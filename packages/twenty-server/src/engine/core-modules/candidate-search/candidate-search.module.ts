@@ -6,15 +6,13 @@ import { ResultValidationService } from 'src/engine/core-modules/candidate-searc
 import { SearchExecutionService } from 'src/engine/core-modules/candidate-search/services/search-execution.service';
 import { SearchParameterGenerationService } from 'src/engine/core-modules/candidate-search/services/search-parameter-generation.service';
 import { StreamProcessingService } from 'src/engine/core-modules/candidate-search/services/stream-processing.service';
-import { ResumeReaderService } from 'src/engine/core-modules/candidate-sourcing/services/resume-reader.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { CandidateSourcingModule } from '../candidate-sourcing/candidate-sourcing.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { LinkedInSearchModule } from '../linkedin-search/linkedin-search.module';
 import { PythonOrgChartService } from '../org-chart/services/python-org-chart.service';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
-import { CandidateSearchOrgchartController } from './controllers/candidate-search-orgchart.controller';
-import { CandidateSearchTestController } from './controllers/candidate-search-test.controller';
+import { CandidateSearchPipelineController } from './controllers/candidate-search-pipeline.controller';
 import { CandidateSearchController } from './controllers/candidate-search.controller';
 import { SearchParametersPrompts } from './prompts/search-parameters-prompts';
 import { BooltreeHintService } from './services/booltree-hint.service';
@@ -35,11 +33,10 @@ import { LinkedinParameterResolver } from './utils/linkedin-parameter-resolver.u
 import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
 @Module({
   imports: [LinkedInSearchModule, WorkspaceModificationsModule, CandidateSourcingModule, GraphQLExecutionModule],
-  controllers: [CandidateSearchController, CandidateSearchChatController, CandidateSearchTestController, CandidateSearchOrgchartController],
+  controllers: [CandidateSearchController, CandidateSearchChatController, CandidateSearchPipelineController],
   providers: [
     CandidateSearchBaseService,
     CandidateSearchHandlerService,
-    CandidateSearchTestController,
     StreamProcessingService,
     SearchParameterGenerationService,
     SearchExecutionService,
@@ -51,7 +48,6 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     LinkedinParameterResolver,
     LinkedInSearchService,
     // SearchGenerationService,
-    ResumeReaderService,  
     ParameterSanitizer,
     FileUtils,
     SearchParametersPrompts,
@@ -67,6 +63,6 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     // Executive search enhancement services
     PythonOrgChartService,
   ],
-  exports: [CandidateSearchBaseService, CandidateSearchTestController],
+  exports: [CandidateSearchBaseService, CandidateSearchHandlerService],
 })
 export class CandidateSearchModule {}

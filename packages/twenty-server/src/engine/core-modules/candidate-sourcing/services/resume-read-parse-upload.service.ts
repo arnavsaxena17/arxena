@@ -2,14 +2,22 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
+import * as mammoth from 'mammoth';
 import { OpenAI } from 'openai';
 import * as path from 'path';
+import * as pdfParse from 'pdf-parse';
 
 import { ProcessCandidatesService } from '../jobs/process-candidates.service';
 import { DataProcessingUtils } from '../utils/data-processing.utils';
 import { CandidateService } from './candidate.service';
 import { ParsedCVData, ParsedCVTransformerService } from './data-sources/parsed-cv-transformer.service';
-import { ResumeReaderService } from './resume-reader.service';
+
+export type ResumeContent = {
+  text: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+};
 
 @Injectable()
 export class ResumeReadParseUploadService {
@@ -17,7 +25,6 @@ export class ResumeReadParseUploadService {
   private openaiClient: OpenAI;
 
   constructor(
-    private readonly resumeReaderService: ResumeReaderService,
     private readonly parsedCVTransformer: ParsedCVTransformerService,
     private readonly processCandidatesService: ProcessCandidatesService,
     private readonly dataProcessingUtils: DataProcessingUtils,
@@ -25,6 +32,112 @@ export class ResumeReadParseUploadService {
     private readonly candidateService: CandidateService,
   ) {
     this.initializeOpenAI();
+  }
+
+  // --- Resume/Document reading (merged from ResumeReaderService) ---
+
+  async readResumeFile(filePath: string): Promise<ResumeContent> {
+    const fileName = path.basename(filePath);
+    const fileExtension = path.extname(fileName).toLowerCase();
+    const stats = fs.statSync(filePath);
+
+    this.logger.log(`Reading resume file: ${fileName} (${fileExtension})`);
+
+    try {
+      let text = '';
+
+      switch (fileExtension) {
+        case '.pdf':
+          text = await this.readPdfFile(filePath);
+          break;
+        case '.docx':
+          text = await this.readDocxFile(filePath);
+          break;
+        case '.doc':
+          text = await this.readDocFile(filePath);
+          break;
+        default:
+          throw new Error(`Unsupported file type: ${fileExtension}`);
+      }
+
+      const cleanedText = this.cleanText(text);
+
+      return {
+        text: cleanedText,
+        fileName,
+        fileType: fileExtension,
+        fileSize: stats.size,
+      };
+    } catch (error) {
+      this.logger.error(`Error reading resume file ${fileName}:`, error);
+      throw new Error(`Failed to read resume file: ${error.message}`);
+    }
+  }
+
+  private async readPdfFile(filePath: string): Promise<string> {
+    try {
+      const dataBuffer = fs.readFileSync(filePath);
+      const data = await pdfParse.default(dataBuffer);
+      return data.text;
+    } catch (error) {
+      this.logger.error(`Error reading PDF file ${filePath}:`, error);
+      throw new Error(`Failed to read PDF file: ${error.message}`);
+    }
+  }
+
+  private async readDocxFile(filePath: string): Promise<string> {
+    try {
+      const result = await mammoth.extractRawText({ path: filePath });
+      return result.value;
+    } catch (error) {
+      this.logger.error(`Error reading DOCX file ${filePath}:`, error);
+      throw new Error(`Failed to read DOCX file: ${error.message}`);
+    }
+  }
+
+  private async readDocFile(filePath: string): Promise<string> {
+    try {
+      const result = await mammoth.extractRawText({ path: filePath });
+      return result.value;
+    } catch (error) {
+      this.logger.warn(`Failed to read DOC file with mammoth: ${error.message}`);
+      throw new Error('DOC file reading not fully supported. Please convert to DOCX or PDF format.');
+    }
+  }
+
+  private cleanText(text: string): string {
+    if (!text) return '';
+    let cleaned = text
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .replace(/\n\s*\n\s*\n/g, '\n\n')
+      .replace(/[ \t]+/g, ' ')
+      .trim();
+    cleaned = cleaned.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+    return cleaned;
+  }
+
+  async readMultipleResumeFiles(filePaths: string[]): Promise<ResumeContent[]> {
+    const results: ResumeContent[] = [];
+    for (const filePath of filePaths) {
+      try {
+        const content = await this.readResumeFile(filePath);
+        results.push(content);
+      } catch (error) {
+        this.logger.error(`Failed to read file ${filePath}:`, error);
+      }
+    }
+    return results;
+  }
+
+  isSupportedResumeFormat(fileName: string): boolean {
+    const supportedExtensions = ['.pdf', '.docx', '.doc'];
+    const extension = path.extname(fileName).toLowerCase();
+    return supportedExtensions.includes(extension);
+  }
+
+  getFileType(fileName: string): string {
+    return path.extname(fileName).toLowerCase();
   }
 
   private initializeOpenAI() {
@@ -64,7 +177,7 @@ export class ResumeReadParseUploadService {
 
     try {
       // Step 1: Read all resume files
-      const resumeContents = await this.resumeReaderService.readMultipleResumeFiles(filePaths);
+      const resumeContents = await this.readMultipleResumeFiles(filePaths);
       this.logger.log(`Successfully read ${resumeContents.length} resume files`);
 
       if (resumeContents.length === 0) {

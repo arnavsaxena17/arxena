@@ -1,6 +1,7 @@
 import { CreateOneCompany, graphqlToFindManyCompanies } from 'twenty-shared';
 
 import { executeGraphQL } from '../api/graphql-client';
+import { callRestAPI } from '../api/rest-client';
 import { McpTool } from '../types/tool-types';
 
 type CompanyNode = {
@@ -111,50 +112,85 @@ export const companyTools: McpTool[] = [
 
   {
     definition: {
-      name: 'find_companies_by_name',
+      name: 'find_company_by_name',
       description:
-        'Search for companies by name or domain. Returns matching companies with their IDs.',
+        'Find a company by name, searching locally first, then LinkedIn if not found. Returns company ID, name, LinkedIn URL, and source (local or linkedin). Useful for finding companies when you only have a name.',
       inputSchema: {
         type: 'object',
         properties: {
-          nameQuery: {
+          companyName: {
             type: 'string',
-            description: 'Partial company name or domain to search for (case-insensitive)',
-          },
-          limit: {
-            type: 'number',
-            description: 'Maximum number of companies to return (default: 10)',
+            description: 'Company name to search for',
           },
         },
-        required: ['nameQuery'],
+        required: ['companyName'],
       },
     },
     handler: async (args, config) => {
-      const nameQuery = args.nameQuery as string;
-      const limit = typeof args.limit === 'number' ? args.limit : 10;
+      const companyName = args.companyName as string;
 
-      const data = await executeGraphQL(
+      if (!companyName || companyName.trim().length === 0) {
+        throw new Error('Company name is required');
+      }
+
+      const result = await callRestAPI(
         config.baseUrl,
         config.apiToken,
-        graphqlToFindManyCompanies,
-        {
-          filter: { name: { like: `%${nameQuery}%` } },
-          limit,
-        },
+        'org-chart',
+        'companies/find-by-name',
+        { companyName: companyName.trim() },
       );
 
-      const companies = extractCompanies(data);
-      return {
-        count: companies.length,
-        companies: companies.map((c) => ({
-          id: c.id,
-          name: c.name,
-          domainName: c.domainName,
-          descriptionOneliner: c.descriptionOneliner,
-        })),
-      };
+      return result;
     },
   },
+
+  // {
+  //   definition: {
+  //     name: 'find_companies_by_name',
+  //     description:
+  //       'Search for companies by name or domain. Returns matching companies with their IDs.',
+  //     inputSchema: {
+  //       type: 'object',
+  //       properties: {
+  //         nameQuery: {
+  //           type: 'string',
+  //           description: 'Partial company name or domain to search for (case-insensitive)',
+  //         },
+  //         limit: {
+  //           type: 'number',
+  //           description: 'Maximum number of companies to return (default: 10)',
+  //         },
+  //       },
+  //       required: ['nameQuery'],
+  //     },
+  //   },
+  //   handler: async (args, config) => {
+  //     const nameQuery = args.nameQuery as string;
+  //     const limit = typeof args.limit === 'number' ? args.limit : 10;
+
+  //     const data = await executeGraphQL(
+  //       config.baseUrl,
+  //       config.apiToken,
+  //       graphqlToFindManyCompanies,
+  //       {
+  //         filter: { name: { like: `%${nameQuery}%` } },
+  //         limit,
+  //       },
+  //     );
+
+  //     const companies = extractCompanies(data);
+  //     return {
+  //       count: companies.length,
+  //       companies: companies.map((c) => ({
+  //         id: c.id,
+  //         name: c.name,
+  //         domainName: c.domainName,
+  //         descriptionOneliner: c.descriptionOneliner,
+  //       })),
+  //     };
+  //   },
+  // },
 
   {
     definition: {

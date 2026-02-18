@@ -53,9 +53,8 @@ import { RmsNaukriTransformerService } from 'src/engine/core-modules/candidate-s
 import { SpreadsheetImportTwentyTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/spreadsheet-import-twenty-transformer.service';
 import { UploadedProfilesTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/uploaded-profiles-transformer.service';
 import { JDParserService } from 'src/engine/core-modules/candidate-sourcing/services/jd-parser.service';
-import { JDUploadService } from 'src/engine/core-modules/candidate-sourcing/services/jd-upload.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
-import { ResumeReaderService } from 'src/engine/core-modules/candidate-sourcing/services/resume-reader.service';
+import { ResumeReadParseUploadService } from 'src/engine/core-modules/candidate-sourcing/services/resume-read-parse-upload.service';
 import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
@@ -90,6 +89,7 @@ import { EngagedCandidateQueueService } from './services/candidate-engagement/en
 import { GmailDraftShortlistQueueProcessor } from './services/candidate-engagement/gmail-draft-shortlist-queue.job';
 import { GmailDraftShortlistQueueService } from './services/candidate-engagement/gmail-draft-shortlist-queue.service';
 import { UpdateChat } from './services/candidate-engagement/update-chat';
+import { MessagingControls } from './services/messaging-controls';
 
 const isWorker = process.argv[1]?.includes('queue-worker');
 
@@ -143,9 +143,8 @@ const conditionalImports = isWorker
     GraphQLExecutionService,
     CandidateService,
     RedisService,
-    ResumeReaderService,
+    ResumeReadParseUploadService,
     JDParserService,
-    JDUploadService,
     ExtSockWhatsappMessageProcessor,
     ...conditionalImports,
     ExtSockWhatsappService,
@@ -171,6 +170,7 @@ const conditionalImports = isWorker
     CandidateEngagementArx,
     CandidateDataProcessorService,
     UpdateChat,
+    MessagingControls,
     DataSourceTransformerFactoryService,
     ResdexNaukriTransformerService,
     HiringNaukriTransformerService,

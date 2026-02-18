@@ -1,6 +1,6 @@
 import { GmailDraftShortlistJobData } from 'twenty-shared';
 
-import { ResumeReaderService } from 'src/engine/core-modules/candidate-sourcing/services/resume-reader.service';
+import { ResumeReadParseUploadService } from 'src/engine/core-modules/candidate-sourcing/services/resume-read-parse-upload.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
@@ -17,7 +17,7 @@ export class GmailDraftShortlistQueueProcessor {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
-    private readonly resumeReaderService: ResumeReaderService,
+    private readonly resumeReadParseUploadService: ResumeReadParseUploadService,
   ) { 
     console.log('GmailDraftShortlistQueueProcessor initialized'); 
   }
@@ -45,7 +45,7 @@ export class GmailDraftShortlistQueueProcessor {
       const candidateDataProcessor = new CandidateDataProcessorService(
         this.workspaceQueryService,
         this.staticGraphQLService,
-        this.resumeReaderService,
+        this.resumeReadParseUploadService,
       );
 
       const documentTemplateService = new DocumentTemplateService();

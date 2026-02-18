@@ -1,5 +1,14 @@
+import {
+  GET_ALL_MESSAGES_BY_CANDIDATE_ID_INPUT_DESCRIPTOR,
+  SEND_BULK_CHATS_BY_CANDIDATE_IDS_INPUT_DESCRIPTOR,
+  SEND_CHAT_INPUT_DESCRIPTOR,
+  SHARE_JD_TO_CANDIDATE_INPUT_DESCRIPTOR,
+  UPLOAD_JD_INPUT_DESCRIPTOR
+} from 'twenty-shared';
+
 import { callRestAPI } from '../api/rest-client';
 import { McpTool } from '../types/tool-types';
+import { descriptorToInputSchema } from '../utils/input-schema';
 
 export const arxChatTools: McpTool[] = [
   {
@@ -7,15 +16,7 @@ export const arxChatTools: McpTool[] = [
       name: 'send_chat',
       description:
         'Send a chat message to a candidate (e.g. via WhatsApp). Pass candidate/candidateId and message content.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          candidateId: { type: 'string', description: 'Candidate ID to send message to' },
-          message: { type: 'string', description: 'Message content' },
-          phoneNumber: { type: 'string', description: 'Optional phone number override' },
-        },
-        required: ['candidateId', 'message'],
-      },
+      inputSchema: descriptorToInputSchema(SEND_CHAT_INPUT_DESCRIPTOR),
     },
     handler: async (args, config) => {
       const body = args as Record<string, unknown>;
@@ -27,13 +28,7 @@ export const arxChatTools: McpTool[] = [
     definition: {
       name: 'get_all_messages_by_candidate_id',
       description: 'Retrieve full chat history for a candidate by their candidate ID.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          candidateId: { type: 'string', description: 'Candidate ID' },
-        },
-        required: ['candidateId'],
-      },
+      inputSchema: descriptorToInputSchema(GET_ALL_MESSAGES_BY_CANDIDATE_ID_INPUT_DESCRIPTOR),
     },
     handler: async (args, config) => {
       const body = args as Record<string, unknown>;
@@ -51,15 +46,7 @@ export const arxChatTools: McpTool[] = [
     definition: {
       name: 'share_jd_to_candidate',
       description: 'Share a job description (JD) with a candidate via chat.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          candidateId: { type: 'string', description: 'Candidate ID' },
-          jobId: { type: 'string', description: 'Job ID' },
-          jdContent: { type: 'string', description: 'JD text or reference' },
-        },
-        required: ['candidateId', 'jobId'],
-      },
+      inputSchema: descriptorToInputSchema(SHARE_JD_TO_CANDIDATE_INPUT_DESCRIPTOR),
     },
     handler: async (args, config) => {
       const body = args as Record<string, unknown>;
@@ -71,62 +58,34 @@ export const arxChatTools: McpTool[] = [
     definition: {
       name: 'upload_jd',
       description: 'Upload a job description file for use in sharing or search.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          jobId: { type: 'string', description: 'Job ID' },
-          filePath: { type: 'string', description: 'Path or reference to JD file' },
-          content: { type: 'string', description: 'Optional raw JD content' },
-        },
-        required: ['jobId'],
-      },
+      inputSchema: descriptorToInputSchema(UPLOAD_JD_INPUT_DESCRIPTOR),
     },
     handler: async (args, config) => {
       const body = args as Record<string, unknown>;
-      return callRestAPI(config.baseUrl, config.apiToken, 'arx-chat', 'upload-jd', body);
+      return callRestAPI(config.baseUrl, config.apiToken, 'candidate-sourcing', 'upload-jd', body);
     },
   },
 
-  {
-    definition: {
-      name: 'get_candidates_by_job_id',
-      description: 'Get candidates linked to a job (from arx-chat context).',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          jobId: { type: 'string', description: 'Job ID' },
-        },
-        required: ['jobId'],
-      },
-    },
-    handler: async (args, config) => {
-      const body = args as Record<string, unknown>;
-      return callRestAPI(
-        config.baseUrl,
-        config.apiToken,
-        'arx-chat',
-        'get-candidates-by-job-id',
-        body,
-      );
-    },
-  },
 
   {
     definition: {
       name: 'send_bulk_chats_by_candidate_ids',
       description: 'Send the same message to multiple candidates by their IDs.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          candidateIds: {
-            type: 'array',
-            items: { type: 'string' },
-            description: 'List of candidate IDs',
+      inputSchema: (() => {
+        const baseSchema = descriptorToInputSchema(SEND_BULK_CHATS_BY_CANDIDATE_IDS_INPUT_DESCRIPTOR);
+        // Handle array type for candidateIds
+        return {
+          ...baseSchema,
+          properties: {
+            ...baseSchema.properties,
+            candidateIds: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'List of candidate IDs',
+            },
           },
-          message: { type: 'string', description: 'Message content' },
-        },
-        required: ['candidateIds', 'message'],
-      },
+        };
+      })(),
     },
     handler: async (args, config) => {
       const body = args as Record<string, unknown>;

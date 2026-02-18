@@ -1,29 +1,42 @@
 import {
-    Body,
-    Controller,
-    Get,
-    Headers,
-    HttpException,
-    HttpStatus,
-    Logger,
-    Param,
-    Post,
-    Put,
-    Query,
-    Req,
+  Body,
+  Controller,
+  Get,
+  Headers,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
 } from '@nestjs/common';
 import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import type { ParsedRequirement } from '../schemas/parsed-requirement.schema';
 import { CandidateSearchHandlerService } from '../services/candidate-search-handler.service';
-import { JobDescriptionService } from '../services/job-description.service';
+import { CompanyExpanderService } from '../services/company-expander.service';
+import { JobTitleExpanderService } from '../services/job-title-expander.service';
+import { SearchExecutionService } from '../services/search-execution.service';
 import { SearchResultsCacheService } from '../services/search-results-cache.service';
 import {
-    CandidateSearchResponse,
-    JobDescriptionParseRequest,
-    ParsedJobDescription
+  CandidateSearchResponse,
+  ParsedJobDescription,
 } from '../types/candidate-search-request.type';
+import { extractApiToken } from '../utils/auth.utils';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
+
+type OrgchartSearchMode =
+  | 'current_node'
+  | 'leadership'
+  | 'entire_company'
+  | 'function_grade'
+  | 'all_people'
+  | 'selected_nodes';
+
+type OrgchartSearchType = 'classic' | 'sales_navigator' | 'recruiter';
 
 type SearchExecutionPreview = {
   itemCount: number;
@@ -42,107 +55,11 @@ export class CandidateSearchController {
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly linkedInRequestTracker: LinkedInSessionTrackerService,
-    private readonly jobDescriptionService: JobDescriptionService,
     private readonly searchResultsCacheService: SearchResultsCacheService,
+    private readonly searchExecutionService: SearchExecutionService,
+    private readonly companyExpanderService: CompanyExpanderService,
+    private readonly jobTitleExpanderService: JobTitleExpanderService,
   ) {}
-
-  /**
-   * Parse job description and extract structured information
-   */
-  @Post('parse-job-description')
-  async parseJobDescription(
-    @Body() request: JobDescriptionParseRequest,
-    @Req() req: any,
-  ): Promise<ParsedJobDescription> {
-    try {
-      // Check if we have a valid jobDescription (non-empty string) or filePath
-      const hasJobDescription = request.jobDescription && request.jobDescription.trim().length > 0;
-      const hasFilePath = request.filePath && request.filePath.trim().length > 0;
-      
-      if (!hasJobDescription && !hasFilePath) {
-        throw new HttpException('Either job description or file path is required', HttpStatus.BAD_REQUEST);
-      }
-
-      const apiToken = req.headers.authorization?.replace('Bearer ', '');
-      if (!apiToken) {
-        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
-      }
-
-      this.logger.log('Parsing job description');
-      
-      const result = await this.jobDescriptionService.parseJobDescription(
-        request,
-        apiToken,
-      );
-
-      this.logger.log('Job description parsed successfully');
-      return result;
-    } catch (error) {
-      this.logger.error('Failed to parse job description in parse-job-description', error);
-      throw new HttpException(
-        error.message || 'Failed to parse job description',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-
-  /**
-   * Generate search parameters from uploaded JD file
-   */
-  @Post('generate-search-parameters/from-file')
-  async generateSearchParametersFromFile(
-    @Body() body: {
-      filePath: string;
-      searchType: 'classic' | 'sales_navigator' | 'recruiter';
-      searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
-    },
-    @Req() req: any,
-  // ): Promise<{ parsedJobDescription: ParsedJobDescription; generatedSearchParameters: GeneratedSearchParameters }> {
-  ) {
-    try {
-      // if (!body.filePath) {
-      //   throw new HttpException('File path is required', HttpStatus.BAD_REQUEST);
-      // }
-
-      // if (!body.searchType || !body.searchCategory) {
-      //   throw new HttpException('Search type and category are required', HttpStatus.BAD_REQUEST);
-      // }
-
-      // const apiToken = req.headers.authorization?.replace('Bearer ', '');
-      // if (!apiToken) {
-      //   throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
-      // }
-
-      // this.logger.log(`Generating search parameters from file for ${body.searchType} ${body.searchCategory}`);
-      
-      // // Parse job description from file
-      // const parsedJobDescription = await this.jobDescriptionService.parseJobDescriptionFromFile(
-      //   body.filePath,
-      //   apiToken,
-      // );
-
-      // // Generate search parameters
-      // const generatedSearchParameters = await this.candidateSearchService.generateSearchParameters(
-      //   parsedJobDescription,
-      //   body.searchType,
-      //   body.searchCategory,
-      //   apiToken,
-      // );
-
-      // this.logger.log('Search parameters generated successfully from file');
-      // return {
-      //   parsedJobDescription,
-      //   generatedSearchParameters,
-      // };
-    } catch (error) {
-      this.logger.error('Failed to generate search parameters from file', error);
-      throw new HttpException(
-        error.message || 'Failed to generate search parameters from file',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
 
   /**
    * Fetch LinkedIn search parameters for a specific type
@@ -233,8 +150,110 @@ export class CandidateSearchController {
     }
   }
 
+  /**
+   * Execute search from file/JD context (resolved parameters + parsed JD).
+   * Replaces the non-existent search/from-file path; use this endpoint for search-from-file flows.
+   */
+  @Post('search-from-file')
+  async searchFromFile(
+    @Body() body: {
+      filePath?: string;
+      jobDescription?: string;
+      jobTitle?: string;
+      company?: string;
+      location?: string;
+      industry?: string;
+      searchType: 'classic' | 'sales_navigator' | 'recruiter';
+      searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
+      searchParameters: any;
+      parsedJD?: ParsedJobDescription;
+      options?: { limit?: number; cursor?: string };
+    },
+    @Req() req: any,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limitParam?: string,
+  ): Promise<{
+    searchResults: { items: any[]; cursor?: string | null; paging?: any };
+    transformedCandidates?: any[];
+    resolvedSearchParameters?: any;
+    searchMetadata?: any;
+  }> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
 
+      const limit = body.options?.limit ?? (limitParam ? parseInt(limitParam, 10) : undefined) ?? 10;
+      const maxPages = Math.max(1, Math.ceil(limit / 25));
 
+      const parsedJD: ParsedJobDescription = body.parsedJD ?? {
+        jobTitle: body.jobTitle ?? '',
+        company: body.company ?? '',
+        location: body.location ?? '',
+        industry: body.industry ?? '',
+        requiredSkills: [],
+        preferredSkills: [],
+        experienceLevel: 'mid_level',
+        education: [],
+        keywords: [],
+        responsibilities: [],
+        qualifications: [],
+        benefits: [],
+        employmentType: 'full_time',
+        remoteWork: false,
+        salaryRange: null,
+      };
+
+      const searchParamKey = `${body.searchType.replace(/_([a-z])/g, (_, l: string) =>
+        l.toUpperCase(),
+      )}${body.searchCategory.charAt(0).toUpperCase() + body.searchCategory.slice(1)}Search`;
+
+      const strategy = {
+        id: 'search-from-file',
+        label: 'Search from file',
+        description: '',
+        strategyText: '',
+        parameters: body.searchParameters,
+      } as any;
+
+      const searchResult = await this.searchExecutionService.executeMultiPageSearchWithoutValidation(
+        parsedJD,
+        strategy,
+        body.searchType,
+        body.searchCategory,
+        searchParamKey,
+        apiToken,
+        maxPages,
+        undefined,
+      );
+
+      if (searchResult?.error) {
+        throw new HttpException(
+          searchResult.error.message || 'Search failed',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+
+      const searchResults = searchResult?.searchResults ?? null;
+      return {
+        searchResults: {
+          items: searchResults?.items ?? [],
+          cursor: searchResults?.cursor ?? null,
+          paging: searchResults?.paging,
+        },
+        transformedCandidates: searchResult?.transformedCandidates,
+        resolvedSearchParameters: body.searchParameters,
+        searchMetadata: searchResult?.searchMetadata,
+      };
+    } catch (error: any) {
+      this.logger.error('Search from file failed', error);
+      throw new HttpException(
+        error?.message || 'Search from file failed',
+        error?.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 
   @Get(':searchFilterId/history')
   async getChatHistory(
@@ -410,59 +429,317 @@ export class CandidateSearchController {
   }
 
   /**
-   * Generate LinkedIn search parameters from parsed job description
+   * Expand companies from parsed requirement
    */
-  @Post('generate-search-parameters')
-  async generateSearchParameters(
-     @Body() body: {
-       parsedJobDescription: ParsedJobDescription;
-       searchType: 'classic' | 'sales_navigator' | 'recruiter';
-       searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
-       searchFilterId: string;
-     },
+  @Post('expand-companies')
+  async expandCompanies(
+    @Body() body: { parsedRequirement: Record<string, unknown> },
     @Req() req: any,
   ) {
-  // ): Promise<{
-  //   generatedSearchParameters: GeneratedSearchParameters;
-  //   resolvedSearchParameters: any;
-  //   chatMessage: string;
-  //   searchResultsPreview?: SearchExecutionPreview;
-  // }> {
-    //  try {
-    //    const apiToken = req.headers.authorization?.replace('Bearer ', '');
-    //    if (!apiToken) {
-    //      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
-    //    }
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const { openAIclient: openaiClient } =
+        await this.workspaceQueryService.initializeLLMClients(workspaceId);
+      const companyAnalysis = await this.companyExpanderService.expandCompanies(
+        body.parsedRequirement as ParsedRequirement,
+        openaiClient,
+      );
+      this.logger.log(`Company analysis: ${JSON.stringify(companyAnalysis, null, 2)}`);
+      return { companyAnalysis };
+    } catch (error) {
+      this.logger.error('Error in company expander:', error);
+      throw new HttpException(
+        error.message || 'Failed to expand companies',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 
-    //    const result = await this.candidateSearchHandlerService.generateSearchParametersInternal(
-    //      body.parsedJobDescription,
-    //      body.searchType,
-    //      body.searchCategory,
-    //      body.searchFilterId,
-    //      apiToken
-    //    ) as {
-    //     generatedSearchParameters: GeneratedSearchParameters;
-    //     resolvedSearchParameters: any;
-    //     chatMessage: string;
-    //     searchResultsPreview?: SearchExecutionPreview;
-    //   } | {
-    //     generatedParams: GeneratedSearchParameters;
-    //   };
+  /**
+   * Expand job titles from parsed requirement
+   */
+  @Post('expand-job-titles')
+  async expandJobTitles(
+    @Body() body: { parsedRequirement: Record<string, unknown> },
+    @Req() req: any,
+  ) {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const { openAIclient: openaiClient } =
+        await this.workspaceQueryService.initializeLLMClients(workspaceId);
+      const titleAnalysis = await this.jobTitleExpanderService.expandJobTitles(
+        body.parsedRequirement as ParsedRequirement,
+        openaiClient,
+      );
+      this.logger.log(`Title analysis: ${JSON.stringify(titleAnalysis, null, 2)}`);
+      return { titleAnalysis };
+    } catch (error) {
+      this.logger.error('Error in job title expander:', error);
+      throw new HttpException(
+        error.message || 'Failed to expand job titles',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 
-    //   if (result && 'generatedParams' in result) {
-    //     return {
-    //       generatedSearchParameters: result.generatedParams,
-    //       resolvedSearchParameters: {},
-    //       chatMessage: '',
-    //       searchResultsPreview: undefined,
-    //     };
-    //   } 
-    //   return result;
-    //  } catch (error) {
-    //    console.error('Error generating search params:', error);
-    //    throw error;
-    //  }
-   }
+ 
+  /**
+   * Org chart search: find people at a company by mode (leadership, entire_company, function_grade, etc.).
+   */
+  @Post('orgchart')
+  async searchOrgchart(
+    @Body() body: {
+      rawQuery: string;
+      cleanedQuery: string;
+      companyName?: string;
+      companyId?: string;
+      jobTitles?: string[];
+      mode: OrgchartSearchMode;
+      maxPages?: number;
+      searchType?: OrgchartSearchType;
+      requestId?: string;
+    },
+    @Headers() headers: Record<string, string>,
+  ) {
+    const apiToken = extractApiToken(headers);
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
 
+    const {
+      companyName,
+      companyId,
+      jobTitles = [],
+      mode,
+      searchType = 'classic',
+      requestId,
+    } = body;
+
+    const resolvedCompanyName =
+      companyName || (companyId ? String(companyId) : '');
+
+    let requirement: string;
+    switch (mode) {
+      case 'leadership':
+        requirement = `Find all leadership positions at ${resolvedCompanyName}.`;
+        break;
+      case 'entire_company':
+      case 'all_people':
+        requirement = `Find all people currently working at ${resolvedCompanyName}.`;
+        break;
+      case 'function_grade': {
+        const titlesText =
+          jobTitles && jobTitles.length > 0
+            ? jobTitles.join(', ')
+            : 'the relevant function and seniority described by the node';
+        requirement = `Find people at ${resolvedCompanyName} with job titles similar to: ${titlesText}.`;
+        break;
+      }
+      case 'selected_nodes':
+        requirement = `Find people for the selected nodes at ${resolvedCompanyName}.`;
+        break;
+      case 'current_node':
+      default: {
+        const titlesText =
+          jobTitles && jobTitles.length > 0
+            ? jobTitles.join(', ')
+            : 'this role';
+        requirement = `Find people matching ${titlesText} at ${resolvedCompanyName}.`;
+        break;
+      }
+    }
+
+    this.logger.log(
+      `Orgchart search requested. Mode=${mode}, searchType=${searchType}, company="${resolvedCompanyName}", jobTitles=${JSON.stringify(
+        jobTitles,
+      )}`,
+    );
+
+    if (mode === 'entire_company') {
+      const cachedOrgChart =
+        await this.candidateSearchHandlerService.getCachedCompanyOrgChart({
+          companyName: resolvedCompanyName,
+          companyId,
+          mode: 'entire_company',
+          searchType,
+        });
+
+      if (cachedOrgChart) {
+        this.logger.log(
+          `Serving cached company org chart for company="${resolvedCompanyName}"`,
+        );
+        return {
+          success: true,
+          mode,
+          searchType,
+          companyName: resolvedCompanyName,
+          jobTitles,
+          itemCount: cachedOrgChart.itemCount,
+          items: cachedOrgChart.items,
+          orgChart: cachedOrgChart.orgChart,
+          isCached: true,
+          cacheSource: 'orgchart',
+          cachedAt: cachedOrgChart.cachedAt,
+        };
+      }
+
+      const cachedCandidateList =
+        await this.candidateSearchHandlerService.getCachedCompanyCandidateList({
+          companyName: resolvedCompanyName,
+          companyId,
+          mode: 'entire_company',
+          searchType,
+        });
+
+      if (cachedCandidateList && cachedCandidateList.itemCount > 0) {
+        this.logger.log(
+          `Building org chart from cached candidate list for company="${resolvedCompanyName}" (${cachedCandidateList.itemCount} candidates)`,
+        );
+        try {
+          const orgChartFromCache =
+            await this.candidateSearchHandlerService.buildOrgChartFromLinkedInCompanyCandidates(
+              cachedCandidateList.items,
+              {
+                companyName: resolvedCompanyName,
+                companyId,
+              },
+            );
+          const shouldCacheBuiltOrgChartFromCandidateList =
+            this.candidateSearchHandlerService.shouldCacheCompanyOrgChart({
+              orgChart: orgChartFromCache,
+              fallbackCandidateCount: cachedCandidateList.itemCount,
+              companyName: resolvedCompanyName,
+              companyId,
+            });
+          if (shouldCacheBuiltOrgChartFromCandidateList) {
+            await this.candidateSearchHandlerService.setCachedCompanyOrgChart({
+              companyName: resolvedCompanyName,
+              companyId,
+              mode: 'entire_company',
+              searchType,
+              orgChart: orgChartFromCache,
+              items: cachedCandidateList.items,
+              itemCount: cachedCandidateList.itemCount,
+            });
+          }
+          return {
+            success: true,
+            mode,
+            searchType,
+            companyName: resolvedCompanyName,
+            jobTitles,
+            itemCount: cachedCandidateList.itemCount,
+            items: cachedCandidateList.items,
+            orgChart: orgChartFromCache,
+            isCached: true,
+            cacheSource: 'candidate_list',
+            cachedAt: cachedCandidateList.cachedAt,
+          };
+        } catch (error) {
+          this.logger.error(
+            `Failed to build org chart from cached candidates for company="${resolvedCompanyName}"`,
+            error as Error,
+          );
+          return {
+            success: true,
+            mode,
+            searchType,
+            companyName: resolvedCompanyName,
+            jobTitles,
+            itemCount: cachedCandidateList.itemCount,
+            items: cachedCandidateList.items,
+            orgChart: undefined,
+            isCached: true,
+            cacheSource: 'candidate_list',
+            cachedAt: cachedCandidateList.cachedAt,
+          };
+        }
+      }
+    }
+
+    const result =
+      await this.candidateSearchHandlerService.runOrgchartLinkedInSearch(
+        body.rawQuery,
+        body.cleanedQuery,
+        searchType,
+        apiToken,
+        undefined,
+        {
+          mode,
+          companyName: resolvedCompanyName,
+          requestId,
+        },
+      );
+
+    let orgChart: Record<string, unknown> | undefined;
+
+    if (mode === 'entire_company' && result.itemCount > 0) {
+      await this.candidateSearchHandlerService.setCachedCompanyCandidateList({
+        companyName: resolvedCompanyName,
+        companyId,
+        mode: 'entire_company',
+        searchType,
+        items: result.items,
+        itemCount: result.itemCount,
+      });
+    }
+
+    if (mode === 'entire_company' && result.itemCount > 0) {
+      try {
+        orgChart =
+          await this.candidateSearchHandlerService.buildOrgChartFromLinkedInCompanyCandidates(
+            result.items,
+            {
+              companyName: resolvedCompanyName,
+              companyId,
+            },
+          );
+        const shouldCacheBuiltOrgChartFromLinkedIn =
+          this.candidateSearchHandlerService.shouldCacheCompanyOrgChart({
+            orgChart,
+            fallbackCandidateCount: result.itemCount,
+            companyName: resolvedCompanyName,
+            companyId,
+          });
+        if (shouldCacheBuiltOrgChartFromLinkedIn) {
+          await this.candidateSearchHandlerService.setCachedCompanyOrgChart({
+            companyName: resolvedCompanyName,
+            companyId,
+            mode: 'entire_company',
+            searchType,
+            orgChart,
+            items: result.items,
+            itemCount: result.itemCount,
+          });
+        }
+      } catch (error) {
+        this.logger.error(
+          `Failed to build org chart from LinkedIn orgchart search for company="${resolvedCompanyName}"`,
+          error as Error,
+        );
+      }
+    }
+
+    return {
+      success: true,
+      mode,
+      searchType,
+      companyName: resolvedCompanyName,
+      jobTitles,
+      itemCount: result.itemCount,
+      items: result.items,
+      orgChart,
+      isCached: false,
+      cacheSource: 'none',
+    };
+  }
 }
 

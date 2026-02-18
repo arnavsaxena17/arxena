@@ -231,4 +231,36 @@ export class OrgChartController {
       );
     }
   }
+
+  @Post('companies/find-by-name')
+  async findCompanyByName(
+    @Body() body: { companyName: string },
+    @Req() req: Request,
+  ) {
+    if (!body?.companyName || !body.companyName.trim()) {
+      throw new HttpException(
+        'Body field "companyName" is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      const authToken = this.getAuthToken(req);
+      if (!authToken) {
+        throw new HttpException('Authentication required', HttpStatus.UNAUTHORIZED);
+      }
+
+      const result = await this.orgChartService.findCompanyByName(
+        body.companyName,
+        authToken,
+      );
+      return { ...result, status: 'ok' };
+    } catch (error) {
+      this.logger.error('Find company by name failed', error);
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Failed to find company',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

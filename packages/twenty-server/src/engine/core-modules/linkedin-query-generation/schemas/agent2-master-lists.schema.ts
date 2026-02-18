@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
 const bySenioritySchema = z.object({
-  junior: z.array(z.string()).optional(),
-  mid: z.array(z.string()).optional(),
-  senior: z.array(z.string()).optional(),
-  cxo: z.array(z.string()).optional(),
+  junior: z.array(z.string()).nullable(),
+  mid: z.array(z.string()).nullable(),
+  senior: z.array(z.string()).nullable(),
+  cxo: z.array(z.string()).nullable(),
 });
 
 /** Array form for grouped concepts (z.record not supported by OpenAI zodResponseFormat). */
@@ -33,8 +33,8 @@ const companiesMasterSchema = z.object({
   all_companies: z.array(z.string()).describe('List of companies'),
   use_company_filter: z.boolean().describe('Use company filter vs alternative_keywords'),
   reasoning: z.string().describe('Explanation for company strategy'),
-  alternative_keywords: z.array(z.string()).optional(),
-  clusters: z.array(z.array(z.string())).optional().describe('Company clusters for splitting'),
+  alternative_keywords: z.array(z.string()).nullable(),
+  clusters: z.array(z.array(z.string())).nullable().describe('Company clusters for splitting'),
 });
 
 /**

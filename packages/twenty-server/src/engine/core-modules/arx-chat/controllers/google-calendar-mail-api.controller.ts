@@ -8,7 +8,7 @@ import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/servic
 import { CalendarEmailService } from 'src/engine/core-modules/arx-chat/utils/calendar-email';
 import { SendEmailFunctionality } from 'src/engine/core-modules/arx-chat/utils/send-gmail';
 import { CalendarEventType } from 'src/engine/core-modules/calendar-events/services/calendar-data-objects-types';
-import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
+import { CandidateWorkspaceGraphQLService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-workspace-graphql.service';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -91,7 +91,7 @@ export class GoogleControllers {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly emailService: EmailService,
-    private readonly candidateService: CandidateService,
+    private readonly candidateWorkspaceGraphQLService: CandidateWorkspaceGraphQLService,
     private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
@@ -259,7 +259,7 @@ export class GoogleControllers {
       ).getJobIdsFromCandidateIds(candidateIds, apiToken);
     console.log('This is the jobIds:', jobIds);
 
-    const candidateJob: Job = await this.candidateService.getJobDetails(
+    const candidateJob: Job = await this.candidateWorkspaceGraphQLService.getJobDetails(
       jobIds[0] || '',
       '',
       apiToken,

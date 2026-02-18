@@ -22,7 +22,7 @@ import {
 } from 'twenty-shared';
 
 import { executeGraphQL } from '../api/graphql-client';
-import { callCandidateSourcingRestAPI } from '../api/rest-client';
+import { callRestAPI } from '../api/rest-client';
 import { McpTool } from '../types/tool-types';
 import { descriptorToInputSchema } from '../utils/input-schema';
 
@@ -156,9 +156,10 @@ export const personTools: McpTool[] = [
     handler: async (args, config) => {
       const { jobId } = args as GetCandidateFieldsForJobInput;
 
-      const result = await callCandidateSourcingRestAPI(
+      const result = await callRestAPI(
         config.baseUrl,
         config.apiToken,
+        'candidate-sourcing',
         'get-candidate-fields-by-job',
         { jobId },
       );
@@ -204,9 +205,10 @@ export const personTools: McpTool[] = [
     handler: async (args, config) => {
       const { contactData } = args as EnrichContactFromDataInput;
 
-      const result = await callCandidateSourcingRestAPI(
+      const result = await callRestAPI(
         config.baseUrl,
         config.apiToken,
+        'candidate-sourcing',
         'update-contact-from-enrichment',
         contactData,
       );

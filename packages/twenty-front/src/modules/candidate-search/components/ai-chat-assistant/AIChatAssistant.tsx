@@ -660,7 +660,7 @@ export const AIChatAssistant = ({
       enqueueSnackBar,
     }), 
     [setSearchResults, setSearchMetadata, jobId, enqueueSnackBar]
-  );
+  )
 
   const handleClearChat = useMemo(() => createClearChatHandler(chatHandlerDeps), [chatHandlerDeps]);
   const chatSubmitHandler = useMemo(() => createChatSubmitHandler(chatHandlerDeps), [chatHandlerDeps]);

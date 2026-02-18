@@ -5,20 +5,20 @@ import path from 'path';
 import { z } from 'zod';
 import {
   classicPeopleSearchSchema,
-} from './packages/twenty-server/src/engine/core-modules/candidate-search/schemas/linkedin-classic-people-search.schema';
+} from '../packages/twenty-server/src/engine/core-modules/candidate-search/schemas/linkedin-classic-people-search.schema';
 import {
   recruiterPeopleSearchSchema,
-} from './packages/twenty-server/src/engine/core-modules/candidate-search/schemas/linkedin-recruiter-people-search.schema';
+} from '../packages/twenty-server/src/engine/core-modules/candidate-search/schemas/linkedin-recruiter-people-search.schema';
 import {
   salesNavigatorPeopleSearchSchema,
-} from './packages/twenty-server/src/engine/core-modules/candidate-search/schemas/linkedin-sales-navigator-people-search.schema';
+} from '../packages/twenty-server/src/engine/core-modules/candidate-search/schemas/linkedin-sales-navigator-people-search.schema';
 import {
   queryConstructorSchema,
   type QueryConstructorResult,
-} from './packages/twenty-server/src/engine/core-modules/candidate-search/schemas/query-constructor.schema';
+} from '../packages/twenty-server/src/engine/core-modules/candidate-search/schemas/query-constructor.schema';
 import {
   mapQueryConstructorToUnresolved,
-} from './packages/twenty-server/src/engine/core-modules/candidate-search/utils/query-constructor-mapper.util';
+} from '../packages/twenty-server/src/engine/core-modules/candidate-search/utils/query-constructor-mapper.util';
 
 type SearchType = 'classic' | 'sales_navigator' | 'recruiter';
 

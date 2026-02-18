@@ -25,7 +25,7 @@ import { GmailDraftShortlistQueueService } from 'src/engine/core-modules/arx-cha
 import { ShortlistDocumentService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/shortlist-document.service';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
-import { ResumeReaderService } from 'src/engine/core-modules/candidate-sourcing/services/resume-reader.service';
+import { ResumeReadParseUploadService } from 'src/engine/core-modules/candidate-sourcing/services/resume-read-parse-upload.service';
 import { createJobIdErrorResponse, validateAndExtractJobId } from 'src/engine/core-modules/candidate-sourcing/utils/job-id.utils';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -41,7 +41,7 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
       private readonly engagedCandidateQueueService: EngagedCandidateQueueService,
       private readonly gmailDraftShortlistQueueService: GmailDraftShortlistQueueService,
 
-      private readonly resumeReaderService: ResumeReaderService,
+      private readonly resumeReadParseUploadService: ResumeReadParseUploadService,
       private readonly updateChat: UpdateChat,
     ) {}
   
@@ -180,7 +180,7 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
         const candidateDataProcessor = new CandidateDataProcessorService(
           this.workspaceQueryService,
           this.staticGraphQLService,
-          this.resumeReaderService,
+          this.resumeReadParseUploadService,
         );
   
         const processedCandidates = await candidateDataProcessor.processCandidates(
@@ -489,7 +489,7 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
         const shortlistDocumentService = new ShortlistDocumentService(
           this.workspaceQueryService,
           this.staticGraphQLService,
-          new CandidateDataProcessorService(this.workspaceQueryService, this.staticGraphQLService, this.resumeReaderService ),
+          new CandidateDataProcessorService(this.workspaceQueryService, this.staticGraphQLService, this.resumeReadParseUploadService ),
           new DocumentTemplateService(),
         );
   
@@ -565,7 +565,7 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
       const shortlistDocumentService = new ShortlistDocumentService(
         this.workspaceQueryService,
         this.staticGraphQLService,
-        new CandidateDataProcessorService(this.workspaceQueryService, this.staticGraphQLService, this.resumeReaderService),
+        new CandidateDataProcessorService(this.workspaceQueryService, this.staticGraphQLService, this.resumeReadParseUploadService),
         new DocumentTemplateService(),
       );
 
@@ -618,7 +618,7 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
       const shortlistDocumentService = new ShortlistDocumentService(
         this.workspaceQueryService,
         this.staticGraphQLService,
-        new CandidateDataProcessorService(this.workspaceQueryService, this.staticGraphQLService, this.resumeReaderService),
+        new CandidateDataProcessorService(this.workspaceQueryService, this.staticGraphQLService, this.resumeReadParseUploadService),
         new DocumentTemplateService(),
       );
 

@@ -44,10 +44,10 @@ export interface MasterLists {
   job_titles: {
     all_terms: string[];
     by_seniority: {
-      junior?: string[];
-      mid?: string[];
-      senior?: string[];
-      cxo?: string[];
+      junior: string[] | null;
+      mid: string[] | null;
+      senior: string[] | null;
+      cxo: string[] | null;
     };
     selected_terms: string[];
     term_count: number;
@@ -56,8 +56,8 @@ export interface MasterLists {
     all_companies: string[];
     use_company_filter: boolean;
     reasoning: string;
-    alternative_keywords?: string[];
-    clusters?: string[][];
+    alternative_keywords: string[] | null;
+    clusters: string[][] | null;
   };
 }
 

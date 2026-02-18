@@ -4,8 +4,12 @@ import * as path from 'path';
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
+import { graphqlToFindManyCompanies } from 'twenty-shared';
 
 import { ContactEnrichmentWaterfallService } from 'src/engine/core-modules/contact-enrichment/services/contact-enrichment-waterfall.service';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import { ArxenaBackendService } from './arxena-backend.service';
 import { OrgChartEsService } from './org-chart-es.service';
@@ -22,6 +26,9 @@ export class OrgChartService {
     private readonly orgChartEsService: OrgChartEsService,
     private readonly peopleEsService: PeopleEsService,
     private readonly contactEnrichmentWaterfall: ContactEnrichmentWaterfallService,
+    private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly linkedInSearchService: LinkedInSearchService,
+    private readonly workspaceQueryService: WorkspaceQueryService,
     @InjectCacheStorage(CacheStorageNamespace.EngineOrgChart)
     private readonly orgChartCacheStorageService: CacheStorageService,
   ) {}
@@ -302,5 +309,230 @@ export class OrgChartService {
       );
       return { emailAddresses: [], phoneNumbers: [] };
     }
+  }
+
+  /**
+   * Find a company by name, searching locally first, then LinkedIn if not found.
+   * Returns company ID, name, LinkedIn URL, and source.
+   */
+  async findCompanyByName(
+    companyName: string,
+    authToken: string,
+  ): Promise<{
+    found: boolean;
+    companyId?: string;
+    companyName?: string;
+    linkedinUrl?: string;
+    source?: 'local' | 'linkedin';
+    message?: string;
+  }> {
+    if (!companyName || companyName.trim().length === 0) {
+      return {
+        found: false,
+        message: 'Company name is required',
+      };
+    }
+
+    const trimmedName = companyName.trim();
+
+    // First try to find locally
+    try {
+      const data = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFindManyCompanies,
+        {
+          filter: { name: { like: `%${trimmedName}%` } },
+          limit: 5,
+        },
+        authToken,
+      );
+
+      const companies = (data?.data?.companies?.edges ?? []) as Array<{
+        node: {
+          id: string;
+          name?: string;
+          linkedinLink?: { primaryLinkUrl?: string } | null;
+        };
+      }>;
+
+      if (companies.length > 0) {
+        // Try exact match first
+        const exactMatch = companies.find(
+          (c) => c.node.name?.toLowerCase() === trimmedName.toLowerCase(),
+        );
+        const match = exactMatch ?? companies[0];
+
+        if (match?.node) {
+          return {
+            found: true,
+            companyId: match.node.id,
+            companyName: match.node.name ?? trimmedName,
+            linkedinUrl: match.node.linkedinLink?.primaryLinkUrl ?? undefined,
+            source: 'local',
+          };
+        }
+      }
+    } catch (error) {
+      this.logger.warn(`Error searching local companies for "${trimmedName}":`, error);
+    }
+
+    // If not found locally, search LinkedIn
+    try {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(authToken);
+      const accountId = await this.workspaceQueryService.getWorkspaceApiKey(
+        workspaceId,
+        'linkedin_unipile_account_id',
+      );
+
+      if (!accountId) {
+        return {
+          found: false,
+          message: `Company "${trimmedName}" not found locally and LinkedIn account ID not configured`,
+        };
+      }
+
+      // First, resolve the company name to a LinkedIn company ID using the parameter API
+      // This ensures we're using LinkedIn's canonical company name and ID
+      const paramsResult = await this.linkedInSearchService.getCompanyParameters(
+        accountId,
+        trimmedName,
+        20,
+      );
+
+      const parameterItems = paramsResult?.items ?? [];
+      if (parameterItems.length === 0) {
+        this.logger.warn(
+          `Could not resolve company name "${trimmedName}" to LinkedIn parameters`,
+        );
+        return {
+          found: false,
+          message: `Company "${trimmedName}" not found in LinkedIn parameters`,
+        };
+      }
+
+      // Find the best matching company from parameter results
+      let resolvedCompany: { id: string; title: string } | null = null;
+
+      // Try exact match first
+      const exactMatch = parameterItems.find(
+        (item) => item.title?.toLowerCase() === trimmedName.toLowerCase(),
+      );
+      if (exactMatch?.id && exactMatch?.title) {
+        resolvedCompany = { id: exactMatch.id, title: exactMatch.title };
+      }
+
+      // Try case-insensitive starts with match
+      if (!resolvedCompany) {
+        const startsWithMatch = parameterItems.find(
+          (item) =>
+            item.title?.toLowerCase().startsWith(trimmedName.toLowerCase()) ||
+            trimmedName.toLowerCase().startsWith(item.title?.toLowerCase() ?? ''),
+        );
+        if (startsWithMatch?.id && startsWithMatch?.title) {
+          resolvedCompany = {
+            id: startsWithMatch.id,
+            title: startsWithMatch.title,
+          };
+        }
+      }
+
+      // Try contains match
+      if (!resolvedCompany) {
+        const containsMatch = parameterItems.find(
+          (item) =>
+            item.title?.toLowerCase().includes(trimmedName.toLowerCase()) ||
+            trimmedName.toLowerCase().includes(item.title?.toLowerCase() ?? ''),
+        );
+        if (containsMatch?.id && containsMatch?.title) {
+          resolvedCompany = {
+            id: containsMatch.id,
+            title: containsMatch.title,
+          };
+        }
+      }
+
+      // Use first match if no better match found
+      if (!resolvedCompany && parameterItems[0]?.id && parameterItems[0]?.title) {
+        resolvedCompany = {
+          id: parameterItems[0].id,
+          title: parameterItems[0].title,
+        };
+      }
+
+      if (!resolvedCompany) {
+        this.logger.warn(
+          `Could not find a valid company parameter for "${trimmedName}"`,
+        );
+        return {
+          found: false,
+          message: `Company "${trimmedName}" not found in LinkedIn parameters`,
+        };
+      }
+
+      // Now search using the resolved company name from LinkedIn's parameter API
+      // This ensures we're using LinkedIn's canonical company name instead of the raw string
+      const searchResult = await this.linkedInSearchService.searchCompanies(
+        {
+          keywords: resolvedCompany.title,
+        },
+        accountId,
+        { limit: 5 },
+      );
+
+      const companies = searchResult.items.filter(
+        (item) => item.type === 'COMPANY',
+      ) as Array<{
+        id: string;
+        name: string;
+        profile_url: string;
+      }>;
+
+      if (companies.length > 0) {
+        // Prefer the company that matches our resolved ID
+        const idMatch = companies.find((c) => c.id === resolvedCompany!.id);
+        if (idMatch?.id) {
+          return {
+            found: true,
+            companyId: idMatch.id,
+            companyName: idMatch.name ?? resolvedCompany.title,
+            linkedinUrl: idMatch.profile_url,
+            source: 'linkedin',
+          };
+        }
+
+        // Try exact match with resolved name
+        const nameExactMatch = companies.find(
+          (c) => c.name?.toLowerCase() === resolvedCompany!.title.toLowerCase(),
+        );
+        if (nameExactMatch?.id) {
+          return {
+            found: true,
+            companyId: nameExactMatch.id,
+            companyName: nameExactMatch.name ?? resolvedCompany.title,
+            linkedinUrl: nameExactMatch.profile_url,
+            source: 'linkedin',
+          };
+        }
+
+        // Return first match
+        const firstMatch = companies[0];
+        if (firstMatch?.id) {
+          return {
+            found: true,
+            companyId: firstMatch.id,
+            companyName: firstMatch.name ?? resolvedCompany.title,
+            linkedinUrl: firstMatch.profile_url,
+            source: 'linkedin',
+          };
+        }
+      }
+    } catch (error) {
+      this.logger.warn(`Error searching LinkedIn for company "${trimmedName}":`, error);
+    }
+
+    return {
+      found: false,
+      message: `Company "${trimmedName}" not found in local database or LinkedIn search`,
+    };
   }
 }

@@ -73,7 +73,7 @@ export async function generateLinkedInUrlsStep(
         const paramSet = paramSets[i];
         try {
           const urlResponse = await axios.post(
-            `${SERVER_URL}/candidate-search/test/generate-linkedin-url`,
+            `${SERVER_URL}/candidate-search/pipeline/generate-linkedin-url`,
             {
               resolvedParameters: paramSet,
               searchType,
@@ -181,7 +181,7 @@ export async function executeParameterSearchStep(
       const searchTypeStart = Date.now();
 
       const searchResponse = await axios.post(
-        `${SERVER_URL}/candidate-search/test/execute-parameter-search`,
+        `${SERVER_URL}/candidate-search/pipeline/execute-parameter-search`,
         {
           resolvedParameters: paramSet,
           searchType,

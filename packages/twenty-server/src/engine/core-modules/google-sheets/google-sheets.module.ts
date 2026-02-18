@@ -32,14 +32,16 @@ import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { AppToken } from '../app-token/app-token.entity';
 import { AuthModule } from '../auth/auth.module';
 import { JwtAuthStrategy } from '../auth/strategies/jwt.auth.strategy';
-import { ProcessCandidatesService } from '../candidate-sourcing/jobs/process-candidates.service';
+import { CandidateSourcingModule } from '../candidate-sourcing/candidate-sourcing.module';
+import { DeleteFieldValuesService } from '../candidate-sourcing/jobs/delete-field-values.service';
 import { ProcessAiFiltersService } from '../candidate-sourcing/jobs/process-ai-filters.service';
+import { ProcessCandidatesService } from '../candidate-sourcing/jobs/process-candidates.service';
+import { AiFilteringProcessorService } from '../candidate-sourcing/services/ai-filtering-processor.service';
+import { AiFilteringService } from '../candidate-sourcing/services/ai-filtering.service';
 import { CandidateDataService } from '../candidate-sourcing/services/candidate-data.service';
 import { CandidateFieldValueService } from '../candidate-sourcing/services/candidate-field-value.service';
 import { CandidateService } from '../candidate-sourcing/services/candidate.service';
 import { ChatService } from '../candidate-sourcing/services/chat.service';
-import { AiFilteringProcessorService } from '../candidate-sourcing/services/ai-filtering-processor.service';
-import { AiFilteringService } from '../candidate-sourcing/services/ai-filtering.service';
 import { FilterDescriptionProcessorService } from '../candidate-sourcing/services/filter-description-processor.service';
 import { PersonService } from '../candidate-sourcing/services/person.service';
 import { User } from '../user/user.entity';
@@ -52,12 +54,13 @@ import { GoogleSheetsService } from './google-sheets.service';
 
 @Module({
   imports: [
+    CandidateSourcingModule,
     CoreGraphQLApiModule,
-    DataSourceModule, 
-    AuthModule, 
-    WorkspaceModificationsModule, 
+    DataSourceModule,
+    AuthModule,
+    WorkspaceModificationsModule,
     GraphQLExecutionModule,
-    
+
     JwtModule,
     TypeORMModule,
     TypeOrmModule.forFeature([Workspace], 'core'),
@@ -97,6 +100,7 @@ import { GoogleSheetsService } from './google-sheets.service';
     ApnaDatabaseTransformerService,
     NaukriProfileDataTransformerService,
     ProcessAiFiltersService,
+    DeleteFieldValuesService,
     UploadedProfilesTransformerService,
     LinkedinRecruiterJobsTransformerService,
     LinkedinPremiumJobsTransformerService,

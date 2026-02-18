@@ -12,23 +12,24 @@ import { RedisService } from 'src/engine/core-modules/arx-chat/services/ext-sock
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
-import { CandidateSourcingController } from 'src/engine/core-modules/candidate-sourcing/controllers/candidate-sourcing.controller';
 import { AiFilteringProgressController } from 'src/engine/core-modules/candidate-sourcing/controllers/ai-filtering-progress.controller';
+import { CandidateSourcingController } from 'src/engine/core-modules/candidate-sourcing/controllers/candidate-sourcing.controller';
 import { FileUploadController } from 'src/engine/core-modules/candidate-sourcing/controllers/file-upload.controller';
 import { UploadProgressController } from 'src/engine/core-modules/candidate-sourcing/controllers/upload-progress.controller';
 import { DeleteFieldValuesQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/delete-field-values.job';
 import { DeleteFieldValuesService } from 'src/engine/core-modules/candidate-sourcing/jobs/delete-field-values.service';
-import { CandidateQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.job';
-import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { AiFiltersQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-ai-filters.job';
 import { ProcessAiFiltersService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-ai-filters.service';
-import { CandidateDataService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-data.service';
-import { CandidateFieldValueService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-field-value.service';
-import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
-import { ChatService } from 'src/engine/core-modules/candidate-sourcing/services/chat.service';
+import { CandidateQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.job';
+import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { AiFilteringProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filtering-processor.service';
 import { AiFilteringProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filtering-progress-pubsub.service';
 import { AiFilteringService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filtering.service';
+import { CandidateDataService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-data.service';
+import { CandidateFieldValueService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-field-value.service';
+import { CandidateWorkspaceGraphQLService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-workspace-graphql.service';
+import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
+import { ChatService } from 'src/engine/core-modules/candidate-sourcing/services/chat.service';
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
@@ -66,9 +67,7 @@ import { RmsNaukriTransformerService } from './services/data-sources/rms-naukri-
 import { SpreadsheetImportTwentyTransformerService } from './services/data-sources/spreadsheet-import-twenty-transformer.service';
 import { UploadedProfilesTransformerService } from './services/data-sources/uploaded-profiles-transformer.service';
 import { JDParserService } from './services/jd-parser.service';
-import { JDUploadService } from './services/jd-upload.service';
 import { ResumeReadParseUploadService } from './services/resume-read-parse-upload.service';
-import { ResumeReaderService } from './services/resume-reader.service';
 import { DataProcessingUtils } from './utils/data-processing.utils';
 
 @Module({
@@ -113,6 +112,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     UploadProgressPubSubService,
     CandidateDataService,
     CandidateFieldValueService,
+    CandidateWorkspaceGraphQLService,
     WorkspaceQueryService,
     WorkspaceDataSourceService,
     EnvironmentService,
@@ -141,11 +141,9 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     LinkedinSalesNavigatorTransformerService,
     LinkedInSearchTransformerService,
     ParsedCVTransformerService,
-    ResumeReaderService,
     ResumeReadParseUploadService,
     ProcessResumeUploadsService,
     JDParserService,
-    JDUploadService,
   ],
   exports: [
     PersonService,
@@ -156,10 +154,11 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     DeleteFieldValuesService,
     DataSourceTransformerFactoryService,
     DataProcessingUtils,
-    JDUploadService,
     JDParserService,
+    ResumeReadParseUploadService,
     FilterDescriptionProcessorService,
     LinkedInSearchTransformerService,
+    CandidateWorkspaceGraphQLService,
   ],
 })
 export class CandidateSourcingModule {}

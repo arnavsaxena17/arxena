@@ -46,7 +46,7 @@ export const useJobDescriptionParser = () => {
     setIsParsing(true);
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/parse-job-description`,
+        `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/parse-job-description`,
         {
           method: 'POST',
           headers: {

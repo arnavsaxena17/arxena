@@ -117,7 +117,7 @@ export const useShortlistEditModal = (
         const requestBody = { jobId };
         console.log("This is the request body in loadShortlistData::::", requestBody);
         const candidatesResponse = await axios.post(
-          `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-candidates-by-job-id`,
+          `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-candidates-by-job-id`,
           requestBody,
           { headers: { Authorization: `Bearer ${apiToken}` } }
         );

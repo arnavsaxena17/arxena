@@ -33,15 +33,49 @@ import { constructSearchParamKey, generateLinkedInSearchUrl } from '../utils/sea
 import { TokenUsage } from '../utils/token-tracking.util';
 import { BooltreeHintService } from './booltree-hint.service';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
+import { ClassifyMessageService } from './classify-message.service';
+import { CleanupService } from './cleanup.service';
 import { CompanyExpanderService } from './company-expander.service';
 import { JobDescriptionService } from './job-description.service';
+import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import { JobTitleExpanderService } from './job-title-expander.service';
 import { QueryConstructorService } from './query-constructor.service';
 import { RequirementAnalyzerService } from './requirement-analyzer.service';
 import { SearchExecutionService } from './search-execution.service';
+import { ChatMessageRequest } from '../types/search-plan.types';
 
+export type HandlerMessageStreamSendEvent = (event: string, data: Record<string, unknown>) => boolean | void;
 
+export type HandleMessageStreamResult = {
+  response: {
+    success?: boolean;
+    type?: string;
+    data?: {
+      strategyResults?: Array<{ preview?: { transformedCandidates?: unknown[] } }>;
+    };
+    chatMessage?: string;
+    error?: string;
+  };
+  assistantMessage: string | null;
+};
 
+const DEFAULT_PARSED_JD_MESSAGE_STREAM: ParsedJobDescription = {
+  jobTitle: '',
+  company: '',
+  location: '',
+  industry: '',
+  requiredSkills: [],
+  preferredSkills: [],
+  experienceLevel: 'mid_level',
+  education: [],
+  keywords: [],
+  responsibilities: [],
+  qualifications: [],
+  benefits: [],
+  employmentType: 'full_time',
+  remoteWork: false,
+  salaryRange: null,
+};
 
 type PeopleSearchGenerationResult<T> = {
   strategies: T[];
@@ -119,6 +153,9 @@ export class CandidateSearchHandlerService {
     private readonly queryConstructorService: QueryConstructorService,
     private readonly linkedinQueryGenerationService: LinkedinQueryGenerationService,
     private readonly pythonOrgChartService: PythonOrgChartService,
+    private readonly classifyMessageService: ClassifyMessageService,
+    private readonly cleanupService: CleanupService,
+    private readonly searchParametersPrompts: SearchParametersPrompts,
     @InjectCacheStorage(CacheStorageNamespace.EngineOrgChart)
     private readonly orgChartCacheStorageService: CacheStorageService,
   ) {}
@@ -1075,6 +1112,168 @@ export class CandidateSearchHandlerService {
       apiToken,
     );
   }
+
+  /**
+   * Handle the full message/stream flow: get search filter, classify, branch, run search.
+   * Used by both POST message/stream (controller) and assistant in-process streaming.
+   * parsedJD is optional; when omitted or partial, DEFAULT_PARSED_JD_MESSAGE_STREAM is used.
+   */
+  async handleMessageStream(
+    body: Omit<ChatMessageRequest, 'parsedJD'> & {
+      parsedJD?: ParsedJobDescription | Record<string, unknown> | null;
+    },
+    apiToken: string,
+    sendEvent: HandlerMessageStreamSendEvent,
+  ): Promise<HandleMessageStreamResult> {
+    const parsedJD: ParsedJobDescription =
+      body.parsedJD && typeof body.parsedJD === 'object' && !Array.isArray(body.parsedJD)
+        ? ({ ...DEFAULT_PARSED_JD_MESSAGE_STREAM, ...body.parsedJD } as ParsedJobDescription)
+        : DEFAULT_PARSED_JD_MESSAGE_STREAM;
+
+    const searchFilter = await this.getSearchFilter(body.searchFilterId, apiToken);
+    const chatHistory = searchFilter.chatHistory ?? [];
+
+    let rawJDText = '';
+    if (body.includeJd !== false && searchFilter.jobId) {
+      try {
+        rawJDText =
+          (await this.jobDescriptionService.getJDContentFromJobAttachments(
+            searchFilter.jobId,
+            apiToken,
+          )) ?? '';
+      } catch (err) {
+        this.logger.warn(
+          `Failed to fetch JD content: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
+    const messageClassification = await this.classifyMessageService.classifyMessage(
+      body.message,
+      apiToken,
+      chatHistory,
+      rawJDText,
+    );
+
+    this.logger.log(
+      `Message classified as: ${messageClassification.type} (confidence: ${messageClassification.confidence})`,
+    );
+
+    if (
+      !sendEvent('classification', {
+        type: messageClassification.type,
+        confidence: messageClassification.confidence,
+        reasoning: messageClassification.reasoning,
+      } as Record<string, unknown>)
+    ) {
+      return { response: {}, assistantMessage: null };
+    }
+
+    let response: HandleMessageStreamResult['response'] = {};
+    let assistantMessage: string | null = null;
+
+    switch (messageClassification.type) {
+      case 'clarification_response': {
+        const pendingClarification = searchFilter.searchFilterParameter?.pendingClarification;
+        const clarificationQuestions = pendingClarification?.questions ?? [];
+        const previousUserMessages = chatHistory.filter((msg: { role: string }) => msg.role === 'user');
+        const originalQuery =
+          previousUserMessages.length > 1
+            ? previousUserMessages[previousUserMessages.length - 2]?.content
+            : previousUserMessages[previousUserMessages.length - 1]?.content ?? body.message;
+        const combinedQuery =
+          this.searchParametersPrompts.buildClarificationResponseCombinedUserQuery(
+            originalQuery,
+            clarificationQuestions,
+            body.message,
+          );
+        const cleanedCombinedQuery = await this.cleanupService.cleanupQuery(
+          combinedQuery,
+          apiToken,
+        );
+        response = await this.handleSearchParametersAndResultsGenerationStream(
+          body.message,
+          cleanedCombinedQuery,
+          body.searchFilterId,
+          parsedJD,
+          body.searchType ?? 'classic',
+          body.searchCategory ?? 'people',
+          apiToken,
+          combinedQuery,
+          sendEvent as (event: string, data: unknown) => void,
+          body.includeJd !== false,
+          true,
+        );
+        if (response?.chatMessage) assistantMessage = response.chatMessage;
+        break;
+      }
+      case 'search_parameters': {
+        const cleanedQuery = await this.cleanupService.cleanupQuery(body.message, apiToken);
+        response = await this.handleSearchParametersAndResultsGenerationStream(
+          body.message,
+          cleanedQuery,
+          body.searchFilterId,
+          parsedJD,
+          body.searchType ?? 'classic',
+          body.searchCategory ?? 'people',
+          apiToken,
+          body.message,
+          sendEvent as (event: string, data: unknown) => void,
+          body.includeJd !== false,
+          false,
+        );
+        if (response?.chatMessage) assistantMessage = response.chatMessage;
+        break;
+      }
+      case 'general_help':
+        assistantMessage =
+          'I can help you with candidate search and recruitment workflows! Here\'s what I can do:\n\n' +
+          '🔍 **Search Parameters** - Generate LinkedIn search criteria to find candidates\n' +
+          '📊 **AI Filters** - Add AI-powered insights to candidate profiles\n' +
+          '🔧 **Filters** - Create filtering strategies to narrow down candidate lists\n' +
+          '📈 **Sorts** - Design sorting strategies to prioritize the best candidates\n' +
+          '🎯 **Complete Plan** - Generate all components at once for a comprehensive search strategy\n\n' +
+          'Try saying "generate search parameters" or "create enrichments" to get started!';
+        sendEvent('message', {
+          success: true,
+          type: 'general_help',
+          chatMessage: assistantMessage,
+        });
+        break;
+      default:
+        assistantMessage =
+          "I didn't understand your request. Please try asking for search parameters, enrichments, filters, sorts, or a complete plan.";
+        sendEvent('message', {
+          success: false,
+          error: assistantMessage,
+          chatMessage: assistantMessage,
+        });
+    }
+
+    return { response, assistantMessage };
+  }
+
+  /** Extract candidates from handler response for MCP tool result shape. */
+  extractCandidatesFromResponse(
+    response: HandleMessageStreamResult['response'],
+  ): Record<string, unknown>[] {
+    const strategyResults = response?.data?.strategyResults;
+    if (!Array.isArray(strategyResults)) return [];
+
+    const rows: Record<string, unknown>[] = [];
+    for (const sr of strategyResults) {
+      const candidates = sr.preview?.transformedCandidates;
+      if (Array.isArray(candidates)) {
+        for (const c of candidates) {
+          rows.push(
+            typeof c === 'object' && c !== null ? (c as Record<string, unknown>) : { value: c },
+          );
+        }
+      }
+    }
+    return rows;
+  }
+
   private async updateSearchFilterParameters(
     searchFilterId: string,
     updatedSearchFilterParameter: any,

@@ -1,28 +1,31 @@
 import { Inject, Logger } from '@nestjs/common';
-import { v4 } from 'uuid';
 
+import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
+import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
-import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
-import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
-import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
-import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 
+import { ApolloProvider } from '../providers/apollo.provider';
+import { ArxenaProvider } from '../providers/arxena.provider';
+import { ContactOutProvider } from '../providers/contactout.provider';
+import { LushaProvider } from '../providers/lusha.provider';
+import { PdlProvider } from '../providers/pdl.provider';
+import { ContactEnrichmentWaterfallService } from '../services/contact-enrichment-waterfall.service';
 import type {
   ContactAvailability,
   ContactEnrichmentJobProgress,
-  ContactEnrichmentJobStatus,
   ContactEnrichmentOptions,
-  ContactResult,
+  ContactEnrichmentProviderName,
+  ContactResult
 } from '../types/contact-enrichment.types';
-import { ContactEnrichmentWaterfallService } from '../services/contact-enrichment-waterfall.service';
 
 export type ContactEnrichmentJobData = {
   jobId: string;
   linkedinUrls: string[];
   operation: 'availability' | 'fetch';
   options?: ContactEnrichmentOptions;
+  providerName?: ContactEnrichmentProviderName;
 };
 
 @Processor(MessageQueue.contactEnrichmentQueue)
@@ -31,6 +34,11 @@ export class ContactEnrichmentQueueProcessor {
 
   constructor(
     private readonly waterfallService: ContactEnrichmentWaterfallService,
+    private readonly arxenaProvider: ArxenaProvider,
+    private readonly pdlProvider: PdlProvider,
+    private readonly contactOutProvider: ContactOutProvider,
+    private readonly lushaProvider: LushaProvider,
+    private readonly apolloProvider: ApolloProvider,
     @Inject(CacheStorageNamespace.EngineContactEnrichment)
     private readonly cacheStorage: CacheStorageService,
   ) {
@@ -39,10 +47,10 @@ export class ContactEnrichmentQueueProcessor {
 
   @Process(ContactEnrichmentQueueProcessor.name)
   async handle(jobData: ContactEnrichmentJobData): Promise<void> {
-    const { jobId, linkedinUrls, operation, options } = jobData;
+    const { jobId, linkedinUrls, operation, options, providerName } = jobData;
 
     this.logger.log(
-      `Processing contact enrichment job ${jobId}: ${operation} for ${linkedinUrls.length} URLs`,
+      `Processing contact enrichment job ${jobId}: ${operation} for ${linkedinUrls.length} URLs${providerName ? ` using ${providerName} provider` : ' using waterfall'}`,
     );
 
     // Initialize progress
@@ -57,15 +65,34 @@ export class ContactEnrichmentQueueProcessor {
 
     await this.updateProgress(jobId, progress);
 
-    // Process each URL sequentially (rate limiting is handled by waterfall service)
+    // Get provider if specified
+    const provider = providerName ? this.getProvider(providerName) : null;
+
+    // Process each URL sequentially (rate limiting is handled by waterfall service or provider)
     for (const linkedinUrl of linkedinUrls) {
       try {
         let result: ContactAvailability | ContactResult;
 
-        if (operation === 'availability') {
-          result = await this.waterfallService.checkAvailability(linkedinUrl);
+        if (provider) {
+          // Use specific provider
+          if (operation === 'availability') {
+            result = await provider.checkAvailability(linkedinUrl);
+            if (result) {
+              (result as ContactAvailability).provider = providerName;
+            }
+          } else {
+            result = await provider.fetchContacts(linkedinUrl, options);
+            if (result) {
+              (result as ContactResult).source = providerName!;
+            }
+          }
         } else {
-          result = await this.waterfallService.fetchContacts(linkedinUrl, options);
+          // Use waterfall
+          if (operation === 'availability') {
+            result = await this.waterfallService.checkAvailability(linkedinUrl);
+          } else {
+            result = await this.waterfallService.fetchContacts(linkedinUrl, options);
+          }
         }
 
         progress.results = progress.results ?? {};
@@ -78,11 +105,19 @@ export class ContactEnrichmentQueueProcessor {
         );
         progress.failed += 1;
         progress.results = progress.results ?? {};
-        progress.results[linkedinUrl] = {
-          emails: [],
-          phones: [],
-          source: 'error',
-        } as ContactResult;
+        if (operation === 'availability') {
+          progress.results[linkedinUrl] = {
+            emailAvailable: false,
+            phoneAvailable: false,
+            provider: providerName,
+          } as ContactAvailability;
+        } else {
+          progress.results[linkedinUrl] = {
+            emails: [],
+            phones: [],
+            source: providerName || 'error',
+          } as ContactResult;
+        }
       }
 
       // Update progress after each URL
@@ -96,6 +131,26 @@ export class ContactEnrichmentQueueProcessor {
     this.logger.log(
       `Completed contact enrichment job ${jobId}: ${progress.completed} succeeded, ${progress.failed} failed`,
     );
+  }
+
+  /**
+   * Get provider by name.
+   */
+  private getProvider(providerName: ContactEnrichmentProviderName) {
+    switch (providerName) {
+      case 'arxena':
+        return this.arxenaProvider;
+      case 'pdl':
+        return this.pdlProvider;
+      case 'contactout':
+        return this.contactOutProvider;
+      case 'lusha':
+        return this.lushaProvider;
+      case 'apollo':
+        return this.apolloProvider;
+      default:
+        return null;
+    }
   }
 
   private async updateProgress(

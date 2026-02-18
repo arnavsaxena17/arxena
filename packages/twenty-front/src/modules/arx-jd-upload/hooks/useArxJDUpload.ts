@@ -369,7 +369,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
 
         const uploadJDResponse = await axios({
           method: 'post',
-          url: `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/upload-jd`,
+          url: `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/upload-jd`,
           data: {
             jobId: createdJob.id,
             attachmentUrl: attachmentAbsoluteURL,
@@ -484,7 +484,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
 
           const createPromptsResponse = await axios({
             method: 'post',
-            url: `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/create-prompts`,
+            url: `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/create-prompts`,
             data: {
               jobId: createdJob.id,
             },

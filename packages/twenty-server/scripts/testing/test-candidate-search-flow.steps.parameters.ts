@@ -78,7 +78,7 @@ export async function resolveParametersStep(
           const resolveResponse = await axios.post<{
             resolvedParameters: PeopleSearchParameters;
           }>(
-            `${SERVER_URL}/candidate-search/test/resolve-parameters`,
+            `${SERVER_URL}/candidate-search/pipeline/resolve-parameters`,
             {
               unresolvedParameters: paramSet,
               searchType,

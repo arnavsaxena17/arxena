@@ -8,7 +8,7 @@ export async function executeGraphQL<T>(
 ): Promise<T> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
+  console.log('executeGraphQL', baseUrl, apiToken, query, variables);
   try {
     const response = await fetch(`${baseUrl}/graphql`, {
       method: 'POST',

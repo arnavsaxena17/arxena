@@ -17,6 +17,7 @@
     "test-prompts": "npx tsx -r tsconfig-paths/register scripts/test-search-prompts.ts",
     "test-prompts:ts-node": "npx ts-node -r tsconfig-paths/register scripts/test-search-prompts.ts",
     "test:linkedin-query-generation": "npx tsx -r tsconfig-paths/register scripts/test-linkedin-query-generation.ts",
+    "test:candidate-search-flow": "npx tsx -r tsconfig-paths/register scripts/testing/test-candidate-search-flow.ts",
     "test:yuga-orgchart": "npx tsx -r tsconfig-paths/register scripts/test-yuga-orgchart.ts"
   },
   "dependencies": {

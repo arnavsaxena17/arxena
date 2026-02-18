@@ -2,7 +2,7 @@ import type {
   LinkedInClassicPeopleSearchRequest,
   LinkedInRecruiterPeopleSearchRequest,
   LinkedInSalesNavigatorPeopleSearchRequest,
-} from './packages/twenty-server/src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
+} from '../../src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
 
 export type ClassicPeopleSearchParams = Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>;
 export type SalesNavigatorPeopleSearchParams = Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>;

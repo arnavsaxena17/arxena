@@ -31,7 +31,7 @@ export async function requirementAnalyzerStep(
 
   const input = cleanedQuery ?? rawQuery;
   const response = await axios.post<{ parsedRequirement: unknown }>(
-    `${SERVER_URL}/candidate-search/test/requirement-analyzer`,
+    `${SERVER_URL}/candidate-search/pipeline/requirement-analyzer`,
     { rawRequirement: rawQuery, cleanedQuery: cleanedQuery ?? input },
     {
       headers: {
@@ -72,7 +72,7 @@ export async function jobTitleExpanderStep(
   }
 
   const response = await axios.post<{ titleAnalysis: unknown }>(
-    `${SERVER_URL}/candidate-search/test/job-title-expander`,
+    `${SERVER_URL}/candidate-search/pipeline/job-title-expander`,
     { parsedRequirement },
     {
       headers: {
@@ -113,7 +113,7 @@ export async function companyExpanderStep(
   }
 
   const response = await axios.post<{ companyAnalysis: unknown }>(
-    `${SERVER_URL}/candidate-search/test/company-expander`,
+    `${SERVER_URL}/candidate-search/pipeline/company-expander`,
     { parsedRequirement },
     {
       headers: {
@@ -155,7 +155,7 @@ export async function booltreeHintsStep(
   }
 
   const response = await axios.post<{ hints: string }>(
-    `${SERVER_URL}/candidate-search/test/booltree-hints`,
+    `${SERVER_URL}/candidate-search/pipeline/booltree-hints`,
     { cleanedQuery, parsedRequirement },
     {
       headers: {
@@ -208,7 +208,7 @@ export async function queryConstructorStep(
     total_queries?: number;
     coverage_assessment?: string;
   }>(
-    `${SERVER_URL}/candidate-search/test/query-constructor`,
+    `${SERVER_URL}/candidate-search/pipeline/query-constructor`,
     {
       parsedRequirement,
       titleAnalysis,
@@ -259,7 +259,7 @@ export async function buildUnresolvedFromQueryConstructorStep(
   console.log(`[${index}] Step: Build unresolved from query constructor...`);
   const start = Date.now();
   const response = await axios.post<{ unresolvedParameters: unknown }>(
-    `${SERVER_URL}/candidate-search/test/build-unresolved-from-query-constructor`,
+    `${SERVER_URL}/candidate-search/pipeline/build-unresolved-from-query-constructor`,
     { queryConstructorResult, searchType },
     {
       headers: {

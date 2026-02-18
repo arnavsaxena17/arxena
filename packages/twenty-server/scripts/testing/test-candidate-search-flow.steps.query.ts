@@ -26,7 +26,7 @@ export async function cleanupQueryStep(rawQuery: string, index: number): Promise
 
   try {
     const response = await axios.post(
-      `${SERVER_URL}/candidate-search/test/cleanup-query`,
+      `${SERVER_URL}/candidate-search/pipeline/cleanup-query`,
       { rawQuery },
       {
         headers: {
@@ -117,7 +117,7 @@ export async function getOrComputeQueryUnderstanding(
     const prompt = cleanedQuery ?? rawQuery;
 
     const response = await axios.post(
-      `${SERVER_URL}/candidate-search/test/understand-query`,
+      `${SERVER_URL}/candidate-search/pipeline/understand-query`,
       { prompt },
       {
         headers: {

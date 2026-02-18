@@ -93,7 +93,7 @@ async function testKeywordCount(
 ): Promise<TestResult> {
   try {
     const response = await axios.post(
-      `${SERVER_URL}/candidate-search/test/count-keyword-terms`,
+      `${SERVER_URL}/candidate-search/pipeline/count-keyword-terms`,
       { keywords },
       {
         headers: {

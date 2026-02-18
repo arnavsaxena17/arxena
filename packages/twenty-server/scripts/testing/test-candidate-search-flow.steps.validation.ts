@@ -103,7 +103,7 @@ export async function validateParameterResultsStep(
       }
 
       const validationResponse = await axios.post(
-        `${SERVER_URL}/candidate-search/test/validate-parameter-results`,
+        `${SERVER_URL}/candidate-search/pipeline/validate-parameter-results`,
         {
           searchResults: {
             searchResults: searchResult.searchResults,
@@ -254,7 +254,7 @@ export async function scoreParameterResultsStep(
       }
 
       const scoringResponse = await axios.post(
-        `${SERVER_URL}/candidate-search/test/score-parameter-results`,
+        `${SERVER_URL}/candidate-search/pipeline/score-parameter-results`,
         {
           searchResults: {
             searchResults: searchResult.searchResults,

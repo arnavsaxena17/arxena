@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   HttpException,
   HttpStatus,
   Logger,
@@ -9,6 +10,7 @@ import {
   Post,
   Query
 } from '@nestjs/common';
+import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { LinkedInSearchService } from '../services/linkedin-search.service';
 import { LinkedInSearchParameterType } from '../types/linkedin-search-parameter.type';
 import {
@@ -30,7 +32,64 @@ import {
 export class LinkedInSearchController {
   private readonly logger = new Logger(LinkedInSearchController.name);
 
-  constructor(private readonly linkedInSearchService: LinkedInSearchService) {}
+  constructor(
+    private readonly linkedInSearchService: LinkedInSearchService,
+    private readonly workspaceQueryService: WorkspaceQueryService,
+  ) {}
+
+  /**
+   * Extract API token from headers
+   */
+  private extractApiToken(headers: any): string | null {
+    const authHeader = headers.authorization || headers.Authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return null;
+    }
+    return authHeader.substring(7);
+  }
+
+  /**
+   * Get LinkedIn account ID from token if not provided
+   */
+  private async getAccountId(
+    accountId: string | undefined,
+    headers: any,
+  ): Promise<string> {
+    if (accountId) {
+      return accountId;
+    }
+
+    const apiToken = this.extractApiToken(headers);
+    if (!apiToken) {
+      throw new HttpException(
+        'Account ID is required or valid authorization token must be provided',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const linkedinAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
+        workspaceId,
+        'linkedin_unipile_account_id',
+      );
+
+      if (!linkedinAccountId) {
+        throw new HttpException(
+          'LinkedIn account ID not found in workspace API keys',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      return linkedinAccountId;
+    } catch (error) {
+      this.logger.error(`Error getting LinkedIn account ID from token: ${error}`);
+      throw new HttpException(
+        'Failed to get LinkedIn account ID from token',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 
   /**
    * Perform LinkedIn search
@@ -38,20 +97,19 @@ export class LinkedInSearchController {
   @Post('search')
   async search(
     @Body() searchRequest: LinkedInSearchRequest,
-    @Query('account_id') accountId: string,
+    @Query('account_id') accountId: string | undefined,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
+    @Headers() headers?: any,
   ): Promise<LinkedInSearchResponse> {
     try {
-      if (!accountId) {
-        throw new HttpException('Account ID is required', HttpStatus.BAD_REQUEST);
-      }
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
 
-      this.logger.log(`Performing LinkedIn search for account: ${accountId}`);
+      this.logger.log(`Performing LinkedIn search for account: ${resolvedAccountId}`);
       
       const result = await this.linkedInSearchService.search(
         searchRequest,
-        accountId,
+        resolvedAccountId,
         { cursor, limit }
       );
 
@@ -72,20 +130,19 @@ export class LinkedInSearchController {
   @Post('search/people')
   async searchPeople(
     @Body() request: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
-    @Query('account_id') accountId: string,
+    @Query('account_id') accountId: string | undefined,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
+    @Headers() headers?: any,
   ): Promise<LinkedInSearchResponse> {
     try {
-      if (!accountId) {
-        throw new HttpException('Account ID is required', HttpStatus.BAD_REQUEST);
-      }
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
 
-      this.logger.log(`Searching for people on LinkedIn for account: ${accountId}`);
+      this.logger.log(`Searching for people on LinkedIn for account: ${resolvedAccountId}`);
       
       const result = await this.linkedInSearchService.searchPeopleClassic(
         request,
-        accountId,
+        resolvedAccountId,
         { cursor, limit }
       );
 
@@ -107,11 +164,12 @@ export class LinkedInSearchController {
   @Post('search/people/compare-classic-raw')
   async comparePeopleClassicAndRaw(
     @Body() request: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
-    @Query('account_id') accountId: string,
+    @Query('account_id') accountId: string | undefined,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
     @Query('start') start?: number,
     @Query('workspace_id') workspaceId?: string,
+    @Headers() headers?: any,
   ): Promise<{
     classic: LinkedInSearchResponse;
     raw: LinkedInSearchResponse;
@@ -124,17 +182,15 @@ export class LinkedInSearchController {
     };
   }> {
     try {
-      if (!accountId) {
-        throw new HttpException('Account ID is required', HttpStatus.BAD_REQUEST);
-      }
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
 
       this.logger.log(
-        `Comparing LinkedIn classic vs raw people search for account: ${accountId}`,
+        `Comparing LinkedIn classic vs raw people search for account: ${resolvedAccountId}`,
       );
 
       const result = await this.linkedInSearchService.comparePeopleClassicAndRaw(
         request,
-        accountId,
+        resolvedAccountId,
         { cursor, limit, start, workspaceId },
       );
 
@@ -158,20 +214,19 @@ export class LinkedInSearchController {
   @Post('search/companies')
   async searchCompanies(
     @Body() request: Omit<LinkedInClassicCompaniesSearchRequest, 'api' | 'category'>,
-    @Query('account_id') accountId: string,
+    @Query('account_id') accountId: string | undefined,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
+    @Headers() headers?: any,
   ): Promise<LinkedInSearchResponse> {
     try {
-      if (!accountId) {
-        throw new HttpException('Account ID is required', HttpStatus.BAD_REQUEST);
-      }
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
 
-      this.logger.log(`Searching for companies on LinkedIn for account: ${accountId}`);
+      this.logger.log(`Searching for companies on LinkedIn for account: ${resolvedAccountId}`);
       
       const result = await this.linkedInSearchService.searchCompanies(
         request,
-        accountId,
+        resolvedAccountId,
         { cursor, limit }
       );
 
@@ -192,20 +247,19 @@ export class LinkedInSearchController {
   @Post('search/posts')
   async searchPosts(
     @Body() request: Omit<LinkedInClassicPostsSearchRequest, 'api' | 'category'>,
-    @Query('account_id') accountId: string,
+    @Query('account_id') accountId: string | undefined,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
+    @Headers() headers?: any,
   ): Promise<LinkedInSearchResponse> {
     try {
-      if (!accountId) {
-        throw new HttpException('Account ID is required', HttpStatus.BAD_REQUEST);
-      }
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
 
-      this.logger.log(`Searching for posts on LinkedIn for account: ${accountId}`);
+      this.logger.log(`Searching for posts on LinkedIn for account: ${resolvedAccountId}`);
       
       const result = await this.linkedInSearchService.searchPosts(
         request,
-        accountId,
+        resolvedAccountId,
         { cursor, limit }
       );
 
@@ -226,20 +280,19 @@ export class LinkedInSearchController {
   @Post('search/jobs')
   async searchJobs(
     @Body() request: Omit<LinkedInClassicJobsSearchRequest, 'api' | 'category'>,
-    @Query('account_id') accountId: string,
+    @Query('account_id') accountId: string | undefined,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
+    @Headers() headers?: any,
   ): Promise<LinkedInSearchResponse> {
     try {
-      if (!accountId) {
-        throw new HttpException('Account ID is required', HttpStatus.BAD_REQUEST);
-      }
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
 
-      this.logger.log(`Searching for jobs on LinkedIn for account: ${accountId}`);
+      this.logger.log(`Searching for jobs on LinkedIn for account: ${resolvedAccountId}`);
       
       const result = await this.linkedInSearchService.searchJobs(
         request,
-        accountId,
+        resolvedAccountId,
         { cursor, limit }
       );
 
@@ -260,20 +313,19 @@ export class LinkedInSearchController {
   @Post('search/sales-navigator/people')
   async searchPeopleSalesNavigator(
     @Body() request: Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>,
-    @Query('account_id') accountId: string,
+    @Query('account_id') accountId: string | undefined,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
+    @Headers() headers?: any,
   ): Promise<LinkedInSearchResponse> {
     try {
-      if (!accountId) {
-        throw new HttpException('Account ID is required', HttpStatus.BAD_REQUEST);
-      }
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
 
-      this.logger.log(`Searching for people on LinkedIn Sales Navigator for account: ${accountId}`);
+      this.logger.log(`Searching for people on LinkedIn Sales Navigator for account: ${resolvedAccountId}`);
       
       const result = await this.linkedInSearchService.searchPeopleSalesNavigator(
         request,
-        accountId,
+        resolvedAccountId,
         { cursor, limit }
       );
 
@@ -294,20 +346,19 @@ export class LinkedInSearchController {
   @Post('search/sales-navigator/companies')
   async searchCompaniesSalesNavigator(
     @Body() request: Omit<LinkedInSalesNavigatorCompaniesSearchRequest, 'api' | 'category'>,
-    @Query('account_id') accountId: string,
+    @Query('account_id') accountId: string | undefined,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
+    @Headers() headers?: any,
   ): Promise<LinkedInSearchResponse> {
     try {
-      if (!accountId) {
-        throw new HttpException('Account ID is required', HttpStatus.BAD_REQUEST);
-      }
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
 
-      this.logger.log(`Searching for companies on LinkedIn Sales Navigator for account: ${accountId}`);
+      this.logger.log(`Searching for companies on LinkedIn Sales Navigator for account: ${resolvedAccountId}`);
       
       const result = await this.linkedInSearchService.searchCompaniesSalesNavigator(
         request,
-        accountId,
+        resolvedAccountId,
         { cursor, limit }
       );
 
@@ -328,20 +379,19 @@ export class LinkedInSearchController {
   @Post('search/recruiter/people')
   async searchPeopleRecruiter(
     @Body() request: Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>,
-    @Query('account_id') accountId: string,
+    @Query('account_id') accountId: string | undefined,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
+    @Headers() headers?: any,
   ): Promise<LinkedInSearchResponse> {
     try {
-      if (!accountId) {
-        throw new HttpException('Account ID is required', HttpStatus.BAD_REQUEST);
-      }
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
 
-      this.logger.log(`Searching for people on LinkedIn Recruiter for account: ${accountId}`);
+      this.logger.log(`Searching for people on LinkedIn Recruiter for account: ${resolvedAccountId}`);
       
       const result = await this.linkedInSearchService.searchPeopleRecruiter(
         request,
-        accountId,
+        resolvedAccountId,
         { cursor, limit }
       );
 
@@ -362,24 +412,23 @@ export class LinkedInSearchController {
   @Post('search/url')
   async searchFromUrl(
     @Body() body: { url: string },
-    @Query('account_id') accountId: string,
+    @Query('account_id') accountId: string | undefined,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
+    @Headers() headers?: any,
   ): Promise<LinkedInSearchResponse> {
     try {
-      if (!accountId) {
-        throw new HttpException('Account ID is required', HttpStatus.BAD_REQUEST);
-      }
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
 
       if (!body.url) {
         throw new HttpException('URL is required', HttpStatus.BAD_REQUEST);
       }
 
-      this.logger.log(`Searching LinkedIn using URL for account: ${accountId}`);
+      this.logger.log(`Searching LinkedIn using URL for account: ${resolvedAccountId}`);
       
       const result = await this.linkedInSearchService.searchFromUrl(
         body.url,
-        accountId,
+        resolvedAccountId,
         { cursor, limit }
       );
 
@@ -400,23 +449,22 @@ export class LinkedInSearchController {
   @Post('search/continue')
   async searchWithCursor(
     @Body() body: { cursor: string },
-    @Query('account_id') accountId: string,
+    @Query('account_id') accountId: string | undefined,
     @Query('limit') limit?: number,
+    @Headers() headers?: any,
   ): Promise<LinkedInSearchResponse> {
     try {
-      if (!accountId) {
-        throw new HttpException('Account ID is required', HttpStatus.BAD_REQUEST);
-      }
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
 
       if (!body.cursor) {
         throw new HttpException('Cursor is required', HttpStatus.BAD_REQUEST);
       }
 
-      this.logger.log(`Continuing LinkedIn search with cursor for account: ${accountId}`);
+      this.logger.log(`Continuing LinkedIn search with cursor for account: ${resolvedAccountId}`);
       
       const result = await this.linkedInSearchService.searchWithCursor(
         body.cursor,
-        accountId,
+        resolvedAccountId,
         { limit }
       );
 
@@ -437,20 +485,19 @@ export class LinkedInSearchController {
   @Get('parameters/:type')
   async getSearchParameters(
     @Param('type') type: LinkedInSearchParameterType,
-    @Query('account_id') accountId: string,
+    @Query('account_id') accountId: string | undefined,
     @Query('limit') limit?: number,
     @Query('keywords') keywords?: string,
+    @Headers() headers?: any,
   ): Promise<LinkedInSearchParametersList> {
     try {
-      if (!accountId) {
-        throw new HttpException('Account ID is required', HttpStatus.BAD_REQUEST);
-      }
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
 
-      this.logger.log(`Getting LinkedIn search parameters for type: ${type}, account: ${accountId}`);
+      this.logger.log(`Getting LinkedIn search parameters for type: ${type}, account: ${resolvedAccountId}`);
       
       const result = await this.linkedInSearchService.getSearchParameters(
         type,
-        accountId,
+        resolvedAccountId,
         { limit, keywords }
       );
 
@@ -470,19 +517,18 @@ export class LinkedInSearchController {
    */
   @Get('parameters/locations')
   async getLocationParameters(
-    @Query('account_id') accountId: string,
+    @Query('account_id') accountId: string | undefined,
     @Query('limit') limit?: number,
     @Query('keywords') keywords?: string,
+    @Headers() headers?: any,
   ): Promise<LinkedInSearchParametersList> {
     try {
-      if (!accountId) {
-        throw new HttpException('Account ID is required', HttpStatus.BAD_REQUEST);
-      }
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
 
-      this.logger.log(`Getting LinkedIn location parameters for account: ${accountId}`);
+      this.logger.log(`Getting LinkedIn location parameters for account: ${resolvedAccountId}`);
       
       const result = await this.linkedInSearchService.getLocationParameters(
-        accountId,
+        resolvedAccountId,
         keywords,
         limit
       );
@@ -503,19 +549,18 @@ export class LinkedInSearchController {
    */
   @Get('parameters/industries')
   async getIndustryParameters(
-    @Query('account_id') accountId: string,
+    @Query('account_id') accountId: string | undefined,
     @Query('limit') limit?: number,
     @Query('keywords') keywords?: string,
+    @Headers() headers?: any,
   ): Promise<LinkedInSearchParametersList> {
     try {
-      if (!accountId) {
-        throw new HttpException('Account ID is required', HttpStatus.BAD_REQUEST);
-      }
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
 
-      this.logger.log(`Getting LinkedIn industry parameters for account: ${accountId}`);
+      this.logger.log(`Getting LinkedIn industry parameters for account: ${resolvedAccountId}`);
       
       const result = await this.linkedInSearchService.getIndustryParameters(
-        accountId,
+        resolvedAccountId,
         keywords,
         limit
       );
@@ -536,19 +581,18 @@ export class LinkedInSearchController {
    */
   @Get('parameters/companies')
   async getCompanyParameters(
-    @Query('account_id') accountId: string,
+    @Query('account_id') accountId: string | undefined,
     @Query('limit') limit?: number,
     @Query('keywords') keywords?: string,
+    @Headers() headers?: any,
   ): Promise<LinkedInSearchParametersList> {
     try {
-      if (!accountId) {
-        throw new HttpException('Account ID is required', HttpStatus.BAD_REQUEST);
-      }
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
 
-      this.logger.log(`Getting LinkedIn company parameters for account: ${accountId}`);
+      this.logger.log(`Getting LinkedIn company parameters for account: ${resolvedAccountId}`);
       
       const result = await this.linkedInSearchService.getCompanyParameters(
-        accountId,
+        resolvedAccountId,
         keywords,
         limit
       );
@@ -569,19 +613,18 @@ export class LinkedInSearchController {
    */
   @Get('parameters/schools')
   async getSchoolParameters(
-    @Query('account_id') accountId: string,
+    @Query('account_id') accountId: string | undefined,
     @Query('limit') limit?: number,
     @Query('keywords') keywords?: string,
+    @Headers() headers?: any,
   ): Promise<LinkedInSearchParametersList> {
     try {
-      if (!accountId) {
-        throw new HttpException('Account ID is required', HttpStatus.BAD_REQUEST);
-      }
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
 
-      this.logger.log(`Getting LinkedIn school parameters for account: ${accountId}`);
+      this.logger.log(`Getting LinkedIn school parameters for account: ${resolvedAccountId}`);
       
       const result = await this.linkedInSearchService.getSchoolParameters(
-        accountId,
+        resolvedAccountId,
         keywords,
         limit
       );
@@ -602,19 +645,18 @@ export class LinkedInSearchController {
    */
   @Get('parameters/job-titles')
   async getJobTitleParameters(
-    @Query('account_id') accountId: string,
+    @Query('account_id') accountId: string | undefined,
     @Query('limit') limit?: number,
     @Query('keywords') keywords?: string,
+    @Headers() headers?: any,
   ): Promise<LinkedInSearchParametersList> {
     try {
-      if (!accountId) {
-        throw new HttpException('Account ID is required', HttpStatus.BAD_REQUEST);
-      }
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
 
-      this.logger.log(`Getting LinkedIn job title parameters for account: ${accountId}`);
+      this.logger.log(`Getting LinkedIn job title parameters for account: ${resolvedAccountId}`);
       
       const result = await this.linkedInSearchService.getJobTitleParameters(
-        accountId,
+        resolvedAccountId,
         keywords,
         limit
       );
@@ -635,19 +677,18 @@ export class LinkedInSearchController {
    */
   @Get('parameters/skills')
   async getSkillParameters(
-    @Query('account_id') accountId: string,
+    @Query('account_id') accountId: string | undefined,
     @Query('limit') limit?: number,
     @Query('keywords') keywords?: string,
+    @Headers() headers?: any,
   ): Promise<LinkedInSearchParametersList> {
     try {
-      if (!accountId) {
-        throw new HttpException('Account ID is required', HttpStatus.BAD_REQUEST);
-      }
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
 
-      this.logger.log(`Getting LinkedIn skill parameters for account: ${accountId}`);
+      this.logger.log(`Getting LinkedIn skill parameters for account: ${resolvedAccountId}`);
       
       const result = await this.linkedInSearchService.getSkillParameters(
-        accountId,
+        resolvedAccountId,
         keywords,
         limit
       );
@@ -668,18 +709,17 @@ export class LinkedInSearchController {
    */
   @Get('parameters/saved-searches')
   async getSavedSearchesParameters(
-    @Query('account_id') accountId: string,
+    @Query('account_id') accountId: string | undefined,
     @Query('limit') limit?: number,
+    @Headers() headers?: any,
   ): Promise<LinkedInSearchParametersList> {
     try {
-      if (!accountId) {
-        throw new HttpException('Account ID is required', HttpStatus.BAD_REQUEST);
-      }
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
 
-      this.logger.log(`Getting LinkedIn saved searches parameters for account: ${accountId}`);
+      this.logger.log(`Getting LinkedIn saved searches parameters for account: ${resolvedAccountId}`);
       
       const result = await this.linkedInSearchService.getSavedSearchesParameters(
-        accountId,
+        resolvedAccountId,
         limit
       );
 
@@ -699,18 +739,17 @@ export class LinkedInSearchController {
    */
   @Get('parameters/recent-searches')
   async getRecentSearchesParameters(
-    @Query('account_id') accountId: string,
+    @Query('account_id') accountId: string | undefined,
     @Query('limit') limit?: number,
+    @Headers() headers?: any,
   ): Promise<LinkedInSearchParametersList> {
     try {
-      if (!accountId) {
-        throw new HttpException('Account ID is required', HttpStatus.BAD_REQUEST);
-      }
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
 
-      this.logger.log(`Getting LinkedIn recent searches parameters for account: ${accountId}`);
+      this.logger.log(`Getting LinkedIn recent searches parameters for account: ${resolvedAccountId}`);
       
       const result = await this.linkedInSearchService.getRecentSearchesParameters(
-        accountId,
+        resolvedAccountId,
         limit
       );
 

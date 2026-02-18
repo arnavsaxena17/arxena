@@ -4,10 +4,10 @@ import { cleanSearchParameters } from '@/arx-jd-upload/utils/searchParametersUti
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SearchParametersManager } from '@/candidate-search/components/search-components/SearchParametersManager';
 import { activeSearchFilterIdState, searchConfigState } from '@/candidate-search/states/searchConfigState';
-import { LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/candidate-search.types';
 import { chatMessagesSelector, resolvedParametersSelector } from '@/candidate-table/states/states';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
+import { LinkedInSearchCategory, LinkedInSearchType } from 'twenty-shared';
 
 import { StyledAdvancedSection, StyledForm } from '../../styles/SearchFormComponents.styled';
 import { CompanyFilters } from './CompanyFilters';
@@ -59,7 +59,7 @@ export const SearchParametersForm = ({
   // Remove redundant local state management - let useSearchParametersManager handle everything
   
   // Use the centralized search parameters service
-  const { generateAndResolveSearchParameters, hasSearchParameters, isGenerating, isResolving } = useSearchParameters();
+  const { generateSearchParameters, hasSearchParameters, isGenerating, isResolving } = useSearchParameters();
   const [easyApply, setEasyApply] = useState<boolean | undefined>(undefined);
   const [inYourNetwork, setInYourNetwork] = useState<boolean | undefined>(undefined);
   const [fairChanceEmployer, setFairChanceEmployer] = useState<boolean | undefined>(undefined);
@@ -99,7 +99,7 @@ export const SearchParametersForm = ({
     }
 
     try {
-      const result = await generateAndResolveSearchParameters(
+      const result = await generateSearchParameters(
         parsedJD?.parsedJobDescription,
         searchType,
         searchCategory,
@@ -132,7 +132,7 @@ export const SearchParametersForm = ({
       console.error('Failed to generate search parameters:', error);
       return null;
     }
-  }, [parsedJD?.parsedJobDescription, generateAndResolveSearchParameters, onSearchFilterUpdate, parsedJD?.searchFilters, searchFilterId]);
+  }, [parsedJD?.parsedJobDescription, generateSearchParameters, onSearchFilterUpdate, parsedJD?.searchFilters, searchFilterId]);
 
   // Handler for search type changes
   const handleSearchTypeChange = useCallback(async (newSearchType: LinkedInSearchType) => {
@@ -190,7 +190,7 @@ export const SearchParametersForm = ({
 
       // Check if we have parameters for the current search type/category
       // Convert searchType to camelCase to match backend parameter key construction
-      const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+      const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_: string, letter: string) => letter.toUpperCase());
       const capitalizedCategory = searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1);
       const parameterKey = `${camelCaseSearchType}${capitalizedCategory}Search`;
       const currentParams = resolvedParameters[parameterKey];
@@ -224,7 +224,7 @@ export const SearchParametersForm = ({
     
     // If we don't have form params, get from resolvedParameters
     if (!formParams) {
-      const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+      const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_: string, letter: string) => letter.toUpperCase());
       const capitalizedCategory = searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1);
       const parameterKey = `${camelCaseSearchType}${capitalizedCategory}Search`;
       formParams = resolvedParameters?.[parameterKey] || {};
@@ -266,7 +266,7 @@ export const SearchParametersForm = ({
       
       // Update the appropriate search type/category parameters
       // Convert searchType to camelCase to match backend parameter key construction
-      const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+      const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_: string, letter: string) => letter.toUpperCase());
       const capitalizedCategory = searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1);
       const parameterKey = `${camelCaseSearchType}${capitalizedCategory}Search`;
       updatedResolved[parameterKey] = {
@@ -281,7 +281,7 @@ export const SearchParametersForm = ({
     if (parsedJD?.searchFilters?.[0]?.id && onSearchFilterUpdate) {
       try {
         // Convert searchType to camelCase to match backend parameter key construction
-        const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+        const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_: string  , letter: string) => letter.toUpperCase());
         const capitalizedCategory = searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1);
         const parameterKey = `${camelCaseSearchType}${capitalizedCategory}Search`;
 
@@ -320,7 +320,7 @@ const handleClear = async () => {
   
   // Clear all parameters for the current search type and category
   // Convert searchType to camelCase to match backend parameter key construction
-  const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+  const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_: string, letter: string) => letter.toUpperCase());
   const capitalizedCategory = searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1);
   const parameterKey = `${camelCaseSearchType}${capitalizedCategory}Search`;
   console.log('CandidateSearchParametersForm.handleClear - clearing parameter key:', parameterKey);
@@ -343,7 +343,7 @@ const handleClear = async () => {
     if (!prevParsedJD?.searchParameters) return prevParsedJD;
     
     // Convert searchType to camelCase to match backend parameter key construction
-    const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+    const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_: string, letter: string) => letter.toUpperCase());
     const capitalizedCategory = searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1);
     const parameterKey = `${camelCaseSearchType}${capitalizedCategory}Search`;
     

@@ -1035,7 +1035,7 @@ export const SearchModels = () => {
       // Step 1: Query Understanding
       if (step === 'query-understanding') {
         const response = await axios.post(
-          `${baseUrl}/candidate-search/test/understand-query`,
+          `${baseUrl}/candidate-search/pipeline/understand-query`,
           {
             prompt,
             rawJDText: '',
@@ -1091,7 +1091,7 @@ export const SearchModels = () => {
         }
 
         const response = await axios.post(
-          `${baseUrl}/candidate-search/test/generate-search-strategies`,
+          `${baseUrl}/candidate-search/pipeline/generate-search-strategies`,
           {
             prompt,
             parsedJobDescription: {
@@ -1158,7 +1158,7 @@ export const SearchModels = () => {
         }
 
         const response = await axios.post(
-          `${baseUrl}/candidate-search/test/generate-search-parameters`,
+          `${baseUrl}/candidate-search/pipeline/generate-search-parameters`,
           {
             prompt,
             parsedJobDescription: {
@@ -1266,7 +1266,7 @@ export const SearchModels = () => {
         }
 
         const response = await axios.post(
-          `${baseUrl}/candidate-search/test/execute-search-page`,
+          `${baseUrl}/candidate-search/pipeline/execute-search-page`,
           {
             prompt,
             parsedJobDescription: {
@@ -1381,7 +1381,7 @@ export const SearchModels = () => {
         }
 
         const response = await axios.post(
-          `${baseUrl}/candidate-search/test/validate-page-results`,
+          `${baseUrl}/candidate-search/pipeline/validate-page-results`,
           {
             prompt,
             queryUnderstanding,
@@ -1452,7 +1452,7 @@ export const SearchModels = () => {
         }
 
         const response = await axios.post(
-          `${baseUrl}/candidate-search/test/score-candidates`,
+          `${baseUrl}/candidate-search/pipeline/score-candidates`,
           {
             prompt,
             queryUnderstanding,

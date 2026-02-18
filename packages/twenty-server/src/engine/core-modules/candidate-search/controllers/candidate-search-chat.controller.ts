@@ -9,10 +9,7 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { ChatMessageRequest } from 'src/engine/core-modules/candidate-search/types/search-plan.types';
-import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import { CandidateSearchHandlerService } from '../services/candidate-search-handler.service';
-import { ClassifyMessageService } from '../services/classify-message.service';
-import { CleanupService } from '../services/cleanup.service';
 import { extractApiToken } from '../utils/auth.utils';
 
 @Controller('candidate-search')
@@ -21,9 +18,6 @@ export class CandidateSearchChatController {
 
   constructor(
     private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
-    private readonly classifyMessageService: ClassifyMessageService,
-    private readonly cleanupService: CleanupService,
-    private readonly searchParametersPrompts: SearchParametersPrompts,
   ) {}
 
   /**
@@ -130,198 +124,32 @@ export class CandidateSearchChatController {
         }
       };
 
-      // Get search filter to access chat history and JD context
-      const searchFilter = await this.candidateSearchHandlerService.getSearchFilter(body.searchFilterId, apiToken);
-      const chatHistory = searchFilter.chatHistory || [];
-      
-      // Get raw JD text if available for context
-      let rawJDText = '';
-      if (body.includeJd !== false) {
-        try {
-          const jobId = searchFilter.jobId;
-          if (jobId) {
-            // Get JD content if available using the same pattern as handler service
-            const candidateSearchStreamingService = this.candidateSearchHandlerService['candidateSearchStreamingService'];
-            if (candidateSearchStreamingService) {
-              rawJDText = await candidateSearchStreamingService['jobDescriptionService']?.getJDContentFromJobAttachments(jobId, apiToken) || '';
-            }
-          }
-        } catch (error) {
-          this.logger.warn(`Failed to fetch JD content: ${error.message}`);
-        }
-      }
-
-      // Classify the message with chat history and JD context
-      const messageClassification = await this.classifyMessageService.classifyMessage(
-        body.message,
+      const result = await this.candidateSearchHandlerService.handleMessageStream(
+        body,
         apiToken,
-        chatHistory,
-        rawJDText,
+        sendEvent,
       );
-      
-      if (isAborted) {
-        this.logger.log('Request aborted after classification');
-        res.end();
-        return;
-      }
-      
-      this.logger.log(`Message classified as: ${messageClassification.type} (confidence: ${messageClassification.confidence})`);
-      
-      if (!sendEvent('classification', {
-        type: messageClassification.type,
-        confidence: messageClassification.confidence,
-        reasoning: messageClassification.reasoning
-      })) {
-        this.logger.log('Event send failed, request aborted');
-        res.end();
-        return;
-      }
 
-      let response: any = {};
-      let assistantMessage: string | null = null; // Track assistant message to save to backend
-
-      switch (messageClassification.type) {
-        case 'clarification_response':
-          // User is responding to clarification questions
-          // Get the stored clarification questions
-          const pendingClarification = searchFilter.searchFilterParameter?.pendingClarification;
-          const clarificationQuestions = pendingClarification?.questions || [];
-          
-          // Combine the original query from chat history with the clarification response
-          // so query understanding can merge them properly
-          const previousUserMessages = chatHistory
-            .filter((msg: any) => msg.role === 'user');
-          // Get the last user message (which should be the original query before clarification)
-          // If there are multiple user messages, get the one before the current one
-          // If there's only one, that's the original query
-          const originalQuery = previousUserMessages.length > 1 
-            ? previousUserMessages[previousUserMessages.length - 2]?.content 
-            : previousUserMessages[previousUserMessages.length - 1]?.content || body.message;
-          
-          // Combine original query with clarification response
-          // Query understanding will use isClarificationResponse flag to merge them
-          const combinedQuery = this.searchParametersPrompts.buildClarificationResponseCombinedUserQuery(
-            originalQuery,
-            clarificationQuestions,
-            body.message,
-          );
-          
-          // Clean up the combined query before processing
-          const cleanedCombinedQuery = await this.cleanupService.cleanupQuery(
-            combinedQuery,
-            apiToken,
-          );
-
-          response = await this.candidateSearchHandlerService.handleSearchParametersAndResultsGenerationStream(
-            body.message,
-            cleanedCombinedQuery,
-            body.searchFilterId,
-            body.parsedJD,
-            body.searchType || 'classic',
-            body.searchCategory || 'people',
-            apiToken,
-            combinedQuery,
-            sendEvent,
-            body.includeJd !== false,
-            true,
-          );
-          // Extract chatMessage from response
-          if (response?.chatMessage) {
-            assistantMessage = response.chatMessage;
-          }
-          break;
-
-        case 'search_parameters':
-          // Query understanding will automatically detect if clarification is needed
-          // and handle it as part of the search_parameters flow
-          // Clean up the query before processing
-          const cleanedQuery = await this.cleanupService.cleanupQuery(
-            body.message,
-            apiToken,
-          );
-          
-          response = await this.candidateSearchHandlerService.handleSearchParametersAndResultsGenerationStream(
-            body.message,
-            cleanedQuery,
-            body.searchFilterId,
-            body.parsedJD,
-            body.searchType || 'classic',
-            body.searchCategory || 'people',
-            apiToken,
-            body.message,
-            sendEvent,
-            body.includeJd !== false,
-            false,
-          );
-          // Extract chatMessage from response
-          if (response?.chatMessage) {
-            assistantMessage = response.chatMessage;
-          }
-          break;
-
-        case 'enrichments':
-          break;
-
-        case 'filters':
-          break;
-
-        case 'sorts':
-          break;
-
-        case 'complete_plan':
-          break;
-
-        case 'general_help':
-          assistantMessage = 'I can help you with candidate search and recruitment workflows! Here\'s what I can do:\n\n' +
-            '🔍 **Search Parameters** - Generate LinkedIn search criteria to find candidates\n' +
-            '📊 **AI Filters** - Add AI-powered insights to candidate profiles\n' +
-            '🔧 **Filters** - Create filtering strategies to narrow down candidate lists\n' +
-            '📈 **Sorts** - Design sorting strategies to prioritize the best candidates\n' +
-            '🎯 **Complete Plan** - Generate all components at once for a comprehensive search strategy\n\n' +
-            'Try saying "generate search parameters" or "create enrichments" to get started!';
-          sendEvent('message', {
-            success: true,
-            type: 'general_help',
-            chatMessage: assistantMessage,
-          });
-          break;
-
-        default:
-          assistantMessage = 'I didn\'t understand your request. Please try asking for search parameters, enrichments, filters, sorts, or a complete plan.';
-          sendEvent('message', {
-            success: false,
-            error: assistantMessage,
-            chatMessage: assistantMessage,
-          });
-      }
-
-      // Check if aborted before finalizing
       if (isAborted) {
         this.logger.log('Request aborted before finalizing');
         res.end();
         return;
       }
 
-      // Add user message to chat history
-      await this.candidateSearchHandlerService.addChatMessage(body.searchFilterId, 'user', body.message, apiToken);
+      await this.candidateSearchHandlerService.addChatMessage(
+        body.searchFilterId,
+        'user',
+        body.message,
+        apiToken,
+      );
 
-      // Determine the final assistant message to save
-      // Priority: 1) response.chatMessage, 2) last accumulated chatMessage from sendEvent, 3) assistantMessage variable
-      let finalAssistantMessage: string | null = null;
-      
-      if (response?.chatMessage) {
-        finalAssistantMessage = response.chatMessage;
-        this.logger.log(`Using chatMessage from response object`);
-      } else if (accumulatedChatMessages.length > 0) {
-        // Use the last accumulated message (most recent)
-        finalAssistantMessage = accumulatedChatMessages[accumulatedChatMessages.length - 1];
-        this.logger.log(`Using last accumulated chatMessage from sendEvent calls (${accumulatedChatMessages.length} messages captured)`);
-      } else if (assistantMessage) {
-        finalAssistantMessage = assistantMessage;
-        this.logger.log(`Using assistantMessage variable`);
-      }
+      const finalAssistantMessage =
+        result.response?.chatMessage ??
+        (accumulatedChatMessages.length > 0
+          ? accumulatedChatMessages[accumulatedChatMessages.length - 1]
+          : null) ??
+        result.assistantMessage;
 
-      // Add assistant message to chat history if we have one
       if (finalAssistantMessage) {
         try {
           await this.candidateSearchHandlerService.addChatMessage(
@@ -333,19 +161,14 @@ export class CandidateSearchChatController {
           this.logger.log(`Saved assistant message to chat history for searchFilterId: ${body.searchFilterId}`);
         } catch (error) {
           this.logger.error(`Failed to save assistant message to chat history: ${error.message}`);
-          // Don't fail the request if saving assistant message fails
         }
       } else {
-        this.logger.warn(`No assistant message found to save to chat history. Response: ${JSON.stringify(response)}, Accumulated: ${accumulatedChatMessages.length}, AssistantMessage: ${assistantMessage}`);
+        this.logger.warn(
+          `No assistant message found to save. Response: ${JSON.stringify(result.response)}, Accumulated: ${accumulatedChatMessages.length}`,
+        );
       }
 
-      // Send final event with accumulated token usage and costs if available
-      // Note: Token usage is sent via 'tokenUsage' events during processing
-      // This final event can include summary if needed
-      sendEvent('done', { 
-        success: true,
-        // Token usage summary will be accumulated from individual tokenUsage events
-      });
+      sendEvent('done', { success: true });
       res.end();
     } catch (error) {
       this.logger.error('Error processing streaming chat message:', error);

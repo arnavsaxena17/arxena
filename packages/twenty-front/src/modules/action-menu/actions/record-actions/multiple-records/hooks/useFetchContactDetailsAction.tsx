@@ -1,14 +1,14 @@
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import { tableStateAtom } from '@/candidate-table/states/states';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
-import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { tokenPairState } from '@/auth/states/tokenPairState';
 
 export const useFetchContactDetailsAction: ActionHookWithObjectMetadataItem =
   ({ objectMetadataItem }) => {
@@ -190,7 +190,7 @@ export const useFetchContactDetailsAction: ActionHookWithObjectMetadataItem =
 
         // Fetch candidate data to get LinkedIn URLs
         const response = await fetch(
-          `${baseUrl}/arx-chat/get-candidates-by-job-id`,
+          `${baseUrl}/candidate-sourcing/get-candidates-by-job-id`,
           {
             method: 'POST',
             headers: {

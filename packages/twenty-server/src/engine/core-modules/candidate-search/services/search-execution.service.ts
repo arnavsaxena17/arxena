@@ -1,27 +1,27 @@
 import { Injectable } from '@nestjs/common';
 import { CandidateRelevanceScoring } from 'src/engine/core-modules/candidate-search/schemas/candidate-relevance-scoring.schema';
 import { LinkedInSearchTransformerService, TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
-import { ResumeReaderService } from '../../candidate-sourcing/services/resume-reader.service';
+import { ResumeReadParseUploadService } from '../../candidate-sourcing/services/resume-read-parse-upload.service';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
 import {
-    LinkedInSearchConfig,
-    LinkedInSearchResponse,
-    LinkedInSearchResult
+  LinkedInSearchConfig,
+  LinkedInSearchResponse,
+  LinkedInSearchResult
 } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import {
-    ClassicPeopleSearchStrategyResult,
-    GeneratedSearchParameters,
-    ParsedJobDescription,
-    RecruiterPeopleSearchStrategyResult,
-    ResultValidationResult,
-    SalesNavigatorPeopleSearchStrategyResult
+  ClassicPeopleSearchStrategyResult,
+  GeneratedSearchParameters,
+  ParsedJobDescription,
+  RecruiterPeopleSearchStrategyResult,
+  ResultValidationResult,
+  SalesNavigatorPeopleSearchStrategyResult
 } from '../types/candidate-search-request.type';
 import {
-    FileUtils,
-    LinkedinParameterResolver,
-    ParameterSanitizer
+  FileUtils,
+  LinkedinParameterResolver,
+  ParameterSanitizer
 } from '../utils';
 import { CandidateScoringService } from './candidate-scoring.service';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
@@ -68,7 +68,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     fileUtils: FileUtils,
     linkedinSearchResultTransformer: LinkedInSearchTransformerService,
     staticGraphQLService: StaticGraphQLService,
-    resumeReaderService: ResumeReaderService,
+    resumeReadParseUploadService: ResumeReadParseUploadService,
     jobDescriptionService: JobDescriptionService,
     // querySimplificationService: QuerySimplificationService,
     private readonly resultValidationService: ResultValidationService,
@@ -82,7 +82,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
       fileUtils,
       linkedinSearchResultTransformer,
       staticGraphQLService,
-      resumeReaderService,
+      resumeReadParseUploadService,
       jobDescriptionService,
       // querySimplificationService,
     );

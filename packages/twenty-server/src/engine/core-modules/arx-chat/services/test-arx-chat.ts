@@ -1,4 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import {
+  CandidateEdge,
+  graphqlToFetchAllCandidateDataWithFieldValues,
+  PageInfo,
+} from 'twenty-shared';
 import { CandidateService } from '../../candidate-sourcing/services/candidate.service';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { ArxChatEndpoint } from '../controllers/arx-chat-agent.controller';
@@ -38,13 +43,40 @@ export class TestArxChat {
       const firstJob = jobs[0].node;
       console.log('Selected job:', firstJob.name);
 
-      // Step 2: Get candidates for this job
-      const candidatesResponse = await this.arxChatEndpoint.getCandidatesByJobId({
-        headers: { authorization: `Bearer ${apiToken}` },
-        body: { jobId: firstJob.id }
-      });
-
-      const candidates = (candidatesResponse['candidates'] || []) as Candidate[];
+      // Step 2: Get candidates for this job (same logic as CandidateSourcingController.getCandidatesByJobId)
+      const allCandidates: Candidate[] = [];
+      let lastCursor: string | null = null;
+      let hasNextPage = true;
+      const timestampedFilter = { jobsId: { eq: firstJob.id } };
+      while (hasNextPage) {
+        const response = await this.staticGraphQLService.executeGraphQL(
+          graphqlToFetchAllCandidateDataWithFieldValues,
+          { lastCursor, limit: 400, filter: timestampedFilter, orderBy: [{ createdAt: 'DESC' }] },
+          apiToken,
+        );
+        const candidatesData = response?.data?.data?.candidates as
+          | { edges: CandidateEdge[]; pageInfo: PageInfo }
+          | undefined;
+        if (!candidatesData?.edges?.length) {
+          break;
+        }
+        hasNextPage = candidatesData.pageInfo?.hasNextPage ?? false;
+        type CandidateNodeWithPerson = { id: string; person?: { id: string }; phoneNumber?: string | { primaryPhoneNumber: string } };
+        allCandidates.push(
+          ...candidatesData.edges.map((edge) => {
+            const node = edge.node as unknown as CandidateNodeWithPerson;
+            const phone = typeof node.phoneNumber === 'string' ? node.phoneNumber : node.phoneNumber?.primaryPhoneNumber;
+            return {
+              id: node.id,
+              personId: node.person?.id ?? '',
+              phoneNumber: phone,
+            };
+          }),
+        );
+        if (!hasNextPage) break;
+        lastCursor = candidatesData.pageInfo?.endCursor ?? null;
+      }
+      const candidates = allCandidates;
       console.log(`Found ${candidates.length} candidates`);
 
       // Step 3: Categorize candidates based on phone number availability

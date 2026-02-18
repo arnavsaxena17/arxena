@@ -2,7 +2,7 @@ import type { Job, Jobs } from 'twenty-shared';
 import { graphqlToAddNewJob, graphqlToFindManyJobs } from 'twenty-shared';
 
 import { executeGraphQL } from '../api/graphql-client';
-import { callCandidateSourcingRestAPI } from '../api/rest-client';
+import { callRestAPI } from '../api/rest-client';
 import { McpTool } from '../types/tool-types';
 
 function extractJobs(data: unknown): Job[] {
@@ -75,9 +75,13 @@ export const jobTools: McpTool[] = [
     handler: async (args, config) => {
       const jobId = args.jobId as string;
 
-      const result = await callCandidateSourcingRestAPI(config.baseUrl, config.apiToken, 'get-job-by-id', {
-        jobId,
-      });
+      const result = await callRestAPI(
+        config.baseUrl,
+        config.apiToken,
+        'candidate-sourcing',
+        'get-job-by-id',
+        { jobId },
+      );
 
       return result;
     },

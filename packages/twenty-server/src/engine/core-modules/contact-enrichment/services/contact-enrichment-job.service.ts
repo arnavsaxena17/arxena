@@ -12,6 +12,7 @@ import { ContactEnrichmentQueueProcessor } from '../jobs/process-contact-enrichm
 import type {
   ContactEnrichmentJobProgress,
   ContactEnrichmentOptions,
+  ContactEnrichmentProviderName,
 } from '../types/contact-enrichment.types';
 
 @Injectable()
@@ -51,6 +52,7 @@ export class ContactEnrichmentJobService {
     linkedinUrls: string[],
     operation: 'availability' | 'fetch',
     options?: ContactEnrichmentOptions,
+    providerName?: ContactEnrichmentProviderName,
   ): Promise<string> {
     const jobId = v4();
 
@@ -59,6 +61,7 @@ export class ContactEnrichmentJobService {
       linkedinUrls,
       operation,
       options,
+      providerName,
     };
 
     await this.messageQueueService.add(
@@ -67,7 +70,7 @@ export class ContactEnrichmentJobService {
     );
 
     this.logger.log(
-      `Queued contact enrichment job ${jobId} for ${linkedinUrls.length} URLs`,
+      `Queued contact enrichment job ${jobId} for ${linkedinUrls.length} URLs${providerName ? ` using ${providerName} provider` : ' using waterfall'}`,
     );
 
     return jobId;

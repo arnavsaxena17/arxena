@@ -5,7 +5,7 @@ import * as path from 'path';
 import { SearchParametersPrompts } from 'src/engine/core-modules/candidate-search/prompts/search-parameters-prompts';
 import { findManyAttachmentsQuery } from 'twenty-shared';
 import { JDParserService } from '../../candidate-sourcing/services/jd-parser.service';
-import { ResumeReaderService } from '../../candidate-sourcing/services/resume-reader.service';
+import { ResumeReadParseUploadService } from '../../candidate-sourcing/services/resume-read-parse-upload.service';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { parsedJobDescriptionSchema } from '../schemas/job-description.schema';
@@ -25,7 +25,7 @@ export class JobDescriptionService {
     private readonly searchParametersPrompts: SearchParametersPrompts,
     private readonly fileUtils: FileUtils,
     private readonly staticGraphQLService: StaticGraphQLService,
-    private readonly resumeReaderService: ResumeReaderService,
+    private readonly resumeReadParseUploadService: ResumeReadParseUploadService,
   ) {}
 
   /**
@@ -220,15 +220,15 @@ export class JobDescriptionService {
       this.logger.log(`Downloaded JD file: ${fileName} for jobId: ${jobId}`);
       
       // Check if the file format is supported
-      if (!this.resumeReaderService.isSupportedResumeFormat(fileName)) {
+      if (!this.resumeReadParseUploadService.isSupportedResumeFormat(fileName)) {
         this.logger.log(`Unsupported JD format: ${fileName} for jobId: ${jobId}`);
         // Clean up temp file
         fs.unlinkSync(tempFilePath);
         return `[Unsupported JD format: ${fileName}]`;
       }
       
-      // Use ResumeReaderService to extract text content
-      const jdContent = await this.resumeReaderService.readResumeFile(tempFilePath);
+      // Use ResumeReadParseUploadService to extract text content
+      const jdContent = await this.resumeReadParseUploadService.readResumeFile(tempFilePath);
       
       // Clean up temp file
       fs.unlinkSync(tempFilePath);

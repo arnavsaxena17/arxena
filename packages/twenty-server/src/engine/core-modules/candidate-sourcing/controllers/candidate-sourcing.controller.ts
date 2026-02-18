@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Post,
+  Req,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
 import * as multer from 'multer';
@@ -6,32 +17,52 @@ import * as path from 'path';
 
 import axios from 'axios';
 import {
+  CandidateEdge,
   CandidateEnrichmentEdge,
   createOneCandidateField,
   CreateOneVideoInterviewTemplate,
+  graphqlMutationToDeleteManyCandidates,
+  graphqlMutationToDeleteManyPeople,
+  graphqlQueryToFindManyPeople,
   graphqlToAddNewJob,
+  graphqlToCreateOnePrompt,
+  graphqlToFetchAllCandidateData,
+  graphqlToFetchAllCandidateDataWithFieldValues,
   graphQlTofindManyCandidateEnrichments,
   graphqlToFindManyJobs,
   graphQltoUpdateOneCandidate,
   Job,
   JobEdge,
+  mutations,
   PageInfo,
+  PersonEdge,
+  PersonNode,
+  queries,
   UpdateOneJob,
-  UserProfile
+  UserProfile,
 } from 'twenty-shared';
 import { v4 } from 'uuid';
 
+import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import {
+  JobDescriptionParseRequest,
+  ParsedJobDescription,
+} from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
+import { DeleteFieldValuesService } from 'src/engine/core-modules/candidate-sourcing/jobs/delete-field-values.service';
 import { ProcessAiFiltersService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-ai-filters.service';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { AiFilteringService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filtering.service';
+import { CandidateWorkspaceGraphQLService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-workspace-graphql.service';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
+import { JDParserService } from 'src/engine/core-modules/candidate-sourcing/services/jd-parser.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
 import { createJobIdErrorResponse, validateAndExtractJobId } from 'src/engine/core-modules/candidate-sourcing/utils/job-id.utils';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { prompts } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
@@ -48,6 +79,9 @@ export class CandidateSourcingController {
     private readonly aiFilteringService: AiFilteringService,
     private readonly filterDescriptionProcessorService: FilterDescriptionProcessorService,
     private readonly uploadProgressPubSubService: UploadProgressPubSubService,
+    private readonly deleteFieldValuesService: DeleteFieldValuesService,
+    private readonly jdParserService: JDParserService,
+    private readonly candidateWorkspaceGraphQLService: CandidateWorkspaceGraphQLService,
   ) {}
 
   @Post('update-candidate')
@@ -386,7 +420,7 @@ export class CandidateSourcingController {
         jobId,
       );
       const videoInterviewModels =
-        await this.candidateService.getVideoInterviewModels(apiToken);
+        await this.candidateWorkspaceGraphQLService.getVideoInterviewModels(apiToken);
 
       console.log('videoInterviewModels:', videoInterviewModels);
       const videoInterviewModelId = videoInterviewModels[0]?.node?.id;
@@ -1034,7 +1068,7 @@ export class CandidateSourcingController {
       const data = request.body;
       const arxenaSiteId = data?.job_id;
       const jobName = data?.job_name;
-      const jobObject: Job = await this.candidateService.getJobDetails(
+      const jobObject: Job = await this.candidateWorkspaceGraphQLService.getJobDetails(
         arxenaSiteId,
         jobName,
         apiToken,
@@ -2419,7 +2453,7 @@ export class CandidateSourcingController {
         // Filter by jobId if provided
         if (jobId && candidates.length > 0) {
           // Get job details to verify candidates belong to this job
-          const job = await this.candidateService.getJobDetails(jobId, '', apiToken);
+          const job = await this.candidateWorkspaceGraphQLService.getJobDetails(jobId, '', apiToken);
           if (job) {
             // Filter candidates that belong to this job
             // Note: This assumes candidates have a jobsId field or similar
@@ -2576,5 +2610,494 @@ export class CandidateSourcingController {
         message: error.message || 'Failed to check candidates',
       };
     }
+  }
+
+  @Post('get-queries-and-mutations')
+  async getQueriesAndMutations(): Promise<object> {
+    const allQueries = {
+      queries: queries,
+      mutations: mutations,
+    };
+    return allQueries;
+  }
+
+  @Post('search-candidates-sql')
+  @UseGuards(JwtAuthGuard)
+  async searchCandidates(@Req() request: any) {
+    try {
+      const startTime = performance.now();
+      let lastStepTime = startTime;
+      const timings: Record<string, number> = {};
+      const body = request.body;
+      const token = request.headers.authorization.split(' ')[1].replace(/\r|\n/g, '');
+      const payload = await this.workspaceQueryService.getWorkspaceIdFromToken(token);
+      timings['extract_and_token'] = performance.now() - lastStepTime;
+      lastStepTime = performance.now();
+
+      if (!body.filter?.jobsId?.in || !Array.isArray(body.filter.jobsId.in)) {
+        throw new HttpException('Invalid jobsId filter', HttpStatus.BAD_REQUEST);
+      }
+      if (!body.limit || typeof body.limit !== 'number') {
+        throw new HttpException('Invalid limit parameter', HttpStatus.BAD_REQUEST);
+      }
+
+      const dataSourceSchema = this.workspaceQueryService.getDataSourceSchema(payload);
+      const sql = `
+        SELECT 
+          c.id, c.name, c."updatedAt", c."createdAt", c."status", c."jobTitle", c."whatsappProvider",
+          c."candConversationStatus", c."peopleId", c."startVideoInterviewChat", c.source, c.campaign,
+          c."jobsId", c.remarks, c."messagingChannel", c."engagementStatus", c."lastEngagementChatControl",
+          c."startVideoInterviewChat", c."startMeetingSchedulingChat", c."stopChat", c."uniqueStringKey",
+          c."startChat", c."chatCount", c."startChatCompleted", c."startMeetingSchedulingChatCompleted", c."startVideoInterviewChatCompleted",
+          COALESCE(JSON_AGG(CASE WHEN cfv.id IS NOT NULL THEN JSON_BUILD_OBJECT('id', cfv.id, 'name', cfv.name, 'candidateFields', JSON_BUILD_OBJECT('name', cf.name, 'id', cf.id)) ELSE NULL END) FILTER (WHERE cfv.id IS NOT NULL), '[]'::json) as candidate_field_values,
+          COALESCE(JSON_AGG(CASE WHEN wm.id IS NOT NULL THEN JSON_BUILD_OBJECT('updatedAt', wm."updatedAt", 'messageObj', wm."messageObj", 'createdAt', wm."createdAt", 'whatsappDeliveryStatus', wm."whatsappDeliveryStatus", 'id', wm.id, 'name', wm.name, 'recruiterId', wm."recruiterId", 'message', wm.message, 'candidateId', wm."candidateId", 'jobsId', wm."jobsId", 'position', wm.position, 'phoneTo', wm."phoneTo", 'phoneFrom', wm."phoneFrom") ELSE NULL END) FILTER (WHERE wm.id IS NOT NULL), '[]'::json) as whatsappMessages
+        FROM ${dataSourceSchema}."_candidate" c
+        LEFT JOIN ${dataSourceSchema}."_candidateFieldValue" cfv ON c.id = cfv."candidateId"
+        LEFT JOIN ${dataSourceSchema}."_candidateField" cf ON cfv."candidateFieldsId" = cf.id
+        LEFT JOIN ${dataSourceSchema}."_whatsappMessage" wm ON c.id = wm."candidateId"
+        WHERE c."deletedAt" IS NULL AND c."stopChat" = false AND c."startChat" = true AND c."startVideoInterviewChatCompleted" IS NULL AND c."jobsId" = ANY($1) ${body.lastCursor ? 'AND c."updatedAt" < $3' : ''}
+        GROUP BY c.id
+        ORDER BY c."updatedAt" DESC
+        LIMIT $2
+      `;
+
+      const shouldFetchAllPages = body.fetchAllPages === true;
+      let allResults: any[] = [];
+      let currentCursor = body.lastCursor;
+      let hasMorePages = true;
+      let pageCount = 0;
+      let lastBatchLength = 0;
+      const maxPages = body.maxPages || 100;
+
+      while (hasMorePages && pageCount < maxPages) {
+        const params = [body.filter.jobsId.in, body.limit, ...(currentCursor ? [new Date(currentCursor)] : [])];
+        const batch = await this.workspaceQueryService.executeRawQuery(sql, params, payload);
+        lastBatchLength = batch.length;
+        allResults = allResults.concat(batch);
+        hasMorePages = batch.length === body.limit;
+        if (hasMorePages && batch.length > 0) {
+          currentCursor = batch[batch.length - 1].updatedAt.toISOString();
+        }
+        pageCount++;
+      }
+
+      const result = allResults;
+      const totalTime = performance.now() - startTime;
+      const edges = result.map((row: any) => ({
+        cursor: row.updatedAt.toISOString(),
+        node: {
+          id: row.id,
+          name: row.name,
+          updatedAt: row.updatedAt,
+          createdAt: row.createdAt,
+          status: row.status,
+          jobTitle: row.jobTitle,
+          whatsappProvider: row.whatsappProvider,
+          phoneNumber: row.phone_number || { primaryPhoneNumber: '' },
+          email: row.email || { primaryEmail: '' },
+          candConversationStatus: row.candConversationStatus,
+          peopleId: row.peopleId,
+          source: row.source,
+          campaign: row.campaign,
+          jobsId: row.jobsId,
+          remarks: row.remarks,
+          messagingChannel: row.messagingChannel,
+          engagementStatus: row.engagementStatus,
+          lastEngagementChatControl: row.lastEngagementChatControl,
+          startVideoInterviewChat: row.startVideoInterviewChat,
+          startMeetingSchedulingChat: row.startMeetingSchedulingChat,
+          stopChat: row.stopChat,
+          uniqueStringKey: row.uniqueStringKey,
+          hiringNaukriUrl: row.hiring_naukri_url || { primaryLinkUrl: '', primaryLinkLabel: '' },
+          resdexNaukriUrl: row.resdex_naukri_url || { primaryLinkUrl: '', primaryLinkLabel: '' },
+          linkedinUrl: row.linkedin_url || { primaryLinkUrl: '', primaryLinkLabel: '' },
+          candidateFieldValues: { edges: (row.candidate_field_values || []).map((cfv: any) => ({ node: cfv })) },
+          whatsappMessages: { edges: (row.whatsapp_messages || []).map((wm: any) => ({ node: wm })) },
+          startChat: row.startChat,
+          chatCount: row.chatCount,
+          startChatCompleted: row.startChatCompleted,
+          startMeetingSchedulingChatCompleted: row.startMeetingSchedulingChatCompleted,
+          startVideoInterviewChatCompleted: row.startVideoInterviewChatCompleted,
+        },
+      }));
+      const pageInfo = {
+        hasNextPage: shouldFetchAllPages ? false : lastBatchLength === body.limit,
+        endCursor: result.length > 0 ? result[result.length - 1].updatedAt.toISOString() : null,
+      };
+      return {
+        data: { candidates: { edges, pageInfo } },
+        executionTime: totalTime,
+      };
+    } catch (error) {
+      console.error('Error in search Candidates:', error);
+      throw new HttpException(
+        error.message || 'Failed to search candidates',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('get-candidates-graphql-queries-execution-service')
+  async getCandidatesGraphQLQueriesExecutionService(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization?.split(' ')[1]?.replace(/[\r\n]+/g, '');
+    const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateDataWithFieldValues, {}, apiToken);
+    return response;
+  }
+
+  @Post('get-candidate-id-by-hiring-naukri-url')
+  @UseGuards(JwtAuthGuard)
+  async getCandidateIdsByHiringNaukriURL(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const hiringNaukriUrl = request.body.hiringNaukriUrl;
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
+        filter: { hiringNaukriUrl: { url: { eq: hiringNaukriUrl } } },
+      }, apiToken);
+      const candidates = response?.data?.data?.candidates as { edges: CandidateEdge[]; pageInfo: PageInfo } | undefined;
+      const candidateId = candidates?.edges[0]?.node?.id;
+      return { candidateId };
+    } catch (err) {
+      return { candidateId: null };
+    }
+  }
+
+  @Post('get-candidate-id-by-resdex-naukri-url')
+  @UseGuards(JwtAuthGuard)
+  async getCandidateIdsByResdexNaukriURL(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const resdexNaukriUrl = request.body.resdexNaukriUrl;
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
+        filter: { resdexNaukriUrl: { url: { eq: resdexNaukriUrl } } },
+      }, apiToken);
+      const candidates = response?.data?.data?.candidates as { edges: CandidateEdge[]; pageInfo: PageInfo } | undefined;
+      const candidateId = candidates?.edges[0]?.node?.id;
+      return { candidateId };
+    } catch (err) {
+      return { candidateId: null };
+    }
+  }
+
+  @Post('get-ids-by-unique-string-key')
+  @UseGuards(JwtAuthGuard)
+  async getIdsByUniqueStringKey(@Req() request: any): Promise<{ candidateIds: string[]; personId: string | undefined }> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, {
+        filter: { uniqueStringKey: { eq: request.body.uniqueStringKey } },
+      }, apiToken);
+      const people = response?.data?.data?.people as { edges: PersonEdge[]; pageInfo: PageInfo } | undefined;
+      const candidateIds = people?.edges[0]?.node?.candidates?.edges?.map((edge: any) => edge.node?.id).filter((id: string) => id) || [];
+      return { candidateIds, personId: people?.edges[0]?.node?.id };
+    } catch (err) {
+      return { candidateIds: [], personId: undefined };
+    }
+  }
+
+  @Post('get-id-by-naukri-url')
+  @UseGuards(JwtAuthGuard)
+  async getCandidateIdByNaukriURL(@Req() request: any): Promise<{ candidateId: string | null }> {
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    try {
+      const url = request.body[request.body.resdexNaukriUrl ? 'resdexNaukriUrl' : 'hiringNaukriUrl'];
+      const type = request.body.resdexNaukriUrl ? 'resdex' : 'hiring';
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
+        filter: { [`${type}NaukriUrl`]: { url: { eq: url } } },
+      }, apiToken);
+      const candidates = response?.data?.data?.candidates as { edges: CandidateEdge[]; pageInfo: PageInfo } | undefined;
+      const candidateId = candidates?.edges[0]?.node?.id || null;
+      return { candidateId };
+    } catch (err) {
+      return { candidateId: null };
+    }
+  }
+
+  @Post('delete-people-and-candidates-from-candidate-id')
+  @UseGuards(JwtAuthGuard)
+  async deletePeopleFromCandidateIds(@Req() request: any): Promise<object> {
+    const candidateId = request.body.candidateId;
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+
+    const candidateObjresponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
+      filter: { id: { eq: candidateId } },
+    }, apiToken);
+    const candidateObj = candidateObjresponse?.data?.data?.candidates as { edges: CandidateEdge[]; pageInfo: PageInfo } | undefined;
+    const candidateNode = candidateObj?.edges[0]?.node;
+
+    if (!candidateNode) {
+      return { status: 'Failed', message: 'Candidate not found' };
+    }
+    const personId = candidateNode?.people?.id;
+    if (!personId) {
+      return { status: 'Failed', message: 'Person ID not found' };
+    }
+
+    try {
+      await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyCandidates, {
+        filter: { id: { in: [candidateId] } },
+      }, apiToken);
+    } catch (err) {
+      return { status: 'Failed', message: 'Error deleting candidate' };
+    }
+    try {
+      await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyPeople, {
+        filter: { id: { in: [personId] } },
+      }, apiToken);
+      return { status: 'Success' };
+    } catch (err) {
+      return { status: 'Failed', message: 'Error deleting person' };
+    }
+  }
+
+  @Post('delete-people-and-candidates-from-person-id')
+  @UseGuards(JwtAuthGuard)
+  async deletePeopleFromPersonIds(@Req() request: any): Promise<object> {
+    const personId = request.body.personId;
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+
+    const personresponse = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, {
+      filter: { id: { eq: personId } },
+    }, apiToken);
+    const personObj = personresponse?.data?.data?.people as { edges: PersonEdge[]; pageInfo: PageInfo } | undefined;
+    const personNode = personObj?.edges[0]?.node;
+
+    if (!personNode) {
+      return { status: 'Failed', message: 'Candidate not found' };
+    }
+    const candidateId = personNode?.candidates?.edges[0]?.node?.id;
+    if (!candidateId) {
+      return { status: 'Failed', message: 'candidateId ID not found' };
+    }
+
+    try {
+      await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyCandidates, {
+        filter: { id: { in: [candidateId] } },
+      }, apiToken);
+    } catch (err) {
+      return { status: 'Failed', message: 'Error deleting candidate' };
+    }
+    try {
+      await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyPeople, {
+        filter: { id: { in: [personId] } },
+      }, apiToken);
+      return { status: 'Success' };
+    } catch (err) {
+      return { status: 'Failed', message: 'Error deleting person' };
+    }
+  }
+
+  @Post('delete-people-and-candidates-bulk')
+  @UseGuards(JwtAuthGuard)
+  async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const { candidateIds, personIds } = request.body;
+    const BATCH_SIZE = 100;
+    const results: { succeeded: string[]; failed: string[] } = { succeeded: [], failed: [] };
+
+    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    const dataSourceSchema = this.workspaceQueryService.getDataSourceSchema(workspaceId);
+
+    const processBatch = async <T>(items: T[], batchSize: number, processor: (batch: T[]) => Promise<void>): Promise<void> => {
+      for (let i = 0; i < items.length; i += batchSize) {
+        await processor(items.slice(i, i + batchSize));
+      }
+    };
+
+    if (candidateIds?.length) {
+      await processBatch<string>(candidateIds as string[], BATCH_SIZE, async (batchCandidateIds) => {
+        try {
+          const candidatesResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
+            filter: { id: { in: batchCandidateIds } },
+          }, apiToken);
+          const candidates = candidatesResponse?.data?.data?.candidates as { edges: CandidateEdge[]; pageInfo: PageInfo } | undefined;
+          const candidateNodes = candidates?.edges || [];
+          const personIdsFromCandidates = candidateNodes.map((edge: any) => edge.node?.people?.id).filter((id: any) => id);
+
+          await this.deleteFieldValuesService.queueDeleteFieldValues(batchCandidateIds, dataSourceSchema, workspaceId);
+          await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyCandidates, {
+            filter: { id: { in: batchCandidateIds } },
+          }, apiToken);
+          if (personIdsFromCandidates.length > 0) {
+            await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyPeople, {
+              filter: { id: { in: personIdsFromCandidates } },
+            }, apiToken);
+          }
+          results.succeeded.push(...batchCandidateIds);
+        } catch (err) {
+          results.failed.push(...batchCandidateIds);
+        }
+      });
+    }
+
+    if (personIds?.length) {
+      await processBatch<string>(personIds as string[], BATCH_SIZE, async (batchPersonIds) => {
+        try {
+          const peopleResponse = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, {
+            filter: { id: { in: batchPersonIds } },
+          }, apiToken);
+          const people = peopleResponse?.data?.data?.people as { edges: PersonEdge[]; pageInfo: PageInfo } | undefined;
+          const peopleNodes = people?.edges || [];
+          const candidateIdsFromPeople = peopleNodes.flatMap((edge: any) => edge.node?.candidates?.edges || []).map((edge: any) => edge?.node?.id).filter((id: any) => id);
+
+          if (candidateIdsFromPeople.length > 0) {
+            await this.deleteFieldValuesService.queueDeleteFieldValues(candidateIdsFromPeople, dataSourceSchema, workspaceId);
+            await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyCandidates, {
+              filter: { id: { in: candidateIdsFromPeople } },
+            }, apiToken);
+          }
+          await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyPeople, {
+            filter: { id: { in: batchPersonIds } },
+          }, apiToken);
+          results.succeeded.push(...batchPersonIds);
+        } catch (err) {
+          results.failed.push(...batchPersonIds);
+        }
+      });
+    }
+
+    if (results.failed.length > 0) {
+      return { status: 'Partial', message: `Successfully deleted ${results.succeeded.length} items, failed to delete ${results.failed.length} items`, results };
+    }
+    return { status: 'Success', message: `Successfully deleted ${results.succeeded.length} items`, results };
+  }
+
+  @Post('upload-jd')
+  @UseGuards(JwtAuthGuard)
+  async uploadJD(@Req() request: any) {
+    try {
+      const { jobId, attachmentUrl } = request.body;
+      if (!jobId || !attachmentUrl) {
+        throw new HttpException('Missing jobId or attachmentUrl', HttpStatus.BAD_REQUEST);
+      }
+      const authToken = request.headers.authorization.split(' ')[1];
+      const result = await this.jdParserService.processJDFromAttachmentUrl(jobId, attachmentUrl, authToken);
+      return result;
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to process JD',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Parse job description (text or file path/URL) and return structured ParsedJobDescription.
+   * Merged from candidate-search; use this endpoint for JD parsing.
+   */
+  @Post('parse-job-description')
+  @UseGuards(JwtAuthGuard)
+  async parseJobDescription(
+    @Body() request: JobDescriptionParseRequest,
+    @Req() req: any,
+  ): Promise<ParsedJobDescription> {
+    try {
+      const hasJobDescription = (request.jobDescription?.trim().length ?? 0) > 0;
+      const hasFilePath = (request.filePath?.trim().length ?? 0) > 0;
+
+      if (!hasJobDescription && !hasFilePath) {
+        throw new HttpException(
+          'Either job description or file path is required',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const apiToken = req.headers.authorization?.replace('Bearer ', '').replace(/[\r\n]+/g, '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+
+      return await this.jdParserService.parseToParsedJobDescription(request, apiToken);
+    } catch (error: any) {
+      throw new HttpException(
+        error?.message || 'Failed to parse job description',
+        error?.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('create-prompts')
+  @UseGuards(JwtAuthGuard)
+  async createPrompts(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const jobId = request.body.jobId;
+      const jobIdValidation = validateAndExtractJobId(jobId);
+      if (!jobIdValidation.isValid) {
+        return createJobIdErrorResponse(jobIdValidation.error!);
+      }
+      const actualJobId = jobIdValidation.jobId!;
+      for (const prompt of prompts) {
+        await this.staticGraphQLService.executeGraphQL(graphqlToCreateOnePrompt, {
+          input: { name: prompt.name, prompt: prompt.prompt, position: 'first', jobId: actualJobId },
+        }, apiToken);
+      }
+      return { status: 'Success' };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to create prompts',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('get-candidate-status-by-phone-number')
+  @UseGuards(JwtAuthGuard)
+  async getCandidateStatusByPhoneNumber(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const personObj: PersonNode | undefined = await new FilterCandidates(
+      this.workspaceQueryService,
+      this.staticGraphQLService,
+    ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
+    const candidateStatus = personObj?.candidates?.edges[0]?.node?.status || 'Unknown';
+    return { status: candidateStatus };
+  }
+
+  @Post('get-candidate-by-phone-number')
+  @UseGuards(JwtAuthGuard)
+  async getCandidateIdsByPhoneNumbers(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const personObj: PersonNode | undefined = await new FilterCandidates(
+      this.workspaceQueryService,
+      this.staticGraphQLService,
+    ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
+    const candidateId: string | undefined = personObj?.candidates?.edges[0]?.node?.id;
+    return { candidateId: candidateId as string };
+  }
+
+  @Post('get-candidates-by-job-id')
+  @UseGuards(JwtAuthGuard)
+  async getCandidatesByJobId(@Req() request: any): Promise<object> {
+    const { jobId } = request.body;
+    const jobIdValidation = validateAndExtractJobId(jobId);
+    if (!jobIdValidation.isValid) {
+      return createJobIdErrorResponse(jobIdValidation.error!);
+    }
+    const actualJobId = jobIdValidation.jobId!;
+    const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '');
+
+    const allCandidates: any[] = [];
+    let lastCursor: string | null = null;
+    let hasNextPage = true;
+    const timestampedFilter = { jobsId: { eq: actualJobId } };
+
+    while (hasNextPage) {
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFetchAllCandidateDataWithFieldValues,
+        { lastCursor, limit: 400, filter: timestampedFilter, orderBy: [{ createdAt: 'DESC' }] },
+        apiToken,
+      );
+      const candidates = response?.data?.data?.candidates as {
+        edges: CandidateEdge[];
+        pageInfo: PageInfo;
+      } | undefined;
+      if (!candidates?.edges?.length) {
+        break;
+      }
+      hasNextPage = candidates.pageInfo?.hasNextPage || false;
+      allCandidates.push(...candidates.edges.map((edge) => edge.node));
+      if (!hasNextPage) break;
+      lastCursor = candidates.pageInfo?.endCursor;
+    }
+    return allCandidates;
   }
 }

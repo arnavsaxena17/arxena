@@ -4,15 +4,15 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SearchParametersForm } from '@/candidate-search/components/search-components/SearchParametersForm';
 import { activeSearchFilterIdState } from '@/candidate-search/states/searchConfigState';
 import {
-    addRecentSearch,
-    isSearchPanelOpenState,
-    loadSearchConfigFromStorage,
-    loadSearchParametersFromStorage,
-    persistentSearchConfigState,
-    persistentSearchParametersState,
-    persistSearchConfig,
-    persistSearchParameters,
-    recentSearchesState
+  addRecentSearch,
+  isSearchPanelOpenState,
+  loadSearchConfigFromStorage,
+  loadSearchParametersFromStorage,
+  persistentSearchConfigState,
+  persistentSearchParametersState,
+  persistSearchConfig,
+  persistSearchParameters,
+  recentSearchesState
 } from '@/candidate-search/states/searchPanelState';
 import { addSearchResults, persistSearchMetadataToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
@@ -444,7 +444,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
 
     try {
       // Call the existing search endpoint
-      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/search/from-file`, {
+      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/search-from-file`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

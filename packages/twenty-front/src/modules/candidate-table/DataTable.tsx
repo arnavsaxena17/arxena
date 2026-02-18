@@ -477,7 +477,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
         console.log("This is the request body in refreshData::::", requestBody);
         const response = await axios.post(
-          `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-candidates-by-job-id`,
+          `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-candidates-by-job-id`,
           requestBody,
           { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
         );
@@ -728,7 +728,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         
         // Make API call to load more search results
         const response = await axios.post(
-          `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/search/from-file`,
+          `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/search-from-file`,
           requestBody,
           { 
             headers: { 
@@ -966,7 +966,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         const requestBody = { jobId };
         console.log("This is the request body in loadData::::", requestBody);
         const response = await axios.post(
-          `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-candidates-by-job-id`,
+          `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-candidates-by-job-id`,
           requestBody,
           { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
         );

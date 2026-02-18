@@ -14,7 +14,6 @@ import { CoreGraphQLApiModule } from 'src/engine/api/graphql/core-graphql-api.mo
 import { WorkspaceResolverBuilderModule } from 'src/engine/api/graphql/workspace-resolver-builder/workspace-resolver-builder.module';
 import { WorkspaceSchemaBuilderModule } from 'src/engine/api/graphql/workspace-schema-builder/workspace-schema-builder.module';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
-import { ResumeReaderService } from 'src/engine/core-modules/candidate-sourcing/services/resume-reader.service';
 import { SharedCronOperationsService } from 'src/engine/core-modules/cron-processes/services/shared-cron-operations.service';
 import { FeatureFlagModule } from 'src/engine/core-modules/feature-flag/feature-flag.module';
 import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-execution.module';
@@ -77,7 +76,6 @@ const conditionalImports = isWorker
     CandidateEngagementCronService,
     CandidateStatusClassificationCronService,
     EngagedCandidateProcessor,
-    ResumeReaderService,  
     LinkedinSockIncomingMessageFetchingCronService,
     // WorkspaceMemberCleanupCronService,
   ],

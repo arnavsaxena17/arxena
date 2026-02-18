@@ -349,7 +349,7 @@ export const CandidateSearchModal = () => {
     requestBody: any,
     cursor?: string
   ) => {
-    const endpoint = '/candidate-search/search/from-file';
+    const endpoint = '/candidate-search/search-from-file';
     const limit = 10;
     
     const queryParams = new URLSearchParams({

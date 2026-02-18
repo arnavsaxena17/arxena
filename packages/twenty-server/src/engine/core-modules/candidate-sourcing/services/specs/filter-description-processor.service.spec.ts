@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { FilterDescriptionProcessorService } from './filter-description-processor.service';
+import { FilterDescriptionProcessorService } from '../filter-description-processor.service';
 
 describe('FilterDescriptionProcessorService', () => {
   let service: FilterDescriptionProcessorService;
@@ -27,7 +27,7 @@ describe('FilterDescriptionProcessorService', () => {
     const validFields = ['first_name', 'last_name', 'email_address'];
     const invalidFields = ['invalid_field', 'another_invalid'];
     const mixedFields = [...validFields, ...invalidFields];
-    
+
     const result = service.validateSelectedFields(mixedFields);
     expect(result).toEqual(validFields);
   });

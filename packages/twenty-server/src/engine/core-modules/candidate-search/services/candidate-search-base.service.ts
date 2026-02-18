@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { LinkedInSearchTransformerService } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
-import { ResumeReaderService } from '../../candidate-sourcing/services/resume-reader.service';
+import { ResumeReadParseUploadService } from '../../candidate-sourcing/services/resume-read-parse-upload.service';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
 import { LinkedInCompanySearchResult, LinkedInJobSearchResult, LinkedInPeopleSearchResult, LinkedInSearchResponse } from '../../linkedin-search/types/linkedin-search-response.type';
@@ -35,7 +35,7 @@ export class CandidateSearchBaseService {
     protected readonly fileUtils: FileUtils,
     protected readonly linkedinSearchResultTransformer: LinkedInSearchTransformerService,
     protected readonly staticGraphQLService: StaticGraphQLService,
-    protected readonly resumeReaderService: ResumeReaderService,
+    protected readonly resumeReadParseUploadService: ResumeReadParseUploadService,
     protected readonly jobDescriptionService: JobDescriptionService,
     // @Optional() protected readonly querySimplificationService?: QuerySimplificationService,
   ) {}

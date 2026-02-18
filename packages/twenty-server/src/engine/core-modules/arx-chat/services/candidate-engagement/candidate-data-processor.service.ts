@@ -9,7 +9,7 @@ import {
 } from 'twenty-shared';
 import { z } from 'zod';
 
-import { ResumeReaderService } from 'src/engine/core-modules/candidate-sourcing/services/resume-reader.service';
+import { ResumeReadParseUploadService } from 'src/engine/core-modules/candidate-sourcing/services/resume-read-parse-upload.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -119,7 +119,7 @@ export class CandidateDataProcessorService {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
-    private readonly resumeReaderService: ResumeReaderService,
+    private readonly resumeReadParseUploadService: ResumeReadParseUploadService,
   ) {}
 
   async processCandidates(
@@ -832,7 +832,7 @@ export class CandidateDataProcessorService {
       console.log(`Downloaded resume file: ${fileName} for candidate: ${candidateName}`);
       
       // Check if the file format is supported
-      if (!this.resumeReaderService.isSupportedResumeFormat(fileName)) {
+      if (!this.resumeReadParseUploadService.isSupportedResumeFormat(fileName)) {
         console.log(`Unsupported resume format: ${fileName} for candidate: ${candidateName}`);
         // Clean up temp file
         fs.unlinkSync(tempFilePath);
@@ -840,7 +840,7 @@ export class CandidateDataProcessorService {
       }
       
       // Use ResumeReaderService to extract text content
-      const resumeContent = await this.resumeReaderService.readResumeFile(tempFilePath);
+      const resumeContent = await this.resumeReadParseUploadService.readResumeFile(tempFilePath);
       
       // Clean up temp file
       fs.unlinkSync(tempFilePath);

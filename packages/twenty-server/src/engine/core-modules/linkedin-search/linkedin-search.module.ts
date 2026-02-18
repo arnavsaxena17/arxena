@@ -13,8 +13,6 @@ import { FileUtils, LinkedinParameterResolver, ParameterSanitizer } from 'src/en
 import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
 import { JDParserService } from 'src/engine/core-modules/candidate-sourcing/services/jd-parser.service';
-import { JDUploadService } from 'src/engine/core-modules/candidate-sourcing/services/jd-upload.service';
-import { ResumeReaderService } from 'src/engine/core-modules/candidate-sourcing/services/resume-reader.service';
 import { LinkedInSearchController } from 'src/engine/core-modules/linkedin-search/controllers/linkedin-search.controller';
 import { LinkedInHtmlParserService } from 'src/engine/core-modules/linkedin-search/services/linkedin-html-parser.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
@@ -59,8 +57,6 @@ import { WorkspaceModificationsModule } from '../workspace-modifications/workspa
     // CandidateSearchPromptService,
     JDParserService,
     ParameterSanitizer,
-    ResumeReaderService,
-    JDUploadService,
     WorkspaceCacheStorageService,
     ],
   exports: [LinkedInSearchService, LinkedInSessionTrackerService],

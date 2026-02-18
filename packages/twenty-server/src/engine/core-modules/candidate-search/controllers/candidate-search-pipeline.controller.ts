@@ -1,8 +1,9 @@
 /**
- * Test Controller for Candidate Search
- * 
- * This controller provides HTTP endpoints for testing candidate search functions.
- * It's designed for testing and scripting.
+ * Pipeline Controller for Candidate Search
+ *
+ * Exposes step-by-step HTTP endpoints for the candidate search pipeline (cleanup,
+ * requirement analysis, parameter generation, search execution, validation, scoring).
+ * Consumed by the frontend Search Models UI, MCP tools, and testing/scripting flows.
  */
 
 import { Body, Controller, HttpException, HttpStatus, Logger, Post, Req } from '@nestjs/common';
@@ -65,9 +66,9 @@ export interface ResultValidationResponse {
   validation: ValidationResult;
 }
 
-@Controller('candidate-search/test')
-export class CandidateSearchTestController {
-  private readonly logger = new Logger(CandidateSearchTestController.name);
+@Controller('candidate-search/pipeline')
+export class CandidateSearchPipelineController {
+  private readonly logger = new Logger(CandidateSearchPipelineController.name);
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,

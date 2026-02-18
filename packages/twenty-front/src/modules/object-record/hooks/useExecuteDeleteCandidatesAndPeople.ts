@@ -31,7 +31,7 @@ export const useExecuteDeleteCandidatesAndPeople = ({
     setError(null);
 
     try {
-      const url = `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/delete-people-and-candidates-bulk`;
+      const url = `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/delete-people-and-candidates-bulk`;
       const body = objectNameSingular === 'candidate'
         ? { candidateIds: ids }
         : { personIds: ids };

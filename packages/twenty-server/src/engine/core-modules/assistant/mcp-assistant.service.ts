@@ -4,6 +4,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
 import * as path from 'path';
+import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
 
 const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
 const OPENAI_MCP_MODEL = 'gpt-4o';
@@ -140,6 +141,8 @@ function historyToOpenAIMessages(
   return out;
 }
 
+const STREAMING_TOOL_NAMES = ['search_linkedin_with_query', 'search_linkedin_people'] as const;
+
 @Injectable()
 export class McpAssistantService {
   private readonly provider: McpModelProvider;
@@ -148,7 +151,9 @@ export class McpAssistantService {
   private readonly serverBaseUrl: string;
   private readonly mcpServerScriptPath: string;
 
-  constructor() {
+  constructor(
+    private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
+  ) {
     this.provider = getMcpModelProvider();
     this.anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
@@ -165,6 +170,63 @@ export class McpAssistantService {
     this.mcpServerScriptPath =
       process.env.MCP_SERVER_SCRIPT_PATH ??
       path.join(packagesDir, 'twenty-mcp-server', 'dist', 'index.js');
+  }
+
+  /**
+   * If this tool is a streaming candidate-search tool, run the same message/stream flow
+   * in-process with sendEvent and return the tool result string. Otherwise return null.
+   */
+  private async runStreamingToolInProcess(
+    name: string,
+    args: Record<string, unknown>,
+    apiToken: string,
+    sendEvent: StreamEventSender,
+  ): Promise<string | null> {
+    if (!STREAMING_TOOL_NAMES.includes(name as (typeof STREAMING_TOOL_NAMES)[number])) {
+      return null;
+    }
+    if (name === 'search_linkedin_people') {
+      const query = args.query;
+      const searchFilterId = args.searchFilterId;
+      if (typeof query !== 'string' || !query || typeof searchFilterId !== 'string' || !searchFilterId) {
+        return null;
+      }
+    }
+    if (name === 'search_linkedin_with_query') {
+      const query = args.query;
+      const searchFilterId = args.searchFilterId;
+      if (typeof query !== 'string' || !query || typeof searchFilterId !== 'string' || !searchFilterId) {
+        return null;
+      }
+    }
+
+    const body = {
+      message: String(args.query ?? args.message ?? ''),
+      searchFilterId: String(args.searchFilterId ?? ''),
+      searchType: (args.searchType as 'classic' | 'sales_navigator' | 'recruiter') ?? 'classic',
+      searchCategory: (args.searchCategory as 'people' | 'companies' | 'posts' | 'jobs') ?? 'people',
+      parsedJD: args.parsedJD as Record<string, unknown> | undefined,
+      includeJd: args.includeJd !== false,
+    };
+
+    try {
+      const result = await this.candidateSearchHandlerService.handleMessageStream(
+        body,
+        apiToken,
+        (event, data) => sendEvent(event, data),
+      );
+      const candidates = this.candidateSearchHandlerService.extractCandidatesFromResponse(
+        result.response,
+      );
+      return JSON.stringify({
+        text: result.response?.chatMessage ?? result.assistantMessage ?? '',
+        ...(candidates.length > 0 ? { candidates } : {}),
+        ...(result.response?.error ? { error: result.response.error } : {}),
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return JSON.stringify({ text: '', error: message });
+    }
   }
 
   async generateThreadName(
@@ -545,19 +607,32 @@ Return only the thread name, nothing else.`;
           }
           if (block.type === 'tool_use') {
             hasToolUse = true;
-            allToolCalls.push({ name: block.name, args: block.input ?? {} });
+            const toolArgs = block.input ?? {};
+            allToolCalls.push({ name: block.name, args: toolArgs });
             if (!sendEvent('tool_use', { name: block.name })) break;
-            const result = await client.callTool({
-              name: block.name,
-              arguments: block.input ?? {},
-            });
-            const textContent = result.content
-              ?.map((c) => (c.type === 'text' ? c.text : JSON.stringify(c)))
-              .join('\n');
+            let textContent: string;
+            const inProcessResult = await this.runStreamingToolInProcess(
+              block.name,
+              toolArgs,
+              apiToken,
+              sendEvent,
+            );
+            if (inProcessResult !== null) {
+              textContent = inProcessResult;
+            } else {
+              const result = await client.callTool({
+                name: block.name,
+                arguments: toolArgs,
+              });
+              textContent =
+                result.content
+                  ?.map((c) => (c.type === 'text' ? c.text : JSON.stringify(c)))
+                  .join('\n') ?? '';
+            }
             toolResults.push({
               type: 'tool_result',
               tool_use_id: block.id,
-              content: textContent ?? '',
+              content: textContent,
             });
             // If tool result is JSON with a list of objects, send as table_data for table display
             if (textContent) {
@@ -704,17 +779,29 @@ Return only the thread name, nothing else.`;
           })();
           allToolCalls.push({ name: tc.name, args });
           if (!sendEvent('tool_use', { name: tc.name })) return;
-          const result = await client.callTool({
-            name: tc.name,
-            arguments: args,
-          });
-          const textContent = result.content
-            ?.map((c) => (c.type === 'text' ? c.text : JSON.stringify(c)))
-            .join('\n');
+          let textContent: string;
+          const inProcessResult = await this.runStreamingToolInProcess(
+            tc.name,
+            args,
+            apiToken,
+            sendEvent,
+          );
+          if (inProcessResult !== null) {
+            textContent = inProcessResult;
+          } else {
+            const result = await client.callTool({
+              name: tc.name,
+              arguments: args,
+            });
+            textContent =
+              result.content
+                ?.map((c) => (c.type === 'text' ? c.text : JSON.stringify(c)))
+                .join('\n') ?? '';
+          }
           openaiMessages.push({
             role: 'tool',
             tool_call_id: tc.id,
-            content: textContent ?? '',
+            content: textContent,
           });
           if (textContent) {
             try {

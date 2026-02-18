@@ -8,13 +8,10 @@ import {
   CreateManyCandidateFieldValues,
   CreateManyCandidates,
   createOneCandidateField,
-  FindManyVideoInterviewModels,
-  getExistingRelationsQuery,
   graphqlQueryToCreateOneCandidateFieldValue,
   graphqlQueryToFindManyCandidateFields,
   graphqlToFetchAllCandidateData,
   graphqlToFindManyCandidateFieldValues,
-  graphqlToFindManyJobs,
   graphqlToFindManyJobsWithCandidateValues,
   graphQltoUpdateOneCandidate,
   Job,
@@ -36,10 +33,9 @@ import axios from 'axios';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
-import { CreateMetaDataStructure } from 'src/engine/core-modules/workspace-modifications/object-apis/object-apis-creation';
-import { createRelations } from 'src/engine/core-modules/workspace-modifications/object-apis/services/relation-service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { ProcessCandidatesService } from '../jobs/process-candidates.service';
+import { CandidateWorkspaceGraphQLService } from './candidate-workspace-graphql.service';
 import { PersonService } from './person.service';
 
 // Forward reference type to avoid circular dependency
@@ -75,6 +71,7 @@ export class CandidateService {
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly jwtWrapperService: JwtWrapperService,
     private readonly dataProcessingUtils: DataProcessingUtils,
+    private readonly candidateWorkspaceGraphQLService: CandidateWorkspaceGraphQLService,
     @Inject(forwardRef(() => ProcessCandidatesService))
     private readonly processCandidatesService: ProcessCandidatesServiceRef,
   ) {}
@@ -148,142 +145,6 @@ export class CandidateService {
       this.candidateFieldsMap.set(workspaceId, workspaceFieldsMap);
     } catch (error) {
       console.error('Error initializing candidate fields:', error);
-    }
-  }
-
-  private async checkExistingRelations(
-    objectMetadataId: string,
-    apiToken: string,
-  ): Promise<any[]> {
-    try {
-
-
-      const response = await this.staticGraphQLService.executeGraphQL(
-        getExistingRelationsQuery,
-        { objectMetadataId },
-        apiToken,
-      );
-
-      const relations = response?.data?.data?.relations as {
-        edges: any[];
-        pageInfo: PageInfo;
-      } | undefined;
-      const relationEdges = relations?.edges?.map((edge: any) => edge.node) || [] as any[];
-      return relationEdges;
-    } catch (error) {
-      console.error('Error checking existing relations:', error);
-
-      return [];
-    }
-  }
-
-  async getVideoInterviewModels(apiToken) {
-    try {
-      const query = FindManyVideoInterviewModels;
-      const variables = {
-        filter: {},
-        orderBy: [{ position: 'AscNullsFirst' }],
-      };
-
-      const response = await this.staticGraphQLService.executeGraphQL(
-        query,
-        variables,
-        apiToken,
-      );
-
-      const videoInterviewModels = response?.data?.data?.videoInterviewModels as {
-        edges: any[];
-        pageInfo: PageInfo;
-      } | undefined;
-      return videoInterviewModels?.edges || [] as any[];
-      } catch (error) {
-      console.error('Error fetching video interview models:', error);
-
-      return [];
-    }
-  }
-
-  async createRelationsBasedonObjectMap(
-    jobCandidateObjectId: string,
-    jobCandidateObjectName: string,
-    apiToken: string,
-    origin: string,
-  ): Promise<void> {
-    const objectsNameIdMap = await new CreateMetaDataStructure(
-      this.workspaceQueryService,
-      this.staticGraphQLService,
-    ).fetchObjectsNameIdMap(apiToken, origin);
-    const existingRelations = await this.checkExistingRelations(
-      jobCandidateObjectId,
-      apiToken,
-    );
-    const relationsToCreate = [
-      {
-        relationMetadata: {
-          fromObjectMetadataId: objectsNameIdMap['person'],
-          toObjectMetadataId: jobCandidateObjectId,
-          relationType: 'ONE_TO_MANY' as const,
-          fromName: jobCandidateObjectName,
-          toName: 'person',
-          fromDescription: 'Job Candidate',
-          toDescription: 'Person',
-          fromLabel: 'Job Candidate',
-          toLabel: 'Person',
-          fromIcon: 'IconUserCheck',
-          toIcon: 'IconUser',
-        },
-      },
-      {
-        relationMetadata: {
-          fromObjectMetadataId: objectsNameIdMap['candidate'],
-          toObjectMetadataId: jobCandidateObjectId,
-          relationType: 'ONE_TO_MANY' as const,
-          fromName: jobCandidateObjectName,
-          toName: 'candidate',
-          fromDescription: 'Job Candidate',
-          toDescription: 'Candidate',
-          fromLabel: 'Job Candidate',
-          toLabel: 'Candidate',
-          fromIcon: 'IconUserCheck',
-          toIcon: 'IconUser',
-        },
-      },
-      {
-        relationMetadata: {
-          fromObjectMetadataId: objectsNameIdMap['job'],
-          toObjectMetadataId: jobCandidateObjectId,
-          relationType: 'ONE_TO_MANY' as const,
-          fromName: jobCandidateObjectName,
-          toName: 'job',
-          fromDescription: 'Job Candidate',
-          toDescription: 'Job',
-          fromLabel: 'Job Candidate',
-          toLabel: 'Job',
-          fromIcon: 'IconUserCheck',
-          toIcon: 'IconUser',
-        },
-      },
-    ].filter((relation) => {
-      // Filter out relations that already exist
-      return !existingRelations.some(
-        (existing) =>
-          existing.fromObjectMetadataId ===
-            relation.relationMetadata.fromObjectMetadataId &&
-          existing.toObjectMetadataId ===
-            relation.relationMetadata.toObjectMetadataId,
-      );
-    });
-
-    console.log('Relations to create:', relationsToCreate);
-    if (relationsToCreate.length > 0) {
-      try {
-        await createRelations(relationsToCreate, apiToken, origin);
-      } catch (error) {
-        // If error indicates relation exists, ignore it
-        if (!error.message?.includes('already exists')) {
-          throw error;
-        }
-      }
     }
   }
 
@@ -637,85 +498,6 @@ export class CandidateService {
     console.log('=== createCandidateFieldsAndValues COMPLETED ===');
   }
 
-  async getJobDetails(
-    jobId: string,
-    jobName: string,
-    apiToken: string,
-  ): Promise<Job> {
-    console.log('Getting job details - jobId:', jobId, 'jobName:', jobName);
-    function isValidMongoDBId(str: string) {
-      if (!str || str.length !== 24) {
-        return false;
-      }
-      const hexRegex = /^[0-9a-fA-F]{24}$/;
-      return hexRegex.test(str);
-    }
-    
-    function isValidUUIDv4(str: string) {
-      const uuidV4Regex =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      return uuidV4Regex.test(str);
-    }
-
-    let graphlQlQuery: string;
-    let queryType = '';
-    let variables;
-
-    if (isValidUUIDv4(jobId)) {
-      queryType = 'UUID';
-      variables = {
-        filter: { id: { in: [jobId] } },
-        limit: 30,
-        orderBy: [{ position: 'AscNullsFirst' }],
-      };
-    } else if (isValidMongoDBId(jobId)) {
-      queryType = 'MongoDB ID';
-      variables = {
-        filter: { arxenaSiteId: { in: [jobId] } },
-        limit: 30,
-        orderBy: [{ position: 'AscNullsFirst' }],
-      };
-    } else if (jobName) {
-      queryType = 'Job Name';
-      variables = {
-        filter: { name: { in: [jobName] } },
-        limit: 30,
-        orderBy: [{ position: 'AscNullsFirst' }],
-      };
-    } else {
-      throw new Error('Invalid job identifier provided - neither valid ID nor name');
-    }
-
-    console.log(`Querying job by ${queryType}`);
-    
-    try {
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobs, variables, apiToken);
-      const job = response?.data?.data?.jobs?.edges[0]?.node;
-      
-      if (!job) {
-        console.error('No job found in response:', response?.data);
-        throw new Error(`Job not found using ${queryType}`);
-      }
-      
-      if (!job.id) {
-        console.error('Invalid job data returned:', job);
-        throw new Error('Job found but missing ID');
-      }
-      
-      console.log('Successfully found job:', {
-        id: job.id,
-        name: job.name,
-        arxenaSiteId: job.arxenaSiteId
-      });
-      
-      return job;
-    } catch (error) {
-      console.error('Error fetching job details:', error);
-      throw new Error(`Failed to fetch job details: ${error.message}`);
-    }
-  }
-
-
   // Helper method to process a chunk of candidates
   async processChunk(
     candidates: UserProfile[],
@@ -845,7 +627,7 @@ export class CandidateService {
     this.resetProcessingStats();
     
     try {
-      const jobObject = await this.getJobDetails(jobId, jobName, apiToken);
+      const jobObject = await this.candidateWorkspaceGraphQLService.getJobDetails(jobId, jobName, apiToken);
 
       if (!jobObject || !jobObject.id) {
         throw new Error(`Job not found or invalid for jobId: ${jobId}, jobName: ${jobName}`);
@@ -1521,75 +1303,6 @@ export class CandidateService {
   }
 
   /**
-   * Format phone number for WhatsApp whitelist request
-   */
-  private formatPhoneForRequest(number: string): string {
-    if (!number) return '';
-    const digits = number.replace(/\D/g, '');
-    return digits.length === 10 ? `91${digits}` : digits;
-  }
-
-  /**
-   * Update WhatsApp whitelist for phone number change
-   */
-  private async updateWhatsAppWhitelist(
-    oldPhoneNumber: string,
-    newPhoneNumber: string,
-    apiToken: string
-  ): Promise<void> {
-    try {
-      const serverBaseUrl = process.env.SERVER_BASE_URL || 'http://localhost:3000';
-      const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileFromCurrentUser(apiToken, serverBaseUrl);
-      const userId = recruiterProfile?.id;
-      
-      if (!userId) {
-        console.error('Could not get userId from recruiter profile');
-        throw new Error('Could not get userId from recruiter profile');
-      }
-
-      const payload = {
-        oldPhoneNumber: this.formatPhoneForRequest(oldPhoneNumber),
-        newPhoneNumber: this.formatPhoneForRequest(newPhoneNumber),
-        userId: userId,
-      };
-
-      console.log('Debug - Attempting whitelist update:', {
-        url: `${serverBaseUrl}/ext-sock-whatsapp/update-whitelist`,
-        payload
-      });
-
-      const response = await axios.post(
-        `${serverBaseUrl}/ext-sock-whatsapp/update-whitelist`,
-        payload,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiToken}`,
-          },
-        }
-      );
-
-      console.log('Debug - Whitelist update response:', {
-        status: response.status,
-        data: response.data
-      });
-    } catch (error) {
-      // Enhanced error logging
-      console.error('Debug - Whitelist update error:', {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data,
-        code: error.code,
-        url: `${process.env.SERVER_BASE_URL}/ext-sock-whatsapp/update-whitelist`,
-        headers: error.response?.headers
-      });
-      
-      // Don't throw - we want to continue even if whitelist update fails
-      console.log('Continuing despite whitelist error');
-    }
-  }
-
-  /**
    * Update candidate phone number
    */
   private async updateCandidatePhoneNumber(
@@ -2113,7 +1826,7 @@ export class CandidateService {
       if (targetJobName && !targetJobId) {
         try {
           console.log(`Attempting to find job by name: ${targetJobName}`);
-          const job = await this.getJobDetails('', targetJobName, apiToken);
+          const job = await this.candidateWorkspaceGraphQLService.getJobDetails('', targetJobName, apiToken);
           if (job && job.id) {
             targetJobId = job.id;
             console.log(`Found job by name, jobId: ${targetJobId}`);
@@ -2268,7 +1981,7 @@ export class CandidateService {
       if (jobName && !jobId) {
         try {
           console.log(`Attempting to find job by name: ${jobName}`);
-          const job = await this.getJobDetails('', jobName, apiToken);
+          const job = await this.candidateWorkspaceGraphQLService.getJobDetails('', jobName, apiToken);
           if (job && job.id) {
             jobId = job.id;
             console.log(`Found job by name, jobId: ${jobId}`);
@@ -2283,7 +1996,7 @@ export class CandidateService {
         jobName = 'default_job';
         try {
           console.log('Attempting to find default_job');
-          const job = await this.getJobDetails('', 'default_job', apiToken);
+          const job = await this.candidateWorkspaceGraphQLService.getJobDetails('', 'default_job', apiToken);
           if (job && job.id) {
             jobId = job.id;
             console.log(`Found default_job, jobId: ${jobId}`);
@@ -3477,181 +3190,5 @@ export class CandidateService {
     }
   }
 
-  /**
-   * Get candidate IDs and person ID by unique string key
-   * Mirrors the get_candidate_ids_by_uniqueStringKey functionality from upload_to_twenty.py
-   */
-  async getCandidateIdsByUniqueStringKeyWithPersonId(uniqueStringKey: string, apiToken: string): Promise<{ candidateIds: string[]; personId: string | null }> {
-    try {
-      console.log('Getting candidate IDs and person ID by unique string key:', uniqueStringKey);
-      
-      const candidateIds = await this.getCandidateIdsByUniqueStringKey(uniqueStringKey, apiToken);
-      
-      if (candidateIds.length === 0) {
-        console.log('No candidates found for unique string key:', uniqueStringKey);
-        return { candidateIds: [], personId: null };
-      }
-      
-      // Get the first candidate's person ID
-      const graphqlQuery = {
-        filter: {
-          id: { eq: candidateIds[0] }
-        }
-      };
-      
-      const response = await this.staticGraphQLService.executeGraphQL(
-        graphqlToFetchAllCandidateData,
-        graphqlQuery,
-        apiToken
-      );
-      
-      const candidate = response?.data?.data?.candidates?.edges?.[0]?.node;
-      const personId = candidate?.peopleId || null;
-      
-      console.log('Found candidate IDs and person ID:', { candidateIds, personId });
-      return { candidateIds, personId };
-      
-    } catch (error) {
-      console.error('Error getting candidate IDs and person ID:', error);
-      return { candidateIds: [], personId: null };
-    }
-  }
-
-  /**
-   * Upload phone number and email profile data
-   * Mirrors the upload_phone_number_email_profile_data functionality from upload_to_twenty.py
-   */
-  async uploadPhoneNumberEmailProfileData(
-    contactData: any,
-    jobName: string,
-    fileName: string,
-    filePath: string,
-    uniqueStringKey: string,
-    apiToken: string,
-    candidateIds?: string[],
-    personId?: string
-  ): Promise<void> {
-    try {
-      console.log('Uploading phone number and email profile data:', {
-        uniqueStringKey,
-        candidateIds: candidateIds?.length || 0,
-        personId
-      });
-      
-      // If candidate IDs and person ID not provided, look them up
-      let finalCandidateIds = candidateIds;
-      let finalPersonId: string | null = personId || null;
-      
-      if (!finalCandidateIds || !finalPersonId) {
-        const result = await this.getCandidateIdsByUniqueStringKeyWithPersonId(uniqueStringKey, apiToken);
-        finalCandidateIds = result.candidateIds;
-        finalPersonId = result.personId;
-      }
-      
-      if (!finalCandidateIds || finalCandidateIds.length === 0) {
-        console.error('No candidates found to update');
-        return;
-      }
-      
-      // Update profile with phone number and email for each candidate
-      for (const candidateId of finalCandidateIds) {
-        await this.updatePersonProfileWithPhoneNumber(contactData, candidateId, finalPersonId, apiToken);
-      }
-      
-      console.log('Successfully updated phone number and email for all candidates');
-      
-    } catch (error) {
-      console.error('Error uploading phone number and email profile data:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Update person profile with phone number
-   * Mirrors the updatePersonProfileWithPhoneNumber functionality from upload_to_twenty.py
-   */
-  private async updatePersonProfileWithPhoneNumber(
-    contactData: any,
-    candidateId: string,
-    personId: string | null,
-    apiToken: string
-  ): Promise<void> {
-    try {
-      console.log('Updating person profile with phone number:', { candidateId, personId });
-      
-      const phoneData = this.dataProcessingUtils.parsePhoneNumbers(contactData.phone_number_current_page || contactData.phone_number || '');
-      const emailData = this.dataProcessingUtils.parseEmails(contactData.email || '');
-      
-      console.log('Phone data to update:', phoneData);
-      console.log('Email data to update:', emailData);
-      
-      // Update candidate first since we have a valid candidateId
-      if (phoneData.primaryPhoneNumber || emailData.primaryEmail) {
-        const candidateUpdateData: any = {};
-        
-        if (phoneData.primaryPhoneNumber) {
-          candidateUpdateData.phoneNumber = {
-            primaryPhoneNumber: phoneData.primaryPhoneNumber,
-            primaryPhoneCountryCode: phoneData.primaryPhoneCountryCode,
-            primaryPhoneCallingCode: phoneData.primaryPhoneCallingCode,
-            additionalPhones: phoneData.additionalPhones
-          };
-        }
-        
-        if (emailData.primaryEmail) {
-          candidateUpdateData.email = {
-            primaryEmail: emailData.primaryEmail,
-            additionalEmails: emailData.additionalEmails
-          };
-        }
-        
-        const candidateResponse = await this.staticGraphQLService.executeGraphQL(
-          graphQltoUpdateOneCandidate,
-          {
-            idToUpdate: candidateId,
-            input: candidateUpdateData
-          },
-          apiToken
-        );
-        
-        console.log('Updated candidate profile:', candidateResponse?.data?.data);
-      }
-      
-      // Only attempt to update person if we have a valid personId
-      if (personId && (phoneData.primaryPhoneNumber || emailData.primaryEmail)) {
-        const personUpdateData: any = {};
-        
-        if (phoneData.primaryPhoneNumber) {
-          personUpdateData.phones = {
-            primaryPhoneNumber: phoneData.primaryPhoneNumber,
-            primaryPhoneCountryCode: phoneData.primaryPhoneCountryCode,
-            primaryPhoneCallingCode: phoneData.primaryPhoneCallingCode,
-            additionalPhones: phoneData.additionalPhones
-          };
-        }
-        
-        if (emailData.primaryEmail) {
-          personUpdateData.emails = {
-            primaryEmail: emailData.primaryEmail,
-            additionalEmails: emailData.additionalEmails
-          };
-        }
-        
-        const personResponse = await this.staticGraphQLService.executeGraphQL(
-          mutationToUpdateOnePerson,
-          {
-            idToUpdate: personId,
-            input: personUpdateData
-          },
-          apiToken
-        );
-        
-        console.log('Updated person profile:', personResponse?.data?.data);
-      }
-      
-    } catch (error) {
-      console.error('Error updating person profile with phone number:', error);
-      throw error;
-    }
-  }
+ 
 }

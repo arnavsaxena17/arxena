@@ -1,11 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
+import axios from 'axios';
+import * as fs from 'fs';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
-import { basename } from 'path';
+import * as os from 'os';
+import * as path from 'path';
 import { z } from 'zod';
-import { ParsedJobDescription } from '../../candidate-search/types/candidate-search-request.type';
+import {
+  JobDescriptionParseRequest,
+  ParsedJobDescription,
+} from '../../candidate-search/types/candidate-search-request.type';
 import { JobDetails } from '../types/job-details.interface';
-import { ResumeReaderService } from './resume-reader.service';
+import { ResumeReadParseUploadService } from './resume-read-parse-upload.service';
 
 // Zod schema for job details parsing
 const jobDetailsSchema = z.object({
@@ -24,10 +30,158 @@ export class JDParserService {
   private readonly logger = new Logger(JDParserService.name);
   private readonly openai: OpenAI;
 
-  constructor(private readonly resumeReaderService: ResumeReaderService) {
+  constructor(private readonly resumeReadParseUploadService: ResumeReadParseUploadService) {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_KEY,
     });
+  }
+
+  /**
+   * Process JD from attachment URL (download, parse, return job data for API)
+   */
+  async processJDFromAttachmentUrl(
+    jobId: string,
+    attachmentUrl: string,
+    authToken: string,
+  ): Promise<{ success: boolean; data: any }> {
+    try {
+      this.logger.log(`Processing JD for job ${jobId} from URL: ${attachmentUrl}`);
+
+      const tempFilePath = await this.downloadAttachmentFile(
+        attachmentUrl,
+        authToken,
+        jobId,
+      );
+
+      try {
+        const jobDetails = await this.processJDFromFile(tempFilePath);
+        const jobCode = this.generateJobCode(jobDetails.job_name);
+
+        const responseData = {
+          name: jobDetails.job_name || '',
+          description: jobDetails.company_one_line_pitch || '',
+          jobCode: jobDetails.job_code || jobCode,
+          jobLocation: jobDetails.location || '',
+          salaryBracket: jobDetails.salary || '',
+          isActive: true,
+          position: jobDetails.job_name || '',
+          companyName: jobDetails.company_name || '',
+          companyDetails: jobDetails.company_one_line_pitch || '',
+          companyWebsiteUrl: jobDetails.company_website_url || '',
+          pathPosition: (jobDetails.company_industry || '').replace(/[\s\-_]/g, ''),
+        };
+
+        this.logger.log('Successfully processed JD:', responseData);
+
+        return {
+          success: true,
+          data: responseData,
+        };
+      } finally {
+        try {
+          if (fs.existsSync(tempFilePath)) {
+            fs.unlinkSync(tempFilePath);
+            this.logger.log(`Cleaned up temporary file: ${tempFilePath}`);
+          }
+        } catch (cleanupError) {
+          this.logger.warn(`Failed to clean up temporary file: ${cleanupError.message}`);
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Error processing JD for job ${jobId}:`, error);
+      return {
+        success: false,
+        data: { error: error.message },
+      };
+    }
+  }
+
+  private async downloadAttachmentFile(
+    attachmentUrl: string,
+    authToken: string,
+    jobId: string,
+  ): Promise<string> {
+    try {
+      const response = await axios.get(attachmentUrl, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          Accept: '*/*',
+        },
+        timeout: 30000,
+        responseType: 'stream',
+      });
+
+      if (response.status !== 200) {
+        throw new Error(`Failed to download attachment: ${response.status}`);
+      }
+
+      const headersRecord: Record<string, string> = {};
+      for (const [k, v] of Object.entries(response.headers)) {
+        if (v !== undefined && v !== null) {
+          headersRecord[k] = Array.isArray(v) ? v[0] : String(v);
+        }
+      }
+      let originalFilename = this.extractFilenameFromResponse({ headers: headersRecord }, attachmentUrl);
+      if (!originalFilename || !originalFilename.includes('.')) {
+        originalFilename = `temp_jd_${jobId}.pdf`;
+      }
+      originalFilename = this.sanitizeFilename(originalFilename);
+
+      const tempDir = path.join(os.tmpdir(), 'jd_uploads');
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+
+      const tempFilePath = path.join(tempDir, originalFilename);
+      const writer = fs.createWriteStream(tempFilePath);
+      response.data.pipe(writer);
+
+      return new Promise((resolve, reject) => {
+        writer.on('finish', () => {
+          this.logger.log(`Successfully downloaded attachment to: ${tempFilePath}`);
+          resolve(tempFilePath);
+        });
+        writer.on('error', (error) => {
+          this.logger.error('Error writing file:', error);
+          reject(error);
+        });
+      });
+    } catch (error) {
+      this.logger.error('Error downloading attachment file:', error);
+      throw new Error(`Failed to download attachment: ${error.message}`);
+    }
+  }
+
+  private extractFilenameFromResponse(response: { headers: Record<string, string> }, attachmentUrl: string): string {
+    const contentDisposition = response.headers['content-disposition'];
+    if (contentDisposition?.includes('filename=')) {
+      const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+      if (filenameMatch) {
+        return filenameMatch[1];
+      }
+    }
+    const urlPath = attachmentUrl.split('?')[0];
+    return path.basename(urlPath) || '';
+  }
+
+  private sanitizeFilename(filename: string): string {
+    let sanitized = filename.replace(/[<>:"/\\|?*]/g, '_');
+    if (sanitized.length > 100) {
+      const ext = path.extname(sanitized);
+      const nameWithoutExt = path.basename(sanitized, ext);
+      sanitized = nameWithoutExt.substring(0, 100 - ext.length) + ext;
+      sanitized = sanitized.replace(/[<>:"/\\|?*]/g, '_');
+    }
+    return sanitized;
+  }
+
+  private generateJobCode(jobName: string): string {
+    if (!jobName) return 'JD-001';
+    return jobName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '-')
+      .substring(0, 10);
   }
 
   /**
@@ -37,14 +191,14 @@ export class JDParserService {
     try {
       this.logger.log(`Processing JD file: ${filePath}`);
 
-      // Read file content using ResumeReaderService
-      const resumeContent = await this.resumeReaderService.readResumeFile(filePath);
+      // Read file content using ResumeReadParseUploadService
+      const resumeContent = await this.resumeReadParseUploadService.readResumeFile(filePath);
       const jdText = resumeContent.text;
 
       this.logger.log(`JD content extracted, length: ${jdText.length} characters`);
 
       // Extract job details using OpenAI
-      const fileName = basename(filePath);
+      const fileName = path.basename(filePath);
       return await this.extractJobDetails(jdText, fileName);
     } catch (error) {
       this.logger.error(`Error processing JD file ${filePath}:`, error);
@@ -163,14 +317,14 @@ export class JDParserService {
     try {
       this.logger.log(`Processing JD file to ParsedJobDescription: ${filePath}`);
 
-      // Read file content using ResumeReaderService
-      const resumeContent = await this.resumeReaderService.readResumeFile(filePath);
+      // Read file content using ResumeReadParseUploadService
+      const resumeContent = await this.resumeReadParseUploadService.readResumeFile(filePath);
       const jdText = resumeContent.text;
 
       this.logger.log(`JD content extracted, length: ${jdText.length} characters`);
 
       // Extract job details using OpenAI
-      const fileName = basename(filePath);
+      const fileName = path.basename(filePath);
       const jobDetails = await this.extractJobDetails(jdText, fileName);
       
       // Convert to ParsedJobDescription
@@ -203,6 +357,49 @@ export class JDParserService {
       this.logger.error('Error processing JD text to ParsedJobDescription:', error);
       throw new Error(`Failed to process JD text to ParsedJobDescription: ${error.message}`);
     }
+  }
+
+  /**
+   * Parse job description from request (text, local file path, or file URL).
+   * Single entry point for the parse-job-description API.
+   */
+  async parseToParsedJobDescription(
+    request: JobDescriptionParseRequest,
+    apiToken?: string,
+  ): Promise<ParsedJobDescription> {
+    const hasJobDescription =
+      request.jobDescription != null && request.jobDescription.trim().length > 0;
+    const hasFilePath = request.filePath != null && request.filePath.trim().length > 0;
+
+    if (!hasJobDescription && !hasFilePath) {
+      throw new Error('Either job description or file path is required');
+    }
+
+    if (hasFilePath && (request.filePath!.startsWith('http://') || request.filePath!.startsWith('https://'))) {
+      const tempFilePath = await this.downloadAttachmentFile(
+        request.filePath!,
+        apiToken ?? '',
+        'parse-jd',
+      );
+      try {
+        return await this.processJDFromFileToParsedJobDescription(tempFilePath);
+      } finally {
+        try {
+          if (fs.existsSync(tempFilePath)) {
+            fs.unlinkSync(tempFilePath);
+            this.logger.log(`Cleaned up temporary file: ${tempFilePath}`);
+          }
+        } catch (cleanupError) {
+          this.logger.warn(`Failed to clean up temporary file: ${cleanupError.message}`);
+        }
+      }
+    }
+
+    if (hasFilePath) {
+      return this.processJDFromFileToParsedJobDescription(request.filePath!);
+    }
+
+    return this.processJDFromTextToParsedJobDescription(request.jobDescription!);
   }
 
   /**
@@ -451,6 +648,6 @@ export class JDParserService {
    * Validate if file is a supported JD format
    */
   isSupportedJDFormat(fileName: string): boolean {
-    return this.resumeReaderService.isSupportedResumeFormat(fileName);
+    return this.resumeReadParseUploadService.isSupportedResumeFormat(fileName);
   }
 }

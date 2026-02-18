@@ -20,6 +20,7 @@ import {
   Job,
   whatappUpdateMessageObjType
 } from 'twenty-shared';
+import { v4 as uuidv4 } from 'uuid';
 
 export class MessagingControls {
   constructor(
@@ -352,6 +353,77 @@ export class MessagingControls {
       console.log('Error in sendWhatsappMessage:', error);
       return { status: 'failed', message: 'Error sending WhatsApp message' };
     }
+  }
+
+  /**
+   * Send a chat message to a candidate by candidate ID.
+   * Fetches candidate details, builds message payload, and sends via the appropriate channel (WhatsApp/LinkedIn).
+   */
+  async sendMessageToCandidateById(
+    candidateId: string,
+    messageToSend: string,
+    apiToken: string,
+  ): Promise<{ status: 'success' | 'failed'; message?: string }> {
+    const candidateNode: CandidateNode | undefined = await new FilterCandidates(
+      this.workspaceQueryService,
+      this.staticGraphQLService,
+    ).getCandidateDetailsById(candidateId, apiToken);
+
+    if (!candidateNode) {
+      return { status: 'failed', message: 'Candidate not found' };
+    }
+
+    const candidateJob = candidateNode?.jobs as Job;
+    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
+      candidateJob,
+      apiToken,
+    );
+
+    const candidateChatHistory = candidateNode?.whatsappMessages?.edges[0]?.node?.messageObj || [];
+    const chatControl: ChatControlsObjType = {
+      chatControlType: 'startChat',
+    };
+
+    let messageTo: string =
+      candidateNode?.phoneNumber?.primaryPhoneNumber?.length === 10
+        ? '91' + candidateNode?.phoneNumber?.primaryPhoneNumber
+        : candidateNode?.phoneNumber?.primaryPhoneNumber || '';
+    if (candidateNode?.messagingChannel === 'linkedin') {
+      messageTo = candidateNode?.linkedinUrl?.primaryLinkUrl || '';
+    } else {
+      messageTo =
+        candidateNode?.phoneNumber?.primaryPhoneNumber?.length === 10
+          ? '91' + candidateNode?.phoneNumber?.primaryPhoneNumber
+          : candidateNode?.phoneNumber?.primaryPhoneNumber || '';
+    }
+
+    const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
+      id: uuidv4(),
+      candidateProfile: candidateNode,
+      candidateFirstName: candidateNode?.name || '',
+      phoneNumberFrom: recruiterProfile.phoneNumber,
+      whatsappMessageType: candidateNode?.whatsappProvider || 'application03',
+      phoneNumberTo: messageTo,
+      messages: [{ content: messageToSend }],
+      messageType: 'botMessage',
+      messageObj: candidateChatHistory,
+      lastEngagementChatControl: chatControl.chatControlType,
+      whatsappDeliveryStatus: 'created',
+      whatsappMessageId: 'startChat',
+      typeOfMessage:
+        candidateNode?.messagingChannel ||
+        process.env.DEFAULT_WHATSAPP_CLIENT ||
+        'baileys',
+    };
+
+    return this.sendWhatsappMessage(
+      whatappUpdateMessageObj,
+      candidateNode,
+      candidateJob,
+      candidateChatHistory,
+      chatControl,
+      apiToken,
+    );
   }
 
   async sendAttachmentMessageOnWhatsapp(
