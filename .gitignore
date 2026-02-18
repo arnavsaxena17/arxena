@@ -8,6 +8,10 @@
 **/**/.package-lock.json
 packages/twenty-server/baileys_auth_info/*
 packages/twenty-server/baileys_auth_info/
+packages/twenty-server/all_resumes/*
+packages/twenty-server/all_resumes/
+packages/twenty-server/client_uploads/*
+packages/twenty-server/client_uploads/**/*
 .nx/installation
 .nx/cache
 packages/twenty-server/.attachments/*
