@@ -4,13 +4,7 @@ import {
   FIND_CANDIDATE_INPUT_DESCRIPTOR,
   GET_CANDIDATE_DETAILS_INPUT_DESCRIPTOR,
   GET_CANDIDATES_BY_JOB_ID_INPUT_DESCRIPTOR,
-  graphqlQueryToFindManyPeople,
-  graphqlToAddNewCandidate,
-  graphqlToAddNewPerson,
-  graphqlToFetchAllCandidateData,
-  graphQltoUpdateOneCandidate,
   LIST_CANDIDATES_FOR_JOB_INPUT_DESCRIPTOR,
-  mutationToUpdateOnePerson,
   POST_CANDIDATES_INPUT_DESCRIPTOR,
   PROCESS_AI_FILTERS_INPUT_DESCRIPTOR,
   PROCESS_FILTER_DESCRIPTION_INPUT_DESCRIPTOR,
@@ -20,8 +14,9 @@ import {
   UPDATE_CANDIDATE_SALARY_INPUT_DESCRIPTOR,
   UPDATE_CANDIDATE_STATUS_INPUT_DESCRIPTOR,
   UPLOAD_PROFILES_INPUT_DESCRIPTOR,
-} from 'twenty-shared';
+} from '../utils/McpToolSchemas';
 
+import { graphqlQueryToFindManyPeople, graphqlToAddNewCandidate, graphqlToAddNewPerson, graphqlToFetchAllCandidateData, graphQltoUpdateOneCandidate, mutationToUpdateOnePerson } from 'twenty-shared';
 import { executeGraphQL } from '../api/graphql-client';
 import { callRestAPI } from '../api/rest-client';
 import { McpTool } from '../types/tool-types';

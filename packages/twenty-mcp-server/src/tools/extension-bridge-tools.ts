@@ -15,7 +15,7 @@ import {
   RMS_NAUKRI_FETCH_AND_SEND_PROFILES_INPUT_DESCRIPTOR,
   WHATSAPP_SEND_ATTACHMENT_INPUT_DESCRIPTOR,
   WHATSAPP_SEND_MESSAGE_INPUT_DESCRIPTOR,
-} from 'twenty-shared';
+} from '../utils/McpToolSchemas';
 
 import { callRestAPI } from '../api/rest-client';
 import { McpTool } from '../types/tool-types';

@@ -24,7 +24,7 @@ import {
   SEARCH_LINKEDIN_PEOPLE_INPUT_DESCRIPTOR,
   SEARCH_LINKEDIN_WITH_QUERY_INPUT_DESCRIPTOR,
   VALIDATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR,
-} from 'twenty-shared';
+} from '../utils/McpToolSchemas';
 
 import { callRestAPI, callRestAPIGet } from '../api/rest-client';
 import { handleStreamingResponse } from '../api/streaming-client';

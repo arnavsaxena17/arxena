@@ -181,6 +181,10 @@ export class CandidateSearchPipelineController {
         throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
       }
 
+      if (body.prompt == null || typeof body.prompt !== 'string') {
+        throw new HttpException('prompt is required and must be a string', HttpStatus.BAD_REQUEST);
+      }
+
       this.logger.log(`Generating search strategies for: "${body.prompt.substring(0, 50)}..."`);
 
       if (body.searchCategory !== 'people') {
@@ -241,6 +245,10 @@ export class CandidateSearchPipelineController {
       const apiToken = req.headers.authorization?.replace('Bearer ', '');
       if (!apiToken) {
         throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+
+      if (body.prompt == null || typeof body.prompt !== 'string') {
+        throw new HttpException('prompt is required and must be a string', HttpStatus.BAD_REQUEST);
       }
 
       this.logger.log(`Generating search parameters for: "${body.prompt.substring(0, 50)}..."`);

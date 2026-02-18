@@ -1,27 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-
-export type AssistantThreadMessage = {
-  role: 'user' | 'assistant';
-  content: string;
-  toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
-};
-
-export type AssistantThreadTableData = {
-  columns: string[];
-  rows: Record<string, unknown>[];
-};
-
-export type AssistantThreadRecord = {
-  id: string;
-  name: string;
-  workspaceId: string;
-  messages: AssistantThreadMessage[];
-  lastTableData: AssistantThreadTableData | null;
-  candidateIds: string[];
-  createdAt: Date;
-  updatedAt: Date;
-};
+import {
+  AssistantThreadRecord,
+  AssistantThreadTableData
+} from './assistant.types';
 
 // TODO: Migrate to database-backed storage using metadata objects:
 // - assistantThread (with fields: name, jobId, workingDirectoryPath)

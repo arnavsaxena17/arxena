@@ -48,7 +48,7 @@ export const useSearchParameters = () => {
     setIsGenerating(true);
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/generate-search-parameters`,
+        `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/pipeline/generate-search-parameters`,
         {
           method: 'POST',
           headers: {

@@ -2,20 +2,11 @@ import { Body, Controller, Get, Param, Patch, Post, Req, Res, UseGuards } from '
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { AssistantThreadService } from './assistant-thread.service';
+import {
+  AssistantChatRequestBody,
+  AssistantContentBlock,
+} from './assistant.types';
 import { McpAssistantService } from './mcp-assistant.service';
-
-type AssistantContentBlock =
-  | { type: 'text'; text: string }
-  | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> };
-
-type AssistantChatRequestBody = {
-  message: string;
-  threadId?: string;
-  conversationHistory?: Array<{
-    role: 'user' | 'assistant';
-    content: string | Array<unknown>;
-  }>;
-};
 
 @Controller('assistant')
 export class AssistantController {

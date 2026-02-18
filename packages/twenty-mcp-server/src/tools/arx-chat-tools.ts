@@ -4,7 +4,7 @@ import {
   SEND_CHAT_INPUT_DESCRIPTOR,
   SHARE_JD_TO_CANDIDATE_INPUT_DESCRIPTOR,
   UPLOAD_JD_INPUT_DESCRIPTOR
-} from 'twenty-shared';
+} from '../utils/McpToolSchemas';
 
 import { callRestAPI } from '../api/rest-client';
 import { McpTool } from '../types/tool-types';

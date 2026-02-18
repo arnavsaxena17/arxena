@@ -5,142 +5,19 @@ import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
 import * as path from 'path';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
+import {
+  AssistantChatResponse,
+  McpModelProvider,
+  MessageParam,
+  StreamEventSender,
+} from './assistant.types';
 
 const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
 const OPENAI_MCP_MODEL = 'gpt-4o';
 const MAX_TOKENS = 4096;
 const MAX_TOOL_ROUNDS = 10;
 
-export type McpModelProvider = 'anthropic' | 'openai';
-
-type MessageParam =
-  | { role: 'user'; content: string }
-  | {
-      role: 'user';
-      content: Array<{
-        type: 'tool_result';
-        tool_use_id: string;
-        content: string;
-      }>;
-    }
-  | {
-      role: 'assistant';
-      content: Array<
-        | { type: 'text'; text: string }
-        | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
-      >;
-    };
-
-export type AssistantChatResponse = {
-  text: string;
-  toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
-};
-
-export type StreamEventSender = (event: string, data: unknown) => boolean;
-
 const TABLE_LIST_KEYS = ['companies', 'jobs', 'candidates', 'people'] as const;
-
-function flattenRowForTable(row: Record<string, unknown>): Record<string, unknown> {
-  const flat: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(row)) {
-    if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
-      const nested = v as Record<string, unknown>;
-      for (const [nk, nv] of Object.entries(nested)) {
-        flat[`${k}_${nk}`] = nv;
-      }
-    } else {
-      flat[k] = v;
-    }
-  }
-  return flat;
-}
-
-function extractTableRowsFromToolResult(parsed: unknown): Record<string, unknown>[] {
-  let rows: Record<string, unknown>[] = [];
-  if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'object' && parsed[0] !== null) {
-    rows = parsed as Record<string, unknown>[];
-  } else if (typeof parsed === 'object' && parsed !== null) {
-    const obj = parsed as Record<string, unknown>;
-    for (const key of TABLE_LIST_KEYS) {
-      const list = obj[key];
-      if (Array.isArray(list) && list.length > 0 && typeof list[0] === 'object' && list[0] !== null) {
-        rows = list as Record<string, unknown>[];
-        break;
-      }
-    }
-  }
-  return rows.map((row) => flattenRowForTable(row));
-}
-
-function getMcpModelProvider(): McpModelProvider {
-  const raw = (process.env.MCP_MODEL_PROVIDER ?? 'anthropic').toLowerCase();
-  return raw === 'openai' ? 'openai' : 'anthropic';
-}
-
-function mcpToolsToOpenAITools(
-  tools: Array<{ name: string; description: string; input_schema: unknown }>,
-): OpenAI.Chat.Completions.ChatCompletionTool[] {
-  return tools.map((t) => ({
-    type: 'function' as const,
-    function: {
-      name: t.name,
-      description: t.description ?? '',
-      parameters:
-        typeof t.input_schema === 'object' && t.input_schema !== null
-          ? (t.input_schema as Record<string, unknown>)
-          : { type: 'object', properties: {} },
-    },
-  }));
-}
-
-function historyToOpenAIMessages(
-  history: MessageParam[],
-  currentUserContent: string,
-): OpenAI.Chat.ChatCompletionMessageParam[] {
-  const out: OpenAI.Chat.ChatCompletionMessageParam[] = [];
-  for (const m of history) {
-    if (m.role === 'user') {
-      if (typeof m.content === 'string') {
-        out.push({ role: 'user', content: m.content });
-      } else {
-        for (const tr of m.content) {
-          out.push({
-            role: 'tool',
-            tool_call_id: tr.tool_use_id,
-            content: tr.content,
-          });
-        }
-      }
-      continue;
-    }
-    if (m.role === 'assistant') {
-      const content = m.content as Array<
-        | { type: 'text'; text: string }
-        | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
-      >;
-      const textParts: string[] = [];
-      const toolCalls: OpenAI.Chat.ChatCompletionMessageToolCall[] = [];
-      for (const block of content) {
-        if (block.type === 'text') textParts.push(block.text);
-        if (block.type === 'tool_use') {
-          toolCalls.push({
-            id: block.id,
-            type: 'function',
-            function: { name: block.name, arguments: JSON.stringify(block.input ?? {}) },
-          });
-        }
-      }
-      out.push({
-        role: 'assistant',
-        content: textParts.join('\n').trim() || null,
-        tool_calls: toolCalls.length > 0 ? toolCalls : undefined,
-      });
-    }
-  }
-  out.push({ role: 'user', content: currentUserContent });
-  return out;
-}
-
 const STREAMING_TOOL_NAMES = ['search_linkedin_with_query', 'search_linkedin_people'] as const;
 
 @Injectable()
@@ -154,7 +31,7 @@ export class McpAssistantService {
   constructor(
     private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
   ) {
-    this.provider = getMcpModelProvider();
+    this.provider = this.getMcpModelProvider();
     this.anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
@@ -170,6 +47,107 @@ export class McpAssistantService {
     this.mcpServerScriptPath =
       process.env.MCP_SERVER_SCRIPT_PATH ??
       path.join(packagesDir, 'twenty-mcp-server', 'dist', 'index.js');
+  }
+
+  private getMcpModelProvider(): McpModelProvider {
+    const raw = (process.env.MCP_MODEL_PROVIDER ?? 'anthropic').toLowerCase();
+    return raw === 'openai' ? 'openai' : 'anthropic';
+  }
+
+  private flattenRowForTable(row: Record<string, unknown>): Record<string, unknown> {
+    const flat: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(row)) {
+      if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
+        const nested = v as Record<string, unknown>;
+        for (const [nk, nv] of Object.entries(nested)) {
+          flat[`${k}_${nk}`] = nv;
+        }
+      } else {
+        flat[k] = v;
+      }
+    }
+    return flat;
+  }
+
+  private extractTableRowsFromToolResult(parsed: unknown): Record<string, unknown>[] {
+    let rows: Record<string, unknown>[] = [];
+    if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'object' && parsed[0] !== null) {
+      rows = parsed as Record<string, unknown>[];
+    } else if (typeof parsed === 'object' && parsed !== null) {
+      const obj = parsed as Record<string, unknown>;
+      for (const key of TABLE_LIST_KEYS) {
+        const list = obj[key];
+        if (Array.isArray(list) && list.length > 0 && typeof list[0] === 'object' && list[0] !== null) {
+          rows = list as Record<string, unknown>[];
+          break;
+        }
+      }
+    }
+    return rows.map((row) => this.flattenRowForTable(row));
+  }
+
+  private mcpToolsToOpenAITools(
+    tools: Array<{ name: string; description: string; input_schema: unknown }>,
+  ): OpenAI.Chat.Completions.ChatCompletionTool[] {
+    return tools.map((t) => ({
+      type: 'function' as const,
+      function: {
+        name: t.name,
+        description: t.description ?? '',
+        parameters:
+          typeof t.input_schema === 'object' && t.input_schema !== null
+            ? (t.input_schema as Record<string, unknown>)
+            : { type: 'object', properties: {} },
+      },
+    }));
+  }
+
+  private historyToOpenAIMessages(
+    history: MessageParam[],
+    currentUserContent: string,
+  ): OpenAI.Chat.ChatCompletionMessageParam[] {
+    const out: OpenAI.Chat.ChatCompletionMessageParam[] = [];
+    for (const m of history) {
+      if (m.role === 'user') {
+        if (typeof m.content === 'string') {
+          out.push({ role: 'user', content: m.content });
+        } else {
+          for (const tr of m.content) {
+            out.push({
+              role: 'tool',
+              tool_call_id: tr.tool_use_id,
+              content: tr.content,
+            });
+          }
+        }
+        continue;
+      }
+      if (m.role === 'assistant') {
+        const content = m.content as Array<
+          | { type: 'text'; text: string }
+          | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
+        >;
+        const textParts: string[] = [];
+        const toolCalls: OpenAI.Chat.ChatCompletionMessageToolCall[] = [];
+        for (const block of content) {
+          if (block.type === 'text') textParts.push(block.text);
+          if (block.type === 'tool_use') {
+            toolCalls.push({
+              id: block.id,
+              type: 'function',
+              function: { name: block.name, arguments: JSON.stringify(block.input ?? {}) },
+            });
+          }
+        }
+        out.push({
+          role: 'assistant',
+          content: textParts.join('\n').trim() || null,
+          tool_calls: toolCalls.length > 0 ? toolCalls : undefined,
+        });
+      }
+    }
+    out.push({ role: 'user', content: currentUserContent });
+    return out;
   }
 
   /**
@@ -452,7 +430,7 @@ Return only the thread name, nothing else.`;
 
     try {
       const toolsResult = await client.listTools();
-      const openaiTools = mcpToolsToOpenAITools(
+      const openaiTools = this.mcpToolsToOpenAITools(
         toolsResult.tools.map((t) => ({
           name: t.name,
           description: t.description ?? '',
@@ -460,7 +438,7 @@ Return only the thread name, nothing else.`;
         })),
       );
 
-      let openaiMessages = historyToOpenAIMessages(conversationHistory, query);
+      let openaiMessages = this.historyToOpenAIMessages(conversationHistory, query);
       const finalText: string[] = [];
       const toolCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
       let rounds = 0;
@@ -638,7 +616,7 @@ Return only the thread name, nothing else.`;
             if (textContent) {
               try {
                 const parsed = JSON.parse(textContent) as unknown;
-                const rows = extractTableRowsFromToolResult(parsed);
+                const rows = this.extractTableRowsFromToolResult(parsed);
                 if (rows.length > 0) {
                   const columns = [...new Set(rows.flatMap((r) => Object.keys(r)))];
                   sendEvent('table_data', { columns, rows });
@@ -699,7 +677,7 @@ Return only the thread name, nothing else.`;
 
     try {
       const toolsResult = await client.listTools();
-      const openaiTools = mcpToolsToOpenAITools(
+      const openaiTools = this.mcpToolsToOpenAITools(
         toolsResult.tools.map((t) => ({
           name: t.name,
           description: t.description ?? '',
@@ -707,7 +685,7 @@ Return only the thread name, nothing else.`;
         })),
       );
 
-      let openaiMessages = historyToOpenAIMessages(conversationHistory, query);
+      let openaiMessages = this.historyToOpenAIMessages(conversationHistory, query);
       const finalText: string[] = [];
       const allToolCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
       let rounds = 0;
@@ -806,7 +784,7 @@ Return only the thread name, nothing else.`;
           if (textContent) {
             try {
               const parsed = JSON.parse(textContent) as unknown;
-              const rows = extractTableRowsFromToolResult(parsed);
+              const rows = this.extractTableRowsFromToolResult(parsed);
               if (rows.length > 0) {
                 const columns = [...new Set(rows.flatMap((r) => Object.keys(r)))];
                 sendEvent('table_data', { columns, rows });

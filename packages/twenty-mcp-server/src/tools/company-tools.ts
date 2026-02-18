@@ -3,7 +3,6 @@ import { CreateOneCompany, graphqlToFindManyCompanies } from 'twenty-shared';
 import { executeGraphQL } from '../api/graphql-client';
 import { callRestAPI } from '../api/rest-client';
 import { McpTool } from '../types/tool-types';
-
 type CompanyNode = {
   id: string;
   name?: string;

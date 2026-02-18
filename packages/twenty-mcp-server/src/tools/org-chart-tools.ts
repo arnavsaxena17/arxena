@@ -2,7 +2,7 @@ import {
   GET_ORG_CHART_INPUT_DESCRIPTOR,
   SEARCH_ORG_CHARTS_BY_COUNTRY_INPUT_DESCRIPTOR,
   SEARCH_ORG_CHARTS_BY_FUNCTION_INPUT_DESCRIPTOR,
-} from 'twenty-shared';
+} from '../utils/McpToolSchemas';
 
 import { fetchOrgChart } from '../api/org-chart-api';
 import { callRestAPI } from '../api/rest-client';

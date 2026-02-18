@@ -99,7 +99,13 @@ scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r ubuntu@$TEMP_DNS:/
 
 
 cd /home/ubuntu/twenty
-npx nx run twenty-server:lingui:compile
+# Compile lingui catalogs for server
+cd /home/ubuntu/twenty/packages/twenty-server
+npx lingui compile --verbose || npx nx run twenty-server:lingui:compile
+
+# Compile lingui catalogs for frontend  
+cd /home/ubuntu/twenty/packages/twenty-front
+npx lingui compile --verbose || npx nx run twenty-front:lingui:compile
 
 echo "Restarting NGINX and PM2"
 # 6. Restart services

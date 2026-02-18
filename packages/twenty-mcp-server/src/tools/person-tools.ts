@@ -1,25 +1,25 @@
-import type {
-  CandidateFieldValueNode,
-  CandidateFieldValues,
-  EnrichContactFromDataInput,
-  FindPersonInput,
-  GetCandidateFieldsForJobInput,
-  GetCandidateFieldValuesInput,
-  People,
-  PersonNode,
-  UpdateContactInfoInput,
-  UpdatedPersonSchema
-} from 'twenty-shared';
 import {
-  ENRICH_CONTACT_FROM_DATA_INPUT_DESCRIPTOR,
-  FIND_PERSON_INPUT_DESCRIPTOR,
-  GET_CANDIDATE_FIELD_VALUES_INPUT_DESCRIPTOR,
-  GET_CANDIDATE_FIELDS_FOR_JOB_INPUT_DESCRIPTOR,
   graphqlQueryToFindManyPeople,
   graphqlToFindManyCandidateFieldValues,
   mutationToUpdateOnePerson,
-  UPDATE_CONTACT_INFO_INPUT_DESCRIPTOR,
+  People,
+  PersonNode,
+  type CandidateFieldValueNode,
+  type CandidateFieldValues,
 } from 'twenty-shared';
+import {
+  ENRICH_CONTACT_FROM_DATA_INPUT_DESCRIPTOR,
+  EnrichContactFromDataInput,
+  FIND_PERSON_INPUT_DESCRIPTOR,
+  FindPersonInput,
+  GET_CANDIDATE_FIELD_VALUES_INPUT_DESCRIPTOR,
+  GET_CANDIDATE_FIELDS_FOR_JOB_INPUT_DESCRIPTOR,
+  GetCandidateFieldsForJobInput,
+  GetCandidateFieldValuesInput,
+  UPDATE_CONTACT_INFO_INPUT_DESCRIPTOR,
+  UpdateContactInfoInput,
+  UpdatedPersonSchema,
+} from '../utils/McpToolSchemas';
 
 import { executeGraphQL } from '../api/graphql-client';
 import { callRestAPI } from '../api/rest-client';

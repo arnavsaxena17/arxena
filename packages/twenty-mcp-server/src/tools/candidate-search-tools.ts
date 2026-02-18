@@ -4,7 +4,7 @@ import {
   GENERATE_SEARCH_PARAMETERS_INPUT_DESCRIPTOR,
   PARSE_JOB_DESCRIPTION_INPUT_DESCRIPTOR,
   RESOLVE_PARAMETERS_INPUT_DESCRIPTOR
-} from 'twenty-shared';
+} from '../utils/McpToolSchemas';
 
 import { callRestAPI } from '../api/rest-client';
 import { McpTool } from '../types/tool-types';
@@ -14,7 +14,7 @@ export const candidateSearchTools: McpTool[] = [
     definition: {
       name: 'parse_job_description',
       description:
-        'Parse a job description (text or file path) and extract structured information for search. Returns parsed JD used by generate_search_parameters.',
+        'Parse a job description (text or file path) and extract structured information for search. Returns parsed JD.',
       inputSchema: descriptorToInputSchema(PARSE_JOB_DESCRIPTION_INPUT_DESCRIPTOR),
     },
     handler: async (args, config) => {

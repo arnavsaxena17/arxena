@@ -1,4 +1,4 @@
-import type { McpInputFieldDescriptor } from 'twenty-shared';
+import type { McpInputFieldDescriptor } from './McpToolSchemas';
 
 /**
  * Builds MCP inputSchema from a shared descriptor array.
