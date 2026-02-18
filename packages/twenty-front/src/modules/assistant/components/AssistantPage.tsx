@@ -293,25 +293,30 @@ export const AssistantPage = () => {
         error?: string;
       };
       if (data.error || !data.messages) return;
-      
-      // Convert backend messages to frontend format
+
       const frontendMessages: AssistantChatMessage[] = data.messages.map((m) => ({
         role: m.role,
         content: m.content,
         toolCalls: m.toolCalls,
       }));
-      
-      setThreads((prev) =>
-        prev.map((t) =>
+
+      setThreads((prev) => {
+        const thread = prev.find((t) => t.id === currentThreadId);
+        const currentCount = thread?.messages?.length ?? 0;
+        // Never overwrite with API when we have more messages (streamed multi-bubble); backend often merges into one per turn
+        const useCurrentMessages =
+          currentCount > 0 && currentCount >= frontendMessages.length;
+        const messages = useCurrentMessages ? thread!.messages! : frontendMessages;
+        return prev.map((t) =>
           t.id === currentThreadId
             ? {
                 ...t,
-                messages: frontendMessages,
-                lastTableData: data.lastTableData ?? null,
+                messages,
+                lastTableData: data.lastTableData ?? t.lastTableData ?? null,
               }
             : t,
-        ),
-      );
+        );
+      });
     } catch {
       // ignore errors - thread will remain with current state
     }

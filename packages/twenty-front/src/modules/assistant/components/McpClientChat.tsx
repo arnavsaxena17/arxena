@@ -6,10 +6,10 @@ import type { AssistantChatMessage } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { TextInput } from '@/ui/input/components/TextInput';
 import styled from '@emotion/styled';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { Button } from 'twenty-ui';
+import { Button, IconChevronDown, IconChevronRight } from 'twenty-ui';
 
 type TextSegment = {
   type: 'text' | 'bold' | 'markdownLink' | 'url' | 'phone' | 'id';
@@ -232,6 +232,111 @@ const StyledMessage = styled.div<{ isUser: boolean }>`
   overflow-wrap: break-word;
 `;
 
+const StyledMessageMinimised = styled(StyledMessage)`
+  max-height: 2.5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  & > span:first-of-type {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+`;
+
+const StyledChevronButton = styled.button`
+  flex-shrink: 0;
+  padding: ${({ theme }) => theme.spacing(0.25)};
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.font.color.tertiary};
+  background: transparent;
+  border: none;
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  cursor: pointer;
+  &:hover {
+    opacity: 0.9;
+  }
+`;
+
+const StyledJsonBlock = styled.div`
+  margin: ${({ theme }) => theme.spacing(1, 0)};
+  padding: ${({ theme }) => theme.spacing(1, 2)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background: ${({ theme }) => theme.background.tertiary};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  font-size: ${({ theme }) => theme.font.size.sm};
+`;
+
+const StyledJsonRow = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(0.25, 0)};
+  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
+  &:last-of-type {
+    border-bottom: none;
+  }
+`;
+
+const StyledJsonKey = styled.span`
+  flex-shrink: 0;
+  color: ${({ theme }) => theme.font.color.tertiary};
+  min-width: 140px;
+`;
+
+const StyledJsonValue = styled.span`
+  word-break: break-word;
+  color: ${({ theme }) => theme.font.color.primary};
+`;
+
+const JSON_BLOCK_REGEX = /```json\s*\n([\s\S]*?)```/g;
+
+function parseMessageContentWithJson(text: string): React.ReactNode[] {
+  const parts: React.ReactNode[] = [];
+  let lastEnd = 0;
+  let match: RegExpExecArray | null;
+  JSON_BLOCK_REGEX.lastIndex = 0;
+  while ((match = JSON_BLOCK_REGEX.exec(text)) !== null) {
+    if (match.index > lastEnd) {
+      parts.push(...parseRichText(text.slice(lastEnd, match.index)));
+    }
+    const jsonStr = match[1].trim();
+    try {
+      const data = JSON.parse(jsonStr) as Record<string, unknown>;
+      parts.push(
+        <StyledJsonBlock key={`json-${match.index}`}>
+          {Object.entries(data).map(([key, value]) => (
+            <StyledJsonRow key={key}>
+              <StyledJsonKey>{key}</StyledJsonKey>
+              <StyledJsonValue>
+                {value === null
+                  ? 'null'
+                  : Array.isArray(value)
+                    ? value.join(', ')
+                    : typeof value === 'object'
+                      ? JSON.stringify(value)
+                      : String(value)}
+              </StyledJsonValue>
+            </StyledJsonRow>
+          ))}
+        </StyledJsonBlock>,
+      );
+    } catch {
+      parts.push(...parseRichText('```json\n' + jsonStr + '\n```'));
+    }
+    lastEnd = match.index + match[0].length;
+  }
+  if (lastEnd < text.length) {
+    parts.push(...parseRichText(text.slice(lastEnd)));
+  }
+  return parts.length > 0 ? parts : parseRichText(text);
+}
+
 const StyledToolCalls = styled.div`
   font-size: ${({ theme }) => theme.font.size.sm};
   color: ${({ theme }) => theme.font.color.tertiary};
@@ -411,6 +516,7 @@ export const McpClientChat = ({
   const [streamLog, setStreamLog] = useState<string[]>([]);
   const [streamLogMinimized, setStreamLogMinimized] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expandedAssistantIndices, setExpandedAssistantIndices] = useState<Set<number>>(() => new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const streamingMessageIndexRef = useRef<number>(-1);
@@ -684,7 +790,7 @@ export const McpClientChat = ({
 
                 setTimeout(() => {
                   onMessageComplete?.();
-                }, 500);
+                }, 800);
               }
               if (eventType === 'error' && typeof data.error === 'string') {
                 setError(data.error);
@@ -813,7 +919,7 @@ export const McpClientChat = ({
                 streamingMessageIndexRef.current = -1;
                 accumulatedContentRef.current = '';
                 setStreamLogMinimized(true);
-                setTimeout(() => onMessageComplete?.(), 500);
+                setTimeout(() => onMessageComplete?.(), 800);
               }
               if (eventType === 'error' && typeof data.error === 'string') {
                 setError(data.error);
@@ -858,6 +964,40 @@ export const McpClientChat = ({
     [input, sendMessage],
   );
 
+  const lastAssistantIndex = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i]?.role === 'assistant') return i;
+    }
+    return -1;
+  }, [messages]);
+
+  const TRUNCATE_THRESHOLD = 120;
+
+  const isLongContent = useCallback((content: string) => {
+    const c = (content || '').trim();
+    if (c.length > TRUNCATE_THRESHOLD) return true;
+    if (c.includes('```json') || c.includes('{"original_requirement"')) return true;
+    return false;
+  }, []);
+
+  const getMinimisedSummary = useCallback((content: string) => {
+    const trimmed = content.trim();
+    if (!trimmed) return '—';
+    if (trimmed.startsWith('Using: ')) return trimmed;
+    const maxLen = 80;
+    if (trimmed.length <= maxLen) return trimmed;
+    return trimmed.slice(0, maxLen).trim() + '…';
+  }, []);
+
+  const toggleAssistantExpanded = useCallback((index: number) => {
+    setExpandedAssistantIndices((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  }, []);
+
   return (
     <StyledContainer>
       <StyledMessages ref={messagesContainerRef}>
@@ -866,11 +1006,51 @@ export const McpClientChat = ({
             Ask anything about jobs, candidates, companies, or people. I can use Arxena tools to look up data for you.
           </StyledMessage>
         )} */}
-        {messages.map((msg, i) => (
+        {messages.map((msg, i) => {
+          const isAssistant = msg.role === 'assistant';
+          const longContent = isAssistant && isLongContent(msg.content || '');
+          const isExpanded =
+            !isAssistant ||
+            !longContent ||
+            expandedAssistantIndices.has(i) ||
+            i === lastAssistantIndex;
+          const showMinimised =
+            isAssistant &&
+            longContent &&
+            !isExpanded &&
+            lastAssistantIndex >= 0;
+          return (
           <div key={i}>
-            <StyledMessage isUser={msg.role === 'user'}>
-              {parseRichText(msg.content || '')}
-            </StyledMessage>
+            {showMinimised ? (
+              <StyledMessageMinimised isUser={false}>
+                <span title={msg.content || ''}>
+                  {getMinimisedSummary(msg.content || '')}
+                </span>
+                <StyledChevronButton
+                  type="button"
+                  onClick={() => toggleAssistantExpanded(i)}
+                  aria-label="Expand message"
+                >
+                  <IconChevronRight size={16} />
+                </StyledChevronButton>
+              </StyledMessageMinimised>
+            ) : (
+              <StyledMessage isUser={msg.role === 'user'}>
+                {msg.role === 'user'
+                  ? parseRichText(msg.content || '')
+                  : parseMessageContentWithJson(msg.content || '')}
+                {isAssistant && longContent && i !== lastAssistantIndex && (
+                  <StyledChevronButton
+                    type="button"
+                    onClick={() => toggleAssistantExpanded(i)}
+                    aria-label="Collapse message"
+                    style={{ marginTop: 8, display: 'block' }}
+                  >
+                    <IconChevronDown size={16} />
+                  </StyledChevronButton>
+                )}
+              </StyledMessage>
+            )}
             {msg.tableDataList?.map((tableData, tableIndex) => (
               <AssistantDetailsTable key={tableIndex} data={tableData} />
             ))}
@@ -925,7 +1105,8 @@ export const McpClientChat = ({
               </StyledToolCalls>
             )}
           </div>
-        ))}
+          );
+        })}
         {loading && messages.length > 0 && messages[messages.length - 1]?.role === 'user' && (
           <StyledMessage isUser={false}>Thinking…</StyledMessage>
         )}
