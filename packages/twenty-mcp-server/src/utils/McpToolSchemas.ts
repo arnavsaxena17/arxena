@@ -232,10 +232,11 @@ export const SEND_BULK_CHATS_BY_CANDIDATE_IDS_INPUT_DESCRIPTOR: readonly McpInpu
 
 /** Descriptor for generate_search_parameters tool input. */
 export const GENERATE_SEARCH_PARAMETERS_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
-  { key: 'parsedJobDescription', type: 'object', description: 'Output from parse_job_description', required: true },
-  { key: 'searchType', type: 'string', description: 'One of: classic, sales_navigator, recruiter', required: true },
-  { key: 'searchCategory', type: 'string', description: 'One of: people, companies, posts, jobs', required: true },
-  { key: 'searchFilterId', type: 'string', description: 'Search filter ID', required: true },
+  { key: 'parsedJobDescription', type: 'object', description: 'Output from parse_job_description, Default is null.', required: false },
+  { key: 'searchType', type: 'string', description: 'One of: classic, sales_navigator, recruiter. Default is classic.', required: true },
+  { key: 'prompt', type: 'string', description: 'Prompt for generating search parameters', required: true },
+  { key: 'searchCategory', type: 'string', description: 'One of: people, companies, posts, jobs. Default is people.', required: true },
+  { key: 'searchFilterId', type: 'string', description: 'Search filter ID. Default is null.', required: false },
 ] as const;
 
 // ==================== Org Chart Tools ====================
@@ -287,6 +288,18 @@ export const SEARCH_LINKEDIN_PEOPLE_INPUT_DESCRIPTOR: readonly McpInputFieldDesc
   { key: 'limit', type: 'number', description: 'Maximum number of results to return', required: false },
 ] as const;
 
+
+/** Descriptor for search_linkedin_with_query tool input. */
+export const SEARCH_LINKEDIN_WITH_QUERY_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'query', type: 'string', description: 'Natural language search query', required: true },
+  { key: 'searchType', type: 'string', description: 'One of: classic, sales_navigator, recruiter', required: true },
+  { key: 'searchCategory', type: 'string', description: 'One of: people, companies, posts, jobs', required: true },
+  { key: 'searchFilterId', type: 'string', description: 'Search filter ID', required: true },
+  { key: 'parsedJD', type: 'object', description: 'Parsed job description (optional)', required: false },
+  { key: 'includeJd', type: 'boolean', description: 'Whether to include JD in search context', required: false },
+] as const;
+
+
 /** Descriptor for search_linkedin_companies tool input. */
 export const SEARCH_LINKEDIN_COMPANIES_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
   { key: 'searchType', type: 'string', description: 'One of: classic, sales_navigator', required: true },
@@ -305,19 +318,11 @@ export const SEARCH_LINKEDIN_JOBS_INPUT_DESCRIPTOR: readonly McpInputFieldDescri
 /** Descriptor for search_linkedin_parameters tool input. */
 export const SEARCH_LINKEDIN_PARAMETERS_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
   { key: 'parameterType', type: 'string', description: 'Type of parameter to fetch: locations, industries, companies, schools, job-titles, skills, saved-searches, recent-searches', required: true },
-  { key: 'keywords', type: 'string', description: 'Optional keywords to filter parameters', required: false },
+  { key: 'keywords', type: 'string', description: 'Keywords to filter parameters', required: true },
   { key: 'limit', type: 'number', description: 'Maximum number of parameters to return', required: false },
 ] as const;
 
-/** Descriptor for search_linkedin_with_query tool input. */
-export const SEARCH_LINKEDIN_WITH_QUERY_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
-  { key: 'query', type: 'string', description: 'Natural language search query', required: true },
-  { key: 'searchType', type: 'string', description: 'One of: classic, sales_navigator, recruiter', required: true },
-  { key: 'searchCategory', type: 'string', description: 'One of: people, companies, posts, jobs', required: true },
-  { key: 'searchFilterId', type: 'string', description: 'Search filter ID', required: true },
-  { key: 'parsedJD', type: 'object', description: 'Parsed job description (optional)', required: false },
-  { key: 'includeJd', type: 'boolean', description: 'Whether to include JD in search context', required: false },
-] as const;
+
 
 /** Descriptor for generate_linkedin_query_set tool input. */
 export const GENERATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [

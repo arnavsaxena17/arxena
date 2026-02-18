@@ -40,10 +40,10 @@ export class SearchParameterGenerationService {
   ) {}
 
   async streamCompaniesSearchParameters(
-    parsedJobDescription: ParsedJobDescription,
     openaiClient: OpenAI,
     searchType: 'classic' | 'sales_navigator',
     userMessage?: string,
+    parsedJobDescription?: ParsedJobDescription,
     rawJDText?: string,
     sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
@@ -122,9 +122,9 @@ export class SearchParameterGenerationService {
    * Stream generation of LinkedIn Classic Jobs Search parameters
    */
   async streamJobsSearchParameters(
-    parsedJobDescription: ParsedJobDescription,
     openaiClient: OpenAI,
     userMessage?: string,
+    parsedJobDescription?: ParsedJobDescription,
     rawJDText?: string,
     sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,

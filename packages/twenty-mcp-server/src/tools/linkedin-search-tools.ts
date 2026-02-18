@@ -22,8 +22,7 @@ import {
   SEARCH_LINKEDIN_JOBS_INPUT_DESCRIPTOR,
   SEARCH_LINKEDIN_PARAMETERS_INPUT_DESCRIPTOR,
   SEARCH_LINKEDIN_PEOPLE_INPUT_DESCRIPTOR,
-  SEARCH_LINKEDIN_WITH_QUERY_INPUT_DESCRIPTOR,
-  VALIDATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR,
+  VALIDATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR
 } from '../utils/McpToolSchemas';
 
 import { callRestAPI, callRestAPIGet } from '../api/rest-client';
@@ -34,11 +33,62 @@ import { descriptorToInputSchema } from '../utils/input-schema';
 export const linkedinSearchTools: McpTool[] = [
   // ==================== LinkedIn Search Tools ====================
 
+
+  // {
+  //   definition: {
+  //     name: 'search_linkedin_with_query',
+  //     description:
+  //       'Full LinkedIn search flow using candidate search handlers. Handles query understanding, parameter generation, resolution, search execution, validation, and scoring with streaming support.',
+  //     inputSchema: (() => {
+  //       const baseSchema = descriptorToInputSchema(SEARCH_LINKEDIN_WITH_QUERY_INPUT_DESCRIPTOR);
+  //       return {
+  //         ...baseSchema,
+  //         properties: {
+  //           ...baseSchema.properties,
+  //           searchType: {
+  //             ...baseSchema.properties.searchType,
+  //             enum: ['classic', 'sales_navigator', 'recruiter'],
+  //           },
+  //           searchCategory: {
+  //             ...baseSchema.properties.searchCategory,
+  //             enum: ['people', 'companies', 'posts', 'jobs'],
+  //           },
+  //         },
+  //       };
+  //     })(),
+  //   },
+  //   handler: async (args, config) => {
+  //     const { query, searchType, searchCategory, searchFilterId, parsedJD, includeJd } = args as {
+  //       query: string;
+  //       searchType: string;
+  //       searchCategory: string;
+  //       searchFilterId: string;
+  //       parsedJD?: Record<string, unknown>;
+  //       includeJd?: boolean;
+  //     };
+
+  //     return handleStreamingResponse(
+  //       config.baseUrl,
+  //       config.apiToken,
+  //       'candidate-search',
+  //       'message/stream',
+  //       {
+  //         message: query,
+  //         searchFilterId,
+  //         parsedJD,
+  //         searchType,
+  //         searchCategory,
+  //         includeJd: includeJd !== false,
+  //       },
+  //     );
+  //   },
+  // },
+  
   {
     definition: {
       name: 'search_linkedin_people',
       description:
-        'Search for people on LinkedIn. Supports classic, sales_navigator, and recruiter search types. Can use either searchParameters for direct search or query for full search flow.',
+      'Search for people on LinkedIn. Do not  use if unless you have generated parameters already.. Supports classic, sales_navigator, and recruiter search types. Requires parsed JSON Can use either searchParameters for direct search or query for full search flow.',
       inputSchema: (() => {
         const baseSchema = descriptorToInputSchema(SEARCH_LINKEDIN_PEOPLE_INPUT_DESCRIPTOR);
         return {
@@ -309,55 +359,7 @@ export const linkedinSearchTools: McpTool[] = [
     },
   },
 
-  {
-    definition: {
-      name: 'search_linkedin_with_query',
-      description:
-        'Full LinkedIn search flow using candidate search handlers. Handles query understanding, parameter generation, resolution, search execution, validation, and scoring with streaming support.',
-      inputSchema: (() => {
-        const baseSchema = descriptorToInputSchema(SEARCH_LINKEDIN_WITH_QUERY_INPUT_DESCRIPTOR);
-        return {
-          ...baseSchema,
-          properties: {
-            ...baseSchema.properties,
-            searchType: {
-              ...baseSchema.properties.searchType,
-              enum: ['classic', 'sales_navigator', 'recruiter'],
-            },
-            searchCategory: {
-              ...baseSchema.properties.searchCategory,
-              enum: ['people', 'companies', 'posts', 'jobs'],
-            },
-          },
-        };
-      })(),
-    },
-    handler: async (args, config) => {
-      const { query, searchType, searchCategory, searchFilterId, parsedJD, includeJd } = args as {
-        query: string;
-        searchType: string;
-        searchCategory: string;
-        searchFilterId: string;
-        parsedJD?: Record<string, unknown>;
-        includeJd?: boolean;
-      };
 
-      return handleStreamingResponse(
-        config.baseUrl,
-        config.apiToken,
-        'candidate-search',
-        'message/stream',
-        {
-          message: query,
-          searchFilterId,
-          parsedJD,
-          searchType,
-          searchCategory,
-          includeJd: includeJd !== false,
-        },
-      );
-    },
-  },
 
   // ==================== LinkedIn Query Generation Tools ====================
 
@@ -365,7 +367,7 @@ export const linkedinSearchTools: McpTool[] = [
     definition: {
       name: 'generate_linkedin_query_set',
       description:
-        'Generate LinkedIn search query set from natural language requirement using full orchestrator (runs all 4 agents: parse, master lists, primary query, factoring).',
+        'Generate LinkedIn search query set from natural language requirement using full orchestrator (runs all 4 agents: parse, master lists, primary query, factoring). IMPORTANT: Do not call this tool multiple times with the same rawRequirement - results are cached and duplicate calls will be skipped. Only call once per unique requirement.',
       inputSchema: descriptorToInputSchema(GENERATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR),
     },
     handler: async (args, config) => {

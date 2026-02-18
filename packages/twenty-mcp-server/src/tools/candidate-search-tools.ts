@@ -32,7 +32,7 @@ export const candidateSearchTools: McpTool[] = [
     definition: {
       name: 'generate_search_parameters',
       description:
-        'Generate LinkedIn search parameters from a parsed job description. Pass parsedJobDescription, searchType, searchCategory, and searchFilterId.',
+        'Generate search parameters from a query. IMPORTANT: Do not call this tool multiple times with the same query parameters - results are cached and duplicate calls will be skipped. Only call once per unique query.',
       inputSchema: descriptorToInputSchema(GENERATE_SEARCH_PARAMETERS_INPUT_DESCRIPTOR),
     },
     handler: async (args, config) => {

@@ -2,9 +2,10 @@ import { ParsedJobDescription } from '@/arx-jd-upload/hooks/useJobDescriptionPar
 import { useSearchParameters } from '@/arx-jd-upload/hooks/useSearchParameters';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { AiFiltersResponse, FiltersResponse, LinkedInSearchResult, SearchParametersResponse, SortsResponse } from '@/candidate-search/types/candidate-search.types';
+import { AiFiltersResponse, LinkedInSearchResult, SearchParametersResponse } from '@/candidate-search/types/candidate-search.types';
 import { useCallback, useState } from 'react';
 import { useRecoilValue } from 'recoil';
+import { FiltersResponse, SortsResponse } from 'twenty-shared';
 
 export interface UseSearchPlanGenerationReturn {
   generateSearchParameters: (

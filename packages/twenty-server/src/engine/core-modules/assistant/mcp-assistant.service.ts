@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import * as path from 'path';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
@@ -18,15 +18,23 @@ const MAX_TOKENS = 4096;
 const MAX_TOOL_ROUNDS = 10;
 
 const TABLE_LIST_KEYS = ['companies', 'jobs', 'candidates', 'people'] as const;
-const STREAMING_TOOL_NAMES = ['search_linkedin_with_query', 'search_linkedin_people'] as const;
+const STREAMING_TOOL_NAMES = [
+  'search_linkedin_with_query',
+  'search_linkedin_people',
+  'generate_search_parameters',
+] as const;
 
 @Injectable()
 export class McpAssistantService {
+  private readonly logger: Logger = new Logger(McpAssistantService.name); 
   private readonly provider: McpModelProvider;
   private readonly anthropic: Anthropic;
   private readonly openai: OpenAI | null;
   private readonly serverBaseUrl: string;
   private readonly mcpServerScriptPath: string;
+  // Cache for recent tool calls to prevent duplicates (key: toolName + normalized args, value: { result, timestamp })
+  private readonly toolCallCache = new Map<string, { result: string; timestamp: number }>();
+  private readonly CACHE_TTL_MS = 30_000; // 30 seconds cache TTL
 
   constructor(
     private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
@@ -151,6 +159,63 @@ export class McpAssistantService {
   }
 
   /**
+   * Generate a cache key from tool name and normalized arguments
+   */
+  private getToolCallCacheKey(name: string, args: Record<string, unknown>): string {
+    // Normalize args by sorting keys and stringifying
+    const normalized = JSON.stringify(
+      Object.keys(args)
+        .sort()
+        .reduce((acc, key) => {
+          const value = args[key];
+          // Normalize string values (trim whitespace, lowercase for comparison)
+          if (typeof value === 'string') {
+            acc[key] = value.trim().toLowerCase();
+          } else {
+            acc[key] = value;
+          }
+          return acc;
+        }, {} as Record<string, unknown>),
+    );
+    return `${name}:${normalized}`;
+  }
+
+  /**
+   * Check if a tool call result is cached and still valid
+   */
+  private getCachedToolResult(cacheKey: string): string | null {
+    const cached = this.toolCallCache.get(cacheKey);
+    if (!cached) {
+      return null;
+    }
+    const age = Date.now() - cached.timestamp;
+    if (age > this.CACHE_TTL_MS) {
+      this.toolCallCache.delete(cacheKey);
+      return null;
+    }
+    return cached.result;
+  }
+
+  /**
+   * Cache a tool call result
+   */
+  private cacheToolResult(cacheKey: string, result: string): void {
+    this.toolCallCache.set(cacheKey, {
+      result,
+      timestamp: Date.now(),
+    });
+    // Clean up old entries periodically (keep cache size reasonable)
+    if (this.toolCallCache.size > 100) {
+      const now = Date.now();
+      for (const [key, value] of this.toolCallCache.entries()) {
+        if (now - value.timestamp > this.CACHE_TTL_MS) {
+          this.toolCallCache.delete(key);
+        }
+      }
+    }
+  }
+
+  /**
    * If this tool is a streaming candidate-search tool, run the same message/stream flow
    * in-process with sendEvent and return the tool result string. Otherwise return null.
    */
@@ -163,6 +228,51 @@ export class McpAssistantService {
     if (!STREAMING_TOOL_NAMES.includes(name as (typeof STREAMING_TOOL_NAMES)[number])) {
       return null;
     }
+
+    // Check cache for duplicate calls
+    const cacheKey = this.getToolCallCacheKey(name, args);
+    const cachedResult = this.getCachedToolResult(cacheKey);
+    if (cachedResult !== null) {
+      this.logger.log(`Returning cached result for ${name} (duplicate call detected)`);
+      sendEvent?.('status', { message: `Using cached result for ${name}...` });
+      return cachedResult;
+    }
+
+    if (name === 'generate_search_parameters') {
+      sendEvent?.('status', { message: 'Generating search parameters from LinkedIn query generation...' });
+      this.logger.log(`Generating search parameters from LinkedIn query generation...`);
+      const prompt = args.prompt ?? args.query;
+      const searchType = (args.searchType as 'classic' | 'sales_navigator' | 'recruiter') ?? 'classic';
+      const searchCategory = (args.searchCategory as 'people' | 'companies' | 'posts' | 'jobs') ?? 'people';
+      if (typeof prompt !== 'string' || !prompt.trim()) {
+        return null;
+      }
+      if (searchCategory !== 'people') {
+        return JSON.stringify({
+          error: 'Only people search is supported for generate_search_parameters with streaming.',
+        });
+      }
+      try {
+        const rawQuery = (args.rawQuery as string) ?? prompt;
+        const cleanedQuery = (args.cleanedQuery as string) ?? prompt;
+        const unresolvedSearchParams =
+          await this.candidateSearchHandlerService.generateSearchParametersFromLinkedinQueryGeneration(
+            rawQuery,
+            searchType,
+            sendEvent,
+          );
+        sendEvent?.('status', { message: 'Produced unresolved search parameters...' });
+        this.logger.log(`Produced unresolved search parameters...`);
+        const result = JSON.stringify(unresolvedSearchParams);
+        // Cache the result
+        this.cacheToolResult(cacheKey, result);
+        return result;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return JSON.stringify({ error: message, searchParameters: null, searchStrategies: null });
+      }
+    }
+
     if (name === 'search_linkedin_people') {
       const query = args.query;
       const searchFilterId = args.searchFilterId;
@@ -177,6 +287,8 @@ export class McpAssistantService {
         return null;
       }
     }
+    sendEvent?.('status', { message: 'Running streaming tool in process...' });
+    this.logger.log(`Running streaming tool in process...`);
 
     const body = {
       message: String(args.query ?? args.message ?? ''),
@@ -196,11 +308,14 @@ export class McpAssistantService {
       const candidates = this.candidateSearchHandlerService.extractCandidatesFromResponse(
         result.response,
       );
-      return JSON.stringify({
+      const toolResult = JSON.stringify({
         text: result.response?.chatMessage ?? result.assistantMessage ?? '',
         ...(candidates.length > 0 ? { candidates } : {}),
         ...(result.response?.error ? { error: result.response.error } : {}),
       });
+      // Cache the result
+      this.cacheToolResult(cacheKey, toolResult);
+      return toolResult;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return JSON.stringify({ text: '', error: message });
@@ -586,26 +701,39 @@ Return only the thread name, nothing else.`;
           if (block.type === 'tool_use') {
             hasToolUse = true;
             const toolArgs = block.input ?? {};
-            allToolCalls.push({ name: block.name, args: toolArgs });
-            if (!sendEvent('tool_use', { name: block.name })) break;
+            
+            // Check for duplicate tool calls in the same round
+            const cacheKey = this.getToolCallCacheKey(block.name, toolArgs);
+            const cachedResult = this.getCachedToolResult(cacheKey);
+            
             let textContent: string;
-            const inProcessResult = await this.runStreamingToolInProcess(
-              block.name,
-              toolArgs,
-              apiToken,
-              sendEvent,
-            );
-            if (inProcessResult !== null) {
-              textContent = inProcessResult;
+            if (cachedResult !== null) {
+              this.logger.log(`Skipping duplicate ${block.name} call (already executed in this session)`);
+              sendEvent?.('status', { message: `Skipping duplicate ${block.name} call...` });
+              textContent = cachedResult;
             } else {
-              const result = await client.callTool({
-                name: block.name,
-                arguments: toolArgs,
-              });
-              textContent =
-                result.content
-                  ?.map((c) => (c.type === 'text' ? c.text : JSON.stringify(c)))
-                  .join('\n') ?? '';
+              allToolCalls.push({ name: block.name, args: toolArgs });
+              if (!sendEvent('tool_use', { name: block.name })) break;
+              const inProcessResult = await this.runStreamingToolInProcess(
+                block.name,
+                toolArgs,
+                apiToken,
+                sendEvent,
+              );
+              if (inProcessResult !== null) {
+                textContent = inProcessResult;
+              } else {
+                const result = await client.callTool({
+                  name: block.name,
+                  arguments: toolArgs,
+                });
+                textContent =
+                  result.content
+                    ?.map((c) => (c.type === 'text' ? c.text : JSON.stringify(c)))
+                    .join('\n') ?? '';
+                // Cache non-streaming tool results too
+                this.cacheToolResult(cacheKey, textContent);
+              }
             }
             toolResults.push({
               type: 'tool_result',
@@ -755,26 +883,39 @@ Return only the thread name, nothing else.`;
               return {};
             }
           })();
-          allToolCalls.push({ name: tc.name, args });
-          if (!sendEvent('tool_use', { name: tc.name })) return;
+          
+          // Check for duplicate tool calls in the same round
+          const cacheKey = this.getToolCallCacheKey(tc.name, args);
+          const cachedResult = this.getCachedToolResult(cacheKey);
+          
           let textContent: string;
-          const inProcessResult = await this.runStreamingToolInProcess(
-            tc.name,
-            args,
-            apiToken,
-            sendEvent,
-          );
-          if (inProcessResult !== null) {
-            textContent = inProcessResult;
+          if (cachedResult !== null) {
+            this.logger.log(`Skipping duplicate ${tc.name} call (already executed in this session)`);
+            sendEvent?.('status', { message: `Skipping duplicate ${tc.name} call...` });
+            textContent = cachedResult;
           } else {
-            const result = await client.callTool({
-              name: tc.name,
-              arguments: args,
-            });
-            textContent =
-              result.content
-                ?.map((c) => (c.type === 'text' ? c.text : JSON.stringify(c)))
-                .join('\n') ?? '';
+            allToolCalls.push({ name: tc.name, args });
+            if (!sendEvent('tool_use', { name: tc.name })) return;
+            const inProcessResult = await this.runStreamingToolInProcess(
+              tc.name,
+              args,
+              apiToken,
+              sendEvent,
+            );
+            if (inProcessResult !== null) {
+              textContent = inProcessResult;
+            } else {
+              const result = await client.callTool({
+                name: tc.name,
+                arguments: args,
+              });
+              textContent =
+                result.content
+                  ?.map((c) => (c.type === 'text' ? c.text : JSON.stringify(c)))
+                  .join('\n') ?? '';
+              // Cache non-streaming tool results too
+              this.cacheToolResult(cacheKey, textContent);
+            }
           }
           openaiMessages.push({
             role: 'tool',

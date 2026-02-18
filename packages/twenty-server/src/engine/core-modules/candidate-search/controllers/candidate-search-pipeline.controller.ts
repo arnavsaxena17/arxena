@@ -197,11 +197,11 @@ export class CandidateSearchPipelineController {
         await this.candidateSearchHandlerService.generateUnresolvedSearchParams(
           rawQuery,
           cleanedQuery,
-          body.parsedJobDescription,
           body.searchType,
           body.searchCategory,
           apiToken,
           body.prompt,
+          body.parsedJobDescription as ParsedJobDescription,
           undefined, // jobId
           undefined, // sendEvent
           false, // includeJd
@@ -234,7 +234,7 @@ export class CandidateSearchPipelineController {
       prompt: string;
       rawQuery?: string;
       cleanedQuery?: string;
-      parsedJobDescription: ParsedJobDescription;
+      parsedJobDescription?: ParsedJobDescription;
       searchType: 'classic' | 'sales_navigator' | 'recruiter';
       searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
       model?: string;
@@ -246,31 +246,34 @@ export class CandidateSearchPipelineController {
       if (!apiToken) {
         throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
       }
-
+      this.logger.log(`Generating search parameters for prompt: "${body.prompt}..."`);
+      this.logger.log(`Generating search parameters for raw Query: "${body.rawQuery}..."`);
       if (body.prompt == null || typeof body.prompt !== 'string') {
         throw new HttpException('prompt is required and must be a string', HttpStatus.BAD_REQUEST);
       }
 
-      this.logger.log(`Generating search parameters for: "${body.prompt.substring(0, 50)}..."`);
+      this.logger.log(`Generating search parameters for prompt substring: "${body.prompt.substring(0, 50)}..."`);
 
       const rawQuery = body.rawQuery ?? body.prompt;
       const cleanedQuery = body.cleanedQuery ?? body.prompt;
+      this.logger.log(`Generating search parameters for raw Query: "${rawQuery}..."`);
+      this.logger.log(`Generating search parameters for cleaned Query: "${cleanedQuery}..."`);
       const unresolvedSearchParams: GeneratedSearchParameters =
         await this.candidateSearchHandlerService.generateUnresolvedSearchParams(
           rawQuery,
           cleanedQuery,
-          body.parsedJobDescription,
           body.searchType,
           body.searchCategory,
           apiToken,
           body.prompt,
+          body.parsedJobDescription,
           undefined, // jobId
           undefined, // sendEvent
           false, // includeJd
           undefined, // onTokenUsage
         );
 
-      const searchParamKey = `${body.searchType.replace(/_([a-z])/g, (_, l) =>
+      const searchParamKey = `${body?.searchType?.replace(/_([a-z])/g, (_, l) =>
         l.toUpperCase(),
       )}${body.searchCategory.charAt(0).toUpperCase() + body.searchCategory.slice(1)}Search`;
 
@@ -287,7 +290,7 @@ export class CandidateSearchPipelineController {
         searchStrategies: strategies,
       };
     } catch (error) {
-      this.logger.error('Error generating search parameters:', error);
+      this.logger.error('Error generating search parameters in testGenerateSearchParameters:', error);
       throw new HttpException(
         error.message || 'Failed to generate search parameters',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -319,7 +322,7 @@ export class CandidateSearchPipelineController {
 
       this.logger.log(`Executing search (max ${body.maxPages || 7} pages)...`);
 
-      const searchParamKey = `${body.searchType.replace(/_([a-z])/g, (_, l) =>
+      const searchParamKey = `${body?.searchType?.replace(/_([a-z])/g, (_, l) =>
         l.toUpperCase(),
       )}${body.searchCategory.charAt(0).toUpperCase() + body.searchCategory.slice(1)}Search`;
 

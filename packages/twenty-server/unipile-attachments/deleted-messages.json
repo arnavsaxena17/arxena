@@ -49,5 +49,38 @@
         "attachment_size": null
       }
     ]
+  },
+  {
+    "deleted_at": "2026-02-18T09:59:47.692Z",
+    "message_id": "ehs2GyawU3mpxpM1vOnc4w",
+    "original_message": "",
+    "sender_name": "Gurlal Singh",
+    "sender_phone": "+919855553839",
+    "sent_at": "2026-02-18T09:59:43.000Z",
+    "account_type": "WHATSAPP",
+    "chat_id": "Y3iD1SFkVTWh5gta3G-UHg",
+    "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
+    "had_attachments": false,
+    "attachments": []
+  },
+  {
+    "deleted_at": "2026-02-18T13:46:23.720Z",
+    "message_id": "AXGvX8YYVX2bysV5eNNReA",
+    "original_message": "",
+    "sender_name": "You",
+    "sender_phone": "+918411937769",
+    "sent_at": "2026-02-18T13:43:03.000Z",
+    "account_type": "WHATSAPP",
+    "chat_id": "zqJoyDfWX8OHduc2e_IdmA",
+    "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
+    "had_attachments": true,
+    "attachments": [
+      {
+        "attachment_id": "3EB05A4960D28FBEF92757",
+        "attachment_type": "img",
+        "attachment_url": null,
+        "attachment_size": null
+      }
+    ]
   }
 ]

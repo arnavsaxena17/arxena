@@ -13,6 +13,10 @@ function buildUrl(
   return url;
 }
 
+/** Header sent by MCP tools so the server can log and identify API calls from tools. */
+export const MCP_REQUEST_SOURCE_HEADER = 'X-Request-Source';
+export const MCP_REQUEST_SOURCE_VALUE = 'mcp';
+
 /**
  * Call any REST API under the Arxena server with GET.
  * pathPrefix is the first segment (e.g. 'candidate-sourcing'), endpoint is the rest (e.g. 'upload-profiles').
@@ -34,6 +38,7 @@ export async function callRestAPIGet(
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiToken}`,
+        [MCP_REQUEST_SOURCE_HEADER]: MCP_REQUEST_SOURCE_VALUE,
       },
       signal: controller.signal,
     });
@@ -74,6 +79,7 @@ export async function callRestAPI(
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiToken}`,
+        [MCP_REQUEST_SOURCE_HEADER]: MCP_REQUEST_SOURCE_VALUE,
       },
       body: JSON.stringify(body),
       signal: controller.signal,

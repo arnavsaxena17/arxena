@@ -1,8 +1,15 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  Logger,
+  Optional,
+} from '@nestjs/common';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 
+import { StreamProcessingService } from 'src/engine/core-modules/candidate-search/services/stream-processing.service';
 import {
   AGENT1_SYSTEM_PROMPT,
   buildAgent1UserPrompt,
@@ -40,6 +47,8 @@ type LlmOptions = {
   temperature?: number;
   verbose?: boolean;
   queryIpLocation?: string;
+  streaming?: boolean;
+  sendEvent?: (event: string, data: Record<string, unknown>) => void;
 };
 
 @Injectable()
@@ -49,6 +58,11 @@ export class LinkedinQueryGenerationService {
     process.env.SEARCH_QUERY_GENERATOR_MODEL ||
     process.env.SEARCH_MODELS_OPENAI_MODEL ||
     'gpt-4o-mini';
+
+  constructor(
+    @Optional()
+    private readonly streamProcessingService: StreamProcessingService | null,
+  ) {}
 
   async runAgent1(
     rawRequirement: string,
@@ -198,31 +212,59 @@ export class LinkedinQueryGenerationService {
 
   async generateSearchQuerySet(
     rawRequirement: string,
-    options?: LlmOptions & { verbose?: boolean },
+    options?: LlmOptions & { verbose?: boolean; sendEvent?: (event: string, data: Record<string, unknown>) => void },
   ): Promise<OrchestratorResult> {
     const startTime = Date.now();
+    const sendEvent = options?.sendEvent;
+
+    // Enable streaming if sendEvent is provided
+    const streamingOptions: LlmOptions = {
+      ...options,
+      streaming: !!sendEvent,
+      sendEvent,
+    };
+
+    sendEvent?.('status', {
+      message: `Parsing requirement...`,
+    });
 
     const agent1Start = Date.now();
-    const parsedRequirement = await this.runAgent1(rawRequirement, options);
+    const parsedRequirement = await this.runAgent1(rawRequirement, streamingOptions);
     this.logger.log(`Parsed requirement: ${JSON.stringify(parsedRequirement, null, 2)}`);
     if (options?.verbose) {
       console.log('[LinkedinQueryGeneration] Stage 1 - Parsed requirement:', JSON.stringify(parsedRequirement, null, 2));
     }
     const agent1Time = Date.now() - agent1Start;
 
+    sendEvent?.('status', {
+      message: 'Generating master lists...',
+    });
+    sendEvent?.('message', {
+      type: 'parsed_requirement',
+      data: parsedRequirement,
+    });
+
     const agent2Start = Date.now();
-    const masterLists = await this.runAgent2(parsedRequirement, options);
+    const masterLists = await this.runAgent2(parsedRequirement, streamingOptions);
     this.logger.log(`Master lists: ${JSON.stringify(masterLists, null, 2)}`);
     if (options?.verbose) {
       console.log('[LinkedinQueryGeneration] Stage 2 - Master lists:', JSON.stringify(masterLists, null, 2));
     }
     const agent2Time = Date.now() - agent2Start;
 
+    sendEvent?.('status', {
+      message: 'Building primary query...',
+    });
+    sendEvent?.('message', {
+      type: 'master_lists',
+      data: masterLists,
+    });
+
     const agent3Start = Date.now();
     const primaryQuery = await this.runAgent3(
       parsedRequirement,
       masterLists,
-      options,
+      streamingOptions,
     );
     this.logger.log(`Primary query: ${JSON.stringify(primaryQuery, null, 2)}`);
     if (options?.verbose) {
@@ -230,17 +272,33 @@ export class LinkedinQueryGenerationService {
     }
     const agent3Time = Date.now() - agent3Start;
 
+    sendEvent?.('status', {
+      message: 'Factoring query...',
+    });
+    sendEvent?.('message', {
+      type: 'primary_query',
+      data: primaryQuery,
+    });
+
     const agent4Start = Date.now();
     const factoredQuery = await this.runAgent4(
       parsedRequirement,
       primaryQuery,
-      options,
+      streamingOptions,
     );
     this.logger.log(`Factored query: ${JSON.stringify(factoredQuery, null, 2)}`);
     if (options?.verbose) {
       console.log('[LinkedinQueryGeneration] Stage 4 - Factored query:', JSON.stringify(factoredQuery, null, 2));
     }
     const agent4Time = Date.now() - agent4Start;
+
+    sendEvent?.('status', {
+      message: 'Splitting queries to meet LinkedIn limits...',
+    });
+    sendEvent?.('message', {
+      type: 'factored_query',
+      data: factoredQuery,
+    });
 
     // Deterministic splitting based on factored query
     const query_set = this.enforceLinkedInLimits({
@@ -261,6 +319,18 @@ export class LinkedinQueryGenerationService {
       console.log('[LinkedinQueryGeneration] Stage 5 - Splitting strategy:', JSON.stringify(splitting_strategy, null, 2));
       console.log('[LinkedinQueryGeneration] Stage 5 - Query set:', JSON.stringify(query_set, null, 2));
     }
+
+    sendEvent?.('status', {
+      message: `Generated ${query_set.search_query_set.length} search query${query_set.search_query_set.length !== 1 ? 's' : ''}`,
+    });
+    sendEvent?.('message', {
+      type: 'splitting_strategy',
+      data: splitting_strategy,
+    });
+    sendEvent?.('message', {
+      type: 'query_set',
+      data: query_set,
+    });
 
     const totalTime = Date.now() - startTime;
 
@@ -614,7 +684,73 @@ export class LinkedinQueryGenerationService {
   ): Promise<T> {
     const openai = this.createOpenAiClient();
     const { schema, name } = schemaOption;
+    const shouldStream = options?.streaming && options?.sendEvent;
 
+    // When streaming, reuse StreamProcessingService when available (retries, timeout, event shape for assistant frontend)
+    if (shouldStream) {
+      const model = options?.model || this.defaultModel;
+      const temperature = options?.temperature ?? 0;
+      const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ];
+
+      if (this.streamProcessingService) {
+        const streamFactory = async () =>
+          openai.chat.completions.create({
+            model,
+            temperature,
+            messages,
+            stream: true,
+          });
+
+        const { content: accumulatedContent } =
+          await this.streamProcessingService.executeStreamingLlmCall(
+            streamFactory,
+            {
+              sendEvent: options.sendEvent,
+              chunkEventName: 'text',
+              chunkPayloadKey: 'delta',
+            },
+          );
+
+        if (!accumulatedContent?.trim()) {
+          throw new HttpException(
+            'Empty response received from LLM',
+            HttpStatus.BAD_GATEWAY,
+          );
+        }
+
+        const raw = this.parseJson(accumulatedContent);
+        return schema.parse(raw) as T;
+      }
+
+      // Fallback when StreamProcessingService not injected (e.g. standalone LinkedinQueryGenerationModule)
+      const stream = await openai.chat.completions.create({
+        model,
+        temperature,
+        messages,
+        stream: true,
+      });
+      let accumulatedContent = '';
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content;
+        if (delta) {
+          accumulatedContent += delta;
+          options.sendEvent?.('text', { delta });
+        }
+      }
+      if (!accumulatedContent.trim()) {
+        throw new HttpException(
+          'Empty response received from LLM',
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+      const raw = this.parseJson(accumulatedContent);
+      return schema.parse(raw) as T;
+    }
+
+    // Non-streaming path with structured output (more reliable)
     const completion = await openai.chat.completions.create({
       model: options?.model || this.defaultModel,
       temperature: options?.temperature ?? 0,

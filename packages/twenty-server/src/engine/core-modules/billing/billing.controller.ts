@@ -191,7 +191,6 @@ export class BillingController {
   }
 
   private async handleStripeEvent(event: Stripe.Event) {
-    console.log("Stripe Event::", event);
     switch (event.type) {
       case BillingWebhookEvent.SETUP_INTENT_SUCCEEDED:
         return await this.billingSubscriptionService.handleUnpaidInvoices(

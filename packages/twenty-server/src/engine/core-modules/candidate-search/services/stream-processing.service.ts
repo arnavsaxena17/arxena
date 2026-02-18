@@ -25,9 +25,19 @@ export class StreamProcessingService {
       sendEvent?: (event: string, data: any) => boolean | void;
       timeoutMs?: number;
       maxRetries?: number;
+      /** Event name for each chunk (default 'chunk'). Use 'text' for assistant/chat frontend. */
+      chunkEventName?: string;
+      /** Key for the chunk content in the event payload (default 'content'). Use 'delta' for assistant/chat frontend. */
+      chunkPayloadKey?: string;
     } = {},
   ): Promise<StreamProcessingResult> {
-    const { sendEvent, timeoutMs = 60000, maxRetries = DEFAULT_MAX_RETRIES } = options;
+    const {
+      sendEvent,
+      timeoutMs = 60000,
+      maxRetries = DEFAULT_MAX_RETRIES,
+      chunkEventName = 'chunk',
+      chunkPayloadKey = 'content',
+    } = options;
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
@@ -38,6 +48,9 @@ export class StreamProcessingService {
           sendEvent,
           timeoutMs,
           true, // throwOnTimeout so we can retry
+          undefined,
+          chunkEventName,
+          chunkPayloadKey,
         );
         if (attempt > 1) {
           this.logger.log(`Stream processing succeeded on retry attempt ${attempt}`);
@@ -151,10 +164,13 @@ export class StreamProcessingService {
     sendEvent?: (event: string, data: any) => boolean | void,
     timeoutMs: number = 60000, // 60 second timeout
     throwOnTimeout?: boolean, // when true, rethrow on timeout so retry layer can catch
+    _reserved?: unknown,
+    chunkEventName: string = 'chunk',
+    chunkPayloadKey: string = 'content',
   ): Promise<StreamProcessingResult> {
     let fullContent = '';
     let usage: TokenUsage | undefined;
-    
+
     const timeoutPromise = new Promise<StreamProcessingResult>((_, reject) => {
       setTimeout(() => {
         reject(new Error(`Stream timeout after ${timeoutMs}ms`));
@@ -166,8 +182,10 @@ export class StreamProcessingService {
         const delta = chunk.choices[0]?.delta?.content;
         if (delta) {
           fullContent += delta;
-          // Check if aborted after processing chunk
-          const eventSent = sendEvent?.('chunk', { content: delta });
+          // Check if aborted after processing chunk (fresh payload per chunk)
+          const eventSent = sendEvent?.(chunkEventName, {
+            [chunkPayloadKey]: delta,
+          });
           if (eventSent === false) {
             this.logger.log('Stream aborted during chunk processing');
             break;
@@ -215,8 +233,6 @@ export class StreamProcessingService {
       return { content: '', usage };
     }
   }
-
-
 
   /**
    * Process stream chunks with candidate-specific context for parallel scoring display

@@ -1,5 +1,5 @@
-import type { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
-import type { AiFiltersResponse, FiltersResponse, SearchParametersResponse, SortsResponse } from '@/candidate-search/types/candidate-search.types';
+import type { FiltersResponse, ParsedJD, SortsResponse } from '@/arx-jd-upload/types/ParsedJD';
+import type { AiFiltersResponse, SearchParametersResponse } from '@/candidate-search/types/candidate-search.types';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import type { ChatMessage } from '../types/chat-message.types';
 import { saveToLocalStorage } from '../utils/storage-helpers';
@@ -166,7 +166,7 @@ export const createSearchParametersHandler = (deps: SearchPlanHandlerDeps) => {
         });
       }
     } catch (error) {
-      console.error('Error generating search parameters:', error);
+      console.error('Error generating search parameters in search plan handler:',  error);
       deps.enqueueSnackBar('Failed to generate search parameters', {
         variant: SnackBarVariant.Error,
       });
@@ -289,7 +289,7 @@ export const createFiltersHandler = (deps: SearchPlanHandlerDeps) => {
               console.log('AIChatAssistant - Saved filters to parsedJD:', {
                 searchFilterId: deps.currentSearchFilterId,
                 filtersCount: result.handsontableFilters.length,
-                filters: result.handsontableFilters.map(f => ({ column: f.column, type: f.type }))
+                filters: result.handsontableFilters.map((f: { column: string; type: string }) => ({ column: f.column, type: f.type }))
               });
             }
             
@@ -302,7 +302,7 @@ export const createFiltersHandler = (deps: SearchPlanHandlerDeps) => {
         
         await deps.addMessage({
           type: 'filters',
-          content: `Generated filter strategy with ${result.handsontableFilters.length} Handsontable filters and ${result.candidateSearchFilters.length} CandidateSearch filters.`,
+          content: `Generated filter strategy with ${result.handsontableFilters.length} Handsontable filters and ${result.candidateSearchFilters?.length || 0} CandidateSearch filters.`,
           metadata: {
             filters: result,
             actionButtons: [

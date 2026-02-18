@@ -64,8 +64,6 @@ export class BillingWebhookSubscriptionService {
       | Stripe.CustomerSubscriptionDeletedEvent.Data,
   ) {
 
-    this.logger.log(`Processing stripe event for workspace ${workspaceId}`);
-    this.logger.log(`Stripe event data: ${JSON.stringify(data)}`);
 
     const workspace = await this.workspaceRepository.findOne({
       where: { id: workspaceId },
