@@ -21,7 +21,7 @@ packages/twenty-server/.attachments/*
 .vercel
 .swc
 packages/twenty-server/unipile-attachments/*
-
+test-cache/
 **/**/logs/**
 
 coverage
