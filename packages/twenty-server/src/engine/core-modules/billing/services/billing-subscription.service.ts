@@ -9,8 +9,8 @@ import Stripe from 'stripe';
 import { Not, Repository } from 'typeorm';
 
 import {
-  BillingException,
-  BillingExceptionCode,
+    BillingException,
+    BillingExceptionCode,
 } from 'src/engine/core-modules/billing/billing.exception';
 import { BillingEntitlement } from 'src/engine/core-modules/billing/entities/billing-entitlement.entity';
 import { BillingPrice } from 'src/engine/core-modules/billing/entities/billing-price.entity';
@@ -62,7 +62,14 @@ export class BillingSubscriptionService {
       `More than one not canceled subscription for workspace ${criteria.workspaceId}`,
     );
 
-    return notCanceledSubscriptions?.[0];
+    const subscription = notCanceledSubscriptions?.[0];
+    if (!subscription) {
+      throw new BillingException(
+        `No active billing subscription found for workspace ${criteria.workspaceId}`,
+        BillingExceptionCode.BILLING_ACTIVE_SUBSCRIPTION_NOT_FOUND,
+      );
+    }
+    return subscription;
   }
 
   async getBaseProductCurrentBillingSubscriptionItemOrThrow(

@@ -26,6 +26,8 @@ const StyledSectionContainer = styled.div`
 
 const StyledButtonContainer = styled.div`
   margin-top: ${({ theme }) => theme.spacing(8)};
+  margin-left: auto;
+  margin-right: auto;
   width: 200px;
   display: flex;
   flex-direction: column;

@@ -27,7 +27,6 @@ import { ChooseYourPlan } from '~/pages/onboarding/ChooseYourPlan';
 import { ConnectLinkedin } from '~/pages/onboarding/ConnectLinkedin';
 import { CreateProfile } from '~/pages/onboarding/CreateProfile';
 import { CreateWorkspace } from '~/pages/onboarding/CreateWorkspace';
-import { InstallApp } from '~/pages/onboarding/InstallApp';
 import { InviteTeam } from '~/pages/onboarding/InviteTeam';
 import { PaymentSuccess } from '~/pages/onboarding/PaymentSuccess';
 import { SyncEmails } from '~/pages/onboarding/SyncEmails';
@@ -52,6 +51,7 @@ import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterv
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import React from 'react';
 import { IconDatabase } from 'twenty-ui';
+import { InstallApp } from '~/pages/onboarding/InstallApp';
 
 const VideoInterviewWrapper = () => {
   console.log('VideoInterviewWrapper rendering');
