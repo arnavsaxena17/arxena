@@ -1,4 +1,11 @@
-// import { Button } from '@/ui/input/button/components/Button';
+import {
+  getFormatLabel,
+  getOSName,
+  getRecommendedFormat,
+  getSystemInfo,
+  SystemInfo,
+  triggerArxenaAppDownload,
+} from '@/candidate-table/utils/arxena-app-download';
 import { Modal } from '@/ui/layout/modal/components/Modal';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
@@ -33,11 +40,6 @@ const StyledButtonContainer = styled.div`
   text-align: center;
 `;
 
-type SystemInfo = {
-  os: string;
-  arch: string;
-};
-
 type ArxDownloadModalProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -49,142 +51,24 @@ export const ArxDownloadModal = ({ isOpen, onClose }: ArxDownloadModalProps) => 
   const [isDownloading, setIsDownloading] = useState(false);
   const theme = useTheme();
 
-  const getBaseUrl = () => {
-    return window.location.hostname === 'localhost' 
-      ? 'http://localhost:5050' 
-      : 'https://arxena.com';
-  };
-
-  const detectOS = (userAgent: string): string => {
-    userAgent = userAgent.toLowerCase();
-    console.log("userAgent", userAgent);
-
-    // Check for macOS (multiple possible indicators)
-    if (userAgent.includes('mac os x') || 
-        userAgent.includes('macintosh') || 
-        userAgent.includes('darwin')) {
-      return 'darwin';
-    }
-    
-    // Check for Windows (multiple possible indicators)
-    if (userAgent.includes('windows') || 
-        userAgent.includes('win64') || 
-        userAgent.includes('win32')) {
-      return 'windows';
-    }
-    
-    // Check for Linux (multiple possible indicators)
-    if (userAgent.includes('linux') || 
-        userAgent.includes('x11') ||
-        userAgent.includes('ubuntu') ||
-        userAgent.includes('fedora') ||
-        userAgent.includes('debian')) {
-      return 'linux';
-    }
-
-    // If no match found
-    return 'unknown';
-  };
-
-  const detectArchitecture = (): string => {
-    const platform = window.navigator.platform.toLowerCase();
-    const userAgent = window.navigator.userAgent.toLowerCase();
-    const cpuClass = (navigator as any).cpuClass;
-    
-    console.log("platform", platform);
-    console.log("cpuClass", cpuClass);
-
-    // Check for ARM architecture
-    if (platform.includes('arm') || 
-        userAgent.includes('arm') || 
-        userAgent.includes('aarch64')) {
-      return 'arm64';
-    }
-
-    // Check for specific 64-bit indicators
-    if (platform.includes('x64') || 
-        platform.includes('x86_64') || 
-        platform.includes('amd64') ||
-        userAgent.includes('x64') || 
-        userAgent.includes('x86_64') || 
-        userAgent.includes('amd64') ||
-        (cpuClass && cpuClass.includes('64'))) {
-      return 'x64';
-    }
-
-    // Default to x64 if we can't definitively determine
-    return 'x64';
-  };
-
   useEffect(() => {
-    const fetchSystemInfo = async () => {
+    if (isOpen) {
       try {
-        const userAgent = window.navigator.userAgent;
-        const os = detectOS(userAgent);
-        const arch = detectArchitecture();
-        
-        setSystemInfo({ os, arch });
+        setSystemInfo(getSystemInfo());
       } catch (err) {
         setError('Failed to detect system information');
         console.error('System detection error:', err);
       }
-    };
-
-    if (isOpen) {
-      fetchSystemInfo();
     }
   }, [isOpen]);
-
-  const getRecommendedFormat = (os: string): string => {
-    switch (os.toLowerCase()) {
-      case 'darwin':
-        return 'dmg';
-      case 'linux':
-        return 'appimage';
-      case 'windows':
-        return 'exe';
-      default:
-        return '';
-    }
-  };
-
-  const getFormatLabel = (os: string, format: string): string => {
-    switch (format) {
-      case 'dmg':
-        return 'DMG Installer';
-      case 'appimage':
-        return 'AppImage';
-      case 'exe':
-        return 'Windows Installer';
-      case 'deb':
-        return 'DEB Package';
-      default:
-        return 'Installer';
-    }
-  };
 
   const handleDownload = async () => {
     try {
       if (!systemInfo) {
         throw new Error('System information not available');
       }
-
       setIsDownloading(true);
-      const baseUrl = getBaseUrl();
-      const format = getRecommendedFormat(systemInfo.os);
-      
-      // Create the download URL
-      const downloadUrl = `${baseUrl}/download-app?arch=${systemInfo.arch}&format=${format}`;
-
-      // Create a link element and trigger the download directly
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.setAttribute('download', ''); // Let the server set the filename
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // Keep the modal open for a moment to show the download starting
+      triggerArxenaAppDownload(systemInfo);
       setTimeout(() => {
         setIsDownloading(false);
         onClose();
@@ -193,22 +77,6 @@ export const ArxDownloadModal = ({ isOpen, onClose }: ArxDownloadModalProps) => 
       setError('Failed to download the application');
       setIsDownloading(false);
       console.error('Download error:', err);
-    }
-  };
-
-  const getOSName = (os: string): string => {
-    console.log("os of the system", os);
-    switch (os.toLowerCase()) {
-      case 'windows':
-        return 'Windows';
-      case 'darwin':
-        return 'macOS';
-      case 'linux':
-        return 'Linux';
-      case 'unknown':
-        return 'Unknown Operating System';
-      default:
-        return `${os.charAt(0).toUpperCase()}${os.slice(1)}`;
     }
   };
 

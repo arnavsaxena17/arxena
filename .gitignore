@@ -27,7 +27,8 @@ packages/twenty-server/.attachments/*
 packages/twenty-server/unipile-attachments/*
 test-cache/
 **/**/logs/**
-
+.cursor/
+.cursor/*
 coverage
 dist
 storybook-static
