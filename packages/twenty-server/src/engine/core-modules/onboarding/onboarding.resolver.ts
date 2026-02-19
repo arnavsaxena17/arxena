@@ -25,7 +25,7 @@ export class OnboardingResolver {
       workspaceId: workspace.id,
       value: false,
     });
-    await this.onboardingService.setOnboardingInstallAppPending({
+    await this.onboardingService.setOnboardingConnectAccountPending({
       userId: user.id,
       workspaceId: workspace.id,
       value: true,
@@ -39,11 +39,6 @@ export class OnboardingResolver {
     @AuthUser() user: User,
     @AuthWorkspace() workspace: Workspace,
   ): Promise<OnboardingStepSuccess> {
-    await this.onboardingService.setOnboardingInstallAppPending({
-      userId: user.id,
-      workspaceId: workspace.id,
-      value: false,
-    });
     await this.onboardingService.setOnboardingConnectAccountPending({
       userId: user.id,
       workspaceId: workspace.id,

@@ -11,7 +11,6 @@ import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 export enum OnboardingStepKeys {
   ONBOARDING_CONNECT_ACCOUNT_PENDING = 'ONBOARDING_CONNECT_ACCOUNT_PENDING',
   ONBOARDING_CONNECT_LINKEDIN_PENDING = 'ONBOARDING_CONNECT_LINKEDIN_PENDING',
-  ONBOARDING_INSTALL_APP_PENDING = 'ONBOARDING_INSTALL_APP_PENDING',
   ONBOARDING_INVITE_TEAM_PENDING = 'ONBOARDING_INVITE_TEAM_PENDING',
   ONBOARDING_CREATE_PROFILE_PENDING = 'ONBOARDING_CREATE_PROFILE_PENDING',
 }
@@ -19,7 +18,6 @@ export enum OnboardingStepKeys {
 export type OnboardingKeyValueTypeMap = {
   [OnboardingStepKeys.ONBOARDING_CONNECT_ACCOUNT_PENDING]: boolean;
   [OnboardingStepKeys.ONBOARDING_CONNECT_LINKEDIN_PENDING]: boolean;
-  [OnboardingStepKeys.ONBOARDING_INSTALL_APP_PENDING]: boolean;
   [OnboardingStepKeys.ONBOARDING_INVITE_TEAM_PENDING]: boolean;
   [OnboardingStepKeys.ONBOARDING_CREATE_PROFILE_PENDING]: boolean;
 };
@@ -69,13 +67,6 @@ export class OnboardingService {
       userVars.get(OnboardingStepKeys.ONBOARDING_CONNECT_LINKEDIN_PENDING) ===
       true;
 
-    const isInstallAppPending =
-      userVars.get(OnboardingStepKeys.ONBOARDING_INSTALL_APP_PENDING) === true;
-
-    const isConnectAccountPending =
-      userVars.get(OnboardingStepKeys.ONBOARDING_CONNECT_ACCOUNT_PENDING) ===
-      true;
-
     const isInviteTeamPending =
       userVars.get(OnboardingStepKeys.ONBOARDING_INVITE_TEAM_PENDING) === true;
 
@@ -85,14 +76,6 @@ export class OnboardingService {
 
     if (isConnectLinkedinPending) {
       return OnboardingStatus.CONNECT_LINKEDIN;
-    }
-
-    if (isInstallAppPending) {
-      return OnboardingStatus.INSTALL_APP;
-    }
-
-    if (isConnectAccountPending) {
-      return OnboardingStatus.SYNC_EMAIL;
     }
 
     if (isInviteTeamPending) {
@@ -152,33 +135,6 @@ export class OnboardingService {
       userId,
       workspaceId,
       key: OnboardingStepKeys.ONBOARDING_CONNECT_LINKEDIN_PENDING,
-      value: true,
-    });
-  }
-
-  async setOnboardingInstallAppPending({
-    userId,
-    workspaceId,
-    value,
-  }: {
-    userId: string;
-    workspaceId: string;
-    value: boolean;
-  }) {
-    if (!value) {
-      await this.userVarsService.delete({
-        userId,
-        workspaceId,
-        key: OnboardingStepKeys.ONBOARDING_INSTALL_APP_PENDING,
-      });
-
-      return;
-    }
-
-    await this.userVarsService.set({
-      userId,
-      workspaceId,
-      key: OnboardingStepKeys.ONBOARDING_INSTALL_APP_PENDING,
       value: true,
     });
   }

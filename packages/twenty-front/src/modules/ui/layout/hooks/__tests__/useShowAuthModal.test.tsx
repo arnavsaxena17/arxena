@@ -64,7 +64,7 @@ const testCases = [
   { loc: AppPath.Verify, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.WORKSPACE_ACTIVATION, res: false },
   { loc: AppPath.Verify, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.PROFILE_CREATION, res: false },
   { loc: AppPath.Verify, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.CONNECT_LINKEDIN, res: false },
-  { loc: AppPath.Verify, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INSTALL_APP, res: false },
+  // INSTALL_APP step removed from onboarding flow
   { loc: AppPath.Verify, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.SYNC_EMAIL, res: false },
   { loc: AppPath.Verify, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INVITE_TEAM, res: false },
   { loc: AppPath.Verify, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.COMPLETED, res: false },
@@ -77,7 +77,7 @@ const testCases = [
   { loc: AppPath.VerifyEmail, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.WORKSPACE_ACTIVATION, res: true },
   { loc: AppPath.VerifyEmail, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.PROFILE_CREATION, res: true },
   { loc: AppPath.VerifyEmail, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.CONNECT_LINKEDIN, res: true },
-  { loc: AppPath.VerifyEmail, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INSTALL_APP, res: true },
+  // INSTALL_APP step removed from onboarding flow
   { loc: AppPath.VerifyEmail, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.SYNC_EMAIL, res: true },
   { loc: AppPath.VerifyEmail, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INVITE_TEAM, res: true },
   { loc: AppPath.VerifyEmail, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.COMPLETED, res: true },
@@ -90,7 +90,7 @@ const testCases = [
   { loc: AppPath.SignInUp, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.WORKSPACE_ACTIVATION, res: true },
   { loc: AppPath.SignInUp, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.PROFILE_CREATION, res: true },
   { loc: AppPath.SignInUp, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.CONNECT_LINKEDIN, res: true },
-  { loc: AppPath.SignInUp, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INSTALL_APP, res: true },
+  // INSTALL_APP step removed from onboarding flow
   { loc: AppPath.SignInUp, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.SYNC_EMAIL, res: true },
   { loc: AppPath.SignInUp, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INVITE_TEAM, res: true },
   { loc: AppPath.SignInUp, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.COMPLETED, res: true },
@@ -103,7 +103,7 @@ const testCases = [
   { loc: AppPath.Invite, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.WORKSPACE_ACTIVATION, res: true },
   { loc: AppPath.Invite, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.PROFILE_CREATION, res: true },
   { loc: AppPath.Invite, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.CONNECT_LINKEDIN, res: true },
-  { loc: AppPath.Invite, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INSTALL_APP, res: true },
+  // INSTALL_APP step removed from onboarding flow
   { loc: AppPath.Invite, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.SYNC_EMAIL, res: true },
   { loc: AppPath.Invite, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INVITE_TEAM, res: true },
   { loc: AppPath.Invite, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.COMPLETED, res: true },
@@ -116,7 +116,7 @@ const testCases = [
   { loc: AppPath.ResetPassword, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.WORKSPACE_ACTIVATION, res: true },
   { loc: AppPath.ResetPassword, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.PROFILE_CREATION, res: true },
   { loc: AppPath.ResetPassword, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.CONNECT_LINKEDIN, res: true },
-  { loc: AppPath.ResetPassword, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INSTALL_APP, res: true },
+  // INSTALL_APP step removed from onboarding flow
   { loc: AppPath.ResetPassword, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.SYNC_EMAIL, res: true },
   { loc: AppPath.ResetPassword, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INVITE_TEAM, res: true },
   { loc: AppPath.ResetPassword, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.COMPLETED, res: true },
@@ -129,7 +129,7 @@ const testCases = [
   { loc: AppPath.CreateWorkspace, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.WORKSPACE_ACTIVATION, res: true },
   { loc: AppPath.CreateWorkspace, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.PROFILE_CREATION, res: true },
   { loc: AppPath.CreateWorkspace, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.CONNECT_LINKEDIN, res: true },
-  { loc: AppPath.CreateWorkspace, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INSTALL_APP, res: true },
+  // INSTALL_APP step removed from onboarding flow
   { loc: AppPath.CreateWorkspace, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.SYNC_EMAIL, res: true },
   { loc: AppPath.CreateWorkspace, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INVITE_TEAM, res: true },
   { loc: AppPath.CreateWorkspace, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.COMPLETED, res: false },
@@ -142,7 +142,7 @@ const testCases = [
   { loc: AppPath.CreateProfile, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.WORKSPACE_ACTIVATION, res: true },
   { loc: AppPath.CreateProfile, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.PROFILE_CREATION, res: true },
   { loc: AppPath.CreateProfile, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.CONNECT_LINKEDIN, res: true },
-  { loc: AppPath.CreateProfile, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INSTALL_APP, res: true },
+  // INSTALL_APP step removed from onboarding flow
   { loc: AppPath.CreateProfile, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.SYNC_EMAIL, res: true },
   { loc: AppPath.CreateProfile, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INVITE_TEAM, res: true },
   { loc: AppPath.CreateProfile, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.COMPLETED, res: false },
@@ -155,7 +155,7 @@ const testCases = [
   { loc: AppPath.SyncEmails, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.WORKSPACE_ACTIVATION, res: true },
   { loc: AppPath.SyncEmails, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.PROFILE_CREATION, res: true },
   { loc: AppPath.SyncEmails, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.CONNECT_LINKEDIN, res: true },
-  { loc: AppPath.SyncEmails, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INSTALL_APP, res: true },
+  // INSTALL_APP step removed from onboarding flow
   { loc: AppPath.SyncEmails, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.SYNC_EMAIL, res: true },
   { loc: AppPath.SyncEmails, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INVITE_TEAM, res: true },
   { loc: AppPath.SyncEmails, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.COMPLETED, res: false },
@@ -168,7 +168,7 @@ const testCases = [
   { loc: AppPath.InviteTeam, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.WORKSPACE_ACTIVATION, res: true },
   { loc: AppPath.InviteTeam, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.PROFILE_CREATION, res: true },
   { loc: AppPath.InviteTeam, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.CONNECT_LINKEDIN, res: true },
-  { loc: AppPath.InviteTeam, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INSTALL_APP, res: true },
+  // INSTALL_APP step removed from onboarding flow
   { loc: AppPath.InviteTeam, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.SYNC_EMAIL, res: true },
   { loc: AppPath.InviteTeam, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INVITE_TEAM, res: true },
   { loc: AppPath.InviteTeam, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.COMPLETED, res: false },
@@ -181,23 +181,12 @@ const testCases = [
   { loc: AppPath.ConnectLinkedin, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.WORKSPACE_ACTIVATION, res: true },
   { loc: AppPath.ConnectLinkedin, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.PROFILE_CREATION, res: true },
   { loc: AppPath.ConnectLinkedin, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.CONNECT_LINKEDIN, res: true },
-  { loc: AppPath.ConnectLinkedin, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INSTALL_APP, res: true },
+  // INSTALL_APP step removed from onboarding flow
   { loc: AppPath.ConnectLinkedin, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.SYNC_EMAIL, res: true },
   { loc: AppPath.ConnectLinkedin, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INVITE_TEAM, res: true },
   { loc: AppPath.ConnectLinkedin, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.COMPLETED, res: false },
 
-  { loc: AppPath.InstallApp, isLogged: true, subscriptionStatus: undefined, onboardingStatus: OnboardingStatus.PLAN_REQUIRED, res: true },
-  { loc: AppPath.InstallApp, isLogged: true, subscriptionStatus: SubscriptionStatus.Canceled, onboardingStatus: OnboardingStatus.COMPLETED, res: false },
-  { loc: AppPath.InstallApp, isLogged: true, subscriptionStatus: SubscriptionStatus.Unpaid, onboardingStatus: OnboardingStatus.COMPLETED, res: false },
-  { loc: AppPath.InstallApp, isLogged: true, subscriptionStatus: SubscriptionStatus.PastDue, onboardingStatus: OnboardingStatus.COMPLETED, res: false },
-  { loc: AppPath.InstallApp, isLogged: false, subscriptionStatus: undefined, onboardingStatus: undefined, res: true },
-  { loc: AppPath.InstallApp, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.WORKSPACE_ACTIVATION, res: true },
-  { loc: AppPath.InstallApp, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.PROFILE_CREATION, res: true },
-  { loc: AppPath.InstallApp, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.CONNECT_LINKEDIN, res: true },
-  { loc: AppPath.InstallApp, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INSTALL_APP, res: true },
-  { loc: AppPath.InstallApp, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.SYNC_EMAIL, res: true },
-  { loc: AppPath.InstallApp, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INVITE_TEAM, res: true },
-  { loc: AppPath.InstallApp, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.COMPLETED, res: false },
+  // AppPath.InstallApp removed from onboarding flow
 
   { loc: AppPath.PlanRequired, isLogged: true, subscriptionStatus: undefined, onboardingStatus: OnboardingStatus.PLAN_REQUIRED, res: true },
   { loc: AppPath.PlanRequired, isLogged: true, subscriptionStatus: SubscriptionStatus.Canceled, onboardingStatus: OnboardingStatus.COMPLETED, res: true },
@@ -207,7 +196,7 @@ const testCases = [
   { loc: AppPath.PlanRequired, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.WORKSPACE_ACTIVATION, res: true },
   { loc: AppPath.PlanRequired, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.PROFILE_CREATION, res: true },
   { loc: AppPath.PlanRequired, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.CONNECT_LINKEDIN, res: true },
-  { loc: AppPath.PlanRequired, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INSTALL_APP, res: true },
+  // INSTALL_APP step removed from onboarding flow
   { loc: AppPath.PlanRequired, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.SYNC_EMAIL, res: true },
   { loc: AppPath.PlanRequired, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INVITE_TEAM, res: true },
   { loc: AppPath.PlanRequired, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.COMPLETED, res: false },
@@ -220,7 +209,7 @@ const testCases = [
   { loc: AppPath.PlanRequiredSuccess, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.WORKSPACE_ACTIVATION, res: true },
   { loc: AppPath.PlanRequiredSuccess, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.PROFILE_CREATION, res: true },
   { loc: AppPath.PlanRequiredSuccess, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.CONNECT_LINKEDIN, res: true },
-  { loc: AppPath.PlanRequiredSuccess, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INSTALL_APP, res: true },
+  // INSTALL_APP step removed from onboarding flow
   { loc: AppPath.PlanRequiredSuccess, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.SYNC_EMAIL, res: true },
   { loc: AppPath.PlanRequiredSuccess, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INVITE_TEAM, res: true },
   { loc: AppPath.PlanRequiredSuccess, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.COMPLETED, res: false },
@@ -233,7 +222,7 @@ const testCases = [
   { loc: AppPath.Index, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.WORKSPACE_ACTIVATION, res: true },
   { loc: AppPath.Index, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.PROFILE_CREATION, res: true },
   { loc: AppPath.Index, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.CONNECT_LINKEDIN, res: true },
-  { loc: AppPath.Index, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INSTALL_APP, res: true },
+  // INSTALL_APP step removed from onboarding flow
   { loc: AppPath.Index, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.SYNC_EMAIL, res: true },
   { loc: AppPath.Index, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INVITE_TEAM, res: true },
   { loc: AppPath.Index, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.COMPLETED, res: false },
@@ -246,7 +235,7 @@ const testCases = [
   { loc: AppPath.TasksPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.WORKSPACE_ACTIVATION, res: true },
   { loc: AppPath.TasksPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.PROFILE_CREATION, res: true },
   { loc: AppPath.TasksPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.CONNECT_LINKEDIN, res: true },
-  { loc: AppPath.TasksPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INSTALL_APP, res: true },
+  // INSTALL_APP step removed from onboarding flow
   { loc: AppPath.TasksPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.SYNC_EMAIL, res: true },
   { loc: AppPath.TasksPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INVITE_TEAM, res: true },
   { loc: AppPath.TasksPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.COMPLETED, res: false },
@@ -259,7 +248,7 @@ const testCases = [
   { loc: AppPath.OpportunitiesPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.WORKSPACE_ACTIVATION, res: true },
   { loc: AppPath.OpportunitiesPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.PROFILE_CREATION, res: true },
   { loc: AppPath.OpportunitiesPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.CONNECT_LINKEDIN, res: true },
-  { loc: AppPath.OpportunitiesPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INSTALL_APP, res: true },
+  // INSTALL_APP step removed from onboarding flow
   { loc: AppPath.OpportunitiesPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.SYNC_EMAIL, res: true },
   { loc: AppPath.OpportunitiesPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INVITE_TEAM, res: true },
   { loc: AppPath.OpportunitiesPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.COMPLETED, res: false },
@@ -272,7 +261,7 @@ const testCases = [
   { loc: AppPath.RecordIndexPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.WORKSPACE_ACTIVATION, res: true },
   { loc: AppPath.RecordIndexPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.PROFILE_CREATION, res: true },
   { loc: AppPath.RecordIndexPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.CONNECT_LINKEDIN, res: true },
-  { loc: AppPath.RecordIndexPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INSTALL_APP, res: true },
+  // INSTALL_APP step removed from onboarding flow
   { loc: AppPath.RecordIndexPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.SYNC_EMAIL, res: true },
   { loc: AppPath.RecordIndexPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INVITE_TEAM, res: true },
   { loc: AppPath.RecordIndexPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.COMPLETED, res: false },
@@ -285,7 +274,7 @@ const testCases = [
   { loc: AppPath.RecordShowPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.WORKSPACE_ACTIVATION, res: true },
   { loc: AppPath.RecordShowPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.PROFILE_CREATION, res: true },
   { loc: AppPath.RecordShowPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.CONNECT_LINKEDIN, res: true },
-  { loc: AppPath.RecordShowPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INSTALL_APP, res: true },
+  // INSTALL_APP step removed from onboarding flow
   { loc: AppPath.RecordShowPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.SYNC_EMAIL, res: true },
   { loc: AppPath.RecordShowPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.INVITE_TEAM, res: true },
   { loc: AppPath.RecordShowPage, isLogged: true, subscriptionStatus: SubscriptionStatus.Active, onboardingStatus: OnboardingStatus.COMPLETED, res: false },

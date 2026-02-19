@@ -33,7 +33,6 @@ export const usePageChangeEffectNavigateLocation = () => {
     isMatchingLocation(AppPath.CreateWorkspace) ||
     isMatchingLocation(AppPath.CreateProfile) ||
     isMatchingLocation(AppPath.ConnectLinkedin) ||
-    isMatchingLocation(AppPath.InstallApp) ||
     isMatchingLocation(AppPath.SyncEmails) ||
     isMatchingLocation(AppPath.InviteTeam);
 
@@ -76,13 +75,6 @@ export const usePageChangeEffectNavigateLocation = () => {
     !isMatchingLocation(AppPath.ConnectLinkedin)
   ) {
     return AppPath.ConnectLinkedin;
-  }
-
-  if (
-    onboardingStatus === OnboardingStatus.INSTALL_APP &&
-    !isMatchingLocation(AppPath.InstallApp)
-  ) {
-    return AppPath.InstallApp;
   }
 
   if (

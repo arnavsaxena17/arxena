@@ -36,7 +36,6 @@ export const useShowAuthModal = () => {
       onboardingStatus === OnboardingStatus.PROFILE_CREATION ||
       onboardingStatus === OnboardingStatus.WORKSPACE_ACTIVATION ||
       onboardingStatus === OnboardingStatus.CONNECT_LINKEDIN ||
-      onboardingStatus === OnboardingStatus.INSTALL_APP ||
       onboardingStatus === OnboardingStatus.SYNC_EMAIL ||
       onboardingStatus === OnboardingStatus.INVITE_TEAM
     ) {

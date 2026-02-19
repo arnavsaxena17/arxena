@@ -51,7 +51,6 @@ import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterv
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import React from 'react';
 import { IconDatabase } from 'twenty-ui';
-import { InstallApp } from '~/pages/onboarding/InstallApp';
 
 const VideoInterviewWrapper = () => {
   console.log('VideoInterviewWrapper rendering');
@@ -209,7 +208,6 @@ export const useCreateAppRouter = (
             />
             <Route path={AppPath.CreateProfile} element={<CreateProfile />} />
             <Route path={AppPath.ConnectLinkedin} element={<ConnectLinkedin />} />
-            <Route path={AppPath.InstallApp} element={<InstallApp />} />
             <Route path={AppPath.SyncEmails} element={<SyncEmails />} />
             <Route path={AppPath.InviteTeam} element={<InviteTeam />} />
             <Route path={AppPath.Jobs} element={<Jobs />} />

@@ -5,8 +5,8 @@ import { WorkspaceActivationStatus } from 'twenty-shared';
 import { BillingService } from 'src/engine/core-modules/billing/services/billing.service';
 import { OnboardingStatus } from 'src/engine/core-modules/onboarding/enums/onboarding-status.enum';
 import {
-    OnboardingService,
-    OnboardingStepKeys,
+  OnboardingService,
+  OnboardingStepKeys,
 } from 'src/engine/core-modules/onboarding/onboarding.service';
 import { UserVarsService } from 'src/engine/core-modules/user/user-vars/services/user-vars.service';
 import { User } from 'src/engine/core-modules/user/user.entity';
@@ -18,7 +18,6 @@ describe('OnboardingService', () => {
   let userVarsService: UserVarsService<{
     [OnboardingStepKeys.ONBOARDING_CONNECT_ACCOUNT_PENDING]: boolean;
     [OnboardingStepKeys.ONBOARDING_CONNECT_LINKEDIN_PENDING]: boolean;
-    [OnboardingStepKeys.ONBOARDING_INSTALL_APP_PENDING]: boolean;
     [OnboardingStepKeys.ONBOARDING_INVITE_TEAM_PENDING]: boolean;
     [OnboardingStepKeys.ONBOARDING_CREATE_PROFILE_PENDING]: boolean;
   }>;
@@ -111,21 +110,5 @@ describe('OnboardingService', () => {
       expect(result).toBe(OnboardingStatus.CONNECT_LINKEDIN);
     });
 
-    it('should return INSTALL_APP when install app is pending', async () => {
-      jest
-        .spyOn(billingService, 'hasWorkspaceAnySubscription')
-        .mockResolvedValue(true);
-      const workspaceActive = {
-        id: 'workspaceId',
-        activationStatus: WorkspaceActivationStatus.ACTIVE,
-      } as Workspace;
-      jest.spyOn(userVarsService, 'getAll').mockResolvedValue(
-        new Map([[OnboardingStepKeys.ONBOARDING_INSTALL_APP_PENDING, true]]),
-      );
-
-      const result = await service.getOnboardingStatus(user, workspaceActive);
-
-      expect(result).toBe(OnboardingStatus.INSTALL_APP);
-    });
   });
 });

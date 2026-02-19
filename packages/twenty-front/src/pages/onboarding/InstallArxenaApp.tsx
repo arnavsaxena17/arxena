@@ -1,14 +1,7 @@
 import { SubTitle } from '@/auth/components/SubTitle';
 import { Title } from '@/auth/components/Title';
-import {
-  getOSName,
-  getSystemInfo,
-  triggerArxenaAppDownload,
-} from '@/candidate-table/utils/arxena-app-download';
-import { SKIP_INSTALL_APP_ONBOARDING_STEP } from '@/onboarding/graphql/mutations/skipInstallAppOnboardingStep';
+import { getOSName, getSystemInfo } from '@/candidate-table/utils/arxena-app-download';
 import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
-import { useSetNextOnboardingStatus } from '@/onboarding/hooks/useSetNextOnboardingStatus';
-import { useMutation } from '@apollo/client';
 import styled from '@emotion/styled';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useEffect, useState } from 'react';
@@ -42,10 +35,6 @@ const StyledSkipContainer = styled.div`
 
 export const InstallArxenaApp = () => {
   const { t } = useLingui();
-  const setNextOnboardingStatus = useSetNextOnboardingStatus();
-  const [skipInstallAppOnboardingStep] = useMutation(
-    SKIP_INSTALL_APP_ONBOARDING_STEP,
-  );
   const [systemInfo, setSystemInfo] = useState<{ os: string; arch: string } | null>(
     null,
   );
@@ -62,28 +51,18 @@ export const InstallArxenaApp = () => {
     setSystemInfo(getSystemInfo());
   }, []);
 
-  const advanceToNextStep = useCallback(async () => {
-    await skipInstallAppOnboardingStep();
-    setNextOnboardingStatus();
-    // Do not call loadCurrentUser() here — same as Connect LinkedIn skip: refetch
-    // can overwrite Recoil with server status (e.g. COMPLETED) before we render
-    // Sync Emails, leaving the page blank.
-  }, [setNextOnboardingStatus, skipInstallAppOnboardingStep]);
-
   const handleDownload = useCallback(async () => {
     if (!systemInfo) return;
     setIsDownloading(true);
     try {
-      triggerArxenaAppDownload(systemInfo);
-      await advanceToNextStep();
+      // Download has been disabled from onboarding flow
+      // triggerArxenaAppDownload(systemInfo);
     } finally {
       setIsDownloading(false);
     }
   }, [advanceToNextStep, systemInfo]);
 
-  const handleSkip = useCallback(async () => {
-    await advanceToNextStep();
-  }, [advanceToNextStep]);
+  const handleSkip = useCallback(async () => {}, []);
 
   if (onboardingStatus === undefined || onboardingStatus === null) {
     return <Loader />;
