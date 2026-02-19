@@ -156,7 +156,7 @@ export const CreateWorkspace = () => {
                 autoFocus
                 value={value}
                 placeholder="Apple"
-                onBlur={onBlur}
+              onBlur={onBlur}
                 onChange={onChange}
                 error={error?.message}
                 onKeyDown={handleKeyDown}

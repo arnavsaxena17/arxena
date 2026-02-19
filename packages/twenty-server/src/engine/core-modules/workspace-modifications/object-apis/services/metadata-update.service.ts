@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { axiosRequestForMetadata } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../../workspace-modifications.service';
 import { getFieldsData } from '../data/fieldsData';
 import { objectCreationArr } from '../data/objectsData';
@@ -10,7 +11,10 @@ import { createRelations } from './relation-service';
 
 @Injectable()
 export class MetadataUpdateService {
-  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly staticGraphQLService: StaticGraphQLService,
+  ) {}
   async fetchCurrentMetadata(token: string) {
     try {
       const data = JSON.stringify({
@@ -488,17 +492,17 @@ export class MetadataUpdateService {
       
       // Create new objects
       if (newObjects.length > 0) {
-        await createObjectMetadataItems(token, newObjects, origin);
+        await createObjectMetadataItems(this.staticGraphQLService, token, newObjects);
       }
 
       // Create new fields
       if (newFields.length > 0) {
-        await createFields(newFields, token, origin, 3);
+        await createFields(this.staticGraphQLService, token, newFields, 3);
       }
 
       // Create new relations
       if (newRelations.length > 0) {
-        await createRelations(newRelations, token, origin);
+        await createRelations(this.staticGraphQLService, token, newRelations);
       }
 
       // Check if we need to update workspace API keys

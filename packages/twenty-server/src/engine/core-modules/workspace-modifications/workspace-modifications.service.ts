@@ -522,6 +522,15 @@ export class WorkspaceQueryService {
 
       return {};
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : String(error ?? '');
+      const isNoDataSource =
+        message.includes('DataSourceEntity') ||
+        message.includes('Could not find any entity');
+
+      if (isNoDataSource) {
+        return {};
+      }
       console.error(
         `Error fetching API keys for workspace ${workspaceId}:`,
         error,

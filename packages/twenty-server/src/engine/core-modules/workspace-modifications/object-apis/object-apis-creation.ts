@@ -6,9 +6,7 @@ import {
   graphqlQueryToGetCurrentUser,
   graphqlToCreateOnePrompt,
   graphQLToCreateOneWorkspaceMemberProfile,
-  ObjectMetadata,
   queryObjectMetadataItems,
-  QueryResponse
 } from 'twenty-shared';
 
 // import { getCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
@@ -38,6 +36,20 @@ import {
   getJobIds,
 } from './services/videoInterviewTemplateService';
 import { executeQuery } from './utils/graphqlClient';
+
+type MetadataObjectsResponse = {
+  data?: {
+    objects?: {
+      edges?: Array<{
+        node?: {
+          nameSingular?: string;
+          id?: string;
+          fields?: { edges?: Array<{ node?: { name?: string } }> };
+        };
+      }>;
+    };
+  };
+};
 
 export class CreateMetaDataStructure {
   constructor(
@@ -107,37 +119,37 @@ export class CreateMetaDataStructure {
     objectId: string,
     cursor: string | null,
     apiToken: string,
-    origin: string
+    origin: string,
   ) {
     try {
-      const response = await executeQuery<any>(
+      const response = await executeQuery<MetadataObjectsResponse>(
         queryObjectMetadataItems,
         { after: cursor || undefined, objectFilter: { id: { eq: objectId } } },
         apiToken,
         origin,
-        3
+        3,
       );
-
-      console.log('fetchFieldsPage response:', response.data);
-
+      console.log('fetchFieldsPage response:', response?.data);
       return response;
     } catch (error) {
       console.error('Error fetching fields page:', error);
       throw error;
     }
   }
-  fetchAllObjects = async (apiToken: string, origin: string, maxRetries: number = 3) => {
-    const objectsResponse = await executeQuery<QueryResponse<ObjectMetadata>>(
+
+  fetchAllObjects = async (
+    apiToken: string,
+    origin: string,
+    maxRetries: number = 3,
+  ): Promise<MetadataObjectsResponse> => {
+    const objectsResponse = await executeQuery<MetadataObjectsResponse>(
       queryObjectMetadataItems,
       {},
       apiToken,
       origin,
-      3
+      maxRetries,
     );
-
-    console.log('Thesear the object:::', objectsResponse?.data);
-    console.log('Thesear the object:::', objectsResponse);
-
+    console.log('fetchAllObjects (metadata HTTP):', objectsResponse?.data);
     return objectsResponse;
   };
 
@@ -150,7 +162,7 @@ export class CreateMetaDataStructure {
 
     console.log('objectsResponse:', objectsResponse);
     console.log(
-      'objectsResponse.data.data.objects.edges length',
+      'objectsResponse.data.objects.edges length',
       objectsResponse?.data?.objects?.edges?.length,
     );
     const objectsNameIdMap: Record<string, string> = {};
@@ -280,13 +292,14 @@ export class CreateMetaDataStructure {
     console.log('candidateObjectMetadataId', candidateObjectMetadataId);
 
 
-    const fieldsPageResponse = await this.fetchFieldsPage(candidateObjectMetadataId || '', null, apiToken,  origin);
+    const fieldsPageResponse = await this.fetchFieldsPage(candidateObjectMetadataId || '', null, apiToken, origin);
     console.log('fieldsPageResponse', fieldsPageResponse);
-    console.log('fieldsPageResponse edges', fieldsPageResponse?.data?.objects?.edges[0]?.node?.fields);
-    console.log('fieldsPageResponse edges length', fieldsPageResponse?.data?.objects?.edges.length);
+    const fieldsEdges = fieldsPageResponse?.data?.objects?.edges;
+    console.log('fieldsPageResponse edges', fieldsEdges?.[0]?.node?.fields);
+    console.log('fieldsPageResponse edges length', fieldsEdges?.length ?? 0);
 
-    const peopleField = fieldsPageResponse?.data?.objects?.edges[0]?.node?.fields?.edges?.find(
-      (field: { node: { name: string; }; }) => field?.node?.name === "people"
+    const peopleField = fieldsEdges?.[0]?.node?.fields?.edges?.find(
+      (field: { node: { name: string } }) => field?.node?.name === 'people',
     );
     console.log('peopleField', peopleField);
 
@@ -527,7 +540,7 @@ export class CreateMetaDataStructure {
           console.log('Fields created successfully');
           const relationsFields = getRelationsData(objectsNameIdMap);
 
-          await createRelations(relationsFields, apiToken, origin);
+          await createRelations(relationsFields, apiToken, origin, 3);
           console.log('Relations created successfully');
           
           // Send websocket notification after relations are created

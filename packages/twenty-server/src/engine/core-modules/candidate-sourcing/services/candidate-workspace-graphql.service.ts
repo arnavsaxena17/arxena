@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 
 import {
-  FindManyVideoInterviewModels,
-  getExistingRelationsQuery,
-  graphqlToFindManyJobs,
-  Job,
-  PageInfo,
+    FindManyVideoInterviewModels,
+    getExistingRelationsQuery,
+    graphqlToFindManyJobs,
+    Job,
+    PageInfo,
 } from 'twenty-shared';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -143,7 +143,7 @@ export class CandidateWorkspaceGraphQLService {
     console.log('Relations to create:', relationsToCreate);
     if (relationsToCreate.length > 0) {
       try {
-        await createRelations(relationsToCreate, apiToken, origin);
+        await createRelations(this.staticGraphQLService, apiToken, relationsToCreate);
       } catch (error) {
         if (!error.message?.includes('already exists')) {
           throw error;

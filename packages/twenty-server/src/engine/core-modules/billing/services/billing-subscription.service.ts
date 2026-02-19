@@ -72,6 +72,24 @@ export class BillingSubscriptionService {
     return subscription;
   }
 
+  async getCurrentBillingSubscription(criteria: {
+    workspaceId?: string;
+    stripeCustomerId?: string;
+  }): Promise<BillingSubscription | null> {
+    const notCanceledSubscriptions =
+      await this.billingSubscriptionRepository.find({
+        where: { ...criteria, status: Not(SubscriptionStatus.Canceled) },
+        relations: ['billingSubscriptionItems'],
+      });
+
+    assert(
+      notCanceledSubscriptions.length <= 1,
+      `More than one not canceled subscription for workspace ${criteria.workspaceId}`,
+    );
+
+    return notCanceledSubscriptions?.[0] ?? null;
+  }
+
   async getBaseProductCurrentBillingSubscriptionItemOrThrow(
     workspaceId: string,
     stripeBaseProductId = this.environmentService.get(
