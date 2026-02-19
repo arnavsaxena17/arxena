@@ -24,8 +24,10 @@ import { NotFound } from '~/pages/not-found/NotFound';
 import { RecordIndexPage } from '~/pages/object-record/RecordIndexPage';
 import { RecordShowPage } from '~/pages/object-record/RecordShowPage';
 import { ChooseYourPlan } from '~/pages/onboarding/ChooseYourPlan';
+import { ConnectLinkedin } from '~/pages/onboarding/ConnectLinkedin';
 import { CreateProfile } from '~/pages/onboarding/CreateProfile';
 import { CreateWorkspace } from '~/pages/onboarding/CreateWorkspace';
+import { InstallApp } from '~/pages/onboarding/InstallApp';
 import { InviteTeam } from '~/pages/onboarding/InviteTeam';
 import { PaymentSuccess } from '~/pages/onboarding/PaymentSuccess';
 import { SyncEmails } from '~/pages/onboarding/SyncEmails';
@@ -206,6 +208,8 @@ export const useCreateAppRouter = (
               element={<CreateWorkspace />}
             />
             <Route path={AppPath.CreateProfile} element={<CreateProfile />} />
+            <Route path={AppPath.ConnectLinkedin} element={<ConnectLinkedin />} />
+            <Route path={AppPath.InstallApp} element={<InstallApp />} />
             <Route path={AppPath.SyncEmails} element={<SyncEmails />} />
             <Route path={AppPath.InviteTeam} element={<InviteTeam />} />
             <Route path={AppPath.Jobs} element={<Jobs />} />

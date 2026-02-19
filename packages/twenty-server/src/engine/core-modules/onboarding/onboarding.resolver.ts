@@ -16,6 +16,44 @@ export class OnboardingResolver {
   constructor(private readonly onboardingService: OnboardingService) {}
 
   @Mutation(() => OnboardingStepSuccess)
+  async skipConnectLinkedinOnboardingStep(
+    @AuthUser() user: User,
+    @AuthWorkspace() workspace: Workspace,
+  ): Promise<OnboardingStepSuccess> {
+    await this.onboardingService.setOnboardingConnectLinkedinPending({
+      userId: user.id,
+      workspaceId: workspace.id,
+      value: false,
+    });
+    await this.onboardingService.setOnboardingInstallAppPending({
+      userId: user.id,
+      workspaceId: workspace.id,
+      value: true,
+    });
+
+    return { success: true };
+  }
+
+  @Mutation(() => OnboardingStepSuccess)
+  async skipInstallAppOnboardingStep(
+    @AuthUser() user: User,
+    @AuthWorkspace() workspace: Workspace,
+  ): Promise<OnboardingStepSuccess> {
+    await this.onboardingService.setOnboardingInstallAppPending({
+      userId: user.id,
+      workspaceId: workspace.id,
+      value: false,
+    });
+    await this.onboardingService.setOnboardingConnectAccountPending({
+      userId: user.id,
+      workspaceId: workspace.id,
+      value: true,
+    });
+
+    return { success: true };
+  }
+
+  @Mutation(() => OnboardingStepSuccess)
   async skipSyncEmailOnboardingStep(
     @AuthUser() user: User,
     @AuthWorkspace() workspace: Workspace,

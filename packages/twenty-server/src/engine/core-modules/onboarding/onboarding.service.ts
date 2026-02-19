@@ -3,7 +3,6 @@ import { Injectable } from '@nestjs/common';
 import { WorkspaceActivationStatus } from 'twenty-shared';
 
 import { BillingService } from 'src/engine/core-modules/billing/services/billing.service';
-import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { OnboardingStatus } from 'src/engine/core-modules/onboarding/enums/onboarding-status.enum';
 import { UserVarsService } from 'src/engine/core-modules/user/user-vars/services/user-vars.service';
 import { User } from 'src/engine/core-modules/user/user.entity';
@@ -11,12 +10,16 @@ import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 
 export enum OnboardingStepKeys {
   ONBOARDING_CONNECT_ACCOUNT_PENDING = 'ONBOARDING_CONNECT_ACCOUNT_PENDING',
+  ONBOARDING_CONNECT_LINKEDIN_PENDING = 'ONBOARDING_CONNECT_LINKEDIN_PENDING',
+  ONBOARDING_INSTALL_APP_PENDING = 'ONBOARDING_INSTALL_APP_PENDING',
   ONBOARDING_INVITE_TEAM_PENDING = 'ONBOARDING_INVITE_TEAM_PENDING',
   ONBOARDING_CREATE_PROFILE_PENDING = 'ONBOARDING_CREATE_PROFILE_PENDING',
 }
 
 export type OnboardingKeyValueTypeMap = {
   [OnboardingStepKeys.ONBOARDING_CONNECT_ACCOUNT_PENDING]: boolean;
+  [OnboardingStepKeys.ONBOARDING_CONNECT_LINKEDIN_PENDING]: boolean;
+  [OnboardingStepKeys.ONBOARDING_INSTALL_APP_PENDING]: boolean;
   [OnboardingStepKeys.ONBOARDING_INVITE_TEAM_PENDING]: boolean;
   [OnboardingStepKeys.ONBOARDING_CREATE_PROFILE_PENDING]: boolean;
 };
@@ -25,7 +28,6 @@ export type OnboardingKeyValueTypeMap = {
 export class OnboardingService {
   constructor(
     private readonly billingService: BillingService,
-    private readonly environmentService: EnvironmentService,
     private readonly userVarsService: UserVarsService<OnboardingKeyValueTypeMap>,
   ) {}
 
@@ -47,16 +49,7 @@ export class OnboardingService {
       await this.isSubscriptionIncompleteOnboardingStatus(workspace);
 
     if (subscriptionIncomplete) {
-      const skipPlanRequiredForOnboarding = this.environmentService.get(
-        'SKIP_PLAN_REQUIRED_FOR_ONBOARDING',
-      );
-      if (
-        skipPlanRequiredForOnboarding &&
-        this.isWorkspaceActivationPending(workspace)
-      ) {
-        return OnboardingStatus.WORKSPACE_ACTIVATION;
-      }
-      return OnboardingStatus.PLAN_REQUIRED;
+      return OnboardingStatus.WORKSPACE_ACTIVATION;
     }
 
     if (this.isWorkspaceActivationPending(workspace)) {
@@ -72,6 +65,13 @@ export class OnboardingService {
       userVars.get(OnboardingStepKeys.ONBOARDING_CREATE_PROFILE_PENDING) ===
       true;
 
+    const isConnectLinkedinPending =
+      userVars.get(OnboardingStepKeys.ONBOARDING_CONNECT_LINKEDIN_PENDING) ===
+      true;
+
+    const isInstallAppPending =
+      userVars.get(OnboardingStepKeys.ONBOARDING_INSTALL_APP_PENDING) === true;
+
     const isConnectAccountPending =
       userVars.get(OnboardingStepKeys.ONBOARDING_CONNECT_ACCOUNT_PENDING) ===
       true;
@@ -81,6 +81,14 @@ export class OnboardingService {
 
     if (isProfileCreationPending) {
       return OnboardingStatus.PROFILE_CREATION;
+    }
+
+    if (isConnectLinkedinPending) {
+      return OnboardingStatus.CONNECT_LINKEDIN;
+    }
+
+    if (isInstallAppPending) {
+      return OnboardingStatus.INSTALL_APP;
     }
 
     if (isConnectAccountPending) {
@@ -117,6 +125,60 @@ export class OnboardingService {
       userId,
       workspaceId: workspaceId,
       key: OnboardingStepKeys.ONBOARDING_CONNECT_ACCOUNT_PENDING,
+      value: true,
+    });
+  }
+
+  async setOnboardingConnectLinkedinPending({
+    userId,
+    workspaceId,
+    value,
+  }: {
+    userId: string;
+    workspaceId: string;
+    value: boolean;
+  }) {
+    if (!value) {
+      await this.userVarsService.delete({
+        userId,
+        workspaceId,
+        key: OnboardingStepKeys.ONBOARDING_CONNECT_LINKEDIN_PENDING,
+      });
+
+      return;
+    }
+
+    await this.userVarsService.set({
+      userId,
+      workspaceId,
+      key: OnboardingStepKeys.ONBOARDING_CONNECT_LINKEDIN_PENDING,
+      value: true,
+    });
+  }
+
+  async setOnboardingInstallAppPending({
+    userId,
+    workspaceId,
+    value,
+  }: {
+    userId: string;
+    workspaceId: string;
+    value: boolean;
+  }) {
+    if (!value) {
+      await this.userVarsService.delete({
+        userId,
+        workspaceId,
+        key: OnboardingStepKeys.ONBOARDING_INSTALL_APP_PENDING,
+      });
+
+      return;
+    }
+
+    await this.userVarsService.set({
+      userId,
+      workspaceId,
+      key: OnboardingStepKeys.ONBOARDING_INSTALL_APP_PENDING,
       value: true,
     });
   }

@@ -1165,6 +1165,8 @@ export type ObjectIndexMetadatasConnection = {
 /** Onboarding status */
 export enum OnboardingStatus {
   COMPLETED = 'COMPLETED',
+  CONNECT_LINKEDIN = 'CONNECT_LINKEDIN',
+  INSTALL_APP = 'INSTALL_APP',
   INVITE_TEAM = 'INVITE_TEAM',
   PLAN_REQUIRED = 'PLAN_REQUIRED',
   PROFILE_CREATION = 'PROFILE_CREATION',

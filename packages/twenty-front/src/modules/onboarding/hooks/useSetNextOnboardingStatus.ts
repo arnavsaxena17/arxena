@@ -2,8 +2,8 @@ import { useRecoilCallback, useRecoilValue } from 'recoil';
 
 import { CurrentUser, currentUserState } from '@/auth/states/currentUserState';
 import {
-  CurrentWorkspace,
-  currentWorkspaceState,
+    CurrentWorkspace,
+    currentWorkspaceState,
 } from '@/auth/states/currentWorkspaceState';
 import { isDefined } from 'twenty-shared';
 import { OnboardingStatus } from '~/generated/graphql';
@@ -17,8 +17,17 @@ const getNextOnboardingStatus = (
   }
 
   if (currentUser?.onboardingStatus === OnboardingStatus.PROFILE_CREATION) {
+    return OnboardingStatus.CONNECT_LINKEDIN;
+  }
+
+  if (currentUser?.onboardingStatus === OnboardingStatus.CONNECT_LINKEDIN) {
+    return OnboardingStatus.INSTALL_APP;
+  }
+
+  if (currentUser?.onboardingStatus === OnboardingStatus.INSTALL_APP) {
     return OnboardingStatus.SYNC_EMAIL;
   }
+
   if (
     currentUser?.onboardingStatus === OnboardingStatus.SYNC_EMAIL &&
     currentWorkspace?.workspaceMembersCount === 1

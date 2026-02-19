@@ -1,6 +1,5 @@
 import { SubTitle } from '@/auth/components/SubTitle';
 import { Title } from '@/auth/components/Title';
-import { useAuth } from '@/auth/hooks/useAuth';
 import { currentUserState } from '@/auth/states/currentUserState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SKIP_CONNECT_LINKEDIN_ONBOARDING_STEP } from '@/onboarding/graphql/mutations/skipConnectLinkedinOnboardingStep';
@@ -131,7 +130,6 @@ export const ConnectLinkedin = () => {
   const currentUser = useRecoilValue(currentUserState);
   const tokenPair = useRecoilValue(tokenPairState);
   const setNextOnboardingStatus = useSetNextOnboardingStatus();
-  const { loadCurrentUser } = useAuth();
   const [skipConnectLinkedinOnboardingStep] = useMutation(
     SKIP_CONNECT_LINKEDIN_ONBOARDING_STEP,
   );
@@ -154,10 +152,11 @@ export const ConnectLinkedin = () => {
 
   const accessToken = tokenPair?.accessToken.token;
 
-  const handleComplete = useCallback(() => {
+  const handleComplete = useCallback(async () => {
+    await skipConnectLinkedinOnboardingStep();
     setNextOnboardingStatus();
-    loadCurrentUser();
-  }, [loadCurrentUser, setNextOnboardingStatus]);
+    // Do not call loadCurrentUser() so Recoil keeps INSTALL_APP and next step renders.
+  }, [setNextOnboardingStatus, skipConnectLinkedinOnboardingStep]);
 
   const handleSkip = useCallback(async () => {
     await skipConnectLinkedinOnboardingStep();

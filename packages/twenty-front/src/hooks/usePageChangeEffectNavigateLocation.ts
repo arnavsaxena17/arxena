@@ -32,10 +32,10 @@ export const usePageChangeEffectNavigateLocation = () => {
     isMatchingOngoingUserCreationRoute ||
     isMatchingLocation(AppPath.CreateWorkspace) ||
     isMatchingLocation(AppPath.CreateProfile) ||
+    isMatchingLocation(AppPath.ConnectLinkedin) ||
+    isMatchingLocation(AppPath.InstallApp) ||
     isMatchingLocation(AppPath.SyncEmails) ||
-    isMatchingLocation(AppPath.InviteTeam) ||
-    isMatchingLocation(AppPath.PlanRequired) ||
-    isMatchingLocation(AppPath.PlanRequiredSuccess);
+    isMatchingLocation(AppPath.InviteTeam);
 
   const objectNamePlural = useParams().objectNamePlural ?? '';
   const objectMetadataItems = useRecoilValue(objectMetadataItemsState);
@@ -51,14 +51,6 @@ export const usePageChangeEffectNavigateLocation = () => {
     return AppPath.SignInUp;
   }
 
-  if (
-    onboardingStatus === OnboardingStatus.PLAN_REQUIRED &&
-    !isMatchingLocation(AppPath.PlanRequired) &&
-    !isMatchingLocation(AppPath.PlanRequiredSuccess)
-  ) {
-    return AppPath.PlanRequired;
-  }
-
   if (isWorkspaceSuspended && !isMatchingLocation(AppPath.SettingsCatchAll)) {
     return `${AppPath.SettingsCatchAll.replace('/*', '')}/${
       SettingsPath.Billing
@@ -67,8 +59,7 @@ export const usePageChangeEffectNavigateLocation = () => {
 
   if (
     onboardingStatus === OnboardingStatus.WORKSPACE_ACTIVATION &&
-    !isMatchingLocation(AppPath.CreateWorkspace) &&
-    !isMatchingLocation(AppPath.PlanRequiredSuccess)
+    !isMatchingLocation(AppPath.CreateWorkspace)
   ) {
     return AppPath.CreateWorkspace;
   }
@@ -78,6 +69,20 @@ export const usePageChangeEffectNavigateLocation = () => {
     !isMatchingLocation(AppPath.CreateProfile)
   ) {
     return AppPath.CreateProfile;
+  }
+
+  if (
+    onboardingStatus === OnboardingStatus.CONNECT_LINKEDIN &&
+    !isMatchingLocation(AppPath.ConnectLinkedin)
+  ) {
+    return AppPath.ConnectLinkedin;
+  }
+
+  if (
+    onboardingStatus === OnboardingStatus.INSTALL_APP &&
+    !isMatchingLocation(AppPath.InstallApp)
+  ) {
+    return AppPath.InstallApp;
   }
 
   if (

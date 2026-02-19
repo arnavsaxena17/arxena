@@ -67,14 +67,10 @@ export const CreateProfile = () => {
   useWebSocketEvent<{ step: string; message: string }>(
     'metadata-structure-progress',
     (data: { step: string; message: string }) => {
-      console.log('CreateProfile component received WebSocket event:', data);
-      
       if (data?.step === 'metadata-structure-complete') {
-        console.log('CreateProfile: Metadata structure creation completed');
         // No need to reload here since we're going to navigate away from this page
       }
 
-      // Send acknowledgment back to server
       if (socket?.connected) {
         const ackData = {
           event: 'metadata-structure-progress',
@@ -84,10 +80,7 @@ export const CreateProfile = () => {
           message: data.message,
           userId: currentWorkspaceMember?.id
         };
-        console.log('Sending metadata structure progress acknowledgment:', ackData);
         socket.emit('notification_received', ackData);
-      } else {
-        console.error('Socket not connected, cannot send acknowledgment');
       }
     },
     [socket, currentWorkspaceMember?.id]
@@ -98,31 +91,14 @@ export const CreateProfile = () => {
   const setNextOnboardingStatus = useSetNextOnboardingStatus();
   const { enqueueSnackBar } = useSnackBar();
 
-  console.log('currentWorkspaceMember in create profile::', currentWorkspaceMember);
   const currentUser = useRecoilValue(currentUserState);
   const currentWorkspace = useRecoilValue(currentWorkspaceState);
   const { updateOneRecord } = useUpdateOneRecord<WorkspaceMember>({
     objectNameSingular: CoreObjectNameSingular.WorkspaceMember,
   });
-  console.log('currentUser in create profile::', currentUser);
-
 
   const signupUserOnArxena = async (userData: any) => {
-    console.log('Going to create user on Arxena using user data:', userData);
     try {
-      console.log(
-        'process.env.REACT_APP_ARXENA_SITE_BASE_URL:',
-        process.env.REACT_APP_ARXENA_SITE_BASE_URL,
-      );
-      console.log('process.env.NODE_ENV:', process.env.NODE_ENV);
-      console.log(
-        'process.env.ARXENA_SITE_BASE_URL:',
-        process.env.ARXENA_SITE_BASE_URL,
-      );
-      console.log(
-        'process.env.ARXENA_SITE_BASE_URL:',
-        process.env.ARXENA_SITE_BASE_URL,
-      );
       let arxenaSiteBaseUrl = '';
       if (process.env.NODE_ENV === 'development') {
         arxenaSiteBaseUrl =
@@ -131,7 +107,6 @@ export const CreateProfile = () => {
         arxenaSiteBaseUrl =
           process.env.REACT_APP_ARXENA_SITE_BASE_URL || 'https://arxena.com';
       }
-      console.log('Final Arxena Site Base URL', arxenaSiteBaseUrl);
       const requestParams = new URLSearchParams({
         full_name: userData?.fullName,
         email: userData?.email,
@@ -144,8 +119,7 @@ export const CreateProfile = () => {
         twentyId: userData?.twentyId || '',
         currentWorkspaceId: userData?.currentWorkspaceId || '',
       });
-      
-      console.log('This is ther requst params:', requestParams);
+
       const response = await fetch(arxenaSiteBaseUrl + '/auth/signup', {
         method: 'POST',
         headers: {
@@ -154,11 +128,10 @@ export const CreateProfile = () => {
         },
         body: requestParams,
       });
-      console.log('signupUserO nArxena response:', response);
       const data = await response.json();
       return data;
-    } catch (error) {
-      console.log('Signup error:', error);
+    } catch {
+      // Signup on Arxena site is best-effort; continue onboarding on failure
     }
   };
 
@@ -180,14 +153,12 @@ export const CreateProfile = () => {
   const onSubmit: SubmitHandler<Form> = useCallback(
     async (data) => {
       try {
-        console.log('Submit has been clicked so somet stuff');
         if (!currentWorkspaceMember?.id) {
           throw new Error('User is not logged in');
         }
         if (!data.firstName || !data.lastName) {
           throw new Error('First name or last name is missing');
         }
-        console.log('Some update records');
 
         await updateOneRecord({
           idToUpdate: currentWorkspaceMember?.id,
@@ -200,7 +171,6 @@ export const CreateProfile = () => {
           },
         });
 
-        console.log('Som etting');
         setCurrentWorkspaceMember((current) => {
           if (isDefined(current)) {
             return {
@@ -214,8 +184,7 @@ export const CreateProfile = () => {
           }
           return current;
         });
-        
-        console.log('Some email and user data');
+
         const userData = {
           fullName:
             data?.firstName !== '' && data?.lastName !== ''
@@ -233,18 +202,14 @@ export const CreateProfile = () => {
         };
 
         try {
-          console.log('signup with user on arxena');
           await signupUserOnArxena(userData);
-        } catch (err) {
-          console.log('Error while signing up on Arxena:', err);
+        } catch {
+          // Continue onboarding on Arxena signup failure
         }
 
         setNextOnboardingStatus();
-      } catch (error: any) {
-        console.log('ERROR', error);
-        // enqueueSnackBar(error?.message, {
-        //   variant: SnackBarVariant.Error,
-        // });
+      } catch {
+        // Error already surfaced or handled
       }
     },
     [

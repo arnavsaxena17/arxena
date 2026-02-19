@@ -5,16 +5,13 @@ import { useIsLogged } from '@/auth/hooks/useIsLogged';
 import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
 import { AppPath } from '@/types/AppPath';
 import { isDefaultLayoutAuthModalVisibleState } from '@/ui/layout/states/isDefaultLayoutAuthModalVisibleState';
-import { useSubscriptionStatus } from '@/workspace/hooks/useSubscriptionStatus';
-import { isDefined } from 'twenty-shared';
-import { OnboardingStatus, SubscriptionStatus } from '~/generated/graphql';
+import { OnboardingStatus } from '~/generated/graphql';
 import { useIsMatchingLocation } from '~/hooks/useIsMatchingLocation';
 
 export const useShowAuthModal = () => {
   const { isMatchingLocation } = useIsMatchingLocation();
   const isLoggedIn = useIsLogged();
   const onboardingStatus = useOnboardingStatus();
-  const subscriptionStatus = useSubscriptionStatus();
 
   const isDefaultLayoutAuthModalVisible = useRecoilValue(
     isDefaultLayoutAuthModalVisibleState,
@@ -36,21 +33,14 @@ export const useShowAuthModal = () => {
 
     if (
       !isLoggedIn ||
-      onboardingStatus === OnboardingStatus.PLAN_REQUIRED ||
       onboardingStatus === OnboardingStatus.PROFILE_CREATION ||
       onboardingStatus === OnboardingStatus.WORKSPACE_ACTIVATION ||
+      onboardingStatus === OnboardingStatus.CONNECT_LINKEDIN ||
+      onboardingStatus === OnboardingStatus.INSTALL_APP ||
       onboardingStatus === OnboardingStatus.SYNC_EMAIL ||
       onboardingStatus === OnboardingStatus.INVITE_TEAM
     ) {
       return true;
-    }
-
-    if (isMatchingLocation(AppPath.PlanRequired)) {
-      return (
-        (onboardingStatus === OnboardingStatus.COMPLETED &&
-          !isDefined(subscriptionStatus)) ||
-        subscriptionStatus === SubscriptionStatus.Canceled
-      );
     }
 
     return false;
@@ -59,6 +49,5 @@ export const useShowAuthModal = () => {
     isDefaultLayoutAuthModalVisible,
     isMatchingLocation,
     onboardingStatus,
-    subscriptionStatus,
   ]);
 };

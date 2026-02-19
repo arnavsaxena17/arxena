@@ -9,6 +9,8 @@ export enum AppPath {
   // Onboarding
   CreateWorkspace = '/create/workspace',
   CreateProfile = '/create/profile',
+  ConnectLinkedin = '/create/connect-linkedin',
+  InstallApp = '/create/install-app',
   SyncEmails = '/sync/emails',
   InviteTeam = '/invite-team',
   PlanRequired = '/plan-required',
