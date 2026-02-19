@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 
 import { WorkspaceActivationStatus } from 'twenty-shared';
 
-import { BillingService } from 'src/engine/core-modules/billing/services/billing.service';
 import { OnboardingStatus } from 'src/engine/core-modules/onboarding/enums/onboarding-status.enum';
 import { UserVarsService } from 'src/engine/core-modules/user/user-vars/services/user-vars.service';
 import { User } from 'src/engine/core-modules/user/user.entity';
@@ -25,16 +24,8 @@ export type OnboardingKeyValueTypeMap = {
 @Injectable()
 export class OnboardingService {
   constructor(
-    private readonly billingService: BillingService,
     private readonly userVarsService: UserVarsService<OnboardingKeyValueTypeMap>,
   ) {}
-
-  private async isSubscriptionIncompleteOnboardingStatus(workspace: Workspace) {
-    const hasAnySubscription =
-      await this.billingService.hasWorkspaceAnySubscription(workspace.id);
-
-    return !hasAnySubscription;
-  }
 
   private isWorkspaceActivationPending(workspace: Workspace) {
     return (
@@ -43,13 +34,6 @@ export class OnboardingService {
   }
 
   async getOnboardingStatus(user: User, workspace: Workspace) {
-    const subscriptionIncomplete =
-      await this.isSubscriptionIncompleteOnboardingStatus(workspace);
-
-    if (subscriptionIncomplete) {
-      return OnboardingStatus.WORKSPACE_ACTIVATION;
-    }
-
     if (this.isWorkspaceActivationPending(workspace)) {
       return OnboardingStatus.WORKSPACE_ACTIVATION;
     }
@@ -67,6 +51,10 @@ export class OnboardingService {
       userVars.get(OnboardingStepKeys.ONBOARDING_CONNECT_LINKEDIN_PENDING) ===
       true;
 
+    const isConnectAccountPending =
+      userVars.get(OnboardingStepKeys.ONBOARDING_CONNECT_ACCOUNT_PENDING) ===
+      true;
+
     const isInviteTeamPending =
       userVars.get(OnboardingStepKeys.ONBOARDING_INVITE_TEAM_PENDING) === true;
 
@@ -76,6 +64,10 @@ export class OnboardingService {
 
     if (isConnectLinkedinPending) {
       return OnboardingStatus.CONNECT_LINKEDIN;
+    }
+
+    if (isConnectAccountPending) {
+      return OnboardingStatus.SYNC_EMAIL;
     }
 
     if (isInviteTeamPending) {
