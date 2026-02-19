@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { IconSettings } from 'twenty-ui';
 
 import { ConnectedAccount } from '@/accounts/types/ConnectedAccount';
+import { useApiKeysRecoil } from '@/arx-jd-upload/hooks/useApiKeysRecoil';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
@@ -19,7 +20,9 @@ import { ConnectedLinkedinAccounts } from './components/ConnectedLinkedinAccount
 
 export const LinkedinAccounts = () => {
   const [hasConnectedAccounts, setHasConnectedAccounts] = useState(false);
+  const [accountsRefreshTrigger, setAccountsRefreshTrigger] = useState(0);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+  const { updateSpecificApiKey } = useApiKeysRecoil();
 
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular: CoreObjectNameSingular.ConnectedAccount,
@@ -35,12 +38,20 @@ export const LinkedinAccounts = () => {
     recordGqlFields: generateDepthOneRecordGqlFields({ objectMetadataItem }),
   });
 
-  const handleSignupComplete = (data: LinkedinSignupCompleteData) => {
-    console.log('LinkedIn signup completed:', data);
-    setHasConnectedAccounts(true);
-    // TODO: Save account data to workspace
-    // This would typically involve calling a GraphQL mutation to save the connected account
-  };
+  const handleSignupComplete = useCallback(
+    async (data: LinkedinSignupCompleteData) => {
+      setHasConnectedAccounts(true);
+      if (data.accountId) {
+        try {
+          await updateSpecificApiKey('linkedin_unipile_account_id', data.accountId);
+          setAccountsRefreshTrigger((n) => n + 1);
+        } catch (err) {
+          console.error('Failed to save LinkedIn account id to workspace:', err);
+        }
+      }
+    },
+    [updateSpecificApiKey],
+  );
 
   const handleSignupCancel = (currentStep: string) => {
     console.log('LinkedIn signup cancelled at step:', currentStep);
@@ -84,7 +95,8 @@ export const LinkedinAccounts = () => {
             onSignupCancel={handleSignupCancel}
           />
         {/* )} */}
-        <ConnectedLinkedinAccounts 
+        <ConnectedLinkedinAccounts
+          refreshTrigger={accountsRefreshTrigger}
           onAccountConnected={handleAccountConnected}
           onAccountsLoaded={handleAccountsLoaded}
         />

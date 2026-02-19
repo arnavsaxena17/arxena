@@ -59,7 +59,8 @@ export class LinkedinUnipileService {
    */
   async connectWithCredentials(credentials: LinkedinCredentials): Promise<LinkedinSignupResponse> {
     try {
-      const response = await this.makeRequest<any>('/api/v1/accounts/linkedin', 'POST', {
+      const response = await this.makeRequest<any>('/api/v1/accounts', 'POST', {
+        provider: 'LINKEDIN',
         username: credentials.username,
         password: credentials.password,
       });
@@ -86,9 +87,10 @@ export class LinkedinUnipileService {
    */
   async connectWithCookie(cookieAuth: LinkedinCookieAuth): Promise<LinkedinSignupResponse> {
     try {
-      const response = await this.makeRequest<any>('/api/v1/accounts/linkedin/cookie', 'POST', {
+      const response = await this.makeRequest<any>('/api/v1/accounts', 'POST', {
+        provider: 'LINKEDIN',
         access_token: cookieAuth.access_token,
-        user_agent: cookieAuth.user_agent,
+        ...(cookieAuth.user_agent && { user_agent: cookieAuth.user_agent }),
       });
 
       return {

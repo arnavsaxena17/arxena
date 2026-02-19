@@ -164,11 +164,13 @@ const RetryButton = styled.button`
 `;
 
 interface ConnectedLinkedinAccountsProps {
+  refreshTrigger?: number;
   onAccountConnected?: () => void;
   onAccountsLoaded?: (hasConnected: boolean) => void;
 }
 
 export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps> = ({
+  refreshTrigger,
   onAccountConnected,
   onAccountsLoaded,
 }) => {
@@ -273,6 +275,12 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
       loadAccounts();
     }
   }, [accessToken, loadAccounts]);
+
+  useEffect(() => {
+    if (accessToken && refreshTrigger != null && refreshTrigger > 0) {
+      loadAccounts();
+    }
+  }, [refreshTrigger, accessToken, loadAccounts]);
 
   const handleReconnect = async (accountId: string) => {
     try {

@@ -296,11 +296,16 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
       const response = await service.connectWithCookie(cookieForm, accessToken);
       
       if (response.success && response.data) {
-        handleSuccess({
-          accountId: response.data.account_id,
-          status: 'connected',
-          profileData: response.data.profile,
-        });
+        if (response.data.status === 'checkpoint_required') {
+          setAccountId(response.data.account_id);
+          setShowCheckpoint(true);
+        } else {
+          handleSuccess({
+            accountId: response.data.account_id,
+            status: 'connected',
+            profileData: response.data.profile,
+          });
+        }
       } else {
         handleError(response.error || 'Failed to connect LinkedIn account');
       }
@@ -378,12 +383,18 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
       }, accessToken);
       
       if (response.success && response.data) {
-        setShowCheckpoint(false);
-        handleSuccess({
-          accountId: response.data.account_id,
-          status: 'connected',
-          profileData: response.data.profile,
-        });
+        if (response.data.status === 'checkpoint_required') {
+          setAccountId(response.data.account_id);
+          setError(null);
+          setCheckpointCode('');
+        } else {
+          setShowCheckpoint(false);
+          handleSuccess({
+            accountId: response.data.account_id,
+            status: 'connected',
+            profileData: response.data.profile,
+          });
+        }
       } else {
         handleError(response.error || 'Failed to verify code');
       }

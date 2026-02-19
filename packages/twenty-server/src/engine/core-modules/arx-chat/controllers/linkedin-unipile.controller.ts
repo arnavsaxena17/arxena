@@ -113,6 +113,7 @@ export class LinkedinUnipileController {
     endpoint: string,
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
     body?: any,
+    options?: { returnStatus: true },
   ): Promise<any> {
     const url = `${this.unipileApiUrl}${endpoint}`;
     const headers = {
@@ -135,17 +136,20 @@ export class LinkedinUnipileController {
       this.logger.log(`Using API key: ${this.unipileAccessToken?.substring(0, 10) || ''}...`);
       
       const response = await fetch(url, config);
+      const data = await response.json().catch(() => ({}));
       
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        this.logger.error(`Unipile API error: ${response.status} ${response.statusText}`, errorData);
-        throw new HttpException(
-          errorData.message || `Unipile API error: ${response.statusText}`,
-          response.status,
-        );
+        this.logger.error(`Unipile API error: ${response.status} ${response.statusText}`);
+        this.logger.error(`Unipile API error: Object:`, JSON.stringify(data, null, 2));
+        const message =
+          data.detail || data.message || `Unipile API error: ${response.statusText}`;
+        throw new HttpException(message, response.status);
       }
 
-      return await response.json();
+      if (options?.returnStatus) {
+        return { status: response.status, data };
+      }
+      return data;
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
@@ -153,6 +157,32 @@ export class LinkedinUnipileController {
       
       this.logger.error('Failed to make Unipile request:', error);
       throw new HttpException('Failed to communicate with Unipile API', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+  }
+
+  /** Fetch a single account by id; returns null on 404 (e.g. account disconnected) without logging ERROR. */
+  private async fetchAccountByIdIfExists(accountId: string): Promise<any | null> {
+    console.log('fetchAccountByIdIfExists', accountId);
+    const url = `${this.unipileApiUrl}/api/v1/accounts/${accountId}`;
+    const headers = {
+      'Accept': 'application/json',
+      'X-API-KEY': this.unipileAccessToken || '',
+    };
+    try {
+      const response = await fetch(url, { method: 'GET', headers });
+      const data = await response.json().catch(() => ({}));
+      if (response.status === 404) {
+        this.logger.warn(`Workspace linked account ${accountId} not found in Unipile (404); it may have been disconnected`);
+        return null;
+      }
+      if (!response.ok) {
+        this.logger.error(`Unipile API error: ${response.status} ${response.statusText}`, data);
+        return null;
+      }
+      return data;
+    } catch (err) {
+      this.logger.warn(`Could not fetch account ${accountId}: ${err instanceof Error ? err.message : err}`);
+      return null;
     }
   }
 
@@ -164,21 +194,46 @@ export class LinkedinUnipileController {
     try {
       this.logger.log(`Connecting LinkedIn account for workspace: ${workspace.id}`);
       
-      const response = await this.makeUnipileRequest('/api/v1/accounts/linkedin', 'POST', {
-        username: credentials.username,
-        password: credentials.password,
-      });
+      const result = await this.makeUnipileRequest(
+        '/api/v1/accounts',
+        'POST',
+        {
+          provider: 'LINKEDIN',
+          username: credentials.username,
+          password: credentials.password,
+        },
+        { returnStatus: true },
+      );
 
-      // Store account information in workspace context if needed
-      // This could involve saving to a ConnectedAccount entity
+      const { status, data } = result;
+
+      this.logger.log(`Unipile connect/credentials response: status=${status}, object=${data?.object ?? 'none'}, account_id=${data?.account_id ?? 'none'}`);
+      this.logger.log(`Unipile connect/credentials response: data=${JSON.stringify(data, null, 2)}`);
+
+      // 202 = checkpoint per Unipile docs; also treat body as checkpoint if object is 'Checkpoint' (in case API returns 201)
+      const isCheckpoint =
+        (status === 202 && data?.account_id) ||
+        (data?.object === 'Checkpoint' && data?.account_id);
+
+      if (isCheckpoint) {
+        this.logger.log(`LinkedIn checkpoint required (status=${status}): ${data?.checkpoint?.type ?? 'unknown'}`);
+        return {
+          success: true,
+          data: {
+            status: 'checkpoint_required',
+            account_id: data.account_id,
+            checkpoint_type: data?.checkpoint?.type ?? '2FA',
+          },
+        };
+      }
 
       return {
         success: true,
         data: {
-          account_id: response.id || response.account_id,
+          account_id: data.id || data.account_id,
           provider: 'LINKEDIN',
-          status: response.status || 'connected',
-          profile: response.profile_data,
+          status: data.status || 'connected',
+          profile: data.profile_data,
         },
       };
     } catch (error) {
@@ -198,18 +253,44 @@ export class LinkedinUnipileController {
     try {
       this.logger.log(`Connecting LinkedIn account with cookie for workspace: ${workspace.id}`);
       
-      const response = await this.makeUnipileRequest('/api/v1/accounts/linkedin/cookie', 'POST', {
-        access_token: cookieAuth.access_token,
-        user_agent: cookieAuth.user_agent,
-      });
+      const result = await this.makeUnipileRequest(
+        '/api/v1/accounts',
+        'POST',
+        {
+          provider: 'LINKEDIN',
+          access_token: cookieAuth.access_token,
+          ...(cookieAuth.user_agent && { user_agent: cookieAuth.user_agent }),
+        },
+        { returnStatus: true },
+      );
+
+      const { status, data } = result;
+
+      this.logger.log(`Unipile connect/cookie response: status=${status}, object=${data?.object ?? 'none'}, account_id=${data?.account_id ?? 'none'}`);
+
+      const isCheckpoint =
+        (status === 202 && data?.account_id) ||
+        (data?.object === 'Checkpoint' && data?.account_id);
+
+      if (isCheckpoint) {
+        this.logger.log(`LinkedIn checkpoint required (status=${status}): ${data?.checkpoint?.type ?? 'unknown'}`);
+        return {
+          success: true,
+          data: {
+            status: 'checkpoint_required',
+            account_id: data.account_id,
+            checkpoint_type: data?.checkpoint?.type ?? '2FA',
+          },
+        };
+      }
 
       return {
         success: true,
         data: {
-          account_id: response.id || response.account_id,
+          account_id: data.id || data.account_id,
           provider: 'LINKEDIN',
-          status: response.status || 'connected',
-          profile: response.profile_data,
+          status: data.status || 'connected',
+          profile: data.profile_data,
         },
       };
     } catch (error) {
@@ -262,15 +343,39 @@ export class LinkedinUnipileController {
     @AuthWorkspace() workspace: Workspace,
   ) {
     try {
-      const response = await this.makeUnipileRequest('/api/v1/accounts/checkpoint', 'POST', checkpointData);
+      const body = {
+        provider: 'LINKEDIN' as const,
+        account_id: checkpointData.account_id,
+        code: checkpointData.code,
+      };
+      const result = await this.makeUnipileRequest(
+        '/api/v1/accounts/checkpoint',
+        'POST',
+        body,
+        { returnStatus: true },
+      );
+
+      const { status, data } = result;
+
+      if (status === 202 && (data.object === 'Checkpoint' || data.account_id)) {
+        this.logger.log(`LinkedIn checkpoint required after solve: ${data.checkpoint?.type ?? 'unknown'}`);
+        return {
+          success: true,
+          data: {
+            status: 'checkpoint_required',
+            account_id: data.account_id,
+            checkpoint_type: data.checkpoint?.type ?? '2FA',
+          },
+        };
+      }
 
       return {
         success: true,
         data: {
-          account_id: response.account_id,
+          account_id: data.account_id ?? data.id,
           provider: 'LINKEDIN',
-          status: response.status || 'connected',
-          profile: response.profile_data,
+          status: data.status || 'connected',
+          profile: data.profile_data,
         },
       };
     } catch (error) {
@@ -284,9 +389,10 @@ export class LinkedinUnipileController {
     try {
       const workspaceKeys = await this.workspaceQueryService.getWorkspaceKeys(workspace.id);
       const linkedinUrl = workspaceKeys.linkedin_url;
+      const linkedinUnipileAccountId = workspaceKeys.linkedin_unipile_account_id;
 
-      if (!linkedinUrl) {
-        this.logger.warn(`No linkedin_url found for workspace ${workspace.id}, skipping Unipile accounts call`);
+      if (!linkedinUrl && !linkedinUnipileAccountId) {
+        this.logger.warn(`No linkedin_url or linkedin_unipile_account_id for workspace ${workspace.id}, skipping Unipile accounts call`);
         return {
           success: true,
           accounts: [],
@@ -297,7 +403,7 @@ export class LinkedinUnipileController {
       const response = await this.makeUnipileRequest('/api/v1/accounts?provider=linkedin');
       this.logger.log('Getting getAllAccounts response');
 
-      this.logger.log(`Filtering LinkedIn accounts for workspace ${workspace.id} with linkedin_url: ${linkedinUrl}`);
+      this.logger.log(`Filtering LinkedIn accounts for workspace ${workspace.id} with linkedin_url: ${linkedinUrl ?? 'none'}, linkedin_unipile_account_id: ${linkedinUnipileAccountId ?? 'none'}`);
       
       // Transform and filter the response to match our expected format
       const allAccounts = (response.items || []).map((item: any) => ({
@@ -313,18 +419,25 @@ export class LinkedinUnipileController {
         groups: item.groups || [],
       }));
       
-      // Filter accounts: only return accounts that match the workspace's linkedin_url
+      // Include account if: (1) it matches workspace linkedin_url by publicIdentifier, or (2) it is the workspace's linkedin_unipile_account_id
       const accounts = allAccounts.filter((account: any) => {
+        if (linkedinUnipileAccountId && account.id === linkedinUnipileAccountId) {
+          this.logger.log(`Account ${account.id} matches workspace linkedin_unipile_account_id`);
+          return true;
+        }
+
         const accountPublicIdentifier = account.connection_params?.im?.publicIdentifier;
         if (!accountPublicIdentifier) {
           this.logger.warn(`Account ${account.id} has no publicIdentifier in connection_params`);
           return false;
         }
         
-        // Match the publicIdentifier with linkedin_url (could be just the username or full URL)
-        const matches = accountPublicIdentifier === linkedinUrl || 
-                       linkedinUrl.includes(accountPublicIdentifier) ||
-                       accountPublicIdentifier.includes(linkedinUrl);
+        if (!linkedinUrl) return false;
+
+        const matches =
+          accountPublicIdentifier === linkedinUrl ||
+          linkedinUrl.includes(accountPublicIdentifier) ||
+          accountPublicIdentifier.includes(linkedinUrl);
         
         if (matches) {
           this.logger.log(`Account ${account.id} (${accountPublicIdentifier}) matches linkedin_url: ${linkedinUrl}`);
@@ -334,6 +447,27 @@ export class LinkedinUnipileController {
         
         return matches;
       });
+
+      // If workspace has linkedin_unipile_account_id but it's not in the list (e.g. newly connected or not in this page), fetch it by id
+      if (linkedinUnipileAccountId && !accounts.some((a: any) => a.id === linkedinUnipileAccountId)) {
+        const single = await this.fetchAccountByIdIfExists(linkedinUnipileAccountId);
+        if (single) {
+          const mapped = {
+            id: single.id,
+            username: single.name || 'Unknown',
+            name: single.name || 'Unknown',
+            type: single.type,
+            status: this.mapAccountStatus(single),
+            created_at: single.created_at,
+            provider: 'LINKEDIN',
+            connection_params: single.connection_params,
+            sources: single.sources || [],
+            groups: single.groups || [],
+          };
+          accounts.push(mapped);
+          this.logger.log(`Included workspace linked account ${linkedinUnipileAccountId} from single-account fetch`);
+        }
+      }
       
       this.logger.log(`Filtered ${accounts.length} LinkedIn accounts from ${allAccounts.length} total accounts`);
       
