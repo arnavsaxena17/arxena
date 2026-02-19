@@ -19,7 +19,7 @@ import { JwtModule } from '../jwt/jwt.module';
 import { JwtWrapperService } from '../jwt/services/jwt-wrapper.service';
 import { UserWorkspace } from '../user-workspace/user-workspace.entity';
 import { User } from '../user/user.entity';
-import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
+import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
 import { Workspace } from '../workspace/workspace.entity';
 
 import { BaileysController } from './baileys.controller';
@@ -31,6 +31,7 @@ import { WebSocketService } from './websocket.service';
     AuthModule,
     DataSourceModule,
     TypeORMModule,
+    WorkspaceModificationsModule,
     WebSocketModule,
     CacheStorageModule,
     WorkspaceCacheStorageModule,
@@ -57,7 +58,6 @@ import { WebSocketService } from './websocket.service';
     ApiKeyService,
     JwtWrapperService,
     EnvironmentService,
-    WorkspaceQueryService,
   ],
   controllers: [BaileysController],
   exports: [BaileysService],

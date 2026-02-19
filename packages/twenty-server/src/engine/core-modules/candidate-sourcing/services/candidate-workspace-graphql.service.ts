@@ -143,7 +143,7 @@ export class CandidateWorkspaceGraphQLService {
     console.log('Relations to create:', relationsToCreate);
     if (relationsToCreate.length > 0) {
       try {
-        await createRelations(this.staticGraphQLService, apiToken, relationsToCreate);
+        await createRelations(relationsToCreate, apiToken, origin, 3);
       } catch (error) {
         if (!error.message?.includes('already exists')) {
           throw error;

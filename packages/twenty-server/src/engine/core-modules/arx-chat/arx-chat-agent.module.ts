@@ -69,8 +69,7 @@ import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/li
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { User } from 'src/engine/core-modules/user/user.entity';
-import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module'; // Add this import
-import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module'; // Add this import
 import { WorkspaceMetadataCacheModule } from 'src/engine/metadata-modules/workspace-metadata-cache/workspace-metadata-cache.module';
@@ -161,7 +160,6 @@ const conditionalImports = isWorker
     GoogleSheetsService,
     WebSocketGateway,
     ProcessCandidatesService,
-    WorkspaceQueryService,
     EnvironmentService,
     JwtAuthStrategy,
     EmailService,

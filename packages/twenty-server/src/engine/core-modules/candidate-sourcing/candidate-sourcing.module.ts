@@ -41,7 +41,6 @@ import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
-import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module';
@@ -76,9 +75,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     WebSocketModule,
     WorkspaceModificationsModule,
     TypeORMModule,
-    AuthModule, 
     GraphQLExecutionModule,
-    WorkspaceModificationsModule, 
     CoreGraphQLApiModule,
     // MulterModule.register({
     //   dest: './uploads',
@@ -113,7 +110,6 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     CandidateDataService,
     CandidateFieldValueService,
     CandidateWorkspaceGraphQLService,
-    WorkspaceQueryService,
     WorkspaceDataSourceService,
     EnvironmentService,
     WorkspaceCacheStorageService,

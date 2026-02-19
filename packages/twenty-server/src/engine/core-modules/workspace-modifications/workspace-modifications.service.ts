@@ -18,6 +18,7 @@ import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrap
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { CreateMetaDataStructure } from './object-apis/object-apis-creation';
+import { MetadataStructureCreationService } from './object-apis/services/metadata-structure-creation.service';
 
 @Injectable()
 export class WorkspaceQueryService {
@@ -33,10 +34,10 @@ export class WorkspaceQueryService {
     public readonly workspaceDataSourceService: WorkspaceDataSourceService,
     public readonly webSocketService: WebSocketService,
 
-    
     public readonly emailService: EmailService,
     private readonly jwtWrapperService: JwtWrapperService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly metadataStructureCreationService: MetadataStructureCreationService,
   ) {}
 
 
@@ -694,7 +695,8 @@ export class WorkspaceQueryService {
     await new CreateMetaDataStructure(
       this,
       this.staticGraphQLService,
-      this.webSocketService
+      this.webSocketService,
+      this.metadataStructureCreationService,
     ).createMetadataStructure(token, origin);
   }
 }

@@ -28,7 +28,6 @@ import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 import { EngagedCandidateProcessor } from '../arx-chat/services/candidate-engagement/engaged-candidate-processor.job';
 import { ApiKeyService } from '../auth/services/api-key.service';
 import { MessageQueueModule } from '../message-queue/message-queue.module';
-import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { CandidateEngagementCronService } from './services/candidate-engagement-cron.service';
 import { CandidateStatusClassificationCronService } from './services/candidate-status-classification-cron.service';
 import { LinkedinSockIncomingMessageFetchingCronService } from './services/linkedin-sock-message-cron.service';
@@ -68,7 +67,6 @@ const conditionalImports = isWorker
     MessageQueueModule,
   ],
   providers: [
-    WorkspaceQueryService,
     WorkspaceDataSourceService,
     WorkspaceCacheStorageService,
     ApiKeyService,

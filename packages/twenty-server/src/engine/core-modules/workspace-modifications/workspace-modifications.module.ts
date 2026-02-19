@@ -10,6 +10,7 @@ import { MessageQueueModule } from 'src/engine/core-modules/message-queue/messag
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module';
+import { MetadataEngineModule } from 'src/engine/metadata-modules/metadata-engine.module';
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { WebSocketModule } from 'src/modules/websocket/websocket.module';
@@ -29,6 +30,7 @@ import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/works
 import { EmailModule } from '../email/email.module';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { CreateMetadataStructureJob } from './jobs/create-metadata-structure.job';
+import { MetadataStructureCreationService } from './object-apis/services/metadata-structure-creation.service';
 import { MetadataUpdateService } from './object-apis/services/metadata-update.service';
 import { WorkspaceModificationsController } from './workspace-modifications.controller';
 import { WorkspaceQueryService } from './workspace-modifications.service';
@@ -40,6 +42,7 @@ import { WorkspaceQueryService } from './workspace-modifications.service';
     TypeORMModule,
     CoreGraphQLApiModule,
     DataSourceModule,
+    MetadataEngineModule,
     WorkspaceMetadataCacheModule,
     FeatureFlagModule,
     TypeORMModule,
@@ -64,6 +67,7 @@ import { WorkspaceQueryService } from './workspace-modifications.service';
     SchemaCacheService,
     WorkspaceDataSourceService,
     ApiKeyService,
+    MetadataStructureCreationService,
     MetadataUpdateService,
     WorkspaceSchemaFactory,
     JwtWrapperService,

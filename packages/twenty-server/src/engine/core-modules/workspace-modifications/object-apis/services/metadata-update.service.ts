@@ -492,17 +492,17 @@ export class MetadataUpdateService {
       
       // Create new objects
       if (newObjects.length > 0) {
-        await createObjectMetadataItems(this.staticGraphQLService, token, newObjects);
+        await createObjectMetadataItems(token, newObjects, origin);
       }
 
       // Create new fields
       if (newFields.length > 0) {
-        await createFields(this.staticGraphQLService, token, newFields, 3);
+        await createFields(newFields, token, origin, 3);
       }
 
       // Create new relations
       if (newRelations.length > 0) {
-        await createRelations(this.staticGraphQLService, token, newRelations);
+        await createRelations(newRelations, token, origin, 3);
       }
 
       // Check if we need to update workspace API keys

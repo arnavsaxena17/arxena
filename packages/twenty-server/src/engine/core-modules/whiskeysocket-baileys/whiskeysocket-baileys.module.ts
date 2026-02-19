@@ -23,7 +23,6 @@ import { EnvironmentService } from '../environment/environment.service';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { GraphQLExecutionService } from '../graphql/graphql-execution.service';
 import { SchemaCacheService } from '../graphql/services/schema-cache.service';
-import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { EventsGateway } from './events-gateway-module/events-gateway';
 import { WhatsAppMonitoringController } from './whatsapp-monitoring.controller';
 import { WhatsAppMonitoringResolver } from './whatsapp-monitoring.resolver';
@@ -56,7 +55,6 @@ import { BaileysWhatsappService } from './whiskeysocket-baileys.service';
     ApiKeyService,
     AccessTokenService,
     JwtAuthStrategy,
-    WorkspaceQueryService,
     GraphQLExecutionService,
     WorkspaceDataSourceService,
     EnvironmentService,

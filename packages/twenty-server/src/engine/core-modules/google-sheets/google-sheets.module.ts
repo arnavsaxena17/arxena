@@ -46,7 +46,6 @@ import { FilterDescriptionProcessorService } from '../candidate-sourcing/service
 import { PersonService } from '../candidate-sourcing/services/person.service';
 import { User } from '../user/user.entity';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
-import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { Workspace } from '../workspace/workspace.entity';
 import { GoogleSheetsDataController } from './google-sheet-data.controller';
 import { GoogleSheetsController } from './google-sheets.controller';
@@ -83,7 +82,6 @@ import { GoogleSheetsService } from './google-sheets.service';
     AiFilteringProcessorService,
     CandidateDataService,
     CandidateFieldValueService,
-    WorkspaceQueryService,
     WorkspaceDataSourceService,
     EnvironmentService,
     ApiKeyService,
