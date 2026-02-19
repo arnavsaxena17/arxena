@@ -2093,12 +2093,25 @@ export class CandidateSourcingController {
       let candidateData: any = {};
       let uniqueStringKey = '';
       let profileDataStr = '';
+      // Optional Resdex identity fields (used to avoid attaching wrong contact to CV)
+      let resdex_key: string | undefined;
+      let resdex_encryptedResId: string | undefined;
+      let resdex_doubleEncryptedUserName: string | undefined;
+      let resdex_download_resId: string | undefined;
+      let resdex_download_uname: string | undefined;
       
       try {
         const candidateDataStr = request.body.candidate_data || '{}';
         candidateData = JSON.parse(candidateDataStr);
         uniqueStringKey = request.body.uniqueStringKey || '';
         profileDataStr = request.body.profile_data;
+
+        // Extract Resdex identity fields when present
+        resdex_key = candidateData.resdex_key;
+        resdex_encryptedResId = candidateData.resdex_encryptedResId;
+        resdex_doubleEncryptedUserName = candidateData.resdex_doubleEncryptedUserName;
+        resdex_download_resId = candidateData.resdex_download_resId;
+        resdex_download_uname = candidateData.resdex_download_uname;
       } catch (parseError) {
         console.error('Error parsing form data:', parseError);
         return {
@@ -2153,6 +2166,16 @@ export class CandidateSourcingController {
           const jsonDataStr = profileData.json_data || '{}';
           const jsonData = JSON.parse(jsonDataStr);
           console.log('This is the jsonData in updateContactWithCv:', jsonData);
+          // If profileData contains more accurate Resdex identity, prefer it
+          if (!resdex_key && jsonData.resdex_key) {
+            resdex_key = jsonData.resdex_key;
+          }
+          if (!resdex_encryptedResId && jsonData.resdex_encryptedResId) {
+            resdex_encryptedResId = jsonData.resdex_encryptedResId;
+          }
+          if (!resdex_doubleEncryptedUserName && jsonData.resdex_doubleEncryptedUserName) {
+            resdex_doubleEncryptedUserName = jsonData.resdex_doubleEncryptedUserName;
+          }
           const profileUrl = jsonData.profile_url || jsonData.window_url;
           if (profileUrl) {
             console.log('Profile URL found:', profileUrl);
@@ -2291,6 +2314,24 @@ export class CandidateSourcingController {
           json_data: JSON.stringify(candidateData),
           popup_data: popupData // Include popup_data with job information
         };
+      }
+
+      // If Resdex identity says this CV/contact pairing is unsafe, strip phone/email from json_data
+      if (resdex_encryptedResId && resdex_download_resId && resdex_encryptedResId !== resdex_download_resId) {
+        try {
+          const parsed = JSON.parse(contactData.json_data || '{}');
+          if (parsed.phone_number || parsed.email_address) {
+            console.warn(
+              '[updateContactWithCv] Resdex encryptedResId mismatch for CV upload. ' +
+              'Removing phone_number and email_address from contact data to avoid wrong merge.'
+            );
+            delete parsed.phone_number;
+            delete parsed.email_address;
+            contactData.json_data = JSON.stringify(parsed);
+          }
+        } catch (stripError) {
+          console.warn('[updateContactWithCv] Failed to strip phone/email on identifier mismatch:', stripError);
+        }
       }
       
       console.log('Final contactData:', contactData);
