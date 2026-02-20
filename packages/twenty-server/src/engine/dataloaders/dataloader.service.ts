@@ -61,7 +61,7 @@ export class DataloaderService {
   private createRelationMetadataLoader() {
     return new DataLoader<
       RelationMetadataLoaderPayload,
-      RelationMetadataEntity
+      RelationMetadataEntity | null
     >(async (dataLoaderParams: RelationMetadataLoaderPayload[]) => {
       const workspaceId = dataLoaderParams[0].workspaceId;
       const fieldMetadataItems = dataLoaderParams.map(

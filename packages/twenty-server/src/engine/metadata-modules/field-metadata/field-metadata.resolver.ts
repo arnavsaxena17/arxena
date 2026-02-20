@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  NotFoundException,
   UnauthorizedException,
   UseFilters,
   UseGuards,
@@ -168,6 +169,10 @@ export class FieldMetadataResolver {
         relationMetadataItem,
       );
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        return null;
+      }
+
       fieldMetadataGraphqlApiExceptionHandler(error);
     }
   }

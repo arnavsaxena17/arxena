@@ -12,7 +12,7 @@ import { RelationMetadataEntity } from 'src/engine/metadata-modules/relation-met
 export interface IDataloaders {
   relationMetadataLoader: DataLoader<
     RelationMetadataLoaderPayload,
-    RelationMetadataEntity
+    RelationMetadataEntity | null
   >;
 
   relationLoader: DataLoader<

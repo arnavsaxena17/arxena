@@ -472,7 +472,7 @@ export class RelationMetadataService extends TypeOrmQueryService<RelationMetadat
       Pick<FieldMetadataInterface, 'id' | 'type' | 'objectMetadataId'>
     >,
     workspaceId: string,
-  ): Promise<(RelationMetadataEntity | NotFoundException)[]> {
+  ): Promise<(RelationMetadataEntity | null)[]> {
     const metadataVersion =
       await this.workspaceCacheStorageService.getMetadataVersion(workspaceId);
 
@@ -499,20 +499,20 @@ export class RelationMetadataService extends TypeOrmQueryService<RelationMetadat
         objectMetadataMaps.byId[fieldMetadataItem.objectMetadataId];
 
       if (!objectMetadata) {
-        return new NotFoundException(
-          `Object metadata not found for field ${fieldMetadataItem.id}`,
-        );
+        return null;
       }
 
       const fieldMetadata = objectMetadata.fieldsById[fieldMetadataItem.id];
+
+      if (!fieldMetadata) {
+        return null;
+      }
 
       const relationMetadata =
         fieldMetadata.fromRelationMetadata ?? fieldMetadata.toRelationMetadata;
 
       if (!relationMetadata) {
-        return new NotFoundException(
-          `From object metadata not found for relation ${fieldMetadata?.id}`,
-        );
+        return null;
       }
 
       const fromObjectMetadata =
@@ -521,15 +521,21 @@ export class RelationMetadataService extends TypeOrmQueryService<RelationMetadat
       const toObjectMetadata =
         objectMetadataMaps.byId[relationMetadata.toObjectMetadataId];
 
-      const fromFieldMetadata =
-        objectMetadataMaps.byId[fromObjectMetadata.id].fieldsById[
-          relationMetadata.fromFieldMetadataId
-        ];
+      if (!fromObjectMetadata || !toObjectMetadata) {
+        return null;
+      }
 
-      const toFieldMetadata =
-        objectMetadataMaps.byId[toObjectMetadata.id].fieldsById[
-          relationMetadata.toFieldMetadataId
-        ];
+      const fromFieldMetadata = fromObjectMetadata.fieldsById[
+        relationMetadata.fromFieldMetadataId
+      ];
+
+      const toFieldMetadata = toObjectMetadata.fieldsById[
+        relationMetadata.toFieldMetadataId
+      ];
+
+      if (!fromFieldMetadata || !toFieldMetadata) {
+        return null;
+      }
 
       return {
         ...relationMetadata,
@@ -540,7 +546,7 @@ export class RelationMetadataService extends TypeOrmQueryService<RelationMetadat
       };
     });
 
-    return mappedResult as (RelationMetadataEntity | NotFoundException)[];
+    return mappedResult;
   }
 
   private async deleteRelationWorkspaceCustomMigration(

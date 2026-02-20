@@ -480,9 +480,13 @@ export class FieldMetadataService extends TypeOrmQueryService<FieldMetadataEntit
 
   public async getRelationDefinitionFromRelationMetadata(
     fieldMetadataDTO: FieldMetadataDTO,
-    relationMetadata: RelationMetadataEntity,
+    relationMetadata: RelationMetadataEntity | null,
   ): Promise<RelationDefinitionDTO | null> {
     if (fieldMetadataDTO.type !== FieldMetadataType.RELATION) {
+      return null;
+    }
+
+    if (!relationMetadata) {
       return null;
     }
 

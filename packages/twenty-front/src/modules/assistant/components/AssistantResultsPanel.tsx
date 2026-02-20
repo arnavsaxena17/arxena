@@ -74,6 +74,17 @@ function getRowId(row: Record<string, unknown>): string | undefined {
   return typeof id === 'string' ? id : undefined;
 }
 
+function getJobIdFromRow(row: Record<string, unknown>): string | undefined {
+  const jobId = row.jobId ?? row.job_id;
+  return typeof jobId === 'string' ? jobId : undefined;
+}
+
+function getJobIdFromTableData(tableData: AssistantTableData | null): string | undefined {
+  if (!tableData?.rows?.length) return undefined;
+  const first = tableData.rows[0] as Record<string, unknown>;
+  return getJobIdFromRow(first);
+}
+
 export const AssistantResultsPanel = ({
   tableData,
   maxTableHeight = 600,
@@ -119,6 +130,12 @@ export const AssistantResultsPanel = ({
   const handleOpenInJobs = useCallback(() => {
     navigate(getAppPath(AppPath.Jobs));
   }, [navigate]);
+
+  const jobIdFromResults = getJobIdFromTableData(tableData);
+  const handleViewInJob = useCallback(() => {
+    if (!jobIdFromResults) return;
+    navigate(`/job/${jobIdFromResults}`);
+  }, [navigate, jobIdFromResults]);
 
   const handleViewAttachments = useCallback(() => {
     if (!selectedRow) return;
@@ -166,22 +183,33 @@ export const AssistantResultsPanel = ({
           />
         )}
       </StyledResultsHeader>
-      {hasSelection && (
+      {(hasSelection || jobIdFromResults) && (
         <StyledActionsBar>
-          <StyledActionButton
-            title="View chat"
-            onClick={handleOpenChat}
-            Icon={IconMessage}
-          />
+          {hasSelection && (
+            <>
+              <StyledActionButton
+                title="View chat"
+                onClick={handleOpenChat}
+                Icon={IconMessage}
+              />
+              <StyledActionButton
+                title="View CV / Attachments"
+                onClick={handleViewAttachments}
+                Icon={IconFileText}
+              />
+            </>
+          )}
+          {jobIdFromResults && (
+            <StyledActionButton
+              title="View in job"
+              onClick={handleViewInJob}
+              Icon={IconBriefcase}
+            />
+          )}
           <StyledActionButton
             title="Open in Jobs"
             onClick={handleOpenInJobs}
             Icon={IconBriefcase}
-          />
-          <StyledActionButton
-            title="View CV / Attachments"
-            onClick={handleViewAttachments}
-            Icon={IconFileText}
           />
         </StyledActionsBar>
       )}
