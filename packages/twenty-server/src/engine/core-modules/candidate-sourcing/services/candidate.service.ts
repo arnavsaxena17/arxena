@@ -1682,7 +1682,6 @@ export class CandidateService {
           console.error(`[CandidateService] Variables sent:`, JSON.stringify(variables, null, 2));
         }
         
-        console.log("response in updateCandidateField::", response?.data);
         return response?.data;
       }
 
