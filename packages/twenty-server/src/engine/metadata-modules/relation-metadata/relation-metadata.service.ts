@@ -499,7 +499,9 @@ export class RelationMetadataService extends TypeOrmQueryService<RelationMetadat
         objectMetadataMaps.byId[fieldMetadataItem.objectMetadataId];
 
       if (!objectMetadata) {
-        return null;
+        return new NotFoundException(
+          `Object metadata not found for field ${fieldMetadataItem.id}`,
+        );
       }
 
       const fieldMetadata = objectMetadata.fieldsById[fieldMetadataItem.id];
@@ -546,7 +548,7 @@ export class RelationMetadataService extends TypeOrmQueryService<RelationMetadat
       };
     });
 
-    return mappedResult;
+    return mappedResult as unknown as (RelationMetadataEntity | null)[];
   }
 
   private async deleteRelationWorkspaceCustomMigration(
