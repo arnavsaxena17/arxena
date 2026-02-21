@@ -720,36 +720,36 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     // Assistant Thread relations
-    {
-      relationMetadata: {
-        fromDescription: null,
-        fromIcon: 'IconMessage',
-        fromLabel: 'Messages',
-        fromName: 'messages',
-        fromObjectMetadataId: objectsNameIdMap.assistantThread,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.assistantMessage,
-        toDescription: '',
-        toIcon: 'IconMessage',
-        toLabel: 'Thread',
-        toName: 'assistantThread',
-      },
-    },
-    {
-      relationMetadata: {
-        fromDescription: null,
-        fromIcon: 'IconUsers',
-        fromLabel: 'Candidates',
-        fromName: 'candidates',
-        fromObjectMetadataId: objectsNameIdMap.assistantThread,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.assistantThreadCandidate,
-        toDescription: '',
-        toIcon: 'IconMessage',
-        toLabel: 'Thread',
-        toName: 'assistantThread',
-      },
-    },
+    // {
+    //   relationMetadata: {
+    //     fromDescription: null,
+    //     fromIcon: 'IconMessage',
+    //     fromLabel: 'Messages',
+    //     fromName: 'messages',
+    //     fromObjectMetadataId: objectsNameIdMap.assistantThread,
+    //     relationType: 'ONE_TO_MANY',
+    //     toObjectMetadataId: objectsNameIdMap.assistantMessage,
+    //     toDescription: '',
+    //     toIcon: 'IconMessage',
+    //     toLabel: 'Thread',
+    //     toName: 'assistantThread',
+    //   },
+    // },
+    // {
+    //   relationMetadata: {
+    //     fromDescription: null,
+    //     fromIcon: 'IconUsers',
+    //     fromLabel: 'Candidates',
+    //     fromName: 'candidates',
+    //     fromObjectMetadataId: objectsNameIdMap.assistantThread,
+    //     relationType: 'ONE_TO_MANY',
+    //     toObjectMetadataId: objectsNameIdMap.assistantThreadCandidate,
+    //     toDescription: '',
+    //     toIcon: 'IconMessage',
+    //     toLabel: 'Thread',
+    //     toName: 'assistantThread',
+    //   },
+    // },
     // Assistant Thread Candidate relations (ONE_TO_MANY only; MANY_TO_ONE not used in sync)
   ];
 }

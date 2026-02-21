@@ -258,36 +258,36 @@ export const objectCreationArr = [
             "namePlural": "recruiterInterviews"
         }
     },
-    {
-        "object": {
-            "description": "",
-            "icon": "IconMessage",
-            "labelPlural": "Assistant Threads",
-            "labelSingular": "Assistant Thread",
-            "nameSingular": "assistantThread",
-            "namePlural": "assistantThreads"
-        }
-    },
-    {
-        "object": {
-            "description": "",
-            "icon": "IconMessage",
-            "labelPlural": "Assistant Messages",
-            "labelSingular": "Assistant Message",
-            "nameSingular": "assistantMessage",
-            "namePlural": "assistantMessages"
-        }
-    },
-    {
-        "object": {
-            "description": "",
-            "icon": "IconUsers",
-            "labelPlural": "Assistant Thread Candidates",
-            "labelSingular": "Assistant Thread Candidate",
-            "nameSingular": "assistantThreadCandidate",
-            "namePlural": "assistantThreadCandidates"
-        }
-    },
+    // {
+    //     "object": {
+    //         "description": "",
+    //         "icon": "IconMessage",
+    //         "labelPlural": "Assistant Threads",
+    //         "labelSingular": "Assistant Thread",
+    //         "nameSingular": "assistantThread",
+    //         "namePlural": "assistantThreads"
+    //     }
+    // },
+    // {
+    //     "object": {
+    //         "description": "",
+    //         "icon": "IconMessage",
+    //         "labelPlural": "Assistant Messages",
+    //         "labelSingular": "Assistant Message",
+    //         "nameSingular": "assistantMessage",
+    //         "namePlural": "assistantMessages"
+    //     }
+    // },
+    // {
+    //     "object": {
+    //         "description": "",
+    //         "icon": "IconUsers",
+    //         "labelPlural": "Assistant Thread Candidates",
+    //         "labelSingular": "Assistant Thread Candidate",
+    //         "nameSingular": "assistantThreadCandidate",
+    //         "namePlural": "assistantThreadCandidates"
+    //     }
+    // },
     {
         "object": {
             "description": "",
