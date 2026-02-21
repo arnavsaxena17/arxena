@@ -1,19 +1,19 @@
 import styled from '@emotion/styled';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
+import { OrgChartAddToJobModal } from './components/OrgChartAddToJobModal';
 import {
   OrgChartDiagram,
   type OrgChartDiagramHandle,
 } from './components/OrgChartDiagram';
-import { OrgChartHeader } from './components/OrgChartHeader';
 import { OrgChartSearchControls } from './components/OrgChartFilters';
-import { OrgChartAddToJobModal } from './components/OrgChartAddToJobModal';
+import { OrgChartHeader } from './components/OrgChartHeader';
 import { OrgChartResultModal } from './components/OrgChartResultModal';
-import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
+import { useCompanyInfoLookup } from './hooks/useCompanyAutocomplete';
 import { useOrgChartActions } from './hooks/useOrgChartActions';
 import { useOrgChartData } from './hooks/useOrgChartData';
 import { useOrgChartFilterOptions } from './hooks/useOrgChartFilterOptions';
-import { useCompanyInfoLookup } from './hooks/useCompanyAutocomplete';
 import {
   extractOrgData,
   processOrgChartToNodeData,
@@ -51,7 +51,13 @@ const StyledSearchOverlay = styled.div`
   position: absolute;
   bottom: ${({ theme }) => theme.spacing(2)};
   left: ${({ theme }) => theme.spacing(2)};
+  right: ${({ theme }) => theme.spacing(2)};
   z-index: 20;
+  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  background: ${({ theme }) => theme.background.primary};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  box-shadow: 0 1px 3px ${({ theme }) => theme.background.transparent.medium};
 `;
 
 const StyledTopRightActionsOverlay = styled.div`
@@ -60,24 +66,32 @@ const StyledTopRightActionsOverlay = styled.div`
   right: ${({ theme }) => theme.spacing(2)};
   z-index: 20;
   display: flex;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${({ theme }) => theme.spacing(0.5)};
+  padding: ${({ theme }) => theme.spacing(0.5)};
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  background: ${({ theme }) => theme.background.primary};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  box-shadow: 0 1px 3px ${({ theme }) => theme.background.transparent.medium};
 `;
 
 const StyledTopRightActionButton = styled.button`
   padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(1.5)};
   border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
+  border: none;
+  background: transparent;
+  color: ${({ theme }) => theme.font.color.secondary};
   font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: 500;
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
 
   &:hover:enabled {
     background: ${({ theme }) => theme.background.transparent.light};
+    color: ${({ theme }) => theme.font.color.primary};
   }
 
   &:disabled {
-    opacity: 0.4;
+    opacity: 0.45;
     cursor: default;
   }
 `;
@@ -102,6 +116,44 @@ const StyledErrorMessage = styled.div`
   font-size: ${({ theme }) => theme.font.size.md};
 `;
 
+const StyledTemplateBanner = styled.div`
+  position: absolute;
+  top: ${({ theme }) => theme.spacing(2)};
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 19;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: ${({ theme }) => theme.spacing(1.5)};
+  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2.5)};
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  background: ${({ theme }) => theme.background.primary};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  line-height: 1.4;
+  box-shadow: 0 2px 8px ${({ theme }) => theme.background.transparent.medium};
+`;
+
+const StyledTemplateBannerButton = styled.button`
+  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1.25)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: none;
+  background: ${({ theme }) => theme.color.blue};
+  color: ${({ theme }) => theme.font.color.inverted};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease, filter 0.15s ease;
+
+  &:hover {
+    opacity: 0.92;
+    filter: brightness(1.05);
+  }
+`;
+
 const PERSON_ROW_HEIGHT = 48;
 
 export const ArxOrgChart = ({
@@ -118,7 +170,6 @@ export const ArxOrgChart = ({
   const [selectedFunctionRoot, setSelectedFunctionRoot] = useState<
     string | undefined
   >();
-  const [selectedYear, setSelectedYear] = useState<string | undefined>();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResultCount, setSearchResultCount] = useState<number | null>(null);
 
@@ -149,6 +200,11 @@ export const ArxOrgChart = ({
     () => extractOrgData(orgSource),
     [orgSource],
   );
+
+  const isBlankTemplate =
+    typeof (orgSource as Record<string, unknown> | null)?.is_blank_template ===
+    'boolean' &&
+    (orgSource as Record<string, unknown>).is_blank_template === true;
 
   const filterOptions = useOrgChartFilterOptions(orgData);
 
@@ -194,11 +250,7 @@ export const ArxOrgChart = ({
           : undefined;
       return initialFunctionRoot;
     });
-
-    if (!selectedYear) {
-      setSelectedYear(new Date().getFullYear().toString());
-    }
-  }, [orgData, companyId, selectedYear]);
+  }, [orgData, companyId]);
 
   const nodeDataArray = useMemo(() => {
     if (!orgData) return [];
@@ -244,9 +296,6 @@ export const ArxOrgChart = ({
   };
 
   const filtersProps = {
-    selectedYear,
-    onYearChange: (year: string) => setSelectedYear(year),
-    availableYears: filterOptions.availableYears,
     availableCountries: filterOptions.availableCountries,
     countryPercentLabels: filterOptions.countryPercentLabels,
     selectedCountry,
@@ -308,6 +357,19 @@ export const ArxOrgChart = ({
 
         {!isLoading && !error && nodeDataArray.length > 0 && (
           <>
+            {isBlankTemplate && (
+              <StyledTemplateBanner>
+                This is an org chart template. To generate the full org chart
+                for this company, click{' '}
+                <StyledTemplateBannerButton
+                  type="button"
+                  onClick={searchControlsProps.onGetAll}
+                >
+                  All
+                </StyledTemplateBannerButton>{' '}
+                and we will create it for you.
+              </StyledTemplateBanner>
+            )}
             <OrgChartDiagram
               ref={diagramHandleRef}
               nodeDataArray={nodeDataArray}

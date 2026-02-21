@@ -27,6 +27,10 @@
       {
         "include": "**/serverless/drivers/constants/executor/index.mjs",
         "outDir": "dist/assets"
+      },
+      {
+        "include": "**/org-chart/static/**",
+        "outDir": "dist/src"
       }
     ],
     "watchAssets": true

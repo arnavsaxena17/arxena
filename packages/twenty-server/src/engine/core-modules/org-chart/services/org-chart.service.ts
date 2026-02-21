@@ -117,13 +117,18 @@ export class OrgChartService {
       return cachedOrgChartPayload.orgChart;
     }
 
-    // No ES document and we do NOT auto-fallback to legacy arxena-site anymore.
-    // For new companies, org charts are built via the LinkedIn+Python pipeline
-    // (e.g. via the "entire_company" orgchart flow). Here we simply return an
-    // empty placeholder object so the frontend can show "No org chart data"
-    // without triggering failing legacy calls.
+    // No ES document and no cache: serve static blank org chart template so the
+    // frontend can show a placeholder structure instead of empty.
+    const blankChart = await this.getBlankOrgChartPlaceholder(companyId, options);
+    if (blankChart) {
+      this.logger.log(
+        `Serving blank org chart placeholder for companyId=${companyId} from static file`,
+      );
+      return blankChart;
+    }
+
     this.logger.warn(
-      `Org chart not found in ES for companyId=${companyId}; skipping legacy arxena-site fallback and returning empty org chart placeholder`,
+      `Org chart not found in ES for companyId=${companyId}; blank placeholder file unavailable, returning empty org chart`,
     );
 
     return {
@@ -132,6 +137,67 @@ export class OrgChartService {
       country: options.country ?? 'global',
       type: options.functionRoot ?? 'fullcompany',
     } as Record<string, unknown>;
+  }
+
+  /**
+   * Load the static blank org chart template (from arxena-site Python output)
+   * and override company fields for the requested companyId. Returns null if
+   * the file is missing or invalid.
+   */
+  private async getBlankOrgChartPlaceholder(
+    companyId: string,
+    options: {
+      companyName?: string;
+      website?: string;
+      country?: string;
+      functionRoot?: string;
+    },
+  ): Promise<Record<string, unknown> | null> {
+    const cwd = process.cwd();
+    const candidates = [
+      path.join(__dirname, '..', 'static', 'blank_org_chart_emp_obj.json'),
+      path.join(
+        cwd,
+        'src',
+        'engine',
+        'core-modules',
+        'org-chart',
+        'static',
+        'blank_org_chart_emp_obj.json',
+      ),
+      path.join(
+        cwd,
+        'packages',
+        'twenty-server',
+        'src',
+        'engine',
+        'core-modules',
+        'org-chart',
+        'static',
+        'blank_org_chart_emp_obj.json',
+      ),
+    ];
+
+    for (const staticPath of candidates) {
+      try {
+        const raw = await readFile(staticPath, 'utf8');
+        const parsed = JSON.parse(raw) as Record<string, unknown>;
+
+        return {
+          ...parsed,
+          company_id: companyId,
+          job_company_id: companyId,
+          job_company_name: options.companyName ?? companyId,
+          country: options.country ?? 'global',
+          type: options.functionRoot ?? 'fullcompany',
+          is_blank_template: true,
+        } as Record<string, unknown>;
+      } catch (err) {
+        continue;
+      }
+    }
+
+    return null;
   }
 
   private buildCompanyOrgChartCacheKey(

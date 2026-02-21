@@ -764,6 +764,84 @@ export class EnvironmentVariables {
   PG_SSL_ALLOW_SELF_SIGNED = false;
 
   @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.ServerConfig,
+    description:
+      'PostgreSQL connection pool max size for metadata schema. Keep sum of all PG_POOL_*_MAX below PostgreSQL max_connections.',
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  @IsNumber()
+  PG_POOL_METADATA_MAX = 25;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.ServerConfig,
+    description: 'PostgreSQL connection pool min size for metadata schema',
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  @IsNumber()
+  PG_POOL_METADATA_MIN = 2;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.ServerConfig,
+    description:
+      'PostgreSQL connection pool max size for core schema. Keep sum of all PG_POOL_*_MAX below PostgreSQL max_connections.',
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  @IsNumber()
+  PG_POOL_CORE_MAX = 25;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.ServerConfig,
+    description: 'PostgreSQL connection pool min size for core schema',
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  @IsNumber()
+  PG_POOL_CORE_MIN = 2;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.ServerConfig,
+    description:
+      'PostgreSQL connection pool max size for TypeORMService main (core) datasource',
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  @IsNumber()
+  PG_POOL_MAIN_MAX = 10;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.ServerConfig,
+    description:
+      'PostgreSQL connection pool min size for TypeORMService main datasource',
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  @IsNumber()
+  PG_POOL_MAIN_MIN = 1;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.ServerConfig,
+    description:
+      'PostgreSQL connection pool max size per workspace (WorkspaceDataSourceFactory). Keep sum of all pools below PostgreSQL max_connections.',
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  @IsNumber()
+  PG_POOL_WORKSPACE_MAX = 10;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.ServerConfig,
+    description:
+      'PostgreSQL connection pool min size per workspace (WorkspaceDataSourceFactory)',
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  @IsNumber()
+  PG_POOL_WORKSPACE_MIN = 0;
+
+  @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.TokensDuration,
     description: 'Time-to-live for cache storage in seconds',
   })

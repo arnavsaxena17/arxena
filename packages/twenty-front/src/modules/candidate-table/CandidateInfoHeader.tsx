@@ -1,8 +1,8 @@
 import { currentJobIdState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { processedDataSelector, selectedCandidateIdState, tableStateAtom } from '@/candidate-table/states/states';
-import { getPermanentId, isUUID } from '@/candidate-table/HotHooks';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
+import { getPermanentId, isUUID } from '@/candidate-table/HotHooks';
+import { processedDataSelector, selectedCandidateIdState, tableStateAtom } from '@/candidate-table/states/states';
 import { useStartChats } from '@/object-record/hooks/useStartChats';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -282,7 +282,7 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
         
         // If found in rawData, try to find corresponding entry in allCandidates
         if (rawCandidate) {
-          const rawCandidateId = getPermanentId(rawCandidate, tableState.rawData) || rawCandidate.id;
+          const rawCandidateId = getPermanentId(rawCandidate as any, tableState.rawData) || rawCandidate.id;
           candidateData = allCandidates.find((row) => {
             const rowPermanentId = getPermanentId(row, tableState.rawData);
             return rowPermanentId === rawCandidateId || row.id === rawCandidateId || row.id === candidateId;

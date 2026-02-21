@@ -183,20 +183,10 @@ export const useOrgChartFilterOptions = (
     }
   }, [orgData]);
 
-  const availableYears = useMemo(() => {
-    const currentYear = new Date().getFullYear();
-    const years: string[] = [];
-    for (let i = 0; i < 5; i += 1) {
-      years.push(String(currentYear - i));
-    }
-    return years;
-  }, []);
-
   return {
     availableCountries,
     availableFunctionRoots,
     countryPercentLabels,
     functionRootPercentLabels,
-    availableYears,
   };
 };

@@ -2,11 +2,11 @@ import styled from '@emotion/styled';
 import * as go from 'gojs';
 import { ReactDiagram } from 'gojs-react';
 import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useRef,
+    forwardRef,
+    useCallback,
+    useEffect,
+    useImperativeHandle,
+    useRef,
 } from 'react';
 
 import type { OrgChartNodeData } from '../utils/orgChartDataUtils';
@@ -139,9 +139,15 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       const textLabel = (s: unknown): string => getLabelFromNodeState(s);
 
       const colorLabel = (s: unknown): string => {
-        if (s === 'active') return 'PaleGreen';
+        if (s === 'active') return '#22c55e';
+        if (s === 'lock') return '#94a3b8';
+        return '#94a3b8';
+      };
+
+      const colorLabelStroke = (s: unknown): string => {
+        if (s === 'active') return '#16a34a';
         if (s === 'lock') return '#64748b';
-        return 'rgb(36,116,204)';
+        return '#64748b';
       };
 
       const findIconSource = (nodeState: unknown): string =>
@@ -219,7 +225,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
               overflow: go.TextBlock.OverflowEllipsis,
               editable: false,
               isMultiline: true,
-              stroke: 'rgb(150,150,150)',
+              stroke: '#64748b',
               minSize: new go.Size(10, 14),
               margin: new go.Margin(0, 0, 0, 0),
               width: 150,
@@ -293,9 +299,9 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
             'RoundedRectangle',
             {
               name: 'SHAPE',
-              fill: 'white',
+              fill: '#fafafa',
               strokeWidth: 1,
-              stroke: 'rgb(150,150,150)',
+              stroke: '#e2e8f0',
               cursor: 'pointer',
               width: 230,
               portId: '',
@@ -303,10 +309,10 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
               toLinkable: true,
             },
             new go.Binding('stroke', 'isHighlighted', (h: boolean) =>
-              h ? 'blue' : 'rgb(150,150,150)',
+              h ? '#3b82f6' : '#e2e8f0',
             ).ofObject(),
             new go.Binding('strokeWidth', 'isHighlighted', (h: boolean) =>
-              h ? 5 : 1,
+              h ? 2 : 1,
             ).ofObject(),
             new go.Binding('fill', 'special_color'),
           ),
@@ -332,11 +338,14 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
                 name: 'LABEL',
                 height: 20,
                 width: 60,
-                stroke: 'rgba(255,255,255,0)',
                 margin: new go.Margin(0, -90, 0, 0),
               },
               new go.Binding('height', 'nodeState', showLabelContainer),
               new go.Binding('fill', 'nodeState', colorLabel),
+              new go.Binding('stroke', 'nodeState', colorLabelStroke),
+              new go.Binding('strokeWidth', 'nodeState', (s: unknown) =>
+                ['preview', 'active', 'lock'].includes(String(s)) ? 1 : 0,
+              ),
             ),
             $(
               go.Panel,
@@ -351,13 +360,16 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
                 {
                   row: 0,
                   column: 0,
-                  font: 'bold 11pt Segoe UI,sans-serif',
+                  font: '600 10pt Segoe UI,sans-serif',
                   editable: false,
                   isMultiline: false,
                   textAlign: 'center',
-                  stroke: 'white',
+                  stroke: '#f8fafc',
                 },
                 new go.Binding('text', 'nodeState', textLabel),
+                new go.Binding('stroke', 'nodeState', (s: unknown) =>
+                  s === 'active' ? '#f0fdf4' : '#f8fafc',
+                ),
               ),
             ),
             $(
@@ -458,7 +470,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
                     isMultiline: false,
                     minSize: new go.Size(10, 14),
                     margin: new go.Margin(0, 8, 0, 0),
-                    stroke: 'rgb(150,150,150)',
+                    stroke: '#64748b',
                     cursor: 'pointer',
                   },
                   new go.Binding('text', 'total_people', textSeeMore),
@@ -637,20 +649,9 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       diagram.nodeTemplate = createNodeTemplate();
       diagram.linkTemplate = $(
         go.Link,
-        { routing: go.Link.Orthogonal, corner: 5 },
-        $(go.Shape, { strokeWidth: 4, stroke: '#00a4a4' }),
+        { routing: go.Link.Orthogonal, corner: 6 },
+        $(go.Shape, { strokeWidth: 2, stroke: '#cbd5e1' }),
       );
-
-      const levelColors: string[] = [
-        '#AC193D',
-        '#2672EC',
-        '#8C0095',
-        '#5133AB',
-        '#008299',
-        '#D24726',
-        '#008A00',
-        '#094AB2',
-      ];
 
       const layout = diagram.layout as go.TreeLayout;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -659,32 +660,6 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       // eslint-disable-next-line func-names, @typescript-eslint/no-explicit-any
       (layout as any).commitNodes = function () {
         baseCommitNodes();
-        const network = layout.network;
-        if (!network) {
-          return;
-        }
-
-        network.vertexes.each((v) => {
-          const tv = v as go.TreeVertex;
-          const node = tv.node;
-          if (!node) {
-            return;
-          }
-
-          const level = tv.level % levelColors.length;
-          const color = levelColors[level];
-          const shape = node.findObject('SHAPE') as go.Shape | null;
-          if (!shape) {
-            return;
-          }
-
-          shape.stroke = $(go.Brush, 'Linear', {
-            0: color,
-            1: go.Brush.lightenBy(color, 0.05),
-            start: go.Spot.Left,
-            end: go.Spot.Right,
-          });
-        });
       };
 
       if (onBackgroundContextAction) {

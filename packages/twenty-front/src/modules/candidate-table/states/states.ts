@@ -2,11 +2,10 @@ import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-ai-f
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { activeSearchFilterIdState } from '@/candidate-search/states/searchConfigState';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
-import { LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/candidate-search.types';
 import { ProcessedData } from '@/candidate-table/ProcessedData';
 import { TableColumns } from '@/candidate-table/TableColumns';
 import { atom, selector } from "recoil";
-import { CandidateNode } from 'twenty-shared';
+import { CandidateNode, LinkedInSearchCategory, LinkedInSearchType } from 'twenty-shared';
 import { sortCandidates } from '../utils/customSortUtils';
 import { customSortState } from './customSortState';
 

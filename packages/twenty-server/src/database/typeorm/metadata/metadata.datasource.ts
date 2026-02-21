@@ -28,17 +28,15 @@ export const typeORMMetadataModuleOptions: TypeOrmModuleOptions = {
       : undefined,
   extra: {
     query_timeout: 10000,
-    // Connection pooling configuration for TypeORM 0.3.20
-    max: 100,
-    min: 10,
+    // Connection pooling: cap to avoid "too many clients" (sum of all pools must be < PostgreSQL max_connections)
+    max: parseInt(process.env.PG_POOL_METADATA_MAX ?? '25', 10),
+    min: parseInt(process.env.PG_POOL_METADATA_MIN ?? '2', 10),
     idle: 60000,
     acquire: 120000,
     evict: 30000,
-    // Node-postgres specific settings to match TypeORM configuration
-    idleTimeoutMillis: 60000, // Match TypeORM idle timeout
-    connectionTimeoutMillis: 120000, // Match TypeORM acquire timeout
-    // Additional PostgreSQL pool settings
-    connectionLimit: 100,
+    idleTimeoutMillis: 60000,
+    connectionTimeoutMillis: 120000,
+    connectionLimit: parseInt(process.env.PG_POOL_METADATA_MAX ?? '25', 10),
     acquireTimeout: 120000,
     timeout: 60000,
   },

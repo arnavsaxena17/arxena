@@ -42,7 +42,7 @@ function saveThreadsToStorage(threads: AssistantThread[]) {
 function createNewThread(name = 'New thread'): AssistantThread {
   return {
     id: crypto.randomUUID(),
-    name,
+  name,
     messages: [],
     lastTableData: null,
   };
