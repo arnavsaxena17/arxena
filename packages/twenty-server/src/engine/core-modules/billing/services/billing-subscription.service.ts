@@ -9,8 +9,8 @@ import Stripe from 'stripe';
 import { Not, Repository } from 'typeorm';
 
 import {
-    BillingException,
-    BillingExceptionCode,
+  BillingException,
+  BillingExceptionCode,
 } from 'src/engine/core-modules/billing/billing.exception';
 import { BillingEntitlement } from 'src/engine/core-modules/billing/entities/billing-entitlement.entity';
 import { BillingPrice } from 'src/engine/core-modules/billing/entities/billing-price.entity';
@@ -135,7 +135,7 @@ export class BillingSubscriptionService {
 
   async deleteSubscriptions(workspaceId: string) {
     const subscriptionToCancel =
-      await this.getCurrentBillingSubscriptionOrThrow({
+      await this.getCurrentBillingSubscription({
         workspaceId,
       });
 
