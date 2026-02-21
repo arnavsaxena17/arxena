@@ -494,16 +494,34 @@ export class FieldMetadataService extends TypeOrmQueryService<FieldMetadataEntit
       relationMetadata.fromFieldMetadata.id === fieldMetadataDTO.id;
 
     // TODO: implement MANY_TO_MANY
-    if (
-      relationMetadata.relationType === RelationMetadataType.MANY_TO_MANY ||
-      relationMetadata.relationType === RelationMetadataType.MANY_TO_ONE
-    ) {
+    if (relationMetadata.relationType === RelationMetadataType.MANY_TO_MANY) {
       throw new FieldMetadataException(
         `
         Relation type ${relationMetadata.relationType} not supported
       `,
         FieldMetadataExceptionCode.INVALID_FIELD_INPUT,
       );
+    }
+
+    if (relationMetadata.relationType === RelationMetadataType.MANY_TO_ONE) {
+      if (isRelationFromSource) {
+        return {
+          relationId: relationMetadata.id,
+          sourceObjectMetadata: relationMetadata.fromObjectMetadata,
+          sourceFieldMetadata: relationMetadata.fromFieldMetadata,
+          targetObjectMetadata: relationMetadata.toObjectMetadata,
+          targetFieldMetadata: relationMetadata.toFieldMetadata,
+          direction: RelationDefinitionType.MANY_TO_ONE,
+        };
+      }
+      return {
+        relationId: relationMetadata.id,
+        sourceObjectMetadata: relationMetadata.toObjectMetadata,
+        sourceFieldMetadata: relationMetadata.toFieldMetadata,
+        targetObjectMetadata: relationMetadata.fromObjectMetadata,
+        targetFieldMetadata: relationMetadata.fromFieldMetadata,
+        direction: RelationDefinitionType.ONE_TO_MANY,
+      };
     }
 
     if (isRelationFromSource) {
