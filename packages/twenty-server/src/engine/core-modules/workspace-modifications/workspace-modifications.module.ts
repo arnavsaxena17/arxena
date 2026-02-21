@@ -29,6 +29,8 @@ import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/works
 import { EmailModule } from '../email/email.module';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { CreateMetadataStructureJob } from './jobs/create-metadata-structure.job';
+import { SeedMetadataStructureJob } from './jobs/seed-metadata-structure.job';
+import { MetadataStructureSeedModule } from './metadata-structure-seed/metadata-structure-seed.module';
 import { MetadataUpdateService } from './object-apis/services/metadata-update.service';
 import { WorkspaceModificationsController } from './workspace-modifications.controller';
 import { WorkspaceQueryService } from './workspace-modifications.service';
@@ -37,6 +39,7 @@ import { WorkspaceQueryService } from './workspace-modifications.service';
   imports: [
     AuthModule,
     MessageQueueModule,
+    MetadataStructureSeedModule,
     TypeORMModule,
     CoreGraphQLApiModule,
     DataSourceModule,
@@ -55,6 +58,7 @@ import { WorkspaceQueryService } from './workspace-modifications.service';
   ],
   providers: [
     CreateMetadataStructureJob,
+    SeedMetadataStructureJob,
     WorkspaceCacheStorageService,
     EnvironmentService,
     GraphQLExecutionService,

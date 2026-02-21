@@ -56,6 +56,7 @@ export class CreateMetaDataStructure {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly webSocketService?: WebSocketService,
+    
   ) {}
 
   // Helper method to emit websocket events
@@ -520,31 +521,49 @@ export class CreateMetaDataStructure {
         return;
       }
       console.log('userId', userId);
-      const shouldCreateObjectMetadata = true;
       const shouldCreateVideoInterviews = true;
       const shouldCreateArxEnrichments = true;
       const shouldCreateApiKeys = true;
       const shoudUpdateCandidateViewField = true;
       const shouldCreateDatabaseIndices = true;
 
-      if (shouldCreateObjectMetadata) {
+      const customObjectNames = objectCreationArr
+        .map((item) => item?.object?.nameSingular)
+        .filter((name): name is string => !!name);
+      const objectsNameIdMap = await this.fetchObjectsNameIdMap(
+        apiToken,
+        origin,
+        3,
+      );
+      const customMetadataAlreadyExists = customObjectNames.every(
+        (name) => !!objectsNameIdMap[name],
+      );
+
+      if (!customMetadataAlreadyExists) {
         try {
           console.log('This is the object creation array:');
           await createObjectMetadataItems(apiToken, objectCreationArr, origin);
           console.log('Object metadata items created successfully');
-          const objectsNameIdMap = await this.fetchObjectsNameIdMap(apiToken, origin, 3);
-          const fieldsData = getFieldsData(objectsNameIdMap);
+          const mapAfterCreate = await this.fetchObjectsNameIdMap(
+            apiToken,
+            origin,
+            3,
+          );
+          const fieldsData = getFieldsData(mapAfterCreate);
           console.log('Number of fieldsData', fieldsData.length);
 
           await createFields(fieldsData, apiToken, origin, 3);
           console.log('Fields created successfully');
-          const relationsFields = getRelationsData(objectsNameIdMap);
+          const relationsFields = getRelationsData(mapAfterCreate);
 
           await createRelations(relationsFields, apiToken, origin, 3);
           console.log('Relations created successfully');
-          
-          // Send websocket notification after relations are created
-          this.emitProgress(userId, 'relations-created', 'Objects and relationships created successfully');
+
+          this.emitProgress(
+            userId,
+            'relations-created',
+            'Objects and relationships created successfully',
+          );
         } catch (error) {
           console.log(
             'Error creating object metadata items, fields, or relations:',

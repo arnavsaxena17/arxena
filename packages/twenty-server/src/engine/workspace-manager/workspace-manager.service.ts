@@ -5,12 +5,13 @@ import { Repository } from 'typeorm';
 
 import { DEV_SEED_USER_WORKSPACE_IDS } from 'src/database/typeorm-seeds/core/user-workspaces';
 import {
-  SEED_ACME_WORKSPACE_ID,
-  SEED_APPLE_WORKSPACE_ID,
+    SEED_ACME_WORKSPACE_ID,
+    SEED_APPLE_WORKSPACE_ID,
 } from 'src/database/typeorm-seeds/core/workspaces';
 import { FeatureFlagKey } from 'src/engine/core-modules/feature-flag/enums/feature-flag-key.enum';
 import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
+import { MetadataStructureSeedService } from 'src/engine/core-modules/workspace-modifications/metadata-structure-seed/metadata-structure-seed.service';
 import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
 import { DataSourceService } from 'src/engine/metadata-modules/data-source/data-source.service';
 import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
@@ -49,6 +50,7 @@ export class WorkspaceManagerService {
     private readonly roleService: RoleService,
     private readonly userRoleService: UserRoleService,
     private readonly featureFlagService: FeatureFlagService,
+    private readonly metadataStructureSeedService: MetadataStructureSeedService,
   ) {}
 
   /**
@@ -90,6 +92,8 @@ export class WorkspaceManagerService {
       dataSourceMetadata,
       workspaceId,
     );
+
+    await this.metadataStructureSeedService.seedForWorkspace(workspaceId);
   }
 
   /**
