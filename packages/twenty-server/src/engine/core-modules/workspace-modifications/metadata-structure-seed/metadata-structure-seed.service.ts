@@ -14,6 +14,7 @@ import { ObjectMetadataService } from 'src/engine/metadata-modules/object-metada
 import { CreateRelationInput } from 'src/engine/metadata-modules/relation-metadata/dtos/create-relation.input';
 import { RelationMetadataType } from 'src/engine/metadata-modules/relation-metadata/relation-metadata.entity';
 import { RelationMetadataService } from 'src/engine/metadata-modules/relation-metadata/relation-metadata.service';
+import { WorkspaceMetadataVersionService } from 'src/engine/metadata-modules/workspace-metadata-version/services/workspace-metadata-version.service';
 
 import { getFieldsData } from '../object-apis/data/fieldsData';
 import { objectCreationArr } from '../object-apis/data/objectsData';
@@ -39,6 +40,8 @@ function normalizeFieldOptions(
   );
 }
 
+const SEED_BATCH_OPTIONS = { skipMetadataVersionIncrement: true } as const;
+
 @Injectable()
 export class MetadataStructureSeedService {
   constructor(
@@ -46,6 +49,7 @@ export class MetadataStructureSeedService {
     private readonly objectMetadataService: ObjectMetadataService,
     private readonly fieldMetadataService: FieldMetadataService,
     private readonly relationMetadataService: RelationMetadataService,
+    private readonly workspaceMetadataVersionService: WorkspaceMetadataVersionService,
   ) {}
 
   async seedForWorkspace(workspaceId: string): Promise<void> {
@@ -71,16 +75,20 @@ export class MetadataStructureSeedService {
         description: item.object.description ?? undefined,
         icon: item.object.icon ?? undefined,
       };
-      const created = await this.objectMetadataService.createOne(createInput);
+      const created = await this.objectMetadataService.createOne(
+        createInput,
+        SEED_BATCH_OPTIONS,
+      );
       objectsNameIdMap[created.nameSingular] = created.id;
     }
 
     const fieldsData = getFieldsData(objectsNameIdMap);
+    const fieldInputs: CreateFieldInput[] = [];
     for (const item of fieldsData) {
       const objId = item?.field?.objectMetadataId;
       const name = item?.field?.name;
       if (!objId || !name) continue;
-      const fieldInput: CreateFieldInput = {
+      fieldInputs.push({
         workspaceId,
         objectMetadataId: objId,
         type: item.field!.type as FieldMetadataType,
@@ -89,8 +97,13 @@ export class MetadataStructureSeedService {
         description: item.field!.description ?? undefined,
         icon: item.field!.icon ?? undefined,
         options: normalizeFieldOptions(item.field!.options),
-      };
-      await this.fieldMetadataService.createOne(fieldInput);
+      });
+    }
+    if (fieldInputs.length > 0) {
+      await this.fieldMetadataService.createMany(
+        fieldInputs,
+        SEED_BATCH_OPTIONS,
+      );
     }
 
     const relationsData = getRelationsData(objectsNameIdMap);
@@ -124,8 +137,15 @@ export class MetadataStructureSeedService {
         fromDescription: r.fromDescription ?? undefined,
         toDescription: r.toDescription ?? undefined,
       };
-      await this.relationMetadataService.createOne(relationInput);
+      await this.relationMetadataService.createOne(
+        relationInput,
+        SEED_BATCH_OPTIONS,
+      );
     }
+
+    await this.workspaceMetadataVersionService.incrementMetadataVersion(
+      workspaceId,
+    );
   }
 
   private async buildObjectsNameIdMap(

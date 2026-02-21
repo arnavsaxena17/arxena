@@ -28,7 +28,6 @@ import { WorkspaceMetadataCacheModule } from 'src/engine/metadata-modules/worksp
 import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
 import { EmailModule } from '../email/email.module';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
-import { CreateMetadataStructureJob } from './jobs/create-metadata-structure.job';
 import { SeedMetadataStructureJob } from './jobs/seed-metadata-structure.job';
 import { MetadataStructureSeedModule } from './metadata-structure-seed/metadata-structure-seed.module';
 import { MetadataUpdateService } from './object-apis/services/metadata-update.service';
@@ -57,7 +56,6 @@ import { WorkspaceQueryService } from './workspace-modifications.service';
     EmailModule,
   ],
   providers: [
-    CreateMetadataStructureJob,
     SeedMetadataStructureJob,
     WorkspaceCacheStorageService,
     EnvironmentService,

@@ -61,6 +61,7 @@ export class RelationMetadataService extends TypeOrmQueryService<RelationMetadat
 
   override async createOne(
     relationMetadataInput: CreateRelationInput,
+    options?: { skipMetadataVersionIncrement?: boolean },
   ): Promise<RelationMetadataEntity> {
     const objectMetadataMap = await this.getObjectMetadataMap(
       relationMetadataInput,
@@ -157,9 +158,11 @@ export class RelationMetadataService extends TypeOrmQueryService<RelationMetadat
       relationMetadataInput.workspaceId,
     );
 
-    await this.workspaceMetadataVersionService.incrementMetadataVersion(
-      relationMetadataInput.workspaceId,
-    );
+    if (!options?.skipMetadataVersionIncrement) {
+      await this.workspaceMetadataVersionService.incrementMetadataVersion(
+        relationMetadataInput.workspaceId,
+      );
+    }
 
     return createdRelationMetadata;
   }

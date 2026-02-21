@@ -18,17 +18,17 @@ import { DeleteOneObjectInput } from 'src/engine/metadata-modules/object-metadat
 import { ObjectMetadataDTO } from 'src/engine/metadata-modules/object-metadata/dtos/object-metadata.dto';
 import { UpdateOneObjectInput } from 'src/engine/metadata-modules/object-metadata/dtos/update-object.input';
 import {
-  ObjectMetadataException,
-  ObjectMetadataExceptionCode,
+    ObjectMetadataException,
+    ObjectMetadataExceptionCode,
 } from 'src/engine/metadata-modules/object-metadata/object-metadata.exception';
 import { ObjectMetadataMigrationService } from 'src/engine/metadata-modules/object-metadata/services/object-metadata-migration.service';
 import { ObjectMetadataRelatedRecordsService } from 'src/engine/metadata-modules/object-metadata/services/object-metadata-related-records.service';
 import { ObjectMetadataRelationService } from 'src/engine/metadata-modules/object-metadata/services/object-metadata-relation.service';
 import { buildDefaultFieldsForCustomObject } from 'src/engine/metadata-modules/object-metadata/utils/build-default-fields-for-custom-object.util';
 import {
-  validateNameAndLabelAreSyncOrThrow,
-  validateNameSingularAndNamePluralAreDifferentOrThrow,
-  validateObjectMetadataInputOrThrow,
+    validateNameAndLabelAreSyncOrThrow,
+    validateNameSingularAndNamePluralAreDifferentOrThrow,
+    validateObjectMetadataInputOrThrow,
 } from 'src/engine/metadata-modules/object-metadata/utils/validate-object-metadata-input.util';
 import { RemoteTableRelationsService } from 'src/engine/metadata-modules/remote-server/remote-table/remote-table-relations/remote-table-relations.service';
 import { SearchService } from 'src/engine/metadata-modules/search/search.service';
@@ -82,6 +82,7 @@ export class ObjectMetadataService extends TypeOrmQueryService<ObjectMetadataEnt
 
   override async createOne(
     objectMetadataInput: CreateObjectInput,
+    options?: { skipMetadataVersionIncrement?: boolean },
   ): Promise<ObjectMetadataEntity> {
     const lastDataSourceMetadata =
       await this.dataSourceService.getLastDataSourceMetadataFromWorkspaceIdOrFail(
@@ -187,9 +188,11 @@ export class ObjectMetadataService extends TypeOrmQueryService<ObjectMetadataEnt
       createdObjectMetadata,
     );
 
-    await this.workspaceMetadataVersionService.incrementMetadataVersion(
-      objectMetadataInput.workspaceId,
-    );
+    if (!options?.skipMetadataVersionIncrement) {
+      await this.workspaceMetadataVersionService.incrementMetadataVersion(
+        objectMetadataInput.workspaceId,
+      );
+    }
 
     return createdObjectMetadata;
   }

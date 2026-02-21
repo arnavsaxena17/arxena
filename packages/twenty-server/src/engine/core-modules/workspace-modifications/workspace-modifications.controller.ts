@@ -1,24 +1,18 @@
 import {
-  Body,
-  Controller,
-  Get,
-  Headers,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Post,
-  Req,
-  UseGuards,
+    Body,
+    Controller,
+    Get,
+    Headers,
+    Param,
+    Post,
+    Req,
+    UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
-import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
-import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { In } from 'typeorm';
-import { CreateMetadataStructureJob } from './jobs/create-metadata-structure.job';
 import { CreateMetaDataStructure } from './object-apis/object-apis-creation';
 import { MetadataUpdateService } from './object-apis/services/metadata-update.service';
 import { WorkspaceQueryService } from './workspace-modifications.service';
@@ -30,8 +24,6 @@ export class WorkspaceModificationsController {
     private readonly webSocketService: WebSocketService,
     private readonly metadataUpdateService: MetadataUpdateService,
     private readonly staticGraphQLService: StaticGraphQLService,
-    @InjectMessageQueue(MessageQueue.metadataStructureQueue)
-    private readonly metadataStructureQueueService: MessageQueueService,
   ) {
     console.log('GraphQL URL configured as:', process.env.GRAPHQL_URL);
   }
@@ -116,18 +108,14 @@ export class WorkspaceModificationsController {
   }
   @Post('create-metadata-structure')
   @UseGuards(JwtAuthGuard)
-  @HttpCode(HttpStatus.ACCEPTED)
   async createMetadataStructure(
     @Headers('authorization') authHeader: string,
     @Req() req: Request,
   ) {
     const token = authHeader?.split(' ')[1];
     const origin = (req.headers.origin as string) || '';
-    await this.metadataStructureQueueService.add(
-      CreateMetadataStructureJob.name,
-      { token, origin },
-    );
-    return { message: 'Metadata structure creation queued' };
+    await this.workspaceQueryService.createMetadataStructure(token, origin);
+    return { message: 'Metadata structure creation completed' };
   }
 
   @Post('update-metadata-structure')

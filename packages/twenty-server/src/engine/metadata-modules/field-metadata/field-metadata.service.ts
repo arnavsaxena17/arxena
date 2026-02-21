@@ -95,8 +95,12 @@ export class FieldMetadataService extends TypeOrmQueryService<FieldMetadataEntit
 
   override async createOne(
     fieldMetadataInput: CreateFieldInput,
+    options?: { skipMetadataVersionIncrement?: boolean },
   ): Promise<FieldMetadataEntity> {
-    const [createdFieldMetadata] = await this.createMany([fieldMetadataInput]);
+    const [createdFieldMetadata] = await this.createMany(
+      [fieldMetadataInput],
+      options,
+    );
 
     if (!createdFieldMetadata) {
       throw new FieldMetadataException(
@@ -748,6 +752,7 @@ export class FieldMetadataService extends TypeOrmQueryService<FieldMetadataEntit
 
   async createMany(
     fieldMetadataInputs: CreateFieldInput[],
+    options?: { skipMetadataVersionIncrement?: boolean },
   ): Promise<FieldMetadataEntity[]> {
     if (!fieldMetadataInputs.length) {
       return [];
@@ -841,9 +846,11 @@ export class FieldMetadataService extends TypeOrmQueryService<FieldMetadataEntit
       throw error;
     } finally {
       await queryRunner.release();
-      await this.workspaceMetadataVersionService.incrementMetadataVersion(
-        workspaceId,
-      );
+      if (!options?.skipMetadataVersionIncrement) {
+        await this.workspaceMetadataVersionService.incrementMetadataVersion(
+          workspaceId,
+        );
+      }
     }
   }
 
@@ -859,7 +866,6 @@ export class FieldMetadataService extends TypeOrmQueryService<FieldMetadataEntit
     const workspaceDataSource =
       await this.typeORMService.connectToDataSource(dataSourceMetadata);
 
-    console.log('workspaceDataSource in createViewAndViewFields');
     const workspaceQueryRunner = workspaceDataSource?.createQueryRunner();
 
     if (!workspaceQueryRunner) {

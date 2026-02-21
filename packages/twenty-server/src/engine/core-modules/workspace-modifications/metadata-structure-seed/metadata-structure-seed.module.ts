@@ -4,6 +4,7 @@ import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-s
 import { FieldMetadataModule } from 'src/engine/metadata-modules/field-metadata/field-metadata.module';
 import { ObjectMetadataModule } from 'src/engine/metadata-modules/object-metadata/object-metadata.module';
 import { RelationMetadataModule } from 'src/engine/metadata-modules/relation-metadata/relation-metadata.module';
+import { WorkspaceMetadataVersionModule } from 'src/engine/metadata-modules/workspace-metadata-version/workspace-metadata-version.module';
 
 import { MetadataStructureSeedService } from './metadata-structure-seed.service';
 
@@ -13,6 +14,7 @@ import { MetadataStructureSeedService } from './metadata-structure-seed.service'
     ObjectMetadataModule,
     FieldMetadataModule,
     RelationMetadataModule,
+    WorkspaceMetadataVersionModule,
   ],
   providers: [MetadataStructureSeedService],
   exports: [MetadataStructureSeedService],
