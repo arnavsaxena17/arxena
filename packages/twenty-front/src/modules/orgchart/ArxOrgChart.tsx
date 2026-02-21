@@ -51,13 +51,7 @@ const StyledSearchOverlay = styled.div`
   position: absolute;
   bottom: ${({ theme }) => theme.spacing(2)};
   left: ${({ theme }) => theme.spacing(2)};
-  right: ${({ theme }) => theme.spacing(2)};
   z-index: 20;
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  background: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  box-shadow: 0 1px 3px ${({ theme }) => theme.background.transparent.medium};
 `;
 
 const StyledTopRightActionsOverlay = styled.div`
@@ -66,32 +60,24 @@ const StyledTopRightActionsOverlay = styled.div`
   right: ${({ theme }) => theme.spacing(2)};
   z-index: 20;
   display: flex;
-  gap: ${({ theme }) => theme.spacing(0.5)};
-  padding: ${({ theme }) => theme.spacing(0.5)};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  background: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  box-shadow: 0 1px 3px ${({ theme }) => theme.background.transparent.medium};
+  gap: ${({ theme }) => theme.spacing(1)};
 `;
 
 const StyledTopRightActionButton = styled.button`
   padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(1.5)};
   border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: none;
-  background: transparent;
-  color: ${({ theme }) => theme.font.color.secondary};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  background: ${({ theme }) => theme.background.primary};
+  color: ${({ theme }) => theme.font.color.primary};
   font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
 
   &:hover:enabled {
     background: ${({ theme }) => theme.background.transparent.light};
-    color: ${({ theme }) => theme.font.color.primary};
   }
 
   &:disabled {
-    opacity: 0.45;
+    opacity: 0.4;
     cursor: default;
   }
 `;
@@ -124,33 +110,35 @@ const StyledTemplateBanner = styled.div`
   z-index: 19;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  justify-content: center;
   gap: ${({ theme }) => theme.spacing(1.5)};
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2.5)};
+  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
   border-radius: ${({ theme }) => theme.border.radius.md};
-  background: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
+  background: ${({ theme }) => theme.background.tertiary};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
   color: ${({ theme }) => theme.font.color.secondary};
   font-size: ${({ theme }) => theme.font.size.sm};
-  line-height: 1.4;
-  box-shadow: 0 2px 8px ${({ theme }) => theme.background.transparent.medium};
+  box-shadow: ${({ theme }) => theme.boxShadow.strong};
 `;
 
 const StyledTemplateBannerButton = styled.button`
   padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1.25)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border-radius: ${({ theme }) => theme.border.radius.md};
   border: none;
-  background: ${({ theme }) => theme.color.blue};
-  color: ${({ theme }) => theme.font.color.inverted};
-  font-size: ${({ theme }) => theme.font.size.xs};
+  background: ${({ theme }) => theme.accent.quaternary};
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.sm};
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.15s ease, filter 0.15s ease;
+  text-decoration: none;
+  white-space: nowrap;
 
   &:hover {
-    opacity: 0.92;
-    filter: brightness(1.05);
+    background: ${({ theme }) => theme.accent.tertiary};
+  }
+
+  &:active {
+    background: ${({ theme }) => theme.accent.secondary};
+    color: ${({ theme }) => theme.font.color.inverted};
   }
 `;
 

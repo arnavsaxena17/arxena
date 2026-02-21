@@ -45,9 +45,9 @@ const StyledSelect = styled.select`
 const StyledSearchContainer = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1.5)};
-  flex-wrap: wrap;
-  justify-content: flex-start;
+  gap: ${({ theme }) => theme.spacing(1)};
+  flex-wrap: nowrap;
+  justify-content: flex-end;
   max-width: 100%;
 `;
 
@@ -65,13 +65,12 @@ const StyledSearchInput = styled.input`
   min-width: 0;
   padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
   padding-left: ${({ theme }) => theme.spacing(4)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border-radius: ${({ theme }) => theme.border.radius.md};
   border: 1px solid ${({ theme }) => theme.border.color.medium};
   background: ${({ theme }) => theme.background.primary};
   color: ${({ theme }) => theme.font.color.primary};
   font-size: ${({ theme }) => theme.font.size.sm};
   font-family: ${({ theme }) => theme.font.family};
-  transition: border-color 0.15s ease;
 
   &:focus {
     outline: none;
@@ -92,19 +91,16 @@ const StyledSearchButton = styled.button`
   border-radius: ${({ theme }) => theme.border.radius.sm};
   border: 1px solid ${({ theme }) => theme.border.color.medium};
   background: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.secondary};
+  color: ${({ theme }) => theme.font.color.primary};
   font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
 
   &:hover:enabled {
     background: ${({ theme }) => theme.background.transparent.light};
-    color: ${({ theme }) => theme.font.color.primary};
   }
 
   &:disabled {
-    opacity: 0.45;
+    opacity: 0.4;
     cursor: default;
   }
 `;
