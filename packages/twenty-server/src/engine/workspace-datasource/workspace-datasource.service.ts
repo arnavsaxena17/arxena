@@ -116,6 +116,17 @@ export class WorkspaceDataSourceService {
   }
 
   /**
+   * Ensures typeorm_metadata table exists in the workspace schema.
+   * Safe to call before running workspace migrations (idempotent).
+   *
+   * @param workspaceId
+   */
+  public async ensureTypeormMetadataTable(workspaceId: string): Promise<void> {
+    const schemaName = this.getSchemaName(workspaceId);
+    await this.typeormService.ensureTypeormMetadataTable(schemaName);
+  }
+
+  /**
    *
    * Delete a DB schema for a workspace
    *

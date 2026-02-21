@@ -151,18 +151,39 @@ export class TypeORMService implements OnModuleInit, OnModuleDestroy {
 
     await queryRunner.createSchema(schemaName, true);
 
-    // TypeORM writes generated column metadata to typeorm_metadata. When workspace
-    // migrations run with search_path set to this schema, that table must exist.
+    await this.ensureTypeormMetadataTableWithRunner(queryRunner, schemaName);
+
+    await queryRunner.release();
+
+    return schemaName;
+  }
+
+  /**
+   * Ensures typeorm_metadata table exists in the given workspace schema.
+   * TypeORM writes generated column metadata (e.g. searchVector) here when
+   * workspace migrations run with search_path set to that schema. Call this
+   * before running workspace migrations for schemas that may have been created
+   * before this table was added, or where the table was never created.
+   */
+  public async ensureTypeormMetadataTable(schemaName: string): Promise<void> {
+    const queryRunner = this.mainDataSource.createQueryRunner();
+    try {
+      await this.ensureTypeormMetadataTableWithRunner(queryRunner, schemaName);
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  private async ensureTypeormMetadataTableWithRunner(
+    queryRunner: { query: (sql: string) => Promise<unknown> },
+    schemaName: string,
+  ): Promise<void> {
     const quotedSchema = `"${schemaName}"`;
     await queryRunner.query(
       `CREATE TABLE IF NOT EXISTS ${quotedSchema}."typeorm_metadata" (` +
         `"type" varchar NOT NULL, "database" varchar, "schema" varchar, "table" varchar, "name" varchar, "value" varchar` +
         `)`,
     );
-
-    await queryRunner.release();
-
-    return schemaName;
   }
 
   public async deleteSchema(schemaName: string) {
