@@ -347,15 +347,14 @@ export const ArxOrgChart = ({
           <>
             {isBlankTemplate && (
               <StyledTemplateBanner>
-                This is an org chart template. To generate the full org chart
-                for this company, click{' '}
+                This is a template. Click{' '}
                 <StyledTemplateBannerButton
                   type="button"
                   onClick={searchControlsProps.onGetAll}
                 >
                   All
                 </StyledTemplateBannerButton>{' '}
-                and we will create it for you.
+                to generate the full org chart for this company.
               </StyledTemplateBanner>
             )}
             <OrgChartDiagram
