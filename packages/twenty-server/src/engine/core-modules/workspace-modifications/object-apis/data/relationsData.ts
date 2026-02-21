@@ -750,66 +750,6 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
         toName: 'assistantThread',
       },
     },
-    {
-      relationMetadata: {
-        fromDescription: null,
-        fromIcon: 'IconTie',
-        fromLabel: 'Job',
-        fromName: 'job',
-        fromObjectMetadataId: objectsNameIdMap.assistantThread,
-        relationType: 'MANY_TO_ONE',
-        toObjectMetadataId: objectsNameIdMap.job,
-        toDescription: '',
-        toIcon: 'IconMessage',
-        toLabel: 'Threads',
-        toName: 'assistantThreads',
-      },
-    },
-    // Assistant Thread Candidate relations
-    {
-      relationMetadata: {
-        fromDescription: null,
-        fromIcon: 'IconUsers',
-        fromLabel: 'Candidate',
-        fromName: 'candidate',
-        fromObjectMetadataId: objectsNameIdMap.assistantThreadCandidate,
-        relationType: 'MANY_TO_ONE',
-        toObjectMetadataId: objectsNameIdMap.candidate,
-        toDescription: '',
-        toIcon: 'IconMessage',
-        toLabel: 'Thread Candidates',
-        toName: 'assistantThreadCandidates',
-      },
-    },
-    {
-      relationMetadata: {
-        fromDescription: null,
-        fromIcon: 'IconTie',
-        fromLabel: 'Job',
-        fromName: 'job',
-        fromObjectMetadataId: objectsNameIdMap.assistantThreadCandidate,
-        relationType: 'MANY_TO_ONE',
-        toObjectMetadataId: objectsNameIdMap.job,
-        toDescription: '',
-        toIcon: 'IconMessage',
-        toLabel: 'Thread Candidates',
-        toName: 'assistantThreadCandidates',
-      },
-    },
-    {
-      relationMetadata: {
-        fromDescription: null,
-        fromIcon: 'IconUser',
-        fromLabel: 'Person',
-        fromName: 'person',
-        fromObjectMetadataId: objectsNameIdMap.assistantThreadCandidate,
-        relationType: 'MANY_TO_ONE',
-        toObjectMetadataId: objectsNameIdMap.person,
-        toDescription: '',
-        toIcon: 'IconMessage',
-        toLabel: 'Thread Candidates',
-        toName: 'assistantThreadCandidates',
-      },
-    },
+    // Assistant Thread Candidate relations (ONE_TO_MANY only; MANY_TO_ONE not used in sync)
   ];
 }
