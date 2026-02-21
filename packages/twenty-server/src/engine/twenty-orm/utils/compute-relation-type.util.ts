@@ -24,11 +24,18 @@ export const computeRelationType = (
         ? 'one-to-many'
         : 'many-to-one';
     }
+    case RelationMetadataType.MANY_TO_ONE: {
+      return relationDirection === RelationDirection.FROM
+        ? 'many-to-one'
+        : 'one-to-many';
+    }
     case RelationMetadataType.ONE_TO_ONE:
       return 'one-to-one';
     case RelationMetadataType.MANY_TO_MANY:
       return 'many-to-many';
     default:
-      throw new Error('Invalid relation type');
+      throw new Error(
+        `Invalid relation type: ${relationMetadata.relationType ?? 'undefined'}`,
+      );
   }
 };
