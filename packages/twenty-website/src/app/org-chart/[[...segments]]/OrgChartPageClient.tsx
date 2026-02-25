@@ -122,11 +122,12 @@ const StyledLinkIcon = styled.a`
   }
 `;
 
-const StyledLinkedinLink = styled.a`
+const _StyledLinkedinLink = styled.a`
   display: inline-flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing(0.5)};
-  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(0.5)}
+    ${({ theme }) => theme.spacing(1)};
   border-radius: 999px;
   border: 1px solid ${({ theme }) => theme.border.color.medium};
   background: ${({ theme }) => theme.background.primary};
@@ -139,13 +140,13 @@ const StyledLinkedinLink = styled.a`
   }
 `;
 
-const StyledLinkedinLogo = styled.img`
+const _StyledLinkedinLogo = styled.img`
   width: 16px;
   height: 16px;
   display: block;
 `;
 
-const StyledLinkedinText = styled.span`
+const _StyledLinkedinText = styled.span`
   max-width: 160px;
   white-space: nowrap;
   overflow: hidden;
@@ -176,7 +177,8 @@ const StyledTopRightActionsOverlay = styled.div`
 `;
 
 const StyledTopRightActionButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(1.5)};
+  padding: ${({ theme }) => theme.spacing(1)}
+    ${({ theme }) => theme.spacing(1.5)};
   border-radius: ${({ theme }) => theme.border.radius.sm};
   border: 1px solid ${({ theme }) => theme.border.color.medium};
   background: ${({ theme }) => theme.background.primary};
@@ -218,7 +220,8 @@ const StyledUnlockText = styled.p`
 
 const StyledUnlockButton = styled(Link)`
   display: inline-block;
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(3)};
+  padding: ${({ theme }) => theme.spacing(1.5)}
+    ${({ theme }) => theme.spacing(3)};
   background: ${({ theme }) => theme.color.blue};
   color: #fff;
   text-decoration: none;
@@ -240,7 +243,9 @@ function getLogoUrl(website?: string): string | null {
 function getDisplayDomain(website?: string): string | null {
   if (!website?.trim()) return null;
   try {
-    const withProtocol = website.startsWith('http') ? website : `https://${website}`;
+    const withProtocol = website.startsWith('http')
+      ? website
+      : `https://${website}`;
     const { hostname } = new URL(withProtocol);
     return hostname.replace(/^www\./u, '');
   } catch {
@@ -356,17 +361,15 @@ export const OrgChartPageClient = ({
             {companyName && (
               <StyledCompanyTitleRow>
                 {logoUrl && (
-                  <StyledCompanyLogo
-                    src={logoUrl}
-                    alt=""
-                    loading="lazy"
-                  />
+                  <StyledCompanyLogo src={logoUrl} alt="" loading="lazy" />
                 )}
                 <StyledCompanyTitle>{companyName}</StyledCompanyTitle>
                 {website ? (
                   <StyledLinkIcon
                     href={
-                      website.startsWith('http') ? website : `https://${website}`
+                      website.startsWith('http')
+                        ? website
+                        : `https://${website}`
                     }
                     target="_blank"
                     rel="noreferrer"

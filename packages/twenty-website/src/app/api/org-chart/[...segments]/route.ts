@@ -58,20 +58,30 @@ export async function GET(
     const contentType = response.headers.get('content-type') ?? '';
     const text = await response.text();
 
-    if (!contentType.includes('application/json') || !text.trim().startsWith('{')) {
-      console.error(
-        'Org chart proxy: upstream returned non-JSON',
-        { url, status: response.status, contentType, bodyPreview: text.slice(0, 100) },
-      );
+    if (
+      !contentType.includes('application/json') ||
+      !text.trim().startsWith('{')
+    ) {
+      console.error('Org chart proxy: upstream returned non-JSON', {
+        url,
+        status: response.status,
+        contentType,
+        bodyPreview: text.slice(0, 100),
+      });
       return NextResponse.json(
         {
           status: 'error',
-          message:
-            response.ok
-              ? 'Invalid response from org chart service'
-              : `Org chart service error (${response.status})`,
+          message: response.ok
+            ? 'Invalid response from org chart service'
+            : `Org chart service error (${response.status})`,
         },
-        { status: response.ok ? 502 : response.status >= 500 ? 502 : response.status },
+        {
+          status: response.ok
+            ? 502
+            : response.status >= 500
+              ? 502
+              : response.status,
+        },
       );
     }
 

@@ -148,7 +148,11 @@ export const FooterDesktop = () => {
           >
             <LinkedInIcon size="M" />
           </a>
-          <a href="https://discord.gg/AwykNdHJ8B" target="_blank" rel="noreferrer">
+          <a
+            href="https://discord.gg/AwykNdHJ8B"
+            target="_blank"
+            rel="noreferrer"
+          >
             <DiscordIcon size="M" />
           </a>
         </SocialLinks>

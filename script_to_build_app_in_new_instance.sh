@@ -26,10 +26,10 @@
 	nvm install 22
 	nvm use 22
 
-        echo "Node version: $(node -v)"
-        echo "npm version: $(npm -v)"
-        echo "Nest CLI version: $(nest --version)"
-        echo "Vite version: $(vite --version)"
+	echo "Node version: $(node -v)"
+	echo "npm version: $(npm -v)"
+	echo "Nest CLI version: $(nest --version)"
+	echo "Vite version: $(vite --version)"
 
 	git clone https://github.com/arnavsaxena17/twenty.git
        	cd twenty
@@ -76,6 +76,11 @@
 	npx nx reset
 	VITE_BUILD_SOURCEMAP=false NODE_OPTIONS="--max-old-space-size=4096" yarn build
 
+
+
+	echo "Building twenty-website package"
+	cd ~/twenty/packages/twenty-website/
+	yarn build
 
 	echo "Building twenty-emails package"
 	cd ~/twenty/packages/twenty-emails/

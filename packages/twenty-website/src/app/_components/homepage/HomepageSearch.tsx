@@ -7,8 +7,11 @@ import { useRouter } from 'next/navigation';
 const CompanySearchAutocomplete = dynamic(
   () =>
     import('@/lib/company-search').then((mod) => {
-      const { CompanySearchAutocomplete: Search, companySearchLightTheme } = mod;
-      return function CompanySearchWithTheme(props: Parameters<typeof Search>[0]) {
+      const { CompanySearchAutocomplete: Search, companySearchLightTheme } =
+        mod;
+      return function CompanySearchWithTheme(
+        props: Parameters<typeof Search>[0],
+      ) {
         return (
           <ThemeProvider theme={companySearchLightTheme}>
             <Search {...props} />
@@ -16,7 +19,7 @@ const CompanySearchAutocomplete = dynamic(
         );
       };
     }),
-  { ssr: false }
+  { ssr: false },
 );
 
 export const HomepageSearch = () => {

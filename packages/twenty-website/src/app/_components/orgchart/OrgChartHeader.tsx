@@ -85,8 +85,12 @@ export const OrgChartHeader = () => {
         <StyledNavLink href="/releases">Releases</StyledNavLink>
       </StyledNav>
       <StyledAuthLinks>
-        <StyledSignIn href="https://app.arxena.com/sign-in">Sign in</StyledSignIn>
-        <StyledSignUp href="https://app.arxena.com/sign-up">Sign up</StyledSignUp>
+        <StyledSignIn href="https://app.arxena.com/sign-in">
+          Sign in
+        </StyledSignIn>
+        <StyledSignUp href="https://app.arxena.com/sign-up">
+          Sign up
+        </StyledSignUp>
       </StyledAuthLinks>
     </StyledHeader>
   );

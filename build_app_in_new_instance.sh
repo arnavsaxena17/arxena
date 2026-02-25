@@ -102,6 +102,11 @@ sudo rm -rf /home/ubuntu/twenty/packages/twenty-mcp-server/dist/*
 # Copy new twenty-mcp-server files
 scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/twenty-mcp-server/dist/* /home/ubuntu/twenty/packages/twenty-mcp-server/dist/
 
+mkdir -p /home/ubuntu/twenty/packages/twenty-website/dist
+# Clear existing files
+sudo rm -rf /home/ubuntu/twenty/packages/twenty-website/dist/*
+# Copy new twenty-website files
+scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/twenty-website/dist/* /home/ubuntu/twenty/packages/twenty-website/dist/
 
 cd /home/ubuntu/twenty
 # Compile lingui catalogs for server
