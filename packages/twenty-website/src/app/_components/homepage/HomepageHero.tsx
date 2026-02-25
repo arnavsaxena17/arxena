@@ -34,7 +34,7 @@ const StyledTitle = styled.h1`
 const StyledSearchWrapper = styled.div`
   width: 100%;
   max-width: 560px;
-  margin: 0 auto 32px 0;
+  margin: 0 auto 32px;
 `;
 
 const StyledAuthLinks = styled.div`

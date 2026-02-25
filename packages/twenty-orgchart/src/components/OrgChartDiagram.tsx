@@ -11,13 +11,23 @@ import {
 
 import type { OrgChartNodeData } from 'twenty-shared';
 
+
 const DEFAULT_AVATAR =
   'https://st2.depositphotos.com/4111759/12123/v/950/depositphotos_121232442-stock-illustration-male-default-placeholder-avatar-profile.jpg';
 
-const DEFAULT_LOCK_ICON = '/img/lock.svg';
-const DEFAULT_LINKEDIN_ICON = '/img/linkedin-icon.svg';
-const DEFAULT_DOWNLOAD_ICON = '/img/download-icon.svg';
-const DEFAULT_SIMILAR_ITEMS_ICON = '/img/similar-items.svg';
+// const DEFAULT_LOCK_ICON = '/img/lock.svg';
+// const DEFAULT_LINKEDIN_ICON = '/img/linkedin-icon.svg';
+// const DEFAULT_DOWNLOAD_ICON = '/img/download-icon.svg';
+// const DEFAULT_SIMILAR_ITEMS_ICON = '/img/similar-items.svg';
+
+
+
+const DEFAULT_LOCK_ICON = '/img/lock.png';
+const DEFAULT_LINKEDIN_ICON = '/img/linkedin-icon-png-circle-2.png';
+const DEFAULT_DOWNLOAD_ICON = '/img/download-icon.png';
+const DEFAULT_SIMILAR_ITEMS_ICON = '/img/similar-items.png';
+
+
 
 const StyledDiagramWrapper = styled.div`
   width: 100%;
@@ -156,6 +166,14 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
 
       const findIconSource = (nodeState: unknown): string =>
         nodeState === 'active' ? LINKEDIN_ICON_URL : LOCK_ICON_URL;
+
+      // Fixed height per candidate row: name (1 line) + title (2 lines max) + padding. Avoids empty gaps.
+
+      const CANDIDATE_ROW_HEIGHT = 52;
+
+
+
+
 
       const createCandidateRow = (idx: number, rowIndex: number) =>
         $(
@@ -850,8 +868,18 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       const handleInitialLayout = () => {
         if (hasCenteredRef.current) return;
         hasCenteredRef.current = true;
+        const ceoNode = diagram
+        .findNodesByExample({ std_function: 'ceo', std_grade: 'ceo' })
+        .first();
 
-        diagram.commandHandler.zoomToFit();
+      if (ceoNode) {
+        diagram.commandHandler.scrollToPart(ceoNode);
+        return;
+      }
+      const firstNode = diagram.nodes.first();
+      if (firstNode) {
+        diagram.commandHandler.scrollToPart(firstNode);
+      }
       };
 
       diagram.addDiagramListener('InitialLayoutCompleted', handleInitialLayout);

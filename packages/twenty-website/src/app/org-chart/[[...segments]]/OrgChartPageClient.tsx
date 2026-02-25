@@ -222,8 +222,8 @@ const StyledUnlockButton = styled(Link)`
   display: inline-block;
   padding: ${({ theme }) => theme.spacing(1.5)}
     ${({ theme }) => theme.spacing(3)};
-  background: ${({ theme }) => theme.color.blue};
-  color: #fff;
+  background: ${({ theme }) => theme.font.color.primary};
+  color: ${({ theme }) => theme.background.primary};
   text-decoration: none;
   border-radius: ${({ theme }) => theme.border.radius.md};
   font-weight: 500;
@@ -410,10 +410,10 @@ export const OrgChartPageClient = ({
                 ref={diagramRef}
                 nodeDataArray={nodeDataArray}
                 iconUrls={{
-                  lock: '/img/lock.svg',
-                  linkedin: '/img/linkedin-icon.svg',
-                  download: '/img/download-icon.svg',
-                  similarItems: '/img/similar-items.svg',
+                  lock: '/img/lock.png',
+                  linkedin: '/img/linkedin-icon-png-circle-2.png',
+                  download: '/img/download-icon.png',
+                  similarItems: '/img/similar-items.png',
                 }}
               />
               <StyledTopRightActionsOverlay>

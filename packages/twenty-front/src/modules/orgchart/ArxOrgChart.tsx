@@ -370,10 +370,10 @@ export const ArxOrgChart = ({
               ref={diagramHandleRef}
               nodeDataArray={nodeDataArray}
               iconUrls={{
-                lock: '/img/lock.svg',
-                linkedin: '/img/linkedin.svg',
-                download: '/img/download.svg',
-                similarItems: '/img/similar-items.svg',
+                lock: '/img/lock.png',
+                linkedin: '/img/linkedin-icon-png-circle-2.png',
+                download: '/img/download-icon.png',
+                similarItems: '/img/similar-items.png',
               }}
               onNodeContextAction={actions.handleNodeContextAction}
               onBackgroundContextAction={actions.handleBackgroundContextAction}
