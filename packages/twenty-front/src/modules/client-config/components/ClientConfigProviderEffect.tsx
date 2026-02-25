@@ -18,6 +18,7 @@ import { isMultiWorkspaceEnabledState } from '@/client-config/states/isMultiWork
 import { labPublicFeatureFlagsState } from '@/client-config/states/labPublicFeatureFlagsState';
 import { sentryConfigState } from '@/client-config/states/sentryConfigState';
 import { supportChatState } from '@/client-config/states/supportChatState';
+import { useConnectLinkedinOnboardingState } from '@/client-config/states/useConnectLinkedinOnboardingState';
 import { domainConfigurationState } from '@/domain-manager/states/domainConfigurationState';
 import { useEffect } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
@@ -80,6 +81,10 @@ export const ClientConfigProviderEffect = () => {
 
   const setIsAttachmentPreviewEnabled = useSetRecoilState(
     isAttachmentPreviewEnabledState,
+  );
+
+  const setUseConnectLinkedinOnboarding = useSetRecoilState(
+    useConnectLinkedinOnboardingState,
   );
 
   const { data, loading, error } = useGetClientConfigQuery({
@@ -157,6 +162,9 @@ export const ClientConfigProviderEffect = () => {
     setIsAttachmentPreviewEnabled(
       data?.clientConfig?.isAttachmentPreviewEnabled,
     );
+    setUseConnectLinkedinOnboarding(
+      data?.clientConfig?.useConnectLinkedinOnboarding ?? true,
+    );
   }, [
     data,
     setIsDebugMode,
@@ -182,6 +190,7 @@ export const ClientConfigProviderEffect = () => {
     setGoogleMessagingEnabled,
     setGoogleCalendarEnabled,
     setIsAttachmentPreviewEnabled,
+    setUseConnectLinkedinOnboarding,
   ]);
 
   return <></>;

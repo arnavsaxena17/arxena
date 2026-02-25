@@ -23,6 +23,7 @@ import { ArxDeliveryEndpoint } from 'src/engine/core-modules/arx-chat/controller
 import { LinkedinUnipileController } from 'src/engine/core-modules/arx-chat/controllers/linkedin-unipile.controller';
 import { UnipileWebhookController } from 'src/engine/core-modules/arx-chat/controllers/unipile-webhook.controller';
 import { VideoInterviewProcessController } from 'src/engine/core-modules/arx-chat/controllers/video-interview-process-controller';
+import { VoiceCallController } from 'src/engine/core-modules/arx-chat/controllers/voice-call.controller';
 import { WhatsappUnipileController } from 'src/engine/core-modules/arx-chat/controllers/whatsapp-unipile.controller';
 import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
 import { ExtSockWhatsappController } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.controller';
@@ -31,6 +32,7 @@ import { ExtSockWhatsappService } from 'src/engine/core-modules/arx-chat/service
 import { ExtSockWhatsappWhitelistProcessingService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whitelist-processing';
 import { RedisService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/redis-service-ops';
 import { UnipileWebhookService } from 'src/engine/core-modules/arx-chat/services/unipile-webhook.service';
+import { VoiceCallService } from 'src/engine/core-modules/arx-chat/services/voice-call/voice-call.service';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
@@ -133,6 +135,7 @@ const conditionalImports = isWorker
     TwilioControllers,
     GoogleControllers,
     VideoInterviewProcessController,
+    VoiceCallController,
     ExtSockWhatsappController,
     LinkedinUnipileController,
     WhatsappUnipileController,
@@ -168,6 +171,7 @@ const conditionalImports = isWorker
     WebSocketService,
     AccessTokenService,
     CandidateEngagementArx,
+    VoiceCallService,
     CandidateDataProcessorService,
     UpdateChat,
     MessagingControls,

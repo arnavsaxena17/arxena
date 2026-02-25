@@ -1,16 +1,22 @@
+import { AssistantActivityFeed } from '@/assistant/components/AssistantActivityFeed';
 import type { AssistantTableData } from '@/assistant/components/AssistantDetailsTable';
 import { AssistantResultsPanel } from '@/assistant/components/AssistantResultsPanel';
 import { McpClientChat } from '@/assistant/components/McpClientChat';
 import type {
+  AssistantAgentEvent,
   AssistantChatMessage,
   AssistantThread,
 } from '@/assistant/types/assistant.types';
+import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { jobsState } from '@/candidate-table/states/states';
 import { TextInput } from '@/ui/input/components/TextInput';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
+import { useWebSocket } from '@/websocket-context/WebSocketContextProvider';
+import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -46,6 +52,16 @@ function createNewThread(name = 'New thread'): AssistantThread {
     messages: [],
     lastTableData: null,
   };
+}
+
+/** Show thread name without surrounding double quotes (LLM sometimes returns quoted names). */
+function displayThreadName(name: string): string {
+  if (!name || typeof name !== 'string') return name ?? '';
+  const t = name.trim();
+  if (t.length >= 2 && t.startsWith('"') && t.endsWith('"')) {
+    return t.slice(1, -1).trim();
+  }
+  return t;
 }
 
 const StyledPageContainer = styled(PageContainer)`
@@ -158,10 +174,35 @@ const StyledThreadNameInput = styled(TextInput)`
   font-size: ${({ theme }) => theme.font.size.sm};
 `;
 
+const StyledJobContextSelect = styled.select`
+  flex: 1;
+  min-width: 0;
+  padding: ${({ theme }) => theme.spacing(1, 2)};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  background: ${({ theme }) => theme.background.primary};
+  color: ${({ theme }) => theme.font.color.primary};
+  transition: border-color 0.2s ease-in-out;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.border.color.strong};
+  }
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.color.blue};
+  }
+`;
+
 export const AssistantPage = () => {
   const isMobile = useIsMobile();
   const tokenPair = useRecoilValue(tokenPairState);
   const token = tokenPair?.accessToken?.token;
+  const currentWorkspace = useRecoilValue(currentWorkspaceState);
+  const jobs = useRecoilValue(jobsState);
+  const { socket, connected } = useWebSocket();
+  const [agentEvents, setAgentEvents] = useState<AssistantAgentEvent[]>([]);
   const [threads, setThreads] = useState<AssistantThread[]>(() => {
     const loaded = loadThreadsFromStorage();
     if (loaded.length === 0) return [createNewThread()];
@@ -211,7 +252,10 @@ export const AssistantPage = () => {
           setThreadsLoadedFromBackend(true);
           return;
         }
-        const data = (await res.json()) as { threads?: Array<{ id: string; name: string }>; error?: string };
+        const data = (await res.json()) as {
+          threads?: Array<{ id: string; name: string; jobId?: string | null }>;
+          error?: string;
+        };
         if (cancelled) {
           setThreadsLoading(false);
           return;
@@ -245,12 +289,26 @@ export const AssistantPage = () => {
             return;
           }
           if (created.id) {
-            setThreads([{ id: created.id, name: created.name ?? 'New thread', messages: [], lastTableData: null }]);
+            setThreads([
+            {
+              id: created.id,
+              name: created.name ?? 'New thread',
+              messages: [],
+              lastTableData: null,
+              jobId: (created as { jobId?: string | null }).jobId ?? null,
+            },
+          ]);
             setCurrentThreadId(created.id);
           }
         } else {
           setThreads(
-            data.threads.map((t) => ({ id: t.id, name: t.name, messages: [], lastTableData: null })),
+            data.threads.map((t) => ({
+              id: t.id,
+              name: t.name,
+              messages: [],
+              lastTableData: null,
+              jobId: t.jobId ?? null,
+            })),
           );
           setCurrentThreadId(data.threads[0].id);
         }
@@ -290,11 +348,13 @@ export const AssistantPage = () => {
           toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
         }>;
         lastTableData?: AssistantTableData;
+        jobId?: string | null;
         error?: string;
       };
-      if (data.error || !data.messages) return;
+      if (data.error) return;
 
-      const frontendMessages: AssistantChatMessage[] = data.messages.map((m) => ({
+      const messagesFromApi = data.messages ?? [];
+      const frontendMessages: AssistantChatMessage[] = messagesFromApi.map((m) => ({
         role: m.role,
         content: m.content,
         toolCalls: m.toolCalls,
@@ -306,13 +366,14 @@ export const AssistantPage = () => {
         // Never overwrite with API when we have more messages (streamed multi-bubble); backend often merges into one per turn
         const useCurrentMessages =
           currentCount > 0 && currentCount >= frontendMessages.length;
-        const messages = useCurrentMessages ? thread!.messages! : frontendMessages;
+        const messages = useCurrentMessages ? (thread?.messages ?? []) : frontendMessages;
         return prev.map((t) =>
           t.id === currentThreadId
             ? {
                 ...t,
                 messages,
                 lastTableData: data.lastTableData ?? t.lastTableData ?? null,
+                jobId: data.jobId !== undefined ? data.jobId : t.jobId,
               }
             : t,
         );
@@ -326,6 +387,27 @@ export const AssistantPage = () => {
   useEffect(() => {
     loadThreadData();
   }, [loadThreadData]);
+
+  const workspaceId = currentWorkspace?.id;
+  useEffect(() => {
+    if (!socket || !connected || !workspaceId) return;
+    const room = `workspace-${workspaceId}`;
+    socket.emit('join_room', { room });
+    return () => {
+      socket.emit('leave_room', { room });
+    };
+  }, [socket, connected, workspaceId]);
+
+  useWebSocketEvent<AssistantAgentEvent>(
+    'assistant.agent_event',
+    (data) => {
+      setAgentEvents((prev) => {
+        const next = [...prev, data];
+        return next.length > 50 ? next.slice(-50) : next;
+      });
+    },
+    [],
+  );
 
   const currentThread =
     threads.find((t) => t.id === currentThreadId) ?? threads[0] ?? null;
@@ -374,6 +456,7 @@ export const AssistantPage = () => {
               name: created.name ?? 'New thread',
               messages: [],
               lastTableData: null,
+              jobId: (created as { jobId?: string | null }).jobId ?? null,
             };
             setThreads((prev) => [...prev, thread]);
             setCurrentThreadId(threadId);
@@ -424,6 +507,28 @@ export const AssistantPage = () => {
     [baseUrl, token, currentThreadId, threadsLoadedFromBackend],
   );
 
+  const handleJobContextChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const value = e.target.value;
+      const jobId = value === '' ? null : value;
+      if (!currentThreadId) return;
+      setThreads((prev) =>
+        prev.map((t) => (t.id === currentThreadId ? { ...t, jobId } : t)),
+      );
+      if (baseUrl && token && threadsLoadedFromBackend && currentThreadId) {
+        fetch(`${baseUrl}/assistant/threads/${currentThreadId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ jobId }),
+        }).catch(() => {});
+      }
+    },
+    [baseUrl, token, currentThreadId, threadsLoadedFromBackend],
+  );
+
   const handleSyncTable = useCallback(async () => {
     if (!baseUrl || !token || !currentThreadId || !threadsLoadedFromBackend)
       return;
@@ -466,6 +571,7 @@ export const AssistantPage = () => {
       <StyledPageBody>
         <StyledSplitLayout isMobile={isMobile}>
           <StyledChatPanel isMobile={isMobile}>
+            <AssistantActivityFeed events={agentEvents} />
             <StyledThreadSelector aria-busy={threadsLoading}>
               <StyledThreadSelectRow>
                 <StyledThreadSelect
@@ -481,7 +587,7 @@ export const AssistantPage = () => {
                   <option value="__new__">+ New thread</option>
                   {threads.map((t) => (
                     <option key={t.id} value={t.id}>
-                      {t.name}
+                      {displayThreadName(t.name)}
                     </option>
                   ))}
                 </StyledThreadSelect>
@@ -493,13 +599,29 @@ export const AssistantPage = () => {
               </StyledThreadSelectRow>
               {currentThread && (
                 <StyledThreadNameInput
-                  value={currentThread.name}
+                  value={displayThreadName(currentThread.name)}
                   onChange={(value: string) => handleThreadNameChange(value)}
                   placeholder="Thread name"
                   onBlur={() => setEditingThreadName(false)}
                   onFocus={() => setEditingThreadName(true)}
                   fullWidth
                 />
+              )}
+              {currentThread && threadsLoadedFromBackend && (
+                <StyledThreadSelectRow>
+                  <StyledJobContextSelect
+                    value={currentThread.jobId ?? ''}
+                    onChange={handleJobContextChange}
+                    aria-label="Thread job context"
+                  >
+                    <option value="">No job context</option>
+                    {jobs.map((job) => (
+                      <option key={job.id} value={job.id}>
+                        {job.name ?? job.id}
+                      </option>
+                    ))}
+                  </StyledJobContextSelect>
+                </StyledThreadSelectRow>
               )}
             </StyledThreadSelector>
             {currentThread && (

@@ -62,6 +62,7 @@ export const GET_CLIENT_CONFIG = gql`
       isMicrosoftCalendarEnabled
       isGoogleMessagingEnabled
       isGoogleCalendarEnabled
+      useConnectLinkedinOnboarding
     }
   }
 `;

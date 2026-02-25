@@ -23,7 +23,7 @@ import { WebSocketService } from './websocket.service';
 
 
 export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
-  @WebSocketServer() server: Server;
+  @WebSocketServer() server: Server; 
   private connectedClients: Map<string, Set<string>> = new Map(); // workspaceMemberId -> Set of GENERAL-SOCKET socketIds
 
   constructor(

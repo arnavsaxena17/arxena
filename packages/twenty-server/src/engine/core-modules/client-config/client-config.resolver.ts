@@ -97,6 +97,9 @@ export class ClientConfigResolver {
       isGoogleCalendarEnabled: this.environmentService.get(
         'CALENDAR_PROVIDER_GOOGLE_ENABLED',
       ),
+      useConnectLinkedinOnboarding: this.environmentService.get(
+        'USE_CONNECT_LINKEDIN_ONBOARDING',
+      ),
     };
 
     return Promise.resolve(clientConfig);

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { WorkspaceActivationStatus } from 'twenty-shared';
 
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { OnboardingStatus } from 'src/engine/core-modules/onboarding/enums/onboarding-status.enum';
 import { UserVarsService } from 'src/engine/core-modules/user/user-vars/services/user-vars.service';
 import { User } from 'src/engine/core-modules/user/user.entity';
@@ -25,6 +26,7 @@ export type OnboardingKeyValueTypeMap = {
 export class OnboardingService {
   constructor(
     private readonly userVarsService: UserVarsService<OnboardingKeyValueTypeMap>,
+    private readonly environmentService: EnvironmentService,
   ) {}
 
   private isWorkspaceActivationPending(workspace: Workspace) {
@@ -62,7 +64,10 @@ export class OnboardingService {
       return OnboardingStatus.PROFILE_CREATION;
     }
 
-    if (isConnectLinkedinPending) {
+    if (
+      isConnectLinkedinPending &&
+      this.environmentService.get('USE_CONNECT_LINKEDIN_ONBOARDING')
+    ) {
       return OnboardingStatus.CONNECT_LINKEDIN;
     }
 

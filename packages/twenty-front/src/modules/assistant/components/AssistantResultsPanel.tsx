@@ -1,6 +1,6 @@
 import {
-  AssistantDetailsTable,
-  AssistantTableData,
+    AssistantDetailsTable,
+    AssistantTableData,
 } from '@/assistant/components/AssistantDetailsTable';
 import { selectedCandidateIdState } from '@/candidate-table/states/states';
 import { AppPath } from '@/types/AppPath';
@@ -11,10 +11,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 import {
-  IconBriefcase,
-  IconFileText,
-  IconMessage,
-  LightButton,
+    IconBriefcase,
+    IconFileText,
+    IconMessage,
+    LightButton,
 } from 'twenty-ui';
 import { getAppPath } from '~/utils/navigation/getAppPath';
 

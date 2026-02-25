@@ -148,4 +148,7 @@ export class ClientConfig {
 
   @Field(() => Boolean)
   isGoogleCalendarEnabled: boolean;
+
+  @Field(() => Boolean)
+  useConnectLinkedinOnboarding: boolean;
 }

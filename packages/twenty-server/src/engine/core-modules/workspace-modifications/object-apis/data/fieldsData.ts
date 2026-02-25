@@ -1893,33 +1893,51 @@ export function getFieldsData(
       },
     },
     // Assistant Thread fields
-    // {
-    //   field: {
-    //     description: '',
-    //     label: 'Name',
-    //     name: 'name',
-    //     objectMetadataId: objectsNameIdMap.assistantThread,
-    //     type: 'TEXT',
-    //   },
-    // },
-    // {
-    //   field: {
-    //     description: '',
-    //     label: 'Job',
-    //     name: 'job',
-    //     objectMetadataId: objectsNameIdMap.assistantThread,
-    //     type: 'LINKS',
-    //   },
-    // },
-    // {
-    //   field: {
-    //     description: '',
-    //     label: 'Working Directory Path',
-    //     name: 'workingDirectoryPath',
-    //     objectMetadataId: objectsNameIdMap.assistantThread,
-    //     type: 'TEXT',
-    //   },
-    // },
+    {
+      field: {
+        description: '',
+        label: 'Name',
+        name: 'name',
+        objectMetadataId: objectsNameIdMap.assistantThread,
+        type: 'TEXT',
+      },
+    },
+    {
+      field: {
+        description: '',
+        label: 'Messages',
+        name: 'messages',
+        objectMetadataId: objectsNameIdMap.assistantThread,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      field: {
+        description: '',
+        label: 'Last Table Data',
+        name: 'lastTableData',
+        objectMetadataId: objectsNameIdMap.assistantThread,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      field: {
+        description: 'Optional job context for this thread',
+        label: 'Job',
+        name: 'jobId',
+        objectMetadataId: objectsNameIdMap.assistantThread,
+        type: 'TEXT',
+      },
+    },
+    {
+      field: {
+        description: 'Agent scratch pad / pending notes for this thread (JSON array of { summary, createdAt? })',
+        label: 'Agent Notes',
+        name: 'agentNotes',
+        objectMetadataId: objectsNameIdMap.assistantThread,
+        type: 'RAW_JSON',
+      },
+    },
     // // Assistant Message fields
     // {
     //   field: {

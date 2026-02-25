@@ -29,4 +29,5 @@ export enum MessageQueue {
   resumeUploadQueue = 'resume-upload-queue',
   contactEnrichmentQueue = 'contact-enrichment-queue',
   metadataStructureQueue = 'metadata-structure-queue',
+  autonomousRecruiterQueue = 'autonomous-recruiter-queue',
 }

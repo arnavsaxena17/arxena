@@ -18,7 +18,11 @@
     "test-prompts:ts-node": "npx ts-node -r tsconfig-paths/register scripts/test-search-prompts.ts",
     "test:linkedin-query-generation": "npx tsx -r tsconfig-paths/register scripts/test-linkedin-query-generation.ts",
     "test:candidate-search-flow": "npx tsx -r tsconfig-paths/register scripts/testing/test-candidate-search-flow.ts",
-    "test:yuga-orgchart": "npx tsx -r tsconfig-paths/register scripts/test-yuga-orgchart.ts"
+    "test:yuga-orgchart": "npx tsx -r tsconfig-paths/register scripts/test-yuga-orgchart.ts",
+    "voice-call:initiate": "npx tsx -r tsconfig-paths/register scripts/voice-call-initiate.ts",
+    "voice-call:list": "npx tsx -r tsconfig-paths/register scripts/voice-call-list.ts",
+    "voice-call:webhook-simulate": "npx tsx -r tsconfig-paths/register scripts/voice-call-webhook-simulate.ts",
+    "voice-call:incoming-simulate": "npx tsx -r tsconfig-paths/register scripts/voice-call-incoming-simulate.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",

@@ -432,16 +432,22 @@ export class BaileysWhatsappService {
       const hasValidCreds = state.creds?.me?.id && state.creds?.registered;
       console.log(`Checking credentials for recruiter ${this.recruiterName}:`, hasValidCreds ? 'Valid' : 'Invalid/Missing');
       
-      // Get next available proxy session
-      const proxyInfo = proxyManager.getNextActiveProxy();
-      if (proxyInfo) {
-        this.currentProxySession = {
-          sessionId: proxyInfo.sessionId,
-          proxyUrl: proxyInfo.proxyUrl
-        };
-        console.log(`Using proxy session-${proxyInfo.sessionId} for WhatsApp connection: ${proxyInfo.proxyUrl}`);
+      const useProxy = process.env.WHATSAPP_USE_PROXY !== 'false';
+      let proxyInfo: ReturnType<typeof proxyManager.getNextActiveProxy> = null;
+      if (useProxy) {
+        proxyInfo = proxyManager.getNextActiveProxy();
+        if (proxyInfo) {
+          this.currentProxySession = {
+            sessionId: proxyInfo.sessionId,
+            proxyUrl: proxyInfo.proxyUrl
+          };
+          console.log(`Using proxy session-${proxyInfo.sessionId} for WhatsApp connection: ${proxyInfo.proxyUrl}`);
+        } else {
+          console.log('No active proxy sessions available for WhatsApp connection');
+          this.currentProxySession = null;
+        }
       } else {
-        console.log('No active proxy sessions available for WhatsApp connection');
+        console.log('WhatsApp proxy disabled (WHATSAPP_USE_PROXY=false), connecting without proxy');
         this.currentProxySession = null;
       }
 
@@ -668,6 +674,59 @@ export class BaileysWhatsappService {
           if (events['creds.update']) {
             console.log('Credentials updated - saving for recruiter:', this.recruiterName);
             await saveCreds();
+          }
+
+          if (events['call']) {
+            const callList = events['call'] as Array<{ id: string; status: string; chatId: string; isGroup?: boolean }>;
+            const call = callList?.[0];
+            if (call?.status === 'offer' && !call.isGroup && call.chatId) {
+              const callerJid = call.chatId;
+              const fromNumber = callerJid.replace('@s.whatsapp.net', '');
+              const selfPhoneNumber = this.sock?.user?.id?.split(':')[0] ?? '';
+              console.log(
+                `Incoming WA call from ${fromNumber} for recruiter ${this.recruiterName}`,
+              );
+              try {
+                const apiToken = await this.getApiKeyToUseFromPhoneNumberMessageReceived(
+                  {
+                    object: 'whatsapp_business_account',
+                    entry: [{
+                      id: 'call_' + Date.now(),
+                      changes: [{
+                        value: {
+                          messages: [{ from: fromNumber }],
+                          metadata: { phone_number_id: selfPhoneNumber },
+                        },
+                      }],
+                    }],
+                  },
+                );
+                const baseUrl =
+                  process.env.SERVER_URL ??
+                  process.env.SERVER_BASE_URL ??
+                  process.env.ARXENA_SITE_BASE_URL ??
+                  'http://localhost:3000';
+                if (apiToken) {
+                  await fetch(`${baseUrl}/voice-calls/incoming`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}` },
+                    body: JSON.stringify({ from: fromNumber, apiToken }),
+                  });
+                } else {
+                  console.log(
+                    `No workspace resolved for number ${fromNumber} (recruiter ${this.recruiterName}); rejecting call and sending message.`,
+                  );
+                }
+                if (typeof this.sock.rejectCall === 'function') {
+                  await this.sock.rejectCall(call.id, callerJid);
+                }
+                await this.sock.sendMessage(callerJid, {
+                  text: "Thanks for your call. We'll get back to you on your number shortly.",
+                });
+              } catch (err) {
+                console.error('Voice call (Baileys) handling error for recruiter:', this.recruiterName, err);
+              }
+            }
           }
 
           if (events['messages.upsert']) {
@@ -1563,6 +1622,7 @@ export class BaileysWhatsappService {
     // Check for proxy-related errors that warrant trying a different proxy
     const proxyErrorPatterns = [
       'Socks5 proxy rejected connection',
+      'Socks5 Authentication failed',
       'HostUnreachable',
       'Connection refused',
       'Network is unreachable',
@@ -1750,6 +1810,7 @@ export class BaileysWhatsappService {
   // Method to get current proxy status for debugging
   public getProxyStatus(): any {
     return {
+      useProxy: process.env.WHATSAPP_USE_PROXY !== 'false',
       currentSession: this.currentProxySession,
       retryAttempts: this.proxyRetryAttempts,
       maxRetries: BaileysWhatsappService.MAX_PROXY_RETRIES,

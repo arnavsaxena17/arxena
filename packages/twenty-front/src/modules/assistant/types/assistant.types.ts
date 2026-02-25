@@ -22,4 +22,15 @@ export type AssistantThread = {
   name: string;
   messages: AssistantChatMessage[];
   lastTableData: AssistantTableData | null;
+  jobId?: string | null;
+};
+
+export type AssistantAgentEvent = {
+  status: 'started' | 'completed' | 'error' | 'tool_call';
+  threadId?: string;
+  runId?: string;
+  summary?: string;
+  error?: string;
+  toolName?: string;
+  timestamp: number;
 };

@@ -1,64 +1,103 @@
 import { Injectable } from '@nestjs/common';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
+  createAssistantThread,
+  findManyAssistantThreads,
+  findOneAssistantThread,
+  updateAssistantThread,
+} from 'twenty-shared';
+import {
   AssistantThreadRecord,
-  AssistantThreadTableData
+  AssistantThreadTableData,
 } from './assistant.types';
 
-// TODO: Migrate to database-backed storage using metadata objects:
-// - assistantThread (with fields: name, jobId, workingDirectoryPath)
-// - assistantMessage (with fields: assistantThreadId, role, content, toolCalls, tableDataRef)
-// - assistantThreadCandidate (with fields: assistantThreadId, candidateId, jobId, personId)
-// These objects are defined in workspace-modifications/object-apis/data/objectsData.ts
-// and will be created when workspace metadata is initialized.
-// Use @InjectObjectMetadataRepository decorator and workspace entities for database access.
-
-const store = new Map<string, AssistantThreadRecord[]>();
-
-function getKey(workspaceId: string): string {
-  return `threads:${workspaceId}`;
-}
+type AssistantThreadMessage = {
+  role: 'user' | 'assistant';
+  content: string;
+  toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
+};
 
 @Injectable()
 export class AssistantThreadService {
-  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly staticGraphQLService: StaticGraphQLService,
+  ) {}
 
-  async listThreads(apiToken: string): Promise<{ id: string; name: string }[]> {
-    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    const list = store.get(getKey(workspaceId)) ?? [];
-    return list.map((t) => ({ id: t.id, name: t.name }));
+  async listThreads(apiToken: string): Promise<{ id: string; name: string; jobId?: string }[]> {
+    const result = await this.staticGraphQLService.executeGraphQL(
+      findManyAssistantThreads,
+      { orderBy: [{ updatedAt: 'Desc' }], limit: 100 },
+      apiToken,
+    );
+    const edges = result?.assistantThreads?.edges ?? [];
+    return edges.map((e: { node: { id: string; name: string; jobId?: string } }) => ({
+      id: e.node.id,
+      name: e.node.name,
+      jobId: e.node.jobId ?? undefined,
+    }));
   }
 
   async createThread(
     apiToken: string,
     name = 'New thread',
-  ): Promise<{ id: string; name: string }> {
-    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    const key = getKey(workspaceId);
-    const list = store.get(key) ?? [];
-    const id = crypto.randomUUID();
-    const record: AssistantThreadRecord = {
-      id,
-      name,
-      workspaceId,
-      messages: [],
-      lastTableData: null,
-      candidateIds: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    jobId?: string,
+  ): Promise<{ id: string; name: string; jobId?: string }> {
+    const input: { name: string; jobId?: string } = { name };
+    if (jobId) input.jobId = jobId;
+    const result = await this.staticGraphQLService.executeGraphQL(
+      createAssistantThread,
+      { input },
+      apiToken,
+    );
+    const created = result?.createAssistantThread;
+    if (!created?.id) {
+      throw new Error('Failed to create assistant thread');
+    }
+    return {
+      id: created.id,
+      name: created.name ?? name,
+      jobId: created.jobId ?? jobId,
     };
-    list.push(record);
-    store.set(key, list);
-    return { id, name: record.name };
   }
 
   async getThread(
     apiToken: string,
     threadId: string,
   ): Promise<AssistantThreadRecord | null> {
-    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    const list = store.get(getKey(workspaceId)) ?? [];
-    return list.find((t) => t.id === threadId) ?? null;
+    const result = await this.staticGraphQLService.executeGraphQL(
+      findOneAssistantThread,
+      { id: threadId },
+      apiToken,
+    );
+    const node = result?.assistantThread;
+    if (!node) return null;
+
+    const messages: AssistantThreadMessage[] = Array.isArray(node.messages)
+      ? (node.messages as AssistantThreadMessage[])
+      : [];
+
+    const agentNotes = Array.isArray(node.agentNotes)
+      ? (node.agentNotes as Array<{ summary: string; createdAt?: string; id?: string }>).filter(
+          (n) => n && typeof n.summary === 'string',
+        )
+      : undefined;
+
+    return {
+      id: node.id,
+      name: node.name ?? 'New thread',
+      workspaceId: '', // not stored per-thread; resolved from token when needed
+      messages,
+      lastTableData:
+        node.lastTableData && typeof node.lastTableData === 'object'
+          ? (node.lastTableData as AssistantThreadTableData)
+          : null,
+      createdAt: node.createdAt ? new Date(node.createdAt) : new Date(),
+      updatedAt: node.updatedAt ? new Date(node.updatedAt) : new Date(),
+      jobId: node.jobId ?? undefined,
+      agentNotes: agentNotes?.length ? agentNotes : undefined,
+    };
   }
 
   async appendMessage(
@@ -68,27 +107,22 @@ export class AssistantThreadService {
     content: string,
     toolCalls?: Array<{ name: string; args: Record<string, unknown> }>,
   ): Promise<void> {
-    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    const key = getKey(workspaceId);
-    const list = store.get(key) ?? [];
-    const thread = list.find((t) => t.id === threadId);
+    const thread = await this.getThread(apiToken, threadId);
     if (!thread) return;
-    thread.messages.push({ role, content, toolCalls });
-    thread.updatedAt = new Date();
-  }
 
-  async setThreadTableData(
-    apiToken: string,
-    threadId: string,
-    data: AssistantThreadTableData,
-  ): Promise<void> {
-    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    const key = getKey(workspaceId);
-    const list = store.get(key) ?? [];
-    const thread = list.find((t) => t.id === threadId);
-    if (!thread) return;
-    thread.lastTableData = data;
-    thread.updatedAt = new Date();
+    const newMessages: AssistantThreadMessage[] = [
+      ...thread.messages,
+      { role, content, toolCalls },
+    ];
+
+    await this.staticGraphQLService.executeGraphQL(
+      updateAssistantThread,
+      {
+        id: threadId,
+        input: { messages: newMessages },
+      },
+      apiToken,
+    );
   }
 
   async updateThreadName(
@@ -96,39 +130,34 @@ export class AssistantThreadService {
     threadId: string,
     name: string,
   ): Promise<void> {
-    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    const key = getKey(workspaceId);
-    const list = store.get(key) ?? [];
-    const thread = list.find((t) => t.id === threadId);
-    if (!thread) return;
-    thread.name = name;
-    thread.updatedAt = new Date();
+    await this.staticGraphQLService.executeGraphQL(
+      updateAssistantThread,
+      { id: threadId, input: { name } },
+      apiToken,
+    );
   }
 
-  async setThreadCandidates(
+  async updateThreadJobId(
     apiToken: string,
     threadId: string,
-    candidateIds: string[],
+    jobId: string | null,
   ): Promise<void> {
-    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    const key = getKey(workspaceId);
-    const list = store.get(key) ?? [];
-    const thread = list.find((t) => t.id === threadId);
-    if (!thread) return;
-    // Merge with existing candidate IDs, avoiding duplicates
-    const existing = new Set(thread.candidateIds);
-    candidateIds.forEach((id) => existing.add(id));
-    thread.candidateIds = Array.from(existing);
-    thread.updatedAt = new Date();
+    await this.staticGraphQLService.executeGraphQL(
+      updateAssistantThread,
+      { id: threadId, input: { jobId: jobId ?? undefined } },
+      apiToken,
+    );
   }
 
-  async getThreadCandidates(
+  async setThreadTableData(
     apiToken: string,
     threadId: string,
-  ): Promise<string[]> {
-    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    const list = store.get(getKey(workspaceId)) ?? [];
-    const thread = list.find((t) => t.id === threadId);
-    return thread?.candidateIds ?? [];
+    data: AssistantThreadTableData,
+  ): Promise<void> {
+    await this.staticGraphQLService.executeGraphQL(
+      updateAssistantThread,
+      { id: threadId, input: { lastTableData: data } },
+      apiToken,
+    );
   }
 }

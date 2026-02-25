@@ -67,6 +67,16 @@ export class EnvironmentVariables {
   IS_EMAIL_VERIFICATION_REQUIRED = false;
 
   @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'Include Connect LinkedIn step in onboarding. When false, step is skipped.',
+  })
+  @CastToBoolean()
+  @IsOptional()
+  @IsBoolean()
+  USE_CONNECT_LINKEDIN_ONBOARDING = false;
+
+  @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.TokensDuration,
     description: 'Duration for which the email verification token is valid',
   })
@@ -1265,6 +1275,52 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   CONTACT_ENRICHMENT_RATE_LIMIT_APOLLO?: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'Use proxy for WhatsApp (Baileys) connections. Set to false to connect without proxy (e.g. when Socks5 auth fails or for local dev). Default true.',
+  })
+  @CastToBoolean()
+  @IsOptional()
+  @IsBoolean()
+  WHATSAPP_USE_PROXY = true;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'ElevenLabs WhatsApp Business API: phone number ID for outbound calls (from Meta WhatsApp Manager).',
+  })
+  @IsOptional()
+  @IsString()
+  ELEVENLABS_WHATSAPP_PHONE_NUMBER_ID: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'ElevenLabs WhatsApp: call permission request message template name (created in WhatsApp Manager).',
+  })
+  @IsOptional()
+  @IsString()
+  ELEVENLABS_WHATSAPP_CALL_PERMISSION_TEMPLATE_NAME: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'ElevenLabs WhatsApp: call permission request template language code (e.g. en). Defaults to en in code if unset.',
+  })
+  @IsOptional()
+  @IsString()
+  ELEVENLABS_WHATSAPP_CALL_PERMISSION_TEMPLATE_LANGUAGE: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'API token for WhatsApp Business webhook call events when phone_number_id cannot be mapped to a workspace. Used by /webhook POST to create PhoneCall records.',
+  })
+  @IsOptional()
+  @IsString()
+  WHATSAPP_BUSINESS_WEBHOOK_API_TOKEN: string;
 }
   
 

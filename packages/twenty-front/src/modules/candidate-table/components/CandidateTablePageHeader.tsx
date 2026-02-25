@@ -2,12 +2,12 @@ import styled from '@emotion/styled';
 import { IconBrandLinkedin, IconBrandWhatsapp } from '@tabler/icons-react';
 import { ReactNode } from 'react';
 import {
-  Button,
-  IconAlertCircle,
-  IconDownload,
-  IconMessage,
-  IconPlus,
-  IconX,
+    Button,
+    IconAlertCircle,
+    IconDownload,
+    IconMessage,
+    IconPlus,
+    IconX,
 } from 'twenty-ui';
 
 import { CompanySearchAutocomplete } from '@/orgchart/components/CompanySearchAutocomplete';
@@ -230,7 +230,7 @@ export const CandidateTablePageHeader = ({
       {/* <StyledLeftSpacer /> */}
 
       {/* <StyledRightSection> */}
-        <Button title="Add New Job" Icon={IconPlus} variant="primary" onClick={onAddJob} />
+        <Button dataTestId="add-new-job" title="Add New Job" Icon={IconPlus} variant="primary" onClick={onAddJob} />
         {/* {onOrgCharts !== undefined && (
           <Button
             title="Org Charts"

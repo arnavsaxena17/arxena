@@ -49,13 +49,16 @@ export type AssistantThreadTableData = {
   rows: Record<string, unknown>[];
 };
 
+export type AgentNote = { summary: string; createdAt?: string; id?: string };
+
 export type AssistantThreadRecord = {
   id: string;
   name: string;
   workspaceId: string;
   messages: AssistantThreadMessage[];
   lastTableData: AssistantThreadTableData | null;
-  candidateIds: string[];
   createdAt: Date;
   updatedAt: Date;
+  jobId?: string;
+  agentNotes?: AgentNote[];
 };

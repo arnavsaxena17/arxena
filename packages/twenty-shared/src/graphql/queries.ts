@@ -112,6 +112,40 @@ export const graphqlQueryToFindScheduledClientMeetings = `query FindManyClientIn
   }
 }`;
 
+export const graphqlQueryToFindManyClientContacts = `query FindManyClientContacts($filter: ClientContactFilterInput, $orderBy: [ClientContactOrderByInput], $limit: Int) {
+  clientContacts(filter: $filter, orderBy: $orderBy, first: $limit) {
+    edges {
+      node {
+        id
+        name
+        jobsId
+        peopleId
+        createdAt
+        updatedAt
+      }
+    }
+    totalCount
+  }
+}`;
+
+export const graphqlQueryToFindManyInterviewSchedules = `query FindManyInterviewSchedules($filter: InterviewScheduleFilterInput, $orderBy: [InterviewScheduleOrderByInput], $limit: Int) {
+  interviewSchedules(filter: $filter, orderBy: $orderBy, first: $limit) {
+    edges {
+      node {
+        id
+        name
+        jobsId
+        meetingType
+        position
+        slotsAvailable
+        createdAt
+        updatedAt
+      }
+    }
+    totalCount
+  }
+}`;
+
 export const graphqlQueryToFetchPrompts = `
   query FindManyPrompts($filter: PromptFilterInput, $orderBy: [PromptOrderByInput], $limit: Int) {
   prompts(filter: $filter, orderBy: $orderBy, first: $limit) {
@@ -1851,10 +1885,11 @@ export const graphqlToFindManyCandidateFieldValues = `query FindManyCandidateFie
       __typename
     }
   }`;
-export const graphqlQueryToFindManyReminders = `query FindManyCandidateReminders($filter: CandidateReminderFilterInput, $orderBy: [CandidateReminderOrderByInput], $lastCursor: String) {
+export const graphqlQueryToFindManyReminders = `query FindManyCandidateReminders($filter: CandidateReminderFilterInput, $orderBy: [CandidateReminderOrderByInput], $lastCursor: String, $limit: Int) {
   candidateReminders(
     filter: $filter
     orderBy: $orderBy
+    first: $limit
     after: $lastCursor
   ) {
     edges {
@@ -2987,5 +3022,33 @@ query FindManyViews($filter: ViewFilterInput, $orderBy: [ViewOrderByInput], $las
 }
 `;
 
+export const findManyAssistantThreads = `query FindManyAssistantThreads($filter: AssistantThreadFilterInput, $orderBy: [AssistantThreadOrderByInput], $limit: Int) {
+  assistantThreads(filter: $filter, orderBy: $orderBy, first: $limit) {
+    edges {
+      node {
+        id
+        name
+        jobId
+        updatedAt
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}`;
 
+export const findOneAssistantThread = `query FindOneAssistantThread($id: ID!) {
+  assistantThread(filter: { id: { eq: $id } }) {
+    id
+    name
+    messages
+    lastTableData
+    jobId
+    agentNotes
+    createdAt
+    updatedAt
+  }
+}`;
 

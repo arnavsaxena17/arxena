@@ -35,7 +35,7 @@ export class AssistantController {
   @Post('threads')
   @UseGuards(JwtAuthGuard)
   async createThread(
-    @Req() request: { headers: { authorization?: string }; body?: { name?: string } },
+    @Req() request: { headers: { authorization?: string }; body?: { name?: string; jobId?: string } },
   ) {
     const authHeader = request.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
@@ -44,7 +44,8 @@ export class AssistantController {
     const apiToken = authHeader.slice(7).replace(/[\r\n]+/g, '');
     try {
       const name = request.body?.name ?? 'New thread';
-      const thread = await this.assistantThreadService.createThread(apiToken, name);
+      const jobId = request.body?.jobId;
+      const thread = await this.assistantThreadService.createThread(apiToken, name, jobId);
       return thread;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -70,7 +71,8 @@ export class AssistantController {
         id: thread.id,
         name: thread.name,
         messages: thread.messages,
-        lastTableData: thread.lastTableData,
+        lastTableData: thread.lastTableData ?? null,
+        jobId: thread.jobId ?? null,
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -82,20 +84,37 @@ export class AssistantController {
   @UseGuards(JwtAuthGuard)
   async updateThread(
     @Param('id') id: string,
-    @Req() request: { headers: { authorization?: string }; body?: { name?: string } },
+    @Req() request: { headers: { authorization?: string }; body?: { name?: string; jobId?: string | null } },
   ) {
     const authHeader = request.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
       return { error: 'Missing or invalid Authorization header' };
     }
     const apiToken = authHeader.slice(7).replace(/[\r\n]+/g, '');
-    const name = request.body?.name;
-    if (!name || typeof name !== 'string') {
-      return { error: 'Body must include a string "name"' };
-    }
+    const body = request.body ?? {};
+    const name = body.name;
+    const jobId = body.jobId;
+
     try {
-      await this.assistantThreadService.updateThreadName(apiToken, id, name);
-      return { id, name };
+      if (typeof name === 'string') {
+        await this.assistantThreadService.updateThreadName(apiToken, id, name);
+      }
+      if (jobId !== undefined) {
+        await this.assistantThreadService.updateThreadJobId(
+          apiToken,
+          id,
+          jobId === null || jobId === '' ? null : jobId,
+        );
+      }
+      if (typeof name !== 'string' && jobId === undefined) {
+        return { error: 'Body must include at least one of "name" or "jobId"' };
+      }
+      const thread = await this.assistantThreadService.getThread(apiToken, id);
+      return {
+        id,
+        name: thread?.name ?? name,
+        jobId: thread?.jobId ?? (jobId !== undefined ? jobId : undefined),
+      };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return { error: message };
@@ -228,10 +247,15 @@ export class AssistantController {
       // Persist messages and table data if threadId is provided
       if (threadId && !isAborted) {
         try {
-          // Get thread to check if this is the first exchange
+          // Get thread to check first exchange and message count for naming
           const thread = await this.assistantThreadService.getThread(apiToken, threadId);
-          const isFirstExchange = thread && thread.messages.length === 0;
-          
+          const messageCountBeforeTurn = thread?.messages.length ?? 0;
+          const isFirstExchange = messageCountBeforeTurn === 0;
+          // After this turn we will have messageCountBeforeTurn + 2 messages (user + assistant)
+          const messageCountAfterTurn = messageCountBeforeTurn + 2;
+          const shouldRegenerateName =
+            isFirstExchange || (messageCountAfterTurn >= 4 && messageCountAfterTurn % 4 === 0);
+
           // Persist user message
           await this.assistantThreadService.appendMessage(
             apiToken,
@@ -239,7 +263,7 @@ export class AssistantController {
             'user',
             message,
           );
-          
+
           // Persist assistant message if we have final text
           if (finalText || finalToolCalls) {
             await this.assistantThreadService.appendMessage(
@@ -249,9 +273,9 @@ export class AssistantController {
               finalText || '',
               finalToolCalls,
             );
-            
-            // Generate thread name after first assistant response
-            if (isFirstExchange && finalText) {
+
+            // Generate thread name: after first response and again every ~4 messages (4, 8, 12, ...)
+            if (finalText && shouldRegenerateName) {
               try {
                 const generatedName = await this.mcpAssistantService.generateThreadName(
                   message,
@@ -262,40 +286,19 @@ export class AssistantController {
                   threadId,
                   generatedName,
                 );
-                // Send name update event to frontend
                 sendEvent('thread_name', { name: generatedName });
               } catch (nameErr) {
-                // Log but don't fail - name generation is best effort
                 console.error('Failed to generate thread name:', nameErr);
               }
             }
           }
-          
-          // Persist table data if available
+
           if (lastTableData) {
-            const tableData = lastTableData as { columns: string[]; rows: Record<string, unknown>[] };
             await this.assistantThreadService.setThreadTableData(
               apiToken,
               threadId,
-              tableData,
+              lastTableData,
             );
-            
-            // Extract candidate IDs from table data and store them
-            // When migrating to database-backed storage, create assistantThreadCandidate records
-            const candidateIds: string[] = [];
-            for (const row of tableData.rows) {
-              const id = row.id ?? row.candidateId ?? row.candidate_id;
-              if (typeof id === 'string' && id) {
-                candidateIds.push(id);
-              }
-            }
-            if (candidateIds.length > 0) {
-              await this.assistantThreadService.setThreadCandidates(
-                apiToken,
-                threadId,
-                candidateIds,
-              );
-            }
           }
         } catch (persistErr) {
           // Log but don't fail the request - persistence is best effort

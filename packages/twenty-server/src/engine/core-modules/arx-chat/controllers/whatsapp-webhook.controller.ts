@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Req, Res } from '@nestjs/common';
 
+import { VoiceCallService } from 'src/engine/core-modules/arx-chat/services/voice-call/voice-call.service';
 import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
@@ -11,7 +12,8 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 export class WhatsappWebhook {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly staticGraphQLService : StaticGraphQLService,
+    private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly voiceCallService: VoiceCallService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
   ) {}
 
@@ -72,6 +74,32 @@ export class WhatsappWebhook {
       }
     } catch (error) {
       console.log('Incoming message could be utility messages:');
+    }
+
+    const value = requestBody?.entry?.[0]?.changes?.[0]?.value;
+    const calls = value?.calls;
+    if (Array.isArray(calls) && calls.length > 0) {
+      const apiToken =
+        (process.env.WHATSAPP_BUSINESS_WEBHOOK_API_TOKEN as string) || null;
+      const phoneNumberId = value?.metadata?.phone_number_id;
+      for (const call of calls) {
+        try {
+          await this.voiceCallService.handleWhatsAppBusinessCallEvent(
+            {
+              phone_number_id: phoneNumberId,
+              from: call.from ?? call.caller_id,
+              id: call.id,
+              timestamp: call.timestamp,
+              type: call.type,
+              status: call.status,
+              duration_seconds: call.duration_seconds ?? call.duration,
+            },
+            apiToken,
+          );
+        } catch (err) {
+          console.error('WhatsApp webhook call event handling error:', err);
+        }
+      }
     }
 
     try {

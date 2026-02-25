@@ -57,6 +57,7 @@ import { WorkspaceEventEmitterModule } from 'src/engine/workspace-event-emitter/
 import { AnalyticsModule } from './analytics/analytics.module';
 import { ArxChatAgentModule } from './arx-chat/arx-chat-agent.module';
 import { AssistantModule } from './assistant/assistant.module';
+import { AutonomousRecruiterModule } from './autonomous-recruiter/autonomous-recruiter.module';
 import { CandidateSearchModule } from './candidate-search/candidate-search.module';
 import { CandidateSourcingModule } from './candidate-sourcing/candidate-sourcing.module';
 import { ClientConfigModule } from './client-config/client-config.module';
@@ -66,8 +67,8 @@ import { FileModule } from './file/file.module';
 import { MailerModule } from './gmail-sender/gmail-sender.module';
 import { GoogleDriveModule } from './google-drive/google-drive.module';
 // import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
-// import { WhiskeySocketsBaileysWhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.module';
 import { SearchModelsModule } from './search-models/search-models.module';
+import { WhiskeySocketsBaileysWhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.module';
 // import { RecruitmentAgentModule } from "src/engine/core-modules/recruitment-agent/recruitment-agent.module";
 
 const isWorker = process?.argv[1]?.includes('queue-worker');
@@ -78,16 +79,13 @@ const isLocalTesting = false;
 
 const conditionalImports = (isWorker || isLocalTesting)
   ? []
-  // : [WhiskeySocketsBaileysWhatsappModule, CronProcessesModule];
-  : [ CronProcessesModule];
+  : [WhiskeySocketsBaileysWhatsappModule, CronProcessesModule];
 
 const conditionalExports = (isWorker || isLocalTesting)
   ? []
-  // : [WhiskeySocketsBaileysWhatsappModule];
-  : [];
+  : [WhiskeySocketsBaileysWhatsappModule];
 
   
-  console.log(`conditionalImports: ${conditionalImports}`);
   console.log(`conditionalExports: ${conditionalExports}`);
 @Module({
   imports: [
@@ -101,11 +99,12 @@ const conditionalExports = (isWorker || isLocalTesting)
     CandidateSourcingModule,
     ContactEnrichmentModule,
     AssistantModule,
+    AutonomousRecruiterModule,
     ExtensionBridgeModule,
     SearchModelsModule,
     LinkedinQueryGenerationModule,
     // BaileysModule,
-    ...conditionalImports,
+    // ...conditionalImports,
     // GoogleSheetsModule,
     GoogleDriveModule,
     FileModule,
@@ -182,7 +181,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     FeatureFlagModule,
     TimelineMessagingModule,
     // BaileysModule,
-    ...conditionalExports,
+    // ...conditionalExports,
     TimelineCalendarEventModule,
     UserModule,
     WorkspaceModule,

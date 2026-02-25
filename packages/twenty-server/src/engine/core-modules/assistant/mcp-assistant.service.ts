@@ -130,8 +130,12 @@ export class McpAssistantService {
   private historyToOpenAIMessages(
     history: MessageParam[],
     currentUserContent: string,
+    systemPrompt?: string,
   ): OpenAI.Chat.ChatCompletionMessageParam[] {
     const out: OpenAI.Chat.ChatCompletionMessageParam[] = [];
+    if (systemPrompt) {
+      out.push({ role: 'system', content: systemPrompt });
+    }
     for (const m of history) {
       if (m.role === 'user') {
         if (typeof m.content === 'string') {
@@ -355,6 +359,15 @@ export class McpAssistantService {
     }
   }
 
+  /** Strip surrounding double quotes from LLM output so the name is shown plainly. */
+  private stripThreadNameQuotes(name: string): string {
+    const trimmed = name.trim();
+    if (trimmed.length >= 2 && trimmed.startsWith('"') && trimmed.endsWith('"')) {
+      return trimmed.slice(1, -1).trim();
+    }
+    return trimmed;
+  }
+
   async generateThreadName(
     userMessage: string,
     assistantResponse: string,
@@ -363,7 +376,7 @@ export class McpAssistantService {
 User: "${userMessage}"
 Assistant: "${assistantResponse.substring(0, 200)}"
 
-Return only the thread name, nothing else.`;
+Return only the thread name, nothing else. Do not wrap it in quotes.`;
 
     try {
       if (this.provider === 'openai' && this.openai) {
@@ -380,9 +393,10 @@ Return only the thread name, nothing else.`;
           max_tokens: 50,
           temperature: 0.7,
         });
-        const name =
+        const raw =
           response.choices[0]?.message?.content?.trim() ?? 'New thread';
-        return name.length > 50 ? name.substring(0, 47) + '...' : name;
+        const name = this.stripThreadNameQuotes(raw);
+        return name.length > 50 ? name.substring(0, 47) + '...' : name || 'New thread';
       } else {
         const response = await this.anthropic.messages.create({
           model: CLAUDE_MODEL,
@@ -395,17 +409,16 @@ Return only the thread name, nothing else.`;
           ],
         });
         const text = response.content[0];
-        const name =
-          text.type === 'text' ? text.text.trim() : 'New thread';
-        return name.length > 50 ? name.substring(0, 47) + '...' : name;
+        const raw = text.type === 'text' ? text.text.trim() : 'New thread';
+        const name = this.stripThreadNameQuotes(raw);
+        return name.length > 50 ? name.substring(0, 47) + '...' : name || 'New thread';
       }
     } catch (err) {
-      // Fallback to a simple name based on user message
       const fallback =
         userMessage.length > 50
           ? userMessage.substring(0, 47) + '...'
           : userMessage;
-      return fallback || 'New thread';
+      return this.stripThreadNameQuotes(fallback) || 'New thread';
     }
   }
 
@@ -439,17 +452,19 @@ Return only the thread name, nothing else.`;
     query: string,
     apiToken: string,
     conversationHistory: MessageParam[] = [],
+    systemPrompt?: string,
   ): Promise<AssistantChatResponse> {
     if (this.provider === 'openai' && this.openai) {
-      return this.processQueryWithOpenAI(query, apiToken, conversationHistory);
+      return this.processQueryWithOpenAI(query, apiToken, conversationHistory, systemPrompt);
     }
-    return this.processQueryWithAnthropic(query, apiToken, conversationHistory);
+    return this.processQueryWithAnthropic(query, apiToken, conversationHistory, systemPrompt);
   }
 
   private async processQueryWithAnthropic(
     query: string,
     apiToken: string,
     conversationHistory: MessageParam[] = [],
+    systemPrompt?: string,
   ): Promise<AssistantChatResponse> {
     const client = new Client({ name: 'arxena-assistant-client', version: '1.0.0' });
     const transport = new StdioClientTransport({
@@ -485,6 +500,7 @@ Return only the thread name, nothing else.`;
       let response = await this.anthropic.messages.create({
         model: CLAUDE_MODEL,
         max_tokens: MAX_TOKENS,
+        ...(systemPrompt ? { system: systemPrompt } : {}),
         messages: messages as Anthropic.MessageParam[],
         tools: availableTools,
       });
@@ -544,6 +560,7 @@ Return only the thread name, nothing else.`;
         response = await this.anthropic.messages.create({
           model: CLAUDE_MODEL,
           max_tokens: MAX_TOKENS,
+          ...(systemPrompt ? { system: systemPrompt } : {}),
           messages: messages as Anthropic.MessageParam[],
           tools: availableTools,
         });
@@ -562,6 +579,7 @@ Return only the thread name, nothing else.`;
     query: string,
     apiToken: string,
     conversationHistory: MessageParam[] = [],
+    systemPrompt?: string,
   ): Promise<AssistantChatResponse> {
     if (!this.openai) {
       throw new Error('OpenAI client not configured. Set MCP_MODEL_PROVIDER=openai and OPENAI_API_KEY.');
@@ -589,7 +607,7 @@ Return only the thread name, nothing else.`;
         })),
       );
 
-      let openaiMessages = this.historyToOpenAIMessages(conversationHistory, query);
+      let openaiMessages = this.historyToOpenAIMessages(conversationHistory, query, systemPrompt);
       const finalText: string[] = [];
       const toolCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
       let rounds = 0;
@@ -660,11 +678,12 @@ Return only the thread name, nothing else.`;
     apiToken: string,
     conversationHistory: MessageParam[] = [],
     sendEvent: StreamEventSender,
+    systemPrompt?: string,
   ): Promise<void> {
     if (this.provider === 'openai' && this.openai) {
-      return this.processQueryStreamWithOpenAI(query, apiToken, conversationHistory, sendEvent);
+      return this.processQueryStreamWithOpenAI(query, apiToken, conversationHistory, sendEvent, systemPrompt);
     }
-    return this.processQueryStreamWithAnthropic(query, apiToken, conversationHistory, sendEvent);
+    return this.processQueryStreamWithAnthropic(query, apiToken, conversationHistory, sendEvent, systemPrompt);
   }
 
   private async processQueryStreamWithAnthropic(
@@ -672,6 +691,7 @@ Return only the thread name, nothing else.`;
     apiToken: string,
     conversationHistory: MessageParam[] = [],
     sendEvent: StreamEventSender,
+    systemPrompt?: string,
   ): Promise<void> {
     const client = new Client({ name: 'arxena-assistant-client', version: '1.0.0' });
     const transport = new StdioClientTransport({
@@ -713,6 +733,7 @@ Return only the thread name, nothing else.`;
         const stream = this.anthropic.messages.stream({
           model: CLAUDE_MODEL,
           max_tokens: MAX_TOKENS,
+          ...(systemPrompt ? { system: systemPrompt } : {}),
           messages: messages as Anthropic.MessageParam[],
           tools: availableTools,
         });
@@ -825,6 +846,7 @@ Return only the thread name, nothing else.`;
     apiToken: string,
     conversationHistory: MessageParam[] = [],
     sendEvent: StreamEventSender,
+    systemPrompt?: string,
   ): Promise<void> {
     if (!this.openai) {
       sendEvent('error', {
@@ -856,7 +878,7 @@ Return only the thread name, nothing else.`;
         })),
       );
 
-      let openaiMessages = this.historyToOpenAIMessages(conversationHistory, query);
+      let openaiMessages = this.historyToOpenAIMessages(conversationHistory, query, systemPrompt);
       const finalText: string[] = [];
       const allToolCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
       let rounds = 0;

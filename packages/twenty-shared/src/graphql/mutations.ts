@@ -46,6 +46,7 @@ export const graphqlQueryToCreateOneReminder = `
   mutation CreateOneCandidateReminder($input: CandidateReminderCreateInput!) {
   createCandidateReminder(data: $input) {
     __typename
+    id
   }
 }
 `;
@@ -147,6 +148,21 @@ export const graphqlQueryToCreateOneCandidateFieldValue = `mutation CreateOneCan
 export const graphqlQueryToCreateOneClientInterview = `mutation CreateOneClientInterview($input: ClientInterviewCreateInput!) {
   createClientInterview(data: $input) {
     __typename
+    id
+  }
+}`;
+
+export const graphqlMutationCreateOneClientContact = `mutation CreateOneClientContact($input: ClientContactCreateInput!) {
+  createClientContact(data: $input) {
+    __typename
+    id
+  }
+}`;
+
+export const graphqlMutationCreateOneInterviewSchedule = `mutation CreateOneInterviewSchedule($input: InterviewScheduleCreateInput!) {
+  createInterviewSchedule(data: $input) {
+    __typename
+    id
   }
 }`;
 
@@ -758,3 +774,22 @@ mutation CreateOneViewField($input: ViewFieldCreateInput!) {
   }
 }
 `;
+
+export const createAssistantThread = `mutation CreateAssistantThread($input: AssistantThreadCreateInput!) {
+  createAssistantThread(data: $input) {
+    id
+    name
+  }
+}`;
+
+export const updateAssistantThread = `mutation UpdateAssistantThread($id: ID!, $input: AssistantThreadUpdateInput!) {
+  updateAssistantThread(id: $id, data: $input) {
+    id
+    name
+    messages
+    lastTableData
+    jobId
+    agentNotes
+    updatedAt
+  }
+}`;

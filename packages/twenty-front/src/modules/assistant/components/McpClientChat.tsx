@@ -11,6 +11,14 @@ import { useNavigate } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { Button, IconChevronDown, IconChevronRight } from 'twenty-ui';
 
+function stripThreadNameQuotes(name: string): string {
+  const t = name.trim();
+  if (t.length >= 2 && t.startsWith('"') && t.endsWith('"')) {
+    return t.slice(1, -1).trim();
+  }
+  return t;
+}
+
 type TextSegment = {
   type: 'text' | 'bold' | 'markdownLink' | 'url' | 'phone' | 'id';
   content: string;
@@ -803,7 +811,7 @@ export const McpClientChat = ({
                 accumulatedContentRef.current = '';
               }
               if (eventType === 'thread_name' && typeof data.name === 'string') {
-                onThreadNameChange?.(data.name);
+                onThreadNameChange?.(stripThreadNameQuotes(data.name));
               }
             } catch {
               // ignore malformed data
@@ -932,7 +940,7 @@ export const McpClientChat = ({
                 accumulatedContentRef.current = '';
               }
               if (eventType === 'thread_name' && typeof data.name === 'string') {
-                onThreadNameChange?.(data.name);
+                onThreadNameChange?.(stripThreadNameQuotes(data.name));
               }
             } catch {
               // ignore malformed data

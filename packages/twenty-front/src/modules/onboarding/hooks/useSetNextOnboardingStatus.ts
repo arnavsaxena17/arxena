@@ -2,22 +2,26 @@ import { useRecoilCallback, useRecoilValue } from 'recoil';
 
 import { CurrentUser, currentUserState } from '@/auth/states/currentUserState';
 import {
-  CurrentWorkspace,
-  currentWorkspaceState,
+    CurrentWorkspace,
+    currentWorkspaceState,
 } from '@/auth/states/currentWorkspaceState';
+import { useConnectLinkedinOnboardingState } from '@/client-config/states/useConnectLinkedinOnboardingState';
 import { isDefined } from 'twenty-shared';
 import { OnboardingStatus } from '~/generated/graphql';
 
 const getNextOnboardingStatus = (
   currentUser: CurrentUser | null,
   currentWorkspace: CurrentWorkspace | null,
+  useConnectLinkedinOnboarding: boolean,
 ) => {
   if (currentUser?.onboardingStatus === OnboardingStatus.WORKSPACE_ACTIVATION) {
     return OnboardingStatus.PROFILE_CREATION;
   }
 
   if (currentUser?.onboardingStatus === OnboardingStatus.PROFILE_CREATION) {
-    return OnboardingStatus.CONNECT_LINKEDIN;
+    return useConnectLinkedinOnboarding
+      ? OnboardingStatus.CONNECT_LINKEDIN
+      : OnboardingStatus.SYNC_EMAIL;
   }
 
   if (currentUser?.onboardingStatus === OnboardingStatus.CONNECT_LINKEDIN) {
@@ -36,6 +40,9 @@ const getNextOnboardingStatus = (
 export const useSetNextOnboardingStatus = () => {
   const currentUser = useRecoilValue(currentUserState);
   const currentWorkspace = useRecoilValue(currentWorkspaceState);
+  const useConnectLinkedinOnboarding = useRecoilValue(
+    useConnectLinkedinOnboardingState,
+  );
 
   return useRecoilCallback(
     ({ set }) =>
@@ -43,6 +50,7 @@ export const useSetNextOnboardingStatus = () => {
         const nextOnboardingStatus = getNextOnboardingStatus(
           currentUser,
           currentWorkspace,
+          useConnectLinkedinOnboarding,
         );
         set(currentUserState, (current) => {
           if (isDefined(current)) {
@@ -54,6 +62,6 @@ export const useSetNextOnboardingStatus = () => {
           return current;
         });
       },
-    [currentWorkspace, currentUser],
+    [currentWorkspace, currentUser, useConnectLinkedinOnboarding],
   );
 };

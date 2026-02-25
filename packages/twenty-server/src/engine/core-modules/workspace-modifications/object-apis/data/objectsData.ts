@@ -258,16 +258,16 @@ export const objectCreationArr = [
             "namePlural": "recruiterInterviews"
         }
     },
-    // {
-    //     "object": {
-    //         "description": "",
-    //         "icon": "IconMessage",
-    //         "labelPlural": "Assistant Threads",
-    //         "labelSingular": "Assistant Thread",
-    //         "nameSingular": "assistantThread",
-    //         "namePlural": "assistantThreads"
-    //     }
-    // },
+    {
+        "object": {
+            "description": "",
+            "icon": "IconMessage",
+            "labelPlural": "Assistant Threads",
+            "labelSingular": "Assistant Thread",
+            "nameSingular": "assistantThread",
+            "namePlural": "assistantThreads"
+        }
+    },
     // {
     //     "object": {
     //         "description": "",
