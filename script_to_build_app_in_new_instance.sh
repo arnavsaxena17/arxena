@@ -19,7 +19,7 @@
        	echo "Node version: $(node -v)"
         echo "npm version: $(npm -v)"
         echo "Nest CLI version: $(nest --version)"
-        echo "Vite version: $(vite --version)"
+        echo "Vite version: $(npx vite --version 2>/dev/null || echo 'not yet installed')"
         echo "Build environment setup complete!"
 	export NODE_OPTIONS="--max-old-space-size=4096"
 	source ~/.nvm/nvm.sh
@@ -29,7 +29,7 @@
 	echo "Node version: $(node -v)"
 	echo "npm version: $(npm -v)"
 	echo "Nest CLI version: $(nest --version)"
-	echo "Vite version: $(vite --version)"
+	echo "Vite version: $(npx vite --version 2>/dev/null || echo 'not yet installed')"
 
 	git clone https://github.com/arnavsaxena17/twenty.git
        	cd twenty

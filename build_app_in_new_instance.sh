@@ -102,11 +102,11 @@ sudo rm -rf /home/ubuntu/twenty/packages/twenty-mcp-server/dist/*
 # Copy new twenty-mcp-server files
 scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/twenty-mcp-server/dist/* /home/ubuntu/twenty/packages/twenty-mcp-server/dist/
 
-mkdir -p /home/ubuntu/twenty/packages/twenty-website/dist
+mkdir -p /home/ubuntu/twenty/packages/twenty-website/.next
 # Clear existing files
-sudo rm -rf /home/ubuntu/twenty/packages/twenty-website/dist/*
-# Copy new twenty-website files
-scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/twenty-website/dist/* /home/ubuntu/twenty/packages/twenty-website/dist/
+sudo rm -rf /home/ubuntu/twenty/packages/twenty-website/.next/*
+# Copy new twenty-website files (Next.js outputs to .next, not dist)
+scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/twenty-website/.next/* /home/ubuntu/twenty/packages/twenty-website/.next/
 
 cd /home/ubuntu/twenty
 # Compile lingui catalogs for server
@@ -124,9 +124,4 @@ pm2 restart all
 
 TZ=Asia/Kolkata date "+%Y-%m-%d %H:%M:%S %Z"
 
-
 echo "Operations Complete, Will Power Off"
-
-
-
-
