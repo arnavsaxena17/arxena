@@ -17,7 +17,17 @@ export type CompanySearchAutocompleteProps = {
   }) => void;
   placeholder?: string;
   disabled?: boolean;
+  /** Base URL for API (e.g. https://server.com or /api/org-chart for proxy) */
+  baseUrl: string;
+  accessToken?: string;
+  /** Path to autocomplete endpoint. Default: /org-chart/companies/autocomplete. Use /autocomplete for Next.js proxy. */
+  autocompletePath?: string;
+  /** Base URL for company logo. Default: same as baseUrl + /org-chart/company-logo. Use /company-logo for proxy. */
+  logoBaseUrl?: string;
 };
+
+const DROPDOWN_MIN_WIDTH = 520;
+const DROPDOWN_MAX_HEIGHT = 360;
 
 const StyledWrapper = styled.div`
   position: relative;
@@ -49,9 +59,6 @@ const StyledInput = styled.input`
     cursor: not-allowed;
   }
 `;
-
-const DROPDOWN_MIN_WIDTH = 520;
-const DROPDOWN_MAX_HEIGHT = 360;
 
 const StyledDropdown = styled.ul<{ top: number; left: number; width: number }>`
   position: fixed;
@@ -148,10 +155,21 @@ const StyledEmptyMessage = styled.div`
   text-align: center;
 `;
 
+const StyledErrorMessage = styled.div`
+  padding: ${({ theme }) => theme.spacing(3)};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  text-align: center;
+`;
+
 export const CompanySearchAutocomplete = ({
   onCompanySelect,
   placeholder = 'Search for a company...',
   disabled = false,
+  baseUrl,
+  accessToken,
+  autocompletePath,
+  logoBaseUrl,
 }: CompanySearchAutocompleteProps) => {
   const [inputValue, setInputValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -159,16 +177,19 @@ export const CompanySearchAutocomplete = ({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLUListElement>(null);
-  const { companies, isLoading, search, clear } = useCompanyAutocomplete();
+
+  const { companies, isLoading, error, search, clear } = useCompanyAutocomplete({
+    baseUrl,
+    accessToken,
+    autocompletePath,
+  });
 
   const updateDropdownPosition = useCallback(() => {
     const input = inputRef.current;
     if (input) {
       const rect = input.getBoundingClientRect();
       const dropdownWidth = Math.max(rect.width, DROPDOWN_MIN_WIDTH);
-      // Center the dropdown relative to the input
       const centeredLeft = rect.left + (rect.width - dropdownWidth) / 2;
-      // Ensure dropdown doesn't go off-screen on the left
       const left = Math.max(8, centeredLeft);
       setDropdownRect({
         top: rect.bottom + 8,
@@ -181,9 +202,7 @@ export const CompanySearchAutocomplete = ({
   const showDropdown = isOpen && inputValue.trim().length > 0;
 
   useLayoutEffect(() => {
-    if (showDropdown) {
-      updateDropdownPosition();
-    }
+    if (showDropdown) updateDropdownPosition();
   }, [showDropdown, companies, isLoading, updateDropdownPosition]);
 
   const handleInputChange = useCallback(
@@ -192,9 +211,7 @@ export const CompanySearchAutocomplete = ({
       setInputValue(value);
       search(value);
       setIsOpen(true);
-      if (!value) {
-        clear();
-      }
+      if (!value) clear();
     },
     [search, clear],
   );
@@ -230,21 +247,20 @@ export const CompanySearchAutocomplete = ({
       const target = event.target as Node;
       const isInsideWrapper = wrapperRef.current?.contains(target);
       const isInsideDropdown = dropdownRef.current?.contains(target);
-      if (!isInsideWrapper && !isInsideDropdown) {
-        setIsOpen(false);
-      }
+      if (!isInsideWrapper && !isInsideDropdown) setIsOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const getLogoUrl = useCallback((website: string | undefined) => {
-    if (!website?.trim()) return null;
-    const base =
-      process.env.REACT_APP_SERVER_BASE_URL ?? '';
-    if (!base) return null;
-    return `${base.replace(/\/$/, '')}/org-chart/company-logo?website=${encodeURIComponent(website)}`;
-  }, []);
+  const getLogoUrl = useCallback(
+    (website: string | undefined) => {
+      if (!website?.trim()) return null;
+      const base = logoBaseUrl ?? `${baseUrl.replace(/\/$/, '')}/org-chart/company-logo`;
+      return `${base.replace(/\/$/, '')}?website=${encodeURIComponent(website)}`;
+    },
+    [baseUrl, logoBaseUrl],
+  );
 
   const dropdownContent = showDropdown && (
     <StyledDropdown
@@ -255,7 +271,11 @@ export const CompanySearchAutocomplete = ({
       onMouseDown={(e) => e.preventDefault()}
     >
       {isLoading ? (
-        <StyledEmptyMessage>Loading...</StyledEmptyMessage>
+        <StyledEmptyMessage>Searching...</StyledEmptyMessage>
+      ) : error ? (
+        <StyledErrorMessage>
+          Unable to search. Please try again.
+        </StyledErrorMessage>
       ) : companies.length === 0 ? (
         <StyledEmptyMessage>No companies found</StyledEmptyMessage>
       ) : (
@@ -292,9 +312,7 @@ export const CompanySearchAutocomplete = ({
                 />
               ) : null}
               <StyledLogoPlaceholder
-                style={{
-                  display: logoUrl ? 'none' : 'flex',
-                }}
+                style={{ display: logoUrl ? 'none' : 'flex' }}
                 aria-hidden
               >
                 {initials || '?'}
@@ -328,11 +346,10 @@ export const CompanySearchAutocomplete = ({
         onBlur={handleBlur}
         onFocus={() => companies.length > 0 && setIsOpen(true)}
         placeholder={placeholder}
-        // disabled={disabled}
+        disabled={disabled}
         autoComplete="off"
       />
-      {dropdownContent &&
-        createPortal(dropdownContent, document.body)}
+      {dropdownContent && createPortal(dropdownContent, document.body)}
     </StyledWrapper>
   );
 };

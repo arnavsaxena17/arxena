@@ -1,0 +1,24 @@
+{
+  "name": "twenty-orgchart",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/twenty-orgchart/src",
+  "projectType": "library",
+  "tags": [
+    "scope:frontend"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "{projectRoot}/dist"
+      ],
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "npx vite build"
+      }
+    }
+  }
+}

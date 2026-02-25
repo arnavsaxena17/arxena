@@ -51,6 +51,8 @@
 	yarn cache clean
 	npx nx build twenty-shared
 	yarn workspace twenty-shared build
+	npx nx build twenty-orgchart
+	yarn workspace twenty-orgchart build
 	cd ~/twenty/packages/twenty-server/
        	mkdir -p src/engine/core-modules/i18n/locales/generated
 	npx lingui extract --clean --verbose

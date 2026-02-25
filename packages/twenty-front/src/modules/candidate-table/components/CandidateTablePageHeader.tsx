@@ -10,7 +10,7 @@ import {
     IconX,
 } from 'twenty-ui';
 
-import { CompanySearchAutocomplete } from '@/orgchart/components/CompanySearchAutocomplete';
+import { OrgChartCompanySearchWrapper } from '@/orgchart/components/OrgChartCompanySearchWrapper';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 
 import type { IconComponent } from 'twenty-ui';
@@ -219,7 +219,7 @@ export const CandidateTablePageHeader = ({
     >
       {onCompanySelect !== undefined && (
         <StyledCompanySearchWrapper>
-          <CompanySearchAutocomplete
+          <OrgChartCompanySearchWrapper
             onCompanySelect={onCompanySelect}
             placeholder="Search company for org charts..."
             disabled={!hasToken}

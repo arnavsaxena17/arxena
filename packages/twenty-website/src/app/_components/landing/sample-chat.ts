@@ -13,30 +13,30 @@ export const SAMPLE_CHAT: ChatMessage[] = [
     time: '20:19',
   },
   {
-      sender: 'user',
-      text: "Hi Arnav, I just got time to check your message. Can we connect tomorrow with a fresh start.",
-      time: '21:11',
+    sender: 'user',
+    text: 'Hi Arnav, I just got time to check your message. Can we connect tomorrow with a fresh start.',
+    time: '21:11',
+  },
+  // {
+  //     sender: 'bot',
+  //     text: 'Sure, we can connect tomorrow. Please let me know your available time slots for the call.',
+  //     time: '21:20',
+  // },
+  {
+    sender: 'bot',
+    attachment: {
+      type: 'document',
+      filename: 'JD_Head_of_Corporate_Strategy.pdf',
+      size: '312 KB',
     },
-    // {
-    //     sender: 'bot',
-    //     text: 'Sure, we can connect tomorrow. Please let me know your available time slots for the call.',
-    //     time: '21:20',
-    // },
-    {
-      sender: 'bot',
-      attachment: {
-        type: 'document',
-        filename: 'JD_Head_of_Corporate_Strategy.pdf',
-        size: '312 KB',
-      },
-      time: '20:20',
-    },
-    {
-        sender: 'bot',
-        text: 'I have shared the job description with you. Let me know if this role interests you.',
-        time: '21:20',
-    },
-    {
+    time: '20:20',
+  },
+  {
+    sender: 'bot',
+    text: 'I have shared the job description with you. Let me know if this role interests you.',
+    time: '21:20',
+  },
+  {
     sender: 'user',
     text: "Hi, good morning we can connect at 11:00 am, hope it's ok with you",
     time: '09:52',
@@ -82,7 +82,7 @@ export const SAMPLE_CHAT: ChatMessage[] = [
   },
   {
     sender: 'user',
-    text: "Current is around 62 L. expectations: We can negotiate on this based on the budget of the organisation.",
+    text: 'Current is around 62 L. expectations: We can negotiate on this based on the budget of the organisation.',
     time: '11:11',
   },
   {

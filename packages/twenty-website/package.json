@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "nx": "NX_DEFAULT_PROJECT=twenty-website node ../../node_modules/nx/bin/nx.js",
-    "dev": "npx next dev",
-    "build": "npx next build",
+    "dev": "npx nx build twenty-orgchart && npx next dev",
+    "build": "npx nx build twenty-orgchart && npx next build",
     "start": "npx next start",
     "lint": "npx next lint",
     "github:sync": "npx tsx src/github/github-sync.ts",
@@ -15,9 +15,13 @@
   },
   "dependencies": {
     "@docsearch/react": "^3.6.2",
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
     "@nivo/calendar": "^0.87.0",
+    "@tabler/icons-react": "^2.44.0",
     "gray-matter": "^4.0.3",
     "next-runtime-env": "^3.2.2",
-    "postgres": "^3.4.3"
+    "postgres": "^3.4.3",
+    "twenty-orgchart": "workspace:*"
   }
 }

@@ -3,10 +3,10 @@
 import styled from '@emotion/styled';
 
 import {
-    DiscordIcon,
-    GithubIcon2,
-    LinkedInIcon,
-    XIcon,
+  DiscordIcon,
+  GithubIcon2,
+  LinkedInIcon,
+  XIcon,
 } from '../icons/SvgIcons';
 
 import { Logo } from './Logo';
@@ -86,7 +86,7 @@ export const FooterDesktop = () => {
       >
         <LeftSideFooter>
           <Logo />
-          <div>Recruitment CRM for modern teams</div>
+          <div>Org Charts for the modern team</div>
         </LeftSideFooter>
         <RightSideFooter>
           <RightSideFooterColumn>
@@ -96,14 +96,22 @@ export const FooterDesktop = () => {
           </RightSideFooterColumn>
           <RightSideFooterColumn>
             <RightSideFooterColumnTitle>Resources</RightSideFooterColumnTitle>
-            <RightSideFooterLink href="/user-guide">User Guide</RightSideFooterLink>
-            <RightSideFooterLink href="/developers">Developers</RightSideFooterLink>
+            <RightSideFooterLink href="/user-guide">
+              User Guide
+            </RightSideFooterLink>
+            <RightSideFooterLink href="/developers">
+              Developers
+            </RightSideFooterLink>
             <RightSideFooterLink href="/releases">Releases</RightSideFooterLink>
           </RightSideFooterColumn>
           <RightSideFooterColumn>
             <RightSideFooterColumnTitle>Legal</RightSideFooterColumnTitle>
-            <RightSideFooterLink href="/legal/terms">Terms of Service</RightSideFooterLink>
-            <RightSideFooterLink href="/legal/privacy">Privacy Policy</RightSideFooterLink>
+            <RightSideFooterLink href="/legal/terms">
+              Terms of Service
+            </RightSideFooterLink>
+            <RightSideFooterLink href="/legal/privacy">
+              Privacy Policy
+            </RightSideFooterLink>
           </RightSideFooterColumn>
         </RightSideFooter>
       </div>
@@ -140,11 +148,7 @@ export const FooterDesktop = () => {
           >
             <LinkedInIcon size="M" />
           </a>
-          <a
-            href="https://discord.gg/arxena"
-            target="_blank"
-            rel="noreferrer"
-          >
+          <a href="https://discord.gg/AwykNdHJ8B" target="_blank" rel="noreferrer">
             <DiscordIcon size="M" />
           </a>
         </SocialLinks>

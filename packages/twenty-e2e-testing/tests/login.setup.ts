@@ -18,10 +18,11 @@ test('Login test', async ({ loginPage, page }) => {
     'Logging in '.concat(page.url(), ' as ', process.env.DEFAULT_LOGIN),
     async () => {
       await page.waitForLoadState('networkidle');
-      if (
-        page.url().includes('app.twenty-next.com') ||
-        !page.url().includes('app.localhost:3001')
-      ) {
+      const shouldUseEmailEntryButton =
+        (await loginPage.loginWithEmailButton.count()) > 0 &&
+        (await loginPage.loginWithEmailButton.first().isVisible());
+
+      if (shouldUseEmailEntryButton) {
         await loginPage.clickLoginWithEmail();
       }
       await loginPage.typeEmail(process.env.DEFAULT_LOGIN);

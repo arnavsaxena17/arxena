@@ -209,9 +209,6 @@ export const OrgChartSearchControls = ({
   onSearch,
   onClearSearch,
   diagramHandleRef,
-  onGetAll,
-  onGetLeaders,
-  onViewAllCandidates,
 }: OrgChartSearchControlsProps) => {
   return (
     <StyledSearchContainer>
@@ -222,9 +219,7 @@ export const OrgChartSearchControls = ({
           value={searchTerm}
           onChange={(event) => onSearchTermChange(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              onSearch();
-            }
+            if (event.key === 'Enter') onSearch();
           }}
         />
       </StyledSearchInputWrapper>
@@ -259,17 +254,6 @@ export const OrgChartSearchControls = ({
             : ''}
         </StyledSearchMeta>
       </StyledSearchNavGroup>
-      {/* <StyledSearchNavGroup>
-        <StyledSearchButton type="button" onClick={onGetAll}>
-          All
-        </StyledSearchButton>
-        <StyledSearchButton type="button" onClick={onViewAllCandidates}>
-          View all candidates
-        </StyledSearchButton>
-        <StyledSearchButton type="button" onClick={onGetLeaders}>
-          Leaders
-        </StyledSearchButton>
-      </StyledSearchNavGroup> */}
     </StyledSearchContainer>
   );
 };

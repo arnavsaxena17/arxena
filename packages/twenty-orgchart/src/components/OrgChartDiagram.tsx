@@ -2,23 +2,22 @@ import styled from '@emotion/styled';
 import * as go from 'gojs';
 import { ReactDiagram } from 'gojs-react';
 import {
-    forwardRef,
-    useCallback,
-    useEffect,
-    useImperativeHandle,
-    useRef,
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
 } from 'react';
 
-import type { OrgChartNodeData } from '../utils/orgChartDataUtils';
+import type { OrgChartNodeData } from 'twenty-shared';
 
 const DEFAULT_AVATAR =
   'https://st2.depositphotos.com/4111759/12123/v/950/depositphotos_121232442-stock-illustration-male-default-placeholder-avatar-profile.jpg';
 
-// Vanilla JS paths: /static/img/lock.png, linkedin-icon-png-circle-2.png, download-icon.png, similar-items.png
-const LOCK_ICON_URL = '/img/lock.png';
-const LINKEDIN_ICON_URL = '/img/linkedin-icon-png-circle-2.png';
-const DOWNLOAD_ICON_URL = '/img/download-icon.png';
-const SIMILAR_ITEMS_ICON_URL = '/img/similar-items.png';
+const DEFAULT_LOCK_ICON = '/img/lock.svg';
+const DEFAULT_LINKEDIN_ICON = '/img/linkedin-icon.svg';
+const DEFAULT_DOWNLOAD_ICON = '/img/download-icon.svg';
+const DEFAULT_SIMILAR_ITEMS_ICON = '/img/similar-items.svg';
 
 const StyledDiagramWrapper = styled.div`
   width: 100%;
@@ -58,8 +57,16 @@ export type OrgChartContextAction =
   | 'add_to_job_and_send_invite'
   | 'add_to_job_and_invite_to_job';
 
+export type OrgChartDiagramIconUrls = {
+  lock?: string;
+  linkedin?: string;
+  download?: string;
+  similarItems?: string;
+};
+
 export type OrgChartDiagramProps = {
   nodeDataArray: OrgChartNodeData[];
+  iconUrls?: OrgChartDiagramIconUrls;
   onNodeContextAction?: (
     action: OrgChartContextAction,
     node: OrgChartNodeData,
@@ -84,6 +91,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
   (
     {
       nodeDataArray,
+      iconUrls,
       onNodeContextAction,
       onBackgroundContextAction,
       onNodeDoubleClick,
@@ -92,6 +100,10 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
     },
     ref,
   ) => {
+    const LOCK_ICON_URL = iconUrls?.lock ?? DEFAULT_LOCK_ICON;
+    const LINKEDIN_ICON_URL = iconUrls?.linkedin ?? DEFAULT_LINKEDIN_ICON;
+    const DOWNLOAD_ICON_URL = iconUrls?.download ?? DEFAULT_DOWNLOAD_ICON;
+    const SIMILAR_ITEMS_ICON_URL = iconUrls?.similarItems ?? DEFAULT_SIMILAR_ITEMS_ICON;
     const diagramRef = useRef<ReactDiagram>(null);
     const overviewDivRef = useRef<HTMLDivElement | null>(null);
     const overviewRef = useRef<go.Overview | null>(null);
@@ -99,9 +111,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
     const searchResultsKeysRef = useRef<go.Key[]>([]);
     const currentResultIndexRef = useRef(0);
 
-    const handleModelChange = useCallback(() => {
-      // No-op for now; can sync state if needed
-    }, []);
+    const handleModelChange = useCallback(() => {}, []);
 
     const createNodeTemplate = useCallback((): go.Node => {
       const $ = go.GraphObject.make;
@@ -147,9 +157,6 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       const findIconSource = (nodeState: unknown): string =>
         nodeState === 'active' ? LINKEDIN_ICON_URL : LOCK_ICON_URL;
 
-      // Fixed height per candidate row: name (1 line) + title (2 lines max) + padding. Avoids empty gaps.
-      const CANDIDATE_ROW_HEIGHT = 52;
-
       const createCandidateRow = (idx: number, rowIndex: number) =>
         $(
           go.Panel,
@@ -161,11 +168,8 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
             defaultAlignment: go.Spot.Left,
           },
           new go.Binding('height', `height_${idx}` as const, findSize),
-          // Avatar column
           $(go.RowColumnDefinition, { column: 0, width: 50 }),
-          // Text column
           $(go.RowColumnDefinition, { column: 1 }),
-          // Icon column (fixed so all locks align vertically)
           $(go.RowColumnDefinition, { column: 2, width: 18 }),
           $(
             go.Panel,
@@ -201,7 +205,6 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
               isMultiline: true,
               maxLines: 1,
               overflow: go.TextBlock.OverflowEllipsis,
-
               editable: false,
               minSize: new go.Size(5, 16),
               width: 150,
@@ -253,12 +256,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
             $(
               go.Shape,
               'Circle',
-              {
-                width: 10,
-                height: 10,
-                strokeWidth: 0,
-                fill: 'white',
-              },
+              { width: 10, height: 10, strokeWidth: 0, fill: 'white' },
             ),
             $(
               go.Picture,
@@ -313,9 +311,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
           $(
             go.Panel,
             'Table',
-            {
-              width: 220,
-            },
+            { width: 220 },
             new go.Binding(
               'padding',
               'nodeState',
@@ -376,20 +372,6 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
               },
               new go.Binding('text', 'headline'),
             ),
-            // $(
-            //   go.TextBlock,
-            //   {
-            //     row: 3,
-            //     column: 0,
-            //     editable: false,
-            //     isMultiline: false,
-            //     minSize: new go.Size(10, 14),
-            //     margin: new go.Margin(0, 5, 20, 5),
-            //     stroke: 'rgb(150,150,150)',
-            //   },
-            //   new go.Binding('text', 'country', (c) => (c ? String(c) : '')),
-            //   new go.Binding('visible', 'nodeState', (s) => s === 'active'),
-            // ),
             createCandidateRow(0, 5),
             createCandidateRow(1, 6),
             createCandidateRow(2, 7),
@@ -480,9 +462,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
               click: (_, obj) => {
                 const part = (obj.part ?? null) as go.Node | null;
                 const data = part?.data as OrgChartNodeData | undefined;
-                if (data) {
-                  onNodeContextAction('current_node', data);
-                }
+                if (data) onNodeContextAction('current_node', data);
               },
             },
           ),
@@ -493,9 +473,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
               click: (_, obj) => {
                 const part = (obj.part ?? null) as go.Node | null;
                 const data = part?.data as OrgChartNodeData | undefined;
-                if (data) {
-                  onNodeContextAction('selected_nodes', data);
-                }
+                if (data) onNodeContextAction('selected_nodes', data);
               },
             },
           ),
@@ -506,9 +484,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
               click: (_, obj) => {
                 const part = (obj.part ?? null) as go.Node | null;
                 const data = part?.data as OrgChartNodeData | undefined;
-                if (data) {
-                  onNodeContextAction('boolean_keywords', data);
-                }
+                if (data) onNodeContextAction('boolean_keywords', data);
               },
             },
           ),
@@ -519,9 +495,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
               click: (_, obj) => {
                 const part = (obj.part ?? null) as go.Node | null;
                 const data = part?.data as OrgChartNodeData | undefined;
-                if (data) {
-                  onNodeContextAction('leadership', data);
-                }
+                if (data) onNodeContextAction('leadership', data);
               },
             },
           ),
@@ -532,9 +506,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
               click: (_, obj) => {
                 const part = (obj.part ?? null) as go.Node | null;
                 const data = part?.data as OrgChartNodeData | undefined;
-                if (data) {
-                  onNodeContextAction('entire_company', data);
-                }
+                if (data) onNodeContextAction('entire_company', data);
               },
             },
           ),
@@ -545,9 +517,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
               click: (_, obj) => {
                 const part = (obj.part ?? null) as go.Node | null;
                 const data = part?.data as OrgChartNodeData | undefined;
-                if (data) {
-                  onNodeContextAction('function_grade', data);
-                }
+                if (data) onNodeContextAction('function_grade', data);
               },
             },
           ),
@@ -558,9 +528,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
               click: (_, obj) => {
                 const part = (obj.part ?? null) as go.Node | null;
                 const data = part?.data as OrgChartNodeData | undefined;
-                if (data) {
-                  onNodeContextAction('similar_companies', data);
-                }
+                if (data) onNodeContextAction('similar_companies', data);
               },
             },
           ),
@@ -571,9 +539,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
               click: (_, obj) => {
                 const part = (obj.part ?? null) as go.Node | null;
                 const data = part?.data as OrgChartNodeData | undefined;
-                if (data) {
-                  onNodeContextAction('add_to_job_and_send_invite', data);
-                }
+                if (data) onNodeContextAction('add_to_job_and_send_invite', data);
               },
             },
           ),
@@ -584,9 +550,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
               click: (_, obj) => {
                 const part = (obj.part ?? null) as go.Node | null;
                 const data = part?.data as OrgChartNodeData | undefined;
-                if (data) {
-                  onNodeContextAction('add_to_job_and_invite_to_job', data);
-                }
+                if (data) onNodeContextAction('add_to_job_and_invite_to_job', data);
               },
             },
           ),
@@ -595,6 +559,10 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
 
       return node;
     }, [
+      LOCK_ICON_URL,
+      LINKEDIN_ICON_URL,
+      DOWNLOAD_ICON_URL,
+      SIMILAR_ITEMS_ICON_URL,
       onNodeContextAction,
       onNodeDoubleClick,
       onDownloadNode,
@@ -656,27 +624,21 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const baseCommitNodes = (layout as any).commitNodes.bind(layout);
 
-      // eslint-disable-next-line func-names, @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (layout as any).commitNodes = function () {
         baseCommitNodes();
         const network = layout.network;
-        if (!network) {
-          return;
-        }
+        if (!network) return;
 
         network.vertexes.each((v) => {
           const tv = v as go.TreeVertex;
           const node = tv.node;
-          if (!node) {
-            return;
-          }
+          if (!node) return;
 
           const level = tv.level % levelColors.length;
           const color = levelColors[level];
           const shape = node.findObject('SHAPE') as go.Shape | null;
-          if (!shape) {
-            return;
-          }
+          if (!shape) return;
 
           shape.stroke = $(go.Brush, 'Linear', {
             0: color,
@@ -695,18 +657,14 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
             'ContextMenuButton',
             $c(go.TextBlock, 'Get all names in this company'),
             {
-              click: () => {
-                onBackgroundContextAction('entire_company');
-              },
+              click: () => onBackgroundContextAction('entire_company'),
             },
           ),
           $c(
             'ContextMenuButton',
             $c(go.TextBlock, 'Get all leadership in this company'),
             {
-              click: () => {
-                onBackgroundContextAction('leadership');
-              },
+              click: () => onBackgroundContextAction('leadership'),
             },
           ),
         );
@@ -719,7 +677,6 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       const diagramHost = diagramRef.current as unknown as {
         getDiagram?: () => go.Diagram | null;
       } | null;
-
       return diagramHost?.getDiagram?.() ?? null;
     }, []);
 
@@ -727,9 +684,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       const diagram = getDiagram();
       const overviewDiv = overviewDivRef.current;
 
-      if (!diagram || !overviewDiv) {
-        return;
-      }
+      if (!diagram || !overviewDiv) return;
 
       if (overviewRef.current) {
         overviewRef.current.observed = diagram;
@@ -760,21 +715,15 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
     const focusResultAtIndex = useCallback(
       (index: number) => {
         const diagram = getDiagram();
-        if (!diagram) {
-          return;
-        }
+        if (!diagram) return;
 
         const keys = searchResultsKeysRef.current;
-        if (!keys.length) {
-          return;
-        }
+        if (!keys.length) return;
 
         const safeIndex = ((index % keys.length) + keys.length) % keys.length;
         const key = keys[safeIndex];
         const part = diagram.findPartForKey(key);
-        if (!part) {
-          return;
-        }
+        if (!part) return;
 
         diagram.zoomToRect(part.actualBounds);
         diagram.centerRect(part.actualBounds);
@@ -787,9 +736,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
     const performSearch = useCallback(
       (keyword: string): number => {
         const diagram = getDiagram();
-        if (!diagram) {
-          return 0;
-        }
+        if (!diagram) return 0;
 
         diagram.startTransaction('highlight search');
         diagram.clearHighlighteds();
@@ -816,9 +763,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
         ) as go.Iterator<go.Node>;
 
         const keys: go.Key[] = [];
-        results.each((item) => {
-          keys.push(item.data.key);
-        });
+        results.each((item) => keys.push(item.data.key));
         searchResultsKeysRef.current = keys;
         currentResultIndexRef.current = 0;
 
@@ -834,31 +779,25 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
         }
 
         diagram.commitTransaction('highlight search');
-
         return keys.length;
       },
       [getDiagram],
     );
 
     const focusNextResult = useCallback(() => {
-      const nextIndex = currentResultIndexRef.current + 1;
-      focusResultAtIndex(nextIndex);
+      focusResultAtIndex(currentResultIndexRef.current + 1);
     }, [focusResultAtIndex]);
 
     const focusPreviousResult = useCallback(() => {
-      const prevIndex = currentResultIndexRef.current - 1;
-      focusResultAtIndex(prevIndex);
+      focusResultAtIndex(currentResultIndexRef.current - 1);
     }, [focusResultAtIndex]);
 
     const clearSearch = useCallback(() => {
       const diagram = getDiagram();
-      if (!diagram) {
-        return;
-      }
+      if (!diagram) return;
 
       searchResultsKeysRef.current = [];
       currentResultIndexRef.current = 0;
-
       diagram.startTransaction('highlight search');
       diagram.clearHighlighteds();
       diagram.commitTransaction('highlight search');
@@ -876,9 +815,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       if (!diagram) return;
       diagram.scale = 1;
       const rootNode = diagram.nodes.first();
-      if (rootNode) {
-        diagram.commandHandler.scrollToPart(rootNode);
-      }
+      if (rootNode) diagram.commandHandler.scrollToPart(rootNode);
     }, [getDiagram]);
 
     useImperativeHandle(
@@ -908,33 +845,16 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
 
     useEffect(() => {
       const diagram = getDiagram();
-      if (!diagram) {
-        return;
-      }
+      if (!diagram) return;
 
       const handleInitialLayout = () => {
-        if (hasCenteredRef.current) {
-          return;
-        }
+        if (hasCenteredRef.current) return;
         hasCenteredRef.current = true;
 
-        const ceoNode = diagram
-          .findNodesByExample({ std_function: 'ceo', std_grade: 'ceo' })
-          .first();
-
-        if (ceoNode) {
-          diagram.commandHandler.scrollToPart(ceoNode);
-          return;
-        }
-
-        const firstNode = diagram.nodes.first();
-        if (firstNode) {
-          diagram.commandHandler.scrollToPart(firstNode);
-        }
+        diagram.commandHandler.zoomToFit();
       };
 
       diagram.addDiagramListener('InitialLayoutCompleted', handleInitialLayout);
-
       return () => {
         diagram.removeDiagramListener('InitialLayoutCompleted', handleInitialLayout);
       };

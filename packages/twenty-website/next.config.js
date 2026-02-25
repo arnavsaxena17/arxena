@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 
+const path = require('path');
+const webpack = require('webpack');
+
+const orgchartDist = path.resolve(__dirname, '../twenty-orgchart/dist');
+
 const nextConfig = {
   images: {
     remotePatterns: [
@@ -8,6 +13,21 @@ const nextConfig = {
         hostname: 'avatars.githubusercontent.com',
       },
     ],
+  },
+  webpack: (config, { isServer }) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'twenty-orgchart': orgchartDist,
+      'twenty-orgchart/company-search': path.join(orgchartDist, 'company-search.js'),
+    };
+    if (!isServer) {
+      config.plugins.push(
+        new webpack.ProvidePlugin({
+          process: 'process/browser',
+        })
+      );
+    }
+    return config;
   },
 };
 

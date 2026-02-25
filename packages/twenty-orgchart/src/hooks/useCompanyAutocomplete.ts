@@ -1,8 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useRecoilValue } from 'recoil';
 import { useDebouncedCallback } from 'use-debounce';
-
-import { tokenPairState } from '@/auth/states/tokenPairState';
 
 export type CompanyAutocompleteItem = {
   name: string;
@@ -19,9 +16,20 @@ export type CompanyAutocompleteItem = {
   count: number;
 };
 
-export const useCompanyAutocomplete = () => {
-  const tokenPair = useRecoilValue(tokenPairState);
-  const accessToken = tokenPair?.accessToken?.token ?? undefined;
+export type UseCompanyAutocompleteOptions = {
+  /** Base URL for API (e.g. https://server.com or /api/org-chart for proxy) */
+  baseUrl: string;
+  accessToken?: string;
+  /** Path to autocomplete endpoint. Default: /org-chart/companies/autocomplete (append to baseUrl). Use /autocomplete for Next.js proxy. */
+  autocompletePath?: string;
+};
+
+export const useCompanyAutocomplete = (options: UseCompanyAutocompleteOptions) => {
+  const {
+    baseUrl,
+    accessToken,
+    autocompletePath = '/org-chart/companies/autocomplete',
+  } = options;
 
   const [companies, setCompanies] = useState<CompanyAutocompleteItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -38,30 +46,28 @@ export const useCompanyAutocomplete = () => {
       setError(null);
 
       try {
-        const response = await fetch(
-          `${process.env.REACT_APP_SERVER_BASE_URL}/org-chart/companies/autocomplete`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(accessToken && {
-                Authorization: `Bearer ${accessToken}`,
-              }),
-            },
-            body: JSON.stringify({
-              input_text: inputText.trim(),
-              query: {},
-              params: {},
+        const path = autocompletePath.startsWith('/') ? autocompletePath : `/${autocompletePath}`;
+        const autocompleteUrl = `${baseUrl.replace(/\/$/, '')}${path}`;
+        const response = await fetch(autocompleteUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(accessToken && {
+              Authorization: `Bearer ${accessToken}`,
             }),
           },
-        );
+          body: JSON.stringify({
+            input_text: inputText.trim(),
+            query: {},
+            params: {},
+          }),
+        });
 
         const data = (await response.json()) as {
           status?: string;
           result?: CompanyAutocompleteItem[];
         };
 
-        console.log('pdl company autocomplete data', data);
         if (data?.status === 'ok' && Array.isArray(data.result)) {
           setCompanies(data.result);
         } else {
@@ -74,7 +80,7 @@ export const useCompanyAutocomplete = () => {
         setIsLoading(false);
       }
     },
-    [accessToken],
+    [baseUrl, accessToken, autocompletePath],
   );
 
   const debouncedFetch = useDebouncedCallback(fetchCompanies, 300, {
@@ -120,9 +126,12 @@ export type CompanyInfoFromPdl = {
   linkedinDisplayName?: string;
 };
 
-export const useCompanyInfoLookup = () => {
-  const tokenPair = useRecoilValue(tokenPairState);
-  const accessToken = tokenPair?.accessToken?.token ?? undefined;
+export const useCompanyInfoLookup = (options: UseCompanyAutocompleteOptions) => {
+  const {
+    baseUrl,
+    accessToken,
+    autocompletePath = '/org-chart/companies/autocomplete',
+  } = options;
 
   const [company, setCompany] = useState<CompanyInfoFromPdl | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -140,26 +149,23 @@ export const useCompanyInfoLookup = () => {
       setError(null);
 
       try {
-        console.log('pdl lookupByName', trimmed);
-        const response = await fetch(
-          `${process.env.REACT_APP_SERVER_BASE_URL}/org-chart/companies/autocomplete`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(accessToken && {
-                Authorization: `Bearer ${accessToken}`,
-              }),
-            },
-            body: JSON.stringify({
-              input_text: trimmed,
-              query: {},
-              params: {},
+        const path = autocompletePath.startsWith('/') ? autocompletePath : `/${autocompletePath}`;
+        const autocompleteUrl = `${baseUrl.replace(/\/$/, '')}${path}`;
+        const response = await fetch(autocompleteUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(accessToken && {
+              Authorization: `Bearer ${accessToken}`,
             }),
           },
-        );
+          body: JSON.stringify({
+            input_text: trimmed,
+            query: {},
+            params: {},
+          }),
+        });
 
-        console.log('pdl lookupByName response', response);
         const data = (await response.json()) as {
           status?: string;
           result?: CompanyAutocompleteItem[];
@@ -202,7 +208,7 @@ export const useCompanyInfoLookup = () => {
         setIsLoading(false);
       }
     },
-    [accessToken],
+    [baseUrl, accessToken, autocompletePath],
   );
 
   return {

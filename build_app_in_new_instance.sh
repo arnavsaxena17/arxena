@@ -68,6 +68,11 @@ sudo rm -rf /home/ubuntu/twenty/packages/twenty-shared/dist/*
 # Copy new shared library files
 scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/twenty-shared/dist/* /home/ubuntu/twenty/packages/twenty-shared/dist/
 
+mkdir -p /home/ubuntu/twenty/packages/twenty-orgchart/dist
+# Clear existing files
+sudo rm -rf /home/ubuntu/twenty/packages/twenty-orgchart/dist/*
+# Copy new twenty-orgchart library files
+scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/twenty-orgchart/dist/* /home/ubuntu/twenty/packages/twenty-orgchart/dist/
 
 mkdir -p /home/ubuntu/twenty/packages/twenty-front/src/locales/generated
 # Clear existing files

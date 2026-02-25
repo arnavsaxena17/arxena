@@ -2,15 +2,15 @@ import styled from '@emotion/styled';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
-import { tokenPairState } from '@/auth/states/tokenPairState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
-import { jobsState } from '@/candidate-table/states/states';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
+import { jobsState } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 
+import type { OrgChartNodeData } from 'twenty-shared';
 import type { ContextResultItem } from '../types';
-import type { OrgChartNodeData } from '../utils/orgChartDataUtils';
 
 const StyledBackdrop = styled.div`
   position: absolute;

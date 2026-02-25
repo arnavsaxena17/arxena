@@ -24,6 +24,7 @@
       "@/*": ["./src/modules/*"],
       "~/*": ["./src/*"],
       "twenty-ui": ["../twenty-ui/src/index.ts"],
+      "twenty-orgchart": ["../twenty-orgchart/src/index.ts"],
       "@ui/*": ["../twenty-ui/src/*"]
     }
   },

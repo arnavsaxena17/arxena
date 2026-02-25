@@ -5,7 +5,12 @@ import react from '@vitejs/plugin-react-swc';
 import wyw from '@wyw-in-js/vite';
 import fs from 'fs';
 import path from 'path';
-import { defineConfig, loadEnv, searchForWorkspaceRoot } from 'vite';
+import {
+  createLogger,
+  defineConfig,
+  loadEnv,
+  searchForWorkspaceRoot,
+} from 'vite';
 import checker from 'vite-plugin-checker';
 import svgr from 'vite-plugin-svgr';
 import tsconfigPaths from 'vite-tsconfig-paths';
@@ -67,9 +72,21 @@ export default defineConfig(({ command, mode }) => {
     };
   }
 
+  const logger = createLogger();
+  const customLogger = {
+    ...logger,
+    warn(msg: string, options?: { clear?: boolean }) {
+      if (typeof msg === 'string' && msg.includes('dynamic import cannot be analyzed')) {
+        return;
+      }
+      logger.warn(msg, options);
+    },
+  };
+
   return {
     root: __dirname,
     cacheDir: '../../node_modules/.vite/packages/twenty-front',
+    customLogger,
 
     server: {
       port: port,
@@ -143,7 +160,6 @@ export default defineConfig(({ command, mode }) => {
       include: ['react', 'react-dom'],
       // Force exclude GoJS to prevent bundling issues
       force: true,
-
     },
 
     build: {
@@ -200,6 +216,14 @@ export default defineConfig(({ command, mode }) => {
     resolve: {
       alias: {
         path: 'rollup-plugin-node-polyfills/polyfills/path',
+        'twenty-orgchart': path.resolve(
+          __dirname,
+          '../twenty-orgchart/dist/index.js',
+        ),
+        'twenty-orgchart/company-search': path.resolve(
+          __dirname,
+          '../twenty-orgchart/dist/company-search.js',
+        ),
       },
     },
   };

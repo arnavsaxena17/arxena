@@ -1,5 +1,6 @@
+import type { OrgChartNodeData } from 'twenty-shared';
+
 import type { ContextResultItem } from '../types';
-import type { OrgChartNodeData } from './orgChartDataUtils';
 
 export const normalizeCandidateItem = (
   raw: Record<string, unknown>,

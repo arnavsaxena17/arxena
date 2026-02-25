@@ -423,6 +423,7 @@
       "packages/twenty-website",
       "packages/twenty-e2e-testing",
       "packages/twenty-shared",
+      "packages/twenty-orgchart",
       "packages/twenty-mcp-server",
       "tools/eslint-rules"
     ]

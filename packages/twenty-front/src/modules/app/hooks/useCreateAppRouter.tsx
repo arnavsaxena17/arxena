@@ -1,6 +1,6 @@
 import {
-  AppRouterProviders,
-  MinimalProviders,
+    AppRouterProviders,
+    MinimalProviders,
 } from '@/app/components/AppRouterProviders';
 import { SettingsRoutes } from '@/app/components/SettingsRoutes';
 
@@ -10,12 +10,12 @@ import { AppPath } from '@/types/AppPath';
 import { BlankLayout } from '@/ui/layout/page/components/BlankLayout';
 import { DefaultLayout } from '@/ui/layout/page/components/DefaultLayout';
 import {
-  Route,
-  createBrowserRouter,
-  createRoutesFromElements,
-  useLocation,
-  useNavigate,
-  useParams,
+    Route,
+    createBrowserRouter,
+    createRoutesFromElements,
+    useLocation,
+    useNavigate,
+    useParams,
 } from 'react-router-dom';
 import { Authorize } from '~/pages/auth/Authorize';
 import { PasswordReset } from '~/pages/auth/PasswordReset';
@@ -42,7 +42,6 @@ import Interview from '@/interviews/components/Interviews';
 import indexAppPath from '@/navigation/utils/indexAppPath';
 // import OrgChart from '@/orgchart/OrgChart';
 import { useBaileysConnection } from '@/baileys/contexts/BaileysContext';
-import { ArxOrgChart } from '@/orgchart/ArxOrgChart';
 import { SearchModels } from '@/search-models/SearchModels';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
@@ -51,6 +50,10 @@ import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterv
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import React from 'react';
 import { IconDatabase } from 'twenty-ui';
+
+const ArxOrgChart = React.lazy(() =>
+  import('@/orgchart/ArxOrgChart').then((m) => ({ default: m.ArxOrgChart })),
+);
 
 const VideoInterviewWrapper = () => {
   console.log('VideoInterviewWrapper rendering');
@@ -151,8 +154,9 @@ const OrgChartRoute = () => {
         isWhatsappLoggedIn={isWhatsappLoggedIn}
       />
       <PageBody>
-        <ArxOrgChart
-          companyId={companyId}
+        <React.Suspense fallback={null}>
+          <ArxOrgChart
+            companyId={companyId}
           companyName={companyFromState?.companyName}
           website={companyFromState?.website}
           locationName={companyFromState?.locationName}
@@ -161,6 +165,7 @@ const OrgChartRoute = () => {
           linkedinUrl={companyFromState?.linkedinUrl}
           onBack={handleBack}
         />
+        </React.Suspense>
       </PageBody>
     </PageContainer>
   );

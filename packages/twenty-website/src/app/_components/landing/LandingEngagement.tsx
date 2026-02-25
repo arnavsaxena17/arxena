@@ -11,8 +11,6 @@ const WA_BUBBLE_INCOMING = '#ffffff';
 const WA_BUBBLE_OUTGOING = '#D9FDD3';
 const WA_BUBBLE_OUTGOING_BORDER = '#ccf0c4';
 
-
-
 const StyledSection = styled.section`
   padding: ${Theme.spacing(12)} ${Theme.spacing(6)};
   background: ${Theme.color.gray10};
@@ -121,7 +119,8 @@ const StyledChatColumn = styled.div`
 const StyledWaHeader = styled.div`
   background: ${WA_HEADER_BG};
   color: ${Theme.color.white};
-  padding: ${Theme.spacing(3)} ${Theme.spacing(4)} ${Theme.spacing(3)} ${Theme.spacing(4)};
+  padding: ${Theme.spacing(3)} ${Theme.spacing(4)} ${Theme.spacing(3)}
+    ${Theme.spacing(4)};
   position: relative;
   flex-shrink: 0;
 `;
@@ -196,7 +195,8 @@ const StyledWaAttachment = styled.div<{ isBot: boolean }>`
   align-items: center;
   gap: 10px;
   padding: 8px;
-  background: ${({ isBot }) => (isBot ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.02)')};
+  background: ${({ isBot }) =>
+    isBot ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.02)'};
   border-radius: 4px;
   margin-bottom: 4px;
 `;
@@ -221,7 +221,8 @@ const StyledWaAttachmentInfo = styled.div`
 const StyledWaAttachmentFilename = styled.div<{ isBot: boolean }>`
   font-size: 14px;
   font-weight: ${Theme.font.weight.medium};
-  color: ${({ isBot }) => (isBot ? Theme.color.white : Theme.text.color.primary)};
+  color: ${({ isBot }) =>
+    isBot ? Theme.color.white : Theme.text.color.primary};
   margin-bottom: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -230,7 +231,8 @@ const StyledWaAttachmentFilename = styled.div<{ isBot: boolean }>`
 
 const StyledWaAttachmentSize = styled.div<{ isBot: boolean }>`
   font-size: 12px;
-  color: ${({ isBot }) => (isBot ? 'rgba(255,255,255,0.7)' : Theme.color.gray40)};
+  color: ${({ isBot }) =>
+    isBot ? 'rgba(255,255,255,0.7)' : Theme.color.gray40};
 `;
 
 /* Right: form and copy */
@@ -397,7 +399,7 @@ export function LandingEngagement() {
               {SAMPLE_CHAT.map((msg, i) => {
                 const isBot = msg.sender === 'user';
                 const hasAttachment = 'attachment' in msg;
-                
+
                 return (
                   <StyledWaBubble key={i} isBot={isBot}>
                     {hasAttachment ? (
@@ -435,11 +437,12 @@ export function LandingEngagement() {
             </StyledWaChatArea>
           </StyledChatColumn>
           <StyledFormColumn>
-            <StyledFormHeadline>
-              Get this on your WhatsApp
-            </StyledFormHeadline>
+            <StyledFormHeadline>Get this on your WhatsApp</StyledFormHeadline>
             <StyledFormSubtext>
-              Our AI recruiter will message you as <strong>Arnav Saxena</strong> for the role of <strong>Head of Corporate Strategy at Acme Corporation</strong>. Talk to it like you would a real recruiter.
+              Our AI recruiter will message you as <strong>Arnav Saxena</strong>{' '}
+              for the role of{' '}
+              <strong>Head of Corporate Strategy at Acme Corporation</strong>.
+              Talk to it like you would a real recruiter.
             </StyledFormSubtext>
             <StyledForm onSubmit={handleSubmit}>
               <div>
@@ -455,7 +458,9 @@ export function LandingEngagement() {
                 />
               </div>
               <div>
-                <StyledLabel htmlFor="demo-whatsapp">WhatsApp number</StyledLabel>
+                <StyledLabel htmlFor="demo-whatsapp">
+                  WhatsApp number
+                </StyledLabel>
                 <StyledInput
                   id="demo-whatsapp"
                   type="tel"
@@ -476,7 +481,10 @@ export function LandingEngagement() {
               <StyledTipsList>
                 <li>Reply like you would to a human recruiter.</li>
                 <li>Misdirection or abuse may make the bot unresponsive.</li>
-                <li>Replies aren't instant — the bot responds in its own time, like a person.</li>
+                <li>
+                  Replies aren't instant — the bot responds in its own time,
+                  like a person.
+                </li>
               </StyledTipsList>
             </StyledTips>
           </StyledFormColumn>

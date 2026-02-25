@@ -1,9 +1,9 @@
 import styled from '@emotion/styled';
 
+import type { OrgChartFiltersProps } from 'twenty-orgchart';
+import { OrgChartFilters } from 'twenty-orgchart';
 import type { OrgChartCompanyInfoProps } from './OrgChartCompanyInfo';
 import { OrgChartCompanyInfo } from './OrgChartCompanyInfo';
-import type { OrgChartFiltersProps } from './OrgChartFilters';
-import { OrgChartFilters } from './OrgChartFilters';
 
 const StyledHeader = styled.div`
   display: flex;

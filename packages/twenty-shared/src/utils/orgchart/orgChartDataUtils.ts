@@ -45,8 +45,6 @@ const isMaskedName = (name: string | null | undefined): boolean => {
     return true;
   }
 
-  // Treat placeholder/masked names as masked: all x's, or x/y only
-  // e.g. "xxxx", "xxxx xxxx", "XXXXXX YYYYYYY", etc.
   return /^x+$/u.test(normalized) || /^[xy]+$/u.test(normalized);
 };
 
@@ -55,7 +53,9 @@ const isUnknownCandidate = (candidate: Candidate | null | undefined): boolean =>
 
   const fullName = (candidate.full_name ?? '').trim().toLowerCase();
   const linkedinUrl =
-    (candidate.std_linkedin_url ?? (candidate as { linkedin_url?: string }).linkedin_url ?? '') as string;
+    (candidate.std_linkedin_url ??
+      (candidate as { linkedin_url?: string }).linkedin_url ??
+      '') as string;
 
   return (
     fullName === 'unknown linkedin member' ||
@@ -74,8 +74,7 @@ function processCandidate(
     candidate?.job_title != null ? candidate.job_title : '';
   node[`name_${index}`] =
     candidate?.full_name != null ? candidate.full_name : '';
-  node[`image_${index}`] =
-    candidate?.image != null ? candidate.image : '';
+  node[`image_${index}`] = candidate?.image != null ? candidate.image : '';
   const linkedinUrl =
     candidate?.std_linkedin_url ??
     (candidate as { linkedin_url?: string } | undefined)?.linkedin_url ??
@@ -131,8 +130,7 @@ export function processOrgChartToNodeData(
   const getFlatCandidate = (node: RawOrgNode, i: number): Candidate | null => {
     const name = node[`name_${i}`];
     const title = node[`title_${i}`];
-    const url =
-      node[`linkedin_url_${i}`] ?? node[`url_${i}`];
+    const url = node[`linkedin_url_${i}`] ?? node[`url_${i}`];
     const fullName =
       name !== undefined && name !== null && name !== '' && name !== 0
         ? String(name)
@@ -188,8 +186,8 @@ export function processOrgChartToNodeData(
       orderedCandidates = candidatesArr;
     }
 
-    const hasRealNamedCandidate = orderedCandidates.some((candidate) =>
-      isMaskedName(candidate.full_name ?? null) === false,
+    const hasRealNamedCandidate = orderedCandidates.some(
+      (candidate) => isMaskedName(candidate.full_name ?? null) === false,
     );
 
     let nodeState: NodeState = 'preview';
@@ -201,7 +199,6 @@ export function processOrgChartToNodeData(
     ) {
       nodeState = rawNodeState;
     } else if (hasRealNamedCandidate) {
-      // Active only where real names are shown (not xxx/yyy placeholders).
       nodeState = 'active';
     }
 

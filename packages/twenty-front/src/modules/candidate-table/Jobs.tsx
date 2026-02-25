@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
@@ -25,7 +25,6 @@ import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-
 import { RecordTableContextProvider } from '@/object-record/record-table/contexts/RecordTableContext';
 import { RecordTableEmptyStateDisplay } from '@/object-record/record-table/empty-state/components/RecordTableEmptyStateDisplay';
 import { useOpenObjectRecordsSpreadsheetImportDialog } from '@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog';
-import { ArxOrgChart } from '@/orgchart/ArxOrgChart';
 import { SpreadsheetImportProvider } from '@/spreadsheet-import/provider/components/SpreadsheetImportProvider';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -46,6 +45,9 @@ import { useChromeExtensionDetection } from './hooks/useChromeExtensionDetection
 import { useJobRefetch } from './hooks/useJobRefetch';
 import { useJobStateReset } from './hooks/useJobStateReset';
 import { processedDataSelector } from './states/states';
+const ArxOrgChart = React.lazy(() =>
+  import('@/orgchart/ArxOrgChart').then((m) => ({ default: m.ArxOrgChart })),
+);
 
 const StyledPageContainer = styled(PageContainer)`
   display: flex;
@@ -527,16 +529,18 @@ export const Jobs = () => {
             />
             <StyledPageBody>
               {selectedOrgChartCompany ? (
-                <ArxOrgChart
-                  companyId={selectedOrgChartCompany.companyId}
-                  companyName={selectedOrgChartCompany.companyName}
-                  website={selectedOrgChartCompany.website}
-                  locationName={selectedOrgChartCompany.locationName}
-                  industry={selectedOrgChartCompany.industry}
-                  profileCount={selectedOrgChartCompany.profileCount}
-                  linkedinUrl={selectedOrgChartCompany.linkedinUrl}
-                  onBack={handleClearOrgChart}
-                />
+                <React.Suspense fallback={null}>
+                  <ArxOrgChart
+                    companyId={selectedOrgChartCompany.companyId}
+                    companyName={selectedOrgChartCompany.companyName}
+                    website={selectedOrgChartCompany.website}
+                    locationName={selectedOrgChartCompany.locationName}
+                    industry={selectedOrgChartCompany.industry}
+                    profileCount={selectedOrgChartCompany.profileCount}
+                    linkedinUrl={selectedOrgChartCompany.linkedinUrl}
+                    onBack={handleClearOrgChart}
+                  />
+                </React.Suspense>
               ) : (
               <RecordIndexContextProvider value={recordIndexContextValue}>
                 <ViewComponentInstanceContext.Provider value={{ instanceId: recordIndexId }} >

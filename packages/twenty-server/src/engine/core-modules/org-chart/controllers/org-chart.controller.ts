@@ -1,15 +1,15 @@
 import {
-  Body,
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  Logger,
-  Param,
-  Post,
-  Query,
-  Req,
-  Res,
+    Body,
+    Controller,
+    Get,
+    HttpException,
+    HttpStatus,
+    Logger,
+    Param,
+    Post,
+    Query,
+    Req,
+    Res,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
@@ -84,40 +84,6 @@ export class OrgChartController {
     }
   }
 
-  @Get(':companyId')
-  async getOrgChart(
-    @Param('companyId') companyId: string,
-    @Query('companyName') companyName: string | undefined,
-    @Query('website') website: string | undefined,
-    @Query('country') country: string | undefined,
-    @Query('functionRoot') functionRoot: string | undefined,
-    @Req() req: Request,
-  ) {
-    if (!companyId || companyId.includes('/') || companyId.includes('..')) {
-      throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
-    }
-    try {
-      const authToken = this.getAuthToken(req);
-      const result = await this.orgChartService.getOrgChart(
-        companyId,
-        {
-          companyName,
-          website,
-          country,
-          functionRoot,
-        },
-        authToken,
-      );
-      return { result, status: 'ok' };
-    } catch (error) {
-      this.logger.error(`Get org chart failed for ${companyId}`, error);
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Failed to fetch org chart',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
   @Get('manual/:companyId')
   async getManualOrgChart(
     @Param('companyId') companyId: string,
@@ -140,6 +106,86 @@ export class OrgChartController {
         error instanceof Error
           ? error.message
           : 'Failed to fetch manual org chart',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get(':companyId/:country/:functionRoot')
+  async getOrgChartPath3(
+    @Param('companyId') companyId: string,
+    @Param('country') country: string,
+    @Param('functionRoot') functionRoot: string,
+    @Query('companyName') companyName: string | undefined,
+    @Query('website') website: string | undefined,
+    @Req() req: Request,
+  ) {
+    return this.getOrgChartInternal(req, companyId, {
+      companyName,
+      website,
+      country,
+      functionRoot,
+    });
+  }
+
+  @Get(':companyId/:country')
+  async getOrgChartPath2(
+    @Param('companyId') companyId: string,
+    @Param('country') country: string,
+    @Query('companyName') companyName: string | undefined,
+    @Query('website') website: string | undefined,
+    @Req() req: Request,
+  ) {
+    return this.getOrgChartInternal(req, companyId, {
+      companyName,
+      website,
+      country,
+      functionRoot: undefined,
+    });
+  }
+
+  @Get(':companyId')
+  async getOrgChart(
+    @Param('companyId') companyId: string,
+    @Query('companyName') companyName: string | undefined,
+    @Query('website') website: string | undefined,
+    @Query('country') country: string | undefined,
+    @Query('functionRoot') functionRoot: string | undefined,
+    @Req() req: Request,
+  ) {
+    return this.getOrgChartInternal(req, companyId, {
+      companyName,
+      website,
+      country,
+      functionRoot,
+    });
+  }
+
+  private async getOrgChartInternal(
+    req: Request,
+    companyId: string,
+    options: {
+      companyName?: string;
+      website?: string;
+      country?: string;
+      functionRoot?: string;
+    },
+  ) {
+    if (!companyId || companyId.includes('/') || companyId.includes('..')) {
+      throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
+    }
+    try {
+      const authToken = this.getAuthToken(req);
+      const result = await this.orgChartService.getOrgChart(
+        companyId,
+        options,
+        authToken,
+      );
+      return { result, status: 'ok' };
+    } catch (error) {
+      this.logger.error(`Get org chart failed for ${companyId}`, error);
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Failed to fetch org chart',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

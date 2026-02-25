@@ -1,7 +1,4 @@
 import { useCallback, useState } from 'react';
-import { useRecoilValue } from 'recoil';
-
-import { tokenPairState } from '@/auth/states/tokenPairState';
 
 type OrgChartCompanyInput = {
   companyId: string | null;
@@ -11,9 +8,19 @@ type OrgChartCompanyInput = {
   functionRoot?: string;
 };
 
-export const useOrgChartData = (company: OrgChartCompanyInput | null) => {
-  const tokenPair = useRecoilValue(tokenPairState);
-  const accessToken = tokenPair?.accessToken?.token ?? undefined;
+export type UseOrgChartDataOptions = {
+  /** Base URL. For direct server: full URL (e.g. https://server.com). For proxy: /api/org-chart */
+  baseUrl: string;
+  accessToken?: string;
+  /** When true (default), path is /org-chart/{id}. When false (proxy), path is /{id} */
+  useOrgChartPrefix?: boolean;
+};
+
+export const useOrgChartData = (
+  company: OrgChartCompanyInput | null,
+  options: UseOrgChartDataOptions,
+) => {
+  const { baseUrl, accessToken, useOrgChartPrefix = true } = options;
 
   const companyId = company?.companyId ?? null;
   const companyName = company?.companyName;
@@ -36,7 +43,7 @@ export const useOrgChartData = (company: OrgChartCompanyInput | null) => {
     setError(null);
 
     try {
-      const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+      const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
       const normalizedCompanyId = companyId
         ? companyId.replace(/-/g, '_').toLowerCase()
         : null;
@@ -59,12 +66,13 @@ export const useOrgChartData = (company: OrgChartCompanyInput | null) => {
       }
 
       const queryString = params.toString();
+      const prefix = useOrgChartPrefix ? '/org-chart' : '';
       const endpointPath =
         normalizedCompanyId === 'yuga_labs'
-          ? `/org-chart/manual/${encodeURIComponent(companyId)}`
-          : `/org-chart/${encodeURIComponent(companyId)}`;
+          ? `${prefix}/manual/${encodeURIComponent(companyId)}`
+          : `${prefix}/${encodeURIComponent(companyId)}`;
 
-      const url = `${baseUrl}${endpointPath}${queryString ? `?${queryString}` : ''}`;
+      const url = `${normalizedBaseUrl}${endpointPath}${queryString ? `?${queryString}` : ''}`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -92,7 +100,7 @@ export const useOrgChartData = (company: OrgChartCompanyInput | null) => {
     } finally {
       setIsLoading(false);
     }
-  }, [companyId, companyName, website, country, functionRoot, accessToken]);
+  }, [companyId, companyName, website, country, functionRoot, baseUrl, accessToken, useOrgChartPrefix]);
 
   const reset = useCallback(() => {
     setData(null);

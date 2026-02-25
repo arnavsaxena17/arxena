@@ -1,24 +1,26 @@
 import styled from '@emotion/styled';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
-import { OrgChartAddToJobModal } from './components/OrgChartAddToJobModal';
 import {
   OrgChartDiagram,
+  OrgChartSearchControls,
+  useCompanyInfoLookup,
+  useOrgChartData,
+  useOrgChartFilterOptions,
   type OrgChartDiagramHandle,
-} from './components/OrgChartDiagram';
-import { OrgChartSearchControls } from './components/OrgChartFilters';
-import { OrgChartHeader } from './components/OrgChartHeader';
-import { OrgChartResultModal } from './components/OrgChartResultModal';
-import { useCompanyInfoLookup } from './hooks/useCompanyAutocomplete';
-import { useOrgChartActions } from './hooks/useOrgChartActions';
-import { useOrgChartData } from './hooks/useOrgChartData';
-import { useOrgChartFilterOptions } from './hooks/useOrgChartFilterOptions';
+} from 'twenty-orgchart';
 import {
   extractOrgData,
   processOrgChartToNodeData,
   type OrgChartNodeData,
-} from './utils/orgChartDataUtils';
+} from 'twenty-shared';
+import { OrgChartAddToJobModal } from './components/OrgChartAddToJobModal';
+import { OrgChartHeader } from './components/OrgChartHeader';
+import { OrgChartResultModal } from './components/OrgChartResultModal';
+import { useOrgChartActions } from './hooks/useOrgChartActions';
 
 export type ArxOrgChartProps = {
   companyId: string;
@@ -163,16 +165,23 @@ export const ArxOrgChart = ({
 
   const diagramHandleRef = useRef<OrgChartDiagramHandle | null>(null);
 
+  const tokenPair = useRecoilValue(tokenPairState);
+  const accessToken = tokenPair?.accessToken?.token ?? undefined;
+  const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+
   const { refetchJobs } = useJobRefetch();
   const actions = useOrgChartActions({ companyId, companyName, website });
 
-  const { data, isLoading, error, fetchOrgChart } = useOrgChartData({
-    companyId,
-    companyName,
-    website,
-    country: selectedCountry,
-    functionRoot: selectedFunctionRoot,
-  });
+  const { data, isLoading, error, fetchOrgChart } = useOrgChartData(
+    {
+      companyId,
+      companyName,
+      website,
+      country: selectedCountry,
+      functionRoot: selectedFunctionRoot,
+    },
+    { baseUrl, accessToken },
+  );
 
   useEffect(() => {
     fetchOrgChart();
@@ -199,7 +208,7 @@ export const ArxOrgChart = ({
   const {
     company: fallbackCompanyInfo,
     lookupByName,
-  } = useCompanyInfoLookup();
+  } = useCompanyInfoLookup({ baseUrl, accessToken });
 
   const hasInitialCompanyInfo =
     companyName ||
@@ -360,6 +369,12 @@ export const ArxOrgChart = ({
             <OrgChartDiagram
               ref={diagramHandleRef}
               nodeDataArray={nodeDataArray}
+              iconUrls={{
+                lock: '/img/lock.svg',
+                linkedin: '/img/linkedin.svg',
+                download: '/img/download.svg',
+                similarItems: '/img/similar-items.svg',
+              }}
               onNodeContextAction={actions.handleNodeContextAction}
               onBackgroundContextAction={actions.handleBackgroundContextAction}
               onNodeDoubleClick={actions.handleNodeDoubleClick}

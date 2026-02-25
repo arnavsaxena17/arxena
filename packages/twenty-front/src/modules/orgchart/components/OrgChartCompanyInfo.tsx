@@ -1,7 +1,7 @@
 import styled from '@emotion/styled';
 import { IconWorld } from '@tabler/icons-react';
 
-const LINKEDIN_ICON_URL = '/img/linkedin-icon-png-circle-2.png';
+const LINKEDIN_ICON_URL = '/img/linkedin.svg';
 
 const StyledCompanyInfo = styled.div`
   display: flex;
