@@ -621,6 +621,8 @@ export class CreateMetaDataStructure {
             await this.createAndUpdateWorkspaceMember(apiToken, origin);
 
           await this.createPrompts(apiToken);
+
+  
           const apiKey = await apiKeyService.createApiKey(apiToken, origin);
 
           console.log('API key created successfully:', apiKey);

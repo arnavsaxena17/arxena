@@ -8,7 +8,7 @@ export const metadata = {
   title: 'Twenty - OSS friends',
   description:
     'At Twenty, we are proud to be part of a global open-source movement. Here are some of our fellow open source friends.',
-  icons: '/images/core/logo.svg',
+  icons: '/images/core/arxena-icon.png',
 };
 
 export const dynamic = 'force-dynamic';

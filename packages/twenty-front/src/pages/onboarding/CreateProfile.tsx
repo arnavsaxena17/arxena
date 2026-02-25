@@ -9,7 +9,9 @@ import { z } from 'zod';
 
 import { SubTitle } from '@/auth/components/SubTitle';
 import { Title } from '@/auth/components/Title';
+import { useAuth } from '@/auth/hooks/useAuth';
 import { currentUserState } from '@/auth/states/currentUserState';
+import { currentWorkspaceMembersState } from '@/auth/states/currentWorkspaceMembersStates';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
@@ -18,6 +20,7 @@ import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
 import { useSetNextOnboardingStatus } from '@/onboarding/hooks/useSetNextOnboardingStatus';
 import { ProfilePictureUploader } from '@/settings/profile/components/ProfilePictureUploader';
 import { PageHotkeyScope } from '@/types/PageHotkeyScope';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TextInputV2 } from '@/ui/input/components/TextInputV2';
 import { useScopedHotkeys } from '@/ui/utilities/hotkey/hooks/useScopedHotkeys';
@@ -87,12 +90,14 @@ export const CreateProfile = () => {
   );
 
   const { t } = useLingui();
+  const { loadCurrentUser } = useAuth();
   const onboardingStatus = useOnboardingStatus();
   const setNextOnboardingStatus = useSetNextOnboardingStatus();
   const { enqueueSnackBar } = useSnackBar();
 
   const currentUser = useRecoilValue(currentUserState);
   const currentWorkspace = useRecoilValue(currentWorkspaceState);
+  const currentWorkspaceMembers = useRecoilValue(currentWorkspaceMembersState);
   const { updateOneRecord } = useUpdateOneRecord<WorkspaceMember>({
     objectNameSingular: CoreObjectNameSingular.WorkspaceMember,
   });
@@ -153,15 +158,27 @@ export const CreateProfile = () => {
   const onSubmit: SubmitHandler<Form> = useCallback(
     async (data) => {
       try {
-        if (!currentWorkspaceMember?.id) {
-          throw new Error('User is not logged in');
+        let workspaceMemberId = currentWorkspaceMember?.id;
+
+        if (!workspaceMemberId) {
+          const { workspaceMember } = await loadCurrentUser();
+          workspaceMemberId =
+            workspaceMember?.id ?? currentWorkspaceMembers[0]?.id;
         }
+
+        if (!workspaceMemberId) {
+          enqueueSnackBar('Unable to load profile. Please refresh and try again.', {
+            variant: SnackBarVariant.Error,
+          });
+          throw new Error('Workspace member not found');
+        }
+
         if (!data.firstName || !data.lastName) {
           throw new Error('First name or last name is missing');
         }
 
         await updateOneRecord({
-          idToUpdate: currentWorkspaceMember?.id,
+          idToUpdate: workspaceMemberId,
           updateOneRecordInput: {
             name: {
               firstName: data.firstName,
@@ -171,10 +188,14 @@ export const CreateProfile = () => {
           },
         });
 
+        const fallbackMember = currentWorkspaceMembers.find(
+          (m) => m.id === workspaceMemberId,
+        );
         setCurrentWorkspaceMember((current) => {
-          if (isDefined(current)) {
+          const base = current ?? fallbackMember;
+          if (isDefined(base)) {
             return {
-              ...current,
+              ...base,
               name: {
                 firstName: data.firstName,
                 lastName: data.lastName,
@@ -195,7 +216,7 @@ export const CreateProfile = () => {
           password: 'password',
           visitorFp: 'some-fingerprint-value',
           token: 'some',
-          currentWorkspaceMemberId: currentWorkspaceMember.id,
+          currentWorkspaceMemberId: workspaceMemberId,
           currentWorkspaceId: currentWorkspace?.id,
           twentyId: currentUser?.id,
           origin: currentWorkspace?.subdomain || '',
@@ -214,9 +235,11 @@ export const CreateProfile = () => {
     },
     [
       currentWorkspaceMember?.id,
-      setNextOnboardingStatus,
+      currentWorkspaceMembers,
       enqueueSnackBar,
+      loadCurrentUser,
       setCurrentWorkspaceMember,
+      setNextOnboardingStatus,
       updateOneRecord,
     ],
   );

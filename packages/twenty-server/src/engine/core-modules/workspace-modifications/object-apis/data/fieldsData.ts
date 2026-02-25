@@ -1893,15 +1893,7 @@ export function getFieldsData(
       },
     },
     // Assistant Thread fields
-    {
-      field: {
-        description: '',
-        label: 'Name',
-        name: 'name',
-        objectMetadataId: objectsNameIdMap.assistantThread,
-        type: 'TEXT',
-      },
-    },
+    // Note: 'name' field is automatically added by buildDefaultFieldsForCustomObject when the object is created
     {
       field: {
         description: '',

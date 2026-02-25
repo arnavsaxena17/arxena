@@ -12,7 +12,7 @@ export const metadata = {
   title: 'Twenty - Contributors',
   description:
     'Discover the brilliant minds behind Twenty.com. Meet our contributors and explore how their expertise contributes to making Twenty the leading open-source CRM. Join our community today.',
-  icons: '/images/core/logo.svg',
+  icons: '/images/core/arxena-icon.png',
 };
 
 interface Contributor {

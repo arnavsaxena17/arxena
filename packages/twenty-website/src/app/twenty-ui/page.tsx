@@ -4,7 +4,7 @@ import { getDocsArticles } from '@/content/user-guide/constants/getDocsArticles'
 export const metadata = {
   title: 'Twenty - Twenty UI',
   description: 'Twenty is a CRM designed to fit your unique business needs.',
-  icons: '/images/core/logo.svg',
+  icons: '/images/core/arxena-icon.png',
 };
 
 export const dynamic = 'force-dynamic';

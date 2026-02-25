@@ -75,6 +75,8 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsBoolean()
   USE_CONNECT_LINKEDIN_ONBOARDING = false;
+  
+
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.TokensDuration,
