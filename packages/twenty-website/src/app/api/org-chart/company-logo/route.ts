@@ -16,13 +16,21 @@ export async function GET(request: NextRequest) {
     return new NextResponse(null, { status: 500 });
   }
 
-  const website = request.nextUrl.searchParams.get('website');
+  const website =
+    request.nextUrl.searchParams.get('website') ??
+    new URL(request.url).searchParams.get('website');
   if (!website?.trim()) {
     return NextResponse.json(
       { message: 'Query parameter "website" is required' },
       { status: 400 },
     );
   }
+  console.log('DEBUG:', {
+    nextUrl: request.nextUrl.toString(),
+    url: request.url,
+    websiteFromNext: request.nextUrl.searchParams.get('website'),
+    websiteFromUrl: new URL(request.url).searchParams.get('website'),
+  });
 
   try {
     const authHeader = request.headers.get('authorization');
