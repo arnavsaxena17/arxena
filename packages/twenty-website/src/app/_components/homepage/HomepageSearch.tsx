@@ -3,6 +3,7 @@
 import { ThemeProvider } from '@emotion/react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 const CompanySearchAutocomplete = dynamic(
   () =>
@@ -24,6 +25,7 @@ const CompanySearchAutocomplete = dynamic(
 
 export const HomepageSearch = () => {
   const router = useRouter();
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const handleCompanySelect = (company: {
     companyId: string;
@@ -34,12 +36,19 @@ export const HomepageSearch = () => {
     profileCount?: number;
     linkedinUrl?: string;
   }) => {
-    router.push(`/org-chart/${encodeURIComponent(company.companyId)}`);
+    setIsNavigating(true);
+    const params = new URLSearchParams();
+    if (company.companyName) params.set('companyName', company.companyName);
+    if (company.website) params.set('website', company.website);
+    const query = params.toString();
+    const path = `/org-chart/${encodeURIComponent(company.companyId)}${query ? `?${query}` : ''}`;
+    router.push(path);
   };
 
   return (
     <CompanySearchAutocomplete
       onCompanySelect={handleCompanySelect}
+      isSelecting={isNavigating}
       placeholder="Search any company's org chart"
       baseUrl="/api/org-chart"
       autocompletePath="/autocomplete"

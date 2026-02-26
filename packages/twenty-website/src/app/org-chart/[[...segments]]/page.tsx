@@ -20,6 +20,16 @@ function getServerBaseUrl(): string {
   return url.replace(/\/$/, '');
 }
 
+function getSignUpUrl(): string {
+  const base =
+    process.env.FRONTEND_URL ??
+    process.env.NEXT_PUBLIC_FRONTEND_URL ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    'https://app.arxena.com';
+  const normalized = base.startsWith('http') ? base : `https://${base}`;
+  return `${normalized.replace(/\/$/, '')}/sign-up`;
+}
+
 async function getAppBaseUrl(): Promise<string> {
   const envUrl =
     process.env.NEXT_PUBLIC_APP_URL ??
@@ -176,6 +186,7 @@ export default async function OrgChartPage({
       orgData={rawData}
       initialCountry={normalizedCountry}
       initialFunctionRoot={normalizedFunctionRoot}
+      signUpUrl={getSignUpUrl()}
     />
   );
 }

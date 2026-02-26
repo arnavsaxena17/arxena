@@ -112,6 +112,11 @@ export const StyledButton = styled.div`
   cursor: pointer;
   max-width: fit-content;
   font-family: var(--font-gabarito);
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: #9e9e9e;
+  }
 `;
 
 export const CallToActionContainer = styled.div`

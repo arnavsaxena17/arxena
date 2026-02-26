@@ -73,8 +73,11 @@ export const SignInUp = () => {
         ? t`Your Workspace`
         : workspacePublicData?.displayName;
 
-    if (workspaceName === 'Twenty') {
-      return t`Welcome to Arxena`;
+    if (workspaceName === 'Arxena') {
+      if (process.env.REACT_APP_IS_ORG_CHART_ENABLED === 'true') {
+        return t`Sign up for your free org chart`;
+      }
+      return t`Welcome to Arxena.`;
     }
 
     return t`Welcome to ${workspaceName}`;

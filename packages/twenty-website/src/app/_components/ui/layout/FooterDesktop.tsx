@@ -85,7 +85,7 @@ export const FooterDesktop = () => {
         }}
       >
         <LeftSideFooter>
-          <Logo />
+          <Logo variant="footer" />
           <div>Org Charts for the modern team</div>
         </LeftSideFooter>
         <RightSideFooter>

@@ -14,9 +14,10 @@ import {
   OrgChartDiagramHandle,
   OrgChartFilters,
   OrgChartSearchControls,
+  OrgChartSignUpModal,
   useOrgChartFilterOptions,
 } from 'twenty-orgchart';
-import { OrgChartNodeData } from 'twenty-shared';
+import type { OrgChartNodeData } from 'twenty-shared';
 
 type OrgChartPageClientProps = {
   companyId: string;
@@ -29,13 +30,14 @@ type OrgChartPageClientProps = {
   orgData: Record<string, unknown> | null;
   initialCountry?: string;
   initialFunctionRoot?: string;
+  signUpUrl: string;
 };
 
 const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-height: 80vh;
+  // min-height: 80vh;
   width: 100%;
   align-self: stretch;
   background: ${({ theme }) => theme.background.primary};
@@ -228,10 +230,10 @@ const StyledUnlockButton = styled(Link)`
   border-radius: ${({ theme }) => theme.border.radius.md};
   font-weight: 500;
   font-size: ${({ theme }) => theme.font.size.sm};
-  transition: opacity 0.15s ease;
+  transition: color 0.15s ease;
 
   &:hover {
-    opacity: 0.9;
+    color: #9e9e9e;
   }
 `;
 
@@ -264,6 +266,7 @@ export const OrgChartPageClient = ({
   orgData,
   initialCountry,
   initialFunctionRoot,
+  signUpUrl,
 }: OrgChartPageClientProps) => {
   const router = useRouter();
   const diagramRef = useRef<OrgChartDiagramHandle | null>(null);
@@ -276,6 +279,9 @@ export const OrgChartPageClient = ({
   >(initialFunctionRoot);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResultCount, setSearchResultCount] = useState<number | null>(
+    null,
+  );
+  const [clickedNode, setClickedNode] = useState<OrgChartNodeData | null>(
     null,
   );
 
@@ -324,6 +330,14 @@ export const OrgChartPageClient = ({
   const handleClearSearch = useCallback(() => {
     diagramRef.current?.clearSearch();
     setSearchResultCount(null);
+  }, []);
+
+  const handleNodeClick = useCallback((node: OrgChartNodeData) => {
+    setClickedNode(node);
+  }, []);
+
+  const handleCloseSignUpModal = useCallback(() => {
+    setClickedNode(null);
   }, []);
 
   const logoUrl = getLogoUrl(website);
@@ -409,6 +423,7 @@ export const OrgChartPageClient = ({
               <OrgChartDiagram
                 ref={diagramRef}
                 nodeDataArray={nodeDataArray}
+                onNodeClick={handleNodeClick}
                 iconUrls={{
                   lock: '/img/lock.png',
                   linkedin: '/img/linkedin-icon-png-circle-2.png',
@@ -435,18 +450,25 @@ export const OrgChartPageClient = ({
               </StyledSearchOverlay>
             </>
           )}
+          {clickedNode && (
+            <OrgChartSignUpModal
+              node={clickedNode}
+              onClose={handleCloseSignUpModal}
+              signUpUrl={signUpUrl}
+            />
+          )}
         </StyledDiagramArea>
 
-        <StyledUnlockBanner>
+        {/* <StyledUnlockBanner>
           <StyledUnlockTitle>Unlock {companyName} Org Chart</StyledUnlockTitle>
           <StyledUnlockText>
             See all names, titles, emails & phone numbers. Your first org chart
             is free. No credit card required.
           </StyledUnlockText>
-          <StyledUnlockButton href="https://app.arxena.com/sign-up">
+          <StyledUnlockButton href={signUpUrl}>
             Continue with LinkedIn / Google / Email
           </StyledUnlockButton>
-        </StyledUnlockBanner>
+        </StyledUnlockBanner> */}
       </StyledContainer>
     </ThemeProvider>
   );

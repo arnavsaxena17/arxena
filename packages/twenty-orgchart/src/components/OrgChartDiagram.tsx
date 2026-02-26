@@ -82,6 +82,7 @@ export type OrgChartDiagramProps = {
     node: OrgChartNodeData,
   ) => void;
   onBackgroundContextAction?: (action: OrgChartContextAction) => void;
+  onNodeClick?: (node: OrgChartNodeData) => void;
   onNodeDoubleClick?: (node: OrgChartNodeData) => void;
   onDownloadNode?: (node: OrgChartNodeData) => void;
   onSimilarPeople?: (node: OrgChartNodeData) => void;
@@ -104,6 +105,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       iconUrls,
       onNodeContextAction,
       onBackgroundContextAction,
+      onNodeClick,
       onNodeDoubleClick,
       onDownloadNode,
       onSimilarPeople,
@@ -294,6 +296,12 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
           cursor: 'pointer',
           fromSpot: go.Spot.Bottom,
           toSpot: go.Spot.Top,
+          click: (_e: go.InputEvent, obj: go.GraphObject) => {
+            if (!onNodeClick) return;
+            const part = (obj.part ?? null) as go.Node | null;
+            const data = part?.data as OrgChartNodeData | undefined;
+            if (data) onNodeClick(data);
+          },
           doubleClick: (_e: go.InputEvent, obj: go.GraphObject) => {
             if (!onNodeDoubleClick) return;
             const part = (obj.part ?? null) as go.Node | null;
@@ -582,6 +590,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       DOWNLOAD_ICON_URL,
       SIMILAR_ITEMS_ICON_URL,
       onNodeContextAction,
+      onNodeClick,
       onNodeDoubleClick,
       onDownloadNode,
       onSimilarPeople,

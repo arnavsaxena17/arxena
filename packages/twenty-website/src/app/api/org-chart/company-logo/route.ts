@@ -25,9 +25,18 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const authHeader = request.headers.get('authorization');
+    const cookieHeader = request.headers.get('cookie');
+
     const response = await fetch(
       `${serverBaseUrl}/org-chart/company-logo?website=${encodeURIComponent(website)}`,
-      { method: 'GET' },
+      {
+        method: 'GET',
+        headers: {
+          ...(authHeader && { Authorization: authHeader }),
+          ...(cookieHeader && { Cookie: cookieHeader }),
+        },
+      },
     );
 
     if (!response.ok) {

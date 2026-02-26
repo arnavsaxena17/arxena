@@ -17,6 +17,8 @@ export type CompanySearchAutocompleteProps = {
   }) => void;
   placeholder?: string;
   disabled?: boolean;
+  /** When true, shows loading spinner (e.g. during navigation after selection) */
+  isSelecting?: boolean;
   /** Base URL for API (e.g. https://server.com or /api/org-chart for proxy) */
   baseUrl: string;
   accessToken?: string;
@@ -162,10 +164,42 @@ const StyledErrorMessage = styled.div`
   text-align: center;
 `;
 
+const StyledSpinner = styled.div`
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid ${({ theme }) => theme.border.color.light};
+  border-top-color: ${({ theme }) => theme.color.blue};
+  animation: company-search-spin 0.8s linear infinite;
+
+  @keyframes company-search-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+`;
+
+const StyledInputWrapper = styled.div`
+  position: relative;
+  width: 100%;
+`;
+
+const StyledInputSpinner = styled.div`
+  position: absolute;
+  right: ${({ theme }) => theme.spacing(3)};
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+`;
+
 export const CompanySearchAutocomplete = ({
   onCompanySelect,
   placeholder = 'Search for a company...',
   disabled = false,
+  isSelecting = false,
   baseUrl,
   accessToken,
   autocompletePath,
@@ -338,17 +372,24 @@ export const CompanySearchAutocomplete = ({
 
   return (
     <StyledWrapper ref={wrapperRef}>
-      <StyledInput
-        ref={inputRef}
-        type="text"
-        value={inputValue}
-        onChange={handleInputChange}
-        onBlur={handleBlur}
-        onFocus={() => companies.length > 0 && setIsOpen(true)}
-        placeholder={placeholder}
-        disabled={disabled}
-        autoComplete="off"
-      />
+      <StyledInputWrapper>
+        <StyledInput
+          ref={inputRef}
+          type="text"
+          value={inputValue}
+          onChange={handleInputChange}
+          onBlur={handleBlur}
+          onFocus={() => companies.length > 0 && setIsOpen(true)}
+          placeholder={placeholder}
+          disabled={disabled || isSelecting}
+          autoComplete="off"
+        />
+        {isSelecting && (
+          <StyledInputSpinner>
+            <StyledSpinner />
+          </StyledInputSpinner>
+        )}
+      </StyledInputWrapper>
       {dropdownContent && createPortal(dropdownContent, document.body)}
     </StyledWrapper>
   );

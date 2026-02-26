@@ -47,6 +47,25 @@ export const usePageChangeEffectNavigateLocation = () => {
   }
 
   if (!isLoggedIn && !isMatchingOngoingUserCreationRoute) {
+    // Don't redirect to SignInUp from onboarding routes when we're in onboarding - 
+    // auth state may be settling (e.g. tokenPair hydration, isVerifyPending) and 
+    // we'd otherwise flap between CreateWorkspace and SignInUp
+    const isOnboardingRouteWithMatchingStatus =
+      (isMatchingLocation(AppPath.CreateWorkspace) &&
+        onboardingStatus === OnboardingStatus.WORKSPACE_ACTIVATION) ||
+      (isMatchingLocation(AppPath.CreateProfile) &&
+        onboardingStatus === OnboardingStatus.PROFILE_CREATION) ||
+      (isMatchingLocation(AppPath.ConnectLinkedin) &&
+        onboardingStatus === OnboardingStatus.CONNECT_LINKEDIN) ||
+      (isMatchingLocation(AppPath.SyncEmails) &&
+        onboardingStatus === OnboardingStatus.SYNC_EMAIL) ||
+      (isMatchingLocation(AppPath.InviteTeam) &&
+        onboardingStatus === OnboardingStatus.INVITE_TEAM);
+
+    if (isOnboardingRouteWithMatchingStatus) {
+      return;
+    }
+
     return AppPath.SignInUp;
   }
 

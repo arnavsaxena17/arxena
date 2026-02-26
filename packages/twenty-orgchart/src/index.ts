@@ -3,6 +3,8 @@ export { OrgChartDiagram } from './components/OrgChartDiagram';
 export type { OrgChartContextAction, OrgChartDiagramHandle, OrgChartDiagramIconUrls, OrgChartDiagramProps } from './components/OrgChartDiagram';
 export { OrgChartFilters, OrgChartSearchControls } from './components/OrgChartFilters';
 export type { OrgChartFiltersProps, OrgChartSearchControlsProps } from './components/OrgChartFilters';
+export { OrgChartSignUpModal } from './components/OrgChartSignUpModal';
+export type { OrgChartSignUpModalProps } from './components/OrgChartSignUpModal';
 export { useCompanyAutocomplete, useCompanyInfoLookup } from './hooks/useCompanyAutocomplete';
 export type {
     CompanyAutocompleteItem,

@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const authHeader = request.headers.get('authorization');
+    const cookieHeader = request.headers.get('cookie');
 
     const response = await fetch(
       `${serverBaseUrl}/org-chart/companies/autocomplete`,
@@ -30,6 +31,7 @@ export async function POST(request: NextRequest) {
         headers: {
           'Content-Type': 'application/json',
           ...(authHeader && { Authorization: authHeader }),
+          ...(cookieHeader && { Cookie: cookieHeader }),
         },
         body: JSON.stringify(body),
       },

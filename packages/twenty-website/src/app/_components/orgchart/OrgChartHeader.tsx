@@ -69,9 +69,10 @@ const StyledSignUp = styled.a`
   font-weight: 500;
   text-decoration: none;
   font-size: 15px;
+  transition: color 0.15s ease;
 
   &:hover {
-    opacity: 0.9;
+    color: #9e9e9e;
   }
 `;
 

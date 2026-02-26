@@ -12,7 +12,15 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Arxena.com',
   description: 'Open Source CRM',
-  icons: '/images/core/arxena-icon.png',
+  icons: {
+    icon: [
+      { url: '/images/favicon/16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/images/favicon/32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/images/favicon/192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/images/favicon/512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: '/images/favicon/180.png',
+  },
 };
 
 const gabarito = Gabarito({

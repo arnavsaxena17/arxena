@@ -2,7 +2,7 @@
 
 import styled from '@emotion/styled';
 
-import { Logo } from '../ui/layout/Logo';
+import { Logo } from '@/app/_components/ui/layout/Logo';
 import { HomepageSearch } from './HomepageSearch';
 
 const StyledHero = styled.section`
@@ -63,7 +63,7 @@ export const HomepageHero = () => {
   return (
     <StyledHero>
       <StyledLogoWrapper>
-        <Logo />
+        <Logo variant="hero" />
       </StyledLogoWrapper>
       <StyledTitle>Search any company&apos;s org chart</StyledTitle>
       <StyledSearchWrapper>
