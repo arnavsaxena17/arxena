@@ -1,6 +1,8 @@
 export function getAuthBaseUrl(): string {
   const base =
-    process.env.FRONTEND_URL ?? 'https://app.arxena.com';
+    process.env.NEXT_PUBLIC_FRONTEND_URL ??
+    process.env.FRONTEND_URL ??
+    'https://app.arxena.com';
   const normalized = base.startsWith('http') ? base : `https://${base}`;
   return normalized.replace(/\/$/, '');
 }
