@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { PublicEnvScript } from 'next-runtime-env';
 import { Gabarito, Inter } from 'next/font/google';
 
-import { FooterDesktop } from './_components/ui/layout/FooterDesktop';
+import { ConditionalFooter } from './_components/ui/layout/ConditionalFooter';
 import EmotionRootStyleRegistry from './emotion-root-style-registry';
 
 import './layout.css';
@@ -45,13 +45,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${gabarito.variable} ${inter.variable}`}>
-      <body>
+    <html
+      lang="en"
+      className={`${gabarito.variable} ${inter.variable}`}
+      suppressHydrationWarning
+    >
+      <body suppressHydrationWarning>
         <PublicEnvScript />
         <EmotionRootStyleRegistry>
           {/* <AppHeader /> */}
           <div className="container">{children}</div>
-          <FooterDesktop />
+          <ConditionalFooter />
         </EmotionRootStyleRegistry>
       </body>
     </html>

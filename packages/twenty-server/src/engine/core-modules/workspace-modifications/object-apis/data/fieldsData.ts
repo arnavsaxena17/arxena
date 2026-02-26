@@ -1,10 +1,19 @@
 import { FieldInput } from 'twenty-shared';
 
+import { getObjectsToExclude } from './objectsData';
+
+type FieldWithObject = {
+  objectName: string;
+  field: NonNullable<FieldInput>['field'];
+};
+
 export function getFieldsData(
   objectsNameIdMap: Record<string, string>,
 ): FieldInput[] {
-  return [
+  const objectsToExclude = getObjectsToExclude();
+  const allFields: FieldWithObject[] = [
     {
+      objectName: 'candidate',
       field: {
         description: '',
         icon: 'IconUsers',
@@ -77,6 +86,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: 'Status of Candidates',
         icon: 'IconUsers',
@@ -156,6 +166,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'recruiterInterview',
       field: {
         description: '',
         label: 'Schedule',
@@ -165,6 +176,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'interviewSchedule',
       field: {
         description: '',
         label: 'Slots Available',
@@ -174,6 +186,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'clientInterview',
       field: {
         description: '',
         label: 'Interview Time',
@@ -183,6 +196,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'clientInterview',
       field: {
         description: '',
         label: 'Client Interview Completed',
@@ -236,6 +250,7 @@ export function getFieldsData(
 
     // },
     {
+      objectName: 'interviewSchedule',
       field: {
         description: '',
         icon: 'IconVideoCall',
@@ -266,6 +281,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'workspaceMemberProfile',
       field: {
         description: '',
         icon: 'IconUserCircle',
@@ -296,6 +312,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'phoneCall',
       field: {
         description: '',
         icon: 'IconPhoneCall',
@@ -332,6 +349,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'textMessage',
       field: {
         description: '',
         icon: 'IconMessage',
@@ -356,6 +374,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'recruiterInterview',
       field: {
         description: '',
         icon: 'IconFileText',
@@ -366,6 +385,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'recruiterInterview',
       field: {
         description: '',
         icon: 'IconChartBar',
@@ -376,6 +396,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'offer',
       field: {
         description: '',
         icon: 'IconCalendar',
@@ -386,6 +407,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'offer',
       field: {
         description: '',
         icon: 'IconNumber',
@@ -396,6 +418,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'whatsappMessage',
       field: {
         description: '',
         icon: 'IconPhone',
@@ -406,6 +429,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'workspaceMemberProfile',
       field: {
         description: '',
         icon: 'IconMail',
@@ -416,6 +440,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'workspaceMemberProfile',
       field: {
         description: '',
         icon: 'IconLinkedin',
@@ -426,6 +451,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'workspaceMemberProfile',
       field: {
         description: '',
         icon: 'IconPhone',
@@ -436,6 +462,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'workspaceMemberProfile',
       field: {
         description: '',
         icon: 'IconBuilding',
@@ -446,6 +473,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'workspaceMemberProfile',
       field: {
         description: '',
         icon: 'IconFileDescription',
@@ -456,6 +484,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'workspaceMemberProfile',
       field: {
         description: '',
         icon: 'IconUser',
@@ -466,6 +495,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'workspaceMemberProfile',
       field: {
         description: '',
         icon: 'IconBriefcase',
@@ -476,6 +506,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'workspaceMemberProfile',
       field: {
         description: '',
         icon: 'IconUser',
@@ -486,6 +517,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'person',
       field: {
         description: '',
         icon: 'IconCurrencyDollar',
@@ -496,6 +528,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'whatsappMessage',
       field: {
         description: '',
         icon: 'IconPhone',
@@ -506,6 +539,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'whatsappMessage',
       field: {
         description: '',
         icon: 'IconMessage',
@@ -516,6 +550,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'textMessage',
       field: {
         description: '',
         icon: 'IconMessage',
@@ -526,6 +561,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'phoneCall',
       field: {
         description: '',
         icon: 'IconClockHour3',
@@ -536,6 +572,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'phoneCall',
       field: {
         description: '',
         icon: 'IconPhone',
@@ -546,6 +583,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'phoneCall',
       field: {
         description: '',
         icon: 'IconFileText',
@@ -556,6 +594,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'textMessage',
       field: {
         description: '',
         icon: 'IconPhone',
@@ -566,6 +605,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'phoneCall',
       field: {
         description: '',
         icon: 'IconCalendar',
@@ -576,6 +616,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'textMessage',
       field: {
         description: '',
         icon: 'IconCalendar',
@@ -586,6 +627,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'whatsappMessage',
       field: {
         description: '',
         icon: 'IconJson',
@@ -596,6 +638,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'whatsappMessage',
       field: {
         description: '',
         icon: 'IconJson',
@@ -606,6 +649,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'whatsappMessage',
       field: {
         description: '',
         icon: 'IconBrandWhatsapp',
@@ -616,6 +660,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'whatsappMessage',
       field: {
         description: '',
         icon: 'IconId',
@@ -626,6 +671,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'whatsappMessage',
       field: {
         description: '',
         icon: 'IconCheck',
@@ -636,6 +682,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'whatsappMessage',
       field: {
         description: '',
         icon: 'IconMessageCircle',
@@ -646,6 +693,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'whatsappMessage',
       field: {
         description: 'lastEngagementChatControl',
         icon: 'IconMessageDots',
@@ -656,6 +704,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'whatsappMessage',
       field: {
         description: '',
         icon: 'IconAudio',
@@ -666,6 +715,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'job',
       field: {
         description: '',
         icon: 'IconToggleLeft',
@@ -676,6 +726,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'job',
       field: {
         description: '',
         icon: 'IconMapPin',
@@ -686,6 +737,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'job',
       field: {
         description: '',
         icon: 'IconTable',
@@ -696,6 +748,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'job',
       field: {
         description: '',
         icon: 'IconBarcode',
@@ -706,6 +759,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'job',
       field: {
         description: '',
         icon: 'IconSearch',
@@ -716,6 +770,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'job',
       field: {
         description: '',
         icon: 'IconUserCircle',
@@ -726,6 +781,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'job',
       field: {
         description: '',
         icon: 'IconUsers',
@@ -736,6 +792,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'job',
       field: {
         description: '',
         icon: 'IconClock',
@@ -746,6 +803,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'job',
       field: {
         description: '',
         icon: 'IconCurrencyDollar',
@@ -756,6 +814,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'job',
       field: {
         description: '',
         icon: 'IconBuilding',
@@ -766,6 +825,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'job',
       field: {
         description: '',
         icon: 'IconUserSearch',
@@ -776,6 +836,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'job',
       field: {
         description: '',
         icon: 'IconList',
@@ -786,6 +847,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'job',
       field: {
         description: '',
         icon: 'IconFileDescription',
@@ -796,6 +858,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'job',
       field: {
         description: '',
         icon: 'IconRoute',
@@ -806,6 +869,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidateField',
       field: {
         description: '',
         icon: 'IconText',
@@ -854,8 +918,9 @@ export function getFieldsData(
     //     objectMetadataId: objectsNameIdMap.candidateFieldValue,
     //     type: 'RAW_JSON',
     //   },
-    // },
+    //     },
     {
+      objectName: 'candidate',
       field: {
         description: '',
         icon: 'IconShoppingCart',
@@ -867,6 +932,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: '',
         icon: 'IconMail',
@@ -877,6 +943,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: '',
         icon: 'IconPhone',
@@ -887,6 +954,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: '',
         icon: 'IconUserCheck',
@@ -898,6 +966,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: '',
         icon: 'IconMessageChatbot',
@@ -909,6 +978,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: '',
         icon: 'IconMessageCheck',
@@ -920,6 +990,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: '',
         icon: 'IconVideo',
@@ -931,6 +1002,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: '',
         icon: 'IconMessageNumber',
@@ -941,6 +1013,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: '',
         icon: 'IconCalendarTime',
@@ -952,6 +1025,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: '',
         icon: 'IconCalendarCheck',
@@ -963,6 +1037,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description:
           'This will stop the chatbot from chatting with the candidates',
@@ -975,6 +1050,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: '',
         icon: 'IconBrandWhatsapp',
@@ -985,6 +1061,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: '',
         icon: 'IconPhone',
@@ -995,6 +1072,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: '',
         icon: 'IconVideoCheck',
@@ -1007,6 +1085,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: '',
         label: 'lastEngagementChatControl',
@@ -1016,6 +1095,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: '',
         label: 'Job specific fields',
@@ -1026,6 +1106,7 @@ export function getFieldsData(
     },
 
     {
+      objectName: 'job',
       field: {
         description: '',
         label: 'chatFlowOrder',
@@ -1036,6 +1117,7 @@ export function getFieldsData(
     },
 
     {
+      objectName: 'candidate',
       field: {
         description: '',
         label: 'shortlistObj',
@@ -1045,6 +1127,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'company',
       field: {
         description: '',
         label: 'descriptionOneliner',
@@ -1054,6 +1137,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidateReminder',
       field: {
         description: '',
         label: 'remindCandidateAtTimestamp',
@@ -1063,6 +1147,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidateReminder',
       field: {
         description: '',
         label: 'remindCandidateDuration',
@@ -1072,6 +1157,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidateReminder',
       field: {
         description: '',
         label: 'isReminderActive',
@@ -1082,6 +1168,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'searchFilter',
       field: {
         description: '',
         label: 'searchFilterFields',
@@ -1091,6 +1178,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'searchFilter',
       field: {
         description: '',
         label: 'searchFilterName',
@@ -1100,6 +1188,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'searchFilter',
       field: {
         description: 'Search filter parameters for this search plan',
         label: 'searchFilterParameter',
@@ -1109,6 +1198,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'searchFilter',
       field: {
         description: '',
         label: 'searchStrategy',
@@ -1118,6 +1208,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'searchFilter',
       field: {
         description: 'Enrichment configurations for this search plan',
         label: 'enrichmentConfigs',
@@ -1127,6 +1218,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'searchFilter',
       field: {
         description: 'Column sort configurations for this search plan',
         label: 'columnSortConfigs',
@@ -1136,6 +1228,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'searchFilter',
       field: {
         description: 'Column filters for candidate filtering',
         label: 'columnFilters',
@@ -1145,6 +1238,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'searchFilter',
       field: {
         description: 'Chat history for this search plan',
         label: 'chatHistory',
@@ -1154,6 +1248,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'searchFilter',
       field: {
         description: 'Whether this search filter is currently active',
         label: 'isActive',
@@ -1164,6 +1259,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'searchFilter',
       field: {
         description: 'Generated search parameter variations for this search plan',
         label: 'Search Parameters',
@@ -1173,6 +1269,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'searchFilter',
       field: {
         description: 'Generated enrichment configurations for candidate evaluation',
         label: 'Enrichments',
@@ -1182,6 +1279,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'searchFilter',
       field: {
         description: 'Generated filter configurations for candidate shortlisting',
         label: 'Filters',
@@ -1191,6 +1289,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidateEnrichment',
       field: {
         description: '',
         label: 'selectedMetadataFields',
@@ -1200,6 +1299,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidateEnrichment',
       field: {
         description: '',
         label: 'modelName',
@@ -1209,6 +1309,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidateEnrichment',
       field: {
         description: '',
         label: 'filterDescription',
@@ -1218,6 +1319,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidateEnrichment',
       field: {
         description: '',
         label: 'fields',
@@ -1227,6 +1329,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidateEnrichment',
       field: {
         description: '',
         label: 'sampleJson',
@@ -1236,6 +1339,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'prompt',
       field: {
         description: '',
         label: 'Prompt',
@@ -1245,6 +1349,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidateEnrichment',
       field: {
         description: '',
         label: 'prompt',
@@ -1254,6 +1359,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidateEnrichment',
       field: {
         description: '',
         label: 'selectedModel',
@@ -1289,6 +1395,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'job',
       field: {
         description: '',
         label: 'Arxena Job Id',
@@ -1299,6 +1406,7 @@ export function getFieldsData(
     },
 
     {
+      objectName: 'videoInterviewModel',
       field: {
         description: '',
         icon: 'IconFlag',
@@ -1342,6 +1450,7 @@ export function getFieldsData(
     },
 
     {
+      objectName: 'videoInterviewModel',
       field: {
         description: '',
         icon: 'IconLanguage',
@@ -1384,6 +1493,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'videoInterviewTemplate',
       field: {
         description: 'Additional Points to be added in introduction',
         icon: 'IconAbc',
@@ -1394,6 +1504,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'videoInterviewTemplate',
       field: {
         description: 'Additional Instructions',
         icon: 'IconAbc',
@@ -1404,6 +1515,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'videoInterviewQuestion',
       field: {
         description: 'Video or Text based Interview',
         icon: 'IconAdjustmentsQuestion',
@@ -1429,6 +1541,7 @@ export function getFieldsData(
     },
 
     {
+      objectName: 'videoInterviewQuestion',
       field: {
         description: '',
         icon: 'IconCameraQuestion',
@@ -1454,6 +1567,7 @@ export function getFieldsData(
     },
 
     {
+      objectName: 'videoInterviewQuestion',
       field: {
         description: 'Time Limit of Recording',
         icon: 'IconTimeDuration30',
@@ -1465,6 +1579,7 @@ export function getFieldsData(
     },
 
     {
+      objectName: 'videoInterviewQuestion',
       field: {
         description: 'The Question',
         icon: 'IconQuestion',
@@ -1475,6 +1590,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'videoInterviewQuestion',
       field: {
         description: 'No. of Retakes allowed in case of answer type video',
         icon: 'IconReload',
@@ -1506,6 +1622,7 @@ export function getFieldsData(
     },
 
     {
+      objectName: 'videoInterviewResponse',
       field: {
         description: 'Whether the candidate has started responding or not',
         icon: 'IconLocationQuestion',
@@ -1517,6 +1634,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'videoInterviewResponse',
       field: {
         description: 'Whether the canadidate has completed responding or not',
         icon: 'IconLocationCheck',
@@ -1528,6 +1646,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'videoInterviewResponse',
       field: {
         description: 'Total Time',
         icon: 'IconDeviceWatchPause',
@@ -1538,6 +1657,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'videoInterviewResponse',
       field: {
         description: 'Time Adherence',
         icon: 'IconTimeDuration30',
@@ -1550,6 +1670,7 @@ export function getFieldsData(
     },
 
     {
+      objectName: 'videoInterviewResponse',
       field: {
         description: 'Transcript of the Response',
         icon: 'IconFileTextAI',
@@ -1561,6 +1682,7 @@ export function getFieldsData(
     },
 
     {
+      objectName: 'videoInterviewResponse',
       field: {
         description: 'Feedback for the Response',
         icon: 'IconPencilStar',
@@ -1571,6 +1693,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'shortlist',
       field: {
         description: 'Shortlists for Client',
         icon: 'IconInputSearch',
@@ -1582,6 +1705,7 @@ export function getFieldsData(
     },
 
     {
+      objectName: 'shortlist',
       field: {
         description: 'Shortlists for Client',
         icon: 'IconInputSearch',
@@ -1592,6 +1716,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'shortlist',
       field: {
         description: 'Shortlists for Client',
         icon: 'IconInputSearch',
@@ -1602,6 +1727,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'shortlist',
       field: {
         description: 'Shortlists for Client',
         icon: 'IconInputSearch',
@@ -1612,6 +1738,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'shortlist',
       field: {
         description: 'Shortlists for Client',
         icon: 'IconInputSearch',
@@ -1622,6 +1749,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'shortlist',
       field: {
         description: 'Shortlists for Client',
         icon: 'IconInputSearch',
@@ -1632,6 +1760,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'shortlist',
       field: {
         description: 'Shortlists for Client',
         icon: 'IconInputSearch',
@@ -1642,6 +1771,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'shortlist',
       field: {
         description: 'Shortlists for Client',
         icon: 'IconInputSearch',
@@ -1652,6 +1782,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'shortlist',
       field: {
         description: 'Shortlists for Client',
         icon: 'IconInputSearch',
@@ -1662,6 +1793,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'shortlist',
       field: {
         description: 'Shortlists for Client',
         icon: 'IconInputSearch',
@@ -1672,6 +1804,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'shortlist',
       field: {
         description: 'Shortlists for Client',
         icon: 'IconInputSearch',
@@ -1682,6 +1815,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'shortlist',
       field: {
         description: 'Shortlists for Client',
         icon: 'IconInputSearch',
@@ -1692,6 +1826,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'shortlist',
       field: {
         description: 'Shortlists for Client',
         icon: 'IconInputSearch',
@@ -1702,6 +1837,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'shortlist',
       field: {
         description: 'Shortlists for Client',
         icon: 'IconInputSearch',
@@ -1712,6 +1848,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'shortlist',
       field: {
         description: 'Shortlists for Client',
         icon: 'IconInputSearch',
@@ -1722,6 +1859,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'person',
       field: {
         description: 'uniqueStringKey for the person',
         icon: 'IconPencilStar',
@@ -1732,6 +1870,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: 'uniqueStringKey for the candidate',
         icon: 'IconPencilStar',
@@ -1742,6 +1881,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: 'source for the candidate',
         icon: 'IconPencilStar',
@@ -1752,6 +1892,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: 'campaign for the candidate',
         icon: 'IconPencilStar',
@@ -1762,6 +1903,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: 'Job Title',
         icon: 'IconPencilStar',
@@ -1772,6 +1914,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: 'Job Company Name',
         icon: 'IconBuilding',
@@ -1782,6 +1925,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: 'Messaging Channel',
         icon: 'IconMessageCircle',
@@ -1792,6 +1936,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'job',
       field: {
         description: 'Link for Candidate Tracker Google Sheet',
         label: 'Google Sheet Url',
@@ -1801,6 +1946,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'videoInterview',
       field: {
         description: 'Link Shared with the candidate',
         icon: 'IconLink',
@@ -1811,6 +1957,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'videoInterview',
       field: {
         description: 'Link with Interview Review',
         icon: 'IconLink',
@@ -1821,6 +1968,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: 'Hiring Naukri URL',
         icon: 'IconLink',
@@ -1831,6 +1979,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: 'Resdex Naukri URL',
         icon: 'IconLink',
@@ -1841,6 +1990,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: 'LinkedIn URL',
         icon: 'IconLink',
@@ -1851,6 +2001,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
       field: {
         description: 'Display Picture URL',
         icon: 'IconLink',
@@ -1861,6 +2012,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'person',
       field: {
         description: 'Display Picture URL',
         icon: 'IconLink',
@@ -1871,6 +2023,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'videoInterview',
       field: {
         description: 'Interview Started or Not',
         icon: 'IconAdjustmentsQuestion',
@@ -1882,6 +2035,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'videoInterview',
       field: {
         description: 'Interview Completed or Not',
         icon: 'IconAdjustmentsCheck',
@@ -1895,6 +2049,7 @@ export function getFieldsData(
     // Assistant Thread fields
     // Note: 'name' field is automatically added by buildDefaultFieldsForCustomObject when the object is created
     {
+      objectName: 'assistantThread',
       field: {
         description: '',
         label: 'Messages',
@@ -1904,6 +2059,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'assistantThread',
       field: {
         description: '',
         label: 'Last Table Data',
@@ -1913,6 +2069,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'assistantThread',
       field: {
         description: 'Optional job context for this thread',
         label: 'Job',
@@ -1922,6 +2079,7 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'assistantThread',
       field: {
         description: 'Agent scratch pad / pending notes for this thread (JSON array of { summary, createdAt? })',
         label: 'Agent Notes',
@@ -2028,4 +2186,8 @@ export function getFieldsData(
     //   },
     // },
   ];
+
+  return allFields
+    .filter((f) => !objectsToExclude.includes(f.objectName))
+    .map((f) => ({ field: f.field }));
 }

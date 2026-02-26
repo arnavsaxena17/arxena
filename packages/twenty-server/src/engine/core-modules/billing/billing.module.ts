@@ -27,6 +27,7 @@ import { BillingProductService } from 'src/engine/core-modules/billing/services/
 import { BillingSubscriptionService } from 'src/engine/core-modules/billing/services/billing-subscription.service';
 import { BillingUsageService } from 'src/engine/core-modules/billing/services/billing-usage.service';
 import { BillingService } from 'src/engine/core-modules/billing/services/billing.service';
+import { InvoiceRequestService } from 'src/engine/core-modules/billing/services/invoice-request.service';
 import { OnboardingBillingSubscriptionService } from 'src/engine/core-modules/billing/services/onboarding-billing-subscription.service';
 import { StripeModule } from 'src/engine/core-modules/billing/stripe/stripe.module';
 import { BillingWebhookEntitlementService } from 'src/engine/core-modules/billing/webhooks/services/billing-webhook-entitlement.service';
@@ -85,6 +86,7 @@ import { PermissionsModule } from 'src/engine/metadata-modules/permissions/permi
     BillingSyncCustomerDataCommand,
     BillingSyncPlansDataCommand,
     BillingUsageService,
+    InvoiceRequestService,
     OnboardingBillingSubscriptionService,
     OnboardingCreateStripeSubscriptionJob,
   ],

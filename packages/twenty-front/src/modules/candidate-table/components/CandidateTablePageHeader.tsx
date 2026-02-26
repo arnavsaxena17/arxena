@@ -1,13 +1,16 @@
 import styled from '@emotion/styled';
-import { IconBrandLinkedin, IconBrandWhatsapp } from '@tabler/icons-react';
+import {
+  IconBrandLinkedin,
+  IconBrandWhatsapp,
+  IconHierarchy2,
+} from '@tabler/icons-react';
 import { ReactNode } from 'react';
 import {
-    Button,
-    IconAlertCircle,
-    IconDownload,
-    IconMessage,
-    IconPlus,
-    IconX,
+  Button,
+  IconAlertCircle,
+  IconDownload,
+  IconMessage,
+  IconPlus,
 } from 'twenty-ui';
 
 import { OrgChartCompanySearchWrapper } from '@/orgchart/components/OrgChartCompanySearchWrapper';
@@ -105,25 +108,28 @@ const StyledConnectionStatus = styled.div<{ isConnected: boolean }>`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  height: 32px;
+  padding: 0 ${({ theme }) => theme.spacing(2)};
   border-radius: ${({ theme }) => theme.border.radius.sm};
   background-color: ${({ theme, isConnected }) =>
-    isConnected ? theme.color.green : theme.color.gray};
-  color: ${({ theme }) => theme.font.color.inverted};
+    isConnected ? theme.tag.background.green : theme.tag.background.gray};
+  color: ${({ theme, isConnected }) =>
+    isConnected ? theme.tag.text.green : theme.tag.text.gray};
   font-size: ${({ theme }) => theme.font.size.sm};
   font-weight: ${({ theme }) => theme.font.weight.medium};
-  transition: all 0.2s ease-in-out;
-  min-width: ${({ isConnected }) => (isConnected ? '120px' : '130px')};
+  border: ${({ theme, isConnected }) =>
+    isConnected ? 'none' : `1px dashed ${theme.border.color.strong}`};
 
   svg {
-    width: 16px;
-    height: 16px;
-    color: ${({ theme }) => theme.font.color.inverted};
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
   }
 `;
 
 const StyledConnectionStatusGroup = styled.div`
   display: flex;
+  align-items: center;
   gap: ${({ theme }) => theme.spacing(2)};
   margin-left: auto;
 `;
@@ -223,6 +229,7 @@ export const CandidateTablePageHeader = ({
             onCompanySelect={onCompanySelect}
             placeholder="Search company for org charts..."
             disabled={!hasToken}
+            startIcon={<IconHierarchy2 size={20} />}
           />
         </StyledCompanySearchWrapper>
       )}
@@ -259,30 +266,12 @@ export const CandidateTablePageHeader = ({
       )}
       <StyledConnectionStatusGroup>
         <StyledConnectionStatus isConnected={isLinkedinConnected}>
-          {isLinkedinConnected ? (
-            <>
-              <IconBrandLinkedin />
-              LinkedIn
-            </>
-          ) : (
-            <>
-              <IconX />
-              LinkedIn
-            </>
-          )}
+          <IconBrandLinkedin size={14} stroke={1.6} />
+          {isLinkedinConnected ? 'Connected' : 'Disconnected'}
         </StyledConnectionStatus>
         <StyledConnectionStatus isConnected={isWhatsappLoggedIn}>
-          {isWhatsappLoggedIn ? (
-            <>
-              <IconBrandWhatsapp />
-              Whatsapp
-            </>
-          ) : (
-            <>
-              <IconX />
-              Whatsapp
-            </>
-          )}
+          <IconBrandWhatsapp size={14} stroke={1.6} />
+          {isWhatsappLoggedIn ? 'Connected' : 'Disconnected'}
         </StyledConnectionStatus>
       </StyledConnectionStatusGroup>
       {/* </StyledRightSection> */}

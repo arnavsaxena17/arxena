@@ -1,17 +1,21 @@
 import { useMutation, useQuery } from '@apollo/client';
+import styled from '@emotion/styled';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import {
-    Button,
-    H2Title,
-    IconCalendarEvent,
-    IconCircleX,
-    IconCreditCard,
-    Section,
+  Button,
+  H2Title,
+  IconCalendarEvent,
+  IconCheck,
+  IconCircleX,
+  IconCreditCard,
+  IconFileText,
+  Section,
 } from 'twenty-ui';
 
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
+import { InvoiceRequestModal } from '@/billing/components/InvoiceRequestModal';
 import { SettingsBillingCoverImage } from '@/billing/components/SettingsBillingCoverImage';
 import { billingState } from '@/client-config/states/billingState';
 import { useRedirect } from '@/domain-manager/hooks/useRedirect';
@@ -24,16 +28,17 @@ import { SubMenuTopBarContainer } from '@/ui/layout/page/components/SubMenuTopBa
 import { useSubscriptionStatus } from '@/workspace/hooks/useSubscriptionStatus';
 import { isDefined } from 'twenty-shared';
 import {
-    BillingPlanKey,
-    SubscriptionInterval,
-    SubscriptionStatus,
-    useBillingPortalSessionQuery,
-    useUpdateBillingSubscriptionMutation,
+  BillingPlanKey,
+  SubscriptionInterval,
+  SubscriptionStatus,
+  useBillingPortalSessionQuery,
+  useUpdateBillingSubscriptionMutation,
 } from '~/generated/graphql';
 import { CHECKOUT_SESSION } from '~/modules/billing/graphql/checkoutSession';
 import { CREATE_RAZORPAY_ORDER_FOR_CREDITS } from '~/modules/billing/graphql/createRazorpayOrderForCredits';
 import { CREDIT_PACKS } from '~/modules/billing/graphql/creditPacks';
 import { ENGAGEMENT_PLANS } from '~/modules/billing/graphql/engagementPlans';
+import { REQUEST_INVOICE_FOR_CREDITS } from '~/modules/billing/graphql/requestInvoiceForCredits';
 import { WORKSPACE_CREDITS } from '~/modules/billing/graphql/workspaceCredits';
 import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
 
@@ -77,6 +82,135 @@ type SwitchInfo = {
   from: string;
   impact: string;
 };
+
+const StyledCreditCardsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-top: 24px;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const StyledCreditCard = styled.div`
+  background: ${({ theme }) => theme.background.primary};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border-radius: 12px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+`;
+
+const StyledCreditCardTitle = styled.h2`
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: ${({ theme }) => theme.font.color.primary};
+`;
+
+const StyledCreditCardPrice = styled.div`
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: ${({ theme }) => theme.font.color.primary};
+  margin-bottom: 4px;
+`;
+
+const StyledCreditCardCredits = styled.div`
+  font-size: 15px;
+  color: ${({ theme }) => theme.font.color.tertiary};
+  margin-bottom: 24px;
+`;
+
+const StyledCreditCardSurcharge = styled.div`
+  font-size: 13px;
+  color: ${({ theme }) => theme.font.color.tertiary};
+  margin-bottom: 24px;
+`;
+
+const StyledFeatureList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px 0;
+  flex: 1;
+`;
+
+const StyledFeatureItem = styled.li`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 15px;
+  color: ${({ theme }) => theme.font.color.secondary};
+  margin-bottom: 12px;
+  line-height: 1.5;
+`;
+
+const StyledCheckIcon = styled(IconCheck)`
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: ${({ theme }) => theme.font.color.primary};
+`;
+
+const StyledCreditCardButtons = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const StyledPrimaryCtaButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  background-color: ${({ theme }) => theme.background.primaryInverted};
+  color: ${({ theme }) => theme.font.color.inverted};
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+const StyledSecondaryCtaButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  background: transparent;
+  color: ${({ theme }) => theme.font.color.primary};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.background.transparent.light};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
 
 export const SettingsBilling = () => {
   const { t } = useLingui();
@@ -190,6 +324,9 @@ export const SettingsBilling = () => {
     {},
   );
   const [buyingPackKey, setBuyingPackKey] = useState<string | null>(null);
+  const [invoicePackKey, setInvoicePackKey] = useState<string | null>(null);
+
+  const [requestInvoiceMutation] = useMutation(REQUEST_INVOICE_FOR_CREDITS);
 
   const loadRazorpayAndOpenSubscription = useCallback(
     (keyId: string, subscriptionId: string, callbackUrl: string) => {
@@ -341,6 +478,39 @@ export const SettingsBilling = () => {
     [createRazorpayOrderMutation, loadRazorpayAndOpen, enqueueSnackBar, t],
   );
 
+  const handleRequestInvoice = useCallback(
+    async (creditPackKey: string, params: {
+      companyName: string;
+      billingAddress: string;
+      billingEmail: string;
+      vatNumber?: string;
+    }) => {
+      try {
+        await requestInvoiceMutation({
+          variables: {
+            input: {
+              creditPackKey,
+              companyName: params.companyName,
+              billingAddress: params.billingAddress,
+              billingEmail: params.billingEmail,
+              vatNumber: params.vatNumber,
+            },
+          },
+        });
+        enqueueSnackBar(
+          t`Invoice request received. We'll send your invoice within 1-2 business days.`,
+          { variant: SnackBarVariant.Success },
+        );
+      } catch {
+        enqueueSnackBar(t`Invoice request failed. Please try again.`, {
+          variant: SnackBarVariant.Error,
+        });
+        throw new Error('Invoice request failed');
+      }
+    },
+    [requestInvoiceMutation, enqueueSnackBar, t],
+  );
+
   const billingPortalButtonDisabled =
     loading || !isDefined(data) || !isDefined(data.billingPortalSession?.url);
   const openBillingPortal = () => {
@@ -356,15 +526,6 @@ export const SettingsBilling = () => {
   const from = switchingInfo.from;
   const to = switchingInfo.to;
   const impact = switchingInfo.impact;
-  console.log("SWITCHING_INFO::", JSON.stringify(switchingInfo, null, 2));
-  console.log("currentWorkspace?.currentBillingSubscription:", currentWorkspace?.currentBillingSubscription);
-  console.log("currentWorkspace?.currentBillingSubscription?.interval:", currentWorkspace?.currentBillingSubscription?.interval);
-  console.log("switchingInfo.newInterval:", switchingInfo.newInterval);
-  console.log("isDefined(currentWorkspace?.currentBillingSubscription):", isDefined(currentWorkspace?.currentBillingSubscription));
-  console.log("isDefined(currentWorkspace?.currentBillingSubscription?.interval):", isDefined(currentWorkspace?.currentBillingSubscription?.interval));
-  console.log("isDefined(switchingInfo.newInterval):", isDefined(switchingInfo.newInterval));
-  console.log("isDefined(currentWorkspace?.currentBillingSubscription):", isDefined(currentWorkspace?.currentBillingSubscription));
-  console.log("isDefined(currentWorkspace?.currentBillingSubscription?.interval):", isDefined(currentWorkspace?.currentBillingSubscription?.interval));
   const switchInterval = async () => {
     try {
       await updateBillingSubscription();
@@ -525,43 +686,78 @@ export const SettingsBilling = () => {
         {creditPacks.length > 0 && (
           <Section>
             <H2Title
-              title={t`Buy credits`}
-              description={t`Add one-time credits to your workspace`}
+              title={t`Credit packs`}
+              description={t`Add org chart credits to your workspace`}
             />
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-                gap: '16px',
-                marginTop: 16,
-              }}
-            >
-              {creditPacks.map((pack) => (
-                <div
-                  key={pack.key}
-                  style={{
-                    border: '1px solid var(--color-gray-20)',
-                    borderRadius: 8,
-                    padding: 16,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 12,
-                  }}
-                >
-                  <div style={{ fontWeight: 600 }}>{pack.name}</div>
-                  <div style={{ color: 'var(--color-gray-50)' }}>
-                    {pack.credits} credits · {pack.currency}{' '}
-                    {(pack.amountSubunits / 100).toFixed(2)}
-                  </div>
-                  <Button
-                    title={t`Buy credits`}
-                    variant="secondary"
-                    onClick={() => handleBuyCredits(pack.key)}
-                    disabled={buyingPackKey !== null}
-                  />
-                </div>
-              ))}
-            </div>
+            <p style={{ marginTop: 8, marginBottom: 8, fontSize: 13, color: 'var(--color-gray-60)' }}>
+              {t`1 credit = 1 org chart (<100 employees). Larger org charts consume more (e.g. 300 employees = 3 credits).`}
+            </p>
+            <p style={{ marginBottom: 24, fontSize: 13, color: 'var(--color-gray-60)' }}>
+              {t`Credit card: +3% surcharge. Pay by invoice: no surcharge.`}
+            </p>
+            <StyledCreditCardsGrid>
+              {creditPacks.map((pack) => {
+                const baseAmount = pack.amountSubunits / 100;
+                const cardAmount = Math.round(
+                  pack.amountSubunits * 1.03,
+                ) / 100;
+                const creditsLabel =
+                  pack.credits === 1
+                    ? t`1 credit (<100 employees)`
+                    : t`${pack.credits} credits (~$${Math.round(baseAmount / pack.credits)}/credit)`;
+                const features =
+                  pack.credits === 1
+                    ? [
+                        t`Full org chart structure`,
+                        t`LinkedIn profiles + emails`,
+                        t`Sign up to unmask names`,
+                      ]
+                    : [
+                        pack.name,
+                        t`All features included`,
+                        t`12-month expiry`,
+                      ];
+                return (
+                  <StyledCreditCard key={pack.key}>
+                    <StyledCreditCardTitle>{pack.name}</StyledCreditCardTitle>
+                    <StyledCreditCardPrice>
+                      {pack.currency === 'USD' ? '$' : pack.currency + ' '}
+                      {baseAmount.toLocaleString()}
+                    </StyledCreditCardPrice>
+                    <StyledCreditCardCredits>
+                      {creditsLabel}
+                    </StyledCreditCardCredits>
+                    <StyledCreditCardSurcharge>
+                      {t`Credit card`}: {pack.currency === 'USD' ? '$' : pack.currency + ' '}
+                      {cardAmount.toLocaleString()} {t`(+3%)`}
+                    </StyledCreditCardSurcharge>
+                    <StyledFeatureList>
+                      {features.map((feature) => (
+                        <StyledFeatureItem key={feature}>
+                          <StyledCheckIcon size={20} strokeWidth={2.5} />
+                          {feature}
+                        </StyledFeatureItem>
+                      ))}
+                    </StyledFeatureList>
+                    <StyledCreditCardButtons>
+                      <StyledPrimaryCtaButton
+                        onClick={() => handleBuyCredits(pack.key)}
+                        disabled={buyingPackKey !== null}
+                      >
+                        <IconCreditCard size={18} strokeWidth={2} />
+                        {t`Pay by credit card`}
+                      </StyledPrimaryCtaButton>
+                      <StyledSecondaryCtaButton
+                        onClick={() => setInvoicePackKey(pack.key)}
+                      >
+                        <IconFileText size={18} strokeWidth={2} />
+                        {t`Pay by invoice`}
+                      </StyledSecondaryCtaButton>
+                    </StyledCreditCardButtons>
+                  </StyledCreditCard>
+                );
+              })}
+            </StyledCreditCardsGrid>
           </Section>
         )}
         {!isRazorpay && (
@@ -596,6 +792,16 @@ export const SettingsBilling = () => {
           </>
         )}
       </SettingsPageContainer>
+      <InvoiceRequestModal
+        isOpen={invoicePackKey !== null}
+        pack={creditPacks.find((p) => p.key === invoicePackKey) ?? null}
+        onClose={() => setInvoicePackKey(null)}
+        onSubmit={async (params) => {
+          if (invoicePackKey) {
+            await handleRequestInvoice(invoicePackKey, params);
+          }
+        }}
+      />
       <ConfirmationModal
         isOpen={isSwitchingIntervalModalOpen}
         setIsOpen={setIsSwitchingIntervalModalOpen}

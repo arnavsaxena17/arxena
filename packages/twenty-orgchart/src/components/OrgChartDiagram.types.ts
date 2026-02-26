@@ -1,0 +1,45 @@
+import type { OrgChartNodeData } from 'twenty-shared';
+
+export type OrgChartContextAction =
+  | 'current_node'
+  | 'leadership'
+  | 'entire_company'
+  | 'all_people'
+  | 'function_grade'
+  | 'selected_nodes'
+  | 'boolean_keywords'
+  | 'similar_companies'
+  | 'add_to_job_and_send_invite'
+  | 'add_to_job_and_invite_to_job';
+
+export type OrgChartDiagramIconUrls = {
+  lock?: string;
+  linkedin?: string;
+  download?: string;
+  similarItems?: string;
+};
+
+export type OrgChartDiagramProps = {
+  nodeDataArray: OrgChartNodeData[];
+  iconUrls?: OrgChartDiagramIconUrls;
+  onDiagramReady?: (handle: OrgChartDiagramHandle) => void;
+  onNodeContextAction?: (
+    action: OrgChartContextAction,
+    node: OrgChartNodeData,
+  ) => void;
+  onBackgroundContextAction?: (action: OrgChartContextAction) => void;
+  onNodeClick?: (node: OrgChartNodeData) => void;
+  onNodeDoubleClick?: (node: OrgChartNodeData) => void;
+  onDownloadNode?: (node: OrgChartNodeData) => void;
+  onSimilarPeople?: (node: OrgChartNodeData) => void;
+};
+
+export type OrgChartDiagramHandle = {
+  search: (keyword: string) => number;
+  focusNextResult: () => void;
+  focusPreviousResult: () => void;
+  clearSearch: () => void;
+  getSearchResultCount: () => number;
+  zoomToFit: () => void;
+  centerContent: () => void;
+};

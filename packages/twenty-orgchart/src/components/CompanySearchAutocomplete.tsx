@@ -17,6 +17,8 @@ export type CompanySearchAutocompleteProps = {
   }) => void;
   placeholder?: string;
   disabled?: boolean;
+  /** Icon to show inside the input on the left */
+  startIcon?: React.ReactNode;
   /** When true, shows loading spinner (e.g. during navigation after selection) */
   isSelecting?: boolean;
   /** Base URL for API (e.g. https://server.com or /api/org-chart for proxy) */
@@ -37,9 +39,10 @@ const StyledWrapper = styled.div`
   z-index: 1;
 `;
 
-const StyledInput = styled.input`
+const StyledInput = styled.input<{ $hasStartIcon?: boolean }>`
   width: 100%;
   padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
+  ${({ $hasStartIcon }) => $hasStartIcon && 'padding-left: 44px;'}
   font-size: ${({ theme }) => theme.font.size.md};
   font-family: ${({ theme }) => theme.font.family};
   color: ${({ theme }) => theme.font.color.primary};
@@ -169,7 +172,7 @@ const StyledSpinner = styled.div`
   height: 20px;
   border-radius: 50%;
   border: 2px solid ${({ theme }) => theme.border.color.light};
-  border-top-color: ${({ theme }) => theme.color.blue};
+  border-top-color: black;
   animation: company-search-spin 0.8s linear infinite;
 
   @keyframes company-search-spin {
@@ -185,6 +188,18 @@ const StyledSpinner = styled.div`
 const StyledInputWrapper = styled.div`
   position: relative;
   width: 100%;
+`;
+
+const StyledStartIcon = styled.span`
+  position: absolute;
+  left: ${({ theme }) => theme.spacing(2)};
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.font.color.tertiary};
+  pointer-events: none;
 `;
 
 const StyledInputSpinner = styled.div`
@@ -204,6 +219,7 @@ export const CompanySearchAutocomplete = ({
   accessToken,
   autocompletePath,
   logoBaseUrl,
+  startIcon,
 }: CompanySearchAutocompleteProps) => {
   const [inputValue, setInputValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -373,6 +389,7 @@ export const CompanySearchAutocomplete = ({
   return (
     <StyledWrapper ref={wrapperRef}>
       <StyledInputWrapper>
+        {startIcon && <StyledStartIcon aria-hidden>{startIcon}</StyledStartIcon>}
         <StyledInput
           ref={inputRef}
           type="text"
@@ -383,6 +400,7 @@ export const CompanySearchAutocomplete = ({
           placeholder={placeholder}
           disabled={disabled || isSelecting}
           autoComplete="off"
+          $hasStartIcon={!!startIcon}
         />
         {isSelecting && (
           <StyledInputSpinner>

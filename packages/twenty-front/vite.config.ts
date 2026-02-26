@@ -21,7 +21,7 @@ export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   const {
-    REACT_APP_IS_ORG_CHART_ENABLED,
+    IS_ORG_CHART_ENABLED,
     REACT_APP_SERVER_BASE_URL,
     VITE_BUILD_SOURCEMAP,
     VITE_DISABLE_TYPESCRIPT_CHECKER,
@@ -203,11 +203,11 @@ export default defineConfig(({ command, mode }) => {
 
     define: {
       _env_: {
-        REACT_APP_IS_ORG_CHART_ENABLED,
+        IS_ORG_CHART_ENABLED,
         REACT_APP_SERVER_BASE_URL,
       },
       'process.env': {
-        REACT_APP_IS_ORG_CHART_ENABLED,
+        IS_ORG_CHART_ENABLED,
         REACT_APP_SERVER_BASE_URL,
       },
     },

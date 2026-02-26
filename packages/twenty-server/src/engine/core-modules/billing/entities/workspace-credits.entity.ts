@@ -4,18 +4,20 @@ import { Field, ObjectType } from '@nestjs/graphql';
 
 import { IDField } from '@ptc-org/nestjs-query-graphql';
 import {
-    Column,
-    CreateDateColumn,
-    Entity,
-    PrimaryGeneratedColumn,
-    UpdateDateColumn,
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';
 
 /**
- * Razorpay: stores org-chart credits for a workspace (1 credit = 100 person org chart).
- * Incremented on payment.captured for credit-pack purchases.
+ * Razorpay: stores org-chart credits for a workspace.
+ * 1 credit = 1 org chart of up to 100 employees. Larger charts consume more:
+ * credits = Math.ceil(employeeCount / 100). Incremented on payment.captured
+ * for credit-pack purchases.
  */
 @Entity({ name: 'workspaceCredits', schema: 'core' })
 @ObjectType()

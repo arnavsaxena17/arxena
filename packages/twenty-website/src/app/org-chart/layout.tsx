@@ -1,4 +1,6 @@
-import { OrgChartHeader } from '../_components/orgchart/OrgChartHeader';
+import { getSignInUrl, getSignUpUrl } from '@/lib/auth-urls';
+
+import { OrgChartHeader } from '../_components/ui/layout/OrgChartHeader';
 
 export default function OrgChartLayout({
   children,
@@ -6,9 +8,31 @@ export default function OrgChartLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
-      <OrgChartHeader />
-      {children}
-    </>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        width: '100%',
+        overflow: 'hidden',
+      }}
+    >
+      <OrgChartHeader
+        signInUrl={getSignInUrl()}
+        signUpUrl={getSignUpUrl()}
+      />
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+          width: '100%',
+          overflow: 'hidden',
+        }}
+      >
+        {children}
+      </div>
+    </div>
   );
 }

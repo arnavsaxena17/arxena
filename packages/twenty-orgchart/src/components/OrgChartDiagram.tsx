@@ -11,6 +11,17 @@ import {
 
 import type { OrgChartNodeData } from 'twenty-shared';
 
+import type {
+  OrgChartDiagramHandle,
+  OrgChartDiagramProps
+} from './OrgChartDiagram.types';
+
+export type {
+  OrgChartContextAction,
+  OrgChartDiagramHandle,
+  OrgChartDiagramIconUrls,
+  OrgChartDiagramProps
+} from './OrgChartDiagram.types';
 
 const DEFAULT_AVATAR =
   'https://st2.depositphotos.com/4111759/12123/v/950/depositphotos_121232442-stock-illustration-male-default-placeholder-avatar-profile.jpg';
@@ -55,54 +66,12 @@ const StyledOverviewContainer = styled.div`
   z-index: 10;
 `;
 
-export type OrgChartContextAction =
-  | 'current_node'
-  | 'leadership'
-  | 'entire_company'
-  | 'all_people'
-  | 'function_grade'
-  | 'selected_nodes'
-  | 'boolean_keywords'
-  | 'similar_companies'
-  | 'add_to_job_and_send_invite'
-  | 'add_to_job_and_invite_to_job';
-
-export type OrgChartDiagramIconUrls = {
-  lock?: string;
-  linkedin?: string;
-  download?: string;
-  similarItems?: string;
-};
-
-export type OrgChartDiagramProps = {
-  nodeDataArray: OrgChartNodeData[];
-  iconUrls?: OrgChartDiagramIconUrls;
-  onNodeContextAction?: (
-    action: OrgChartContextAction,
-    node: OrgChartNodeData,
-  ) => void;
-  onBackgroundContextAction?: (action: OrgChartContextAction) => void;
-  onNodeClick?: (node: OrgChartNodeData) => void;
-  onNodeDoubleClick?: (node: OrgChartNodeData) => void;
-  onDownloadNode?: (node: OrgChartNodeData) => void;
-  onSimilarPeople?: (node: OrgChartNodeData) => void;
-};
-
-export type OrgChartDiagramHandle = {
-  search: (keyword: string) => number;
-  focusNextResult: () => void;
-  focusPreviousResult: () => void;
-  clearSearch: () => void;
-  getSearchResultCount: () => number;
-  zoomToFit: () => void;
-  centerContent: () => void;
-};
-
 export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagramProps>(
   (
     {
       nodeDataArray,
       iconUrls,
+      onDiagramReady,
       onNodeContextAction,
       onBackgroundContextAction,
       onNodeClick,
@@ -845,17 +814,19 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       if (rootNode) diagram.commandHandler.scrollToPart(rootNode);
     }, [getDiagram]);
 
+    const handle = {
+      search: performSearch,
+      focusNextResult,
+      focusPreviousResult,
+      clearSearch,
+      getSearchResultCount: () => searchResultsKeysRef.current.length,
+      zoomToFit,
+      centerContent,
+    };
+
     useImperativeHandle(
       ref,
-      () => ({
-        search: performSearch,
-        focusNextResult,
-        focusPreviousResult,
-        clearSearch,
-        getSearchResultCount: () => searchResultsKeysRef.current.length,
-        zoomToFit,
-        centerContent,
-      }),
+      () => handle,
       [
         clearSearch,
         focusNextResult,
@@ -865,6 +836,10 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
         centerContent,
       ],
     );
+
+    useEffect(() => {
+      onDiagramReady?.(handle);
+    }, [onDiagramReady, clearSearch, focusNextResult, focusPreviousResult, performSearch, zoomToFit, centerContent]);
 
     useEffect(() => {
       hasCenteredRef.current = false;

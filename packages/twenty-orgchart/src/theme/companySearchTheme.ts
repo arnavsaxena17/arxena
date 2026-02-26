@@ -7,7 +7,7 @@ const baseTheme = {
   spacing: (...args: number[]) =>
     args.map((n) => `${n * 4}px`).join(' '),
   font: {
-    size: { md: '14px', sm: '12px', xs: '11px' },
+    size: { md: '14px', sm: '12px', xs: '11px', lg: '16px' },
     family: 'Inter, system-ui, -apple-system, sans-serif',
     weight: { medium: '500' },
   },

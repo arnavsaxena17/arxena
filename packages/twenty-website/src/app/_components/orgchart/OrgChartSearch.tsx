@@ -2,8 +2,8 @@
 
 import { ThemeProvider } from '@emotion/react';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 const CompanySearchAutocomplete = dynamic(
   () =>
@@ -20,12 +20,30 @@ const CompanySearchAutocomplete = dynamic(
         );
       };
     }),
-  { ssr: false },
+  {
+    ssr: false,
+    loading: () => (
+      <div style={{ height: 48, background: '#f5f5f5', borderRadius: 8 }} />
+    ),
+  },
 );
 
-export const HomepageSearch = () => {
+type OrgChartSearchProps = {
+  placeholder?: string;
+  startIcon?: React.ReactNode;
+};
+
+export const OrgChartSearch = ({
+  placeholder = "Search any company's org chart",
+  startIcon,
+}: OrgChartSearchProps) => {
   const router = useRouter();
+  const pathname = usePathname();
   const [isNavigating, setIsNavigating] = useState(false);
+
+  useEffect(() => {
+    setIsNavigating(false);
+  }, [pathname]);
 
   const handleCompanySelect = (company: {
     companyId: string;
@@ -49,10 +67,11 @@ export const HomepageSearch = () => {
     <CompanySearchAutocomplete
       onCompanySelect={handleCompanySelect}
       isSelecting={isNavigating}
-      placeholder="Search any company's org chart"
+      placeholder={placeholder}
       baseUrl="/api/org-chart"
       autocompletePath="/autocomplete"
       logoBaseUrl="/api/org-chart/company-logo"
+      startIcon={startIcon}
     />
   );
 };

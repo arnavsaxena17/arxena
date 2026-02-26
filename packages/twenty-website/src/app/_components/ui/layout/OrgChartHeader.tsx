@@ -1,8 +1,10 @@
 'use client';
 
 import styled from '@emotion/styled';
+import { IconHierarchy2 } from '@tabler/icons-react';
 import Link from 'next/link';
 
+import { OrgChartSearch } from '@/app/_components/orgchart/OrgChartSearch';
 import { Logo } from '@/app/_components/ui/layout/Logo';
 
 const StyledHeader = styled.header`
@@ -37,6 +39,20 @@ const StyledNavLink = styled(Link)`
 
   &:hover {
     background-color: #f1f1f1;
+  }
+`;
+
+const StyledSearchWrapper = styled.div`
+  flex: 1;
+  min-width: 200px;
+  max-width: 360px;
+  margin: 0 16px;
+
+  @media (max-width: 809px) {
+    order: 3;
+    flex-basis: 100%;
+    max-width: none;
+    margin: 0;
   }
 `;
 
@@ -76,22 +92,35 @@ const StyledSignUp = styled.a`
   }
 `;
 
-export const OrgChartHeader = () => {
+type OrgChartHeaderProps = {
+  showSearch?: boolean;
+  signInUrl: string;
+  signUpUrl: string;
+};
+
+export const OrgChartHeader = ({
+  showSearch = true,
+  signInUrl,
+  signUpUrl,
+}: OrgChartHeaderProps) => {
   return (
     <StyledHeader>
       <StyledNav>
         <Logo />
         <StyledNavLink href="/story">Story</StyledNavLink>
         <StyledNavLink href="/pricing">Pricing</StyledNavLink>
-        <StyledNavLink href="/releases">Releases</StyledNavLink>
       </StyledNav>
+      {showSearch && (
+        <StyledSearchWrapper>
+          <OrgChartSearch
+            placeholder="Search another company's org chart"
+            startIcon={<IconHierarchy2 size={20} />}
+          />
+        </StyledSearchWrapper>
+      )}
       <StyledAuthLinks>
-        <StyledSignIn href="https://app.arxena.com/sign-in">
-          Sign in
-        </StyledSignIn>
-        <StyledSignUp href="https://app.arxena.com/sign-up">
-          Sign up
-        </StyledSignUp>
+        <StyledSignIn href={signInUrl}>Sign in</StyledSignIn>
+        <StyledSignUp href={signUpUrl}>Sign up</StyledSignUp>
       </StyledAuthLinks>
     </StyledHeader>
   );

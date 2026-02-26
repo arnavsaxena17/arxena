@@ -114,55 +114,68 @@ export const ApiKeysForm = () => {
     return <div>Loading API keys...</div>;
   }
 
-  return (
-    <StyledInputContainer>
+
+  const renderInputs = () => {
+    return (
+      <>
+  {renderInput('openaikey', 'OpenAI API Key')}
+  {renderInput('twilio_account_sid', 'Twilio Account SID')}
+  {renderInput('twilio_auth_token', 'Twilio Auth Token')}
+  {renderInput('linkedin_url', 'Linkedin Profile URL')}
+  {renderInput('linkedin_profile_id', 'Linkedin Profile ID')}
+  {renderInput('linkedin_unipile_account_id', 'Linkedin Unipile Account ID')}
+  {renderInput('linkedin_cookie_auth', 'LinkedIn cookie (from extension)')}
+  {renderInput('whatsapp_unipile_account_id', 'Whatsapp Unipile Account ID')}
+  {renderInput('whatsapp_key', 'WhatsApp Key')}
+  {renderInput('anthropic_key', 'Anthropic Key')}
+  {renderInput(
+    'facebook_whatsapp_api_token',
+    'Facebook WhatsApp API Token (Do Not Change)',
+  )}
+  {renderInput(
+    'facebook_whatsapp_phone_number_id',
+    'Facebook WhatsApp Phone Number ID',
+  )}
+  {renderInput(
+    'whatsapp_web_phone_number',
+    'WhatsApp Web Phone Number',
+  )}
+  {renderInput(
+    'facebook_whatsapp_app_id',
+    'Facebook WhatsApp App ID (Do Not Change)',
+  )}
+  {renderInput(
+    'facebook_whatsapp_asset_id',
+    'Facebook WhatsApp Business Asset ID (WABA)',
+  )}
+  {renderInput(
+    'is_chrome_extension_installed',
+    'Is Chrome Extension Installed (true/false)',
+  )}
+  {renderInput(
+    'chrome_extension_id',
+    'Chrome Extension ID',
+  )}
+      </>
+    );
+  };
+
+
+  const renderOrgChartInputs = () => {
+    return (
+      <>
       {renderInput('openaikey', 'OpenAI API Key')}
-      {renderInput('twilio_account_sid', 'Twilio Account SID')}
-      {renderInput('twilio_auth_token', 'Twilio Auth Token')}
       {renderInput('linkedin_url', 'Linkedin Profile URL')}
       {renderInput('linkedin_profile_id', 'Linkedin Profile ID')}
       {renderInput('linkedin_unipile_account_id', 'Linkedin Unipile Account ID')}
       {renderInput('linkedin_cookie_auth', 'LinkedIn cookie (from extension)')}
-      {/* <TextInput
-        label="LinkedIn cookie (from extension)"
-        value={keys.linkedin_cookie_auth ? 'Set' : 'Not set'}
-        onChange={() => {}}
-        disabled
-        fullWidth
-        placeholder="Synced when extension opens on LinkedIn"
-      /> */}
-      {renderInput('whatsapp_unipile_account_id', 'Whatsapp Unipile Account ID')}
-      {renderInput('whatsapp_key', 'WhatsApp Key')}
-      {renderInput('anthropic_key', 'Anthropic Key')}
-      {renderInput(
-        'facebook_whatsapp_api_token',
-        'Facebook WhatsApp API Token (Do Not Change)',
-      )}
-      {renderInput(
-        'facebook_whatsapp_phone_number_id',
-        'Facebook WhatsApp Phone Number ID',
-      )}
-      {renderInput(
-        'whatsapp_web_phone_number',
-        'WhatsApp Web Phone Number',
-      )}
-      {renderInput(
-        'facebook_whatsapp_app_id',
-        'Facebook WhatsApp App ID (Do Not Change)',
-      )}
-      {renderInput(
-        'facebook_whatsapp_asset_id',
-        'Facebook WhatsApp Business Asset ID (WABA)',
-      )}
-      {renderInput(
-        'is_chrome_extension_installed',
-        'Is Chrome Extension Installed (true/false)',
-      )}
-      {renderInput(
-        'chrome_extension_id',
-        'Chrome Extension ID',
-      )}
+    </>
+    );
+  };
 
+  return (
+    <StyledInputContainer>
+      {process.env.IS_ORG_CHART_ENABLED === 'true' ? renderOrgChartInputs() : renderInputs()}
       <StyledButtonContainer>
         {isEditing ? (
           <>

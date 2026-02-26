@@ -1,7 +1,19 @@
 import { RelationInput } from "twenty-shared";
+
+import { getObjectsToExclude } from "./objectsData";
+
+type RelationWithObjects = {
+  fromObjectName: string;
+  toObjectName: string;
+  relationMetadata: NonNullable<RelationInput>["relationMetadata"];
+};
+
 export function getRelationsData(objectsNameIdMap: Record<string, string>): RelationInput[] {
-  return [
+  const objectsToExclude = getObjectsToExclude();
+  const allRelations: RelationWithObjects[] = [
     {
+      fromObjectName: "company",
+      toObjectName: "job",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconTie',
@@ -17,6 +29,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "workspaceMember",
+      toObjectName: "prompt",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconMessage',
@@ -32,6 +46,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "job",
+      toObjectName: "prompt",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconMessage',
@@ -47,6 +63,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "job",
+      toObjectName: "candidateEnrichment",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconEnrich',
@@ -62,6 +80,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "job",
+      toObjectName: "searchFilter",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconFilterSearch',
@@ -77,6 +97,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "workspaceMember",
+      toObjectName: "searchFilter",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconFilterSearch',
@@ -92,6 +114,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "workspaceMember",
+      toObjectName: "candidateEnrichment",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconEnrich',
@@ -107,6 +131,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "workspaceMember",
+      toObjectName: "job",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconTie',
@@ -122,6 +148,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "job",
+      toObjectName: "candidateField",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconQuestionMark',
@@ -137,6 +165,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "candidateField",
+      toObjectName: "candidateFieldValue",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconMessageCheck',
@@ -152,6 +182,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "candidate",
+      toObjectName: "candidateFieldValue",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconMessageCheck',
@@ -167,6 +199,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "job",
+      toObjectName: "candidate",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconUsers',
@@ -182,6 +216,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "person",
+      toObjectName: "candidate",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconUsers',
@@ -198,6 +234,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     },
   
     {
+      fromObjectName: "workspaceMember",
+      toObjectName: "workspaceMemberProfile",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconUserScan',
@@ -213,6 +251,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "person",
+      toObjectName: "workspaceMemberProfile",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconUserScan',
@@ -229,6 +269,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     },
 
     {
+      fromObjectName: "person",
+      toObjectName: "whatsappMessage",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconBrandWhatsapp',
@@ -245,6 +287,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     },
    
     {
+      fromObjectName: "workspaceMember",
+      toObjectName: "whatsappMessage",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconBrandWhatsapp',
@@ -260,6 +304,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "job",
+      toObjectName: "whatsappMessage",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconBrandWhatsapp',
@@ -275,6 +321,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "job",
+      toObjectName: "clientContact",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconUserStar',
@@ -290,6 +338,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "person",
+      toObjectName: "clientContact",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconUserStar',
@@ -306,6 +356,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     },
 
     {
+      fromObjectName: "clientContact",
+      toObjectName: "clientInterview",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconCalendarTime',
@@ -321,6 +373,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "candidate",
+      toObjectName: "clientInterview",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconCalendarTime',
@@ -336,6 +390,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "job",
+      toObjectName: "clientInterview",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconCalendarTime',
@@ -351,6 +407,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "job",
+      toObjectName: "videoInterviewTemplate",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconScan',
@@ -367,6 +425,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     },
 
     {
+      fromObjectName: "videoInterviewModel",
+      toObjectName: "videoInterviewTemplate",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconScan',
@@ -383,6 +443,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     },
 
     {
+      fromObjectName: "videoInterviewTemplate",
+      toObjectName: "videoInterviewQuestion",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconQuestionMark',
@@ -399,6 +461,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     },
 
     {
+      fromObjectName: "videoInterviewQuestion",
+      toObjectName: "videoInterviewResponse",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconPencil',
@@ -415,6 +479,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     },
  
     {
+      fromObjectName: "videoInterview",
+      toObjectName: "videoInterviewResponse",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconPencil',
@@ -430,6 +496,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "job",
+      toObjectName: "videoInterviewResponse",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconPencil',
@@ -445,6 +513,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "videoInterviewTemplate",
+      toObjectName: "videoInterview",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconActivity',
@@ -461,6 +531,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     },
 
     {
+      fromObjectName: "candidate",
+      toObjectName: "videoInterviewResponse",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconPencil',
@@ -476,6 +548,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "candidate",
+      toObjectName: "whatsappMessage",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconBrandWhatsapp',
@@ -491,6 +565,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "candidate",
+      toObjectName: "videoInterview",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconActivity',
@@ -506,6 +582,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "candidate",
+      toObjectName: "candidateReminder",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconAlarm',
@@ -522,6 +600,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     },
 
   {
+    fromObjectName: "candidate",
+    toObjectName: "screening",
     relationMetadata: {
       fromDescription: null,
       fromIcon: 'IconScreenShare',
@@ -537,6 +617,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     },
   },
   {
+    fromObjectName: "candidate",
+    toObjectName: "recruiterInterview",
     relationMetadata: {
       fromDescription: null,
       fromIcon: 'IconCalendarTime',
@@ -552,6 +634,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     },
   },
   {
+    fromObjectName: "candidate",
+    toObjectName: "cvSent",
     relationMetadata: {
       fromDescription: null,
       fromIcon: 'IconSend',
@@ -567,6 +651,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     },
   },
   {
+    fromObjectName: "candidate",
+    toObjectName: "shortlist",
     relationMetadata: {
       fromDescription: null,
       fromIcon: 'IconListCheck',
@@ -583,6 +669,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
   },
 
     {
+      fromObjectName: "job",
+      toObjectName: "cvSent",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconSend',
@@ -599,6 +687,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     },
    
     {
+      fromObjectName: "job",
+      toObjectName: "interviewSchedule",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconCalendarTime',
@@ -614,6 +704,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "interviewSchedule",
+      toObjectName: "clientInterview",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconCalendarTime',
@@ -630,6 +722,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     },
 
     {
+      fromObjectName: "person",
+      toObjectName: "videoInterviewResponse",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconPencil',
@@ -646,6 +740,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     },
    
      {
+      fromObjectName: "person",
+      toObjectName: "textMessage",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconMessage',
@@ -675,6 +771,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     //   },
     // },
     {
+      fromObjectName: "person",
+      toObjectName: "phoneCall",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconPhone',
@@ -690,6 +788,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "job",
+      toObjectName: "shortlist",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconListCheck',
@@ -705,6 +805,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
     {
+      fromObjectName: "cvSent",
+      toObjectName: "shortlist",
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconListCheck',
@@ -752,4 +854,12 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     // },
     // Assistant Thread Candidate relations (ONE_TO_MANY only; MANY_TO_ONE not used in sync)
   ];
+
+  return allRelations
+    .filter(
+      (r) =>
+        !objectsToExclude.includes(r.fromObjectName) &&
+        !objectsToExclude.includes(r.toObjectName),
+    )
+    .map((r) => ({ relationMetadata: r.relationMetadata }));
 }

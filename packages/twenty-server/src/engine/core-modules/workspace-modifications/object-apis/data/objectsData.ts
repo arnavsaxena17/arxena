@@ -1,4 +1,6 @@
-export const objectCreationArr = [
+
+
+const allObjects = [
     {
         "object": {
             "description": "",
@@ -329,3 +331,37 @@ export const objectCreationArr = [
     //     }
     // },
 ];
+
+const OBJECTS_TO_EXCLUDE = [
+  'prompt',
+  'videoInterview',
+  'videoInterviewTemplate',
+  'videoInterviewModel',
+  'videoInterviewQuestion',
+  'videoInterviewResponse',
+  'clientInterview',
+  'interviewSchedule',
+  'cvSent',
+  'candidateEnrichment',
+  'candidateReminder',
+  'clientContact',
+  'searchFilter',
+  'phoneCall',
+  'textMessage',
+  'shortlist',
+  'recruiterInterview',
+  'assistantThread',
+  'screening',
+  'offer'
+];
+
+export function getObjectsToExclude(): string[] {
+  if (process.env.IS_ORG_CHART_ENABLED === 'false') {
+    return [];
+  }
+  return OBJECTS_TO_EXCLUDE;
+}
+
+export const objectCreationArr = allObjects.filter(
+  (object) => !getObjectsToExclude().includes(object.object.nameSingular),
+);

@@ -26,14 +26,16 @@ const StyledModal = styled.div`
 
 const StyledTitle = styled.h3`
   margin: 0;
-  font-size: ${({ theme }) => theme.font.size.md};
+  font-size: ${({ theme }) => theme.font.size.lg};
   font-weight: 600;
   color: ${({ theme }) => theme.font.color.primary};
+  text-align: center;
 `;
 
 const StyledNodeInfo = styled.div`
   font-size: ${({ theme }) => theme.font.size.sm};
   color: ${({ theme }) => theme.font.color.tertiary};
+  text-align: center;
 `;
 
 const StyledText = styled.p`
@@ -86,23 +88,46 @@ export type OrgChartSignUpModalProps = {
   node: OrgChartNodeData | null;
   onClose: () => void;
   signUpUrl?: string;
+  companyName?: string;
+  selectedCountry?: string;
+  selectedFunctionRoot?: string;
 };
+
+const formatLabel = (s: string): string =>
+  s
+    .split(/[-_]/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
 
 export const OrgChartSignUpModal = ({
   node,
   onClose,
   signUpUrl = '/sign-up',
+  companyName,
+  selectedCountry,
+  selectedFunctionRoot,
 }: OrgChartSignUpModalProps) => {
   if (!node) return null;
 
-  const headline = node.headline ?? 'Unknown';
-  const names: string[] = [];
-  for (let i = 0; i < 4; i++) {
-    const name = node[`name_${i}`];
-    if (typeof name === 'string' && name.trim()) {
-      names.push(name);
-    }
+  const headline = (node.headline + ' at ' + companyName)
+  const company = companyName?.trim() || 'this company';
+  const companyDisplay =
+    company.charAt(0).toUpperCase() + company.slice(1).toLowerCase();
+
+  const sliceParts: string[] = [];
+  if (selectedCountry && selectedCountry !== 'global') {
+    sliceParts.push(`by geography (e.g. ${formatLabel(selectedCountry)})`);
   }
+  if (selectedFunctionRoot && selectedFunctionRoot !== 'fullcompany') {
+    sliceParts.push(`by function (e.g. ${formatLabel(selectedFunctionRoot)})`);
+  }
+  if (sliceParts.length === 0) {
+    sliceParts.push('by geography or function');
+  }
+  const sliceText =
+    sliceParts.length > 1
+      ? sliceParts.join(', ')
+      : sliceParts[0] || 'by geography or function';
 
   return (
     <StyledBackdrop onClick={onClose}>
@@ -111,16 +136,18 @@ export const OrgChartSignUpModal = ({
           e.stopPropagation();
         }}
       >
-        <StyledTitle>Sign up for your free org chart</StyledTitle>
+        <StyledTitle>Your first org chart is free!</StyledTitle>
         <StyledNodeInfo>{headline}</StyledNodeInfo>
-        {names.length > 0 && (
-          <StyledText>
-            See names, titles, emails & phone numbers for this role and the rest
-            of the org chart.
-          </StyledText>
-        )}
+        <StyledText>
+          Get the {companyDisplay} org chart — {sliceText}, sliced any way you
+          want.
+        </StyledText>
+        <StyledText>
+          Get names, titles, emails & phone numbers for this role and the rest
+          of the org chart.
+        </StyledText>
         <StyledButton href={signUpUrl} rel="noreferrer">
-          Continue with LinkedIn / Google / Email
+          Sign up!
         </StyledButton>
         <StyledButtonRow>
           <StyledCloseButton type="button" onClick={onClose}>

@@ -17,6 +17,11 @@
       "types": "./dist/company-search.d.ts",
       "import": "./dist/company-search.js",
       "require": "./dist/company-search.cjs"
+    },
+    "./orgchart-core": {
+      "types": "./dist/orgchart-core.d.ts",
+      "import": "./dist/orgchart-core.js",
+      "require": "./dist/orgchart-core.cjs"
     }
   },
   "dependencies": {

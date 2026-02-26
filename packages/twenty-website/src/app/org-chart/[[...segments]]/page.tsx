@@ -3,7 +3,10 @@ import { headers } from 'next/headers';
 
 import { extractOrgData, processOrgChartToNodeData } from 'twenty-shared';
 
+import { getSignUpUrl } from '@/lib/auth-urls';
+
 import { OrgChartPageClient } from './OrgChartPageClient';
+import { OrgChartStructureSSR } from './OrgChartStructureSSR';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,16 +21,6 @@ function getServerBaseUrl(): string {
     process.env.NEXT_PUBLIC_SERVER_BASE_URL ??
     '';
   return url.replace(/\/$/, '');
-}
-
-function getSignUpUrl(): string {
-  const base =
-    process.env.FRONTEND_URL ??
-    process.env.NEXT_PUBLIC_FRONTEND_URL ??
-    process.env.NEXT_PUBLIC_APP_URL ??
-    'https://app.arxena.com';
-  const normalized = base.startsWith('http') ? base : `https://${base}`;
-  return `${normalized.replace(/\/$/, '')}/sign-up`;
 }
 
 async function getAppBaseUrl(): Promise<string> {
@@ -173,20 +166,40 @@ export default async function OrgChartPage({
       : undefined;
   const industry =
     typeof rawData?.industry === 'string' ? rawData.industry : undefined;
+  const linkedinUrl =
+    typeof rawData?.linkedin_url === 'string'
+      ? rawData.linkedin_url
+      : undefined;
 
   return (
-    <OrgChartPageClient
-      companyId={companyId}
-      companyName={displayCompanyName}
-      website={website}
-      locationName={locationName}
-      industry={industry}
-      profileCount={profileCount}
-      nodeDataArray={nodeDataArray}
-      orgData={rawData}
-      initialCountry={normalizedCountry}
-      initialFunctionRoot={normalizedFunctionRoot}
-      signUpUrl={getSignUpUrl()}
-    />
+    <div
+      style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        width: '100%',
+      }}
+    >
+      <OrgChartPageClient
+        companyId={companyId}
+        companyName={displayCompanyName}
+        website={website}
+        locationName={locationName}
+        industry={industry}
+        profileCount={profileCount}
+        linkedinUrl={linkedinUrl}
+        nodeDataArray={nodeDataArray}
+        orgData={rawData}
+        initialCountry={normalizedCountry}
+        initialFunctionRoot={normalizedFunctionRoot}
+        signUpUrl={getSignUpUrl()}
+      >
+        <OrgChartStructureSSR
+          nodeDataArray={nodeDataArray}
+          companyName={displayCompanyName}
+        />
+      </OrgChartPageClient>
+    </div>
   );
 }

@@ -1,13 +1,15 @@
 'use client';
 
 import styled from '@emotion/styled';
+import { IconHierarchy2 } from '@tabler/icons-react';
 
 const StyledLoader = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 80vh;
+  flex: 1;
+  min-height: 0;
   gap: 24px;
 `;
 
@@ -38,6 +40,7 @@ const StyledText = styled.p`
 export default function OrgChartLoading() {
   return (
     <StyledLoader>
+      <IconHierarchy2 size={48} stroke={1.5} style={{ color: '#737373' }} />
       <StyledSpinner />
       <StyledText>Loading org chart...</StyledText>
     </StyledLoader>

@@ -1,7 +1,7 @@
 import styled from '@emotion/styled';
 import { IconSearch } from '@tabler/icons-react';
 
-import type { OrgChartDiagramHandle } from './OrgChartDiagram';
+import type { OrgChartDiagramHandle } from './OrgChartDiagram.types';
 
 const StyledFiltersContainer = styled.div`
   margin-left: auto;

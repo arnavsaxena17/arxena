@@ -12,6 +12,7 @@ import { BillingCheckoutSessionInput } from 'src/engine/core-modules/billing/dto
 import { BillingProductInput } from 'src/engine/core-modules/billing/dtos/inputs/billing-product.input';
 import { BillingSessionInput } from 'src/engine/core-modules/billing/dtos/inputs/billing-session.input';
 import { CreateRazorpayOrderInput } from 'src/engine/core-modules/billing/dtos/inputs/create-razorpay-order.input';
+import { RequestInvoiceForCreditsInput } from 'src/engine/core-modules/billing/dtos/inputs/request-invoice-for-credits.input';
 import { BillingPlanOutput } from 'src/engine/core-modules/billing/dtos/outputs/billing-plan.output';
 import { BillingProductPricesOutput } from 'src/engine/core-modules/billing/dtos/outputs/billing-product-prices.output';
 import {
@@ -23,6 +24,7 @@ import { BillingUpdateOutput } from 'src/engine/core-modules/billing/dtos/output
 import { CreditPackOutput } from 'src/engine/core-modules/billing/dtos/outputs/credit-pack.output';
 import { EngagementPlanOutput } from 'src/engine/core-modules/billing/dtos/outputs/engagement-plan.output';
 import { RazorpayOrderOutput } from 'src/engine/core-modules/billing/dtos/outputs/razorpay-order.output';
+import { RequestInvoiceForCreditsOutput } from 'src/engine/core-modules/billing/dtos/outputs/request-invoice-for-credits.output';
 import { WorkspaceCreditsOutput } from 'src/engine/core-modules/billing/dtos/outputs/workspace-credits.output';
 import { BillingPrice } from 'src/engine/core-modules/billing/entities/billing-price.entity';
 import { WorkspaceCredits } from 'src/engine/core-modules/billing/entities/workspace-credits.entity';
@@ -35,6 +37,7 @@ import { RazorpayPlanService } from 'src/engine/core-modules/billing/razorpay/se
 import { BillingPlanService } from 'src/engine/core-modules/billing/services/billing-plan.service';
 import { BillingPortalWorkspaceService } from 'src/engine/core-modules/billing/services/billing-portal.workspace-service';
 import { BillingSubscriptionService } from 'src/engine/core-modules/billing/services/billing-subscription.service';
+import { InvoiceRequestService } from 'src/engine/core-modules/billing/services/invoice-request.service';
 import { StripePriceService } from 'src/engine/core-modules/billing/stripe/services/stripe-price.service';
 import { BillingPortalCheckoutSessionParameters } from 'src/engine/core-modules/billing/types/billing-portal-checkout-session-parameters.type';
 import { formatBillingDatabaseProductToGraphqlDTO } from 'src/engine/core-modules/billing/utils/format-database-product-to-graphql-dto.util';
@@ -62,6 +65,7 @@ export class BillingResolver {
     private readonly environmentService: EnvironmentService,
     private readonly razorpayPlanService: RazorpayPlanService,
     private readonly razorpayOrderService: RazorpayOrderService,
+    private readonly invoiceRequestService: InvoiceRequestService,
     @InjectRepository(BillingPrice, 'core')
     private readonly billingPriceRepository: Repository<BillingPrice>,
     @InjectRepository(WorkspaceCredits, 'core')
@@ -283,5 +287,25 @@ export class BillingResolver {
       currency: result.currency,
       keyId: result.keyId,
     };
+  }
+
+  @Mutation(() => RequestInvoiceForCreditsOutput)
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  async requestInvoiceForCredits(
+    @AuthWorkspace() workspace: Workspace,
+    @AuthUser() user: User,
+    @Args('input', { type: () => RequestInvoiceForCreditsInput })
+    input: RequestInvoiceForCreditsInput,
+  ): Promise<RequestInvoiceForCreditsOutput> {
+    await this.invoiceRequestService.requestInvoice({
+      workspaceId: workspace.id,
+      userEmail: user.email,
+      creditPackKey: input.creditPackKey,
+      companyName: input.companyName,
+      billingAddress: input.billingAddress,
+      billingEmail: input.billingEmail,
+      vatNumber: input.vatNumber,
+    });
+    return { success: true };
   }
 }

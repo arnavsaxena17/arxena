@@ -16,12 +16,14 @@ type OrgChartCompanySearchWrapperProps = {
   }) => void;
   placeholder?: string;
   disabled?: boolean;
+  startIcon?: React.ReactNode;
 };
 
 export const OrgChartCompanySearchWrapper = ({
   onCompanySelect,
   placeholder = 'Search company for org charts...',
   disabled = false,
+  startIcon,
 }: OrgChartCompanySearchWrapperProps) => {
   const tokenPair = useRecoilValue(tokenPairState);
   const accessToken = tokenPair?.accessToken?.token ?? undefined;
@@ -34,6 +36,7 @@ export const OrgChartCompanySearchWrapper = ({
       disabled={disabled}
       baseUrl={baseUrl}
       accessToken={accessToken}
+      startIcon={startIcon}
     />
   );
 };

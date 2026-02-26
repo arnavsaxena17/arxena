@@ -1,31 +1,53 @@
 'use client';
 
-import { IconWorld } from '@tabler/icons-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { ThemeProvider } from '@emotion/react';
 import styled from '@emotion/styled';
 
+import { OrgChartCompanyInfo } from '@/app/_components/orgchart/OrgChartCompanyInfo';
 import { companySearchLightTheme } from '@/lib/company-search';
+import type { OrgChartDiagramHandle } from 'twenty-orgchart/orgchart-core';
 import {
-  OrgChartDiagram,
-  OrgChartDiagramHandle,
   OrgChartFilters,
   OrgChartSearchControls,
   OrgChartSignUpModal,
+  useCompanyInfoLookup,
   useOrgChartFilterOptions,
-} from 'twenty-orgchart';
+} from 'twenty-orgchart/orgchart-core';
 import type { OrgChartNodeData } from 'twenty-shared';
 
+const OrgChartDiagram = dynamic(
+  () => import('twenty-orgchart').then((mod) => mod.OrgChartDiagram),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        style={{
+          width: '100%',
+          minHeight: 400,
+          background: '#f5f5f5',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      />
+    ),
+  },
+);
+
 type OrgChartPageClientProps = {
+  children?: React.ReactNode;
   companyId: string;
   companyName: string;
   website?: string;
   locationName?: string;
   industry?: string;
   profileCount?: number;
+  linkedinUrl?: string;
   nodeDataArray: OrgChartNodeData[];
   orgData: Record<string, unknown> | null;
   initialCountry?: string;
@@ -37,10 +59,14 @@ const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
   flex: 1;
-  // min-height: 80vh;
+  min-height: 0;
   width: 100%;
   align-self: stretch;
   background: ${({ theme }) => theme.background.primary};
+`;
+
+const StyledStructureWrapper = styled.div<{ $hidden: boolean }>`
+  ${({ $hidden }) => $hidden && 'display: none;'}
 `;
 
 const StyledHeader = styled.header`
@@ -53,112 +79,11 @@ const StyledHeader = styled.header`
   flex-wrap: wrap;
 `;
 
-const StyledCompanyInfo = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(0.5)};
-  min-width: 0;
-`;
-
-const StyledCompanyTitleRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(1.5)};
-  min-width: 0;
-`;
-
-const StyledCompanyLogo = styled.img`
-  width: 32px;
-  height: 32px;
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  object-fit: contain;
-  background: ${({ theme }) => theme.background.tertiary};
-  flex-shrink: 0;
-`;
-
-const StyledCompanyTitle = styled.h1`
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: ${({ theme }) => theme.font.color.primary};
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
-`;
-
-const StyledCompanyMetaRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.tertiary};
-`;
-
-const StyledMetaItem = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(0.5)};
-
-  &:not(:last-child)::after {
-    content: '·';
-    margin-left: ${({ theme }) => theme.spacing(1)};
-  }
-`;
-
-const StyledLinkIcon = styled.a`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  color: ${({ theme }) => theme.font.color.primary};
-  background: ${({ theme }) => theme.background.primary};
-  cursor: pointer;
-  text-decoration: none;
-
-  &:hover {
-    background: ${({ theme }) => theme.background.transparent.light};
-  }
-`;
-
-const _StyledLinkedinLink = styled.a`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(0.5)};
-  padding: ${({ theme }) => theme.spacing(0.5)}
-    ${({ theme }) => theme.spacing(1)};
-  border-radius: 999px;
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  text-decoration: none;
-
-  &:hover {
-    background: ${({ theme }) => theme.background.transparent.light};
-  }
-`;
-
-const _StyledLinkedinLogo = styled.img`
-  width: 16px;
-  height: 16px;
-  display: block;
-`;
-
-const _StyledLinkedinText = styled.span`
-  max-width: 160px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`;
-
 const StyledDiagramArea = styled.div`
   flex: 1;
   position: relative;
-  min-height: 500px;
+  min-height: 0;
+  overflow: hidden;
   background: ${({ theme }) => theme.background.secondary};
 `;
 
@@ -237,31 +162,15 @@ const StyledUnlockButton = styled(Link)`
   }
 `;
 
-function getLogoUrl(website?: string): string | null {
-  if (!website?.trim()) return null;
-  return `/api/org-chart/company-logo?website=${encodeURIComponent(website)}`;
-}
-
-function getDisplayDomain(website?: string): string | null {
-  if (!website?.trim()) return null;
-  try {
-    const withProtocol = website.startsWith('http')
-      ? website
-      : `https://${website}`;
-    const { hostname } = new URL(withProtocol);
-    return hostname.replace(/^www\./u, '');
-  } catch {
-    return website;
-  }
-}
-
 export const OrgChartPageClient = ({
+  children,
   companyId,
   companyName,
   website,
   locationName,
   industry,
   profileCount,
+  linkedinUrl,
   nodeDataArray,
   orgData,
   initialCountry,
@@ -269,7 +178,14 @@ export const OrgChartPageClient = ({
   signUpUrl,
 }: OrgChartPageClientProps) => {
   const router = useRouter();
-  const diagramRef = useRef<OrgChartDiagramHandle | null>(null);
+  const diagramHandleRef = useRef<OrgChartDiagramHandle | null>(null);
+
+  const handleDiagramReady = useCallback((handle: OrgChartDiagramHandle) => {
+    diagramHandleRef.current = handle;
+    setIsDiagramVisible(true);
+  }, []);
+
+  const [isDiagramVisible, setIsDiagramVisible] = useState(false);
 
   const [selectedCountry, setSelectedCountry] = useState<string | undefined>(
     initialCountry,
@@ -291,6 +207,29 @@ export const OrgChartPageClient = ({
     countryPercentLabels,
     functionRootPercentLabels,
   } = useOrgChartFilterOptions(orgData);
+
+  const { company: fallbackCompanyInfo, lookupByName } = useCompanyInfoLookup({
+    baseUrl: '/api/org-chart',
+    accessToken: undefined,
+    autocompletePath: '/autocomplete',
+  });
+
+  // Always call PDL autocomplete to enrich with employee count, website, LinkedIn, etc.
+  // even when we have partial data from the org chart API (e.g. industry, location).
+  useEffect(() => {
+    const lookupKey = companyName?.trim() || companyId;
+    if (lookupKey) {
+      lookupByName(lookupKey);
+    }
+  }, [lookupByName, companyName, companyId]);
+
+  const displayWebsite = website ?? fallbackCompanyInfo?.website;
+  const displayLocationName =
+    locationName ?? fallbackCompanyInfo?.locationName;
+  const displayIndustry = industry ?? fallbackCompanyInfo?.industry;
+  const displayProfileCount = profileCount ?? fallbackCompanyInfo?.profileCount;
+  const displayLinkedinUrl = linkedinUrl ?? fallbackCompanyInfo?.linkedinUrl;
+  const displayEmployeeCount = fallbackCompanyInfo?.employeeCount;
 
   const buildPath = useCallback(
     (country?: string, fn?: string) => {
@@ -323,12 +262,12 @@ export const OrgChartPageClient = ({
   );
 
   const handleSearch = useCallback(() => {
-    const count = diagramRef.current?.search(searchTerm) ?? 0;
+    const count = diagramHandleRef.current?.search(searchTerm) ?? 0;
     setSearchResultCount(count);
   }, [searchTerm]);
 
   const handleClearSearch = useCallback(() => {
-    diagramRef.current?.clearSearch();
+    diagramHandleRef.current?.clearSearch();
     setSearchResultCount(null);
   }, []);
 
@@ -340,8 +279,6 @@ export const OrgChartPageClient = ({
     setClickedNode(null);
   }, []);
 
-  const logoUrl = getLogoUrl(website);
-  const websiteDomain = getDisplayDomain(website);
   const hasFilters = !!orgData;
 
   const filtersProps = {
@@ -361,59 +298,37 @@ export const OrgChartPageClient = ({
     searchResultCount,
     onSearch: handleSearch,
     onClearSearch: handleClearSearch,
-    diagramHandleRef: diagramRef,
+    diagramHandleRef: diagramHandleRef,
     onGetAll: () => {},
     onGetLeaders: () => {},
     onViewAllCandidates: () => {},
   };
 
   return (
-    <ThemeProvider theme={companySearchLightTheme}>
-      <StyledContainer>
+    <div
+      style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        height: '100%',
+        width: '100%',
+        overflow: 'hidden',
+      }}
+    >
+      <ThemeProvider theme={companySearchLightTheme}>
+        <StyledContainer>
         <StyledHeader>
-          <StyledCompanyInfo>
-            {companyName && (
-              <StyledCompanyTitleRow>
-                {logoUrl && (
-                  <StyledCompanyLogo src={logoUrl} alt="" loading="lazy" />
-                )}
-                <StyledCompanyTitle>{companyName}</StyledCompanyTitle>
-                {website ? (
-                  <StyledLinkIcon
-                    href={
-                      website.startsWith('http')
-                        ? website
-                        : `https://${website}`
-                    }
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label="Open company website"
-                  >
-                    <IconWorld size={14} />
-                  </StyledLinkIcon>
-                ) : null}
-              </StyledCompanyTitleRow>
-            )}
-            {(locationName ||
-              industry ||
-              websiteDomain ||
-              typeof profileCount === 'number') && (
-              <StyledCompanyMetaRow>
-                {locationName && (
-                  <StyledMetaItem>{locationName}</StyledMetaItem>
-                )}
-                {industry && <StyledMetaItem>{industry}</StyledMetaItem>}
-                {websiteDomain && (
-                  <StyledMetaItem>{websiteDomain}</StyledMetaItem>
-                )}
-                {typeof profileCount === 'number' && (
-                  <StyledMetaItem>
-                    {profileCount.toLocaleString()} profiles
-                  </StyledMetaItem>
-                )}
-              </StyledCompanyMetaRow>
-            )}
-          </StyledCompanyInfo>
+          <OrgChartCompanyInfo
+            companyName={companyName}
+            website={displayWebsite}
+            locationName={displayLocationName}
+            industry={displayIndustry}
+            profileCount={displayProfileCount}
+            linkedinUrl={displayLinkedinUrl}
+            employeeCount={displayEmployeeCount}
+            logoBaseUrl="/api/org-chart"
+          />
           {hasFilters && <OrgChartFilters {...filtersProps} />}
         </StyledHeader>
 
@@ -421,7 +336,7 @@ export const OrgChartPageClient = ({
           {nodeDataArray.length > 0 && (
             <>
               <OrgChartDiagram
-                ref={diagramRef}
+                onDiagramReady={handleDiagramReady}
                 nodeDataArray={nodeDataArray}
                 onNodeClick={handleNodeClick}
                 iconUrls={{
@@ -434,13 +349,13 @@ export const OrgChartPageClient = ({
               <StyledTopRightActionsOverlay>
                 <StyledTopRightActionButton
                   type="button"
-                  onClick={() => diagramRef.current?.zoomToFit()}
+                  onClick={() => diagramHandleRef.current?.zoomToFit()}
                 >
                   Zoom to fit
                 </StyledTopRightActionButton>
                 <StyledTopRightActionButton
                   type="button"
-                  onClick={() => diagramRef.current?.centerContent()}
+                  onClick={() => diagramHandleRef.current?.centerContent()}
                 >
                   Center
                 </StyledTopRightActionButton>
@@ -455,6 +370,9 @@ export const OrgChartPageClient = ({
               node={clickedNode}
               onClose={handleCloseSignUpModal}
               signUpUrl={signUpUrl}
+              companyName={companyName}
+              selectedCountry={selectedCountry}
+              selectedFunctionRoot={selectedFunctionRoot}
             />
           )}
         </StyledDiagramArea>
@@ -469,7 +387,16 @@ export const OrgChartPageClient = ({
             Continue with LinkedIn / Google / Email
           </StyledUnlockButton>
         </StyledUnlockBanner> */}
+        {children && (
+          <StyledStructureWrapper
+            $hidden={isDiagramVisible}
+            aria-hidden={isDiagramVisible}
+          >
+            {children}
+          </StyledStructureWrapper>
+        )}
       </StyledContainer>
-    </ThemeProvider>
+      </ThemeProvider>
+    </div>
   );
 };

@@ -1,21 +1,22 @@
 import {
-    AppRouterProviders,
-    MinimalProviders,
+  AppRouterProviders,
+  MinimalProviders,
 } from '@/app/components/AppRouterProviders';
 import { SettingsRoutes } from '@/app/components/SettingsRoutes';
 
 import { VerifyEffect } from '@/auth/components/VerifyEffect';
 import { VerifyEmailEffect } from '@/auth/components/VerifyEmailEffect';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import { AppPath } from '@/types/AppPath';
 import { BlankLayout } from '@/ui/layout/page/components/BlankLayout';
 import { DefaultLayout } from '@/ui/layout/page/components/DefaultLayout';
 import {
-    Route,
-    createBrowserRouter,
-    createRoutesFromElements,
-    useLocation,
-    useNavigate,
-    useParams,
+  Route,
+  createBrowserRouter,
+  createRoutesFromElements,
+  useLocation,
+  useNavigate,
+  useParams,
 } from 'react-router-dom';
 import { Authorize } from '~/pages/auth/Authorize';
 import { PasswordReset } from '~/pages/auth/PasswordReset';
@@ -49,6 +50,7 @@ import { useUnipile } from '@/unipile/contexts/UnipileContext';
 import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import React from 'react';
+import { useRecoilValue } from 'recoil';
 import { IconDatabase } from 'twenty-ui';
 
 const ArxOrgChart = React.lazy(() =>
@@ -104,6 +106,8 @@ const OrgChartRoute = () => {
     };
   };
 
+  const tokenPair = useRecoilValue(tokenPairState);
+  const hasToken = Boolean(tokenPair?.accessToken?.token);
   const { isBaileysLoggedIn } = useBaileysConnection();
   const { isLinkedinConnected, isWhatsappUnipileConnected } = useUnipile();
   const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileConnected;
@@ -146,7 +150,7 @@ const OrgChartRoute = () => {
         onAddJob={handleAddJob}
         onOrgCharts={() => navigate(`/${AppPath.OrgChart}`)}
         onCompanySelect={handleCompanySelect}
-        hasToken={false}
+        hasToken={!!hasToken}
         isExtensionInstalled={false}
         onDownloadClick={handleDownloadClick}
         hasInsufficientCredits={false}

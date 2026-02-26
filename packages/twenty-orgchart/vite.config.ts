@@ -25,6 +25,7 @@ export default defineConfig({
       entry: {
         index: 'src/index.ts',
         'company-search': 'src/company-search.ts',
+        'orgchart-core': 'src/orgchart-core.ts',
       },
       formats: ['es', 'cjs'],
     },

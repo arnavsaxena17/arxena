@@ -35,7 +35,7 @@ export type OrgChartNodeData = {
   [key: string]: unknown;
 };
 
-const isMaskedName = (name: string | null | undefined): boolean => {
+export const isMaskedName = (name: string | null | undefined): boolean => {
   if (!name) return true;
 
   const normalized = name.replace(/\s+/g, '').toLowerCase();

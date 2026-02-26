@@ -1,0 +1,205 @@
+'use client';
+
+import styled from '@emotion/styled';
+import { IconBrandLinkedin, IconHierarchy2, IconWorld } from '@tabler/icons-react';
+
+const StyledCompanyInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(0.5)};
+  min-width: 0;
+`;
+
+const StyledCompanyTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1.5)};
+  min-width: 0;
+`;
+
+const StyledCompanyLogo = styled.img`
+  width: 32px;
+  height: 32px;
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  object-fit: contain;
+  background: ${({ theme }) => theme.background.tertiary};
+  flex-shrink: 0;
+`;
+
+const StyledCompanyLogoPlaceholder = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  background: ${({ theme }) => theme.background.tertiary};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  flex-shrink: 0;
+`;
+
+const StyledCompanyTitle = styled.h1`
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.font.color.primary};
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+`;
+
+const StyledCompanyMetaRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.tertiary};
+`;
+
+const StyledMetaItem = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(0.5)};
+
+  &:not(:last-child)::after {
+    content: '·';
+    margin-left: ${({ theme }) => theme.spacing(1)};
+  }
+`;
+
+const StyledLinkIcon = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  color: ${({ theme }) => theme.font.color.primary};
+  background: ${({ theme }) => theme.background.primary};
+  cursor: pointer;
+  text-decoration: none;
+
+  &:hover {
+    background: ${({ theme }) => theme.background.transparent.light};
+  }
+`;
+
+export type OrgChartCompanyInfoProps = {
+  companyName?: string;
+  website?: string;
+  locationName?: string;
+  industry?: string;
+  profileCount?: number;
+  linkedinUrl?: string;
+  employeeCount?: number;
+  logoBaseUrl?: string;
+};
+
+function getLogoUrl(website?: string, logoBaseUrl?: string): string | null {
+  if (!website?.trim()) return null;
+  const base = logoBaseUrl ?? '/api/org-chart';
+  return `${base.replace(/\/$/, '')}/company-logo?website=${encodeURIComponent(website)}`;
+}
+
+function getDisplayDomain(website?: string): string | null {
+  if (!website?.trim()) return null;
+  try {
+    const withProtocol = website.startsWith('http')
+      ? website
+      : `https://${website}`;
+    const { hostname } = new URL(withProtocol);
+    return hostname.replace(/^www\./u, '');
+  } catch {
+    return website;
+  }
+}
+
+export const OrgChartCompanyInfo = ({
+  companyName,
+  website,
+  locationName,
+  industry,
+  profileCount,
+  linkedinUrl,
+  employeeCount,
+  logoBaseUrl = '/api/org-chart',
+}: OrgChartCompanyInfoProps) => {
+  const logoUrl = getLogoUrl(website, logoBaseUrl);
+  const websiteDomain = getDisplayDomain(website);
+
+  const hasInfo =
+    companyName ||
+    website ||
+    locationName ||
+    industry ||
+    typeof profileCount === 'number' ||
+    typeof employeeCount === 'number';
+
+  if (!hasInfo) return null;
+
+  return (
+    <StyledCompanyInfo>
+      {companyName && (
+        <StyledCompanyTitleRow>
+          {logoUrl ? (
+            <StyledCompanyLogo src={logoUrl} alt="" loading="lazy" />
+          ) : (
+            <StyledCompanyLogoPlaceholder>
+              <IconHierarchy2 size={20} />
+            </StyledCompanyLogoPlaceholder>
+          )}
+          <StyledCompanyTitle>{companyName}</StyledCompanyTitle>
+          {website ? (
+            <StyledLinkIcon
+              href={
+                website.startsWith('http') ? website : `https://${website}`
+              }
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Open company website"
+            >
+              <IconWorld size={14} />
+            </StyledLinkIcon>
+          ) : null}
+          {linkedinUrl ? (
+            <StyledLinkIcon
+              href={linkedinUrl}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Open company LinkedIn"
+            >
+              <IconBrandLinkedin size={14} />
+            </StyledLinkIcon>
+          ) : null}
+        </StyledCompanyTitleRow>
+      )}
+      {(locationName ||
+        industry ||
+        websiteDomain ||
+        typeof profileCount === 'number' ||
+        typeof employeeCount === 'number') && (
+        <StyledCompanyMetaRow>
+          {locationName && (
+            <StyledMetaItem>{locationName}</StyledMetaItem>
+          )}
+          {industry && <StyledMetaItem>{industry}</StyledMetaItem>}
+          {websiteDomain && (
+            <StyledMetaItem>{websiteDomain}</StyledMetaItem>
+          )}
+          {typeof profileCount === 'number' && (
+            <StyledMetaItem>
+              {profileCount.toLocaleString()} profiles
+            </StyledMetaItem>
+          )}
+          {typeof employeeCount === 'number' && (
+            <StyledMetaItem>
+              {employeeCount.toLocaleString()} employees
+            </StyledMetaItem>
+          )}
+        </StyledCompanyMetaRow>
+      )}
+    </StyledCompanyInfo>
+  );
+};

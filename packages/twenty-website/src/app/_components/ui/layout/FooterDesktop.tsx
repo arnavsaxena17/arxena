@@ -9,7 +9,6 @@ import {
   XIcon,
 } from '../icons/SvgIcons';
 
-import { Logo } from './Logo';
 
 const FooterContainer = styled.div`
   padding: 64px 96px 64px 96px;
@@ -75,46 +74,21 @@ const SocialLinks = styled.div`
 export const FooterDesktop = () => {
   return (
     <FooterContainer>
-      <div
-        style={{
-          width: '100%',
-          margin: '0 auto',
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-        }}
-      >
-        <LeftSideFooter>
-          <Logo variant="footer" />
-          <div>Org Charts for the modern team</div>
-        </LeftSideFooter>
-        <RightSideFooter>
-          <RightSideFooterColumn>
-            <RightSideFooterColumnTitle>Company</RightSideFooterColumnTitle>
-            <RightSideFooterLink href="/pricing">Pricing</RightSideFooterLink>
-            <RightSideFooterLink href="/story">Story</RightSideFooterLink>
-          </RightSideFooterColumn>
-          <RightSideFooterColumn>
-            <RightSideFooterColumnTitle>Resources</RightSideFooterColumnTitle>
-            <RightSideFooterLink href="/user-guide">
-              User Guide
-            </RightSideFooterLink>
-            <RightSideFooterLink href="/developers">
-              Developers
-            </RightSideFooterLink>
-            <RightSideFooterLink href="/releases">Releases</RightSideFooterLink>
-          </RightSideFooterColumn>
-          <RightSideFooterColumn>
-            <RightSideFooterColumnTitle>Legal</RightSideFooterColumnTitle>
-            <RightSideFooterLink href="/legal/terms">
-              Terms of Service
-            </RightSideFooterLink>
-            <RightSideFooterLink href="/legal/privacy">
-              Privacy Policy
-            </RightSideFooterLink>
-          </RightSideFooterColumn>
-        </RightSideFooter>
-      </div>
+      <RightSideFooter>
+        <RightSideFooterColumn>
+          <RightSideFooterColumnTitle>Product</RightSideFooterColumnTitle>
+          <RightSideFooterLink href="/pricing">Pricing</RightSideFooterLink>
+        </RightSideFooterColumn>
+        <RightSideFooterColumn>
+          <RightSideFooterColumnTitle>Company</RightSideFooterColumnTitle>
+          <RightSideFooterLink href="/story">Story</RightSideFooterLink>
+        </RightSideFooterColumn>
+        <RightSideFooterColumn>
+          <RightSideFooterColumnTitle>Legal</RightSideFooterColumnTitle>
+          <RightSideFooterLink href="/legal/terms">Terms of Service</RightSideFooterLink>
+          <RightSideFooterLink href="/legal/privacy">Privacy Policy</RightSideFooterLink>
+        </RightSideFooterColumn>
+      </RightSideFooter>
       <div
         style={{
           width: '100%',
@@ -128,14 +102,14 @@ export const FooterDesktop = () => {
       >
         <div>
           <span style={{ fontFamily: 'Inter, sans-serif' }}>©</span>
-          {new Date().getFullYear()} Arxena
+          {new Date().getFullYear()} Arxena Inc
         </div>
         <SocialLinks>
-          <a href="https://x.com/arxena" target="_blank" rel="noreferrer">
+          <a href="https://x.com/arxenainc" target="_blank" rel="noreferrer">
             <XIcon size="M" />
           </a>
           <a
-            href="https://github.com/arxena/arxena"
+            href="https://github.com/arxenainc"
             target="_blank"
             rel="noreferrer"
           >
@@ -149,7 +123,7 @@ export const FooterDesktop = () => {
             <LinkedInIcon size="M" />
           </a>
           <a
-            href="https://discord.gg/AwykNdHJ8B"
+            href="https://discord.gg/xBmrg5kJ9p"
             target="_blank"
             rel="noreferrer"
           >

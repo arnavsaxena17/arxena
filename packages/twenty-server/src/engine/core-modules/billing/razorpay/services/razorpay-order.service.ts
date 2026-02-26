@@ -3,8 +3,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import {
-    RAZORPAY_CREDIT_PACKS,
-    type CreditPackKey,
+  RAZORPAY_CREDIT_PACKS,
+  type CreditPackKey,
 } from 'src/engine/core-modules/billing/razorpay/constants/credit-packs.constant';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 
@@ -12,6 +12,8 @@ type OrderNotes = {
   workspaceId?: string;
   creditPackKey?: string;
 };
+
+const CREDIT_CARD_SURCHARGE_RATE = 0.03;
 
 export type CreateOrderForCreditsResult = {
   orderId: string;
@@ -42,6 +44,9 @@ export class RazorpayOrderService {
       throw new Error('Razorpay credentials not configured');
     }
     const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+    const amountWithSurcharge = Math.round(
+      pack.amountSubunits * (1 + CREDIT_CARD_SURCHARGE_RATE),
+    );
     const res = await fetch('https://api.razorpay.com/v1/orders', {
       method: 'POST',
       headers: {
@@ -49,7 +54,7 @@ export class RazorpayOrderService {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        amount: pack.amountSubunits,
+        amount: amountWithSurcharge,
         currency: pack.currency,
         notes: {
           workspaceId,

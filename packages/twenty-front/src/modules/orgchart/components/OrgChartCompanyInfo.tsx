@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { IconWorld } from '@tabler/icons-react';
+import { IconHierarchy2, IconWorld } from '@tabler/icons-react';
 
 const LINKEDIN_ICON_URL = '/img/linkedin.svg';
 
@@ -23,6 +23,18 @@ const StyledCompanyLogo = styled.img`
   border-radius: ${({ theme }) => theme.border.radius.md};
   object-fit: contain;
   background: ${({ theme }) => theme.background.tertiary};
+  flex-shrink: 0;
+`;
+
+const StyledCompanyLogoPlaceholder = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  background: ${({ theme }) => theme.background.tertiary};
+  color: ${({ theme }) => theme.font.color.tertiary};
   flex-shrink: 0;
 `;
 
@@ -163,12 +175,12 @@ export const OrgChartCompanyInfo = ({
     <StyledCompanyInfo>
       {companyName && (
         <StyledCompanyTitleRow>
-          {logoUrl && (
-            <StyledCompanyLogo
-              src={logoUrl}
-              alt=""
-              loading="lazy"
-            />
+          {logoUrl ? (
+            <StyledCompanyLogo src={logoUrl} alt="" loading="lazy" />
+          ) : (
+            <StyledCompanyLogoPlaceholder>
+              <IconHierarchy2 size={20} />
+            </StyledCompanyLogoPlaceholder>
           )}
           <StyledCompanyTitle>{companyName}</StyledCompanyTitle>
           {linkedinUrl ? (
