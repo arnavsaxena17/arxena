@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
 import { IBM_Plex_Mono } from 'next/font/google';
+import { useState } from 'react';
 
-import { ExternalArrow, GithubIcon } from '@/app/_components/ui/icons/SvgIcons';
+import { GithubIcon } from '@/app/_components/ui/icons/SvgIcons';
 import { CallToAction } from '@/app/_components/ui/layout/header/callToAction';
 import {
   HamburgerContainer,
@@ -15,10 +15,9 @@ import {
   MobileLinkList,
   MobileMenu,
   MobileNav,
-  NavOpen,
+  NavOpen
 } from '@/app/_components/ui/layout/header/styled';
 import { Logo } from '@/app/_components/ui/layout/Logo';
-import { formatNumberOfStars } from '@/shared-utils/formatNumberOfStars';
 
 const IBMPlexMono = IBM_Plex_Mono({
   weight: '500',
@@ -69,7 +68,6 @@ export const HeaderMobile = ({ numberOfStars }: Props) => {
           <ListItem href="/developers">Developers</ListItem>
           <ListItem href="https://github.com/twentyhq/twenty">
             <GithubIcon color="rgb(71,71,71)" />{' '}
-            {formatNumberOfStars(numberOfStars)} <ExternalArrow />
           </ListItem>
         </MobileLinkList>
         <CallToAction />
