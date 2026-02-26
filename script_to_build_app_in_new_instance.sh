@@ -35,6 +35,11 @@
        	cd twenty
 	mv ~/.env_server ~/twenty/packages/twenty-server/.env
         mv ~/.env_front ~/twenty/packages/twenty-front/.env
+	if [ -f ~/.env_website ]; then
+	  mv ~/.env_website ~/twenty/packages/twenty-website/.env
+	else
+	  cp ~/twenty/packages/twenty-website/.env.example ~/twenty/packages/twenty-website/.env
+	fi
 
 	git checkout without-payment
       	# orgchart-test change branch if needed
@@ -89,4 +94,3 @@
 	echo "Building twenty-mcp-server package"
 	cd ~/twenty/packages/twenty-mcp-server/
 	npx nx run twenty-mcp-server:build || yarn build
-

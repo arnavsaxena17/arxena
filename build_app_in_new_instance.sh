@@ -37,6 +37,7 @@ echo $TEMP_DNS
 scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ~/script_to_build_app_in_new_instance.sh ubuntu@$TEMP_DNS:/home/ubuntu/
 scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ~/twenty/packages/twenty-front/.env ubuntu@$TEMP_DNS:/home/ubuntu/.env_front
 scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ~/twenty/packages/twenty-server/.env ubuntu@$TEMP_DNS:/home/ubuntu/.env_server
+scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ~/twenty/packages/twenty-website/.env ubuntu@$TEMP_DNS:/home/ubuntu/.env_website
 echo "Maybe finished copying pem files"
 # 2. Set up build environment (you'll need to SSH and do this manually or use a script)
 # 3. Build your project (SSH and run build commands)
