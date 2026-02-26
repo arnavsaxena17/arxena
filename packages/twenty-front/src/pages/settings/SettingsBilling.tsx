@@ -6,17 +6,15 @@ import { useRecoilValue, useSetRecoilState } from 'recoil';
 import {
   Button,
   H2Title,
-  IconCalendarEvent,
   IconCheck,
   IconCircleX,
   IconCreditCard,
   IconFileText,
-  Section,
+  Section
 } from 'twenty-ui';
 
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { InvoiceRequestModal } from '@/billing/components/InvoiceRequestModal';
-import { SettingsBillingCoverImage } from '@/billing/components/SettingsBillingCoverImage';
 import { billingState } from '@/client-config/states/billingState';
 import { useRedirect } from '@/domain-manager/hooks/useRedirect';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
@@ -83,14 +81,34 @@ type SwitchInfo = {
   impact: string;
 };
 
+const StyledBillingContent = styled.div`
+  max-width: 1200px;
+  width: 100%;
+`;
+
+const StyledBillingHeadline = styled.h1`
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 0 0 ${({ theme }) => theme.spacing(2)} 0;
+  color: ${({ theme }) => theme.font.color.primary};
+`;
+
+const StyledBillingSub = styled.p`
+  font-size: 15px;
+  color: ${({ theme }) => theme.font.color.tertiary};
+  margin: 0 0 ${({ theme }) => theme.spacing(6)} 0;
+  line-height: 1.5;
+`;
+
 const StyledCreditCardsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 24px;
   margin-top: 24px;
 
-  @media (max-width: 1024px) {
-    grid-template-columns: repeat(2, 1fr);
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   @media (max-width: 640px) {
@@ -99,6 +117,7 @@ const StyledCreditCardsGrid = styled.div`
 `;
 
 const StyledCreditCard = styled.div`
+  min-width: 0;
   background: ${({ theme }) => theme.background.primary};
   border: 1px solid ${({ theme }) => theme.border.color.medium};
   border-radius: 12px;
@@ -284,7 +303,7 @@ export const SettingsBilling = () => {
   const [isSwitchingIntervalModalOpen, setIsSwitchingIntervalModalOpen] =
     useState(false);
   const [updateBillingSubscription] = useUpdateBillingSubscriptionMutation();
-  const { data, loading } = useBillingPortalSessionQuery({
+  const { data } = useBillingPortalSessionQuery({
     variables: {
       returnUrlPath: '/settings/billing',
     },
@@ -511,8 +530,6 @@ export const SettingsBilling = () => {
     [requestInvoiceMutation, enqueueSnackBar, t],
   );
 
-  const billingPortalButtonDisabled =
-    loading || !isDefined(data) || !isDefined(data.billingPortalSession?.url);
   const openBillingPortal = () => {
     if (isDefined(data) && isDefined(data.billingPortalSession?.url)) {
       redirect(data.billingPortalSession.url);
@@ -560,35 +577,8 @@ export const SettingsBilling = () => {
         { children: <Trans>Billing</Trans> },
       ]}
     >
-      <SettingsPageContainer>
-        <SettingsBillingCoverImage />
-        <Section>
-          <H2Title
-            title={t`Manage your subscription`}
-            description={t`Edit payment method, see your invoices and more`}
-          />
-          {billingEnabled && (
-            <p style={{ marginBottom: 12 }}>
-              {t`Current plan:`}{' '}
-              {[
-                currentWorkspace?.currentBillingSubscription?.planName,
-                currentWorkspace?.currentBillingSubscription?.status ??
-                  t`No active subscription`,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-              {' · '}
-              {t`Credits:`} {subscribedCredits}
-            </p>
-          )}
-          <Button
-            Icon={IconCreditCard}
-            title={t`View billing details`}
-            variant="secondary"
-            onClick={openBillingPortal}
-            disabled={billingPortalButtonDisabled}
-          />
-        </Section>
+      <SettingsPageContainer fullWidth>
+        <StyledBillingContent>
         {engagementPlans.length > 0 && (
           <Section>
             <H2Title
@@ -685,16 +675,10 @@ export const SettingsBilling = () => {
         )}
         {creditPacks.length > 0 && (
           <Section>
-            <H2Title
-              title={t`Credit packs`}
-              description={t`Add org chart credits to your workspace`}
-            />
-            <p style={{ marginTop: 8, marginBottom: 8, fontSize: 13, color: 'var(--color-gray-60)' }}>
-              {t`1 credit = 1 org chart (<100 employees). Larger org charts consume more (e.g. 300 employees = 3 credits).`}
-            </p>
-            <p style={{ marginBottom: 24, fontSize: 13, color: 'var(--color-gray-60)' }}>
-              {t`Credit card: +3% surcharge. Pay by invoice: no surcharge.`}
-            </p>
+            {/* <StyledBillingHeadline>{t`Billing`}</StyledBillingHeadline> */}
+            <StyledBillingSub>
+              {t`Add org chart credits to your workspace. 1 credit = 1 org chart (<100 employees). Larger org charts consume more (e.g. 300 employees = 3 credits). Credit card: +3% surcharge. Pay by invoice: no surcharge.`}
+            </StyledBillingSub>
             <StyledCreditCardsGrid>
               {creditPacks.map((pack) => {
                 const baseAmount = pack.amountSubunits / 100;
@@ -760,9 +744,21 @@ export const SettingsBilling = () => {
             </StyledCreditCardsGrid>
           </Section>
         )}
+        {/* TODO: Add back in when we have a way to switch billing interval */}
+        <>
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        </>
         {!isRazorpay && (
           <>
-            <Section>
+            {/* <Section>
               <H2Title
                 title={t`Edit billing interval`}
                 description={t`Switch ${from}`}
@@ -774,7 +770,7 @@ export const SettingsBilling = () => {
                 onClick={openSwitchingIntervalModal}
                 disabled={!hasNotCanceledCurrentSubscription}
               />
-            </Section>
+            </Section> */}
             <Section>
               <H2Title
                 title={t`Cancel your subscription`}
@@ -791,6 +787,7 @@ export const SettingsBilling = () => {
             </Section>
           </>
         )}
+        </StyledBillingContent>
       </SettingsPageContainer>
       <InvoiceRequestModal
         isOpen={invoicePackKey !== null}

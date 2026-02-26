@@ -7,13 +7,17 @@ import { isDefined } from 'twenty-shared';
 
 const StyledSettingsPageContainer = styled.div<{
   width?: number;
+  fullWidth?: boolean;
 }>`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(8)};
   overflow: auto;
   padding: ${({ theme }) => theme.spacing(6, 8, 8)};
-  width: ${({ width }) => {
+  width: ${({ width, fullWidth }) => {
+    if (fullWidth) {
+      return '100%';
+    }
     if (isDefined(width)) {
       return width + 'px';
     }
@@ -27,13 +31,17 @@ const StyledSettingsPageContainer = styled.div<{
 
 export const SettingsPageContainer = ({
   children,
+  fullWidth,
 }: {
   children: ReactNode;
+  fullWidth?: boolean;
 }) => (
   <ScrollWrapper
     contextProviderName="settingsPageContainer"
     componentInstanceId={'scroll-wrapper-settings-page-container'}
   >
-    <StyledSettingsPageContainer>{children}</StyledSettingsPageContainer>
+    <StyledSettingsPageContainer fullWidth={fullWidth}>
+      {children}
+    </StyledSettingsPageContainer>
   </ScrollWrapper>
 );
