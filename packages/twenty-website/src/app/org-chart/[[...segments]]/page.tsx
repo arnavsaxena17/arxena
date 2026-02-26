@@ -15,19 +15,8 @@ type PageProps = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
-function getServerBaseUrl(): string {
-  const url =
-    process.env.SERVER_BASE_URL ??
-    process.env.NEXT_PUBLIC_SERVER_BASE_URL ??
-    '';
-  return url.replace(/\/$/, '');
-}
-
-async function getAppBaseUrl(): Promise<string> {
-  const envUrl =
-    process.env.NEXT_PUBLIC_APP_URL ??
-    process.env.APP_URL ??
-    process.env.VERCEL_URL;
+async function getBaseUrl(): Promise<string> {
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL;
   if (envUrl) {
     const base = envUrl.startsWith('http') ? envUrl : `https://${envUrl}`;
     return base.replace(/\/$/, '');
@@ -47,9 +36,7 @@ async function fetchOrgChart(
     functionRoot?: string;
   },
 ): Promise<Record<string, unknown> | null> {
-  const serverBaseUrl = getServerBaseUrl();
-  const appBaseUrl = await getAppBaseUrl();
-
+  const baseUrl = await getBaseUrl();
   const params = new URLSearchParams();
   if (options.companyName) params.set('companyName', options.companyName);
   if (options.website) params.set('website', options.website);
@@ -59,27 +46,17 @@ async function fetchOrgChart(
   const queryString = params.toString();
   const path =
     companyId.toLowerCase() === 'yuga_labs' ? `manual/${companyId}` : companyId;
+  const url = `${baseUrl}/api/org-chart/${path}${queryString ? `?${queryString}` : ''}`;
 
-  const urlsToTry = [
-    `${appBaseUrl}/api/org-chart/${path}${queryString ? `?${queryString}` : ''}`,
-    ...(serverBaseUrl
-      ? [
-          `${serverBaseUrl}/org-chart/${path}${queryString ? `?${queryString}` : ''}`,
-        ]
-      : []),
-  ];
-
-  for (const url of urlsToTry) {
-    try {
-      const res = await fetch(url, { cache: 'no-store' });
-      const json = (await res.json()) as {
-        status?: string;
-        result?: Record<string, unknown>;
-      };
-      if (json?.status === 'ok' && json.result) return json.result;
-    } catch {
-      // try next URL
-    }
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    const json = (await res.json()) as {
+      status?: string;
+      result?: Record<string, unknown>;
+    };
+    if (json?.status === 'ok' && json.result) return json.result;
+  } catch {
+    // fetch failed
   }
   return null;
 }
