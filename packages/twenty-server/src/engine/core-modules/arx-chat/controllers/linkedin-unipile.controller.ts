@@ -17,7 +17,9 @@ import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { LinkedinUnipileMessagingService } from '../services/linkedin-unipile/linkedin-unipile-messaging.service';
+import { UnipileAccountPoolService } from '../services/unipile-account-pool.service';
 import { UnipileWebhookService } from '../services/unipile-webhook.service';
+import { WorkspaceMemberProfileUnipileService } from '../services/workspace-member-profile-unipile.service';
 import type {
   CreateWebhookDto,
   UnipileAccountStatusWebhook,
@@ -104,6 +106,8 @@ export class LinkedinUnipileController {
     private readonly webhookService: UnipileWebhookService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly unipileAccountPoolService: UnipileAccountPoolService,
+    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
   ) {
     this.logger.log(`Unipile API URL: ${this.unipileApiUrl}`);
     this.logger.log(`Unipile Access Token configured: ${!!this.unipileAccessToken}`);
@@ -297,6 +301,78 @@ export class LinkedinUnipileController {
       this.logger.error('Failed to connect LinkedIn with cookie:', error);
       throw error;
     }
+  }
+
+  @Post('accounts/update-member')
+  async updateMemberLinkedinAccount(
+    @Body() body: { accountId: string },
+    @Req() request: { workspaceMemberId?: string; headers?: { authorization?: string } },
+  ) {
+    const workspaceMemberId = request.workspaceMemberId;
+    if (!workspaceMemberId) {
+      throw new HttpException(
+        'workspaceMemberId required (user auth only)',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    const authToken =
+      request.headers?.authorization?.replace(/^Bearer\s+/i, '') ?? '';
+    if (!authToken || !body?.accountId) {
+      throw new HttpException(
+        'Authorization header and accountId required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberUnipileAccountId(
+      workspaceMemberId,
+      authToken,
+      'linkedin',
+      body.accountId,
+    );
+    return { success: true };
+  }
+
+  @Post('org-chart/ensure-account')
+  async ensureAccountForOrgChart(
+    @Body() body: { success_redirect_url?: string; failure_redirect_url?: string },
+    @AuthWorkspace() workspace: Workspace,
+    @Req() request: { workspaceMemberId?: string; headers?: { authorization?: string } },
+  ) {
+    const workspaceMemberId = request.workspaceMemberId;
+    if (!workspaceMemberId) {
+      throw new HttpException(
+        'workspaceMemberId required (user auth only)',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    const authToken =
+      request.headers?.authorization?.replace(/^Bearer\s+/i, '') ?? '';
+    if (!authToken) {
+      throw new HttpException('Authorization header required', HttpStatus.UNAUTHORIZED);
+    }
+
+    const result = await this.unipileAccountPoolService.getOrCreateUnipileAccount(
+      workspaceMemberId,
+      workspace.id,
+      authToken,
+      'LINKEDIN',
+      {
+        successRedirectUrl: body.success_redirect_url,
+        failureRedirectUrl: body.failure_redirect_url,
+      },
+    );
+
+    if ('accountId' in result) {
+      return { accountId: result.accountId };
+    }
+    if ('redirectUrl' in result) {
+      return { redirectUrl: result.redirectUrl };
+    }
+    return {
+      status: 'pool_full',
+      slotsUsed: result.slotsUsed,
+      maxSlots: result.maxSlots,
+    };
   }
 
   @Post('hosted-auth')
@@ -781,6 +857,7 @@ export class LinkedinUnipileController {
           account_id: payload.account_id,
           account_type: 'LINKEDIN',
           message: payload.status,
+          name: payload.name,
         },
       };
 

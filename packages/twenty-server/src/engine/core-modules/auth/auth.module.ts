@@ -14,6 +14,7 @@ import { SSOAuthController } from 'src/engine/core-modules/auth/controllers/sso-
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { GoogleAPIsService } from 'src/engine/core-modules/auth/services/google-apis.service';
 import { MicrosoftAPIsService } from 'src/engine/core-modules/auth/services/microsoft-apis.service';
+import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 // import { OAuthService } from 'src/engine/core-modules/auth/services/oauth.service';
 import { ResetPasswordService } from 'src/engine/core-modules/auth/services/reset-password.service';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
@@ -58,6 +59,7 @@ import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
 
 @Module({
   imports: [
+    BillingModule,
     JwtModule,
     FileUploadModule,
     DataSourceModule,

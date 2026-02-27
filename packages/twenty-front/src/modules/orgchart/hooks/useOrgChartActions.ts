@@ -11,9 +11,9 @@ import type { NodeState, OrgChartNodeData } from 'twenty-shared';
 import type { OrgChartContextAction } from '../components/OrgChartDiagram';
 import type { ContextResultItem } from '../types';
 import {
-    buildBooleanKeywordsForNode,
-    exportContextResultsToCsv,
-    normalizeCandidateItem,
+  buildBooleanKeywordsForNode,
+  exportContextResultsToCsv,
+  normalizeCandidateItem,
 } from '../utils/orgChartUtils';
 
 type OrgchartSearchMode =
@@ -104,9 +104,37 @@ export const useOrgChartActions = ({
   );
   const [addToJobQueueStartChat, setAddToJobQueueStartChat] = useState(true);
 
+  const [isAddResultsToJobModalOpen, setIsAddResultsToJobModalOpen] =
+    useState(false);
+  const [addResultsToJobResults, setAddResultsToJobResults] = useState<
+    ContextResultItem[]
+  >([]);
+  const [addResultsToJobContext, setAddResultsToJobContext] = useState<{
+    companyName?: string;
+    contextModalMode?: string | null;
+  }>({});
+
   const closeAddToJobModal = useCallback(() => {
     setIsAddToJobModalOpen(false);
     setAddToJobNode(null);
+  }, []);
+
+  const openAddResultsToJobModal = useCallback(
+    (
+      results: ContextResultItem[],
+      context: { companyName?: string; contextModalMode?: string | null },
+    ) => {
+      setAddResultsToJobResults(results);
+      setAddResultsToJobContext(context);
+      setIsAddResultsToJobModalOpen(true);
+    },
+    [],
+  );
+
+  const closeAddResultsToJobModal = useCallback(() => {
+    setIsAddResultsToJobModalOpen(false);
+    setAddResultsToJobResults([]);
+    setAddResultsToJobContext({});
   }, []);
 
   useWebSocketEvent<OrgChartSearchProgressEvent>(
@@ -276,6 +304,39 @@ export const useOrgChartActions = ({
     };
 
     try {
+      // Ensure LinkedIn account is connected before org chart (LRU pool)
+      const currentUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}${window.location.search}`;
+      const ensureRes = await fetch(`${baseUrl}/linkedin-unipile/org-chart/ensure-account`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          success_redirect_url: currentUrl,
+          failure_redirect_url: currentUrl,
+        }),
+      });
+      if (!ensureRes.ok) {
+        throw new Error(`Ensure account failed with status ${ensureRes.status}`);
+      }
+      const ensureJson = (await ensureRes.json()) as
+        | { accountId?: string }
+        | { redirectUrl?: string }
+        | { status: 'pool_full'; slotsUsed: number; maxSlots: number };
+      if ('redirectUrl' in ensureJson && ensureJson.redirectUrl) {
+        window.location.href = ensureJson.redirectUrl;
+        return;
+      }
+      if ('status' in ensureJson && ensureJson.status === 'pool_full') {
+        enqueueSnackBar(
+          "Please try again in 5 mins. We're at capacity and should free up shortly.",
+          { variant: SnackBarVariant.Warning },
+        );
+        setIsContextLoading(false);
+        return;
+      }
+
       if (mode === 'entire_company') {
         enqueueSnackBar(
           `Fetching all employees and building org chart for ${resolvedCompanyName}...`,
@@ -428,8 +489,10 @@ export const useOrgChartActions = ({
       const nameKey = `name_${i}` as keyof OrgChartNodeData;
       const titleKey = `title_${i}` as keyof OrgChartNodeData;
       const linkedinKey = `linkedin_url_${i}` as keyof OrgChartNodeData;
+      const imageKey = `image_${i}` as keyof OrgChartNodeData;
       const name = n[nameKey];
       if (typeof name === 'string' && name.trim().length > 0) {
+        const image = n[imageKey];
         rows.push({
           id: `${i}`,
           fullName: name.trim(),
@@ -439,7 +502,10 @@ export const useOrgChartActions = ({
             typeof n[linkedinKey] === 'string'
               ? (n[linkedinKey] as string)
               : undefined,
-          raw: {},
+          raw:
+            typeof image === 'string'
+              ? { image, profile_picture_url: image }
+              : {},
         });
       }
     }
@@ -678,5 +744,11 @@ export const useOrgChartActions = ({
     addToJobNode,
     addToJobQueueStartChat,
     closeAddToJobModal,
+
+    isAddResultsToJobModalOpen,
+    addResultsToJobResults,
+    addResultsToJobContext,
+    openAddResultsToJobModal,
+    closeAddResultsToJobModal,
   };
 };

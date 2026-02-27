@@ -1,6 +1,7 @@
 import { Module, OnModuleInit } from '@nestjs/common';
 
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
+import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-storage.module';
 import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
@@ -21,6 +22,7 @@ import { RateLimiterService } from './services/rate-limiter.service';
 @Module({
   imports: [
     AuthModule,
+    BillingModule,
     CacheStorageModule,
     EnvironmentModule,
     JwtModule,

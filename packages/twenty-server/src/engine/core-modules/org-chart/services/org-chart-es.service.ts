@@ -164,5 +164,78 @@ export class OrgChartEsService {
       return null;
     }
   }
+
+  /**
+   * Get all (country, type) combinations that exist in ES for a company.
+   * Used by the sitemap to index all org chart URL variants.
+   */
+  async getIndexedUrlsForCompany(
+    companyId: string,
+  ): Promise<{ country: string; type: string }[]> {
+    if (!this.client) {
+      return [];
+    }
+
+    if (!companyId.trim()) {
+      this.logger.warn('Empty companyId provided to getIndexedUrlsForCompany');
+      return [];
+    }
+
+    const results: { country: string; type: string }[] = [];
+    let after: Record<string, string | number> | undefined;
+
+    try {
+      do {
+        const compositeAgg: Record<string, unknown> = {
+          size: 500,
+          sources: [
+            { country: { terms: { field: 'country' } } },
+            { type: { terms: { field: 'type' } } },
+          ],
+        };
+        if (after) {
+          compositeAgg.after = after;
+        }
+
+        const response = await this.client.search({
+          index: this.orgChartsIndex,
+          size: 0,
+          query: {
+            bool: {
+              must: [{ match: { job_company_id: companyId } }],
+            },
+          },
+          aggs: {
+            combos: {
+              composite: compositeAgg,
+            },
+          },
+        });
+
+        const agg = response.aggregations?.combos as
+          | { buckets?: Array<{ key: { country: string; type: string } }>; after?: Record<string, string | number> }
+          | undefined;
+        const buckets = agg?.buckets ?? [];
+        after = agg?.after;
+
+        for (const bucket of buckets) {
+          const country = bucket.key?.country ?? 'global';
+          const type = bucket.key?.type ?? 'fullcompany';
+          results.push({ country, type });
+        }
+      } while (after);
+
+      this.logger.log(
+        `getIndexedUrlsForCompany companyId=${companyId} found ${results.length} URL combinations`,
+      );
+      return results;
+    } catch (error) {
+      this.logger.error(
+        `Elasticsearch getIndexedUrlsForCompany failed for companyId=${companyId}`,
+        error as Error,
+      );
+      return [];
+    }
+  }
 }
 

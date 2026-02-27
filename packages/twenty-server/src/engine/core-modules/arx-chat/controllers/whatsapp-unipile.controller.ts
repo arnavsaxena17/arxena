@@ -19,6 +19,7 @@ import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorat
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { UnipileClient } from 'unipile-node-sdk';
 import { UnipileWebhookService } from '../services/unipile-webhook.service';
+import { WorkspaceMemberProfileUnipileService } from '../services/workspace-member-profile-unipile.service';
 import type {
   UnipileAccountStatusWebhook,
 } from '../types/unipile-webhook.types';
@@ -37,6 +38,7 @@ export class WhatsappUnipileController {
     private readonly webhookService: UnipileWebhookService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
   ) {
     this.logger.log(`Unipile API URL: ${this.unipileApiUrl}`);
     this.logger.log(`Unipile Access Token configured: ${!!this.unipileAccessToken}`);
@@ -100,6 +102,35 @@ export class WhatsappUnipileController {
       this.logger.error('Failed to make Unipile request:', error);
       throw new HttpException('Failed to communicate with Unipile API', HttpStatus.SERVICE_UNAVAILABLE);
     }
+  }
+
+  @Post('accounts/update-member')
+  async updateMemberWhatsappAccount(
+    @Body() body: { accountId: string },
+    @Req() request: { workspaceMemberId?: string; headers?: { authorization?: string } },
+  ) {
+    const workspaceMemberId = request.workspaceMemberId;
+    if (!workspaceMemberId) {
+      throw new HttpException(
+        'workspaceMemberId required (user auth only)',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    const authToken =
+      request.headers?.authorization?.replace(/^Bearer\s+/i, '') ?? '';
+    if (!authToken || !body?.accountId) {
+      throw new HttpException(
+        'Authorization header and accountId required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberUnipileAccountId(
+      workspaceMemberId,
+      authToken,
+      'whatsapp',
+      body.accountId,
+    );
+    return { success: true };
   }
 
   /**

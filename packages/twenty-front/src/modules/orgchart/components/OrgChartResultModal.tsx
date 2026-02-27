@@ -6,6 +6,9 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 
+const DEFAULT_AVATAR =
+  'https://st2.depositphotos.com/4111759/12123/v/950/depositphotos_121232442-stock-illustration-male-default-placeholder-avatar-profile.jpg';
+
 import type { ContextResultItem } from '../types';
 
 const StyledContextModalBackdrop = styled.div`
@@ -91,8 +94,31 @@ const StyledContextResultItem = styled.div`
   padding: ${({ theme }) => theme.spacing(1.5)} 0;
   border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
   display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledAvatarWrapper = styled.div<{ $size: number }>`
+  width: ${({ $size }) => $size}px;
+  height: ${({ $size }) => $size}px;
+  min-width: ${({ $size }) => $size}px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+`;
+
+const StyledAvatarImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+`;
+
+const StyledContextResultContent = styled.div`
+  display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(0.25)};
+  min-width: 0;
 `;
 
 const StyledContextResultName = styled.div`
@@ -196,56 +222,90 @@ type ResultItemProps = {
   onFetchContacts?: (item: ContextResultItem) => void;
 };
 
+const getAvatarUrl = (item: ContextResultItem): string | undefined => {
+  const raw = item.raw as Record<string, unknown> | undefined;
+  if (!raw) return undefined;
+  const img =
+    (raw.image as string | undefined) ??
+    (raw.profile_picture_url as string | undefined);
+  return typeof img === 'string' && img.trim().length > 0 ? img : undefined;
+};
+
+const Avatar = ({ src, size = 36 }: { src: string; size?: number }) => {
+  const [effectiveSrc, setEffectiveSrc] = useState(src);
+
+  useEffect(() => {
+    setEffectiveSrc(src);
+  }, [src]);
+
+  return (
+    <StyledAvatarWrapper $size={size}>
+      <StyledAvatarImage
+        src={effectiveSrc}
+        alt=""
+        onError={() => setEffectiveSrc(DEFAULT_AVATAR)}
+      />
+    </StyledAvatarWrapper>
+  );
+};
+
 const ResultItem = ({
   item,
   contactInfo,
   isFetchingContacts,
   onFetchContacts,
-}: ResultItemProps) => (
-  <StyledContextResultItem>
-    <StyledContextResultName>{item.fullName}</StyledContextResultName>
-    {item.headline && (
-      <StyledContextResultMeta>{item.headline}</StyledContextResultMeta>
-    )}
-    {item.company && (
-      <StyledContextResultMeta>{item.company}</StyledContextResultMeta>
-    )}
-    {item.linkedinUrl && (
-      <StyledContextResultLink
-        href={item.linkedinUrl}
-        target="_blank"
-        rel="noreferrer"
-      >
-        View on LinkedIn
-      </StyledContextResultLink>
-    )}
-    {contactInfo && (contactInfo.email || contactInfo.phone) && (
-      <StyledContextResultMeta>
-        {contactInfo.email && <span>Email: {contactInfo.email}</span>}
-        {contactInfo.email && contactInfo.phone && ' · '}
-        {contactInfo.phone && <span>Phone: {contactInfo.phone}</span>}
-      </StyledContextResultMeta>
-    )}
-    {contactInfo &&
-      contactInfo.fetched &&
-      !contactInfo.email &&
-      !contactInfo.phone && (
-        <StyledContextResultMeta>
-          No contacts have been fetched for this person yet.
-        </StyledContextResultMeta>
-      )}
-    {onFetchContacts &&
-      (!contactInfo || !contactInfo.fetched) && (
-      <StyledContactButton
-        type="button"
-        onClick={() => onFetchContacts(item)}
-        disabled={isFetchingContacts}
-      >
-        {isFetchingContacts ? 'Fetching contacts…' : 'Fetch contacts'}
-      </StyledContactButton>
-    )}
-  </StyledContextResultItem>
-);
+}: ResultItemProps) => {
+  const avatarUrl = getAvatarUrl(item);
+
+  return (
+    <StyledContextResultItem>
+      {avatarUrl && <Avatar src={avatarUrl} size={36} />}
+      <StyledContextResultContent>
+        <StyledContextResultName>{item.fullName}</StyledContextResultName>
+        {item.headline && (
+          <StyledContextResultMeta>{item.headline}</StyledContextResultMeta>
+        )}
+        {item.company && (
+          <StyledContextResultMeta>{item.company}</StyledContextResultMeta>
+        )}
+        {item.linkedinUrl && (
+          <StyledContextResultLink
+            href={item.linkedinUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            View on LinkedIn
+          </StyledContextResultLink>
+        )}
+        {contactInfo && (contactInfo.email || contactInfo.phone) && (
+          <StyledContextResultMeta>
+            {contactInfo.email && <span>Email: {contactInfo.email}</span>}
+            {contactInfo.email && contactInfo.phone && ' · '}
+            {contactInfo.phone && <span>Phone: {contactInfo.phone}</span>}
+          </StyledContextResultMeta>
+        )}
+        {contactInfo &&
+          contactInfo.fetched &&
+          !contactInfo.email &&
+          !contactInfo.phone && (
+            <StyledContextResultMeta>
+              No contacts have been fetched for this person yet.
+            </StyledContextResultMeta>
+          )}
+        {onFetchContacts &&
+          (!contactInfo || !contactInfo.fetched) && (
+            <StyledContactButton
+              type="button"
+              onClick={() => onFetchContacts(item)}
+              disabled={isFetchingContacts}
+            >
+              {isFetchingContacts ? 'Fetching contacts…' : 'Fetch contacts'}
+            </StyledContactButton>
+          )}
+      </StyledContextResultContent>
+    </StyledContextResultItem>
+  );
+};
 
 const useClickedContactLinkImage = () => {
   const tokenPair = useRecoilValue(tokenPairState);
@@ -525,6 +585,7 @@ export type OrgChartResultModalProps = {
   emptyMessage?: string;
   onClose: () => void;
   onDownloadCsv?: () => void;
+  onAddToJob?: () => void;
   extraFooterButtons?: React.ReactNode;
   onGetSimilarPeople?: () => void;
 };
@@ -543,6 +604,7 @@ export const OrgChartResultModal = ({
   emptyMessage = 'No candidates returned for this request yet.',
   onClose,
   onDownloadCsv,
+  onAddToJob,
   extraFooterButtons,
   onGetSimilarPeople,
 }: OrgChartResultModalProps) => {
@@ -640,6 +702,11 @@ export const OrgChartResultModal = ({
           {onDownloadCsv && (results.length > 0 || onGetSimilarPeople) && (
             <StyledContextSecondaryButton type="button" onClick={onDownloadCsv}>
               Download to CSV
+            </StyledContextSecondaryButton>
+          )}
+          {onAddToJob && results.length > 0 && (
+            <StyledContextSecondaryButton type="button" onClick={onAddToJob}>
+              Add to job
             </StyledContextSecondaryButton>
           )}
           {/* {onGetSimilarPeople && (

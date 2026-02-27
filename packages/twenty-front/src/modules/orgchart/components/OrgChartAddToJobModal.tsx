@@ -9,8 +9,12 @@ import { jobsState } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 
+const DEFAULT_AVATAR =
+  'https://st2.depositphotos.com/4111759/12123/v/950/depositphotos_121232442-stock-illustration-male-default-placeholder-avatar-profile.jpg';
+
 import type { OrgChartNodeData } from 'twenty-shared';
 import type { ContextResultItem } from '../types';
+import { toLinkedInPremiumCandidate } from '../utils/orgChartUtils';
 
 const StyledBackdrop = styled.div`
   position: absolute;
@@ -98,6 +102,21 @@ const StyledCandidateRow = styled.label`
   color: ${({ theme }) => theme.font.color.primary};
 `;
 
+const StyledAvatarWrapper = styled.div<{ $size: number }>`
+  width: ${({ $size }) => $size}px;
+  height: ${({ $size }) => $size}px;
+  min-width: ${({ $size }) => $size}px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+`;
+
+const StyledAvatarImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+`;
+
 const StyledFooter = styled.div`
   padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
   border-top: 1px solid ${({ theme }) => theme.border.color.light};
@@ -183,23 +202,32 @@ function buildCandidatesFromNode(
   return rows;
 }
 
-function toLinkedInPremiumCandidate(item: ContextResultItem): Record<string, unknown> {
-  const raw = item.raw ?? {};
-  const linkedinUrl = item.linkedinUrl ?? '';
-  const publicIdentifier = linkedinUrl
-    ? linkedinUrl.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//i, '').split('/')[0]
-    : '';
-  return {
-    full_name: item.fullName,
-    job_title: item.headline,
-    linkedin_url: linkedinUrl,
-    profile_url: linkedinUrl,
-    public_identifier: publicIdentifier || undefined,
-    linkedin_profile_id_url: linkedinUrl,
-    ...(raw && typeof raw === 'object' ? raw : {}),
-    uniqueStringKey: linkedinUrl || `orgchart-${item.id}`,
-  };
-}
+const getCandidateAvatarUrl = (c: ContextResultItem): string | undefined => {
+  const raw = c.raw as Record<string, unknown> | undefined;
+  if (!raw) return undefined;
+  const img =
+    (raw.image as string | undefined) ??
+    (raw.profile_picture_url as string | undefined);
+  return typeof img === 'string' && img.trim().length > 0 ? img : undefined;
+};
+
+const CandidateAvatar = ({ src, size = 30 }: { src: string; size?: number }) => {
+  const [effectiveSrc, setEffectiveSrc] = useState(src);
+
+  useEffect(() => {
+    setEffectiveSrc(src);
+  }, [src]);
+
+  return (
+    <StyledAvatarWrapper $size={size}>
+      <StyledAvatarImage
+        src={effectiveSrc}
+        alt=""
+        onError={() => setEffectiveSrc(DEFAULT_AVATAR)}
+      />
+    </StyledAvatarWrapper>
+  );
+};
 
 export type OrgChartAddToJobModalProps = {
   isOpen: boolean;
@@ -401,27 +429,31 @@ export const OrgChartAddToJobModal = ({
               </div>
             )}
             <StyledCandidateList>
-              {candidates.map((c) => (
-                <StyledCandidateRow key={c.id}>
-                  <input
-                    type="checkbox"
-                    checked={selectedCandidateIds.has(c.id)}
-                    onChange={() => toggleCandidate(c.id)}
-                  />
-                  <span>{c.fullName}</span>
-                  {c.headline ? (
-                    <span
-                      style={{
-                        color: 'inherit',
-                        opacity: 0.8,
-                        fontSize: 12,
-                      }}
-                    >
-                      {c.headline}
-                    </span>
-                  ) : null}
-                </StyledCandidateRow>
-              ))}
+              {candidates.map((c) => {
+                const avatarUrl = getCandidateAvatarUrl(c);
+                return (
+                  <StyledCandidateRow key={c.id}>
+                    {avatarUrl && <CandidateAvatar src={avatarUrl} size={30} />}
+                    <input
+                      type="checkbox"
+                      checked={selectedCandidateIds.has(c.id)}
+                      onChange={() => toggleCandidate(c.id)}
+                    />
+                    <span>{c.fullName}</span>
+                    {c.headline ? (
+                      <span
+                        style={{
+                          color: 'inherit',
+                          opacity: 0.8,
+                          fontSize: 12,
+                        }}
+                      >
+                        {c.headline}
+                      </span>
+                    ) : null}
+                  </StyledCandidateRow>
+                );
+              })}
             </StyledCandidateList>
           </StyledSection>
         </StyledBody>

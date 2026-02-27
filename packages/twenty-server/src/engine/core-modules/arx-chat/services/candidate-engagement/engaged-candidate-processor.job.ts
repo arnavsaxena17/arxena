@@ -25,7 +25,6 @@ export interface EngagedCandidateJobData {
 
 // Sliding window configuration
 const SLIDING_WINDOW_DELAY_MS = 2 * 60 * 1000; // 2 minutes delay after last message
-const MAX_BATCH_SIZE = 50; // Maximum candidates to process in one batch
 const PROCESSING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes timeout per candidate
 
 @Injectable()

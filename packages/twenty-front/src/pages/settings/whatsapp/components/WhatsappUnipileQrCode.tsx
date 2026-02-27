@@ -3,7 +3,6 @@ import styled from '@emotion/styled';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
 import { useRecoilValue } from 'recoil';
-import { useApiKeysRecoil } from '~/modules/arx-jd-upload/hooks/useApiKeysRecoil';
 import { tokenPairState } from '~/modules/auth/states/tokenPairState';
 import { getWhatsappUnipileService } from '~/pages/settings/whatsapp/services/whatsapp-unipile-backend.service';
 
@@ -193,8 +192,6 @@ export const WhatsappUnipileQrCode: React.FC<WhatsappUnipileQrCodeProps> = ({
   
   const tokenPair = useRecoilValue(tokenPairState);
   const accessToken = tokenPair?.accessToken?.token;
-  const { updateSpecificApiKey } = useApiKeysRecoil();
-
   const startPolling = useCallback((accountIdToPoll: string) => {
     const service = getWhatsappUnipileService();
     let disconnectedCount = 0;
@@ -207,12 +204,15 @@ export const WhatsappUnipileQrCode: React.FC<WhatsappUnipileQrCodeProps> = ({
           clearInterval(interval);
           setPollingInterval(null);
           
-          // Update the WhatsApp Unipile Account ID in workspace settings
+          // Update workspace member profile with WhatsApp Unipile account ID
           try {
-            await updateSpecificApiKey('whatsapp_unipile_account_id', statusResponse.account_id);
-            console.log('Updated WhatsApp Unipile Account ID:', statusResponse.account_id);
+            const service = getWhatsappUnipileService();
+            const result = await service.updateMemberAccount(statusResponse.account_id, accessToken);
+            if (!result.success) {
+              console.error('Failed to update workspace member profile with WhatsApp account ID');
+            }
           } catch (apiKeyError) {
-            console.error('Failed to update WhatsApp Unipile Account ID:', apiKeyError);
+            console.error('Failed to update workspace member profile with WhatsApp account ID:', apiKeyError);
           }
           
           if (onConnected) {
@@ -262,7 +262,7 @@ export const WhatsappUnipileQrCode: React.FC<WhatsappUnipileQrCodeProps> = ({
         return prevStatus;
       });
     }, 300000);
-  }, [accessToken, onConnected, updateSpecificApiKey]);
+  }, [accessToken, onConnected]);
 
   const requestQrCode = useCallback(async () => {
     if (!accessToken) {

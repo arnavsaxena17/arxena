@@ -91,11 +91,10 @@ export async function GET(
 
     const data = JSON.parse(text) as Record<string, unknown>;
     return NextResponse.json(data, { status: response.status });
-  } catch (error) {
-    console.error('Org chart proxy error:', error);
+  } catch {
     return NextResponse.json(
       { status: 'error', message: 'Failed to fetch org chart' },
-      { status: 500 },
+      { status: 503 },
     );
   }
 }

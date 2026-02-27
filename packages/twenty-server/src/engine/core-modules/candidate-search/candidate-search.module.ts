@@ -7,6 +7,7 @@ import { SearchExecutionService } from 'src/engine/core-modules/candidate-search
 import { SearchParameterGenerationService } from 'src/engine/core-modules/candidate-search/services/search-parameter-generation.service';
 import { StreamProcessingService } from 'src/engine/core-modules/candidate-search/services/stream-processing.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
+import { UnipilePoolModule } from '../arx-chat/unipile-pool.module';
 import { CandidateSourcingModule } from '../candidate-sourcing/candidate-sourcing.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { LinkedInSearchModule } from '../linkedin-search/linkedin-search.module';
@@ -32,7 +33,7 @@ import { FileUtils } from './utils/file.utils';
 import { LinkedinParameterResolver } from './utils/linkedin-parameter-resolver.util';
 import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
 @Module({
-  imports: [LinkedInSearchModule, WorkspaceModificationsModule, CandidateSourcingModule, GraphQLExecutionModule],
+  imports: [LinkedInSearchModule, UnipilePoolModule, WorkspaceModificationsModule, CandidateSourcingModule, GraphQLExecutionModule],
   controllers: [CandidateSearchController, CandidateSearchChatController, CandidateSearchPipelineController],
   providers: [
     CandidateSearchBaseService,

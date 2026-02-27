@@ -101,6 +101,13 @@ const StyledBillingSub = styled.p`
   line-height: 1.5;
 `;
 
+const StyledCreditUsage = styled.p`
+  font-size: 15px;
+  color: ${({ theme }) => theme.font.color.secondary};
+  margin: 0 0 ${({ theme }) => theme.spacing(4)} 0;
+  line-height: 1.5;
+`;
+
 const StyledCreditCardsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -314,9 +321,14 @@ export const SettingsBilling = () => {
     WORKSPACE_CREDITS,
     { skip: !billingEnabled },
   );
-  const subscribedCredits =
-    (creditsData as { workspaceCredits?: { credits: number } } | undefined)
-      ?.workspaceCredits?.credits ?? 0;
+  const workspaceCredits =
+    (creditsData as {
+      workspaceCredits?: {
+        orgChartCredits: number;
+        emailContactCredits: number;
+        phoneContactCredits: number;
+      };
+    } | undefined)?.workspaceCredits ?? null;
 
   const { data: engagementPlansData } = useQuery(ENGAGEMENT_PLANS, {
     skip: !billingEnabled,
@@ -579,6 +591,15 @@ export const SettingsBilling = () => {
     >
       <SettingsPageContainer fullWidth>
         <StyledBillingContent>
+        {workspaceCredits && billingEnabled && (
+          <StyledCreditUsage>
+            <Trans>
+              Org chart credits: {workspaceCredits.orgChartCredits} | Email
+              credits: {workspaceCredits.emailContactCredits} | Phone credits:{' '}
+              {workspaceCredits.phoneContactCredits}
+            </Trans>
+          </StyledCreditUsage>
+        )}
         {engagementPlans.length > 0 && (
           <Section>
             <H2Title

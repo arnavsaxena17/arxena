@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { PublicEnvScript } from 'next-runtime-env';
 import { Gabarito, Inter } from 'next/font/google';
+import Script from 'next/script';
 
 import { ConditionalFooter } from './_components/ui/layout/footer';
 import EmotionRootStyleRegistry from './emotion-root-style-registry';
@@ -57,6 +58,17 @@ export default function RootLayout({
           <div className="container">{children}</div>
           <ConditionalFooter />
         </EmotionRootStyleRegistry>
+        <Script
+          id="tawk-to"
+          strategy="lazyOnload"
+          dangerouslySetInnerHTML={{
+            __html: `var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
+(function(){ var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
+s1.async=true; s1.src='https://embed.tawk.to/61401352d326717cb6814b43/1ffh4mvd2';
+s1.charset='UTF-8'; s1.setAttribute('crossorigin','*');
+s0.parentNode.insertBefore(s1,s0); })();`,
+          }}
+        />
       </body>
     </html>
   );

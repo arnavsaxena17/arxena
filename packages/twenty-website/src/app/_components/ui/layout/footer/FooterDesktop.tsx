@@ -44,6 +44,20 @@ const RightSideFooterLink = styled.a`
   }
 `;
 
+const RightSideFooterButton = styled.button`
+  background: none;
+  border: none;
+  padding: 0;
+  color: rgb(129, 129, 129);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  &:hover {
+    text-decoration: underline;
+    color: #000;
+  }
+`;
+
 const RightSideFooterColumnTitle = styled.div`
   font-size: 20px;
   font-weight: 500;
@@ -78,6 +92,25 @@ export const FooterDesktop = () => {
           <RightSideFooterLink href="/legal/privacy">
             Privacy Policy
           </RightSideFooterLink>
+        </RightSideFooterColumn>
+        <RightSideFooterColumn>
+          <RightSideFooterColumnTitle>Contact</RightSideFooterColumnTitle>
+          <RightSideFooterLink href="mailto:hello@arxena.com">
+            Email
+          </RightSideFooterLink>
+          <RightSideFooterLink
+            href="https://wa.me/918411937769"
+            target="_blank"
+            rel="noreferrer"
+          >
+            WhatsApp
+          </RightSideFooterLink>
+          <RightSideFooterButton
+            type="button"
+            onClick={() => window.Tawk_API?.maximize?.()}
+          >
+            Chat with us
+          </RightSideFooterButton>
         </RightSideFooterColumn>
       </RightSideFooter>
       <div

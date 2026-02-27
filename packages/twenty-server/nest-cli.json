@@ -31,6 +31,10 @@
       {
         "include": "**/org-chart/static/**",
         "outDir": "dist/src"
+      },
+      {
+        "include": "**/arx-chat/static/**",
+        "outDir": "dist/src"
       }
     ],
     "watchAssets": true

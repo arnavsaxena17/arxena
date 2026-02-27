@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CandidateRelevanceScoring } from 'src/engine/core-modules/candidate-search/schemas/candidate-relevance-scoring.schema';
+import { WorkspaceMemberProfileUnipileService } from '../../arx-chat/services/workspace-member-profile-unipile.service';
 import { LinkedInSearchTransformerService, TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { ResumeReadParseUploadService } from '../../candidate-sourcing/services/resume-read-parse-upload.service';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
@@ -63,6 +64,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
   constructor(
     linkedInSearchService: LinkedInSearchService,
     workspaceQueryService: WorkspaceQueryService,
+    workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     linkedinParameterResolver: LinkedinParameterResolver,
     parameterSanitizer: ParameterSanitizer,
     fileUtils: FileUtils,
@@ -77,6 +79,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     super(
       linkedInSearchService,
       workspaceQueryService,
+      workspaceMemberProfileUnipileService,
       linkedinParameterResolver,
       parameterSanitizer,
       fileUtils,

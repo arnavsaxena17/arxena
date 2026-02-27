@@ -17,6 +17,7 @@ import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
 import { CandidateTablePageHeader } from '@/candidate-table/components/CandidateTablePageHeader';
+import { MergeJobsModal } from '@/candidate-table/components/MergeJobsModal';
 import { JobCard } from '@/candidate-table/JobCard';
 import { jobsState } from '@/candidate-table/states/states';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
@@ -443,6 +444,33 @@ export const Jobs = () => {
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const processedData = useRecoilValue(processedDataSelector);
 
+  const [isMergeMode, setIsMergeMode] = useState(false);
+  const [selectedJobIds, setSelectedJobIds] = useState<Set<string>>(new Set());
+  const [isMergeJobsModalOpen, setIsMergeJobsModalOpen] = useState(false);
+
+  const handleMergeJobs = useCallback(() => setIsMergeMode(true), []);
+  const handleMergeModeCancel = useCallback(() => {
+    setIsMergeMode(false);
+    setSelectedJobIds(new Set());
+  }, []);
+  const handleToggleJobSelect = useCallback((jobId: string) => {
+    setSelectedJobIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(jobId)) next.delete(jobId);
+      else next.add(jobId);
+      return next;
+    });
+  }, []);
+  const handleMergeSelected = useCallback(() => {
+    if (selectedJobIds.size >= 2) {
+      setIsMergeJobsModalOpen(true);
+    }
+  }, [selectedJobIds.size]);
+  const handleMergeJobsModalClose = useCallback(() => {
+    setIsMergeJobsModalOpen(false);
+    handleMergeModeCancel();
+  }, [handleMergeModeCancel]);
+
   const handleDownloadClick = () => {
     console.log("Downloading app");
     setIsDownloadModalOpen(true);
@@ -526,6 +554,11 @@ export const Jobs = () => {
               onAddCredits={handleAddCredits}
               isLinkedinConnected={isLinkedinConnected}
               isWhatsappLoggedIn={isWhatsappLoggedIn}
+              onMergeJobs={hasJobs && !selectedOrgChartCompany ? handleMergeJobs : undefined}
+              isMergeMode={isMergeMode}
+              onMergeModeCancel={handleMergeModeCancel}
+              mergeSelectedCount={selectedJobIds.size}
+              onMergeSelected={handleMergeSelected}
             />
             <StyledPageBody>
               {selectedOrgChartCompany ? (
@@ -590,7 +623,9 @@ export const Jobs = () => {
                                   isActive={job.isActive}
                                   jobLocation={job.jobLocation}
                                   searchName={job.searchName}
-                                  // candidateCount={ || 0}
+                                  isMergeMode={isMergeMode}
+                                  isSelected={selectedJobIds.has(job.id)}
+                                  onToggleSelect={handleToggleJobSelect}
                                 />
                               ))}
                           </StyledJobCardsGrid>
@@ -610,16 +645,18 @@ export const Jobs = () => {
                                 {sortedJobs
                                   .filter(job => !job.isActive)
                                   .map((job) => (
-                                                                    <JobCard
-                                  key={job.id}
-                                  id={job.id}
-                                  name={job.name}
-                                  createdAt={job.createdAt || new Date().toISOString()}
-                                  isActive={job.isActive}
-                                  jobLocation={job.jobLocation}
-                                  searchName={job.searchName}
-                                  // candidateCount={ || 0}
-                                />
+                                    <JobCard
+                                      key={job.id}
+                                      id={job.id}
+                                      name={job.name}
+                                      createdAt={job.createdAt || new Date().toISOString()}
+                                      isActive={job.isActive}
+                                      jobLocation={job.jobLocation}
+                                      searchName={job.searchName}
+                                      isMergeMode={isMergeMode}
+                                      isSelected={selectedJobIds.has(job.id)}
+                                      onToggleSelect={handleToggleJobSelect}
+                                    />
                                   ))}
                               </StyledJobCardsGrid>
                             </StyledJobsSection>
@@ -674,6 +711,16 @@ export const Jobs = () => {
                 isOpen={isDownloadModalOpen}
                 onClose={() => setIsDownloadModalOpen(false)}
               />
+
+              {isMergeJobsModalOpen && (
+                <MergeJobsModal
+                  isOpen={isMergeJobsModalOpen}
+                  onClose={handleMergeJobsModalClose}
+                  sourceJobIds={Array.from(selectedJobIds)}
+                  sourceJobs={sortedJobs.filter((j) => selectedJobIds.has(j.id)).map((j) => ({ id: j.id, name: j.name }))}
+                  onSuccess={() => refetchJobs()}
+                />
+              )}
 
               {isBulkMessageModalOpen && (
                 <BulkMessageModal />

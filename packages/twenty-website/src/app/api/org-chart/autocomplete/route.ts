@@ -63,12 +63,8 @@ export async function GET(request: NextRequest) {
       { input_text: name.trim(), query: {}, params: {} },
       request.headers,
     );
-  } catch (error) {
-    console.error('Org chart autocomplete proxy error:', error);
-    return NextResponse.json(
-      { message: 'Autocomplete request failed' },
-      { status: 500 },
-    );
+  } catch {
+    return NextResponse.json({ result: [], status: 'ok' }, { status: 200 });
   }
 }
 
@@ -97,11 +93,7 @@ export async function POST(request: NextRequest) {
       },
       request.headers,
     );
-  } catch (error) {
-    console.error('Org chart autocomplete proxy error:', error);
-    return NextResponse.json(
-      { message: 'Autocomplete request failed' },
-      { status: 500 },
-    );
+  } catch {
+    return NextResponse.json({ result: [], status: 'ok' }, { status: 200 });
   }
 }

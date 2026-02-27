@@ -41,6 +41,7 @@
     "@ptc-org/nestjs-query-graphql": "patch:@ptc-org/nestjs-query-graphql@4.2.0#./patches/@ptc-org+nestjs-query-graphql+4.2.0.patch",
     "@revertdotdev/revert-react": "^0.0.21",
     "@sentry/nestjs": "^8.30.0",
+    "apify-client": "^2.12.0",
     "async-sema": "^3.1.1",
     "bull": "^4.16.5",
     "cache-manager": "^5.4.0",

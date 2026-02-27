@@ -29,6 +29,7 @@ import {
   SignInUpBaseParams,
   SignInUpNewUserPayload,
 } from 'src/engine/core-modules/auth/types/signInUp.type';
+import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { DomainManagerService } from 'src/engine/core-modules/domain-manager/services/domain-manager.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { FileUploadService } from 'src/engine/core-modules/file/file-upload/services/file-upload.service';
@@ -58,6 +59,7 @@ export class SignInUpService {
     private readonly environmentService: EnvironmentService,
     private readonly domainManagerService: DomainManagerService,
     private readonly userService: UserService,
+    private readonly workspaceCreditsService: WorkspaceCreditsService,
   ) {}
 
   async computeParamsForNewUser(
@@ -339,6 +341,10 @@ export class SignInUpService {
     });
 
     const workspace = await this.workspaceRepository.save(workspaceToCreate);
+
+    if (process.env.IS_BILLING_ENABLED === 'true') {
+      await this.workspaceCreditsService.getOrCreate(workspace.id);
+    }
 
     user.defaultAvatarUrl = await this.uploadPicture(
       partialUserWithPicture.picture,

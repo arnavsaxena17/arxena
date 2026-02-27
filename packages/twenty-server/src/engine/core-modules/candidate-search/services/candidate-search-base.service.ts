@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
+import { WorkspaceMemberProfileUnipileService } from '../../arx-chat/services/workspace-member-profile-unipile.service';
 import { LinkedInSearchTransformerService } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { ResumeReadParseUploadService } from '../../candidate-sourcing/services/resume-read-parse-upload.service';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
@@ -30,6 +31,7 @@ export class CandidateSearchBaseService {
   constructor(
     protected readonly linkedInSearchService: LinkedInSearchService,
     protected readonly workspaceQueryService: WorkspaceQueryService,
+    protected readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     protected readonly linkedinParameterResolver: LinkedinParameterResolver,
     protected readonly parameterSanitizer: ParameterSanitizer,
     protected readonly fileUtils: FileUtils,
@@ -640,12 +642,20 @@ export class CandidateSearchBaseService {
 
 
   /**
-   * Get LinkedIn account ID from workspace
+   * Get LinkedIn account ID from workspace member profile (with workspace fallback)
    */
   async getLinkedInAccountId(apiToken: string): Promise<string> {
     try {
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const linkedinAccountId = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'linkedin_unipile_account_id');
+      const workspaceMemberId =
+        await this.workspaceQueryService.getWorkspaceMemberIdFromToken(apiToken);
+      const linkedinAccountId =
+        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+          workspaceMemberId,
+          workspaceId,
+          apiToken,
+          'linkedin',
+        );
 
       if (!linkedinAccountId) {
         throw new Error('LinkedIn account ID not found in workspace API keys');

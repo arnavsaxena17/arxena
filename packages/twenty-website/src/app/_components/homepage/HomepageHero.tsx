@@ -4,6 +4,7 @@ import styled from '@emotion/styled';
 import { IconHierarchy2 } from '@tabler/icons-react';
 import Link from 'next/link';
 
+import { ContactUsSection } from '@/app/_components/homepage/ContactUsSection';
 import { OrgChartSearch } from '@/app/_components/orgchart/OrgChartSearch';
 import { Logo } from '@/app/_components/ui/layout/Logo';
 
@@ -381,6 +382,8 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
           </StyledEngageLink>
         </p>
       </StyledPricingSection>
+
+      <ContactUsSection />
     </>
   );
 };

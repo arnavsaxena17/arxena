@@ -10,6 +10,7 @@ import styled from '@emotion/styled';
 
 import { OrgChartCompanyInfo } from '@/app/_components/orgchart/OrgChartCompanyInfo';
 import { companySearchLightTheme } from '@/lib/company-search';
+// eslint-disable-next-line @nx/enforce-module-boundaries -- orgchart-core is used alongside dynamic OrgChartDiagram
 import {
   OrgChartDiagramHandle,
   OrgChartFilters,
@@ -198,6 +199,9 @@ export const OrgChartPageClient = ({
     null,
   );
   const [clickedNode, setClickedNode] = useState<OrgChartNodeData | null>(null);
+  const [exactEmployeeCount, setExactEmployeeCount] = useState<number | null>(
+    null,
+  );
 
   const {
     availableCountries,
@@ -221,12 +225,46 @@ export const OrgChartPageClient = ({
     }
   }, [lookupByName, companyName, companyId]);
 
+  // Fetch exact employee count from Apify (LinkedIn) when we have company identifier
+  useEffect(() => {
+    const linkedinUrlToUse = linkedinUrl ?? fallbackCompanyInfo?.linkedinUrl;
+    const identifier = linkedinUrlToUse ?? companyId;
+    if (!identifier?.trim()) return;
+
+    let cancelled = false;
+    const fetchEmployeeCount = async () => {
+      try {
+        const params = new URLSearchParams();
+        if (linkedinUrlToUse?.trim()) {
+          params.set('linkedinUrl', linkedinUrlToUse.trim());
+        } else {
+          params.set('companyId', companyId);
+        }
+        const res = await fetch(
+          `/api/org-chart/companies/employee-count?${params.toString()}`,
+        );
+        if (cancelled) return;
+        const data = (await res.json()) as { employeeCount?: number | null };
+        if (res.ok && typeof data.employeeCount === 'number') {
+          setExactEmployeeCount(data.employeeCount);
+        }
+      } catch {
+        if (!cancelled) setExactEmployeeCount(null);
+      }
+    };
+    fetchEmployeeCount();
+    return () => {
+      cancelled = true;
+    };
+  }, [companyId, linkedinUrl, fallbackCompanyInfo?.linkedinUrl]);
+
   const displayWebsite = website ?? fallbackCompanyInfo?.website;
   const displayLocationName = locationName ?? fallbackCompanyInfo?.locationName;
   const displayIndustry = industry ?? fallbackCompanyInfo?.industry;
   const displayProfileCount = profileCount ?? fallbackCompanyInfo?.profileCount;
   const displayLinkedinUrl = linkedinUrl ?? fallbackCompanyInfo?.linkedinUrl;
-  const displayEmployeeCount = fallbackCompanyInfo?.employeeCount;
+  const displayEmployeeCount =
+    exactEmployeeCount ?? fallbackCompanyInfo?.employeeCount;
 
   const buildPath = useCallback(
     (country?: string, fn?: string) => {

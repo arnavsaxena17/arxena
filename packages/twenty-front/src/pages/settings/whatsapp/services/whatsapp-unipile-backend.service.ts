@@ -138,6 +138,25 @@ export class WhatsappUnipileBackendService {
   }
 
   /**
+   * Update workspace member profile with WhatsApp Unipile account ID.
+   * Call this when a new account is connected (e.g. after QR code scan).
+   */
+  async updateMemberAccount(accountId: string, accessToken?: string): Promise<{ success: boolean }> {
+    try {
+      await this.makeRequest<{ success: boolean }>(
+        '/accounts/update-member',
+        'POST',
+        { accountId },
+        accessToken,
+      );
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to update member WhatsApp account:', error);
+      return { success: false };
+    }
+  }
+
+  /**
    * Disconnect WhatsApp account
    */
   async disconnectAccount(accountId: string, accessToken?: string): Promise<{ success: boolean }> {

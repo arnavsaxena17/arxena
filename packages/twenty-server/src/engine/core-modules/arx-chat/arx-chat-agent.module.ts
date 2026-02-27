@@ -31,8 +31,10 @@ import { WhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/servi
 import { ExtSockWhatsappService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.service';
 import { ExtSockWhatsappWhitelistProcessingService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whitelist-processing';
 import { RedisService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/redis-service-ops';
+import { UnipileAccountPoolService } from 'src/engine/core-modules/arx-chat/services/unipile-account-pool.service';
 import { UnipileWebhookService } from 'src/engine/core-modules/arx-chat/services/unipile-webhook.service';
 import { VoiceCallService } from 'src/engine/core-modules/arx-chat/services/voice-call/voice-call.service';
+import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
@@ -193,6 +195,8 @@ const conditionalImports = isWorker
     GmailDraftShortlistQueueService,
     GmailDraftShortlistQueueProcessor,
     UnipileWebhookService,
+    WorkspaceMemberProfileUnipileService,
+    UnipileAccountPoolService,
     LinkedinParameterResolver,
   ],
   exports: [ExtSockWhatsappService, CandidateEngagementArx],

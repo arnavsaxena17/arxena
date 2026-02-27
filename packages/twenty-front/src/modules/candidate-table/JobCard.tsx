@@ -33,6 +33,9 @@ type JobCardProps = {
   jobLocation?: string;
   searchName?: string;
   candidateCount?: number;
+  isMergeMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (jobId: string) => void;
 };
 
 const StyledCard = styled.div`
@@ -58,6 +61,14 @@ const StyledCardHeader = styled.div`
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: ${({ theme }) => theme.spacing(2)};
+  gap: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledMergeCheckbox = styled.div`
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
 `;
 
 const StyledCardTitle = styled.h3`
@@ -71,6 +82,8 @@ const StyledCardTitle = styled.h3`
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   word-break: break-word;
+  flex: 1;
+  min-width: 0;
 `;
 
 const StyledCardContent = styled.div`
@@ -202,14 +215,16 @@ const StyledActionButtons = styled.div`
   gap: ${({ theme }) => theme.spacing(0.5)};
 `;
 
-export const JobCard = ({ 
-  id, 
-  name, 
-  createdAt, 
-  isActive, 
-  jobLocation, 
+export const JobCard = ({
+  id,
+  name,
+  createdAt,
+  isActive,
+  jobLocation,
   searchName,
-  // candidateCount = 0 
+  isMergeMode,
+  isSelected,
+  onToggleSelect,
 }: JobCardProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -246,7 +261,15 @@ export const JobCard = ({
     if ((event.target as HTMLElement).closest('.menu-container')) {
       return;
     }
-    
+    if ((event.target as HTMLElement).closest('.merge-checkbox')) {
+      return;
+    }
+
+    if (isMergeMode && onToggleSelect) {
+      onToggleSelect(id);
+      return;
+    }
+
     setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
     setIsNavigationDrawerExpanded(true);
     setNavigationMemorizedUrl(location.pathname + location.search);
@@ -302,6 +325,22 @@ export const JobCard = ({
   return (
     <StyledCard onClick={handleCardClick}>
       <StyledCardHeader>
+        {isMergeMode && (
+          <StyledMergeCheckbox
+            className="merge-checkbox"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleSelect?.(id);
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={!!isSelected}
+              onChange={() => onToggleSelect?.(id)}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </StyledMergeCheckbox>
+        )}
         <StyledCardTitle>{name}</StyledCardTitle>
         <div className="menu-container" onClick={(e) => e.stopPropagation()}>
           <StyledMenuButton onClick={toggleDropdown}>

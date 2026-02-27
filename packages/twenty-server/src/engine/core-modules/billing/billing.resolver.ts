@@ -267,7 +267,11 @@ export class BillingResolver {
     const row = await this.workspaceCreditsRepository.findOne({
       where: { workspaceId: workspace.id },
     });
-    return { credits: row?.credits ?? 0 };
+    return {
+      orgChartCredits: row?.orgChartCredits ?? 0,
+      emailContactCredits: row?.emailContactCredits ?? 0,
+      phoneContactCredits: row?.phoneContactCredits ?? 0,
+    };
   }
 
   @Mutation(() => RazorpayOrderOutput)

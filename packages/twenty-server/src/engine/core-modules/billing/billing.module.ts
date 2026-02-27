@@ -29,6 +29,7 @@ import { BillingUsageService } from 'src/engine/core-modules/billing/services/bi
 import { BillingService } from 'src/engine/core-modules/billing/services/billing.service';
 import { InvoiceRequestService } from 'src/engine/core-modules/billing/services/invoice-request.service';
 import { OnboardingBillingSubscriptionService } from 'src/engine/core-modules/billing/services/onboarding-billing-subscription.service';
+import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { StripeModule } from 'src/engine/core-modules/billing/stripe/stripe.module';
 import { BillingWebhookEntitlementService } from 'src/engine/core-modules/billing/webhooks/services/billing-webhook-entitlement.service';
 import { BillingWebhookPriceService } from 'src/engine/core-modules/billing/webhooks/services/billing-webhook-price.service';
@@ -89,12 +90,14 @@ import { PermissionsModule } from 'src/engine/metadata-modules/permissions/permi
     InvoiceRequestService,
     OnboardingBillingSubscriptionService,
     OnboardingCreateStripeSubscriptionJob,
+    WorkspaceCreditsService,
   ],
   exports: [
     BillingSubscriptionService,
     BillingPortalWorkspaceService,
     BillingService,
     BillingUsageService,
+    WorkspaceCreditsService,
   ],
 })
 export class BillingModule {}

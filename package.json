@@ -83,6 +83,7 @@
     "addressparser": "^1.0.1",
     "afterframe": "^1.0.2",
     "agora-rtc-sdk-ng": "^4.23.2",
+    "apify-client": "^2.22.2",
     "apollo-server-express": "^3.12.0",
     "apollo-upload-client": "^17.0.0",
     "archiver": "^7.0.1",

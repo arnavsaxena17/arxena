@@ -3,7 +3,6 @@ import styled from '@emotion/styled';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import type { UnipileLinkedinAccount } from 'twenty-shared';
-import { useApiKeysRecoil } from '~/modules/arx-jd-upload/hooks/useApiKeysRecoil';
 import { tokenPairState } from '~/modules/auth/states/tokenPairState';
 import { linkedinUnipileAccountsState } from '~/modules/linkedin-unipile/states/linkedinUnipileAccountsState';
 import { getLinkedinService } from '~/pages/settings/linkedin/services/linkedin-backend.service';
@@ -184,8 +183,6 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
   const accessToken = tokenPair?.accessToken?.token;
   const setLinkedinUnipileAccounts = useSetRecoilState(linkedinUnipileAccountsState);
   
-  const { updateSpecificApiKey } = useApiKeysRecoil();
-
   const loadAccounts = useCallback(async () => {
     try {
       setLoading(true);
@@ -210,18 +207,19 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
         !previousAccountIds.includes(acc.id)
       );
       
-      // Update API keys with the first new connected LinkedIn account ID only
+      // Update workspace member profile with the first new connected LinkedIn account ID
       if (newConnectedAccounts.length > 0) {
         const newAccountId = newConnectedAccounts[0].id;
-        // Double-check it's a LinkedIn account before updating
         const account = newConnectedAccounts[0];
         if (account.type === 'LINKEDIN') {
           try {
-            await updateSpecificApiKey('linkedin_unipile_account_id', newAccountId);
-            console.log('Updated API keys with new LinkedIn account ID:', newAccountId);
+            const service = getLinkedinService();
+            const result = await service.updateMemberAccount(newAccountId, accessToken);
+            if (!result.success) {
+              console.error('Failed to update workspace member profile with LinkedIn account ID');
+            }
           } catch (apiKeyError) {
-            console.error('Failed to update API keys with LinkedIn account ID:', apiKeyError);
-            // Don't fail the entire operation if API key update fails
+            console.error('Failed to update workspace member profile with LinkedIn account ID:', apiKeyError);
           }
         }
       }
@@ -264,7 +262,6 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
     }
   }, [
     accessToken,
-    updateSpecificApiKey,
     onAccountConnected,
     onAccountsLoaded,
     setLinkedinUnipileAccounts,

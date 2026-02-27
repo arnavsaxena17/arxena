@@ -193,6 +193,25 @@ export class LinkedinBackendService {
   }
 
   /**
+   * Update workspace member profile with LinkedIn Unipile account ID.
+   * Call this when a new account is connected (e.g. after Hosted Auth redirect).
+   */
+  async updateMemberAccount(accountId: string, accessToken?: string): Promise<{ success: boolean }> {
+    try {
+      await this.makeRequest<{ success: boolean }>(
+        '/accounts/update-member',
+        'POST',
+        { accountId },
+        accessToken,
+      );
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to update member LinkedIn account:', error);
+      return { success: false };
+    }
+  }
+
+  /**
    * Disconnect LinkedIn account
    */
   async disconnectAccount(accountId: string, accessToken?: string): Promise<{ success: boolean }> {

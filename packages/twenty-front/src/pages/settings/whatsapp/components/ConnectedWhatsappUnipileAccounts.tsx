@@ -3,7 +3,6 @@ import styled from '@emotion/styled';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import type { UnipileWhatsappAccount } from 'twenty-shared';
-import { useApiKeysRecoil } from '~/modules/arx-jd-upload/hooks/useApiKeysRecoil';
 import { tokenPairState } from '~/modules/auth/states/tokenPairState';
 import { whatsappUnipileAccountsState } from '~/modules/whatsapp-unipile/states/whatsappUnipileAccountsState';
 import { getWhatsappUnipileService } from '~/pages/settings/whatsapp/services/whatsapp-unipile-backend.service';
@@ -187,8 +186,6 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<ConnectedWhatsappUnipile
   const accessToken = tokenPair?.accessToken?.token;
   const setWhatsappUnipileAccounts = useSetRecoilState(whatsappUnipileAccountsState);
   
-  const { updateSpecificApiKey } = useApiKeysRecoil();
-
   const loadAccounts = useCallback(async () => {
     try {
       setLoading(true);
@@ -213,17 +210,19 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<ConnectedWhatsappUnipile
         !previousAccountIds.includes(acc.id)
       );
       
-      // Update API keys with the first new connected WhatsApp account ID only
+      // Update workspace member profile with the first new connected WhatsApp account ID
       if (newConnectedAccounts.length > 0) {
         const newAccountId = newConnectedAccounts[0].id;
-        // Double-check it's a WhatsApp account before updating
         const account = newConnectedAccounts[0];
         if (account.type === 'WHATSAPP') {
           try {
-            await updateSpecificApiKey('whatsapp_unipile_account_id', newAccountId);
-            console.log('Updated API keys with new WhatsApp account ID:', newAccountId);
+            const service = getWhatsappUnipileService();
+            const result = await service.updateMemberAccount(newAccountId, accessToken);
+            if (!result.success) {
+              console.error('Failed to update workspace member profile with WhatsApp account ID');
+            }
           } catch (apiKeyError) {
-            console.error('Failed to update API keys with WhatsApp account ID:', apiKeyError);
+            console.error('Failed to update workspace member profile with WhatsApp account ID:', apiKeyError);
           }
         }
       }
@@ -264,7 +263,7 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<ConnectedWhatsappUnipile
     } finally {
       setLoading(false);
     }
-  }, [accessToken, updateSpecificApiKey, onAccountConnected, onAccountsLoaded, setWhatsappUnipileAccounts, getNormalizedStatus]);
+  }, [accessToken, onAccountConnected, onAccountsLoaded, setWhatsappUnipileAccounts, getNormalizedStatus]);
 
   useEffect(() => {
     if (accessToken) {

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { readFile } from 'fs/promises';
 import * as path from 'path';
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
@@ -6,6 +6,8 @@ import { CacheStorageService } from 'src/engine/core-modules/cache-storage/servi
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { graphqlToFindManyCompanies } from 'twenty-shared';
 
+import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { ContactEnrichmentWaterfallService } from 'src/engine/core-modules/contact-enrichment/services/contact-enrichment-waterfall.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
@@ -29,6 +31,8 @@ export class OrgChartService {
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly linkedInSearchService: LinkedInSearchService,
     private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceCreditsService: WorkspaceCreditsService,
     @InjectCacheStorage(CacheStorageNamespace.EngineOrgChart)
     private readonly orgChartCacheStorageService: CacheStorageService,
   ) {}
@@ -93,6 +97,11 @@ export class OrgChartService {
     );
 
     if (esResult) {
+      await this.debitOrgChartCreditsIfNeeded(
+        authToken,
+        esResult,
+        companyId,
+      );
       this.logger.log(
         `Serving org chart for companyId=${companyId} from Elasticsearch`,
       );
@@ -111,6 +120,12 @@ export class OrgChartService {
       }>(cacheKey);
 
     if (cachedOrgChartPayload?.orgChart) {
+      await this.debitOrgChartCreditsIfNeeded(
+        authToken,
+        cachedOrgChartPayload.orgChart,
+        companyId,
+        cachedOrgChartPayload.itemCount,
+      );
       this.logger.log(
         `Serving org chart for companyId=${companyId} from Redis cache key=${cacheKey} cachedAt=${cachedOrgChartPayload.cachedAt ?? 'unknown'} itemCount=${cachedOrgChartPayload.itemCount ?? 0}`,
       );
@@ -118,7 +133,7 @@ export class OrgChartService {
     }
 
     // No ES document and no cache: serve static blank org chart template so the
-    // frontend can show a placeholder structure instead of empty.
+    // frontend can show a placeholder structure instead of empty. No credits debited for blank.
     const blankChart = await this.getBlankOrgChartPlaceholder(companyId, options);
     if (blankChart) {
       this.logger.log(
@@ -198,6 +213,60 @@ export class OrgChartService {
     }
 
     return null;
+  }
+
+  private getEmployeeCountFromOrgChart(
+    orgChart: Record<string, unknown>,
+    itemCountOverride?: number,
+  ): number {
+    if (typeof itemCountOverride === 'number' && itemCountOverride >= 0) {
+      return itemCountOverride;
+    }
+    const itemCount = orgChart.item_count as number | undefined;
+    if (typeof itemCount === 'number' && itemCount >= 0) {
+      return itemCount;
+    }
+    try {
+      const orgChartStr = orgChart.org_chart as string | undefined;
+      if (typeof orgChartStr === 'string') {
+        const parsed = JSON.parse(orgChartStr) as {
+          list_orgcharts?: Array<{ orgchart?: Array<{ len_candidates?: number }> }>;
+        };
+        const list = parsed?.list_orgcharts ?? [];
+        let total = 0;
+        for (const item of list) {
+          const nodes = item?.orgchart ?? [];
+          for (const node of nodes) {
+            total += node?.len_candidates ?? 0;
+          }
+        }
+        return total > 0 ? total : 100;
+      }
+    } catch {
+      // ignore parse errors
+    }
+    return 100;
+  }
+
+  private async debitOrgChartCreditsIfNeeded(
+    authToken: string | undefined,
+    orgChart: Record<string, unknown>,
+    _companyId: string,
+    itemCountOverride?: number,
+  ): Promise<void> {
+    if (process.env.IS_BILLING_ENABLED !== 'true') return;
+    if (!authToken?.trim()) return;
+
+    const workspaceId =
+      await this.workspaceQueryService.getWorkspaceIdFromToken(authToken);
+    const employeeCount = this.getEmployeeCountFromOrgChart(
+      orgChart,
+      itemCountOverride,
+    );
+    await this.workspaceCreditsService.debitOrgChartCredits(
+      workspaceId,
+      employeeCount,
+    );
   }
 
   private buildCompanyOrgChartCacheKey(
@@ -357,11 +426,38 @@ export class OrgChartService {
       return { emailAddresses: [], phoneNumbers: [] };
     }
 
+    const wantEmail = true;
+    const wantPhone = true;
+
+    if (
+      process.env.IS_BILLING_ENABLED === 'true' &&
+      authToken?.trim()
+    ) {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(authToken);
+      const hasSufficient = await this.workspaceCreditsService.hasSufficientContactCredits(
+        workspaceId,
+        wantEmail,
+        wantPhone,
+      );
+      if (!hasSufficient) {
+        throw new HttpException(
+          'Insufficient contact credits',
+          HttpStatus.FORBIDDEN,
+        );
+      }
+      await this.workspaceCreditsService.debitContactCredits(
+        workspaceId,
+        wantEmail ? 1 : 0,
+        wantPhone ? 1 : 0,
+      );
+    }
+
     // Use the new contact enrichment waterfall service (all in NestJS, no arxena-site)
     try {
       const result = await this.contactEnrichmentWaterfall.fetchContacts(
         trimmedUrl,
-        { wantEmail: true, wantPhone: true },
+        { wantEmail, wantPhone },
       );
 
       return {
@@ -384,6 +480,7 @@ export class OrgChartService {
   async findCompanyByName(
     companyName: string,
     authToken: string,
+    workspaceMemberId?: string | null,
   ): Promise<{
     found: boolean;
     companyId?: string;
@@ -445,10 +542,13 @@ export class OrgChartService {
     try {
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(authToken);
-      const accountId = await this.workspaceQueryService.getWorkspaceApiKey(
-        workspaceId,
-        'linkedin_unipile_account_id',
-      );
+      const accountId =
+        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+          workspaceMemberId ?? null,
+          workspaceId,
+          authToken,
+          'linkedin',
+        );
 
       if (!accountId) {
         return {

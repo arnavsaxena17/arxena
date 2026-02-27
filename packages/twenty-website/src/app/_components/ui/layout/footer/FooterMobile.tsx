@@ -46,6 +46,21 @@ const StyledLink = styled.a`
   }
 `;
 
+const StyledChatButton = styled.button`
+  background: none;
+  border: none;
+  padding: 0;
+  color: rgb(129, 129, 129);
+  font-size: 15px;
+  font-family: inherit;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+    color: #000;
+  }
+`;
+
 const StyledBottomRow = styled.div`
   display: flex;
   flex-direction: column;
@@ -82,6 +97,23 @@ export const FooterMobile = () => {
         <StyledSectionTitle>Legal</StyledSectionTitle>
         <StyledLink href="/legal/terms">Terms of Service</StyledLink>
         <StyledLink href="/legal/privacy">Privacy Policy</StyledLink>
+      </StyledLinkSection>
+      <StyledLinkSection>
+        <StyledSectionTitle>Contact</StyledSectionTitle>
+        <StyledLink href="mailto:hello@arxena.com">Email</StyledLink>
+        <StyledLink
+          href="https://wa.me/918411937769"
+          target="_blank"
+          rel="noreferrer"
+        >
+          WhatsApp
+        </StyledLink>
+        <StyledChatButton
+          type="button"
+          onClick={() => window.Tawk_API?.maximize?.()}
+        >
+          Chat with us
+        </StyledChatButton>
       </StyledLinkSection>
       <StyledBottomRow>
         <StyledCopyright>

@@ -15,15 +15,15 @@ import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queu
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import {
-    CleanWorkspaceDeletionWarningUserVarsJob,
-    CleanWorkspaceDeletionWarningUserVarsJobData,
+  CleanWorkspaceDeletionWarningUserVarsJob,
+  CleanWorkspaceDeletionWarningUserVarsJobData,
 } from 'src/engine/workspace-manager/workspace-cleaner/jobs/clean-workspace-deletion-warning-user-vars.job';
 import { BillingSubscription } from '../../entities/billing-subscription.entity';
 import { WorkspaceCredits } from '../../entities/workspace-credits.entity';
 import { SubscriptionStatus } from '../../enums/billing-subscription-status.enum';
 import {
-    RAZORPAY_CREDIT_PACKS,
-    type CreditPackKey,
+  RAZORPAY_CREDIT_PACKS,
+  type CreditPackKey,
 } from '../constants/credit-packs.constant';
 import { RazorpayOrderService } from './razorpay-order.service';
 
@@ -178,12 +178,14 @@ export class RazorpayWebhookService {
     if (row) {
       await this.workspaceCreditsRepository.update(
         { workspaceId },
-        { credits: row.credits + pack.credits },
+        { orgChartCredits: row.orgChartCredits + pack.credits },
       );
     } else {
       await this.workspaceCreditsRepository.insert({
         workspaceId,
-        credits: pack.credits,
+        orgChartCredits: pack.credits,
+        emailContactCredits: 0,
+        phoneContactCredits: 0,
       });
     }
 

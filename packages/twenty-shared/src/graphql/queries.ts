@@ -799,6 +799,9 @@ export const findWorkspaceMemberProfiles = `query FindManyWorkspaceMemberProfile
         typeWorkspaceMember
         email
         companyName
+        linkedinUnipileAccountId
+        whatsappUnipileAccountId
+        keepLinkedinConnected
       }
       cursor
       __typename

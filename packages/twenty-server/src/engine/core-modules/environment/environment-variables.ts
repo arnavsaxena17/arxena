@@ -75,7 +75,7 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsBoolean()
   USE_CONNECT_LINKEDIN_ONBOARDING = false;
-  
+
 
 
   @EnvironmentVariablesMetadata({
@@ -1178,6 +1178,16 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   NUBELA_API_KEY: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    sensitive: true,
+    description:
+      'Apify API token for LinkedIn company employee count (harvestapi/linkedin-company-employees) and future actors.',
+  })
+  @IsOptional()
+  @IsString()
+  APIFY_API_TOKEN?: string;
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.Other,

@@ -37,6 +37,8 @@ export interface UnipileAccountStatusWebhook {
     account_id: string;
     account_type: 'LINKEDIN' | 'WHATSAPP' | 'INSTAGRAM' | 'MESSENGER' | 'TELEGRAM' | 'X_TWITTER';
     message: 'OK' | 'ERROR' | 'STOPPED' | 'CREDENTIALS' | 'CONNECTING' | 'DELETED' | 'CREATION_SUCCESS' | 'RECONNECTED' | 'SYNC_SUCCESS';
+    /** Optional: workspace_member_id or "workspaceMemberId|workspaceId" (from Hosted Auth name) */
+    name?: string;
   };
 }
 
@@ -101,13 +103,29 @@ export interface UnipileTrackingEmailWebhook {
   };
 }
 
+/**
+ * New relation webhook - supports both formats:
+ *
+ * 1. Flat format from Unipile USERS webhook (source: "users", event: "new_relation").
+ *    Fired when someone accepts your LinkedIn invitation.
+ *    @see https://developer.unipile.com/docs/detecting-accepted-invitations
+ *
+ * 2. Nested format with relation object (legacy)
+ */
 export interface UnipileNewRelationWebhook {
+  event: 'new_relation';
   account_id: string;
   account_type: 'LINKEDIN';
-  event: 'new_relation';
-  timestamp: string;
-  webhook_name: string;
-  relation: {
+  timestamp?: string;
+  webhook_name?: string;
+  /** Flat format - user who accepted the invitation */
+  user_full_name?: string;
+  user_provider_id?: string;
+  user_public_identifier?: string;
+  user_profile_url?: string;
+  user_picture_url?: string;
+  /** Nested format (legacy) */
+  relation?: {
     relation_id: string;
     name: string;
     profile_url: string;

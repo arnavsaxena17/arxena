@@ -1,22 +1,24 @@
 import {
-    Body,
-    Controller,
-    Get,
-    HttpException,
-    HttpStatus,
-    Logger,
-    Param,
-    Post,
-    Query,
-    Req,
-    Res,
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Query,
+  Req,
+  Res,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
+import { ApifyEmployeeCountService } from 'src/engine/core-modules/apify/services/apify-employee-count.service';
 import { CompanyAutocompleteDto } from '../dto/company-autocomplete.dto';
 import { OrgChartNodePeopleDto } from '../dto/org-chart-node-people.dto';
 import { OrgChartQueryDto } from '../dto/org-chart-query.dto';
 import { CompanyLogoService } from '../services/company-logo.service';
+import { OrgChartEsService } from '../services/org-chart-es.service';
 import { OrgChartService } from '../services/org-chart.service';
 
 @Controller('org-chart')
@@ -25,7 +27,9 @@ export class OrgChartController {
 
   constructor(
     private readonly orgChartService: OrgChartService,
+    private readonly orgChartEsService: OrgChartEsService,
     private readonly companyLogoService: CompanyLogoService,
+    private readonly apifyEmployeeCountService: ApifyEmployeeCountService,
   ) {}
 
   private getAuthToken(req: Request): string | undefined {
@@ -64,6 +68,55 @@ export class OrgChartController {
       contentType ?? 'image/png',
     );
     res.send(Buffer.from(body));
+  }
+
+  @Get('companies/employee-count')
+  async getEmployeeCount(
+    @Query('companyId') companyId: string,
+    @Query('linkedinUrl') linkedinUrl: string,
+  ) {
+    const urlOrSlug = linkedinUrl?.trim() || companyId?.trim();
+    if (!urlOrSlug) {
+      throw new HttpException(
+        'Query parameter "companyId" or "linkedinUrl" is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      const employeeCount =
+        await this.apifyEmployeeCountService.getEmployeeCount(urlOrSlug);
+      return { employeeCount, status: 'ok' };
+    } catch (error) {
+      this.logger.error('Employee count lookup failed', error);
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Employee count lookup failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('companies/:companyId/indexed-urls')
+  async getIndexedUrls(
+    @Param('companyId') companyId: string,
+  ) {
+    if (!companyId || companyId.includes('/') || companyId.includes('..')) {
+      throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
+    }
+    try {
+      const urls =
+        await this.orgChartEsService.getIndexedUrlsForCompany(companyId);
+      return { urls, status: 'ok' };
+    } catch (error) {
+      this.logger.error(
+        `Get indexed URLs failed for companyId=${companyId}`,
+        error,
+      );
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Failed to fetch indexed URLs',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Post('companies/autocomplete')
@@ -296,9 +349,11 @@ export class OrgChartController {
         throw new HttpException('Authentication required', HttpStatus.UNAUTHORIZED);
       }
 
+      const workspaceMemberId = (req as { workspaceMemberId?: string }).workspaceMemberId;
       const result = await this.orgChartService.findCompanyByName(
         body.companyName,
         authToken,
+        workspaceMemberId,
       );
       return { ...result, status: 'ok' };
     } catch (error) {

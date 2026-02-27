@@ -53,6 +53,7 @@ export class ContactEnrichmentJobService {
     operation: 'availability' | 'fetch',
     options?: ContactEnrichmentOptions,
     providerName?: ContactEnrichmentProviderName,
+    workspaceId?: string,
   ): Promise<string> {
     const jobId = v4();
 
@@ -62,6 +63,7 @@ export class ContactEnrichmentJobService {
       operation,
       options,
       providerName,
+      workspaceId,
     };
 
     await this.messageQueueService.add(

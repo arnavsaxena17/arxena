@@ -2,13 +2,19 @@ import {
   Body,
   Controller,
   Get,
+  HttpException,
+  HttpStatus,
   Logger,
   Param,
   Post,
   Query,
+  Req,
   UseGuards
 } from '@nestjs/common';
 
+import { Request } from 'express';
+
+import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
 import { ApolloProvider } from '../providers/apollo.provider';
@@ -32,6 +38,7 @@ export class ContactEnrichmentController {
   constructor(
     private readonly waterfallService: ContactEnrichmentWaterfallService,
     private readonly jobService: ContactEnrichmentJobService,
+    private readonly workspaceCreditsService: WorkspaceCreditsService,
     private readonly arxenaProvider: ArxenaProvider,
     private readonly pdlProvider: PdlProvider,
     private readonly contactOutProvider: ContactOutProvider,
@@ -109,6 +116,7 @@ export class ContactEnrichmentController {
    */
   @Post('fetch')
   async fetchContacts(
+    @Req() req: Request & { workspaceId?: string },
     @Body()
     body: {
       linkedinUrl?: string;
@@ -139,9 +147,40 @@ export class ContactEnrichmentController {
       wantPhone: body.wantPhone,
     };
 
+    const wantEmail = options.wantEmail !== false;
+    const wantPhone = options.wantPhone !== false;
+    const workspaceId = req.workspaceId;
+
+    if (
+      process.env.IS_BILLING_ENABLED === 'true' &&
+      workspaceId &&
+      (wantEmail || wantPhone)
+    ) {
+      const totalEmailCredits = wantEmail ? urls.length : 0;
+      const totalPhoneCredits = wantPhone ? urls.length : 0;
+      const hasSufficient =
+        await this.workspaceCreditsService.hasSufficientContactCreditsForCount(
+          workspaceId,
+          totalEmailCredits,
+          totalPhoneCredits,
+        );
+      if (!hasSufficient) {
+        throw new HttpException(
+          'Insufficient contact credits',
+          HttpStatus.FORBIDDEN,
+        );
+      }
+    }
+
     // Check if we should process async
     if (this.jobService.shouldProcessAsync(urls.length)) {
-      const jobId = await this.jobService.queueBulkJob(urls, 'fetch', options);
+      const jobId = await this.jobService.queueBulkJob(
+        urls,
+        'fetch',
+        options,
+        undefined,
+        workspaceId,
+      );
       return {
         jobId,
         status: 'queued',
@@ -149,10 +188,22 @@ export class ContactEnrichmentController {
       };
     }
 
-    // Process synchronously
+    // Process synchronously - debit per URL
     const results: Record<string, ContactResult> = {};
     for (const url of urls) {
       try {
+        if (
+          process.env.IS_BILLING_ENABLED === 'true' &&
+          workspaceId &&
+          (wantEmail || wantPhone)
+        ) {
+          await this.workspaceCreditsService.debitContactCredits(
+            workspaceId,
+            wantEmail ? 1 : 0,
+            wantPhone ? 1 : 0,
+          );
+        }
+
         results[url] = await this.waterfallService.fetchContacts(url, options);
       } catch (error) {
         this.logger.error(`Fetch failed for ${url}`, error as Error);
@@ -281,6 +332,7 @@ export class ContactEnrichmentController {
    */
   @Post('fetch/arxena')
   async fetchContactsArxena(
+    @Req() req: Request & { workspaceId?: string },
     @Body()
     body: {
       linkedinUrl?: string;
@@ -293,7 +345,7 @@ export class ContactEnrichmentController {
     | { jobId: string; status: string; total: number }
     | { results: Record<string, ContactResult> }
   > {
-    return this.fetchContactsForProvider('arxena', body);
+    return this.fetchContactsForProvider('arxena', req, body);
   }
 
   /**
@@ -302,6 +354,7 @@ export class ContactEnrichmentController {
    */
   @Post('fetch/pdl')
   async fetchContactsPdl(
+    @Req() req: Request & { workspaceId?: string },
     @Body()
     body: {
       linkedinUrl?: string;
@@ -314,7 +367,7 @@ export class ContactEnrichmentController {
     | { jobId: string; status: string; total: number }
     | { results: Record<string, ContactResult> }
   > {
-    return this.fetchContactsForProvider('pdl', body);
+    return this.fetchContactsForProvider('pdl', req, body);
   }
 
   /**
@@ -323,6 +376,7 @@ export class ContactEnrichmentController {
    */
   @Post('fetch/contactout')
   async fetchContactsContactOut(
+    @Req() req: Request & { workspaceId?: string },
     @Body()
     body: {
       linkedinUrl?: string;
@@ -335,7 +389,7 @@ export class ContactEnrichmentController {
     | { jobId: string; status: string; total: number }
     | { results: Record<string, ContactResult> }
   > {
-    return this.fetchContactsForProvider('contactout', body);
+    return this.fetchContactsForProvider('contactout', req, body);
   }
 
   /**
@@ -344,6 +398,7 @@ export class ContactEnrichmentController {
    */
   @Post('fetch/lusha')
   async fetchContactsLusha(
+    @Req() req: Request & { workspaceId?: string },
     @Body()
     body: {
       linkedinUrl?: string;
@@ -356,7 +411,7 @@ export class ContactEnrichmentController {
     | { jobId: string; status: string; total: number }
     | { results: Record<string, ContactResult> }
   > {
-    return this.fetchContactsForProvider('lusha', body);
+    return this.fetchContactsForProvider('lusha', req, body);
   }
 
   /**
@@ -365,6 +420,7 @@ export class ContactEnrichmentController {
    */
   @Post('fetch/apollo')
   async fetchContactsApollo(
+    @Req() req: Request & { workspaceId?: string },
     @Body()
     body: {
       linkedinUrl?: string;
@@ -377,7 +433,7 @@ export class ContactEnrichmentController {
     | { jobId: string; status: string; total: number }
     | { results: Record<string, ContactResult> }
   > {
-    return this.fetchContactsForProvider('apollo', body);
+    return this.fetchContactsForProvider('apollo', req, body);
   }
 
   /**
@@ -460,6 +516,7 @@ export class ContactEnrichmentController {
    */
   private async fetchContactsForProvider(
     providerName: 'arxena' | 'pdl' | 'contactout' | 'lusha' | 'apollo',
+    req: Request & { workspaceId?: string },
     body: {
       linkedinUrl?: string;
       linkedinUrls?: string[];
@@ -495,9 +552,40 @@ export class ContactEnrichmentController {
       wantPhone: body.wantPhone,
     };
 
+    const wantEmail = options.wantEmail !== false;
+    const wantPhone = options.wantPhone !== false;
+    const workspaceId = req.workspaceId;
+
+    if (
+      process.env.IS_BILLING_ENABLED === 'true' &&
+      workspaceId &&
+      (wantEmail || wantPhone)
+    ) {
+      const totalEmailCredits = wantEmail ? urls.length : 0;
+      const totalPhoneCredits = wantPhone ? urls.length : 0;
+      const hasSufficient =
+        await this.workspaceCreditsService.hasSufficientContactCreditsForCount(
+          workspaceId,
+          totalEmailCredits,
+          totalPhoneCredits,
+        );
+      if (!hasSufficient) {
+        throw new HttpException(
+          'Insufficient contact credits',
+          HttpStatus.FORBIDDEN,
+        );
+      }
+    }
+
     // Check if we should process async
     if (this.jobService.shouldProcessAsync(urls.length)) {
-      const jobId = await this.jobService.queueBulkJob(urls, 'fetch', options, providerName);
+      const jobId = await this.jobService.queueBulkJob(
+        urls,
+        'fetch',
+        options,
+        providerName,
+        workspaceId,
+      );
       return {
         jobId,
         status: 'queued',
@@ -509,6 +597,18 @@ export class ContactEnrichmentController {
     const results: Record<string, ContactResult> = {};
     for (const url of urls) {
       try {
+        if (
+          process.env.IS_BILLING_ENABLED === 'true' &&
+          workspaceId &&
+          (wantEmail || wantPhone)
+        ) {
+          await this.workspaceCreditsService.debitContactCredits(
+            workspaceId,
+            wantEmail ? 1 : 0,
+            wantPhone ? 1 : 0,
+          );
+        }
+
         results[url] = await provider.fetchContacts(url, options);
         // Ensure source includes provider name
         if (results[url]) {

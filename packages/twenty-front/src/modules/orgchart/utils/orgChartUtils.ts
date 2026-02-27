@@ -100,6 +100,43 @@ export const buildBooleanKeywordsForNode = (
   return parts.join(' AND ');
 };
 
+export const toLinkedInPremiumCandidate = (
+  item: ContextResultItem,
+): Record<string, unknown> => {
+  const raw = item.raw ?? {};
+  const linkedinUrl = item.linkedinUrl ?? '';
+  const publicIdentifier = linkedinUrl
+    ? linkedinUrl.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//i, '').split('/')[0]
+    : '';
+  return {
+    full_name: item.fullName,
+    job_title: item.headline,
+    linkedin_url: linkedinUrl,
+    profile_url: linkedinUrl,
+    public_identifier: publicIdentifier || undefined,
+    linkedin_profile_id_url: linkedinUrl,
+    ...(raw && typeof raw === 'object' ? raw : {}),
+    uniqueStringKey: linkedinUrl || `orgchart-${item.id}`,
+  };
+};
+
+export const getSuggestedJobNameFromContext = (
+  companyName: string,
+  contextModalMode: string | null,
+): string => {
+  const label =
+    contextModalMode === 'leadership'
+      ? 'Leadership'
+      : contextModalMode === 'entire_company' || contextModalMode === 'all_people'
+        ? 'All employees'
+        : contextModalMode === 'function_grade'
+          ? 'This function'
+          : contextModalMode === 'current_node' || contextModalMode === 'selected_nodes'
+            ? 'Selected positions'
+            : 'Org chart';
+  return `${companyName || 'Company'} – ${label}`;
+};
+
 const escapeCsvValue = (value: string): string =>
   `"${String(value).replace(/"/g, '""')}"`;
 

@@ -91,30 +91,18 @@ export class DocumentTemplateService {
   }
 
   private getPlaceholderImagePath(): string {
-    // Try to find placeholder image in different possible locations
-    const possiblePaths = [
-      // First try the arxena-site static directory (where place_holder_photo.png exists)
-      './place_holder_photo.png',
-      path.join(process.cwd(), 'arxena/packages/twenty-server/src/engine/core-modules/arx-chat/services/candidate-engagement/place_holder_photo.png'),
-      path.join(process.cwd(), 'src/engine/core-modules/arx-chat/services/candidate-engagement/place_holder_photo.png'),
-      '/Users/arnavsaxena/MEGA/arx/arxena-site/static/img/place_holder_photo.png',
-      '/Users/arnavsaxena/MEGA/arx/arxena-site/static/img/blank-image.png',
-      // Then try local paths relative to twenty-server
-      path.join(process.cwd(), 'static', 'img', 'place_holder_photo.png'),
-      path.join(process.cwd(), 'static', 'img', 'placeholder.png'),
-      path.join(process.cwd(), 'static', 'img', 'blank-image.png')
-    ];
-
-    for (const imagePath of possiblePaths) {
-      if (fs.existsSync(imagePath)) {
-        console.log(`Using placeholder image: ${imagePath}`);
-        return imagePath;
-      }
+    // Use __dirname to resolve path relative to compiled output (dist/src/.../arx-chat/static/)
+    const placeholderPath = path.join(__dirname, '..', '..', 'static', 'place_holder_photo.png');
+    if (fs.existsSync(placeholderPath)) {
+      return placeholderPath;
     }
-
-    // If no placeholder found, return the first path from arxena-site
-    console.warn('No placeholder image found, using default path');
-    return possiblePaths[0];
+    // Fallback for development when running from src
+    const devPath = path.join(process.cwd(), 'src', 'engine', 'core-modules', 'arx-chat', 'static', 'place_holder_photo.png');
+    if (fs.existsSync(devPath)) {
+      return devPath;
+    }
+    console.warn('No placeholder image found at arx-chat/static/place_holder_photo.png');
+    return placeholderPath;
   }
 
   private getInlinePlaceholderImage(): Buffer {

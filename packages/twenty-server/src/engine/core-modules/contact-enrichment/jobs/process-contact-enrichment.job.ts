@@ -1,5 +1,6 @@
 import { Inject, Logger } from '@nestjs/common';
 
+import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
@@ -26,6 +27,7 @@ export type ContactEnrichmentJobData = {
   operation: 'availability' | 'fetch';
   options?: ContactEnrichmentOptions;
   providerName?: ContactEnrichmentProviderName;
+  workspaceId?: string;
 };
 
 @Processor(MessageQueue.contactEnrichmentQueue)
@@ -34,6 +36,7 @@ export class ContactEnrichmentQueueProcessor {
 
   constructor(
     private readonly waterfallService: ContactEnrichmentWaterfallService,
+    private readonly workspaceCreditsService: WorkspaceCreditsService,
     private readonly arxenaProvider: ArxenaProvider,
     private readonly pdlProvider: PdlProvider,
     private readonly contactOutProvider: ContactOutProvider,
@@ -47,7 +50,8 @@ export class ContactEnrichmentQueueProcessor {
 
   @Process(ContactEnrichmentQueueProcessor.name)
   async handle(jobData: ContactEnrichmentJobData): Promise<void> {
-    const { jobId, linkedinUrls, operation, options, providerName } = jobData;
+    const { jobId, linkedinUrls, operation, options, providerName, workspaceId } =
+      jobData;
 
     this.logger.log(
       `Processing contact enrichment job ${jobId}: ${operation} for ${linkedinUrls.length} URLs${providerName ? ` using ${providerName} provider` : ' using waterfall'}`,
@@ -68,9 +72,34 @@ export class ContactEnrichmentQueueProcessor {
     // Get provider if specified
     const provider = providerName ? this.getProvider(providerName) : null;
 
+    const wantEmail = options?.wantEmail !== false;
+    const wantPhone = options?.wantPhone !== false;
+
     // Process each URL sequentially (rate limiting is handled by waterfall service or provider)
     for (const linkedinUrl of linkedinUrls) {
       try {
+        if (
+          operation === 'fetch' &&
+          process.env.IS_BILLING_ENABLED === 'true' &&
+          workspaceId &&
+          (wantEmail || wantPhone)
+        ) {
+          const hasSufficient =
+            await this.workspaceCreditsService.hasSufficientContactCredits(
+              workspaceId,
+              wantEmail,
+              wantPhone,
+            );
+          if (!hasSufficient) {
+            throw new Error('Insufficient contact credits');
+          }
+          await this.workspaceCreditsService.debitContactCredits(
+            workspaceId,
+            wantEmail ? 1 : 0,
+            wantPhone ? 1 : 0,
+          );
+        }
+
         let result: ContactAvailability | ContactResult;
 
         if (provider) {

@@ -31,7 +31,6 @@ import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-gra
 import { v4 as uuidv4 } from 'uuid';
 import { RecruiterProfileService } from '../recruiter-profile';
 import { FilterCandidates } from './filter-candidates';
-// UpdateChat is imported dynamically to avoid circular dependency
 
 export interface ChatFlowConfig {
   order: number;

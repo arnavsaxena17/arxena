@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
@@ -46,7 +46,7 @@ import { WorkspaceQueryService } from './workspace-modifications.service';
     FeatureFlagModule,
     TypeORMModule,
     WorkspaceSchemaBuilderModule, 
-    WebSocketModule,
+    forwardRef(() => WebSocketModule),
     WorkspaceResolverBuilderModule,
     GraphQLExecutionModule,
     TypeOrmModule.forFeature([Workspace], 'core'),

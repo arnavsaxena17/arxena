@@ -25,13 +25,6 @@ export async function GET(request: NextRequest) {
       { status: 400 },
     );
   }
-  console.log('DEBUG:', {
-    nextUrl: request.nextUrl.toString(),
-    url: request.url,
-    websiteFromNext: request.nextUrl.searchParams.get('website'),
-    websiteFromUrl: new URL(request.url).searchParams.get('website'),
-  });
-
   try {
     const authHeader = request.headers.get('authorization');
     const cookieHeader = request.headers.get('cookie');
@@ -60,8 +53,7 @@ export async function GET(request: NextRequest) {
         'Content-Type': contentType,
       },
     });
-  } catch (error) {
-    console.error('Org chart company logo proxy error:', error);
-    return new NextResponse(null, { status: 500 });
+  } catch {
+    return new NextResponse(null, { status: 404 });
   }
 }

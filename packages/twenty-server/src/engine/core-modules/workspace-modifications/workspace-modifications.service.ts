@@ -54,6 +54,19 @@ export class WorkspaceQueryService {
       throw new Error(`Failed to get workspace ID from token: ${error.message}`);
     }
   }
+
+  async getWorkspaceMemberIdFromToken(apiToken: string): Promise<string | null> {
+    if (!apiToken) {
+      return null;
+    }
+    try {
+      const validatedToken =
+        await this.accessTokenService.validateToken(apiToken);
+      return validatedToken.workspaceMemberId ?? null;
+    } catch {
+      return null;
+    }
+  }
   async getWorkspaceNameFromToken(apiToken: string) {
     if (!apiToken) {
       throw new Error('API token is required');

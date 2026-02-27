@@ -14,10 +14,10 @@ import {
 import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';
 
 /**
- * Razorpay: stores org-chart credits for a workspace.
- * 1 credit = 1 org chart of up to 100 employees. Larger charts consume more:
- * credits = Math.ceil(employeeCount / 100). Incremented on payment.captured
- * for credit-pack purchases.
+ * Stores credits for a workspace: org chart credits and contact credits (email/phone).
+ * Org chart: 1 credit = 1 org chart of up to 100 employees. Larger charts consume more:
+ * credits = Math.ceil(employeeCount / 100). Incremented on payment.captured for credit-pack purchases.
+ * Contact credits: 1 credit per email fetch, 1 credit per phone fetch.
  */
 @Entity({ name: 'workspaceCredits', schema: 'core' })
 @ObjectType()
@@ -37,5 +37,13 @@ export class WorkspaceCredits {
 
   @Field()
   @Column({ type: 'int', default: 0 })
-  credits: number;
+  orgChartCredits: number;
+
+  @Field()
+  @Column({ type: 'int', default: 0 })
+  emailContactCredits: number;
+
+  @Field()
+  @Column({ type: 'int', default: 0 })
+  phoneContactCredits: number;
 }

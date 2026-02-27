@@ -20,6 +20,7 @@ import {
 import { OrgChartAddToJobModal } from './components/OrgChartAddToJobModal';
 import { OrgChartHeader } from './components/OrgChartHeader';
 import { OrgChartResultModal } from './components/OrgChartResultModal';
+import { OrgChartResultsAddToJobModal } from './components/OrgChartResultsAddToJobModal';
 import { useOrgChartActions } from './hooks/useOrgChartActions';
 
 export type ArxOrgChartProps = {
@@ -162,6 +163,9 @@ export const ArxOrgChart = ({
   >();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResultCount, setSearchResultCount] = useState<number | null>(null);
+  const [exactEmployeeCount, setExactEmployeeCount] = useState<number | null>(
+    null,
+  );
 
   const diagramHandleRef = useRef<OrgChartDiagramHandle | null>(null);
 
@@ -228,6 +232,49 @@ export const ArxOrgChart = ({
       lookupByName(lookupKey);
     }
   }, [companyId, companyName, hasInitialCompanyInfo, lookupByName]);
+
+  useEffect(() => {
+    const linkedinUrlToUse = linkedinUrl ?? fallbackCompanyInfo?.linkedinUrl;
+    const identifier = linkedinUrlToUse ?? companyId;
+    if (!identifier?.trim() || !baseUrl) return;
+
+    let cancelled = false;
+    const fetchEmployeeCount = async () => {
+      try {
+        const params = new URLSearchParams();
+        if (linkedinUrlToUse?.trim()) {
+          params.set('linkedinUrl', linkedinUrlToUse.trim());
+        } else {
+          params.set('companyId', companyId);
+        }
+        const res = await fetch(
+          `${baseUrl.replace(/\/$/, '')}/org-chart/companies/employee-count?${params.toString()}`,
+          {
+            headers: accessToken
+              ? { Authorization: `Bearer ${accessToken}` }
+              : undefined,
+          },
+        );
+        if (cancelled) return;
+        const data = (await res.json()) as { employeeCount?: number | null };
+        if (res.ok && typeof data.employeeCount === 'number') {
+          setExactEmployeeCount(data.employeeCount);
+        }
+      } catch {
+        if (!cancelled) setExactEmployeeCount(null);
+      }
+    };
+    fetchEmployeeCount();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    baseUrl,
+    accessToken,
+    companyId,
+    linkedinUrl,
+    fallbackCompanyInfo?.linkedinUrl,
+  ]);
 
   useEffect(() => {
     if (!orgData || !companyId) return;
@@ -335,7 +382,7 @@ export const ArxOrgChart = ({
     industry: industry ?? fallbackCompanyInfo?.industry,
     profileCount: profileCount ?? fallbackCompanyInfo?.profileCount,
     linkedinUrl: linkedinUrl ?? fallbackCompanyInfo?.linkedinUrl,
-    employeeCount: fallbackCompanyInfo?.employeeCount,
+    employeeCount: exactEmployeeCount ?? fallbackCompanyInfo?.employeeCount,
     linkedinDisplayName: fallbackCompanyInfo?.linkedinDisplayName,
     onBack,
     hasFilters: !!orgData,
@@ -443,6 +490,15 @@ export const ArxOrgChart = ({
                 ? actions.downloadContextResultsAsCsv
                 : undefined
             }
+            onAddToJob={
+              actions.contextResults.length > 0
+                ? () =>
+                    actions.openAddResultsToJobModal(actions.contextResults, {
+                      companyName: companyName ?? undefined,
+                      contextModalMode: actions.contextModalMode ?? undefined,
+                    })
+                : undefined
+            }
           />
         )}
 
@@ -455,6 +511,18 @@ export const ArxOrgChart = ({
             emptyMessage="No people are attached to this node yet."
             onClose={actions.closeNodeDetailModal}
             onDownloadCsv={actions.downloadNodeDetailsAsCsv}
+            onAddToJob={
+              actions.nodeDetailResults.length > 0
+                ? () =>
+                    actions.openAddResultsToJobModal(
+                      actions.nodeDetailResults,
+                      {
+                        companyName: companyName ?? undefined,
+                        contextModalMode: 'current_node',
+                      },
+                    )
+                : undefined
+            }
             onGetSimilarPeople={() =>
               actions.executeOrgchartSearch({
                 mode: 'function_grade',
@@ -472,6 +540,16 @@ export const ArxOrgChart = ({
           companyName={companyName ?? undefined}
           queueStartChatAfter={actions.addToJobQueueStartChat}
           onSuccess={actions.closeAddToJobModal}
+        />
+
+        <OrgChartResultsAddToJobModal
+          isOpen={actions.isAddResultsToJobModalOpen}
+          onClose={actions.closeAddResultsToJobModal}
+          results={actions.addResultsToJobResults}
+          companyName={actions.addResultsToJobContext.companyName}
+          contextModalMode={actions.addResultsToJobContext.contextModalMode}
+          queueStartChatAfter={true}
+          onSuccess={actions.closeAddResultsToJobModal}
         />
       </StyledDiagramArea>
     </StyledContainer>

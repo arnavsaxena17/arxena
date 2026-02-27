@@ -1,0 +1,54 @@
+{
+  "companies": [
+    {
+      "companyId": "litify",
+      "companyName": "Litify",
+      "website": "litify.com"
+    },
+    {
+      "companyId": "hellosign",
+      "companyName": "HelloSign",
+      "website": "hellosign.com"
+    },
+    {
+      "companyId": "launchdarkly",
+      "companyName": "LaunchDarkly",
+      "website": "launchdarkly.com"
+    },
+    {
+      "companyId": "slack",
+      "companyName": "Slack",
+      "website": "slack.com"
+    },
+    {
+      "companyId": "figma",
+      "companyName": "Figma",
+      "website": "figma.com"
+    },
+    {
+      "companyId": "pandadoc",
+      "companyName": "PandaDoc",
+      "website": "pandadoc.com"
+    },
+    {
+      "companyId": "airtable",
+      "companyName": "Airtable",
+      "website": "airtable.com"
+    },
+    {
+      "companyId": "evernote",
+      "companyName": "Evernote",
+      "website": "evernote.com"
+    },
+    {
+      "companyId": "intercom",
+      "companyName": "Intercom",
+      "website": "intercom.com"
+    },
+    {
+      "companyId": "egnyte",
+      "companyName": "Egnyte",
+      "website": "egnyte.com"
+    }
+  ]
+}

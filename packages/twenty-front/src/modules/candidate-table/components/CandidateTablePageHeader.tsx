@@ -2,6 +2,7 @@ import styled from '@emotion/styled';
 import {
   IconBrandLinkedin,
   IconBrandWhatsapp,
+  IconGitMerge,
   IconHierarchy2,
 } from '@tabler/icons-react';
 import { ReactNode } from 'react';
@@ -188,6 +189,11 @@ export type CandidateTablePageHeaderProps = {
   hasInsufficientCredits?: boolean;
   onAddCredits?: () => void;
   onChatKitToggle?: () => void;
+  onMergeJobs?: () => void;
+  isMergeMode?: boolean;
+  onMergeModeCancel?: () => void;
+  mergeSelectedCount?: number;
+  onMergeSelected?: () => void;
 };
 
 export const CandidateTablePageHeader = ({
@@ -211,6 +217,11 @@ export const CandidateTablePageHeader = ({
   hasInsufficientCredits,
   onAddCredits,
   onChatKitToggle,
+  onMergeJobs,
+  isMergeMode,
+  onMergeModeCancel,
+  mergeSelectedCount = 0,
+  onMergeSelected,
 }: CandidateTablePageHeaderProps) => (
     <StyledPageHeader
       title={title}
@@ -237,7 +248,36 @@ export const CandidateTablePageHeader = ({
       {/* <StyledLeftSpacer /> */}
 
       {/* <StyledRightSection> */}
-        <Button dataTestId="add-new-job" title="Add New Job" Icon={IconPlus} variant="primary" onClick={onAddJob} />
+        {isMergeMode ? (
+          <>
+            <Button
+              dataTestId="merge-selected"
+              title={`Merge selected (${mergeSelectedCount})`}
+              Icon={IconGitMerge}
+              variant="primary"
+              onClick={onMergeSelected}
+              disabled={mergeSelectedCount < 2}
+            />
+            <Button
+              dataTestId="merge-cancel"
+              title="Cancel"
+              variant="secondary"
+              onClick={onMergeModeCancel}
+            />
+          </>
+        ) : (
+          <>
+            <Button dataTestId="add-new-job" title="Add New Job" Icon={IconPlus} variant="primary" onClick={onAddJob} />
+            {onMergeJobs && (
+              <Button
+                dataTestId="merge-jobs"
+                title="Merge jobs"
+                variant="secondary"
+                onClick={onMergeJobs}
+              />
+            )}
+          </>
+        )}
         {/* {onOrgCharts !== undefined && (
           <Button
             title="Org Charts"

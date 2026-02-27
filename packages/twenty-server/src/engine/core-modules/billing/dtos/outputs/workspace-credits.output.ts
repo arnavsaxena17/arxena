@@ -5,5 +5,11 @@ import { Field, ObjectType } from '@nestjs/graphql';
 @ObjectType()
 export class WorkspaceCreditsOutput {
   @Field()
-  credits: number;
+  orgChartCredits: number;
+
+  @Field()
+  emailContactCredits: number;
+
+  @Field()
+  phoneContactCredits: number;
 }

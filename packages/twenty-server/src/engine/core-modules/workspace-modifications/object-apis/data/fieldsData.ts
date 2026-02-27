@@ -517,6 +517,39 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'workspaceMemberProfile',
+      field: {
+        description: 'Unipile account ID for LinkedIn (org chart, search)',
+        icon: 'IconLinkedin',
+        label: 'LinkedIn Unipile Account ID',
+        name: 'linkedinUnipileAccountId',
+        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        type: 'TEXT',
+      },
+    },
+    {
+      objectName: 'workspaceMemberProfile',
+      field: {
+        description: 'Unipile account ID for WhatsApp',
+        icon: 'IconPhone',
+        label: 'WhatsApp Unipile Account ID',
+        name: 'whatsappUnipileAccountId',
+        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        type: 'TEXT',
+      },
+    },
+    {
+      objectName: 'workspaceMemberProfile',
+      field: {
+        description: 'If true, keep LinkedIn connected for engagement (never evict from pool)',
+        icon: 'IconLink',
+        label: 'Keep LinkedIn Connected',
+        name: 'keepLinkedinConnected',
+        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        type: 'BOOLEAN',
+      },
+    },
+    {
       objectName: 'person',
       field: {
         description: '',

@@ -13,10 +13,12 @@ import type {
   UnipileNewRelationWebhook,
   UnipileTrackingEmailWebhook,
   UnipileWebhookAttachment,
-  UnipileWebhookPayload
+  UnipileWebhookPayload,
 } from '../types/unipile-webhook.types';
 import { UnipileAttachmentStorageUtil } from '../utils/unipile-attachment-storage.util';
+import { UnipileAccountPoolService } from './unipile-account-pool.service';
 import { IncomingWhatsappMessages } from './whatsapp-api/incoming-messages';
+import { WorkspaceMemberProfileUnipileService } from './workspace-member-profile-unipile.service';
 
 @Injectable()
 export class UnipileWebhookService {
@@ -26,6 +28,8 @@ export class UnipileWebhookService {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly unipileAccountPoolService: UnipileAccountPoolService,
+    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
   ) {
     this.attachmentStorage = new UnipileAttachmentStorageUtil();
@@ -143,9 +147,9 @@ export class UnipileWebhookService {
    * Handle account status webhook
    */
   private async handleAccountStatusWebhook(payload: UnipileAccountStatusWebhook): Promise<void> {
-    const { account_id, account_type, message: status } = payload.AccountStatus;
+    const { account_id, account_type, message: status, name } = payload.AccountStatus;
     
-    this.logger.log(`Account status update: ${account_id} (${account_type}) - ${status}`);
+    this.logger.log(`Account status update: ${account_id} (${account_type}) - ${status} for name ${name}`);
 
     // TODO: Update account status in database
     // This would typically involve:
@@ -160,34 +164,34 @@ export class UnipileWebhookService {
         break;
       
       case 'CREDENTIALS':
-        this.logger.warn(`Account ${account_id} requires credential update`);
+        this.logger.warn(`Account ${account_id} requires credential update for name ${name}`);
         await this.onAccountCredentialsRequired(account_id, account_type);
         break;
       
       case 'ERROR':
       case 'STOPPED':
-        this.logger.error(`Account ${account_id} has stopped working: ${status}`);
+        this.logger.error(`Account ${account_id} has stopped working: ${status} for name ${name}`);
         await this.onAccountError(account_id, account_type, status);
         break;
       
       case 'CREATION_SUCCESS':
       case 'RECONNECTED':
-        this.logger.log(`Account ${account_id} successfully connected: ${status}`);
-        await this.onAccountConnected(account_id, account_type, status);
+        this.logger.log(`Account ${account_id} successfully connected: ${status} for name ${name}`);
+        await this.onAccountConnected(account_id, account_type, status, name);
         break;
       
       case 'SYNC_SUCCESS':
-        this.logger.log(`Account ${account_id} synchronization completed`);
+        this.logger.log(`Account ${account_id} synchronization completed for name ${name}`);
         await this.onAccountSyncCompleted(account_id, account_type);
         break;
       
       case 'CONNECTING':
-        this.logger.log(`Account ${account_id} is attempting to connect`);
+        this.logger.log(`Account ${account_id} is attempting to connect for name ${name}`);
         await this.onAccountConnecting(account_id, account_type);
         break;
       
       case 'DELETED':
-        this.logger.log(`Account ${account_id} has been deleted`);
+        this.logger.log(`Account ${account_id} has been deleted for name ${name}`);
         await this.onAccountDeleted(account_id, account_type);
         break;
       
@@ -311,31 +315,37 @@ export class UnipileWebhookService {
    */
   private async handleNewRelationWebhook(payload: UnipileNewRelationWebhook): Promise<void> {
     const { account_id, relation } = payload;
-    
-    this.logger.log(`New LinkedIn relation: ${relation.name} (${relation.status})`);
 
-    // TODO: Process new connection
-    // This would typically involve:
-    // 1. Storing the new connection in the database
-    // 2. Triggering connection acceptance workflow
-    // 3. Adding contact to CRM
-
-    switch (relation.status) {
-      case 'pending':
-        this.logger.log(`Connection request pending: ${relation.name}`);
-        await this.onConnectionPending(payload);
-        break;
-      
-      case 'accepted':
-        this.logger.log(`Connection accepted: ${relation.name}`);
-        await this.onConnectionAccepted(payload);
-        break;
-      
-      case 'ignored':
-        this.logger.log(`Connection ignored: ${relation.name}`);
-        await this.onConnectionIgnored(payload);
-        break;
+    if (relation) {
+      this.logger.log(`New LinkedIn relation (nested): ${relation.name} (${relation.status})`);
+      switch (relation.status) {
+        case 'pending':
+          await this.onConnectionPending(payload);
+          break;
+        case 'accepted':
+          await this.onConnectionAccepted(payload);
+          break;
+        case 'ignored':
+          await this.onConnectionIgnored(payload);
+          break;
+      }
+    } else {
+      // Flat format from USERS webhook - always treat as accepted
+      this.logger.log(`New LinkedIn relation (flat): ${payload.user_full_name} accepted invitation`);
+      await this.onConnectionAccepted(payload);
     }
+  }
+
+  /**
+   * Process new_relation webhook from dedicated /relations endpoint.
+   * Treats acceptance as "Yes, I'm keen" and adds to database via receiveIncomingMessageFromLinkedinUnipile.
+   */
+  async processNewRelationWebhook(payload: UnipileNewRelationWebhook): Promise<void> {
+    if (payload.event !== 'new_relation') {
+      this.logger.warn(`Expected new_relation event, got: ${payload.event}`);
+      return;
+    }
+    await this.handleNewRelationWebhook(payload);
   }
 
   // Account status event handlers (to be implemented by consumers)
@@ -351,8 +361,62 @@ export class UnipileWebhookService {
     // TODO: Implement account error handler
   }
 
-  private async onAccountConnected(accountId: string, accountType: string, status: string): Promise<void> {
-    // TODO: Implement account connected handler
+  private async onAccountConnected(
+    accountId: string,
+    accountType: string,
+    status: string,
+    name?: string,
+  ): Promise<void> {
+    const parsed = this.parseWebhookName(name);
+    if (parsed.workspaceMemberId && parsed.workspaceId) {
+      const poolType = accountType === 'LINKEDIN' ? 'LINKEDIN' : 'WHATSAPP';
+      await this.unipileAccountPoolService.upsertPoolRecord(
+        parsed.workspaceMemberId,
+        parsed.workspaceId,
+        accountId,
+        poolType,
+      );
+      const type = accountType === 'LINKEDIN' ? 'linkedin' : 'whatsapp';
+      const authToken = await this.getWorkspaceApiToken(parsed.workspaceId);
+      if (authToken) {
+        await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberUnipileAccountId(
+          parsed.workspaceMemberId,
+          authToken,
+          type,
+          accountId,
+        );
+      }
+    } else if (parsed.workspaceId) {
+      await this.workspaceQueryService.updateWorkspaceKeys(parsed.workspaceId, {
+        [accountType === 'LINKEDIN' ? 'linkedin_unipile_account_id' : 'whatsapp_unipile_account_id']:
+          accountId,
+      });
+    }
+  }
+
+  private parseWebhookName(name?: string): {
+    workspaceMemberId?: string;
+    workspaceId?: string;
+  } {
+    if (!name?.trim()) return {};
+    const parts = name.split('|');
+    if (parts.length >= 2) {
+      return { workspaceMemberId: parts[0].trim(), workspaceId: parts[1].trim() };
+    }
+    return { workspaceId: name.trim() };
+  }
+
+  private async getWorkspaceApiToken(workspaceId: string): Promise<string | null> {
+    try {
+      const apiKeys = await this.workspaceQueryService.getApiKeys(
+        workspaceId,
+        this.workspaceQueryService.getDataSourceSchema(workspaceId),
+      );
+      const key = apiKeys?.[0];
+      return key?.key ?? null;
+    } catch {
+      return null;
+    }
   }
 
   private async onAccountSyncCompleted(accountId: string, accountType: string): Promise<void> {
@@ -716,14 +780,84 @@ export class UnipileWebhookService {
 
   // Connection event handlers
   private async onConnectionPending(payload: UnipileNewRelationWebhook): Promise<void> {
-    // TODO: Handle pending connection
+    // No action for pending - we only process accepted invitations
   }
 
   private async onConnectionAccepted(payload: UnipileNewRelationWebhook): Promise<void> {
-    // TODO: Handle accepted connection
+    const { account_id, user_full_name, user_provider_id, user_profile_url, relation } = payload;
+
+    const name = user_full_name ?? relation?.name;
+    const providerId = user_provider_id ?? relation?.profile_url;
+    const profileUrl = user_profile_url ?? relation?.profile_url;
+
+    if (!name || !providerId || !profileUrl) {
+      this.logger.warn('New relation payload missing required fields for accepted connection');
+      return;
+    }
+
+    const workspaceId =
+      await this.workspaceQueryService.findWorkspaceIdByLinkedinUnipileAccountId(account_id);
+    if (!workspaceId) {
+      this.logger.warn(`No workspace found for LinkedIn Unipile account ${account_id}, skipping new relation`);
+      return;
+    }
+
+    const workspaceKeys = await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
+    const linkedinUrl = workspaceKeys?.linkedin_url;
+    if (!linkedinUrl) {
+      this.logger.warn(`Workspace ${workspaceId} has no linkedin_url, skipping new relation`);
+      return;
+    }
+
+    const normalizeUrl = (url: string) =>
+      url?.replace('www.linkedin.com', 'linkedin.com') ?? '';
+    const recipientProfileUrl = normalizeUrl(linkedinUrl.startsWith('http') ? linkedinUrl : `https://linkedin.com/in/${linkedinUrl}`);
+
+    const senderAttendee = {
+      attendee_id: providerId,
+      attendee_name: name,
+      attendee_provider_id: providerId,
+      attendee_profile_url: profileUrl,
+      attendee_public_identifier: payload.user_public_identifier ?? profileUrl.split('/').pop() ?? '',
+    };
+
+    const syntheticMessagePayload: UnipileMessageWebhook = {
+      account_id,
+      account_type: 'LINKEDIN',
+      event: 'message_received',
+      chat_id: `relation-${account_id}-${providerId}`,
+      message_id: `new_relation-${account_id}-${providerId}-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      webhook_name: payload.webhook_name ?? '',
+      message: "Yes, I'm keen",
+      sender: senderAttendee,
+      attendees: [
+        senderAttendee,
+        {
+          attendee_id: 'workspace-linkedin',
+          attendee_name: 'Connected User',
+          attendee_provider_id: 'workspace-linkedin',
+          attendee_profile_url: recipientProfileUrl,
+          attendee_public_identifier: recipientProfileUrl.split('/').pop() ?? '',
+        },
+      ],
+    };
+
+    try {
+      const incomingMessagesService = new IncomingWhatsappMessages(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+        this.messageQueueService,
+      );
+      await incomingMessagesService.receiveIncomingMessageFromLinkedinUnipile(syntheticMessagePayload);
+      this.logger.log(`Processed new relation as "Yes, I'm keen" for ${name}`);
+    } catch (error) {
+      this.logger.error(`Error processing new relation for ${name}:`, error);
+      throw error;
+    }
   }
 
   private async onConnectionIgnored(payload: UnipileNewRelationWebhook): Promise<void> {
-    // TODO: Handle ignored connection
+    // No action for ignored connections
   }
 }

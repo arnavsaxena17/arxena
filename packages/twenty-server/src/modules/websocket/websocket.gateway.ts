@@ -10,8 +10,9 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { UnipileAccountPoolService } from 'src/engine/core-modules/arx-chat/services/unipile-account-pool.service';
 import { WebSocketService } from './websocket.service';
-  
+
 @NestWebSocketGateway({
   cors: {
     origin: [/localhost:\d+$/, /\.arxena\.com$/, 'https://arxena.arxena.com', 'https://app.arxena.com', 'https://web.whatsapp.com'],
@@ -28,7 +29,7 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
 
   constructor(
     readonly webSocketService: WebSocketService,
-    // private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly unipileAccountPoolService: UnipileAccountPoolService,
   ) {}
 
   afterInit(server: Server) {
@@ -137,21 +138,33 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
   handleDisconnect(client: Socket) {
     const workspaceMemberName = client?.handshake?.query?.workspaceMemberName;
     const workspaceMemberId = this.removeClientFromWorkspaceMember(client.id, workspaceMemberName as string);
-    
+
     if (workspaceMemberId) {
       // Remove user mapping from WebSocketService
       this.webSocketService.removeUserIdMapping(workspaceMemberId);
-      
+
       const recruiterRoom = this.getRecruiterRoom(workspaceMemberId);
       console.log(`Client ${client.id} disconnected from rooms: ${recruiterRoom}, ${workspaceMemberId}, ${workspaceMemberName}`);
-      
+
       // Notify others in the room about the disconnection
       client.to(recruiterRoom).emit('user_disconnected', {
         clientId: client.id,
         workspaceMemberId,
         workspaceMemberName,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
+
+      // Disconnect Unipile pool account when last client for this member disconnects (tab close)
+      if (this.getClientsForWorkspaceMember(workspaceMemberId).length === 0) {
+        this.unipileAccountPoolService
+          .disconnectForMember(workspaceMemberId)
+          .catch((err) =>
+            console.warn(
+              `Unipile disconnectForMember failed for ${workspaceMemberId}:`,
+              err,
+            ),
+          );
+      }
     }
   }
 
