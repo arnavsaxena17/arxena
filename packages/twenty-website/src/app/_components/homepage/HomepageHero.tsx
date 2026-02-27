@@ -272,7 +272,13 @@ const EXAMPLE_COMPANIES = [
   { companyId: 'apple', name: 'Apple', website: 'apple.com' },
   { companyId: 'facebook', name: 'Facebook', website: 'facebook.com' },
   { companyId: 'tesla', name: 'Tesla', website: 'tesla.com' },
-  { companyId: 'tata-consultancy-services', name: 'TCS', website: 'tcs.com' },
+  { companyId: 'accenture', name: 'Accenture', website: 'accenture.com' },
+  { companyId: 'ibm', name: 'IBM', website: 'ibm.com' },
+  { companyId: 'oracle', name: 'Oracle', website: 'oracle.com' },
+  { companyId: 'sap', name: 'SAP', website: 'sap.com' },
+  { companyId: 'hp', name: 'HP', website: 'hp.com' },
+  { companyId: 'dell', name: 'Dell', website: 'dell.com' },
+  { companyId: 'cisco', name: 'Cisco', website: 'cisco.com' },
 ];
 
 const PRICING_TIERS = [
