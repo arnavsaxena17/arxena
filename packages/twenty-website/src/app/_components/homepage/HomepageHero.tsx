@@ -261,7 +261,7 @@ const EXAMPLE_COMPANIES = [
   { companyId: 'salesforce', name: 'Salesforce', website: 'salesforce.com' },
   { companyId: 'amazon', name: 'Amazon', website: 'amazon.com' },
   { companyId: 'apple', name: 'Apple', website: 'apple.com' },
-  { companyId: 'meta', name: 'Meta', website: 'meta.com' },
+  { companyId: 'facebook', name: 'Facebook', website: 'facebook.com' },
   { companyId: 'tesla', name: 'Tesla', website: 'tesla.com' },
   { companyId: 'tata-consultancy-services', name: 'TCS', website: 'tcs.com' },
 ];
