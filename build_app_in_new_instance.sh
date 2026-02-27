@@ -1,5 +1,16 @@
 #!/bin/bash
 
+# Load build config (branch name, etc.) - single source of truth
+# Scripts may live in ~/ (production) or ~/twenty/ (repo); config is in repo
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+for config in "$SCRIPT_DIR/build.config" "$HOME/twenty/build.config" "/home/ubuntu/twenty/build.config"; do
+  if [ -f "$config" ]; then
+    source "$config"
+    break
+  fi
+done
+BUILD_BRANCH="${BUILD_BRANCH:-without-payment}"
+
 # Function to cleanup and terminate the instance
 cleanup() {
     echo "Cleaning up and terminating instance..."
@@ -16,6 +27,15 @@ set -e
 
 start_time=$(date +%s)
 
+# 0. Sync production server repo with build branch (ensures package.json has new deps before yarn install)
+if [ -d /home/ubuntu/twenty/.git ]; then
+  echo "Syncing repo with build branch ($BUILD_BRANCH)..."
+  cd /home/ubuntu/twenty
+  git fetch origin
+  git checkout "$BUILD_BRANCH"
+  git pull origin "$BUILD_BRANCH" || true
+  cd /home/ubuntu
+fi
 
 # 1. Create temporary EC2 instance
 TEMP_INSTANCE_ID=$(aws ec2 run-instances --image-id ami-09e12010e9d1fb5a3 --instance-type t2.xlarge --key-name arx-analytics-key --security-group-ids sg-04efe18d868d9a023 --subnet-id subnet-0fe5d2cdf8329f8a5 --block-device-mappings '[{"DeviceName":"/dev/sda1","Ebs":{"VolumeSize":30,"VolumeType":"gp2"}}]' --query 'Instances[0].InstanceId' --output text)
@@ -35,16 +55,20 @@ TEMP_DNS=$(aws ec2 describe-instances --instance-ids $TEMP_INSTANCE_ID --query '
 # Copy script file
 echo $TEMP_DNS
 scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ~/script_to_build_app_in_new_instance.sh ubuntu@$TEMP_DNS:/home/ubuntu/
+# Copy build.config to temp instance (from repo or script dir)
+for config in "$SCRIPT_DIR/build.config" "$HOME/twenty/build.config" "/home/ubuntu/twenty/build.config"; do
+  if [ -f "$config" ]; then
+    scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no "$config" ubuntu@$TEMP_DNS:/home/ubuntu/
+    break
+  fi
+done
 scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ~/twenty/packages/twenty-front/.env ubuntu@$TEMP_DNS:/home/ubuntu/.env_front
 scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ~/twenty/packages/twenty-server/.env ubuntu@$TEMP_DNS:/home/ubuntu/.env_server
 scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ~/twenty/packages/twenty-website/.env ubuntu@$TEMP_DNS:/home/ubuntu/.env_website
 echo "Maybe finished copying pem files"
 # 2. Set up build environment (you'll need to SSH and do this manually or use a script)
 # 3. Build your project (SSH and run build commands)
-ssh -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no  ubuntu@$TEMP_DNS << EOF
-        chmod +x script_to_build_app_in_new_instance.sh
-        ./script_to_build_app_in_new_instance.sh
-EOF
+ssh -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS "BUILD_BRANCH=$BUILD_BRANCH chmod +x script_to_build_app_in_new_instance.sh && BUILD_BRANCH=$BUILD_BRANCH ./script_to_build_app_in_new_instance.sh"
 # 4. Transfer build files
 
 # For server files
@@ -109,7 +133,20 @@ sudo rm -rf /home/ubuntu/twenty/packages/twenty-website/.next/*
 # Copy new twenty-website files (Next.js outputs to .next, not dist)
 scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/twenty-website/.next/* /home/ubuntu/twenty/packages/twenty-website/.next/
 
+# Copy package.json and yarn.lock so production has same deps as build (avoids missing new packages like apify-client)
+scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/twenty/package.json /home/ubuntu/twenty/package.json
+scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/twenty/yarn.lock /home/ubuntu/twenty/yarn.lock
+# Copy workspace package.json files (twenty-server, etc.) so deps match exactly
+for pkg in twenty-server twenty-front twenty-website twenty-worker twenty-shared twenty-orgchart twenty-emails twenty-mcp-server; do
+  if [ -d "/home/ubuntu/twenty/packages/$pkg" ]; then
+    scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no "ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/$pkg/package.json" "/home/ubuntu/twenty/packages/$pkg/package.json" 2>/dev/null || true
+  fi
+done
+
+echo "Installing dependencies (ensures new packages like apify-client are available)"
 cd /home/ubuntu/twenty
+yarn install --frozen-lockfile || yarn install
+
 # Compile lingui catalogs for server
 cd /home/ubuntu/twenty/packages/twenty-server
 npx lingui compile --verbose || npx nx run twenty-server:lingui:compile

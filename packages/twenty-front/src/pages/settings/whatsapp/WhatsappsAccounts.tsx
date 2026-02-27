@@ -53,20 +53,6 @@ export const WhatsappAccounts = () => {
 
   return (
 
-        // <SubMenuTopBarContainer
-    //   title={t`Calendars`}
-    //   links={[
-    //     {
-    //       children: <Trans>User</Trans>,
-    //       href: getSettingsPath(SettingsPath.ProfilePage),
-    //     },
-    //     {
-    //       children: <Trans>Accounts</Trans>,
-    //       href: getSettingsPath(SettingsPath.Accounts),
-    //     },
-    //     { children: <Trans>Calendars</Trans> },
-    //   ]}
-    // >
     <SubMenuTopBarContainer Icon={IconSettings} title="Whatsapp Business" links={[
             {
               children: <Trans id="User">User</Trans>,
@@ -79,7 +65,6 @@ export const WhatsappAccounts = () => {
             { children: <Trans id="Whatsapp Business">Calendars</Trans> },
           ]}>
       <SettingsPageContainer>
-        {/* <Breadcrumb links={[{ children: 'Accounts' }]} /> */}
         <WhatsAppEmbeddedSignup
           appId={FACEBOOK_WHATSAPP_APP_ID || ''}
           configId={FACEBOOK_WHATSAPP_CONFIGURATION_ID || ''}

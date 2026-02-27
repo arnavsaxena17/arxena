@@ -1,3 +1,7 @@
+# Branch: from BUILD_BRANCH env (passed by build_app_in_new_instance.sh) or build.config or default
+[ -f ~/build.config ] && source ~/build.config
+BUILD_BRANCH="${BUILD_BRANCH:-without-payment}"
+
 #sudo apt update -y || sudo yum update -y
         # Install Node.js and npm (using Node.js 18.x as an example)
         #curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
@@ -41,8 +45,8 @@
 	  cp ~/twenty/packages/twenty-website/.env.example ~/twenty/packages/twenty-website/.env
 	fi
 
-	git checkout without-payment
-      	# orgchart-test change branch if needed
+	git checkout "${BUILD_BRANCH:-without-payment}"
+      	# Branch set by build_app_in_new_instance.sh via BUILD_BRANCH env
 	#rm -rf yarn.lock
         #touch yarn.lock
 	#export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"

@@ -6,7 +6,9 @@ const getServerBaseUrl = () => {
   const url =
     process.env.SERVER_BASE_URL ??
     process.env.NEXT_PUBLIC_SERVER_BASE_URL ??
-    (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : '');
+    (process.env.NODE_ENV === 'development'
+      ? 'http://localhost:3000'
+      : 'https://app.arxena.com');
   return url.replace(/\/$/, '');
 };
 
@@ -29,16 +31,22 @@ export async function GET(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
     const cookieHeader = request.headers.get('cookie');
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+
     const response = await fetch(
       `${serverBaseUrl}/org-chart/company-logo?website=${encodeURIComponent(website)}`,
       {
         method: 'GET',
+        signal: controller.signal,
         headers: {
           ...(authHeader && { Authorization: authHeader }),
           ...(cookieHeader && { Cookie: cookieHeader }),
         },
       },
     );
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       return new NextResponse(null, { status: response.status });
@@ -53,7 +61,10 @@ export async function GET(request: NextRequest) {
         'Content-Type': contentType,
       },
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      return new NextResponse(null, { status: 504 });
+    }
     return new NextResponse(null, { status: 404 });
   }
 }
