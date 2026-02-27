@@ -3,6 +3,7 @@
 import styled from '@emotion/styled';
 import { IconHierarchy2 } from '@tabler/icons-react';
 import Link from 'next/link';
+import { useCallback, useState } from 'react';
 
 import { ContactUsSection } from '@/app/_components/homepage/ContactUsSection';
 import { OrgChartSearch } from '@/app/_components/orgchart/OrgChartSearch';
@@ -308,6 +309,13 @@ type HomepageHeroProps = {
 };
 
 export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
+  const [failedLogoWebsites, setFailedLogoWebsites] = useState<Set<string>>(
+    new Set(),
+  );
+  const handleLogoError = useCallback((website: string) => {
+    setFailedLogoWebsites((prev) => new Set(prev).add(website));
+  }, []);
+
   return (
     <>
       <StyledHero>
@@ -332,31 +340,28 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
         <StyledScrollingStrip>
           <StyledScrollingTrack>
             {[...EXAMPLE_COMPANIES, ...EXAMPLE_COMPANIES].map(
-              ({ companyId, name, website }, i) => (
-                <StyledExampleCard
-                  key={`${companyId}-${i}`}
-                  href={`/org-chart/${encodeURIComponent(companyId)}`}
-                >
-                  <StyledExampleLogo
-                    src={`/api/org-chart/company-logo?website=${encodeURIComponent(website)}`}
-                    alt=""
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      const placeholder = e.currentTarget.nextElementSibling;
-                      if (placeholder) {
-                        (placeholder as HTMLElement).style.display = 'flex';
-                        (placeholder as HTMLElement).textContent =
-                          getLogoAbbreviation(website, name);
-                      }
-                    }}
-                  />
-                  <StyledExampleLogoPlaceholder
-                    style={{ display: 'none' }}
-                    aria-hidden
-                  />
-                  <StyledExampleCardTitle>{name}</StyledExampleCardTitle>
-                </StyledExampleCard>
-              ),
+              ({ companyId, name, website }, i) => {
+                const logoFailed = failedLogoWebsites.has(website);
+                return (
+                  <StyledExampleCard
+                    key={`${companyId}-${i}`}
+                    href={`/org-chart/${encodeURIComponent(companyId)}`}
+                  >
+                    {logoFailed ? (
+                      <StyledExampleLogoPlaceholder>
+                        {getLogoAbbreviation(website, name)}
+                      </StyledExampleLogoPlaceholder>
+                    ) : (
+                      <StyledExampleLogo
+                        src={`/api/org-chart/company-logo?website=${encodeURIComponent(website)}`}
+                        alt=""
+                        onError={() => handleLogoError(website)}
+                      />
+                    )}
+                    <StyledExampleCardTitle>{name}</StyledExampleCardTitle>
+                  </StyledExampleCard>
+                );
+              },
             )}
           </StyledScrollingTrack>
         </StyledScrollingStrip>
