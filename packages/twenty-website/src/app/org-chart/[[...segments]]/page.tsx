@@ -1,10 +1,14 @@
 import { Metadata } from 'next';
-import { headers } from 'next/headers';
 
 import { extractOrgData, processOrgChartToNodeData } from 'twenty-shared';
 
 import { getSignUpUrl } from '@/lib/auth-urls';
+import { getBaseUrl } from '@/lib/base-url';
 
+import {
+  BreadcrumbListSchema,
+  BreadcrumbNav,
+} from '@/app/_components/BreadcrumbList';
 import { OrgChartPageClient } from './OrgChartPageClient';
 import { OrgChartStructureSSR } from './OrgChartStructureSSR';
 
@@ -14,18 +18,6 @@ type PageProps = {
   params: Promise<{ segments?: string[] }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
-
-async function getBaseUrl(): Promise<string> {
-  const envUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (envUrl) {
-    const base = envUrl.startsWith('http') ? envUrl : `https://${envUrl}`;
-    return base.replace(/\/$/, '');
-  }
-  const headersList = await headers();
-  const host = headersList.get('host') ?? 'localhost:3002';
-  const protocol = headersList.get('x-forwarded-proto') ?? 'http';
-  return `${protocol}://${host}`;
-}
 
 async function fetchOrgChart(
   companyId: string,
@@ -136,7 +128,10 @@ export async function generateMetadata({
     );
   }
   if (country) {
-    keywords.push(`${companyName} ${country}`, `${companyName} ${country} office`);
+    keywords.push(
+      `${companyName} ${country}`,
+      `${companyName} ${country} office`,
+    );
   }
   keywords.push(
     'recruitment',
@@ -241,6 +236,30 @@ export default async function OrgChartPage({
       ? rawData.linkedin_url
       : undefined;
 
+  const baseUrl = await getBaseUrl();
+  const breadcrumbItems = [
+    { name: 'Home', url: '/' },
+    {
+      name: `${displayCompanyName} Org Chart`,
+      url: `/org-chart/${encodeURIComponent(companyId)}`,
+    },
+  ];
+  if (normalizedCountry) {
+    breadcrumbItems.push({
+      name: normalizedCountry,
+      url: `/org-chart/${encodeURIComponent(companyId)}/${encodeURIComponent(normalizedCountry)}`,
+    });
+  }
+  if (normalizedFunctionRoot) {
+    breadcrumbItems.push({
+      name: normalizedFunctionRoot,
+      url: `/org-chart/${[companyId, normalizedCountry, normalizedFunctionRoot]
+        .filter(Boolean)
+        .map((s) => encodeURIComponent(s as string))
+        .join('/')}`,
+    });
+  }
+
   return (
     <div
       style={{
@@ -251,6 +270,7 @@ export default async function OrgChartPage({
         width: '100%',
       }}
     >
+      <BreadcrumbListSchema items={breadcrumbItems} baseUrl={baseUrl} />
       <OrgChartPageClient
         companyId={companyId}
         companyName={displayCompanyName}
@@ -264,6 +284,7 @@ export default async function OrgChartPage({
         initialCountry={normalizedCountry}
         initialFunctionRoot={normalizedFunctionRoot}
         signUpUrl={getSignUpUrl()}
+        breadcrumb={<BreadcrumbNav items={breadcrumbItems} />}
       >
         <OrgChartStructureSSR
           nodeDataArray={nodeDataArray}

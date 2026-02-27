@@ -1,21 +1,9 @@
 import { MetadataRoute } from 'next';
-import { headers } from 'next/headers';
 
 import indexedCompanies from '@/data/indexed-org-charts.json';
+import { getBaseUrl } from '@/lib/base-url';
 
 export const revalidate = 3600;
-
-async function getBaseUrl(): Promise<string> {
-  const envUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.VERCEL_URL;
-  if (envUrl) {
-    const base = envUrl.startsWith('http') ? envUrl : `https://${envUrl}`;
-    return base.replace(/\/$/, '');
-  }
-  const headersList = await headers();
-  const host = headersList.get('host') ?? 'localhost:3002';
-  const protocol = headersList.get('x-forwarded-proto') ?? 'http';
-  return `${protocol}://${host}`;
-}
 
 function buildOrgChartPath(
   companyId: string,
@@ -38,8 +26,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = await getBaseUrl();
   const entries: MetadataRoute.Sitemap = [];
 
-  // Static routes
-  const staticRoutes = ['/', '/pricing', '/engage', '/story'];
+  // Static routes - key pages for sitelinks
+  const staticRoutes = [
+    '/',
+    '/pricing',
+    '/engage',
+    '/story',
+    '/legal/terms',
+    '/legal/privacy',
+  ];
   for (const path of staticRoutes) {
     entries.push({
       url: `${baseUrl}${path}`,

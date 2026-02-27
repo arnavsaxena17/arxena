@@ -3,6 +3,7 @@ import { PublicEnvScript } from 'next-runtime-env';
 import { Gabarito, Inter } from 'next/font/google';
 import Script from 'next/script';
 
+import { WebSiteStructuredData } from './_components/StructuredData';
 import { ConditionalFooter } from './_components/ui/layout/footer';
 import EmotionRootStyleRegistry from './emotion-root-style-registry';
 
@@ -40,7 +41,7 @@ const inter = Inter({
   variable: '--font-inter',
 });
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -52,6 +53,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body suppressHydrationWarning>
+        <WebSiteStructuredData />
         <PublicEnvScript />
         <EmotionRootStyleRegistry>
           {/* <AppHeader /> */}

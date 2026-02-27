@@ -54,6 +54,7 @@ type OrgChartPageClientProps = {
   initialCountry?: string;
   initialFunctionRoot?: string;
   signUpUrl: string;
+  breadcrumb?: React.ReactNode;
 };
 
 const StyledContainer = styled.div`
@@ -177,6 +178,7 @@ export const OrgChartPageClient = ({
   initialCountry,
   initialFunctionRoot,
   signUpUrl,
+  breadcrumb,
 }: OrgChartPageClientProps) => {
   const router = useRouter();
   const diagramHandleRef = useRef<OrgChartDiagramHandle | null>(null);
@@ -353,6 +355,11 @@ export const OrgChartPageClient = ({
     >
       <ThemeProvider theme={companySearchLightTheme}>
         <StyledContainer>
+          {breadcrumb && (
+            <div style={{ padding: '12px 24px 0', flexShrink: 0 }}>
+              {breadcrumb}
+            </div>
+          )}
           <StyledHeader>
             <OrgChartCompanyInfo
               companyName={companyName}
