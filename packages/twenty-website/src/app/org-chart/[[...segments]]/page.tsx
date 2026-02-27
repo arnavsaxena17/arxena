@@ -69,18 +69,21 @@ export async function generateMetadata({
   const companyName =
     typeof companyId === 'string' ? decodeURIComponent(companyId) : companyId;
 
+  const description = `Explore ${companyName}'s organizational structure with Arxena. View leadership hierarchy, teams, departments, and key decision-makers. Built from publicly available data for recruitment, sales outreach, and talent mapping.`;
+  const ogDescription = `View ${companyName}'s org chart: leadership, teams, and hierarchy. 1M+ companies mapped on Arxena for recruitment and people analytics.`;
+
   return {
     title: `${companyName} Org Chart - Arxena`,
-    description: `Explore the organizational structure of ${companyName}. View leadership, teams, and hierarchy.`,
+    description,
     openGraph: {
       title: `${companyName} Org Chart - Arxena`,
-      description: `Explore the organizational structure of ${companyName}.`,
+      description: ogDescription,
       type: 'website',
     },
     twitter: {
       card: 'summary_large_image',
       title: `${companyName} Org Chart - Arxena`,
-      description: `Explore the organizational structure of ${companyName}.`,
+      description: ogDescription,
     },
   };
 }
