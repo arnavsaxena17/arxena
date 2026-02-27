@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { PublicEnvScript } from 'next-runtime-env';
 import { Gabarito, Inter } from 'next/font/google';
 
-import { ConditionalFooter } from './_components/ui/layout/ConditionalFooter';
+import { ConditionalFooter } from './_components/ui/layout/footer';
 import EmotionRootStyleRegistry from './emotion-root-style-registry';
 
 import './layout.css';

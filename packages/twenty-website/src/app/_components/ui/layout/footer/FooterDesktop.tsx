@@ -7,8 +7,7 @@ import {
   GithubIcon2,
   LinkedInIcon,
   XIcon,
-} from '../icons/SvgIcons';
-
+} from '../../icons/SvgIcons';
 
 const FooterContainer = styled.div`
   padding: 64px 96px 64px 96px;
@@ -16,16 +15,7 @@ const FooterContainer = styled.div`
   flex-direction: column;
   color: rgb(129, 129, 129);
   gap: 32px;
-  @media (max-width: 809px) {
-    padding: 36px 24px;
-  }
-`;
 
-const LeftSideFooter = styled.div`
-  width: 360px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
   @media (max-width: 809px) {
     display: none;
   }
@@ -36,10 +26,6 @@ const RightSideFooter = styled.div`
   justify-content: space-between;
   gap: 48px;
   height: 146px;
-  @media (max-width: 809px) {
-    flex-direction: column;
-    height: fit-content;
-  }
 `;
 
 const RightSideFooterColumn = styled.div`

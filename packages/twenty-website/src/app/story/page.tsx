@@ -2,7 +2,7 @@ import { getSignInUrl, getSignUpUrl } from '@/lib/auth-urls';
 
 import { StoryContent } from '@/app/_components/story/StoryContent';
 import { ContentContainer } from '@/app/_components/ui/layout/ContentContainer';
-import { OrgChartHeader } from '@/app/_components/ui/layout/OrgChartHeader';
+import { Header } from '@/app/_components/ui/layout/header';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +17,7 @@ export default function StoryPage() {
 
   return (
     <>
-      <OrgChartHeader
+      <Header
         showSearch={false}
         signInUrl={signInUrl}
         signUpUrl={signUpUrl}

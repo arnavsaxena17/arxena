@@ -2,7 +2,7 @@ import { getSignInUrl, getSignUpUrl } from '@/lib/auth-urls';
 
 import { HomepageHero } from './_components/homepage/HomepageHero';
 import { ContentContainer } from './_components/ui/layout/ContentContainer';
-import { OrgChartHeader } from './_components/ui/layout/OrgChartHeader';
+import { Header } from './_components/ui/layout/header';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +11,7 @@ export default function Home() {
   const signUpUrl = getSignUpUrl();
   return (
     <>
-      <OrgChartHeader
+      <Header
         showSearch={false}
         signInUrl={signInUrl}
         signUpUrl={signUpUrl}

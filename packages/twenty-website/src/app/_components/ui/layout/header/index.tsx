@@ -1,12 +1,5 @@
+export { CallToAction } from './callToAction';
+export { Header } from './Header';
+export { HeaderDesktop } from './HeaderDesktop';
+export { HeaderMobile } from './HeaderMobile';
 
-
-export const AppHeader = async () => {
-
-
-  return (
-    <>
-      {/* <HeaderDesktop numberOfStars={githubStars?.[0]?.numberOfStars} /> */}
-      {/* <HeaderMobile numberOfStars={githubStars?.[0]?.numberOfStars} /> */}
-    </>
-  );
-};

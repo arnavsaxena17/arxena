@@ -71,8 +71,10 @@ const StyledDropdown = styled.ul<{ top: number; left: number; width: number }>`
   left: ${({ left }) => left}px;
   width: ${({ width }) => width}px;
   min-width: ${DROPDOWN_MIN_WIDTH}px;
+  max-width: calc(100vw - 16px);
   max-height: ${DROPDOWN_MAX_HEIGHT}px;
   overflow-y: auto;
+  overflow-x: hidden;
   margin: 0;
   padding: ${({ theme }) => theme.spacing(2)};
   list-style: none;
@@ -81,6 +83,10 @@ const StyledDropdown = styled.ul<{ top: number; left: number; width: number }>`
   border-radius: ${({ theme }) => theme.border.radius.xl};
   box-shadow: ${({ theme }) => theme.boxShadow.strong};
   z-index: 9999;
+
+  @media (max-width: 809px) {
+    min-width: 0;
+  }
 `;
 
 const StyledDropdownItem = styled.li`
@@ -140,12 +146,16 @@ const StyledCompanyName = styled.div`
   color: ${({ theme }) => theme.font.color.primary};
   margin-bottom: ${({ theme }) => theme.spacing(1)};
   line-height: 1.3;
+  overflow-wrap: break-word;
+  word-break: break-word;
 `;
 
 const StyledCompanyMeta = styled.div`
   font-size: ${({ theme }) => theme.font.size.sm};
   color: ${({ theme }) => theme.font.color.tertiary};
   line-height: 1.4;
+  overflow-wrap: break-word;
+  word-break: break-word;
 
   span:not(:last-child)::after {
     content: ' · ';
@@ -236,11 +246,19 @@ export const CompanySearchAutocomplete = ({
 
   const updateDropdownPosition = useCallback(() => {
     const input = inputRef.current;
-    if (input) {
+    if (input && typeof window !== 'undefined') {
       const rect = input.getBoundingClientRect();
-      const dropdownWidth = Math.max(rect.width, DROPDOWN_MIN_WIDTH);
-      const centeredLeft = rect.left + (rect.width - dropdownWidth) / 2;
-      const left = Math.max(8, centeredLeft);
+      const viewportWidth = window.innerWidth;
+      const isMobile = viewportWidth < 810;
+      const dropdownWidth = isMobile
+        ? Math.min(rect.width, viewportWidth - 16)
+        : Math.max(rect.width, DROPDOWN_MIN_WIDTH);
+      const left = isMobile
+        ? Math.max(8, Math.min(rect.left, viewportWidth - dropdownWidth - 8))
+        : Math.max(
+            8,
+            rect.left + (rect.width - dropdownWidth) / 2,
+          );
       setDropdownRect({
         top: rect.bottom + 8,
         left,
@@ -254,6 +272,13 @@ export const CompanySearchAutocomplete = ({
   useLayoutEffect(() => {
     if (showDropdown) updateDropdownPosition();
   }, [showDropdown, companies, isLoading, updateDropdownPosition]);
+
+  useEffect(() => {
+    if (!showDropdown) return;
+    const handleResize = () => updateDropdownPosition();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [showDropdown, updateDropdownPosition]);
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -2,7 +2,7 @@ import { getSignInUrl, getSignUpUrl } from '@/lib/auth-urls';
 
 import { PrivacyContent } from '@/app/_components/legal/PrivacyContent';
 import { ContentContainer } from '@/app/_components/ui/layout/ContentContainer';
-import { OrgChartHeader } from '@/app/_components/ui/layout/OrgChartHeader';
+import { Header } from '@/app/_components/ui/layout/header';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +18,7 @@ export default function PrivacyPage() {
 
   return (
     <>
-      <OrgChartHeader
+      <Header
         showSearch={false}
         signInUrl={signInUrl}
         signUpUrl={signUpUrl}
