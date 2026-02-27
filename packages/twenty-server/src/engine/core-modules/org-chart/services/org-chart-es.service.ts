@@ -102,7 +102,6 @@ export class OrgChartEsService {
 
     mustClauses.push({
       match: {
-        // Mirrors ESOrgQueryGenerator.create_es_query_orgcharts_locations
         country: countryValue,
       },
     });

@@ -97,11 +97,6 @@ export class OrgChartService {
     );
 
     if (esResult) {
-      await this.debitOrgChartCreditsIfNeeded(
-        authToken,
-        esResult,
-        companyId,
-      );
       this.logger.log(
         `Serving org chart for companyId=${companyId} from Elasticsearch`,
       );
@@ -120,12 +115,6 @@ export class OrgChartService {
       }>(cacheKey);
 
     if (cachedOrgChartPayload?.orgChart) {
-      await this.debitOrgChartCreditsIfNeeded(
-        authToken,
-        cachedOrgChartPayload.orgChart,
-        companyId,
-        cachedOrgChartPayload.itemCount,
-      );
       this.logger.log(
         `Serving org chart for companyId=${companyId} from Redis cache key=${cacheKey} cachedAt=${cachedOrgChartPayload.cachedAt ?? 'unknown'} itemCount=${cachedOrgChartPayload.itemCount ?? 0}`,
       );
@@ -213,60 +202,6 @@ export class OrgChartService {
     }
 
     return null;
-  }
-
-  private getEmployeeCountFromOrgChart(
-    orgChart: Record<string, unknown>,
-    itemCountOverride?: number,
-  ): number {
-    if (typeof itemCountOverride === 'number' && itemCountOverride >= 0) {
-      return itemCountOverride;
-    }
-    const itemCount = orgChart.item_count as number | undefined;
-    if (typeof itemCount === 'number' && itemCount >= 0) {
-      return itemCount;
-    }
-    try {
-      const orgChartStr = orgChart.org_chart as string | undefined;
-      if (typeof orgChartStr === 'string') {
-        const parsed = JSON.parse(orgChartStr) as {
-          list_orgcharts?: Array<{ orgchart?: Array<{ len_candidates?: number }> }>;
-        };
-        const list = parsed?.list_orgcharts ?? [];
-        let total = 0;
-        for (const item of list) {
-          const nodes = item?.orgchart ?? [];
-          for (const node of nodes) {
-            total += node?.len_candidates ?? 0;
-          }
-        }
-        return total > 0 ? total : 100;
-      }
-    } catch {
-      // ignore parse errors
-    }
-    return 100;
-  }
-
-  private async debitOrgChartCreditsIfNeeded(
-    authToken: string | undefined,
-    orgChart: Record<string, unknown>,
-    _companyId: string,
-    itemCountOverride?: number,
-  ): Promise<void> {
-    if (process.env.IS_BILLING_ENABLED !== 'true') return;
-    if (!authToken?.trim()) return;
-
-    const workspaceId =
-      await this.workspaceQueryService.getWorkspaceIdFromToken(authToken);
-    const employeeCount = this.getEmployeeCountFromOrgChart(
-      orgChart,
-      itemCountOverride,
-    );
-    await this.workspaceCreditsService.debitOrgChartCredits(
-      workspaceId,
-      employeeCount,
-    );
   }
 
   private buildCompanyOrgChartCacheKey(

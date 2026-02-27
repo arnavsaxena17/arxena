@@ -16,9 +16,11 @@ export const useOrgChartFilterOptions = (
             .filter((c): c is string => typeof c === 'string')
             .filter((c) => c !== '0');
           const withGlobal = [...cleaned, 'global'];
-          return Array.from(new Set(withGlobal)).sort((a, b) =>
-            a.localeCompare(b),
-          );
+          return Array.from(new Set(withGlobal)).sort((a, b) => {
+            if (a === 'global') return -1;
+            if (b === 'global') return 1;
+            return a.localeCompare(b);
+          });
         }
       } catch {
         return [];
@@ -30,9 +32,11 @@ export const useOrgChartFilterOptions = (
         .filter((c): c is string => typeof c === 'string')
         .filter((c) => c !== '0');
       const withGlobal = [...cleaned, 'global'];
-      return Array.from(new Set(withGlobal)).sort((a, b) =>
-        a.localeCompare(b),
-      );
+      return Array.from(new Set(withGlobal)).sort((a, b) => {
+        if (a === 'global') return -1;
+        if (b === 'global') return 1;
+        return a.localeCompare(b);
+      });
     }
 
     return [];
@@ -51,9 +55,12 @@ export const useOrgChartFilterOptions = (
             (fn): fn is string =>
               typeof fn === 'string' && fn.trim().length > 0,
           );
-          return Array.from(new Set(cleaned)).sort((a, b) =>
-            a.localeCompare(b),
-          );
+          const withFullCompany = [...cleaned, 'fullcompany'];
+          return Array.from(new Set(withFullCompany)).sort((a, b) => {
+            if (a === 'fullcompany') return -1;
+            if (b === 'fullcompany') return 1;
+            return a.localeCompare(b);
+          });
         }
       } catch {
         return [];
@@ -65,7 +72,12 @@ export const useOrgChartFilterOptions = (
         (fn): fn is string =>
           typeof fn === 'string' && fn.trim().length > 0,
       );
-      return Array.from(new Set(cleaned)).sort((a, b) => a.localeCompare(b));
+      const withFullCompany = [...cleaned, 'fullcompany'];
+      return Array.from(new Set(withFullCompany)).sort((a, b) => {
+        if (a === 'fullcompany') return -1;
+        if (b === 'fullcompany') return 1;
+        return a.localeCompare(b);
+      });
     }
 
     return [];

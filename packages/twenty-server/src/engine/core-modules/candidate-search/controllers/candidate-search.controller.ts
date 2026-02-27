@@ -12,6 +12,7 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
+import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -54,6 +55,7 @@ export class CandidateSearchController {
     private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly workspaceCreditsService: WorkspaceCreditsService,
     private readonly linkedInRequestTracker: LinkedInSessionTrackerService,
     private readonly searchResultsCacheService: SearchResultsCacheService,
     private readonly searchExecutionService: SearchExecutionService,
@@ -693,6 +695,30 @@ export class CandidateSearchController {
     }
 
     if (mode === 'entire_company' && result.itemCount > 0) {
+      if (process.env.IS_BILLING_ENABLED === 'true' && apiToken) {
+        const workspaceId =
+          await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+        const hasSufficient =
+          await this.workspaceCreditsService.hasSufficientOrgChartCredits(
+            workspaceId,
+            result.itemCount,
+          );
+        if (!hasSufficient) {
+          const creditsNeeded =
+            this.workspaceCreditsService.computeOrgChartCreditsNeeded(
+              result.itemCount,
+            );
+          throw new HttpException(
+            `Insufficient org chart credits. Need ${creditsNeeded} credits for ${result.itemCount} employees.`,
+            HttpStatus.FORBIDDEN,
+          );
+        }
+        await this.workspaceCreditsService.debitOrgChartCredits(
+          workspaceId,
+          result.itemCount,
+        );
+      }
+
       try {
         orgChart =
           await this.candidateSearchHandlerService.buildOrgChartFromLinkedInCompanyCandidates(

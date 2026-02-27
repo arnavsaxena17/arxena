@@ -7,8 +7,8 @@ import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/Snac
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
 
+import type { OrgChartContextAction } from 'twenty-orgchart';
 import type { NodeState, OrgChartNodeData } from 'twenty-shared';
-import type { OrgChartContextAction } from '../components/OrgChartDiagram';
 import type { ContextResultItem } from '../types';
 import {
   buildBooleanKeywordsForNode,

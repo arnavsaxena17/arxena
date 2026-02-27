@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { CandidateSearchChatController } from 'src/engine/core-modules/candidate-search/controllers/candidate-search-chat.controller';
 import { CandidateScoringService } from 'src/engine/core-modules/candidate-search/services/candidate-scoring.service';
 import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
@@ -33,7 +34,14 @@ import { FileUtils } from './utils/file.utils';
 import { LinkedinParameterResolver } from './utils/linkedin-parameter-resolver.util';
 import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
 @Module({
-  imports: [LinkedInSearchModule, UnipilePoolModule, WorkspaceModificationsModule, CandidateSourcingModule, GraphQLExecutionModule],
+  imports: [
+    BillingModule,
+    LinkedInSearchModule,
+    UnipilePoolModule,
+    WorkspaceModificationsModule,
+    CandidateSourcingModule,
+    GraphQLExecutionModule,
+  ],
   controllers: [CandidateSearchController, CandidateSearchChatController, CandidateSearchPipelineController],
   providers: [
     CandidateSearchBaseService,

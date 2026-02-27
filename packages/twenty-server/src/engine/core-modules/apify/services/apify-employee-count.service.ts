@@ -48,8 +48,11 @@ export class ApifyEmployeeCountService {
 
     const cached = await this.cacheStorage.get<number>(cacheKey);
     if (typeof cached === 'number') {
+      this.logger.log(`Employee count cached for ${normalizedUrl}: ${cached}`);
       return cached;
     }
+
+    this.logger.log(`Employee count not cached for ${normalizedUrl}, running actor`);
 
     if (!this.apifyService.isConfigured()) {
       this.logger.warn(
