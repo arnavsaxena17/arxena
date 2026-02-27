@@ -1,5 +1,4 @@
-import type { OrgChartNodeData } from 'twenty-shared';
-import { isMaskedName } from 'twenty-shared';
+import { OrgChartNodeData, isMaskedName } from 'twenty-shared';
 
 type TreeNode = OrgChartNodeData & { children: TreeNode[] };
 

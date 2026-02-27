@@ -100,6 +100,7 @@ export const HeaderDesktop = ({
         <Logo />
         <StyledNavLink href="/story">Story</StyledNavLink>
         <StyledNavLink href="/pricing">Pricing</StyledNavLink>
+        <StyledNavLink href="/engage">Engage</StyledNavLink>
       </StyledNav>
       {showSearch && (
         <StyledSearchWrapper>

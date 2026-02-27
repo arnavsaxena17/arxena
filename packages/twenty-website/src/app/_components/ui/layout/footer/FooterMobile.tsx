@@ -72,6 +72,7 @@ export const FooterMobile = () => {
       <StyledLinkSection>
         <StyledSectionTitle>Product</StyledSectionTitle>
         <StyledLink href="/pricing">Pricing</StyledLink>
+        <StyledLink href="/engage">Engage</StyledLink>
       </StyledLinkSection>
       <StyledLinkSection>
         <StyledSectionTitle>Company</StyledSectionTitle>

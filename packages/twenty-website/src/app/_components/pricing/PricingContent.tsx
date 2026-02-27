@@ -2,6 +2,7 @@
 
 import styled from '@emotion/styled';
 import { IconCheck } from '@tabler/icons-react';
+import Link from 'next/link';
 
 const StyledSection = styled.section`
   max-width: 900px;
@@ -63,7 +64,7 @@ const StyledPrice = styled.div`
   margin-bottom: 4px;
 `;
 
-const StyledPriceUnit = styled.span`
+const _StyledPriceUnit = styled.span`
   font-size: 16px;
   font-weight: 400;
   color: #818181;
@@ -162,6 +163,16 @@ const StyledHelpLink = styled.a`
   }
 `;
 
+const StyledEngageLink = styled(Link)`
+  color: #474747;
+  text-decoration: underline;
+  font-size: 15px;
+
+  &:hover {
+    color: #141414;
+  }
+`;
+
 type PricingContentProps = {
   signInUrl: string;
   signUpUrl: string;
@@ -184,33 +195,21 @@ const PRICING_TIERS = [
     price: 2499,
     credits: '5 credits (~$500/credit)',
     useCase: 'Individual recruiters',
-    features: [
-      '5 org charts',
-      'All features included',
-      '12-month expiry',
-    ],
+    features: ['5 org charts', 'All features included', '12-month expiry'],
   },
   {
     name: '15 org charts',
     price: 4999,
     credits: '15 credits (~$333/credit)',
     useCase: 'TA teams, agencies',
-    features: [
-      '15 org charts',
-      'All features included',
-      '12-month expiry',
-    ],
+    features: ['15 org charts', 'All features included', '12-month expiry'],
   },
   {
     name: '30 org charts',
     price: 7999,
     credits: '30 credits (~$267/credit)',
     useCase: 'Power users, bulk mandates',
-    features: [
-      '30 org charts',
-      'All features included',
-      '12-month expiry',
-    ],
+    features: ['30 org charts', 'All features included', '12-month expiry'],
   },
 ];
 
@@ -227,9 +226,7 @@ export const PricingContent = ({ signUpUrl }: PricingContentProps) => {
         {PRICING_TIERS.map(({ name, price, credits, features }) => (
           <StyledCard key={name}>
             <StyledCardTitle>{name}</StyledCardTitle>
-            <StyledPrice>
-              ${price.toLocaleString()}
-            </StyledPrice>
+            <StyledPrice>${price.toLocaleString()}</StyledPrice>
             <StyledCredits>{credits}</StyledCredits>
             <StyledFeatureList>
               {features.map((feature) => (
@@ -245,7 +242,9 @@ export const PricingContent = ({ signUpUrl }: PricingContentProps) => {
       </StyledCardsGrid>
 
       <StyledRoiSection>
-        <StyledRoiTitle>One placement costs $5K–40K. Map the entire org for less.</StyledRoiTitle>
+        <StyledRoiTitle>
+          One placement costs $5K–40K. Map the entire org for less.
+        </StyledRoiTitle>
         <StyledRoiText>
           Recruiters charge $5K–40K per placement — and don&apos;t provide
           mapping. ZoomInfo costs $25K+. We give you the full org chart for a
@@ -262,11 +261,20 @@ export const PricingContent = ({ signUpUrl }: PricingContentProps) => {
       </StyledRoiSection>
 
       <StyledHelpSection>
+        <p style={{ margin: '0 0 16px 0', fontSize: 15, color: '#474747' }}>
+          Already have your org charts? Let our AI reach out to the right
+          people.{' '}
+          <StyledEngageLink href="/engage">
+            Learn about Engagement →
+          </StyledEngageLink>
+        </p>
         <StyledHelpTitle>Need more information?</StyledHelpTitle>
         <p style={{ margin: '0 0 8px 0', color: '#818181', fontSize: 15 }}>
           Let&apos;s find the perfect solution for your organization.
         </p>
-        <StyledHelpLink href="mailto:hello@arxena.com">Book a demo</StyledHelpLink>
+        <StyledHelpLink href="mailto:hello@arxena.com">
+          Book a demo
+        </StyledHelpLink>
       </StyledHelpSection>
     </StyledSection>
   );

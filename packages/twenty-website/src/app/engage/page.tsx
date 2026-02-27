@@ -1,18 +1,18 @@
 import { getSignInUrl, getSignUpUrl } from '@/lib/auth-urls';
 
-import { PrivacyContent } from '@/app/_components/legal/PrivacyContent';
+import { EngagementContent } from '@/app/_components/engagement/EngagementContent';
 import { ContentContainer } from '@/app/_components/ui/layout/ContentContainer';
 import { Header } from '@/app/_components/ui/layout/header';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Privacy Policy | Arxena',
+  title: 'Engage | Arxena',
   description:
-    'Arxena Privacy Policy - How we collect, use, and protect your personal information.',
+    'Our AI reaches out from your own WhatsApp and LinkedIn accounts. Messages go from you — human-like — across any channel. You only talk to people who are interested.',
 };
 
-export default function PrivacyPage() {
+export default function EngagePage() {
   const signInUrl = getSignInUrl();
   const signUpUrl = getSignUpUrl();
 
@@ -20,7 +20,7 @@ export default function PrivacyPage() {
     <>
       <Header showSearch={false} signInUrl={signInUrl} signUpUrl={signUpUrl} />
       <ContentContainer>
-        <PrivacyContent />
+        <EngagementContent signUpUrl={signUpUrl} />
       </ContentContainer>
     </>
   );

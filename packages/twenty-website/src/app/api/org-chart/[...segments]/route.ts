@@ -33,7 +33,8 @@ export async function GET(
   const pathPart = segments.join('/');
   const nextParams = request.nextUrl.searchParams;
   const urlParams = new URL(request.url).searchParams;
-  const companyName = nextParams.get('companyName') ?? urlParams.get('companyName');
+  const companyName =
+    nextParams.get('companyName') ?? urlParams.get('companyName');
   const website = nextParams.get('website') ?? urlParams.get('website');
   const country = nextParams.get('country') ?? urlParams.get('country');
   const functionRoot =

@@ -1,7 +1,11 @@
 'use client';
 
 import styled from '@emotion/styled';
-import { IconBrandLinkedin, IconHierarchy2, IconWorld } from '@tabler/icons-react';
+import {
+  IconBrandLinkedin,
+  IconHierarchy2,
+  IconWorld,
+} from '@tabler/icons-react';
 
 const StyledCompanyInfo = styled.div`
   display: flex;
@@ -153,9 +157,7 @@ export const OrgChartCompanyInfo = ({
           <StyledCompanyTitle>{companyName}</StyledCompanyTitle>
           {website ? (
             <StyledLinkIcon
-              href={
-                website.startsWith('http') ? website : `https://${website}`
-              }
+              href={website.startsWith('http') ? website : `https://${website}`}
               target="_blank"
               rel="noreferrer"
               aria-label="Open company website"
@@ -181,13 +183,9 @@ export const OrgChartCompanyInfo = ({
         typeof profileCount === 'number' ||
         typeof employeeCount === 'number') && (
         <StyledCompanyMetaRow>
-          {locationName && (
-            <StyledMetaItem>{locationName}</StyledMetaItem>
-          )}
+          {locationName && <StyledMetaItem>{locationName}</StyledMetaItem>}
           {industry && <StyledMetaItem>{industry}</StyledMetaItem>}
-          {websiteDomain && (
-            <StyledMetaItem>{websiteDomain}</StyledMetaItem>
-          )}
+          {websiteDomain && <StyledMetaItem>{websiteDomain}</StyledMetaItem>}
           {typeof profileCount === 'number' && (
             <StyledMetaItem>
               {profileCount.toLocaleString()} profiles

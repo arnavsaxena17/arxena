@@ -8,7 +8,8 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Story | Arxena',
-  description: 'The world\'s first org chart database. Discovery of people inside companies as easy as finding a destination on a map.',
+  description:
+    "The world's first org chart database. Discovery of people inside companies as easy as finding a destination on a map.",
 };
 
 export default function StoryPage() {
@@ -17,11 +18,7 @@ export default function StoryPage() {
 
   return (
     <>
-      <Header
-        showSearch={false}
-        signInUrl={signInUrl}
-        signUpUrl={signUpUrl}
-      />
+      <Header showSearch={false} signInUrl={signInUrl} signUpUrl={signUpUrl} />
       <ContentContainer>
         <StoryContent signInUrl={signInUrl} signUpUrl={signUpUrl} />
       </ContentContainer>

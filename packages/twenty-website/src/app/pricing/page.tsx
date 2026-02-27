@@ -18,11 +18,7 @@ export default function PricingPage() {
 
   return (
     <>
-      <Header
-        showSearch={false}
-        signInUrl={signInUrl}
-        signUpUrl={signUpUrl}
-      />
+      <Header showSearch={false} signInUrl={signInUrl} signUpUrl={signUpUrl} />
       <ContentContainer>
         <PricingContent signInUrl={signInUrl} signUpUrl={signUpUrl} />
       </ContentContainer>

@@ -66,11 +66,11 @@ export const TermsContent = () => {
 
       <StyledParagraph>
         These Terms of Service are a legally binding agreement between Arxena,
-        Inc. DBA Arxena (&quot;Arxena&quot;, &quot;the Company&quot;, &quot;we&quot; or
-        &quot;us&quot;) and between you (&quot;user&quot; or &quot;you&quot;) and
-        constitute legal basis for the download, installation, access and general
-        use you (either an individual or entity) make from the Arxena website
-        (&quot;Product&quot;).
+        Inc. DBA Arxena (&quot;Arxena&quot;, &quot;the Company&quot;,
+        &quot;we&quot; or &quot;us&quot;) and between you (&quot;user&quot; or
+        &quot;you&quot;) and constitute legal basis for the download,
+        installation, access and general use you (either an individual or
+        entity) make from the Arxena website (&quot;Product&quot;).
       </StyledParagraph>
       <StyledParagraph>
         The Product, the Arxena website (www.arxena.com) (the &quot;Site&quot;),
@@ -85,10 +85,10 @@ export const TermsContent = () => {
         acknowledge that you have read these Terms of Service and our{' '}
         <StyledLink href="/legal/privacy">Privacy Policy</StyledLink> which is
         incorporated herein by reference, as may be amended from time to time
-        (collectively &quot;the Terms&quot;). These Terms shall govern any and all
-        kind of use and features offered via the Services as may become available
-        from time to time. You agree to be bound by these Terms and to fully
-        comply with them.
+        (collectively &quot;the Terms&quot;). These Terms shall govern any and
+        all kind of use and features offered via the Services as may become
+        available from time to time. You agree to be bound by these Terms and to
+        fully comply with them.
       </StyledParagraph>
       <StyledParagraph>
         If you do not agree to any of the Terms you should immediately stop
@@ -112,7 +112,8 @@ export const TermsContent = () => {
         If you believe that information about you that is provided through the
         Product or Services is inaccurate, false or if you wish such information
         about you to be removed, please send us a request at{' '}
-        <StyledLink href="mailto:arnav@arxena.com">arnav@arxena.com</StyledLink>.
+        <StyledLink href="mailto:arnav@arxena.com">arnav@arxena.com</StyledLink>
+        .
       </StyledParagraph>
 
       <StyledHeading>Eligibility</StyledHeading>
@@ -129,12 +130,12 @@ export const TermsContent = () => {
         We reserve the right (but we are under no obligation) to modify,
         correct, amend, enhance, improve, make any other changes to, suspend or
         discontinue, temporarily or permanently the Product, Services or any
-        portion of which (the &quot;Changes&quot;) with or without notice with no
-        liability, at any time and for any reason, including without limitation
-        any Changes which may be done automatically for the purpose of
-        improving, enhancing or de-bugging versions of the Product or aspects of
-        the Services. We will notify you of any material change via the Site or
-        Services (including without limitation by sending you an email
+        portion of which (the &quot;Changes&quot;) with or without notice with
+        no liability, at any time and for any reason, including without
+        limitation any Changes which may be done automatically for the purpose
+        of improving, enhancing or de-bugging versions of the Product or aspects
+        of the Services. We will notify you of any material change via the Site
+        or Services (including without limitation by sending you an email
         notification) by any other form prior to those material changes becoming
         effective. Otherwise, any other, non-material change, will be effective
         upon the &quot;last updated&quot; date stated at the top of these Terms.
@@ -144,9 +145,9 @@ export const TermsContent = () => {
         revisions, constitutes your complete and irrevocable acceptance of such
         Changes. If you do not agree with the new/modified Terms, your sole
         remedy is to discontinue using the Product and the Services and cancel
-        your registration. Each time you use a Arxena Product, you reaffirm
-        your acceptance of the then-current Terms of Service. If you do not wish
-        to be bound by these Terms, you may discontinue using Arxena Services.
+        your registration. Each time you use a Arxena Product, you reaffirm your
+        acceptance of the then-current Terms of Service. If you do not wish to
+        be bound by these Terms, you may discontinue using Arxena Services.
       </StyledParagraph>
 
       <StyledHeading>Creating an Account</StyledHeading>
@@ -173,13 +174,13 @@ export const TermsContent = () => {
         send to you.
       </StyledParagraph>
       <StyledParagraph>
-        We may cancel your access to the Services and terminate your account,
-        at our sole consideration, at any time and for any reason, with or
-        without notice to you. Upon any termination, discontinuation or
-        cancellation of Services or your account, all provisions of these Terms
-        which by their nature should survive will survive, including, without
-        limitation, licenses and ownership provisions, warranty disclaimers,
-        limitations of liability, indemnity, and dispute resolution provisions.
+        We may cancel your access to the Services and terminate your account, at
+        our sole consideration, at any time and for any reason, with or without
+        notice to you. Upon any termination, discontinuation or cancellation of
+        Services or your account, all provisions of these Terms which by their
+        nature should survive will survive, including, without limitation,
+        licenses and ownership provisions, warranty disclaimers, limitations of
+        liability, indemnity, and dispute resolution provisions.
       </StyledParagraph>
 
       <StyledHeading>Free Trial</StyledHeading>
@@ -187,8 +188,8 @@ export const TermsContent = () => {
         Your Free Trial includes the services as described in your free trial
         agreement. The term period and type of your free trial appears upon sign
         up to our services. Creating multiple accounts for the same user is
-        strictly forbidden. Arxena reserves the right to charge your account
-        for any use of additional accounts set up for the same user.
+        strictly forbidden. Arxena reserves the right to charge your account for
+        any use of additional accounts set up for the same user.
       </StyledParagraph>
 
       <StyledHeading>Payment and Fees</StyledHeading>
@@ -213,18 +214,20 @@ export const TermsContent = () => {
         When using our Services through any of the Platforms which our Product
         may operate on, you acknowledge and agree that you (and not Arxena) are
         obliged to comply with the applicable terms of use and all associated
-        policies and guidelines of such Platforms. If for any reason: (i)
-        Arxena will not be able to provide you its Services through a specific
-        Platform; or (ii) any Platform&apos;s terms of use shall require that you
-        cease using our Product, deny your access to our Product when using the
-        Platform or terminate your Platform&apos;s account, Arxena will not have
-        any liability whatsoever and will not have any legal or commercial
+        policies and guidelines of such Platforms. If for any reason: (i) Arxena
+        will not be able to provide you its Services through a specific
+        Platform; or (ii) any Platform&apos;s terms of use shall require that
+        you cease using our Product, deny your access to our Product when using
+        the Platform or terminate your Platform&apos;s account, Arxena will not
+        have any liability whatsoever and will not have any legal or commercial
         obligation to refund any paid fees made by you in connection with the
         Services. However, Arxena, at its sole discretion, may offer you other
         alternatives to use its Product (e.g. through other Platforms).
       </StyledParagraph>
 
-      <StyledHeading>100% Satisfaction or Your Money Back Guarantee</StyledHeading>
+      <StyledHeading>
+        100% Satisfaction or Your Money Back Guarantee
+      </StyledHeading>
       <StyledParagraph>
         Arxena offers a 100% satisfaction money back guarantee on our monthly
         plans listed on our site. Arxena will at its discretion, return 100% of
@@ -263,22 +266,22 @@ export const TermsContent = () => {
         modify, translate, reverse engineer, decompile, disassemble, or create
         derivative works based on the Product or Services; (ii) Access to data
         not intended for you, such as logging into a server or an account which
-        you are not authorized to access; (iii) Interfere with the Product&apos;s
-        or Services&apos; operation (or any portion of them) in any manner,
-        including, without limitation, by means of submitting a virus or
-        malicious code of any type; (iv) Delete or modify any attributions,
-        legal notices or other proprietary designations or labels on the Product
-        or Services, or on any third party material contained or otherwise
-        available therein; or (v) use any data in an abusive or illegal manner.
-        Any right that is not explicitly provided to you under these Terms is
-        expressly reserved by us.
+        you are not authorized to access; (iii) Interfere with the
+        Product&apos;s or Services&apos; operation (or any portion of them) in
+        any manner, including, without limitation, by means of submitting a
+        virus or malicious code of any type; (iv) Delete or modify any
+        attributions, legal notices or other proprietary designations or labels
+        on the Product or Services, or on any third party material contained or
+        otherwise available therein; or (v) use any data in an abusive or
+        illegal manner. Any right that is not explicitly provided to you under
+        these Terms is expressly reserved by us.
       </StyledParagraph>
       <StyledParagraph>
         As between you and us, we are the sole owners of the Product and the
         Services, including without limitation, all copyrights, patents, patent
         applications or other inventions, trademarks, trade secrets, databases
-        and other intellectual property rights thereto, including all titles
-        and intellectual property rights in and to the Product, Services and
+        and other intellectual property rights thereto, including all titles and
+        intellectual property rights in and to the Product, Services and
         respective content (including that of any third party website which may
         be linked to or viewed in connection with the Services). These Terms
         grant you no rights to use such content except as allowed by such third
@@ -305,11 +308,11 @@ export const TermsContent = () => {
       </StyledParagraph>
       <StyledParagraph>
         You hereby grant us a worldwide, non-revocable, royalty-free,
-        sub-licensable and transferable license to use information you submit
-        to us as described in our Privacy Policy, operate them and constantly
-        improve them, including for the purpose of introducing new features
-        when they become available, to reproduce, distribute, make derivatives
-        of it and use it in order to promote the Services.
+        sub-licensable and transferable license to use information you submit to
+        us as described in our Privacy Policy, operate them and constantly
+        improve them, including for the purpose of introducing new features when
+        they become available, to reproduce, distribute, make derivatives of it
+        and use it in order to promote the Services.
       </StyledParagraph>
       <StyledParagraph>
         By accessing and using the Services, you agree and understand that we
@@ -323,8 +326,8 @@ export const TermsContent = () => {
         Services and to constantly improve them. We created different tools to
         help our users address frequently asked questions and additional
         technical and general support issues. Also, we test frequent updates,
-        maintenance, error shooting and additional means in order to improve
-        the Services.
+        maintenance, error shooting and additional means in order to improve the
+        Services.
       </StyledParagraph>
       <StyledParagraph>
         However, we do not undertake to keep operate any of the above, and we
@@ -388,10 +391,10 @@ export const TermsContent = () => {
       <StyledParagraph>
         You acknowledge that you are responsible for any information or Content
         that you submit or transmit through the Services and any other
-        communications options available by us, including your responsibility
-        as to the privacy, legality, reliability, appropriateness, originality,
-        and copyright of any such information and Content, whether publicly
-        posted or privately transmitted.
+        communications options available by us, including your responsibility as
+        to the privacy, legality, reliability, appropriateness, originality, and
+        copyright of any such information and Content, whether publicly posted
+        or privately transmitted.
       </StyledParagraph>
       <StyledParagraph>
         You acknowledge that in order to use the Services, you must use WiFi or
@@ -416,11 +419,13 @@ export const TermsContent = () => {
           unlawful, threatening, abusive, defamatory, invasive of privacy or
           publicity rights, or otherwise objectionable;
         </li>
-        <li>encouraging conduct that would constitute a criminal or civil offense;</li>
+        <li>
+          encouraging conduct that would constitute a criminal or civil offense;
+        </li>
         <li>giving rise to civil liability;</li>
         <li>
-          collect content or information, or otherwise access the Services
-          using any automated means (such as bots or scrapers) without our prior
+          collect content or information, or otherwise access the Services using
+          any automated means (such as bots or scrapers) without our prior
           permission;
         </li>
         <li>
@@ -446,12 +451,12 @@ export const TermsContent = () => {
       </StyledParagraph>
       <StyledParagraph>
         You may not impersonate another person or entity, or misrepresent your
-        affiliation with a person or entity when using the services; You may
-        not use or attempt to use another&apos;s account or personal
-        information. You may not attempt to gain unauthorized access to data or
-        the Services, or the computer or mobile systems or networks connected to
-        the Services, through hacking password mining or any other means;
-        Otherwise violating these Terms or creating liability for us.
+        affiliation with a person or entity when using the services; You may not
+        use or attempt to use another&apos;s account or personal information.
+        You may not attempt to gain unauthorized access to data or the Services,
+        or the computer or mobile systems or networks connected to the Services,
+        through hacking password mining or any other means; Otherwise violating
+        these Terms or creating liability for us.
       </StyledParagraph>
       <StyledParagraph>
         You may not use the Services to determine a consumer&apos;s eligibility
@@ -467,12 +472,12 @@ export const TermsContent = () => {
       <StyledHeading>Termination</StyledHeading>
       <StyledParagraph>
         We reserve the right to terminate your access to the Product or Services
-        for any reason, including, without limitation, if we have good reason
-        to believe your use to be unacceptable, or in the event of any breach
-        by you of the Terms (either directly or through breach of any other
-        terms and conditions or operating rules applicable to you). We may, but
-        shall be under no obligation to, provide you a warning prior to
-        termination of your use of the Product or Services.
+        for any reason, including, without limitation, if we have good reason to
+        believe your use to be unacceptable, or in the event of any breach by
+        you of the Terms (either directly or through breach of any other terms
+        and conditions or operating rules applicable to you). We may, but shall
+        be under no obligation to, provide you a warning prior to termination of
+        your use of the Product or Services.
       </StyledParagraph>
       <StyledParagraph>
         All provisions which according to their nature shall survive in order to
@@ -537,17 +542,17 @@ export const TermsContent = () => {
         AFFILIATES, SUCCESSORS OR ASSIGNS (TOGETHER &quot;Arxena PARTIES&quot;),
         BE LIABLE TO ANY PARTY (1) FOR ANY INDIRECT, DIRECT, SPECIAL, PUNITIVE,
         INCIDENTAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-        LIMITED TO, DAMAGES FOR LOSS OF BUSINESS PROFITS, BUSINESS
-        INTERRUPTION, LOSS OF PROGRAMS OR DATA, LOSS OF GOODWILL, OR
-        INFORMATION, WORK STOPPAGE, COMPUTER FAILURE OR MALFUNCTION, OR ANY
-        OTHER COMMERCIAL DAMAGES OR LOSSES AND THE LIKE), OR ANY OTHER DAMAGES
-        ARISING IN ANY WAY OUT OF THE AVAILABILITY, USE, RELIANCE ON, OR
-        INABILITY TO USE THE PRODUCT OR SERVICES, EVEN IF Arxena PARTIES SHALL
-        HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES, AND REGARDLESS OF
-        THE FORM OF ACTION, WHETHER IN CONTRACT, TORT, OR OTHERWISE; OR (2) FOR
-        ANY CLAIM ATTRIBUTABLE TO ERRORS, OMISSIONS, OR OTHER INACCURACIES IN,
-        OR DESTRUCTIVE PROPERTIES OF ANY OTHER SOFTWARE OR OTHER CONTENT
-        INCLUDED AS PART OF THE PRODUCT OR SERVICES.
+        LIMITED TO, DAMAGES FOR LOSS OF BUSINESS PROFITS, BUSINESS INTERRUPTION,
+        LOSS OF PROGRAMS OR DATA, LOSS OF GOODWILL, OR INFORMATION, WORK
+        STOPPAGE, COMPUTER FAILURE OR MALFUNCTION, OR ANY OTHER COMMERCIAL
+        DAMAGES OR LOSSES AND THE LIKE), OR ANY OTHER DAMAGES ARISING IN ANY WAY
+        OUT OF THE AVAILABILITY, USE, RELIANCE ON, OR INABILITY TO USE THE
+        PRODUCT OR SERVICES, EVEN IF Arxena PARTIES SHALL HAVE BEEN ADVISED OF
+        THE POSSIBILITY OF SUCH DAMAGES, AND REGARDLESS OF THE FORM OF ACTION,
+        WHETHER IN CONTRACT, TORT, OR OTHERWISE; OR (2) FOR ANY CLAIM
+        ATTRIBUTABLE TO ERRORS, OMISSIONS, OR OTHER INACCURACIES IN, OR
+        DESTRUCTIVE PROPERTIES OF ANY OTHER SOFTWARE OR OTHER CONTENT INCLUDED
+        AS PART OF THE PRODUCT OR SERVICES.
       </StyledParagraph>
       <StyledParagraph>
         Without derogating any of the above, If for any reason: (i) Arxena will
@@ -577,19 +582,19 @@ export const TermsContent = () => {
         You agree to defend, indemnify and hold harmless Arxena, its directors,
         employees and agents, from and against any and all claims, damages,
         obligations, losses, liabilities, costs or debt, and expenses (including
-        but not limited to attorney&apos;s fees) arising from: (i) your use of and
-        access to the Services; (ii) your violation of any term of these Terms;
-        (iii) your violation of any third party right, including without
+        but not limited to attorney&apos;s fees) arising from: (i) your use of
+        and access to the Services; (ii) your violation of any term of these
+        Terms; (iii) your violation of any third party right, including without
         limitation any copyright, property, or privacy right; or (iv) any claim
         that one of your act or omission caused damage to a third party.
       </StyledParagraph>
       <StyledParagraph>
         Under no circumstances whatsoever will the Company be liable in any way
         for any of the Content (including your contact) you share or publish,
-        including, without limitation, for any infringement of third party&apos;s
-        right, loss or damage of any kind incurred as a result of the use or
-        display or performance of any third party content transmitted,
-        displayed or otherwise made available through the Services.
+        including, without limitation, for any infringement of third
+        party&apos;s right, loss or damage of any kind incurred as a result of
+        the use or display or performance of any third party content
+        transmitted, displayed or otherwise made available through the Services.
       </StyledParagraph>
 
       <StyledHeading>Copyright Infringements</StyledHeading>
@@ -602,7 +607,9 @@ export const TermsContent = () => {
         of copyright infringement and/or a trademark infringement and appears on
         the Site or Services, please send us a proper notification or request
         for removal at{' '}
-        <StyledLink href="mailto:contact@arxena.com">contact@arxena.com</StyledLink>{' '}
+        <StyledLink href="mailto:contact@arxena.com">
+          contact@arxena.com
+        </StyledLink>{' '}
         together with the following information:
       </StyledParagraph>
       <StyledList>
@@ -694,31 +701,31 @@ export const TermsContent = () => {
       </StyledParagraph>
       <StyledParagraph>
         Electronic Delivery Policy – Arxena, as an online business, transacts
-        with its users electronically. When you sign up for any of the
-        Services, you consent to receive electronic communication from us
-        including without limitation any privacy or other notices, agreements,
+        with its users electronically. When you sign up for any of the Services,
+        you consent to receive electronic communication from us including
+        without limitation any privacy or other notices, agreements,
         disclosures, reports, documents, communications, or other records
         (collectively, &quot;Notices&quot;). You agree that generally, we can
         send you electronic notices in either or both of the following ways: (i)
         to the e-mail address that you provided to us during registration or
-        (ii) on a welcoming screen or top page of the relevant Arxena Product
-        or Service. The delivery of any Notices from Arxena is effective when
-        sent by us, regardless of whether you read the Notice when you receive
-        it or whether you actually receive the delivery.
+        (ii) on a welcoming screen or top page of the relevant Arxena Product or
+        Service. The delivery of any Notices from Arxena is effective when sent
+        by us, regardless of whether you read the Notice when you receive it or
+        whether you actually receive the delivery.
       </StyledParagraph>
       <StyledParagraph>
         Entire Agreement – These Terms (together with the Privacy Policy and
-        with any other incorporated policy) constitute the entire
-        understanding between us and you with respect to the subject matter
-        hereof. There are no understandings, agreements, conditions or
-        representations, oral or written, express or implied, with reference to
-        the subject matter hereof that are not merged herein, expressly
-        referenced herein, or superseded hereby.
+        with any other incorporated policy) constitute the entire understanding
+        between us and you with respect to the subject matter hereof. There are
+        no understandings, agreements, conditions or representations, oral or
+        written, express or implied, with reference to the subject matter hereof
+        that are not merged herein, expressly referenced herein, or superseded
+        hereby.
       </StyledParagraph>
       <StyledParagraph>
-        No Waiver – The failure or delay of us to exercise or enforce any
-        rights or provision of these Terms does not constitute a waiver of such
-        right or provision.
+        No Waiver – The failure or delay of us to exercise or enforce any rights
+        or provision of these Terms does not constitute a waiver of such right
+        or provision.
       </StyledParagraph>
       <StyledParagraph>
         Provisions unenforceable or invalid – Should any part of these Terms be

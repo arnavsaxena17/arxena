@@ -11,11 +11,7 @@ export default function Home() {
   const signUpUrl = getSignUpUrl();
   return (
     <>
-      <Header
-        showSearch={false}
-        signInUrl={signInUrl}
-        signUpUrl={signUpUrl}
-      />
+      <Header showSearch={false} signInUrl={signInUrl} signUpUrl={signUpUrl} />
       <ContentContainer>
         <HomepageHero signInUrl={signInUrl} signUpUrl={signUpUrl} />
       </ContentContainer>

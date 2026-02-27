@@ -168,6 +168,7 @@ export const HeaderMobile = ({
         <StyledMobileLinkList>
           <StyledNavLink href="/story">Story</StyledNavLink>
           <StyledNavLink href="/pricing">Pricing</StyledNavLink>
+          <StyledNavLink href="/engage">Engage</StyledNavLink>
           {showSearch && (
             <StyledSearchWrapper>
               <OrgChartSearch

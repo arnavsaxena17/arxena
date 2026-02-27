@@ -18,11 +18,7 @@ export default function TermsPage() {
 
   return (
     <>
-      <Header
-        showSearch={false}
-        signInUrl={signInUrl}
-        signUpUrl={signUpUrl}
-      />
+      <Header showSearch={false} signInUrl={signInUrl} signUpUrl={signUpUrl} />
       <ContentContainer>
         <TermsContent />
       </ContentContainer>

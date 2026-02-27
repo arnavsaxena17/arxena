@@ -64,9 +64,11 @@ export const PrivacyContent = () => {
       <StyledHeadline>Arxena – Privacy Policy</StyledHeadline>
 
       <StyledParagraph>
-        This Privacy Policy describes how your personal information is collected,
-        used, and shared when you visit or make a purchase from{' '}
-        <StyledLink href="https://www.arxena.com/">https://www.arxena.com/</StyledLink>{' '}
+        This Privacy Policy describes how your personal information is
+        collected, used, and shared when you visit or make a purchase from{' '}
+        <StyledLink href="https://www.arxena.com/">
+          https://www.arxena.com/
+        </StyledLink>{' '}
         (the &quot;Site&quot;).
       </StyledParagraph>
 
@@ -87,7 +89,9 @@ export const PrivacyContent = () => {
         accordingly through the application settings.
       </StyledParagraph>
 
-      <StyledHeading>Data Protection Mechanisms for Sensitive Data</StyledHeading>
+      <StyledHeading>
+        Data Protection Mechanisms for Sensitive Data
+      </StyledHeading>
       <StyledParagraph>
         Protecting the privacy and security of our users&apos; sensitive data is
         of utmost importance to us. While our privacy policy outlines our
@@ -98,9 +102,9 @@ export const PrivacyContent = () => {
       <StyledParagraph>
         Sensitive data, including, but not limited to, personally identifiable
         information, and financial information is treated with the highest level
-        of care and attention. We employ industry-standard encryption
-        protocols, access controls, and other technical safeguards to prevent
-        unauthorized access, disclosure, or misuse of sensitive data.
+        of care and attention. We employ industry-standard encryption protocols,
+        access controls, and other technical safeguards to prevent unauthorized
+        access, disclosure, or misuse of sensitive data.
       </StyledParagraph>
       <StyledParagraph>
         Furthermore, we conduct regular security audits and compliance checks to
@@ -121,7 +125,9 @@ export const PrivacyContent = () => {
         interact with the Site. We refer to this automatically-collected
         information as &quot;Device Information.&quot;
       </StyledParagraph>
-      <StyledParagraph>We collect Device Information using the following technologies:</StyledParagraph>
+      <StyledParagraph>
+        We collect Device Information using the following technologies:
+      </StyledParagraph>
       <StyledList>
         <li>
           &quot;Cookies&quot; are data files that are placed on your device or
@@ -198,16 +204,15 @@ export const PrivacyContent = () => {
 
       <StyledHeading>Changes</StyledHeading>
       <StyledParagraph>
-        We may update this privacy policy from time to time in order to
-        reflect, for example, changes to our practices or for other operational,
-        legal or regulatory reasons.
+        We may update this privacy policy from time to time in order to reflect,
+        for example, changes to our practices or for other operational, legal or
+        regulatory reasons.
       </StyledParagraph>
 
       <StyledHeading>Contact Us</StyledHeading>
       <StyledParagraph>
         For more information about our privacy practices, if you have questions,
-        or if you would like to make a complaint, please contact us by e-mail
-        at{' '}
+        or if you would like to make a complaint, please contact us by e-mail at{' '}
         <StyledLink href="mailto:info@arxena.com">info@arxena.com</StyledLink>{' '}
         or by mail using the details provided below:
       </StyledParagraph>

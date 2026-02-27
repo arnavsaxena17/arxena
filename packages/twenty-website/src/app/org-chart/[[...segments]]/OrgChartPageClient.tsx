@@ -10,15 +10,15 @@ import styled from '@emotion/styled';
 
 import { OrgChartCompanyInfo } from '@/app/_components/orgchart/OrgChartCompanyInfo';
 import { companySearchLightTheme } from '@/lib/company-search';
-import type { OrgChartDiagramHandle } from 'twenty-orgchart/orgchart-core';
 import {
+  OrgChartDiagramHandle,
   OrgChartFilters,
   OrgChartSearchControls,
   OrgChartSignUpModal,
   useCompanyInfoLookup,
   useOrgChartFilterOptions,
 } from 'twenty-orgchart/orgchart-core';
-import type { OrgChartNodeData } from 'twenty-shared';
+import { OrgChartNodeData } from 'twenty-shared';
 
 const OrgChartDiagram = dynamic(
   () => import('twenty-orgchart').then((mod) => mod.OrgChartDiagram),
@@ -197,9 +197,7 @@ export const OrgChartPageClient = ({
   const [searchResultCount, setSearchResultCount] = useState<number | null>(
     null,
   );
-  const [clickedNode, setClickedNode] = useState<OrgChartNodeData | null>(
-    null,
-  );
+  const [clickedNode, setClickedNode] = useState<OrgChartNodeData | null>(null);
 
   const {
     availableCountries,
@@ -224,8 +222,7 @@ export const OrgChartPageClient = ({
   }, [lookupByName, companyName, companyId]);
 
   const displayWebsite = website ?? fallbackCompanyInfo?.website;
-  const displayLocationName =
-    locationName ?? fallbackCompanyInfo?.locationName;
+  const displayLocationName = locationName ?? fallbackCompanyInfo?.locationName;
   const displayIndustry = industry ?? fallbackCompanyInfo?.industry;
   const displayProfileCount = profileCount ?? fallbackCompanyInfo?.profileCount;
   const displayLinkedinUrl = linkedinUrl ?? fallbackCompanyInfo?.linkedinUrl;
@@ -318,66 +315,66 @@ export const OrgChartPageClient = ({
     >
       <ThemeProvider theme={companySearchLightTheme}>
         <StyledContainer>
-        <StyledHeader>
-          <OrgChartCompanyInfo
-            companyName={companyName}
-            website={displayWebsite}
-            locationName={displayLocationName}
-            industry={displayIndustry}
-            profileCount={displayProfileCount}
-            linkedinUrl={displayLinkedinUrl}
-            employeeCount={displayEmployeeCount}
-            logoBaseUrl="/api/org-chart"
-          />
-          {hasFilters && <OrgChartFilters {...filtersProps} />}
-        </StyledHeader>
-
-        <StyledDiagramArea>
-          {nodeDataArray.length > 0 && (
-            <>
-              <OrgChartDiagram
-                onDiagramReady={handleDiagramReady}
-                nodeDataArray={nodeDataArray}
-                onNodeClick={handleNodeClick}
-                iconUrls={{
-                  lock: '/img/lock.png',
-                  linkedin: '/img/linkedin-icon-png-circle-2.png',
-                  download: '/img/download-icon.png',
-                  similarItems: '/img/similar-items.png',
-                }}
-              />
-              <StyledTopRightActionsOverlay>
-                <StyledTopRightActionButton
-                  type="button"
-                  onClick={() => diagramHandleRef.current?.zoomToFit()}
-                >
-                  Zoom to fit
-                </StyledTopRightActionButton>
-                <StyledTopRightActionButton
-                  type="button"
-                  onClick={() => diagramHandleRef.current?.centerContent()}
-                >
-                  Center
-                </StyledTopRightActionButton>
-              </StyledTopRightActionsOverlay>
-              <StyledSearchOverlay>
-                <OrgChartSearchControls {...searchControlsProps} />
-              </StyledSearchOverlay>
-            </>
-          )}
-          {clickedNode && (
-            <OrgChartSignUpModal
-              node={clickedNode}
-              onClose={handleCloseSignUpModal}
-              signUpUrl={signUpUrl}
+          <StyledHeader>
+            <OrgChartCompanyInfo
               companyName={companyName}
-              selectedCountry={selectedCountry}
-              selectedFunctionRoot={selectedFunctionRoot}
+              website={displayWebsite}
+              locationName={displayLocationName}
+              industry={displayIndustry}
+              profileCount={displayProfileCount}
+              linkedinUrl={displayLinkedinUrl}
+              employeeCount={displayEmployeeCount}
+              logoBaseUrl="/api/org-chart"
             />
-          )}
-        </StyledDiagramArea>
+            {hasFilters && <OrgChartFilters {...filtersProps} />}
+          </StyledHeader>
 
-        {/* <StyledUnlockBanner>
+          <StyledDiagramArea>
+            {nodeDataArray.length > 0 && (
+              <>
+                <OrgChartDiagram
+                  onDiagramReady={handleDiagramReady}
+                  nodeDataArray={nodeDataArray}
+                  onNodeClick={handleNodeClick}
+                  iconUrls={{
+                    lock: '/img/lock.png',
+                    linkedin: '/img/linkedin-icon-png-circle-2.png',
+                    download: '/img/download-icon.png',
+                    similarItems: '/img/similar-items.png',
+                  }}
+                />
+                <StyledTopRightActionsOverlay>
+                  <StyledTopRightActionButton
+                    type="button"
+                    onClick={() => diagramHandleRef.current?.zoomToFit()}
+                  >
+                    Zoom to fit
+                  </StyledTopRightActionButton>
+                  <StyledTopRightActionButton
+                    type="button"
+                    onClick={() => diagramHandleRef.current?.centerContent()}
+                  >
+                    Center
+                  </StyledTopRightActionButton>
+                </StyledTopRightActionsOverlay>
+                <StyledSearchOverlay>
+                  <OrgChartSearchControls {...searchControlsProps} />
+                </StyledSearchOverlay>
+              </>
+            )}
+            {clickedNode && (
+              <OrgChartSignUpModal
+                node={clickedNode}
+                onClose={handleCloseSignUpModal}
+                signUpUrl={signUpUrl}
+                companyName={companyName}
+                selectedCountry={selectedCountry}
+                selectedFunctionRoot={selectedFunctionRoot}
+              />
+            )}
+          </StyledDiagramArea>
+
+          {/* <StyledUnlockBanner>
           <StyledUnlockTitle>Unlock {companyName} Org Chart</StyledUnlockTitle>
           <StyledUnlockText>
             See all names, titles, emails & phone numbers. Your first org chart
@@ -387,15 +384,15 @@ export const OrgChartPageClient = ({
             Continue with LinkedIn / Google / Email
           </StyledUnlockButton>
         </StyledUnlockBanner> */}
-        {children && (
-          <StyledStructureWrapper
-            $hidden={isDiagramVisible}
-            aria-hidden={isDiagramVisible}
-          >
-            {children}
-          </StyledStructureWrapper>
-        )}
-      </StyledContainer>
+          {children && (
+            <StyledStructureWrapper
+              $hidden={isDiagramVisible}
+              aria-hidden={isDiagramVisible}
+            >
+              {children}
+            </StyledStructureWrapper>
+          )}
+        </StyledContainer>
       </ThemeProvider>
     </div>
   );

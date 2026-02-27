@@ -1,7 +1,6 @@
 import { getSignInUrl, getSignUpUrl } from '@/lib/auth-urls';
 import { Header } from '../_components/ui/layout/header';
 
-
 export default function OrgChartLayout({
   children,
 }: {
@@ -17,10 +16,7 @@ export default function OrgChartLayout({
         overflow: 'hidden',
       }}
     >
-      <Header
-        signInUrl={getSignInUrl()}
-        signUpUrl={getSignUpUrl()}
-      />
+      <Header signInUrl={getSignInUrl()} signUpUrl={getSignUpUrl()} />
       <div
         style={{
           flex: 1,

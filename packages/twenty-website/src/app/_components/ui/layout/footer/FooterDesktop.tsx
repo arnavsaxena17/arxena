@@ -64,6 +64,7 @@ export const FooterDesktop = () => {
         <RightSideFooterColumn>
           <RightSideFooterColumnTitle>Product</RightSideFooterColumnTitle>
           <RightSideFooterLink href="/pricing">Pricing</RightSideFooterLink>
+          <RightSideFooterLink href="/engage">Engage</RightSideFooterLink>
         </RightSideFooterColumn>
         <RightSideFooterColumn>
           <RightSideFooterColumnTitle>Company</RightSideFooterColumnTitle>
@@ -71,8 +72,12 @@ export const FooterDesktop = () => {
         </RightSideFooterColumn>
         <RightSideFooterColumn>
           <RightSideFooterColumnTitle>Legal</RightSideFooterColumnTitle>
-          <RightSideFooterLink href="/legal/terms">Terms of Service</RightSideFooterLink>
-          <RightSideFooterLink href="/legal/privacy">Privacy Policy</RightSideFooterLink>
+          <RightSideFooterLink href="/legal/terms">
+            Terms of Service
+          </RightSideFooterLink>
+          <RightSideFooterLink href="/legal/privacy">
+            Privacy Policy
+          </RightSideFooterLink>
         </RightSideFooterColumn>
       </RightSideFooter>
       <div

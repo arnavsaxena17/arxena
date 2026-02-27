@@ -61,6 +61,16 @@ const StyledLink = styled.a`
   }
 `;
 
+const StyledEngageLink = styled(Link)`
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
 const StyledPrimaryCta = styled.a`
   display: inline-flex;
   align-items: center;
@@ -143,7 +153,9 @@ const StyledExampleCard = styled(Link)`
   border-radius: 12px;
   text-decoration: none;
   color: #141414;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
   flex-shrink: 0;
 
   &:hover {
@@ -254,9 +266,24 @@ const EXAMPLE_COMPANIES = [
 ];
 
 const PRICING_TIERS = [
-  { name: '1 org chart', price: 799, credits: '1 credit (<100 employees)', useCase: 'One-off mapping' },
-  { name: '5 org charts', price: 2499, credits: '5 credits', useCase: 'Individual recruiters' },
-  { name: '15 org charts', price: 4999, credits: '15 credits', useCase: 'TA teams, agencies' },
+  {
+    name: '1 org chart',
+    price: 799,
+    credits: '1 credit (<100 employees)',
+    useCase: 'One-off mapping',
+  },
+  {
+    name: '5 org charts',
+    price: 2499,
+    credits: '5 credits',
+    useCase: 'Individual recruiters',
+  },
+  {
+    name: '15 org charts',
+    price: 4999,
+    credits: '15 credits',
+    useCase: 'TA teams, agencies',
+  },
 ];
 
 type HomepageHeroProps = {
@@ -329,7 +356,9 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
           {PRICING_TIERS.map(({ name, price, credits, useCase }) => (
             <StyledPricingCard key={name}>
               <StyledPricingCardTitle>{name}</StyledPricingCardTitle>
-              <StyledPricingCardPrice>${price.toLocaleString()}</StyledPricingCardPrice>
+              <StyledPricingCardPrice>
+                ${price.toLocaleString()}
+              </StyledPricingCardPrice>
               <StyledPricingCardCredits>{credits}</StyledPricingCardCredits>
               <div style={{ fontSize: 13, color: '#818181' }}>{useCase}</div>
             </StyledPricingCard>
@@ -338,6 +367,19 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
         <div style={{ textAlign: 'center' }}>
           <StyledPrimaryCta href="/pricing">View full pricing</StyledPrimaryCta>
         </div>
+        <p
+          style={{
+            margin: '24px 0 0 0',
+            textAlign: 'center',
+            fontSize: 15,
+            color: '#474747',
+          }}
+        >
+          Want to reach the right people?{' '}
+          <StyledEngageLink href="/engage">
+            Learn about Engagement →
+          </StyledEngageLink>
+        </p>
       </StyledPricingSection>
     </>
   );

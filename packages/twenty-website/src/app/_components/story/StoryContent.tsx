@@ -16,7 +16,7 @@ const TESTIMONIALS = [
   },
   {
     quote:
-      "Before Arxena, I had used everything from DiscoverOrg to LucidCharts and nothing worked, locating the right decision makers took hours… now it takes me minutes, Arxena has helped close over 300k in ARR, this is by far the best sales outreach tool I have used.",
+      'Before Arxena, I had used everything from DiscoverOrg to LucidCharts and nothing worked, locating the right decision makers took hours… now it takes me minutes, Arxena has helped close over 300k in ARR, this is by far the best sales outreach tool I have used.',
     name: 'Craig Rajpal',
     title: 'Enterprise Sales Director',
     company: 'Workato',
@@ -201,7 +201,9 @@ const StyledNavButton = styled.button`
   background: #fff;
   color: #141414;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 
   &:hover {
     background: #f5f5f5;
@@ -225,13 +227,15 @@ const StyledDot = styled.button<{ isActive: boolean }>`
   height: 8px;
   border-radius: 50%;
   border: none;
-  background: ${({ isActive }) => (isActive ? '#141414' : 'rgba(20, 20, 20, 0.2)')};
+  background: ${({ isActive }) =>
+    isActive ? '#141414' : 'rgba(20, 20, 20, 0.2)'};
   cursor: pointer;
   padding: 0;
   transition: background 0.15s ease;
 
   &:hover {
-    background: ${({ isActive }) => (isActive ? '#141414' : 'rgba(20, 20, 20, 0.4)')};
+    background: ${({ isActive }) =>
+      isActive ? '#141414' : 'rgba(20, 20, 20, 0.4)'};
   }
 `;
 
@@ -271,6 +275,17 @@ const StyledOrgChartLink = styled(Link)`
   }
 `;
 
+const StyledEngageLink = styled(Link)`
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 500;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
 type Testimonial = {
   quote: string;
   name: string;
@@ -296,8 +311,10 @@ const TestimonialsCarousel = ({ testimonials }: TestimonialsCarouselProps) => {
     return () => clearInterval(id);
   }, [testimonials.length]);
 
-  const goPrev = () => setIndex((i) => (i === 0 ? testimonials.length - 1 : i - 1));
-  const goNext = () => setIndex((i) => (i === testimonials.length - 1 ? 0 : i + 1));
+  const goPrev = () =>
+    setIndex((i) => (i === 0 ? testimonials.length - 1 : i - 1));
+  const goNext = () =>
+    setIndex((i) => (i === testimonials.length - 1 ? 0 : i + 1));
 
   return (
     <>
@@ -371,10 +388,16 @@ export const StoryContent = ({ signUpUrl }: StoryContentProps) => {
         See a live example: Google org chart →
       </StyledOrgChartLink>
 
+      <p style={{ margin: '16px 0 0 0' }}>
+        <StyledEngageLink href="/engage">
+          Want to reach the right people? Learn about Engagement →
+        </StyledEngageLink>
+      </p>
+
       <StyledScenarioBlock>
         <StyledScenarioText>
-          Your competitor just hired 3 senior engineers from Google&apos;s
-          Cloud team. You&apos;d know that if you had their org chart.
+          Your competitor just hired 3 senior engineers from Google&apos;s Cloud
+          team. You&apos;d know that if you had their org chart.
         </StyledScenarioText>
       </StyledScenarioBlock>
 

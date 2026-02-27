@@ -14,7 +14,11 @@ const BACKEND_PATH = '/org-chart/companies/autocomplete';
 
 async function proxyToBackend(
   serverBaseUrl: string,
-  body: { input_text: string; query: Record<string, unknown>; params: Record<string, unknown> },
+  body: {
+    input_text: string;
+    query: Record<string, unknown>;
+    params: Record<string, unknown>;
+  },
   headers: Headers,
 ) {
   const authHeader = headers.get('authorization');
@@ -43,7 +47,9 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const name = request.nextUrl.searchParams.get('name') ?? request.nextUrl.searchParams.get('q');
+  const name =
+    request.nextUrl.searchParams.get('name') ??
+    request.nextUrl.searchParams.get('q');
   if (!name?.trim()) {
     return NextResponse.json(
       { message: 'Query param "name" or "q" is required' },
