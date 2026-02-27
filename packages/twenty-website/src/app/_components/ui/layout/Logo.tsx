@@ -21,8 +21,8 @@ const StyledLink = styled.a<{ variant: LogoVariant }>`
     variant === 'hero' &&
     `
     height: 100px;
-    width: 100px;
-    background-image: url('/images/favicon/512.png');
+    width: 200px;
+    background-image: url('/images/core/arxena-logo-black-straight.png');
   `}
   ${({ variant }) =>
     variant === 'footer' &&
