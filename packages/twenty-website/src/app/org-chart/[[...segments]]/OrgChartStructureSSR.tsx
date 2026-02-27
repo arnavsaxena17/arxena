@@ -79,11 +79,19 @@ function OrgChartNodeList({ node }: { node: TreeNode }) {
 type OrgChartStructureSSRProps = {
   nodeDataArray: OrgChartNodeData[];
   companyName: string;
+  locationName?: string;
+  industry?: string;
+  country?: string;
+  functionRoot?: string;
 };
 
 export function OrgChartStructureSSR({
   nodeDataArray,
   companyName,
+  locationName,
+  industry,
+  country,
+  functionRoot,
 }: OrgChartStructureSSRProps) {
   if (nodeDataArray.length === 0) return null;
 
@@ -104,17 +112,36 @@ export function OrgChartStructureSSR({
       }));
   });
 
+  const descParts = [
+    `Org structure and organization structure of ${companyName}.`,
+    `View ${companyName} executive team, leadership, management hierarchy, HR team, departments.`,
+  ];
+  if (functionRoot) {
+    descParts.push(`${companyName} ${functionRoot} team.`);
+  }
+  if (country || locationName) {
+    descParts.push(`${companyName} ${country ?? locationName ?? ''} office.`);
+  }
+  descParts.push('Recruitment, talent mapping, people analytics.');
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: companyName,
-    description: `Organizational structure of ${companyName}`,
+    description: descParts.join(' '),
+    ...(industry && { industry }),
+    ...((country || locationName) && {
+      areaServed: {
+        '@type': 'Place' as const,
+        name: country ?? locationName,
+      },
+    }),
     ...(employees.length > 0 && { employee: employees }),
   };
 
   return (
     <section
-      aria-label={`${companyName} organizational structure`}
+      aria-label={`${companyName} leadership, management and team structure`}
       style={{
         padding: '24px 0',
         borderTop: '1px solid #e5e5e5',
@@ -126,7 +153,7 @@ export function OrgChartStructureSSR({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <h2 style={{ fontSize: '1.25rem', marginBottom: 16 }}>
-        {companyName} Organizational Structure
+        {companyName} Leadership &amp; Team Structure
       </h2>
       <nav aria-label="Organization hierarchy">
         <ol style={{ listStyle: 'none', paddingLeft: 0, margin: 0 }}>

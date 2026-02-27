@@ -61,29 +61,119 @@ async function fetchOrgChart(
   return null;
 }
 
+function formatCompanyName(companyId: string): string {
+  return decodeURIComponent(companyId)
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { segments } = await params;
   const companyId = segments?.[0] ?? 'company';
   const companyName =
-    typeof companyId === 'string' ? decodeURIComponent(companyId) : companyId;
+    typeof companyId === 'string' ? formatCompanyName(companyId) : 'Company';
+  const country =
+    segments?.[1] && segments[1] !== 'global'
+      ? decodeURIComponent(segments[1])
+      : undefined;
+  const functionRoot =
+    segments?.[2] && segments[2] !== 'fullcompany'
+      ? decodeURIComponent(segments[2])
+      : undefined;
 
-  const description = `Explore ${companyName}'s organizational structure with Arxena. View leadership hierarchy, teams, departments, and key decision-makers. Built from publicly available data for recruitment, sales outreach, and talent mapping.`;
-  const ogDescription = `View ${companyName}'s org chart: leadership, teams, and hierarchy. 1M+ companies mapped on Arxena for recruitment and people analytics.`;
+  const titleParts: string[] = [];
+  if (functionRoot) {
+    titleParts.push(`${functionRoot} Team at ${companyName}`);
+  } else {
+    titleParts.push(`${companyName}`);
+  }
+  if (country) {
+    titleParts.push(`(${country})`);
+  }
+  const baseTitle = titleParts.join(' ') + ' Org Chart';
+  const title = `${baseTitle} - Arxena`;
+
+  const descParts: string[] = [];
+  if (functionRoot) {
+    descParts.push(
+      `${companyName}'s ${functionRoot} team org structure: management, leadership, and organisation structure.`,
+    );
+  } else {
+    descParts.push(
+      `${companyName}'s org structure and organization structure: executive team, leadership, management hierarchy, and departments.`,
+    );
+  }
+  if (country) {
+    descParts.push(`${companyName} ${country} office.`);
+  }
+  descParts.push(
+    `Find decision-makers for recruitment, sales outreach, talent mapping. 1M+ companies on Arxena.`,
+  );
+  const description = descParts.join(' ');
+
+  const keywords: string[] = [
+    `${companyName} org chart`,
+    `${companyName} org structure`,
+    `${companyName} organizational chart`,
+    `${companyName} organization structure`,
+    `${companyName} organisation structure`,
+    `orgchart ${companyName}`,
+    `team at ${companyName}`,
+    `${companyName} team`,
+    `${companyName} team structure`,
+    `${companyName} leadership`,
+    `${companyName} leadership team`,
+    `${companyName} management`,
+    `${companyName} executive team`,
+    `${companyName} hierarchy`,
+  ];
+  if (functionRoot) {
+    keywords.push(
+      `${functionRoot} team at ${companyName}`,
+      `${companyName} ${functionRoot} team`,
+    );
+  }
+  if (country) {
+    keywords.push(`${companyName} ${country}`, `${companyName} ${country} office`);
+  }
+  keywords.push(
+    'recruitment',
+    'talent mapping',
+    'people analytics',
+    'leadership',
+    'management',
+    'executive team',
+    'org structure',
+    'organization structure',
+    'organisation structure',
+  );
+
+  const ogDescription =
+    descParts.length > 1
+      ? descParts.slice(0, 2).join(' ')
+      : `${companyName} org structure and organization structure: executive team, leadership. 1M+ companies on Arxena.`;
 
   return {
-    title: `${companyName} Org Chart - Arxena`,
+    title,
     description,
+    keywords: keywords.join(', '),
     openGraph: {
-      title: `${companyName} Org Chart - Arxena`,
+      title,
       description: ogDescription,
       type: 'website',
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${companyName} Org Chart - Arxena`,
+      title,
       description: ogDescription,
+    },
+    alternates: {
+      canonical: `/org-chart/${[companyId, country, functionRoot]
+        .filter(Boolean)
+        .map((s) => encodeURIComponent(s as string))
+        .join('/')}`,
     },
   };
 }
@@ -178,6 +268,10 @@ export default async function OrgChartPage({
         <OrgChartStructureSSR
           nodeDataArray={nodeDataArray}
           companyName={displayCompanyName}
+          locationName={locationName}
+          industry={industry}
+          country={normalizedCountry}
+          functionRoot={normalizedFunctionRoot}
         />
       </OrgChartPageClient>
     </div>
