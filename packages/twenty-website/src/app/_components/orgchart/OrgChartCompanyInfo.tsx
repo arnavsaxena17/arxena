@@ -2,10 +2,11 @@
 
 import styled from '@emotion/styled';
 import {
-  IconBrandLinkedin,
-  IconHierarchy2,
-  IconWorld,
+    IconBrandLinkedin,
+    IconHierarchy2,
+    IconWorld,
 } from '@tabler/icons-react';
+import { useState } from 'react';
 
 const StyledCompanyInfo = styled.div`
   display: flex;
@@ -39,6 +40,8 @@ const StyledCompanyLogoPlaceholder = styled.div`
   border-radius: ${({ theme }) => theme.border.radius.md};
   background: ${({ theme }) => theme.background.tertiary};
   color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: 14px;
+  font-weight: 600;
   flex-shrink: 0;
 `;
 
@@ -101,6 +104,15 @@ export type OrgChartCompanyInfoProps = {
   logoBaseUrl?: string;
 };
 
+function getLogoAbbreviation(website?: string, companyName?: string): string {
+  if (website?.trim()) {
+    const domain = website.replace(/^https?:\/\//, '').split('.')[0];
+    const letter = domain?.[0];
+    return letter ? letter.toUpperCase() : companyName?.charAt(0)?.toUpperCase() ?? '?';
+  }
+  return companyName?.charAt(0)?.toUpperCase() ?? '?';
+}
+
 function getLogoUrl(website?: string, logoBaseUrl?: string): string | null {
   if (!website?.trim()) return null;
   const base = logoBaseUrl ?? '/api/org-chart';
@@ -130,8 +142,10 @@ export const OrgChartCompanyInfo = ({
   employeeCount,
   logoBaseUrl = '/api/org-chart',
 }: OrgChartCompanyInfoProps) => {
+  const [logoError, setLogoError] = useState(false);
   const logoUrl = getLogoUrl(website, logoBaseUrl);
   const websiteDomain = getDisplayDomain(website);
+  const logoAbbreviation = getLogoAbbreviation(website, companyName);
 
   const hasInfo =
     companyName ||
@@ -147,11 +161,20 @@ export const OrgChartCompanyInfo = ({
     <StyledCompanyInfo>
       {companyName && (
         <StyledCompanyTitleRow>
-          {logoUrl ? (
-            <StyledCompanyLogo src={logoUrl} alt="" loading="lazy" />
+          {logoUrl && !logoError ? (
+            <StyledCompanyLogo
+              src={logoUrl}
+              alt=""
+              loading="lazy"
+              onError={() => setLogoError(true)}
+            />
           ) : (
             <StyledCompanyLogoPlaceholder>
-              <IconHierarchy2 size={20} />
+              {logoAbbreviation !== '?' ? (
+                logoAbbreviation
+              ) : (
+                <IconHierarchy2 size={20} />
+              )}
             </StyledCompanyLogoPlaceholder>
           )}
           <StyledCompanyTitle>{companyName}</StyledCompanyTitle>

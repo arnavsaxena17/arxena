@@ -254,6 +254,15 @@ const StyledPricingCardCredits = styled.div`
   margin-bottom: 16px;
 `;
 
+function getLogoAbbreviation(website?: string, companyName?: string): string {
+  if (website?.trim()) {
+    const domain = website.replace(/^https?:\/\//, '').split('.')[0];
+    const letter = domain?.[0];
+    return letter ? letter.toUpperCase() : companyName?.charAt(0)?.toUpperCase() ?? '?';
+  }
+  return companyName?.charAt(0)?.toUpperCase() ?? '?';
+}
+
 const EXAMPLE_COMPANIES = [
   { companyId: 'google', name: 'Google', website: 'google.com' },
   { companyId: 'microsoft', name: 'Microsoft', website: 'microsoft.com' },
@@ -331,7 +340,7 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
                       if (placeholder) {
                         (placeholder as HTMLElement).style.display = 'flex';
                         (placeholder as HTMLElement).textContent =
-                          name.charAt(0);
+                          getLogoAbbreviation(website, name);
                       }
                     }}
                   />
