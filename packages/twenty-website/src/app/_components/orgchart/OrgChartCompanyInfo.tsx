@@ -110,7 +110,9 @@ function getLogoAbbreviation(website?: string, companyName?: string): string {
   if (website?.trim()) {
     const domain = website.replace(/^https?:\/\//, '').split('.')[0];
     const letter = domain?.[0];
-    return letter ? letter.toUpperCase() : companyName?.charAt(0)?.toUpperCase() ?? '?';
+    return letter
+      ? letter.toUpperCase()
+      : (companyName?.charAt(0)?.toUpperCase() ?? '?');
   }
   return companyName?.charAt(0)?.toUpperCase() ?? '?';
 }
@@ -148,7 +150,10 @@ export const OrgChartCompanyInfo = ({
   const logoUrl = getLogoUrl(website, logoBaseUrl);
   const websiteDomain = getDisplayDomain(website);
   const displayCompanyName = toTitleCase(companyName);
-  const logoAbbreviation = getLogoAbbreviation(website, displayCompanyName || companyName);
+  const logoAbbreviation = getLogoAbbreviation(
+    website,
+    displayCompanyName || companyName,
+  );
   const displayLocationName = toTitleCase(locationName);
   const displayIndustry = toTitleCase(industry);
 

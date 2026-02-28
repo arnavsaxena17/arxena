@@ -1,5 +1,7 @@
 import { MetadataRoute } from 'next';
 
+import { toSlug } from 'twenty-shared';
+
 import indexedCompanies from '@/data/indexed-org-charts.json';
 import { getBaseUrl } from '@/lib/base-url';
 
@@ -14,12 +16,14 @@ function buildOrgChartPath(
     return `/org-chart/${encodeURIComponent(companyId)}`;
   }
   if (type === 'fullcompany') {
-    return `/org-chart/${encodeURIComponent(companyId)}/${encodeURIComponent(country)}`;
+    const countrySegment = country === 'global' ? 'global' : toSlug(country);
+    return `/org-chart/${encodeURIComponent(companyId)}/${countrySegment}`;
   }
   if (country === 'global') {
-    return `/org-chart/${encodeURIComponent(companyId)}/global/${encodeURIComponent(type)}`;
+    const typeSegment = type === 'fullcompany' ? 'fullcompany' : toSlug(type);
+    return `/org-chart/${encodeURIComponent(companyId)}/global/${typeSegment}`;
   }
-  return `/org-chart/${encodeURIComponent(companyId)}/${encodeURIComponent(country)}/${encodeURIComponent(type)}`;
+  return `/org-chart/${encodeURIComponent(companyId)}/${toSlug(country)}/${toSlug(type)}`;
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

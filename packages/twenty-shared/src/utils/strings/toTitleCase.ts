@@ -1,7 +1,3 @@
-/**
- * Words that stay lowercase in title case unless first or last.
- * Covers articles, conjunctions, and short prepositions common in job titles.
- */
 const SMALL_WORDS = new Set([
   'a',
   'an',
@@ -71,10 +67,14 @@ const ABBREVIATION_DISPLAY: Record<string, string> = {
   g2c: 'G2C',
   rnd: 'R&D',
   ltd: 'Ltd',
+  pwc:'PwC',
   ios: 'iOS',
   iphone: 'iPhone',
   ipad: 'iPad',
   hcm: 'HCM',
+  hdfc: 'HDFC',
+  gss: 'GSS',
+  us:'US',
   scm: 'SCM',
   hrms: 'HRMS',
   hrm: 'HRM',
@@ -83,10 +83,13 @@ const ABBREVIATION_DISPLAY: Record<string, string> = {
   aws: 'AWS',
   macos: 'macOS',
   seo: 'SEO',
+  hrt:'HRT',
   pm: 'PM',
   qa: 'QA',
   qc: 'QC',
-  pr: 'PR',
+  mdg:'MDG',
+  hrd:'HRD',
+  hrta: 'HRTA',
   sf:'SF',
   sap: 'SAP',
   mba: 'MBA',

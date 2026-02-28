@@ -19,7 +19,7 @@ import {
   useCompanyInfoLookup,
   useOrgChartFilterOptions,
 } from 'twenty-orgchart/orgchart-core';
-import { OrgChartNodeData } from 'twenty-shared';
+import { OrgChartNodeData, toSlug } from 'twenty-shared';
 
 const OrgChartDiagram = dynamic(
   () => import('twenty-orgchart').then((mod) => mod.OrgChartDiagram),
@@ -272,10 +272,13 @@ export const OrgChartPageClient = ({
     (country?: string, fn?: string) => {
       let path = `/org-chart/${encodeURIComponent(companyId)}`;
       if (country && country !== 'global') {
-        path += `/${encodeURIComponent(country)}`;
+        path += `/${toSlug(country)}`;
       }
       if (fn && fn !== 'fullcompany') {
-        path += `/${encodeURIComponent(fn)}`;
+        if (!country || country === 'global') {
+          path += '/global';
+        }
+        path += `/${toSlug(fn)}`;
       }
       return path;
     },
@@ -386,6 +389,7 @@ export const OrgChartPageClient = ({
                     linkedin: '/img/linkedin-icon-png-circle-2.png',
                     download: '/img/download-icon.png',
                     similarItems: '/img/similar-items.png',
+                    contact: '/img/contact-icon.svg',
                   }}
                 />
                 <StyledTopRightActionsOverlay>

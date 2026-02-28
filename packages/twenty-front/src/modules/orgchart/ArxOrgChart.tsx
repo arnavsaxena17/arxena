@@ -207,6 +207,15 @@ export const ArxOrgChart = ({
     'boolean' &&
     (orgSource as Record<string, unknown>).is_blank_template === true;
 
+  // const hasPreviewOrLockNodes = useMemo(() => {
+  //   return nodeDataArray.some(
+  //     (n) => n.nodeState === 'preview' || n.nodeState === 'lock',
+  //   );
+  // }, [nodeDataArray]);
+
+  // const isPreviewMode = isBlankTemplate || hasPreviewOrLockNodes;
+  // const isPreviewMode = isBlankTemplate;
+
   const filterOptions = useOrgChartFilterOptions(orgData);
 
   const {

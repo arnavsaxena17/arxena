@@ -259,7 +259,9 @@ function getLogoAbbreviation(website?: string, companyName?: string): string {
   if (website?.trim()) {
     const domain = website.replace(/^https?:\/\//, '').split('.')[0];
     const letter = domain?.[0];
-    return letter ? letter.toUpperCase() : companyName?.charAt(0)?.toUpperCase() ?? '?';
+    return letter
+      ? letter.toUpperCase()
+      : (companyName?.charAt(0)?.toUpperCase() ?? '?');
   }
   return companyName?.charAt(0)?.toUpperCase() ?? '?';
 }

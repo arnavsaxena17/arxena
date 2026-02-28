@@ -2,7 +2,9 @@ import { Metadata } from 'next';
 
 import {
   extractOrgData,
+  fromSlug,
   processOrgChartToNodeData,
+  toSlug,
   toTitleCase,
 } from 'twenty-shared';
 
@@ -72,11 +74,11 @@ export async function generateMetadata({
     typeof companyId === 'string' ? formatCompanyName(companyId) : 'Company';
   const country =
     segments?.[1] && segments[1] !== 'global'
-      ? decodeURIComponent(segments[1])
+      ? fromSlug(segments[1])
       : undefined;
   const functionRoot =
     segments?.[2] && segments[2] !== 'fullcompany'
-      ? decodeURIComponent(segments[2])
+      ? fromSlug(segments[2])
       : undefined;
 
   const titleParts: string[] = [];
@@ -169,10 +171,10 @@ export async function generateMetadata({
       description: ogDescription,
     },
     alternates: {
-      canonical: `/org-chart/${[companyId, country, functionRoot]
-        .filter(Boolean)
-        .map((s) => encodeURIComponent(s as string))
-        .join('/')}`,
+      canonical:
+        segments && segments.length > 0
+          ? `/org-chart/${encodeURIComponent(companyId)}${segments.length > 1 ? `/${segments.slice(1).join('/')}` : ''}`
+          : `/org-chart/${encodeURIComponent(companyId)}`,
     },
   };
 }
@@ -189,10 +191,10 @@ export default async function OrgChartPage({
   const functionRoot = segments?.[2];
 
   const normalizedCountry =
-    country && country !== 'global' ? decodeURIComponent(country) : undefined;
+    country && country !== 'global' ? fromSlug(country) : undefined;
   const normalizedFunctionRoot =
     functionRoot && functionRoot !== 'fullcompany'
-      ? decodeURIComponent(functionRoot)
+      ? fromSlug(functionRoot)
       : undefined;
 
   if (!companyId) {
@@ -216,8 +218,8 @@ export default async function OrgChartPage({
   const rawData = await fetchOrgChart(companyId, {
     companyName,
     website,
-    country: normalizedCountry,
-    functionRoot: normalizedFunctionRoot,
+    country: normalizedCountry?.toLowerCase(),
+    functionRoot: normalizedFunctionRoot?.toLowerCase(),
   });
 
   const orgData = extractOrgData(rawData);
@@ -258,16 +260,16 @@ export default async function OrgChartPage({
   if (normalizedCountry) {
     breadcrumbItems.push({
       name: normalizedCountry,
-      url: `/org-chart/${encodeURIComponent(companyId)}/${encodeURIComponent(normalizedCountry)}`,
+      url: `/org-chart/${encodeURIComponent(companyId)}/${toSlug(normalizedCountry)}`,
     });
   }
   if (normalizedFunctionRoot) {
+    const fnPath = normalizedCountry
+      ? `/${toSlug(normalizedFunctionRoot)}`
+      : `/global/${toSlug(normalizedFunctionRoot)}`;
     breadcrumbItems.push({
       name: normalizedFunctionRoot,
-      url: `/org-chart/${[companyId, normalizedCountry, normalizedFunctionRoot]
-        .filter(Boolean)
-        .map((s) => encodeURIComponent(s as string))
-        .join('/')}`,
+      url: `/org-chart/${encodeURIComponent(companyId)}${normalizedCountry ? `/${toSlug(normalizedCountry)}` : ''}${fnPath}`,
     });
   }
 

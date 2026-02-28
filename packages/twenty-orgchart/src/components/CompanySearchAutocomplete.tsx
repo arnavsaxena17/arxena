@@ -2,6 +2,8 @@ import styled from '@emotion/styled';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import { toTitleCase } from 'twenty-shared';
+
 import type { CompanyAutocompleteItem } from '../hooks/useCompanyAutocomplete';
 import { useCompanyAutocomplete } from '../hooks/useCompanyAutocomplete';
 
@@ -393,13 +395,15 @@ export const CompanySearchAutocomplete = ({
                 {initials || '?'}
               </StyledLogoPlaceholder>
               <StyledItemContent>
-                <StyledCompanyName>{company.name}</StyledCompanyName>
+                <StyledCompanyName>
+                  {toTitleCase(company.name)}
+                </StyledCompanyName>
                 <StyledCompanyMeta>
                   {company.meta.location_name && (
-                    <span>{company.meta.location_name}</span>
+                    <span>{toTitleCase(company.meta.location_name)}</span>
                   )}
                   {company.meta.industry && (
-                    <span>{company.meta.industry}</span>
+                    <span>{toTitleCase(company.meta.industry)}</span>
                   )}
                   <span>{company.count.toLocaleString()} profiles</span>
                 </StyledCompanyMeta>
