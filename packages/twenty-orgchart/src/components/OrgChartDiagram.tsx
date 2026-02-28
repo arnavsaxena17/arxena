@@ -71,6 +71,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
     {
       nodeDataArray,
       iconUrls,
+      defaultAvatarUrl = DEFAULT_AVATAR,
       onDiagramReady,
       onNodeContextAction,
       onBackgroundContextAction,
@@ -177,10 +178,10 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
               {
                 desiredSize: new go.Size(30, 30),
                 imageStretch: go.GraphObject.UniformToFill,
-                errorFunction: () => DEFAULT_AVATAR,
+                errorFunction: () => defaultAvatarUrl,
               },
               new go.Binding('source', `image_${idx}` as const, (src) =>
-                src || DEFAULT_AVATAR,
+                src || defaultAvatarUrl,
               ),
             ),
           ),
@@ -554,6 +555,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
 
       return node;
     }, [
+      defaultAvatarUrl,
       LOCK_ICON_URL,
       LINKEDIN_ICON_URL,
       DOWNLOAD_ICON_URL,

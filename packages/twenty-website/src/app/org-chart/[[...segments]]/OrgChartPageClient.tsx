@@ -384,6 +384,7 @@ export const OrgChartPageClient = ({
                   onDiagramReady={handleDiagramReady}
                   nodeDataArray={nodeDataArray}
                   onNodeClick={handleNodeClick}
+                  defaultAvatarUrl="/img/default-avatar.jpg"
                   iconUrls={{
                     lock: '/img/lock.png',
                     linkedin: '/img/linkedin-icon-png-circle-2.png',

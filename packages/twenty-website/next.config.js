@@ -9,6 +9,16 @@ const nextConfig = {
   async redirects() {
     return [
       {
+        source: '/favicon.ico',
+        destination: '/images/favicon/32.png',
+        permanent: true,
+      },
+      {
+        source: '/signup',
+        destination: 'https://app.arxena.com/sign-up',
+        permanent: true,
+      },
+      {
         source: '/org-chart/meta',
         destination: '/org-chart/facebook',
         permanent: true,

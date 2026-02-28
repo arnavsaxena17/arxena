@@ -22,6 +22,8 @@ export type OrgChartDiagramIconUrls = {
 export type OrgChartDiagramProps = {
   nodeDataArray: OrgChartNodeData[];
   iconUrls?: OrgChartDiagramIconUrls;
+  /** URL for default avatar when node has no image. Use local path (e.g. /img/default-avatar.jpg) to avoid external requests from crawlers. */
+  defaultAvatarUrl?: string;
   onDiagramReady?: (handle: OrgChartDiagramHandle) => void;
   onNodeContextAction?: (
     action: OrgChartContextAction,
