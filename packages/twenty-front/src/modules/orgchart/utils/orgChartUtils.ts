@@ -1,4 +1,4 @@
-import type { OrgChartNodeData } from 'twenty-shared';
+import { toTitleCase, type OrgChartNodeData } from 'twenty-shared';
 
 import type { ContextResultItem } from '../types';
 
@@ -6,25 +6,28 @@ export const normalizeCandidateItem = (
   raw: Record<string, unknown>,
   index: number,
 ): ContextResultItem => {
-  const fullName =
+  const rawFullName =
     (raw.full_name as string | undefined) ??
     (raw.fullName as string | undefined) ??
     (raw.name as string | undefined) ??
     (raw.headline as string | undefined) ??
     `Candidate ${index + 1}`;
+  const fullName = toTitleCase(rawFullName, { skipIfMasked: true });
 
-  const headline =
+  const rawHeadline =
     (raw.job_title as string | undefined) ??
     (raw.headline as string | undefined) ??
     (raw.title as string | undefined) ??
     (raw.jobTitle as string | undefined) ??
     '';
+  const headline = toTitleCase(rawHeadline, { skipIfMasked: true });
 
-  const company =
+  const company = toTitleCase(
     (raw.company as string | undefined) ??
-    (raw.currentCompany as string | undefined) ??
-    (raw.organisation as string | undefined) ??
-    '';
+      (raw.currentCompany as string | undefined) ??
+      (raw.organisation as string | undefined) ??
+      '',
+  );
 
   const email =
     (raw.email_address as string | undefined) ??

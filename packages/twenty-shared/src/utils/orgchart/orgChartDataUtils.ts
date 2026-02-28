@@ -1,3 +1,5 @@
+import { toTitleCase } from '../strings/toTitleCase';
+
 /**
  * Extracts and processes org chart data for GoJS TreeModel.
  * Matches arxena getOrgChartJsonObj + processCandidate structure.
@@ -71,9 +73,13 @@ function processCandidate(
   index: number,
 ): void {
   node[`title_${index}`] =
-    candidate?.job_title != null ? candidate.job_title : '';
+    candidate?.job_title != null
+      ? toTitleCase(candidate.job_title, { skipIfMasked: true })
+      : '';
   node[`name_${index}`] =
-    candidate?.full_name != null ? candidate.full_name : '';
+    candidate?.full_name != null
+      ? toTitleCase(candidate.full_name, { skipIfMasked: true })
+      : '';
   node[`image_${index}`] = candidate?.image != null ? candidate.image : '';
   const linkedinUrl =
     candidate?.std_linkedin_url ??
@@ -205,7 +211,9 @@ export function processOrgChartToNodeData(
     const node: OrgChartNodeData = {
       key: typeof raw.key === 'number' ? raw.key : lastKey++,
       parent: typeof raw.parent === 'number' ? raw.parent : undefined,
-      headline: raw.headline ?? 'Unknown',
+      headline: toTitleCase(raw.headline ?? 'Unknown', {
+        skipIfMasked: true,
+      }),
       country: raw.country as string | undefined,
       category: 'detailed',
       nodeState,

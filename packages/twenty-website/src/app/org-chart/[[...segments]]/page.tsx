@@ -1,6 +1,10 @@
 import { Metadata } from 'next';
 
-import { extractOrgData, processOrgChartToNodeData } from 'twenty-shared';
+import {
+  extractOrgData,
+  processOrgChartToNodeData,
+  toTitleCase,
+} from 'twenty-shared';
 
 import { getSignUpUrl } from '@/lib/auth-urls';
 import { getBaseUrl } from '@/lib/base-url';
@@ -223,14 +227,21 @@ export default async function OrgChartPage({
     typeof rawData?.profile_count === 'number'
       ? rawData.profile_count
       : undefined;
-  const displayCompanyName =
-    companyName ?? (typeof companyId === 'string' ? companyId : 'Company');
+  const displayCompanyName = toTitleCase(
+    companyName ??
+      (typeof rawData?.job_company_name === 'string'
+        ? rawData.job_company_name
+        : undefined) ??
+      (typeof companyId === 'string' ? companyId : 'Company'),
+  );
   const locationName =
     typeof rawData?.location_name === 'string'
-      ? rawData.location_name
+      ? toTitleCase(rawData.location_name)
       : undefined;
   const industry =
-    typeof rawData?.industry === 'string' ? rawData.industry : undefined;
+    typeof rawData?.industry === 'string'
+      ? toTitleCase(rawData.industry)
+      : undefined;
   const linkedinUrl =
     typeof rawData?.linkedin_url === 'string'
       ? rawData.linkedin_url

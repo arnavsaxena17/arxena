@@ -1,6 +1,8 @@
 import styled from '@emotion/styled';
 import { IconSearch } from '@tabler/icons-react';
 
+import { toTitleCase } from 'twenty-shared';
+
 import type { OrgChartDiagramHandle } from './OrgChartDiagram.types';
 
 const StyledFiltersContainer = styled.div`
@@ -170,8 +172,8 @@ export const OrgChartFilters = ({
             {availableCountries.map((country) => (
               <option key={country} value={country}>
                 {countryPercentLabels[country]
-                  ? `${country} (${countryPercentLabels[country]})`
-                  : country}
+                  ? `${toTitleCase(country)} (${countryPercentLabels[country]})`
+                  : toTitleCase(country)}
               </option>
             ))}
           </StyledSelect>
@@ -191,8 +193,8 @@ export const OrgChartFilters = ({
             {availableFunctionRoots.map((fn) => (
               <option key={fn} value={fn}>
                 {functionRootPercentLabels[fn]
-                  ? `${fn} (${functionRootPercentLabels[fn]})`
-                  : fn}
+                  ? `${toTitleCase(fn)} (${functionRootPercentLabels[fn]})`
+                  : toTitleCase(fn)}
               </option>
             ))}
           </StyledSelect>

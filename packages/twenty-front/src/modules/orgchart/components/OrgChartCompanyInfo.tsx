@@ -1,6 +1,8 @@
 import styled from '@emotion/styled';
 import { IconHierarchy2, IconWorld } from '@tabler/icons-react';
 
+import { toTitleCase } from 'twenty-shared';
+
 const LINKEDIN_ICON_URL = '/img/linkedin.svg';
 
 const StyledCompanyInfo = styled.div`
@@ -159,13 +161,17 @@ export const OrgChartCompanyInfo = ({
 
   const logoUrl = getLogoUrl(website);
   const websiteDomain = getDisplayDomain(website);
-  const linkedinLabel = linkedinDisplayName || companyName || 'LinkedIn';
+  const displayCompanyName = toTitleCase(companyName);
+  const displayLocationName = toTitleCase(locationName);
+  const displayIndustry = toTitleCase(industry);
+  const linkedinLabel =
+    toTitleCase(linkedinDisplayName) || displayCompanyName || 'LinkedIn';
 
   const hasInfo =
-    companyName ||
+    displayCompanyName ||
     website ||
-    locationName ||
-    industry ||
+    displayLocationName ||
+    displayIndustry ||
     typeof profileCount === 'number' ||
     typeof employeeCount === 'number';
 
@@ -173,7 +179,7 @@ export const OrgChartCompanyInfo = ({
 
   return (
     <StyledCompanyInfo>
-      {companyName && (
+      {displayCompanyName && (
         <StyledCompanyTitleRow>
           {logoUrl ? (
             <StyledCompanyLogo src={logoUrl} alt="" loading="lazy" />
@@ -182,7 +188,7 @@ export const OrgChartCompanyInfo = ({
               <IconHierarchy2 size={20} />
             </StyledCompanyLogoPlaceholder>
           )}
-          <StyledCompanyTitle>{companyName}</StyledCompanyTitle>
+          <StyledCompanyTitle>{displayCompanyName}</StyledCompanyTitle>
           {linkedinUrl ? (
             <StyledLinkedinLink
               href={linkedinUrl}
@@ -205,14 +211,18 @@ export const OrgChartCompanyInfo = ({
           ) : null}
         </StyledCompanyTitleRow>
       )}
-      {(locationName ||
-        industry ||
+      {(displayLocationName ||
+        displayIndustry ||
         websiteDomain ||
         typeof profileCount === 'number' ||
         typeof employeeCount === 'number') && (
         <StyledCompanyMetaRow>
-          {locationName && <StyledMetaItem>{locationName}</StyledMetaItem>}
-          {industry && <StyledMetaItem>{industry}</StyledMetaItem>}
+          {displayLocationName && (
+            <StyledMetaItem>{displayLocationName}</StyledMetaItem>
+          )}
+          {displayIndustry && (
+            <StyledMetaItem>{displayIndustry}</StyledMetaItem>
+          )}
           {websiteDomain && <StyledMetaItem>{websiteDomain}</StyledMetaItem>}
           {typeof profileCount === 'number' && (
             <StyledMetaItem>

@@ -15,7 +15,7 @@ import {
 import {
   extractOrgData,
   processOrgChartToNodeData,
-  type OrgChartNodeData,
+  type OrgChartNodeData
 } from 'twenty-shared';
 import { OrgChartAddToJobModal } from './components/OrgChartAddToJobModal';
 import { OrgChartHeader } from './components/OrgChartHeader';
