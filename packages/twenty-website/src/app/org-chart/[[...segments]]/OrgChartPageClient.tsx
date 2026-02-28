@@ -389,7 +389,6 @@ export const OrgChartPageClient = ({
                     linkedin: '/img/linkedin-icon-png-circle-2.png',
                     download: '/img/download-icon.png',
                     similarItems: '/img/similar-items.png',
-                    contact: '/img/contact-icon.svg',
                   }}
                 />
                 <StyledTopRightActionsOverlay>
