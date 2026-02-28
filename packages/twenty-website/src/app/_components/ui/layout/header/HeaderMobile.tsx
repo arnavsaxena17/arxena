@@ -172,7 +172,7 @@ export const HeaderMobile = ({
           {showSearch && (
             <StyledSearchWrapper>
               <OrgChartSearch
-                placeholder="Search another company's org chart"
+                placeholder="Search any company's org chart"
                 startIcon={<IconHierarchy2 size={20} />}
               />
             </StyledSearchWrapper>

@@ -6,7 +6,8 @@
 ### Main Packages / folders
 - packages/twenty-front: Main Frontend (React)
 - packages/twenty-server: Main Backend (NestJS)
-- packages/twenty-website: Marketing website + docs (NextJS)
+- packages/twenty-website: Marketing website (NextJS)
+- packages/twenty-orgchart: Org Charts shared by twenty-front and twenty-website (NextJS)
 - packages/twenty-ui: UI library (React)
 - packages/twenty-shared: Shared utils, constants, types
 
@@ -97,3 +98,11 @@
 - Mock external deps
 - Use data-testid
 - Follow naming conventions
+
+
+## Production
+- Use aws profile arxanalytics
+- production server is available at ssh app.arxena.com
+- at /home/ubuntu in production build_app_in_new_instance.sh builds production by running script_to_build_app_in_new_instance.sh in a remote instance
+
+

@@ -156,6 +156,16 @@ export async function generateMetadata({
       ? descParts.slice(0, 2).join(' ')
       : `${companyName} org structure and organization structure: executive team, leadership. 1M+ companies on Arxena.`;
 
+  const baseUrl = await getBaseUrl();
+  const canonicalPath =
+    segments && segments.length > 0
+      ? `/org-chart/${encodeURIComponent(companyId)}${segments.length > 1 ? `/${segments.slice(1).join('/')}` : ''}`
+      : `/org-chart/${encodeURIComponent(companyId)}`;
+  const isProduction =
+    baseUrl.includes('arxena.com');
+  const canonicalBase = isProduction ? 'https://arxena.com' : baseUrl;
+  const canonicalUrl = `${canonicalBase}${canonicalPath}`;
+
   return {
     title,
     description,
@@ -164,6 +174,7 @@ export async function generateMetadata({
       title,
       description: ogDescription,
       type: 'website',
+      url: canonicalUrl,
     },
     twitter: {
       card: 'summary_large_image',
@@ -171,10 +182,7 @@ export async function generateMetadata({
       description: ogDescription,
     },
     alternates: {
-      canonical:
-        segments && segments.length > 0
-          ? `/org-chart/${encodeURIComponent(companyId)}${segments.length > 1 ? `/${segments.slice(1).join('/')}` : ''}`
-          : `/org-chart/${encodeURIComponent(companyId)}`,
+      canonical: canonicalUrl,
     },
   };
 }

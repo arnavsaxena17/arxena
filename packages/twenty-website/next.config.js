@@ -6,6 +6,20 @@ const webpack = require('webpack');
 const orgchartDist = path.resolve(__dirname, '../twenty-orgchart/dist');
 
 const nextConfig = {
+  async redirects() {
+    return [
+      {
+        source: '/org-chart/meta',
+        destination: '/org-chart/facebook',
+        permanent: true,
+      },
+      {
+        source: '/org-chart/meta/:path*',
+        destination: '/org-chart/facebook/:path*',
+        permanent: true,
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {
