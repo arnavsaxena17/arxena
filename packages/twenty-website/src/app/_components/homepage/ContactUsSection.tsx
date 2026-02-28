@@ -116,13 +116,13 @@ export const ContactUsSection = () => {
     <StyledContactSection>
       <StyledContactTitle>Contact Us</StyledContactTitle>
       <StyledContactGrid>
-        <StyledContactCard href="mailto:hello@arxena.com">
+        <StyledContactCard href="mailto:info@arxena.com">
           <StyledContactIcon>
             <IconMail size={28} stroke={1.5} />
           </StyledContactIcon>
           <StyledContactCardTitle>Email</StyledContactCardTitle>
           <StyledContactCardSubtitle>
-            hello@arxena.com
+            info@arxena.com
           </StyledContactCardSubtitle>
         </StyledContactCard>
         <StyledContactCard

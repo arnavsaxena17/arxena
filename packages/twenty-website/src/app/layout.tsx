@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Arxena.com',
-  description: 'Open Source CRM',
+  description: 'Search and explore organizational charts of any company. 1M+ companies, 55M+ professionals for recruitment and talent mapping.',
   icons: {
     icon: [
       { url: '/images/favicon/16.png', sizes: '16x16', type: 'image/png' },
