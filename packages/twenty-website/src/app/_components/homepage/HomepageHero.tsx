@@ -366,6 +366,7 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
                   <StyledExampleCard
                     key={`${companyId}-${i}`}
                     href={`/org-chart/${encodeURIComponent(companyId)}`}
+                    prefetch={false}
                   >
                     {logoFailed ? (
                       <StyledExampleLogoPlaceholder>
