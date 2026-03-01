@@ -20,6 +20,7 @@
     "@nivo/calendar": "^0.87.0",
     "@tabler/icons-react": "^2.44.0",
     "gray-matter": "^4.0.3",
+    "mixpanel-browser": "^2.75.0",
     "next-runtime-env": "^3.2.2",
     "postgres": "^3.4.3",
     "twenty-orgchart": "workspace:*"

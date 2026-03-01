@@ -7,6 +7,8 @@ import { useState } from 'react';
 
 import { OrgChartSearch } from '@/app/_components/orgchart/OrgChartSearch';
 import { Logo } from '@/app/_components/ui/layout/Logo';
+import { trackGA4Event } from '@/lib/analytics';
+import { trackWebsiteEvent } from '@/lib/mixpanel';
 
 import { LogoContainer, NavOpen } from './styled';
 
@@ -177,8 +179,24 @@ export const HeaderMobile = ({
               />
             </StyledSearchWrapper>
           )}
-          <StyledSignIn href={signInUrl}>Sign in</StyledSignIn>
-          <StyledSignUp href={signUpUrl}>Sign up</StyledSignUp>
+          <StyledSignIn
+            href={signInUrl}
+            onClick={() => {
+              trackGA4Event('sign_in_click', { source: 'header_mobile' });
+              trackWebsiteEvent('sign_in_click', { source: 'header_mobile' });
+            }}
+          >
+            Sign in
+          </StyledSignIn>
+          <StyledSignUp
+            href={signUpUrl}
+            onClick={() => {
+              trackGA4Event('sign_up_click', { source: 'header_mobile' });
+              trackWebsiteEvent('sign_up_click', { source: 'header_mobile' });
+            }}
+          >
+            Sign up
+          </StyledSignUp>
         </StyledMobileLinkList>
       </NavOpen>
     </StyledMobileMenu>

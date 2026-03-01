@@ -21,11 +21,12 @@ import { useTriggerApisOAuth } from '@/settings/accounts/hooks/useTriggerApiOAut
 import { AppPath } from '@/types/AppPath';
 import { ConnectedAccountProvider } from 'twenty-shared';
 import {
-  CalendarChannelVisibility,
-  MessageChannelVisibility,
-  OnboardingStatus,
-  useSkipSyncEmailOnboardingStepMutation,
+    CalendarChannelVisibility,
+    MessageChannelVisibility,
+    OnboardingStatus,
+    useSkipSyncEmailOnboardingStepMutation,
 } from '~/generated/graphql';
+import { Mixpanel } from '~/mixpanel';
 
 const StyledSyncEmailsContainer = styled.div`
   display: flex;
@@ -60,6 +61,10 @@ export const SyncEmails = () => {
     useSkipSyncEmailOnboardingStepMutation();
 
   const handleButtonClick = async (provider: ConnectedAccountProvider) => {
+    Mixpanel.track('onboarding_step', {
+      stepName: 'sync_emails',
+      provider: provider.toLowerCase(),
+    });
     const calendarChannelVisibility =
       visibility === MessageChannelVisibility.SHARE_EVERYTHING
         ? CalendarChannelVisibility.SHARE_EVERYTHING
@@ -73,6 +78,7 @@ export const SyncEmails = () => {
   };
 
   const continueWithoutSync = async () => {
+    Mixpanel.track('onboarding_step', { stepName: 'sync_emails' });
     await skipSyncEmailOnboardingStatusMutation();
     setNextOnboardingStatus();
   };

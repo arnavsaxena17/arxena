@@ -5,6 +5,9 @@ import dynamic from 'next/dynamic';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { trackGA4Event } from '@/lib/analytics';
+import { trackWebsiteEvent } from '@/lib/mixpanel';
+
 const CompanySearchAutocomplete = dynamic(
   () =>
     import('@/lib/company-search').then((mod) => {
@@ -54,6 +57,14 @@ export const OrgChartSearch = ({
     profileCount?: number;
     linkedinUrl?: string;
   }) => {
+    trackGA4Event('org_chart_search', {
+      company_id: company.companyId,
+      company_name: company.companyName,
+    });
+    trackWebsiteEvent('org_chart_search', {
+      companyId: company.companyId,
+      companyName: company.companyName,
+    });
     setIsNavigating(true);
     const params = new URLSearchParams();
     if (company.companyName) params.set('companyName', company.companyName);

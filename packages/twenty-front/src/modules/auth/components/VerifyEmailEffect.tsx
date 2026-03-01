@@ -2,6 +2,7 @@ import { useAuth } from '@/auth/hooks/useAuth';
 import { AppPath } from '@/types/AppPath';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { Mixpanel } from '~/mixpanel';
 
 import { useReadCaptchaToken } from '@/captcha/hooks/useReadCaptchaToken';
 import { useEffect, useState } from 'react';
@@ -45,6 +46,7 @@ export const VerifyEmailEffect = () => {
           variant: SnackBarVariant.Success,
         });
 
+        Mixpanel.track('sign_up_complete', { method: 'email' });
         navigate(AppPath.Verify, undefined, { loginToken: loginToken.token });
       } catch (error) {
         enqueueSnackBar('Email verification failed.', {

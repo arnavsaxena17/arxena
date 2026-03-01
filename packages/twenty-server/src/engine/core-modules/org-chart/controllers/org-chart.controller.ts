@@ -96,6 +96,29 @@ export class OrgChartController {
     }
   }
 
+  @Get('companies/:companyId/top-hired-from')
+  async getTopHiredFrom(
+    @Param('companyId') companyId: string,
+  ) {
+    if (!companyId || companyId.includes('/') || companyId.includes('..')) {
+      throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
+    }
+    try {
+      const companies =
+        await this.orgChartEsService.getTopHiredFromCompanies(companyId);
+      return { companies, status: 'ok' };
+    } catch (error) {
+      this.logger.error(
+        `Get top hired from failed for companyId=${companyId}`,
+        error,
+      );
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Failed to fetch top hired from',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Get('companies/:companyId/indexed-urls')
   async getIndexedUrls(
     @Param('companyId') companyId: string,

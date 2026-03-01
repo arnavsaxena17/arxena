@@ -57,6 +57,7 @@ import { SearchPanel } from '@/candidate-search/components/SearchPanel/SearchPan
 import { SearchPanelToggle } from '@/candidate-search/components/SearchPanel/SearchPanelToggle';
 import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
 import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
+import { Mixpanel } from '~/mixpanel';
 import { useBaileysConnection } from '../baileys/contexts/BaileysContext';
 import { useUnipile } from '../unipile/contexts/UnipileContext';
 import { ChatKitWidget } from './components/ChatKitWidget';
@@ -537,6 +538,12 @@ export const JobPage: React.FC = () => {
   useEffect(() => {
     memoizedFetchCandidateFields();
   }, [memoizedFetchCandidateFields]);
+
+  useEffect(() => {
+    if (jobId && jobId !== 'job-id') {
+      Mixpanel.track('job_view', { jobId });
+    }
+  }, [jobId]);
 
   // Listen for job updates when ArxJDUploadModal closes
   useEffect(() => {

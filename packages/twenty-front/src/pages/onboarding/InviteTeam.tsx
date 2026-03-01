@@ -14,24 +14,25 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback } from 'react';
 import {
-  Controller,
-  SubmitHandler,
-  useFieldArray,
-  useForm,
+    Controller,
+    SubmitHandler,
+    useFieldArray,
+    useForm,
 } from 'react-hook-form';
 import { useRecoilValue } from 'recoil';
 import { Key } from 'ts-key-enum';
 import {
-  ActionLink,
-  IconCopy,
-  LightButton,
-  MainButton,
-  SeparatorLineText,
+    ActionLink,
+    IconCopy,
+    LightButton,
+    MainButton,
+    SeparatorLineText,
 } from 'twenty-ui';
 import { z } from 'zod';
 
 import { isDefined } from 'twenty-shared';
 import { OnboardingStatus } from '~/generated/graphql';
+import { Mixpanel } from '~/mixpanel';
 import { useCreateWorkspaceInvitation } from '../../modules/workspace-invitation/hooks/useCreateWorkspaceInvitation';
 
 const StyledAnimatedContainer = styled.div`
@@ -143,6 +144,7 @@ export const InviteTeam = () => {
       );
       const result = await sendInvitation({ emails });
 
+      Mixpanel.track('onboarding_step', { stepName: 'invite_team' });
       setNextOnboardingStatus();
 
       if (isDefined(result.errors)) {

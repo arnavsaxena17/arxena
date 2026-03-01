@@ -6,6 +6,7 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
+import { Mixpanel } from '~/mixpanel';
 
 import type { OrgChartContextAction } from 'twenty-orgchart';
 import type { NodeState, OrgChartNodeData } from 'twenty-shared';
@@ -380,6 +381,7 @@ export const useOrgChartActions = ({
 
       if (mode === 'entire_company' && json.orgChart) {
         setLatestOrgChart(json.orgChart);
+        Mixpanel.track('org_chart_create', { companyId });
         const cacheText = json.isCached
           ? 'served from cache'
           : 'generated and cached';

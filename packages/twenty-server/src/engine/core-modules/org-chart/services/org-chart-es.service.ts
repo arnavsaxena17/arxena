@@ -165,6 +165,94 @@ export class OrgChartEsService {
   }
 
   /**
+   * Get top 10 companies most commonly hired from (prior employers of people
+   * who joined this company). Returns company ids, names, and websites for
+   * linking to org charts and displaying logos.
+   */
+  async getTopHiredFromCompanies(
+    companyId: string,
+  ): Promise<{ id: string; name: string; website?: string }[]> {
+    if (!this.client) {
+      return [];
+    }
+
+    if (!companyId.trim()) {
+      return [];
+    }
+
+    const companiesIndex =
+      (this.environmentService.get('COMPANIES_ES_INDEX') as string | undefined) ??
+      'companies_index_text';
+
+    try {
+      const searchResponse = await this.client.search<{
+        id?: string;
+        name?: string;
+        website?: string;
+        top_ten_before_companies?: string[];
+      }>({
+        index: companiesIndex,
+        size: 1,
+        query: {
+          bool: {
+            should: [
+              { term: { id: companyId } },
+              { term: { 'name.keyword': companyId } },
+            ],
+          },
+        },
+        _source: ['top_ten_before_companies', 'name'],
+      });
+
+      const hit = searchResponse.hits.hits[0];
+      const topTen = hit?._source?.top_ten_before_companies;
+
+      if (!Array.isArray(topTen) || topTen.length === 0) {
+        return [];
+      }
+
+      const idsToFetch = topTen.slice(0, 10);
+
+      const fetchResponse = await this.client.search<{
+        id?: string;
+        name?: string;
+        website?: string;
+      }>({
+        index: companiesIndex,
+        size: idsToFetch.length,
+        query: { terms: { id: idsToFetch } },
+        _source: ['id', 'name', 'website'],
+      });
+
+      const byId = new Map<string, { id: string; name: string; website?: string }>();
+      for (const h of fetchResponse.hits.hits) {
+        const src = h._source;
+        if (!src?.id) continue;
+        const id = String(src.id);
+        const name =
+          typeof src.name === 'string' && src.name.trim()
+            ? src.name
+            : id.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+        byId.set(id, {
+          id,
+          name,
+          website: typeof src.website === 'string' ? src.website : undefined,
+        });
+      }
+
+      return idsToFetch
+        .map((id) => byId.get(id))
+        .filter((c): c is { id: string; name: string; website?: string } => !!c);
+    } catch (error) {
+      this.logger.error(
+        `Elasticsearch getTopHiredFromCompanies failed for companyId=${companyId}`,
+        error as Error,
+      );
+      return [];
+    }
+  }
+
+  /**
    * Get all (country, type) combinations that exist in ES for a company.
    * Used by the sitemap to index all org chart URL variants.
    */

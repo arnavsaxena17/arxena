@@ -2,9 +2,11 @@ import { ActionMenuEntry } from '@/action-menu/types/ActionMenuEntry';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { i18n } from '@lingui/core';
+import { Mixpanel } from '~/mixpanel';
 
 type RecordIndexActionMenuBarEntryProps = {
   entry: ActionMenuEntry;
+  trackAsCandidateAction?: boolean;
 };
 
 const StyledButton = styled.div`
@@ -28,11 +30,19 @@ const StyledButtonLabel = styled.div`
 
 export const RecordIndexActionMenuBarEntry = ({
   entry,
+  trackAsCandidateAction = false,
 }: RecordIndexActionMenuBarEntryProps) => {
   const theme = useTheme();
 
+  const handleClick = () => {
+    if (trackAsCandidateAction) {
+      Mixpanel.track('candidate_action', { actionKey: entry.key });
+    }
+    entry.onClick?.();
+  };
+
   return (
-    <StyledButton onClick={() => entry.onClick?.()}>
+    <StyledButton onClick={handleClick}>
       {entry.Icon && <entry.Icon size={theme.icon.size.md} />}
       <StyledButtonLabel>{i18n._(entry.label)}</StyledButtonLabel>
     </StyledButton>

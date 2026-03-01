@@ -14,6 +14,7 @@ import { SettingsPath } from '@/types/SettingsPath';
 import { SubMenuTopBarContainer } from '@/ui/layout/page/components/SubMenuTopBarContainer';
 import { Trans } from '@lingui/react';
 import type { LinkedinSignupCompleteData } from 'twenty-shared';
+import { Mixpanel } from '~/mixpanel';
 import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
 import { LinkedinSignup } from './LinkedinSignup';
 import { ConnectedLinkedinAccounts } from './components/ConnectedLinkedinAccounts';
@@ -40,6 +41,7 @@ export const LinkedinAccounts = () => {
 
   const handleSignupComplete = useCallback(
     async (data: LinkedinSignupCompleteData) => {
+      Mixpanel.track('linkedin_connect_complete');
       setHasConnectedAccounts(true);
       if (data.accountId) {
         try {
@@ -63,7 +65,7 @@ export const LinkedinAccounts = () => {
   };
 
   const handleAccountConnected = () => {
-    console.log('LinkedIn account connected successfully');
+    Mixpanel.track('linkedin_connect_complete');
     setHasConnectedAccounts(true);
   };
 

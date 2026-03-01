@@ -11,18 +11,19 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import type {
-  LinkedinCookieAuth,
-  LinkedinCredentials,
-  LinkedinSignupCompleteData,
+    LinkedinCookieAuth,
+    LinkedinCredentials,
+    LinkedinSignupCompleteData,
 } from 'twenty-shared';
 import {
-  ActionLink,
-  H2Title,
-  LightButton,
-  Loader,
-  MainButton,
+    ActionLink,
+    H2Title,
+    LightButton,
+    Loader,
+    MainButton,
 } from 'twenty-ui';
 import { OnboardingStatus } from '~/generated/graphql';
+import { Mixpanel } from '~/mixpanel';
 import { getLinkedinService } from '~/pages/settings/linkedin/services/linkedin-backend.service';
 
 const StyledContentContainer = styled.div`
@@ -153,12 +154,17 @@ export const ConnectLinkedin = () => {
   const accessToken = tokenPair?.accessToken.token;
 
   const handleComplete = useCallback(async () => {
+    Mixpanel.track('onboarding_step', { stepName: 'connect_linkedin' });
     await skipConnectLinkedinOnboardingStep();
     setNextOnboardingStatus();
     // Do not call loadCurrentUser() so Recoil keeps INSTALL_APP and next step renders.
   }, [setNextOnboardingStatus, skipConnectLinkedinOnboardingStep]);
 
   const handleSkip = useCallback(async () => {
+    Mixpanel.track('onboarding_step', {
+      stepName: 'connect_linkedin',
+      skipped: true,
+    });
     await skipConnectLinkedinOnboardingStep();
     setNextOnboardingStatus();
     // Do not refetch here: server may not have INSTALL_APP pending yet; refetch

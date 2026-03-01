@@ -8,6 +8,8 @@ import { useCallback, useState } from 'react';
 import { ContactUsSection } from '@/app/_components/homepage/ContactUsSection';
 import { OrgChartSearch } from '@/app/_components/orgchart/OrgChartSearch';
 import { Logo } from '@/app/_components/ui/layout/Logo';
+import { trackGA4Event } from '@/lib/analytics';
+import { trackWebsiteEvent } from '@/lib/mixpanel';
 
 const StyledHero = styled.section`
   display: flex;
@@ -332,8 +334,24 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
           />
         </StyledSearchWrapper>
         <StyledAuthLinks>
-          <StyledPrimaryCta href={signUpUrl}>Try it free</StyledPrimaryCta>
-          <StyledLink href={signInUrl}>Log in</StyledLink>
+          <StyledPrimaryCta
+            href={signUpUrl}
+            onClick={() => {
+              trackGA4Event('cta_click', { cta: 'Try it free' });
+              trackWebsiteEvent('cta_click', { cta: 'Try it free' });
+            }}
+          >
+            Try it free
+          </StyledPrimaryCta>
+          <StyledLink
+            href={signInUrl}
+            onClick={() => {
+              trackGA4Event('sign_in_click', { source: 'homepage' });
+              trackWebsiteEvent('sign_in_click', { source: 'homepage' });
+            }}
+          >
+            Log in
+          </StyledLink>
         </StyledAuthLinks>
       </StyledHero>
 

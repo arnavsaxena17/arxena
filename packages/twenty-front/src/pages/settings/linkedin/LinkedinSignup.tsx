@@ -4,11 +4,12 @@ import styled from '@emotion/styled';
 import React, { useCallback, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import type {
-  LinkedinCookieAuth,
-  LinkedinCredentials,
-  LinkedinSignupCompleteData,
-  LinkedinSignupProps
+    LinkedinCookieAuth,
+    LinkedinCredentials,
+    LinkedinSignupCompleteData,
+    LinkedinSignupProps
 } from 'twenty-shared';
+import { Mixpanel } from '~/mixpanel';
 import { getLinkedinService } from '~/pages/settings/linkedin/services/linkedin-backend.service';
 
 const Card = styled.div`
@@ -252,6 +253,7 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
       return;
     }
 
+    Mixpanel.track('linkedin_connect_start', { method: 'credentials' });
     setLoading(true);
     setError(null);
     
@@ -288,6 +290,7 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
       return;
     }
 
+    Mixpanel.track('linkedin_connect_start', { method: 'cookie' });
     setLoading(true);
     setError(null);
     
@@ -317,6 +320,7 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
   };
 
   const handleHostedAuth = async () => {
+    Mixpanel.track('linkedin_connect_start', { method: 'hosted_auth' });
     setLoading(true);
     setError(null);
     

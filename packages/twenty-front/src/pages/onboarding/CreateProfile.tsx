@@ -28,6 +28,7 @@ import { WorkspaceMember } from '@/workspace-member/types/WorkspaceMember';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { isDefined } from 'twenty-shared';
 import { OnboardingStatus } from '~/generated/graphql';
+import { Mixpanel } from '~/mixpanel';
 import { useWebSocketEvent } from '../../modules/websocket-context/useWebSocketEvent';
 import { useWebSocket } from '../../modules/websocket-context/WebSocketContextProvider';
 
@@ -228,6 +229,7 @@ export const CreateProfile = () => {
           // Continue onboarding on Arxena signup failure
         }
 
+        Mixpanel.track('onboarding_step', { stepName: 'create_profile' });
         setNextOnboardingStatus();
       } catch {
         // Error already surfaced or handled

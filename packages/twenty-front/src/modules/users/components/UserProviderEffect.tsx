@@ -20,6 +20,7 @@ import { ColorScheme } from '@/workspace-member/types/WorkspaceMember';
 import { APP_LOCALES, isDefined, SOURCE_LOCALE } from 'twenty-shared';
 import { WorkspaceMember } from '~/generated-metadata/graphql';
 import { useGetCurrentUserQuery } from '~/generated/graphql';
+import { Mixpanel } from '~/mixpanel';
 import { dynamicActivate } from '~/utils/i18n/dynamicActivate';
 
 export const UserProviderEffect = () => {
@@ -54,7 +55,11 @@ export const UserProviderEffect = () => {
 
     if (!isDefined(queryData?.currentUser)) return;
 
-    setCurrentUser(queryData.currentUser);
+    const currentUser = queryData.currentUser;
+    if (currentUser?.id) {
+      Mixpanel.identify(currentUser.id);
+    }
+    setCurrentUser(currentUser);
 
     if (isDefined(queryData.currentUser.currentWorkspace)) {
       setCurrentWorkspace(queryData.currentUser.currentWorkspace);

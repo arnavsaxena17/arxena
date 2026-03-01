@@ -9,7 +9,10 @@ import { ThemeProvider } from '@emotion/react';
 import styled from '@emotion/styled';
 
 import { OrgChartCompanyInfo } from '@/app/_components/orgchart/OrgChartCompanyInfo';
+import { OrgChartHiredFromRibbon } from '@/app/_components/orgchart/OrgChartHiredFromRibbon';
+import { trackGA4Event } from '@/lib/analytics';
 import { companySearchLightTheme } from '@/lib/company-search';
+import { trackWebsiteEvent } from '@/lib/mixpanel';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- orgchart-core is used alongside dynamic OrgChartDiagram
 import {
   OrgChartDiagramHandle,
@@ -287,6 +290,8 @@ export const OrgChartPageClient = ({
 
   const handleCountryChange = useCallback(
     (country: string | undefined) => {
+      trackGA4Event('org_chart_filter', { filter_type: 'country', value: country });
+      trackWebsiteEvent('org_chart_filter', { filterType: 'country', value: country });
       setSelectedCountry(country);
       router.push(buildPath(country, selectedFunctionRoot));
     },
@@ -295,6 +300,8 @@ export const OrgChartPageClient = ({
 
   const handleFunctionRootChange = useCallback(
     (fn: string | undefined) => {
+      trackGA4Event('org_chart_filter', { filter_type: 'function_root', value: fn });
+      trackWebsiteEvent('org_chart_filter', { filterType: 'functionRoot', value: fn });
       setSelectedFunctionRoot(fn);
       router.push(buildPath(selectedCountry, fn));
     },
@@ -302,6 +309,8 @@ export const OrgChartPageClient = ({
   );
 
   const handleSearch = useCallback(() => {
+    trackGA4Event('org_chart_search_person', { query: searchTerm });
+    trackWebsiteEvent('org_chart_search_person', { query: searchTerm });
     const count = diagramHandleRef.current?.search(searchTerm) ?? 0;
     setSearchResultCount(count);
   }, [searchTerm]);
@@ -312,6 +321,8 @@ export const OrgChartPageClient = ({
   }, []);
 
   const handleNodeClick = useCallback((node: OrgChartNodeData) => {
+    trackGA4Event('sign_up_cta_click', { source: 'modal' });
+    trackWebsiteEvent('sign_up_cta_click', { source: 'modal' });
     setClickedNode(node);
   }, []);
 
@@ -320,6 +331,19 @@ export const OrgChartPageClient = ({
   }, []);
 
   const hasFilters = !!orgData;
+
+  useEffect(() => {
+    trackGA4Event('org_chart_view', {
+      company_id: companyId,
+      country: initialCountry,
+      function_root: initialFunctionRoot,
+    });
+    trackWebsiteEvent('org_chart_view', {
+      companyId,
+      country: initialCountry,
+      functionRoot: initialFunctionRoot,
+    });
+  }, [companyId, initialCountry, initialFunctionRoot]);
 
   const filtersProps = {
     availableCountries,
@@ -422,6 +446,8 @@ export const OrgChartPageClient = ({
               />
             )}
           </StyledDiagramArea>
+
+          <OrgChartHiredFromRibbon companyId={companyId} />
 
           {/* <StyledUnlockBanner>
           <StyledUnlockTitle>Unlock {companyName} Org Chart</StyledUnlockTitle>

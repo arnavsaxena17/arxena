@@ -6,6 +6,7 @@ import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { useOpenArxenaSiteWithToken } from '@/auth/hooks/useOpenArxenaSiteWithToken';
 import { AppPath } from '@/types/AppPath';
 import { IconDatabase, IconPlus } from 'twenty-ui';
+import { Mixpanel } from '~/mixpanel';
 
 import { ArxEnrichmentModal } from '@/arx-ai-filtering/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from '@/arx-ai-filtering/hooks/useSelectedRecordForEnrichment';
@@ -201,7 +202,11 @@ export const Jobs = () => {
 
   // Get jobs from recoil state (populated by useJobRefetch via REST API)
   const jobsFromState = useRecoilValue(jobsState);
-  
+
+  useEffect(() => {
+    Mixpanel.track('job_list_view');
+  }, []);
+
   // Placeholder value for RecordIndexContext
   const recordIndexContextValue = {
     indexIdentifierUrl: (recordId: string) => `/jobs/${recordId}`, // Adjust URL path as needed

@@ -6,6 +6,8 @@ import Link from 'next/link';
 
 import { OrgChartSearch } from '@/app/_components/orgchart/OrgChartSearch';
 import { Logo } from '@/app/_components/ui/layout/Logo';
+import { trackGA4Event } from '@/lib/analytics';
+import { trackWebsiteEvent } from '@/lib/mixpanel';
 
 const StyledDesktopNav = styled.nav`
   display: flex;
@@ -111,8 +113,24 @@ export const HeaderDesktop = ({
         </StyledSearchWrapper>
       )}
       <StyledAuthLinks>
-        <StyledSignIn href={signInUrl}>Sign in</StyledSignIn>
-        <StyledSignUp href={signUpUrl}>Sign up</StyledSignUp>
+        <StyledSignIn
+          href={signInUrl}
+          onClick={() => {
+            trackGA4Event('sign_in_click', { source: 'header' });
+            trackWebsiteEvent('sign_in_click', { source: 'header' });
+          }}
+        >
+          Sign in
+        </StyledSignIn>
+        <StyledSignUp
+          href={signUpUrl}
+          onClick={() => {
+            trackGA4Event('sign_up_click', { source: 'header' });
+            trackWebsiteEvent('sign_up_click', { source: 'header' });
+          }}
+        >
+          Sign up
+        </StyledSignUp>
       </StyledAuthLinks>
     </StyledDesktopNav>
   );

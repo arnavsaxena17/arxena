@@ -1,16 +1,12 @@
 import { useEffect, useState } from 'react';
 import {
-  matchPath,
-  useLocation,
-  useNavigate,
-  useParams,
+    matchPath,
+    useLocation,
+    useNavigate,
+    useParams,
 } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 
-import {
-  setSessionId,
-  useEventTracker,
-} from '@/analytics/hooks/useEventTracker';
 import { useRequestFreshCaptchaToken } from '@/captcha/hooks/useRequestFreshCaptchaToken';
 import { isCaptchaScriptLoadedState } from '@/captcha/states/isCaptchaScriptLoadedState';
 import { CoreObjectNamePlural } from '@/object-metadata/types/CoreObjectNamePlural';
@@ -24,6 +20,7 @@ import { useSetHotkeyScope } from '@/ui/utilities/hotkey/hooks/useSetHotkeyScope
 import { isDefined } from 'twenty-shared';
 import { useIsMatchingLocation } from '~/hooks/useIsMatchingLocation';
 import { usePageChangeEffectNavigateLocation } from '~/hooks/usePageChangeEffectNavigateLocation';
+import { Mixpanel } from '~/mixpanel';
 
 // TODO: break down into smaller functions and / or hooks
 //  - moved usePageChangeEffectNavigateLocation into dedicated hook
@@ -40,7 +37,7 @@ export const PageChangeEffect = () => {
   const pageChangeEffectNavigateLocation =
     usePageChangeEffectNavigateLocation();
 
-  const eventTracker = useEventTracker();
+  const params = useParams();
 
   //TODO: refactor useResetTableRowSelection hook to not throw when the argument `recordTableId` is an empty string
   // - replace CoreObjectNamePlural.Person
@@ -162,17 +159,18 @@ export const PageChangeEffect = () => {
 
   useEffect(() => {
     setTimeout(() => {
-      setSessionId();
-      eventTracker('pageview', {
+      const payload: Record<string, unknown> = {
         pathname: location.pathname,
-        locale: navigator.language,
-        userAgent: window.navigator.userAgent,
         href: window.location.href,
         referrer: document.referrer,
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      });
+      };
+      if (params.jobId) payload.jobId = params.jobId;
+      if (params.companyKey) payload.companyId = params.companyKey;
+      if (location.pathname.startsWith('/settings'))
+        payload.settingsSection = location.pathname;
+      Mixpanel.track('Page View', payload);
     }, 500);
-  }, [eventTracker, location.pathname]);
+  }, [location.pathname, params.jobId, params.companyKey]);
 
   const { requestFreshCaptchaToken } = useRequestFreshCaptchaToken();
   const isCaptchaScriptLoaded = useRecoilValue(isCaptchaScriptLoadedState);

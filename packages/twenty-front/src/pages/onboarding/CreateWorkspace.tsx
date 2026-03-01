@@ -19,9 +19,10 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
 import {
-  OnboardingStatus,
-  useActivateWorkspaceMutation,
+    OnboardingStatus,
+    useActivateWorkspaceMutation,
 } from '~/generated/graphql';
+import { Mixpanel } from '~/mixpanel';
 
 const StyledContentContainer = styled.div`
   width: 100%;
@@ -82,6 +83,7 @@ export const CreateWorkspace = () => {
           throw result.errors ?? new Error(t`Unknown error`);
         }
         await loadCurrentUser();
+        Mixpanel.track('onboarding_step', { stepName: 'create_workspace' });
         setNextOnboardingStatus();
 
         if (tokenPair?.accessToken?.token) {

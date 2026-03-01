@@ -3,6 +3,7 @@ import styled from '@emotion/styled';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import type { UnipileLinkedinAccount } from 'twenty-shared';
+import { Mixpanel } from '~/mixpanel';
 import { tokenPairState } from '~/modules/auth/states/tokenPairState';
 import { linkedinUnipileAccountsState } from '~/modules/linkedin-unipile/states/linkedinUnipileAccountsState';
 import { getLinkedinService } from '~/pages/settings/linkedin/services/linkedin-backend.service';
@@ -280,6 +281,7 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
   }, [refreshTrigger, accessToken, loadAccounts]);
 
   const handleReconnect = async (accountId: string) => {
+    Mixpanel.track('linkedin_connect_start', { method: 'reconnect' });
     try {
       const service = getLinkedinService();
       const currentUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;

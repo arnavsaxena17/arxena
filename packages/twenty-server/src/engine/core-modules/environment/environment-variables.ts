@@ -2,16 +2,16 @@ import { LogLevel, Logger } from '@nestjs/common';
 
 import { plainToClass } from 'class-transformer';
 import {
-  IsBoolean,
-  IsDefined,
-  IsEnum,
-  IsIn,
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsUrl,
-  ValidateIf,
-  validateSync,
+    IsBoolean,
+    IsDefined,
+    IsEnum,
+    IsIn,
+    IsNumber,
+    IsOptional,
+    IsString,
+    IsUrl,
+    ValidateIf,
+    validateSync,
 } from 'class-validator';
 
 import { EmailDriver } from 'src/engine/core-modules/email/interfaces/email.interface';
@@ -1215,6 +1215,14 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   PEOPLE_ES_INDEX = 'people_all';
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description: 'Elasticsearch index name for companies (top hired from)',
+  })
+  @IsOptional()
+  @IsString()
+  COMPANIES_ES_INDEX = 'companies_index_text';
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.Other,

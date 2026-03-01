@@ -8441,6 +8441,64 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@mixpanel/rrdom@npm:^2.0.0-alpha.18":
+  version: 2.0.0-alpha.18.3
+  resolution: "@mixpanel/rrdom@npm:2.0.0-alpha.18.3"
+  dependencies:
+    "@mixpanel/rrweb-snapshot": "npm:^2.0.0-alpha.18"
+  checksum: 10c0/04f5bddc3997d389100cd7d3046e4210ca2d884386414e9972598c90b079ae0ea7362e84b89f8e954c21bd2b8cdc668187c75d079145e2cad44cf5f29788f213
+  languageName: node
+  linkType: hard
+
+"@mixpanel/rrweb-plugin-console-record@npm:2.0.0-alpha.18.3":
+  version: 2.0.0-alpha.18.3
+  resolution: "@mixpanel/rrweb-plugin-console-record@npm:2.0.0-alpha.18.3"
+  peerDependencies:
+    "@mixpanel/rrweb": ^2.0.0-alpha.18
+    "@mixpanel/rrweb-utils": ^2.0.0-alpha.18
+  checksum: 10c0/3b9531bed5715e8b49ad2a08188421125c336881c23e70b046eee85273f30588ca61c12a5fcf2853359af33179faf645c11e8cac1dc7b21527818388e897f982
+  languageName: node
+  linkType: hard
+
+"@mixpanel/rrweb-snapshot@npm:^2.0.0-alpha.18":
+  version: 2.0.0-alpha.18.3
+  resolution: "@mixpanel/rrweb-snapshot@npm:2.0.0-alpha.18.3"
+  dependencies:
+    postcss: "npm:^8.4.38"
+  checksum: 10c0/3982f2415d3a375db0c46af3a6b9adbcaf0f4ffa40dd1c14ad0dc3e25a51cd1758410f5b20d438230ffa0242634754619f5c8e69931d24eb77353dd844c2bd78
+  languageName: node
+  linkType: hard
+
+"@mixpanel/rrweb-types@npm:^2.0.0-alpha.18":
+  version: 2.0.0-alpha.18.3
+  resolution: "@mixpanel/rrweb-types@npm:2.0.0-alpha.18.3"
+  checksum: 10c0/d0a17a846c1b920fe1591620f2b321eb9baf9bcc09bb878442cbc1a300cb604ab22f057fb43bf3dec95f1e905848652ca736945f7026ca4b7e38c79db38e5675
+  languageName: node
+  linkType: hard
+
+"@mixpanel/rrweb-utils@npm:^2.0.0-alpha.18":
+  version: 2.0.0-alpha.18.3
+  resolution: "@mixpanel/rrweb-utils@npm:2.0.0-alpha.18.3"
+  checksum: 10c0/c80b452e98f935ae3bcc7b49694e4c19a7416726bbf5ff7ada2074cbdc23eac40f4e5f895270c6355cab8fefb1b74f38d8ff5e9c471f25ca1b90942c0fcdb25e
+  languageName: node
+  linkType: hard
+
+"@mixpanel/rrweb@npm:2.0.0-alpha.18.3":
+  version: 2.0.0-alpha.18.3
+  resolution: "@mixpanel/rrweb@npm:2.0.0-alpha.18.3"
+  dependencies:
+    "@mixpanel/rrdom": "npm:^2.0.0-alpha.18"
+    "@mixpanel/rrweb-snapshot": "npm:^2.0.0-alpha.18"
+    "@mixpanel/rrweb-types": "npm:^2.0.0-alpha.18"
+    "@mixpanel/rrweb-utils": "npm:^2.0.0-alpha.18"
+    "@types/css-font-loading-module": "npm:0.0.7"
+    "@xstate/fsm": "npm:^1.4.0"
+    base64-arraybuffer: "npm:^1.0.1"
+    mitt: "npm:^3.0.0"
+  checksum: 10c0/58aa0c6857cf6113163dd0e8d467ffbe0a6d14a2ed8f8667c1ee75aeaa680399fdae371d2fba9bc917fd32561a944b20d01534c02da44b4ec2f3bc65db786e35
+  languageName: node
+  linkType: hard
+
 "@modelcontextprotocol/sdk@npm:1.26.0":
   version: 1.26.0
   resolution: "@modelcontextprotocol/sdk@npm:1.26.0"
@@ -36510,6 +36568,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"json-logic-js@npm:2.0.5":
+  version: 2.0.5
+  resolution: "json-logic-js@npm:2.0.5"
+  checksum: 10c0/c80d96a9f704dac2f4488c7119d9c94cbf67adbd93cb47eaa5b7eadc4947f18ed6d62fd5555f245cc2f87525f9e8d7bd5f70bd9e7fba2c70366e63bd68010f23
+  languageName: node
+  linkType: hard
+
 "json-parse-even-better-errors@npm:^2.3.0, json-parse-even-better-errors@npm:^2.3.1":
   version: 2.3.1
   resolution: "json-parse-even-better-errors@npm:2.3.1"
@@ -40014,6 +40079,17 @@ __metadata:
   dependencies:
     rrweb: "npm:2.0.0-alpha.13"
   checksum: 10c0/7d8228219040bfa369ac2c7f1f3d6d0a228d1462199701c56356fe7eb2f1467cbfecf5828d35995eb0b38bd2c40e16531112268fb336165a597f6c05421a1cd5
+  languageName: node
+  linkType: hard
+
+"mixpanel-browser@npm:^2.75.0":
+  version: 2.75.0
+  resolution: "mixpanel-browser@npm:2.75.0"
+  dependencies:
+    "@mixpanel/rrweb": "npm:2.0.0-alpha.18.3"
+    "@mixpanel/rrweb-plugin-console-record": "npm:2.0.0-alpha.18.3"
+    json-logic-js: "npm:2.0.5"
+  checksum: 10c0/d3c8e14a9c5151c0a1f1e85ffe0e4bdc82ef171f654def5804adc781559b75d804b6d43eb1f426d7680cdf54e7d989789449c019d2b4461dfedd80e95831e875
   languageName: node
   linkType: hard
 
@@ -50488,6 +50564,7 @@ __metadata:
     "@nivo/calendar": "npm:^0.87.0"
     "@tabler/icons-react": "npm:^2.44.0"
     gray-matter: "npm:^4.0.3"
+    mixpanel-browser: "npm:^2.75.0"
     next-runtime-env: "npm:^3.2.2"
     postgres: "npm:^3.4.3"
     twenty-orgchart: "workspace:*"

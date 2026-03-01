@@ -1,6 +1,8 @@
+import { useCallback } from 'react';
 import { useRecoilValue } from 'recoil';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { Mixpanel } from '~/mixpanel';
 
 import { CompanySearchAutocomplete } from '~/lib/company-search';
 
@@ -29,9 +31,28 @@ export const OrgChartCompanySearchWrapper = ({
   const accessToken = tokenPair?.accessToken?.token ?? undefined;
   const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
 
+  const handleCompanySelect = useCallback(
+    (company: {
+      companyId: string;
+      companyName: string;
+      website?: string;
+      locationName?: string;
+      industry?: string;
+      profileCount?: number;
+      linkedinUrl?: string;
+    }) => {
+      Mixpanel.track('org_chart_company_search', {
+        companyId: company.companyId,
+        companyName: company.companyName,
+      });
+      onCompanySelect(company);
+    },
+    [onCompanySelect],
+  );
+
   return (
     <CompanySearchAutocomplete
-      onCompanySelect={onCompanySelect}
+      onCompanySelect={handleCompanySelect}
       placeholder={placeholder}
       disabled={disabled}
       baseUrl={baseUrl}

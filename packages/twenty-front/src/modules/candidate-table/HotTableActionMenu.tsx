@@ -120,7 +120,11 @@ const HotTableRecordIndexActionMenuBar = ({ tableId }: { tableId: string }) => {
       >
         <StyledLabel>{contextStoreNumberOfSelectedRecords} selected:</StyledLabel>
         {pinnedEntries.map((entry: ActionMenuEntry, index: number) => (
-          <RecordIndexActionMenuBarEntry key={index} entry={entry} />
+          <RecordIndexActionMenuBarEntry
+            key={index}
+            entry={entry}
+            trackAsCandidateAction
+          />
         ))}
         <HotTableAllActionsButton />
       </BottomBar>

@@ -2,11 +2,11 @@ import { AppPath } from '@/types/AppPath';
 import { ApolloError, useApolloClient } from '@apollo/client';
 import { useCallback } from 'react';
 import {
-  snapshot_UNSTABLE,
-  useGotoRecoilSnapshot,
-  useRecoilCallback,
-  useRecoilValue,
-  useSetRecoilState,
+    snapshot_UNSTABLE,
+    useGotoRecoilSnapshot,
+    useRecoilCallback,
+    useRecoilValue,
+    useSetRecoilState,
 } from 'recoil';
 import { iconsState } from 'twenty-ui';
 
@@ -23,12 +23,12 @@ import { ColorScheme } from '@/workspace-member/types/WorkspaceMember';
 import { APP_LOCALES, isDefined } from 'twenty-shared';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import {
-  useCheckUserExistsLazyQuery,
-  useGetAuthTokensFromLoginTokenMutation,
-  useGetCurrentUserLazyQuery,
-  useGetLoginTokenFromCredentialsMutation,
-  useGetLoginTokenFromEmailVerificationTokenMutation,
-  useSignUpMutation,
+    useCheckUserExistsLazyQuery,
+    useGetAuthTokensFromLoginTokenMutation,
+    useGetCurrentUserLazyQuery,
+    useGetLoginTokenFromCredentialsMutation,
+    useGetLoginTokenFromEmailVerificationTokenMutation,
+    useSignUpMutation,
 } from '~/generated/graphql';
 
 import { currentWorkspaceMembersState } from '@/auth/states/currentWorkspaceMembersStates';
@@ -46,8 +46,8 @@ import { tokenPairState } from '../states/tokenPairState';
 
 import { currentUserWorkspaceState } from '@/auth/states/currentUserWorkspaceState';
 import {
-  SignInUpStep,
-  signInUpStepState,
+    SignInUpStep,
+    signInUpStepState,
 } from '@/auth/states/signInUpStepState';
 import { workspacePublicDataState } from '@/auth/states/workspacePublicDataState';
 import { BillingCheckoutSession } from '@/auth/types/billingCheckoutSession.type';
@@ -63,6 +63,7 @@ import { isAppWaitingForFreshObjectMetadataState } from '@/object-metadata/state
 import { workspaceAuthProvidersState } from '@/workspace/states/workspaceAuthProvidersState';
 import { i18n } from '@lingui/core';
 import { useSearchParams } from 'react-router-dom';
+import { Mixpanel } from '~/mixpanel';
 import { getWorkspaceUrl } from '~/utils/getWorkspaceUrl';
 import { dynamicActivate } from '~/utils/i18n/dynamicActivate';
 
@@ -413,6 +414,8 @@ export const useAuth = () => {
       if (!signUpResult.data?.signUp) {
         throw new Error('No login token');
       }
+
+      Mixpanel.track('sign_up_complete', { method: 'email' });
 
       if (isEmailVerificationRequired) {
         setSearchParams({ email });
