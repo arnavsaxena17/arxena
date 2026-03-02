@@ -59,10 +59,9 @@ async function fetchOrgChart(
   return null;
 }
 
-function formatCompanyName(companyId: string): string {
-  return decodeURIComponent(companyId)
-    .replace(/-/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+function formatCompanyNameForDisplay(companyId: string): string {
+  const decoded = decodeURIComponent(companyId).replace(/_/g, '-');
+  return fromSlug(decoded);
 }
 
 export async function generateMetadata({
@@ -71,14 +70,16 @@ export async function generateMetadata({
   const { segments } = await params;
   const companyId = segments?.[0] ?? 'company';
   const companyName =
-    typeof companyId === 'string' ? formatCompanyName(companyId) : 'Company';
+    typeof companyId === 'string'
+      ? formatCompanyNameForDisplay(companyId)
+      : 'Company';
   const country =
     segments?.[1] && segments[1] !== 'global'
-      ? fromSlug(segments[1])
+      ? toTitleCase(fromSlug(segments[1]))
       : undefined;
   const functionRoot =
     segments?.[2] && segments[2] !== 'fullcompany'
-      ? fromSlug(segments[2])
+      ? toTitleCase(fromSlug(segments[2]))
       : undefined;
 
   const titleParts: string[] = [];
@@ -195,10 +196,10 @@ export default async function OrgChartPage({
   const functionRoot = segments?.[2];
 
   const normalizedCountry =
-    country && country !== 'global' ? fromSlug(country) : undefined;
+    country && country !== 'global' ? toTitleCase(fromSlug(country)) : undefined;
   const normalizedFunctionRoot =
     functionRoot && functionRoot !== 'fullcompany'
-      ? fromSlug(functionRoot)
+      ? toTitleCase(fromSlug(functionRoot))
       : undefined;
 
   if (!companyId) {

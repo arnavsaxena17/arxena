@@ -226,12 +226,12 @@ export const OrgChartCompanyInfo = ({
           {websiteDomain && <StyledMetaItem>{websiteDomain}</StyledMetaItem>}
           {typeof profileCount === 'number' && (
             <StyledMetaItem>
-              {profileCount.toLocaleString()} profiles
+              Total {profileCount.toLocaleString()} profiles
             </StyledMetaItem>
           )}
           {typeof employeeCount === 'number' && (
             <StyledMetaItem>
-              {employeeCount.toLocaleString()} employees
+              Total {employeeCount.toLocaleString()} employees
             </StyledMetaItem>
           )}
         </StyledCompanyMetaRow>
