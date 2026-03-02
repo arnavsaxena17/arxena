@@ -4,8 +4,8 @@ import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { SettingsNavigationDrawerItems } from '@/settings/components/SettingsNavigationDrawerItems';
 import { SupportDropdown } from '@/support/components/SupportDropdown';
 import {
-  NavigationDrawer,
-  NavigationDrawerProps,
+    NavigationDrawer,
+    NavigationDrawerProps,
 } from '@/ui/navigation/navigation-drawer/components/NavigationDrawer';
 import { isAdvancedModeEnabledState } from '@/ui/navigation/navigation-drawer/states/isAdvancedModeEnabledState';
 
@@ -29,8 +29,6 @@ export const AppNavigationDrawer = ({
     isAdvancedModeEnabledState,
   );
 
-  console.log('AppNavigationDrawer got called with isSettingsDrawer:', isSettingsDrawer);
-  console.log('isAdvancedModeEnabled:', isAdvancedModeEnabled);
   const { t } = useLingui();
 
   const drawerProps: NavigationDrawerProps = isSettingsDrawer

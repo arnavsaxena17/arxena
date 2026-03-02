@@ -4,27 +4,39 @@ import { v4 } from 'uuid';
 
 import { currentUserState } from '@/auth/states/currentUserState';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
+import { skipOptionalOnboardingStepsState } from '@/client-config/states/skipOptionalOnboardingStepsState';
+import { useConnectLinkedinOnboardingState } from '@/client-config/states/useConnectLinkedinOnboardingState';
 import { useSetNextOnboardingStatus } from '@/onboarding/hooks/useSetNextOnboardingStatus';
 import { OnboardingStatus, SubscriptionStatus } from '~/generated/graphql';
 import {
-  mockCurrentWorkspace,
-  mockedUserData,
+    mockCurrentWorkspace,
+    mockedUserData,
 } from '~/testing/mock-data/users';
 
 const renderHooks = (
   onboardingStatus: OnboardingStatus,
   withCurrentBillingSubscription: boolean,
   withOneWorkspaceMember = true,
+  skipOptionalOnboardingSteps = false,
+  useConnectLinkedinOnboarding = false,
 ) => {
   const { result } = renderHook(
     () => {
       const [currentUser, setCurrentUser] = useRecoilState(currentUserState);
       const setCurrentWorkspace = useSetRecoilState(currentWorkspaceState);
+      const setSkipOptionalOnboardingSteps = useSetRecoilState(
+        skipOptionalOnboardingStepsState,
+      );
+      const setUseConnectLinkedinOnboarding = useSetRecoilState(
+        useConnectLinkedinOnboardingState,
+      );
       const setNextOnboardingStatus = useSetNextOnboardingStatus();
       return {
         currentUser,
         setCurrentUser,
         setCurrentWorkspace,
+        setSkipOptionalOnboardingSteps,
+        setUseConnectLinkedinOnboarding,
         setNextOnboardingStatus,
       };
     },
@@ -41,6 +53,8 @@ const renderHooks = (
         : undefined,
       workspaceMembersCount: withOneWorkspaceMember ? 1 : 2,
     });
+    result.current.setSkipOptionalOnboardingSteps(skipOptionalOnboardingSteps);
+    result.current.setUseConnectLinkedinOnboarding(useConnectLinkedinOnboarding);
   });
   act(() => {
     result.current.setNextOnboardingStatus();
@@ -79,6 +93,16 @@ describe('useSetNextOnboardingStatus', () => {
   it('should set next onboarding status for Completed', () => {
     const nextOnboardingStatus = renderHooks(
       OnboardingStatus.INVITE_TEAM,
+      true,
+      true,
+    );
+    expect(nextOnboardingStatus).toEqual(OnboardingStatus.COMPLETED);
+  });
+
+  it('should skip to Completed when skipOptionalOnboardingSteps is true after ProfileCreation', () => {
+    const nextOnboardingStatus = renderHooks(
+      OnboardingStatus.PROFILE_CREATION,
+      false,
       true,
       true,
     );

@@ -100,6 +100,9 @@ export class ClientConfigResolver {
       useConnectLinkedinOnboarding: this.environmentService.get(
         'USE_CONNECT_LINKEDIN_ONBOARDING',
       ),
+      skipOptionalOnboardingSteps: this.environmentService.get(
+        'SKIP_OPTIONAL_ONBOARDING_STEPS',
+      ),
     };
 
     return Promise.resolve(clientConfig);

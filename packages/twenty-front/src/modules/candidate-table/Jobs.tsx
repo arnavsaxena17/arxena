@@ -27,6 +27,7 @@ import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-
 import { RecordTableContextProvider } from '@/object-record/record-table/contexts/RecordTableContext';
 import { RecordTableEmptyStateDisplay } from '@/object-record/record-table/empty-state/components/RecordTableEmptyStateDisplay';
 import { useOpenObjectRecordsSpreadsheetImportDialog } from '@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog';
+import { OrgChartCompanySearchWrapper } from '@/orgchart/components/OrgChartCompanySearchWrapper';
 import { SpreadsheetImportProvider } from '@/spreadsheet-import/provider/components/SpreadsheetImportProvider';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -38,6 +39,7 @@ import { TopBar } from '@/ui/layout/top-bar/components/TopBar';
 import { InterviewCreationModal } from '@/video-interview/interview-creation/InterviewCreationModal';
 import { isVideoInterviewModalOpenState } from '@/video-interview/interview-creation/states/videoInterviewModalState';
 import { ViewComponentInstanceContext } from '@/views/states/contexts/ViewComponentInstanceContext';
+import { IconHierarchy2 } from '@tabler/icons-react';
 import { AnimatedPlaceholder, AnimatedPlaceholderEmptyContainer, AnimatedPlaceholderEmptySubTitle, AnimatedPlaceholderEmptyTextContainer, AnimatedPlaceholderEmptyTitle } from 'twenty-ui';
 import { useBaileysConnection } from '../baileys/contexts/BaileysContext';
 import { useUnipile } from '../unipile/contexts/UnipileContext';
@@ -181,6 +183,26 @@ const StyledRightSection = styled.div`
   display: flex;
   font-weight: ${({ theme }) => theme.font.weight.regular};
   gap: ${({ theme }) => theme.betweenSiblingsGap};
+`;
+
+const StyledEmptyStateOrgChartSearch = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 420px;
+`;
+
+const StyledOrgChartEmptyStateWrapper = styled.div`
+  width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: ${({ theme }) => theme.spacing(8)};
+  gap: ${({ theme }) => theme.spacing(6)};
+  text-align: center;
 `;
 
 export const Jobs = () => {
@@ -551,7 +573,7 @@ export const Jobs = () => {
               Icon={IconDatabase}
               onAddJob={handleAddJob}
               onOrgCharts={() => navigate(`/${AppPath.OrgChart}`)}
-              onCompanySelect={handleCompanySelect}
+              onCompanySelect={hasJobs ? handleCompanySelect : undefined}
               hasToken={!!hasToken}
               isExtensionInstalled={isExtensionInstalled}
               onDownloadClick={handleDownloadClick}
@@ -668,6 +690,26 @@ export const Jobs = () => {
                           </>
                         )}
                       </>
+                    ) : process.env.IS_ORG_CHART_ENABLED === 'true' ? (
+                      <StyledOrgChartEmptyStateWrapper>
+                        <AnimatedPlaceholder type="noRecord" />
+                        <AnimatedPlaceholderEmptyTextContainer>
+                          <AnimatedPlaceholderEmptyTitle>
+                            Your workspace is ready
+                          </AnimatedPlaceholderEmptyTitle>
+                          <AnimatedPlaceholderEmptySubTitle>
+                            Search for a company to explore org charts
+                          </AnimatedPlaceholderEmptySubTitle>
+                        </AnimatedPlaceholderEmptyTextContainer>
+                        <StyledEmptyStateOrgChartSearch>
+                          <OrgChartCompanySearchWrapper
+                            onCompanySelect={handleCompanySelect}
+                            placeholder="Search company for org charts..."
+                            disabled={!hasToken}
+                            startIcon={<IconHierarchy2 size={20} />}
+                          />
+                        </StyledEmptyStateOrgChartSearch>
+                      </StyledOrgChartEmptyStateWrapper>
                     ) : (
                       <RecordTableEmptyStateDisplay
                         buttonTitle="Add New Job"
@@ -701,7 +743,7 @@ export const Jobs = () => {
                 <></>
               )}
               
-              {isArxUploadJDModalOpen ? (
+              {process.env.IS_ORG_CHART_ENABLED !== 'true' && isArxUploadJDModalOpen ? (
                 <ApiKeysProvider>
                   <ArxJDUploadModal
                     objectNameSingular="job"

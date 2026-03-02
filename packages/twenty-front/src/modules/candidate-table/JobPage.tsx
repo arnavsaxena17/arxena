@@ -802,7 +802,7 @@ export const JobPage: React.FC = () => {
               <></>
             )}
             
-            {isArxUploadJDModalOpen ? (
+            {process.env.IS_ORG_CHART_ENABLED !== 'true' && isArxUploadJDModalOpen ? (
               <ApiKeysProvider>
                 <ArxJDUploadModal
                   objectNameSingular="job"
@@ -828,8 +828,8 @@ export const JobPage: React.FC = () => {
               <BulkMessageModal />
             )}
             
-            {/* Legacy Candidate Search Modal - Only when new UI is disabled */}
-            {!isNewSearchUIEnabled && (
+            {/* Legacy Candidate Search Modal - Only when new UI is disabled and not org chart only */}
+            {process.env.IS_ORG_CHART_ENABLED !== 'true' && !isNewSearchUIEnabled && (
               <CandidateSearchModal />
             )}
 

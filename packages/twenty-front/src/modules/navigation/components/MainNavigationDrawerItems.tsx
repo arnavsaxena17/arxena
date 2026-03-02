@@ -57,7 +57,9 @@ export const MainNavigationDrawerItems = () => {
       origin: window.location.origin,
     },
   });
-  
+
+  const isOrgChartEnabled = process.env.IS_ORG_CHART_ENABLED === 'true';
+
   return (
     <>
       {!isMobile && (
@@ -68,16 +70,18 @@ export const MainNavigationDrawerItems = () => {
             onClick={openRecordsSearchPage}
             keyboard={['/']}
           />
-          <NavigationDrawerItem
-            label={t`Assistant`}
-            to={getAppPath(AppPath.Assistant)}
-            onClick={() => {
-              setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
-              setIsNavigationDrawerExpanded(true);
-              setNavigationMemorizedUrl(location.pathname + location.search);
-            }}
-            Icon={IconMessage2}
-          />
+          {!isOrgChartEnabled && (
+            <NavigationDrawerItem
+              label={t`Assistant`}
+              to={getAppPath(AppPath.Assistant)}
+              onClick={() => {
+                setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
+                setIsNavigationDrawerExpanded(true);
+                setNavigationMemorizedUrl(location.pathname + location.search);
+              }}
+              Icon={IconMessage2}
+            />
+          )}
           <NavigationDrawerItem
             label={t`Settings`}
             to={getSettingsPath(SettingsPath.ProfilePage)}
@@ -158,11 +162,13 @@ export const MainNavigationDrawerItems = () => {
       >
         <StyledInnerContainer>
           <JobsNavigationDrawerItems />
-          <NavigationDrawerOpenedSection />
-          {/* <CurrentWorkspaceMemberFavoritesFolders /> */}
-          {/* <WorkspaceJobCandidatesFavorites /> */}
-          <WorkspaceFavorites />
-          <RemoteNavigationDrawerSection />
+          {!isOrgChartEnabled && (
+            <>
+              <NavigationDrawerOpenedSection />
+              <WorkspaceFavorites />
+              <RemoteNavigationDrawerSection />
+            </>
+          )}
         </StyledInnerContainer>
       </ScrollWrapper>
     </>

@@ -75,7 +75,7 @@ export const SignInUp = () => {
 
     if (workspaceName === 'Arxena') {
       if (process.env.IS_ORG_CHART_ENABLED === 'true') {
-        return t`Your first org chart is free!`;
+        return t`Start for free, no credit card required!`;
       }
       return t`Welcome to Arxena.`;
     }

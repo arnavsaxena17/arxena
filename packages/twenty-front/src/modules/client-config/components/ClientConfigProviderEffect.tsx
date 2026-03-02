@@ -17,6 +17,7 @@ import { isMicrosoftMessagingEnabledState } from '@/client-config/states/isMicro
 import { isMultiWorkspaceEnabledState } from '@/client-config/states/isMultiWorkspaceEnabledState';
 import { labPublicFeatureFlagsState } from '@/client-config/states/labPublicFeatureFlagsState';
 import { sentryConfigState } from '@/client-config/states/sentryConfigState';
+import { skipOptionalOnboardingStepsState } from '@/client-config/states/skipOptionalOnboardingStepsState';
 import { supportChatState } from '@/client-config/states/supportChatState';
 import { useConnectLinkedinOnboardingState } from '@/client-config/states/useConnectLinkedinOnboardingState';
 import { domainConfigurationState } from '@/domain-manager/states/domainConfigurationState';
@@ -85,6 +86,10 @@ export const ClientConfigProviderEffect = () => {
 
   const setUseConnectLinkedinOnboarding = useSetRecoilState(
     useConnectLinkedinOnboardingState,
+  );
+
+  const setSkipOptionalOnboardingSteps = useSetRecoilState(
+    skipOptionalOnboardingStepsState,
   );
 
   const { data, loading, error } = useGetClientConfigQuery({
@@ -165,6 +170,9 @@ export const ClientConfigProviderEffect = () => {
     setUseConnectLinkedinOnboarding(
       data?.clientConfig?.useConnectLinkedinOnboarding ?? true,
     );
+    setSkipOptionalOnboardingSteps(
+      data?.clientConfig?.skipOptionalOnboardingSteps ?? false,
+    );
   }, [
     data,
     setIsDebugMode,
@@ -191,6 +199,7 @@ export const ClientConfigProviderEffect = () => {
     setGoogleCalendarEnabled,
     setIsAttachmentPreviewEnabled,
     setUseConnectLinkedinOnboarding,
+    setSkipOptionalOnboardingSteps,
   ]);
 
   return <></>;

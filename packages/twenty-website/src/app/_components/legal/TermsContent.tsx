@@ -73,9 +73,9 @@ export const TermsContent = () => {
         entity) make from the Arxena website (&quot;Product&quot;).
       </StyledParagraph>
       <StyledParagraph>
-        The Product, the Arxena website (www.arxena.com) (the &quot;Site&quot;),
-        including any feature, functionality, data and content therein will be
-        herein referred to as the &quot;Services&quot;.
+        The Product, the Arxena website (
+        <StyledLink href="https://arxena.com/">https://arxena.com/</StyledLink>
+        ) (the &quot;Site&quot;), including any feature, functionality, data and content therein will be herein referred to as the &quot;Services&quot;.
       </StyledParagraph>
       <StyledParagraph>
         Please read the Terms of Service carefully before using our Services.

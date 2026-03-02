@@ -2,16 +2,16 @@ import { LogLevel, Logger } from '@nestjs/common';
 
 import { plainToClass } from 'class-transformer';
 import {
-    IsBoolean,
-    IsDefined,
-    IsEnum,
-    IsIn,
-    IsNumber,
-    IsOptional,
-    IsString,
-    IsUrl,
-    ValidateIf,
-    validateSync,
+  IsBoolean,
+  IsDefined,
+  IsEnum,
+  IsIn,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUrl,
+  ValidateIf,
+  validateSync,
 } from 'class-validator';
 
 import { EmailDriver } from 'src/engine/core-modules/email/interfaces/email.interface';
@@ -76,7 +76,15 @@ export class EnvironmentVariables {
   @IsBoolean()
   USE_CONNECT_LINKEDIN_ONBOARDING = false;
 
-
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'Skip optional onboarding steps (Sync Emails, Invite Team). When true, users go directly from Create Profile to the jobs page.',
+  })
+  @CastToBoolean()
+  @IsOptional()
+  @IsBoolean()
+  SKIP_OPTIONAL_ONBOARDING_STEPS = true;
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.TokensDuration,

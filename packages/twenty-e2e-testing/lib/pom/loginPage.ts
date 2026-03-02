@@ -85,6 +85,13 @@ export class LoginPage {
     await this.loginWithEmailButton.click();
   }
 
+  async hasVisibleLoginWithEmailButton() {
+    return (
+      (await this.loginWithEmailButton.count()) > 0 &&
+      (await this.loginWithEmailButton.first().isVisible())
+    );
+  }
+
   async clickContinueButton() {
     await this.continueButton.click();
   }
@@ -107,8 +114,30 @@ export class LoginPage {
     await this.passwordField.fill(email);
   }
 
+  async expectPasswordStepVisible() {
+    await expect(this.passwordField).toBeVisible();
+  }
+
+  async expectPasswordStepHidden() {
+    await expect(this.passwordField).toBeHidden();
+  }
+
   async clickSignInButton() {
     await this.signInButton.click();
+  }
+
+  async submitPasswordStep() {
+    const canUseSignIn =
+      (await this.signInButton.count()) > 0 &&
+      (await this.signInButton.first().isVisible());
+
+    if (canUseSignIn) {
+      await this.signInButton.first().click();
+
+      return;
+    }
+
+    await this.continueButton.first().click();
   }
 
   async clickSignUpButton() {

@@ -101,6 +101,7 @@ export const FooterMobile = () => {
       <StyledLinkSection>
         <StyledSectionTitle>Company</StyledSectionTitle>
         <StyledLink href="/story">Story</StyledLink>
+        <StyledLink href="/team">Team</StyledLink>
       </StyledLinkSection>
       <StyledLinkSection>
         <StyledSectionTitle>Legal</StyledSectionTitle>

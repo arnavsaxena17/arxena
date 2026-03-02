@@ -22,6 +22,33 @@
         ]
       }
     },
+    "test:jobs-pipeline": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "packages/twenty-e2e-testing",
+        "commands": [
+          "yarn playwright test tests/jobs.pipeline.spec.ts --project=chrome --no-deps"
+        ]
+      }
+    },
+    "test:website-orgchart-pipeline": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "packages/twenty-e2e-testing",
+        "commands": [
+          "yarn playwright test tests/website.orgchart.pipeline.spec.ts --project=chrome --no-deps"
+        ]
+      }
+    },
+    "test:signup-delete-pipeline": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "packages/twenty-e2e-testing",
+        "commands": [
+          "yarn playwright test tests/signup.delete-account.pipeline.spec.ts --project=chrome --no-deps"
+        ]
+      }
+    },
     "test:ui": {
       "executor": "nx:run-commands",
       "options": {

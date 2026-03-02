@@ -22,6 +22,8 @@ import styled from '@emotion/styled';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 import { capitalize } from 'twenty-shared';
 
+const isOrgChartOnly = process.env.IS_ORG_CHART_ENABLED === 'true';
+
 import { ArxEnrichmentModal } from '@/arx-ai-filtering/arxEnrichmentModal';
 import { isArxEnrichModalOpenState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
@@ -50,6 +52,7 @@ export const RecordIndexContainerGater = () => {
 
   const recordIndexId = `${objectMetadataItem.namePlural}-${contextStoreCurrentViewId}`;
   const isArxEnrichModalOpen = useRecoilValue(isArxEnrichModalOpenState);
+  const isArxUploadJDModalOpen = useRecoilValue(isArxUploadJDModalOpenState);
   const { selectedRecordId } = useSelectedRecordForEnrichment();
 
   const handleIndexRecordsLoaded = useRecoilCallback(
@@ -114,7 +117,7 @@ export const RecordIndexContainerGater = () => {
                       <></>
                     )}
 
-                    {isArxUploadJDModalOpenState ? (
+                    {!isOrgChartOnly && isArxUploadJDModalOpen ? (
                       <ApiKeysProvider>
                         <ArxJDUploadModal
                           objectNameSingular={objectMetadataItem.nameSingular}

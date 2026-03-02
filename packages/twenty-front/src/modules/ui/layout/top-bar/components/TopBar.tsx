@@ -776,7 +776,7 @@ export const TopBar = memo(({
       {isBulkMessageModalOpen && (
         <BulkMessageModal />
       )}
-      <CandidateSearchModal />
+      {process.env.IS_ORG_CHART_ENABLED !== 'true' && <CandidateSearchModal />}
       {currentJobId && (
         <DripCampaignModal
           objectNameSingular="Job"

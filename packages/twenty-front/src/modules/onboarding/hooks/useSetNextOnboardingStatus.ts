@@ -5,6 +5,7 @@ import {
     CurrentWorkspace,
     currentWorkspaceState,
 } from '@/auth/states/currentWorkspaceState';
+import { skipOptionalOnboardingStepsState } from '@/client-config/states/skipOptionalOnboardingStepsState';
 import { useConnectLinkedinOnboardingState } from '@/client-config/states/useConnectLinkedinOnboardingState';
 import { isDefined } from 'twenty-shared';
 import { OnboardingStatus } from '~/generated/graphql';
@@ -13,12 +14,16 @@ const getNextOnboardingStatus = (
   currentUser: CurrentUser | null,
   currentWorkspace: CurrentWorkspace | null,
   useConnectLinkedinOnboarding: boolean,
+  skipOptionalOnboardingSteps: boolean,
 ) => {
   if (currentUser?.onboardingStatus === OnboardingStatus.WORKSPACE_ACTIVATION) {
     return OnboardingStatus.PROFILE_CREATION;
   }
 
   if (currentUser?.onboardingStatus === OnboardingStatus.PROFILE_CREATION) {
+    if (skipOptionalOnboardingSteps) {
+      return OnboardingStatus.COMPLETED;
+    }
     return useConnectLinkedinOnboarding
       ? OnboardingStatus.CONNECT_LINKEDIN
       : OnboardingStatus.SYNC_EMAIL;
@@ -43,6 +48,9 @@ export const useSetNextOnboardingStatus = () => {
   const useConnectLinkedinOnboarding = useRecoilValue(
     useConnectLinkedinOnboardingState,
   );
+  const skipOptionalOnboardingSteps = useRecoilValue(
+    skipOptionalOnboardingStepsState,
+  );
 
   return useRecoilCallback(
     ({ set }) =>
@@ -51,6 +59,7 @@ export const useSetNextOnboardingStatus = () => {
           currentUser,
           currentWorkspace,
           useConnectLinkedinOnboarding,
+          skipOptionalOnboardingSteps,
         );
         set(currentUserState, (current) => {
           if (isDefined(current)) {
@@ -62,6 +71,11 @@ export const useSetNextOnboardingStatus = () => {
           return current;
         });
       },
-    [currentWorkspace, currentUser, useConnectLinkedinOnboarding],
+    [
+      currentWorkspace,
+      currentUser,
+      useConnectLinkedinOnboarding,
+      skipOptionalOnboardingSteps,
+    ],
   );
 };

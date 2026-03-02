@@ -136,7 +136,7 @@ export const OrgChartSignUpModal = ({
           e.stopPropagation();
         }}
       >
-        <StyledTitle>Your first org chart is free!</StyledTitle>
+        <StyledTitle>Start for free, no credit card required!</StyledTitle>
         <StyledNodeInfo>{headline}</StyledNodeInfo>
         <StyledText>
           Get the {companyDisplay} org chart — {sliceText}, sliced any way you

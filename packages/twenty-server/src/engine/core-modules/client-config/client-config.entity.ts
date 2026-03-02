@@ -151,4 +151,7 @@ export class ClientConfig {
 
   @Field(() => Boolean)
   useConnectLinkedinOnboarding: boolean;
+
+  @Field(() => Boolean)
+  skipOptionalOnboardingSteps: boolean;
 }

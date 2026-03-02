@@ -19,17 +19,21 @@ test('Login test', async ({ loginPage, page }) => {
     async () => {
       await page.waitForLoadState('networkidle');
       const shouldUseEmailEntryButton =
-        (await loginPage.loginWithEmailButton.count()) > 0 &&
-        (await loginPage.loginWithEmailButton.first().isVisible());
+        await loginPage.hasVisibleLoginWithEmailButton();
 
       if (shouldUseEmailEntryButton) {
         await loginPage.clickLoginWithEmail();
       }
+
+      await loginPage.expectPasswordStepHidden();
       await loginPage.typeEmail(process.env.DEFAULT_LOGIN);
       await loginPage.clickContinueButton();
+      await loginPage.expectPasswordStepVisible();
       await loginPage.typePassword(process.env.DEFAULT_PASSWORD);
       await page.waitForLoadState('networkidle');
-      await loginPage.clickSignInButton();
+      await loginPage.submitPasswordStep();
+      await page.waitForURL(/\/jobs(?:[/?#]|$)/);
+      await expect(page).toHaveURL(/\/jobs(?:[/?#]|$)/);
       await expect(page.getByText(/Welcome to .+/)).not.toBeVisible();
     },
   );

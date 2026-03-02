@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 import { IconBriefcase, IconUsers } from 'twenty-ui';
@@ -6,6 +6,7 @@ import { IconBriefcase, IconUsers } from 'twenty-ui';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
 import { jobsRefetchTriggerState, jobsState } from '@/candidate-table/states/states';
+import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { AppPath } from '@/types/AppPath';
 import { NavigationDrawerItem } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import { NavigationDrawerItemGroup } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItemGroup';
@@ -52,6 +53,12 @@ export const JobsNavigationDrawerItems = () => {
   const location = useLocation();
   const { t } = useLingui();
 
+  const { objectMetadataItems } = useObjectMetadataItems();
+  const jobMetadataItem = useMemo(
+    () => objectMetadataItems.find((item) => item.nameSingular === 'job'),
+    [objectMetadataItems],
+  );
+
   const [isNavigationDrawerExpanded, setIsNavigationDrawerExpanded] =
     useRecoilState(isNavigationDrawerExpandedState);
   const setNavigationDrawerExpandedMemorized = useSetRecoilState(
@@ -61,19 +68,19 @@ export const JobsNavigationDrawerItems = () => {
     navigationMemorizedUrlState,
   );
 
-  // Initial load when component mounts
+  // Fetch jobs only when metadata is loaded (avoids findManyJobs during onboarding)
   useEffect(() => {
-    console.log('JobsNavigationDrawerItems - Component mounted, fetching jobs...');
-    refetchJobsRef.current();
-  }, []);
-
-  // Listen for global job refetch triggers
-  useEffect(() => {
-    if (jobsRefetchTrigger > 0) {
-      console.log('JobsNavigationDrawerItems - Refetch triggered, updating jobs...');
+    if (jobMetadataItem) {
       refetchJobsRef.current();
     }
-  }, [jobsRefetchTrigger]);
+  }, [jobMetadataItem?.id]);
+
+  // Listen for global job refetch triggers (when metadata is ready)
+  useEffect(() => {
+    if (jobMetadataItem && jobsRefetchTrigger > 0) {
+      refetchJobsRef.current();
+    }
+  }, [jobMetadataItem?.id, jobsRefetchTrigger]);
 
   // Update local jobs when global jobs state changes
   useEffect(() => {

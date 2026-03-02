@@ -71,6 +71,13 @@ export class OnboardingService {
       return OnboardingStatus.CONNECT_LINKEDIN;
     }
 
+    if (
+      this.environmentService.get('SKIP_OPTIONAL_ONBOARDING_STEPS') &&
+      (isConnectAccountPending || isInviteTeamPending)
+    ) {
+      return OnboardingStatus.COMPLETED;
+    }
+
     if (isConnectAccountPending) {
       return OnboardingStatus.SYNC_EMAIL;
     }
