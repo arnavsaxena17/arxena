@@ -2,11 +2,13 @@
 
 import styled from '@emotion/styled';
 
+import { COMPANY_INFO } from '@/lib/company-info';
+
 import {
-  DiscordIcon,
-  GithubIcon2,
-  LinkedInIcon,
-  XIcon,
+    DiscordIcon,
+    GithubIcon2,
+    LinkedInIcon,
+    XIcon,
 } from '../../icons/SvgIcons';
 
 const StyledFooterMobile = styled.footer`
@@ -61,6 +63,13 @@ const StyledChatButton = styled.button`
   }
 `;
 
+const StyledAddress = styled.div`
+  color: rgb(129, 129, 129);
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+`;
+
 const StyledBottomRow = styled.div`
   display: flex;
   flex-direction: column;
@@ -100,9 +109,9 @@ export const FooterMobile = () => {
       </StyledLinkSection>
       <StyledLinkSection>
         <StyledSectionTitle>Contact</StyledSectionTitle>
-        <StyledLink href="mailto:hello@arxena.com">Email</StyledLink>
+        <StyledLink href={`mailto:${COMPANY_INFO.email}`}>Email</StyledLink>
         <StyledLink
-          href="https://wa.me/918411937769"
+          href={`https://wa.me/${COMPANY_INFO.whatsapp}`}
           target="_blank"
           rel="noreferrer"
         >
@@ -114,11 +123,12 @@ export const FooterMobile = () => {
         >
           Chat with us
         </StyledChatButton>
+        <StyledAddress>{COMPANY_INFO.addresses[0]}</StyledAddress>
       </StyledLinkSection>
       <StyledBottomRow>
         <StyledCopyright>
           <span style={{ fontFamily: 'Inter, sans-serif' }}>©</span>
-          {new Date().getFullYear()} Arxena Inc
+          {new Date().getFullYear()} {COMPANY_INFO.name}
         </StyledCopyright>
         <StyledSocialLinks>
           <a href="https://x.com/arxenainc" target="_blank" rel="noreferrer">

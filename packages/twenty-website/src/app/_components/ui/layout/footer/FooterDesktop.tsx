@@ -2,11 +2,13 @@
 
 import styled from '@emotion/styled';
 
+import { COMPANY_INFO } from '@/lib/company-info';
+
 import {
-  DiscordIcon,
-  GithubIcon2,
-  LinkedInIcon,
-  XIcon,
+    DiscordIcon,
+    GithubIcon2,
+    LinkedInIcon,
+    XIcon,
 } from '../../icons/SvgIcons';
 
 const FooterContainer = styled.div`
@@ -25,7 +27,6 @@ const RightSideFooter = styled.div`
   display: flex;
   justify-content: space-between;
   gap: 48px;
-  height: 146px;
 `;
 
 const RightSideFooterColumn = styled.div`
@@ -56,6 +57,12 @@ const RightSideFooterButton = styled.button`
     text-decoration: underline;
     color: #000;
   }
+`;
+
+const RightSideFooterAddress = styled.div`
+  color: rgb(129, 129, 129);
+  font-size: 14px;
+  line-height: 1.4;
 `;
 
 const RightSideFooterColumnTitle = styled.div`
@@ -95,11 +102,11 @@ export const FooterDesktop = () => {
         </RightSideFooterColumn>
         <RightSideFooterColumn>
           <RightSideFooterColumnTitle>Contact</RightSideFooterColumnTitle>
-          <RightSideFooterLink href="mailto:hello@arxena.com">
+          <RightSideFooterLink href={`mailto:${COMPANY_INFO.email}`}>
             Email
           </RightSideFooterLink>
           <RightSideFooterLink
-            href="https://wa.me/918411937769"
+            href={`https://wa.me/${COMPANY_INFO.whatsapp}`}
             target="_blank"
             rel="noreferrer"
           >
@@ -111,6 +118,9 @@ export const FooterDesktop = () => {
           >
             Chat with us
           </RightSideFooterButton>
+          <RightSideFooterAddress>
+            {COMPANY_INFO.addresses[0]}
+          </RightSideFooterAddress>
         </RightSideFooterColumn>
       </RightSideFooter>
       <div
@@ -126,7 +136,7 @@ export const FooterDesktop = () => {
       >
         <div>
           <span style={{ fontFamily: 'Inter, sans-serif' }}>©</span>
-          {new Date().getFullYear()} Arxena Inc
+          {new Date().getFullYear()} {COMPANY_INFO.name}
         </div>
         <SocialLinks>
           <a href="https://x.com/arxenainc" target="_blank" rel="noreferrer">

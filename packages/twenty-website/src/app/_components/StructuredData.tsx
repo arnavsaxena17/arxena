@@ -1,5 +1,6 @@
 import { getAuthBaseUrl } from '@/lib/auth-urls';
 import { getBaseUrl } from '@/lib/base-url';
+import { COMPANY_INFO } from '@/lib/company-info';
 
 const SITE_NAVIGATION: {
   name: string;
@@ -51,7 +52,16 @@ export async function WebSiteStructuredData() {
       url: baseUrl,
       logo: {
         '@type': 'ImageObject',
-        url: `${baseUrl}/images/favicon/512.png`,
+        url: `${baseUrl}/images/favicon/icon-512.png`,
+      },
+      email: COMPANY_INFO.email,
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: '651 N Broad St, Suite 206',
+        addressLocality: 'Middletown',
+        addressRegion: 'Delaware',
+        postalCode: '19709',
+        addressCountry: 'US',
       },
     },
     potentialAction: {

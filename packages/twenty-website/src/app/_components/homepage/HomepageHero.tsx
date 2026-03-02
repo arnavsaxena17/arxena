@@ -6,6 +6,12 @@ import Link from 'next/link';
 import { useCallback, useState } from 'react';
 
 import { ContactUsSection } from '@/app/_components/homepage/ContactUsSection';
+import { DifferentiatorsSection } from '@/app/_components/homepage/DifferentiatorsSection';
+import { HomepageStickyNav } from '@/app/_components/homepage/HomepageStickyNav';
+import { HowItWorksSection } from '@/app/_components/homepage/HowItWorksSection';
+import { TestimonialsSection } from '@/app/_components/homepage/TestimonialsSection';
+import { TrustBadgesSection } from '@/app/_components/homepage/TrustBadgesSection';
+import { UseCasesSection } from '@/app/_components/homepage/UseCasesSection';
 import { OrgChartSearch } from '@/app/_components/orgchart/OrgChartSearch';
 import { Logo } from '@/app/_components/ui/layout/Logo';
 import { trackGA4Event } from '@/lib/analytics';
@@ -203,6 +209,10 @@ const StyledSocialProof = styled.p`
   padding: 24px;
 `;
 
+const StyledSectionAnchor = styled.section`
+  scroll-margin-top: 60px;
+`;
+
 const StyledPricingSection = styled.section`
   width: 100%;
   max-width: 900px;
@@ -322,6 +332,7 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
 
   return (
     <>
+      <HomepageStickyNav />
       <StyledHero>
         <StyledLogoWrapper>
           <Logo variant="hero" />
@@ -388,13 +399,29 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
         </StyledScrollingStrip>
       </StyledExampleSection>
 
+      <StyledSectionAnchor id="built-for">
+        <UseCasesSection />
+      </StyledSectionAnchor>
+      <StyledSectionAnchor id="how-it-works">
+        <HowItWorksSection />
+      </StyledSectionAnchor>
+      <StyledSectionAnchor id="why-us">
+        <DifferentiatorsSection />
+      </StyledSectionAnchor>
+      <StyledSectionAnchor id="testimonials">
+        <TestimonialsSection />
+      </StyledSectionAnchor>
+      <TrustBadgesSection />
+
       <StyledSocialProof>
-        1M+ companies mapped, 55M+ professionals indexed
+        1M+ companies mapped, 55M+ professionals indexed — algorithmically
+        clustered and mapped
       </StyledSocialProof>
 
-      <StyledPricingSection>
-        <StyledPricingTitle>Simple pricing</StyledPricingTitle>
-        <StyledPricingGrid>
+      <StyledSectionAnchor id="pricing">
+        <StyledPricingSection>
+          <StyledPricingTitle>Simple pricing</StyledPricingTitle>
+          <StyledPricingGrid>
           {PRICING_TIERS.map(({ name, price, credits, useCase }) => (
             <StyledPricingCard key={name}>
               <StyledPricingCardTitle>{name}</StyledPricingCardTitle>
@@ -405,26 +432,29 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
               <div style={{ fontSize: 13, color: '#818181' }}>{useCase}</div>
             </StyledPricingCard>
           ))}
-        </StyledPricingGrid>
-        <div style={{ textAlign: 'center' }}>
-          <StyledPrimaryCta href="/pricing">View full pricing</StyledPrimaryCta>
-        </div>
-        <p
-          style={{
-            margin: '24px 0 0 0',
-            textAlign: 'center',
-            fontSize: 15,
-            color: '#474747',
-          }}
-        >
-          Want to reach the right people?{' '}
-          <StyledEngageLink href="/engage">
-            Learn about Engagement →
-          </StyledEngageLink>
-        </p>
-      </StyledPricingSection>
+          </StyledPricingGrid>
+          <div style={{ textAlign: 'center' }}>
+            <StyledPrimaryCta href="/pricing">View full pricing</StyledPrimaryCta>
+          </div>
+          <p
+            style={{
+              margin: '24px 0 0 0',
+              textAlign: 'center',
+              fontSize: 15,
+              color: '#474747',
+            }}
+          >
+            Want to reach the right people?{' '}
+            <StyledEngageLink href="/engage">
+              Learn about Engagement →
+            </StyledEngageLink>
+          </p>
+        </StyledPricingSection>
+      </StyledSectionAnchor>
 
-      <ContactUsSection />
+      <StyledSectionAnchor id="contact">
+        <ContactUsSection />
+      </StyledSectionAnchor>
     </>
   );
 };

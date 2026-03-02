@@ -1,8 +1,9 @@
 import styled from '@emotion/styled';
+import Link from 'next/link';
 
 export type LogoVariant = 'header' | 'hero' | 'footer';
 
-const StyledLink = styled.a<{ variant: LogoVariant }>`
+const StyledLink = styled(Link)<{ variant: LogoVariant }>`
   display: block;
   flex-shrink: 0;
   background-size: contain;
@@ -15,7 +16,7 @@ const StyledLink = styled.a<{ variant: LogoVariant }>`
     `
     height: 40px;
     width: 120px;
-    background-image: url('/images/favicon/512.png');
+    background-image: url('/images/favicon/icon-512.png');
   `}
   ${({ variant }) =>
     variant === 'hero' &&
@@ -29,7 +30,7 @@ const StyledLink = styled.a<{ variant: LogoVariant }>`
     `
     height: 40px;
     width: 40px;
-    background-image: url('/images/favicon/512.png');
+    background-image: url('/images/favicon/icon-512.png');
   `}
 `;
 

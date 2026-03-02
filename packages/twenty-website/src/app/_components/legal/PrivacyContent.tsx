@@ -3,6 +3,8 @@
 import styled from '@emotion/styled';
 import Link from 'next/link';
 
+import { COMPANY_INFO } from '@/lib/company-info';
+
 const StyledSection = styled.section`
   max-width: 720px;
   margin: 0 auto;
@@ -213,18 +215,21 @@ export const PrivacyContent = () => {
       <StyledParagraph>
         For more information about our privacy practices, if you have questions,
         or if you would like to make a complaint, please contact us by e-mail at{' '}
-        <StyledLink href="mailto:info@arxena.com">info@arxena.com</StyledLink>{' '}
+        <StyledLink href={`mailto:${COMPANY_INFO.email}`}>
+          {COMPANY_INFO.email}
+        </StyledLink>{' '}
         or by mail using the details provided below:
       </StyledParagraph>
       <StyledParagraph>
-        Arxena Inc.
+        {COMPANY_INFO.name}
         <br />
-        651 N Broad St, Suite 206 Middletown, New Castle, Delaware - 19709
-        <br />
-        India: 1702, Splendor Complex, JV Link Road, Andheri East, Mumbai -
-        400060
-        <br />
-        Email: info@arxena.com
+        {COMPANY_INFO.addresses.map((addr) => (
+          <span key={addr}>
+            {addr}
+            <br />
+          </span>
+        ))}
+        Email: {COMPANY_INFO.email}
       </StyledParagraph>
     </StyledSection>
   );
