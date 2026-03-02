@@ -35,6 +35,11 @@ export const TESTIMONIALS = [
 
 export const USE_CASES = [
   {
+    title: 'Founders',
+    description: 'Understand competitor roles, their backgrounds for workforce planning and hiring.',
+    href: '/org-chart/microsoft',
+  },
+  {
     title: 'Recruiters',
     description:
       'Map target companies and find decision-makers for placements.',
@@ -44,11 +49,6 @@ export const USE_CASES = [
     title: 'Sales teams',
     description: 'Identify the right stakeholders and reach them at scale.',
     href: '/engage',
-  },
-  {
-    title: 'Talent mapping',
-    description: 'Understand org structures for workforce planning.',
-    href: '/org-chart/microsoft',
   },
   {
     title: 'Investors',
@@ -93,7 +93,7 @@ export const DIFFERENTIATORS = [
   {
     title: 'AI that speaks as you',
     description:
-      "Reach enterprise CEOs and decision-makers in your voice. Our AI writes so naturally they can't tell the difference — and you only talk to people who respond.",
+      "Our AI interacts with enterprise CEOs and decision-makers on whatsapp/ linkedin/ email in your voice. Our AI writes so naturally they can't tell the difference — and you only talk to people who respond.",
     href: '/engage',
   },
 ] as const;
