@@ -12,14 +12,17 @@ import './layout.css';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://arxena.com'),
   title: 'Arxena.com',
   description: 'Search and explore organizational charts of any company. 1M+ companies, 55M+ professionals for recruitment and talent mapping.',
   icons: {
     icon: [
-      { url: '/images/favicon/16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/images/favicon/32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/images/favicon/192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/images/favicon/512.png', sizes: '512x512', type: 'image/png' },
+      // Primary favicon for Google Search (redirects /favicon.ico → 64.png)
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/images/favicon/icon-16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/images/favicon/icon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/images/favicon/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/images/favicon/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
     apple: '/images/favicon/180.png',
   },

@@ -10,6 +10,9 @@ export const metadata = {
   title: 'Pricing | Arxena',
   description:
     "Map any company's org chart. A fraction of one recruitment fee. From $799. Stop paying recruitment agencies $5K-40K per placement with no mapping.",
+  alternates: {
+    canonical: '/pricing',
+  },
 };
 
 export default function PricingPage() {

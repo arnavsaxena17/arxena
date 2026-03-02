@@ -10,6 +10,9 @@ export const metadata = {
   title: 'Engage | Arxena',
   description:
     'Our AI reaches out from your own WhatsApp and LinkedIn accounts. Messages go from you — human-like — across any channel. You only talk to people who are interested.',
+  alternates: {
+    canonical: '/engage',
+  },
 };
 
 export default function EngagePage() {

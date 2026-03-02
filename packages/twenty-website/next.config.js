@@ -10,7 +10,7 @@ const nextConfig = {
     return [
       {
         source: '/favicon.ico',
-        destination: '/images/favicon/32.png',
+        destination: '/images/favicon/icon-64.png',
         permanent: true,
       },
       {

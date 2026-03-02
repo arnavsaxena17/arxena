@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   title: "Arxena - Search Any Company's Org Chart",
   description:
     'Arxena lets you search and explore organizational charts of any company. Access 1M+ companies and 55M+ professionals for recruitment, outreach, and people analytics. Free org chart search.',
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
     title: "Arxena - Search Any Company's Org Chart",
     description:

@@ -10,6 +10,9 @@ export const metadata = {
   title: 'Terms of Service | Arxena',
   description:
     'Arxena Terms of Service - Legal agreement for using Arxena products and services.',
+  alternates: {
+    canonical: '/legal/terms',
+  },
 };
 
 export default function TermsPage() {

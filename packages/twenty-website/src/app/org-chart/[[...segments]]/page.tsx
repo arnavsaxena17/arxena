@@ -161,11 +161,7 @@ export async function generateMetadata({
     segments && segments.length > 0
       ? `/org-chart/${encodeURIComponent(companyId)}${segments.length > 1 ? `/${segments.slice(1).join('/')}` : ''}`
       : `/org-chart/${encodeURIComponent(companyId)}`;
-  const isProduction =
-    baseUrl.includes('arxena.com');
-  const canonicalBase = isProduction ? 'https://arxena.com' : baseUrl;
-  const canonicalUrl = `${canonicalBase}${canonicalPath}`;
-
+  // metadataBase in root layout resolves relative canonicals to https://arxena.com
   return {
     title,
     description,
@@ -174,7 +170,7 @@ export async function generateMetadata({
       title,
       description: ogDescription,
       type: 'website',
-      url: canonicalUrl,
+      url: canonicalPath,
     },
     twitter: {
       card: 'summary_large_image',
@@ -182,7 +178,7 @@ export async function generateMetadata({
       description: ogDescription,
     },
     alternates: {
-      canonical: canonicalUrl,
+      canonical: canonicalPath,
     },
   };
 }

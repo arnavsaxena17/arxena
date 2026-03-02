@@ -10,6 +10,9 @@ export const metadata = {
   title: 'Story | Arxena',
   description:
     "The world's first org chart database. Discovery of people inside companies as easy as finding a destination on a map.",
+  alternates: {
+    canonical: '/story',
+  },
 };
 
 export default function StoryPage() {
