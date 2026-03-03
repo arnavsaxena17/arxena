@@ -78,6 +78,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
 
     for (const { country, type } of urls) {
+      // Exclude /0 paths - they represent root nodes and are not meaningful for SEO
+      if (type === '0') continue;
+
       const path = buildOrgChartPath(companyId, country, type);
       entries.push({
         url: `${baseUrl}${path}`,

@@ -137,7 +137,19 @@ export class LoginPage {
       return;
     }
 
-    await this.continueButton.first().click();
+    const continueButton = this.continueButton.first();
+    const canUseContinue =
+      (await this.continueButton.count()) > 0 &&
+      (await continueButton.isVisible().catch(() => false));
+
+    if (canUseContinue) {
+      await continueButton.click();
+
+      return;
+    }
+
+    // Some auth UI variants only submit on Enter from the password input.
+    await this.passwordField.first().press('Enter');
   }
 
   async clickSignUpButton() {

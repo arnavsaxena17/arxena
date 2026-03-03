@@ -28,6 +28,12 @@ const nextConfig = {
         destination: '/org-chart/facebook/:path*',
         permanent: true,
       },
+      // /global/fullcompany is equivalent to base URL - redirect to canonical form
+      {
+        source: '/org-chart/:companyId/global/fullcompany',
+        destination: '/org-chart/:companyId',
+        permanent: true,
+      },
     ];
   },
   images: {

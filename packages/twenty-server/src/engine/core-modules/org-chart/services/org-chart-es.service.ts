@@ -308,6 +308,8 @@ export class OrgChartEsService {
         for (const bucket of buckets) {
           const country = bucket.key?.country ?? 'global';
           const type = bucket.key?.type ?? 'fullcompany';
+          // Exclude type '0' - root nodes are not meaningful for sitemap/SEO
+          if (type === '0') continue;
           results.push({ country, type });
         }
       } while (after);

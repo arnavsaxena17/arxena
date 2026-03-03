@@ -3,16 +3,22 @@ import { expect, test } from '@playwright/test';
 test('Logged-out website loads Salesforce org chart and captures screenshot', async ({
   page,
 }) => {
-  await page.goto('/');
+  const websiteBaseUrl = process.env.WEBSITE_BASE_URL || 'http://localhost:3002';
+  await page.goto(websiteBaseUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
 
   const autocompleteResponsePromise = page.waitForResponse((response) => {
     return (
       response.request().method() === 'POST' &&
-      response.url().includes('/api/org-chart/autocomplete')
+      (response.url().includes('/api/org-chart/autocomplete') ||
+        response.url().includes('/org-chart/companies/autocomplete'))
     );
   });
 
-  const searchInput = page.getByPlaceholder("Search any company's org chart");
+  const searchInput = page
+    .locator(
+      'input[placeholder*="Search any company"], input[placeholder*="Search company"], input[placeholder*="org chart"]',
+    )
+    .first();
   await expect(searchInput).toBeVisible();
   await searchInput.click();
   await searchInput.fill('salesforce');
