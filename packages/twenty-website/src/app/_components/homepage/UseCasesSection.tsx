@@ -2,10 +2,10 @@
 
 import styled from '@emotion/styled';
 import {
-    IconBuildingStore,
-    IconChartBar,
-    IconChartTreemap,
-    IconUsers,
+  IconBuildingStore,
+  IconChartBar,
+  IconChartTreemap,
+  IconUsers,
 } from '@tabler/icons-react';
 import Link from 'next/link';
 

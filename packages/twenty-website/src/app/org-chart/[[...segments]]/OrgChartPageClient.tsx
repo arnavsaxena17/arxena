@@ -290,8 +290,14 @@ export const OrgChartPageClient = ({
 
   const handleCountryChange = useCallback(
     (country: string | undefined) => {
-      trackGA4Event('org_chart_filter', { filter_type: 'country', value: country });
-      trackWebsiteEvent('org_chart_filter', { filterType: 'country', value: country });
+      trackGA4Event('org_chart_filter', {
+        filter_type: 'country',
+        value: country,
+      });
+      trackWebsiteEvent('org_chart_filter', {
+        filterType: 'country',
+        value: country,
+      });
       setSelectedCountry(country);
       router.push(buildPath(country, selectedFunctionRoot));
     },
@@ -300,8 +306,14 @@ export const OrgChartPageClient = ({
 
   const handleFunctionRootChange = useCallback(
     (fn: string | undefined) => {
-      trackGA4Event('org_chart_filter', { filter_type: 'function_root', value: fn });
-      trackWebsiteEvent('org_chart_filter', { filterType: 'functionRoot', value: fn });
+      trackGA4Event('org_chart_filter', {
+        filter_type: 'function_root',
+        value: fn,
+      });
+      trackWebsiteEvent('org_chart_filter', {
+        filterType: 'functionRoot',
+        value: fn,
+      });
       setSelectedFunctionRoot(fn);
       router.push(buildPath(selectedCountry, fn));
     },

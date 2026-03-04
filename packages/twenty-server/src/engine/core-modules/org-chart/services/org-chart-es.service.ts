@@ -252,6 +252,901 @@ export class OrgChartEsService {
     }
   }
 
+  /** Company IDs to exclude from sitemap indexing (e.g. government/military). */
+  private static readonly SITEMAP_EXCLUDED_COMPANY_IDS = new Set([
+    'us-army',
+    'us-navy',
+    'united-states-air-force',
+    'united-states-marine-corps'
+  
+  ]);
+
+  /**
+   * Get company IDs that have org charts in ES, for sitemap indexing.
+   * Returns up to limit companies (default 100), ordered by max count_org
+   * (employee count in org chart) descending.
+   * Excludes companies in SITEMAP_EXCLUDED_COMPANY_IDS.
+   */
+  async getIndexedCompanyIds(limit = 250): Promise<string[]> {
+    if (!this.client) {
+      return [];
+    }
+
+    try {
+      const response = await this.client.search({
+        index: this.orgChartsIndex,
+        size: 0,
+        aggs: {
+          companies: {
+            terms: {
+              field: 'job_company_id',
+              size: limit + 50,
+              order: { max_count_org: 'desc' },
+            },
+            aggs: {
+              max_count_org: {
+                max: { field: 'count_org' },
+              },
+            },
+          },
+        },
+      });
+
+      const buckets = (response.aggregations?.companies as { buckets?: Array<{ key: string }> })
+        ?.buckets ?? [];
+      return buckets
+        .map((b) => b.key)
+        .filter(
+          (id): id is string =>
+            !!id && !OrgChartEsService.SITEMAP_EXCLUDED_COMPANY_IDS.has(id),
+        )
+        .slice(0, limit);
+    } catch (error) {
+      this.logger.error(
+        'Elasticsearch getIndexedCompanyIds failed',
+        error as Error,
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Get company IDs paginated by rank (max count_org descending).
+   * Used for sitemap company-level grouping.
+   */
+  async getIndexedCompanyIdsPaginated(
+    offset: number,
+    limit: number,
+  ): Promise<string[]> {
+    if (!this.client || limit < 1) {
+      return [];
+    }
+
+    try {
+      const response = await this.client.search({
+        index: this.orgChartsIndex,
+        size: 0,
+        query: {
+          bool: {
+            must_not: [
+              { term: { type: '0' } },
+              ...Array.from(
+                OrgChartEsService.SITEMAP_EXCLUDED_COMPANY_IDS,
+              ).map((id) => ({ term: { job_company_id: id } })),
+            ],
+          },
+        },
+        aggs: {
+          companies: {
+            terms: {
+              field: 'job_company_id',
+              size: offset + limit + 100,
+              order: { max_count_org: 'desc' },
+            },
+            aggs: {
+              max_count_org: {
+                max: { field: 'count_org' },
+              },
+              page_bucket: {
+                bucket_sort: {
+                  from: offset,
+                  size: limit,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const buckets = (response.aggregations?.companies as {
+        buckets?: Array<{ key: string }>;
+      })?.buckets ?? [];
+      return buckets
+        .map((b) => b.key)
+        .filter(
+          (id): id is string =>
+            !!id && !OrgChartEsService.SITEMAP_EXCLUDED_COMPANY_IDS.has(id),
+        );
+    } catch (error) {
+      this.logger.error(
+        'Elasticsearch getIndexedCompanyIdsPaginated failed',
+        error as Error,
+      );
+      return [];
+    }
+  }
+
+  /** Chunk size for search_after pagination (stays within ES default limits). */
+  private static readonly SEARCH_AFTER_CHUNK_SIZE = 1000;
+
+  /** Sitemap batch sizes: 500, 2500, 5000, 25000, 50000, 50000, ... */
+  private static readonly BATCH_SIZES = [500, 2500, 5000, 25000, 50000];
+
+  private static getOffsetAndLimitForBatch(batchIndex: number): {
+    offset: number;
+    limit: number;
+  } {
+    if (batchIndex === 0) {
+      return { offset: 0, limit: OrgChartEsService.BATCH_SIZES[0] };
+    }
+    let offset = 0;
+    for (let i = 0; i < batchIndex; i++) {
+      offset +=
+        OrgChartEsService.BATCH_SIZES[
+          Math.min(i, OrgChartEsService.BATCH_SIZES.length - 1)
+        ];
+    }
+    const limit =
+      batchIndex < OrgChartEsService.BATCH_SIZES.length
+        ? OrgChartEsService.BATCH_SIZES[batchIndex]
+        : OrgChartEsService.BATCH_SIZES[
+            OrgChartEsService.BATCH_SIZES.length - 1
+          ];
+    return { offset, limit };
+  }
+
+  private static computeCutoffForCount(count: number): number {
+    let cumulative = 0;
+    let batchIndex = 0;
+    while (cumulative < count && batchIndex < 500) {
+      const { limit } = OrgChartEsService.getOffsetAndLimitForBatch(batchIndex);
+      cumulative += limit;
+      batchIndex++;
+    }
+    return batchIndex;
+  }
+
+  /**
+   * Fetch one chunk of (companyId, country, type) tuples using search_after.
+   * Returns urls and nextSearchAfter for chaining. Excludes type '0' and SITEMAP_EXCLUDED_COMPANY_IDS.
+   */
+  async getIndexedUrlsPaginatedWithSearchAfter(
+    options: {
+      country?: string;
+      type?: string;
+      size?: number;
+      searchAfter?: unknown[];
+    } = {},
+  ): Promise<{
+    urls: { companyId: string; country: string; type: string }[];
+    nextSearchAfter: unknown[] | null;
+  }> {
+    if (!this.client) {
+      return { urls: [], nextSearchAfter: null };
+    }
+
+    const size = Math.min(
+      options.size ?? OrgChartEsService.SEARCH_AFTER_CHUNK_SIZE,
+      5000,
+    );
+    const excludeIds = Array.from(
+      OrgChartEsService.SITEMAP_EXCLUDED_COMPANY_IDS,
+    );
+
+    const mustNotClauses: Record<string, unknown>[] = [
+      { term: { type: '0' } },
+      ...excludeIds.map((id) => ({ term: { job_company_id: id } })),
+    ];
+
+    const mustClauses: Record<string, unknown>[] = [];
+    if (options.country && options.country.trim()) {
+      mustClauses.push({
+        term: { country: options.country.trim() },
+      });
+    }
+    if (options.type && options.type.trim()) {
+      mustClauses.push({
+        term: { type: options.type.trim() },
+      });
+    }
+
+    const query: Record<string, unknown> = {
+      bool: {
+        must_not: mustNotClauses,
+        ...(mustClauses.length > 0 ? { must: mustClauses } : {}),
+      },
+    };
+
+    // Avoid sorting by _id: on large indexes (23M+ docs) it triggers CircuitBreakingException.
+    // Use doc-value fields for deterministic tie-breaker instead.
+    const searchBody: Record<string, unknown> = {
+      index: this.orgChartsIndex,
+      size,
+      _source: ['job_company_id', 'country', 'type'],
+      query,
+      sort: [
+        { count_org: { order: 'desc' } },
+        { job_company_id: { order: 'asc' } },
+        { country: { order: 'asc' } },
+        { type: { order: 'asc' } },
+      ],
+    };
+
+    if (options.searchAfter && Array.isArray(options.searchAfter)) {
+      searchBody.search_after = options.searchAfter;
+    }
+
+    try {
+      const response = await this.client.search<{
+        job_company_id?: string;
+        country?: string;
+        type?: string;
+      }>(searchBody);
+
+      const hits = response.hits.hits;
+      const urls: { companyId: string; country: string; type: string }[] = [];
+
+      for (const hit of hits) {
+        const src = hit._source;
+        if (!src || typeof src.job_company_id !== 'string') continue;
+        const companyId = String(src.job_company_id).trim();
+        if (!companyId) continue;
+        const country =
+          typeof src.country === 'string' && src.country.trim()
+            ? src.country.trim()
+            : 'global';
+        const type =
+          typeof src.type === 'string' && src.type.trim()
+            ? src.type.trim()
+            : 'fullcompany';
+        urls.push({ companyId, country, type });
+      }
+
+      const lastHit = hits[hits.length - 1];
+      const nextSearchAfter =
+        lastHit?.sort
+          ? (lastHit.sort as unknown[])
+          : null;
+
+      return {
+        urls,
+        nextSearchAfter:
+          nextSearchAfter && hits.length === size ? nextSearchAfter : null,
+      };
+    } catch (error) {
+      this.logger.error(
+        'Elasticsearch getIndexedUrlsPaginatedWithSearchAfter failed',
+        error as Error,
+      );
+      return { urls: [], nextSearchAfter: null };
+    }
+  }
+
+  /**
+   * Get URLs for sitemap batch using chained search_after requests.
+   * Skips first offset URLs, then collects limit URLs.
+   */
+  async getIndexedUrlsWithSearchAfterChaining(options: {
+    offset: number;
+    limit: number;
+    country?: string;
+    type?: string;
+  }): Promise<{ companyId: string; country: string; type: string }[]> {
+    const { offset, limit, country, type } = options;
+    const results: { companyId: string; country: string; type: string }[] = [];
+    let searchAfter: unknown[] | undefined;
+    let skipped = 0;
+
+    while (skipped < offset || results.length < limit) {
+      const { urls, nextSearchAfter } =
+        await this.getIndexedUrlsPaginatedWithSearchAfter({
+          country,
+          type,
+          size: OrgChartEsService.SEARCH_AFTER_CHUNK_SIZE,
+          searchAfter,
+        });
+
+      if (urls.length === 0) break;
+
+      searchAfter = nextSearchAfter ?? undefined;
+
+      for (const u of urls) {
+        if (skipped < offset) {
+          skipped++;
+        } else if (results.length < limit) {
+          results.push(u);
+        }
+      }
+
+      if (!nextSearchAfter || urls.length < OrgChartEsService.SEARCH_AFTER_CHUNK_SIZE) {
+        break;
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Get distinct (country, type) pairs with doc counts for Phase 2 sitemaps.
+   * Excludes global/fullcompany and type '0'. Sorted by doc count desc.
+   */
+  async getDistinctCountryTypePairs(): Promise<
+    { country: string; type: string; docCount: number }[]
+  > {
+    if (!this.client) {
+      return [];
+    }
+
+    const excludeIds = Array.from(
+      OrgChartEsService.SITEMAP_EXCLUDED_COMPANY_IDS,
+    );
+
+    try {
+      const response = await this.client.search({
+        index: this.orgChartsIndex,
+        size: 0,
+        query: {
+          bool: {
+            must_not: [
+              { term: { type: '0' } },
+              {
+                bool: {
+                  must: [
+                    { term: { country: 'global' } },
+                    { term: { type: 'fullcompany' } },
+                  ],
+                },
+              },
+              ...excludeIds.map((id) => ({ term: { job_company_id: id } })),
+            ],
+          },
+        },
+        aggs: {
+          by_country_type: {
+            composite: {
+              size: 10000,
+              sources: [
+                { country: { terms: { field: 'country' } } },
+                { type: { terms: { field: 'type' } } },
+              ],
+            },
+          },
+        },
+      });
+
+      const agg = response.aggregations?.by_country_type as
+        | {
+            buckets?: Array<{
+              key: { country: string; type: string };
+              doc_count: number;
+            }>;
+          }
+        | undefined;
+      const buckets = agg?.buckets ?? [];
+      const pairs = buckets
+        .map((b) => ({
+          country: b.key?.country ?? 'global',
+          type: b.key?.type ?? 'fullcompany',
+          docCount: b.doc_count ?? 0,
+        }))
+        .filter((p) => p.docCount > 0)
+        .sort((a, b) => b.docCount - a.docCount);
+
+      return pairs;
+    } catch (error) {
+      this.logger.error(
+        'Elasticsearch getDistinctCountryTypePairs failed',
+        error as Error,
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Get sitemap batch params for a given batchIndex.
+   * Phase 1: global fullcompany. Phase 2: country/type slices.
+   */
+  async getSitemapBatchParams(batchIndex: number): Promise<{
+    country: string;
+    type: string;
+    offset: number;
+    limit: number;
+  } | null> {
+    const count = await this.getGlobalFullcompanyCount();
+    const cutoff = OrgChartEsService.computeCutoffForCount(count);
+
+    if (batchIndex < cutoff) {
+      const { offset, limit } =
+        OrgChartEsService.getOffsetAndLimitForBatch(batchIndex);
+      return {
+        country: 'global',
+        type: 'fullcompany',
+        offset,
+        limit,
+      };
+    }
+
+    const pairs = await this.getDistinctCountryTypePairs();
+    const PHASE2_SITEMAP_SIZE = 50000;
+    let remainingBatchIndex = batchIndex - cutoff;
+
+    for (const pair of pairs) {
+      const numSitemaps = Math.ceil(pair.docCount / PHASE2_SITEMAP_SIZE);
+      if (remainingBatchIndex < numSitemaps) {
+        const offset = remainingBatchIndex * PHASE2_SITEMAP_SIZE;
+        const limit = Math.min(
+          PHASE2_SITEMAP_SIZE,
+          pair.docCount - offset,
+        );
+        return {
+          country: pair.country,
+          type: pair.type,
+          offset,
+          limit,
+        };
+      }
+      remainingBatchIndex -= numSitemaps;
+    }
+
+    return null;
+  }
+
+  /**
+   * Get total count of global fullcompany org chart URLs for sitemap cutoff.
+   */
+  async getGlobalFullcompanyCount(): Promise<number> {
+    if (!this.client) {
+      return 0;
+    }
+
+    const excludeIds = Array.from(
+      OrgChartEsService.SITEMAP_EXCLUDED_COMPANY_IDS,
+    );
+
+    try {
+      const response = await this.client.count({
+        index: this.orgChartsIndex,
+        query: {
+          bool: {
+            must: [
+              { term: { country: 'global' } },
+              { term: { type: 'fullcompany' } },
+            ],
+            must_not: [
+              { term: { type: '0' } },
+              ...excludeIds.map((id) => ({ term: { job_company_id: id } })),
+            ],
+          },
+        },
+      });
+      return response.count ?? 0;
+    } catch (error) {
+      this.logger.error(
+        'Elasticsearch getGlobalFullcompanyCount failed',
+        error as Error,
+      );
+      return 0;
+    }
+  }
+
+  /**
+   * Get paginated (companyId, country, type) tuples for sitemap indexing.
+   * Ordered by count_org descending (largest companies first).
+   * Excludes type '0' and SITEMAP_EXCLUDED_COMPANY_IDS.
+   * Note: ES index.max_result_window may need to be increased for large offsets
+   * (e.g. 100000+) when using deep pagination.
+   */
+  async getIndexedUrlsPaginated(
+    offset: number,
+    limit: number,
+  ): Promise<{ companyId: string; country: string; type: string }[]> {
+    if (!this.client) {
+      return [];
+    }
+
+    const excludeIds = Array.from(
+      OrgChartEsService.SITEMAP_EXCLUDED_COMPANY_IDS,
+    );
+
+    try {
+      const response = await this.client.search({
+        index: this.orgChartsIndex,
+        from: offset,
+        size: Math.min(limit, 50000),
+        _source: ['job_company_id', 'country', 'type'],
+        query: {
+          bool: {
+            must_not: [
+              { term: { type: '0' } },
+              ...excludeIds.map((id) => ({ term: { job_company_id: id } })),
+            ],
+          },
+        },
+        sort: [
+          { count_org: { order: 'desc' } },
+          { job_company_id: { order: 'asc' } },
+          { country: { order: 'asc' } },
+          { type: { order: 'asc' } },
+        ],
+      });
+
+      const hits = response.hits.hits;
+      const results: { companyId: string; country: string; type: string }[] = [];
+      for (const hit of hits) {
+        const src = hit._source as
+          | { job_company_id?: string; country?: string; type?: string }
+          | undefined;
+        if (!src || typeof src.job_company_id !== 'string') continue;
+        const companyId = String(src.job_company_id).trim();
+        if (!companyId) continue;
+        const country =
+          typeof src.country === 'string' && src.country.trim()
+            ? src.country.trim()
+            : 'global';
+        const type =
+          typeof src.type === 'string' && src.type.trim()
+            ? src.type.trim()
+            : 'fullcompany';
+        results.push({ companyId, country, type });
+      }
+      return results;
+    } catch (error) {
+      this.logger.error(
+        'Elasticsearch getIndexedUrlsPaginated failed',
+        error as Error,
+      );
+      return [];
+    }
+  }
+
+  /** Letters for company list browsing (a-z). */
+  private static readonly COMPANY_LIST_LETTERS = 'abcdefghijklmnopqrstuvwxyz'.split('');
+
+  /**
+   * Get top N company IDs by global rank (count_org desc).
+   * Used for maxExposedCount filtering.
+   */
+  async getTopCompanyIdsByRank(limit: number): Promise<string[]> {
+    if (!this.client || limit < 1) {
+      return [];
+    }
+
+    const excludeIds = Array.from(
+      OrgChartEsService.SITEMAP_EXCLUDED_COMPANY_IDS,
+    );
+
+    try {
+      const response = await this.client.search({
+        index: this.orgChartsIndex,
+        size: 0,
+        query: {
+          bool: {
+            must_not: [
+              { term: { type: '0' } },
+              ...excludeIds.map((id) => ({ term: { job_company_id: id } })),
+            ],
+          },
+        },
+        aggs: {
+          companies: {
+            terms: {
+              field: 'job_company_id',
+              size: Math.min(limit, 10000),
+              order: { max_count_org: 'desc' },
+            },
+            aggs: {
+              max_count_org: { max: { field: 'count_org' } },
+            },
+          },
+        },
+      });
+
+      const buckets = (response.aggregations?.companies as { buckets?: Array<{ key: string }> })
+        ?.buckets ?? [];
+      return buckets
+        .map((b) => b.key)
+        .filter(
+          (id): id is string =>
+            !!id && !OrgChartEsService.SITEMAP_EXCLUDED_COMPANY_IDS.has(id),
+        );
+    } catch (error) {
+      this.logger.error(
+        'Elasticsearch getTopCompanyIdsByRank failed',
+        error as Error,
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Get companies for the /companies/{letter}-{page} list.
+   * Returns company IDs starting with the given letter, ordered by max count_org desc.
+   */
+  async getCompaniesByLetterPage(
+    letter: string,
+    page: number,
+    pageSize = 100,
+    maxExposedCount?: number,
+  ): Promise<{ companyIds: string[]; hasMore: boolean }> {
+    if (!this.client) {
+      return { companyIds: [], hasMore: false };
+    }
+
+    const normalizedLetter = letter.toLowerCase().trim();
+    if (normalizedLetter.length !== 1 || !/[a-z]/.test(normalizedLetter)) {
+      return { companyIds: [], hasMore: false };
+    }
+
+    const excludeIds = Array.from(
+      OrgChartEsService.SITEMAP_EXCLUDED_COMPANY_IDS,
+    );
+    const from = (Math.max(1, page) - 1) * pageSize;
+
+    let topCompanyIds: string[] | undefined;
+    if (maxExposedCount != null && maxExposedCount > 0 && maxExposedCount <= 10000) {
+      topCompanyIds = await this.getTopCompanyIdsByRank(maxExposedCount);
+    }
+
+    const mustClauses: Record<string, unknown>[] = [
+      { prefix: { job_company_id: normalizedLetter } },
+    ];
+    if (topCompanyIds && topCompanyIds.length > 0) {
+      mustClauses.push({ terms: { job_company_id: topCompanyIds } });
+    }
+
+    try {
+      const response = await this.client.search({
+        index: this.orgChartsIndex,
+        size: 0,
+        query: {
+          bool: {
+            must_not: [
+              { term: { type: '0' } },
+              ...excludeIds.map((id) => ({ term: { job_company_id: id } })),
+            ],
+            must: mustClauses,
+          },
+        },
+        aggs: {
+          companies: {
+            terms: {
+              field: 'job_company_id',
+              size: 50000,
+              order: { max_count_org: 'desc' },
+            },
+            aggs: {
+              max_count_org: {
+                max: { field: 'count_org' },
+              },
+              page_bucket: {
+                bucket_sort: {
+                  from,
+                  size: pageSize + 1,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const buckets = (response.aggregations?.companies as { buckets?: Array<{ key: string }> })
+        ?.buckets ?? [];
+      const companyIds = buckets
+        .map((b) => b.key)
+        .filter((id): id is string => !!id && typeof id === 'string')
+        .slice(0, pageSize);
+      const hasMore = buckets.length > pageSize;
+
+      return { companyIds, hasMore };
+    } catch (error) {
+      this.logger.error(
+        `Elasticsearch getCompaniesByLetterPage failed letter=${letter}`,
+        error as Error,
+      );
+      return { companyIds: [], hasMore: false };
+    }
+  }
+
+  /**
+   * Get companies for /companies/{country} browse.
+   * Returns company IDs with org charts in that country, ordered by count_org desc.
+   */
+  async getCompaniesByCountryPage(
+    country: string,
+    page: number,
+    pageSize = 100,
+    maxExposedCount?: number,
+  ): Promise<{ companyIds: string[]; hasMore: boolean }> {
+    if (!this.client) {
+      return { companyIds: [], hasMore: false };
+    }
+
+    const normalizedCountry = country?.trim();
+    if (!normalizedCountry) {
+      return { companyIds: [], hasMore: false };
+    }
+
+    const excludeIds = Array.from(
+      OrgChartEsService.SITEMAP_EXCLUDED_COMPANY_IDS,
+    );
+    const from = (Math.max(1, page) - 1) * pageSize;
+
+    let topCompanyIds: string[] | undefined;
+    if (maxExposedCount != null && maxExposedCount > 0 && maxExposedCount <= 10000) {
+      topCompanyIds = await this.getTopCompanyIdsByRank(maxExposedCount);
+    }
+
+    const mustClauses: Record<string, unknown>[] = [
+      { term: { country: normalizedCountry } },
+    ];
+    if (topCompanyIds && topCompanyIds.length > 0) {
+      mustClauses.push({ terms: { job_company_id: topCompanyIds } });
+    }
+
+    try {
+      const response = await this.client.search({
+        index: this.orgChartsIndex,
+        size: 0,
+        query: {
+          bool: {
+            must_not: [
+              { term: { type: '0' } },
+              ...excludeIds.map((id) => ({ term: { job_company_id: id } })),
+            ],
+            must: mustClauses,
+          },
+        },
+        aggs: {
+          companies: {
+            terms: {
+              field: 'job_company_id',
+              size: 50000,
+              order: { _key: 'asc' },
+            },
+            aggs: {
+              page_bucket: {
+                bucket_sort: {
+                  from,
+                  size: pageSize + 1,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const buckets = (response.aggregations?.companies as { buckets?: Array<{ key: string }> })
+        ?.buckets ?? [];
+      const companyIds = buckets
+        .map((b) => b.key)
+        .filter((id): id is string => !!id && typeof id === 'string')
+        .slice(0, pageSize);
+      const hasMore = buckets.length > pageSize;
+
+      return { companyIds, hasMore };
+    } catch (error) {
+      this.logger.error(
+        `Elasticsearch getCompaniesByCountryPage failed country=${country}`,
+        error as Error,
+      );
+      return { companyIds: [], hasMore: false };
+    }
+  }
+
+  /**
+   * Get companies for /companies/{country}/{functionRoot} browse.
+   */
+  async getCompaniesByCountryAndTypePage(
+    country: string,
+    type: string,
+    page: number,
+    pageSize = 100,
+    maxExposedCount?: number,
+  ): Promise<{ companyIds: string[]; hasMore: boolean }> {
+    if (!this.client) {
+      return { companyIds: [], hasMore: false };
+    }
+
+    const normalizedCountry = country?.trim();
+    const normalizedType = type?.trim();
+    if (!normalizedCountry || !normalizedType) {
+      return { companyIds: [], hasMore: false };
+    }
+
+    const excludeIds = Array.from(
+      OrgChartEsService.SITEMAP_EXCLUDED_COMPANY_IDS,
+    );
+    const from = (Math.max(1, page) - 1) * pageSize;
+
+    let topCompanyIds: string[] | undefined;
+    if (maxExposedCount != null && maxExposedCount > 0 && maxExposedCount <= 10000) {
+      topCompanyIds = await this.getTopCompanyIdsByRank(maxExposedCount);
+    }
+
+    const mustClauses: Record<string, unknown>[] = [
+      { term: { country: normalizedCountry } },
+      { term: { type: normalizedType } },
+    ];
+    if (topCompanyIds && topCompanyIds.length > 0) {
+      mustClauses.push({ terms: { job_company_id: topCompanyIds } });
+    }
+
+    try {
+      const response = await this.client.search({
+        index: this.orgChartsIndex,
+        size: 0,
+        query: {
+          bool: {
+            must_not: [
+              { term: { type: '0' } },
+              ...excludeIds.map((id) => ({ term: { job_company_id: id } })),
+            ],
+            must: mustClauses,
+          },
+        },
+        aggs: {
+          companies: {
+            terms: {
+              field: 'job_company_id',
+              size: 50000,
+              order: { _key: 'asc' },
+            },
+            aggs: {
+              page_bucket: {
+                bucket_sort: {
+                  from,
+                  size: pageSize + 1,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const buckets = (response.aggregations?.companies as { buckets?: Array<{ key: string }> })
+        ?.buckets ?? [];
+      const companyIds = buckets
+        .map((b) => b.key)
+        .filter((id): id is string => !!id && typeof id === 'string')
+        .slice(0, pageSize);
+      const hasMore = buckets.length > pageSize;
+
+      return { companyIds, hasMore };
+    } catch (error) {
+      this.logger.error(
+        `Elasticsearch getCompaniesByCountryAndTypePage failed country=${country} type=${type}`,
+        error as Error,
+      );
+      return { companyIds: [], hasMore: false };
+    }
+  }
+
+  /**
+   * Get (letter, page) tuples for company list URLs to include in sitemap batch.
+   * Batch 0: /companies + first page per letter (a-1 through z-1).
+   * Batch 1: second page per letter (a-2 through z-2).
+   * etc.
+   */
+  getCompanyListUrlSegmentsForBatch(
+    batchIndex: number,
+  ): Array<{ letter: string; page: number }> {
+    const page = batchIndex + 1;
+    return OrgChartEsService.COMPANY_LIST_LETTERS.map((letter) => ({
+      letter,
+      page,
+    }));
+  }
+
   /**
    * Get all (country, type) combinations that exist in ES for a company.
    * Used by the sitemap to index all org chart URL variants.

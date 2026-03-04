@@ -121,9 +121,7 @@ export const ContactUsSection = () => {
             <IconMail size={28} stroke={1.5} />
           </StyledContactIcon>
           <StyledContactCardTitle>Email</StyledContactCardTitle>
-          <StyledContactCardSubtitle>
-            info@arxena.com
-          </StyledContactCardSubtitle>
+          <StyledContactCardSubtitle>info@arxena.com</StyledContactCardSubtitle>
         </StyledContactCard>
         <StyledContactCard
           href="https://wa.me/918411937769"

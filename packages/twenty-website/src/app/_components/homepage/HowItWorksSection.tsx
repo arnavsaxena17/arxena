@@ -115,9 +115,7 @@ export const HowItWorksSection = () => {
             );
           }
 
-          return (
-            <StyledStepCard key={item.step}>{content}</StyledStepCard>
-          );
+          return <StyledStepCard key={item.step}>{content}</StyledStepCard>;
         })}
       </StyledStepsGrid>
     </StyledSection>

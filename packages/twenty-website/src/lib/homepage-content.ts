@@ -36,7 +36,8 @@ export const TESTIMONIALS = [
 export const USE_CASES = [
   {
     title: 'Founders',
-    description: 'Understand competitor roles, their backgrounds for workforce planning and hiring.',
+    description:
+      'Understand competitor roles, their backgrounds for workforce planning and hiring.',
     href: '/org-chart/microsoft',
   },
   {

@@ -68,9 +68,7 @@ export const PrivacyContent = () => {
       <StyledParagraph>
         This Privacy Policy describes how your personal information is
         collected, used, and shared when you visit or make a purchase from{' '}
-        <StyledLink href="https://arxena.com/">
-          https://arxena.com/
-        </StyledLink>{' '}
+        <StyledLink href="https://arxena.com/">https://arxena.com/</StyledLink>{' '}
         (the &quot;Site&quot;).
       </StyledParagraph>
 

@@ -83,6 +83,13 @@ export const FooterDesktop = () => {
     <FooterContainer>
       <RightSideFooter>
         <RightSideFooterColumn>
+          <RightSideFooterColumnTitle>Browse</RightSideFooterColumnTitle>
+          <RightSideFooterLink href="/companies">Org charts by company</RightSideFooterLink>
+          <RightSideFooterLink href="/companies/by-country">Org charts by geography</RightSideFooterLink>
+          <RightSideFooterLink href="/companies/by-function">Org charts by function</RightSideFooterLink>
+          <RightSideFooterLink href="/sitemap-index.xml">Sitemap</RightSideFooterLink>
+        </RightSideFooterColumn>
+        <RightSideFooterColumn>
           <RightSideFooterColumnTitle>Product</RightSideFooterColumnTitle>
           <RightSideFooterLink href="/pricing">Pricing</RightSideFooterLink>
           <RightSideFooterLink href="/engage">Engage</RightSideFooterLink>

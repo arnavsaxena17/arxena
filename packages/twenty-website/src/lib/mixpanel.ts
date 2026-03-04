@@ -1,6 +1,6 @@
 'use client';
 
-import type { Mixpanel } from 'mixpanel-browser';
+import { Mixpanel } from 'mixpanel-browser';
 
 let mixpanelInstance: Mixpanel | null = null;
 
@@ -23,7 +23,8 @@ async function getMixpanel() {
 }
 
 const isTrackingEnabled = () =>
-  process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development';
+  process.env.NODE_ENV === 'production' ||
+  process.env.NODE_ENV === 'development';
 
 export const trackWebsiteEvent = (
   eventName: string,

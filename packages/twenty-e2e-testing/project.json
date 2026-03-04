@@ -1,7 +1,9 @@
 {
   "name": "twenty-e2e-testing",
   "projectType": "application",
-  "tags": ["scope:testing"],
+  "tags": [
+    "scope:testing"
+  ],
   "targets": {
     "setup": {
       "executor": "nx:run-commands",
@@ -37,6 +39,24 @@
         "cwd": "packages/twenty-e2e-testing",
         "commands": [
           "yarn playwright test tests/website.orgchart.pipeline.spec.ts --project=chrome --no-deps"
+        ]
+      }
+    },
+    "test:sitemap-rollout": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "packages/twenty-e2e-testing",
+        "commands": [
+          "yarn playwright test tests/sitemap.companies.rollout.spec.ts --project=website"
+        ]
+      }
+    },
+    "test:sitemap-rollout:all-counts": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "packages/twenty-e2e-testing",
+        "commands": [
+          "for c in 1 5 51; do SITEMAP_EXPOSED_BATCH_COUNT=$c RUN_SITEMAP_TESTS=1 yarn playwright test tests/sitemap.companies.rollout.spec.ts --project=website; done"
         ]
       }
     },

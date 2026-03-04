@@ -39,9 +39,6 @@ export async function GET(
     const data = await response.json();
     return NextResponse.json(data, { status: response.status });
   } catch {
-    return NextResponse.json(
-      { companies: [], status: 'ok' },
-      { status: 200 },
-    );
+    return NextResponse.json({ companies: [], status: 'ok' }, { status: 200 });
   }
 }

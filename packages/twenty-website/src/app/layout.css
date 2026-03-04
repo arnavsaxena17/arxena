@@ -134,3 +134,15 @@ strong,
     font-weight: 500;
     text-decoration: none;
 }
+
+.companies-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px 24px;
+}
+
+@media (max-width: 809px) {
+  .companies-grid {
+    grid-template-columns: 1fr;
+  }
+}

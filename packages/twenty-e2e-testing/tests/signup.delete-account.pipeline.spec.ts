@@ -123,4 +123,9 @@ test('Create account, onboard, reach jobs, then delete account', async ({
 
   await page.waitForURL(/\/welcome(?:[/?#]|$)/, { timeout: 60_000 });
   await expect(page.getByPlaceholder('Email')).toBeVisible();
+
+  await page.screenshot({
+    path: 'run_results/new-account-after-delete-final.png',
+    fullPage: true,
+  });
 });

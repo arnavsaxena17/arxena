@@ -196,7 +196,9 @@ export default async function OrgChartPage({
   const functionRoot = segments?.[2];
 
   const normalizedCountry =
-    country && country !== 'global' ? toTitleCase(fromSlug(country)) : undefined;
+    country && country !== 'global'
+      ? toTitleCase(fromSlug(country))
+      : undefined;
   const normalizedFunctionRoot =
     functionRoot && functionRoot !== 'fullcompany'
       ? toTitleCase(fromSlug(functionRoot))

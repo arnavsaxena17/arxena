@@ -367,7 +367,9 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
       </StyledHero>
 
       <StyledExampleSection>
-        <StyledExampleTitle>Example org charts</StyledExampleTitle>
+        <StyledExampleTitle>
+          Algorithmically Clustered Org Charts
+        </StyledExampleTitle>
         <StyledScrollingStrip>
           <StyledScrollingTrack>
             {[...EXAMPLE_COMPANIES, ...EXAMPLE_COMPANIES].map(
@@ -414,7 +416,7 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
       <TrustBadgesSection />
 
       <StyledSocialProof>
-        1M+ companies mapped, 55M+ professionals indexed — algorithmically
+        1M+ companies mapped, 800M+ professionals indexed — algorithmically
         clustered and mapped
       </StyledSocialProof>
 
@@ -422,19 +424,21 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
         <StyledPricingSection>
           <StyledPricingTitle>Simple pricing</StyledPricingTitle>
           <StyledPricingGrid>
-          {PRICING_TIERS.map(({ name, price, credits, useCase }) => (
-            <StyledPricingCard key={name}>
-              <StyledPricingCardTitle>{name}</StyledPricingCardTitle>
-              <StyledPricingCardPrice>
-                ${price.toLocaleString()}
-              </StyledPricingCardPrice>
-              <StyledPricingCardCredits>{credits}</StyledPricingCardCredits>
-              <div style={{ fontSize: 13, color: '#818181' }}>{useCase}</div>
-            </StyledPricingCard>
-          ))}
+            {PRICING_TIERS.map(({ name, price, credits, useCase }) => (
+              <StyledPricingCard key={name}>
+                <StyledPricingCardTitle>{name}</StyledPricingCardTitle>
+                <StyledPricingCardPrice>
+                  ${price.toLocaleString()}
+                </StyledPricingCardPrice>
+                <StyledPricingCardCredits>{credits}</StyledPricingCardCredits>
+                <div style={{ fontSize: 13, color: '#818181' }}>{useCase}</div>
+              </StyledPricingCard>
+            ))}
           </StyledPricingGrid>
           <div style={{ textAlign: 'center' }}>
-            <StyledPrimaryCta href="/pricing">View full pricing</StyledPrimaryCta>
+            <StyledPrimaryCta href="/pricing">
+              View full pricing
+            </StyledPrimaryCta>
           </div>
           <p
             style={{

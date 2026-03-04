@@ -94,6 +94,13 @@ export const FooterMobile = () => {
   return (
     <StyledFooterMobile>
       <StyledLinkSection>
+        <StyledSectionTitle>Browse</StyledSectionTitle>
+        <StyledLink href="/companies">Org charts by company</StyledLink>
+        <StyledLink href="/companies/by-country">Org charts by geography</StyledLink>
+        <StyledLink href="/companies/by-function">Org charts by function</StyledLink>
+        <StyledLink href="/sitemap-index.xml">Sitemap</StyledLink>
+      </StyledLinkSection>
+      <StyledLinkSection>
         <StyledSectionTitle>Product</StyledSectionTitle>
         <StyledLink href="/pricing">Pricing</StyledLink>
         <StyledLink href="/engage">Engage</StyledLink>

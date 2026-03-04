@@ -104,7 +104,11 @@ export const DifferentiatorsSection = () => {
 
           if ('href' in item && item.href) {
             return (
-              <StyledCardLink key={item.title} href={item.href} prefetch={false}>
+              <StyledCardLink
+                key={item.title}
+                href={item.href}
+                prefetch={false}
+              >
                 {content}
               </StyledCardLink>
             );

@@ -18,12 +18,6 @@ export class UnipileWebhookController {
 
   constructor(private readonly webhookService: UnipileWebhookService) {}
 
-  /**
-   * Dedicated endpoint for Unipile USERS webhook (source: "users", event: "new_relation").
-   * Fired when someone accepts your LinkedIn invitation.
-   * Treats the acceptance as "Yes, I'm keen" and adds to the database via receiveIncomingMessageFromLinkedinUnipile.
-   * Note: This endpoint is not protected by JwtAuthGuard as it's called by Unipile servers
-   */
   @Post('relations')
   async handleRelationsWebhook(
     @Body() payload: UnipileNewRelationWebhook,

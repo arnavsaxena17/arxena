@@ -153,12 +153,7 @@ export const OrgChartHiredFromRibbon = ({
       <StyledRibbonLabel>Most commonly hired from:</StyledRibbonLabel>
       <StyledRibbonTrack>
         {companies.map(({ id, name, website }) => (
-          <RibbonCompanyLink
-            key={id}
-            id={id}
-            name={name}
-            website={website}
-          />
+          <RibbonCompanyLink key={id} id={id} name={name} website={website} />
         ))}
       </StyledRibbonTrack>
     </StyledRibbon>

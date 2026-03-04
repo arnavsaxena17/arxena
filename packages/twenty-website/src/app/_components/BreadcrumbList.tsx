@@ -36,7 +36,7 @@ type BreadcrumbNavProps = {
 
 export function BreadcrumbNav({ items }: BreadcrumbNavProps) {
   return (
-    <nav aria-label="Breadcrumb" style={{ marginBottom: 16 }}>
+    <nav aria-label="Breadcrumb" style={{ marginBottom: 24 }}>
       <ol
         style={{
           display: 'flex',

@@ -70,6 +70,313 @@ export class OrgChartController {
     res.send(Buffer.from(body));
   }
 
+  @Get('companies/sitemap-index')
+  async getSitemapIndex() {
+    try {
+      const companyIds =
+        await this.orgChartEsService.getIndexedCompanyIds(500);
+      return { companyIds, status: 'ok' };
+    } catch (error) {
+      this.logger.error('Get sitemap index failed', error);
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Failed to fetch sitemap index',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('companies/list')
+  async getCompaniesList(
+    @Query('letter') letter: string,
+    @Query('page') pageParam: string,
+    @Query('maxExposedCount') maxExposedCountParam?: string,
+    @Query('pageSize') pageSizeParam?: string,
+  ) {
+    const normalizedLetter = (letter ?? '').trim().toLowerCase();
+    const page = Math.max(1, parseInt(pageParam ?? '1', 10) || 1);
+    const pageSize = Math.min(
+      500,
+      Math.max(50, parseInt(pageSizeParam ?? '300', 10) || 300),
+    );
+    const maxExposedCount = maxExposedCountParam
+      ? parseInt(maxExposedCountParam, 10)
+      : undefined;
+    if (!normalizedLetter || normalizedLetter.length !== 1 || !/[a-z]/.test(normalizedLetter)) {
+      throw new HttpException(
+        'Query parameter "letter" is required (a-z)',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    try {
+      const { companyIds, hasMore } =
+        await this.orgChartEsService.getCompaniesByLetterPage(
+          normalizedLetter,
+          page,
+          pageSize,
+          maxExposedCount,
+        );
+      return { companyIds, hasMore, status: 'ok' };
+    } catch (error) {
+      this.logger.error(
+        `Get companies list failed letter=${letter} page=${page}`,
+        error,
+      );
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Failed to fetch companies list',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /** Convert URL slug (e.g. united-states) to ES country format (e.g. united states). */
+  private slugToCountry(slug: string): string {
+    return slug.replace(/-/g, ' ').toLowerCase().trim();
+  }
+
+  @Get('companies/list-by-country')
+  async getCompaniesListByCountry(
+    @Query('country') country: string,
+    @Query('page') pageParam: string,
+    @Query('maxExposedCount') maxExposedCountParam?: string,
+    @Query('pageSize') pageSizeParam?: string,
+  ) {
+    const normalizedCountry = this.slugToCountry(country ?? '');
+    const page = Math.max(1, parseInt(pageParam ?? '1', 10) || 1);
+    const pageSize = Math.min(
+      500,
+      Math.max(50, parseInt(pageSizeParam ?? '300', 10) || 300),
+    );
+    const maxExposedCount = maxExposedCountParam
+      ? parseInt(maxExposedCountParam, 10)
+      : undefined;
+    if (!normalizedCountry) {
+      throw new HttpException(
+        'Query parameter "country" is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    try {
+      const { companyIds, hasMore } =
+        await this.orgChartEsService.getCompaniesByCountryPage(
+          normalizedCountry,
+          page,
+          pageSize,
+          maxExposedCount,
+        );
+      return { companyIds, hasMore, status: 'ok' };
+    } catch (error) {
+      this.logger.error(
+        `Get companies list by country failed country=${country} page=${page}`,
+        error,
+      );
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch companies list by country',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('companies/list-by-country-function')
+  async getCompaniesListByCountryFunction(
+    @Query('country') country: string,
+    @Query('type') type: string,
+    @Query('page') pageParam: string,
+    @Query('maxExposedCount') maxExposedCountParam?: string,
+    @Query('pageSize') pageSizeParam?: string,
+  ) {
+    const normalizedCountry = this.slugToCountry(country ?? '');
+    const normalizedType = this.slugToCountry(type ?? '');
+    const page = Math.max(1, parseInt(pageParam ?? '1', 10) || 1);
+    const pageSize = Math.min(
+      500,
+      Math.max(50, parseInt(pageSizeParam ?? '300', 10) || 300),
+    );
+    const maxExposedCount = maxExposedCountParam
+      ? parseInt(maxExposedCountParam, 10)
+      : undefined;
+    if (!normalizedCountry || !normalizedType) {
+      throw new HttpException(
+        'Query parameters "country" and "type" are required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    try {
+      const { companyIds, hasMore } =
+        await this.orgChartEsService.getCompaniesByCountryAndTypePage(
+          normalizedCountry,
+          normalizedType,
+          page,
+          pageSize,
+          maxExposedCount,
+        );
+      return { companyIds, hasMore, status: 'ok' };
+    } catch (error) {
+      this.logger.error(
+        `Get companies list by country/function failed country=${country} type=${type}`,
+        error,
+      );
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch companies list by country/function',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('companies/sitemap-urls')
+  async getSitemapUrls(
+    @Query('offset') offsetParam: string,
+    @Query('limit') limitParam: string,
+    @Query('country') countryParam?: string,
+    @Query('type') typeParam?: string,
+  ) {
+    const offset = Math.max(0, parseInt(offsetParam ?? '0', 10) || 0);
+    const limit = Math.min(
+      50000,
+      Math.max(1, parseInt(limitParam ?? '500', 10) || 500),
+    );
+    const country = countryParam?.trim() || undefined;
+    const type = typeParam?.trim() || undefined;
+
+    try {
+      const urls =
+        await this.orgChartEsService.getIndexedUrlsWithSearchAfterChaining({
+          offset,
+          limit,
+          country,
+          type,
+        });
+      return { urls, status: 'ok' };
+    } catch (error) {
+      this.logger.error('Get sitemap URLs failed', error);
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Failed to fetch sitemap URLs',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('companies/sitemap-slices')
+  async getSitemapSlices() {
+    try {
+      const pairs =
+        await this.orgChartEsService.getDistinctCountryTypePairs();
+      return { slices: pairs, status: 'ok' };
+    } catch (error) {
+      this.logger.error('Get sitemap slices failed', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch sitemap slices',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('companies/sitemap-batch-params')
+  async getSitemapBatchParams(@Query('batchIndex') batchIndexParam: string) {
+    const batchIndex = Math.max(
+      0,
+      parseInt(batchIndexParam ?? '0', 10) || 0,
+    );
+    try {
+      const params =
+        await this.orgChartEsService.getSitemapBatchParams(batchIndex);
+      if (!params) {
+        return { status: 'ok' };
+      }
+      return { ...params, status: 'ok' };
+    } catch (error) {
+      this.logger.error('Get sitemap batch params failed', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch sitemap batch params',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('companies/sitemap-global-fullcompany-count')
+  async getSitemapGlobalFullcompanyCount() {
+    try {
+      const count =
+        await this.orgChartEsService.getGlobalFullcompanyCount();
+      return { count, status: 'ok' };
+    } catch (error) {
+      this.logger.error('Get sitemap global fullcompany count failed', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch global fullcompany count',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('companies/sitemap-urls-by-company')
+  async getSitemapUrlsByCompany(
+    @Query('offset') offsetParam: string,
+    @Query('limit') limitParam: string,
+    @Query('batchIndex') batchIndexParam?: string,
+  ) {
+    const offset = Math.max(0, parseInt(offsetParam ?? '0', 10) || 0);
+    const limit = Math.min(
+      5000,
+      Math.max(1, parseInt(limitParam ?? '50', 10) || 50),
+    );
+    const batchIndex = Math.max(
+      0,
+      parseInt(batchIndexParam ?? '0', 10) || 0,
+    );
+    const depth = batchIndex < 40 ? 'global' : 'countries';
+    try {
+      const companyIds =
+        await this.orgChartEsService.getIndexedCompanyIdsPaginated(
+          offset,
+          limit,
+        );
+      const urls: { companyId: string; country: string; type: string }[] = [];
+
+      if (depth === 'global') {
+        for (const companyId of companyIds) {
+          urls.push({
+            companyId,
+            country: 'global',
+            type: 'fullcompany',
+          });
+        }
+      } else {
+        for (const companyId of companyIds) {
+          const combos =
+            await this.orgChartEsService.getIndexedUrlsForCompany(companyId);
+          for (const { country, type } of combos) {
+            const t = type ?? 'fullcompany';
+            if (depth === 'countries' && t !== 'fullcompany') continue;
+            urls.push({
+              companyId,
+              country: country ?? 'global',
+              type: t,
+            });
+          }
+        }
+      }
+
+      return { urls, status: 'ok' };
+    } catch (error) {
+      this.logger.error('Get sitemap URLs by company failed', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch sitemap URLs by company',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Get('companies/employee-count')
   async getEmployeeCount(
     @Query('companyId') companyId: string,

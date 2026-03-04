@@ -6,11 +6,17 @@ const webpack = require('webpack');
 const orgchartDist = path.resolve(__dirname, '../twenty-orgchart/dist');
 
 const nextConfig = {
+  async rewrites() {
+    return [
+      { source: '/sitemap-index.xml', destination: '/sitemap-index' },
+      { source: '/sitemap-:id.xml', destination: '/sitemap/:id' },
+    ];
+  },
   async redirects() {
     return [
       {
         source: '/favicon.ico',
-        destination: '/images/favicon/icon-64.png',
+        destination: '/images/favicon/icon-96.png',
         permanent: true,
       },
       {

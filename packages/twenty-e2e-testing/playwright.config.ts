@@ -17,6 +17,21 @@ if (envResult.error) {
  */
 export default defineConfig({
   testDir: './tests',
+  ...(process.env.RUN_SITEMAP_TESTS && {
+    webServer: {
+      command: 'yarn nx run twenty-website:dev',
+      cwd: path.resolve(__dirname, '../..'),
+      url: process.env.WEBSITE_BASE_URL || 'http://localhost:3002',
+      timeout: 120_000,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        ...process.env,
+        PORT: '3002',
+        SITEMAP_EXPOSED_BATCH_COUNT:
+          process.env.SITEMAP_EXPOSED_BATCH_COUNT || '1',
+      },
+    },
+  }),
   outputDir: 'run_results/', // directory for screenshots and videos
   snapshotPathTemplate: '{testDir}/__screenshots__/{testFilePath}/{arg}{ext}', // just in case, do not delete it
   fullyParallel: false, // parallelization of tests will be done later in the future
@@ -48,6 +63,13 @@ export default defineConfig({
         storageState: path.resolve(__dirname, '.auth', 'user.json'), // takes saved cookies from directory
       },
       dependencies: ['setup'],
+    },
+    {
+      name: 'website',
+      testMatch: /.*sitemap\.companies\.rollout\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+      },
     },
 
     //{
