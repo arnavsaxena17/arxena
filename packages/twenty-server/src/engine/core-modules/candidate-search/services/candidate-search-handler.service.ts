@@ -11,6 +11,7 @@ import {
 } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
 import { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { PythonOrgChartService } from 'src/engine/core-modules/org-chart/services/python-org-chart.service';
+import { PythonQueryGenerationService } from './python-query-generation.service';
 import {
   graphqlToFindManySearchFilters,
   SearchFilter,
@@ -152,6 +153,7 @@ export class CandidateSearchHandlerService {
     private readonly booltreeHintService: BooltreeHintService,
     private readonly queryConstructorService: QueryConstructorService,
     private readonly linkedinQueryGenerationService: LinkedinQueryGenerationService,
+    private readonly pythonQueryGenerationService: PythonQueryGenerationService,
     private readonly pythonOrgChartService: PythonOrgChartService,
     private readonly classifyMessageService: ClassifyMessageService,
     private readonly cleanupService: CleanupService,
@@ -1655,6 +1657,7 @@ export class CandidateSearchHandlerService {
       mode?: string;
       companyName?: string;
       requestId?: string;
+      jobTitles?: string[];
     },
   ): Promise<{
     items: any[];
@@ -1787,47 +1790,80 @@ export class CandidateSearchHandlerService {
         salaryRange: null,
       };
     } else {
-      const { tokenAccumulator, accumulateTokens } = this.createTokenAccumulator();
-      const workspaceId =
-        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const { openAIclient: openaiClient } =
-        await this.workspaceQueryService.initializeLLMClients(workspaceId);
+      let parsedRequirement: { primary_role_name?: string | null; location?: string | null; industry?: string | null } | undefined;
+      const usePythonQueryGenerator =
+        process.env.USE_PYTHON_QUERY_GENERATOR_FOR_ORGCHART === 'true' ||
+        process.env.USE_PYTHON_QUERY_GENERATOR_FOR_ORGCHART === '1';
 
-      // Agent 1: requirement analysis (for logging/consistency with main flow)
-      emitProgress('status', { message: 'Analyzing org-chart requirement...' });
-      const parsedRequirement =
-        await this.requirementAnalyzerService.analyzeRequirement(
-          rawQuery,
-          cleanedQuery,
-          openaiClient,
-          accumulateTokens,
-          sendEvent,
+      if (usePythonQueryGenerator) {
+        emitProgress('status', {
+          message: 'Generating LinkedIn search via Python query generator...',
+        });
+        const pythonInput: import('./python-query-generation.service').PythonQueryInput =
+          {
+            company_names: primaryCompanyName ? [primaryCompanyName] : [],
+          };
+        if (mode === 'leadership') {
+          pythonInput.grades = [{ name: 'leadership', exclude: false }];
+        } else if (mode === 'function_grade' && options?.jobTitles?.length) {
+          pythonInput.raw_job_titles = options.jobTitles;
+        } else {
+          pythonInput.grades = [{ name: 'mid', exclude: false }];
+        }
+        const unresolved =
+          await this.pythonQueryGenerationService.generateSearchParameters(
+            pythonInput,
+            searchType,
+            requirement,
+          );
+        strategies = this.extractStrategiesFromGeneratedParams(
+          unresolved,
+          searchType,
+          searchCategory,
         );
+      } else {
+        const { tokenAccumulator, accumulateTokens } =
+          this.createTokenAccumulator();
+        const workspaceId =
+          await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+        const { openAIclient: openaiClient } =
+          await this.workspaceQueryService.initializeLLMClients(workspaceId);
 
-      // Agents 2–4: multi-agent flow to build unresolved LinkedIn parameters
-      emitProgress('status', {
-        message: 'Generating LinkedIn search strategies...',
-      });
-      const unresolved = await this.generateUnresolvedSearchParametersFromLinkedinQueryGeneration(
-        cleanedQuery,
-        searchType,
-        sendEvent,
-      );
+        emitProgress('status', {
+          message: 'Analyzing org-chart requirement...',
+        });
+        parsedRequirement =
+          await this.requirementAnalyzerService.analyzeRequirement(
+            rawQuery,
+            cleanedQuery,
+            openaiClient,
+            accumulateTokens,
+            sendEvent,
+          );
 
-      strategies = this.extractStrategiesFromGeneratedParams(
-        unresolved,
-        searchType,
-        searchCategory,
-      );
+        emitProgress('status', {
+          message: 'Generating LinkedIn search strategies...',
+        });
+        const unresolved =
+          await this.generateUnresolvedSearchParametersFromLinkedinQueryGeneration(
+            cleanedQuery,
+            searchType,
+            sendEvent,
+          );
+
+        strategies = this.extractStrategiesFromGeneratedParams(
+          unresolved,
+          searchType,
+          searchCategory,
+        );
+      }
       // Build a minimal ParsedJobDescription stub for downstream services
+      const parsedReq = parsedRequirement as { primary_role_name?: string | null; location?: string | null; industry?: string | null } | undefined;
       parsedJobDescription = {
-        jobTitle:
-          parsedRequirement.primary_role_name ||
-          '',
-        company: '',
-        location: parsedRequirement.location || '',
-        industry:
-          parsedRequirement.industry || '',
+        jobTitle: (parsedReq?.primary_role_name && parsedReq.primary_role_name.trim()) || (primaryCompanyName ? `Role at ${primaryCompanyName}` : 'Employee'),
+        company: primaryCompanyName,
+        location: parsedReq?.location ?? '',
+        industry: parsedReq?.industry ?? '',
         requiredSkills: [],
         preferredSkills: [],
         experienceLevel: 'mid_level',
@@ -1895,9 +1931,14 @@ export class CandidateSearchHandlerService {
    */
   async buildOrgChartFromLinkedInCompanyCandidates(
     candidates: any[],
-    options: { companyName: string; companyId?: string },
+    options: {
+      companyName: string;
+      companyId?: string;
+      mode?: string;
+      function?: string;
+    },
   ): Promise<Record<string, unknown>> {
-    const { companyName, companyId } = options;
+    const { companyName, companyId, mode, function: fn } = options;
     const normalizedCompanyName = (companyName ?? '').trim();
     const normalizedCompanyId =
       (companyId ?? '').trim() ||
@@ -2011,10 +2052,19 @@ export class CandidateSearchHandlerService {
       `OrgchartLinkedInSearch: building org chart from ${people.length} candidates for company="${normalizedCompanyName}"`,
     );
 
+    const jobNameSuffix = fn
+      ? fn.replace(/\s+/g, '-').toLowerCase()
+      : mode === 'leadership'
+        ? 'leadership'
+        : mode === 'entire_company' || mode === 'all_people'
+          ? 'entire'
+          : mode ?? 'chart';
+    const jobName = `orgchart-${normalizedCompanyName.replace(/\s+/g, '-')}-${jobNameSuffix}`;
+
     const orgChart =
       await this.pythonOrgChartService.createOrgChartFromStandardizedPeople({
         people,
-        jobName: normalizedCompanyName,
+        jobName,
         jobId: normalizedCompanyId || undefined,
       });
 

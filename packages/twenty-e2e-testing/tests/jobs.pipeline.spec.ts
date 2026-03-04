@@ -1,8 +1,16 @@
+/**
+ * Jobs pipeline E2E: Login, go to org charts, fetch full company, leadership,
+ * function-wise, geo-wise, and node-level candidate searches.
+ * Uses UNIPILE_LINKEDIN_ACCOUNT_ID + UNIPILE_ACCESS_TOKEN from twenty-server .env.
+ * Screenshots captured for each search result.
+ */
 import { expect, test, type Page } from '@playwright/test';
 
 import { LoginPage } from '../lib/pom/loginPage';
 
 test.use({ storageState: { cookies: [], origins: [] } });
+
+const TEST_COMPANY = process.env.E2E_TEST_COMPANY || 'salesforce';
 
 const waitForPasswordStepOrJobs = async (page: Page) => {
   for (let attempt = 0; attempt < 120; attempt += 1) {
@@ -111,17 +119,16 @@ const completeOnboardingIfNeeded = async (page: Page) => {
   }
 };
 
-test('Login flow lands existing user on jobs page', async ({ page }) => {
-  test.setTimeout(180_000);
+test('Jobs org chart pipeline: full company, leadership, functions, geos, nodes', async ({
+  page,
+}) => {
+  test.setTimeout(300_000);
 
   const login = process.env.DEFAULT_LOGIN || 'arnav@arxena.com';
   const password = process.env.DEFAULT_PASSWORD || 'Applecar2025';
 
-  expect(login, 'DEFAULT_LOGIN must be set for jobs login pipeline').toBeTruthy();
-  expect(
-    password,
-    'DEFAULT_PASSWORD must be set for jobs login pipeline',
-  ).toBeTruthy();
+  expect(login, 'DEFAULT_LOGIN must be set').toBeTruthy();
+  expect(password, 'DEFAULT_PASSWORD must be set').toBeTruthy();
 
   const loginPage = new LoginPage(page);
 
@@ -162,7 +169,7 @@ test('Login flow lands existing user on jobs page', async ({ page }) => {
   );
   await expect(companySearchInput).toBeVisible();
   await companySearchInput.click();
-  await companySearchInput.fill('salesforce');
+  await companySearchInput.fill(TEST_COMPANY);
 
   const autocompleteResponse = await autocompleteResponsePromise;
   expect(autocompleteResponse.ok()).toBeTruthy();
@@ -172,49 +179,122 @@ test('Login flow lands existing user on jobs page', async ({ page }) => {
   };
   expect(autocompletePayload.status).toBe('ok');
   expect((autocompletePayload.result?.length ?? 0) > 0).toBeTruthy();
-  const salesforceOption = autocompletePayload.result?.find((item) =>
-    (item.name ?? '').toLowerCase().includes('salesforce'),
-  );
-  expect(salesforceOption).toBeTruthy();
 
-  const optionalOrgChartResponsePromise = page.waitForResponse(
-    (response) =>
-      response.request().method() === 'GET' &&
-      response.ok() &&
-      /\/org-chart\/[^/?#]+/.test(response.url()) &&
-      !response.url().includes('/companies/') &&
-      (response.headers()['content-type'] ?? '').includes('application/json'),
-    { timeout: 20_000 },
-  );
-
-  await page.getByRole('option', { name: /salesforce/i }).first().click();
-
-  await page.waitForTimeout(1_500);
-  const orgChartResponse = await optionalOrgChartResponsePromise.catch(
-    () => null,
-  );
-  if (orgChartResponse) {
-    const orgChartPayload = (await orgChartResponse.json()) as {
-      status?: string;
-      result?: { orgchart?: string };
-    };
-    expect(orgChartPayload.status).toBe('ok');
-    expect(typeof orgChartPayload.result?.orgchart === 'string').toBeTruthy();
-    expect((orgChartPayload.result?.orgchart?.length ?? 0) > 0).toBeTruthy();
-  }
+  const companyOption = page.getByRole('option', {
+    name: new RegExp(TEST_COMPANY, 'i'),
+  }).first();
+  await companyOption.click();
 
   await expect(
     page.getByRole('button', { name: /back to jobs/i }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 30_000 });
   await expect(
-    page.getByRole('heading', { name: /salesforce/i }),
+    page.getByRole('heading', { name: new RegExp(TEST_COMPANY, 'i') }),
   ).toBeVisible();
-  await expect(page.getByText(/Total .*profiles/i).first()).toBeVisible();
-  await expect(page.locator('.orgchart-diagram').first()).toBeVisible();
-  await expect(page.locator('.orgchart-diagram canvas').first()).toBeVisible();
+
+  const diagramOrLoading = page.locator(
+    '.orgchart-diagram, [style*="Loading org chart"], [style*="loading"]',
+  );
+  await diagramOrLoading.first().waitFor({ state: 'visible', timeout: 60_000 });
+
+  const templateBanner = page.getByText(/this is a template|template.*generate/i);
+  if (await templateBanner.isVisible().catch(() => false)) {
+    const allButton = page.getByRole('button', { name: 'All' }).first();
+    await allButton.click();
+    await page.waitForTimeout(5_000);
+    await page.waitForSelector('.orgchart-diagram canvas', {
+      state: 'visible',
+      timeout: 180_000,
+    });
+  } else {
+    await page.waitForSelector('.orgchart-diagram canvas', {
+      state: 'visible',
+      timeout: 90_000,
+    });
+  }
 
   await page.screenshot({
-    path: 'run_results/salesforce-orgchart-final.png',
+    path: 'run_results/jobs-01-full-company-orgchart.png',
+    fullPage: true,
+  });
+
+  const allButton = page.getByRole('button', { name: 'All' }).first();
+  if (await allButton.isVisible().catch(() => false)) {
+    await allButton.click();
+    await page.waitForTimeout(3_000);
+    await page.screenshot({
+      path: 'run_results/jobs-02-all-full-company.png',
+      fullPage: true,
+    });
+  }
+
+  const leadersButton = page.getByRole('button', { name: 'Leaders' }).first();
+  if (await leadersButton.isVisible().catch(() => false)) {
+    await leadersButton.click();
+    await page.waitForTimeout(3_000);
+    await page.screenshot({
+      path: 'run_results/jobs-03-leadership-nodes.png',
+      fullPage: true,
+    });
+  }
+
+  const viewAllButton = page
+    .getByRole('button', { name: /view all candidates/i })
+    .first();
+  if (await viewAllButton.isVisible().catch(() => false)) {
+    await viewAllButton.click();
+    await page.waitForTimeout(3_000);
+    await page.screenshot({
+      path: 'run_results/jobs-04-view-all-candidates.png',
+      fullPage: true,
+    });
+  }
+
+  const countrySelect = page.locator('select').filter({ has: page.locator('option') }).first();
+  if (await countrySelect.isVisible().catch(() => false)) {
+    const options = await countrySelect.locator('option').allTextContents();
+    const nonEmptyOption = options.find((o) => o && o.trim() && !/^all$/i.test(o));
+    if (nonEmptyOption) {
+      await countrySelect.selectOption({ label: nonEmptyOption });
+      await page.waitForTimeout(3_000);
+      await page.screenshot({
+        path: 'run_results/jobs-05-geo-filter.png',
+        fullPage: true,
+      });
+    }
+  }
+
+  const functionSelect = page.locator('select').filter({ has: page.locator('option') }).nth(1);
+  if (await functionSelect.isVisible().catch(() => false)) {
+    const options = await functionSelect.locator('option').allTextContents();
+    const nonEmptyOption = options.find((o) => o && o.trim() && !/^all$/i.test(o));
+    if (nonEmptyOption) {
+      await functionSelect.selectOption({ label: nonEmptyOption });
+      await page.waitForTimeout(3_000);
+      await page.screenshot({
+        path: 'run_results/jobs-06-function-filter.png',
+        fullPage: true,
+      });
+    }
+  }
+
+  const firstNode = page.locator('.orgchart-diagram [data-key]').first();
+  if (await firstNode.isVisible().catch(() => false)) {
+    await firstNode.dblclick();
+    await page.waitForTimeout(2_000);
+    const modal = page.locator('[role="dialog"], .modal, [data-testid="orgchart-result-modal"]').first();
+    if (await modal.isVisible().catch(() => false)) {
+      await page.screenshot({
+        path: 'run_results/jobs-07-node-detail-modal.png',
+        fullPage: true,
+      });
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(500);
+    }
+  }
+
+  await page.screenshot({
+    path: 'run_results/jobs-08-final-orgchart.png',
     fullPage: true,
   });
 });

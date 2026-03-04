@@ -22,6 +22,7 @@ import { CandidateSearchHandlerService } from './services/candidate-search-handl
 import { CompanyExpanderService } from './services/company-expander.service';
 import { JobDescriptionService } from './services/job-description.service';
 import { JobTitleExpanderService } from './services/job-title-expander.service';
+import { PythonQueryGenerationService } from './services/python-query-generation.service';
 import { QueryConstructorService } from './services/query-constructor.service';
 import { RequirementAnalyzerService } from './services/requirement-analyzer.service';
 // import { QuerySimplificationService } from './services/query-simplification.service';
@@ -63,6 +64,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     // QuerySimplificationService,
     RequirementAnalyzerService,
     JobTitleExpanderService,
+    PythonQueryGenerationService,
     CompanyExpanderService,
     BooltreeHintService,
     QueryConstructorService,

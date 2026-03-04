@@ -200,7 +200,7 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
       // Try streaming first, fallback to regular if not supported
       try {
         const response = await handleStreamingResponse(
-          process.env.REACT_APP_SERVER_BASE_URL + '/candidate-search/message/stream',
+          process.env.REACT_APP_SERVER_BASE_URL + '/candidate-search-chat/message/stream',
           body,
           deps.tokenPair.accessToken.token,
           deps,

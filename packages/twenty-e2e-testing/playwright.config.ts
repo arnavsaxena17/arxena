@@ -71,6 +71,27 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
       },
     },
+    {
+      name: 'website-orgchart',
+      testMatch: /.*website\.orgchart\.pipeline\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
+    {
+      name: 'orgchart-python',
+      testMatch: /.*orgchart-python-linkedin-search\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
+    {
+      name: 'orgchart-pipeline',
+      testMatch: /.*orgchart\.pipeline\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
 
     //{
     //  name: 'webkit',

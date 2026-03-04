@@ -9,13 +9,13 @@ import { LinkedInCompanySearchResult, LinkedInJobSearchResult, LinkedInPeopleSea
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 
 import {
-  GeneratedSearchParameters
+    GeneratedSearchParameters
 } from '../types/candidate-search-request.type';
 import {
-  FileUtils,
-  generateLinkedInSearchUrl,
-  LinkedinParameterResolver,
-  ParameterSanitizer,
+    FileUtils,
+    generateLinkedInSearchUrl,
+    LinkedinParameterResolver,
+    ParameterSanitizer,
 } from '../utils';
 import { JobDescriptionService } from './job-description.service';
 // import { QuerySimplificationService } from './query-simplification.service';
@@ -642,9 +642,16 @@ export class CandidateSearchBaseService {
 
 
   /**
-   * Get LinkedIn account ID from workspace member profile (with workspace fallback)
+   * Get LinkedIn account ID from workspace member profile (with workspace fallback).
+   * When UNIPILE_LINKEDIN_ACCOUNT_ID is set (e.g. for testing), returns that value instead.
    */
   async getLinkedInAccountId(apiToken: string): Promise<string> {
+    const envOverride = process.env.UNIPILE_LINKEDIN_ACCOUNT_ID?.trim();
+    if (envOverride) {
+      this.logger.debug(`Using UNIPILE_LINKEDIN_ACCOUNT_ID env override for LinkedIn search`);
+      return envOverride;
+    }
+
     try {
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const workspaceMemberId =

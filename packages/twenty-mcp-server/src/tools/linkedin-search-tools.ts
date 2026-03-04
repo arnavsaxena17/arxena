@@ -120,7 +120,7 @@ export const linkedinSearchTools: McpTool[] = [
         return handleStreamingResponse(
           config.baseUrl,
           config.apiToken,
-          'candidate-search',
+          'candidate-search-chat',
           'message/stream',
           {
             message: query,

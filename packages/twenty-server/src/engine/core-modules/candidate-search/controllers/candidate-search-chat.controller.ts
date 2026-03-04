@@ -12,7 +12,7 @@ import { ChatMessageRequest } from 'src/engine/core-modules/candidate-search/typ
 import { CandidateSearchHandlerService } from '../services/candidate-search-handler.service';
 import { extractApiToken } from '../utils/auth.utils';
 
-@Controller('candidate-search')
+@Controller('candidate-search-chat')
 export class CandidateSearchChatController {
   private readonly logger = new Logger(CandidateSearchChatController.name);
 

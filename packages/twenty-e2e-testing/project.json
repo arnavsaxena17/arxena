@@ -38,7 +38,16 @@
       "options": {
         "cwd": "packages/twenty-e2e-testing",
         "commands": [
-          "yarn playwright test tests/website.orgchart.pipeline.spec.ts --project=chrome --no-deps"
+          "yarn playwright test tests/website.orgchart.pipeline.spec.ts --project=website-orgchart"
+        ]
+      }
+    },
+    "test:orgchart-pipeline": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "packages/twenty-e2e-testing",
+        "commands": [
+          "yarn playwright test tests/orgchart.pipeline.spec.ts --project=orgchart-pipeline"
         ]
       }
     },

@@ -612,6 +612,8 @@ export class CandidateSearchController {
               {
                 companyName: resolvedCompanyName,
                 companyId,
+                mode,
+                function: undefined,
               },
             );
           const shouldCacheBuiltOrgChartFromCandidateList =
@@ -678,6 +680,7 @@ export class CandidateSearchController {
           mode,
           companyName: resolvedCompanyName,
           requestId,
+          jobTitles: body.jobTitles,
         },
       );
 
@@ -726,6 +729,8 @@ export class CandidateSearchController {
             {
               companyName: resolvedCompanyName,
               companyId,
+              mode,
+              function: undefined,
             },
           );
         const shouldCacheBuiltOrgChartFromLinkedIn =
