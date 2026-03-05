@@ -13,11 +13,27 @@ const nextConfig = {
     ];
   },
   async redirects() {
+    const arxenaSiteUrl =
+      process.env.NODE_ENV === 'production'
+        ? 'https://services.arxena.com'
+        : 'http://localhost:5050';
+
     return [
       {
         source: '/favicon.ico',
         destination: '/images/favicon/icon-96.png',
         permanent: true,
+      },
+      // Redirect extension and app download to arxena-site (services.arxena.com in prod, localhost:5050 in dev)
+      {
+        source: '/extension',
+        destination: `${arxenaSiteUrl}/extension`,
+        permanent: false,
+      },
+      {
+        source: '/download-app',
+        destination: `${arxenaSiteUrl}/download-app`,
+        permanent: false,
       },
       {
         source: '/signup',
