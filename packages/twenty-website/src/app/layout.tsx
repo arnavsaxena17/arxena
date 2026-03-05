@@ -18,18 +18,15 @@ export const metadata: Metadata = {
     'Search and explore organizational charts of any company. 1M+ companies, 55M+ professionals for recruitment and talent mapping.',
   icons: {
     icon: [
-      { url: '/images/favicon/icon-96.png', sizes: '96x96', type: 'image/png' },
-      { url: '/images/favicon/icon-16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/images/favicon/icon-32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/images/favicon/icon-48.png', sizes: '48x48', type: 'image/png' },
-      { url: '/images/favicon/icon-64.png', sizes: '64x64', type: 'image/png' },
-      { url: '/images/favicon/icon-96.png', sizes: '96x96', type: 'image/png' },
-      { url: '/images/favicon/icon-128.png', sizes: '128x128', type: 'image/png' },
-      { url: '/images/favicon/icon-192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/images/favicon/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/favicon.ico/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+      { url: '/favicon.ico/favicon.svg', type: 'image/svg+xml' },
     ],
-    apple: '/images/favicon/icon-180.png',
+    shortcut: '/favicon.ico/favicon.ico',
+    apple: [
+      { url: '/favicon.ico/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
+  manifest: '/favicon.ico/site.webmanifest',
 };
 
 const gabarito = Gabarito({
