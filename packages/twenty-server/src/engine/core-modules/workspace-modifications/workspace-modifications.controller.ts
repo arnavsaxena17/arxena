@@ -1,12 +1,14 @@
 import {
-    Body,
-    Controller,
-    Get,
-    Headers,
-    Param,
-    Post,
-    Req,
-    UseGuards,
+  BadRequestException,
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Headers,
+  Param,
+  Post,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -74,6 +76,31 @@ export class WorkspaceModificationsController {
     );
   }
 
+  @Post('admin/workspace-keys')
+  @UseGuards(JwtAuthGuard)
+  async adminUpdateWorkspaceKeys(
+    @Req() req: Request,
+    @Body()
+    body: {
+      workspaceId: string;
+      is_org_chart_enabled: string;
+    },
+  ) {
+    const user = (req as any).user;
+    if (!user?.canImpersonate) {
+      throw new ForbiddenException('Admin access required');
+    }
+    if (!body.workspaceId || body.is_org_chart_enabled === undefined) {
+      throw new BadRequestException(
+        'workspaceId and is_org_chart_enabled are required',
+      );
+    }
+    await this.workspaceQueryService.updateWorkspaceKeys(body.workspaceId, {
+      is_org_chart_enabled: body.is_org_chart_enabled,
+    });
+    return { success: true };
+  }
+
   @Post('workspace-keys')
   @UseGuards(JwtAuthGuard)
   async updateWorkspaceKeys(
@@ -81,20 +108,21 @@ export class WorkspaceModificationsController {
     @Body()
     keys: {
       openaikey?: string;
-      twilioAccountSid?: string;
-      twilioAuthToken?: string;
-      linkedinUrl?: string;
-      whatsappKey?: string;
-      anthropicKey?: string;
-      facebookWhatsappApiToken?: string;
-      facebookWhatsappPhoneNumberId?: string;
-      facebookWhatsappAppId?: string;
-      whatsappWebPhoneNumber?: string;
-      linkedinUnipileAccountId?: string;
-      linkedinProfileId?: string;
-      linkedinCookieAuth?: string;
-      isChromeExtensionInstalled?: string;
-      chromeExtensionId?: string;
+      twilio_account_sid?: string;
+      twilio_auth_token?: string;
+      linkedin_url?: string;
+      whatsapp_key?: string;
+      anthropic_key?: string;
+      facebook_whatsapp_api_token?: string;
+      facebook_whatsapp_phone_number_id?: string;
+      facebook_whatsapp_app_id?: string;
+      whatsapp_web_phone_number?: string;
+      linkedin_unipile_account_id?: string;
+      linkedin_profile_id?: string;
+      linkedin_cookie_auth?: string;
+      is_chrome_extension_installed?: string;
+      chrome_extension_id?: string;
+      is_org_chart_enabled?: string;
     },
   ) {
     const { workspace } =
@@ -106,6 +134,30 @@ export class WorkspaceModificationsController {
       keys,
     );
   }
+  @Post('upgrade-to-engagement-workflows')
+  @UseGuards(JwtAuthGuard)
+  async upgradeToEngagementWorkflows(
+    @Headers('authorization') authHeader: string,
+    @Req() req: Request,
+  ) {
+    const token = authHeader?.split(' ')[1];
+    const origin = (req.headers.origin as string) || '';
+    const { workspace } =
+      await this.workspaceQueryService.accessTokenService.validateTokenByRequest(
+        req,
+      );
+    await this.workspaceQueryService.updateWorkspaceKeys(workspace.id, {
+      is_org_chart_enabled: 'false',
+    });
+    const result = await this.metadataUpdateService.updateMetadata(
+      token,
+      origin,
+    );
+    return {
+      ...result,
+    };
+  }
+
   @Post('create-metadata-structure')
   @UseGuards(JwtAuthGuard)
   async createMetadataStructure(

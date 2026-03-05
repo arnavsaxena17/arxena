@@ -1,25 +1,25 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 
 import {
-  ArxenaCandidateNode,
-  ArxenaPersonNode,
-  CandidateFieldEdge,
-  CandidatesEdge,
-  CreateManyCandidateFieldValues,
-  CreateManyCandidates,
-  createOneCandidateField,
-  graphqlQueryToCreateOneCandidateFieldValue,
-  graphqlQueryToFindManyCandidateFields,
-  graphqlToFetchAllCandidateData,
-  graphqlToFindManyCandidateFieldValues,
-  graphqlToFindManyJobsWithCandidateValues,
-  graphQltoUpdateOneCandidate,
-  Job,
-  mutationToUpdateOnePerson,
-  PageInfo,
-  PersonNode,
-  updateOneCandidateFieldValue,
-  UserProfile
+    ArxenaCandidateNode,
+    ArxenaPersonNode,
+    CandidateFieldEdge,
+    CandidatesEdge,
+    CreateManyCandidateFieldValues,
+    CreateManyCandidates,
+    createOneCandidateField,
+    getGraphqlToFindManyJobsWithCandidateValues,
+    graphqlQueryToCreateOneCandidateFieldValue,
+    graphqlQueryToFindManyCandidateFields,
+    graphqlToFetchAllCandidateData,
+    graphqlToFindManyCandidateFieldValues,
+    graphQltoUpdateOneCandidate,
+    Job,
+    mutationToUpdateOnePerson,
+    PageInfo,
+    PersonNode,
+    updateOneCandidateFieldValue,
+    UserProfile
 } from 'twenty-shared';
 import { NameProcessor } from '../../workspace-modifications/object-apis/data/nameProcessor';
 
@@ -1699,13 +1699,28 @@ export class CandidateService {
     apiToken: string,
   ): Promise<any> {
     try {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const workspaceKeys =
+        await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
+      const isOrgChartEnabled =
+        (workspaceKeys?.is_org_chart_enabled ??
+          process.env.IS_ORG_CHART_ENABLED ??
+          'true') === 'true';
+      const query =
+        getGraphqlToFindManyJobsWithCandidateValues(isOrgChartEnabled);
+
       const variables = {
         filter: { id: { eq: jobId } },
         orderBy: [{ position: 'AscNullsFirst' }],
         limit: 100
       };
 
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobsWithCandidateValues, variables, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(
+        query,
+        variables,
+        apiToken,
+      );
       // console.log("NUmber of candidate field values  =", response.data.data?.jobs?.edges[0]?.node?.candidates?.edges[0]?.node?.candidateFieldValues?.edges.length);
       // const candidateFieldsJobs = response?.data?.data?.jobs?.edges[0]?.node?.candidateFields?.edges || [];
       const candidateFields = response.data.data?.jobs?.edges[0]?.node?.candidates?.edges[0]?.node?.candidateFieldValues?.edges

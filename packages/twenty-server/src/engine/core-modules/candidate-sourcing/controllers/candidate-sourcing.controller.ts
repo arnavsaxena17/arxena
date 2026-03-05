@@ -1,14 +1,14 @@
 import {
-  Body,
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  Post,
-  Req,
-  UploadedFile,
-  UseGuards,
-  UseInterceptors,
+    Body,
+    Controller,
+    Get,
+    HttpException,
+    HttpStatus,
+    Post,
+    Req,
+    UploadedFile,
+    UseGuards,
+    UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
@@ -17,37 +17,37 @@ import * as path from 'path';
 
 import axios from 'axios';
 import {
-  CandidateEdge,
-  CandidateEnrichmentEdge,
-  createOneCandidateField,
-  CreateOneVideoInterviewTemplate,
-  graphqlMutationToDeleteManyCandidates,
-  graphqlMutationToDeleteManyPeople,
-  graphqlQueryToFindManyPeople,
-  graphqlToAddNewJob,
-  graphqlToCreateOnePrompt,
-  graphqlToFetchAllCandidateData,
-  graphqlToFetchAllCandidateDataWithFieldValues,
-  graphQlTofindManyCandidateEnrichments,
-  graphqlToFindManyJobs,
-  graphQltoUpdateOneCandidate,
-  Job,
-  JobEdge,
-  mutations,
-  PageInfo,
-  PersonEdge,
-  PersonNode,
-  queries,
-  UpdateOneJob,
-  UserProfile,
+    CandidateEdge,
+    CandidateEnrichmentEdge,
+    createOneCandidateField,
+    CreateOneVideoInterviewTemplate,
+    getGraphqlToFindManyJobs,
+    graphqlMutationToDeleteManyCandidates,
+    graphqlMutationToDeleteManyPeople,
+    graphqlQueryToFindManyPeople,
+    graphqlToAddNewJob,
+    graphqlToCreateOnePrompt,
+    graphqlToFetchAllCandidateData,
+    graphqlToFetchAllCandidateDataWithFieldValues,
+    graphQlTofindManyCandidateEnrichments,
+    graphQltoUpdateOneCandidate,
+    Job,
+    JobEdge,
+    mutations,
+    PageInfo,
+    PersonEdge,
+    PersonNode,
+    queries,
+    UpdateOneJob,
+    UserProfile,
 } from 'twenty-shared';
 import { v4 } from 'uuid';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import {
-  JobDescriptionParseRequest,
-  ParsedJobDescription,
+    JobDescriptionParseRequest,
+    ParsedJobDescription,
 } from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
 import { DeleteFieldValuesService } from 'src/engine/core-modules/candidate-sourcing/jobs/delete-field-values.service';
 import { ProcessAiFiltersService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-ai-filters.service';
@@ -248,14 +248,25 @@ export class CandidateSourcingController {
   
   async findJob(path_position: string, apiToken: string): Promise<any> {
     console.log('Going to find job by path_position id:', path_position);
+    const workspaceId =
+      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    const workspaceKeys =
+      await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
+    const isOrgChartEnabled =
+      (workspaceKeys?.is_org_chart_enabled ??
+        process.env.IS_ORG_CHART_ENABLED ??
+        'true') === 'true';
+    const query = getGraphqlToFindManyJobs(isOrgChartEnabled);
     const variables = {
       filter: { pathPosition: { in: [path_position] } },
       limit: 30,
       orderBy: [{ position: 'AscNullsFirst' }],
     };
-    const query = graphqlToFindManyJobs;
-    const data = { query, variables };
-    const response = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobs, variables, apiToken);
+    const response = await this.staticGraphQLService.executeGraphQL(
+      query,
+      variables,
+      apiToken,
+    );
     const jobs = response?.data?.data?.jobs as {
       edges: JobEdge[];
       pageInfo: PageInfo;
@@ -921,13 +932,23 @@ export class CandidateSourcingController {
           message: 'Missing required field: jobId',
         };
       }
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const workspaceKeys =
+        await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
+      const isOrgChartEnabled =
+        (workspaceKeys?.is_org_chart_enabled ??
+          process.env.IS_ORG_CHART_ENABLED ??
+          'true') === 'true';
+      const query = getGraphqlToFindManyJobs(isOrgChartEnabled);
+
       // Use the same GraphQL query as get-all-jobs but with a filter
       const response = await this.staticGraphQLService.executeGraphQL(
-        graphqlToFindManyJobs,
-        { 
-          filter: { id: { eq: jobId } }, 
-          limit: 1, 
-          orderBy: [{ position: 'AscNullsFirst' }] 
+        query,
+        {
+          filter: { id: { eq: jobId } },
+          limit: 1,
+          orderBy: [{ position: 'AscNullsFirst' }],
         },
         apiToken,
       );
@@ -966,11 +987,22 @@ export class CandidateSourcingController {
     //   await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
     let jobs = [];
     try {
-      const responseFromGetAllJobs = await this.staticGraphQLService.executeGraphQL(
-        graphqlToFindManyJobs,
-        { limit: 30, orderBy: [{ position: 'AscNullsFirst' }] },
-        apiToken,
-      );
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const workspaceKeys =
+        await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
+      const isOrgChartEnabled =
+        (workspaceKeys?.is_org_chart_enabled ??
+          process.env.IS_ORG_CHART_ENABLED ??
+          'true') === 'true';
+      const query = getGraphqlToFindManyJobs(isOrgChartEnabled);
+
+      const responseFromGetAllJobs =
+        await this.staticGraphQLService.executeGraphQL(
+          query,
+          { limit: 30, orderBy: [{ position: 'AscNullsFirst' }] },
+          apiToken,
+        );
       jobs = responseFromGetAllJobs?.data?.data?.jobs?.edges || [];
       console.log('Number of jobs in get all jobs:', jobs.length);
     } catch (error) {

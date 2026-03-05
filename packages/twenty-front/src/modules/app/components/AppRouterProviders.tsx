@@ -1,6 +1,7 @@
 import { ApolloProvider } from '@/apollo/components/ApolloProvider';
 import { GotoHotkeysEffectsProvider } from '@/app/effect-components/GotoHotkeysEffectsProvider';
 import { PageChangeEffect } from '@/app/effect-components/PageChangeEffect';
+import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
 import { AuthProvider } from '@/auth/components/AuthProvider';
 import { ChromeExtensionSidecarEffect } from '@/chrome-extension-sidecar/components/ChromeExtensionSidecarEffect';
 import { ChromeExtensionSidecarProvider } from '@/chrome-extension-sidecar/components/ChromeExtensionSidecarProvider';
@@ -52,6 +53,7 @@ export const AppRouterProviders = () => {
             <WorkspaceProviderEffect />
             <UserProvider>
               <AuthProvider>
+                <ApiKeysProvider>
                 <ApolloMetadataClientProvider>
                   <ObjectMetadataItemsProvider>
                     <ObjectMetadataItemsGater>
@@ -80,6 +82,7 @@ export const AppRouterProviders = () => {
                     </ObjectMetadataItemsGater>
                   </ObjectMetadataItemsProvider>
                 </ApolloMetadataClientProvider>
+                </ApiKeysProvider>
               </AuthProvider>
             </UserProvider>
           </ChromeExtensionSidecarProvider>

@@ -1,8 +1,9 @@
 import { useLocation } from 'react-router-dom';
-import { useRecoilState, useSetRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { IconSearch, IconSettings } from 'twenty-ui';
 
 
+import { isOrgChartEnabledState } from '@/arx-jd-upload/states/isOrgChartEnabledState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useCommandMenu } from '@/command-menu/hooks/useCommandMenu';
 import { WorkspaceFavorites } from '@/favorites/components/WorkspaceFavorites';
@@ -58,7 +59,7 @@ export const MainNavigationDrawerItems = () => {
     },
   });
 
-  const isOrgChartEnabled = process.env.IS_ORG_CHART_ENABLED === 'true';
+  const isOrgChartEnabled = useRecoilValue(isOrgChartEnabledState);
 
   return (
     <>

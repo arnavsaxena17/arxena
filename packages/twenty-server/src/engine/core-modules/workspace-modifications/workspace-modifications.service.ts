@@ -454,6 +454,7 @@ export class WorkspaceQueryService {
     facebook_whatsapp_asset_id?: string;
     is_chrome_extension_installed?: string;
     chrome_extension_id?: string;
+    is_org_chart_enabled?: string;
   }> {
     try {
       console.log('Getting workspace api keys for workspace:', workspaceId);
@@ -476,7 +477,8 @@ export class WorkspaceQueryService {
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_asset_id varchar(255),
       ADD COLUMN IF NOT EXISTS is_chrome_extension_installed varchar(255) DEFAULT 'false',
       ADD COLUMN IF NOT EXISTS chrome_extension_id varchar(255),
-      ADD COLUMN IF NOT EXISTS linkedin_cookie_auth TEXT
+      ADD COLUMN IF NOT EXISTS linkedin_cookie_auth TEXT,
+      ADD COLUMN IF NOT EXISTS is_org_chart_enabled varchar(255) DEFAULT 'true'
     `;
 
       await this.executeRawQuery(alterTableQuery, [], workspaceId);
@@ -499,7 +501,8 @@ export class WorkspaceQueryService {
         facebook_whatsapp_app_id,
         facebook_whatsapp_asset_id,
         is_chrome_extension_installed,
-        chrome_extension_id
+        chrome_extension_id,
+        is_org_chart_enabled
       FROM core.workspace 
       WHERE id = $1
     `;
@@ -530,6 +533,7 @@ export class WorkspaceQueryService {
           is_chrome_extension_installed:
             result[0].is_chrome_extension_installed,
           chrome_extension_id: result[0].chrome_extension_id,
+          is_org_chart_enabled: result[0].is_org_chart_enabled,
         };
       }
 
@@ -609,7 +613,7 @@ export class WorkspaceQueryService {
       linkedin_unipile_account_id?: string;
       whatsapp_unipile_account_id?: string;
       linkedin_profile_id?: string;
-      linkedinCookieAuth?: string;
+      linkedin_cookie_auth?: string;
       anthropic_key?: string;
       facebook_whatsapp_api_token?: string;
       facebook_whatsapp_phone_number_id?: string;
@@ -618,6 +622,7 @@ export class WorkspaceQueryService {
       facebook_whatsapp_asset_id?: string;
       is_chrome_extension_installed?: string;
       chrome_extension_id?: string;
+      is_org_chart_enabled?: string;
     },
   ): Promise<boolean> {
     try {
@@ -643,7 +648,8 @@ export class WorkspaceQueryService {
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_app_id varchar(255),
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_asset_id varchar(255),
       ADD COLUMN IF NOT EXISTS is_chrome_extension_installed varchar(255) DEFAULT 'false',
-      ADD COLUMN IF NOT EXISTS linkedin_cookie_auth TEXT
+      ADD COLUMN IF NOT EXISTS linkedin_cookie_auth TEXT,
+      ADD COLUMN IF NOT EXISTS is_org_chart_enabled varchar(255) DEFAULT 'true'
     `;
     
     await this.executeRawQuery(alterTableQuery, [], workspaceId);

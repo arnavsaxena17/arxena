@@ -1,12 +1,12 @@
 import axios from 'axios';
 import {
-  createViewFieldMutation,
-  findManyViewsQuery,
-  FindManyWorkspaceMembers,
-  graphqlQueryToGetCurrentUser,
-  graphqlToCreateOnePrompt,
-  graphQLToCreateOneWorkspaceMemberProfile,
-  queryObjectMetadataItems,
+    createViewFieldMutation,
+    findManyViewsQuery,
+    FindManyWorkspaceMembers,
+    graphqlQueryToGetCurrentUser,
+    graphqlToCreateOnePrompt,
+    graphQLToCreateOneWorkspaceMemberProfile,
+    queryObjectMetadataItems,
 } from 'twenty-shared';
 
 // import { getCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
@@ -22,7 +22,7 @@ import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-gra
 import { FieldMetadataInterface } from 'src/engine/metadata-modules/field-metadata/interfaces/field-metadata.interface';
 import { WorkspaceSetupCompleteEmail } from 'twenty-emails';
 import { getFieldsData } from './data/fieldsData';
-import { objectCreationArr } from './data/objectsData';
+import { getObjectCreationArr } from './data/objectsData';
 import { prompts } from './data/prompts';
 import { getRelationsData } from './data/relationsData';
 import { ApiKeyService } from './services/apiKeyCreation';
@@ -32,8 +32,8 @@ import { createObjectMetadataItems } from './services/object-service';
 import { createRelations } from './services/relation-service';
 import { createVideoInterviewModels } from './services/videoInterviewModelService';
 import {
-  createVideoInterviewTemplates,
-  getJobIds,
+    createVideoInterviewTemplates,
+    getJobIds,
 } from './services/videoInterviewTemplateService';
 import { executeQuery } from './utils/graphqlClient';
 
@@ -521,6 +521,15 @@ export class CreateMetaDataStructure {
         return;
       }
       console.log('userId', userId);
+
+      const workspaceKeys =
+        await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
+      const isOrgChartEnabled =
+        (workspaceKeys?.is_org_chart_enabled ??
+          process.env.IS_ORG_CHART_ENABLED ??
+          'true') === 'true';
+      const objectCreationArr = getObjectCreationArr(isOrgChartEnabled);
+
       const shouldCreateVideoInterviews = true;
       const shouldCreateArxEnrichments = true;
       const shouldCreateApiKeys = true;
@@ -549,12 +558,15 @@ export class CreateMetaDataStructure {
             origin,
             3,
           );
-          const fieldsData = getFieldsData(mapAfterCreate);
+          const fieldsData = getFieldsData(mapAfterCreate, isOrgChartEnabled);
           console.log('Number of fieldsData', fieldsData.length);
 
           await createFields(fieldsData, apiToken, origin, 3);
           console.log('Fields created successfully');
-          const relationsFields = getRelationsData(mapAfterCreate);
+          const relationsFields = getRelationsData(
+            mapAfterCreate,
+            isOrgChartEnabled,
+          );
 
           await createRelations(relationsFields, apiToken, origin, 3);
           console.log('Relations created successfully');

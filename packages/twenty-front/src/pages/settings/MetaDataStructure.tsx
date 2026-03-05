@@ -58,6 +58,10 @@ const StyledButton = styled.button<{
 export const MetadataStructureSection = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isUpgrading, setIsUpgrading] = useState(false);
+  const [isOrgChartEnabled, setIsOrgChartEnabled] = useState<boolean | null>(
+    null,
+  );
   const [tokenPair] = useRecoilState(tokenPairState);
   const [hasBeenClicked, setHasBeenClicked] = useState(() => {
     return localStorage.getItem('metadata-structure-created') === 'true';
@@ -148,6 +152,62 @@ export const MetadataStructureSection = () => {
       console.log('WebSocket connected status changed to:', connected);
     }
   }, [connected, enqueueSnackBar]);
+
+  useEffect(() => {
+    if (!tokenPair?.accessToken?.token) return;
+    fetch(
+      `${process.env.REACT_APP_SERVER_BASE_URL}/workspace-modifications/workspace-keys`,
+      {
+        headers: {
+          Authorization: `Bearer ${tokenPair.accessToken.token}`,
+        },
+      },
+    )
+      .then((res) => res.json())
+      .then((keys) => {
+        const flag = keys?.is_org_chart_enabled;
+        setIsOrgChartEnabled(flag === undefined ? true : flag === 'true');
+      })
+      .catch(() => setIsOrgChartEnabled(true));
+  }, [tokenPair?.accessToken?.token]);
+
+  const handleUpgradeToEngagementWorkflows = async () => {
+    if (isUpgrading) return;
+    setIsUpgrading(true);
+
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_SERVER_BASE_URL}/workspace-modifications/upgrade-to-engagement-workflows`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to upgrade to Engagement Workflows');
+      }
+
+      enqueueSnackBar('Upgraded to Engagement Workflows successfully', {
+        variant: SnackBarVariant.Success,
+      });
+      setIsOrgChartEnabled(false);
+      setTimeout(() => window.location.reload(), 2000);
+    } catch (error) {
+      enqueueSnackBar(
+        error instanceof Error
+          ? `Failed to upgrade: ${error.message}`
+          : 'Failed to upgrade to Engagement Workflows',
+        {
+          variant: SnackBarVariant.Error,
+        },
+      );
+    } finally {
+      setIsUpgrading(false);
+    }
+  };
 
   const handleCreateStructure = async () => {
     if (isSubmitting || hasBeenClicked) return;
@@ -245,6 +305,15 @@ export const MetadataStructureSection = () => {
       >
         {isUpdating ? 'Updating...' : 'Update Metadata Structure'}
       </StyledButton>
+      {isOrgChartEnabled === true && (
+        <StyledButton
+          onClick={handleUpgradeToEngagementWorkflows}
+          disabled={isUpgrading}
+          variant="secondary"
+        >
+          {isUpgrading ? 'Upgrading...' : 'Upgrade to Engagement Workflows'}
+        </StyledButton>
+      )}
     </StyledButtonContainer>
   );
 };

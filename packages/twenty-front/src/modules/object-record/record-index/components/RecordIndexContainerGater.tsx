@@ -22,13 +22,12 @@ import styled from '@emotion/styled';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 import { capitalize } from 'twenty-shared';
 
-const isOrgChartOnly = process.env.IS_ORG_CHART_ENABLED === 'true';
-
 import { ArxEnrichmentModal } from '@/arx-ai-filtering/arxEnrichmentModal';
 import { isArxEnrichModalOpenState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
 import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
+import { isOrgChartEnabledState } from '@/arx-jd-upload/states/isOrgChartEnabledState';
 
 const StyledIndexContainer = styled.div`
   display: flex;
@@ -37,6 +36,7 @@ const StyledIndexContainer = styled.div`
 `;
 
 export const RecordIndexContainerGater = () => {
+  const isOrgChartOnly = useRecoilValue(isOrgChartEnabledState);
   const mainContextStoreComponentInstanceId = useRecoilValue(
     mainContextStoreComponentInstanceIdState,
   );

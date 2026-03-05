@@ -3,7 +3,7 @@ import { axiosRequestForMetadata } from 'src/engine/core-modules/candidate-sourc
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../../workspace-modifications.service';
 import { getFieldsData } from '../data/fieldsData';
-import { objectCreationArr } from '../data/objectsData';
+import { getObjectCreationArr } from '../data/objectsData';
 import { getRelationsData } from '../data/relationsData';
 import { createFields } from './field-service';
 import { createObjectMetadataItems } from './object-service';
@@ -133,22 +133,37 @@ export class MetadataUpdateService {
     }
   }
 
-  compareMetadata(currentMetadata: any, objectsNameIdMap: Record<string, string>) {
-    const objectIds = currentMetadata.data.objects.edges.map((edge: any) => edge.node.id);
+  compareMetadata(
+    currentMetadata: any,
+    objectsNameIdMap: Record<string, string>,
+    isOrgChartEnabled?: boolean,
+  ) {
+    const objectIds = currentMetadata.data.objects.edges.map(
+      (edge: any) => edge.node.id,
+    );
     console.log('objectIds', objectIds);
     const existingObjectsById = new Map(
-      currentMetadata.data.objects.edges.map((edge: any) => [edge.node.id, edge.node])
+      currentMetadata.data.objects.edges.map((edge: any) => [
+        edge.node.id,
+        edge.node,
+      ]),
     );
-    console.log('existingObjectsById', Array.from(existingObjectsById.values()).map((edge: any) => edge.nameSingular));
+    console.log(
+      'existingObjectsById',
+      Array.from(existingObjectsById.values()).map(
+        (edge: any) => edge.nameSingular,
+      ),
+    );
     const existingObjectNames = new Set(
-      currentMetadata.data.objects.edges.map((edge: any) => edge.node.nameSingular)
+      currentMetadata.data.objects.edges.map((edge: any) => edge.node.nameSingular),
     );
+    const objectCreationArr = getObjectCreationArr(isOrgChartEnabled);
     const newObjects = objectCreationArr.filter(
-      (obj) => !existingObjectNames.has(obj.object.nameSingular)
+      (obj) => !existingObjectNames.has(obj.object.nameSingular),
     );
     console.log('existingObjectNames', existingObjectNames);
     console.log('newObjects', newObjects);
-    const fieldsData = getFieldsData(objectsNameIdMap);
+    const fieldsData = getFieldsData(objectsNameIdMap, isOrgChartEnabled);
     console.log('Processing fields:', fieldsData.map(field => ({
       name: field?.field?.name,
       objectMetadataId: field?.field?.objectMetadataId,
@@ -206,7 +221,10 @@ export class MetadataUpdateService {
         (edge: any) => edge.node.id === objectsNameIdMap[field.field.objectMetadataId]
       )?.node.nameSingular}:${field.field.name}`
     })));
-    const relationsData = getRelationsData(objectsNameIdMap);
+    const relationsData = getRelationsData(
+      objectsNameIdMap,
+      isOrgChartEnabled,
+    );
     const existingRelations = new Set();
     currentMetadata.data.objects.edges.forEach((objEdge: any) => {
       const objName = objEdge.node.nameSingular;
@@ -434,6 +452,15 @@ export class MetadataUpdateService {
 
   async updateMetadata(token: string, origin: string) {
     try {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(token);
+      const workspaceKeys =
+        await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
+      const isOrgChartEnabled =
+        (workspaceKeys?.is_org_chart_enabled ??
+          process.env.IS_ORG_CHART_ENABLED ??
+          'true') === 'true';
+
       // Fetch the metadata once
       const currentMetadata = await this.fetchCurrentMetadata(token);
       console.log("Current metadata is this::", currentMetadata);
@@ -485,7 +512,11 @@ export class MetadataUpdateService {
       }
 
       // Single comparison with detailed metadata
-      const { newObjects, newFields, newRelations } = this.compareMetadata(detailedMetadata, objectsNameIdMap);
+      const { newObjects, newFields, newRelations } = this.compareMetadata(
+        detailedMetadata,
+        objectsNameIdMap,
+        isOrgChartEnabled,
+      );
       console.log('newObjects', newObjects.map((object: any) => object.object.nameSingular));
       console.log('newFields', newFields.map((field: any) => field.field.name));
       console.log('newRelations', newRelations.map((relation: any) => relation.relationMetadata.fromName));
@@ -507,7 +538,6 @@ export class MetadataUpdateService {
 
       // Check if we need to update workspace API keys
       try {
-        const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(token);
         const newApiKeys = await this.detectNewApiKeyFields(newFields, workspaceId);
         
         if (Object.keys(newApiKeys).length > 0) {

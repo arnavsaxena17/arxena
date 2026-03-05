@@ -1,12 +1,33 @@
 import {
+    getGraphqlToFindManyJobs,
     graphqlQueryToFindCvsent,
     graphqlQueryToFindScheduledClientMeetings,
     graphqlQueryToFindShortlists,
     graphqlToFetchAllCandidateData,
-    graphqlToFindManyJobs,
 } from 'twenty-shared';
 import { executeGraphQL } from '../api/graphql-client';
 import { McpTool } from '../types/tool-types';
+
+async function getIsOrgChartEnabled(
+  baseUrl: string,
+  apiToken: string,
+): Promise<boolean> {
+  try {
+    const serverBase = baseUrl.replace(/\/graphql\/?$/, '') || baseUrl;
+    const res = await fetch(
+      `${serverBase}/workspace-modifications/workspace-keys`,
+      {
+        headers: { Authorization: `Bearer ${apiToken}` },
+      },
+    );
+    if (!res.ok) return process.env.IS_ORG_CHART_ENABLED === 'true';
+    const keys = await res.json();
+    const flag = keys?.is_org_chart_enabled ?? process.env.IS_ORG_CHART_ENABLED ?? 'true';
+    return flag === 'true';
+  } catch {
+    return process.env.IS_ORG_CHART_ENABLED === 'true';
+  }
+}
 
 function extractJobs(data: unknown): Array<{ id: string; name?: string }> {
   const result = data as { jobs?: { edges?: Array<{ node: { id: string; name?: string } }> } };
@@ -68,8 +89,14 @@ export const pendingActionsTools: McpTool[] = [
       const maxCandidatesPerJob = typeof args.maxCandidatesPerJob === 'number' ? args.maxCandidatesPerJob : 200;
       const upcomingInterviewsLimit = typeof args.upcomingInterviewsLimit === 'number' ? args.upcomingInterviewsLimit : 20;
 
+      const isOrgChartEnabled = await getIsOrgChartEnabled(
+        config.baseUrl,
+        config.apiToken,
+      );
+      const jobsQuery = getGraphqlToFindManyJobs(isOrgChartEnabled);
+
       const [jobsData, shortlistsData, cvSentsData, interviewsData] = await Promise.all([
-        executeGraphQL(config.baseUrl, config.apiToken, graphqlToFindManyJobs, {
+        executeGraphQL(config.baseUrl, config.apiToken, jobsQuery, {
           filter: { isActive: { eq: true } },
           limit: maxJobs,
           orderBy: [{ updatedAt: 'DescNullsLast' }],

@@ -394,10 +394,14 @@ const graphqlToFindManyJobsOrgChart = `query FindManyJobs($filter: JobFilterInpu
   }
 }`;
 
-const isOrgChartEnabled =
+const isOrgChartEnabledEnv =
   (typeof process !== 'undefined' ? process.env?.IS_ORG_CHART_ENABLED : undefined) === 'true';
 
-export const graphqlToFindManyJobs = isOrgChartEnabled
+export function getGraphqlToFindManyJobs(isOrgChartEnabled: boolean): string {
+  return isOrgChartEnabled ? graphqlToFindManyJobsOrgChart : graphqlToFindManyJobsFull;
+}
+
+export const graphqlToFindManyJobs = isOrgChartEnabledEnv
   ? graphqlToFindManyJobsOrgChart
   : graphqlToFindManyJobsFull;
 const graphqlToFindManyJobsWithPromptsFull = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
@@ -535,7 +539,15 @@ const graphqlToFindManyJobsWithPromptsOrgChart = `query FindManyJobs($filter: Jo
   }
 }`;
 
-export const graphqlToFindManyJobsWithPrompts = isOrgChartEnabled
+export function getGraphqlToFindManyJobsWithPrompts(
+  isOrgChartEnabled: boolean,
+): string {
+  return isOrgChartEnabled
+    ? graphqlToFindManyJobsWithPromptsOrgChart
+    : graphqlToFindManyJobsWithPromptsFull;
+}
+
+export const graphqlToFindManyJobsWithPrompts = isOrgChartEnabledEnv
   ? graphqlToFindManyJobsWithPromptsOrgChart
   : graphqlToFindManyJobsWithPromptsFull;
 const graphqlToFindManyJobsWithCandidateValuesFull = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
@@ -753,7 +765,15 @@ const graphqlToFindManyJobsWithCandidateValuesOrgChart = `query FindManyJobs($fi
   }
 }`;
 
-export const graphqlToFindManyJobsWithCandidateValues = isOrgChartEnabled
+export function getGraphqlToFindManyJobsWithCandidateValues(
+  isOrgChartEnabled: boolean,
+): string {
+  return isOrgChartEnabled
+    ? graphqlToFindManyJobsWithCandidateValuesOrgChart
+    : graphqlToFindManyJobsWithCandidateValuesFull;
+}
+
+export const graphqlToFindManyJobsWithCandidateValues = isOrgChartEnabledEnv
   ? graphqlToFindManyJobsWithCandidateValuesOrgChart
   : graphqlToFindManyJobsWithCandidateValuesFull;
 const graphqlToFindManyJobsWithCandidatesFull = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
@@ -971,7 +991,15 @@ const graphqlToFindManyJobsWithCandidatesOrgChart = `query FindManyJobs($filter:
   }
 }`;
 
-export const graphqlToFindManyJobsWithCandidates = isOrgChartEnabled
+export function getGraphqlToFindManyJobsWithCandidates(
+  isOrgChartEnabled: boolean,
+): string {
+  return isOrgChartEnabled
+    ? graphqlToFindManyJobsWithCandidatesOrgChart
+    : graphqlToFindManyJobsWithCandidatesFull;
+}
+
+export const graphqlToFindManyJobsWithCandidates = isOrgChartEnabledEnv
   ? graphqlToFindManyJobsWithCandidatesOrgChart
   : graphqlToFindManyJobsWithCandidatesFull;
 

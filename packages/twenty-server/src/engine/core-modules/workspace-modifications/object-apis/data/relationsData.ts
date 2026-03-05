@@ -8,8 +8,11 @@ type RelationWithObjects = {
   relationMetadata: NonNullable<RelationInput>["relationMetadata"];
 };
 
-export function getRelationsData(objectsNameIdMap: Record<string, string>): RelationInput[] {
-  const objectsToExclude = getObjectsToExclude();
+export function getRelationsData(
+  objectsNameIdMap: Record<string, string>,
+  isOrgChartEnabled?: boolean,
+): RelationInput[] {
+  const objectsToExclude = getObjectsToExclude(isOrgChartEnabled);
   const allRelations: RelationWithObjects[] = [
     {
       fromObjectName: "company",

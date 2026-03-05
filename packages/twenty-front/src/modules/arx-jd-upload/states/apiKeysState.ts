@@ -18,6 +18,7 @@ export interface ApiKey {
   facebook_whatsapp_asset_id?: string;
   is_chrome_extension_installed?: string;
   chrome_extension_id?: string;
+  is_org_chart_enabled?: string;
 }
 
 export const apiKeysState = atom<ApiKey>({

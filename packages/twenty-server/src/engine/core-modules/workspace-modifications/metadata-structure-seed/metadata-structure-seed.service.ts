@@ -5,8 +5,8 @@ import { FieldMetadataType } from 'twenty-shared';
 import { DataSourceService } from 'src/engine/metadata-modules/data-source/data-source.service';
 import { CreateFieldInput } from 'src/engine/metadata-modules/field-metadata/dtos/create-field.input';
 import {
-  FieldMetadataComplexOption,
-  FieldMetadataDefaultOption,
+    FieldMetadataComplexOption,
+    FieldMetadataDefaultOption,
 } from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
 import { FieldMetadataService } from 'src/engine/metadata-modules/field-metadata/field-metadata.service';
 import { CreateObjectInput } from 'src/engine/metadata-modules/object-metadata/dtos/create-object.input';
@@ -17,7 +17,7 @@ import { RelationMetadataService } from 'src/engine/metadata-modules/relation-me
 import { WorkspaceMetadataVersionService } from 'src/engine/metadata-modules/workspace-metadata-version/services/workspace-metadata-version.service';
 
 import { getFieldsData } from '../object-apis/data/fieldsData';
-import { objectCreationArr } from '../object-apis/data/objectsData';
+import { getObjectCreationArr } from '../object-apis/data/objectsData';
 import { getRelationsData } from '../object-apis/data/relationsData';
 
 function normalizeFieldOptions(
@@ -59,6 +59,8 @@ export class MetadataStructureSeedService {
       );
     const objectsNameIdMap = await this.buildObjectsNameIdMap(workspaceId);
 
+    const objectCreationArr = getObjectCreationArr(true);
+
     for (const item of objectCreationArr) {
       if (!item?.object) continue;
       const { nameSingular, namePlural, labelSingular, labelPlural } =
@@ -82,7 +84,7 @@ export class MetadataStructureSeedService {
       objectsNameIdMap[created.nameSingular] = created.id;
     }
 
-    const fieldsData = getFieldsData(objectsNameIdMap);
+    const fieldsData = getFieldsData(objectsNameIdMap, true);
     const fieldInputs: CreateFieldInput[] = [];
     for (const item of fieldsData) {
       const objId = item?.field?.objectMetadataId;
@@ -106,7 +108,7 @@ export class MetadataStructureSeedService {
       );
     }
 
-    const relationsData = getRelationsData(objectsNameIdMap);
+    const relationsData = getRelationsData(objectsNameIdMap, true);
     for (const item of relationsData) {
       if (!item?.relationMetadata) continue;
       const r = item.relationMetadata;

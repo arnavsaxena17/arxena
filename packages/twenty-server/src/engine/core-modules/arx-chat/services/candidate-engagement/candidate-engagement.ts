@@ -1,20 +1,20 @@
 import {
-  CandidateEdge,
-  CandidateNode,
-  ChatControlsObjType,
-  chatControlType,
-  ChatHistoryItem,
-  graphqlToFetchAllCandidateData,
-  graphqlToFetchAllCandidateDataWithFieldValues,
-  graphQlToFetchWhatsappMessages,
-  graphqlToFindManyJobs,
-  graphQltoUpdateOneCandidate,
-  Job,
-  JobEdge,
-  MessageNode,
-  PageInfo,
-  RecruiterProfileType,
-  whatappUpdateMessageObjType
+    CandidateEdge,
+    CandidateNode,
+    ChatControlsObjType,
+    chatControlType,
+    ChatHistoryItem,
+    getGraphqlToFindManyJobs,
+    graphqlToFetchAllCandidateData,
+    graphqlToFetchAllCandidateDataWithFieldValues,
+    graphQlToFetchWhatsappMessages,
+    graphQltoUpdateOneCandidate,
+    Job,
+    JobEdge,
+    MessageNode,
+    PageInfo,
+    RecruiterProfileType,
+    whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { ChatFlowConfigBuilder } from 'src/engine/core-modules/arx-chat/services/chat-flow-config';
@@ -1010,8 +1010,21 @@ export class CandidateEngagementArx {
     apiToken: string,
   ): Promise<{ candidates: CandidateNode[]; candidateJobs: Map<string, Job> }> {
     try {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const workspaceKeys =
+        await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
+      const isOrgChartEnabled =
+        (workspaceKeys?.is_org_chart_enabled ??
+          process.env.IS_ORG_CHART_ENABLED ??
+          'true') === 'true';
+      const query = getGraphqlToFindManyJobs(isOrgChartEnabled);
 
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobs, { filter: { isActive: { eq: true } } }, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(
+        query,
+        { filter: { isActive: { eq: true } } },
+        apiToken,
+      );
       const activeJobs = response?.data?.data?.jobs as { 
         edges: JobEdge[];
         pageInfo: PageInfo;

@@ -1,9 +1,11 @@
 import { useApiKeysRecoil } from '@/arx-jd-upload/hooks/useApiKeysRecoil';
 import { ApiKey } from '@/arx-jd-upload/states/apiKeysState';
+import { isOrgChartEnabledState } from '@/arx-jd-upload/states/isOrgChartEnabledState';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TextInput } from '@/ui/input/components/TextInput';
 import styled from '@emotion/styled';
 import { useCallback, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 
 const StyledInputContainer = styled.div`
   display: flex;
@@ -48,6 +50,7 @@ const StyledButton = styled.button<{ variant?: 'primary' | 'secondary' }>`
 
 
 export const ApiKeysForm = () => {
+  const isOrgChartEnabled = useRecoilValue(isOrgChartEnabledState);
   const { enqueueSnackBar } = useSnackBar();
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -128,34 +131,13 @@ export const ApiKeysForm = () => {
   {renderInput('whatsapp_unipile_account_id', 'Whatsapp Unipile Account ID')}
   {renderInput('whatsapp_key', 'WhatsApp Key')}
   {renderInput('anthropic_key', 'Anthropic Key')}
-  {renderInput(
-    'facebook_whatsapp_api_token',
-    'Facebook WhatsApp API Token (Do Not Change)',
-  )}
-  {renderInput(
-    'facebook_whatsapp_phone_number_id',
-    'Facebook WhatsApp Phone Number ID',
-  )}
-  {renderInput(
-    'whatsapp_web_phone_number',
-    'WhatsApp Web Phone Number',
-  )}
-  {renderInput(
-    'facebook_whatsapp_app_id',
-    'Facebook WhatsApp App ID (Do Not Change)',
-  )}
-  {renderInput(
-    'facebook_whatsapp_asset_id',
-    'Facebook WhatsApp Business Asset ID (WABA)',
-  )}
-  {renderInput(
-    'is_chrome_extension_installed',
-    'Is Chrome Extension Installed (true/false)',
-  )}
-  {renderInput(
-    'chrome_extension_id',
-    'Chrome Extension ID',
-  )}
+  {renderInput( 'facebook_whatsapp_api_token', 'Facebook WhatsApp API Token (Do Not Change)', )}
+  {renderInput( 'facebook_whatsapp_phone_number_id', 'Facebook WhatsApp Phone Number ID', )}
+  {renderInput( 'whatsapp_web_phone_number', 'WhatsApp Web Phone Number', )}
+  {renderInput( 'facebook_whatsapp_app_id', 'Facebook WhatsApp App ID (Do Not Change)', )}
+  {renderInput( 'facebook_whatsapp_asset_id', 'Facebook WhatsApp Business Asset ID (WABA)', )}
+  {renderInput( 'is_chrome_extension_installed', 'Is Chrome Extension Installed (true/false)', )}
+  {renderInput( 'chrome_extension_id', 'Chrome Extension ID', )}
       </>
     );
   };
@@ -175,7 +157,7 @@ export const ApiKeysForm = () => {
 
   return (
     <StyledInputContainer>
-      {process.env.IS_ORG_CHART_ENABLED === 'true' ? renderOrgChartInputs() : renderInputs()}
+      {isOrgChartEnabled ? renderOrgChartInputs() : renderInputs()}
       <StyledButtonContainer>
         {isEditing ? (
           <>

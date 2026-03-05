@@ -15,6 +15,7 @@ import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
 import { parsedJDInternalState } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
+import { isOrgChartEnabledState } from '@/arx-jd-upload/states/isOrgChartEnabledState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
 import { CandidateTablePageHeader } from '@/candidate-table/components/CandidateTablePageHeader';
@@ -256,6 +257,7 @@ export const Jobs = () => {
   const navigate = useNavigate();
 
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+  const isOrgChartEnabled = useRecoilValue(isOrgChartEnabledState);
   const { isBaileysLoggedIn } = useBaileysConnection();
   const { isLinkedinConnected, isWhatsappUnipileConnected } = useUnipile();
   const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileConnected;
@@ -690,7 +692,7 @@ export const Jobs = () => {
                           </>
                         )}
                       </>
-                    ) : process.env.IS_ORG_CHART_ENABLED === 'true' ? (
+                    ) : isOrgChartEnabled ? (
                       <StyledOrgChartEmptyStateWrapper>
                         <AnimatedPlaceholder type="noRecord" />
                         <AnimatedPlaceholderEmptyTextContainer>
@@ -743,7 +745,7 @@ export const Jobs = () => {
                 <></>
               )}
               
-              {process.env.IS_ORG_CHART_ENABLED !== 'true' && isArxUploadJDModalOpen ? (
+              {!isOrgChartEnabled && isArxUploadJDModalOpen ? (
                 <ApiKeysProvider>
                   <ArxJDUploadModal
                     objectNameSingular="job"

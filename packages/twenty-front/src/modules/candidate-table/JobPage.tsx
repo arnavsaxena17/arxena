@@ -18,6 +18,7 @@ import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
 import { parsedJDInternalState } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from "@/arx-jd-upload/states/arxUploadJDModalOpenState";
+import { isOrgChartEnabledState } from '@/arx-jd-upload/states/isOrgChartEnabledState';
 import { ChatOptionsDropdownButton } from "@/candidate-table/ChatOptionsDropdownButton";
 import { ArxDownloadModal } from "@/candidate-table/components/ArxDownloadModal";
 import { CandidateTablePageHeader } from '@/candidate-table/components/CandidateTablePageHeader';
@@ -123,7 +124,8 @@ export const JobPage: React.FC = () => {
   const [searchResults, setSearchResults] = useRecoilState(searchResultsState);
   const searchMetadata = useRecoilValue(searchMetadataState);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
-  
+  const isOrgChartEnabled = useRecoilValue(isOrgChartEnabledState);
+
   // Feature flag for new search UI
   // const { isNewSearchUIEnabled } = useNewSearchUI();
   const isNewSearchUIEnabled = true; // TODO: Remove this once the feature flag is implemented
@@ -802,7 +804,7 @@ export const JobPage: React.FC = () => {
               <></>
             )}
             
-            {process.env.IS_ORG_CHART_ENABLED !== 'true' && isArxUploadJDModalOpen ? (
+            {!isOrgChartEnabled && isArxUploadJDModalOpen ? (
               <ApiKeysProvider>
                 <ArxJDUploadModal
                   objectNameSingular="job"
@@ -829,7 +831,7 @@ export const JobPage: React.FC = () => {
             )}
             
             {/* Legacy Candidate Search Modal - Only when new UI is disabled and not org chart only */}
-            {process.env.IS_ORG_CHART_ENABLED !== 'true' && !isNewSearchUIEnabled && (
+            {!isOrgChartEnabled && !isNewSearchUIEnabled && (
               <CandidateSearchModal />
             )}
 

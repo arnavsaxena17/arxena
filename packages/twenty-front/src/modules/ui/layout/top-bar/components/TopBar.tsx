@@ -1,4 +1,5 @@
 import { arxUploadJDModalModeState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
+import { isOrgChartEnabledState } from '@/arx-jd-upload/states/isOrgChartEnabledState';
 import { CandidateSearchModal } from '@/candidate-search/components/search-components/CandidateSearchModal';
 import { isCandidateSearchModalOpenState } from '@/candidate-search/states/candidateSearchModalState';
 import { searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
@@ -431,6 +432,7 @@ export const TopBar = memo(({
   // Get jobId from jobsState
   const currentJobId = useRecoilValue(jobIdAtom);
   const jobs = useRecoilValue(jobsState);
+  const isOrgChartEnabled = useRecoilValue(isOrgChartEnabledState);
   const tableState = useRecoilValue(tableStateAtom);
   const columns = useRecoilValue(columnsSelector);
   
@@ -776,7 +778,7 @@ export const TopBar = memo(({
       {isBulkMessageModalOpen && (
         <BulkMessageModal />
       )}
-      {process.env.IS_ORG_CHART_ENABLED !== 'true' && <CandidateSearchModal />}
+      {!isOrgChartEnabled && <CandidateSearchModal />}
       {currentJobId && (
         <DripCampaignModal
           objectNameSingular="Job"

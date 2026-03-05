@@ -9,8 +9,9 @@ type FieldWithObject = {
 
 export function getFieldsData(
   objectsNameIdMap: Record<string, string>,
+  isOrgChartEnabled?: boolean,
 ): FieldInput[] {
-  const objectsToExclude = getObjectsToExclude();
+  const objectsToExclude = getObjectsToExclude(isOrgChartEnabled);
   const allFields: FieldWithObject[] = [
     {
       objectName: 'candidate',

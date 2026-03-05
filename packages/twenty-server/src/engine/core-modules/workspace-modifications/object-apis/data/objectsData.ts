@@ -355,11 +355,21 @@ const OBJECTS_TO_EXCLUDE = [
   'offer'
 ];
 
-export function getObjectsToExclude(): string[] {
-  if (process.env.IS_ORG_CHART_ENABLED === 'false') {
+export function getObjectsToExclude(isOrgChartEnabled?: boolean): string[] {
+  const enabled =
+    isOrgChartEnabled ??
+    (process.env.IS_ORG_CHART_ENABLED === 'true');
+  if (!enabled) {
     return [];
   }
   return OBJECTS_TO_EXCLUDE;
+}
+
+export function getObjectCreationArr(isOrgChartEnabled?: boolean) {
+  const objectsToExclude = getObjectsToExclude(isOrgChartEnabled);
+  return allObjects.filter(
+    (object) => !objectsToExclude.includes(object.object.nameSingular),
+  );
 }
 
 export const objectCreationArr = allObjects.filter(
