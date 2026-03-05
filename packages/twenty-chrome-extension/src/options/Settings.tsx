@@ -82,7 +82,7 @@ const Settings = () => {
   return (
     <StyledWrapper>
       <StyledContainer>
-        <img src="/logo/32-32.svg" alt="twenty-logo" height={40} width={40} />
+        <img src="/logo/32-32.png" alt="arxena-logo" height={40} width={40} />
         <StyledActionContainer>
           <TextInput
             label="Client URL"
