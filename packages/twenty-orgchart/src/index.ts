@@ -11,7 +11,7 @@ export type {
     CompanyInfoFromPdl,
     UseCompanyAutocompleteOptions
 } from './hooks/useCompanyAutocomplete';
-export { useOrgChartData } from './hooks/useOrgChartData';
+export { normalizeCompanyIdForUrl, useOrgChartData } from './hooks/useOrgChartData';
 export type { UseOrgChartDataOptions } from './hooks/useOrgChartData';
 export { useOrgChartFilterOptions } from './hooks/useOrgChartFilterOptions';
 export { companySearchLightTheme } from './theme/companySearchTheme';

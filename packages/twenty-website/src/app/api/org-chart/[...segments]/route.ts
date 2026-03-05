@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import {
+  getRequestMetadata,
+  isBlockedBot,
+} from '@/lib/bot-detection';
+
 export const dynamic = 'force-dynamic';
 
 const getServerBaseUrl = () => {
@@ -16,6 +21,14 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ segments: string[] }> },
 ) {
+  const { userAgent, referer, clientIp } = getRequestMetadata(request);
+  if (isBlockedBot(userAgent)) {
+    return NextResponse.json(
+      { status: 'error', message: 'Forbidden' },
+      { status: 403 },
+    );
+  }
+
   const serverBaseUrl = getServerBaseUrl();
   if (!serverBaseUrl) {
     return NextResponse.json(
@@ -73,6 +86,9 @@ export async function GET(
         status: response.status,
         contentType,
         bodyPreview: text.slice(0, 100),
+        userAgent: userAgent ?? '(none)',
+        referer: referer ?? '(none)',
+        clientIp: clientIp ?? '(none)',
       });
       return NextResponse.json(
         {

@@ -8,7 +8,10 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
 import { Mixpanel } from '~/mixpanel';
 
-import type { OrgChartContextAction } from 'twenty-orgchart';
+import {
+  normalizeCompanyIdForUrl,
+  type OrgChartContextAction,
+} from 'twenty-orgchart';
 import type { NodeState, OrgChartNodeData } from 'twenty-shared';
 import type { ContextResultItem } from '../types';
 import {
@@ -554,8 +557,9 @@ export const useOrgChartActions = ({
         limit: 50,
       };
 
+      const canonicalCompanyId = normalizeCompanyIdForUrl(companyId);
       const response = await fetch(
-        `${baseUrl}/org-chart/${encodeURIComponent(companyId)}/node-people`,
+        `${baseUrl}/org-chart/${encodeURIComponent(canonicalCompanyId)}/node-people`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

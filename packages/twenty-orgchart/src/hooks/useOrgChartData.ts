@@ -1,5 +1,24 @@
 import { useCallback, useState } from 'react';
 
+/**
+ * Normalizes a company ID that may be over-encoded (e.g. h%2526m from H&M).
+ * Decodes repeatedly until stable, then returns the canonical form for URL encoding.
+ */
+export function normalizeCompanyIdForUrl(companyId: string): string {
+  if (!companyId?.trim()) return companyId;
+  let decoded = companyId.trim();
+  let prev = '';
+  while (prev !== decoded) {
+    prev = decoded;
+    try {
+      decoded = decodeURIComponent(decoded);
+    } catch {
+      break;
+    }
+  }
+  return decoded;
+}
+
 type OrgChartCompanyInput = {
   companyId: string | null;
   companyName?: string;
@@ -44,9 +63,9 @@ export const useOrgChartData = (
 
     try {
       const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
-      const normalizedCompanyId = companyId
-        ? companyId.replace(/-/g, '_').toLowerCase()
-        : null;
+      const canonicalCompanyId = normalizeCompanyIdForUrl(companyId);
+      const slugForPath =
+        canonicalCompanyId.replace(/-/g, '_').toLowerCase();
       const params = new URLSearchParams();
 
       if (companyName && companyName.trim().length > 0) {
@@ -68,9 +87,9 @@ export const useOrgChartData = (
       const queryString = params.toString();
       const prefix = useOrgChartPrefix ? '/org-chart' : '';
       const endpointPath =
-        normalizedCompanyId === 'yuga_labs'
-          ? `${prefix}/manual/${encodeURIComponent(companyId)}`
-          : `${prefix}/${encodeURIComponent(companyId)}`;
+        slugForPath === 'yuga_labs'
+          ? `${prefix}/manual/${encodeURIComponent(canonicalCompanyId)}`
+          : `${prefix}/${encodeURIComponent(canonicalCompanyId)}`;
 
       const url = `${normalizedBaseUrl}${endpointPath}${queryString ? `?${queryString}` : ''}`;
 

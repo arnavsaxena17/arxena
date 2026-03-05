@@ -1,6 +1,7 @@
 import styled from '@emotion/styled';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
+import { useDebouncedCallback } from 'use-debounce';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
@@ -168,6 +169,7 @@ export const ArxOrgChart = ({
   );
 
   const diagramHandleRef = useRef<OrgChartDiagramHandle | null>(null);
+  const skipNextRefetchRef = useRef(false);
 
   const tokenPair = useRecoilValue(tokenPairState);
   const accessToken = tokenPair?.accessToken?.token ?? undefined;
@@ -188,6 +190,10 @@ export const ArxOrgChart = ({
   );
 
   useEffect(() => {
+    if (skipNextRefetchRef.current) {
+      skipNextRefetchRef.current = false;
+      return;
+    }
     fetchOrgChart();
   }, [fetchOrgChart]);
 
@@ -290,6 +296,7 @@ export const ArxOrgChart = ({
 
     setSelectedCountry((current) => {
       if (current) return current;
+      skipNextRefetchRef.current = true;
       const initialCountry =
         typeof orgData.country === 'string' ? orgData.country : undefined;
       return initialCountry;
@@ -297,6 +304,7 @@ export const ArxOrgChart = ({
 
     setSelectedFunctionRoot((current) => {
       if (current) return current;
+      skipNextRefetchRef.current = true;
       const initialFunctionRoot =
         typeof (orgData as Record<string, unknown>).type === 'string'
           ? ((orgData as Record<string, unknown>).type as string)
@@ -348,16 +356,24 @@ export const ArxOrgChart = ({
     setSearchResultCount(null);
   };
 
+  const debouncedSetCountry = useDebouncedCallback(
+    (country: string | undefined) => setSelectedCountry(country),
+    150,
+  );
+  const debouncedSetFunctionRoot = useDebouncedCallback(
+    (fn: string | undefined) => setSelectedFunctionRoot(fn),
+    150,
+  );
+
   const filtersProps = {
     availableCountries: filterOptions.availableCountries,
     countryPercentLabels: filterOptions.countryPercentLabels,
     selectedCountry,
-    onCountryChange: (country: string | undefined) => setSelectedCountry(country),
+    onCountryChange: debouncedSetCountry,
     availableFunctionRoots: filterOptions.availableFunctionRoots,
     functionRootPercentLabels: filterOptions.functionRootPercentLabels,
     selectedFunctionRoot,
-    onFunctionRootChange: (fn: string | undefined) =>
-      setSelectedFunctionRoot(fn),
+    onFunctionRootChange: debouncedSetFunctionRoot,
   };
 
   const searchControlsProps = {

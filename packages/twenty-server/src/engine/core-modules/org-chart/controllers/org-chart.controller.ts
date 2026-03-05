@@ -133,6 +133,25 @@ export class OrgChartController {
     return slug.replace(/-/g, ' ').toLowerCase().trim();
   }
 
+  /**
+   * Normalizes over-encoded company IDs (e.g. h%2526m from H&M).
+   * Decodes repeatedly until stable to handle multiple encoding layers.
+   */
+  private normalizeCompanyId(companyId: string): string {
+    if (!companyId?.trim()) return companyId;
+    let decoded = companyId.trim();
+    let prev = '';
+    while (prev !== decoded) {
+      prev = decoded;
+      try {
+        decoded = decodeURIComponent(decoded);
+      } catch {
+        break;
+      }
+    }
+    return decoded;
+  }
+
   @Get('companies/list-by-country')
   async getCompaniesListByCountry(
     @Query('country') country: string,
@@ -382,7 +401,10 @@ export class OrgChartController {
     @Query('companyId') companyId: string,
     @Query('linkedinUrl') linkedinUrl: string,
   ) {
-    const urlOrSlug = linkedinUrl?.trim() || companyId?.trim();
+    const normalizedCompanyId = companyId?.trim()
+      ? this.normalizeCompanyId(companyId.trim())
+      : '';
+    const urlOrSlug = linkedinUrl?.trim() || normalizedCompanyId;
     if (!urlOrSlug) {
       throw new HttpException(
         'Query parameter "companyId" or "linkedinUrl" is required',
@@ -410,9 +432,10 @@ export class OrgChartController {
     if (!companyId || companyId.includes('/') || companyId.includes('..')) {
       throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
     }
+    const normalizedCompanyId = this.normalizeCompanyId(companyId);
     try {
       const companies =
-        await this.orgChartEsService.getTopHiredFromCompanies(companyId);
+        await this.orgChartEsService.getTopHiredFromCompanies(normalizedCompanyId);
       return { companies, status: 'ok' };
     } catch (error) {
       this.logger.error(
@@ -433,9 +456,10 @@ export class OrgChartController {
     if (!companyId || companyId.includes('/') || companyId.includes('..')) {
       throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
     }
+    const normalizedCompanyId = this.normalizeCompanyId(companyId);
     try {
       const urls =
-        await this.orgChartEsService.getIndexedUrlsForCompany(companyId);
+        await this.orgChartEsService.getIndexedUrlsForCompany(normalizedCompanyId);
       return { urls, status: 'ok' };
     } catch (error) {
       this.logger.error(
@@ -475,9 +499,10 @@ export class OrgChartController {
       throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
     }
 
+    const normalizedCompanyId = this.normalizeCompanyId(companyId);
     try {
       const result = await this.orgChartService.getManualOrgChart(
-        companyId,
+        normalizedCompanyId,
       );
       return { result, status: 'ok' };
     } catch (error) {
@@ -557,10 +582,11 @@ export class OrgChartController {
     if (!companyId || companyId.includes('/') || companyId.includes('..')) {
       throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
     }
+    const normalizedCompanyId = this.normalizeCompanyId(companyId);
     try {
       const authToken = this.getAuthToken(req);
       const result = await this.orgChartService.getOrgChart(
-        companyId,
+        normalizedCompanyId,
         options,
         authToken,
       );
@@ -584,10 +610,11 @@ export class OrgChartController {
       throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
     }
 
+    const normalizedCompanyId = this.normalizeCompanyId(companyId);
     try {
       const authToken = this.getAuthToken(req);
       const result = await this.orgChartService.getNodePeople(
-        companyId,
+        normalizedCompanyId,
         body,
         authToken,
       );

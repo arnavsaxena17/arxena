@@ -24,7 +24,9 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
   const sitemapBase = isProduction ? CANONICAL_DOMAIN : baseUrl;
 
   return {
-    rules: { userAgent: '*', allow: '/' },
+    rules: [
+      { userAgent: '*', allow: '/', disallow: '/api/' },
+    ],
     sitemap: `${sitemapBase}/sitemap-index.xml`,
   };
 }
