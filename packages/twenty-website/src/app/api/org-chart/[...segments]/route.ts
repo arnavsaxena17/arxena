@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import {
   getRequestMetadata,
-  identifyBot,
   isBlockedBot,
 } from '@/lib/bot-detection';
 
@@ -22,23 +21,10 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ segments: string[] }> },
 ) {
+  const forwardedUserAgent = request.headers.get('x-forwarded-user-agent');
   const { userAgent, referer, clientIp } = getRequestMetadata(request);
-  const botName = identifyBot(userAgent);
-  if (botName) {
-    const { segments } = await params;
-    const pathPart = segments?.join('/') ?? '';
-    console.info(
-      '[org-chart-proxy] Bot crawl',
-      JSON.stringify({
-        bot: botName,
-        path: pathPart,
-        blocked: isBlockedBot(userAgent),
-        clientIp: clientIp ?? undefined,
-        referer: referer ?? undefined,
-      }),
-    );
-  }
-  if (isBlockedBot(userAgent)) {
+  const effectiveUserAgent = forwardedUserAgent ?? userAgent;
+  if (isBlockedBot(effectiveUserAgent)) {
     return NextResponse.json(
       { status: 'error', message: 'Forbidden' },
       { status: 403 },
@@ -102,8 +88,7 @@ export async function GET(
         status: response.status,
         contentType,
         bodyPreview: text.slice(0, 100),
-        bot: botName ?? undefined,
-        userAgent: userAgent ?? '(none)',
+        userAgent: effectiveUserAgent ?? '(none)',
         referer: referer ?? '(none)',
         clientIp: clientIp ?? '(none)',
       });
@@ -125,6 +110,21 @@ export async function GET(
     }
 
     const data = JSON.parse(text) as Record<string, unknown>;
+    const isLikelyBot =
+      effectiveUserAgent &&
+      /bot|crawler|spider|scraper|bytespider|petalbot/i.test(
+        effectiveUserAgent,
+      );
+    const shouldLog =
+      process.env.LOG_ORG_CHART_REQUESTS === '1' || isLikelyBot;
+    if (effectiveUserAgent && shouldLog) {
+      console.log('[OrgChart proxy]', {
+        path: pathPart,
+        userAgent: effectiveUserAgent,
+        referer: referer ?? undefined,
+        clientIp: clientIp ?? undefined,
+      });
+    }
     return NextResponse.json(data, { status: response.status });
   } catch {
     return NextResponse.json(

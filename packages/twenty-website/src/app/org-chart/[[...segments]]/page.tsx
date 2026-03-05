@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { headers } from 'next/headers';
 
 import {
   extractOrgData,
@@ -32,6 +33,7 @@ async function fetchOrgChart(
     website?: string;
     country?: string;
     functionRoot?: string;
+    forwardedUserAgent?: string;
   },
 ): Promise<Record<string, unknown> | null> {
   const baseUrl = await getBaseUrl();
@@ -47,7 +49,12 @@ async function fetchOrgChart(
   const url = `${baseUrl}/api/org-chart/${path}${queryString ? `?${queryString}` : ''}`;
 
   try {
-    const res = await fetch(url, { cache: 'no-store' });
+    const res = await fetch(url, {
+      cache: 'no-store',
+      headers: options.forwardedUserAgent
+        ? { 'X-Forwarded-User-Agent': options.forwardedUserAgent }
+        : undefined,
+    });
     const json = (await res.json()) as {
       status?: string;
       result?: Record<string, unknown>;
@@ -222,11 +229,15 @@ export default async function OrgChartPage({
       ? resolvedSearchParams.website
       : undefined;
 
+  const headersList = await headers();
+  const forwardedUserAgent = headersList.get('user-agent') ?? undefined;
+
   const rawData = await fetchOrgChart(companyId, {
     companyName,
     website,
     country: normalizedCountry?.toLowerCase(),
     functionRoot: normalizedFunctionRoot?.toLowerCase(),
+    forwardedUserAgent,
   });
 
   const orgData = extractOrgData(rawData);
