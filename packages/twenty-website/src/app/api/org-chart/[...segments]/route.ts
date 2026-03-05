@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import {
   getRequestMetadata,
+  identifyBot,
   isBlockedBot,
 } from '@/lib/bot-detection';
 
@@ -22,6 +23,21 @@ export async function GET(
   { params }: { params: Promise<{ segments: string[] }> },
 ) {
   const { userAgent, referer, clientIp } = getRequestMetadata(request);
+  const botName = identifyBot(userAgent);
+  if (botName) {
+    const { segments } = await params;
+    const pathPart = segments?.join('/') ?? '';
+    console.info(
+      '[org-chart-proxy] Bot crawl',
+      JSON.stringify({
+        bot: botName,
+        path: pathPart,
+        blocked: isBlockedBot(userAgent),
+        clientIp: clientIp ?? undefined,
+        referer: referer ?? undefined,
+      }),
+    );
+  }
   if (isBlockedBot(userAgent)) {
     return NextResponse.json(
       { status: 'error', message: 'Forbidden' },
@@ -86,6 +102,7 @@ export async function GET(
         status: response.status,
         contentType,
         bodyPreview: text.slice(0, 100),
+        bot: botName ?? undefined,
         userAgent: userAgent ?? '(none)',
         referer: referer ?? '(none)',
         clientIp: clientIp ?? '(none)',
