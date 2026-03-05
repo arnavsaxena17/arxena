@@ -1,6 +1,5 @@
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
-import { notFound } from 'next/navigation';
 
 import {
   extractOrgData,
@@ -12,7 +11,6 @@ import {
 
 import { getSignUpUrl } from '@/lib/auth-urls';
 import { getBaseUrl } from '@/lib/base-url';
-import { isPhase2Exposed } from '@/lib/sitemap';
 import { decodeOverEncodedPath } from '@/lib/url-utils';
 
 import {
@@ -202,8 +200,6 @@ export default async function OrgChartPage({
 }: PageProps) {
   const { segments } = await params;
   const resolvedSearchParams = await searchParams;
-
-  if (segments && segments.length >= 2 && !isPhase2Exposed()) notFound();
 
   const rawCompanyId = segments?.[0] ?? null;
   const companyId = rawCompanyId

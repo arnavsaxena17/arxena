@@ -97,9 +97,7 @@ export class OrgChartService {
     );
 
     if (esResult) {
-      this.logger.log(
-        `Serving org chart for companyId=${companyId} from Elasticsearch`,
-      );
+
       return esResult;
     }
 

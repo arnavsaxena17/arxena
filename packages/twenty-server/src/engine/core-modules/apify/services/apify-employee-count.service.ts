@@ -9,6 +9,9 @@ import { ApifyService } from './apify.service';
 const LINKEDIN_EMPLOYEES_ACTOR_ID = 'harvestapi/linkedin-company-employees';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
+/** Pause Apify actor runs (free tier limit). Cached values still returned. */
+const APIFY_EMPLOYEE_COUNT_PAUSED = true;
+
 function normalizeLinkedInCompanyUrl(urlOrSlug: string): string {
   const trimmed = urlOrSlug.trim();
   if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) {
@@ -53,6 +56,13 @@ export class ApifyEmployeeCountService {
     }
 
     this.logger.log(`Employee count not cached for ${normalizedUrl}, running actor`);
+
+    if (APIFY_EMPLOYEE_COUNT_PAUSED) {
+      this.logger.warn(
+        'ApifyEmployeeCountService is paused (free tier limit). Returning null for uncached lookups.',
+      );
+      return null;
+    }
 
     if (!this.apifyService.isConfigured()) {
       this.logger.warn(

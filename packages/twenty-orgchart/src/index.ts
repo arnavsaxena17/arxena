@@ -11,10 +11,11 @@ export type {
     CompanyInfoFromPdl,
     UseCompanyAutocompleteOptions
 } from './hooks/useCompanyAutocomplete';
-export { normalizeCompanyIdForUrl, useOrgChartData } from './hooks/useOrgChartData';
+export { useOrgChartData } from './hooks/useOrgChartData';
 export type { UseOrgChartDataOptions } from './hooks/useOrgChartData';
 export { useOrgChartFilterOptions } from './hooks/useOrgChartFilterOptions';
 export { companySearchLightTheme } from './theme/companySearchTheme';
 export type { OrgChartThemeType } from './theme/companySearchTheme';
 export { defaultTheme } from './theme/defaultTheme';
+export { normalizeCompanyIdForUrl } from './utils/normalizeCompanyId';
 
