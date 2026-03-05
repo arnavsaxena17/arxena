@@ -1,11 +1,12 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 
 import { fromSlug } from 'twenty-shared';
 
 import { getSignInUrl, getSignUpUrl } from '@/lib/auth-urls';
 import { getBaseUrl } from '@/lib/base-url';
-import { getExposedBatchCount, getMaxExposedUrlCount } from '@/lib/sitemap';
+import { getExposedBatchCount, getMaxExposedUrlCount, isPhase2Exposed } from '@/lib/sitemap';
 
 import {
     BreadcrumbListSchema,
@@ -134,6 +135,8 @@ export default async function CompaniesSegmentPage({
       />
     );
   }
+
+  if (!isPhase2Exposed()) notFound();
 
   const { companyIds, hasMore } = await fetchCompaniesByCountry(
     segment,

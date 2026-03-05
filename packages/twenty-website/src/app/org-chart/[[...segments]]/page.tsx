@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
+import { notFound } from 'next/navigation';
 
 import {
   extractOrgData,
@@ -11,6 +12,8 @@ import {
 
 import { getSignUpUrl } from '@/lib/auth-urls';
 import { getBaseUrl } from '@/lib/base-url';
+import { isPhase2Exposed } from '@/lib/sitemap';
+import { decodeOverEncodedPath } from '@/lib/url-utils';
 
 import {
   BreadcrumbListSchema,
@@ -75,7 +78,9 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { segments } = await params;
-  const companyId = segments?.[0] ?? 'company';
+  const companyId = segments?.[0]
+    ? decodeOverEncodedPath(segments[0])
+    : 'company';
   const companyName =
     typeof companyId === 'string'
       ? formatCompanyNameForDisplay(companyId)
@@ -198,9 +203,18 @@ export default async function OrgChartPage({
   const { segments } = await params;
   const resolvedSearchParams = await searchParams;
 
-  const companyId = segments?.[0] ?? null;
-  const country = segments?.[1];
-  const functionRoot = segments?.[2];
+  if (segments && segments.length >= 2 && !isPhase2Exposed()) notFound();
+
+  const rawCompanyId = segments?.[0] ?? null;
+  const companyId = rawCompanyId
+    ? decodeOverEncodedPath(rawCompanyId)
+    : null;
+  const country = segments?.[1]
+    ? decodeOverEncodedPath(segments[1])
+    : undefined;
+  const functionRoot = segments?.[2]
+    ? decodeOverEncodedPath(segments[2])
+    : undefined;
 
   const normalizedCountry =
     country && country !== 'global'

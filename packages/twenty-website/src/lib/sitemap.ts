@@ -110,6 +110,16 @@ export function getExposedBatchCount(): number {
 }
 
 /**
+ * Phase 1 = batch 0 only = global fullcompany URLs (/org-chart/{companyId}).
+ * Phase 2 = batches 1+ = country/function URLs (/org-chart/{companyId}/{country}, etc.)
+ * When SITEMAP_EXPOSED_BATCH_COUNT is 0 or 1, only Phase 1 is in the sitemap.
+ * Use this to gate country/function browse pages and Phase 2 org chart URLs.
+ */
+export function isPhase2Exposed(): boolean {
+  return getExposedBatchCount() > 1;
+}
+
+/**
  * Cumulative URL count for batches 0 through (exposedCount - 1).
  * Used for maxExposedCount when gating browse pages.
  */

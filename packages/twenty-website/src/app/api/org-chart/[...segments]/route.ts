@@ -4,6 +4,7 @@ import {
   getRequestMetadata,
   isBlockedBot,
 } from '@/lib/bot-detection';
+import { decodeOverEncodedPath } from '@/lib/url-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,7 +48,8 @@ export async function GET(
     );
   }
 
-  const pathPart = segments.join('/');
+  const rawPathPart = segments.join('/');
+  const pathPart = decodeOverEncodedPath(rawPathPart);
   const nextParams = request.nextUrl.searchParams;
   const urlParams = new URL(request.url).searchParams;
   const companyName =

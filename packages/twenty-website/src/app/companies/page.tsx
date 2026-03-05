@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 
 import { getSignInUrl, getSignUpUrl } from '@/lib/auth-urls';
+import { isPhase2Exposed } from '@/lib/sitemap';
 
 import { ContentContainer } from '@/app/_components/ui/layout/ContentContainer';
 import { Header } from '@/app/_components/ui/layout/header';
@@ -28,6 +29,7 @@ export const metadata: Metadata = {
 export default function CompaniesIndexPage() {
   const signInUrl = getSignInUrl();
   const signUpUrl = getSignUpUrl();
+  const phase2Exposed = isPhase2Exposed();
 
   return (
     <>
@@ -61,37 +63,39 @@ export default function CompaniesIndexPage() {
             Explore organizational charts of companies alphabetically. Select a
             letter to browse companies starting with that letter.
           </p>
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 12,
-              marginBottom: 32,
-            }}
-          >
-            <Link
-              href="/companies/by-country"
+          {phase2Exposed && (
+            <div
               style={{
-                fontSize: 14,
-                color: '#2563eb',
-                textDecoration: 'none',
-                fontWeight: 500,
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 12,
+                marginBottom: 32,
               }}
             >
-              Org charts by geography →
-            </Link>
-            <Link
-              href="/companies/by-function"
-              style={{
-                fontSize: 14,
-                color: '#2563eb',
-                textDecoration: 'none',
-                fontWeight: 500,
-              }}
-            >
-              Org charts by function →
-            </Link>
-          </div>
+              <Link
+                href="/companies/by-country"
+                style={{
+                  fontSize: 14,
+                  color: '#2563eb',
+                  textDecoration: 'none',
+                  fontWeight: 500,
+                }}
+              >
+                Org charts by geography →
+              </Link>
+              <Link
+                href="/companies/by-function"
+                style={{
+                  fontSize: 14,
+                  color: '#2563eb',
+                  textDecoration: 'none',
+                  fontWeight: 500,
+                }}
+              >
+                Org charts by function →
+              </Link>
+            </div>
+          )}
           <div
             style={{
               display: 'flex',

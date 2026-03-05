@@ -1,11 +1,12 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 
 import { fromSlug } from 'twenty-shared';
 
 import { getSignInUrl, getSignUpUrl } from '@/lib/auth-urls';
 import { getBaseUrl } from '@/lib/base-url';
-import { getExposedBatchCount, getMaxExposedUrlCount } from '@/lib/sitemap';
+import { getExposedBatchCount, getMaxExposedUrlCount, isPhase2Exposed } from '@/lib/sitemap';
 
 import {
     BreadcrumbListSchema,
@@ -117,6 +118,8 @@ export default async function CompaniesSegment2Page({
   params: Promise<{ segment: string; segment2: string }>;
 }) {
   const { segment, segment2 } = await params;
+
+  if (!isPhase2Exposed()) notFound();
 
   if (parseLetterSegment(segment)) {
     return (

@@ -1,12 +1,14 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 
 import { getSignInUrl, getSignUpUrl } from '@/lib/auth-urls';
 import { getBaseUrl } from '@/lib/base-url';
+import { isPhase2Exposed } from '@/lib/sitemap';
 
 import {
-  BreadcrumbListSchema,
-  BreadcrumbNav,
+    BreadcrumbListSchema,
+    BreadcrumbNav,
 } from '@/app/_components/BreadcrumbList';
 import { ContentContainer } from '@/app/_components/ui/layout/ContentContainer';
 import { Header } from '@/app/_components/ui/layout/header';
@@ -38,6 +40,7 @@ async function fetchCountries(): Promise<
 }
 
 export default async function CompaniesByCountryPage() {
+  if (!isPhase2Exposed()) notFound();
   const countries = await fetchCountries();
   const baseUrl = await getBaseUrl();
   const signInUrl = getSignInUrl();

@@ -1,11 +1,12 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 
 import { fromSlug } from 'twenty-shared';
 
 import { getSignInUrl, getSignUpUrl } from '@/lib/auth-urls';
 import { getBaseUrl } from '@/lib/base-url';
-import { getExposedBatchCount, getMaxExposedUrlCount } from '@/lib/sitemap';
+import { getExposedBatchCount, getMaxExposedUrlCount, isPhase2Exposed } from '@/lib/sitemap';
 
 import {
     BreadcrumbListSchema,
@@ -44,6 +45,9 @@ export default async function CompaniesCountryFunctionPagePage({
   params: Promise<{ segment: string; segment2: string; page: string }>;
 }) {
   const { segment, segment2, page } = await params;
+
+  if (!isPhase2Exposed()) notFound();
+
   const country = segment;
   const functionRoot = segment2;
   const pageNum = parseInt(page, 10);
