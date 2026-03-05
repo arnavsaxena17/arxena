@@ -30,6 +30,7 @@ import {
     graphqlToFetchAllCandidateData,
     graphqlToFetchAllCandidateDataWithFieldValues,
     graphQlTofindManyCandidateEnrichments,
+    graphqlToFindManyJobs,
     graphQltoUpdateOneCandidate,
     Job,
     JobEdge,
