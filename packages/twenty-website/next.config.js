@@ -24,6 +24,11 @@ const nextConfig = {
         destination: '/images/favicon/icon-96.png',
         permanent: true,
       },
+      {
+        source: '/sitemap.xml',
+        destination: '/sitemap-index.xml',
+        permanent: true,
+      },
       // Redirect extension and app download to arxena-site (services.arxena.com in prod, localhost:5050 in dev)
       {
         source: '/extension',
