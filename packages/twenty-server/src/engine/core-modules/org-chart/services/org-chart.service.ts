@@ -113,9 +113,7 @@ export class OrgChartService {
       }>(cacheKey);
 
     if (cachedOrgChartPayload?.orgChart) {
-      this.logger.log(
-        `Serving org chart for companyId=${companyId} from Redis cache key=${cacheKey} cachedAt=${cachedOrgChartPayload.cachedAt ?? 'unknown'} itemCount=${cachedOrgChartPayload.itemCount ?? 0}`,
-      );
+
       return cachedOrgChartPayload.orgChart;
     }
 
