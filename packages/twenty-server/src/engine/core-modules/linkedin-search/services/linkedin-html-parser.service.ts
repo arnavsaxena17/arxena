@@ -380,12 +380,26 @@ export class LinkedInHtmlParserService {
   }
 
   private decodePotentiallyEscapedHtml(html: string): string {
-    return html
-      .replace(/\\u0026/g, '&')
-      .replace(/\\\//g, '/')
-      .replace(/&#x2F;/gi, '/')
-      .replace(/&amp;/g, '&')
-      .replace(/\\"/g, '"');
+    let decoded = html;
+
+    for (let i = 0; i < 4; i++) {
+      const next = decoded
+        .replace(/\\u0026/g, '&')
+        .replace(/\\\//g, '/')
+        .replace(/&#x2F;/gi, '/')
+        .replace(/&amp;/g, '&')
+        .replace(/\\&/g, '&')
+        .replace(/\\u003A/gi, ':')
+        .replace(/\\"/g, '"');
+
+      if (next === decoded) {
+        break;
+      }
+
+      decoded = next;
+    }
+
+    return decoded;
   }
 
   private normalizeProfileImageUrl(url: string): string {
