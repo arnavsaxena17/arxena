@@ -5,6 +5,7 @@ import { useDebouncedCallback } from 'use-debounce';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
+import { useUnipile } from '@/unipile/contexts/UnipileContext';
 import {
   OrgChartDiagram,
   OrgChartSearchControls,
@@ -96,6 +97,20 @@ const StyledLoadingMessage = styled.div`
   font-size: ${({ theme }) => theme.font.size.md};
 `;
 
+const StyledProgressBanner = styled.div`
+  position: absolute;
+  top: ${({ theme }) => theme.spacing(2)};
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 25;
+  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  background: ${({ theme }) => theme.background.tertiary};
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  box-shadow: ${({ theme }) => theme.boxShadow.light};
+`;
+
 const StyledErrorMessage = styled.div`
   display: flex;
   align-items: center;
@@ -108,41 +123,44 @@ const StyledErrorMessage = styled.div`
 
 const StyledTemplateBanner = styled.div`
   position: absolute;
-  top: ${({ theme }) => theme.spacing(2)};
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
-  z-index: 19;
+  transform: translate(-50%, -50%);
+  z-index: 25;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1.5)};
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  background: ${({ theme }) => theme.background.tertiary};
+  gap: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(3)} ${({ theme }) => theme.spacing(4)};
+  border-radius: ${({ theme }) => theme.border.radius.xl};
+  background: ${({ theme }) => theme.background.primary};
   border: 1px solid ${({ theme }) => theme.border.color.medium};
   color: ${({ theme }) => theme.font.color.secondary};
   font-size: ${({ theme }) => theme.font.size.sm};
   box-shadow: ${({ theme }) => theme.boxShadow.strong};
+  max-width: 420px;
+  text-align: center;
 `;
 
 const StyledTemplateBannerButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1.25)};
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
   border-radius: ${({ theme }) => theme.border.radius.md};
   border: none;
-  background: ${({ theme }) => theme.accent.quaternary};
-  color: ${({ theme }) => theme.font.color.primary};
+  background: ${({ theme }) => theme.accent.primary};
+  color: ${({ theme }) => theme.font.color.inverted};
   font-size: ${({ theme }) => theme.font.size.sm};
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
+  transition: opacity 0.15s ease;
 
   &:hover {
-    background: ${({ theme }) => theme.accent.tertiary};
+    opacity: 0.9;
   }
 
   &:active {
-    background: ${({ theme }) => theme.accent.secondary};
-    color: ${({ theme }) => theme.font.color.inverted};
+    opacity: 0.8;
   }
 `;
 
@@ -167,6 +185,18 @@ export const ArxOrgChart = ({
   const [exactEmployeeCount, setExactEmployeeCount] = useState<number | null>(
     null,
   );
+  const [unipileCompanyProfile, setUnipileCompanyProfile] = useState<{
+    employee_count?: number;
+    description?: string;
+    tagline?: string;
+    logo?: string;
+    logo_large?: string;
+    website?: string;
+    name?: string;
+    profile_url?: string;
+    locations?: Array<{ city?: string; country?: string; area?: string }>;
+    industry?: string[];
+  } | null>(null);
 
   const diagramHandleRef = useRef<OrgChartDiagramHandle | null>(null);
   const skipNextRefetchRef = useRef(false);
@@ -174,9 +204,24 @@ export const ArxOrgChart = ({
   const tokenPair = useRecoilValue(tokenPairState);
   const accessToken = tokenPair?.accessToken?.token ?? undefined;
   const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+  const { isLinkedinConnected } = useUnipile();
+
+  const {
+    company: fallbackCompanyInfo,
+    lookupByName,
+  } = useCompanyInfoLookup({ baseUrl, accessToken });
 
   const { refetchJobs } = useJobRefetch();
-  const actions = useOrgChartActions({ companyId, companyName, website });
+  const effectiveEmployeeCount =
+    unipileCompanyProfile?.employee_count ??
+    exactEmployeeCount ??
+    fallbackCompanyInfo?.employeeCount;
+  const actions = useOrgChartActions({
+    companyId,
+    companyName,
+    website,
+    employeeCount: effectiveEmployeeCount,
+  });
 
   const { data, isLoading, error, fetchOrgChart } = useOrgChartData(
     {
@@ -224,11 +269,6 @@ export const ArxOrgChart = ({
 
   const filterOptions = useOrgChartFilterOptions(orgData);
 
-  const {
-    company: fallbackCompanyInfo,
-    lookupByName,
-  } = useCompanyInfoLookup({ baseUrl, accessToken });
-
   const hasInitialCompanyInfo =
     companyName ||
     website ||
@@ -248,8 +288,65 @@ export const ArxOrgChart = ({
     }
   }, [companyId, companyName, hasInitialCompanyInfo, lookupByName]);
 
+  const linkedinUrlToUse = linkedinUrl ?? fallbackCompanyInfo?.linkedinUrl;
+
   useEffect(() => {
-    const linkedinUrlToUse = linkedinUrl ?? fallbackCompanyInfo?.linkedinUrl;
+    if (!isLinkedinConnected || !linkedinUrlToUse?.trim() || !baseUrl || !accessToken) {
+      if (!isLinkedinConnected) {
+        setUnipileCompanyProfile(null);
+      }
+      return;
+    }
+
+    let cancelled = false;
+    const fetchCompanyProfile = async () => {
+      try {
+        const params = new URLSearchParams();
+        params.set('linkedinUrl', linkedinUrlToUse.trim());
+        const res = await fetch(
+          `${baseUrl.replace(/\/$/, '')}/org-chart/companies/company-profile?${params.toString()}`,
+          {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          },
+        );
+        if (cancelled) return;
+        const data = (await res.json()) as {
+          linkedinConnected?: boolean;
+          profile?: {
+            employee_count?: number;
+            description?: string;
+            tagline?: string;
+            logo?: string;
+            logo_large?: string;
+            website?: string;
+            name?: string;
+            profile_url?: string;
+            locations?: Array<{ city?: string; country?: string; area?: string }>;
+            industry?: string[];
+          } | null;
+        };
+        if (res.ok && data.linkedinConnected && data.profile) {
+          setUnipileCompanyProfile(data.profile);
+        } else {
+          setUnipileCompanyProfile(null);
+        }
+      } catch {
+        if (!cancelled) setUnipileCompanyProfile(null);
+      }
+    };
+    fetchCompanyProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    baseUrl,
+    accessToken,
+    isLinkedinConnected,
+    linkedinUrlToUse,
+  ]);
+
+  useEffect(() => {
+    if (isLinkedinConnected) return;
     const identifier = linkedinUrlToUse ?? companyId;
     if (!identifier?.trim() || !baseUrl) return;
 
@@ -287,8 +384,8 @@ export const ArxOrgChart = ({
     baseUrl,
     accessToken,
     companyId,
-    linkedinUrl,
-    fallbackCompanyInfo?.linkedinUrl,
+    linkedinUrlToUse,
+    isLinkedinConnected,
   ]);
 
   useEffect(() => {
@@ -400,15 +497,49 @@ export const ArxOrgChart = ({
       }),
   };
 
+  const unipileLocationName = unipileCompanyProfile?.locations?.[0]
+    ? [
+        unipileCompanyProfile.locations[0].city,
+        unipileCompanyProfile.locations[0].area,
+        unipileCompanyProfile.locations[0].country,
+      ]
+        .filter(Boolean)
+        .join(', ')
+    : undefined;
+
   const headerProps = {
-    companyName: companyName ?? fallbackCompanyInfo?.companyName,
-    website: website ?? fallbackCompanyInfo?.website,
-    locationName: locationName ?? fallbackCompanyInfo?.locationName,
-    industry: industry ?? fallbackCompanyInfo?.industry,
+    companyName:
+      companyName ??
+      unipileCompanyProfile?.name ??
+      fallbackCompanyInfo?.companyName,
+    website:
+      website ??
+      unipileCompanyProfile?.website ??
+      fallbackCompanyInfo?.website,
+    locationName:
+      locationName ??
+      unipileLocationName ??
+      fallbackCompanyInfo?.locationName,
+    industry:
+      industry ??
+      (Array.isArray(unipileCompanyProfile?.industry)
+        ? unipileCompanyProfile?.industry?.join(', ')
+        : undefined) ??
+      fallbackCompanyInfo?.industry,
     profileCount: profileCount ?? fallbackCompanyInfo?.profileCount,
-    linkedinUrl: linkedinUrl ?? fallbackCompanyInfo?.linkedinUrl,
-    employeeCount: exactEmployeeCount ?? fallbackCompanyInfo?.employeeCount,
+    hideProfileCountWhenUnipile: !!unipileCompanyProfile,
+    linkedinUrl:
+      linkedinUrl ??
+      unipileCompanyProfile?.profile_url ??
+      fallbackCompanyInfo?.linkedinUrl,
+    employeeCount:
+      unipileCompanyProfile?.employee_count ??
+      exactEmployeeCount ??
+      fallbackCompanyInfo?.employeeCount,
     linkedinDisplayName: fallbackCompanyInfo?.linkedinDisplayName,
+    description: unipileCompanyProfile?.description,
+    tagline: unipileCompanyProfile?.tagline,
+    logoUrl: unipileCompanyProfile?.logo_large ?? unipileCompanyProfile?.logo,
     onBack,
     hasFilters: !!orgData,
     filtersProps,
@@ -422,20 +553,31 @@ export const ArxOrgChart = ({
         {isLoading && (
           <StyledLoadingMessage>Loading org chart...</StyledLoadingMessage>
         )}
+        {actions.isContextLoading &&
+          !actions.isContextModalOpen &&
+          actions.contextProgressMessage && (
+            <StyledProgressBanner>
+              {actions.contextProgressMessage}
+            </StyledProgressBanner>
+          )}
         {error && <StyledErrorMessage>{error}</StyledErrorMessage>}
 
         {!isLoading && !error && nodeDataArray.length > 0 && (
           <>
             {isBlankTemplate && (
               <StyledTemplateBanner>
-                This is a template. Click{' '}
+                <span>
+                  This is a preview template. Generate the full org chart to see
+                  all employees.
+                </span>
                 <StyledTemplateBannerButton
                   type="button"
                   onClick={searchControlsProps.onGetAll}
                 >
-                  All
-                </StyledTemplateBannerButton>{' '}
-                to generate the full org chart for this company.
+                  {typeof effectiveEmployeeCount === 'number'
+                    ? `Generate full org chart (${effectiveEmployeeCount.toLocaleString()} employees)`
+                    : 'Generate full org chart'}
+                </StyledTemplateBannerButton>
               </StyledTemplateBanner>
             )}
             <OrgChartDiagram
@@ -458,7 +600,9 @@ export const ArxOrgChart = ({
                 type="button"
                 onClick={searchControlsProps.onGetAll}
               >
-                All
+                {typeof effectiveEmployeeCount === 'number'
+                  ? `Full org chart (${effectiveEmployeeCount.toLocaleString()})`
+                  : 'All'}
               </StyledTopRightActionButton>
               <StyledTopRightActionButton
                 type="button"

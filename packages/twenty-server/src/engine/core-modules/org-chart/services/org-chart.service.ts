@@ -381,6 +381,7 @@ export class OrgChartService {
         workspaceId,
         wantEmail ? 1 : 0,
         wantPhone ? 1 : 0,
+        { linkedinUrl: trimmedUrl, source: 'org_chart_contact' },
       );
     }
 

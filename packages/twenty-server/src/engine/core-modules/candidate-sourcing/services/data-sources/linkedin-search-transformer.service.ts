@@ -391,7 +391,11 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         // Override string fields for Handsontable compatibility
         phoneNumber: userProfile.phoneNumber || '',
         email: userProfile.emailAddress || '',
-        linkedinUrl: peopleResult.public_profile_url || '',
+        linkedinUrl:
+          peopleResult.public_profile_url ||
+          peopleResult.profile_url ||
+          userProfile.linkedinUrl ||
+          '',
         hiringNaukriUrl: userProfile.linkedinSpecificData?.hiringNaukriUrl || '',
         resdexNaukriUrl: '',
         displayPicture: peopleResult.profile_picture_url || '',

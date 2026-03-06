@@ -5,13 +5,24 @@ import { toTitleCase } from '../strings/toTitleCase';
  * Matches arxena getOrgChartJsonObj + processCandidate structure.
  */
 
+/** Recursive JSON value type - no unknown. */
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue | undefined };
+
 type Candidate = {
   full_name?: string | null;
   job_title?: string | null;
   image?: string | null;
   std_linkedin_url?: string | null;
   location_name?: string | null;
-  [key: string]: unknown;
+  profile_picture_url?: string | null;
+  linkedin_url?: string | null;
+  [key: string]: JsonValue | undefined;
 };
 
 type RawOrgNode = {
@@ -22,10 +33,47 @@ type RawOrgNode = {
   country?: string;
   std_function?: string;
   std_grade?: string;
-  [key: string]: unknown;
+  nodeState?: 'preview' | 'active' | 'lock';
+  len_candidates?: number | string;
+  [key: string]: JsonValue | undefined;
 };
 
 export type NodeState = 'preview' | 'active' | 'lock';
+
+/**
+ * Raw org chart payload from API/cache.
+ * Shape from Python OrgStructure.create_org_charts_json_from_std_people_array.
+ */
+export type OrgChartData = {
+  /** JSON string of node array - primary data for processing. */
+  orgchart?: string;
+  company_id?: string;
+  count_org?: number;
+  job_company_id?: string;
+  job_company_name?: string;
+  job_company_linkedin_url?: string;
+  job_company_website?: string;
+  job_id?: string;
+  industry?: string;
+  country?: string;
+  countries?: string;
+  type?: string;
+  functions?: string;
+  analytics?: string;
+  gender_analytics?: string;
+  location_analytics?: string;
+  functions_analytics?: string;
+  country_analytics?: string;
+  /** Direct people count fields (used by inferPeopleCountFromOrgChart). */
+  people_count?: number;
+  peopleCount?: number;
+  candidate_count?: number;
+  candidateCount?: number;
+  total_people?: number;
+  totalPeople?: number;
+  itemCount?: number;
+  [key: string]: JsonValue | undefined;
+};
 
 export type OrgChartNodeData = {
   key: number;
@@ -34,7 +82,7 @@ export type OrgChartNodeData = {
   country?: string;
   category?: string;
   nodeState?: NodeState;
-  [key: string]: unknown;
+  [key: string]: JsonValue | undefined;
 };
 
 export const isMaskedName = (name: string | null | undefined): boolean => {
@@ -80,7 +128,11 @@ function processCandidate(
     candidate?.full_name != null
       ? toTitleCase(candidate.full_name, { skipIfMasked: true })
       : '';
-  node[`image_${index}`] = candidate?.image != null ? candidate.image : '';
+  const imageUrl =
+    candidate?.image ??
+    (candidate as { profile_picture_url?: string })?.profile_picture_url;
+  node[`image_${index}`] =
+    imageUrl != null && imageUrl !== '' ? imageUrl : '';
   const linkedinUrl =
     candidate?.std_linkedin_url ??
     (candidate as { linkedin_url?: string } | undefined)?.linkedin_url ??
@@ -94,7 +146,7 @@ function processCandidate(
  */
 export function extractOrgData(
   data: Record<string, unknown> | null,
-): Record<string, unknown> | null {
+): OrgChartData | null {
   if (!data) return null;
 
   const nested =
@@ -104,10 +156,10 @@ export function extractOrgData(
   const modified = nested?.modified_query_results;
 
   if (modified && typeof modified === 'object') {
-    return modified as Record<string, unknown>;
+    return modified as OrgChartData;
   }
   if (data.orgchart != null || data.company_id != null) {
-    return data;
+    return data as OrgChartData;
   }
   return null;
 }
@@ -116,7 +168,7 @@ export function extractOrgData(
  * Process raw org chart data to GoJS nodeDataArray for TreeModel.
  */
 export function processOrgChartToNodeData(
-  orgData: Record<string, unknown>,
+  orgData: OrgChartData,
 ): OrgChartNodeData[] {
   const orgchartStr = orgData.orgchart;
   if (typeof orgchartStr !== 'string') return [];
@@ -137,6 +189,7 @@ export function processOrgChartToNodeData(
     const name = node[`name_${i}`];
     const title = node[`title_${i}`];
     const url = node[`linkedin_url_${i}`] ?? node[`url_${i}`];
+    const image = node[`image_${i}`];
     const fullName =
       name !== undefined && name !== null && name !== '' && name !== 0
         ? String(name)
@@ -153,6 +206,10 @@ export function processOrgChartToNodeData(
           ? String(title)
           : undefined,
       std_linkedin_url: stdUrl ?? undefined,
+      image:
+        image !== undefined && image !== null && image !== '' && image !== 0
+          ? String(image)
+          : undefined,
     };
   };
 
@@ -220,11 +277,11 @@ export function processOrgChartToNodeData(
     };
 
     if (typeof raw.std_function === 'string') {
-      (node as Record<string, unknown>).std_function = raw.std_function;
+      node.std_function = raw.std_function;
     }
 
     if (typeof raw.std_grade === 'string') {
-      (node as Record<string, unknown>).std_grade = raw.std_grade;
+      node.std_grade = raw.std_grade;
     }
 
     for (let i = 0; i < orderedCandidates.length && i < 4; i++) {
@@ -233,14 +290,10 @@ export function processOrgChartToNodeData(
     node.total_people = orderedCandidates.length;
 
     const PERSON_ROW_HEIGHT = 48;
-    (node as Record<string, unknown>).height_0 =
-      orderedCandidates.length >= 1 ? PERSON_ROW_HEIGHT : 0;
-    (node as Record<string, unknown>).height_1 =
-      orderedCandidates.length >= 2 ? PERSON_ROW_HEIGHT : 0;
-    (node as Record<string, unknown>).height_2 =
-      orderedCandidates.length >= 3 ? PERSON_ROW_HEIGHT : 0;
-    (node as Record<string, unknown>).height_3 =
-      orderedCandidates.length >= 4 ? PERSON_ROW_HEIGHT : 0;
+    node.height_0 = orderedCandidates.length >= 1 ? PERSON_ROW_HEIGHT : 0;
+    node.height_1 = orderedCandidates.length >= 2 ? PERSON_ROW_HEIGHT : 0;
+    node.height_2 = orderedCandidates.length >= 3 ? PERSON_ROW_HEIGHT : 0;
+    node.height_3 = orderedCandidates.length >= 4 ? PERSON_ROW_HEIGHT : 0;
 
     result.push(node);
   }

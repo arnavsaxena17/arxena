@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { spawn } from 'child_process';
 import * as path from 'path';
+import type { OrgChartData } from 'twenty-shared';
 
 type PythonStdResult = {
   input_title: string;
@@ -165,7 +166,7 @@ export class PythonOrgChartService {
     people: Record<string, unknown>[];
     job_name: string;
     job_id: string;
-  }): Promise<Record<string, unknown>> {
+  }): Promise<OrgChartData> {
     const baseUrl = (
       process.env.ARXENA_SITE_ORGCHART_URL ?? 'http://localhost:5050/api/orgchart/build'
     ).replace(/\/+$/, '');
@@ -196,7 +197,7 @@ export class PythonOrgChartService {
       if (result && typeof (result as { error?: string }).error === 'string') {
         throw new Error((result as { error: string }).error);
       }
-      return result;
+      return result as OrgChartData;
     } catch (err) {
       clearTimeout(timeoutId);
       if (err instanceof Error) {
@@ -226,7 +227,7 @@ export class PythonOrgChartService {
     people: Record<string, unknown>[];
     jobName?: string;
     jobId?: string;
-  }): Promise<Record<string, unknown>> {
+  }): Promise<OrgChartData> {
     const payload = {
       people: input.people,
       job_name: input.jobName ?? '',
@@ -241,7 +242,7 @@ export class PythonOrgChartService {
     this.logger.log(`Using ${useCli ? 'CLI' : 'HTTP'} orgchart build`);
     this.logger.log(`Payload: ${JSON.stringify(payload)}`);
     if (useCli) {
-      return this.runPython<Record<string, unknown>>(['orgchart'], payload);
+      return this.runPython<OrgChartData>(['orgchart'], payload);
     }
 
     return this.callOrgChartBuildUrl(payload);
@@ -257,8 +258,8 @@ export class PythonOrgChartService {
    * The caller can then compare this against the static
    * yuga_labs_all_org_chart_assist.json contents.
    */
-  async buildYugaLabsOrgChartFromPython(): Promise<Record<string, unknown>> {
-    const result = await this.runPython<Record<string, unknown>>([
+  async buildYugaLabsOrgChartFromPython(): Promise<OrgChartData> {
+    const result = await this.runPython<OrgChartData>([
       'orgchart-yuga',
     ]);
     return result;

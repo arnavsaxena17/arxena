@@ -5,28 +5,28 @@ import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/typ
 import { SearchParameterGenerationService } from 'src/engine/core-modules/candidate-search/services/search-parameter-generation.service';
 import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
 import {
-  LinkedInClassicCompaniesSearchRequest,
-  LinkedInClassicJobsSearchRequest,
-  LinkedInSalesNavigatorCompaniesSearchRequest,
+    LinkedInClassicCompaniesSearchRequest,
+    LinkedInClassicJobsSearchRequest,
+    LinkedInSalesNavigatorCompaniesSearchRequest,
 } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
 import { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { PythonOrgChartService } from 'src/engine/core-modules/org-chart/services/python-org-chart.service';
-import { PythonQueryGenerationService } from './python-query-generation.service';
 import {
-  graphqlToFindManySearchFilters,
-  SearchFilter,
-  UpdateOneSearchFilter,
+    graphqlToFindManySearchFilters,
+    OrgChartData,
+    SearchFilter,
+    UpdateOneSearchFilter,
 } from 'twenty-shared';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import {
-  ClassicPeopleSearchStrategyResult,
-  GeneratedSearchParameters,
-  ParsedJobDescription,
-  RecruiterPeopleSearchStrategyResult,
-  ResultValidationResult,
-  SalesNavigatorPeopleSearchStrategyResult,
+    ClassicPeopleSearchStrategyResult,
+    GeneratedSearchParameters,
+    ParsedJobDescription,
+    RecruiterPeopleSearchStrategyResult,
+    ResultValidationResult,
+    SalesNavigatorPeopleSearchStrategyResult,
 } from '../types/candidate-search-request.type';
 import { ChatMessageRequest } from '../types/search-plan.types';
 import { calculateCost } from '../utils/cost-calculation.util';
@@ -41,6 +41,7 @@ import { CleanupService } from './cleanup.service';
 import { CompanyExpanderService } from './company-expander.service';
 import { JobDescriptionService } from './job-description.service';
 import { JobTitleExpanderService } from './job-title-expander.service';
+import { PythonQueryGenerationService } from './python-query-generation.service';
 import { QueryConstructorService } from './query-constructor.service';
 import { RequirementAnalyzerService } from './requirement-analyzer.service';
 import { SearchExecutionService } from './search-execution.service';
@@ -110,10 +111,12 @@ type CachedCompanyOrgChartPayload = {
   companyName: string;
   mode: 'entire_company';
   searchType?: 'classic' | 'sales_navigator' | 'recruiter';
-  orgChart: Record<string, unknown>;
+  orgChart: OrgChartData;
   items: any[];
   itemCount: number;
   cachedAt: string;
+  /** True if credits were debited when this org chart was created. Undefined = legacy cache (treated as true). */
+  creditsDebited?: boolean;
 };
 
 type CachedCompanyCandidateListPayload = {
@@ -1937,7 +1940,7 @@ export class CandidateSearchHandlerService {
       mode?: string;
       function?: string;
     },
-  ): Promise<Record<string, unknown>> {
+  ): Promise<OrgChartData> {
     const { companyName, companyId, mode, function: fn } = options;
     const normalizedCompanyName = (companyName ?? '').trim();
     const normalizedCompanyId =
@@ -2022,6 +2025,22 @@ export class CandidateSearchHandlerService {
         (linkedinUrl !== '' ? linkedinUrl : '') ||
         `${fullName || 'candidate'}-${jobCompanyName || 'company'}-${index}`;
 
+      const profilePictureUrl =
+        (typeof (raw as { profile_picture_url?: unknown }).profile_picture_url ===
+          'string' &&
+          (raw as { profile_picture_url: string }).profile_picture_url) ||
+        (typeof (raw as { profile_picture_url_large?: unknown })
+          .profile_picture_url_large === 'string' &&
+          (raw as { profile_picture_url_large: string })
+            .profile_picture_url_large) ||
+        (typeof (raw as { profilePictureUrl?: unknown }).profilePictureUrl ===
+          'string' &&
+          (raw as { profilePictureUrl: string }).profilePictureUrl) ||
+        (typeof (raw as { displayPicture?: unknown }).displayPicture ===
+          'string' &&
+          (raw as { displayPicture: string }).displayPicture) ||
+        '';
+
       return {
         full_name: fullName,
         job_title: jobTitle,
@@ -2044,6 +2063,7 @@ export class CandidateSearchHandlerService {
         inferred_years_experience: '',
         emails: '',
         phone_numbers: '',
+        profile_picture_url: profilePictureUrl,
         id: idValue,
       };
     });
@@ -2154,9 +2174,11 @@ export class CandidateSearchHandlerService {
     companyId?: string;
     mode: 'entire_company';
     searchType: 'classic' | 'sales_navigator' | 'recruiter';
-    orgChart: Record<string, unknown>;
+    orgChart: OrgChartData;
     items: any[];
     itemCount: number;
+    /** True if credits were debited when creating this org chart. Default true for backward compat. */
+    creditsDebited?: boolean;
   }): Promise<void> {
     const normalizedCompanyName = this.normalizeCompanyName(input.companyName);
     const normalizedCompanyId = this.normalizeCompanyId(
@@ -2179,6 +2201,7 @@ export class CandidateSearchHandlerService {
       items: input.items,
       itemCount: input.itemCount,
       cachedAt: new Date().toISOString(),
+      creditsDebited: input.creditsDebited ?? true,
     };
 
     const ttlFromEnv = Number(process.env.ORG_CHART_COMPANY_CACHE_TTL_SECONDS);
@@ -2194,7 +2217,7 @@ export class CandidateSearchHandlerService {
   }
 
   shouldCacheCompanyOrgChart(input: {
-    orgChart: Record<string, unknown> | undefined;
+    orgChart: OrgChartData | undefined;
     fallbackCandidateCount?: number;
     companyName?: string;
     companyId?: string;

@@ -15,15 +15,16 @@ import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queu
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import {
-  CleanWorkspaceDeletionWarningUserVarsJob,
-  CleanWorkspaceDeletionWarningUserVarsJobData,
+    CleanWorkspaceDeletionWarningUserVarsJob,
+    CleanWorkspaceDeletionWarningUserVarsJobData,
 } from 'src/engine/workspace-manager/workspace-cleaner/jobs/clean-workspace-deletion-warning-user-vars.job';
 import { BillingSubscription } from '../../entities/billing-subscription.entity';
 import { WorkspaceCredits } from '../../entities/workspace-credits.entity';
 import { SubscriptionStatus } from '../../enums/billing-subscription-status.enum';
+import { CreditTransactionService } from '../../services/credit-transaction.service';
 import {
-  RAZORPAY_CREDIT_PACKS,
-  type CreditPackKey,
+    RAZORPAY_CREDIT_PACKS,
+    type CreditPackKey,
 } from '../constants/credit-packs.constant';
 import { RazorpayOrderService } from './razorpay-order.service';
 
@@ -85,6 +86,7 @@ export class RazorpayWebhookService {
   constructor(
     private readonly environmentService: EnvironmentService,
     private readonly razorpayOrderService: RazorpayOrderService,
+    private readonly creditTransactionService: CreditTransactionService,
     @InjectMessageQueue(MessageQueue.workspaceQueue)
     private readonly messageQueueService: MessageQueueService,
     @InjectRepository(WorkspaceCredits, 'core')
@@ -188,6 +190,14 @@ export class RazorpayWebhookService {
         phoneContactCredits: 0,
       });
     }
+
+    await this.creditTransactionService.recordTransaction({
+      workspaceId,
+      type: 'credit',
+      creditType: 'org_chart',
+      amount: pack.credits,
+      metadata: { creditPackKey, source: 'payment_captured' },
+    });
 
     this.logger.log(
       `payment.captured: added ${pack.credits} credits for workspace ${workspaceId}`,

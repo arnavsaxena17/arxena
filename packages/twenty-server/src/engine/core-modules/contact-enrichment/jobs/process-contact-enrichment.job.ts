@@ -97,6 +97,7 @@ export class ContactEnrichmentQueueProcessor {
             workspaceId,
             wantEmail ? 1 : 0,
             wantPhone ? 1 : 0,
+            { linkedinUrl, source: 'contact_enrichment_job' },
           );
         }
 

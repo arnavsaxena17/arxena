@@ -1,15 +1,15 @@
 import {
-  Body,
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  Logger,
-  Param,
-  Post,
-  Query,
-  Req,
-  UseGuards
+    Body,
+    Controller,
+    Get,
+    HttpException,
+    HttpStatus,
+    Logger,
+    Param,
+    Post,
+    Query,
+    Req,
+    UseGuards
 } from '@nestjs/common';
 
 import { Request } from 'express';
@@ -25,9 +25,9 @@ import { PdlProvider } from '../providers/pdl.provider';
 import { ContactEnrichmentJobService } from '../services/contact-enrichment-job.service';
 import { ContactEnrichmentWaterfallService } from '../services/contact-enrichment-waterfall.service';
 import type {
-  ContactAvailability,
-  ContactEnrichmentOptions,
-  ContactResult,
+    ContactAvailability,
+    ContactEnrichmentOptions,
+    ContactResult,
 } from '../types/contact-enrichment.types';
 
 @Controller('contact-enrichment')
@@ -201,6 +201,7 @@ export class ContactEnrichmentController {
             workspaceId,
             wantEmail ? 1 : 0,
             wantPhone ? 1 : 0,
+            { linkedinUrl: url, source: 'contact_enrichment' },
           );
         }
 
@@ -606,6 +607,7 @@ export class ContactEnrichmentController {
             workspaceId,
             wantEmail ? 1 : 0,
             wantPhone ? 1 : 0,
+            { linkedinUrl: url, source: 'contact_enrichment' },
           );
         }
 

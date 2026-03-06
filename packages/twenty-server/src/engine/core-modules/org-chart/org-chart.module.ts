@@ -8,6 +8,7 @@ import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-
 import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 
+import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 
 import { OrgChartController } from './controllers/org-chart.controller';
@@ -23,14 +24,15 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
   imports: [
     ApifyModule,
     BillingModule,
-    EnvironmentModule,
     ContactEnrichmentModule,
+    EnvironmentModule,
     GraphQLExecutionModule,
     LinkedInSearchModule,
     WorkspaceModificationsModule,
   ],
   controllers: [OrgChartController],
   providers: [
+    UnipileCompanyService,
     WorkspaceMemberProfileUnipileService,
     OrgChartService,
     ArxenaBackendService,

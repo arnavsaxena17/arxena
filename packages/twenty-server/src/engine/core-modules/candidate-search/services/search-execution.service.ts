@@ -6,23 +6,23 @@ import { ResumeReadParseUploadService } from '../../candidate-sourcing/services/
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
 import {
-  LinkedInSearchConfig,
-  LinkedInSearchResponse,
-  LinkedInSearchResult
+    LinkedInSearchConfig,
+    LinkedInSearchResponse,
+    LinkedInSearchResult
 } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import {
-  ClassicPeopleSearchStrategyResult,
-  GeneratedSearchParameters,
-  ParsedJobDescription,
-  RecruiterPeopleSearchStrategyResult,
-  ResultValidationResult,
-  SalesNavigatorPeopleSearchStrategyResult
+    ClassicPeopleSearchStrategyResult,
+    GeneratedSearchParameters,
+    ParsedJobDescription,
+    RecruiterPeopleSearchStrategyResult,
+    ResultValidationResult,
+    SalesNavigatorPeopleSearchStrategyResult
 } from '../types/candidate-search-request.type';
 import {
-  FileUtils,
-  LinkedinParameterResolver,
-  ParameterSanitizer
+    FileUtils,
+    LinkedinParameterResolver,
+    ParameterSanitizer
 } from '../utils';
 import { CandidateScoringService } from './candidate-scoring.service';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
@@ -161,6 +161,12 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           break;
         }
 
+        sendEvent?.('status', {
+          message: `Fetching page ${state.currentPage}${state.allItems.length > 0 ? ` (${state.allItems.length} candidates collected so far)` : ''}...`,
+          page: state.currentPage,
+          candidatesCollectedSoFar: state.allItems.length,
+        });
+
         const pageResult = await this.fetchPage(
           strategyResolvedParams,
           searchType,
@@ -232,6 +238,10 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           totalPages: state.totalPagesAvailable,
           strategyId: strategy.id,
           strategyLabel: strategy.label,
+          remainingToFetch:
+            state.totalCountFromAPI != null
+              ? Math.max(0, state.totalCountFromAPI - state.allItems.length)
+              : undefined,
         });
 
         // Stop if page returned only duplicates (same results as before - API may not support pagination or has no more)
@@ -332,6 +342,12 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           break;
         }
 
+        sendEvent?.('status', {
+          message: `Fetching page ${state.currentPage}${state.allItems.length > 0 ? ` (${state.allItems.length} candidates collected so far)` : ''}...`,
+          page: state.currentPage,
+          candidatesCollectedSoFar: state.allItems.length,
+        });
+
         const pageResult = await this.fetchPage(
           strategyResolvedParams,
           searchType,
@@ -404,6 +420,10 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           totalPages: state.totalPagesAvailable,
           strategyId: strategy.id,
           strategyLabel: strategy.label,
+          remainingToFetch:
+            state.totalCountFromAPI != null
+              ? Math.max(0, state.totalCountFromAPI - state.allItems.length)
+              : undefined,
         });
 
         // Stop if page returned only duplicates (same results as before - API may return same page or has no more)
@@ -498,7 +518,10 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     config?: LinkedInSearchConfig;
     paging?: { total_count: number };
   } | null> {
-    sendEvent?.('status', { message: `Fetching page...` });
+    sendEvent?.('status', {
+      message: `Sending request for page ${currentPage}...`,
+      page: currentPage,
+    });
 
     const accountId = await this.getLinkedInAccountId(apiToken);
 

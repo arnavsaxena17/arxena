@@ -14,7 +14,6 @@ export interface JobIdValidationResult {
  * @returns JobIdValidationResult with validation status and extracted job ID
  */
 export function validateAndExtractJobId(input: any): JobIdValidationResult {
-  console.log('validateAndExtractJobId called with input:', typeof input, input);
   
   if (!input) {
     return {

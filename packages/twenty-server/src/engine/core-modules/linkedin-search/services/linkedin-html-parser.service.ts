@@ -27,13 +27,16 @@ export class LinkedInHtmlParserService {
         return [];
       }
 
+      // Extract profile picture URLs from rehydration script (fallback when DOM has no img)
+      const rehydrationUrls = this.extractProfilePictureUrlsFromRehydration(html);
+
       const results: LinkedInPeopleSearchResult[] = [];
 
       resultCards.forEach((card, index) => {
         try {
           const cardElement = card as Element;
           // this.logger.log(`[Profile ${index} HTML]\n${cardElement.outerHTML}`);
-          const result = this.parseResultCard(cardElement, index);
+          const result = this.parseResultCard(cardElement, index, rehydrationUrls);
           if (result) {
             results.push(result);
           }
@@ -54,7 +57,11 @@ export class LinkedInHtmlParserService {
    * Parse a single result card element using stable selectors and relative structure.
    * Structure: name container (p with name + "• 2nd"), then headline (p), then location (p), then Current: / followers / mutual.
    */
-  private parseResultCard(card: Element, index: number): LinkedInPeopleSearchResult | null {
+  private parseResultCard(
+    card: Element,
+    index: number,
+    rehydrationUrls: string[] = [],
+  ): LinkedInPeopleSearchResult | null {
     try {
       // Stable selector: name and profile URL (data-view-name is not dynamically generated)
       const nameLink = card.querySelector('a[data-view-name="search-result-lockup-title"]');
@@ -113,17 +120,26 @@ export class LinkedInHtmlParserService {
 
       // Extract profile picture URL
       // Strategy:
-      // - Prefer <img> inside a <figure>
-      // - Fallback to any element with an inline background-image style
+      // 1. <img> inside figure or anywhere in card (src, data-src, srcset)
+      // 2. Element with inline background-image style (figure, span, etc.)
+      // 3. Rehydration script URLs (fallback when DOM has no img - LinkedIn often lazy-loads)
       const profilePictureElement =
         card.querySelector('figure img') ||
+        card.querySelector('figure[data-view-name="image"] img') ||
+        card.querySelector('img') ||
         card.querySelector('figure [style*="background-image"]') ||
+        card.querySelector('figure[data-view-name="image"] [style*="background-image"]') ||
         card.querySelector('[style*="background-image"]');
       let profilePictureUrl: string | null = null;
       if (profilePictureElement) {
-        profilePictureUrl = profilePictureElement.getAttribute('src') || 
-                          profilePictureElement.getAttribute('data-src') ||
-                          this.extractBackgroundImageUrl(profilePictureElement);
+        profilePictureUrl =
+          profilePictureElement.getAttribute('src') ||
+          profilePictureElement.getAttribute('data-src') ||
+          this.extractSrcFromSrcset(profilePictureElement.getAttribute('srcset')) ||
+          this.extractBackgroundImageUrl(profilePictureElement);
+      }
+      if (!profilePictureUrl && rehydrationUrls[index]) {
+        profilePictureUrl = rehydrationUrls[index];
       }
 
       const nameParts = this.parseName(name);
@@ -280,6 +296,110 @@ export class LinkedInHtmlParserService {
 
     const match = style.match(/background-image:\s*url\(['"]?([^'"]+)['"]?\)/);
     return match ? match[1] : null;
+  }
+
+  /**
+   * Extract first URL from srcset attribute (e.g. "url1 1x, url2 2x" -> url1)
+   */
+  private extractSrcFromSrcset(srcset: string | null): string | null {
+    if (!srcset?.trim()) return null;
+    const firstPart = srcset.split(',')[0]?.trim();
+    if (!firstPart) return null;
+    return firstPart.split(/\s+/)[0]?.trim() || null;
+  }
+
+  /**
+   * Extract profile picture URLs from LinkedIn rehydration script.
+   * LinkedIn often embeds image URLs in window.__como_rehydration__ before they're rendered.
+   * Returns URLs in order they appear (typically matches people-search-result order).
+   * Full URL format: .../profile-displayphoto-shrink_100_100/.../0/123?e=...&v=...&t=...
+   */
+  private extractProfilePictureUrlsFromRehydration(html: string): string[] {
+    const normalizedHtml = this.decodePotentiallyEscapedHtml(html);
+    const urls: string[] = [];
+    const seen = new Set<string>();
+
+    // 1) Direct full URLs embedded in the page payload.
+    const profileImagePattern =
+      /https?:\/\/(?:media\.licdn\.com|media-exp[0-9]?\.licdn\.com)\/dms\/image\/v2\/[^"'\s<>]+/g;
+    let match: RegExpExecArray | null;
+    const regex = new RegExp(profileImagePattern.source, 'g');
+    while ((match = regex.exec(normalizedHtml)) !== null) {
+      const url = this.normalizeProfileImageUrl(match[0]);
+      if (
+        !/\.(?:svg|gif|png)(?:\?|$)/i.test(url) &&
+        /(?:profile|displayphoto|shrink|framedphoto|scale)/i.test(url)
+      ) {
+        // Only keep URLs that look complete (have query params, full path, and reasonable length)
+        if (this.isCompleteProfileImageUrl(url)) {
+          urls.push(url);
+          seen.add(url);
+        }
+      }
+    }
+
+    // 2) LinkedIn stores many images as rootUrl + suffixUrl in rehydration JSON blocks.
+    // Example:
+    // "rootUrl":"https://media.licdn.com/dms/image/v2/.../profile-displayphoto-shrink_"
+    // "suffixUrl":"100_100/profile-displayphoto-shrink_100_100/0/123?...".
+    const rootPayloadRegex =
+      /\brenderPayload\b[^{}]*\{[^{}]*?"rootUrl":"([^"]+)","imageRenditions":\s*\[(.*?)\][^{}]*\}/gs;
+    let payloadMatch: RegExpExecArray | null;
+    while ((payloadMatch = rootPayloadRegex.exec(normalizedHtml)) !== null) {
+      const rootUrl = this.normalizeProfileImageUrl(payloadMatch[1]);
+      const renditionsBlock = payloadMatch[2] || '';
+      const suffixRegex = /"suffixUrl":"([^"]+)"/g;
+      let suffixMatch: RegExpExecArray | null;
+      const suffixes: string[] = [];
+      while ((suffixMatch = suffixRegex.exec(renditionsBlock)) !== null) {
+        suffixes.push(this.normalizeProfileImageUrl(suffixMatch[1]));
+      }
+
+      const preferredSuffix =
+        suffixes.find((suffix) => suffix.includes('/100_100/')) ||
+        suffixes.find((suffix) => suffix.includes('/200_200/')) ||
+        suffixes[0];
+
+      if (!preferredSuffix) {
+        continue;
+      }
+
+      const fullUrl = this.normalizeProfileImageUrl(`${rootUrl}${preferredSuffix}`);
+      if (
+        /(?:profile|displayphoto|shrink|framedphoto|scale)/i.test(fullUrl) &&
+        !/\.(?:svg|gif|png)(?:\?|$)/i.test(fullUrl) &&
+        this.isCompleteProfileImageUrl(fullUrl) &&
+        !seen.has(fullUrl)
+      ) {
+        urls.push(fullUrl);
+        seen.add(fullUrl);
+      }
+    }
+
+    return urls;
+  }
+
+  private decodePotentiallyEscapedHtml(html: string): string {
+    return html
+      .replace(/\\u0026/g, '&')
+      .replace(/\\\//g, '/')
+      .replace(/&#x2F;/gi, '/')
+      .replace(/&amp;/g, '&')
+      .replace(/\\"/g, '"');
+  }
+
+  private normalizeProfileImageUrl(url: string): string {
+    return this.decodePotentiallyEscapedHtml(url)
+      .trim()
+      .replace(/\\u003A/gi, ':');
+  }
+
+  private isCompleteProfileImageUrl(url: string): boolean {
+    return (
+      (/\?e=/.test(url) || /\/\d+\?/.test(url) || /\/0\/\d+/.test(url)) &&
+      url.length >= 100 &&
+      !/\.(?:svg|gif|png)(?:\?|$)/i.test(url)
+    );
   }
 
   /**

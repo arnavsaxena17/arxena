@@ -14,6 +14,9 @@ import {
 import { Request, Response } from 'express';
 
 import { ApifyEmployeeCountService } from 'src/engine/core-modules/apify/services/apify-employee-count.service';
+import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
+import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { CompanyAutocompleteDto } from '../dto/company-autocomplete.dto';
 import { OrgChartNodePeopleDto } from '../dto/org-chart-node-people.dto';
 import { OrgChartQueryDto } from '../dto/org-chart-query.dto';
@@ -30,6 +33,9 @@ export class OrgChartController {
     private readonly orgChartEsService: OrgChartEsService,
     private readonly companyLogoService: CompanyLogoService,
     private readonly apifyEmployeeCountService: ApifyEmployeeCountService,
+    private readonly unipileCompanyService: UnipileCompanyService,
+    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceQueryService: WorkspaceQueryService,
   ) {}
 
   private getAuthToken(req: Request): string | undefined {
@@ -420,6 +426,82 @@ export class OrgChartController {
       this.logger.error('Employee count lookup failed', error);
       throw new HttpException(
         error instanceof Error ? error.message : 'Employee count lookup failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('companies/company-profile')
+  async getCompanyProfile(
+    @Query('linkedinUrl') linkedinUrl: string,
+    @Query('linkedinSlug') linkedinSlug: string,
+    @Req() req: Request,
+  ) {
+    const urlOrSlug = linkedinUrl?.trim() || linkedinSlug?.trim();
+    if (!urlOrSlug) {
+      throw new HttpException(
+        'Query parameter "linkedinUrl" or "linkedinSlug" is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const authToken = this.getAuthToken(req);
+    if (!authToken) {
+      return { linkedinConnected: false, status: 'ok' };
+    }
+
+    try {
+      let workspaceId: string;
+      try {
+        workspaceId =
+          await this.workspaceQueryService.getWorkspaceIdFromToken(authToken);
+      } catch {
+        return { linkedinConnected: false, status: 'ok' };
+      }
+      const workspaceMemberId =
+        await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
+          authToken,
+        );
+      const accountId =
+        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+          workspaceMemberId ?? null,
+          workspaceId,
+          authToken,
+          'linkedin',
+        );
+
+      if (!accountId) {
+        return { linkedinConnected: false, status: 'ok' };
+      }
+
+      const publicIdentifier =
+        this.unipileCompanyService.extractPublicIdentifier(urlOrSlug);
+      if (!publicIdentifier) {
+        throw new HttpException(
+          'Could not extract company identifier from linkedinUrl or linkedinSlug',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const profile = await this.unipileCompanyService.getCompanyProfile(
+        publicIdentifier,
+        accountId,
+      );
+
+      if (!profile) {
+        return { linkedinConnected: true, profile: null, status: 'ok' };
+      }
+
+      return { linkedinConnected: true, profile, status: 'ok' };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      this.logger.error('Company profile lookup failed', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Company profile lookup failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

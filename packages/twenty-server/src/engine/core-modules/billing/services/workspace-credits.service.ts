@@ -6,6 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { WorkspaceCredits } from 'src/engine/core-modules/billing/entities/workspace-credits.entity';
+import { CreditTransactionService } from 'src/engine/core-modules/billing/services/credit-transaction.service';
 
 const DEFAULT_FREE_ORG_CHART_CREDITS = 1;
 const DEFAULT_FREE_EMAIL_CREDITS = 0;
@@ -16,6 +17,7 @@ export class WorkspaceCreditsService {
   constructor(
     @InjectRepository(WorkspaceCredits, 'core')
     private readonly workspaceCreditsRepository: Repository<WorkspaceCredits>,
+    private readonly creditTransactionService: CreditTransactionService,
   ) {}
 
   private getFreeOrgChartCredits(): number {
@@ -79,6 +81,7 @@ export class WorkspaceCreditsService {
   async debitOrgChartCredits(
     workspaceId: string,
     employeeCount: number,
+    metadata?: { companyName?: string; companyId?: string },
   ): Promise<void> {
     const creditsNeeded = this.computeOrgChartCreditsNeeded(employeeCount);
     const hasSufficient = await this.hasSufficientOrgChartCredits(
@@ -106,6 +109,16 @@ export class WorkspaceCreditsService {
       { workspaceId },
       { orgChartCredits: row.orgChartCredits - creditsNeeded },
     );
+
+    await this.creditTransactionService.recordTransaction({
+      workspaceId,
+      type: 'debit',
+      creditType: 'org_chart',
+      amount: creditsNeeded,
+      metadata: metadata
+        ? { ...metadata, employeeCount }
+        : { employeeCount },
+    });
   }
 
   async hasSufficientContactCredits(
@@ -137,6 +150,7 @@ export class WorkspaceCreditsService {
     workspaceId: string,
     emailCount: number,
     phoneCount: number,
+    metadata?: { linkedinUrl?: string; source?: string },
   ): Promise<void> {
     const row = await this.workspaceCreditsRepository.findOne({
       where: { workspaceId },
@@ -165,6 +179,26 @@ export class WorkspaceCreditsService {
         phoneContactCredits: newPhone,
       },
     );
+
+    const txMetadata = metadata ? { ...metadata } : {};
+    if (emailCount > 0) {
+      await this.creditTransactionService.recordTransaction({
+        workspaceId,
+        type: 'debit',
+        creditType: 'email_contact',
+        amount: emailCount,
+        metadata: Object.keys(txMetadata).length > 0 ? txMetadata : undefined,
+      });
+    }
+    if (phoneCount > 0) {
+      await this.creditTransactionService.recordTransaction({
+        workspaceId,
+        type: 'debit',
+        creditType: 'phone_contact',
+        amount: phoneCount,
+        metadata: Object.keys(txMetadata).length > 0 ? txMetadata : undefined,
+      });
+    }
   }
 
   async addOrgChartCredits(

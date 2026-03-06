@@ -1,10 +1,12 @@
 import styled from '@emotion/styled';
+import { IconBrandLinkedin, IconMail, IconPhone } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { toTitleCase } from 'twenty-shared';
 
 const DEFAULT_AVATAR =
   'https://st2.depositphotos.com/4111759/12123/v/950/depositphotos_121232442-stock-illustration-male-default-placeholder-avatar-profile.jpg';
@@ -132,6 +134,9 @@ const StyledContextResultMeta = styled.div`
 `;
 
 const StyledContextResultLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(0.5)};
   font-size: ${({ theme }) => theme.font.size.sm};
   color: ${({ theme }) => theme.color.blue};
   text-decoration: none;
@@ -142,6 +147,9 @@ const StyledContextResultLink = styled.a`
 `;
 
 const StyledContactButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(0.5)};
   margin-top: ${({ theme }) => theme.spacing(0.5)};
   padding: 0;
   border: none;
@@ -153,6 +161,11 @@ const StyledContactButton = styled.button`
 
   &:hover {
     text-decoration: underline;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
   }
 `;
 
@@ -255,18 +268,24 @@ const ResultItem = ({
   isFetchingContacts,
   onFetchContacts,
 }: ResultItemProps) => {
-  const avatarUrl = getAvatarUrl(item);
+  const avatarUrl = getAvatarUrl(item) ?? DEFAULT_AVATAR;
+  const displayHeadline = item.headline
+    ? toTitleCase(item.headline, { skipIfMasked: true })
+    : '';
+  const displayCompany = item.company
+    ? toTitleCase(item.company)
+    : '';
 
   return (
     <StyledContextResultItem>
-      {avatarUrl && <Avatar src={avatarUrl} size={36} />}
+      <Avatar src={avatarUrl} size={36} />
       <StyledContextResultContent>
         <StyledContextResultName>{item.fullName}</StyledContextResultName>
-        {item.headline && (
-          <StyledContextResultMeta>{item.headline}</StyledContextResultMeta>
+        {displayHeadline && (
+          <StyledContextResultMeta>{displayHeadline}</StyledContextResultMeta>
         )}
-        {item.company && (
-          <StyledContextResultMeta>{item.company}</StyledContextResultMeta>
+        {displayCompany && (
+          <StyledContextResultMeta>{displayCompany}</StyledContextResultMeta>
         )}
         {item.linkedinUrl && (
           <StyledContextResultLink
@@ -274,6 +293,7 @@ const ResultItem = ({
             target="_blank"
             rel="noreferrer"
           >
+            <IconBrandLinkedin size={14} stroke={1.6} />
             View on LinkedIn
           </StyledContextResultLink>
         )}
@@ -299,6 +319,8 @@ const ResultItem = ({
               onClick={() => onFetchContacts(item)}
               disabled={isFetchingContacts}
             >
+              <IconPhone size={14} stroke={1.6} />
+              <IconMail size={14} stroke={1.6} />
               {isFetchingContacts ? 'Fetching contacts…' : 'Fetch contacts'}
             </StyledContactButton>
           )}

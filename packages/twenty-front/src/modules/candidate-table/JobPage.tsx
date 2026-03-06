@@ -45,6 +45,7 @@ import { TopBar } from "@/ui/layout/top-bar/components/TopBar";
 import { InterviewCreationModal } from '@/video-interview/interview-creation/InterviewCreationModal';
 import { isVideoInterviewModalOpenState } from "@/video-interview/interview-creation/states/videoInterviewModalState";
 import { ViewComponentInstanceContext } from "@/views/states/contexts/ViewComponentInstanceContext";
+import { useQuery } from '@apollo/client';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -59,6 +60,7 @@ import { SearchPanelToggle } from '@/candidate-search/components/SearchPanel/Sea
 import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
 import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
 import { Mixpanel } from '~/mixpanel';
+import { WORKSPACE_CREDITS } from '~/modules/billing/graphql/workspaceCredits';
 import { useBaileysConnection } from '../baileys/contexts/BaileysContext';
 import { useUnipile } from '../unipile/contexts/UnipileContext';
 import { ChatKitWidget } from './components/ChatKitWidget';
@@ -125,6 +127,19 @@ export const JobPage: React.FC = () => {
   const searchMetadata = useRecoilValue(searchMetadataState);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const isOrgChartEnabled = useRecoilValue(isOrgChartEnabledState);
+  const { data: creditsData } = useQuery(WORKSPACE_CREDITS, {
+    skip: !isOrgChartEnabled,
+  });
+  const credits = (creditsData as {
+    workspaceCredits?: {
+      orgChartCredits: number;
+      emailContactCredits: number;
+      phoneContactCredits: number;
+    };
+  } | undefined)?.workspaceCredits;
+  const orgChartCredits = credits?.orgChartCredits ?? undefined;
+  const emailContactCredits = credits?.emailContactCredits ?? undefined;
+  const phoneContactCredits = credits?.phoneContactCredits ?? undefined;
 
   // Feature flag for new search UI
   // const { isNewSearchUIEnabled } = useNewSearchUI();
@@ -668,6 +683,9 @@ export const JobPage: React.FC = () => {
             onDownloadClick={handleDownloadClick}
             isLinkedinConnected={isLinkedinConnected}
             isWhatsappLoggedIn={isWhatsappLoggedIn}
+            orgChartCredits={orgChartCredits}
+            emailContactCredits={emailContactCredits}
+            phoneContactCredits={phoneContactCredits}
           />
           <StyledPageBody>
             <RecordIndexContextProvider value={recordIndexContextValue}>

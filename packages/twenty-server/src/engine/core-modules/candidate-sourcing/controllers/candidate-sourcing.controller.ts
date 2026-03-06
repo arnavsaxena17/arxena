@@ -1,14 +1,14 @@
 import {
-    Body,
-    Controller,
-    Get,
-    HttpException,
-    HttpStatus,
-    Post,
-    Req,
-    UploadedFile,
-    UseGuards,
-    UseInterceptors,
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Post,
+  Req,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
@@ -17,38 +17,38 @@ import * as path from 'path';
 
 import axios from 'axios';
 import {
-    CandidateEdge,
-    CandidateEnrichmentEdge,
-    createOneCandidateField,
-    CreateOneVideoInterviewTemplate,
-    getGraphqlToFindManyJobs,
-    graphqlMutationToDeleteManyCandidates,
-    graphqlMutationToDeleteManyPeople,
-    graphqlQueryToFindManyPeople,
-    graphqlToAddNewJob,
-    graphqlToCreateOnePrompt,
-    graphqlToFetchAllCandidateData,
-    graphqlToFetchAllCandidateDataWithFieldValues,
-    graphQlTofindManyCandidateEnrichments,
-    graphqlToFindManyJobs,
-    graphQltoUpdateOneCandidate,
-    Job,
-    JobEdge,
-    mutations,
-    PageInfo,
-    PersonEdge,
-    PersonNode,
-    queries,
-    UpdateOneJob,
-    UserProfile,
+  CandidateEdge,
+  CandidateEnrichmentEdge,
+  createOneCandidateField,
+  CreateOneVideoInterviewTemplate,
+  getGraphqlToFindManyJobs,
+  graphqlMutationToDeleteManyCandidates,
+  graphqlMutationToDeleteManyPeople,
+  graphqlQueryToFindManyPeople,
+  graphqlToAddNewJob,
+  graphqlToCreateOnePrompt,
+  graphqlToFetchAllCandidateData,
+  graphqlToFetchAllCandidateDataWithFieldValues,
+  graphQlTofindManyCandidateEnrichments,
+  graphqlToFindManyJobs,
+  graphQltoUpdateOneCandidate,
+  Job,
+  JobEdge,
+  mutations,
+  PageInfo,
+  PersonEdge,
+  PersonNode,
+  queries,
+  UpdateOneJob,
+  UserProfile,
 } from 'twenty-shared';
 import { v4 } from 'uuid';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import {
-    JobDescriptionParseRequest,
-    ParsedJobDescription,
+  JobDescriptionParseRequest,
+  ParsedJobDescription,
 } from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
 import { DeleteFieldValuesService } from 'src/engine/core-modules/candidate-sourcing/jobs/delete-field-values.service';
 import { ProcessAiFiltersService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-ai-filters.service';
@@ -1782,8 +1782,6 @@ export class CandidateSourcingController {
   
       // Get current user data using the same approach as RecruiterProfileService
       const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
-      console.log('currentUser in getUserObj:', currentUser);
-
       // Get all jobs for the user using staticGraphQLService
       const responseFromGetAllJobs = await this.staticGraphQLService.executeGraphQL(
         graphqlToFindManyJobs,
@@ -1791,7 +1789,6 @@ export class CandidateSourcingController {
         apiToken,
       );
       const jobs = responseFromGetAllJobs?.data?.data?.jobs?.edges || [];
-      console.log('jobs in getUserObj:', jobs.length);
 
       // Use the workspace member data from currentUser instead of separate query
       const workspaceMember = currentUser?.workspaceMember;

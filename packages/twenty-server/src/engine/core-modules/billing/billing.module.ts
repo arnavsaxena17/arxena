@@ -15,6 +15,7 @@ import { BillingPrice } from 'src/engine/core-modules/billing/entities/billing-p
 import { BillingProduct } from 'src/engine/core-modules/billing/entities/billing-product.entity';
 import { BillingSubscriptionItem } from 'src/engine/core-modules/billing/entities/billing-subscription-item.entity';
 import { BillingSubscription } from 'src/engine/core-modules/billing/entities/billing-subscription.entity';
+import { CreditTransaction } from 'src/engine/core-modules/billing/entities/credit-transaction.entity';
 import { WorkspaceCredits } from 'src/engine/core-modules/billing/entities/workspace-credits.entity';
 import { BillingRestApiExceptionFilter } from 'src/engine/core-modules/billing/filters/billing-api-exception.filter';
 import { OnboardingCreateStripeSubscriptionJob } from 'src/engine/core-modules/billing/jobs/onboarding-create-stripe-subscription.job';
@@ -61,6 +62,7 @@ import { PermissionsModule } from 'src/engine/metadata-modules/permissions/permi
         BillingMeter,
         BillingEntitlement,
         WorkspaceCredits,
+        CreditTransaction,
         Workspace,
         UserWorkspace,
         FeatureFlag,

@@ -1,7 +1,7 @@
 /* @license Enterprise */
 
 import { UseFilters, UseGuards } from '@nestjs/common';
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { GraphQLError } from 'graphql';
@@ -16,12 +16,15 @@ import { RequestInvoiceForCreditsInput } from 'src/engine/core-modules/billing/d
 import { BillingPlanOutput } from 'src/engine/core-modules/billing/dtos/outputs/billing-plan.output';
 import { BillingProductPricesOutput } from 'src/engine/core-modules/billing/dtos/outputs/billing-product-prices.output';
 import {
-  BillingProviderEnum,
-  BillingProviderOutput,
+    BillingProviderEnum,
+    BillingProviderOutput,
 } from 'src/engine/core-modules/billing/dtos/outputs/billing-provider.output';
 import { BillingSessionOutput } from 'src/engine/core-modules/billing/dtos/outputs/billing-session.output';
 import { BillingUpdateOutput } from 'src/engine/core-modules/billing/dtos/outputs/billing-update.output';
 import { CreditPackOutput } from 'src/engine/core-modules/billing/dtos/outputs/credit-pack.output';
+import {
+    CreditTransactionsOutput,
+} from 'src/engine/core-modules/billing/dtos/outputs/credit-transaction.output';
 import { EngagementPlanOutput } from 'src/engine/core-modules/billing/dtos/outputs/engagement-plan.output';
 import { RazorpayOrderOutput } from 'src/engine/core-modules/billing/dtos/outputs/razorpay-order.output';
 import { RequestInvoiceForCreditsOutput } from 'src/engine/core-modules/billing/dtos/outputs/request-invoice-for-credits.output';
@@ -37,6 +40,7 @@ import { RazorpayPlanService } from 'src/engine/core-modules/billing/razorpay/se
 import { BillingPlanService } from 'src/engine/core-modules/billing/services/billing-plan.service';
 import { BillingPortalWorkspaceService } from 'src/engine/core-modules/billing/services/billing-portal.workspace-service';
 import { BillingSubscriptionService } from 'src/engine/core-modules/billing/services/billing-subscription.service';
+import { CreditTransactionService } from 'src/engine/core-modules/billing/services/credit-transaction.service';
 import { InvoiceRequestService } from 'src/engine/core-modules/billing/services/invoice-request.service';
 import { StripePriceService } from 'src/engine/core-modules/billing/stripe/services/stripe-price.service';
 import { BillingPortalCheckoutSessionParameters } from 'src/engine/core-modules/billing/types/billing-portal-checkout-session-parameters.type';
@@ -57,6 +61,7 @@ import { PermissionsGraphqlApiExceptionFilter } from 'src/engine/metadata-module
 @UseFilters(PermissionsGraphqlApiExceptionFilter)
 export class BillingResolver {
   constructor(
+    private readonly creditTransactionService: CreditTransactionService,
     private readonly billingSubscriptionService: BillingSubscriptionService,
     private readonly billingPortalWorkspaceService: BillingPortalWorkspaceService,
     private readonly stripePriceService: StripePriceService,
@@ -257,6 +262,31 @@ export class BillingResolver {
           interval: isYearly ? 12 : 1,
         };
       });
+  }
+
+  @Query(() => CreditTransactionsOutput)
+  @UseGuards(WorkspaceAuthGuard)
+  async creditTransactions(
+    @AuthWorkspace() workspace: Workspace,
+    @Args('limit', { type: () => Int, nullable: true }) limit?: number,
+    @Args('cursor', { nullable: true }) cursor?: string,
+  ): Promise<CreditTransactionsOutput> {
+    const { items, nextCursor } =
+      await this.creditTransactionService.findByWorkspace(workspace.id, {
+        limit,
+        cursor,
+      });
+    return {
+      items: items.map((t) => ({
+        id: t.id,
+        type: t.type,
+        creditType: t.creditType,
+        amount: t.amount,
+        metadata: t.metadata,
+        createdAt: t.createdAt,
+      })),
+      nextCursor,
+    };
   }
 
   @Query(() => WorkspaceCreditsOutput)

@@ -13,11 +13,11 @@ export function generateFrontConfig(): void {
     },
   };
 
-  const configString = `<!-- BEGIN: Twenty Config -->
-    <script id="twenty-env-config">
+  const configString = `<!-- BEGIN: Arxena Config -->
+    <script id="arxena-env-config">
       window._env_ = ${JSON.stringify(configObject.window._env_, null, 2)};
     </script>
-    <!-- END: Twenty Config -->`;
+    <!-- END: Arxena Config -->`;
 
   const distPath = path.join(__dirname, '../..', 'front');
   const indexPath = path.join(distPath, 'index.html');
@@ -34,7 +34,7 @@ export function generateFrontConfig(): void {
   let indexContent = fs.readFileSync(indexPath, 'utf8');
 
   indexContent = indexContent.replace(
-    /<!-- BEGIN: Twenty Config -->[\s\S]*?<!-- END: Twenty Config -->/,
+    /<!-- BEGIN: Arxena Config -->[\s\S]*?<!-- END: Arxena Config -->/,
     configString,
   );
 

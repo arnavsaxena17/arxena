@@ -49,9 +49,11 @@ import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { useUnipile } from '@/unipile/contexts/UnipileContext';
 import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
+import { useQuery } from '@apollo/client';
 import React from 'react';
 import { useRecoilValue } from 'recoil';
 import { IconDatabase } from 'twenty-ui';
+import { WORKSPACE_CREDITS } from '~/modules/billing/graphql/workspaceCredits';
 
 const ArxOrgChart = React.lazy(() =>
   import('@/orgchart/ArxOrgChart').then((m) => ({ default: m.ArxOrgChart })),
@@ -108,6 +110,17 @@ const OrgChartRoute = () => {
 
   const tokenPair = useRecoilValue(tokenPairState);
   const hasToken = Boolean(tokenPair?.accessToken?.token);
+  const { data: creditsData } = useQuery(WORKSPACE_CREDITS);
+  const credits = (creditsData as {
+    workspaceCredits?: {
+      orgChartCredits: number;
+      emailContactCredits: number;
+      phoneContactCredits: number;
+    };
+  } | undefined)?.workspaceCredits;
+  const orgChartCredits = credits?.orgChartCredits;
+  const emailContactCredits = credits?.emailContactCredits;
+  const phoneContactCredits = credits?.phoneContactCredits;
   const { isBaileysLoggedIn } = useBaileysConnection();
   const { isLinkedinConnected, isWhatsappUnipileConnected } = useUnipile();
   const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileConnected;
@@ -156,6 +169,9 @@ const OrgChartRoute = () => {
         hasInsufficientCredits={false}
         isLinkedinConnected={isLinkedinConnected}
         isWhatsappLoggedIn={isWhatsappLoggedIn}
+        orgChartCredits={orgChartCredits}
+        emailContactCredits={emailContactCredits}
+        phoneContactCredits={phoneContactCredits}
       />
       <PageBody>
         <React.Suspense fallback={null}>

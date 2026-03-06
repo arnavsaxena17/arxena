@@ -138,6 +138,7 @@ export const ApiKeysForm = () => {
   {renderInput( 'facebook_whatsapp_asset_id', 'Facebook WhatsApp Business Asset ID (WABA)', )}
   {renderInput( 'is_chrome_extension_installed', 'Is Chrome Extension Installed (true/false)', )}
   {renderInput( 'chrome_extension_id', 'Chrome Extension ID', )}
+  {renderInput( 'is_org_chart_enabled', 'Is Org Chart Enabled (true/false)', )}
       </>
     );
   };
@@ -151,6 +152,10 @@ export const ApiKeysForm = () => {
       {renderInput('linkedin_profile_id', 'Linkedin Profile ID')}
       {renderInput('linkedin_unipile_account_id', 'Linkedin Unipile Account ID')}
       {renderInput('linkedin_cookie_auth', 'LinkedIn cookie (from extension)')}
+      {renderInput( 'whatsapp_web_phone_number', 'WhatsApp Web Phone Number', )}
+      {renderInput('whatsapp_unipile_account_id', 'Whatsapp Unipile Account ID')}
+      {renderInput('is_org_chart_enabled', 'Is Org Chart Enabled (true/false)')}
+
     </>
     );
   };

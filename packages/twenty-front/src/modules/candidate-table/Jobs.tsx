@@ -5,6 +5,7 @@ import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 import { useOpenArxenaSiteWithToken } from '@/auth/hooks/useOpenArxenaSiteWithToken';
 import { AppPath } from '@/types/AppPath';
+import { useQuery } from '@apollo/client';
 import { IconDatabase, IconPlus } from 'twenty-ui';
 import { Mixpanel } from '~/mixpanel';
 
@@ -42,6 +43,7 @@ import { isVideoInterviewModalOpenState } from '@/video-interview/interview-crea
 import { ViewComponentInstanceContext } from '@/views/states/contexts/ViewComponentInstanceContext';
 import { IconHierarchy2 } from '@tabler/icons-react';
 import { AnimatedPlaceholder, AnimatedPlaceholderEmptyContainer, AnimatedPlaceholderEmptySubTitle, AnimatedPlaceholderEmptyTextContainer, AnimatedPlaceholderEmptyTitle } from 'twenty-ui';
+import { WORKSPACE_CREDITS } from '~/modules/billing/graphql/workspaceCredits';
 import { useBaileysConnection } from '../baileys/contexts/BaileysContext';
 import { useUnipile } from '../unipile/contexts/UnipileContext';
 import { useWebSocket } from '../websocket-context/hooks/useWebSocket';
@@ -194,6 +196,19 @@ const StyledEmptyStateOrgChartSearch = styled.div`
   max-width: 420px;
 `;
 
+const StyledEmptyStateOrgChartSearchRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledEmptyStateOrgChartCreditsBadge = styled.span`
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  white-space: nowrap;
+`;
+
 const StyledOrgChartEmptyStateWrapper = styled.div`
   width: 100%;
   min-height: 100%;
@@ -268,6 +283,19 @@ export const Jobs = () => {
   refetchJobsRef.current = refetchJobs;
 
   const { socket } = useWebSocket();
+  const { data: creditsData } = useQuery(WORKSPACE_CREDITS, {
+    skip: !isOrgChartEnabled,
+  });
+  const credits = (creditsData as {
+    workspaceCredits?: {
+      orgChartCredits: number;
+      emailContactCredits: number;
+      phoneContactCredits: number;
+    };
+  } | undefined)?.workspaceCredits;
+  const orgChartCredits = credits?.orgChartCredits ?? undefined;
+  const emailContactCredits = credits?.emailContactCredits ?? undefined;
+  const phoneContactCredits = credits?.phoneContactCredits ?? undefined;
   const [hasInsufficientCredits, setHasInsufficientCredits] = useState(false);
   const [selectedOrgChartCompany, setSelectedOrgChartCompany] = useState<{
     companyId: string;
@@ -538,6 +566,9 @@ export const Jobs = () => {
               onAddCredits={handleAddCredits}
               isLinkedinConnected={isLinkedinConnected}
               isWhatsappLoggedIn={isWhatsappLoggedIn}
+              orgChartCredits={orgChartCredits}
+              emailContactCredits={emailContactCredits}
+              phoneContactCredits={phoneContactCredits}
             />
             <StyledPageBody>
               <AnimatedPlaceholderEmptyContainer>
@@ -583,6 +614,9 @@ export const Jobs = () => {
               onAddCredits={handleAddCredits}
               isLinkedinConnected={isLinkedinConnected}
               isWhatsappLoggedIn={isWhatsappLoggedIn}
+              orgChartCredits={orgChartCredits}
+              emailContactCredits={emailContactCredits}
+              phoneContactCredits={phoneContactCredits}
               onMergeJobs={hasJobs && !selectedOrgChartCompany ? handleMergeJobs : undefined}
               isMergeMode={isMergeMode}
               onMergeModeCancel={handleMergeModeCancel}
@@ -704,12 +738,19 @@ export const Jobs = () => {
                           </AnimatedPlaceholderEmptySubTitle>
                         </AnimatedPlaceholderEmptyTextContainer>
                         <StyledEmptyStateOrgChartSearch>
-                          <OrgChartCompanySearchWrapper
-                            onCompanySelect={handleCompanySelect}
-                            placeholder="Search company for org charts..."
-                            disabled={!hasToken}
-                            startIcon={<IconHierarchy2 size={20} />}
-                          />
+                          <StyledEmptyStateOrgChartSearchRow>
+                            <OrgChartCompanySearchWrapper
+                              onCompanySelect={handleCompanySelect}
+                              placeholder="Search company for org charts..."
+                              disabled={!hasToken}
+                              startIcon={<IconHierarchy2 size={20} />}
+                            />
+                            {orgChartCredits !== undefined && (
+                              <StyledEmptyStateOrgChartCreditsBadge>
+                                {orgChartCredits} credits
+                              </StyledEmptyStateOrgChartCreditsBadge>
+                            )}
+                          </StyledEmptyStateOrgChartSearchRow>
                         </StyledEmptyStateOrgChartSearch>
                       </StyledOrgChartEmptyStateWrapper>
                     ) : (

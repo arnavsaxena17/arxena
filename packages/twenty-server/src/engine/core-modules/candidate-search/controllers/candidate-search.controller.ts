@@ -1,16 +1,16 @@
 import {
-  Body,
-  Controller,
-  Get,
-  Headers,
-  HttpException,
-  HttpStatus,
-  Logger,
-  Param,
-  Post,
-  Put,
-  Query,
-  Req,
+    Body,
+    Controller,
+    Get,
+    Headers,
+    HttpException,
+    HttpStatus,
+    Logger,
+    Param,
+    Post,
+    Put,
+    Query,
+    Req,
 } from '@nestjs/common';
 import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
@@ -23,11 +23,12 @@ import { JobTitleExpanderService } from '../services/job-title-expander.service'
 import { SearchExecutionService } from '../services/search-execution.service';
 import { SearchResultsCacheService } from '../services/search-results-cache.service';
 import {
-  CandidateSearchResponse,
-  ParsedJobDescription,
+    CandidateSearchResponse,
+    ParsedJobDescription,
 } from '../types/candidate-search-request.type';
 import { extractApiToken } from '../utils/auth.utils';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
+import type { OrgChartData } from 'twenty-shared';
 
 type OrgchartSearchMode =
   | 'current_node'
@@ -575,8 +576,61 @@ export class CandidateSearchController {
         });
 
       if (cachedOrgChart) {
+        const creditsAlreadyDebited = cachedOrgChart.creditsDebited !== false;
+        if (creditsAlreadyDebited) {
+          this.logger.log(
+            `Serving cached company org chart for company="${resolvedCompanyName}" (credits already debited)`,
+          );
+          return {
+            success: true,
+            mode,
+            searchType,
+            companyName: resolvedCompanyName,
+            jobTitles,
+            itemCount: cachedOrgChart.itemCount,
+            items: cachedOrgChart.items,
+            orgChart: cachedOrgChart.orgChart,
+            isCached: true,
+            cacheSource: 'orgchart',
+            cachedAt: cachedOrgChart.cachedAt,
+          };
+        }
+        if (process.env.IS_BILLING_ENABLED === 'true' && apiToken) {
+          const workspaceId =
+            await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+          const hasSufficient =
+            await this.workspaceCreditsService.hasSufficientOrgChartCredits(
+              workspaceId,
+              cachedOrgChart.itemCount,
+            );
+          if (!hasSufficient) {
+            const creditsNeeded =
+              this.workspaceCreditsService.computeOrgChartCreditsNeeded(
+                cachedOrgChart.itemCount,
+              );
+            throw new HttpException(
+              `Insufficient org chart credits. Need ${creditsNeeded} credits for ${cachedOrgChart.itemCount} employees.`,
+              HttpStatus.FORBIDDEN,
+            );
+          }
+          await this.workspaceCreditsService.debitOrgChartCredits(
+            workspaceId,
+            cachedOrgChart.itemCount,
+            { companyName: resolvedCompanyName, companyId },
+          );
+          await this.candidateSearchHandlerService.setCachedCompanyOrgChart({
+            companyName: resolvedCompanyName,
+            companyId,
+            mode: 'entire_company',
+            searchType,
+            orgChart: cachedOrgChart.orgChart,
+            items: cachedOrgChart.items,
+            itemCount: cachedOrgChart.itemCount,
+            creditsDebited: true,
+          });
+        }
         this.logger.log(
-          `Serving cached company org chart for company="${resolvedCompanyName}"`,
+          `Serving cached company org chart for company="${resolvedCompanyName}" (credits debited on this request)`,
         );
         return {
           success: true,
@@ -623,6 +677,44 @@ export class CandidateSearchController {
               companyName: resolvedCompanyName,
               companyId,
             });
+          let creditsDebited = process.env.IS_BILLING_ENABLED !== 'true';
+          if (process.env.IS_BILLING_ENABLED === 'true' && apiToken) {
+            const workspaceId =
+              await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+            const hasSufficient =
+              await this.workspaceCreditsService.hasSufficientOrgChartCredits(
+                workspaceId,
+                cachedCandidateList.itemCount,
+              );
+            if (!hasSufficient) {
+              if (shouldCacheBuiltOrgChartFromCandidateList) {
+                await this.candidateSearchHandlerService.setCachedCompanyOrgChart({
+                  companyName: resolvedCompanyName,
+                  companyId,
+                  mode: 'entire_company',
+                  searchType,
+                  orgChart: orgChartFromCache,
+                  items: cachedCandidateList.items,
+                  itemCount: cachedCandidateList.itemCount,
+                  creditsDebited: false,
+                });
+              }
+              const creditsNeeded =
+                this.workspaceCreditsService.computeOrgChartCreditsNeeded(
+                  cachedCandidateList.itemCount,
+                );
+              throw new HttpException(
+                `Insufficient org chart credits. Need ${creditsNeeded} credits for ${cachedCandidateList.itemCount} employees.`,
+                HttpStatus.FORBIDDEN,
+              );
+            }
+            await this.workspaceCreditsService.debitOrgChartCredits(
+              workspaceId,
+              cachedCandidateList.itemCount,
+              { companyName: resolvedCompanyName, companyId },
+            );
+            creditsDebited = true;
+          }
           if (shouldCacheBuiltOrgChartFromCandidateList) {
             await this.candidateSearchHandlerService.setCachedCompanyOrgChart({
               companyName: resolvedCompanyName,
@@ -632,6 +724,7 @@ export class CandidateSearchController {
               orgChart: orgChartFromCache,
               items: cachedCandidateList.items,
               itemCount: cachedCandidateList.itemCount,
+              creditsDebited,
             });
           }
           return {
@@ -648,6 +741,9 @@ export class CandidateSearchController {
             cachedAt: cachedCandidateList.cachedAt,
           };
         } catch (error) {
+          if (error instanceof HttpException) {
+            throw error;
+          }
           this.logger.error(
             `Failed to build org chart from cached candidates for company="${resolvedCompanyName}"`,
             error as Error,
@@ -684,7 +780,7 @@ export class CandidateSearchController {
         },
       );
 
-    let orgChart: Record<string, unknown> | undefined;
+    let orgChart: OrgChartData | undefined;
 
     if (mode === 'entire_company' && result.itemCount > 0) {
       await this.candidateSearchHandlerService.setCachedCompanyCandidateList({
@@ -698,6 +794,32 @@ export class CandidateSearchController {
     }
 
     if (mode === 'entire_company' && result.itemCount > 0) {
+      try {
+        orgChart =
+          await this.candidateSearchHandlerService.buildOrgChartFromLinkedInCompanyCandidates(
+            result.items,
+            {
+              companyName: resolvedCompanyName,
+              companyId,
+              mode,
+              function: undefined,
+            },
+          );
+      } catch (error) {
+        this.logger.error(
+          `Failed to build org chart from LinkedIn orgchart search for company="${resolvedCompanyName}"`,
+          error as Error,
+        );
+      }
+      const shouldCacheBuiltOrgChartFromLinkedIn =
+        orgChart &&
+        this.candidateSearchHandlerService.shouldCacheCompanyOrgChart({
+          orgChart,
+          fallbackCandidateCount: result.itemCount,
+          companyName: resolvedCompanyName,
+          companyId,
+        });
+      let creditsDebited = process.env.IS_BILLING_ENABLED !== 'true';
       if (process.env.IS_BILLING_ENABLED === 'true' && apiToken) {
         const workspaceId =
           await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
@@ -707,6 +829,18 @@ export class CandidateSearchController {
             result.itemCount,
           );
         if (!hasSufficient) {
+          if (shouldCacheBuiltOrgChartFromLinkedIn && orgChart) {
+            await this.candidateSearchHandlerService.setCachedCompanyOrgChart({
+              companyName: resolvedCompanyName,
+              companyId,
+              mode: 'entire_company',
+              searchType,
+              orgChart,
+              items: result.items,
+              itemCount: result.itemCount,
+              creditsDebited: false,
+            });
+          }
           const creditsNeeded =
             this.workspaceCreditsService.computeOrgChartCreditsNeeded(
               result.itemCount,
@@ -719,43 +853,21 @@ export class CandidateSearchController {
         await this.workspaceCreditsService.debitOrgChartCredits(
           workspaceId,
           result.itemCount,
+          { companyName: resolvedCompanyName, companyId },
         );
+        creditsDebited = true;
       }
-
-      try {
-        orgChart =
-          await this.candidateSearchHandlerService.buildOrgChartFromLinkedInCompanyCandidates(
-            result.items,
-            {
-              companyName: resolvedCompanyName,
-              companyId,
-              mode,
-              function: undefined,
-            },
-          );
-        const shouldCacheBuiltOrgChartFromLinkedIn =
-          this.candidateSearchHandlerService.shouldCacheCompanyOrgChart({
-            orgChart,
-            fallbackCandidateCount: result.itemCount,
-            companyName: resolvedCompanyName,
-            companyId,
-          });
-        if (shouldCacheBuiltOrgChartFromLinkedIn) {
-          await this.candidateSearchHandlerService.setCachedCompanyOrgChart({
-            companyName: resolvedCompanyName,
-            companyId,
-            mode: 'entire_company',
-            searchType,
-            orgChart,
-            items: result.items,
-            itemCount: result.itemCount,
-          });
-        }
-      } catch (error) {
-        this.logger.error(
-          `Failed to build org chart from LinkedIn orgchart search for company="${resolvedCompanyName}"`,
-          error as Error,
-        );
+      if (shouldCacheBuiltOrgChartFromLinkedIn && orgChart) {
+        await this.candidateSearchHandlerService.setCachedCompanyOrgChart({
+          companyName: resolvedCompanyName,
+          companyId,
+          mode: 'entire_company',
+          searchType,
+          orgChart,
+          items: result.items,
+          itemCount: result.itemCount,
+          creditsDebited,
+        });
       }
     }
 

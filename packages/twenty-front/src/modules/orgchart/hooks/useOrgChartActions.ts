@@ -32,11 +32,13 @@ export type UseOrgChartActionsParams = {
   companyId: string;
   companyName?: string;
   website?: string;
+  employeeCount?: number | null;
 };
 
 type OrgChartSearchProgressEvent = {
   event?: 'status' | 'paginationInfo' | 'pageResults' | 'complete';
   requestId?: string;
+  mode?: string;
   data?: {
     message?: string;
     page?: number;
@@ -44,6 +46,8 @@ type OrgChartSearchProgressEvent = {
     totalCandidates?: number;
     totalCount?: number;
     candidatesReceived?: number;
+    candidatesCollectedSoFar?: number;
+    remainingToFetch?: number;
   };
 };
 
@@ -54,10 +58,12 @@ export const useOrgChartActions = ({
   companyId,
   companyName,
   website,
+  employeeCount,
 }: UseOrgChartActionsParams) => {
   const tokenPair = useRecoilValue(tokenPairState);
   const accessToken = tokenPair?.accessToken?.token ?? undefined;
-  const { enqueueSnackBar } = useSnackBar();
+  const { enqueueSnackBar, updateSnackBarByDedupeKey, closeSnackBarByDedupeKey } =
+    useSnackBar();
   const [isContextModalOpen, setIsContextModalOpen] = useState(false);
   const [contextModalTitle, setContextModalTitle] = useState('');
   const [contextModalMode, setContextModalMode] =
@@ -150,9 +156,19 @@ export const useOrgChartActions = ({
 
       const eventData = payload.data ?? {};
 
+      const updateSnackBarIfEntireCompany = (message: string) => {
+        if (payload.mode === 'entire_company' && companyId) {
+          updateSnackBarByDedupeKey(
+            `orgchart-entire-company-${companyId}`,
+            { message },
+          );
+        }
+      };
+
       if (payload.event === 'status') {
         if (eventData.message) {
           setContextProgressMessage(eventData.message);
+          updateSnackBarIfEntireCompany(eventData.message);
         }
         return;
       }
@@ -166,11 +182,12 @@ export const useOrgChartActions = ({
         setContextProgressTotalPages(totalPages);
         setContextProgressTotalCandidates(totalCount);
 
-        setContextProgressMessage(
+        const paginationMsg =
           totalPages && totalCount
             ? `Found ${totalCount} results across about ${totalPages} page(s).`
-            : 'Pagination info received. Fetching additional pages...',
-        );
+            : 'Pagination info received. Fetching additional pages...';
+        setContextProgressMessage(paginationMsg);
+        updateSnackBarIfEntireCompany(paginationMsg);
         return;
       }
 
@@ -182,16 +199,23 @@ export const useOrgChartActions = ({
           typeof eventData.totalCandidates === 'number'
             ? eventData.totalCandidates
             : null;
+        const remaining =
+          typeof eventData.remainingToFetch === 'number'
+            ? eventData.remainingToFetch
+            : null;
 
         setContextProgressPage(page);
         setContextProgressTotalPages(totalPages);
         setContextProgressTotalCandidates(totalCandidates);
 
-        setContextProgressMessage(
-          page
-            ? `Fetched page ${page}${totalPages ? `/${totalPages}` : ''} - ${totalCandidates ?? 0} people collected so far.`
-            : 'Received page update...',
-        );
+        const pageMsg =
+          page != null
+            ? remaining != null && remaining >= 0
+              ? `Fetched page ${page}${totalPages ? `/${totalPages}` : ''} - ${totalCandidates ?? 0} collected, ${remaining} remaining.`
+              : `Fetched page ${page}${totalPages ? `/${totalPages}` : ''} - ${totalCandidates ?? 0} people collected so far.`
+            : 'Received page update...';
+        setContextProgressMessage(pageMsg);
+        updateSnackBarIfEntireCompany(pageMsg);
         return;
       }
 
@@ -201,7 +225,7 @@ export const useOrgChartActions = ({
         }
       }
     },
-    [activeOrgChartRequestId],
+    [activeOrgChartRequestId, companyId, updateSnackBarByDedupeKey],
   );
 
   useEffect(() => {
@@ -342,8 +366,12 @@ export const useOrgChartActions = ({
       }
 
       if (mode === 'entire_company') {
+        const employeeSuffix =
+          typeof employeeCount === 'number'
+            ? ` (${employeeCount.toLocaleString()} employees)`
+            : '';
         enqueueSnackBar(
-          `Fetching all employees and building org chart for ${resolvedCompanyName}...`,
+          `Generating full org chart for ${resolvedCompanyName}${employeeSuffix}...`,
           {
             variant: SnackBarVariant.Info,
             showProgressBar: true,
@@ -361,20 +389,25 @@ export const useOrgChartActions = ({
         body: JSON.stringify(body),
       });
 
+      const json = await response.json();
+
       if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
+        // If there is a string message for an error, prefer it; otherwise try serializing the json
+        let serverMessage: string;
+        if (json && typeof json === "object" && typeof json.message === "string") {
+          serverMessage = json.message;
+        } else if (typeof json === 'string') {
+          serverMessage = json;
+        } else {
+          serverMessage = `Request failed with status ${response.status}`;
+        }
+        // eslint-disable-next-line no-console
+        console.log("json::", json);
+        throw new Error(serverMessage);
       }
 
-      const json = (await response.json()) as {
-        success?: boolean;
-        items?: Array<Record<string, unknown>>;
-        itemCount?: number;
-        orgChart?: Record<string, unknown>;
-        isCached?: boolean;
-      };
-
       const rawItems = Array.isArray(json.items) ? json.items : [];
-      const normalized = rawItems.map((item, index) =>
+      const normalized = rawItems.map((item: Record<string, unknown>, index: number) =>
         normalizeCandidateItem(item, index),
       );
 
@@ -385,32 +418,39 @@ export const useOrgChartActions = ({
       if (mode === 'entire_company' && json.orgChart) {
         setLatestOrgChart(json.orgChart);
         Mixpanel.track('org_chart_create', { companyId });
+        closeSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`);
         const cacheText = json.isCached
           ? 'served from cache'
           : 'generated and cached';
 
-        enqueueSnackBar(`Org chart ${cacheText} for ${resolvedCompanyName} (${rawItems.length} people)`, {
-          variant: SnackBarVariant.Success,
-          dedupeKey: `orgchart-entire-company-${companyId}-done`,
-        });
+        enqueueSnackBar(
+          `Org chart ${cacheText} for ${resolvedCompanyName} (${rawItems.length} people)`,
+          {
+            variant: SnackBarVariant.Success,
+            dedupeKey: `orgchart-entire-company-${companyId}-done`,
+            duration: 4000,
+          },
+        );
       }
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error(err);
-      setContextError(
-        err instanceof Error ? err.message : 'Failed to fetch candidates',
-      );
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to fetch candidates';
+      setContextError(errorMessage);
       setContextProgressMessage(null);
       if (mode === 'entire_company') {
-        enqueueSnackBar(
-          `Failed to build org chart for ${resolvedCompanyName}`,
-          {
-            variant: SnackBarVariant.Error,
-            dedupeKey: `orgchart-entire-company-${companyId}-error`,
-          },
-        );
+        closeSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`);
+        enqueueSnackBar(errorMessage, {
+          variant: SnackBarVariant.Error,
+          dedupeKey: `orgchart-entire-company-${companyId}-error`,
+          duration: 5000,
+        });
       }
     } finally {
+      if (mode === 'entire_company') {
+        closeSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`);
+      }
       setIsContextLoading(false);
     }
   };

@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { IconHierarchy2, IconWorld } from '@tabler/icons-react';
+import { IconHierarchy2, IconInfoCircle, IconWorld } from '@tabler/icons-react';
 
 import { toTitleCase } from 'twenty-shared';
 
@@ -10,6 +10,24 @@ const StyledCompanyInfo = styled.div`
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(0.5)};
   min-width: 0;
+`;
+
+const StyledCompanyInfoClickable = styled.button`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(0.5)};
+  min-width: 0;
+  text-align: left;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.background.transparent.light};
+  }
 `;
 
 const StyledCompanyTitleRow = styled.div`
@@ -88,6 +106,24 @@ const StyledLinkIcon = styled.a`
   }
 `;
 
+const StyledInfoButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  color: ${({ theme }) => theme.font.color.primary};
+  background: ${({ theme }) => theme.background.primary};
+  cursor: pointer;
+  padding: 0;
+
+  &:hover {
+    background: ${({ theme }) => theme.background.transparent.light};
+  }
+`;
+
 const StyledLinkedinLink = styled.a`
   display: inline-flex;
   align-items: center;
@@ -127,6 +163,11 @@ export type OrgChartCompanyInfoProps = {
   linkedinUrl?: string;
   employeeCount?: number;
   linkedinDisplayName?: string;
+  description?: string;
+  tagline?: string;
+  logoUrl?: string;
+  onViewDetails?: () => void;
+  hideProfileCountWhenUnipile?: boolean;
 };
 
 export const OrgChartCompanyInfo = ({
@@ -138,6 +179,11 @@ export const OrgChartCompanyInfo = ({
   linkedinUrl,
   employeeCount,
   linkedinDisplayName,
+  description,
+  tagline,
+  logoUrl: logoUrlProp,
+  onViewDetails,
+  hideProfileCountWhenUnipile,
 }: OrgChartCompanyInfoProps) => {
   const getLogoUrl = (site?: string): string | null => {
     if (!site?.trim()) return null;
@@ -159,26 +205,29 @@ export const OrgChartCompanyInfo = ({
     }
   };
 
-  const logoUrl = getLogoUrl(website);
+  const logoUrl = logoUrlProp?.trim() ? logoUrlProp : getLogoUrl(website);
   const websiteDomain = getDisplayDomain(website);
   const displayCompanyName = toTitleCase(companyName);
   const displayLocationName = toTitleCase(locationName);
   const displayIndustry = toTitleCase(industry);
   const linkedinLabel =
     toTitleCase(linkedinDisplayName) || displayCompanyName || 'LinkedIn';
+  const displayTagline = tagline?.trim();
 
   const hasInfo =
     displayCompanyName ||
     website ||
     displayLocationName ||
     displayIndustry ||
+    displayTagline ||
     typeof profileCount === 'number' ||
-    typeof employeeCount === 'number';
+    typeof employeeCount === 'number' ||
+    description?.trim();
 
   if (!hasInfo) return null;
 
-  return (
-    <StyledCompanyInfo>
+  const content = (
+    <>
       {displayCompanyName && (
         <StyledCompanyTitleRow>
           {logoUrl ? (
@@ -195,6 +244,7 @@ export const OrgChartCompanyInfo = ({
               target="_blank"
               rel="noreferrer"
               aria-label="Open LinkedIn company page"
+              onClick={(e) => e.stopPropagation()}
             >
               <StyledLinkedinLogo src={LINKEDIN_ICON_URL} alt="LinkedIn" />
               <StyledLinkedinText>{linkedinLabel}</StyledLinkedinText>
@@ -205,18 +255,35 @@ export const OrgChartCompanyInfo = ({
               target="_blank"
               rel="noreferrer"
               aria-label="Open company website"
+              onClick={(e) => e.stopPropagation()}
             >
               <IconWorld />
             </StyledLinkIcon>
           ) : null}
+          {onViewDetails && (
+            <StyledInfoButton
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewDetails();
+              }}
+              aria-label="View company details"
+            >
+              <IconInfoCircle size={16} />
+            </StyledInfoButton>
+          )}
         </StyledCompanyTitleRow>
       )}
       {(displayLocationName ||
         displayIndustry ||
         websiteDomain ||
+        displayTagline ||
         typeof profileCount === 'number' ||
         typeof employeeCount === 'number') && (
         <StyledCompanyMetaRow>
+          {displayTagline && (
+            <StyledMetaItem>{displayTagline}</StyledMetaItem>
+          )}
           {displayLocationName && (
             <StyledMetaItem>{displayLocationName}</StyledMetaItem>
           )}
@@ -224,7 +291,7 @@ export const OrgChartCompanyInfo = ({
             <StyledMetaItem>{displayIndustry}</StyledMetaItem>
           )}
           {websiteDomain && <StyledMetaItem>{websiteDomain}</StyledMetaItem>}
-          {typeof profileCount === 'number' && (
+          {typeof profileCount === 'number' && !hideProfileCountWhenUnipile && (
             <StyledMetaItem>
               Total {profileCount.toLocaleString()} profiles
             </StyledMetaItem>
@@ -236,6 +303,20 @@ export const OrgChartCompanyInfo = ({
           )}
         </StyledCompanyMetaRow>
       )}
-    </StyledCompanyInfo>
+    </>
   );
+
+  if (onViewDetails) {
+    return (
+      <StyledCompanyInfoClickable
+        type="button"
+        onClick={onViewDetails}
+        aria-label="View company details"
+      >
+        {content}
+      </StyledCompanyInfoClickable>
+    );
+  }
+
+  return <StyledCompanyInfo>{content}</StyledCompanyInfo>;
 };

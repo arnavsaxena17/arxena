@@ -2,10 +2,11 @@ import styled from '@emotion/styled';
 import {
   IconBrandLinkedin,
   IconBrandWhatsapp,
+  IconCoins,
   IconGitMerge,
   IconHierarchy2,
 } from '@tabler/icons-react';
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import {
   Button,
   IconAlertCircle,
@@ -14,6 +15,7 @@ import {
   IconPlus,
 } from 'twenty-ui';
 
+import { CreditHistoryModal } from '@/billing/components/CreditHistoryModal';
 import { OrgChartCompanySearchWrapper } from '@/orgchart/components/OrgChartCompanySearchWrapper';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 
@@ -35,6 +37,12 @@ const StyledCompanySearchWrapper = styled.div`
     flex: 1 1 auto;
     max-width: 100%;
   }
+`;
+
+const StyledOrgChartSearchRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(2)};
 `;
 
 export const StyledPageHeader = styled(PageHeader)`
@@ -188,6 +196,9 @@ export type CandidateTablePageHeaderProps = {
   hasToken?: boolean;
   hasInsufficientCredits?: boolean;
   onAddCredits?: () => void;
+  orgChartCredits?: number;
+  emailContactCredits?: number;
+  phoneContactCredits?: number;
   onChatKitToggle?: () => void;
   onMergeJobs?: () => void;
   isMergeMode?: boolean;
@@ -216,13 +227,20 @@ export const CandidateTablePageHeader = ({
   hasToken = false,
   hasInsufficientCredits,
   onAddCredits,
+  orgChartCredits,
+  emailContactCredits,
+  phoneContactCredits,
   onChatKitToggle,
   onMergeJobs,
   isMergeMode,
   onMergeModeCancel,
   mergeSelectedCount = 0,
   onMergeSelected,
-}: CandidateTablePageHeaderProps) => (
+}: CandidateTablePageHeaderProps) => {
+  const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
+
+  return (
+    <>
     <StyledPageHeader
       title={title}
       Icon={Icon}
@@ -236,12 +254,14 @@ export const CandidateTablePageHeader = ({
     >
       {onCompanySelect !== undefined && (
         <StyledCompanySearchWrapper>
-          <OrgChartCompanySearchWrapper
-            onCompanySelect={onCompanySelect}
-            placeholder="Search company for org charts..."
-            disabled={!hasToken}
-            startIcon={<IconHierarchy2 size={20} />}
-          />
+          <StyledOrgChartSearchRow>
+            <OrgChartCompanySearchWrapper
+              onCompanySelect={onCompanySelect}
+              placeholder="Search company for org charts..."
+              disabled={!hasToken}
+              startIcon={<IconHierarchy2 size={20} />}
+            />
+          </StyledOrgChartSearchRow>
         </StyledCompanySearchWrapper>
       )}
     {/* <StyledButtonContainer> */}
@@ -298,6 +318,15 @@ export const CandidateTablePageHeader = ({
         {!isExtensionInstalled && (
           <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={onDownloadClick} />
         )}
+        {orgChartCredits !== undefined && (
+          <Button
+            dataTestId="credits-button"
+            title={`Credits (${(orgChartCredits ?? 0) + (emailContactCredits ?? 0) + (phoneContactCredits ?? 0)})`}
+            Icon={IconCoins}
+            variant="secondary"
+            onClick={() => setIsCreditModalOpen(true)}
+          />
+        )}
       {hasInsufficientCredits && onAddCredits && (
         <StyledCreditsAlert onClick={onAddCredits}>
           <IconAlertCircle />
@@ -317,4 +346,15 @@ export const CandidateTablePageHeader = ({
       {/* </StyledRightSection> */}
     {/* </StyledButtonContainer> */}
   </StyledPageHeader>
-);
+  {orgChartCredits !== undefined && (
+    <CreditHistoryModal
+      isOpen={isCreditModalOpen}
+      onClose={() => setIsCreditModalOpen(false)}
+      orgChartCredits={orgChartCredits}
+      emailContactCredits={emailContactCredits}
+      phoneContactCredits={phoneContactCredits}
+    />
+  )}
+    </>
+  );
+};

@@ -54,6 +54,30 @@ export const useSnackBar = () => {
     [scopeId],
   );
 
+  const updateSnackBarByDedupeKey = useRecoilCallback(
+    ({ set }) =>
+      (dedupeKey: string, updates: Partial<Pick<SnackBarOptions, 'message' | 'progressMessage'>>) =>
+        set(snackBarInternalScopedState({ scopeId }), (prev) => {
+          const idx = prev.queue.findIndex((s) => s.dedupeKey === dedupeKey);
+          if (idx < 0) return prev;
+          const updated = [...prev.queue];
+          updated[idx] = { ...updated[idx], ...updates };
+          return { ...prev, queue: updated };
+        }),
+    [scopeId],
+  );
+
+  const closeSnackBarByDedupeKey = useRecoilCallback(
+    ({ set }) =>
+      (dedupeKey: string) => {
+        set(snackBarInternalScopedState({ scopeId }), (prevState) => ({
+          ...prevState,
+          queue: prevState.queue.filter((snackBar) => snackBar.dedupeKey !== dedupeKey),
+        }));
+      },
+    [scopeId],
+  );
+
   const enqueueSnackBar = useCallback(
     (message: string, options?: Omit<SnackBarOptions, 'message' | 'id'>) => {
       setSnackBarQueue({
@@ -65,5 +89,10 @@ export const useSnackBar = () => {
     [setSnackBarQueue],
   );
 
-  return { handleSnackBarClose, enqueueSnackBar };
+  return {
+    handleSnackBarClose,
+    enqueueSnackBar,
+    updateSnackBarByDedupeKey,
+    closeSnackBarByDedupeKey,
+  };
 };

@@ -1,7 +1,9 @@
 import styled from '@emotion/styled';
+import { useState } from 'react';
 
 import type { OrgChartFiltersProps } from 'twenty-orgchart';
 import { OrgChartFilters } from 'twenty-orgchart';
+import { OrgChartCompanyDrawer } from './OrgChartCompanyDrawer';
 import type { OrgChartCompanyInfoProps } from './OrgChartCompanyInfo';
 import { OrgChartCompanyInfo } from './OrgChartCompanyInfo';
 
@@ -40,14 +42,28 @@ export const OrgChartHeader = ({
   hasFilters,
   filtersProps,
   ...companyInfoProps
-}: OrgChartHeaderProps) => (
-  <StyledHeader>
-    {onBack && (
-      <StyledBackButton type="button" onClick={onBack}>
-        ← Back to jobs
-      </StyledBackButton>
-    )}
-    <OrgChartCompanyInfo {...companyInfoProps} />
-    {hasFilters && <OrgChartFilters {...filtersProps} />}
-  </StyledHeader>
-);
+}: OrgChartHeaderProps) => {
+  const [isCompanyDrawerOpen, setIsCompanyDrawerOpen] = useState(false);
+
+  return (
+    <>
+      <StyledHeader>
+        {onBack && (
+          <StyledBackButton type="button" onClick={onBack}>
+            ← Back to jobs
+          </StyledBackButton>
+        )}
+        <OrgChartCompanyInfo
+          {...companyInfoProps}
+          onViewDetails={() => setIsCompanyDrawerOpen(true)}
+        />
+        {hasFilters && <OrgChartFilters {...filtersProps} />}
+      </StyledHeader>
+      <OrgChartCompanyDrawer
+        {...companyInfoProps}
+        isOpen={isCompanyDrawerOpen}
+        onClose={() => setIsCompanyDrawerOpen(false)}
+      />
+    </>
+  );
+};
