@@ -78,15 +78,23 @@ const SocialLinks = styled.div`
   gap: 10px;
 `;
 
-export const FooterDesktop = () => {
+type FooterDesktopProps = {
+  phase2Exposed?: boolean;
+};
+
+export const FooterDesktop = ({ phase2Exposed = false }: FooterDesktopProps) => {
   return (
     <FooterContainer>
       <RightSideFooter>
         <RightSideFooterColumn>
           <RightSideFooterColumnTitle>Browse</RightSideFooterColumnTitle>
           <RightSideFooterLink href="/companies">Org charts by company</RightSideFooterLink>
-          <RightSideFooterLink href="/companies/by-country">Org charts by geography</RightSideFooterLink>
-          <RightSideFooterLink href="/companies/by-function">Org charts by function</RightSideFooterLink>
+          {phase2Exposed && (
+            <>
+              <RightSideFooterLink href="/companies/by-country">Org charts by geography</RightSideFooterLink>
+              <RightSideFooterLink href="/companies/by-function">Org charts by function</RightSideFooterLink>
+            </>
+          )}
           <RightSideFooterLink href="/sitemap-index.xml">Sitemap</RightSideFooterLink>
         </RightSideFooterColumn>
         <RightSideFooterColumn>

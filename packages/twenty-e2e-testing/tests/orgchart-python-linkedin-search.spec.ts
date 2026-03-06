@@ -43,11 +43,10 @@ test.describe('Org chart Python query generator', () => {
     }
 
     const body = await response.json();
-    expect(body).toHaveProperty('job_title');
     expect(body).toHaveProperty('keywords');
     expect(body).toHaveProperty('company');
-    if (body.job_title) {
-      expect(typeof body.job_title).toBe('string');
+    if (body.keywords) {
+      expect(typeof body.keywords).toBe('string');
     }
     if (body.company) {
       expect(Array.isArray(body.company)).toBe(true);

@@ -5,28 +5,28 @@ import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/typ
 import { SearchParameterGenerationService } from 'src/engine/core-modules/candidate-search/services/search-parameter-generation.service';
 import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
 import {
-    LinkedInClassicCompaniesSearchRequest,
-    LinkedInClassicJobsSearchRequest,
-    LinkedInSalesNavigatorCompaniesSearchRequest,
+  LinkedInClassicCompaniesSearchRequest,
+  LinkedInClassicJobsSearchRequest,
+  LinkedInSalesNavigatorCompaniesSearchRequest,
 } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
 import { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { PythonOrgChartService } from 'src/engine/core-modules/org-chart/services/python-org-chart.service';
 import {
-    graphqlToFindManySearchFilters,
-    OrgChartData,
-    SearchFilter,
-    UpdateOneSearchFilter,
+  graphqlToFindManySearchFilters,
+  OrgChartData,
+  SearchFilter,
+  UpdateOneSearchFilter,
 } from 'twenty-shared';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import {
-    ClassicPeopleSearchStrategyResult,
-    GeneratedSearchParameters,
-    ParsedJobDescription,
-    RecruiterPeopleSearchStrategyResult,
-    ResultValidationResult,
-    SalesNavigatorPeopleSearchStrategyResult,
+  ClassicPeopleSearchStrategyResult,
+  GeneratedSearchParameters,
+  ParsedJobDescription,
+  RecruiterPeopleSearchStrategyResult,
+  ResultValidationResult,
+  SalesNavigatorPeopleSearchStrategyResult,
 } from '../types/candidate-search-request.type';
 import { ChatMessageRequest } from '../types/search-plan.types';
 import { calculateCost } from '../utils/cost-calculation.util';
@@ -993,6 +993,12 @@ export class CandidateSearchHandlerService {
       
       // Check if parameters need resolution and resolve if needed
       const accountId = await this.candidateSearchBaseService.getLinkedInAccountId(apiToken);
+      const originalCompanyNames =
+        Array.isArray(strategy.parameters?.company) && strategy.parameters.company.length > 0
+          ? (strategy.parameters.company as string[]).filter(
+              (c): c is string => typeof c === 'string' && c.trim().length > 0,
+            )
+          : [];
       const needsResolution = !this.areStrategyParametersResolved(strategy.parameters);
       if (needsResolution) {
         this.logger.log(`[Strategy: ${strategyId}] Resolving parameter IDs for strategy parameters`);
@@ -1005,6 +1011,37 @@ export class CandidateSearchHandlerService {
         // Update strategy object with resolved parameters to avoid duplicate resolution
         strategy.parameters = resolvedParams;
         this.logger.log(`[Strategy: ${strategyId}] Completed resolving strategy parameters`);
+
+        // When company was requested but resolution returned no IDs, parameterise company as
+        // advanced_keywords.company (freetext) so the raw LinkedIn request still sends
+        // SEARCH_FILTER_company instead of only relying on keywords.
+        const resolvedCompanyIds = Array.isArray(resolvedParams.company) ? resolvedParams.company : [];
+        const hasResolvedCompanyIds = resolvedCompanyIds.some(
+          (id) => typeof id === 'string' && (/^\d+$/.test(id) || id.includes('urn:li:')),
+        );
+        if (
+          originalCompanyNames.length > 0 &&
+          !hasResolvedCompanyIds &&
+          parameterKey === 'classicPeopleSearch'
+        ) {
+          const companyFallback = originalCompanyNames[0].trim();
+          const classicParams = resolvedParams as {
+            advanced_keywords?: { company?: string; title?: string; [k: string]: unknown };
+            [k: string]: unknown;
+          };
+          const paramsWithCompanyFallback = {
+            ...resolvedParams,
+            advanced_keywords: {
+              ...(classicParams.advanced_keywords ?? {}),
+              company: companyFallback,
+            },
+          };
+          strategy.parameters = paramsWithCompanyFallback as typeof strategy.parameters;
+          strategyResolvedParams[parameterKey] = paramsWithCompanyFallback as (typeof strategyResolvedParams)[typeof parameterKey];
+          this.logger.log(
+            `[Strategy: ${strategyId}] Company not resolved to IDs; using advanced_keywords.company="${companyFallback}"`,
+          );
+        }
       } else {
         this.logger.log(`[Strategy: ${strategyId}] Parameters already resolved, skipping resolution`);
       }
@@ -1964,12 +2001,31 @@ export class CandidateSearchHandlerService {
           (raw as { name: string }).name) ||
         '';
 
-      const jobTitle =
-        (typeof (raw as { jobTitle?: unknown }).jobTitle === 'string' &&
-          (raw as { jobTitle: string }).jobTitle) ||
-        (typeof (raw as { headline?: unknown }).headline === 'string' &&
-          (raw as { headline: string }).headline) ||
+      const rawJob =
+        typeof (raw as { jobTitle?: unknown }).jobTitle === 'string'
+          ? (raw as { jobTitle: string }).jobTitle?.trim()
+          : '';
+      const rawHeadline =
+        typeof (raw as { headline?: unknown }).headline === 'string'
+          ? (raw as { headline: string }).headline?.trim()
+          : '';
+      const rawJobTitleSnake =
+        typeof (raw as { job_title?: unknown }).job_title === 'string'
+          ? (raw as { job_title: string }).job_title?.trim()
+          : '';
+      const rawLinkedInHeadline =
+        typeof (raw as { linkedin_headline?: unknown }).linkedin_headline ===
+        'string'
+          ? (raw as { linkedin_headline: string }).linkedin_headline?.trim()
+          : '';
+      const jobTitleStr =
+        (rawJob && rawJob !== 'N/A' ? rawJob : '') ||
+        rawHeadline ||
+        rawJobTitleSnake ||
+        rawLinkedInHeadline ||
         '';
+      const jobTitle =
+        typeof jobTitleStr === 'string' ? jobTitleStr : '';
 
       const jobCompanyName =
         (typeof (raw as { jobCompanyName?: unknown }).jobCompanyName ===

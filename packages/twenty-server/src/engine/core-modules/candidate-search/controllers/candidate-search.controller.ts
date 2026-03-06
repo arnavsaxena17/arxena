@@ -14,8 +14,10 @@ import {
 } from '@nestjs/common';
 import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
+import { CandidateDataService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-data.service';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import type { OrgChartData } from 'twenty-shared';
 import type { ParsedRequirement } from '../schemas/parsed-requirement.schema';
 import { CandidateSearchHandlerService } from '../services/candidate-search-handler.service';
 import { CompanyExpanderService } from '../services/company-expander.service';
@@ -28,7 +30,6 @@ import {
 } from '../types/candidate-search-request.type';
 import { extractApiToken } from '../utils/auth.utils';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
-import type { OrgChartData } from 'twenty-shared';
 
 type OrgchartSearchMode =
   | 'current_node'
@@ -62,6 +63,7 @@ export class CandidateSearchController {
     private readonly searchExecutionService: SearchExecutionService,
     private readonly companyExpanderService: CompanyExpanderService,
     private readonly jobTitleExpanderService: JobTitleExpanderService,
+    private readonly candidateDataService: CandidateDataService,
   ) {}
 
   /**
@@ -426,6 +428,123 @@ export class CandidateSearchController {
       this.logger.error('Failed to set search results cache', error);
       throw new HttpException(
         error?.message || 'Failed to set search results cache',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Build an org chart directly from candidates attached to a specific job,
+   * without running a new LinkedIn search.
+   */
+  @Post('orgchart/from-job')
+  async buildOrgChartFromJobCandidates(
+    @Body()
+    body: {
+      jobId: string;
+      jobName?: string;
+    },
+    @Req() req: any,
+  ) {
+    try {
+      const apiToken = req.headers?.authorization?.replace?.('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+
+      const jobId = body?.jobId;
+      if (!jobId || jobId === 'job-id') {
+        throw new HttpException('jobId is required', HttpStatus.BAD_REQUEST);
+      }
+
+      // Fetch all candidates currently attached to this job
+      const candidates =
+        await this.candidateDataService.fetchCandidatesForJob(
+          jobId,
+          [],
+          apiToken,
+        );
+
+      if (!candidates.length) {
+        return {
+          success: true,
+          mode: 'entire_company' as OrgchartSearchMode,
+          searchType: 'classic' as OrgchartSearchType,
+          jobId,
+          itemCount: 0,
+          items: [],
+          orgChart: undefined,
+          isCached: false,
+          cacheSource: 'none',
+        };
+      }
+
+      // Infer primary company name from candidate data (e.g. job_company_name field),
+      // falling back to the provided jobName when needed.
+      const companyCounts = new Map<string, number>();
+      for (const candidate of candidates as Array<Record<string, unknown>>) {
+        const raw = candidate as { [key: string]: unknown };
+        const companyNameValue =
+          (typeof raw.job_company_name === 'string' &&
+            raw.job_company_name) ||
+          (typeof raw.company === 'string' && raw.company) ||
+          '';
+        const trimmed = companyNameValue?.trim();
+        if (trimmed) {
+          companyCounts.set(trimmed, (companyCounts.get(trimmed) ?? 0) + 1);
+        }
+      }
+
+      let primaryCompanyName = '';
+      let maxCount = 0;
+      for (const [name, count] of companyCounts.entries()) {
+        if (count > maxCount) {
+          primaryCompanyName = name;
+          maxCount = count;
+        }
+      }
+
+      if (!primaryCompanyName) {
+        primaryCompanyName = body.jobName?.trim() || 'OrgChart Job';
+      }
+
+      this.logger.log(
+        `Building job org chart from ${candidates.length} candidates for jobId="${jobId}", primaryCompany="${primaryCompanyName}"`,
+      );
+
+      const orgChart =
+        await this.candidateSearchHandlerService.buildOrgChartFromLinkedInCompanyCandidates(
+          candidates,
+          {
+            companyName: primaryCompanyName,
+            companyId: undefined,
+            mode: 'entire_company',
+            function: undefined,
+          },
+        );
+
+      return {
+        success: true,
+        mode: 'entire_company' as OrgchartSearchMode,
+        searchType: 'classic' as OrgchartSearchType,
+        jobId,
+        companyName: primaryCompanyName,
+        itemCount: candidates.length,
+        items: candidates,
+        orgChart,
+        isCached: false,
+        cacheSource: 'job_candidates',
+      };
+    } catch (error: any) {
+      this.logger.error(
+        'Failed to build org chart from job candidates',
+        error,
+      );
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error?.message || 'Failed to build org chart from job candidates',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

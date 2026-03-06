@@ -90,14 +90,22 @@ const StyledSocialLinks = styled.div`
   gap: 16px;
 `;
 
-export const FooterMobile = () => {
+type FooterMobileProps = {
+  phase2Exposed?: boolean;
+};
+
+export const FooterMobile = ({ phase2Exposed = false }: FooterMobileProps) => {
   return (
     <StyledFooterMobile>
       <StyledLinkSection>
         <StyledSectionTitle>Browse</StyledSectionTitle>
         <StyledLink href="/companies">Org charts by company</StyledLink>
-        <StyledLink href="/companies/by-country">Org charts by geography</StyledLink>
-        <StyledLink href="/companies/by-function">Org charts by function</StyledLink>
+        {phase2Exposed && (
+          <>
+            <StyledLink href="/companies/by-country">Org charts by geography</StyledLink>
+            <StyledLink href="/companies/by-function">Org charts by function</StyledLink>
+          </>
+        )}
         <StyledLink href="/sitemap-index.xml">Sitemap</StyledLink>
       </StyledLinkSection>
       <StyledLinkSection>

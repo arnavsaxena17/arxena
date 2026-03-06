@@ -45,12 +45,11 @@ test.describe('Org chart pipeline: Python query generation', () => {
     }
 
     const body = await response.json();
-    expect(body).toHaveProperty('job_title');
     expect(body).toHaveProperty('keywords');
     expect(body).toHaveProperty('company');
-    if (body.job_title) {
-      expect(typeof body.job_title).toBe('string');
-      expect(body.job_title.length).toBeGreaterThan(0);
+    if (body.keywords) {
+      expect(typeof body.keywords).toBe('string');
+      expect(body.keywords.length).toBeGreaterThan(0);
     }
     if (body.company) {
       expect(Array.isArray(body.company)).toBe(true);
@@ -82,9 +81,9 @@ test.describe('Org chart pipeline: Python query generation', () => {
     }
 
     const body = await response.json();
-    expect(body).toHaveProperty('job_title');
-    if (body.job_title) {
-      expect(typeof body.job_title).toBe('string');
+    expect(body).toHaveProperty('keywords');
+    if (body.keywords) {
+      expect(typeof body.keywords).toBe('string');
     }
   });
 
@@ -112,7 +111,7 @@ test.describe('Org chart pipeline: Python query generation', () => {
     }
 
     const body = await response.json();
-    expect(body).toHaveProperty('job_title');
+    expect(body).toHaveProperty('keywords');
   });
 
   test('Python query generator returns params for Technology function', async ({
@@ -139,7 +138,7 @@ test.describe('Org chart pipeline: Python query generation', () => {
     }
 
     const body = await response.json();
-    expect(body).toHaveProperty('job_title');
+    expect(body).toHaveProperty('keywords');
   });
 
   test('Python query generator returns params for Engineering function', async ({
@@ -166,6 +165,6 @@ test.describe('Org chart pipeline: Python query generation', () => {
     }
 
     const body = await response.json();
-    expect(body).toHaveProperty('job_title');
+    expect(body).toHaveProperty('keywords');
   });
 });

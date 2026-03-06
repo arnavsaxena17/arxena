@@ -67,7 +67,6 @@ export const useUploadProgressSnackBar = () => {
             showProgressBar: true,
             progress: progress_percentage || 0,
               progressMessage: `Processing batch ${current_batch || 0}/${total_batches || 0} - ${processed_candidates || 0}/${total_candidates || 0} candidates`,
-            duration: 2000, // Don't auto-close
           }
         );
         currentSnackBarId.current = `upload-processing-${Date.now()}`;
@@ -81,8 +80,7 @@ export const useUploadProgressSnackBar = () => {
             variant: SnackBarVariant.Success,
             showProgressBar: true,
             progress: 100,
-              progressMessage: `Successfully processed ${total_candidates || 0} candidates`,
-            duration: 3000, // Auto-close after 5 seconds
+            progressMessage: `Successfully processed ${total_candidates || 0} candidates`,
           }
         );
         currentSnackBarId.current = `upload-completed-${Date.now()}`;
@@ -106,7 +104,6 @@ export const useUploadProgressSnackBar = () => {
             variant: SnackBarVariant.Error,
             showProgressBar: false,
             progressMessage: message,
-            duration: 2000, // Show error for 10 seconds
           }
         );
         currentSnackBarId.current = `upload-error-${Date.now()}`;

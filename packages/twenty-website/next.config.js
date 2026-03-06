@@ -6,6 +6,13 @@ const webpack = require('webpack');
 const orgchartDist = path.resolve(__dirname, '../twenty-orgchart/dist');
 
 const nextConfig = {
+  experimental: {
+    serverActions: {
+      // Allow Server Actions from our domains when requests are forwarded (e.g. behind proxy/CDN).
+      // Bots/crawlers often omit Origin; middleware sets it from Host when missing.
+      allowedOrigins: ['arxena.com', 'www.arxena.com', 'localhost:3000'],
+    },
+  },
   async rewrites() {
     return [
       { source: '/sitemap-index.xml', destination: '/sitemap-index' },

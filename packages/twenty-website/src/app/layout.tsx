@@ -3,6 +3,8 @@ import { PublicEnvScript } from 'next-runtime-env';
 import { Gabarito, Inter } from 'next/font/google';
 import Script from 'next/script';
 
+import { isPhase2Exposed } from '@/lib/sitemap';
+
 import { WebSiteStructuredData } from './_components/StructuredData';
 import { ConditionalFooter } from './_components/ui/layout/footer';
 import EmotionRootStyleRegistry from './emotion-root-style-registry';
@@ -78,7 +80,7 @@ export default async function RootLayout({
         <EmotionRootStyleRegistry>
           {/* <AppHeader /> */}
           <div className="container">{children}</div>
-          <ConditionalFooter />
+          <ConditionalFooter phase2Exposed={isPhase2Exposed()} />
         </EmotionRootStyleRegistry>
         <Script
           id="tawk-to"

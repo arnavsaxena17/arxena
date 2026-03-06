@@ -156,6 +156,10 @@ export const OrgChartFilters = ({
   selectedFunctionRoot,
   onFunctionRootChange,
 }: OrgChartFiltersProps) => {
+  const visibleFunctionRoots = availableFunctionRoots.filter(
+    (fn) => !fn.toLowerCase().includes('assist'),
+  );
+
   return (
     <StyledFiltersContainer>
       {availableCountries.length > 0 && (
@@ -179,7 +183,7 @@ export const OrgChartFilters = ({
           </StyledSelect>
         </StyledFilterGroup>
       )}
-      {availableFunctionRoots.length > 0 && (
+      {visibleFunctionRoots.length > 0 && (
         <StyledFilterGroup>
           <StyledFilterLabel>Function</StyledFilterLabel>
           <StyledSelect
@@ -190,7 +194,7 @@ export const OrgChartFilters = ({
               )
             }
           >
-            {availableFunctionRoots.map((fn) => (
+            {visibleFunctionRoots.map((fn) => (
               <option key={fn} value={fn}>
                 {functionRootPercentLabels[fn]
                   ? `${toTitleCase(fn)} (${functionRootPercentLabels[fn]})`

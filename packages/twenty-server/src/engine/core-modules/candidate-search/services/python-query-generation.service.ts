@@ -1,10 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import type {
-  GeneratedSearchParameters,
-  ClassicPeopleSearchStrategyResult,
-} from '../types/candidate-search-request.type';
 import type { SearchQuerySet } from 'src/engine/core-modules/linkedin-query-generation/types/linkedin-query-generation.types';
+import type {
+  GeneratedSearchParameters
+} from '../types/candidate-search-request.type';
 import { mapLinkedinSearchQueriesToGeneratedParameters } from '../utils/linkedin-query-generation-mapper.util';
 
 export type PythonQueryInput = {
@@ -53,12 +52,15 @@ export class PythonQueryGenerationService {
         `Python query generator returned ${response.status}: ${text}`,
       );
     }
+    this.logger.log(`Python query generator returned ${response.status}`);
 
     const result = (await response.json()) as {
       job_title?: string | null;
       keywords?: string | null;
       company?: string[] | null;
     };
+
+    this.logger.log(`Python query generator returned ${JSON.stringify(result, null, 2)}`);
 
     return {
       job_title: result.job_title ?? null,

@@ -1,17 +1,18 @@
 import { gql, useMutation } from '@apollo/client';
 import styled from '@emotion/styled';
+import { IconHierarchy2 } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 import {
-  IconBriefcase,
-  IconCalendar,
-  IconCheck,
-  IconDotsVertical,
-  IconMap,
-  IconPencil,
-  IconX,
-  MenuItem
+    IconBriefcase,
+    IconCalendar,
+    IconCheck,
+    IconDotsVertical,
+    IconMap,
+    IconPencil,
+    IconX,
+    MenuItem,
 } from 'twenty-ui';
 
 import { useJobStatusToggle } from '@/candidate-table/hooks/useJobStatusToggle';
@@ -36,6 +37,7 @@ type JobCardProps = {
   isMergeMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: (jobId: string) => void;
+  onOpenOrgChart?: (jobId: string, jobName: string) => void;
 };
 
 const StyledCard = styled.div`
@@ -215,6 +217,24 @@ const StyledActionButtons = styled.div`
   gap: ${({ theme }) => theme.spacing(0.5)};
 `;
 
+const StyledOrgChartButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1.5)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  background: ${({ theme }) => theme.background.primary};
+  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  cursor: pointer;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.background.tertiary};
+    border-color: ${({ theme }) => theme.border.color.medium};
+  }
+`;
+
 export const JobCard = ({
   id,
   name,
@@ -225,6 +245,7 @@ export const JobCard = ({
   isMergeMode,
   isSelected,
   onToggleSelect,
+  onOpenOrgChart,
 }: JobCardProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -412,6 +433,18 @@ export const JobCard = ({
           <IconBriefcase size={16} />
           {isActive ? 'Active' : 'Inactive'}
         </StyledActiveStatus>
+        {onOpenOrgChart && (
+          <StyledOrgChartButton
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenOrgChart(id, name);
+            }}
+          >
+            <IconHierarchy2 size={14} />
+            Org chart
+          </StyledOrgChartButton>
+        )}
       </StyledCardFooter>
     </StyledCard>
   );

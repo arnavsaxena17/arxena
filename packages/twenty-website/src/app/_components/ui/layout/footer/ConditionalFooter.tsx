@@ -5,7 +5,11 @@ import { usePathname } from 'next/navigation';
 import { FooterDesktop } from './FooterDesktop';
 import { FooterMobile } from './FooterMobile';
 
-export const ConditionalFooter = () => {
+type ConditionalFooterProps = {
+  phase2Exposed?: boolean;
+};
+
+export const ConditionalFooter = ({ phase2Exposed = false }: ConditionalFooterProps) => {
   const pathname = usePathname();
   const isOrgChart = pathname?.startsWith('/org-chart');
 
@@ -15,8 +19,8 @@ export const ConditionalFooter = () => {
 
   return (
     <>
-      <FooterDesktop />
-      <FooterMobile />
+      <FooterDesktop phase2Exposed={phase2Exposed} />
+      <FooterMobile phase2Exposed={phase2Exposed} />
     </>
   );
 };

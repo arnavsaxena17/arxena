@@ -46,15 +46,16 @@ export const useOrgChartFilterOptions = (
     if (!orgData) return [];
 
     const rawFunctions = (orgData as Record<string, unknown>).functions;
+    const isValidFunctionRoot = (fn: unknown): fn is string =>
+      typeof fn === 'string' &&
+      fn.trim().length > 0 &&
+      !fn.toLowerCase().includes('assist');
 
     if (typeof rawFunctions === 'string') {
       try {
         const parsed = JSON.parse(rawFunctions) as unknown;
         if (Array.isArray(parsed)) {
-          const cleaned = parsed.filter(
-            (fn): fn is string =>
-              typeof fn === 'string' && fn.trim().length > 0,
-          );
+          const cleaned = parsed.filter(isValidFunctionRoot);
           const withFullCompany = [...cleaned, 'fullcompany'];
           return Array.from(new Set(withFullCompany)).sort((a, b) => {
             if (a === 'fullcompany') return -1;
@@ -68,10 +69,7 @@ export const useOrgChartFilterOptions = (
     }
 
     if (Array.isArray(rawFunctions)) {
-      const cleaned = rawFunctions.filter(
-        (fn): fn is string =>
-          typeof fn === 'string' && fn.trim().length > 0,
-      );
+      const cleaned = rawFunctions.filter(isValidFunctionRoot);
       const withFullCompany = [...cleaned, 'fullcompany'];
       return Array.from(new Set(withFullCompany)).sort((a, b) => {
         if (a === 'fullcompany') return -1;

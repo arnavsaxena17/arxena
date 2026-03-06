@@ -7,22 +7,23 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
 import { useUnipile } from '@/unipile/contexts/UnipileContext';
 import {
-  OrgChartDiagram,
-  OrgChartSearchControls,
-  useCompanyInfoLookup,
-  useOrgChartData,
-  useOrgChartFilterOptions,
-  type OrgChartDiagramHandle,
+    OrgChartDiagram,
+    OrgChartSearchControls,
+    useCompanyInfoLookup,
+    useOrgChartData,
+    useOrgChartFilterOptions,
+    type OrgChartDiagramHandle,
 } from 'twenty-orgchart';
 import {
-  extractOrgData,
-  processOrgChartToNodeData,
-  type OrgChartNodeData
+    extractOrgData,
+    processOrgChartToNodeData,
+    type OrgChartNodeData
 } from 'twenty-shared';
 import { OrgChartAddToJobModal } from './components/OrgChartAddToJobModal';
 import { OrgChartHeader } from './components/OrgChartHeader';
 import { OrgChartResultModal } from './components/OrgChartResultModal';
 import { OrgChartResultsAddToJobModal } from './components/OrgChartResultsAddToJobModal';
+import { useJobOrgChartData } from './hooks/useJobOrgChartData';
 import { useOrgChartActions } from './hooks/useOrgChartActions';
 
 export type ArxOrgChartProps = {
@@ -34,6 +35,7 @@ export type ArxOrgChartProps = {
   profileCount?: number;
   linkedinUrl?: string;
   onBack?: () => void;
+  jobId?: string;
 };
 
 const StyledContainer = styled.div`
@@ -193,6 +195,7 @@ export const ArxOrgChart = ({
   profileCount,
   linkedinUrl,
   onBack,
+  jobId,
 }: ArxOrgChartProps) => {
   const [selectedCountry, setSelectedCountry] = useState<string | undefined>();
   const [selectedFunctionRoot, setSelectedFunctionRoot] = useState<
@@ -241,7 +244,12 @@ export const ArxOrgChart = ({
     employeeCount: effectiveEmployeeCount,
   });
 
-  const { data, isLoading, error, fetchOrgChart } = useOrgChartData(
+  const jobOrgChartHook = useJobOrgChartData(
+    { jobId, jobName: companyName },
+    { baseUrl, accessToken },
+  );
+
+  const classicOrgChartHook = useOrgChartData(
     {
       companyId,
       companyName,
@@ -251,6 +259,21 @@ export const ArxOrgChart = ({
     },
     { baseUrl, accessToken },
   );
+
+  const isJobMode = !!jobId;
+
+  const data = (isJobMode ? jobOrgChartHook.data : classicOrgChartHook.data) as
+    | Record<string, unknown>
+    | null;
+  const isLoading = isJobMode
+    ? jobOrgChartHook.isLoading
+    : classicOrgChartHook.isLoading;
+  const error = isJobMode
+    ? jobOrgChartHook.error
+    : classicOrgChartHook.error;
+  const fetchOrgChart = isJobMode
+    ? jobOrgChartHook.fetchOrgChart
+    : classicOrgChartHook.fetchOrgChart;
 
   useEffect(() => {
     if (skipNextRefetchRef.current) {
@@ -264,7 +287,9 @@ export const ArxOrgChart = ({
     refetchJobs();
   }, [refetchJobs]);
 
-  const orgSource = actions.latestOrgChart ?? (data as Record<string, unknown> | null);
+  const orgSource = isJobMode
+    ? ((data?.orgChart as Record<string, unknown> | null) ?? null)
+    : actions.latestOrgChart ?? ((data as Record<string, unknown> | null) ?? null);
 
   const orgData = useMemo(
     () => extractOrgData(orgSource),

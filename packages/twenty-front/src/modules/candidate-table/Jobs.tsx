@@ -307,6 +307,11 @@ export const Jobs = () => {
     linkedinUrl?: string;
   } | null>(null);
 
+  const [selectedJobForOrgChart, setSelectedJobForOrgChart] = useState<{
+    jobId: string;
+    jobName: string;
+  } | null>(null);
+
   const [isBulkMessageModalOpen, setIsBulkMessageModalOpen] = useRecoilState(isBulkMessageModalOpenState);
 
   const handleCompanySelect = useCallback(
@@ -320,6 +325,7 @@ export const Jobs = () => {
       linkedinUrl?: string;
     }) => {
       setSelectedOrgChartCompany(company);
+      setSelectedJobForOrgChart(null);
       navigate(`/${AppPath.OrgChart}/${company.companyId}`, {
         state: { company },
       });
@@ -329,7 +335,16 @@ export const Jobs = () => {
 
   const handleClearOrgChart = useCallback(() => {
     setSelectedOrgChartCompany(null);
+    setSelectedJobForOrgChart(null);
   }, []);
+
+  const handleOpenJobOrgChart = useCallback(
+    (jobId: string, jobName: string) => {
+      setSelectedOrgChartCompany(null);
+      setSelectedJobForOrgChart({ jobId, jobName });
+    },
+    [],
+  );
 
   // Reset job states when Jobs component mounts to ensure clean state
   useEffect(() => {
@@ -637,6 +652,15 @@ export const Jobs = () => {
                     onBack={handleClearOrgChart}
                   />
                 </React.Suspense>
+              ) : selectedJobForOrgChart ? (
+                <React.Suspense fallback={null}>
+                  <ArxOrgChart
+                    companyId={selectedJobForOrgChart.jobId}
+                    companyName={selectedJobForOrgChart.jobName}
+                    onBack={handleClearOrgChart}
+                    jobId={selectedJobForOrgChart.jobId}
+                  />
+                </React.Suspense>
               ) : (
               <RecordIndexContextProvider value={recordIndexContextValue}>
                 <ViewComponentInstanceContext.Provider value={{ instanceId: recordIndexId }} >
@@ -689,6 +713,7 @@ export const Jobs = () => {
                                   isMergeMode={isMergeMode}
                                   isSelected={selectedJobIds.has(job.id)}
                                   onToggleSelect={handleToggleJobSelect}
+                                  onOpenOrgChart={handleOpenJobOrgChart}
                                 />
                               ))}
                           </StyledJobCardsGrid>
@@ -719,6 +744,7 @@ export const Jobs = () => {
                                       isMergeMode={isMergeMode}
                                       isSelected={selectedJobIds.has(job.id)}
                                       onToggleSelect={handleToggleJobSelect}
+                                      onOpenOrgChart={handleOpenJobOrgChart}
                                     />
                                   ))}
                               </StyledJobCardsGrid>
