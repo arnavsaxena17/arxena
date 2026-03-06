@@ -164,6 +164,24 @@ const StyledTemplateBannerButton = styled.button`
   }
 `;
 
+const StyledSpinner = styled.div`
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid ${({ theme }) => theme.border.color.medium};
+  border-top-color: ${({ theme }) => theme.color.blue};
+  animation: orgchart-spin 0.8s linear infinite;
+
+  @keyframes orgchart-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+`;
+
 const PERSON_ROW_HEIGHT = 48;
 
 export const ArxOrgChart = ({
@@ -565,20 +583,27 @@ export const ArxOrgChart = ({
         {!isLoading && !error && nodeDataArray.length > 0 && (
           <>
             {isBlankTemplate && (
-              <StyledTemplateBanner>
-                <span>
-                  This is a preview template. Generate the full org chart to see
-                  all employees.
-                </span>
-                <StyledTemplateBannerButton
-                  type="button"
-                  onClick={searchControlsProps.onGetAll}
-                >
-                  {typeof effectiveEmployeeCount === 'number'
-                    ? `Generate full org chart (${effectiveEmployeeCount.toLocaleString()} employees)`
-                    : 'Generate full org chart'}
-                </StyledTemplateBannerButton>
-              </StyledTemplateBanner>
+              actions.isContextLoading ? (
+                <StyledTemplateBanner>
+                  <StyledSpinner />
+                  <span>{actions.contextProgressMessage || 'Processing...'}</span>
+                </StyledTemplateBanner>
+              ) : (
+                <StyledTemplateBanner>
+                  <span>
+                    This is a preview template. Generate the full org chart to see
+                    all employees.
+                  </span>
+                  <StyledTemplateBannerButton
+                    type="button"
+                    onClick={searchControlsProps.onGetAll}
+                  >
+                    {typeof effectiveEmployeeCount === 'number'
+                      ? `Generate full org chart (${effectiveEmployeeCount.toLocaleString()} employees)`
+                      : 'Generate full org chart'}
+                  </StyledTemplateBannerButton>
+                </StyledTemplateBanner>
+              )
             )}
             <OrgChartDiagram
               ref={diagramHandleRef}

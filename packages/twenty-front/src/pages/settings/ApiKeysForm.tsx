@@ -162,7 +162,7 @@ export const ApiKeysForm = () => {
 
   return (
     <StyledInputContainer>
-      {isOrgChartEnabled ? renderOrgChartInputs() : renderInputs()}
+      {isOrgChartEnabled ? renderInputs() : renderInputs()}
       <StyledButtonContainer>
         {isEditing ? (
           <>
