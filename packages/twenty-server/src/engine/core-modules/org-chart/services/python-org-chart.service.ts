@@ -162,15 +162,25 @@ export class PythonOrgChartService {
    * Call arxena-site POST /api/orgchart/build when ARXENA_SITE_ORGCHART_URL is set.
    * Avoids subprocess/cwd/path issues and uses the same timeout as the CLI path.
    */
+  private getOrgChartBuildEndpoint(): string {
+    const baseUrl = (
+      process.env.ARXENA_SITE_ORGCHART_URL ||
+      process.env.ARXENA_SITE_URL ||
+      'http://127.0.0.1:8000'
+    )
+      .replace(/\/api\/orgchart\/build\/?$/, '')
+      .replace(/\/+$/, '');
+
+    return `${baseUrl}/api/orgchart/build`;
+  }
+
   private async callOrgChartBuildUrl(payload: {
     people: Record<string, unknown>[];
     job_name: string;
     job_id: string;
   }): Promise<OrgChartData> {
-    const baseUrl = (
-      process.env.ARXENA_SITE_ORGCHART_URL ?? 'http://localhost:5050/api/orgchart/build'
-    ).replace(/\/+$/, '');
-    const url = baseUrl.includes('/build') ? baseUrl : `${baseUrl}/build`;
+    const baseUrl = this.getOrgChartBuildEndpoint();
+    const url = baseUrl;
     const timeoutMs = Number(process.env.PYTHON_ORGCHART_TIMEOUT_MS ?? 300000);
 
     this.logger.log(`Calling org chart build at ${url} (timeout ${timeoutMs}ms)`);
@@ -265,4 +275,3 @@ export class PythonOrgChartService {
     return result;
   }
 }
-

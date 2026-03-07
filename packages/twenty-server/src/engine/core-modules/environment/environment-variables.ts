@@ -1169,6 +1169,15 @@ export class EnvironmentVariables {
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.Other,
+    description:
+      'Optional override for orgchart build endpoint (e.g. http://arxena-site:5050/api/orgchart/build).',
+  })
+  @IsOptional()
+  @IsString()
+  ARXENA_SITE_ORGCHART_URL?: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
     sensitive: true,
     description:
       'People Data Labs API key for org-chart company autocomplete. When set, autocomplete runs in NestJS instead of proxying to arxena-site.',

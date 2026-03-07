@@ -8,11 +8,13 @@ import { GraphQLError } from 'graphql';
 import { SettingsFeatures } from 'twenty-shared';
 import { Repository } from 'typeorm';
 
+import { AdminAdjustWorkspaceCreditsInput } from 'src/engine/core-modules/billing/dtos/inputs/admin-adjust-workspace-credits.input';
 import { BillingCheckoutSessionInput } from 'src/engine/core-modules/billing/dtos/inputs/billing-checkout-session.input';
 import { BillingProductInput } from 'src/engine/core-modules/billing/dtos/inputs/billing-product.input';
 import { BillingSessionInput } from 'src/engine/core-modules/billing/dtos/inputs/billing-session.input';
 import { CreateRazorpayOrderInput } from 'src/engine/core-modules/billing/dtos/inputs/create-razorpay-order.input';
 import { RequestInvoiceForCreditsInput } from 'src/engine/core-modules/billing/dtos/inputs/request-invoice-for-credits.input';
+import { AdminWorkspaceCreditsRowOutput } from 'src/engine/core-modules/billing/dtos/outputs/admin-workspace-credits-row.output';
 import { BillingPlanOutput } from 'src/engine/core-modules/billing/dtos/outputs/billing-plan.output';
 import { BillingProductPricesOutput } from 'src/engine/core-modules/billing/dtos/outputs/billing-product-prices.output';
 import {
@@ -42,6 +44,7 @@ import { BillingPortalWorkspaceService } from 'src/engine/core-modules/billing/s
 import { BillingSubscriptionService } from 'src/engine/core-modules/billing/services/billing-subscription.service';
 import { CreditTransactionService } from 'src/engine/core-modules/billing/services/credit-transaction.service';
 import { InvoiceRequestService } from 'src/engine/core-modules/billing/services/invoice-request.service';
+import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { StripePriceService } from 'src/engine/core-modules/billing/stripe/services/stripe-price.service';
 import { BillingPortalCheckoutSessionParameters } from 'src/engine/core-modules/billing/types/billing-portal-checkout-session-parameters.type';
 import { formatBillingDatabaseProductToGraphqlDTO } from 'src/engine/core-modules/billing/utils/format-database-product-to-graphql-dto.util';
@@ -52,6 +55,7 @@ import { User } from 'src/engine/core-modules/user/user.entity';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthUser } from 'src/engine/decorators/auth/auth-user.decorator';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
+import { ImpersonateGuard } from 'src/engine/guards/impersonate-guard';
 import { SettingsPermissionsGuard } from 'src/engine/guards/settings-permissions.guard';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
@@ -71,10 +75,13 @@ export class BillingResolver {
     private readonly razorpayPlanService: RazorpayPlanService,
     private readonly razorpayOrderService: RazorpayOrderService,
     private readonly invoiceRequestService: InvoiceRequestService,
+    private readonly workspaceCreditsService: WorkspaceCreditsService,
     @InjectRepository(BillingPrice, 'core')
     private readonly billingPriceRepository: Repository<BillingPrice>,
     @InjectRepository(WorkspaceCredits, 'core')
     private readonly workspaceCreditsRepository: Repository<WorkspaceCredits>,
+    @InjectRepository(Workspace, 'core')
+    private readonly workspaceRepository: Repository<Workspace>,
   ) {}
 
   @Query(() => BillingProductPricesOutput)
@@ -341,5 +348,43 @@ export class BillingResolver {
       vatNumber: input.vatNumber,
     });
     return { success: true };
+  }
+
+  @Query(() => [AdminWorkspaceCreditsRowOutput])
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
+  async adminListWorkspacesWithCredits(): Promise<
+    AdminWorkspaceCreditsRowOutput[]
+  > {
+    const workspaces = await this.workspaceRepository.find({
+      select: ['id', 'displayName'],
+    });
+    const creditsRows = await this.workspaceCreditsRepository.find();
+    const creditsByWorkspaceId = new Map(
+      creditsRows.map((row) => [row.workspaceId, row]),
+    );
+    return workspaces.map((workspace) => {
+      const credits = creditsByWorkspaceId.get(workspace.id);
+      return {
+        workspaceId: workspace.id,
+        workspaceName: workspace.displayName ?? '',
+        orgChartCredits: credits?.orgChartCredits ?? 0,
+        emailContactCredits: credits?.emailContactCredits ?? 0,
+        phoneContactCredits: credits?.phoneContactCredits ?? 0,
+      };
+    });
+  }
+
+  @Mutation(() => Boolean)
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
+  async adminAdjustWorkspaceCredits(
+    @Args('input', { type: () => AdminAdjustWorkspaceCreditsInput })
+    input: AdminAdjustWorkspaceCreditsInput,
+  ): Promise<boolean> {
+    await this.workspaceCreditsService.adjustCredits(
+      input.workspaceId,
+      input.creditType as 'org_chart' | 'email_contact' | 'phone_contact',
+      input.delta,
+    );
+    return true;
   }
 }

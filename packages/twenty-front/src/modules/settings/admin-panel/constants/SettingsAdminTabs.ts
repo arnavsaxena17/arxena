@@ -3,4 +3,5 @@ export const SETTINGS_ADMIN_TABS = {
   ENV_VARIABLES: 'env-variables',
   HEALTH_STATUS: 'health-status',
   WHATSAPP_MONITORING: 'whatsapp-monitoring',
+  WORKSPACE_CREDITS: 'workspace-credits',
 };

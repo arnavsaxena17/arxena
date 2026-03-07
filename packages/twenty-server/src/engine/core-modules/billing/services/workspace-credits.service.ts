@@ -222,4 +222,86 @@ export class WorkspaceCreditsService {
       });
     }
   }
+
+  async addEmailContactCredits(
+    workspaceId: string,
+    amount: number,
+  ): Promise<void> {
+    const row = await this.workspaceCreditsRepository.findOne({
+      where: { workspaceId },
+    });
+    if (row) {
+      await this.workspaceCreditsRepository.update(
+        { workspaceId },
+        { emailContactCredits: row.emailContactCredits + amount },
+      );
+    } else {
+      await this.workspaceCreditsRepository.insert({
+        workspaceId,
+        orgChartCredits: 0,
+        emailContactCredits: amount,
+        phoneContactCredits: 0,
+      });
+    }
+  }
+
+  async addPhoneContactCredits(
+    workspaceId: string,
+    amount: number,
+  ): Promise<void> {
+    const row = await this.workspaceCreditsRepository.findOne({
+      where: { workspaceId },
+    });
+    if (row) {
+      await this.workspaceCreditsRepository.update(
+        { workspaceId },
+        { phoneContactCredits: row.phoneContactCredits + amount },
+      );
+    } else {
+      await this.workspaceCreditsRepository.insert({
+        workspaceId,
+        orgChartCredits: 0,
+        emailContactCredits: 0,
+        phoneContactCredits: amount,
+      });
+    }
+  }
+
+  async adjustCredits(
+    workspaceId: string,
+    creditType: 'org_chart' | 'email_contact' | 'phone_contact',
+    delta: number,
+  ): Promise<void> {
+    const row = await this.workspaceCreditsRepository.findOne({
+      where: { workspaceId },
+    });
+
+    if (delta > 0) {
+      if (creditType === 'org_chart') {
+        await this.addOrgChartCredits(workspaceId, delta);
+      } else if (creditType === 'email_contact') {
+        await this.addEmailContactCredits(workspaceId, delta);
+      } else {
+        await this.addPhoneContactCredits(workspaceId, delta);
+      }
+      return;
+    }
+
+    if (!row) {
+      return;
+    }
+
+    const field =
+      creditType === 'org_chart'
+        ? 'orgChartCredits'
+        : creditType === 'email_contact'
+          ? 'emailContactCredits'
+          : 'phoneContactCredits';
+    const current = row[field];
+    const newValue = Math.max(0, current + delta);
+    await this.workspaceCreditsRepository.update(
+      { workspaceId },
+      { [field]: newValue },
+    );
+  }
 }

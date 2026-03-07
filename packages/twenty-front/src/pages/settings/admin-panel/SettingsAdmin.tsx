@@ -19,7 +19,7 @@ export const SettingsAdmin = () => {
         { children: t`Server Admin Panel` },
       ]}
     >
-      <SettingsPageContainer>
+      <SettingsPageContainer fullWidth>
         <SettingsAdminContent />
       </SettingsPageContainer>
     </SubMenuTopBarContainer>

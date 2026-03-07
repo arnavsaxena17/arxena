@@ -2,6 +2,7 @@ import { SettingsAdminEnvVariables } from '@/settings/admin-panel/components/Set
 import { SettingsAdminGeneral } from '@/settings/admin-panel/components/SettingsAdminGeneral';
 import { SettingsAdminHealthStatus } from '@/settings/admin-panel/components/SettingsAdminHealthStatus';
 import { SettingsAdminWhatsAppMonitoring } from '@/settings/admin-panel/components/SettingsAdminWhatsAppMonitoring';
+import { SettingsAdminWorkspaceCredits } from '@/settings/admin-panel/components/SettingsAdminWorkspaceCredits';
 import { SETTINGS_ADMIN_TABS } from '@/settings/admin-panel/constants/SettingsAdminTabs';
 import { SETTINGS_ADMIN_TABS_ID } from '@/settings/admin-panel/constants/SettingsAdminTabsId';
 import { useTabList } from '@/ui/layout/tab/hooks/useTabList';
@@ -18,6 +19,8 @@ export const SettingsAdminTabContent = () => {
       return <SettingsAdminHealthStatus />;
     case SETTINGS_ADMIN_TABS.WHATSAPP_MONITORING:
       return <SettingsAdminWhatsAppMonitoring />;
+    case SETTINGS_ADMIN_TABS.WORKSPACE_CREDITS:
+      return <SettingsAdminWorkspaceCredits />;
     default:
       return null;
   }
