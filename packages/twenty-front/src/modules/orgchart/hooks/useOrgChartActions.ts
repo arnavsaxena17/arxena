@@ -108,6 +108,13 @@ export const useOrgChartActions = ({
     Record<string, unknown> | null
   >(null);
 
+  const [selectedNodeFunction, setSelectedNodeFunction] = useState<
+    string | undefined
+  >(undefined);
+  const [selectedNodeGrade, setSelectedNodeGrade] = useState<
+    string | undefined
+  >(undefined);
+
   const [isAddToJobModalOpen, setIsAddToJobModalOpen] = useState(false);
   const [addToJobNode, setAddToJobNode] = useState<OrgChartNodeData | null>(
     null,
@@ -122,6 +129,8 @@ export const useOrgChartActions = ({
   const [addResultsToJobContext, setAddResultsToJobContext] = useState<{
     companyName?: string;
     contextModalMode?: string | null;
+    selectedNodeFunction?: string;
+    selectedNodeGrade?: string;
   }>({});
 
   const closeAddToJobModal = useCallback(() => {
@@ -132,13 +141,23 @@ export const useOrgChartActions = ({
   const openAddResultsToJobModal = useCallback(
     (
       results: ContextResultItem[],
-      context: { companyName?: string; contextModalMode?: string | null },
+      context: {
+        companyName?: string;
+        contextModalMode?: string | null;
+        selectedNodeFunction?: string;
+        selectedNodeGrade?: string;
+      },
     ) => {
       setAddResultsToJobResults(results);
-      setAddResultsToJobContext(context);
+      setAddResultsToJobContext({
+        ...context,
+        selectedNodeFunction:
+          context.selectedNodeFunction ?? selectedNodeFunction,
+        selectedNodeGrade: context.selectedNodeGrade ?? selectedNodeGrade,
+      });
       setIsAddResultsToJobModalOpen(true);
     },
-    [],
+    [selectedNodeFunction, selectedNodeGrade],
   );
 
   const closeAddResultsToJobModal = useCallback(() => {
@@ -274,6 +293,15 @@ export const useOrgChartActions = ({
       default:
         title = 'Get all names in this function';
         break;
+    }
+
+    if (mode === 'function_grade' && node) {
+      setSelectedNodeFunction(
+        (node as Record<string, unknown>).std_function as string | undefined,
+      );
+      setSelectedNodeGrade(
+        (node as Record<string, unknown>).std_grade as string | undefined,
+      );
     }
 
     if (!isHeaderEntireCompany) {
@@ -464,6 +492,12 @@ export const useOrgChartActions = ({
       action === 'add_to_job_and_invite_to_job'
     ) {
       setAddToJobNode(node);
+      setSelectedNodeFunction(
+        (node as Record<string, unknown>).std_function as string | undefined,
+      );
+      setSelectedNodeGrade(
+        (node as Record<string, unknown>).std_grade as string | undefined,
+      );
       setAddToJobQueueStartChat(true);
       setIsAddToJobModalOpen(true);
       return;
@@ -559,6 +593,12 @@ export const useOrgChartActions = ({
 
   const handleNodeDoubleClick = async (node: OrgChartNodeData) => {
     setSelectedNodeForDetails(node);
+    setSelectedNodeFunction(
+      (node as Record<string, unknown>).std_function as string | undefined,
+    );
+    setSelectedNodeGrade(
+      (node as Record<string, unknown>).std_grade as string | undefined,
+    );
     setNodeDetailError(null);
 
     const nodeKey = typeof node.key === 'number' ? node.key : undefined;
@@ -796,5 +836,8 @@ export const useOrgChartActions = ({
     addResultsToJobContext,
     openAddResultsToJobModal,
     closeAddResultsToJobModal,
+
+    selectedNodeFunction,
+    selectedNodeGrade,
   };
 };

@@ -7,17 +7,17 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
 import { useUnipile } from '@/unipile/contexts/UnipileContext';
 import {
-    OrgChartDiagram,
-    OrgChartSearchControls,
-    useCompanyInfoLookup,
-    useOrgChartData,
-    useOrgChartFilterOptions,
-    type OrgChartDiagramHandle,
+  OrgChartDiagram,
+  OrgChartSearchControls,
+  useCompanyInfoLookup,
+  useOrgChartData,
+  useOrgChartFilterOptions,
+  type OrgChartDiagramHandle,
 } from 'twenty-orgchart';
 import {
-    extractOrgData,
-    processOrgChartToNodeData,
-    type OrgChartNodeData
+  extractOrgData,
+  processOrgChartToNodeData,
+  type OrgChartNodeData
 } from 'twenty-shared';
 import { OrgChartAddToJobModal } from './components/OrgChartAddToJobModal';
 import { OrgChartHeader } from './components/OrgChartHeader';
@@ -231,28 +231,32 @@ export const ArxOrgChart = ({
     company: fallbackCompanyInfo,
     lookupByName,
   } = useCompanyInfoLookup({ baseUrl, accessToken });
-
+console.log("Company name in ArxOrgChart::", companyName);
   const { refetchJobs } = useJobRefetch();
   const effectiveEmployeeCount =
     unipileCompanyProfile?.employee_count ??
     exactEmployeeCount ??
     fallbackCompanyInfo?.employeeCount;
+  const effectiveCompanyName =
+    companyName ??
+    unipileCompanyProfile?.name ??
+    fallbackCompanyInfo?.companyName;
   const actions = useOrgChartActions({
     companyId,
-    companyName,
+    companyName: effectiveCompanyName,
     website,
     employeeCount: effectiveEmployeeCount,
   });
 
   const jobOrgChartHook = useJobOrgChartData(
-    { jobId, jobName: companyName },
+    { jobId, jobName: companyName ?? effectiveCompanyName },
     { baseUrl, accessToken },
   );
 
   const classicOrgChartHook = useOrgChartData(
     {
       companyId,
-      companyName,
+      companyName: effectiveCompanyName ?? companyName,
       website,
       country: selectedCountry,
       functionRoot: selectedFunctionRoot,
@@ -551,10 +555,7 @@ export const ArxOrgChart = ({
     : undefined;
 
   const headerProps = {
-    companyName:
-      companyName ??
-      unipileCompanyProfile?.name ??
-      fallbackCompanyInfo?.companyName,
+    companyName: effectiveCompanyName,
     website:
       website ??
       unipileCompanyProfile?.website ??
@@ -713,8 +714,10 @@ export const ArxOrgChart = ({
               actions.contextResults.length > 0
                 ? () =>
                     actions.openAddResultsToJobModal(actions.contextResults, {
-                      companyName: companyName ?? undefined,
+                      companyName: effectiveCompanyName ?? undefined,
                       contextModalMode: actions.contextModalMode ?? undefined,
+                      selectedNodeFunction: actions.selectedNodeFunction,
+                      selectedNodeGrade: actions.selectedNodeGrade,
                     })
                 : undefined
             }
@@ -736,8 +739,10 @@ export const ArxOrgChart = ({
                     actions.openAddResultsToJobModal(
                       actions.nodeDetailResults,
                       {
-                        companyName: companyName ?? undefined,
+                        companyName: effectiveCompanyName ?? undefined,
                         contextModalMode: 'current_node',
+                        selectedNodeFunction: actions.selectedNodeFunction,
+                        selectedNodeGrade: actions.selectedNodeGrade,
                       },
                     )
                 : undefined
@@ -756,7 +761,7 @@ export const ArxOrgChart = ({
           isOpen={actions.isAddToJobModalOpen}
           onClose={actions.closeAddToJobModal}
           node={actions.addToJobNode}
-          companyName={companyName ?? undefined}
+          companyName={effectiveCompanyName ?? undefined}
           queueStartChatAfter={actions.addToJobQueueStartChat}
           onSuccess={actions.closeAddToJobModal}
         />
@@ -767,6 +772,8 @@ export const ArxOrgChart = ({
           results={actions.addResultsToJobResults}
           companyName={actions.addResultsToJobContext.companyName}
           contextModalMode={actions.addResultsToJobContext.contextModalMode}
+          selectedNodeFunction={actions.addResultsToJobContext.selectedNodeFunction}
+          selectedNodeGrade={actions.addResultsToJobContext.selectedNodeGrade}
           queueStartChatAfter={true}
           onSuccess={actions.closeAddResultsToJobModal}
         />

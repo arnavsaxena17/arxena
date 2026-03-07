@@ -169,8 +169,10 @@ export type OrgChartResultsAddToJobModalProps = {
   isOpen: boolean;
   onClose: () => void;
   results: ContextResultItem[];
-  companyName?: string;
-  contextModalMode?: string | null;
+  companyName?: string | undefined | null;
+  contextModalMode?: string | undefined | null;
+  selectedNodeFunction?: string;
+  selectedNodeGrade?: string;
   queueStartChatAfter?: boolean;
   onSuccess?: () => void;
 };
@@ -181,6 +183,8 @@ export const OrgChartResultsAddToJobModal = ({
   results,
   companyName,
   contextModalMode,
+  selectedNodeFunction,
+  selectedNodeGrade,
   queueStartChatAfter = true,
   onSuccess,
 }: OrgChartResultsAddToJobModalProps) => {
@@ -203,7 +207,7 @@ export const OrgChartResultsAddToJobModal = ({
 
   const suggestedJobName = useMemo(
     () =>
-      getSuggestedJobNameFromContext(companyName ?? 'Company', contextModalMode),
+      getSuggestedJobNameFromContext(companyName ?? 'Company', contextModalMode ?? null),
     [companyName, contextModalMode],
   );
 
@@ -316,7 +320,7 @@ export const OrgChartResultsAddToJobModal = ({
     setIsSubmitting(true);
     try {
       const candidatesPayload = selected.map(toLinkedInPremiumCandidate);
-      const body = {
+      const body: Record<string, unknown> = {
         candidates: candidatesPayload,
         data_source: 'linkedin_premium',
         job_id: jobId,
@@ -329,6 +333,12 @@ export const OrgChartResultsAddToJobModal = ({
         },
         queue_start_chat_after: queueStartChatAfter,
       };
+      if (selectedNodeFunction ?? selectedNodeGrade) {
+        body.org_chart_selected_nodes = {
+          ...(selectedNodeFunction && { std_function: selectedNodeFunction }),
+          ...(selectedNodeGrade && { std_grade: selectedNodeGrade }),
+        };
+      }
 
       const response = await fetch(
         `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/upload-profiles`,
@@ -371,6 +381,8 @@ export const OrgChartResultsAddToJobModal = ({
     newJobName,
     selectedJob,
     queueStartChatAfter,
+    selectedNodeFunction,
+    selectedNodeGrade,
     currentWorkspaceMember?.id,
     tokenPair?.accessToken?.token,
     createJob,

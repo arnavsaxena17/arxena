@@ -323,7 +323,13 @@ export const OrgChartAddToJobModal = ({
     setIsSubmitting(true);
     try {
       const candidatesPayload = selected.map(toLinkedInPremiumCandidate);
-      const body = {
+      const nodeStdFunction = node
+        ? (node as Record<string, unknown>).std_function as string | undefined
+        : undefined;
+      const nodeStdGrade = node
+        ? (node as Record<string, unknown>).std_grade as string | undefined
+        : undefined;
+      const body: Record<string, unknown> = {
         candidates: candidatesPayload,
         data_source: 'linkedin_premium',
         job_id: selectedJob.id,
@@ -336,6 +342,12 @@ export const OrgChartAddToJobModal = ({
         },
         queue_start_chat_after: queueStartChatAfter,
       };
+      if (nodeStdFunction ?? nodeStdGrade) {
+        body.org_chart_selected_nodes = {
+          ...(nodeStdFunction && { std_function: nodeStdFunction }),
+          ...(nodeStdGrade && { std_grade: nodeStdGrade }),
+        };
+      }
 
       const response = await fetch(
         `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/upload-profiles`,

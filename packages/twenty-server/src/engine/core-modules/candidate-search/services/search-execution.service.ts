@@ -6,23 +6,23 @@ import { ResumeReadParseUploadService } from '../../candidate-sourcing/services/
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
 import {
-    LinkedInSearchConfig,
-    LinkedInSearchResponse,
-    LinkedInSearchResult
+  LinkedInSearchConfig,
+  LinkedInSearchResponse,
+  LinkedInSearchResult
 } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import {
-    ClassicPeopleSearchStrategyResult,
-    GeneratedSearchParameters,
-    ParsedJobDescription,
-    RecruiterPeopleSearchStrategyResult,
-    ResultValidationResult,
-    SalesNavigatorPeopleSearchStrategyResult
+  ClassicPeopleSearchStrategyResult,
+  GeneratedSearchParameters,
+  ParsedJobDescription,
+  RecruiterPeopleSearchStrategyResult,
+  ResultValidationResult,
+  SalesNavigatorPeopleSearchStrategyResult
 } from '../types/candidate-search-request.type';
 import {
-    FileUtils,
-    LinkedinParameterResolver,
-    ParameterSanitizer
+  FileUtils,
+  LinkedinParameterResolver,
+  ParameterSanitizer
 } from '../utils';
 import { CandidateScoringService } from './candidate-scoring.service';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
@@ -519,7 +519,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     paging?: { total_count: number };
   } | null> {
     sendEvent?.('status', {
-      message: `Sending request for page ${currentPage}...`,
+      message: `Please wait.. Sending request for page ${currentPage}...`,
       page: currentPage,
     });
 
