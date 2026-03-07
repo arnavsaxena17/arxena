@@ -34,7 +34,7 @@ export const useUploadProgressSnackBar = () => {
             showProgressBar: true,
             progress: 0,
             progressMessage: `Processing ${total_candidates || 0} candidates in ${total_batches || 0} batches`,
-            duration: 2000, // Don't auto-close
+            duration: 4000,
           }
         );
         // Generate a unique ID for tracking (since enqueueSnackBar doesn't return one)
@@ -66,7 +66,8 @@ export const useUploadProgressSnackBar = () => {
             variant: SnackBarVariant.Info,
             showProgressBar: true,
             progress: progress_percentage || 0,
-              progressMessage: `Processing batch ${current_batch || 0}/${total_batches || 0} - ${processed_candidates || 0}/${total_candidates || 0} candidates`,
+            progressMessage: `Processing batch ${current_batch || 0}/${total_batches || 0} - ${processed_candidates || 0}/${total_candidates || 0} candidates`,
+            duration: 4000,
           }
         );
         currentSnackBarId.current = `upload-processing-${Date.now()}`;
@@ -81,6 +82,7 @@ export const useUploadProgressSnackBar = () => {
             showProgressBar: true,
             progress: 100,
             progressMessage: `Successfully processed ${total_candidates || 0} candidates`,
+            duration: 4000,
           }
         );
         currentSnackBarId.current = `upload-completed-${Date.now()}`;
@@ -104,6 +106,7 @@ export const useUploadProgressSnackBar = () => {
             variant: SnackBarVariant.Error,
             showProgressBar: false,
             progressMessage: message,
+            duration: 5000,
           }
         );
         currentSnackBarId.current = `upload-error-${Date.now()}`;
@@ -117,8 +120,8 @@ export const useUploadProgressSnackBar = () => {
             variant: SnackBarVariant.Info,
             showProgressBar: true,
             progress: progress_percentage || 0,
-              progressMessage: `Batch ${current_batch || 0}/${total_batches || 0} - ${processed_candidates || 0}/${total_candidates || 0} candidates`,
-            duration: 0, // Don't auto-close
+            progressMessage: `Batch ${current_batch || 0}/${total_batches || 0} - ${processed_candidates || 0}/${total_candidates || 0} candidates`,
+            duration: 4000,
           }
         );
         currentSnackBarId.current = `upload-default-${Date.now()}`;

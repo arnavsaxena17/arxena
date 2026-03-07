@@ -3,21 +3,21 @@ import { render } from '@react-email/render';
 import axios from 'axios';
 import { InsufficientCreditsEmail } from 'twenty-emails';
 import {
-  allStatuses,
-  AnswerMessageObj,
-  CandidateNode,
-  CandidatesEdge,
-  chatMessageType,
-  deleteOneWhatsappMessage,
-  graphqlQueryToCreateOneCandidateFieldValue,
-  graphqlQueryToCreateOneNewWhatsappMessage,
-  graphqlQueryToRemoveMessages,
-  graphqlToFetchAllCandidateData,
-  graphQltoUpdateOneCandidate,
-  graphqlToUpdateOneClientInterview,
-  Job,
-  PageInfo,
-  whatappUpdateMessageObjType
+    allStatuses,
+    AnswerMessageObj,
+    CandidateNode,
+    CandidatesEdge,
+    chatMessageType,
+    deleteOneWhatsappMessage,
+    graphqlQueryToCreateOneCandidateFieldValue,
+    graphqlQueryToCreateOneNewWhatsappMessage,
+    graphqlQueryToRemoveMessages,
+    graphqlToFetchAllCandidateData,
+    graphQltoUpdateOneCandidate,
+    graphqlToUpdateOneClientInterview,
+    Job,
+    PageInfo,
+    whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -362,16 +362,24 @@ export class UpdateChat {
 
     const candidateJob: Job = candidate?.jobs as Job;
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
+    if (!recruiterProfile) {
+      console.warn(
+        '[UpdateChat] Skipping interim chat: job has no recruiter (jobId: %s, candidateId: %s)',
+        candidateJob?.id,
+        candidateId,
+      );
+      return;
+    }
     const chatReply = interimChat;
-    
+
     // Set the appropriate message identifier based on messaging channel
     let messageFrom = candidate?.phoneNumber?.primaryPhoneNumber || '';
-    let messageTo = recruiterProfile?.phoneNumber || '';
+    let messageTo = recruiterProfile.phoneNumber || '';
     let messageType = 'string';
     
     if (candidate?.messagingChannel === 'linkedin' || candidate?.messagingChannel === 'linkedin-sock') {
       messageFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
-      messageTo = recruiterProfile?.linkedinUrl || '';
+      messageTo = recruiterProfile.linkedinUrl || '';
       messageType = 'linkedin';
     }
     

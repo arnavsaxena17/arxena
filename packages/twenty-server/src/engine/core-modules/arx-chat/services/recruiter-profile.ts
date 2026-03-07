@@ -1,10 +1,10 @@
 import { axiosRequest } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import {
-  findWorkspaceMemberProfiles,
-  graphqlQueryToGetCurrentUser,
-  Job,
-  RecruiterProfileType
+    findWorkspaceMemberProfiles,
+    graphqlQueryToGetCurrentUser,
+    Job,
+    RecruiterProfileType
 } from 'twenty-shared';
 
 
@@ -12,17 +12,35 @@ import {
 export class RecruiterProfileService {
   constructor(private readonly staticGraphQLService: StaticGraphQLService) {}
 
-   async  getRecruiterProfileByJob(
-  candidateJob: Job,
-  apiToken: string,
-) {
-  const recruiterId = candidateJob?.recruiterId;
-  console.log('recruiterId in getRecruiterProfileByJob:', recruiterId);
-  const workspaceMemberProfilesResponse = await this.staticGraphQLService.executeGraphQL(findWorkspaceMemberProfiles, { filter: { workspaceMemberId: { eq: recruiterId } } } , apiToken);
-  const recruiterProfile: RecruiterProfileType = workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges[0]?.node;
-  console.log('Got this recruiterProfile name:', recruiterProfile.name);
-  return recruiterProfile;
-}
+  async getRecruiterProfileByJob(
+    candidateJob: Job,
+    apiToken: string,
+  ): Promise<RecruiterProfileType | null> {
+    const recruiterId = candidateJob?.recruiterId;
+    if (!recruiterId) {
+      console.warn(
+        '[RecruiterProfileService] Job has no recruiterId, cannot resolve recruiter profile',
+        candidateJob?.id,
+      );
+      return null;
+    }
+    const workspaceMemberProfilesResponse =
+      await this.staticGraphQLService.executeGraphQL(
+        findWorkspaceMemberProfiles,
+        { filter: { workspaceMemberId: { eq: recruiterId } } },
+        apiToken,
+      );
+    const recruiterProfile: RecruiterProfileType | null =
+      workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles
+        ?.edges?.[0]?.node ?? null;
+    if (recruiterProfile) {
+      console.log(
+        'Got this recruiterProfile name:',
+        recruiterProfile.name,
+      );
+    }
+    return recruiterProfile;
+  }
 
  async  getRecruiterProfileByRecruiterId(
   recruiterId: string,

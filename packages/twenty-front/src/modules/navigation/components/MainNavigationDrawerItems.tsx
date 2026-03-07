@@ -163,13 +163,13 @@ export const MainNavigationDrawerItems = () => {
       >
         <StyledInnerContainer>
           <JobsNavigationDrawerItems />
-          {!isOrgChartEnabled && (
-            <>
+          {/* {!isOrgChartEnabled && ( */}
+            {/* <> */}
               <NavigationDrawerOpenedSection />
               <WorkspaceFavorites />
               <RemoteNavigationDrawerSection />
-            </>
-          )}
+            {/* </>
+          )} */}
         </StyledInnerContainer>
       </ScrollWrapper>
     </>

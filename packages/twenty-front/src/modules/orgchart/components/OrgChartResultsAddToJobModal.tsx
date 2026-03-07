@@ -289,7 +289,13 @@ export const OrgChartResultsAddToJobModal = ({
       try {
         const res = await createJob({
           variables: {
-            input: { name: trimmedName, isActive: true },
+            input: {
+              name: trimmedName,
+              isActive: true,
+              ...(currentWorkspaceMember?.id && {
+                recruiterId: currentWorkspaceMember.id,
+              }),
+            },
           },
         });
         const createdId = res.data?.createJob?.id;
