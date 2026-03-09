@@ -76,6 +76,16 @@ const StyledErrorMessage = styled.div`
   border-radius: ${({ theme }) => theme.border.radius.sm};
 `;
 
+const StyledUnavailableMessage = styled.div`
+  color: ${({ theme }) => theme.font.color.tertiary};
+  padding: ${({ theme }) => theme.spacing(3)};
+  background: ${({ theme }) => theme.background.transparent.light};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(2)};
+`;
+
 const StyledLoadingSpinner = styled.div`
   display: flex;
   justify-content: center;
@@ -132,6 +142,13 @@ const StyledBadge = styled.span<{ variant?: 'secondary' | 'outline' }>`
   color: ${({ theme }) => theme.font.color.tertiary};
 `;
 
+const WHATSAPP_MODULE_UNAVAILABLE_MESSAGE =
+  'WhatsApp monitoring is not available because the module is not loaded.';
+
+const isWhatsAppModuleUnavailableError = (message: string): boolean =>
+  (message.includes('getWhatsAppSessionStats') || message.includes('getWhatsAppHealthStatus')) &&
+  message.includes('on type') &&
+  message.includes('Query');
 
 export const SettingsAdminWhatsAppMonitoring = () => {
   const [healthData, setHealthData] = useState<any>(null);
@@ -232,6 +249,18 @@ export const SettingsAdminWhatsAppMonitoring = () => {
   }
 
   if (error) {
+    const moduleUnavailable = isWhatsAppModuleUnavailableError(error);
+    if (moduleUnavailable) {
+      return (
+        <StyledUnavailableMessage>
+          {WHATSAPP_MODULE_UNAVAILABLE_MESSAGE}
+          <Button onClick={refreshData} variant="secondary" size="small">
+            <IconRefresh size={16} />
+            Retry
+          </Button>
+        </StyledUnavailableMessage>
+      );
+    }
     return (
       <StyledErrorMessage>
         Error loading WhatsApp monitoring data: {error}

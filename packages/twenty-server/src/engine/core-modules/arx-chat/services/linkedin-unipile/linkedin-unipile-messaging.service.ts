@@ -1,11 +1,11 @@
 import axios from 'axios';
 import FormData from 'form-data';
 import {
-  CandidateNode,
-  ChatControlsObjType,
-  ChatHistoryItem,
-  Job,
-  whatappUpdateMessageObjType
+    CandidateNode,
+    ChatControlsObjType,
+    ChatHistoryItem,
+    Job,
+    whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
@@ -46,6 +46,9 @@ export class LinkedinUnipileMessagingService {
       candidateJob,
       apiToken,
     );
+    if (!recruiterProfile) {
+      return message.slice(0, maxLength);
+    }
     // Check if it contains "Global Recruitment" pattern - create a standardized short message
     if (message.includes('Global Recruitment') || message.includes('recruitment firm')) {
       return `Hi, I'm ${recruiterProfile.name} from ${recruiterProfile.companyName}. We have a role that might interest you. Can we connect?`;

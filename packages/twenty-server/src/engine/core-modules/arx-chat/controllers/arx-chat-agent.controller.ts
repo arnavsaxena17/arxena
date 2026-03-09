@@ -1,25 +1,25 @@
 import {
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  Post,
-  Req,
-  UseGuards,
+    Controller,
+    Get,
+    HttpException,
+    HttpStatus,
+    Post,
+    Req,
+    UseGuards,
 } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
-  CandidateEdge,
-  CandidateNode,
-  ChatControlsObjType,
-  graphqlToFetchAllCandidateData,
-  graphQltoUpdateOneCandidate,
-  graphqlToUpdateWhatsappMessageId,
-  Job,
-  MessageNode,
-  PersonNode,
-  whatappUpdateMessageObjType
+    CandidateEdge,
+    CandidateNode,
+    ChatControlsObjType,
+    graphqlToFetchAllCandidateData,
+    graphQltoUpdateOneCandidate,
+    graphqlToUpdateWhatsappMessageId,
+    Job,
+    MessageNode,
+    PersonNode,
+    whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { PageInfo } from 'cloudflare/core';
@@ -32,7 +32,7 @@ import { ToolCallsProcessing } from 'src/engine/core-modules/arx-chat/services/l
 import { MessagingControls } from 'src/engine/core-modules/arx-chat/services/messaging-controls';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import {
-  formatChat
+    formatChat
 } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -439,6 +439,9 @@ export class ArxChatEndpoint {
       candidateJob as Job,
       apiToken,
     );
+    if (!recruiterProfile) {
+      throw new Error('Recruiter profile not found for job');
+    }
 
     console.log('Recruiter profile', recruiterProfile);
     const chatMessages =

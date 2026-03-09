@@ -1,14 +1,14 @@
 import { Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 
 import {
-  CandidateNode,
-  ChatControlsObjType,
-  ChatHistoryItem,
-  ChatRequestBody,
-  Job,
-  PersonNode,
-  sendWhatsappTemplateMessageObjectType,
-  SendWhatsappUtilityMessageObjectType
+    CandidateNode,
+    ChatControlsObjType,
+    ChatHistoryItem,
+    ChatRequestBody,
+    Job,
+    PersonNode,
+    sendWhatsappTemplateMessageObjectType,
+    SendWhatsappUtilityMessageObjectType
 } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
@@ -53,6 +53,9 @@ export class MetaWhatsappController {
         candidateJob as Job,
         apiToken,
       );
+      if (!recruiterProfile) {
+        throw new Error('Recruiter profile not found for job');
+      }
 
       const sendTemplateMessageObj = {
         recipient:

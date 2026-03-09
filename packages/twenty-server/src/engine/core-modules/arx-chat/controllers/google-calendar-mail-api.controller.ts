@@ -180,13 +180,16 @@ export class GoogleControllers {
       candidateJob,
       apiToken,
     );
+    if (!recruiterProfile) {
+      throw new Error('Recruiter profile not found for job');
+    }
 
     console.log('recruiterProfile?.email:', recruiterProfile?.email);
     const emailData: GmailMessageData = {
-      sendEmailFrom: recruiterProfile?.email,
+      sendEmailFrom: recruiterProfile.email,
       sendEmailNameFrom:
-        recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
-      sendEmailTo: person?.emails.primaryEmail,
+        recruiterProfile.firstName + ' ' + recruiterProfile.lastName,
+      sendEmailTo: person?.emails.primaryEmail ?? '',
       subject: request.body?.subject || 'Email from the recruiter',
       message: request.body?.message || 'This is a test email',
     };
@@ -222,12 +225,15 @@ export class GoogleControllers {
       candidateJob,
       apiToken,
     );
+    if (!recruiterProfile) {
+      throw new Error('Recruiter profile not found for job');
+    }
 
     const emailData: GmailMessageData = {
-      sendEmailFrom: recruiterProfile?.email,
+      sendEmailFrom: recruiterProfile.email,
       sendEmailNameFrom:
-        recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
-      sendEmailTo: person?.emails.primaryEmail,
+        recruiterProfile.firstName + ' ' + recruiterProfile.lastName,
+      sendEmailTo: person?.emails.primaryEmail ?? '',
       subject: request.body?.subject || 'Email from the recruiter',
       message: request.body?.message || 'This is a test email',
       attachments: request.body.attachments || [],
@@ -270,10 +276,13 @@ export class GoogleControllers {
       candidateJob,
       apiToken,
     );
+    if (!recruiterProfile) {
+      throw new Error('Recruiter profile not found for job');
+    }
     const emailData: GmailMessageData = {
-      sendEmailFrom: recruiterProfile?.email,
+      sendEmailFrom: recruiterProfile.email,
       sendEmailNameFrom:
-        recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
+        recruiterProfile.firstName + ' ' + recruiterProfile.lastName,
       sendEmailTo: recruiterProfile.email,
       subject: request.body?.subject || 'Email from the recruiter',
       message: request.body?.message || 'This is a test email',
@@ -423,6 +432,9 @@ export class GoogleControllers {
       candidateJob,
       apiToken,
     );
+    if (!recruiterProfile) {
+      throw new Error('Recruiter profile not found for job');
+    }
 
     // const recruiterProfile = await getRecruiterProfileFromCurrentUser(apiToken)
 

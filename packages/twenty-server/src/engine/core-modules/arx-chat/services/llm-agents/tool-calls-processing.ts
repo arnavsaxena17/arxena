@@ -5,11 +5,10 @@ import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/ut
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
-  CandidateNode,
-  ChatControlsObjType,
-  Job,
-  RecruiterProfileType,
-  whatappUpdateMessageObjType
+    CandidateNode,
+    ChatControlsObjType,
+    Job,
+    whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 export class ToolCallsProcessing {
@@ -78,9 +77,10 @@ export class ToolCallsProcessing {
       candidateId,
     );
     const candidateJob: Job = candidate?.jobs;
-    const recruiterProfile: RecruiterProfileType =
-    await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
-
+    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
+    if (!recruiterProfile) {
+      throw new Error('Recruiter profile not found for job');
+    }
 
     let phoneNumberFrom: string = '';
     if (candidate?.messagingChannel == 'linkedin') {
@@ -150,8 +150,10 @@ export class ToolCallsProcessing {
       candidateId,
     );
 
-    const recruiterProfile: RecruiterProfileType =
-      await new RecruiterProfileService(this.staticGraphQLService). getRecruiterProfileByJob(candidateJob, apiToken);
+    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
+    if (!recruiterProfile) {
+      throw new Error('Recruiter profile not found for job');
+    }
 
     const candidateProfileObj = candidate
 

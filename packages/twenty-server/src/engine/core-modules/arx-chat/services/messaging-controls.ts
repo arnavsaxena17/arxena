@@ -12,13 +12,13 @@ import { WhatsappUnipileMessagingService } from 'src/engine/core-modules/arx-cha
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
-  Attachment,
-  AttachmentMessageObject,
-  CandidateNode,
-  ChatControlsObjType,
-  ChatHistoryItem,
-  Job,
-  whatappUpdateMessageObjType
+    Attachment,
+    AttachmentMessageObject,
+    CandidateNode,
+    ChatControlsObjType,
+    ChatHistoryItem,
+    Job,
+    whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -378,6 +378,9 @@ export class MessagingControls {
       candidateJob,
       apiToken,
     );
+    if (!recruiterProfile) {
+      throw new Error('Recruiter profile not found for job');
+    }
 
     const candidateChatHistory = candidateNode?.whatsappMessages?.edges[0]?.node?.messageObj || [];
     const chatControl: ChatControlsObjType = {
@@ -564,7 +567,10 @@ export class MessagingControls {
       candidateJob,
       apiToken,
     );
-    
+    if (!recruiterProfile) {
+      throw new Error('Recruiter profile not found for job');
+    }
+
     // Set the appropriate message identifiers based on messaging channel
     let phoneNumberTo: string;
     let phoneNumberFrom: string;

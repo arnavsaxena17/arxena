@@ -2,14 +2,14 @@
 import { Controller, Post, Req, UseGuards } from '@nestjs/common';
 
 import { Request } from 'express';
-import { Job, RecruiterProfileType } from 'twenty-shared';
+import { Job } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { VideoInterviewChatProcesses } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/start-video-interview-chat-processes';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import {
-  EmailTemplates,
-  SendEmailFunctionality,
+    EmailTemplates,
+    SendEmailFunctionality,
 } from 'src/engine/core-modules/arx-chat/utils/send-gmail';
 import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -88,8 +88,10 @@ export class VideoInterviewProcessController {
 
       const candidateNode = person.candidates.edges[0].node;
       const candidateJob: Job = candidateNode?.jobs;
-      const recruiterProfile: RecruiterProfileType =
-        await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
+      const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
+      if (!recruiterProfile) {
+        throw new Error('Recruiter profile not found for job');
+      }
 
       if (videoInterviewUrl) {
         console.log('Going to send email to person:', person);
@@ -103,9 +105,9 @@ export class VideoInterviewProcessController {
         console.log('recruiterProfile?.email:', recruiterProfile?.email);
         const emailData: GmailMessageData = {
           sendEmailNameFrom:
-            recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
-          sendEmailFrom: recruiterProfile?.email,
-          sendEmailTo: person?.emails.primaryEmail,
+            recruiterProfile.firstName + ' ' + recruiterProfile.lastName,
+          sendEmailFrom: recruiterProfile.email,
+          sendEmailTo: person?.emails.primaryEmail ?? '',
           subject:
             'Video Interview - ' + person?.name?.firstName + '<>' + companyName,
           message: videoInterviewInviteTemplate,
@@ -212,8 +214,10 @@ export class VideoInterviewProcessController {
     )[0]?.node;
   
         const candidateJob: Job = candidateNode?.jobs;
-      const recruiterProfile: RecruiterProfileType =
-        await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
+      const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
+      if (!recruiterProfile) {
+        throw new Error('Recruiter profile not found for job');
+      }
 
       if (videoInterviewUrl) {
         const videoInterviewInviteTemplate =
@@ -226,9 +230,9 @@ export class VideoInterviewProcessController {
         console.log('recruiterProfile?.email:', recruiterProfile?.email);
         const emailData: GmailMessageData = {
           sendEmailNameFrom:
-            recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
-          sendEmailFrom: recruiterProfile?.email,
-          sendEmailTo: personObj?.emails.primaryEmail,
+            recruiterProfile.firstName + ' ' + recruiterProfile.lastName,
+          sendEmailFrom: recruiterProfile.email,
+          sendEmailTo: personObj?.emails.primaryEmail ?? '',
           subject:
             'Video Interview - ' +
             personObj?.name?.firstName +

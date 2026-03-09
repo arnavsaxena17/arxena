@@ -3,13 +3,12 @@ import { SchedulerRegistry } from '@nestjs/schedule';
 import fuzzy from 'fuzzy';
 import { ChatCompletionTool } from 'openai/resources';
 import {
-  allStatusesArray,
-  CandidateNode,
-  ChatControlsObjType,
-  graphqlQueryToCreateOneClientInterview,
-  graphqlQueryToCreateOneReminder,
-  Job,
-  RecruiterProfileType
+    allStatusesArray,
+    CandidateNode,
+    ChatControlsObjType,
+    graphqlQueryToCreateOneClientInterview,
+    graphqlQueryToCreateOneReminder,
+    Job
 } from 'twenty-shared';
 import { z } from 'zod';
 
@@ -18,13 +17,13 @@ import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { ScheduledJobService } from 'src/engine/core-modules/arx-chat/services/scheduled-job.service';
 import {
-  addHoursInDate,
-  toIsoString
+    addHoursInDate,
+    toIsoString
 } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { CalendarEmailService } from 'src/engine/core-modules/arx-chat/utils/calendar-email';
 import {
-  EmailTemplates,
-  SendEmailFunctionality,
+    EmailTemplates,
+    SendEmailFunctionality,
 } from 'src/engine/core-modules/arx-chat/utils/send-gmail';
 import { CalendarEventType } from 'src/engine/core-modules/calendar-events/services/calendar-data-objects-types';
 import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
@@ -127,14 +126,16 @@ export class ToolCallingAgents {
         candidateJob,
         videoInterviewUrl,
       );
-    const recruiterProfile: RecruiterProfileType =
-      await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, twenty_token);
+    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, twenty_token);
+    if (!recruiterProfile) {
+      throw new Error('Recruiter profile not found for job');
+    }
 
     console.log('recruiterProfile?.email:', recruiterProfile?.email);
     const emailData: GmailMessageData = {
       sendEmailNameFrom:
-        recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
-      sendEmailFrom: recruiterProfile?.email,
+        recruiterProfile.firstName + ' ' + recruiterProfile.lastName,
+      sendEmailFrom: recruiterProfile.email,
       sendEmailTo: candidate?.email?.primaryEmail,
       subject:
         'Video Interview - ' + candidate?.name + '<>' + companyName,
@@ -206,13 +207,15 @@ export class ToolCallingAgents {
     candidateJob: Job,
     apiToken: string,
   ) {
-    const recruiterProfile: RecruiterProfileType =
-      await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
+    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
+    if (!recruiterProfile) {
+      throw new Error('Recruiter profile not found for job');
+    }
 
     const emailData: GmailMessageData = {
       sendEmailNameFrom:
-        recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
-      sendEmailFrom: recruiterProfile?.email,
+        recruiterProfile.firstName + ' ' + recruiterProfile.lastName,
+      sendEmailFrom: recruiterProfile.email,
       sendEmailTo: candidate?.email?.primaryEmail,
       subject: inputs?.subject || 'Email from the recruiter',
       message: inputs?.message || '',

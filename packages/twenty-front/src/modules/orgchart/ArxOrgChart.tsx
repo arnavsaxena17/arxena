@@ -554,6 +554,23 @@ console.log("Company name in ArxOrgChart::", companyName);
         .join(', ')
     : undefined;
 
+  const resolveSafeLogoUrl = (rawLogoUrl?: string): string | undefined => {
+    const trimmed = rawLogoUrl?.trim();
+    if (!trimmed) return undefined;
+    if (trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {
+      return trimmed;
+    }
+    try {
+      const parsed = new URL(trimmed, window.location.origin);
+      if (parsed.origin === window.location.origin) {
+        return parsed.toString();
+      }
+    } catch {
+      return undefined;
+    }
+    return undefined;
+  };
+
   const headerProps = {
     companyName: effectiveCompanyName,
     website:
@@ -583,7 +600,9 @@ console.log("Company name in ArxOrgChart::", companyName);
     linkedinDisplayName: fallbackCompanyInfo?.linkedinDisplayName,
     description: unipileCompanyProfile?.description,
     tagline: unipileCompanyProfile?.tagline,
-    logoUrl: unipileCompanyProfile?.logo_large ?? unipileCompanyProfile?.logo,
+    logoUrl: resolveSafeLogoUrl(
+      unipileCompanyProfile?.logo_large ?? unipileCompanyProfile?.logo,
+    ),
     onBack,
     hasFilters: !!orgData,
     filtersProps,

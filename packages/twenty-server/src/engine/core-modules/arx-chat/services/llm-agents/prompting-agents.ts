@@ -1,10 +1,9 @@
 import {
-  allStatusesArray,
-  CandidateNode,
-  graphqlQueryToFetchPrompts,
-  Job,
-  RecruiterProfileType,
-  statusesArray
+    allStatusesArray,
+    CandidateNode,
+    graphqlQueryToFetchPrompts,
+    Job,
+    statusesArray
 } from 'twenty-shared';
 import { z } from 'zod';
 
@@ -247,8 +246,10 @@ export class PromptingAgents {
     mannerOfAskingQuestions =
       'Ask these questions in a single message and ask the candidate to answer each of them.';
 
-    const recruiterProfile: RecruiterProfileType =
-      await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
+    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
+    if (!recruiterProfile) {
+      throw new Error('Recruiter profile not found for job');
+    }
 
     console.log('recruiterProfile in getstartprompt::', recruiterProfile);
 

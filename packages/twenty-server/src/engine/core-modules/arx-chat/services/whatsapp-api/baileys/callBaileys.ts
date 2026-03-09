@@ -1,12 +1,12 @@
 import axios from 'axios';
 import {
-  AttachmentMessageObject,
-  CandidateNode,
-  ChatControlsObjType,
-  ChatHistoryItem,
-  ChatRequestBody,
-  Job,
-  whatappUpdateMessageObjType
+    AttachmentMessageObject,
+    CandidateNode,
+    ChatControlsObjType,
+    ChatHistoryItem,
+    ChatRequestBody,
+    Job,
+    whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
@@ -37,6 +37,9 @@ export class BaileysWhatsappAPI {
       candidateJob,
       apiToken,
     );
+    if (!recruiterProfile) {
+      throw new Error('Recruiter profile not found for job');
+    }
 
     console.log(
       'whatappUpdateMessageObj.messageType',

@@ -1,28 +1,28 @@
 import {
-  CandidateFieldEdge,
-  CandidateNode,
-  CandidatesEdge,
-  ChatControlsObjType,
-  ChatHistoryItem,
-  chatMessageType,
-  ClientInterviewEdge,
-  ClientInterviewNode,
-  ClientMeetingEdge,
-  emptyCandidateProfileObj,
-  graphqlQueryToFindManyCandidateFields,
-  graphqlQueryToFindManyPeople,
-  graphqlQueryToFindScheduledClientMeetings,
-  graphqlQueryToFindVideoInterviewTemplatesByJobId,
-  graphqlToFetchAllCandidateData,
-  graphQlToFetchWhatsappMessages,
-  graphqlToFindManyJobs,
-  Job,
-  MessageNode,
-  PageInfo,
-  PersonEdge,
-  PersonNode,
-  whatappUpdateMessageObjType,
-  WhatsAppMessagesEdge
+    CandidateFieldEdge,
+    CandidateNode,
+    CandidatesEdge,
+    ChatControlsObjType,
+    ChatHistoryItem,
+    chatMessageType,
+    ClientInterviewEdge,
+    ClientInterviewNode,
+    ClientMeetingEdge,
+    emptyCandidateProfileObj,
+    graphqlQueryToFindManyCandidateFields,
+    graphqlQueryToFindManyPeople,
+    graphqlQueryToFindScheduledClientMeetings,
+    graphqlQueryToFindVideoInterviewTemplatesByJobId,
+    graphqlToFetchAllCandidateData,
+    graphQlToFetchWhatsappMessages,
+    graphqlToFindManyJobs,
+    Job,
+    MessageNode,
+    PageInfo,
+    PersonEdge,
+    PersonNode,
+    whatappUpdateMessageObjType,
+    WhatsAppMessagesEdge
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -56,6 +56,9 @@ export class FilterCandidates {
       candidateJob,
       apiToken,
     );
+    if (!recruiterProfile) {
+      throw new Error('Recruiter profile not found for job');
+    }
 
     let phoneNumberTo: string = '';
     

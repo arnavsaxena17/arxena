@@ -82,5 +82,25 @@
         "attachment_size": null
       }
     ]
+  },
+  {
+    "deleted_at": "2026-03-09T07:13:11.179Z",
+    "message_id": "1gNgoOa8WMe0nfvN2ZYE7g",
+    "original_message": "",
+    "sender_name": "You",
+    "sender_phone": "+918411937769",
+    "sent_at": "2026-03-09T07:13:05.000Z",
+    "account_type": "WHATSAPP",
+    "chat_id": "zqJoyDfWX8OHduc2e_IdmA",
+    "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
+    "had_attachments": true,
+    "attachments": [
+      {
+        "attachment_id": "3EB0F81D7DC90058BFC6E8",
+        "attachment_type": "img",
+        "attachment_url": null,
+        "attachment_size": null
+      }
+    ]
   }
 ]

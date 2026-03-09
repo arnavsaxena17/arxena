@@ -1,11 +1,10 @@
 import {
-  CandidateNode,
-  ChatControlsObjType,
-  ChatRequestBody,
-  Job,
-  RecruiterProfileType,
-  SendWhatsappUtilityMessageObjectType,
-  whatappUpdateMessageObjType
+    CandidateNode,
+    ChatControlsObjType,
+    ChatRequestBody,
+    Job,
+    SendWhatsappUtilityMessageObjectType,
+    whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { ToolCallingAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/tool-calling-agents';
@@ -49,8 +48,10 @@ export class ChatControls {
     let response;
 
     try {
-      const recruiterProfile: RecruiterProfileType =
-        await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
+      const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
+      if (!recruiterProfile) {
+        throw new Error('Recruiter profile not found for job');
+      }
 
       console.log('This is the recruiterProfile::', recruiterProfile);
       if (

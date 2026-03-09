@@ -215,6 +215,10 @@ export class CandidateEngagementArx {
       candidateJob as Job,
       apiToken,
     );
+    if (!recruiterProfile) {
+      console.warn('Recruiter profile not found for job, skipping chat');
+      return;
+    }
 
     const candidateId = candidate?.id || '';
     console.log("candidateId::", candidateId)
