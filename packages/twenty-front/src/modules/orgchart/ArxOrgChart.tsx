@@ -457,6 +457,25 @@ console.log("Company name in ArxOrgChart::", companyName);
     });
   }, [orgData, companyId]);
 
+  const readImageFromRawCandidate = (
+    raw?: Record<string, unknown>,
+    fallback?: string,
+  ): string => {
+    if (!raw) return fallback ?? '';
+
+    const candidateImage = raw.image;
+    const profilePictureUrl = raw.profile_picture_url;
+    const pictureUrl = raw.picture_url;
+    const picture = raw.picture;
+
+    const candidates = [candidateImage, profilePictureUrl, pictureUrl, picture];
+    const found = candidates.find(
+      (value) => typeof value === 'string' && value.trim() !== '',
+    );
+
+    return found && typeof found === 'string' ? found : fallback ?? '';
+  };
+
   const nodeDataArray = useMemo(() => {
     if (!orgData) return [];
     const base = processOrgChartToNodeData(orgData);
@@ -474,8 +493,14 @@ console.log("Company name in ArxOrgChart::", companyName);
         merged[`name_${i}`] = p.fullName;
         merged[`title_${i}`] = p.headline;
         merged[`linkedin_url_${i}`] = p.linkedinUrl ?? '';
-        const img = (p.raw as Record<string, unknown>)?.image;
-        merged[`image_${i}`] = typeof img === 'string' ? img : '';
+        const existingImage = merged[`image_${i}`];
+        const mergedImage =
+          typeof existingImage === 'string' ? existingImage : undefined;
+        const enrichedImage = readImageFromRawCandidate(
+          (p.raw as Record<string, unknown>) ?? undefined,
+          mergedImage,
+        );
+        merged[`image_${i}`] = enrichedImage;
       });
       merged.height_0 = displayedCount >= 1 ? PERSON_ROW_HEIGHT : 0;
       merged.height_1 = displayedCount >= 2 ? PERSON_ROW_HEIGHT : 0;
