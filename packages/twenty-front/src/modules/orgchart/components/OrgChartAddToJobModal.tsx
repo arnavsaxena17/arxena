@@ -13,8 +13,8 @@ const DEFAULT_AVATAR =
   'https://st2.depositphotos.com/4111759/12123/v/950/depositphotos_121232442-stock-illustration-male-default-placeholder-avatar-profile.jpg';
 
 import type { OrgChartNodeData } from 'twenty-shared';
+import { getProxiedImageUrl } from 'twenty-shared';
 import type { ContextResultItem } from '../types';
-import { getProxiedImageUrl } from '../utils/getProxiedImageUrl';
 import { toLinkedInPremiumCandidate } from '../utils/orgChartUtils';
 
 const StyledBackdrop = styled.div`

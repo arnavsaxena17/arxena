@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import {
-  getRequestMetadata,
-  isBlockedBot,
+    getRequestMetadata,
+    isBlockedBot,
 } from '@/lib/bot-detection';
 import { decodeOverEncodedPath } from '@/lib/url-utils';
 
@@ -52,18 +52,23 @@ export async function GET(
   const pathPart = decodeOverEncodedPath(rawPathPart);
   const nextParams = request.nextUrl.searchParams;
   const urlParams = new URL(request.url).searchParams;
-  const companyName =
-    nextParams.get('companyName') ?? urlParams.get('companyName');
-  const website = nextParams.get('website') ?? urlParams.get('website');
-  const country = nextParams.get('country') ?? urlParams.get('country');
-  const functionRoot =
-    nextParams.get('functionRoot') ?? urlParams.get('functionRoot');
+  const isImageProxy = pathPart === 'image-proxy';
 
   const queryParams = new URLSearchParams();
-  if (companyName) queryParams.set('companyName', companyName);
-  if (website) queryParams.set('website', website);
-  if (country) queryParams.set('country', country);
-  if (functionRoot) queryParams.set('functionRoot', functionRoot);
+  if (isImageProxy) {
+    urlParams.forEach((value, key) => queryParams.set(key, value));
+  } else {
+    const companyName =
+      nextParams.get('companyName') ?? urlParams.get('companyName');
+    const website = nextParams.get('website') ?? urlParams.get('website');
+    const country = nextParams.get('country') ?? urlParams.get('country');
+    const functionRoot =
+      nextParams.get('functionRoot') ?? urlParams.get('functionRoot');
+    if (companyName) queryParams.set('companyName', companyName);
+    if (website) queryParams.set('website', website);
+    if (country) queryParams.set('country', country);
+    if (functionRoot) queryParams.set('functionRoot', functionRoot);
+  }
 
   const queryString = queryParams.toString();
   const url = `${serverBaseUrl}/org-chart/${pathPart}${queryString ? `?${queryString}` : ''}`;
@@ -79,6 +84,18 @@ export async function GET(
     });
 
     const contentType = response.headers.get('content-type') ?? '';
+
+    if (isImageProxy && contentType.startsWith('image/')) {
+      const blob = await response.arrayBuffer();
+      return new NextResponse(blob, {
+        status: response.status,
+        headers: {
+          'Content-Type': contentType,
+          'Cross-Origin-Resource-Policy': 'cross-origin',
+        },
+      });
+    }
+
     const text = await response.text();
 
     if (

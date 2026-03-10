@@ -4,9 +4,11 @@ import { headers } from 'next/headers';
 import {
   extractOrgData,
   fromSlug,
+  getProxiedImageUrl,
   processOrgChartToNodeData,
   toSlug,
   toTitleCase,
+  type OrgChartNodeData,
 } from 'twenty-shared';
 
 import { getSignUpUrl } from '@/lib/auth-urls';
@@ -251,7 +253,20 @@ export default async function OrgChartPage({
   });
 
   const orgData = extractOrgData(rawData);
-  const nodeDataArray = orgData ? processOrgChartToNodeData(orgData) : [];
+  const baseUrl = await getBaseUrl();
+  const apiBase = `${baseUrl}/api/org-chart`;
+  const rawNodeDataArray = orgData ? processOrgChartToNodeData(orgData) : [];
+  const nodeDataArray = rawNodeDataArray.map((node) => {
+    const out = { ...node } as OrgChartNodeData;
+    for (let i = 0; i < 4; i++) {
+      const key = `image_${i}` as keyof OrgChartNodeData;
+      const val = out[key];
+      if (typeof val === 'string' && val) {
+        (out as Record<string, string>)[key] = getProxiedImageUrl(val, apiBase);
+      }
+    }
+    return out;
+  });
 
   const profileCount =
     typeof rawData?.profile_count === 'number'
@@ -277,7 +292,6 @@ export default async function OrgChartPage({
       ? rawData.linkedin_url
       : undefined;
 
-  const baseUrl = await getBaseUrl();
   const breadcrumbItems = [
     { name: 'Home', url: '/' },
     {

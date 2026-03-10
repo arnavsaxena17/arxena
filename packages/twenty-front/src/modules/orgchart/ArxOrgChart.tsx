@@ -16,8 +16,9 @@ import {
 } from 'twenty-orgchart';
 import {
   extractOrgData,
+  getProxiedImageUrl,
   processOrgChartToNodeData,
-  type OrgChartNodeData
+  type OrgChartNodeData,
 } from 'twenty-shared';
 import { OrgChartAddToJobModal } from './components/OrgChartAddToJobModal';
 import { OrgChartHeader } from './components/OrgChartHeader';
@@ -25,7 +26,6 @@ import { OrgChartResultModal } from './components/OrgChartResultModal';
 import { OrgChartResultsAddToJobModal } from './components/OrgChartResultsAddToJobModal';
 import { useJobOrgChartData } from './hooks/useJobOrgChartData';
 import { useOrgChartActions } from './hooks/useOrgChartActions';
-import { getProxiedImageUrl } from './utils/getProxiedImageUrl';
 
 export type ArxOrgChartProps = {
   companyId: string;

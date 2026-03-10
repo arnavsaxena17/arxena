@@ -1,3 +1,4 @@
+export { getProxiedImageUrl } from './getProxiedImageUrl';
 export {
     extractOrgData,
     isMaskedName,

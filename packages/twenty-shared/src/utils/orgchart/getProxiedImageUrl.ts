@@ -9,7 +9,10 @@ export function getProxiedImageUrl(
 ): string {
   if (!imageUrl || typeof imageUrl !== 'string') return imageUrl ?? '';
   const trimmed = imageUrl.trim();
-  if (!trimmed || (!trimmed.startsWith('http:') && !trimmed.startsWith('https:'))) {
+  if (
+    !trimmed ||
+    (!trimmed.startsWith('http:') && !trimmed.startsWith('https:'))
+  ) {
     return imageUrl;
   }
   try {
