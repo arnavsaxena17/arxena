@@ -69,48 +69,78 @@ echo "Maybe finished copying pem files"
 # 2. Set up build environment (you'll need to SSH and do this manually or use a script)
 # 3. Build your project (SSH and run build commands)
 ssh -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS "BUILD_BRANCH=$BUILD_BRANCH chmod +x script_to_build_app_in_new_instance.sh && BUILD_BRANCH=$BUILD_BRANCH ./script_to_build_app_in_new_instance.sh"
+
+# Resolve a list of candidate remote directories and return first match.
+resolve_remote_dir() {
+  local package_name="$1"
+  shift
+  for candidate in "$@"; do
+    if ssh -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS "[ -d '$candidate' ]"; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+  echo "Unable to locate built $package_name on remote host $TEMP_DNS" >&2
+  return 1
+}
+
+copy_remote_dir() {
+  local remote_path="$1"
+  local local_path="$2"
+
+  mkdir -p "$local_path"
+  sudo rm -rf "$local_path"/*
+  scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r "ubuntu@$TEMP_DNS:$remote_path/*" "$local_path/"
+}
+
 # 4. Transfer build files
 
 # For server files
 # First ensure the dist directory exists
-mkdir -p /home/ubuntu/twenty/packages/twenty-server/dist
-# Clear existing files
-sudo rm -rf /home/ubuntu/twenty/packages/twenty-server/dist/*
-# Copy new server files
-scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/twenty-server/dist/* /home/ubuntu/twenty/packages/twenty-server/dist/
+REMOTE_TWENTY_SERVER_DIST="$(resolve_remote_dir "twenty-server dist" \
+  /home/ubuntu/twenty/packages/twenty-server/dist \
+  /home/ubuntu/dist/packages/twenty-server \
+  /home/ubuntu/twenty/dist/packages/twenty-server)"
+copy_remote_dir "$REMOTE_TWENTY_SERVER_DIST" /home/ubuntu/twenty/packages/twenty-server/dist
 
 # For frontend files
 # First ensure the build directory exists
-mkdir -p /home/ubuntu/twenty/packages/twenty-front/build
-# Clear existing files
-sudo rm -rf /home/ubuntu/twenty/packages/twenty-front/build/*
-# Copy new frontend files
-sudo scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/twenty-front/build/* /home/ubuntu/twenty/packages/twenty-front/build/
+REMOTE_TWENTY_FRONT_BUILD="$(resolve_remote_dir "twenty-front build" \
+  /home/ubuntu/twenty/packages/twenty-front/build \
+  /home/ubuntu/twenty/dist/packages/twenty-front \
+  /home/ubuntu/dist/packages/twenty-front)"
+copy_remote_dir "$REMOTE_TWENTY_FRONT_BUILD" /home/ubuntu/twenty/packages/twenty-front/build
 
-mkdir -p /home/ubuntu/twenty/packages/twenty-shared/dist
-# Clear existing files
-sudo rm -rf /home/ubuntu/twenty/packages/twenty-shared/dist/*
-# Copy new shared library files
-scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/twenty-shared/dist/* /home/ubuntu/twenty/packages/twenty-shared/dist/
+REMOTE_TWENTY_SHARED_DIST="$(resolve_remote_dir "twenty-shared dist" \
+  /home/ubuntu/twenty/packages/twenty-shared/dist \
+  /home/ubuntu/twenty/dist/packages/twenty-shared \
+  /home/ubuntu/dist/packages/twenty-shared)"
+copy_remote_dir "$REMOTE_TWENTY_SHARED_DIST" /home/ubuntu/twenty/packages/twenty-shared/dist
 
-mkdir -p /home/ubuntu/twenty/packages/twenty-orgchart/dist
-# Clear existing files
-sudo rm -rf /home/ubuntu/twenty/packages/twenty-orgchart/dist/*
-# Copy new twenty-orgchart library files
-scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/twenty-orgchart/dist/* /home/ubuntu/twenty/packages/twenty-orgchart/dist/
+REMOTE_TWENTY_ORGCHART_DIST="$(resolve_remote_dir "twenty-orgchart dist" \
+  /home/ubuntu/twenty/packages/twenty-orgchart/dist \
+  /home/ubuntu/twenty/dist/packages/twenty-orgchart \
+  /home/ubuntu/dist/packages/twenty-orgchart)"
+copy_remote_dir "$REMOTE_TWENTY_ORGCHART_DIST" /home/ubuntu/twenty/packages/twenty-orgchart/dist
 
 mkdir -p /home/ubuntu/twenty/packages/twenty-front/src/locales/generated
 # Clear existing files
 sudo rm -rf /home/ubuntu/twenty/packages/twenty-front/src/locales/generated/*
 # Copy new locale files
-scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/twenty-front/src/locales/generated/* /home/ubuntu/twenty/packages/twenty-front/src/locales/generated/
+REMOTE_TWENTY_FRONT_LOCALES="$(resolve_remote_dir "twenty-front generated locales" \
+  /home/ubuntu/twenty/packages/twenty-front/src/locales/generated \
+  /home/ubuntu/dist/packages/twenty-front/src/locales/generated)"
+copy_remote_dir "$REMOTE_TWENTY_FRONT_LOCALES" /home/ubuntu/twenty/packages/twenty-front/src/locales/generated
 
 # For server locale files (if needed)
 mkdir -p /home/ubuntu/twenty/packages/twenty-server/src/engine/core-modules/i18n/locales/generated
 # Clear existing files
 sudo rm -rf /home/ubuntu/twenty/packages/twenty-server/src/engine/core-modules/i18n/locales/generated/*
 # Copy new locale files
-scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/twenty-server/src/engine/core-modules/i18n/locales/generated/* /home/ubuntu/twenty/packages/twenty-server/src/engine/core-modules/i18n/locales/generated/
+REMOTE_TWENTY_SERVER_LOCALES="$(resolve_remote_dir "twenty-server generated locales" \
+  /home/ubuntu/twenty/packages/twenty-server/src/engine/core-modules/i18n/locales/generated \
+  /home/ubuntu/dist/packages/twenty-server/src/engine/core-modules/i18n/locales/generated)"
+copy_remote_dir "$REMOTE_TWENTY_SERVER_LOCALES" /home/ubuntu/twenty/packages/twenty-server/src/engine/core-modules/i18n/locales/generated
 
 
 # For emails files
@@ -118,20 +148,32 @@ mkdir -p /home/ubuntu/twenty/packages/twenty-emails/dist
 # Clear existing files
 sudo rm -rf /home/ubuntu/twenty/packages/twenty-emails/dist/*
 # Copy new emails files
-scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/twenty-emails/dist/* /home/ubuntu/twenty/packages/twenty-emails/dist/
+REMOTE_TWENTY_EMAILS_DIST="$(resolve_remote_dir "twenty-emails dist" \
+  /home/ubuntu/twenty/packages/twenty-emails/dist \
+  /home/ubuntu/twenty/dist/packages/twenty-emails \
+  /home/ubuntu/dist/packages/twenty-emails)"
+copy_remote_dir "$REMOTE_TWENTY_EMAILS_DIST" /home/ubuntu/twenty/packages/twenty-emails/dist
 
 # For twenty-mcp-server files
 mkdir -p /home/ubuntu/twenty/packages/twenty-mcp-server/dist
 # Clear existing files
 sudo rm -rf /home/ubuntu/twenty/packages/twenty-mcp-server/dist/*
 # Copy new twenty-mcp-server files
-scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/twenty-mcp-server/dist/* /home/ubuntu/twenty/packages/twenty-mcp-server/dist/
+REMOTE_TWENTY_MCP_SERVER_DIST="$(resolve_remote_dir "twenty-mcp-server dist" \
+  /home/ubuntu/twenty/packages/twenty-mcp-server/dist \
+  /home/ubuntu/twenty/dist/packages/twenty-mcp-server \
+  /home/ubuntu/dist/packages/twenty-mcp-server)"
+copy_remote_dir "$REMOTE_TWENTY_MCP_SERVER_DIST" /home/ubuntu/twenty/packages/twenty-mcp-server/dist
 
 mkdir -p /home/ubuntu/twenty/packages/twenty-website/.next
 # Clear existing files
 sudo rm -rf /home/ubuntu/twenty/packages/twenty-website/.next/*
 # Copy new twenty-website files (Next.js outputs to .next, not dist)
-scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/twenty-website/.next/* /home/ubuntu/twenty/packages/twenty-website/.next/
+REMOTE_TWENTY_WEBSITE_NEXT="$(resolve_remote_dir "twenty-website .next" \
+  /home/ubuntu/twenty/packages/twenty-website/.next \
+  /home/ubuntu/twenty/dist/packages/twenty-website/.next \
+  /home/ubuntu/dist/packages/twenty-website/.next)"
+copy_remote_dir "$REMOTE_TWENTY_WEBSITE_NEXT" /home/ubuntu/twenty/packages/twenty-website/.next
 
 # Copy package.json and yarn.lock so production has same deps as build (avoids missing new packages like apify-client)
 scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/twenty/package.json /home/ubuntu/twenty/package.json
