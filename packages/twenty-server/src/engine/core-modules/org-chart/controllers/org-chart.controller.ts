@@ -1,15 +1,15 @@
 import {
-  Body,
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  Logger,
-  Param,
-  Post,
-  Query,
-  Req,
-  Res,
+    Body,
+    Controller,
+    Get,
+    HttpException,
+    HttpStatus,
+    Logger,
+    Param,
+    Post,
+    Query,
+    Req,
+    Res,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
@@ -21,6 +21,7 @@ import { CompanyAutocompleteDto } from '../dto/company-autocomplete.dto';
 import { OrgChartNodePeopleDto } from '../dto/org-chart-node-people.dto';
 import { OrgChartQueryDto } from '../dto/org-chart-query.dto';
 import { CompanyLogoService } from '../services/company-logo.service';
+import { ImageProxyService } from '../services/image-proxy.service';
 import { OrgChartEsService } from '../services/org-chart-es.service';
 import { OrgChartService } from '../services/org-chart.service';
 
@@ -32,6 +33,7 @@ export class OrgChartController {
     private readonly orgChartService: OrgChartService,
     private readonly orgChartEsService: OrgChartEsService,
     private readonly companyLogoService: CompanyLogoService,
+    private readonly imageProxyService: ImageProxyService,
     private readonly apifyEmployeeCountService: ApifyEmployeeCountService,
     private readonly unipileCompanyService: UnipileCompanyService,
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
@@ -73,6 +75,33 @@ export class OrgChartController {
       'Content-Type',
       contentType ?? 'image/png',
     );
+    res.send(Buffer.from(body));
+  }
+
+  /**
+   * Proxy external images (e.g. LinkedIn profile photos) so the response
+   * can set Cross-Origin-Resource-Policy and avoid CORP blocking in the browser.
+   */
+  @Get('image-proxy')
+  async getImageProxy(
+    @Query('url') url: string,
+    @Res() res: Response,
+  ) {
+    if (!url?.trim()) {
+      throw new HttpException(
+        'Query parameter "url" is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    const decodedUrl = decodeURIComponent(url.trim());
+    const { ok, contentType, body } =
+      await this.imageProxyService.fetchImage(decodedUrl);
+    if (!ok || body.byteLength === 0) {
+      res.status(404).send();
+      return;
+    }
+    res.setHeader('Content-Type', contentType ?? 'image/jpeg');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     res.send(Buffer.from(body));
   }
 

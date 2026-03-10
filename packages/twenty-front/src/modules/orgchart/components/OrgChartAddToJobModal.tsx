@@ -14,6 +14,7 @@ const DEFAULT_AVATAR =
 
 import type { OrgChartNodeData } from 'twenty-shared';
 import type { ContextResultItem } from '../types';
+import { getProxiedImageUrl } from '../utils/getProxiedImageUrl';
 import { toLinkedInPremiumCandidate } from '../utils/orgChartUtils';
 
 const StyledBackdrop = styled.div`
@@ -442,7 +443,11 @@ export const OrgChartAddToJobModal = ({
             )}
             <StyledCandidateList>
               {candidates.map((c) => {
-                const avatarUrl = getCandidateAvatarUrl(c);
+                const rawUrl = getCandidateAvatarUrl(c);
+                const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+                const avatarUrl = rawUrl
+                  ? getProxiedImageUrl(rawUrl, baseUrl)
+                  : undefined;
                 return (
                   <StyledCandidateRow key={c.id}>
                     {avatarUrl && <CandidateAvatar src={avatarUrl} size={30} />}

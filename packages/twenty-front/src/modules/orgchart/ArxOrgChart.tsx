@@ -25,6 +25,7 @@ import { OrgChartResultModal } from './components/OrgChartResultModal';
 import { OrgChartResultsAddToJobModal } from './components/OrgChartResultsAddToJobModal';
 import { useJobOrgChartData } from './hooks/useJobOrgChartData';
 import { useOrgChartActions } from './hooks/useOrgChartActions';
+import { getProxiedImageUrl } from './utils/getProxiedImageUrl';
 
 export type ArxOrgChartProps = {
   companyId: string;
@@ -479,11 +480,36 @@ console.log("Company name in ArxOrgChart::", companyName);
   const nodeDataArray = useMemo(() => {
     if (!orgData) return [];
     const base = processOrgChartToNodeData(orgData);
-    if (Object.keys(actions.enrichedNodes).length === 0) return base;
+    const apiBase = baseUrl.replace(/\/$/, '');
+    const rewriteImage = (url: string) => getProxiedImageUrl(url, apiBase);
+
+    if (Object.keys(actions.enrichedNodes).length === 0) {
+      return base.map((node) => {
+        const out = { ...node } as OrgChartNodeData;
+        for (let i = 0; i < 4; i++) {
+          const key = `image_${i}` as keyof OrgChartNodeData;
+          const val = out[key];
+          if (typeof val === 'string' && val) {
+            (out as Record<string, string>)[key] = rewriteImage(val);
+          }
+        }
+        return out;
+      });
+    }
 
     return base.map((node) => {
       const enriched = actions.enrichedNodes[node.key];
-      if (!enriched) return node;
+      if (!enriched) {
+        const out = { ...node } as OrgChartNodeData;
+        for (let i = 0; i < 4; i++) {
+          const key = `image_${i}` as keyof OrgChartNodeData;
+          const val = out[key];
+          if (typeof val === 'string' && val) {
+            (out as Record<string, string>)[key] = rewriteImage(val);
+          }
+        }
+        return out;
+      }
 
       const merged = { ...node } as OrgChartNodeData;
       const displayedCount = Math.min(enriched.people.length, 4);
@@ -500,7 +526,7 @@ console.log("Company name in ArxOrgChart::", companyName);
           (p.raw as Record<string, unknown>) ?? undefined,
           mergedImage,
         );
-        merged[`image_${i}`] = enrichedImage;
+        merged[`image_${i}`] = rewriteImage(enrichedImage || '') || enrichedImage;
       });
       merged.height_0 = displayedCount >= 1 ? PERSON_ROW_HEIGHT : 0;
       merged.height_1 = displayedCount >= 2 ? PERSON_ROW_HEIGHT : 0;
@@ -510,7 +536,7 @@ console.log("Company name in ArxOrgChart::", companyName);
       merged.total_people = totalCount;
       return merged;
     });
-  }, [orgData, actions.enrichedNodes]);
+  }, [orgData, actions.enrichedNodes, baseUrl]);
 
   const handleSearch = () => {
     const handle = diagramHandleRef.current;

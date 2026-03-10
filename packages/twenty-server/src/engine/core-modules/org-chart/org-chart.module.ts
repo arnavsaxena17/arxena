@@ -14,6 +14,7 @@ import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/ar
 import { OrgChartController } from './controllers/org-chart.controller';
 import { ArxenaBackendService } from './services/arxena-backend.service';
 import { CompanyLogoService } from './services/company-logo.service';
+import { ImageProxyService } from './services/image-proxy.service';
 import { OrgChartEsService } from './services/org-chart-es.service';
 import { OrgChartService } from './services/org-chart.service';
 import { PdlAutocompleteService } from './services/pdl-autocomplete.service';
@@ -40,6 +41,7 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
     PeopleEsService,
     PdlAutocompleteService,
     CompanyLogoService,
+    ImageProxyService,
     PythonOrgChartService,
   ],
   exports: [OrgChartService],

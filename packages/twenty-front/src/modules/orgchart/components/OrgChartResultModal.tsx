@@ -12,6 +12,7 @@ const DEFAULT_AVATAR =
   'https://st2.depositphotos.com/4111759/12123/v/950/depositphotos_121232442-stock-illustration-male-default-placeholder-avatar-profile.jpg';
 
 import type { ContextResultItem } from '../types';
+import { getProxiedImageUrl } from '../utils/getProxiedImageUrl';
 
 const StyledContextModalBackdrop = styled.div`
   position: absolute;
@@ -268,7 +269,9 @@ const ResultItem = ({
   isFetchingContacts,
   onFetchContacts,
 }: ResultItemProps) => {
-  const avatarUrl = getAvatarUrl(item) ?? DEFAULT_AVATAR;
+  const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+  const rawAvatarUrl = getAvatarUrl(item) ?? DEFAULT_AVATAR;
+  const avatarUrl = getProxiedImageUrl(rawAvatarUrl, baseUrl) || rawAvatarUrl;
   const displayHeadline = item.headline
     ? toTitleCase(item.headline, { skipIfMasked: true })
     : '';
