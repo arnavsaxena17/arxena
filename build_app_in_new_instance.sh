@@ -10,13 +10,12 @@ for config in "$SCRIPT_DIR/build.config" "$HOME/twenty/build.config" "/home/ubun
     break
   fi
 done
-AWS_PROFILE="${AWS_PROFILE:-arxanalytics}"
 BUILD_BRANCH="${BUILD_BRANCH:-onboarding-workspace}"
 
 # Function to cleanup and terminate the instance
 cleanup() {
     echo "Cleaning up and terminating instance..."
-    AWS_PROFILE="$AWS_PROFILE" aws ec2 terminate-instances --instance-ids $TEMP_INSTANCE_ID
+    aws ec2 terminate-instances --instance-ids $TEMP_INSTANCE_ID
     exit
 }
 
@@ -40,11 +39,11 @@ if [ -d "$REPO_DIR/.git" ]; then
 fi
 
 # 1. Create temporary EC2 instance
-TEMP_INSTANCE_ID=$(AWS_PROFILE="$AWS_PROFILE" aws ec2 run-instances --image-id ami-09e12010e9d1fb5a3 --instance-type t2.xlarge --key-name arx-analytics-key --security-group-ids sg-04efe18d868d9a023 --subnet-id subnet-0fe5d2cdf8329f8a5 --block-device-mappings '[{"DeviceName":"/dev/sda1","Ebs":{"VolumeSize":30,"VolumeType":"gp2"}}]' --query 'Instances[0].InstanceId' --output text)
+TEMP_INSTANCE_ID=$(aws ec2 run-instances --image-id ami-09e12010e9d1fb5a3 --instance-type t2.xlarge --key-name arx-analytics-key --security-group-ids sg-04efe18d868d9a023 --subnet-id subnet-0fe5d2cdf8329f8a5 --block-device-mappings '[{"DeviceName":"/dev/sda1","Ebs":{"VolumeSize":30,"VolumeType":"gp2"}}]' --query 'Instances[0].InstanceId' --output text)
 # Wait for instance to be running
 echo $TEMP_INSTANCE_ID
 echo "EC2 instance is starting, please wait....."
-AWS_PROFILE="$AWS_PROFILE" aws ec2 wait instance-status-ok --instance-ids $TEMP_INSTANCE_ID
+aws ec2 wait instance-status-ok --instance-ids $TEMP_INSTANCE_ID
 end_time=$(date +%s)
 elapsed_time=$((end_time - start_time))
 echo "Instance creation took $elapsed_time seconds."
@@ -53,7 +52,7 @@ echo "Instance creation took $elapsed_time seconds."
 
 
 # Get public IP of temporary instance
-TEMP_DNS=$(AWS_PROFILE="$AWS_PROFILE" aws ec2 describe-instances --instance-ids $TEMP_INSTANCE_ID --query 'Reservations[0].Instances[0].PublicDnsName' --output text)
+TEMP_DNS=$(aws ec2 describe-instances --instance-ids $TEMP_INSTANCE_ID --query 'Reservations[0].Instances[0].PublicDnsName' --output text)
 # Copy script file
 echo $TEMP_DNS
 scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no "$SCRIPT_DIR/script_to_build_app_in_new_instance.sh" ubuntu@$TEMP_DNS:/home/ubuntu/
