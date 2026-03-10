@@ -89,7 +89,7 @@ BUILD_BRANCH="${BUILD_BRANCH:-without-payment}"
 
 	echo "Building twenty-website package"
 	cd ~/twenty/packages/twenty-website/
-	yarn build
+	yarn build --no-lint
 
 	echo "Building twenty-emails package"
 	cd ~/twenty/packages/twenty-emails/
