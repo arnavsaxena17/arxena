@@ -9,7 +9,7 @@ for config in "$SCRIPT_DIR/build.config" "$HOME/twenty/build.config" "/home/ubun
     break
   fi
 done
-BUILD_BRANCH="${BUILD_BRANCH:-without-payment}"
+BUILD_BRANCH="${BUILD_BRANCH:-onboarding-workspace}"
 
 # Function to cleanup and terminate the instance
 cleanup() {
