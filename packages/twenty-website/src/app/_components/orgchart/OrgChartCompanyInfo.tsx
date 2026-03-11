@@ -2,9 +2,9 @@
 
 import styled from '@emotion/styled';
 import {
-  IconBrandLinkedin,
-  IconHierarchy2,
-  IconWorld,
+    IconBrandLinkedin,
+    IconHierarchy2,
+    IconWorld,
 } from '@tabler/icons-react';
 import { useState } from 'react';
 
@@ -58,23 +58,17 @@ const StyledCompanyTitle = styled.h1`
 `;
 
 const StyledCompanyMetaRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  min-width: 0;
   font-size: ${({ theme }) => theme.font.size.sm};
   color: ${({ theme }) => theme.font.color.tertiary};
 `;
 
-const StyledMetaItem = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(0.5)};
-
-  &:not(:last-child)::after {
-    content: '·';
-    margin-left: ${({ theme }) => theme.spacing(1)};
-  }
+const StyledCompanyMetaLine = styled.span`
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 `;
 
 const StyledLinkIcon = styled.a`
@@ -216,23 +210,35 @@ export const OrgChartCompanyInfo = ({
         typeof profileCount === 'number' ||
         typeof employeeCount === 'number') && (
         <StyledCompanyMetaRow>
-          {displayLocationName && (
-            <StyledMetaItem>{displayLocationName}</StyledMetaItem>
-          )}
-          {displayIndustry && (
-            <StyledMetaItem>{displayIndustry}</StyledMetaItem>
-          )}
-          {websiteDomain && <StyledMetaItem>{websiteDomain}</StyledMetaItem>}
-          {typeof profileCount === 'number' && (
-            <StyledMetaItem>
-              {profileCount.toLocaleString()} profiles
-            </StyledMetaItem>
-          )}
-          {typeof employeeCount === 'number' && (
-            <StyledMetaItem>
-              {employeeCount.toLocaleString()} employees
-            </StyledMetaItem>
-          )}
+          <StyledCompanyMetaLine
+            title={[
+              displayLocationName,
+              displayIndustry,
+              websiteDomain,
+              typeof profileCount === 'number'
+                ? `${profileCount.toLocaleString()} profiles`
+                : '',
+              typeof employeeCount === 'number'
+                ? `${employeeCount.toLocaleString()} employees`
+                : '',
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          >
+            {[
+              displayLocationName,
+              displayIndustry,
+              websiteDomain,
+              typeof profileCount === 'number'
+                ? `${profileCount.toLocaleString()} profiles`
+                : '',
+              typeof employeeCount === 'number'
+                ? `${employeeCount.toLocaleString()} employees`
+                : '',
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </StyledCompanyMetaLine>
         </StyledCompanyMetaRow>
       )}
     </StyledCompanyInfo>

@@ -12,6 +12,7 @@ export type PythonQueryInput = {
   function_root?: Array<{ name: string; exclude?: boolean }>;
   company_names?: string[];
   raw_job_titles?: string[];
+  top_n_terms?: number;
 };
 
 @Injectable()
@@ -69,24 +70,92 @@ export class PythonQueryGenerationService {
     };
   }
 
+  private async generateLinkedInQuerySet(
+    input: PythonQueryInput,
+  ): Promise<SearchQuerySet> {
+    const baseUrl = this.getBaseUrl();
+    const url = `${baseUrl}/api/query-generator/linkedin/query-set`;
+
+    this.logger.log(`Calling Python query-set generator at ${url}`);
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        functions: input.functions ?? [],
+        grades: input.grades ?? [],
+        function_root: input.function_root ?? [],
+        company_names: input.company_names ?? [],
+        raw_job_titles: input.raw_job_titles ?? [],
+        ...(typeof input.top_n_terms === 'number' && input.top_n_terms > 0
+          ? { top_n_terms: input.top_n_terms }
+          : {}),
+      }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(
+        `Python query-set generator returned ${response.status}: ${text}`,
+      );
+    }
+
+    const result = (await response.json()) as {
+      search_query_set?: Array<{
+        keywords?: string | null;
+        job_title?: string | null;
+        company?: string[] | null;
+        location?: string[] | null;
+        years_of_experience?: string | null;
+      }>;
+    };
+
+    const rows = Array.isArray(result.search_query_set)
+      ? result.search_query_set
+      : [];
+
+    return {
+      search_query_set: rows.map((row) => ({
+        keywords: row.keywords ?? null,
+        job_title: row.job_title ?? null,
+        company: row.company ?? null,
+        location: row.location ?? null,
+        years_of_experience: row.years_of_experience ?? null,
+      })),
+    };
+  }
+
   async generateSearchParameters(
     input: PythonQueryInput,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     requirement?: string,
   ): Promise<GeneratedSearchParameters> {
-    const pythonResult = await this.generateLinkedInQuery(input);
+    let querySet: SearchQuerySet;
+    const hasFunctionRoot = Array.isArray(input.function_root) && input.function_root.length > 0;
 
-    const querySet: SearchQuerySet = {
-      search_query_set: [
-        {
-          keywords: pythonResult.keywords,
-          job_title: pythonResult.job_title,
-          company: pythonResult.company,
-          location: null,
-          years_of_experience: null,
-        },
-      ],
-    };
+    if (hasFunctionRoot) {
+      querySet = await this.generateLinkedInQuerySet(input);
+      if (!querySet.search_query_set.length) {
+        this.logger.warn('Python query-set returned no queries; falling back to single query endpoint');
+      }
+    } else {
+      querySet = { search_query_set: [] };
+    }
+
+    if (!querySet.search_query_set.length) {
+      const pythonResult = await this.generateLinkedInQuery(input);
+      querySet = {
+        search_query_set: [
+          {
+            keywords: pythonResult.keywords,
+            job_title: pythonResult.job_title,
+            company: pythonResult.company,
+            location: null,
+            years_of_experience: null,
+          },
+        ],
+      };
+    }
 
     return mapLinkedinSearchQueriesToGeneratedParameters(
       querySet,

@@ -27,6 +27,7 @@ import { CleanupService } from './services/cleanup.service';
 import { CompanyExpanderService } from './services/company-expander.service';
 import { JobDescriptionService } from './services/job-description.service';
 import { JobTitleExpanderService } from './services/job-title-expander.service';
+import { OrgchartCancelRegistryService } from './services/orgchart-cancel-registry.service';
 import { PythonQueryGenerationService } from './services/python-query-generation.service';
 import { QueryConstructorService } from './services/query-constructor.service';
 import { RequirementAnalyzerService } from './services/requirement-analyzer.service';
@@ -72,6 +73,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     CleanupService,
     ClassifyMessageService,
     SearchResultsCacheService,
+    OrgchartCancelRegistryService,
     // Executive search enhancement services
     PythonOrgChartService,
   ],

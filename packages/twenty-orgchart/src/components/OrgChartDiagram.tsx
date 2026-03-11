@@ -854,18 +854,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       const handleInitialLayout = () => {
         if (hasCenteredRef.current) return;
         hasCenteredRef.current = true;
-        const ceoNode = diagram
-        .findNodesByExample({ std_function: 'ceo', std_grade: 'ceo' })
-        .first();
-
-      if (ceoNode) {
-        diagram.commandHandler.scrollToPart(ceoNode);
-        return;
-      }
-      const firstNode = diagram.nodes.first();
-      if (firstNode) {
-        diagram.commandHandler.scrollToPart(firstNode);
-      }
+        diagram.commandHandler.zoomToFit();
       };
 
       diagram.addDiagramListener('InitialLayoutCompleted', handleInitialLayout);

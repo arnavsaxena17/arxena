@@ -117,9 +117,27 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         return null;
       }
 
-      const strategyResolvedParams: GeneratedSearchParameters = {
+      let strategyResolvedParams: GeneratedSearchParameters = {
         [parameterKey]: strategy.parameters,
       } as GeneratedSearchParameters;
+
+      // Ensure classic/company/location/etc params are resolved to LinkedIn IDs before execution.
+      // Orgchart flows (especially python query generation) often provide company names; classic people search
+      // requires resolved IDs for facets like currentCompany/geoUrn to be applied.
+      const areParamsResolved = this.checkIfParametersResolved(
+        strategyResolvedParams,
+        searchType,
+        searchCategory,
+      );
+      if (!areParamsResolved) {
+        const accountId = await this.getLinkedInAccountId(apiToken);
+        strategyResolvedParams = await this.resolveSearchParameters(
+          strategyResolvedParams,
+          searchType,
+          searchCategory,
+          accountId,
+        );
+      }
 
       // Detect raw classic people search so we can rely on offset-based
       // pagination (start param) instead of cursor-based pagination.
@@ -182,17 +200,22 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           break;
         }
 
-        // Store first page config and pagination info
+        // Store first page config and pagination info.
+        // For raw classic people searches, we intentionally ignore paging.total_count because
+        // the raw HTML endpoint only knows the count for the current page, not the full result set.
+        // Rely on empty/duplicate pages to stop pagination instead.
         if (state.currentPage === 1 && pageResult.config) {
           state.firstPageConfig = pageResult.config;
-          if (pageResult.paging?.total_count !== undefined) {
+          if (!useRawClassicPeople && pageResult.paging?.total_count !== undefined) {
             state.totalCountFromAPI = pageResult.paging.total_count;
-            state.totalPagesAvailable = Math.ceil(pageResult.paging.total_count / pageLimit);
-            
+            state.totalPagesAvailable = Math.ceil(
+              pageResult.paging.total_count / pageLimit,
+            );
+
             this.logger.log(
               `Strategy ${strategy.id} pagination info: Total results available: ${state.totalCountFromAPI}, Total pages: ${state.totalPagesAvailable}, Page limit: ${pageLimit}`,
             );
-            
+
             sendEvent?.('paginationInfo', {
               strategyId: strategy.id,
               strategyLabel: strategy.label,
@@ -248,6 +271,17 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         if (newItemsNoVal.length === 0 && state.allItems.length > 0) {
           this.logger.log(
             `Stopping pagination for strategy ${strategy.id}: page ${state.currentPage} returned only duplicate results (0 new unique candidates). Likely no more results or pagination not supported.`,
+          );
+          break;
+        }
+
+        // Respect known total pages from API paging metadata.
+        if (
+          state.totalPagesAvailable !== undefined &&
+          state.currentPage >= state.totalPagesAvailable
+        ) {
+          this.logger.log(
+            `Stopping pagination for strategy ${strategy.id}: reached last available page (${state.currentPage}/${state.totalPagesAvailable}).`,
           );
           break;
         }
@@ -314,6 +348,26 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         [parameterKey]: strategy.parameters,
       } as GeneratedSearchParameters;
 
+      // Detect raw classic people search so we can ignore paging.total_count metadata.
+      // The raw HTML endpoint only returns the count for the current page, so treating it
+      // as the full total would prematurely stop pagination after page 1.
+      const rawParamObject = (strategyResolvedParams[
+        parameterKey
+      ] ?? strategyResolvedParams) as { useRawEndpoint?: boolean } | undefined;
+      const rawFromParams = rawParamObject?.useRawEndpoint;
+      const rawFromEnv = (() => {
+        const envRaw = process.env.LINKEDIN_CLASSIC_PEOPLE_USE_RAW_ENDPOINT;
+        return (
+          envRaw !== undefined &&
+          envRaw !== '' &&
+          (envRaw === 'true' || envRaw === '1')
+        );
+      })();
+      const useRawClassicPeople =
+        searchType === 'classic' &&
+        searchCategory === 'people' &&
+        (rawFromParams === true || rawFromEnv);
+
       const maxPagesToFetch = 10; // Cap to top 10 pages to limit pagination and align with org-chart requirements
       const state = {
         allItems: [] as LinkedInSearchResult[],
@@ -363,17 +417,21 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           break;
         }
 
-        // Store first page config and pagination info
+        // Store first page config and pagination info.
+        // For raw classic people searches, ignore paging.total_count for the same reason as above:
+        // it only represents the current page, not the total result set.
         if (state.currentPage === 1 && pageResult.config) {
           state.firstPageConfig = pageResult.config;
-          if (pageResult.paging?.total_count !== undefined) {
+          if (!useRawClassicPeople && pageResult.paging?.total_count !== undefined) {
             state.totalCountFromAPI = pageResult.paging.total_count;
-            state.totalPagesAvailable = Math.ceil(pageResult.paging.total_count / pageLimit);
-            
+            state.totalPagesAvailable = Math.ceil(
+              pageResult.paging.total_count / pageLimit,
+            );
+
             this.logger.log(
               `Strategy ${strategy.id} pagination info: Total results available: ${state.totalCountFromAPI}, Total pages: ${state.totalPagesAvailable}, Page limit: ${pageLimit}`,
             );
-            
+
             sendEvent?.('paginationInfo', {
               strategyId: strategy.id,
               strategyLabel: strategy.label,
@@ -456,6 +514,17 @@ export class SearchExecutionService extends CandidateSearchBaseService {
             break;
           }
         } else if (!state.currentCursor) {
+          break;
+        }
+
+        // Respect known total pages from API paging metadata.
+        if (
+          state.totalPagesAvailable !== undefined &&
+          state.currentPage >= state.totalPagesAvailable
+        ) {
+          this.logger.log(
+            `Stopping pagination for strategy ${strategy.id}: reached last available page (${state.currentPage}/${state.totalPagesAvailable}).`,
+          );
           break;
         }
 
@@ -966,4 +1035,3 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     return transformed;
   }
 }
-

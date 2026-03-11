@@ -85,8 +85,6 @@ BUILD_BRANCH="${BUILD_BRANCH:-without-payment}"
 	npx nx reset
 	VITE_BUILD_SOURCEMAP=false NODE_OPTIONS="--max-old-space-size=4096" yarn build
 
-
-
 	echo "Building twenty-website package"
 	cd ~/twenty/packages/twenty-website/
 	yarn build --no-lint

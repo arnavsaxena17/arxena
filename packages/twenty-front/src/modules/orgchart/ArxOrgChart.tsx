@@ -289,6 +289,16 @@ console.log("Company name in ArxOrgChart::", companyName);
   }, [fetchOrgChart]);
 
   useEffect(() => {
+    if (isJobMode) return;
+    actions.clearLatestOrgChart();
+  }, [
+    actions.clearLatestOrgChart,
+    isJobMode,
+    selectedCountry,
+    selectedFunctionRoot,
+  ]);
+
+  useEffect(() => {
     refetchJobs();
   }, [refetchJobs]);
 
@@ -560,6 +570,11 @@ console.log("Company name in ArxOrgChart::", companyName);
     150,
   );
 
+  const resolvedSearchMode =
+    selectedFunctionRoot && selectedFunctionRoot !== 'fullcompany'
+      ? 'function_grade'
+      : 'entire_company';
+
   const filtersProps = {
     availableCountries: filterOptions.availableCountries,
     countryPercentLabels: filterOptions.countryPercentLabels,
@@ -580,13 +595,17 @@ console.log("Company name in ArxOrgChart::", companyName);
     diagramHandleRef,
     onGetAll: () =>
       actions.executeOrgchartSearch({
-        mode: 'entire_company',
+        mode: resolvedSearchMode as any,
         origin: 'header',
+        country: selectedCountry,
+        functionRoot: selectedFunctionRoot,
       }),
     onViewAllCandidates: () =>
       actions.executeOrgchartSearch({
-        mode: 'entire_company',
+        mode: resolvedSearchMode as any,
         origin: 'view_all_candidates',
+        country: selectedCountry,
+        functionRoot: selectedFunctionRoot,
       }),
     onGetLeaders: () =>
       actions.executeOrgchartSearch({
@@ -791,6 +810,7 @@ console.log("Company name in ArxOrgChart::", companyName);
                     })
                 : undefined
             }
+            onStop={actions.cancelOrgchartSearch}
           />
         )}
 

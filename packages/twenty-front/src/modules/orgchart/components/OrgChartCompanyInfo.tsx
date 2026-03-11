@@ -68,24 +68,28 @@ const StyledCompanyTitle = styled.h2`
   overflow: hidden;
 `;
 
+const StyledTagline = styled.p`
+  margin: 0;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.secondary};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+`;
+
 const StyledCompanyMetaRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  min-width: 0;
   font-size: ${({ theme }) => theme.font.size.sm};
   color: ${({ theme }) => theme.font.color.tertiary};
 `;
 
-const StyledMetaItem = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(0.5)};
-
-  &:not(:last-child)::after {
-    content: '·';
-    margin-left: ${({ theme }) => theme.spacing(1)};
-  }
+const StyledCompanyMetaLine = styled.span`
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 `;
 
 const StyledLinkIcon = styled.a`
@@ -274,33 +278,44 @@ export const OrgChartCompanyInfo = ({
           )}
         </StyledCompanyTitleRow>
       )}
+      {displayTagline && (
+        <StyledTagline title={displayTagline}>{displayTagline}</StyledTagline>
+      )}
       {(displayLocationName ||
         displayIndustry ||
         websiteDomain ||
-        displayTagline ||
         typeof profileCount === 'number' ||
         typeof employeeCount === 'number') && (
         <StyledCompanyMetaRow>
-          {displayTagline && (
-            <StyledMetaItem>{displayTagline}</StyledMetaItem>
-          )}
-          {displayLocationName && (
-            <StyledMetaItem>{displayLocationName}</StyledMetaItem>
-          )}
-          {displayIndustry && (
-            <StyledMetaItem>{displayIndustry}</StyledMetaItem>
-          )}
-          {websiteDomain && <StyledMetaItem>{websiteDomain}</StyledMetaItem>}
-          {typeof profileCount === 'number' && !hideProfileCountWhenUnipile && (
-            <StyledMetaItem>
-              Total {profileCount.toLocaleString()} profiles
-            </StyledMetaItem>
-          )}
-          {typeof employeeCount === 'number' && (
-            <StyledMetaItem>
-              Total {employeeCount.toLocaleString()} employees
-            </StyledMetaItem>
-          )}
+          <StyledCompanyMetaLine
+            title={[
+              displayLocationName,
+              displayIndustry,
+              websiteDomain,
+              typeof profileCount === 'number' && !hideProfileCountWhenUnipile
+                ? `Total ${profileCount.toLocaleString()} profiles`
+                : '',
+              typeof employeeCount === 'number'
+                ? `Total ${employeeCount.toLocaleString()} employees`
+                : '',
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          >
+            {[
+              displayLocationName,
+              displayIndustry,
+              websiteDomain,
+              typeof profileCount === 'number' && !hideProfileCountWhenUnipile
+                ? `Total ${profileCount.toLocaleString()} profiles`
+                : '',
+              typeof employeeCount === 'number'
+                ? `Total ${employeeCount.toLocaleString()} employees`
+                : '',
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </StyledCompanyMetaLine>
         </StyledCompanyMetaRow>
       )}
     </>

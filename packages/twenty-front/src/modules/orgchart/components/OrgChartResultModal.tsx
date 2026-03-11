@@ -187,6 +187,12 @@ const StyledLoadingRow = styled.div`
   gap: ${({ theme }) => theme.spacing(1)};
 `;
 
+const StyledStopRow = styled.div`
+  display: flex;
+  align-items: center;
+  margin-top: ${({ theme }) => theme.spacing(2)};
+`;
+
 const StyledSpinner = styled.div`
   width: 16px;
   height: 16px;
@@ -613,6 +619,7 @@ export type OrgChartResultModalProps = {
   onAddToJob?: () => void;
   extraFooterButtons?: React.ReactNode;
   onGetSimilarPeople?: () => void;
+  onStop?: () => void;
 };
 
 export const OrgChartResultModal = ({
@@ -632,6 +639,7 @@ export const OrgChartResultModal = ({
   onAddToJob,
   extraFooterButtons,
   onGetSimilarPeople,
+  onStop,
 }: OrgChartResultModalProps) => {
   const { contactsById, loadingById, clickedContactLinkImage } =
     useClickedContactLinkImage();
@@ -690,6 +698,16 @@ export const OrgChartResultModal = ({
                 <StyledLoadingDetails>
                   {`Page ${loadingPage ?? '-'}${loadingTotalPages ? `/${loadingTotalPages}` : ''} - ${loadingTotalCandidates ?? 0} people`}
                 </StyledLoadingDetails>
+              )}
+              {onStop && (
+                <StyledStopRow>
+                  <StyledContextSecondaryButton
+                    type="button"
+                    onClick={onStop}
+                  >
+                    Stop
+                  </StyledContextSecondaryButton>
+                </StyledStopRow>
               )}
             </StyledLoadingMessage>
           )}

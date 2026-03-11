@@ -35,6 +35,10 @@ export class OrgChartEsService {
     }
   }
 
+  private normalizeCompanyId(companyId: string): string {
+    return companyId.trim().toLowerCase();
+  }
+
   async getOrgChartByCompanyId(
     companyId: string,
     options?: {
@@ -48,7 +52,9 @@ export class OrgChartEsService {
       return null;
     }
 
-    if (!companyId.trim()) {
+    const normalizedCompanyId = this.normalizeCompanyId(companyId);
+
+    if (!normalizedCompanyId) {
       this.logger.warn('Empty companyId provided to getOrgChartByCompanyId');
       return null;
     }
@@ -59,20 +65,21 @@ export class OrgChartEsService {
       country: countryOverride,
       functionRoot,
     } = options ?? {};
+    const normalizedCompanyName = companyName?.trim().toLowerCase();
 
     const shouldClauses: Record<string, unknown>[] = [
       {
         match: {
           // Mirrors ESOrgQueryGenerator.create_es_query_orgcharts_job_company_name
-          job_company_id: companyId,
+          job_company_id: normalizedCompanyId,
         },
       },
     ];
 
-    if (companyName && companyName.trim().length > 0) {
+    if (normalizedCompanyName && normalizedCompanyName.length > 0) {
       shouldClauses.push({
         match: {
-          job_company_name: companyName.trim(),
+          job_company_name: normalizedCompanyName,
         },
       });
     }
@@ -126,7 +133,7 @@ export class OrgChartEsService {
 
     try {
       this.logger.log(
-        `Executing org chart ES query for companyId=${companyId}, companyName=${companyName ?? ''}, website=${website ?? ''}, country=${countryValue}, type=${typeValue}: ${JSON.stringify(
+        `Executing org chart ES query for companyId=${normalizedCompanyId}, companyName=${normalizedCompanyName ?? ''}, website=${website ?? ''}, country=${countryValue}, type=${typeValue}: ${JSON.stringify(
           query,
         ).slice(0, 4000)}`,
       );
@@ -176,7 +183,9 @@ export class OrgChartEsService {
       return [];
     }
 
-    if (!companyId.trim()) {
+    const normalizedCompanyId = this.normalizeCompanyId(companyId);
+
+    if (!normalizedCompanyId) {
       return [];
     }
 
@@ -196,8 +205,8 @@ export class OrgChartEsService {
         query: {
           bool: {
             should: [
-              { term: { id: companyId } },
-              { term: { 'name.keyword': companyId } },
+              { term: { id: normalizedCompanyId } },
+              { term: { 'name.keyword': normalizedCompanyId } },
             ],
           },
         },
@@ -1158,7 +1167,9 @@ export class OrgChartEsService {
       return [];
     }
 
-    if (!companyId.trim()) {
+    const normalizedCompanyId = this.normalizeCompanyId(companyId);
+
+    if (!normalizedCompanyId) {
       this.logger.warn('Empty companyId provided to getIndexedUrlsForCompany');
       return [];
     }
@@ -1184,7 +1195,7 @@ export class OrgChartEsService {
           size: 0,
           query: {
             bool: {
-              must: [{ match: { job_company_id: companyId } }],
+              must: [{ match: { job_company_id: normalizedCompanyId } }],
             },
           },
           aggs: {
@@ -1210,7 +1221,7 @@ export class OrgChartEsService {
       } while (after);
 
       this.logger.log(
-        `getIndexedUrlsForCompany companyId=${companyId} found ${results.length} URL combinations`,
+        `getIndexedUrlsForCompany companyId=${normalizedCompanyId} found ${results.length} URL combinations`,
       );
       return results;
     } catch (error) {
@@ -1222,4 +1233,3 @@ export class OrgChartEsService {
     }
   }
 }
-

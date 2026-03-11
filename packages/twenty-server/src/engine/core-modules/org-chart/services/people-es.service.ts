@@ -35,6 +35,10 @@ export class PeopleEsService {
     }
   }
 
+  private normalizeCompanyId(companyId: string): string {
+    return companyId.trim().toLowerCase();
+  }
+
   async searchForOrgChartNode(options: {
     companyId: string;
     companyName?: string;
@@ -58,7 +62,10 @@ export class PeopleEsService {
       limit,
     } = options;
 
-    if (!companyId.trim() && !companyName && !website) {
+    const normalizedCompanyId = this.normalizeCompanyId(companyId);
+    const normalizedCompanyName = companyName?.trim().toLowerCase();
+
+    if (!normalizedCompanyId && !companyName && !website) {
       this.logger.warn(
         'searchForOrgChartNode called without a usable company identifier',
       );
@@ -69,18 +76,18 @@ export class PeopleEsService {
 
     const companyShould: Record<string, unknown>[] = [];
 
-    if (companyId.trim()) {
+    if (normalizedCompanyId) {
       companyShould.push({
         match: {
-          job_company_id: companyId.trim(),
+          job_company_id: normalizedCompanyId,
         },
       });
     }
 
-    if (companyName && companyName.trim().length > 0) {
+    if (normalizedCompanyName && normalizedCompanyName.length > 0) {
       companyShould.push({
         match: {
-          job_company_name: companyName.trim(),
+          job_company_name: normalizedCompanyName,
         },
       });
     }
@@ -151,7 +158,7 @@ export class PeopleEsService {
 
     try {
       this.logger.log(
-        `Executing people ES query for orgchart node, companyId=${companyId}, stdFunction=${stdFunction ?? ''}, stdGrade=${stdGrade ?? ''}, country=${country ?? ''}: ${JSON.stringify(
+        `Executing people ES query for orgchart node, companyId=${normalizedCompanyId}, stdFunction=${stdFunction ?? ''}, stdGrade=${stdGrade ?? ''}, country=${country ?? ''}: ${JSON.stringify(
           query,
         ).slice(0, 4000)}`,
       );
@@ -186,4 +193,3 @@ export class PeopleEsService {
     }
   }
 }
-

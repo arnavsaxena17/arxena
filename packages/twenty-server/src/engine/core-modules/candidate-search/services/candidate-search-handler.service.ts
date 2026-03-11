@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { createHash } from 'crypto';
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
@@ -32,6 +33,7 @@ import { ChatMessageRequest } from '../types/search-plan.types';
 import { calculateCost } from '../utils/cost-calculation.util';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
 import { mapLinkedinSearchQueriesToGeneratedParameters } from '../utils/linkedin-query-generation-mapper.util';
+import { hasMeaningfulOrgChartFunctionRootFilter } from '../utils/orgchart-filter.util';
 import { constructSearchParamKey, generateLinkedInSearchUrl } from '../utils/search-parameter.utils';
 import { TokenUsage } from '../utils/token-tracking.util';
 import { BooltreeHintService } from './booltree-hint.service';
@@ -41,10 +43,13 @@ import { CleanupService } from './cleanup.service';
 import { CompanyExpanderService } from './company-expander.service';
 import { JobDescriptionService } from './job-description.service';
 import { JobTitleExpanderService } from './job-title-expander.service';
+import { OrgchartCancelRegistryService } from './orgchart-cancel-registry.service';
 import { PythonQueryGenerationService } from './python-query-generation.service';
 import { QueryConstructorService } from './query-constructor.service';
 import { RequirementAnalyzerService } from './requirement-analyzer.service';
 import { SearchExecutionService } from './search-execution.service';
+
+import type { TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 
 export type HandlerMessageStreamSendEvent = (event: string, data: Record<string, unknown>) => boolean | void;
 
@@ -129,12 +134,57 @@ type CachedCompanyCandidateListPayload = {
   cachedAt: string;
 };
 
+type CachedFunctionGradeSearchPayload = {
+  companyId: string;
+  companyName: string;
+  functionRoot: string;
+  country: string;
+  searchType: 'classic' | 'sales_navigator' | 'recruiter';
+  strategyCap: number;
+  keywordsHash: string;
+  items: any[];
+  itemCount: number;
+  orgChart?: OrgChartData;
+  cachedAt: string;
+};
+
+type OrgChartCandidateInput = TransformedCandidateForTable | Record<string, unknown>;
+
+type StandardizedOrgChartPerson = {
+  full_name: string;
+  job_title: string;
+  job_company_linkedin_url: string;
+  job_company_id: string;
+  job_company_name: string;
+  industry: string;
+  country: string;
+  job_company_website: string;
+  linkedin_url: string;
+  facebook_url: string;
+  twitter_url: string;
+  gender: string;
+  location_country: string;
+  location_region: string;
+  location_locality: string;
+  location_metro: string;
+  location_name: string;
+  inferred_salary: string;
+  inferred_years_experience: string;
+  emails: string;
+  phone_numbers: string;
+  profile_picture_url: string;
+  id: string;
+};
+
 const ORG_CHART_COMPANY_CACHE_KEY_PREFIX = 'company-orgchart';
 const ORG_CHART_COMPANY_CANDIDATE_LIST_CACHE_KEY_PREFIX =
   'company-orgchart-candidates';
+const ORG_CHART_FUNCTION_GRADE_CACHE_KEY_PREFIX = 'function-grade-orgchart';
 const DEFAULT_ORG_CHART_COMPANY_CACHE_TTL_SECONDS = 60 * 60 * 24 * 90;;
 const DEFAULT_ORG_CHART_COMPANY_CANDIDATES_CACHE_TTL_SECONDS =
   60 * 60 * 24 * 90;
+const DEFAULT_ORG_CHART_FUNCTION_GRADE_CACHE_TTL_SECONDS =
+  60 * 60 * 24 * 30;
 const THREE_MONTHS_IN_MS = 1000 * 60 * 60 * 24 * 90;
 const DEFAULT_ORG_CHART_MIN_PEOPLE_TO_CACHE = 3;
 
@@ -163,6 +213,7 @@ export class CandidateSearchHandlerService {
     private readonly searchParametersPrompts: SearchParametersPrompts,
     @InjectCacheStorage(CacheStorageNamespace.EngineOrgChart)
     private readonly orgChartCacheStorageService: CacheStorageService,
+    private readonly orgchartCancelRegistry: OrgchartCancelRegistryService,
   ) {}
 
   async handleSearchParametersAndResultsGenerationStream(
@@ -1696,12 +1747,24 @@ export class CandidateSearchHandlerService {
     options?: {
       mode?: string;
       companyName?: string;
+      companyId?: string;
       requestId?: string;
       jobTitles?: string[];
+      country?: string;
+      functionRoot?: string;
     },
   ): Promise<{
     items: any[];
     itemCount: number;
+    isCached?: boolean;
+    cacheSource?: 'none' | 'function_grade';
+    orgChart?: OrgChartData;
+    functionGradeCacheMeta?: {
+      strategyCap: number;
+      keywordsHash: string;
+      functionRoot: string;
+      country: string;
+    };
     strategyResults: Array<{
       strategy: PeopleSearchStrategyResult;
       result: SearchExecutionResult | null;
@@ -1716,7 +1779,12 @@ export class CandidateSearchHandlerService {
     // Decide whether we can skip the full multi-agent flow.
     const mode = options?.mode;
     const primaryCompanyName = options?.companyName?.trim() || '';
+    const primaryCompanyId = options?.companyId?.trim() || '';
     const requestId = options?.requestId;
+    const rawCountry = options?.country?.trim() || '';
+    const country =
+      rawCountry.toLowerCase() === 'global' ? '' : rawCountry;
+    const functionRoot = options?.functionRoot?.trim() || '';
 
     let workspaceMemberId: string | undefined;
     try {
@@ -1731,7 +1799,13 @@ export class CandidateSearchHandlerService {
       );
     }
 
-    const emitProgress = (event: string, data: Record<string, unknown>) => {
+    const emitProgress = (
+      event: string,
+      data: Record<string, unknown>,
+    ): boolean | void => {
+      if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
+        return false;
+      }
       sendEvent?.(event, data);
 
       if (!workspaceMemberId) {
@@ -1756,10 +1830,64 @@ export class CandidateSearchHandlerService {
       message: `Starting org chart search for ${primaryCompanyName || 'company'}...`,
     });
 
+    const hasAdditionalFilters =
+      !!country || hasMeaningfulOrgChartFunctionRootFilter(functionRoot);
+
     const isAllPeopleInCompanyMode =
       searchType === 'classic' &&
       !!primaryCompanyName &&
-      (mode === 'entire_company' || mode === 'all_people');
+      (mode === 'entire_company' || mode === 'all_people') &&
+      !hasAdditionalFilters;
+
+    // If we already have a fresh full-company candidate list cached for this
+    // company, reuse it for function-grade orgchart searches instead of
+    // hitting LinkedIn again. This lets us build a function-scoped org chart
+    // by filtering the existing full-company candidates (e.g. human resources
+    // at Litify) when the user asks for function-level orgcharts after a
+    // full-company run.
+    if (
+      mode === 'function_grade' &&
+      searchType === 'classic' &&
+      !!primaryCompanyName
+    ) {
+      const cachedCandidateList =
+        await this.getCachedCompanyCandidateList({
+          companyName: primaryCompanyName,
+          companyId: primaryCompanyId,
+          mode: 'entire_company',
+          searchType,
+        });
+
+      if (cachedCandidateList?.items && Array.isArray(cachedCandidateList.items)) {
+        const filteredItems =
+          this.filterOrgChartCandidatesByCountryAndFunctionRoot(
+            cachedCandidateList.items,
+            country,
+            functionRoot,
+          );
+
+        this.logger.log(
+          `OrgchartLinkedInSearch: reusing full-company candidate list cache for function-grade search (company="${primaryCompanyName}", functionRoot="${functionRoot}", country="${rawCountry || 'global'}") with ${filteredItems.length} candidates after filters.`,
+        );
+
+        emitProgress('complete', {
+          message: `Loaded cached org chart people search with ${filteredItems.length} candidates (from full-company cache).`,
+          itemCount: filteredItems.length,
+          strategyCount: 0,
+          isCached: true,
+        });
+
+        return {
+          items: filteredItems,
+          itemCount: filteredItems.length,
+          isCached: true,
+          cacheSource: 'function_grade',
+          orgChart: undefined,
+          functionGradeCacheMeta: undefined,
+          strategyResults: [],
+        };
+      }
+    }
 
     let strategies: PeopleSearchStrategyResult[];
     let parsedJobDescription: ParsedJobDescription;
@@ -1843,13 +1971,24 @@ export class CandidateSearchHandlerService {
           {
             company_names: primaryCompanyName ? [primaryCompanyName] : [],
           };
+
+        if (functionRoot) {
+          pythonInput.function_root = [
+            {
+              name: functionRoot,
+              exclude: false,
+            },
+          ];
+        }
+
         if (mode === 'leadership') {
           pythonInput.grades = [{ name: 'leadership', exclude: false }];
         } else if (mode === 'function_grade' && options?.jobTitles?.length) {
           pythonInput.raw_job_titles = options.jobTitles;
         } else {
-          pythonInput.grades = [{ name: 'mid', exclude: false }];
+          // pythonInput.grades = [{ name: 'mid', exclude: false }];
         }
+
         const unresolved =
           await this.pythonQueryGenerationService.generateSearchParameters(
             pythonInput,
@@ -1925,9 +2064,79 @@ export class CandidateSearchHandlerService {
       result: SearchExecutionResult | null;
     }> = [];
 
-    // For org-chart usage, execute only the first strategy to keep latency and cost bounded
+    // For org-chart usage, cap strategies to keep latency and cost bounded.
+    // Default remains 1; can be increased with ORGCHART_MAX_STRATEGIES.
+    const configuredMaxStrategiesRaw = process.env.ORGCHART_MAX_STRATEGIES;
+    const configuredMaxStrategiesParsed =
+      configuredMaxStrategiesRaw !== undefined
+        ? Number.parseInt(configuredMaxStrategiesRaw, 10)
+        : NaN;
+    const maxStrategiesToRun =
+      Number.isFinite(configuredMaxStrategiesParsed) &&
+      configuredMaxStrategiesParsed > 0
+        ? configuredMaxStrategiesParsed
+        : 1;
     const strategiesToRun =
-      strategies.length > 0 ? strategies.slice(0, 1) : [];
+      strategies.length > 0 ? strategies.slice(0, maxStrategiesToRun) : [];
+
+    this.logger.log(
+      `OrgchartLinkedInSearch: strategy execution cap=${maxStrategiesToRun}, extracted=${strategies.length}, executing=${strategiesToRun.length}`,
+    );
+
+    const isFunctionGradeMode = mode === 'function_grade';
+    const normalizedFunctionRoot = this.normalizeFunctionRoot(functionRoot);
+    const normalizedCountry = this.normalizeCountry(country);
+    const keywordsHash = this.buildFunctionGradeKeywordsHash(strategiesToRun);
+
+    if (isFunctionGradeMode && primaryCompanyName && normalizedFunctionRoot) {
+      const cachedFunctionGrade =
+        await this.getCachedFunctionGradeSearch({
+          companyName: primaryCompanyName,
+          companyId: primaryCompanyId,
+          functionRoot: normalizedFunctionRoot,
+          country: normalizedCountry,
+          searchType,
+          strategyCap: maxStrategiesToRun,
+          keywordsHash,
+        });
+
+      if (cachedFunctionGrade) {
+        this.logger.log(
+          `OrgchartLinkedInSearch: function-grade cache HIT for company="${primaryCompanyName}", functionRoot="${normalizedFunctionRoot}", country="${normalizedCountry}", strategyCap=${maxStrategiesToRun}`,
+        );
+        emitProgress('complete', {
+          message: `Loaded cached org chart people search with ${cachedFunctionGrade.itemCount} candidates.`,
+          itemCount: cachedFunctionGrade.itemCount,
+          strategyCount: strategiesToRun.length,
+          isCached: true,
+        });
+        return {
+          items: cachedFunctionGrade.items,
+          itemCount: cachedFunctionGrade.itemCount,
+          isCached: true,
+          cacheSource: 'function_grade',
+          orgChart: cachedFunctionGrade.orgChart,
+          functionGradeCacheMeta: {
+            strategyCap: maxStrategiesToRun,
+            keywordsHash,
+            functionRoot: normalizedFunctionRoot,
+            country: normalizedCountry,
+          },
+          strategyResults: strategiesToRun.map((s) => ({ strategy: s, result: null })),
+        };
+      }
+    }
+
+    if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
+      this.logger.log(
+        `Orgchart search aborted by user before execution. requestId=${requestId}`,
+      );
+      return {
+        items: [],
+        itemCount: 0,
+        strategyResults: strategiesToRun.map((s) => ({ strategy: s, result: null })),
+      };
+    }
 
     for (const strategy of strategiesToRun) {
       const preview = await this.searchExecutionService.executeMultiPageSearchWithoutValidation(
@@ -1956,9 +2165,39 @@ export class CandidateSearchHandlerService {
       strategyCount: strategyResults.length,
     });
 
+    if (
+      isFunctionGradeMode &&
+      primaryCompanyName &&
+      normalizedFunctionRoot &&
+      allCandidates.length > 0
+    ) {
+      await this.setCachedFunctionGradeSearch({
+        companyName: primaryCompanyName,
+        companyId: primaryCompanyId,
+        functionRoot: normalizedFunctionRoot,
+        country: normalizedCountry,
+        searchType,
+        strategyCap: maxStrategiesToRun,
+        keywordsHash,
+        items: allCandidates,
+        itemCount: allCandidates.length,
+      });
+    }
+
     return {
       items: allCandidates,
       itemCount: allCandidates.length,
+      isCached: false,
+      cacheSource: 'none',
+      functionGradeCacheMeta:
+        isFunctionGradeMode && normalizedFunctionRoot
+          ? {
+              strategyCap: maxStrategiesToRun,
+              keywordsHash,
+              functionRoot: normalizedFunctionRoot,
+              country: normalizedCountry,
+            }
+          : undefined,
       strategyResults,
     };
   }
@@ -1970,7 +2209,7 @@ export class CandidateSearchHandlerService {
    * pipeline and delegating the heavy lifting to Python.
    */
   async buildOrgChartFromLinkedInCompanyCandidates(
-    candidates: any[],
+    candidates: OrgChartCandidateInput[],
     options: {
       companyName: string;
       companyId?: string;
@@ -1991,7 +2230,7 @@ export class CandidateSearchHandlerService {
         ? `https://www.linkedin.com/company/${normalizedCompanyId}`
         : '';
 
-    const people = candidates.map((candidate: any, index: number) => {
+    const people: StandardizedOrgChartPerson[] = candidates.map((candidate, index) => {
       const raw = candidate as Record<string, unknown>;
 
       const fullName =
@@ -2142,6 +2381,7 @@ export class CandidateSearchHandlerService {
         people,
         jobName,
         jobId: normalizedCompanyId || undefined,
+        functionRoot: fn,
       });
 
     return orgChart;
@@ -2358,6 +2598,219 @@ export class CandidateSearchHandlerService {
     );
   }
 
+  async getCachedFunctionGradeSearch(input: {
+    companyName?: string;
+    companyId?: string;
+    functionRoot: string;
+    country: string;
+    searchType: 'classic' | 'sales_navigator' | 'recruiter';
+    strategyCap: number;
+    keywordsHash: string;
+  }): Promise<CachedFunctionGradeSearchPayload | undefined> {
+    const cacheKey = this.buildFunctionGradeCacheKey(input);
+    const cached =
+      await this.orgChartCacheStorageService.get<CachedFunctionGradeSearchPayload>(
+        cacheKey,
+      );
+
+    if (!cached?.items || !Array.isArray(cached.items)) {
+      this.logger.log(
+        `Function-grade cache MISS: key=${cacheKey} (company="${input.companyName ?? input.companyId ?? ''}", functionRoot="${input.functionRoot}", country="${input.country}")`,
+      );
+      return undefined;
+    }
+
+    this.logger.log(
+      `Function-grade cache HIT: key=${cacheKey}, itemCount=${cached.itemCount}, cachedAt=${cached.cachedAt}`,
+    );
+    return cached;
+  }
+
+  async setCachedFunctionGradeSearch(input: {
+    companyName?: string;
+    companyId?: string;
+    functionRoot: string;
+    country: string;
+    searchType: 'classic' | 'sales_navigator' | 'recruiter';
+    strategyCap: number;
+    keywordsHash: string;
+    items: any[];
+    itemCount: number;
+    orgChart?: OrgChartData;
+  }): Promise<void> {
+    const normalizedCompanyName = this.normalizeCompanyName(input.companyName);
+    const normalizedCompanyId = this.normalizeCompanyId(
+      input.companyId,
+      normalizedCompanyName,
+    );
+    const normalizedFunctionRoot = this.normalizeFunctionRoot(input.functionRoot);
+    const normalizedCountry = this.normalizeCountry(input.country);
+
+    const cacheKey = this.buildFunctionGradeCacheKey({
+      companyName: normalizedCompanyName,
+      companyId: normalizedCompanyId,
+      functionRoot: normalizedFunctionRoot,
+      country: normalizedCountry,
+      searchType: input.searchType,
+      strategyCap: input.strategyCap,
+      keywordsHash: input.keywordsHash,
+    });
+
+    const payload: CachedFunctionGradeSearchPayload = {
+      companyId: normalizedCompanyId,
+      companyName: normalizedCompanyName,
+      functionRoot: normalizedFunctionRoot,
+      country: normalizedCountry,
+      searchType: input.searchType,
+      strategyCap: input.strategyCap,
+      keywordsHash: input.keywordsHash,
+      items: input.items,
+      itemCount: input.itemCount,
+      ...(input.orgChart ? { orgChart: input.orgChart } : {}),
+      cachedAt: new Date().toISOString(),
+    };
+
+    const ttlFromEnv = Number(
+      process.env.ORG_CHART_FUNCTION_GRADE_CACHE_TTL_SECONDS,
+    );
+    const ttlSeconds =
+      Number.isFinite(ttlFromEnv) && ttlFromEnv > 0
+        ? Math.floor(ttlFromEnv)
+        : DEFAULT_ORG_CHART_FUNCTION_GRADE_CACHE_TTL_SECONDS;
+
+    await this.orgChartCacheStorageService.set(cacheKey, payload, ttlSeconds);
+    this.logger.log(
+      `Function-grade cache WRITE: key=${cacheKey}, itemCount=${payload.itemCount}, ttlSeconds=${ttlSeconds}, cachedAt=${payload.cachedAt}, hasOrgChart=${!!payload.orgChart}`,
+    );
+  }
+
+  private buildFunctionGradeCacheKey(input: {
+    companyName?: string;
+    companyId?: string;
+    functionRoot: string;
+    country: string;
+    searchType: 'classic' | 'sales_navigator' | 'recruiter';
+    strategyCap: number;
+    keywordsHash: string;
+  }): string {
+    const normalizedCompanyName = this.normalizeCompanyName(input.companyName);
+    const normalizedCompanyId = this.normalizeCompanyId(
+      input.companyId,
+      normalizedCompanyName,
+    );
+    const normalizedFunctionRoot = this.normalizeFunctionRoot(input.functionRoot);
+    const normalizedCountry = this.normalizeCountry(input.country);
+    const normalizedKeywordsHash = (input.keywordsHash || '').trim().toLowerCase();
+    const strategyCap = Number.isFinite(input.strategyCap) && input.strategyCap > 0
+      ? Math.floor(input.strategyCap)
+      : 1;
+
+    return [
+      ORG_CHART_FUNCTION_GRADE_CACHE_KEY_PREFIX,
+      normalizedCompanyId,
+      normalizedFunctionRoot || 'unknown_function',
+      normalizedCountry || 'global',
+      input.searchType,
+      `cap_${strategyCap}`,
+      normalizedKeywordsHash || 'no_keywords_hash',
+    ].join(':');
+  }
+
+  private filterOrgChartCandidatesByCountryAndFunctionRoot(
+    items: any[],
+    countryRaw?: string,
+    functionRootRaw?: string,
+  ): any[] {
+    const normalizedCountryRaw =
+      typeof countryRaw === 'string' ? countryRaw.trim() : '';
+    const hasCountryFilter =
+      normalizedCountryRaw.length > 0 &&
+      normalizedCountryRaw.toLowerCase() !== 'global';
+
+    const normalizedFunctionRootRaw =
+      typeof functionRootRaw === 'string' ? functionRootRaw.trim() : '';
+    const hasFunctionRootFilter =
+      hasMeaningfulOrgChartFunctionRootFilter(normalizedFunctionRootRaw);
+
+    if (!hasCountryFilter && !hasFunctionRootFilter) {
+      return items;
+    }
+
+    return items.filter((item) => {
+      const raw = item as Record<string, unknown>;
+
+      if (hasCountryFilter) {
+        const filterCountry = normalizedCountryRaw.toLowerCase();
+        const possibleCountryValues = [
+          (raw as { locationCountry?: unknown }).locationCountry,
+          (raw as { location_country?: unknown }).location_country,
+          raw.country,
+        ].filter(
+          (v): v is string =>
+            typeof v === 'string' && v.trim().length > 0,
+        );
+
+        const normalizedCountry =
+          possibleCountryValues[0]?.trim().toLowerCase() ?? '';
+
+        if (!normalizedCountry.includes(filterCountry)) {
+          return false;
+        }
+      }
+
+      if (hasFunctionRootFilter) {
+        const filterFunctionRoot = normalizedFunctionRootRaw.toLowerCase();
+        const possibleFunctionRootValues = [
+          (raw as { std_function_root?: unknown }).std_function_root,
+          (raw as { functionRoot?: unknown }).functionRoot,
+          (raw as { function_root?: unknown }).function_root,
+        ].filter(
+          (v): v is string =>
+            typeof v === 'string' && v.trim().length > 0,
+        );
+
+        const normalizedFunctionRoot =
+          possibleFunctionRootValues[0]?.trim().toLowerCase() ?? '';
+
+        if (
+          normalizedFunctionRoot === '' ||
+          !normalizedFunctionRoot.includes(filterFunctionRoot)
+        ) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }
+
+  private buildFunctionGradeKeywordsHash(
+    strategies: Array<{
+      id?: string;
+      label?: string;
+      parameters?: Record<string, unknown>;
+    }>,
+  ): string {
+    const normalized = strategies.map((strategy) => {
+      const rawKeywords = strategy.parameters?.keywords;
+      const rawJobTitle = strategy.parameters?.job_title;
+      const keywords =
+        typeof rawKeywords === 'string' ? rawKeywords.trim().toLowerCase() : '';
+      const jobTitle =
+        typeof rawJobTitle === 'string' ? rawJobTitle.trim().toLowerCase() : '';
+      return {
+        id: strategy.id ?? '',
+        label: strategy.label ?? '',
+        keywords,
+        jobTitle,
+      };
+    });
+
+    return createHash('sha256')
+      .update(JSON.stringify(normalized))
+      .digest('hex');
+  }
+
   private buildCompanyOrgChartCacheKey(
     companyName: string | undefined,
     companyId: string | undefined,
@@ -2496,6 +2949,23 @@ export class CandidateSearchHandlerService {
     return (companyName ?? '').trim();
   }
 
+  private normalizeFunctionRoot(functionRoot?: string): string {
+    return (functionRoot ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^a-z0-9_]+/g, '')
+      .replace(/^_+|_+$/g, '');
+  }
+
+  private normalizeCountry(country?: string): string {
+    const normalized = (country ?? '').trim().toLowerCase();
+    if (!normalized) {
+      return 'global';
+    }
+    return normalized.replace(/\s+/g, '_').replace(/[^a-z0-9_]+/g, '');
+  }
+
   private normalizeCompanyId(companyId?: string, fallbackName?: string): string {
     const normalizedCompanyId = (companyId ?? '').trim().toLowerCase();
     if (normalizedCompanyId) {
@@ -2511,5 +2981,3 @@ export class CandidateSearchHandlerService {
     return normalizedFallbackName || 'unknown_company';
   }
 }
-
-

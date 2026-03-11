@@ -1,16 +1,16 @@
 import {
-    Body,
-    Controller,
-    Get,
-    Headers,
-    HttpException,
-    HttpStatus,
-    Logger,
-    Param,
-    Post,
-    Put,
-    Query,
-    Req,
+  Body,
+  Controller,
+  Get,
+  Headers,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
 } from '@nestjs/common';
 import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
@@ -22,14 +22,16 @@ import type { ParsedRequirement } from '../schemas/parsed-requirement.schema';
 import { CandidateSearchHandlerService } from '../services/candidate-search-handler.service';
 import { CompanyExpanderService } from '../services/company-expander.service';
 import { JobTitleExpanderService } from '../services/job-title-expander.service';
+import { OrgchartCancelRegistryService } from '../services/orgchart-cancel-registry.service';
 import { SearchExecutionService } from '../services/search-execution.service';
 import { SearchResultsCacheService } from '../services/search-results-cache.service';
 import {
-    CandidateSearchResponse,
-    ParsedJobDescription,
+  CandidateSearchResponse,
+  ParsedJobDescription,
 } from '../types/candidate-search-request.type';
 import { extractApiToken } from '../utils/auth.utils';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
+import { hasMeaningfulOrgChartFunctionRootFilter } from '../utils/orgchart-filter.util';
 
 type OrgchartSearchMode =
   | 'current_node'
@@ -64,6 +66,7 @@ export class CandidateSearchController {
     private readonly companyExpanderService: CompanyExpanderService,
     private readonly jobTitleExpanderService: JobTitleExpanderService,
     private readonly candidateDataService: CandidateDataService,
+    private readonly orgchartCancelRegistry: OrgchartCancelRegistryService,
   ) {}
 
   /**
@@ -628,6 +631,8 @@ export class CandidateSearchController {
       maxPages?: number;
       searchType?: OrgchartSearchType;
       requestId?: string;
+      country?: string;
+      functionRoot?: string;
     },
     @Headers() headers: Record<string, string>,
   ) {
@@ -636,6 +641,7 @@ export class CandidateSearchController {
       throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
     }
 
+    this.logger.log("body::", body);
     const {
       companyName,
       companyId,
@@ -643,7 +649,11 @@ export class CandidateSearchController {
       mode,
       searchType = 'classic',
       requestId,
+      country,
+      functionRoot,
     } = body;
+
+
 
     const resolvedCompanyName =
       companyName || (companyId ? String(companyId) : '');
@@ -685,7 +695,97 @@ export class CandidateSearchController {
       )}`,
     );
 
+    let shouldWriteCompanyOrgChartCache = true;
+
     if (mode === 'entire_company') {
+      const filterCountryRaw = body.country;
+      const filterFunctionRootRaw = body.functionRoot;
+      const normalizedCountryRaw =
+        typeof filterCountryRaw === 'string' ? filterCountryRaw.trim() : '';
+      const hasCountryFilter =
+        normalizedCountryRaw.length > 0 &&
+        normalizedCountryRaw.toLowerCase() !== 'global';
+
+      const normalizedFunctionRootRaw =
+        typeof filterFunctionRootRaw === 'string'
+          ? filterFunctionRootRaw.trim()
+          : '';
+      const hasFunctionRootFilter =
+        hasMeaningfulOrgChartFunctionRootFilter(normalizedFunctionRootRaw);
+      shouldWriteCompanyOrgChartCache =
+        !hasCountryFilter && !hasFunctionRootFilter;
+
+      const applyFiltersToItems = (items: any[]): any[] => {
+        if (!hasCountryFilter && !hasFunctionRootFilter) {
+          return items;
+        }
+
+        return items.filter((item) => {
+          const raw = item as Record<string, unknown>;
+
+          if (hasCountryFilter) {
+            const filterCountry = normalizedCountryRaw.toLowerCase();
+            const possibleCountryValues = [
+              raw.locationCountry,
+              raw.location_country,
+              raw.country,
+            ].filter(
+              (v): v is string =>
+                typeof v === 'string' && v.trim().length > 0,
+            );
+
+            const normalizedCountry =
+              possibleCountryValues[0]?.trim().toLowerCase() ?? '';
+
+            if (!normalizedCountry.includes(filterCountry)) {
+              return false;
+            }
+          }
+
+          if (hasFunctionRootFilter) {
+            const filterFunctionRoot = normalizedFunctionRootRaw.toLowerCase();
+            const possibleFunctionRootValues = [
+              (raw as { std_function_root?: unknown }).std_function_root,
+              (raw as { functionRoot?: unknown }).functionRoot,
+              (raw as { function_root?: unknown }).function_root,
+            ].filter(
+              (v): v is string =>
+                typeof v === 'string' && v.trim().length > 0,
+            );
+
+            const normalizedFunctionRoot =
+              possibleFunctionRootValues[0]?.trim().toLowerCase() ?? '';
+
+            if (
+              normalizedFunctionRoot === '' ||
+              !normalizedFunctionRoot.includes(filterFunctionRoot)
+            ) {
+              return false;
+            }
+          }
+
+          return true;
+        });
+      };
+
+      const isFullCompanyOrgChartPayload = (
+        orgChartPayload: unknown,
+      ): boolean => {
+        if (
+          !orgChartPayload ||
+          typeof orgChartPayload !== 'object' ||
+          Array.isArray(orgChartPayload)
+        ) {
+          return false;
+        }
+
+        const rawType = (orgChartPayload as { type?: unknown }).type;
+        return (
+          typeof rawType === 'string' &&
+          rawType.trim().toLowerCase() === 'fullcompany'
+        );
+      };
+
       const cachedOrgChart =
         await this.candidateSearchHandlerService.getCachedCompanyOrgChart({
           companyName: resolvedCompanyName,
@@ -695,75 +795,119 @@ export class CandidateSearchController {
         });
 
       if (cachedOrgChart) {
-        const creditsAlreadyDebited = cachedOrgChart.creditsDebited !== false;
-        if (creditsAlreadyDebited) {
-          this.logger.log(
-            `Serving cached company org chart for company="${resolvedCompanyName}" (credits already debited)`,
+        if (
+          !hasCountryFilter &&
+          !hasFunctionRootFilter &&
+          !isFullCompanyOrgChartPayload(cachedOrgChart.orgChart)
+        ) {
+          this.logger.warn(
+            `Ignoring invalid company org chart cache for company="${resolvedCompanyName}" because cached orgChart.type is not fullcompany`,
           );
+        } else {
+          const creditsAlreadyDebited = cachedOrgChart.creditsDebited !== false;
+          if (creditsAlreadyDebited) {
+            this.logger.log(
+              `Serving cached company org chart for company="${resolvedCompanyName}" (credits already debited)`,
+            );
+            const baseItems = Array.isArray(cachedOrgChart.items)
+              ? cachedOrgChart.items
+              : [];
+            const filteredItems = applyFiltersToItems(baseItems);
+            const orgChartForResponse = hasCountryFilter || hasFunctionRootFilter
+              ? await this.candidateSearchHandlerService.buildOrgChartFromLinkedInCompanyCandidates(
+                  filteredItems,
+                  {
+                    companyName: resolvedCompanyName,
+                    companyId,
+                    mode: 'entire_company',
+                    function: hasFunctionRootFilter
+                      ? normalizedFunctionRootRaw
+                      : undefined,
+                  },
+                )
+              : cachedOrgChart.orgChart;
+            return {
+              success: true,
+              mode,
+              searchType,
+              companyName: resolvedCompanyName,
+              jobTitles,
+              itemCount: filteredItems.length,
+              items: filteredItems,
+              orgChart: orgChartForResponse,
+              isCached: true,
+              cacheSource: 'orgchart',
+              cachedAt: cachedOrgChart.cachedAt,
+            };
+          }
+          if (process.env.IS_BILLING_ENABLED === 'true' && apiToken) {
+            const workspaceId =
+              await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+            const hasSufficient =
+              await this.workspaceCreditsService.hasSufficientOrgChartCredits(
+                workspaceId,
+                cachedOrgChart.itemCount,
+              );
+            if (!hasSufficient) {
+              const creditsNeeded =
+                this.workspaceCreditsService.computeOrgChartCreditsNeeded(
+                  cachedOrgChart.itemCount,
+                );
+              throw new HttpException(
+                `Insufficient org chart credits. Need ${creditsNeeded} credits for ${cachedOrgChart.itemCount} employees.`,
+                HttpStatus.FORBIDDEN,
+              );
+            }
+            await this.workspaceCreditsService.debitOrgChartCredits(
+              workspaceId,
+              cachedOrgChart.itemCount,
+              { companyName: resolvedCompanyName, companyId },
+            );
+            await this.candidateSearchHandlerService.setCachedCompanyOrgChart({
+              companyName: resolvedCompanyName,
+              companyId,
+              mode: 'entire_company',
+              searchType,
+              orgChart: cachedOrgChart.orgChart,
+              items: cachedOrgChart.items,
+              itemCount: cachedOrgChart.itemCount,
+              creditsDebited: true,
+            });
+          }
+          this.logger.log(
+            `Serving cached company org chart for company="${resolvedCompanyName}" (credits debited on this request)`,
+          );
+          const baseItems = Array.isArray(cachedOrgChart.items)
+            ? cachedOrgChart.items
+            : [];
+          const filteredItems = applyFiltersToItems(baseItems);
+          const orgChartForResponse = hasCountryFilter || hasFunctionRootFilter
+            ? await this.candidateSearchHandlerService.buildOrgChartFromLinkedInCompanyCandidates(
+                filteredItems,
+                {
+                  companyName: resolvedCompanyName,
+                  companyId,
+                  mode: 'entire_company',
+                  function: hasFunctionRootFilter
+                    ? normalizedFunctionRootRaw
+                    : undefined,
+                },
+              )
+            : cachedOrgChart.orgChart;
           return {
             success: true,
             mode,
             searchType,
             companyName: resolvedCompanyName,
             jobTitles,
-            itemCount: cachedOrgChart.itemCount,
-            items: cachedOrgChart.items,
-            orgChart: cachedOrgChart.orgChart,
+            itemCount: filteredItems.length,
+            items: filteredItems,
+            orgChart: orgChartForResponse,
             isCached: true,
             cacheSource: 'orgchart',
             cachedAt: cachedOrgChart.cachedAt,
           };
         }
-        if (process.env.IS_BILLING_ENABLED === 'true' && apiToken) {
-          const workspaceId =
-            await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-          const hasSufficient =
-            await this.workspaceCreditsService.hasSufficientOrgChartCredits(
-              workspaceId,
-              cachedOrgChart.itemCount,
-            );
-          if (!hasSufficient) {
-            const creditsNeeded =
-              this.workspaceCreditsService.computeOrgChartCreditsNeeded(
-                cachedOrgChart.itemCount,
-              );
-            throw new HttpException(
-              `Insufficient org chart credits. Need ${creditsNeeded} credits for ${cachedOrgChart.itemCount} employees.`,
-              HttpStatus.FORBIDDEN,
-            );
-          }
-          await this.workspaceCreditsService.debitOrgChartCredits(
-            workspaceId,
-            cachedOrgChart.itemCount,
-            { companyName: resolvedCompanyName, companyId },
-          );
-          await this.candidateSearchHandlerService.setCachedCompanyOrgChart({
-            companyName: resolvedCompanyName,
-            companyId,
-            mode: 'entire_company',
-            searchType,
-            orgChart: cachedOrgChart.orgChart,
-            items: cachedOrgChart.items,
-            itemCount: cachedOrgChart.itemCount,
-            creditsDebited: true,
-          });
-        }
-        this.logger.log(
-          `Serving cached company org chart for company="${resolvedCompanyName}" (credits debited on this request)`,
-        );
-        return {
-          success: true,
-          mode,
-          searchType,
-          companyName: resolvedCompanyName,
-          jobTitles,
-          itemCount: cachedOrgChart.itemCount,
-          items: cachedOrgChart.items,
-          orgChart: cachedOrgChart.orgChart,
-          isCached: true,
-          cacheSource: 'orgchart',
-          cachedAt: cachedOrgChart.cachedAt,
-        };
       }
 
       const cachedCandidateList =
@@ -779,14 +923,20 @@ export class CandidateSearchController {
           `Building org chart from cached candidate list for company="${resolvedCompanyName}" (${cachedCandidateList.itemCount} candidates)`,
         );
         try {
+          const baseItems = Array.isArray(cachedCandidateList.items)
+            ? cachedCandidateList.items
+            : [];
+          const filteredItems = applyFiltersToItems(baseItems);
           const orgChartFromCache =
             await this.candidateSearchHandlerService.buildOrgChartFromLinkedInCompanyCandidates(
-              cachedCandidateList.items,
+              filteredItems,
               {
                 companyName: resolvedCompanyName,
                 companyId,
                 mode,
-                function: undefined,
+                function: hasFunctionRootFilter
+                  ? normalizedFunctionRootRaw
+                  : undefined,
               },
             );
           const shouldCacheBuiltOrgChartFromCandidateList =
@@ -806,7 +956,10 @@ export class CandidateSearchController {
                 cachedCandidateList.itemCount,
               );
             if (!hasSufficient) {
-              if (shouldCacheBuiltOrgChartFromCandidateList) {
+              if (
+                shouldCacheBuiltOrgChartFromCandidateList &&
+                shouldWriteCompanyOrgChartCache
+              ) {
                 await this.candidateSearchHandlerService.setCachedCompanyOrgChart({
                   companyName: resolvedCompanyName,
                   companyId,
@@ -834,15 +987,18 @@ export class CandidateSearchController {
             );
             creditsDebited = true;
           }
-          if (shouldCacheBuiltOrgChartFromCandidateList) {
+          if (
+            shouldCacheBuiltOrgChartFromCandidateList &&
+            shouldWriteCompanyOrgChartCache
+          ) {
             await this.candidateSearchHandlerService.setCachedCompanyOrgChart({
               companyName: resolvedCompanyName,
               companyId,
               mode: 'entire_company',
               searchType,
               orgChart: orgChartFromCache,
-              items: cachedCandidateList.items,
-              itemCount: cachedCandidateList.itemCount,
+              items: baseItems,
+              itemCount: baseItems.length,
               creditsDebited,
             });
           }
@@ -852,8 +1008,8 @@ export class CandidateSearchController {
             searchType,
             companyName: resolvedCompanyName,
             jobTitles,
-            itemCount: cachedCandidateList.itemCount,
-            items: cachedCandidateList.items,
+            itemCount: filteredItems.length,
+            items: filteredItems,
             orgChart: orgChartFromCache,
             isCached: true,
             cacheSource: 'candidate_list',
@@ -867,14 +1023,18 @@ export class CandidateSearchController {
             `Failed to build org chart from cached candidates for company="${resolvedCompanyName}"`,
             error as Error,
           );
+          const baseItems = Array.isArray(cachedCandidateList.items)
+            ? cachedCandidateList.items
+            : [];
+          const filteredItems = applyFiltersToItems(baseItems);
           return {
             success: true,
             mode,
             searchType,
             companyName: resolvedCompanyName,
             jobTitles,
-            itemCount: cachedCandidateList.itemCount,
-            items: cachedCandidateList.items,
+            itemCount: filteredItems.length,
+            items: filteredItems,
             orgChart: undefined,
             isCached: true,
             cacheSource: 'candidate_list',
@@ -882,6 +1042,10 @@ export class CandidateSearchController {
           };
         }
       }
+    }
+
+    if (requestId) {
+      this.orgchartCancelRegistry.register(requestId);
     }
 
     const result =
@@ -894,8 +1058,11 @@ export class CandidateSearchController {
         {
           mode,
           companyName: resolvedCompanyName,
+          companyId,
           requestId,
           jobTitles: body.jobTitles,
+          country: body.country,
+          functionRoot: body.functionRoot,
         },
       );
 
@@ -921,7 +1088,10 @@ export class CandidateSearchController {
               companyName: resolvedCompanyName,
               companyId,
               mode,
-              function: undefined,
+              // When a functionRoot filter is provided, pass it down so that
+              // the Python org-chart pipeline can build a function-specific
+              // chart instead of always returning the full company.
+              function: body.functionRoot,
             },
           );
       } catch (error) {
@@ -948,7 +1118,11 @@ export class CandidateSearchController {
             result.itemCount,
           );
         if (!hasSufficient) {
-          if (shouldCacheBuiltOrgChartFromLinkedIn && orgChart) {
+          if (
+            shouldCacheBuiltOrgChartFromLinkedIn &&
+            shouldWriteCompanyOrgChartCache &&
+            orgChart
+          ) {
             await this.candidateSearchHandlerService.setCachedCompanyOrgChart({
               companyName: resolvedCompanyName,
               companyId,
@@ -976,7 +1150,11 @@ export class CandidateSearchController {
         );
         creditsDebited = true;
       }
-      if (shouldCacheBuiltOrgChartFromLinkedIn && orgChart) {
+      if (
+        shouldCacheBuiltOrgChartFromLinkedIn &&
+        shouldWriteCompanyOrgChartCache &&
+        orgChart
+      ) {
         await this.candidateSearchHandlerService.setCachedCompanyOrgChart({
           companyName: resolvedCompanyName,
           companyId,
@@ -990,6 +1168,49 @@ export class CandidateSearchController {
       }
     }
 
+    // Build and return org chart for function-root scoped searches as well.
+    // This keeps the candidate list payload while enabling the org chart UI to render.
+    if (mode === 'function_grade' && result.itemCount > 0) {
+      orgChart = result.orgChart;
+      try {
+        if (!orgChart) {
+          orgChart =
+            await this.candidateSearchHandlerService.buildOrgChartFromLinkedInCompanyCandidates(
+              result.items,
+              {
+                companyName: resolvedCompanyName,
+                companyId,
+                mode,
+                function: body.functionRoot,
+              },
+            );
+        }
+      } catch (error) {
+        this.logger.error(
+          `Failed to build function-grade org chart for company="${resolvedCompanyName}"`,
+          error as Error,
+        );
+      }
+
+      if (
+        result.functionGradeCacheMeta &&
+        result.functionGradeCacheMeta.functionRoot
+      ) {
+        await this.candidateSearchHandlerService.setCachedFunctionGradeSearch({
+          companyName: resolvedCompanyName,
+          companyId,
+          functionRoot: result.functionGradeCacheMeta.functionRoot,
+          country: result.functionGradeCacheMeta.country,
+          searchType,
+          strategyCap: result.functionGradeCacheMeta.strategyCap,
+          keywordsHash: result.functionGradeCacheMeta.keywordsHash,
+          items: result.items,
+          itemCount: result.itemCount,
+          ...(orgChart ? { orgChart } : {}),
+        });
+      }
+    }
+
     return {
       success: true,
       mode,
@@ -999,9 +1220,30 @@ export class CandidateSearchController {
       itemCount: result.itemCount,
       items: result.items,
       orgChart,
-      isCached: false,
-      cacheSource: 'none',
+      isCached: result.isCached ?? false,
+      cacheSource: result.cacheSource ?? 'none',
     };
   }
-}
 
+  /**
+   * Cancel an in-progress orgchart search by requestId.
+   * The running search will stop at the next progress check (e.g. between pages).
+   */
+  @Post('orgchart/cancel')
+  async cancelOrgchartSearch(
+    @Body() body: { requestId: string },
+    @Headers() headers: Record<string, string>,
+  ) {
+    const apiToken = extractApiToken(headers);
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+    const { requestId } = body;
+    if (!requestId || typeof requestId !== 'string') {
+      throw new HttpException('requestId is required', HttpStatus.BAD_REQUEST);
+    }
+    this.orgchartCancelRegistry.setCancelled(requestId);
+    this.logger.log(`Orgchart search cancelled. requestId=${requestId}`);
+    return { success: true, requestId };
+  }
+}

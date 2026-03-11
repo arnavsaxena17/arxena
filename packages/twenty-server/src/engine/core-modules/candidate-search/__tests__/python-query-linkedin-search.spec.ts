@@ -123,5 +123,59 @@ describe('PythonQueryGenerationService', () => {
       expect(strategy?.parameters?.advanced_keywords?.title).toBeTruthy();
       expect(strategy?.parameters?.company).toEqual(['testcorp']);
     });
+
+    it('should use query-set endpoint for function_root and map all queries to strategies', async () => {
+      const mockQuerySetResponse = {
+        search_query_set: [
+          {
+            keywords:
+              '"human resources" OR "training development" OR recruitment OR "talent acquisition" OR "human resources business" OR recruiter',
+            job_title: null,
+            company: ['Litify'],
+            location: null,
+            years_of_experience: null,
+          },
+          {
+            keywords:
+              'payroll OR employee OR performance OR benefits OR resource OR rewards',
+            job_title: null,
+            company: ['Litify'],
+            location: null,
+            years_of_experience: null,
+          },
+        ],
+      };
+
+      global.fetch = mockFetch(mockQuerySetResponse) as typeof fetch;
+
+      const result = await service.generateSearchParameters(
+        {
+          function_root: [{ name: 'human resources', exclude: false }],
+          company_names: ['Litify'],
+        },
+        'classic',
+        'Find HR talent in Litify',
+      );
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/query-generator/linkedin/query-set'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+
+      expect(result.classicPeopleSearchStrategies).toBeDefined();
+      expect(result.classicPeopleSearchStrategies?.length).toBe(2);
+      expect(result.classicPeopleSearchStrategies?.[0]?.parameters?.keywords).toContain(
+        '"human resources"',
+      );
+      expect(result.classicPeopleSearchStrategies?.[1]?.parameters?.keywords).toContain(
+        'payroll',
+      );
+      expect(result.classicPeopleSearchStrategies?.[0]?.parameters?.company).toEqual([
+        'litify',
+      ]);
+    });
   });
 });

@@ -184,7 +184,7 @@ export class OrgChartController {
         break;
       }
     }
-    return decoded;
+    return decoded.toLowerCase();
   }
 
   @Get('companies/list-by-country')

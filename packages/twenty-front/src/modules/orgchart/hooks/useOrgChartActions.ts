@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useRecoilValue } from 'recoil';
 
@@ -77,6 +77,7 @@ export const useOrgChartActions = ({
   const [activeOrgChartRequestId, setActiveOrgChartRequestId] = useState<
     string | null
   >(null);
+  const orgchartAbortControllerRef = useRef<AbortController | null>(null);
   const [contextProgressMessage, setContextProgressMessage] = useState<
     string | null
   >(null);
@@ -262,6 +263,8 @@ export const useOrgChartActions = ({
       | 'doubleClick'
       | 'view_all_candidates';
     node?: OrgChartNodeData;
+    country?: string;
+    functionRoot?: string;
   }) => {
     if (!companyId) return;
 
@@ -270,9 +273,10 @@ export const useOrgChartActions = ({
 
     const mode = params.mode;
     const node = params.node;
-
-    const isHeaderEntireCompany =
-      mode === 'entire_company' && params.origin === 'header';
+    console.log("params::", params);
+    const isHeaderOrgChartRequest =
+      params.origin === 'header' &&
+      (mode === 'entire_company' || mode === 'function_grade');
 
     let title: string;
     switch (mode) {
@@ -304,7 +308,7 @@ export const useOrgChartActions = ({
       );
     }
 
-    if (!isHeaderEntireCompany) {
+    if (!isHeaderOrgChartRequest) {
       setIsContextModalOpen(true);
       setContextModalTitle(title);
       setContextModalMode(mode);
@@ -322,6 +326,7 @@ export const useOrgChartActions = ({
 
     const requestId = createOrgChartRequestId();
     setActiveOrgChartRequestId(requestId);
+    orgchartAbortControllerRef.current = new AbortController();
 
     const jobTitles: string[] = [];
     if (node) {
@@ -346,7 +351,20 @@ export const useOrgChartActions = ({
 
     const titlesRequirement =
       jobTitles.length > 0 ? ` Key titles: ${jobTitles.join(', ')}.` : '';
-    const requirement = `${baseRequirement}${titlesRequirement}`;
+
+    const filterParts: string[] = [];
+    if (params.country) {
+      filterParts.push(`located in ${params.country}`);
+    }
+    if (params.functionRoot) {
+      filterParts.push(`working in the ${params.functionRoot} function`);
+    }
+    const filtersRequirement =
+      params.origin === 'view_all_candidates' && filterParts.length > 0
+        ? ` Focus on people ${filterParts.join(' and ')}.`
+        : '';
+
+    const requirement = `${baseRequirement}${titlesRequirement}${filtersRequirement}`;
 
     const body = {
       rawQuery: requirement,
@@ -357,6 +375,8 @@ export const useOrgChartActions = ({
       mode,
       searchType: 'classic' as const,
       requestId,
+      country: params.country,
+      functionRoot: params.functionRoot,
     };
 
     try {
@@ -415,6 +435,7 @@ export const useOrgChartActions = ({
           authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify(body),
+        signal: orgchartAbortControllerRef.current?.signal,
       });
 
       const json = await response.json();
@@ -439,12 +460,18 @@ export const useOrgChartActions = ({
         normalizeCandidateItem(item, index),
       );
 
-      if (!isHeaderEntireCompany) {
+      if (!isHeaderOrgChartRequest) {
         setContextResults(normalized);
       }
 
-      if (mode === 'entire_company' && json.orgChart) {
+      if (
+        (mode === 'entire_company' || mode === 'function_grade') &&
+        json.orgChart
+      ) {
         setLatestOrgChart(json.orgChart);
+        if (isHeaderOrgChartRequest) {
+          setIsContextModalOpen(false);
+        }
         Mixpanel.track('org_chart_create', { companyId });
         closeSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`);
         const cacheText = json.isCached
@@ -461,27 +488,53 @@ export const useOrgChartActions = ({
         );
       }
     } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error(err);
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to fetch candidates';
-      setContextError(errorMessage);
-      setContextProgressMessage(null);
-      if (mode === 'entire_company') {
-        closeSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`);
-        enqueueSnackBar(errorMessage, {
-          variant: SnackBarVariant.Error,
-          dedupeKey: `orgchart-entire-company-${companyId}-error`,
-          duration: 5000,
-        });
+      const isAbort = err instanceof Error && err.name === 'AbortError';
+      if (!isAbort) {
+        // eslint-disable-next-line no-console
+        console.error(err);
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to fetch candidates';
+        setContextError(errorMessage);
+        setContextProgressMessage(null);
+        if (mode === 'entire_company' || mode === 'function_grade') {
+          closeSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`);
+          enqueueSnackBar(errorMessage, {
+            variant: SnackBarVariant.Error,
+            dedupeKey: `orgchart-entire-company-${companyId}-error`,
+            duration: 5000,
+          });
+        }
+      } else {
+        setContextError('Search stopped.');
+        setContextProgressMessage(null);
       }
     } finally {
-      if (mode === 'entire_company') {
+      orgchartAbortControllerRef.current = null;
+      if (mode === 'entire_company' || mode === 'function_grade') {
         closeSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`);
       }
       setIsContextLoading(false);
     }
   };
+
+  const cancelOrgchartSearch = useCallback(() => {
+    const requestId = activeOrgChartRequestId;
+    if (requestId) {
+      const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+      if (baseUrl && accessToken) {
+        fetch(`${baseUrl}/candidate-search/orgchart/cancel`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ requestId }),
+        }).catch(() => {});
+      }
+      orgchartAbortControllerRef.current?.abort();
+    }
+    setContextProgressMessage('Stopping search...');
+  }, [activeOrgChartRequestId, accessToken]);
 
   const handleNodeContextAction = async (
     action: OrgChartContextAction,
@@ -697,6 +750,10 @@ export const useOrgChartActions = ({
     setContextProgressTotalCandidates(null);
   };
 
+  const clearLatestOrgChart = useCallback(() => {
+    setLatestOrgChart(null);
+  }, []);
+
   const downloadContextResultsAsCsv = () => {
     if (!contextResults.length) return;
     exportContextResultsToCsv(contextResults, 'orgchart-candidates.csv');
@@ -808,8 +865,10 @@ export const useOrgChartActions = ({
     contextProgressTotalCandidates,
     booleanKeywordsString,
     closeContextModal,
+    clearLatestOrgChart,
     downloadContextResultsAsCsv,
     executeOrgchartSearch,
+    cancelOrgchartSearch,
 
     selectedNodeForDetails,
     isNodeDetailLoading,

@@ -1,6 +1,11 @@
 /**
  * Unit tests for org chart search job naming and buildOrgChartFromLinkedInCompanyCandidates.
  */
+import {
+  hasMeaningfulOrgChartFunctionRootFilter,
+  normalizeOrgChartFunctionRootFilter,
+} from '../utils/orgchart-filter.util';
+
 describe('Org chart job naming', () => {
   function buildOrgChartJobName(
     companyName: string,
@@ -61,5 +66,24 @@ describe('Org chart candidate structure', () => {
     expect(peopleEntry).toHaveProperty('phone_numbers');
     expect(peopleEntry.emails).toBe('');
     expect(peopleEntry.phone_numbers).toBe('');
+  });
+});
+
+describe('Org chart function root filters', () => {
+  it('treats fullcompany as a non-filter value', () => {
+    expect(hasMeaningfulOrgChartFunctionRootFilter('fullcompany')).toBe(false);
+    expect(hasMeaningfulOrgChartFunctionRootFilter('full_company')).toBe(false);
+    expect(hasMeaningfulOrgChartFunctionRootFilter(' full-company ')).toBe(
+      false,
+    );
+  });
+
+  it('keeps real function roots as filters', () => {
+    expect(hasMeaningfulOrgChartFunctionRootFilter('human resources')).toBe(
+      true,
+    );
+    expect(normalizeOrgChartFunctionRootFilter('Human Resources')).toBe(
+      'humanresources',
+    );
   });
 });

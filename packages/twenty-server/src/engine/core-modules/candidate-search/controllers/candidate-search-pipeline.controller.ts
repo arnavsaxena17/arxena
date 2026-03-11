@@ -395,72 +395,72 @@ export class CandidateSearchPipelineController {
     }
   }
 
-  /**
-   * Internal method for executing search (for backward compatibility)
-   */
-  async executeSearch(
-    prompt: string,
-    apiToken: string,
-    parsedJD: ParsedJobDescription,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
-    searchParameters: GeneratedSearchParameters,
-    maxPages = 7,
-  ): Promise<SearchResultsResult> {
-    this.logger.log(`Executing search (max ${maxPages} pages)...`);
+  // /**
+  //  * Internal method for executing search (for backward compatibility)
+  //  */
+  // async executeSearch(
+  //   prompt: string,
+  //   apiToken: string,
+  //   parsedJD: ParsedJobDescription,
+  //   searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  //   searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+  //   searchParameters: GeneratedSearchParameters,
+  //   maxPages = 7,
+  // ): Promise<SearchResultsResult> {
+  //   this.logger.log(`Executing search (max ${maxPages} pages)...`);
 
-    const searchParamKey = `${searchType.replace(/_([a-z])/g, (_, l) =>
-      l.toUpperCase(),
-    )}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+  //   const searchParamKey = `${searchType.replace(/_([a-z])/g, (_, l) =>
+  //     l.toUpperCase(),
+  //   )}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
 
-    // Create a strategy result for execution
-    const primaryStrategy: PeopleSearchStrategyResult = {
-      id: 'primary',
-      label: 'Primary Search',
-      description: 'Primary search strategy',
-      parameters: searchParameters as any,
-    } as PeopleSearchStrategyResult;
+  //   // Create a strategy result for execution
+  //   const primaryStrategy: PeopleSearchStrategyResult = {
+  //     id: 'primary',
+  //     label: 'Primary Search',
+  //     description: 'Primary search strategy',
+  //     parameters: searchParameters as any,
+  //   } as PeopleSearchStrategyResult;
 
-    const searchPreview =
-      await this.searchExecutionService.executeMultiPageStrategySearch(
-        parsedJD,
-        primaryStrategy,
-        searchType,
-        searchCategory,
-        searchParamKey,
-        apiToken,
-        prompt,
-        undefined, // sendEvent
-      );
+  //   const searchPreview =
+  //     await this.searchExecutionService.executeMultiPageStrategySearch(
+  //       parsedJD,
+  //       primaryStrategy,
+  //       searchType,
+  //       searchCategory,
+  //       searchParamKey,
+  //       apiToken,
+  //       prompt,
+  //       undefined, // sendEvent
+  //     );
 
-    const allCandidates: (LinkedInSearchResult | TransformedCandidateForTable)[] = [];
-    const resultsByPage: Array<{ page: number; candidates: (LinkedInSearchResult | TransformedCandidateForTable)[] }> = [];
+  //   const allCandidates: (LinkedInSearchResult | TransformedCandidateForTable)[] = [];
+  //   const resultsByPage: Array<{ page: number; candidates: (LinkedInSearchResult | TransformedCandidateForTable)[] }> = [];
 
-    if (searchPreview && searchPreview.transformedCandidates) {
-      const candidates = searchPreview.transformedCandidates;
-      allCandidates.push(...candidates);
+  //   if (searchPreview && searchPreview.transformedCandidates) {
+  //     const candidates = searchPreview.transformedCandidates;
+  //     allCandidates.push(...candidates);
 
-      const pageSize = 25;
-      for (let page = 0; page < Math.min(maxPages, Math.ceil(candidates.length / pageSize)); page++) {
-        const start = page * pageSize;
-        const end = start + pageSize;
-        const pageCandidates = candidates.slice(start, end);
-        if (pageCandidates.length > 0) {
-          resultsByPage.push({
-            page: page + 1,
-            candidates: pageCandidates,
-          });
-        }
-      }
-    }
+  //     const pageSize = 25;
+  //     for (let page = 0; page < Math.min(maxPages, Math.ceil(candidates.length / pageSize)); page++) {
+  //       const start = page * pageSize;
+  //       const end = start + pageSize;
+  //       const pageCandidates = candidates.slice(start, end);
+  //       if (pageCandidates.length > 0) {
+  //         resultsByPage.push({
+  //           page: page + 1,
+  //           candidates: pageCandidates,
+  //         });
+  //       }
+  //     }
+  //   }
 
-    this.logger.log(`Found ${allCandidates.length} total candidates`);
+  //   this.logger.log(`Found ${allCandidates.length} total candidates`);
 
-    return {
-      searchResultsPages: resultsByPage,
-      allResults: allCandidates,
-    };
-  }
+  //   return {
+  //     searchResultsPages: resultsByPage,
+  //     allResults: allCandidates,
+  //   };
+  // }
 
   /**
    * Test endpoint for executing a single page search

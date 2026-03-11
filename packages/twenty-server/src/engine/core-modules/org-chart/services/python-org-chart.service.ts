@@ -237,11 +237,15 @@ export class PythonOrgChartService {
     people: Record<string, unknown>[];
     jobName?: string;
     jobId?: string;
+    functionRoot?: string;
   }): Promise<OrgChartData> {
     const payload = {
       people: input.people,
       job_name: input.jobName ?? '',
       job_id: input.jobId ?? '',
+      // Optional hint to Python about which function-root
+      // subset is desired (e.g. "human resources").
+      function_root: input.functionRoot ?? null,
     };
 
     const useCli =
