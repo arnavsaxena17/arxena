@@ -2,6 +2,26 @@
 [ -f ~/build.config ] && source ~/build.config
 BUILD_BRANCH="${BUILD_BRANCH:-without-payment}"
 
+BUILD_STATUS_FILE="${HOME}/build_status.env"
+rm -f "$BUILD_STATUS_FILE"
+
+build_step() {
+  local name="$1"
+  shift
+
+  echo "Starting build: $name"
+  if "$@"; then
+    echo "BUILD_${name}=success" >> "$BUILD_STATUS_FILE"
+    echo "Build succeeded: $name"
+    return 0
+  else
+    local exit_code=$?
+    echo "BUILD_${name}=failed" >> "$BUILD_STATUS_FILE"
+    echo "Build failed: $name (exit code $exit_code)"
+    return "$exit_code"
+  fi
+}
+
 #sudo apt update -y || sudo yum update -y
         # Install Node.js and npm (using Node.js 18.x as an example)
         #curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
@@ -58,17 +78,17 @@ BUILD_BRANCH="${BUILD_BRANCH:-without-payment}"
 	echo "Git pulled, going to nest build"
 	cd ~/twenty/
 	yarn cache clean
-	npx nx build twenty-shared
-	yarn workspace twenty-shared build
-	npx nx build twenty-orgchart
-	yarn workspace twenty-orgchart build
+	build_step TWENTY_SHARED npx nx build twenty-shared
+	build_step TWENTY_SHARED_WORKSPACE yarn workspace twenty-shared build
+	build_step TWENTY_ORGCHART npx nx build twenty-orgchart
+	build_step TWENTY_ORGCHART_WORKSPACE yarn workspace twenty-orgchart build
 	cd ~/twenty/packages/twenty-server/
        	mkdir -p src/engine/core-modules/i18n/locales/generated
 	npx lingui extract --clean --verbose
 	ls -la src/engine/core-modules/i18n/locales/
 	npx lingui compile --verbose
 	ls -la src/engine/core-modules/i18n/locales/generated/
-       	nest build -p tsconfig.build.json
+       	build_step TWENTY_SERVER nest build -p tsconfig.build.json
         echo "Nest Built, going  to yarn build"
         cd ~/twenty/packages/twenty-front/
 	mkdir -p src/locales/generated
@@ -83,16 +103,45 @@ BUILD_BRANCH="${BUILD_BRANCH:-without-payment}"
 
 	yarn cache clean
 	npx nx reset
-	VITE_BUILD_SOURCEMAP=false NODE_OPTIONS="--max-old-space-size=4096" yarn build
+	build_step TWENTY_FRONT env VITE_BUILD_SOURCEMAP=false NODE_OPTIONS="--max-old-space-size=4096" yarn build
 
 	echo "Building twenty-website package"
 	cd ~/twenty/packages/twenty-website/
-	yarn build --no-lint
+	build_step TWENTY_WEBSITE yarn build --no-lint
 
 	echo "Building twenty-emails package"
 	cd ~/twenty/packages/twenty-emails/
-	yarn build
+	build_step TWENTY_EMAILS yarn build
 
 	echo "Building twenty-mcp-server package"
 	cd ~/twenty/packages/twenty-mcp-server/
-	npx nx run twenty-mcp-server:build || yarn build
+	if ! build_step TWENTY_MCP_SERVER npx nx run twenty-mcp-server:build; then
+	  build_step TWENTY_MCP_SERVER yarn build
+	fi
+
+required_builds=(
+  TWENTY_SERVER
+  TWENTY_FRONT
+  TWENTY_ORGCHART
+  TWENTY_SHARED
+  TWENTY_WEBSITE
+)
+
+echo "Build summary:"
+all_required_success=true
+for build_name in "${required_builds[@]}"; do
+  status="$(grep "^BUILD_${build_name}=" "$BUILD_STATUS_FILE" 2>/dev/null | tail -n 1 | cut -d= -f2)"
+  status="${status:-failed}"
+  echo " - ${build_name}: ${status}"
+  if [ "$status" != "success" ]; then
+    all_required_success=false
+  fi
+done
+
+if [ "$all_required_success" = true ]; then
+  echo "Required build check passed: twenty-server, twenty-front, twenty-orgchart, twenty-shared, and twenty-website all built successfully."
+  exit 0
+fi
+
+echo "Required build check failed: one or more of twenty-server, twenty-front, twenty-orgchart, twenty-shared, or twenty-website did not build successfully."
+exit 1

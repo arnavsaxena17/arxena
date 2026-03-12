@@ -69,7 +69,89 @@ scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no "$REPO_DIR/packages/t
 echo "Maybe finished copying pem files"
 # 2. Set up build environment (you'll need to SSH and do this manually or use a script)
 # 3. Build your project (SSH and run build commands)
+BUILD_STATUS_LOCAL_FILE="$(mktemp /tmp/twenty-build-status.XXXXXX)"
+STAGING_ROOT="$(mktemp -d /tmp/twenty-build-stage.XXXXXX)"
+REMOTE_BUILD_EXIT_CODE=0
+
+set +e
 ssh -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS "BUILD_BRANCH=$BUILD_BRANCH chmod +x script_to_build_app_in_new_instance.sh && BUILD_BRANCH=$BUILD_BRANCH ./script_to_build_app_in_new_instance.sh"
+REMOTE_BUILD_EXIT_CODE=$?
+set -e
+
+scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/build_status.env "$BUILD_STATUS_LOCAL_FILE" 2>/dev/null || true
+
+get_build_status() {
+  local build_name="$1"
+
+  if [ ! -f "$BUILD_STATUS_LOCAL_FILE" ]; then
+    echo "unknown"
+    return 0
+  fi
+
+  local status
+  status="$(grep "^BUILD_${build_name}=" "$BUILD_STATUS_LOCAL_FILE" | tail -n 1 | cut -d= -f2)"
+  echo "${status:-unknown}"
+}
+
+set_deploy_status() {
+  local build_name="$1"
+  local status="$2"
+  eval "DEPLOY_STATUS_${build_name}='$status'"
+}
+
+get_deploy_status() {
+  local build_name="$1"
+  eval "echo \${DEPLOY_STATUS_${build_name}:-kept-existing-files}"
+}
+
+stage_remote_dir() {
+  local remote_path="$1"
+  local stage_path="$2"
+
+  mkdir -p "$stage_path"
+  find "$stage_path" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+  scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r "ubuntu@$TEMP_DNS:$remote_path/." "$stage_path/"
+}
+
+activate_staged_dir() {
+  local stage_path="$1"
+  local live_path="$2"
+
+  mkdir -p "$live_path"
+  find "$live_path" -mindepth 1 -maxdepth 1 -exec sudo rm -rf {} +
+  cp -a "$stage_path"/. "$live_path"/
+}
+
+deploy_component() {
+  local build_name="$1"
+  local label="$2"
+  local destination="$3"
+  shift 3
+
+  local build_status
+  build_status="$(get_build_status "$build_name")"
+
+  if [ "$build_status" != "success" ]; then
+    echo "$label build status: $build_status. Keeping existing files."
+    return 1
+  fi
+
+  local remote_path
+  if ! remote_path="$(resolve_remote_dir "$label" "$@")"; then
+    echo "$label build succeeded but artifact directory was not found. Keeping existing files."
+    return 1
+  fi
+
+  local stage_path="$STAGING_ROOT/$build_name"
+  if ! stage_remote_dir "$remote_path" "$stage_path"; then
+    echo "$label build succeeded but artifact copy failed. Keeping existing files."
+    return 1
+  fi
+
+  activate_staged_dir "$stage_path" "$destination"
+  echo "$label build succeeded and files were updated."
+  return 0
+}
 
 # Resolve a list of candidate remote directories and return first match.
 resolve_remote_dir() {
@@ -85,123 +167,111 @@ resolve_remote_dir() {
   return 1
 }
 
-copy_remote_dir() {
-  local remote_path="$1"
-  local local_path="$2"
-
-  mkdir -p "$local_path"
-  sudo rm -rf "$local_path"/*
-  scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r "ubuntu@$TEMP_DNS:$remote_path/*" "$local_path/"
-}
-
 # 4. Transfer build files
+DEPLOYMENTS_APPLIED=0
+set_deploy_status TWENTY_SERVER kept-existing-files
+set_deploy_status TWENTY_FRONT kept-existing-files
+set_deploy_status TWENTY_SHARED kept-existing-files
+set_deploy_status TWENTY_ORGCHART kept-existing-files
+set_deploy_status TWENTY_WEBSITE kept-existing-files
 
-# For server files
-# First ensure the dist directory exists
-REMOTE_TWENTY_SERVER_DIST="$(resolve_remote_dir "twenty-server dist" \
+if deploy_component TWENTY_SERVER "twenty-server dist" "$REPO_DIR/packages/twenty-server/dist" \
   /home/ubuntu/twenty/packages/twenty-server/dist \
   /home/ubuntu/dist/packages/twenty-server \
-  /home/ubuntu/twenty/dist/packages/twenty-server)"
-copy_remote_dir "$REMOTE_TWENTY_SERVER_DIST" "$REPO_DIR/packages/twenty-server/dist"
+  /home/ubuntu/twenty/dist/packages/twenty-server; then
+  DEPLOYMENTS_APPLIED=1
+  set_deploy_status TWENTY_SERVER updated
+fi
 
-# For frontend files
-# First ensure the build directory exists
-REMOTE_TWENTY_FRONT_BUILD="$(resolve_remote_dir "twenty-front build" \
+if deploy_component TWENTY_FRONT "twenty-front build" "$REPO_DIR/packages/twenty-front/build" \
   /home/ubuntu/twenty/packages/twenty-front/build \
   /home/ubuntu/twenty/dist/packages/twenty-front \
-  /home/ubuntu/dist/packages/twenty-front)"
-copy_remote_dir "$REMOTE_TWENTY_FRONT_BUILD" "$REPO_DIR/packages/twenty-front/build"
+  /home/ubuntu/dist/packages/twenty-front; then
+  DEPLOYMENTS_APPLIED=1
+  set_deploy_status TWENTY_FRONT updated
+fi
 
-REMOTE_TWENTY_SHARED_DIST="$(resolve_remote_dir "twenty-shared dist" \
+if deploy_component TWENTY_SHARED "twenty-shared dist" "$REPO_DIR/packages/twenty-shared/dist" \
   /home/ubuntu/twenty/packages/twenty-shared/dist \
   /home/ubuntu/twenty/dist/packages/twenty-shared \
-  /home/ubuntu/dist/packages/twenty-shared)"
-copy_remote_dir "$REMOTE_TWENTY_SHARED_DIST" "$REPO_DIR/packages/twenty-shared/dist"
+  /home/ubuntu/dist/packages/twenty-shared; then
+  DEPLOYMENTS_APPLIED=1
+  set_deploy_status TWENTY_SHARED updated
+fi
 
-REMOTE_TWENTY_ORGCHART_DIST="$(resolve_remote_dir "twenty-orgchart dist" \
+if deploy_component TWENTY_ORGCHART "twenty-orgchart dist" "$REPO_DIR/packages/twenty-orgchart/dist" \
   /home/ubuntu/twenty/packages/twenty-orgchart/dist \
   /home/ubuntu/twenty/dist/packages/twenty-orgchart \
-  /home/ubuntu/dist/packages/twenty-orgchart)"
-copy_remote_dir "$REMOTE_TWENTY_ORGCHART_DIST" "$REPO_DIR/packages/twenty-orgchart/dist"
+  /home/ubuntu/dist/packages/twenty-orgchart; then
+  DEPLOYMENTS_APPLIED=1
+  set_deploy_status TWENTY_ORGCHART updated
+fi
 
-mkdir -p "$REPO_DIR/packages/twenty-front/src/locales/generated"
-# Clear existing files
-sudo rm -rf "$REPO_DIR/packages/twenty-front/src/locales/generated/*"
-# Copy new locale files
-REMOTE_TWENTY_FRONT_LOCALES="$(resolve_remote_dir "twenty-front generated locales" \
+deploy_component TWENTY_FRONT "twenty-front generated locales" "$REPO_DIR/packages/twenty-front/src/locales/generated" \
   /home/ubuntu/twenty/packages/twenty-front/src/locales/generated \
-  /home/ubuntu/dist/packages/twenty-front/src/locales/generated)"
-copy_remote_dir "$REMOTE_TWENTY_FRONT_LOCALES" "$REPO_DIR/packages/twenty-front/src/locales/generated"
+  /home/ubuntu/dist/packages/twenty-front/src/locales/generated || true
 
-# For server locale files (if needed)
-mkdir -p "$REPO_DIR/packages/twenty-server/src/engine/core-modules/i18n/locales/generated"
-# Clear existing files
-sudo rm -rf "$REPO_DIR/packages/twenty-server/src/engine/core-modules/i18n/locales/generated/*"
-# Copy new locale files
-REMOTE_TWENTY_SERVER_LOCALES="$(resolve_remote_dir "twenty-server generated locales" \
+deploy_component TWENTY_SERVER "twenty-server generated locales" "$REPO_DIR/packages/twenty-server/src/engine/core-modules/i18n/locales/generated" \
   /home/ubuntu/twenty/packages/twenty-server/src/engine/core-modules/i18n/locales/generated \
-  /home/ubuntu/dist/packages/twenty-server/src/engine/core-modules/i18n/locales/generated)"
-copy_remote_dir "$REMOTE_TWENTY_SERVER_LOCALES" "$REPO_DIR/packages/twenty-server/src/engine/core-modules/i18n/locales/generated"
+  /home/ubuntu/dist/packages/twenty-server/src/engine/core-modules/i18n/locales/generated || true
 
-
-# For emails files
-mkdir -p "$REPO_DIR/packages/twenty-emails/dist"
-# Clear existing files
-sudo rm -rf "$REPO_DIR/packages/twenty-emails/dist/*"
-# Copy new emails files
-REMOTE_TWENTY_EMAILS_DIST="$(resolve_remote_dir "twenty-emails dist" \
+deploy_component TWENTY_EMAILS "twenty-emails dist" "$REPO_DIR/packages/twenty-emails/dist" \
   /home/ubuntu/twenty/packages/twenty-emails/dist \
   /home/ubuntu/twenty/dist/packages/twenty-emails \
-  /home/ubuntu/dist/packages/twenty-emails)"
-copy_remote_dir "$REMOTE_TWENTY_EMAILS_DIST" "$REPO_DIR/packages/twenty-emails/dist"
+  /home/ubuntu/dist/packages/twenty-emails || true
 
-# For twenty-mcp-server files
-mkdir -p "$REPO_DIR/packages/twenty-mcp-server/dist"
-# Clear existing files
-sudo rm -rf "$REPO_DIR/packages/twenty-mcp-server/dist/*"
-# Copy new twenty-mcp-server files
-REMOTE_TWENTY_MCP_SERVER_DIST="$(resolve_remote_dir "twenty-mcp-server dist" \
+deploy_component TWENTY_MCP_SERVER "twenty-mcp-server dist" "$REPO_DIR/packages/twenty-mcp-server/dist" \
   /home/ubuntu/twenty/packages/twenty-mcp-server/dist \
   /home/ubuntu/twenty/dist/packages/twenty-mcp-server \
-  /home/ubuntu/dist/packages/twenty-mcp-server)"
-copy_remote_dir "$REMOTE_TWENTY_MCP_SERVER_DIST" "$REPO_DIR/packages/twenty-mcp-server/dist"
+  /home/ubuntu/dist/packages/twenty-mcp-server || true
 
-mkdir -p "$REPO_DIR/packages/twenty-website/.next"
-# Clear existing files
-sudo rm -rf "$REPO_DIR/packages/twenty-website/.next/*"
-# Copy new twenty-website files (Next.js outputs to .next, not dist)
-REMOTE_TWENTY_WEBSITE_NEXT="$(resolve_remote_dir "twenty-website .next" \
+if deploy_component TWENTY_WEBSITE "twenty-website .next" "$REPO_DIR/packages/twenty-website/.next" \
   /home/ubuntu/twenty/packages/twenty-website/.next \
   /home/ubuntu/twenty/dist/packages/twenty-website/.next \
-  /home/ubuntu/dist/packages/twenty-website/.next)"
-copy_remote_dir "$REMOTE_TWENTY_WEBSITE_NEXT" "$REPO_DIR/packages/twenty-website/.next"
+  /home/ubuntu/dist/packages/twenty-website/.next; then
+  DEPLOYMENTS_APPLIED=1
+  set_deploy_status TWENTY_WEBSITE updated
+fi
 
-# Copy package.json and yarn.lock so production has same deps as build (avoids missing new packages like apify-client)
-scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/twenty/package.json "$REPO_DIR/package.json"
-scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/twenty/yarn.lock "$REPO_DIR/yarn.lock"
-# Copy workspace package.json files (twenty-server, etc.) so deps match exactly
-for pkg in twenty-server twenty-front twenty-website twenty-worker twenty-shared twenty-orgchart twenty-emails twenty-mcp-server; do
-  if [ -d "$REPO_DIR/packages/$pkg" ]; then
-    scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no "ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/$pkg/package.json" "$REPO_DIR/packages/$pkg/package.json" 2>/dev/null || true
-  fi
+if [ "$DEPLOYMENTS_APPLIED" -eq 1 ]; then
+  # Copy package.json and yarn.lock so production has same deps as build (avoids missing new packages like apify-client)
+  scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/twenty/package.json "$REPO_DIR/package.json"
+  scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/twenty/yarn.lock "$REPO_DIR/yarn.lock"
+  # Copy workspace package.json files (twenty-server, etc.) so deps match exactly
+  for pkg in twenty-server twenty-front twenty-website twenty-worker twenty-shared twenty-orgchart twenty-emails twenty-mcp-server; do
+    if [ -d "$REPO_DIR/packages/$pkg" ]; then
+      scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no "ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/$pkg/package.json" "$REPO_DIR/packages/$pkg/package.json" 2>/dev/null || true
+    fi
+  done
+
+  echo "Installing dependencies (ensures new packages like apify-client are available)"
+  cd "$REPO_DIR"
+  yarn install --frozen-lockfile || yarn install
+
+  # Compile lingui catalogs for server
+  cd "$REPO_DIR/packages/twenty-server"
+  npx lingui compile --verbose || npx nx run twenty-server:lingui:compile
+
+  # Compile lingui catalogs for frontend
+  cd "$REPO_DIR/packages/twenty-front"
+  npx lingui compile --verbose || npx nx run twenty-front:lingui:compile
+
+  echo "Restarting NGINX and PM2"
+  # 6. Restart services
+  sudo systemctl restart nginx
+  pm2 restart all
+else
+  echo "No required application build was deployed. Skipping dependency install and service restart."
+fi
+
+echo "Final required build summary before shutdown:"
+for build_name in TWENTY_SERVER TWENTY_FRONT TWENTY_ORGCHART TWENTY_SHARED TWENTY_WEBSITE; do
+  echo " - ${build_name}: build=$(get_build_status "$build_name"), files=$(get_deploy_status "$build_name")"
 done
 
-echo "Installing dependencies (ensures new packages like apify-client are available)"
-cd "$REPO_DIR"
-yarn install --frozen-lockfile || yarn install
-
-# Compile lingui catalogs for server
-cd "$REPO_DIR/packages/twenty-server"
-npx lingui compile --verbose || npx nx run twenty-server:lingui:compile
-
-# Compile lingui catalogs for frontend  
-cd "$REPO_DIR/packages/twenty-front"
-npx lingui compile --verbose || npx nx run twenty-front:lingui:compile
-
-echo "Restarting NGINX and PM2"
-# 6. Restart services
-sudo systemctl restart nginx
-pm2 restart all
+if [ "$REMOTE_BUILD_EXIT_CODE" -ne 0 ]; then
+  echo "Remote build script exited with code $REMOTE_BUILD_EXIT_CODE."
+fi
 
 TZ=Asia/Kolkata date "+%Y-%m-%d %H:%M:%S %Z"
 
