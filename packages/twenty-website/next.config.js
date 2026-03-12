@@ -62,6 +62,11 @@ const nextConfig = {
         destination: '/org-chart/facebook/:path*',
         permanent: true,
       },
+      {
+        source: '/org-chart/samsung/:path*',
+        destination: '/org-chart/samsung-electronics/:path*',
+        permanent: true,
+      },
       // /global/fullcompany is equivalent to base URL - redirect to canonical form
       {
         source: '/org-chart/:companyId/global/fullcompany',
