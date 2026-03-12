@@ -287,7 +287,28 @@ export function processOrgChartToNodeData(
     for (let i = 0; i < orderedCandidates.length && i < 4; i++) {
       processCandidate(orderedCandidates[i], node, i);
     }
-    node.total_people = orderedCandidates.length;
+    const rawLen = raw.len_candidates;
+    const totalFromRaw =
+      typeof rawLen === 'number' && rawLen >= 0
+        ? rawLen
+        : typeof rawLen === 'string' && rawLen !== ''
+          ? parseInt(rawLen, 10)
+          : NaN;
+    node.total_people =
+      !Number.isNaN(totalFromRaw) && totalFromRaw >= orderedCandidates.length
+        ? totalFromRaw
+        : orderedCandidates.length;
+    node.allCandidates = orderedCandidates.slice();
+
+    if (typeof console !== 'undefined') {
+      console.log('[orgchart/processOrgChartToNodeData]', {
+        headline: node.headline,
+        key: node.key,
+        totalPeople: node.total_people,
+        allCandidatesLength: orderedCandidates.length,
+        rawLenCandidates: raw.len_candidates,
+      });
+    }
 
     const PERSON_ROW_HEIGHT = 48;
     node.height_0 = orderedCandidates.length >= 1 ? PERSON_ROW_HEIGHT : 0;

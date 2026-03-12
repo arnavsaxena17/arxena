@@ -503,6 +503,19 @@ console.log("Company name in ArxOrgChart::", companyName);
             (out as Record<string, string>)[key] = rewriteImage(val);
           }
         }
+        if (typeof console !== 'undefined') {
+          console.log('[orgchart/ArxOrgChart/nodeDataArray]', {
+            headline: out.headline,
+            key: out.key,
+            totalPeople: out.total_people,
+            allCandidatesLength: Array.isArray(
+              (out as Record<string, unknown>).allCandidates,
+            )
+              ? ((out as Record<string, unknown>).allCandidates as unknown[])
+                  .length
+              : null,
+          });
+        }
         return out;
       });
     }
@@ -544,6 +557,19 @@ console.log("Company name in ArxOrgChart::", companyName);
       merged.height_3 = displayedCount >= 4 ? PERSON_ROW_HEIGHT : 0;
       merged.nodeState = enriched.nodeState;
       merged.total_people = totalCount;
+      if (typeof console !== 'undefined') {
+        console.log('[orgchart/ArxOrgChart/nodeDataArray/enriched]', {
+          headline: merged.headline,
+          key: merged.key,
+          totalPeople: merged.total_people,
+          allCandidatesLength: Array.isArray(
+            (merged as Record<string, unknown>).allCandidates,
+          )
+            ? ((merged as Record<string, unknown>).allCandidates as unknown[])
+                .length
+            : null,
+        });
+      }
       return merged;
     });
   }, [orgData, actions.enrichedNodes, baseUrl]);

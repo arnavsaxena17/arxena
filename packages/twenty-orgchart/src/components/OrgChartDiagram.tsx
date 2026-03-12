@@ -276,7 +276,22 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
             if (!onNodeDoubleClick) return;
             const part = (obj.part ?? null) as go.Node | null;
             const data = part?.data as OrgChartNodeData | undefined;
-            if (data) onNodeDoubleClick(data);
+            if (data) {
+              // eslint-disable-next-line no-console
+              console.log('[orgchart/OrgChartDiagram/doubleClick]', {
+                headline: data.headline,
+                key: data.key,
+                totalPeople: data.total_people,
+                allCandidatesLength: Array.isArray(
+                  (data as Record<string, unknown>).allCandidates,
+                )
+                  ? (
+                      (data as Record<string, unknown>).allCandidates as unknown[]
+                    ).length
+                  : null,
+              });
+              onNodeDoubleClick(data);
+            }
           },
         },
         $(
@@ -854,7 +869,14 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       const handleInitialLayout = () => {
         if (hasCenteredRef.current) return;
         hasCenteredRef.current = true;
-        diagram.commandHandler.zoomToFit();
+        const rootNode = diagram.nodes.first();
+        if (rootNode) {
+          diagram.zoomToRect(rootNode.actualBounds);
+          diagram.centerRect(rootNode.actualBounds);
+          diagram.commandHandler.decreaseZoom(0.3);
+        } else {
+          diagram.commandHandler.zoomToFit();
+        }
       };
 
       diagram.addDiagramListener('InitialLayoutCompleted', handleInitialLayout);

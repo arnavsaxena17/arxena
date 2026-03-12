@@ -655,9 +655,70 @@ export const useOrgChartActions = ({
     setNodeDetailError(null);
 
     const nodeKey = typeof node.key === 'number' ? node.key : undefined;
+    const nodeRecord = node as Record<string, unknown>;
+    const allCandidates = nodeRecord.allCandidates;
+    const totalPeople =
+      typeof node.total_people === 'number'
+        ? node.total_people
+        : typeof node.total_people === 'string'
+          ? parseInt(String(node.total_people), 10)
+          : 0;
+    const hasPartialList =
+      Array.isArray(allCandidates) &&
+      allCandidates.length > 0 &&
+      totalPeople > allCandidates.length;
     const isActive = node.nodeState === 'active';
 
-    if (isActive) {
+    // eslint-disable-next-line no-console
+    console.log('[orgchart/handleNodeDoubleClick]', {
+      headline: node.headline,
+      key: node.key,
+      nodeState: node.nodeState,
+      totalPeople,
+      allCandidatesLength: Array.isArray(allCandidates)
+        ? allCandidates.length
+        : null,
+      hasPartialList,
+    });
+
+    if (
+      Array.isArray(allCandidates) &&
+      allCandidates.length > 0 &&
+      !hasPartialList
+    ) {
+      const results = allCandidates.map((candidate, index) =>
+        normalizeCandidateItem(
+          {
+            ...(candidate as Record<string, unknown>),
+            company:
+              ((candidate as Record<string, unknown>).job_company_name as
+                | string
+                | undefined) ??
+              companyName ??
+              '',
+            linkedin_url:
+              ((candidate as Record<string, unknown>).std_linkedin_url as
+                | string
+                | undefined) ??
+              ((candidate as Record<string, unknown>).linkedin_url as
+                | string
+                | undefined),
+          },
+          index,
+        ),
+      );
+      setNodeDetailResults(results);
+      if (nodeKey !== undefined) {
+        setEnrichedNodes((prev) => ({
+          ...prev,
+          [nodeKey]: { people: results, nodeState: 'active' },
+        }));
+      }
+      setIsNodeDetailLoading(false);
+      return;
+    }
+
+    if (isActive && !hasPartialList) {
       const cached =
         nodeKey !== undefined ? enrichedNodes[nodeKey]?.people : undefined;
       const results =
@@ -687,7 +748,9 @@ export const useOrgChartActions = ({
         stdGrade:
           (node as Record<string, unknown>).std_grade as string | undefined,
         country: node.country ?? undefined,
-        limit: 50,
+        limit: hasPartialList
+          ? Math.min(Math.max(totalPeople, 50), 500)
+          : 50,
       };
 
       const canonicalCompanyId = normalizeCompanyIdForUrl(companyId);
