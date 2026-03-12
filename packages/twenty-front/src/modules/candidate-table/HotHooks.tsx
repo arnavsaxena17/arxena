@@ -409,8 +409,11 @@ const updateTableState = (rowData: any, prop: string, newValue: any, setTableSta
 
   setTableState((prev: any) => {
     const updatedRawData = [...prev.rawData];
-    const index = updatedRawData.findIndex(item => item.id === rowData.id);
-    
+    // Match by id (table row id from ProcessedData) or by peopleId (rawData) === personId (table row)
+    const index = updatedRawData.findIndex(
+      (item: any) => item.id === rowData.id || (item.peopleId && item.peopleId === rowData.personId)
+    );
+
     if (index >= 0) {
       const currentRow = updatedRawData[index];
       
@@ -524,8 +527,11 @@ const updateTableState = (rowData: any, prop: string, newValue: any, setTableSta
           updatedRawData[index] = updatedRow;
         }
       }
+    } else {
+      // Row not found in rawData (e.g. id/personId mismatch); avoid spurious re-render
+      return prev;
     }
-    
+
     console.log('updatedRawData in updateTableState::', updatedRawData);
     return {
       ...prev,
@@ -656,8 +662,10 @@ export const afterChange = async (
   // Skip processing for internal Handsontable updates that don't represent user edits
   // 'updateData' is triggered when Handsontable updates its internal data structure
   // 'loadData' is triggered when data is loaded into the table
-  // These don't represent actual user edits, so we skip them to prevent unnecessary re-renders
-  if (source === 'undo' || source === 'redo' || source === 'updateData' || source === 'loadData') {
+  // 'external' is triggered when we call setDataAtCell(..., 'external') for optimistic update -
+  // skipping it avoids double-processing and prevents the table from being overwritten before
+  // React re-renders with updated state (rawData -> processedData -> mergedData -> table data)
+  if (source === 'undo' || source === 'redo' || source === 'updateData' || source === 'loadData' || source === 'external') {
     // Silently skip - these are internal Handsontable operations, not user edits
     return;
   }
