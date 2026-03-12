@@ -44,6 +44,7 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
     // Process phone numbers - spreadsheet import uses specific field names
     const phoneNumberKey = candidateData['Phone number (phones)'] || 
                           candidateData['Phone number (phoneNumber)'] || 
+                          candidateData['Phone Number'] ||
                           candidateData.phoneNumber || 
                           candidateData.phone_number;
     
@@ -58,6 +59,7 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
     // Process email addresses - spreadsheet import uses specific field names
     const emailKey = candidateData['Email (emails)'] || 
                     candidateData['Email (email)'] || 
+                    candidateData['Email ID'] ||
                     candidateData.email || 
                     candidateData.email_address;
     
@@ -129,7 +131,7 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
       // Use the DataProcessingUtils to generate uniqueStringKey properly
       userProfile.uniqueStringKey = this.dataProcessingUtils.generateUniqueStringKey(
         candidateData,
-        'spreadsheet_import'
+        'spreadsheet_import_twenty'
       );
     }
   }

@@ -812,12 +812,9 @@ export const Jobs = () => {
                 <></>
               )}
               
-              {!isOrgChartEnabled && isArxUploadJDModalOpen ? (
+              {isArxUploadJDModalOpen ? (
                 <ApiKeysProvider>
-                  <ArxJDUploadModal
-                    objectNameSingular="job"
-                    objectRecordId=""
-                  />
+                  <ArxJDUploadModal objectNameSingular="job" objectRecordId="" />
                 </ApiKeysProvider>
               ) : (
                 <></>

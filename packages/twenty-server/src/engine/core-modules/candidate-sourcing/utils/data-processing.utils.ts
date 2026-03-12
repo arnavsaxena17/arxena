@@ -50,6 +50,35 @@ export class DataProcessingUtils {
    * Format: first_name + last_name + company_name (matching Python implementation)
    */
   generateUniqueStringKey(candidateData: any, dataSource: string): string {
+    // Spreadsheet imports often have stable contact identifiers; prefer them when present.
+    // This improves deduping and ensures a consistent key across repeated uploads of the same file.
+    if (typeof dataSource === 'string' && dataSource.startsWith('spreadsheet_import')) {
+      const emailRaw =
+        candidateData['Email ID'] ||
+        candidateData['Email (emails)'] ||
+        candidateData['Email (email)'] ||
+        candidateData.email ||
+        candidateData.email_address ||
+        candidateData.emailAddress;
+      const email = this.cleanEmailAddresses(emailRaw)[0];
+      if (email) {
+        return `spreadsheet_import|email:${email}`;
+      }
+
+      const phoneRaw =
+        candidateData['Phone Number'] ||
+        candidateData['Phone number (phones)'] ||
+        candidateData['Phone number (phoneNumber)'] ||
+        candidateData.phone ||
+        candidateData.phoneNumber ||
+        candidateData.phone_number ||
+        candidateData.phone_numbers;
+      const phone = this.cleanPhoneNumbers(phoneRaw)[0];
+      if (phone) {
+        return `spreadsheet_import|phone:${phone}`;
+      }
+    }
+
     // First try to get full name from various fields
     let fullName = candidateData.name || candidateData.jsUserName || candidateData.full_name || candidateData['Name'] || '';
     

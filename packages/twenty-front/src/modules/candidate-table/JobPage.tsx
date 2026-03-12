@@ -822,7 +822,7 @@ export const JobPage: React.FC = () => {
               <></>
             )}
             
-            {!isOrgChartEnabled && isArxUploadJDModalOpen ? (
+            {isArxUploadJDModalOpen ? (
               <ApiKeysProvider>
                 <ArxJDUploadModal
                   objectNameSingular="job"

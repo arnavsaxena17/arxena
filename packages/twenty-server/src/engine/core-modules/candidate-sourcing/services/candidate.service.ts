@@ -897,9 +897,61 @@ export class CandidateService {
             console.log(`Error finding existing person for ${key}:`, error.message);
           }
         }
+
+        // Spreadsheet import: ensure we always have a linked Person.
+        // These imports can legitimately arrive without an existing Person (no match by uniqueStringKey),
+        // but the UI expects Candidate.peopleId to exist to persist edits (e.g. remarks).
+        if (!personId && profile?.creationSource === 'spreadsheet_import_twenty') {
+          console.log(`No personId for spreadsheet import key ${key}. Creating person before candidate.`);
+          try {
+            const personNode = mapArxCandidateToPersonNode(profile);
+            const createPersonResponse = await this.personService.createPeople([personNode], apiToken);
+            const createdPersonId = createPersonResponse?.data?.data?.createPeople?.[0]?.id;
+            if (createdPersonId) {
+              personId = createdPersonId;
+              tracking.personIdMap.set(key, personId);
+              console.log(`Created person for ${key}: ${personId}`);
+            } else {
+              // As a fallback (e.g. if createPeople returns errors), try to fetch again by uniqueStringKey.
+              const existingPersons = await this.personService.batchGetPersonDetailsByStringKeys([key], apiToken);
+              const existingPerson = existingPersons.get(key);
+              if (existingPerson?.id) {
+                personId = existingPerson.id;
+                tracking.personIdMap.set(key, personId);
+                console.log(`Resolved person after creation attempt for ${key}: ${personId}`);
+              } else {
+                console.warn(`Failed to create/resolve person for spreadsheet import key ${key}. Candidate may be unlinked.`);
+              }
+            }
+          } catch (error) {
+            console.warn(`Error creating person for spreadsheet import key ${key}:`, error?.message || error);
+          }
+        }
         
         console.log(`- Final personId: ${personId}`);
         console.log(`- Will create candidate: ${!existingCandidate ? 'YES' : 'NO'}`);
+
+        // If a spreadsheet-import candidate already exists but is not linked to a person, link it now.
+        if (
+          existingCandidate &&
+          profile?.creationSource === 'spreadsheet_import_twenty' &&
+          personId &&
+          !existingCandidate?.peopleId
+        ) {
+          try {
+            console.log(`Linking existing candidate ${existingCandidate.id} to person ${personId} (spreadsheet import).`);
+            await this.staticGraphQLService.executeGraphQL(
+              graphQltoUpdateOneCandidate,
+              { idToUpdate: existingCandidate.id, input: { peopleId: personId } },
+              apiToken,
+            );
+          } catch (error) {
+            console.warn(
+              `Failed linking existing candidate ${existingCandidate.id} to person ${personId}:`,
+              error?.message || error,
+            );
+          }
+        }
 
         // Create candidate if it doesn't already exist, regardless of personId status
         if (!existingCandidate) {
