@@ -12,13 +12,13 @@ import { WhatsappUnipileMessagingService } from 'src/engine/core-modules/arx-cha
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
-    Attachment,
-    AttachmentMessageObject,
-    CandidateNode,
-    ChatControlsObjType,
-    ChatHistoryItem,
-    Job,
-    whatappUpdateMessageObjType
+  Attachment,
+  AttachmentMessageObject,
+  CandidateNode,
+  ChatControlsObjType,
+  ChatHistoryItem,
+  Job,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -50,22 +50,29 @@ export class MessagingControls {
         mostRecentMessageArr[0].role != 'system' &&
         mostRecentMessageArr.length == 1
       ) {
-        console.log( 'Found a single sneaky message which is coming out:: ', messageText, );
-
-        return;
-      }
-      
-      if (
-        messageText.includes('#DONTRESPOND#') ||
-        (messageText.includes('DONTRESPOND') && messageText)
-      ) {
         console.log(
-          'Found a #DONTRESPOND# message, so not sending any message',
+          'Found a single sneaky message #DONTRESPOND# which is coming out:: ',
+          messageText,
         );
 
         return;
       }
-      
+
+      const shouldSaveDontRespondMessages =
+        process.env.SAVE_DONTRESPOND_MESSAGES === 'true';
+
+      if (
+        !shouldSaveDontRespondMessages &&
+        (messageText.includes('#DONTRESPOND#') ||
+          messageText.includes('DONTRESPOND'))
+      ) {
+        console.log(
+          'Found a #DONTRESPOND# message and SAVE_DONTRESPOND_MESSAGES is not enabled, so not sending or saving any message',
+        );
+
+        return;
+      }
+
       console.log(
         'Going to create whatsaappupdatemessage obj for message text::',
         messageText,

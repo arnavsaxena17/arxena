@@ -1,4 +1,4 @@
-import { i18n, Messages } from '@lingui/core';
+import { Messages, setupI18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { Container, Html } from '@react-email/components';
 import { PropsWithChildren } from 'react';
@@ -42,6 +42,8 @@ type BaseEmailProps = PropsWithChildren<{
   width?: number;
   locale: keyof typeof APP_LOCALES;
 }>;
+
+const i18n = setupI18n();
 
 const messages: Record<keyof typeof APP_LOCALES, Messages> = {
   en: enMessages,

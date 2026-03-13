@@ -398,7 +398,8 @@ export class MetadataUpdateService {
   }> {
     try {
       // Get existing API keys from the workspace
-      const existingKeys = await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
+      const existingKeys =
+        await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
       console.log('existingWorkspaceKeys from workspace:', existingKeys);
       
       // Get the field names that already exist in the workspace
@@ -419,25 +420,92 @@ export class MetadataUpdateService {
       
       // Only return API keys if there are truly new fields that aren't already in the workspace
       if (trulyNewApiKeyFields.length > 0) {
-        const apiKeyFields = {
-          openaikey: process.env.OPENAI_KEY,
-          twilio_account_sid: undefined,
-          twilio_auth_token: undefined,
-          linkedin_url: undefined,
-          whatsapp_key: process.env.DEFAULT_WHATSAPP_CLIENT || 'whatsapp-unipile',
-          linkedin_unipile_account_id: undefined,
-          whatsapp_unipile_account_id: undefined,
-          linkedin_profile_id: undefined,
-          anthropic_key: undefined,
-          facebook_whatsapp_api_token: process.env.FACEBOOK_WHATSAPP_API_TOKEN,
-          facebook_whatsapp_phone_number_id: process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID,
-          whatsapp_web_phone_number: '',
-          facebook_whatsapp_app_id: process.env.FACEBOOK_WHATSAPP_APP_ID,
-          facebook_whatsapp_asset_id: process.env.FACEBOOK_WHATSAPP_ASSET_ID,
-          is_chrome_extension_installed: 'false',
-          chrome_extension_id: undefined,
-        };
-        
+        const apiKeyFields: {
+          openaikey?: string;
+          twilio_account_sid?: string;
+          twilio_auth_token?: string;
+          linkedin_url?: string;
+          whatsapp_key?: string;
+          linkedin_unipile_account_id?: string;
+          whatsapp_unipile_account_id?: string;
+          linkedin_profile_id?: string;
+          anthropic_key?: string;
+          facebook_whatsapp_api_token?: string;
+          facebook_whatsapp_phone_number_id?: string;
+          whatsapp_web_phone_number?: string;
+          facebook_whatsapp_app_id?: string;
+          facebook_whatsapp_asset_id?: string;
+          is_chrome_extension_installed?: string;
+          chrome_extension_id?: string;
+        } = {};
+
+        // For each truly new API key field, set a default value only if it doesn't already exist
+        for (const fieldName of trulyNewApiKeyFields) {
+          switch (fieldName) {
+            case 'openaikey':
+              if (!existingKeys.openaikey && process.env.OPENAI_KEY) {
+                apiKeyFields.openaikey = process.env.OPENAI_KEY;
+              }
+              break;
+            case 'whatsapp_key':
+              if (!existingKeys.whatsapp_key) {
+                apiKeyFields.whatsapp_key =
+                  process.env.DEFAULT_WHATSAPP_CLIENT || 'whatsapp-unipile';
+              }
+              break;
+            case 'facebook_whatsapp_api_token':
+              if (
+                !existingKeys.facebook_whatsapp_api_token &&
+                process.env.FACEBOOK_WHATSAPP_API_TOKEN
+              ) {
+                apiKeyFields.facebook_whatsapp_api_token =
+                  process.env.FACEBOOK_WHATSAPP_API_TOKEN;
+              }
+              break;
+            case 'facebook_whatsapp_phone_number_id':
+              if (
+                !existingKeys.facebook_whatsapp_phone_number_id &&
+                process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID
+              ) {
+                apiKeyFields.facebook_whatsapp_phone_number_id =
+                  process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID;
+              }
+              break;
+            case 'facebook_whatsapp_app_id':
+              if (
+                !existingKeys.facebook_whatsapp_app_id &&
+                process.env.FACEBOOK_WHATSAPP_APP_ID
+              ) {
+                apiKeyFields.facebook_whatsapp_app_id =
+                  process.env.FACEBOOK_WHATSAPP_APP_ID;
+              }
+              break;
+            case 'facebook_whatsapp_asset_id':
+              if (
+                !existingKeys.facebook_whatsapp_asset_id &&
+                process.env.FACEBOOK_WHATSAPP_ASSET_ID
+              ) {
+                apiKeyFields.facebook_whatsapp_asset_id =
+                  process.env.FACEBOOK_WHATSAPP_ASSET_ID;
+              }
+              break;
+            case 'whatsapp_web_phone_number':
+              if (!existingKeys.whatsapp_web_phone_number) {
+                apiKeyFields.whatsapp_web_phone_number = '';
+              }
+              break;
+            case 'is_chrome_extension_installed':
+              if (!existingKeys.is_chrome_extension_installed) {
+                apiKeyFields.is_chrome_extension_installed = 'false';
+              }
+              break;
+            // Other keys (twilio_account_sid, etc.) can be added here with their own defaults if needed,
+            // but we intentionally skip keys that already have a value to avoid overwriting.
+            default:
+              break;
+          }
+        }
+
         console.log('Returning API keys for new fields:', apiKeyFields);
         return apiKeyFields;
       }
