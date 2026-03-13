@@ -17,7 +17,8 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
     candidateData: any,
     context: TransformationContext
   ): UserProfile {
-
+    // When data comes from Excel-only (no JSON), map Excel column headers to expected keys
+    candidateData = this.normalizeExcelRow(candidateData);
     console.log("Transforming hiring naukri profile for candidate data:", candidateData);
     const userProfile = this.createBaseUserProfile(candidateData, context);
     
@@ -37,6 +38,137 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
     this.processHiringSpecificData(candidateData, userProfile);
     
     return userProfile;
+  }
+
+  /**
+   * Maps Naukri Hiring Excel export column headers to the keys expected by the transformer.
+   * Used when profiles are uploaded from Excel-only (no JSON); ensures all Excel columns
+   * (email, phone, salary, experience, education, etc.) are normalized and stored correctly.
+   */
+  private normalizeExcelRow(candidateData: any): any {
+    if (!candidateData || typeof candidateData !== 'object') {
+      return candidateData;
+    }
+    const row = { ...candidateData };
+
+    const setIf = (excelKey: string, targetKey: string): void => {
+      const v = row[excelKey];
+      if (v != null && v !== '' && row[targetKey] == null) {
+        row[targetKey] = v;
+      }
+    };
+    const setFirst = (excelKeys: string[], targetKey: string): void => {
+      if (row[targetKey] != null && row[targetKey] !== '') return;
+      for (const k of excelKeys) {
+        if (row[k] != null && row[k] !== '') {
+          row[targetKey] = row[k];
+          return;
+        }
+      }
+    };
+
+    // Name
+    setIf('Name', 'name');
+
+    // Current location
+    setFirst(['Current Location', 'Current location'], 'currentCity');
+    if (row.currentCity) row.current_city = row.currentCity;
+
+    // Company
+    setIf('Curr. Company name', 'companyName');
+
+    // Email – ensure base processContactData and processHiringSpecificData get it
+    setFirst(['Email ID', 'Email', 'Email Id', 'E-mail'], 'email');
+    if (row.email) row.email_address = row.email;
+
+    // Phone – base processContactData reads 'Phone Number', phone, phoneNumber, phone_number
+    setFirst(
+      ['Phone Number', 'Phone', 'Mobile', 'Mobile Number', 'Contact Number', 'Contact No', 'Phone No'],
+      'phoneNumber',
+    );
+    if (row.phoneNumber) {
+      row.phone_number = row.phoneNumber;
+      row['Phone Number'] = row.phoneNumber;
+    }
+
+    // Salary
+    setFirst(['Annual Salary', 'Salary', 'CTC', 'Current CTC', 'Current Salary', 'Expected CTC'], 'annual_salary');
+    if (row.annual_salary) {
+      row.currentSalary = row.annual_salary;
+      row.salary = row.annual_salary;
+    }
+
+    // Total experience (years) – for inferredYearsExperience and experience logic
+    setFirst(['Total Experience', 'Experience', 'Experience (Yrs)', 'Years of Experience', 'Work Experience'], 'total_experience');
+    if (row.total_experience != null && row.total_experience !== '') {
+      row.workExp = row.total_experience;
+    }
+
+    // Notice period
+    setFirst(['Notice period/ Availability to join', 'Notice Period', 'Notice period', 'Availability'], 'noticePeriod');
+    if (row.noticePeriod) row.notice_period = row.noticePeriod;
+
+    // Key skills
+    setFirst(['Key Skills', 'Skills', 'Key skills'], 'keySkills');
+    if (row.keySkills) row.skills = row.keySkills;
+
+    // Industry
+    setIf('Industry', 'industry');
+
+    // Preferred locations
+    setFirst(['Preferred Locations', 'Preferred Location', 'Preferred locations'], 'preferredLocations');
+    if (row.preferredLocations) row.preferred_locations = row.preferredLocations;
+
+    // Education – build education array from UG/PG columns for Excel-only (used by processHiringEducationData)
+    const ugInstitute = row['UG University/institute Name'] ?? row['UG University/Institute Name'] ?? row.ug_institute_name;
+    const ugDegree = row['Under Graduation degree'] ?? row['UG Degree'] ?? row.ug_graduation_degree;
+    const ugYear = row['UG Graduation year'] ?? row.ug_graduation_year;
+    const pgInstitute = row['PG university/institute name'] ?? row['PG University/Institute name'] ?? row.pg_institute_name;
+    const pgDegree = row['Post graduation degree'] ?? row['PG Degree'] ?? row.pg_graduation_degree;
+    const pgYear = row['PG Graduation year'] ?? row.pg_graduation_year;
+    if (
+      (ugInstitute || ugDegree || ugYear || pgInstitute || pgDegree || pgYear) &&
+      (!row.education || !Array.isArray(row.education))
+    ) {
+      row.education = [];
+      if (ugInstitute || ugDegree || ugYear) {
+        row.education.push({
+          institute: ugInstitute ?? null,
+          degree: ugDegree ?? null,
+          course: ugDegree ?? null,
+          qualification: ugDegree ?? null,
+          passingYear: ugYear ?? null,
+          startYear: ugYear,
+          endYear: ugYear,
+        });
+      }
+      if (pgInstitute || pgDegree || pgYear) {
+        row.education.push({
+          institute: pgInstitute ?? null,
+          degree: pgDegree ?? null,
+          course: pgDegree ?? null,
+          qualification: pgDegree ?? null,
+          passingYear: pgYear ?? null,
+          startYear: pgYear,
+          endYear: pgYear,
+        });
+      }
+      row.educationDetails = row.education;
+    }
+
+    // Resume headline (common typo in exports)
+    setFirst(['Resume Headline', 'Resumen Headline', 'Headline'], 'resumeHeadline');
+    if (row.resumeHeadline) row.resume_headline = row.resumeHeadline;
+
+    // Marital status, gender, birth date
+    setIf('Marital Status', 'maritalStatus');
+    setIf('Gender', 'gender');
+    setFirst(['Date of Birth', 'DOB', 'Birth Date'], 'birth_date');
+
+    // Home town
+    setFirst(['Home Town/City', 'Home Town', 'Hometown', 'City'], 'homeTown');
+
+    return row;
   }
 
   private processHiringProfileData(candidateData: any, userProfile: UserProfile): void {
@@ -64,7 +196,10 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
   }
 
   private processHiringLocationData(candidateData: any, userProfile: UserProfile): void {
-    const currentCity = candidateData.currentCity || candidateData.current_city;
+    const currentCity =
+      candidateData.currentCity ||
+      candidateData.current_city ||
+      candidateData['Current Location'];
     const preferredLocations = candidateData.preferredLocations || candidateData.preferred_locations;
     const homeTown = candidateData['Home Town/City'] || candidateData.homeTown;
     
@@ -141,7 +276,7 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
   }
 
   private processHiringExperienceData(candidateData: any, userProfile: UserProfile): void {
-    // Hiring Naukri provides work experience as structured data
+    // Hiring Naukri provides work experience as structured data (JSON) or scalar fields (Excel)
     const workExp = candidateData.workExp || candidateData.work_experience || candidateData.experience;
     
     if (workExp && Array.isArray(workExp)) {
@@ -161,25 +296,95 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
         };
       });
       
-      // Calculate experience statistics
       this.calculateExperienceStats(userProfile);
     } else {
-      // If structured experience is not available, try to extract from other fields
-      const totalWorkExp = candidateData.workExp || candidateData.total_experience;
-      if (totalWorkExp && typeof totalWorkExp === 'string') {
-        const experienceMatch = totalWorkExp.match(/(\d+(?:\.\d+)?)/);
-        if (experienceMatch) {
-          userProfile.inferredYearsExperience = parseFloat(experienceMatch[1]);
+      // Excel-only or no array: set years from Total Experience and optionally one experience entry from current company/designation
+      const totalExpRaw =
+        candidateData['Total Experience'] ??
+        candidateData.total_experience ??
+        candidateData.workExp ??
+        candidateData.experience;
+      if (totalExpRaw != null && totalExpRaw !== '') {
+        const str = totalExpRaw.toString();
+        const match = str.match(/(\d+(?:\.\d+)?)/);
+        if (match) {
+          userProfile.inferredYearsExperience = parseFloat(match[1]);
+        } else {
+          userProfile.inferredYearsExperience = parseFloat(str);
         }
+      }
+      // Build a single experience entry from current company/designation (Excel columns) so experience is not empty
+      const company =
+        candidateData['Curr. Company name'] ??
+        candidateData.companyName ??
+        candidateData.currentCompany;
+      const designation =
+        candidateData['Curr. Company Designation'] ??
+        candidateData.designation ??
+        candidateData.currentDesignation;
+      if (company || designation) {
+        userProfile.experience = [
+          {
+            company: { name: company ?? '' },
+            title: { name: designation ?? '' },
+            startDate: null,
+            endDate: null,
+          },
+        ];
       }
     }
   }
 
   private processHiringEducationData(candidateData: any, userProfile: UserProfile): void {
-    const education = candidateData.education || candidateData.educationDetails;
+    let education = candidateData.education || candidateData.educationDetails;
     
-    if (education && Array.isArray(education)) {
-      userProfile.education = education.map((edu, index) => ({
+    // Excel-only: build education array from UG/PG columns if not already an array
+    if (!education || !Array.isArray(education)) {
+      const ugInstitute =
+        candidateData['UG University/institute Name'] ??
+        candidateData['UG University/Institute Name'] ??
+        candidateData.ug_institute_name;
+      const ugDegree =
+        candidateData['Under Graduation degree'] ??
+        candidateData['UG Degree'] ??
+        candidateData.ug_graduation_degree;
+      const ugYear =
+        candidateData['UG Graduation year'] ?? candidateData.ug_graduation_year;
+      const pgInstitute =
+        candidateData['PG university/institute name'] ??
+        candidateData['PG University/Institute name'] ??
+        candidateData.pg_institute_name;
+      const pgDegree =
+        candidateData['Post graduation degree'] ??
+        candidateData['PG Degree'] ??
+        candidateData.pg_graduation_degree;
+      const pgYear =
+        candidateData['PG Graduation year'] ?? candidateData.pg_graduation_year;
+      education = [];
+      if (ugInstitute || ugDegree || ugYear) {
+        education.push({
+          institute: ugInstitute ?? null,
+          degree: ugDegree ?? null,
+          course: ugDegree ?? null,
+          passingYear: ugYear ?? null,
+          startYear: ugYear,
+          endYear: ugYear,
+        });
+      }
+      if (pgInstitute || pgDegree || pgYear) {
+        education.push({
+          institute: pgInstitute ?? null,
+          degree: pgDegree ?? null,
+          course: pgDegree ?? null,
+          passingYear: pgYear ?? null,
+          startYear: pgYear,
+          endYear: pgYear,
+        });
+      }
+    }
+
+    if (education && education.length > 0) {
+      userProfile.education = education.map((edu: any) => ({
         institute: {
           name: edu.institute || edu.school || edu.university || edu.college || null,
           type: edu.type || null,
@@ -188,8 +393,8 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
           website: null,
         },
         degrees: edu.degree || edu.course || edu.qualification || null,
-        start_date: this.dataProcessingUtils.formatDate(edu.passingYear || edu.startYear),
-        end_date: this.dataProcessingUtils.formatDate(edu.passingYear || edu.endYear),
+        start_date: this.dataProcessingUtils.formatDate(edu.passingYear ?? edu.startYear),
+        end_date: this.dataProcessingUtils.formatDate(edu.passingYear ?? edu.endYear),
         gpa: edu.percentage || edu.gpa || null,
         majors: [],
         minors: [],
