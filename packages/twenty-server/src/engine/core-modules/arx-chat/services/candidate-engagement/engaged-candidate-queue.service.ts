@@ -7,10 +7,10 @@ import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queu
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
-  CandidateNode,
-  Job,
-  chatMessageType,
-  whatappUpdateMessageObjType
+    CandidateNode,
+    Job,
+    chatMessageType,
+    whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 import { RecruiterProfileService } from '../recruiter-profile';
@@ -31,6 +31,7 @@ export class EngagedCandidateQueueService {
     workspaceId: string,
     messageId?: string,
     isIncomingMessage: boolean = true, // Default to true since this is called from incoming messages
+    slidingWindowDelayMinutes?: number, // From job.engagementProcessingDelayMinutes; default applied in processor
   ): Promise<void> {
     if (!this.engagedCandidateMessageQueueService) {
       console.warn(`Message queue service not available, skipping queue for candidate ${candidateId}`);
@@ -43,6 +44,7 @@ export class EngagedCandidateQueueService {
         timestamp: Date.now(),
         messageId,
         isIncomingMessage,
+        ...(slidingWindowDelayMinutes != null && { slidingWindowDelayMinutes }),
       };
 
       await this.engagedCandidateMessageQueueService.add<EngagedCandidateJobData>(
@@ -66,6 +68,7 @@ export class EngagedCandidateQueueService {
     apiToken: string,
     chatControlType: string = 'startChat',
     isIncomingMessage: boolean = true, // Default to true for interim chat
+    slidingWindowDelayMinutes?: number, // From job.engagementProcessingDelayMinutes; default applied in processor
   ): Promise<void> {
     if (!this.engagedCandidateMessageQueueService) {
       console.warn(`Message queue service not available, skipping queue for candidate ${candidateId}`);
@@ -81,6 +84,7 @@ export class EngagedCandidateQueueService {
         apiToken,
         chatControlType,
         isIncomingMessage,
+        ...(slidingWindowDelayMinutes != null && { slidingWindowDelayMinutes }),
       };
       console.log(`🔄 QUEUEING CANDIDATE FOR ENGAGEMENT: ${candidateId}`);
       console.log(`Job data: ${JSON.stringify(jobData, null, 2)}`);

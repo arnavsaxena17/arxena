@@ -1,14 +1,14 @@
 import {
-  BaileysIncomingMessage,
-  CandidateNode,
-  chatMessageType,
-  emptyCandidateProfileObj,
-  graphqlQueryToCreateOneNewWhatsappMessage,
-  graphqlToFetchWhatsappMessageByWhatsappId,
-  graphQlToFetchWhatsappMessages,
-  graphqlToUpdateWhatsappMessageId,
-  Job,
-  WhatsAppBusinessAccount
+    BaileysIncomingMessage,
+    CandidateNode,
+    chatMessageType,
+    emptyCandidateProfileObj,
+    graphqlQueryToCreateOneNewWhatsappMessage,
+    graphqlToFetchWhatsappMessageByWhatsappId,
+    graphQlToFetchWhatsappMessages,
+    graphqlToUpdateWhatsappMessageId,
+    Job,
+    WhatsAppBusinessAccount
 } from 'twenty-shared';
 import { EntityManager } from 'typeorm';
 import { UnipileMessageWebhook } from '../../types/unipile-webhook.types';
@@ -1595,6 +1595,8 @@ export class IncomingWhatsappMessages {
               candidateProfileDataNodeObj.id,
               workspaceId,
               replyObject.whatsappMessageId,
+              true,
+              candidateJob?.engagementProcessingDelayMinutes,
             );
           }
         } catch (error) {

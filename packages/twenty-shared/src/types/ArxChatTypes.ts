@@ -2034,8 +2034,13 @@ export interface JobEdge {
 
 
 
+/** Default delay (minutes) after last message before processing engagement. Used when job has no engagementProcessingDelayMinutes set. */
+export const DEFAULT_ENGAGEMENT_PROCESSING_DELAY_MINUTES = 2;
+
 export interface Job {
   chatFlowOrder?: chatControlType[]; // Array defining the order for this job
+  /** Delay in minutes after last message before processing from queue. Recruiter-configurable per job. */
+  engagementProcessingDelayMinutes?: number;
   name: string;
   id: string;
   recruiterId: string;

@@ -279,6 +279,7 @@ const graphqlToFindManyJobsFull = `query FindManyJobs($filter: JobFilterInput, $
         isActive
         arxenaSiteId
         chatFlowOrder
+        engagementProcessingDelayMinutes
         jobCode
         searchName
         reportsTo
@@ -350,6 +351,7 @@ const graphqlToFindManyJobsOrgChart = `query FindManyJobs($filter: JobFilterInpu
         isActive
         arxenaSiteId
         chatFlowOrder
+        engagementProcessingDelayMinutes
         jobCode
         searchName
         reportsTo
@@ -413,6 +415,7 @@ const graphqlToFindManyJobsWithPromptsFull = `query FindManyJobs($filter: JobFil
         isActive
         arxenaSiteId
         chatFlowOrder
+        engagementProcessingDelayMinutes
         jobCode
         searchName
         reportsTo
@@ -494,6 +497,7 @@ const graphqlToFindManyJobsWithPromptsOrgChart = `query FindManyJobs($filter: Jo
         isActive
         arxenaSiteId
         chatFlowOrder
+        engagementProcessingDelayMinutes
         jobCode
         searchName
         reportsTo
@@ -559,6 +563,7 @@ const graphqlToFindManyJobsWithCandidateValuesFull = `query FindManyJobs($filter
         isActive
         arxenaSiteId
         chatFlowOrder
+        engagementProcessingDelayMinutes
         jobCode
         searchName
         reportsTo
@@ -671,6 +676,7 @@ const graphqlToFindManyJobsWithCandidateValuesOrgChart = `query FindManyJobs($fi
         isActive
         arxenaSiteId
         chatFlowOrder
+        engagementProcessingDelayMinutes
         jobCode
         searchName
         reportsTo
@@ -785,6 +791,7 @@ const graphqlToFindManyJobsWithCandidatesFull = `query FindManyJobs($filter: Job
         isActive
         arxenaSiteId
         chatFlowOrder
+        engagementProcessingDelayMinutes
         jobCode
         searchName
         reportsTo
@@ -897,6 +904,7 @@ const graphqlToFindManyJobsWithCandidatesOrgChart = `query FindManyJobs($filter:
         isActive
         arxenaSiteId
         chatFlowOrder
+        engagementProcessingDelayMinutes
         jobCode
         searchName
         reportsTo
@@ -2818,6 +2826,7 @@ export const graphqlToFetchAllCandidateData = `
             recruiterId
             companyDetails
             chatFlowOrder
+            engagementProcessingDelayMinutes
             pathPosition
             createdAt
             updatedAt

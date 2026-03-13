@@ -3,21 +3,21 @@ import { render } from '@react-email/render';
 import axios from 'axios';
 import { InsufficientCreditsEmail } from 'twenty-emails';
 import {
-    allStatuses,
-    AnswerMessageObj,
-    CandidateNode,
-    CandidatesEdge,
-    chatMessageType,
-    deleteOneWhatsappMessage,
-    graphqlQueryToCreateOneCandidateFieldValue,
-    graphqlQueryToCreateOneNewWhatsappMessage,
-    graphqlQueryToRemoveMessages,
-    graphqlToFetchAllCandidateData,
-    graphQltoUpdateOneCandidate,
-    graphqlToUpdateOneClientInterview,
-    Job,
-    PageInfo,
-    whatappUpdateMessageObjType
+  allStatuses,
+  AnswerMessageObj,
+  CandidateNode,
+  CandidatesEdge,
+  chatMessageType,
+  deleteOneWhatsappMessage,
+  graphqlQueryToCreateOneCandidateFieldValue,
+  graphqlQueryToCreateOneNewWhatsappMessage,
+  graphqlQueryToRemoveMessages,
+  graphqlToFetchAllCandidateData,
+  graphQltoUpdateOneCandidate,
+  graphqlToUpdateOneClientInterview,
+  Job,
+  PageInfo,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -427,6 +427,12 @@ export class UpdateChat {
   ) {
     console.log('📨 INTERIM CHAT QUEUE REQUEST:');
     try {
+      const candidate = await new FilterCandidates(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+      ).getCandidateDetailsById(candidateId, apiToken);
+      const slidingWindowDelayMinutes = candidate?.jobs?.engagementProcessingDelayMinutes;
+
       // Queue the candidate for engagement processing with the interim chat data
       // All heavy operations including getWorkspaceIdFromToken and createChatControl will be moved to the worker
       await this.queueCandidateForEngagementWithData(
@@ -434,6 +440,8 @@ export class UpdateChat {
         interimChat,
         apiToken,
         'startChat', // chatControlType
+        true,
+        slidingWindowDelayMinutes,
       );
 
       console.log('✅ Successfully queued candidate for engagement processing');
@@ -448,6 +456,8 @@ export class UpdateChat {
     interimChat: string,
     apiToken: string,
     chatControlType: string = 'startChat',
+    isIncomingMessage: boolean = true,
+    slidingWindowDelayMinutes?: number,
   ): Promise<void> {
     console.log('🔄 QUEUE CANDIDATE FOR ENGAGEMENT WITH DATA:');
     console.log('Candidate ID:', candidateId);
@@ -470,6 +480,8 @@ export class UpdateChat {
         interimChat,
         apiToken,
         chatControlType,
+        isIncomingMessage,
+        slidingWindowDelayMinutes,
       );
 
       console.log(`Queued candidate ${candidateId} for engagement processing with interim chat data: ${interimChat} and chat control: ${chatControlType}`);

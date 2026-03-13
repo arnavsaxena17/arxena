@@ -21,11 +21,23 @@ export interface EngagedCandidateJobData {
   apiToken?: string;
   chatControlType?: string;
   isIncomingMessage?: boolean; // Flag to distinguish incoming vs outgoing messages
+  /** Delay in minutes after last message before processing. From job.engagementProcessingDelayMinutes; default 2. */
+  slidingWindowDelayMinutes?: number;
 }
 
-// Sliding window configuration
-const SLIDING_WINDOW_DELAY_MS = 2 * 60 * 1000; // 2 minutes delay after last message
 const PROCESSING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes timeout per candidate
+
+/** Default delay (minutes) after last message before processing. Matches Job.engagementProcessingDelayMinutes default. */
+const DEFAULT_SLIDING_WINDOW_DELAY_MINUTES = 2;
+/** Min/max allowed delay (minutes) for sliding window; values outside are clamped. */
+const MIN_SLIDING_WINDOW_DELAY_MINUTES = 1;
+const MAX_SLIDING_WINDOW_DELAY_MINUTES = 60;
+
+function getSlidingWindowDelayMs(jobData: EngagedCandidateJobData): number {
+  const minutes = jobData.slidingWindowDelayMinutes ?? DEFAULT_SLIDING_WINDOW_DELAY_MINUTES;
+  const clamped = Math.min(MAX_SLIDING_WINDOW_DELAY_MINUTES, Math.max(MIN_SLIDING_WINDOW_DELAY_MINUTES, minutes));
+  return clamped * 60 * 1000;
+}
 
 @Injectable()
 @Processor(MessageQueue.engagedCandidateProcessingQueue)
@@ -86,6 +98,7 @@ export class EngagedCandidateProcessor {
         workspaceId,
       };
 
+      const slidingWindowDelayMs = getSlidingWindowDelayMs(jobData);
       // Set new timeout for processing
       const timeoutId = setTimeout(async () => {
         try {
@@ -95,14 +108,14 @@ export class EngagedCandidateProcessor {
           this.logger.error(`Error processing candidate ${candidateId}:`, error);
           this.candidateWindows.delete(windowKey);
         }
-      }, SLIDING_WINDOW_DELAY_MS);
+      }, slidingWindowDelayMs);
 
       this.candidateWindows.set(windowKey, {
         ...windowData,
         timeoutId,
       });
 
-      this.logger.log(`Updated sliding window for candidate ${candidateId}, will process after ${SLIDING_WINDOW_DELAY_MS}ms delay`);
+      this.logger.log(`Updated sliding window for candidate ${candidateId}, will process after ${slidingWindowDelayMs}ms delay (${jobData.slidingWindowDelayMinutes ?? DEFAULT_SLIDING_WINDOW_DELAY_MINUTES} min)`);
 
     } catch (error) {
       this.logger.error(`Error handling engaged candidate job for ${candidateId}:`, error);

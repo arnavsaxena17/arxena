@@ -1149,6 +1149,17 @@ export function getFieldsData(
         type: 'RAW_JSON',
       },
     },
+    {
+      objectName: 'job',
+      field: {
+        description: 'Delay in minutes after last message before processing engagement from the queue. Default 2.',
+        label: 'Engagement processing delay (minutes)',
+        name: 'engagementProcessingDelayMinutes',
+        objectMetadataId: objectsNameIdMap.job,
+        type: 'NUMBER',
+        defaultValue: 2,
+      },
+    },
 
     {
       objectName: 'candidate',

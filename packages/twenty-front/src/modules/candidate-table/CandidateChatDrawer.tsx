@@ -249,6 +249,61 @@ const TemplatePreview = styled.div`
   box-sizing: border-box;
 `;
 
+const ChatStatusBar = styled.div`
+  padding: ${props => props.theme.spacing(1)} ${props => props.theme.spacing(2)};
+  margin-bottom: ${props => props.theme.spacing(1)};
+  font-size: ${props => props.theme.font.size.sm};
+  color: ${props => props.theme.font.color.secondary};
+  background-color: ${props => props.theme.background.secondary};
+  border-radius: ${props => props.theme.border.radius.sm};
+  border-left: 3px solid ${props => props.theme.color.blue80};
+`;
+
+const DoNotRespondBanner = styled.div`
+  padding: ${props => props.theme.spacing(1)} ${props => props.theme.spacing(2)};
+  margin-bottom: ${props => props.theme.spacing(1)};
+  font-size: ${props => props.theme.font.size.sm};
+  color: ${props => props.theme.font.color.primary};
+  background-color: ${props => props.theme.background.tertiary};
+  border-radius: ${props => props.theme.border.radius.sm};
+  border-left: 3px solid ${props => props.theme.color.orange};
+  display: flex;
+  align-items: center;
+  gap: ${props => props.theme.spacing(1)};
+`;
+
+const DoNotRespondBubble = styled.div`
+  max-width: 70%;
+  margin: 8px 8px 8px auto;
+  padding: 10px 14px;
+  border-radius: 16px;
+  border-bottom-right-radius: 4px;
+  font-size: 13px;
+  color: ${props => props.theme.font.color.tertiary};
+  background-color: ${props => props.theme.background.tertiary};
+  border: 1px dashed ${props => props.theme.border.color.medium};
+  font-style: italic;
+`;
+
+const CONVERSATION_STATUS_LABELS: Record<string, string> = {
+  ONLY_ADDED_NO_CONVERSATION: 'No Conversation',
+  CONVERSATION_STARTED_HAS_NOT_RESPONDED: 'Started, No Response',
+  SHARED_JD_HAS_NOT_RESPONDED: 'Shared JD, No Response',
+  CANDIDATE_REFUSES_TO_RELOCATE: 'Refuses Relocation',
+  STOPPED_RESPONDING_ON_QUESTIONS: 'Stopped Responding',
+  CANDIDATE_SALARY_OUT_OF_RANGE: 'Salary Out of Range',
+  CANDIDATE_IS_KEEN_TO_CHAT: 'Keen to Chat',
+  CANDIDATE_DECLINED_OPPORTUNITY: 'Declined Opportunity',
+  CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT: 'Followed Up',
+  CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION: 'Reluctant on Compensation',
+  CONVERSATION_CLOSED_TO_BE_CONTACTED: 'Closed to Contact',
+};
+
+function isDoNotRespondMessage(content: string | undefined): boolean {
+  if (!content || typeof content !== 'string') return false;
+  return content.includes('#DONTRESPOND#') || content.includes('DONTRESPOND');
+}
+
 const formatDate = (date: string) => {
   const messageDate = dayjs(date);
   const today = dayjs();
@@ -331,8 +386,8 @@ export const CandidateChatDrawer = React.memo(() => {
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const fetchMessagesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasMarkedAsReadRef = useRef<string | null>(null);
-  
-  
+  const prevConversationStatusRef = useRef<string | null>(null);
+
   // Use the templates hook
   const { templates, templatePreviews, isLoading: isLoadingTemplates } = useTemplates();
   
@@ -567,6 +622,7 @@ export const CandidateChatDrawer = React.memo(() => {
     // Set up polling interval with longer interval to reduce load
     pollingIntervalRef.current = setInterval(() => {
       debouncedFetchMessages();
+      fetchCandidateData();
     }, 30000); // Poll every 30 seconds instead of 10
 
     // Cleanup interval on unmount or when candidateId changes
@@ -788,8 +844,39 @@ export const CandidateChatDrawer = React.memo(() => {
     sendMessage(messageText);
   };
 
+  const conversationStatusLabel = candidateData?.candConversationStatus
+    ? (CONVERSATION_STATUS_LABELS[candidateData.candConversationStatus] || candidateData.candConversationStatus)
+    : null;
+
+  const conversationStatusChanged =
+    conversationStatusLabel &&
+    prevConversationStatusRef.current !== null &&
+    prevConversationStatusRef.current !== candidateData?.candConversationStatus;
+
+  useEffect(() => {
+    if (candidateData?.candConversationStatus != null) {
+      prevConversationStatusRef.current = candidateData.candConversationStatus;
+    }
+  }, [candidateData?.candConversationStatus]);
+
+  const hasLatestDoNotRespond = useMemo(() => {
+    if (!messageHistory.length) return false;
+    const sorted = [...messageHistory].sort((a, b) => (b.position ?? 0) - (a.position ?? 0));
+    const latestBot = sorted.find(m => m.name === 'botMessage');
+    return latestBot ? isDoNotRespondMessage(latestBot.message) : false;
+  }, [messageHistory]);
+
   const renderChatTab = () => (
     <ChatView ref={chatContainerRef}>
+      {conversationStatusLabel && (
+        <ChatStatusBar>
+          {conversationStatusChanged ? (
+            <>Status updated: {conversationStatusLabel}</>
+          ) : (
+            <>Conversation status: {conversationStatusLabel}</>
+          )}
+        </ChatStatusBar>
+      )}
       {isLoading ? (
         <div>Loading chat history... for {candidateId}</div>
       ) : error ? (
@@ -806,15 +893,20 @@ export const CandidateChatDrawer = React.memo(() => {
               {messages.map((message) => {
                 const isSent = message.name === 'botMessage';
                 const status = message.whatsappDeliveryStatus || 'sent';
+                const isDoNotRespond = isSent && isDoNotRespondMessage(message.message);
                 return (
                   <MessageGroup key={message.id}>
-                    <MessageBubble isSent={isSent}>
-                      {message.message}
-                    </MessageBubble>
+                    {isDoNotRespond ? (
+                      <DoNotRespondBubble>AI chose not to respond</DoNotRespondBubble>
+                    ) : (
+                      <MessageBubble isSent={isSent}>
+                        {message.message}
+                      </MessageBubble>
+                    )}
                     <MessageStatus isSent={isSent}>
                       <StatusIcon status={status} />
                       {formatTime(message.createdAt)}
-                      {isSent && (
+                      {isSent && !isDoNotRespond && (
                         <span>
                           {status === 'sent' && 'Sent'}
                           {status === 'delivered' && 'Delivered'}
@@ -868,6 +960,11 @@ export const CandidateChatDrawer = React.memo(() => {
 
   const renderMessageInput = () => (
     <MessageInputContainer>
+      {hasLatestDoNotRespond && (
+        <DoNotRespondBanner>
+          <span>Last response: AI chose not to respond to this message.</span>
+        </DoNotRespondBanner>
+      )}
       <MessageInputTabContainer>
         <MessageInputTab 
           isActive={activeMessageTab === 'direct'} 
