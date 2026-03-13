@@ -546,13 +546,30 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
       userProfile.id = candidateData.applicationId || candidateData.application_id;
     }
     
-    // Process call tracking params for URL generation
+    // Process call tracking params for URL generation (JSON flows)
     if (candidateData.callTrackingParams?.jobId && candidateData.applicationId) {
       const hiringUrl = `https://hiring.naukri.com/hiring/${candidateData.callTrackingParams.jobId}/apply/${candidateData.applicationId}`;
       const resumeDownloadUrl = `https://hiring.naukri.com/cloudgateway-rm/rm-document-services/v0/download/applications/${candidateData.applicationId}?jobId=${candidateData.callTrackingParams.jobId}`;
       
       userProfile.hiringNaukriUrl = { primaryLinkLabel: 'Hiring Naukri', primaryLinkUrl: hiringUrl };
       userProfile.resumeDownloadUrl = resumeDownloadUrl;
+    }
+    
+    // Excel-only flows: hiringNaukriUrl comes directly from the Excel hyperlink (last column)
+    if (!userProfile.hiringNaukriUrl) {
+      const excelHiringUrl = candidateData.hiringNaukriUrl || candidateData.hiring_naukri_url;
+      if (typeof excelHiringUrl === 'string' && excelHiringUrl.includes('hiring.naukri.com')) {
+        userProfile.hiringNaukriUrl = {
+          primaryLinkLabel: 'Hiring Naukri',
+          primaryLinkUrl: excelHiringUrl,
+        };
+        // If profileUrl is still empty, also set it from this link for convenience
+        if (!userProfile.profileUrl) {
+          userProfile.profileUrl = excelHiringUrl;
+        }
+      } else if (excelHiringUrl && typeof excelHiringUrl === 'object' && (excelHiringUrl as any).primaryLinkUrl) {
+        userProfile.hiringNaukriUrl = excelHiringUrl as { primaryLinkLabel: string; primaryLinkUrl: string };
+      }
     }
     
     // Process Q&A fields (Ans(...))
