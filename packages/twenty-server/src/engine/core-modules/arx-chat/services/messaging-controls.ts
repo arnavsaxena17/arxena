@@ -58,21 +58,6 @@ export class MessagingControls {
         return;
       }
 
-      const shouldSaveDontRespondMessages =
-        process.env.SAVE_DONTRESPOND_MESSAGES === 'true';
-
-      if (
-        !shouldSaveDontRespondMessages &&
-        (messageText.includes('#DONTRESPOND#') ||
-          messageText.includes('DONTRESPOND'))
-      ) {
-        console.log(
-          'Found a #DONTRESPOND# message and SAVE_DONTRESPOND_MESSAGES is not enabled, so not sending or saving any message',
-        );
-
-        return;
-      }
-
       console.log(
         'Going to create whatsaappupdatemessage obj for message text::',
         messageText,
@@ -101,16 +86,21 @@ export class MessagingControls {
         apiToken,
       );
 
+      const saveDontRespondMessages =
+        process.env.SAVE_DONTRESPOND_MESSAGES !== 'false';
+
       if (
         !whatappUpdateMessageObj ||
-        whatappUpdateMessageObj.messages[0].content?.includes(
-          '#DONTRESPOND#',
-        ) ||
-        (whatappUpdateMessageObj.messages[0].content?.includes('DONTRESPOND') &&
-          whatappUpdateMessageObj.messages[0].content)
+        (!saveDontRespondMessages &&
+          (whatappUpdateMessageObj.messages[0].content?.includes(
+            '#DONTRESPOND#',
+          ) ||
+            whatappUpdateMessageObj.messages[0].content?.includes(
+              'DONTRESPOND',
+            )))
       ) {
         console.log(
-          'Found a #DONTRESPOND# message, so not sending any message',
+          'Found a #DONTRESPOND# message and SAVE_DONTRESPOND_MESSAGES is false, so not saving or sending any message',
         );
 
         return;

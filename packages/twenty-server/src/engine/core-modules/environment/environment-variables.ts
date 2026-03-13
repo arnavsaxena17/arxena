@@ -2,16 +2,16 @@ import { LogLevel, Logger } from '@nestjs/common';
 
 import { plainToClass } from 'class-transformer';
 import {
-  IsBoolean,
-  IsDefined,
-  IsEnum,
-  IsIn,
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsUrl,
-  ValidateIf,
-  validateSync,
+    IsBoolean,
+    IsDefined,
+    IsEnum,
+    IsIn,
+    IsNumber,
+    IsOptional,
+    IsString,
+    IsUrl,
+    ValidateIf,
+    validateSync,
 } from 'class-validator';
 
 import { EmailDriver } from 'src/engine/core-modules/email/interfaces/email.interface';
@@ -1358,6 +1358,16 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   WHATSAPP_BUSINESS_WEBHOOK_API_TOKEN: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'When false, #DONTRESPOND# AI control messages are not persisted to the database or sent to candidates. Default true (messages are saved but not sent).',
+  })
+  @CastToBoolean()
+  @IsOptional()
+  @IsBoolean()
+  SAVE_DONTRESPOND_MESSAGES = true;
 }
   
 
