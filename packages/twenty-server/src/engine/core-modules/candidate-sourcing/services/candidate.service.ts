@@ -1,25 +1,25 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 
 import {
-    ArxenaCandidateNode,
-    ArxenaPersonNode,
-    CandidateFieldEdge,
-    CandidatesEdge,
-    CreateManyCandidateFieldValues,
-    CreateManyCandidates,
-    createOneCandidateField,
-    getGraphqlToFindManyJobsWithCandidateValues,
-    graphqlQueryToCreateOneCandidateFieldValue,
-    graphqlQueryToFindManyCandidateFields,
-    graphqlToFetchAllCandidateData,
-    graphqlToFindManyCandidateFieldValues,
-    graphQltoUpdateOneCandidate,
-    Job,
-    mutationToUpdateOnePerson,
-    PageInfo,
-    PersonNode,
-    updateOneCandidateFieldValue,
-    UserProfile
+  ArxenaCandidateNode,
+  ArxenaPersonNode,
+  CandidateFieldEdge,
+  CandidatesEdge,
+  CreateManyCandidateFieldValues,
+  CreateManyCandidates,
+  createOneCandidateField,
+  getGraphqlToFindManyJobsWithCandidateValues,
+  graphqlQueryToCreateOneCandidateFieldValue,
+  graphqlQueryToFindManyCandidateFields,
+  graphqlToFetchAllCandidateData,
+  graphqlToFindManyCandidateFieldValues,
+  graphQltoUpdateOneCandidate,
+  Job,
+  mutationToUpdateOnePerson,
+  PageInfo,
+  PersonNode,
+  updateOneCandidateFieldValue,
+  UserProfile
 } from 'twenty-shared';
 import { NameProcessor } from '../../workspace-modifications/object-apis/data/nameProcessor';
 
@@ -780,24 +780,64 @@ export class CandidateService {
         } else if (response?.data?.errors) {
           // Handle case where createPeople failed (e.g., duplicate emails)
           console.log('CreatePeople failed with errors, attempting to find existing people by email');
+          const emails = peopleToCreate.map(
+            (profile) => profile.emails?.primaryEmail || '',
+          );
+
+          let existingByEmail = new Map<string, any>();
+          try {
+            existingByEmail =
+              await this.personService.batchGetPersonDetailsByEmails(
+                emails,
+                apiToken,
+              );
+          } catch (error) {
+            console.log(
+              'Error in batchGetPersonDetailsByEmails after createPeople failure:',
+              (error as any)?.message || error,
+            );
+          }
+
           for (let i = 0; i < peopleKeys.length; i++) {
             const key = peopleKeys[i];
             const profile = peopleToCreate[i];
-            
-            console.log(`Attempting to find existing person for key: ${key}, email: ${profile.emails?.primaryEmail}`);
+            const email = profile.emails?.primaryEmail || '';
+
+            console.log(
+              `Attempting to find existing person for key: ${key}, email: ${email}`,
+            );
             try {
-              // Try to find existing person by uniqueStringKey
-              const existingPersons = await this.personService.batchGetPersonDetailsByStringKeys([key], apiToken);
-              const existingPerson = existingPersons.get(key);
-              
-              if (existingPerson?.id) {
-                tracking.personIdMap.set(key, existingPerson.id);
-                console.log(`Found existing person for ${key}: ${existingPerson.id}`);
+              let existingPerson: PersonNode | null = null;
+
+              if (email) {
+                existingPerson = existingByEmail.get(email.toLowerCase().trim());
+              }
+
+              if (!existingPerson) {
+                const existingPersonsByKey =
+                  await this.personService.batchGetPersonDetailsByStringKeys(
+                    [key],
+                    apiToken,
+                  );
+                existingPerson = existingPersonsByKey.get(key) || null;
+              }
+
+              if ((existingPerson as PersonNode | null)?.id) {
+                const personIdFromExisting = (existingPerson as PersonNode).id;
+                tracking.personIdMap.set(key, personIdFromExisting);
+                console.log(
+                  `Found existing person for ${key}: ${personIdFromExisting}`,
+                );
               } else {
-                console.log(`No existing person found for ${key} after creation failure`);
+                console.log(
+                  `No existing person found for ${key} after creation failure`,
+                );
               }
             } catch (error) {
-              console.log(`Error finding existing person for ${key}:`, error.message);
+              console.log(
+                `Error finding existing person for ${key}:`,
+                (error as any)?.message || error,
+              );
             }
           }
         }
@@ -884,17 +924,42 @@ export class CandidateService {
         if (!personId && profile?.emailAddress) {
           console.log(`PersonId not found for ${key}, attempting to find existing person by email: ${profile.emailAddress}`);
           try {
-            const existingPersons = await this.personService.batchGetPersonDetailsByStringKeys([key], apiToken);
-            const existingPerson = existingPersons.get(key);
-            if (existingPerson?.id) {
-              personId = existingPerson.id;
-              tracking.personIdMap.set(key, personId);
-              console.log(`Found existing person for ${key}: ${personId}`);
+            const email = profile.emailAddress.toLowerCase().trim();
+            let existingPerson: PersonNode | null = null;
+
+            if (email) {
+              const existingByEmail =
+                await this.personService.batchGetPersonDetailsByEmails(
+                  [email],
+                  apiToken,
+                );
+              existingPerson = existingByEmail.get(email) || null;
+            }
+
+            if (!existingPerson) {
+              const existingPersonsByKey =
+                await this.personService.batchGetPersonDetailsByStringKeys(
+                  [key],
+                  apiToken,
+                );
+              existingPerson = existingPersonsByKey.get(key) || null;
+            }
+
+            if ((existingPerson as PersonNode | null)?.id) {
+              const personIdFromExisting = (existingPerson as PersonNode).id;
+              personId = personIdFromExisting;
+              tracking.personIdMap.set(key, personIdFromExisting);
+              console.log(`Found existing person for ${key}: ${personIdFromExisting}`);
             } else {
-              console.log(`No existing person found for ${key}, will create candidate without personId`);
+              console.log(
+                `No existing person found for ${key}, will create candidate without personId`,
+              );
             }
           } catch (error) {
-            console.log(`Error finding existing person for ${key}:`, error.message);
+            console.log(
+              `Error finding existing person for ${key}:`,
+              (error as any)?.message || error,
+            );
           }
         }
 

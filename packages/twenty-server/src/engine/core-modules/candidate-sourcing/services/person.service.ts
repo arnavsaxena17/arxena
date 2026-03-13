@@ -44,12 +44,68 @@ export class PersonService {
       limit: 30,
     };
     try {
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, graphqlVariables, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlQueryToFindManyPeople,
+        graphqlVariables,
+        apiToken,
+      );
       const people = response.data?.data?.people?.edges || [];
-      const personMap = new Map<string, PersonNode>(people.map((edge: any) => [edge.node.uniqueStringKey, edge.node]));
+      const personMap = new Map<string, PersonNode>(
+        people.map((edge: any) => [edge.node.uniqueStringKey, edge.node]),
+      );
       return personMap as Map<string, PersonNode>;
     } catch (error) {
-      console.error('Error in batchGetPersonDetails:', error);
+      console.error('Error in batchGetPersonDetailsByStringKeys:', error);
+      throw error;
+    }
+  }
+
+  async batchGetPersonDetailsByEmails(
+    emails: string[],
+    apiToken: string,
+  ): Promise<Map<string, PersonNode>> {
+    const cleanedEmails = emails
+      .filter(Boolean)
+      .map((email) => email.toLowerCase().trim())
+      .filter((email, index, array) => array.indexOf(email) === index);
+
+    if (cleanedEmails.length === 0) {
+      return new Map<string, PersonNode>();
+    }
+
+    const graphqlVariables = {
+      filter: {
+        emailsPrimaryEmail: {
+          in: cleanedEmails,
+        },
+      },
+      limit: 30,
+    };
+
+    try {
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlQueryToFindManyPeople,
+        graphqlVariables,
+        apiToken,
+      );
+      const people = response.data?.data?.people?.edges || [];
+
+      const personMap = new Map<string, PersonNode>();
+
+      for (const edge of people) {
+        const node = edge.node as PersonNode;
+        const primaryEmail = (node as any)?.emails?.primaryEmail
+          ? (node as any).emails.primaryEmail.toLowerCase().trim()
+          : null;
+
+        if (primaryEmail) {
+          personMap.set(primaryEmail, node);
+        }
+      }
+
+      return personMap;
+    } catch (error) {
+      console.error('Error in batchGetPersonDetailsByEmails:', error);
       throw error;
     }
   }
