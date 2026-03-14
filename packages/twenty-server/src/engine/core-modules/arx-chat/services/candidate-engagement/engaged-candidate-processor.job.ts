@@ -252,31 +252,82 @@ export class EngagedCandidateProcessor {
         'Created the interim chat message and processed engagement operations',
       );
 
-      // Step 5: Process the candidate for engagement after message processing
+      // Step 5: Process the candidate for engagement after message processing,
+      // respecting silent hours for outgoing messages when enabled.
       this.logger.log(`Processing candidate ${candidateId} for engagement after interim chat`);
-      
-      // Get the candidate's job and determine which chat controls to process
-      const chatFlowOrder = candidateJob.chatFlowOrder || this.chatFlowConfigBuilder.getDefaultChatFlowOrder();
-      const chatFlowConfigObj = this.chatFlowConfigBuilder.buildChatFlowConfig(chatFlowOrder);
 
-      // Find appropriate chat control based on candidate's current state
-      const activeChatControl = this.determineActiveChatControl(candidateProfileData, chatFlowOrder);
-      
-      if (activeChatControl) {
-        this.logger.log(`Processing candidate ${candidateId} with chat control: ${activeChatControl.chatControlType}`);
-        
-        // Process the candidate with the determined chat control
-        await candidateEngagement.processCandidate(
+      const silentHoursEnabled =
+        process.env.ENGAGEMENT_SILENT_HOURS_ENABLED === 'true';
+
+      const processCandidateNow = async () => {
+        const chatFlowOrder =
+          candidateJob.chatFlowOrder ||
+          this.chatFlowConfigBuilder.getDefaultChatFlowOrder();
+        const activeChatControl = this.determineActiveChatControl(
           candidateProfileData,
-          candidateJob,
-          activeChatControl,
-          apiToken,
+          chatFlowOrder,
         );
-        
-        this.logger.log(`Successfully processed candidate ${candidateId} for engagement`);
-      } else {
-        this.logger.log(`No active chat control found for candidate ${candidateId}, skipping engagement`);
+
+        if (activeChatControl) {
+          this.logger.log(
+            `Processing candidate ${candidateId} with chat control: ${activeChatControl.chatControlType}`,
+          );
+
+          await candidateEngagement.processCandidate(
+            candidateProfileData,
+            candidateJob,
+            activeChatControl,
+            apiToken,
+          );
+
+          this.logger.log(
+            `Successfully processed candidate ${candidateId} for engagement`,
+          );
+        } else {
+          this.logger.log(
+            `No active chat control found for candidate ${candidateId}, skipping engagement`,
+          );
+        }
+      };
+
+      if (silentHoursEnabled) {
+        const now = new Date();
+        const currentHour = now.getHours();
+        const isWithinSilentHours = currentHour >= 23 || currentHour < 7;
+
+        if (isWithinSilentHours) {
+          const nextAllowed = new Date(now);
+
+          if (currentHour >= 23) {
+            nextAllowed.setDate(nextAllowed.getDate() + 1);
+          }
+
+          nextAllowed.setHours(7, 0, 0, 0);
+
+          const delayMs = nextAllowed.getTime() - now.getTime();
+
+          if (delayMs > 0) {
+            this.logger.log(
+              `Silent hours active (server time). Scheduling interim engagement for candidate ${candidateId} at ${nextAllowed.toISOString()} (delay ${delayMs}ms).`,
+            );
+
+            setTimeout(async () => {
+              try {
+                await processCandidateNow();
+              } catch (error) {
+                this.logger.error(
+                  `Error processing candidate ${candidateId} after silent hours (interim chat):`,
+                  error,
+                );
+              }
+            }, delayMs);
+
+            return;
+          }
+        }
       }
+
+      await processCandidateNow();
 
     } catch (error) {
       this.logger.error(`Error handling interim chat queue for candidate ${candidateId}:`, error);
@@ -339,7 +390,9 @@ export class EngagedCandidateProcessor {
         }
         
         if (isIncomingMessage) {
-          this.logger.log(`Processing incoming message for candidate ${candidateId}, engagementStatus will be ignored`);
+          this.logger.log(
+            `Processing incoming message for candidate ${candidateId}, engagementStatus will be ignored`,
+          );
         }
 
         // Process the candidate using existing engagement logic
@@ -350,18 +403,105 @@ export class EngagedCandidateProcessor {
 
         // Get the candidate's job and determine which chat controls to process
         const job = candidate.jobs;
-        const chatFlowOrder = job.chatFlowOrder || this.chatFlowConfigBuilder.getDefaultChatFlowOrder();
-        const chatFlowConfigObj = this.chatFlowConfigBuilder.buildChatFlowConfig(chatFlowOrder);
+
+        // If silent hours are enabled for outgoing messages, and this is not an
+        // incoming message, delay processing until the next allowed time
+        // (23:00–07:00 window in server local time).
+        const silentHoursEnabled =
+          process.env.ENGAGEMENT_SILENT_HOURS_ENABLED === 'true';
+
+        if (silentHoursEnabled && !isIncomingMessage) {
+          const now = new Date();
+          const currentHour = now.getHours();
+          const isWithinSilentHours = currentHour >= 23 || currentHour < 7;
+
+          if (isWithinSilentHours) {
+            const nextAllowed = new Date(now);
+
+            if (currentHour >= 23) {
+              nextAllowed.setDate(nextAllowed.getDate() + 1);
+            }
+
+            nextAllowed.setHours(7, 0, 0, 0);
+
+            const delayMs = nextAllowed.getTime() - now.getTime();
+
+            if (delayMs > 0) {
+              this.logger.log(
+                `Silent hours active (server time). Scheduling engagement for candidate ${candidateId} at ${nextAllowed.toISOString()} (delay ${delayMs}ms).`,
+              );
+
+              setTimeout(async () => {
+                try {
+                  const refreshedCandidate = await new FilterCandidates(
+                    this.workspaceQueryService,
+                    this.staticGraphQLService,
+                  ).fetchCandidateByCandidateId(candidateId, token.token);
+
+                  if (!refreshedCandidate || !refreshedCandidate.jobs) {
+                    this.logger.warn(
+                      `Candidate ${candidateId} not found or has no active job at silent-hours resume time`,
+                    );
+                    return;
+                  }
+
+                  const refreshedJob = refreshedCandidate.jobs;
+                  const chatFlowOrderNow =
+                    refreshedJob.chatFlowOrder ||
+                    this.chatFlowConfigBuilder.getDefaultChatFlowOrder();
+                  const activeChatControlNow =
+                    this.determineActiveChatControl(
+                      refreshedCandidate,
+                      chatFlowOrderNow,
+                    );
+
+                  if (!activeChatControlNow) {
+                    this.logger.log(
+                      `No active chat control found for candidate ${candidateId} at silent-hours resume time`,
+                    );
+                    return;
+                  }
+
+                  await candidateEngagement.processCandidate(
+                    refreshedCandidate,
+                    refreshedJob,
+                    activeChatControlNow,
+                    token.token,
+                  );
+                } catch (error) {
+                  this.logger.error(
+                    `Error processing candidate ${candidateId} after silent hours:`,
+                    error,
+                  );
+                }
+              }, delayMs);
+
+              // Early return: do not process immediately while in silent hours
+              return;
+            }
+          }
+        }
+
+        const chatFlowOrder =
+          job.chatFlowOrder ||
+          this.chatFlowConfigBuilder.getDefaultChatFlowOrder();
 
         // Find appropriate chat control based on candidate's current state
-        const activeChatControl = this.determineActiveChatControl(candidate, chatFlowOrder);
-        
+        const activeChatControl = this.determineActiveChatControl(
+          candidate,
+          chatFlowOrder,
+        );
+
         if (!activeChatControl) {
-          this.logger.log(`No active chat control found for candidate ${candidateId}`);
+          this.logger.log(
+            `No active chat control found for candidate ${candidateId}`,
+          );
           return;
         }
 
-        this.logger.log(`Processing candidate ${candidateId} with chat control: ${activeChatControl.chatControlType}`);
+        this.logger.log(
+          `Processing candidate ${candidateId} with chat control: ${activeChatControl.chatControlType}`,
+        );
 
         // Process the candidate with the determined chat control
         await candidateEngagement.processCandidate(

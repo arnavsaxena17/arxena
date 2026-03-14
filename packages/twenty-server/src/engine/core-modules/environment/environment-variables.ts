@@ -2,16 +2,16 @@ import { LogLevel, Logger } from '@nestjs/common';
 
 import { plainToClass } from 'class-transformer';
 import {
-    IsBoolean,
-    IsDefined,
-    IsEnum,
-    IsIn,
-    IsNumber,
-    IsOptional,
-    IsString,
-    IsUrl,
-    ValidateIf,
-    validateSync,
+  IsBoolean,
+  IsDefined,
+  IsEnum,
+  IsIn,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUrl,
+  ValidateIf,
+  validateSync,
 } from 'class-validator';
 
 import { EmailDriver } from 'src/engine/core-modules/email/interfaces/email.interface';
@@ -1368,6 +1368,15 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsBoolean()
   SAVE_DONTRESPOND_MESSAGES = true;
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'Enable silent hours for candidate engagement (no outbound messages between 23:00 and 07:00 recruiter local time).',
+  })
+  @CastToBoolean()
+  @IsOptional()
+  @IsBoolean()
+  ENGAGEMENT_SILENT_HOURS_ENABLED = false;
 }
   
 
