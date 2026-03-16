@@ -164,10 +164,6 @@ export const jobTools: McpTool[] = [
             type: 'string',
             description: 'ID of the company this job belongs to (use list_companies or get_company_by_id to get IDs)',
           },
-          recruiterId: {
-            type: 'string',
-            description: 'Recruiter workspace member ID',
-          },
         },
         required: ['name'],
       },
@@ -177,7 +173,6 @@ export const jobTools: McpTool[] = [
       const jobLocation = args.jobLocation as string | undefined;
       const jobCode = args.jobCode as string | undefined;
       const companyId = args.companyId as string | undefined;
-      const recruiterId = args.recruiterId as string | undefined;
 
       const input: Record<string, unknown> = {
         name,
@@ -186,7 +181,7 @@ export const jobTools: McpTool[] = [
       if (jobLocation !== undefined) input.jobLocation = jobLocation;
       if (jobCode !== undefined) input.jobCode = jobCode;
       if (companyId !== undefined) input.companyId = companyId;
-      if (recruiterId !== undefined) input.recruiterId = recruiterId;
+      if (config.workspaceMemberId) input.recruiterId = config.workspaceMemberId;
 
       const data = await executeGraphQL<{ createJob: { id: string } }>(
         config.baseUrl,

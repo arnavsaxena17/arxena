@@ -3,8 +3,8 @@ import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { AssistantThreadService } from './assistant-thread.service';
 import {
-  AssistantChatRequestBody,
-  AssistantContentBlock,
+    AssistantChatRequestBody,
+    AssistantContentBlock,
 } from './assistant.types';
 import { McpAssistantService } from './mcp-assistant.service';
 
@@ -152,18 +152,60 @@ export class AssistantController {
     if (!message || typeof message !== 'string') {
       return { error: 'Body must include a string "message"' };
     }
+    const history = (conversationHistory ?? []).map(
+      (
+        m,
+      ):
+        | { role: 'user'; content: string }
+        | { role: 'assistant'; content: AssistantContentBlock[] } => {
+        if (m.role === 'user') {
+          return {
+            role: 'user',
+            content:
+              typeof m.content === 'string'
+                ? m.content
+                : JSON.stringify(m.content),
+          };
+        }
+        const content: AssistantContentBlock[] = Array.isArray(m.content)
+          ? (m.content as AssistantContentBlock[])
+          : [{ type: 'text', text: String(m.content) }];
+        return { role: 'assistant', content };
+      },
+    );
 
-    const history = (conversationHistory ?? []).map((m): { role: 'user'; content: string } | { role: 'assistant'; content: AssistantContentBlock[] } => {
-      if (m.role === 'user') {
-        return { role: 'user', content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) };
+    const result = await this.mcpAssistantService.processQuery(
+      message,
+      apiToken,
+      history,
+    );
+
+    // Persist user + assistant messages (including final toolCalls) when a threadId is provided.
+    const threadId = request.body.threadId;
+    if (threadId) {
+      try {
+        await this.assistantThreadService.appendMessage(
+          apiToken,
+          threadId,
+          'user',
+          message,
+        );
+        if (result.text || result.toolCalls) {
+          await this.assistantThreadService.appendMessage(
+            apiToken,
+            threadId,
+            'assistant',
+            result.text ?? '',
+            result.toolCalls,
+          );
+        }
+      } catch (persistErr) {
+        // Best-effort persistence; log and continue returning the response.
+        // eslint-disable-next-line no-console
+        console.error('Failed to persist non-stream chat messages:', persistErr);
       }
-      const content: AssistantContentBlock[] = Array.isArray(m.content)
-        ? (m.content as AssistantContentBlock[])
-        : [{ type: 'text', text: String(m.content) }];
-      return { role: 'assistant', content };
-    });
+    }
 
-    const result = await this.mcpAssistantService.processQuery(message, apiToken, history);
     return result;
   }
 

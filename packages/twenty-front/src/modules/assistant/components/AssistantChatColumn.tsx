@@ -290,19 +290,41 @@ export const AssistantChatColumn = ({
   const tokenPair = useRecoilValue(tokenPairState);
   const token = tokenPair?.accessToken?.token;
 
-  const handleStartMockRun = async () => {
-    console.log("handleStartMockRun called: currentThreadId::", currentThreadId);
-    console.log("handleStartMockRun called: threadsLoadedFromBackend::", threadsLoadedFromBackend);
-    console.log("handleStartMockRun called: currentThread::", currentThread);
+  const [isDemoRunning, setIsDemoRunning] = useState(false);
+  const demoAbortControllerRef = useRef<AbortController | null>(null);
+  const demoStreamingTextRef = useRef<string>('');
+  const demoStreamingMessagesRef = useRef<AssistantThread['messages']>([]);
+  const demoStreamingMessageIndexRef = useRef<number>(-1);
+
+  const handleStopDemoRun = useCallback(() => {
+    const controller = demoAbortControllerRef.current;
+    if (controller) {
+      controller.abort();
+    }
+    demoAbortControllerRef.current = null;
+    setIsDemoRunning(false);
+    demoStreamingTextRef.current = '';
+    demoStreamingMessagesRef.current = [];
+    demoStreamingMessageIndexRef.current = -1;
+  }, []);
+
+  const handleStartMockRun = useCallback(async () => {
+    if (isDemoRunning) {
+      handleStopDemoRun();
+      return;
+    }
+
     if (!currentThread || !currentThreadId) return;
     if (!baseUrl || !token || !threadsLoadedFromBackend) return;
-    console.log("handleStartMockRun called: baseUrl::", baseUrl);
-    console.log("handleStartMockRun called: token::", token);
     const requirement =
       'We need senior React developers in Bangalore with 5+ years experience at product companies.';
 
     try {
-      const response = await fetch(`${baseUrl}/autonomous-recruiter/demo-thread`, {
+      const abortController = new AbortController();
+      demoAbortControllerRef.current = abortController;
+      setIsDemoRunning(true);
+
+      const response = await fetch(`${baseUrl}/autonomous-recruiter/demo-thread/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -312,16 +334,223 @@ export const AssistantChatColumn = ({
           requirement,
           threadId: currentThreadId,
           threadName: currentThread.name,
-          maxTurns: 3,
+          maxTurns: 10,
         }),
+        signal: abortController.signal,
       });
+      if (!response.ok) {
+        // Best-effort: if streaming endpoint is not available, fall back to non-streaming demo call.
+        await fetch(`${baseUrl}/autonomous-recruiter/demo-thread`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            requirement,
+            threadId: currentThreadId,
+            threadName: currentThread.name,
+            maxTurns: 10
+          }),
+        }).catch(() => {});
+        onMessageComplete();
+        setIsDemoRunning(false);
+        demoAbortControllerRef.current = null;
+        return;
+      }
 
-      console.log("handleStartMockRun called: response::", JSON.stringify(response, null, 2));
-      onMessageComplete();
+      const reader = response.body?.getReader();
+      if (!reader) {
+        onMessageComplete();
+        setIsDemoRunning(false);
+        demoAbortControllerRef.current = null;
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+      demoStreamingTextRef.current = '';
+      demoStreamingMessagesRef.current = currentThread.messages ?? [];
+      demoStreamingMessageIndexRef.current = -1;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split('\n\n');
+        buffer = events.pop() ?? '';
+        for (const raw of events) {
+          let eventType = 'message';
+          let dataStr = '';
+          for (const line of raw.split('\n')) {
+            if (line.startsWith('event: ')) eventType = line.slice(7).trim();
+            if (line.startsWith('data: ')) dataStr = line.slice(6);
+          }
+          if (!dataStr) continue;
+
+          if (eventType === 'text') {
+            try {
+              const data = JSON.parse(dataStr) as { delta?: string };
+              if (typeof data.delta === 'string' && data.delta) {
+                demoStreamingTextRef.current += data.delta;
+
+                // Update streaming assistant bubble in the main chat
+                const prevMessages = demoStreamingMessagesRef.current;
+                const nextMessages = [...prevMessages];
+                const streamingIndex = demoStreamingMessageIndexRef.current;
+
+                if (streamingIndex >= 0 && streamingIndex < nextMessages.length) {
+                  const existing = nextMessages[streamingIndex];
+                  if (existing?.role === 'assistant') {
+                    nextMessages[streamingIndex] = {
+                      ...existing,
+                      content: demoStreamingTextRef.current,
+                    };
+                  } else {
+                    nextMessages.push({
+                      role: 'assistant',
+                      content: demoStreamingTextRef.current,
+                    });
+                    demoStreamingMessageIndexRef.current = nextMessages.length - 1;
+                  }
+                } else {
+                  nextMessages.push({
+                    role: 'assistant',
+                    content: demoStreamingTextRef.current,
+                  });
+                  demoStreamingMessageIndexRef.current = nextMessages.length - 1;
+                }
+
+                demoStreamingMessagesRef.current = nextMessages;
+                onMessagesChange(nextMessages);
+              }
+            } catch {
+              // Ignore malformed JSON in stream; proceed to next event.
+            }
+          }
+
+          if (eventType === 'status') {
+            try {
+              const data = JSON.parse(dataStr) as { message?: string };
+              if (typeof data.message === 'string' && data.message) {
+                const prevMessages = demoStreamingMessagesRef.current;
+                const nextMessages = [
+                  ...prevMessages,
+                  {
+                    role: 'assistant' as const,
+                    content: data.message,
+                  },
+                ];
+                demoStreamingMessagesRef.current = nextMessages;
+                onMessagesChange(nextMessages);
+              }
+            } catch {
+              // Ignore malformed JSON in stream; proceed to next event.
+            }
+          }
+
+          if (eventType === 'message') {
+            try {
+              const payload = JSON.parse(dataStr) as {
+                type?: string;
+                data?: unknown;
+                chatMessage?: string;
+              };
+
+              const msgType = typeof payload.type === 'string' ? payload.type : '';
+              const chatMessage =
+                typeof payload.chatMessage === 'string' ? payload.chatMessage : null;
+
+              const displayText =
+                chatMessage ??
+                (msgType
+                  ? `**${msgType}**\n${
+                      typeof payload.data !== 'undefined'
+                        ? JSON.stringify(payload.data, null, 2)
+                        : ''
+                    }`
+                  : '');
+
+              if (displayText) {
+                const prevMessages = demoStreamingMessagesRef.current;
+                const nextMessages = [
+                  ...prevMessages,
+                  {
+                    role: 'assistant' as const,
+                    content: displayText,
+                  },
+                ];
+                demoStreamingMessagesRef.current = nextMessages;
+                onMessagesChange(nextMessages);
+              }
+            } catch {
+              // Ignore malformed JSON in stream; proceed to next event.
+            }
+          }
+
+          if (eventType === 'step' || eventType === 'done') {
+            try {
+              const payload = JSON.parse(dataStr) as {
+                step?: number;
+                recruiterInstruction?: string;
+                autonomousResponse?: string;
+              };
+
+              const stepNumber = payload.step ?? undefined;
+              const summaryBase =
+                typeof payload.recruiterInstruction === 'string'
+                  ? payload.recruiterInstruction
+                  : payload.autonomousResponse ?? '';
+
+              const summaryText =
+                summaryBase.length > 160
+                  ? `${summaryBase.slice(0, 157)}...`
+                  : summaryBase;
+
+              onAgentEvent({
+                status: eventType === 'done' ? 'completed' : 'tool_call',
+                threadId: currentThreadId,
+                runId: stepNumber ? `demo-step-${stepNumber}` : undefined,
+                summary:
+                  eventType === 'done'
+                    ? summaryText || 'Autonomous recruiter demo finished'
+                    : summaryText ||
+                      (stepNumber
+                        ? `Autonomous recruiter demo step ${stepNumber}`
+                        : 'Autonomous recruiter demo step'),
+                timestamp: Date.now(),
+              });
+            } catch {
+              // Ignore malformed JSON in stream; still refresh messages below.
+            }
+
+            // Each step completion (and final done) means the backend has appended
+            // new messages to the thread; refresh from the server so the chat updates.
+            onMessageComplete();
+            if (eventType === 'done') {
+              handleStopDemoRun();
+            }
+          }
+        }
+      }
+      setIsDemoRunning(false);
+      demoAbortControllerRef.current = null;
     } catch {
       // If anything goes wrong talking to the backend, silently fail for now
+      setIsDemoRunning(false);
+      demoAbortControllerRef.current = null;
     }
-  };
+  }, [
+    baseUrl,
+    token,
+    threadsLoadedFromBackend,
+    currentThread,
+    currentThreadId,
+    isDemoRunning,
+    handleStopDemoRun,
+    onMessageComplete,
+    onAgentEvent,
+  ]);
 
   const sortedAgentEvents = [...agentEvents].sort(
     (a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0),
@@ -374,10 +603,14 @@ export const AssistantChatColumn = ({
                   <StyledJDMenuButton
                     type="button"
                     onClick={handleStartMockRun}
-                    title="Start recruiter/autonomous mock run"
+                    title={
+                      isDemoRunning
+                        ? 'Stop recruiter/autonomous mock run'
+                        : 'Start recruiter/autonomous mock run'
+                    }
                     disabled={threadsLoading}
                   >
-                    Start demo
+                    {isDemoRunning ? 'Stop demo' : 'Start demo'}
                   </StyledJDMenuButton>
                 </StyledJDMenuContainer>
               </StyledJDHeaderRow>

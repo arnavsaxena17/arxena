@@ -36,7 +36,7 @@ export class AssistantThreadService {
     }
     const result = await this.staticGraphQLService.executeGraphQL(
       findManyAssistantThreads,
-      { filter: { workspaceMemberId: { eq: workspaceMemberId } }, orderBy: [{ updatedAt: 'DescNullsFirst' }], limit: 100 },
+      { filter: { recruiterId: { eq: workspaceMemberId } }, orderBy: [{ updatedAt: 'DescNullsFirst' }], limit: 100 },
       apiToken,
     );
     console.log("listThreads called: result::", JSON.stringify(result, null, 2));
@@ -63,7 +63,6 @@ export class AssistantThreadService {
       throw new Error('Failed to get workspace member ID');
     }
     const input: { name: string; jobId?: string; recruiterId: string } = { name, jobId: jobId ?? undefined, recruiterId:workspaceMemberId };
-    console.log("Input::", input);
     if (jobId) input.jobId = jobId;
     const result = await this.staticGraphQLService.executeGraphQL(
       createOneAssistantThread,
@@ -71,7 +70,6 @@ export class AssistantThreadService {
       apiToken,
     );
     const created = result.data.data.createAssistantThread;
-    console.log("Created::", JSON.stringify(created, null, 2));
     if (!created?.id) {
       throw new Error('Failed to create assistant thread');
     }
@@ -105,7 +103,6 @@ export class AssistantThreadService {
       throw error;
     }
     const node = result?.data.data.assistantThread;
-    console.log("getThread called: node::", JSON.stringify(node, null, 2));
     if (!node) return null;
 
     const messages: AssistantThreadMessage[] = Array.isArray(node.messages)
@@ -186,13 +183,11 @@ export class AssistantThreadService {
     threadId: string,
     name: string,
   ): Promise<void> {
-    console.log("updateThreadName called: name::", name);
     const result = await this.staticGraphQLService.executeGraphQL(
       updateOneAssistantThread,
       { id: threadId, input: { name } },
       apiToken,
     );
-    console.log("updateThreadName called: result::", JSON.stringify(result, null, 2));
   }
 
   async updateThreadJobId(

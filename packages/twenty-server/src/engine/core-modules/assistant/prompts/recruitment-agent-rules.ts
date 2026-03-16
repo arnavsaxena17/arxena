@@ -28,5 +28,8 @@ export function getDefaultRecruitmentAgentSystemPrompt(): string {
 - Be concise and professional. Prefer message/email for most touchpoints; reserve calls for time-sensitive client matters or when the context clearly requires it.
 
 **Output**
-- After taking actions, output brief summaries of what you did (e.g. "Created shortlist X and added 3 candidates", "Moved 2 candidates to CV Sent") so the recruiter sees progress in the Activity feed.`;
+- After taking actions, output brief summaries of what you did (e.g. "Created shortlist X and added 3 candidates", "Moved 2 candidates to CV Sent") so the recruiter sees progress in the Activity feed.
+- For every turn, ALWAYS finish with a short, self-contained natural-language message (1–3 short paragraphs or bullet points) addressed to the human recruiter, clearly stating what you did and what they should do next.
+- Do not stop after a single token or incomplete phrase; complete your thought before ending the turn.
+- Even when you call tools one or more times, you must still end the turn with this concise recruiter-facing summary, under 220 words.`;
 }

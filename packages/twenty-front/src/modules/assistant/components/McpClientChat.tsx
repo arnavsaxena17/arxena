@@ -709,10 +709,25 @@ export const McpClientChat = ({
               if (eventType === 'tool_use' && typeof data.name === 'string') {
                 lastBubbleIsTextRunRef.current = false;
                 const toolName = data.name as string;
-                const next = [...streamedMessagesRef.current, { role: 'assistant' as const, content: `Using: ${toolName}` }];
+                const next = [
+                  ...streamedMessagesRef.current,
+                  {
+                    role: 'assistant' as const,
+                    content: `Using: ${toolName}`,
+                  },
+                ];
                 streamingMessageIndexRef.current = next.length - 1;
                 streamedMessagesRef.current = next;
                 setMessages(next);
+
+                onAgentEvent?.({
+                  status: 'tool_call',
+                  threadId,
+                  runId: undefined,
+                  summary: `Calling ${toolName}`,
+                  toolName,
+                  timestamp: Date.now(),
+                });
               }
               if (eventType === 'status' && typeof data.message === 'string') {
                 setStreamLog((prev) => [...prev, data.message as string]);
@@ -834,7 +849,11 @@ export const McpClientChat = ({
                 const prev = streamedMessagesRef.current;
                 const next = [...prev];
                 const streamingIndex = streamingMessageIndexRef.current;
-                if (streamingIndex >= 0 && streamingIndex < next.length && next[streamingIndex]?.role === 'assistant') {
+                if (
+                  streamingIndex >= 0 &&
+                  streamingIndex < next.length &&
+                  next[streamingIndex]?.role === 'assistant'
+                ) {
                   next[streamingIndex] = {
                     ...next[streamingIndex],
                     content: finalContent,
@@ -849,6 +868,17 @@ export const McpClientChat = ({
                 }
                 streamedMessagesRef.current = next;
                 setMessages(next);
+
+                if (toolCalls && toolCalls.length > 0) {
+                  const names = toolCalls.map((t) => t.name).join(', ');
+                  onAgentEvent?.({
+                    status: 'completed',
+                    threadId,
+                    runId: undefined,
+                    summary: `Completed with tools: ${names}`,
+                    timestamp: Date.now(),
+                  });
+                }
 
                 streamingMessageIndexRef.current = -1;
                 accumulatedContentRef.current = '';
@@ -892,10 +922,25 @@ export const McpClientChat = ({
               if (eventType === 'tool_use' && typeof data.name === 'string') {
                 lastBubbleIsTextRunRef.current = false;
                 const toolName = data.name as string;
-                const next = [...streamedMessagesRef.current, { role: 'assistant' as const, content: `Using: ${toolName}` }];
+                const next = [
+                  ...streamedMessagesRef.current,
+                  {
+                    role: 'assistant' as const,
+                    content: `Using: ${toolName}`,
+                  },
+                ];
                 streamingMessageIndexRef.current = next.length - 1;
                 streamedMessagesRef.current = next;
                 setMessages(next);
+
+                onAgentEvent?.({
+                  status: 'tool_call',
+                  threadId,
+                  runId: undefined,
+                  summary: `Calling ${toolName}`,
+                  toolName,
+                  timestamp: Date.now(),
+                });
               }
               if (eventType === 'status' && typeof data.message === 'string') {
                 setStreamLog((prev) => [...prev, data.message as string]);
@@ -983,6 +1028,18 @@ export const McpClientChat = ({
                 }
                 streamedMessagesRef.current = next;
                 setMessages(next);
+
+                if (toolCalls && toolCalls.length > 0) {
+                  const names = toolCalls.map((t) => t.name).join(', ');
+                  onAgentEvent?.({
+                    status: 'completed',
+                    threadId,
+                    runId: undefined,
+                    summary: `Completed with tools: ${names}`,
+                    timestamp: Date.now(),
+                  });
+                }
+
                 streamingMessageIndexRef.current = -1;
                 accumulatedContentRef.current = '';
                 setStreamLogMinimized(true);

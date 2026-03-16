@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { RecruiterMessageService } from 'src/engine/core-modules/autonomous-recruiter/recruiter-message.service';
-import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
+import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 import { AssistantModule } from '../assistant/assistant.module';
+import { CandidateSearchModule } from '../candidate-search/candidate-search.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { MessageQueueModule } from '../message-queue/message-queue.module';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
@@ -20,6 +21,7 @@ import { JobContextService } from './job-context.service';
     WebSocketModule,
     GraphQLExecutionModule,
     AuthModule,
+    CandidateSearchModule,
   ],
   controllers: [AutonomousRecruiterController],
   providers: [

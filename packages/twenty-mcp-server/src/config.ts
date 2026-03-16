@@ -1,11 +1,13 @@
 export interface ArxenaConfig {
   apiToken: string;
   baseUrl: string;
+  workspaceMemberId?: string;
 }
 
 export function loadConfig(): ArxenaConfig {
   const apiToken = process.env.ARXENA_API_TOKEN;
   const baseUrl = process.env.ARXENA_BASE_URL ?? 'http://localhost:3000';
+  const workspaceMemberId = process.env.ARXENA_WORKSPACE_MEMBER_ID;
 
   if (!apiToken) {
     throw new Error(
@@ -14,5 +16,5 @@ export function loadConfig(): ArxenaConfig {
     );
   }
 
-  return { apiToken, baseUrl };
+  return { apiToken, baseUrl, workspaceMemberId };
 }

@@ -411,7 +411,7 @@ export const AssistantPage = () => {
   const handleNewThread = useCallback(async () => {
     if (useMock) {
       const thread = createNewThread();
-      setThreads((prev) => [...prev, thread]);
+      setThreads((prev) => [thread, ...prev]);
       setCurrentThreadId(thread.id);
       setAgentEvents([]);
       return;
@@ -437,7 +437,7 @@ export const AssistantPage = () => {
               lastTableData: null,
               jobId: (created as { jobId?: string | null }).jobId ?? null,
             };
-            setThreads((prev) => [...prev, thread]);
+            setThreads((prev) => [thread, ...prev]);
             setCurrentThreadId(threadId);
           setAgentEvents([]);
             return;
@@ -448,7 +448,7 @@ export const AssistantPage = () => {
       }
     }
     const thread = createNewThread();
-    setThreads((prev) => [...prev, thread]);
+    setThreads((prev) => [thread, ...prev]);
     setCurrentThreadId(thread.id);
     setAgentEvents([]);
   }, [token, threadsLoadedFromBackend]);

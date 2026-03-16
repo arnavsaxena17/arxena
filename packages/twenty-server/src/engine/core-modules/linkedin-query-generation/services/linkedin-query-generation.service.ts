@@ -750,15 +750,24 @@ export class LinkedinQueryGenerationService {
       return schema.parse(raw) as T;
     }
 
-    // Non-streaming path with structured output (more reliable)
+    // Non-streaming path
+    const model = options?.model || this.defaultModel;
+    const temperature = options?.temperature ?? 0;
+
+    // Only some models support `response_format: { type: "json_schema" }`.
+    // For models that don't (e.g. gpt-3.5-turbo), fall back to plain JSON-in-text parsing.
+    const supportsStructuredOutputs = !/^gpt-3\.5/i.test(model);
+
     const completion = await openai.chat.completions.create({
-      model: options?.model || this.defaultModel,
-      temperature: options?.temperature ?? 0,
+      model,
+      temperature,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      response_format: zodResponseFormat(schema, name),
+      ...(supportsStructuredOutputs
+        ? { response_format: zodResponseFormat(schema, name) }
+        : {}),
     });
 
     const content = completion.choices[0]?.message?.content?.trim();

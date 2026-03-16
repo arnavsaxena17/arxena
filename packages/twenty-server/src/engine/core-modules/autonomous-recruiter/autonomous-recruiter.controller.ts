@@ -1,4 +1,5 @@
-import { Body, Controller, Logger, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Logger, Post, Req, Res, UseGuards } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { AssistantThreadService } from 'src/engine/core-modules/assistant/assistant-thread.service';
 import type { AssistantThreadRecord } from 'src/engine/core-modules/assistant/assistant.types';
 import { McpAssistantService } from 'src/engine/core-modules/assistant/mcp-assistant.service';
@@ -29,34 +30,34 @@ export class AutonomousRecruiterController {
 
   private readonly logger = new Logger(AutonomousRecruiterController.name);
 
-  @Post('demo-thread')
+
+  @Post('demo-thread/stream')
   @UseGuards(JwtAuthGuard)
-  async startDemoConversation(
-    @Req() request: { headers: { authorization?: string }; body: StartDemoBody },
+  async startDemoConversationStream(
     @Body() body: StartDemoBody,
-  ) {
-    const authHeader = request.headers.authorization;
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
+    const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
-      return { error: 'Missing or invalid Authorization header' };
+      res.status(401).json({ error: 'Missing or invalid Authorization header' });
+      return;
     }
-    console.log("startDemoConversation called: authHeader::", authHeader);
+
     const apiToken = authHeader.slice(7).replace(/[\r\n]+/g, '');
-    console.log("startDemoConversation called: apiToken::", apiToken);
     if (!body?.requirement || typeof body.requirement !== 'string') {
-      return { error: 'Body must include a string "requirement"' };
+      res.status(400).json({ error: 'Body must include a string "requirement"' });
+      return;
     }
-    console.log("startDemoConversation called: body::", body);
+
     const { threadId: maybeThreadId, threadName, requirement, maxTurns } = body;
-console.log("startDemoConversation called: maybeThreadId::", maybeThreadId);
-console.log("startDemoConversation called: threadName::", threadName);
-console.log("startDemoConversation called: requirement::", requirement);
-console.log("startDemoConversation called: maxTurns::", maxTurns);
+
     let thread: AssistantThreadRecord | null;
     if (maybeThreadId) {
       thread = await this.assistantThreadService.getThread(apiToken, maybeThreadId);
-      console.log("startDemoConversation called: thread::", thread);
       if (!thread) {
-        return { error: `Thread not found for id=${maybeThreadId}` };
+        res.status(404).json({ error: `Thread not found for id=${maybeThreadId}` });
+        return;
       }
     } else {
       const created = await this.assistantThreadService.createThread(
@@ -65,13 +66,41 @@ console.log("startDemoConversation called: maxTurns::", maxTurns);
       );
       thread = await this.assistantThreadService.getThread(apiToken, created.id);
       if (!thread) {
-        return { error: 'Failed to create demo thread' };
+        res.status(500).json({ error: 'Failed to create demo thread' });
+        return;
       }
     }
 
     const plannedTurns = Number.isFinite(maxTurns as number)
       ? Math.max(1, Math.min(5, Math.floor(maxTurns as number)))
       : 5;
+
+    let isAborted = false;
+    const abortHandler = () => {
+      isAborted = true;
+    };
+    res.on('close', abortHandler);
+    req.on('close', abortHandler);
+    req.on('aborted', abortHandler);
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+
+    const sendEvent = (event: string, data: unknown): boolean => {
+      if (isAborted || res.closed || res.destroyed) return false;
+      const socket = req.socket ?? res.socket;
+      if (socket && socket.destroyed) return false;
+      try {
+        res.write(`event: ${event}\n`);
+        res.write(`data: ${JSON.stringify(data)}\n\n`);
+        return true;
+      } catch {
+        isAborted = true;
+        return false;
+      }
+    };
 
     const steps: Array<{
       step: number;
@@ -80,87 +109,238 @@ console.log("startDemoConversation called: maxTurns::", maxTurns);
       toolCalls: Array<{ name: string; args: Record<string, unknown> }>;
     }> = [];
 
-    let lastResponseText = '';
-    let lastToolCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
-    let lastRecruiterInstruction = '';
-    let lastRecruiterMetadata: unknown = null;
+    try {
+      for (let i = 0; i < plannedTurns; i += 1) {
+        const isFirstTurn = i === 0;
 
-    for (let i = 0; i < plannedTurns; i += 1) {
-      const recruiterUserMessage =
-        i === 0
-          ? requirement
-          : 'Continue the recruiter workflow for this job. Take the next one or two high-value actions (filter candidates, fetch contacts, fetch org charts, send chats) based on the current thread state. If you are done for now, respond with "DONE" and a brief summary.';
+        // #region agent log
+        fetch('http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Debug-Session-Id': '51e09d',
+          },
+          body: JSON.stringify({
+            sessionId: '51e09d',
+            runId: 'pre-mcp-call',
+            hypothesisId: 'A',
+            location: 'autonomous-recruiter.controller.ts:loop-start',
+            message: 'Autonomous recruiter loop iteration start',
+            data: { i, plannedTurns, isFirstTurn },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion agent log
 
-      const recruiterMessage =
-        await this.recruiterMessageService.generateRecruiterMessageWithToken(
+        let recruiterMessage:
+          | { text: string; metadata?: Record<string, unknown> }
+          | null = null;
+
+        const refreshedThreadBeforeTurn = await this.assistantThreadService.getThread(
           apiToken,
           thread.id,
-          recruiterUserMessage,
-          { includeJobContext: true },
+        );
+        const historyBeforeTurn = refreshedThreadBeforeTurn
+          ? threadMessagesToHistory(refreshedThreadBeforeTurn.messages)
+          : [];
+        const systemPrompt =
+          await this.recruitmentAgentRulesService.getSystemPrompt(apiToken);
+
+        let finalText = '';
+        let finalToolCalls:
+          | Array<{ name: string; args: Record<string, unknown> }>
+          | undefined;
+
+        if (isFirstTurn) {
+          // First turn: send the raw requirement directly to the autonomous recruiter,
+          // then feed the autonomous response into the recruiter message service.
+          // Also append the human requirement to the thread so history is preserved.
+          await this.assistantThreadService.appendMessage(
+            apiToken,
+            thread.id,
+            'user',
+            requirement,
+          );
+        }
+
+        await this.mcpAssistantService.processQueryStream(
+          isFirstTurn ? requirement : (await this.recruiterMessageService.generateRecruiterMessageFromThread(
+            apiToken,
+            thread.id,
+            {
+              includeJobContext: true,
+              appendUserMessageToThread: true,
+            },
+          )).text,
+          apiToken,
+          historyBeforeTurn,
+          (event, data) => {
+            if (event === 'final_text') {
+              console.log("final_text event received: data::", JSON.stringify(data, null, 2));
+              const full = (data as { text?: string }).text;
+              if (typeof full === 'string' && full.length > 0) {
+                finalText = full;
+              }
+              // Do NOT forward inner final_text events to the client; the
+              // outer controller will emit a single demo-level "done" event
+              // once all turns have completed.
+              return true;
+            }
+
+            if (event === 'text') {
+              console.log("text event received: data::", JSON.stringify(data, null, 2));
+              const delta = (data as { delta?: string }).delta;
+              if (typeof delta === 'string') {
+                finalText += delta;
+              }
+            }
+
+            if (event === 'done') {
+              console.log("done event received: data::", JSON.stringify(data, null, 2));
+              const donePayload = data as {
+                text?: string;
+                toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
+              };
+              // Prefer the text we have accumulated from the streaming deltas.
+              // Only fall back to donePayload.text if, for some reason, no text
+              // was ever streamed (e.g. edge-case provider behavior).
+              if (!finalText && typeof donePayload.text === 'string' && donePayload.text.length > 0) {
+                finalText = donePayload.text;
+              }
+              if (Array.isArray(donePayload.toolCalls)) {
+                finalToolCalls = donePayload.toolCalls;
+              }
+              // Swallow inner "done" events; the autonomous recruiter loop
+              // still needs the full assistant message, but the frontend
+              // should only react to the outer demo-level "done" event
+              // emitted after all turns finish.
+              return true;
+            }
+
+            // Forward all streaming events (text, status, table_data, etc.) to the client.
+            return sendEvent(event, data);
+          },
+          systemPrompt,
         );
 
-      this.logger.log(`Recruiter message generated: ${recruiterMessage.text.slice(0, 200)}`);
-      const refreshedThread = await this.assistantThreadService.getThread(apiToken, thread.id);
-      const history = refreshedThread ? threadMessagesToHistory(refreshedThread.messages) : [];
-      const systemPrompt = await this.recruitmentAgentRulesService.getSystemPrompt(apiToken);
-        console.log('systemPrompt', systemPrompt);
-      const response = await this.mcpAssistantService.processQuery(
-        recruiterMessage.text,
-        apiToken,
-        history,
-        systemPrompt,
-      );
+        const autonomousResponse = finalText;
+        const toolCalls = finalToolCalls ?? [];
 
-      console.log('response', response);
-      console.log('response.text', response.text);
-      console.log('response.toolCalls', response.toolCalls);
-      await this.assistantThreadService.appendMessage(
-        apiToken,
-        thread.id,
-        'assistant',
-        response.text ?? '',
-        response.toolCalls,
-      );
+        // #region agent log
+        fetch('http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Debug-Session-Id': '51e09d',
+          },
+          body: JSON.stringify({
+            sessionId: '51e09d',
+            runId: 'post-mcp-call',
+            hypothesisId: 'B',
+            location: 'autonomous-recruiter.controller.ts:after-mcp-call',
+            message: 'Autonomous recruiter loop after processQueryStream',
+            data: {
+              i,
+              autonomousResponseLength: autonomousResponse?.length ?? 0,
+              hasToolCalls: !!toolCalls.length,
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion agent log
+
+        console.log("appendMessage called: autonomousResponse::", autonomousResponse);
+        const result = await this.assistantThreadService.appendMessage(
+          apiToken,
+          thread.id,
+          'assistant',
+          autonomousResponse ?? '',
+          toolCalls,
+        );
+        console.log("appendMessage called: result::", JSON.stringify(result, null, 2));
+
+        // After the autonomous recruiter has responded on the first turn,
+        // generate a recruiter-facing instruction from that response so that
+        // subsequent planning can build on it.
+        if (isFirstTurn) {
+          recruiterMessage =
+            await this.recruiterMessageService.generateRecruiterMessageWithToken(
+              apiToken,
+              thread.id,
+              autonomousResponse ?? '',
+              {
+                includeJobContext: true,
+                appendUserMessageToThread: false,
+              },
+            );
+          console.log(
+            'recruiterMessage generated after first autonomous response: recruiterMessage::',
+            JSON.stringify(recruiterMessage, null, 2),
+          );
+        } else {
+          recruiterMessage =
+            await this.recruiterMessageService.generateRecruiterMessageFromThread(
+              apiToken,
+              thread.id,
+              {
+                includeJobContext: true,
+                appendUserMessageToThread: true,
+              },
+            );
+          console.log(
+            'recruiterMessage generated from thread: recruiterMessage::',
+            JSON.stringify(recruiterMessage, null, 2),
+          );
+        }
+
+        const stepPayload = {
+          step: i + 1,
+          recruiterInstruction: recruiterMessage?.text ?? '',
+          autonomousResponse,
+          toolCalls,
+        };
+        steps.push(stepPayload);
+        if (!sendEvent('step', { ...stepPayload, threadId: thread.id })) {
+          console.log("sendEvent(step) returned false, continuing without breaking loop");
+        }
 
 
-
-      lastRecruiterInstruction = recruiterMessage.text;
-      lastRecruiterMetadata = recruiterMessage.metadata ?? null;
-      lastResponseText = response.text ?? '';
-      lastToolCalls = response.toolCalls ?? [];
-
-      steps.push({
-        step: i + 1,
-        recruiterInstruction: recruiterMessage.text,
-        autonomousResponse: response.text ?? '',
-        toolCalls: response.toolCalls ?? [],
-      });
-
-      this.logger.log(
-        `Demo turn ${i + 1} completed: recruiterInstruction="${recruiterMessage.text.slice(
-          0,
-          200,
-        )}", autonomousResponse="${(response.text ?? '').slice(0, 200)}"`,
-      );
-
-      if (response.text && /DONE\b/i.test(response.text)) {
-        break;
+        if (autonomousResponse && /DONE\b/i.test(autonomousResponse)) {
+          break;
+        }
       }
+
+      sendEvent('done', {
+        threadId: thread.id,
+        requirement,
+        steps,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+
+      // #region agent log
+      fetch('http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Debug-Session-Id': '51e09d',
+        },
+        body: JSON.stringify({
+          sessionId: '51e09d',
+          runId: 'catch-block',
+          hypothesisId: 'C',
+          location: 'autonomous-recruiter.controller.ts:catch',
+          message: 'Error in autonomous recruiter demo loop',
+          data: { errorMessage: message },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion agent log
+
+      sendEvent('error', { error: message });
+    } finally {
+      res.end();
     }
-    console.log('steps', steps);
-    console.log('lastRecruiterInstruction', lastRecruiterInstruction);
-    console.log('lastRecruiterMetadata', lastRecruiterMetadata);
-    console.log('lastResponseText', lastResponseText);
-    console.log('lastToolCalls', lastToolCalls);
-    return {
-      threadId: thread.id,
-      requirement,
-      recruiterInstruction: lastRecruiterInstruction,
-      recruiterMetadata: lastRecruiterMetadata,
-      autonomousResponse: lastResponseText,
-      toolCalls: lastToolCalls,
-      steps,
-    };
   }
 }
 

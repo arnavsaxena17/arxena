@@ -24,9 +24,10 @@ describe('AutonomousRecruiterController', () => {
   };
   let recruiterMessageService: {
     generateRecruiterMessageWithToken: jest.Mock;
+    generateRecruiterMessageFromThread: jest.Mock;
   };
   let mcpAssistantService: {
-    processQuery: jest.Mock;
+    processQueryStream: jest.Mock;
   };
   let recruitmentAgentRulesService: {
     getSystemPrompt: jest.Mock;
@@ -60,33 +61,51 @@ describe('AutonomousRecruiterController', () => {
           jobContextSummary: 'Senior React Developer @ Mock Product Co',
         },
       }),
+      generateRecruiterMessageFromThread: jest.fn().mockResolvedValue({
+        text: 'Continue the recruiter workflow with the next best action.',
+        metadata: {
+          jobContextSummary: 'Senior React Developer @ Mock Product Co',
+        },
+      }),
     };
     recruitmentAgentRulesService = {
       getSystemPrompt: jest.fn().mockResolvedValue('You are an autonomous recruiter.'),
     };
     mcpAssistantService = {
-      processQuery: jest.fn().mockResolvedValue({
-        text:
-          'I found 3 strong candidates for this requirement and prepared outreach messages for the top 2.',
-        toolCalls: [
-          { name: 'filter_candidates_for_job', args: { jobId: 'job-1' } },
-          {
-            name: 'fetch_contacts_for_candidates',
-            args: { candidateIds: ['mock-cand-1', 'mock-cand-2'] },
-          },
-          {
-            name: 'fetch_org_charts_for_companies',
-            args: { companyIds: ['company-1', 'company-2'] },
-          },
-          {
-            name: 'send_chat_to_candidates',
-            args: {
-              candidateIds: ['mock-cand-1', 'mock-cand-2'],
-              channel: 'whatsapp',
-            },
-          },
-        ],
-      }),
+      processQueryStream: jest.fn().mockImplementation(
+        async (
+          _query: string,
+          _apiToken: string,
+          _history: unknown[],
+          onEvent: (event: string, data: unknown) => boolean,
+        ) => {
+          // Simulate a short streaming sequence for each turn.
+          onEvent('text', { delta: 'I found 3 strong candidates for this requirement' });
+          onEvent('text', { delta: ' and prepared outreach messages for the top 2.' });
+          onEvent('done', {
+            text:
+              'I found 3 strong candidates for this requirement and prepared outreach messages for the top 2.',
+            toolCalls: [
+              { name: 'filter_candidates_for_job', args: { jobId: 'job-1' } },
+              {
+                name: 'fetch_contacts_for_candidates',
+                args: { candidateIds: ['mock-cand-1', 'mock-cand-2'] },
+              },
+              {
+                name: 'fetch_org_charts_for_companies',
+                args: { companyIds: ['company-1', 'company-2'] },
+              },
+              {
+                name: 'send_chat_to_candidates',
+                args: {
+                  candidateIds: ['mock-cand-1', 'mock-cand-2'],
+                  channel: 'whatsapp',
+                },
+              },
+            ],
+          });
+        },
+      ),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -112,91 +131,123 @@ describe('AutonomousRecruiterController', () => {
     const requirement =
       'We need senior React developers in Bangalore with 5+ years experience at product companies.';
 
-    const request = {
+    const req = {
       headers: {
         authorization: `Bearer ${apiToken}`,
       },
-      body: {
-        requirement,
-        maxTurns: 3,
-      },
+      socket: { destroyed: false },
+      on: jest.fn(),
     } as unknown as {
       headers: { authorization?: string };
-      body: { requirement: string; maxTurns: number };
+      socket: { destroyed: boolean };
+      on: jest.Mock;
     };
 
-    const result = await controller.startDemoConversation(request, request.body);
+    const writtenChunks: string[] = [];
+    const res = {
+      closed: false,
+      destroyed: false,
+      socket: { destroyed: false },
+      on: jest.fn(),
+      setHeader: jest.fn(),
+      write: jest.fn((chunk: string) => {
+        writtenChunks.push(chunk);
+        return true;
+      }),
+      end: jest.fn(),
+    } as unknown as {
+      closed: boolean;
+      destroyed: boolean;
+      socket: { destroyed: boolean };
+      on: jest.Mock;
+      setHeader: jest.Mock;
+      write: jest.Mock;
+      end: jest.Mock;
+    };
+
+    await controller.startDemoConversationStream(
+      { requirement, maxTurns: 3 },
+      req as never,
+      res as never,
+    );
 
     expect(assistantThreadService.createThread).toHaveBeenCalledWith(
       apiToken,
       'Autonomous recruiter demo',
     );
-    expect(recruiterMessageService.generateRecruiterMessageWithToken).toHaveBeenCalledTimes(3);
-    expect(recruiterMessageService.generateRecruiterMessageWithToken).toHaveBeenNthCalledWith(
-      1,
+    expect(recruiterMessageService.generateRecruiterMessageWithToken).toHaveBeenCalledTimes(1);
+    expect(recruiterMessageService.generateRecruiterMessageWithToken).toHaveBeenCalledWith(
       apiToken,
       threadId,
-      requirement,
-      { includeJobContext: true },
+      expect.stringContaining('I found 3 strong candidates'),
+      {
+        includeJobContext: true,
+        appendUserMessageToThread: false,
+      },
     );
-    expect(recruiterMessageService.generateRecruiterMessageWithToken).toHaveBeenNthCalledWith(
-      2,
-      apiToken,
-      threadId,
-      expect.stringContaining('Continue the recruiter workflow'),
-      { includeJobContext: true },
-    );
+    expect(recruiterMessageService.generateRecruiterMessageFromThread).toHaveBeenCalledTimes(2);
     expect(recruitmentAgentRulesService.getSystemPrompt).toHaveBeenCalledTimes(3);
     expect(recruitmentAgentRulesService.getSystemPrompt).toHaveBeenCalledWith(apiToken);
-    expect(mcpAssistantService.processQuery).toHaveBeenCalledTimes(3);
-    expect(assistantThreadService.appendMessage).toHaveBeenCalledTimes(3);
-    expect(assistantThreadService.appendMessage).toHaveBeenCalledWith(
-      apiToken,
-      threadId,
-      'assistant',
-      expect.stringContaining('I found 3 strong candidates'),
-      expect.any(Array),
-    );
+    expect(mcpAssistantService.processQueryStream).toHaveBeenCalledTimes(3);
 
-    expect(result.threadId).toBe(threadId);
-    expect(result.requirement).toBe(requirement);
-    expect(result.recruiterInstruction).toContain('You are a senior recruiter');
-    const recruiterMetadata = result.recruiterMetadata as { jobContextSummary?: string } | null;
-    expect(recruiterMetadata?.jobContextSummary).toContain('Senior React Developer');
-    expect(result.autonomousResponse).toContain('I found 3 strong candidates');
-    expect(result.toolCalls).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ name: 'filter_candidates_for_job' }),
-        expect.objectContaining({ name: 'fetch_contacts_for_candidates' }),
-        expect.objectContaining({ name: 'fetch_org_charts_for_companies' }),
-        expect.objectContaining({ name: 'send_chat_to_candidates' }),
-      ]),
-    );
+    // One append for the initial user requirement, plus one per autonomous turn.
+    expect(assistantThreadService.appendMessage).toHaveBeenCalledTimes(4);
+    expect(
+      assistantThreadService.appendMessage.mock.calls.filter(
+        (call) => call[2] === 'assistant',
+      ),
+    ).toHaveLength(3);
 
-    expect(result.steps).toBeDefined();
-    expect(result.steps).toHaveLength(3);
-    expect(result.steps?.[0].recruiterInstruction).toContain('You are a senior recruiter');
-    expect(result.steps?.[0].autonomousResponse).toContain('I found 3 strong candidates');
+    // We should have emitted 3 "step" events and one final "done" event.
+    const stepEvents = writtenChunks.filter((chunk) => chunk.startsWith('event: step'));
+    const doneEvents = writtenChunks.filter((chunk) => chunk.startsWith('event: done'));
+    expect(stepEvents).toHaveLength(3);
+    expect(doneEvents).toHaveLength(1);
   });
 
   it('runs exactly 5 recruiter/autonomous turns when maxTurns is 5', async () => {
     const requirement =
       'We need senior React developers in Bangalore with 5+ years experience at product companies.';
 
-    const request = {
+    const req = {
       headers: {
         authorization: `Bearer ${apiToken}`,
       },
-      body: {
-        requirement,
-        maxTurns: 5,
-      },
+      socket: { destroyed: false },
+      on: jest.fn(),
     } as unknown as {
       headers: { authorization?: string };
-      body: { requirement: string; maxTurns: number };
+      socket: { destroyed: boolean };
+      on: jest.Mock;
     };
 
-    const result = await controller.startDemoConversation(request, request.body);
+    const writtenChunks: string[] = [];
+    const res = {
+      closed: false,
+      destroyed: false,
+      socket: { destroyed: false },
+      on: jest.fn(),
+      setHeader: jest.fn(),
+      write: jest.fn((chunk: string) => {
+        writtenChunks.push(chunk);
+        return true;
+      }),
+      end: jest.fn(),
+    } as unknown as {
+      closed: boolean;
+      destroyed: boolean;
+      socket: { destroyed: boolean };
+      on: jest.Mock;
+      setHeader: jest.Mock;
+      write: jest.Mock;
+      end: jest.Mock;
+    };
+
+    await controller.startDemoConversationStream(
+      { requirement, maxTurns: 5 },
+      req as never,
+      res as never,
+    );
 
     expect(assistantThreadService.createThread).toHaveBeenCalledWith(
       apiToken,
@@ -204,20 +255,21 @@ describe('AutonomousRecruiterController', () => {
     );
 
     // Recruiter ↔ autonomous recruiter should exchange exactly 5 turns.
-    expect(recruiterMessageService.generateRecruiterMessageWithToken).toHaveBeenCalledTimes(5);
-    expect(mcpAssistantService.processQuery).toHaveBeenCalledTimes(5);
-    expect(assistantThreadService.appendMessage).toHaveBeenCalledTimes(5);
-    expect(result.steps).toHaveLength(5);
+    expect(recruiterMessageService.generateRecruiterMessageWithToken).toHaveBeenCalledTimes(1);
+    expect(recruiterMessageService.generateRecruiterMessageFromThread).toHaveBeenCalledTimes(4);
+    expect(mcpAssistantService.processQueryStream).toHaveBeenCalledTimes(5);
 
-    // Log the recruiter and autonomous recruiter messages for visibility in test output.
-    // eslint-disable-next-line no-console
-    console.log(
-      'Autonomous recruiter demo 5-turn conversation:',
-      result.steps?.map((step) => ({
-        step: step.step,
-        recruiterInstruction: step.recruiterInstruction,
-        autonomousResponse: step.autonomousResponse,
-      })),
-    );
+    // One append for the initial user requirement, plus one per autonomous turn.
+    expect(assistantThreadService.appendMessage).toHaveBeenCalledTimes(6);
+    expect(
+      assistantThreadService.appendMessage.mock.calls.filter(
+        (call) => call[2] === 'assistant',
+      ),
+    ).toHaveLength(5);
+
+    const stepEvents = writtenChunks.filter((chunk) => chunk.startsWith('event: step'));
+    const doneEvents = writtenChunks.filter((chunk) => chunk.startsWith('event: done'));
+    expect(stepEvents).toHaveLength(5);
+    expect(doneEvents).toHaveLength(1);
   });
 });

@@ -21,7 +21,7 @@ import {
   FactoredQuery,
   MasterLists,
   OrchestratorResult,
-  ParsedRequirement,
+  ParsedRequirement
 } from 'src/engine/core-modules/linkedin-query-generation/types/linkedin-query-generation.types';
 
 @Controller('linkedin-query-generation')

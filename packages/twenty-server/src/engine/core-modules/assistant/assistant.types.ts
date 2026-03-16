@@ -28,9 +28,36 @@ export type RecruiterMessageMetadata = {
 };
 
 export type RecruiterMessageOptions = {
+  /**
+   * Maximum number of prior messages from the assistant thread history
+   * that the recruiter message generator should consider.
+   */
   maxHistoryMessages?: number;
+  /**
+   * When true (default), the recruiter job / search context will be
+   * fetched and embedded into the recruiter instruction prompt.
+   */
   includeJobContext?: boolean;
+  /**
+   * Optional soft cap for response length when recruiter messages are
+   * generated via an LLM. Not currently enforced by the autonomous
+   * recruiter controller.
+   */
   maxResponseCharacters?: number;
+  /**
+   * Controls whether the plain-text recruiter message should be appended
+   * to the assistant thread as a `user` message.
+   *
+   * For genuine recruiter input (e.g. the initial requirement) this
+   * should remain `true` so the conversation history stays readable.
+   *
+   * For internal controller-driven prompts (e.g. "continue the workflow")
+   * this should be set to `false` so those control messages are not
+   * persisted as if they came from the human recruiter.
+   *
+   * Defaults to `true` when omitted.
+   */
+  appendUserMessageToThread?: boolean;
 };
 
 export type RecruiterMessageResponse = {

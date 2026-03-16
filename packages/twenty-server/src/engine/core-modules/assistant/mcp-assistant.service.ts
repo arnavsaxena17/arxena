@@ -5,6 +5,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import * as path from 'path';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
   AssistantChatResponse,
   McpModelProvider,
@@ -39,6 +40,7 @@ export class McpAssistantService {
 
   constructor(
     private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
+    private readonly workspaceQueryService: WorkspaceQueryService,
   ) {
     this.provider = this.getMcpModelProvider();
     this.anthropic = new Anthropic({
@@ -424,6 +426,10 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
 
   async listTools(apiToken: string): Promise<Array<{ name: string; description: string; input_schema: unknown }>> {
     const client = new Client({ name: 'arxena-assistant-client', version: '1.0.0' });
+    const workspaceMemberId =
+      await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
+        apiToken,
+      );
     const transport = new StdioClientTransport({
       command: process.execPath,
       args: [this.mcpServerScriptPath],
@@ -431,6 +437,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
         ...process.env,
         ARXENA_API_TOKEN: apiToken.replace(/[\r\n]+/g, ''),
         ARXENA_BASE_URL: this.serverBaseUrl,
+        ARXENA_WORKSPACE_MEMBER_ID: workspaceMemberId ?? '',
       },
     });
 
@@ -467,6 +474,10 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     systemPrompt?: string,
   ): Promise<AssistantChatResponse> {
     const client = new Client({ name: 'arxena-assistant-client', version: '1.0.0' });
+    const workspaceMemberId =
+      await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
+        apiToken,
+      );
     const transport = new StdioClientTransport({
       command: process.execPath,
       args: [this.mcpServerScriptPath],
@@ -585,6 +596,10 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
       throw new Error('OpenAI client not configured. Set MCP_MODEL_PROVIDER=openai and OPENAI_API_KEY.');
     }
     const client = new Client({ name: 'arxena-assistant-client', version: '1.0.0' });
+    const workspaceMemberId =
+      await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
+        apiToken,
+      );
     const transport = new StdioClientTransport({
       command: process.execPath,
       args: [this.mcpServerScriptPath],
@@ -681,9 +696,13 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     systemPrompt?: string,
   ): Promise<void> {
     if (this.provider === 'openai' && this.openai) {
-      return this.processQueryStreamWithOpenAI(query, apiToken, conversationHistory, sendEvent, systemPrompt);
+      const streamResult = await this.processQueryStreamWithOpenAI(query, apiToken, conversationHistory, sendEvent, systemPrompt);
+      console.log("streamResult::", JSON.stringify(streamResult, null, 2));
+      return streamResult;    
     }
-    return this.processQueryStreamWithAnthropic(query, apiToken, conversationHistory, sendEvent, systemPrompt);
+    const streamResult = await this.processQueryStreamWithAnthropic(query, apiToken, conversationHistory, sendEvent, systemPrompt);
+    console.log("streamResult::", JSON.stringify(streamResult, null, 2));
+    return streamResult;
   }
 
   private async processQueryStreamWithAnthropic(
@@ -832,8 +851,14 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
         });
       }
 
+      const fullText = finalText.join('\n').trim() || 'No response generated.';
+
+      // Emit a dedicated final_text event so callers that accumulate streaming
+      // deltas can reliably grab the complete assistant message for persistence.
+      sendEvent('final_text', { text: fullText });
+
       sendEvent('done', {
-        text: finalText.join('\n').trim() || 'No response generated.',
+        text: fullText,
         toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined,
       });
     } finally {
@@ -883,6 +908,8 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
       const allToolCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
       let rounds = 0;
 
+
+      console.log("processQueryStreamWithOpenAI called: openaiMessages::", JSON.stringify(openaiMessages, null, 2));
       while (rounds < MAX_TOOL_ROUNDS) {
         rounds += 1;
         const stream = await this.openai.chat.completions.create({
@@ -904,7 +931,10 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
           if (!delta) continue;
           if (delta.content) {
             content += delta.content;
-            if (!sendEvent('text', { delta: delta.content })) return;
+            // Always continue consuming the stream even if the SSE client
+            // has disconnected; the autonomous recruiter loop still depends
+            // on having the full assistant message.
+            sendEvent('text', { delta: delta.content });
           }
           if (delta.tool_calls) {
             for (const tc of delta.tool_calls) {
@@ -960,7 +990,9 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
             textContent = cachedResult;
           } else {
             allToolCalls.push({ name: tc.name, args });
-            if (!sendEvent('tool_use', { name: tc.name })) return;
+            // As with text tokens, do not abort the OpenAI stream based on
+            // SSE client state; just attempt to emit the event.
+            sendEvent('tool_use', { name: tc.name });
             const inProcessResult = await this.runStreamingToolInProcess(
               tc.name,
               args,
@@ -1006,8 +1038,17 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
         }
       }
 
+      const fullText = finalText.join('\n').trim() || 'No response generated.';
+      this.logger.log(
+        `[OpenAI stream] fullText length=${fullText.length}, preview=${fullText.slice(0, 200)}`
+      );
+      
+      // Emit a dedicated final_text event (same contract as Anthropic path)
+      // so callers can reliably persist the complete assistant message.
+      sendEvent('final_text', { text: fullText });
+
       sendEvent('done', {
-        text: finalText.join('\n').trim() || 'No response generated.',
+        text: fullText,
         toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined,
       });
     } finally {

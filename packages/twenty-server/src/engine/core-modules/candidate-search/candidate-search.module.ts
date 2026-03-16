@@ -77,6 +77,10 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     // Executive search enhancement services
     PythonOrgChartService,
   ],
-  exports: [CandidateSearchBaseService, CandidateSearchHandlerService],
+  exports: [
+    CandidateSearchBaseService,
+    CandidateSearchHandlerService,
+    StreamProcessingService,
+  ],
 })
 export class CandidateSearchModule {}
