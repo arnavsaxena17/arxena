@@ -2,7 +2,7 @@ import {
   AssistantDetailsTable,
   AssistantTableData,
 } from '@/assistant/components/AssistantDetailsTable';
-import type { AssistantChatMessage } from '@/assistant/types/assistant.types';
+import type { AssistantAgentEvent, AssistantChatMessage } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { TextInput } from '@/ui/input/components/TextInput';
 import styled from '@emotion/styled';
@@ -203,6 +203,8 @@ export type McpClientChatProps = {
   onMessageComplete?: () => void;
   /** Called when backend sends a message event (e.g. parsed_requirement, master_lists, query_set) */
   onStreamMessage?: (type: string, data: unknown) => void;
+  /** Called when backend sends an assistant agent event over SSE (event: agent_event) */
+  onAgentEvent?: (event: AssistantAgentEvent) => void;
 };
 
 const StyledContainer = styled.div`
@@ -512,6 +514,7 @@ export const McpClientChat = ({
   onThreadNameChange,
   onMessageComplete,
   onStreamMessage,
+  onAgentEvent,
 }: McpClientChatProps) => {
   const tokenPair = useRecoilValue(tokenPairState);
   const navigate = useNavigate();
@@ -646,6 +649,24 @@ export const McpClientChat = ({
             if (!dataStr) continue;
             try {
               const data = JSON.parse(dataStr) as Record<string, unknown>;
+              if (eventType === 'agent_event') {
+                const evt = data as Partial<AssistantAgentEvent>;
+                if (evt && typeof evt.status === 'string') {
+                  onAgentEvent?.({
+                    status: evt.status as AssistantAgentEvent['status'],
+                    threadId: evt.threadId,
+                    runId: evt.runId,
+                    summary: typeof evt.summary === 'string' ? evt.summary : undefined,
+                    error: typeof evt.error === 'string' ? evt.error : undefined,
+                    toolName: typeof evt.toolName === 'string' ? evt.toolName : undefined,
+                    timestamp:
+                      typeof evt.timestamp === 'number'
+                        ? evt.timestamp
+                        : Date.now(),
+                  });
+                }
+                continue;
+              }
               // New bubble per tool_use / status / message; one bubble per run of text deltas; when deltas end, next event opens a new bubble. Always append from streamedMessagesRef so we never overwrite/remove previous bubbles.
               if (eventType === 'tool_use' && typeof data.name === 'string') {
                 lastBubbleIsTextRunRef.current = false;

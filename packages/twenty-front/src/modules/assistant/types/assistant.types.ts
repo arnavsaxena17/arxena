@@ -17,12 +17,19 @@ export type AssistantChatMessage = {
   orgCharts?: OrgChartPreview[];
 };
 
+export type AgentNote = {
+  summary: string;
+  createdAt?: string;
+  id?: string;
+};
+
 export type AssistantThread = {
   id: string;
   name: string;
   messages: AssistantChatMessage[];
   lastTableData: AssistantTableData | null;
   jobId?: string | null;
+  agentNotes?: AgentNote[];
 };
 
 export type AssistantAgentEvent = {

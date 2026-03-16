@@ -1,22 +1,18 @@
-import { AssistantActivityFeed } from '@/assistant/components/AssistantActivityFeed';
+import { AssistantChatColumn } from '@/assistant/components/AssistantChatColumn';
 import type { AssistantTableData } from '@/assistant/components/AssistantDetailsTable';
 import { AssistantResultsPanel } from '@/assistant/components/AssistantResultsPanel';
-import { McpClientChat } from '@/assistant/components/McpClientChat';
+import { AssistantThreadSidebar } from '@/assistant/components/AssistantThreadSidebar';
+import { MOCK_THREADS, USE_MOCK_ASSISTANT } from '@/assistant/mocks/mockThreads';
 import type {
   AssistantAgentEvent,
   AssistantChatMessage,
   AssistantThread,
 } from '@/assistant/types/assistant.types';
-import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { jobsState } from '@/candidate-table/states/states';
-import { TextInput } from '@/ui/input/components/TextInput';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
-import { useWebSocket } from '@/websocket-context/WebSocketContextProvider';
-import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -48,14 +44,14 @@ function saveThreadsToStorage(threads: AssistantThread[]) {
 function createNewThread(name = 'New thread'): AssistantThread {
   return {
     id: crypto.randomUUID(),
-  name,
+    name,
     messages: [],
     lastTableData: null,
   };
 }
 
 /** Show thread name without surrounding double quotes (LLM sometimes returns quoted names). */
-function displayThreadName(name: string): string {
+export function displayThreadName(name: string): string {
   if (!name || typeof name !== 'string') return name ?? '';
   const t = name.trim();
   if (t.length >= 2 && t.startsWith('"') && t.endsWith('"')) {
@@ -82,19 +78,6 @@ const StyledSplitLayout = styled.div<{ isMobile: boolean }>`
   flex: 1;
   min-height: 0;
   flex-direction: ${({ isMobile }) => (isMobile ? 'column' : 'row')};
-`;
-
-const StyledChatPanel = styled.div<{ isMobile: boolean }>`
-  display: flex;
-  flex-direction: column;
-  ${({ isMobile }) =>
-    isMobile
-      ? 'min-height: 40%; max-height: 60%; min-width: 0;'
-      : 'flex: 0 0 420px; min-width: 420px; max-width: 480px; flex-shrink: 0;'}
-  border-right: ${({ isMobile, theme }) =>
-    isMobile ? 'none' : `1px solid ${theme.border.color.medium}`};
-  border-bottom: ${({ isMobile, theme }) =>
-    isMobile ? `1px solid ${theme.border.color.medium}` : 'none'};
 `;
 
 const StyledPageHeader = styled(PageHeader)`
@@ -133,86 +116,29 @@ const StyledPageHeader = styled(PageHeader)`
   }
 `;
 
-const StyledThreadSelector = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(3, 4)};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.medium};
-  flex-shrink: 0;
-  background: ${({ theme }) => theme.background.primary};
-`;
-
-const StyledThreadSelectRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-`;
-
-const StyledThreadSelect = styled.select`
-  flex: 1;
-  min-width: 0;
-  padding: ${({ theme }) => theme.spacing(1, 2)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
-  transition: border-color 0.2s ease-in-out;
-
-  &:hover {
-    border-color: ${({ theme }) => theme.border.color.strong};
-  }
-
-  &:focus {
-    outline: none;
-    border-color: ${({ theme }) => theme.color.blue};
-  }
-`;
-
-const StyledThreadNameInput = styled(TextInput)`
-  font-size: ${({ theme }) => theme.font.size.sm};
-`;
-
-const StyledJobContextSelect = styled.select`
-  flex: 1;
-  min-width: 0;
-  padding: ${({ theme }) => theme.spacing(1, 2)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
-  transition: border-color 0.2s ease-in-out;
-
-  &:hover {
-    border-color: ${({ theme }) => theme.border.color.strong};
-  }
-
-  &:focus {
-    outline: none;
-    border-color: ${({ theme }) => theme.color.blue};
-  }
-`;
+const useMockAssistant = (): boolean =>
+  USE_MOCK_ASSISTANT || !(process.env.REACT_APP_SERVER_BASE_URL ?? '');
 
 export const AssistantPage = () => {
   const isMobile = useIsMobile();
   const tokenPair = useRecoilValue(tokenPairState);
   const token = tokenPair?.accessToken?.token;
-  const currentWorkspace = useRecoilValue(currentWorkspaceState);
-  const jobs = useRecoilValue(jobsState);
-  const { socket, connected } = useWebSocket();
+  const useMock = useMockAssistant();
   const [agentEvents, setAgentEvents] = useState<AssistantAgentEvent[]>([]);
   const [threads, setThreads] = useState<AssistantThread[]>(() => {
+    if (USE_MOCK_ASSISTANT) {
+      return MOCK_THREADS.map((t) => ({ ...t }));
+    }
     const loaded = loadThreadsFromStorage();
     if (loaded.length === 0) return [createNewThread()];
     return loaded;
   });
   const [currentThreadId, setCurrentThreadId] = useState<string>(() => {
+    if (USE_MOCK_ASSISTANT && MOCK_THREADS.length > 0) return MOCK_THREADS[0].id;
     const loaded = loadThreadsFromStorage();
     return loaded.length > 0 ? loaded[0].id : '';
   });
-  const [threadsLoadedFromBackend, setThreadsLoadedFromBackend] = useState(false);
+  const [threadsLoadedFromBackend, setThreadsLoadedFromBackend] = useState(USE_MOCK_ASSISTANT);
   const [threadsLoading, setThreadsLoading] = useState(false);
   const [editingThreadName, setEditingThreadName] = useState(false);
 
@@ -223,21 +149,29 @@ export const AssistantPage = () => {
   }, [threads, currentThreadId]);
 
   useEffect(() => {
+    if (USE_MOCK_ASSISTANT) {
+      setThreads(MOCK_THREADS.map((t) => ({ ...t })));
+      setThreadsLoadedFromBackend(true);
+      setThreadsLoading(false);
+      if (MOCK_THREADS.length > 0 && !threads.some((t) => t.id === currentThreadId)) {
+        setCurrentThreadId(MOCK_THREADS[0].id);
+      }
+      return;
+    }
     if (!baseUrl || !token || threadsLoadedFromBackend) {
       setThreadsLoading(false);
       return;
     }
     let cancelled = false;
     setThreadsLoading(true);
-    
-    // Safety timeout to ensure loading state is reset
+
     const timeoutId = setTimeout(() => {
       if (!cancelled) {
         setThreadsLoading(false);
         setThreadsLoadedFromBackend(true);
       }
-    }, 30000); // 30 second timeout
-    
+    }, 30000);
+
     const loadFromBackend = async () => {
       try {
         const res = await fetch(`${baseUrl}/assistant/threads`, {
@@ -290,14 +224,14 @@ export const AssistantPage = () => {
           }
           if (created.id) {
             setThreads([
-            {
-              id: created.id,
-              name: created.name ?? 'New thread',
-              messages: [],
-              lastTableData: null,
-              jobId: (created as { jobId?: string | null }).jobId ?? null,
-            },
-          ]);
+              {
+                id: created.id,
+                name: created.name ?? 'New thread',
+                messages: [],
+                lastTableData: null,
+                jobId: (created as { jobId?: string | null }).jobId ?? null,
+              },
+            ]);
             setCurrentThreadId(created.id);
           }
         } else {
@@ -329,13 +263,35 @@ export const AssistantPage = () => {
   }, [token, threadsLoadedFromBackend]);
 
   useEffect(() => {
-    saveThreadsToStorage(threads);
-  }, [threads]);
+    if (!useMock) saveThreadsToStorage(threads);
+  }, [threads, useMock]);
 
-  // Load full thread data when selecting a backend thread
+  // Load full thread data when selecting a backend thread (or apply mock thread when in mock mode)
   const loadThreadData = useCallback(async () => {
-    if (!baseUrl || !token || !currentThreadId || !threadsLoadedFromBackend) return;
-    
+    if (!currentThreadId || !threadsLoadedFromBackend) return;
+
+    if (useMock) {
+      const mockThread = MOCK_THREADS.find((t) => t.id === currentThreadId);
+      if (mockThread) {
+        setThreads((prev) =>
+          prev.map((t) =>
+            t.id === currentThreadId
+              ? {
+                  ...t,
+                  messages: mockThread.messages,
+                  lastTableData: mockThread.lastTableData ?? null,
+                  agentNotes: mockThread.agentNotes,
+                  jobId: mockThread.jobId ?? t.jobId,
+                }
+              : t,
+          ),
+        );
+      }
+      return;
+    }
+
+    if (!baseUrl || !token) return;
+
     try {
       const res = await fetch(`${baseUrl}/assistant/threads/${currentThreadId}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -349,6 +305,7 @@ export const AssistantPage = () => {
         }>;
         lastTableData?: AssistantTableData;
         jobId?: string | null;
+        agentNotes?: Array<{ summary: string; createdAt?: string; id?: string }>;
         error?: string;
       };
       if (data.error) return;
@@ -363,7 +320,6 @@ export const AssistantPage = () => {
       setThreads((prev) => {
         const thread = prev.find((t) => t.id === currentThreadId);
         const currentCount = thread?.messages?.length ?? 0;
-        // Never overwrite with API when we have more messages (streamed multi-bubble); backend often merges into one per turn
         const useCurrentMessages =
           currentCount > 0 && currentCount >= frontendMessages.length;
         const messages = useCurrentMessages ? (thread?.messages ?? []) : frontendMessages;
@@ -374,6 +330,7 @@ export const AssistantPage = () => {
                 messages,
                 lastTableData: data.lastTableData ?? t.lastTableData ?? null,
                 jobId: data.jobId !== undefined ? data.jobId : t.jobId,
+                agentNotes: data.agentNotes ?? t.agentNotes,
               }
             : t,
         );
@@ -381,33 +338,18 @@ export const AssistantPage = () => {
     } catch {
       // ignore errors - thread will remain with current state
     }
-  }, [baseUrl, token, currentThreadId, threadsLoadedFromBackend]);
+  }, [baseUrl, token, currentThreadId, threadsLoadedFromBackend, useMock]);
 
-  // Load thread data when thread is selected
   useEffect(() => {
     loadThreadData();
   }, [loadThreadData]);
 
-  const workspaceId = currentWorkspace?.id;
-  useEffect(() => {
-    if (!socket || !connected || !workspaceId) return;
-    const room = `workspace-${workspaceId}`;
-    socket.emit('join_room', { room });
-    return () => {
-      socket.emit('leave_room', { room });
-    };
-  }, [socket, connected, workspaceId]);
-
-  useWebSocketEvent<AssistantAgentEvent>(
-    'assistant.agent_event',
-    (data) => {
-      setAgentEvents((prev) => {
-        const next = [...prev, data];
-        return next.length > 50 ? next.slice(-50) : next;
-      });
-    },
-    [],
-  );
+  const handleAgentEvent = useCallback((event: AssistantAgentEvent) => {
+    setAgentEvents((prev) => {
+      const next = [...prev, event];
+      return next.length > 50 ? next.slice(-50) : next;
+    });
+  }, []);
 
   const currentThread =
     threads.find((t) => t.id === currentThreadId) ?? threads[0] ?? null;
@@ -437,6 +379,12 @@ export const AssistantPage = () => {
   );
 
   const handleNewThread = useCallback(async () => {
+    if (useMock) {
+      const thread = createNewThread();
+      setThreads((prev) => [...prev, thread]);
+      setCurrentThreadId(thread.id);
+      return;
+    }
     if (baseUrl && token && threadsLoadedFromBackend) {
       try {
         const res = await fetch(`${baseUrl}/assistant/threads`, {
@@ -507,28 +455,6 @@ export const AssistantPage = () => {
     [baseUrl, token, currentThreadId, threadsLoadedFromBackend],
   );
 
-  const handleJobContextChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const value = e.target.value;
-      const jobId = value === '' ? null : value;
-      if (!currentThreadId) return;
-      setThreads((prev) =>
-        prev.map((t) => (t.id === currentThreadId ? { ...t, jobId } : t)),
-      );
-      if (baseUrl && token && threadsLoadedFromBackend && currentThreadId) {
-        fetch(`${baseUrl}/assistant/threads/${currentThreadId}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ jobId }),
-        }).catch(() => {});
-      }
-    },
-    [baseUrl, token, currentThreadId, threadsLoadedFromBackend],
-  );
-
   const handleSyncTable = useCallback(async () => {
     if (!baseUrl || !token || !currentThreadId || !threadsLoadedFromBackend)
       return;
@@ -555,6 +481,7 @@ export const AssistantPage = () => {
   ]);
 
   const showSync =
+    !useMock &&
     Boolean(baseUrl && token && currentThreadId && threadsLoadedFromBackend);
 
   return (
@@ -570,71 +497,32 @@ export const AssistantPage = () => {
       </StyledPageHeader>
       <StyledPageBody>
         <StyledSplitLayout isMobile={isMobile}>
-          <StyledChatPanel isMobile={isMobile}>
-            <AssistantActivityFeed events={agentEvents} />
-            <StyledThreadSelector aria-busy={threadsLoading}>
-              <StyledThreadSelectRow>
-                <StyledThreadSelect
-                  value={
-                    threads.some((t) => t.id === currentThreadId)
-                      ? currentThreadId
-                      : threads[0]?.id ?? '__new__'
-                  }
-                  onChange={handleSelectThread}
-                  aria-label="Select conversation thread"
-                  disabled={threadsLoading}
-                >
-                  <option value="__new__">+ New thread</option>
-                  {threads.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {displayThreadName(t.name)}
-                    </option>
-                  ))}
-                </StyledThreadSelect>
-                <Button
-                  title="New thread"
-                  onClick={handleNewThread}
-                  disabled={threadsLoading && threadsLoadedFromBackend}
-                />
-              </StyledThreadSelectRow>
-              {currentThread && (
-                <StyledThreadNameInput
-                  value={displayThreadName(currentThread.name)}
-                  onChange={(value: string) => handleThreadNameChange(value)}
-                  placeholder="Thread name"
-                  onBlur={() => setEditingThreadName(false)}
-                  onFocus={() => setEditingThreadName(true)}
-                  fullWidth
-                />
-              )}
-              {currentThread && threadsLoadedFromBackend && (
-                <StyledThreadSelectRow>
-                  <StyledJobContextSelect
-                    value={currentThread.jobId ?? ''}
-                    onChange={handleJobContextChange}
-                    aria-label="Thread job context"
-                  >
-                    <option value="">No job context</option>
-                    {jobs.map((job) => (
-                      <option key={job.id} value={job.id}>
-                        {job.name ?? job.id}
-                      </option>
-                    ))}
-                  </StyledJobContextSelect>
-                </StyledThreadSelectRow>
-              )}
-            </StyledThreadSelector>
-            {currentThread && (
-              <McpClientChat
-                messages={currentThread.messages}
-                onMessagesChange={handleMessagesChange}
-                onTableData={handleTableData}
-                threadId={currentThreadId || undefined}
-                onThreadNameChange={handleThreadNameChange}
-                onMessageComplete={loadThreadData}
-              />
-            )}
-          </StyledChatPanel>
+          <AssistantThreadSidebar
+            isMobile={isMobile}
+            threads={threads}
+            currentThreadId={currentThreadId}
+            threadsLoading={threadsLoading}
+            threadsLoadedFromBackend={threadsLoadedFromBackend}
+            onSelectThread={setCurrentThreadId}
+            onNewThread={handleNewThread}
+          />
+          <AssistantChatColumn
+            isMobile={isMobile}
+            agentEvents={agentEvents}
+            threads={threads}
+            currentThread={currentThread}
+            currentThreadId={currentThreadId}
+            threadsLoading={threadsLoading}
+            threadsLoadedFromBackend={threadsLoadedFromBackend}
+            editingThreadName={editingThreadName}
+            onSelectThread={handleSelectThread}
+            onThreadNameChange={handleThreadNameChange}
+            onThreadNameFocusChange={setEditingThreadName}
+            onMessagesChange={handleMessagesChange}
+            onTableData={(data) => handleTableData(data)}
+            onMessageComplete={loadThreadData}
+            onAgentEvent={handleAgentEvent}
+          />
           <AssistantResultsPanel
             tableData={currentThread?.lastTableData ?? null}
             maxTableHeight={600}
