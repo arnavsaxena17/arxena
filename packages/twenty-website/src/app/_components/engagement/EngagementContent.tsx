@@ -209,12 +209,13 @@ export const EngagementContent = ({ signUpUrl }: EngagementContentProps) => {
   return (
     <StyledSection>
       <StyledHeadline>
-        You&apos;ve identified the right people. Now what?
+        You&apos;ve mapped the org and built your list. Now engage.
       </StyledHeadline>
       <StyledHeadlineSub>
         Our AI reaches out from your own WhatsApp and LinkedIn accounts.
-        Messages go from you — human-like — across any channel. You only talk to
-        people who are interested.
+        Messages go from you — human-like — across any channel. Use real-time
+        org charts to build lists, then we help you reach the right people. You
+        only talk to people who respond.
       </StyledHeadlineSub>
 
       <EngagementChatDemo />
@@ -257,7 +258,7 @@ export const EngagementContent = ({ signUpUrl }: EngagementContentProps) => {
       </StyledCardsGrid>
 
       <StyledFooterLine>
-        Includes org charts for all campaign targets. No double-paying.
+        Includes real-time org charts for all campaign targets. No double-paying.
       </StyledFooterLine>
 
       <StyledCtaSection>

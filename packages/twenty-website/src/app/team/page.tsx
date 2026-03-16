@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
   title: 'Team | Arxena',
   description:
-    "Meet the team building Arxena — the world's first org chart database. 1M+ companies mapped, 55M+ professionals indexed.",
+    'Meet the team building Arxena — Org Chart AI. Real-time company structures, algorithmic recruitment, from map to engagement.',
   alternates: {
     canonical: '/team',
   },

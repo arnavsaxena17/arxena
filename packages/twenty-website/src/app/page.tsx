@@ -9,23 +9,23 @@ import { Header } from './_components/ui/layout/header';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: "Arxena - Search Any Company's Org Chart",
+  title: 'Arxena — Org Chart AI | Real-Time Company Structures',
   description:
-    'Arxena lets you search and explore organizational charts of any company. Access 1M+ companies and 55M+ professionals for recruitment, outreach, and people analytics. Free org chart search.',
+    'Org Chart AI: real-time company structures from LinkedIn. Map companies, build lists, fetch contacts, engage on WhatsApp and LinkedIn. Algorithmic recruitment. 1M+ companies, 55M+ professionals. Search any company org chart.',
   alternates: {
     canonical: '/',
   },
   openGraph: {
-    title: "Arxena - Search Any Company's Org Chart",
+    title: 'Arxena — Org Chart AI | Real-Time Company Structures',
     description:
-      'Search organizational charts of any company. 1M+ companies, 55M+ professionals. Built for recruiters, sales teams, and talent mapping.',
+      'Org Chart AI: real-time structures from LinkedIn. Map companies, build lists, fetch contacts, engage on WhatsApp and LinkedIn. 1M+ companies.',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: "Arxena - Search Any Company's Org Chart",
+    title: 'Arxena — Org Chart AI | Real-Time Company Structures',
     description:
-      'Search organizational charts of any company. 1M+ companies, 55M+ professionals for recruitment and people analytics.',
+      'Org Chart AI: real-time company structures from LinkedIn. Map, build lists, fetch contacts, engage on WhatsApp and LinkedIn. 1M+ companies.',
   },
 };
 

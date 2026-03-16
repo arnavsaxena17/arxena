@@ -43,12 +43,13 @@ export const USE_CASES = [
   {
     title: 'Recruiters',
     description:
-      'Map target companies and find decision-makers for placements.',
+      'Map companies in real time, build lists, fetch contacts, engage on WhatsApp and LinkedIn.',
     href: '/org-chart/google',
   },
   {
     title: 'Sales teams',
-    description: 'Identify the right stakeholders and reach them at scale.',
+    description:
+      'Map companies in real time, build lists, fetch contacts, engage on WhatsApp and LinkedIn.',
     href: '/engage',
   },
   {
@@ -69,32 +70,32 @@ export const HOW_IT_WORKS_STEPS = [
     step: 2,
     title: 'View structure',
     description:
-      'Our algorithm clusters people and creates a best-guess hierarchy from millions of data points.',
+      'Real-time org structure from LinkedIn and other data; algorithmically clustered.',
   },
   {
     step: 3,
-    title: 'Identify decision-makers',
-    description: 'See names, titles, and contact info.',
+    title: 'Build lists & contacts',
+    description: 'Navigate the org, build lists, fetch contact details.',
   },
   {
     step: 4,
     title: 'Engage',
     description:
-      'Reach out via WhatsApp, LinkedIn, and more. AI writes from your accounts — you only talk to people who respond.',
+      'Reach out via WhatsApp, LinkedIn; you only talk to people who respond.',
     href: '/engage',
   },
 ] as const;
 
 export const DIFFERENTIATORS = [
   {
-    title: 'Algorithmic Org Charts',
+    title: 'Real-time org charts from LinkedIn (and others)',
     description:
-      "Our algorithm clusters millions of professionals and builds org structures automatically — a best-guess hierarchy so you don't have to map it yourself.",
+      'Real-time company structures from LinkedIn and other data; algorithmically built so you can navigate, build lists, and fetch contacts.',
   },
   {
     title: 'AI that speaks as you',
     description:
-      "Our AI interacts with enterprise CEOs and decision-makers on whatsapp/ linkedin/ email in your voice. Our AI writes so naturally they can't tell the difference — and you only talk to people who respond.",
+      'Engage in your voice on WhatsApp, LinkedIn, and email. You only talk to people who respond.',
     href: '/engage',
   },
 ] as const;

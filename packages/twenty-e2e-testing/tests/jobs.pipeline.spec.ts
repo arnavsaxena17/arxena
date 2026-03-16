@@ -35,8 +35,40 @@ const waitForPasswordStepOrJobs = async (page: Page) => {
 };
 
 const completeOnboardingIfNeeded = async (page: Page) => {
-  for (let i = 0; i < 10; i += 1) {
+  const isJobsUiVisible = async () => {
     if (/\/jobs(?:[/?#]|$)/.test(page.url())) {
+      return true;
+    }
+
+    const activeJobsVisible = await page
+      .getByText(/Active Jobs/i)
+      .first()
+      .isVisible()
+      .catch(() => false);
+    if (activeJobsVisible) {
+      return true;
+    }
+
+    const jobsHeadingVisible = await page
+      .getByRole('heading', { name: /Jobs/i })
+      .first()
+      .isVisible()
+      .catch(() => false);
+    if (jobsHeadingVisible) {
+      return true;
+    }
+
+    const orgChartSearchVisible = await page
+      .getByPlaceholder('Search company for org charts...')
+      .first()
+      .isVisible()
+      .catch(() => false);
+
+    return orgChartSearchVisible;
+  };
+
+  for (let i = 0; i < 10; i += 1) {
+    if (await isJobsUiVisible()) {
       return;
     }
 
@@ -134,19 +166,29 @@ test('Jobs org chart pipeline: full company, leadership, functions, geos, nodes'
 
   await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 90_000 });
 
-  if (await loginPage.hasVisibleLoginWithEmailButton()) {
-    await loginPage.clickLoginWithEmail();
-  }
+  const isAlreadyInApp = () => /\/(welcome|jobs)(?:[/?#]|$)/.test(page.url());
 
-  if (!/\/jobs(?:[/?#]|$)/.test(page.url())) {
-    await loginPage.typeEmail(login as string);
-    await loginPage.clickContinueButton();
+  if (!isAlreadyInApp()) {
+    if (await loginPage.hasVisibleLoginWithEmailButton()) {
+      await loginPage.clickLoginWithEmail();
+    }
 
-    const nextStep = await waitForPasswordStepOrJobs(page);
+    const emailFieldVisible = await page
+      .locator('input[placeholder="Email"], input[type="email"], input[name="email"]')
+      .first()
+      .isVisible()
+      .catch(() => false);
 
-    if (nextStep === 'password') {
-      await loginPage.typePassword(password as string);
-      await loginPage.submitPasswordStep();
+    if (emailFieldVisible) {
+      await loginPage.typeEmail(login as string);
+      await loginPage.clickContinueButton();
+
+      const nextStep = await waitForPasswordStepOrJobs(page);
+
+      if (nextStep === 'password') {
+        await loginPage.typePassword(password as string);
+        await loginPage.submitPasswordStep();
+      }
     }
   }
 
@@ -238,11 +280,25 @@ test('Jobs org chart pipeline: full company, leadership, functions, geos, nodes'
     });
   }
 
+  const blockingCloseButton = page
+    .getByRole('button', { name: /close/i })
+    .first();
+  const modalBackdrop = page.locator('.modal-backdrop, [role="dialog"], .css-osvyda').first();
+
+  if (await blockingCloseButton.isVisible().catch(() => false)) {
+    await blockingCloseButton.click().catch(() => {});
+    await page.waitForTimeout(1_000);
+  } else if (await modalBackdrop.isVisible().catch(() => false)) {
+    await page.keyboard.press('Escape').catch(() => {});
+    await page.waitForTimeout(1_000);
+  }
+
   const viewAllButton = page
     .getByRole('button', { name: /view all candidates/i })
     .first();
   if (await viewAllButton.isVisible().catch(() => false)) {
-    await viewAllButton.click();
+    await expect(modalBackdrop).toBeHidden({ timeout: 5_000 }).catch(() => {});
+    await viewAllButton.click({ force: true });
     await page.waitForTimeout(3_000);
     await page.screenshot({
       path: 'run_results/jobs-04-view-all-candidates.png',

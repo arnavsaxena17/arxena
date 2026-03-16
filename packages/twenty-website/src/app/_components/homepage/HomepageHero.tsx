@@ -337,7 +337,9 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
         <StyledLogoWrapper>
           <Logo variant="hero" />
         </StyledLogoWrapper>
-        <StyledTitle>Search any company&apos;s org chart</StyledTitle>
+        <StyledTitle>
+          Org Chart AI — real-time company structures
+        </StyledTitle>
         <StyledSearchWrapper>
           <OrgChartSearch
             placeholder="Search any company's org chart"
@@ -368,7 +370,7 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
 
       <StyledExampleSection>
         <StyledExampleTitle>
-          Algorithmically Clustered Org Charts
+          Real-time org charts from LinkedIn (and others)
         </StyledExampleTitle>
         <StyledScrollingStrip>
           <StyledScrollingTrack>
@@ -416,8 +418,8 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
       <TrustBadgesSection />
 
       <StyledSocialProof>
-        1M+ companies mapped, 800M+ professionals indexed — algorithmically
-        clustered and mapped
+        1M+ companies mapped, 800M+ professionals indexed — real-time
+        structures, algorithmically clustered
       </StyledSocialProof>
 
       <StyledSectionAnchor id="pricing">
@@ -448,9 +450,9 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
               color: '#474747',
             }}
           >
-            Want to reach the right people?{' '}
+            Build lists, get contacts, engage on WhatsApp & LinkedIn —{' '}
             <StyledEngageLink href="/engage">
-              Learn about Engagement →
+              Learn more →
             </StyledEngageLink>
           </p>
         </StyledPricingSection>

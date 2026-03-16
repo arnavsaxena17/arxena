@@ -103,7 +103,9 @@ export const HeaderDesktop = ({
         <StyledNavLink href="/story">Story</StyledNavLink>
         <StyledNavLink href="/team">Team</StyledNavLink>
         <StyledNavLink href="/pricing">Pricing</StyledNavLink>
-        <StyledNavLink href="/engage">Engage</StyledNavLink>
+        <StyledNavLink href="/engage" aria-label="Engage — WhatsApp & LinkedIn">
+          Engage
+        </StyledNavLink>
       </StyledNav>
       {showSearch && (
         <StyledSearchWrapper>

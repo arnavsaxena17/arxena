@@ -148,7 +148,8 @@ export const TeamContent = ({ signInUrl, signUpUrl }: TeamContentProps) => {
     <StyledSection>
       <StyledHeadline>Meet the team</StyledHeadline>
       <StyledHeadlineSub>
-        The people building the world&apos;s first org chart database.
+        The people building Org Chart AI — real-time org charts and
+        recruitment from map to engagement.
       </StyledHeadlineSub>
       <StyledTeamGrid>
         {TEAM_MEMBERS.map((member) => (

@@ -7,9 +7,9 @@ import { Header } from '@/app/_components/ui/layout/header';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Engage | Arxena',
+  title: 'Engage | Org Chart AI — WhatsApp & LinkedIn outreach | Arxena',
   description:
-    'Our AI reaches out from your own WhatsApp and LinkedIn accounts. Messages go from you — human-like — across any channel. You only talk to people who are interested.',
+    'The last step of Org Chart AI: build lists from real-time org charts, then human-like outreach from your accounts. WhatsApp and LinkedIn. You only talk to people who respond.',
   alternates: {
     canonical: '/engage',
   },

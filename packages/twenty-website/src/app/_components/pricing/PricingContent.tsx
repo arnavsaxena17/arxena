@@ -4,6 +4,8 @@ import styled from '@emotion/styled';
 import { IconCheck } from '@tabler/icons-react';
 import Link from 'next/link';
 
+import { type CreditPack, CREDIT_PACKS } from 'twenty-shared';
+
 const StyledSection = styled.section`
   max-width: 900px;
   margin: 0 auto;
@@ -178,41 +180,6 @@ type PricingContentProps = {
   signUpUrl: string;
 };
 
-const PRICING_TIERS = [
-  {
-    name: '1 org chart',
-    price: 799,
-    credits: '1 credit (<100 employees)',
-    useCase: 'One-off mapping',
-    features: [
-      'Full org chart structure',
-      'LinkedIn profiles + emails',
-      'Sign up to unmask names',
-    ],
-  },
-  {
-    name: '5 org charts',
-    price: 2499,
-    credits: '5 credits (~$500/credit)',
-    useCase: 'Individual recruiters',
-    features: ['5 org charts', 'All features included', '12-month expiry'],
-  },
-  {
-    name: '15 org charts',
-    price: 4999,
-    credits: '15 credits (~$333/credit)',
-    useCase: 'TA teams, agencies',
-    features: ['15 org charts', 'All features included', '12-month expiry'],
-  },
-  {
-    name: '30 org charts',
-    price: 7999,
-    credits: '30 credits (~$267/credit)',
-    useCase: 'Power users, bulk mandates',
-    features: ['30 org charts', 'All features included', '12-month expiry'],
-  },
-];
-
 export const PricingContent = ({ signUpUrl }: PricingContentProps) => {
   return (
     <StyledSection>
@@ -223,13 +190,13 @@ export const PricingContent = ({ signUpUrl }: PricingContentProps) => {
       </StyledHeadlineSub>
 
       <StyledCardsGrid>
-        {PRICING_TIERS.map(({ name, price, credits, features }) => (
-          <StyledCard key={name}>
-            <StyledCardTitle>{name}</StyledCardTitle>
-            <StyledPrice>${price.toLocaleString()}</StyledPrice>
-            <StyledCredits>{credits}</StyledCredits>
+        {CREDIT_PACKS.map((pack: CreditPack) => (
+          <StyledCard key={pack.name}>
+            <StyledCardTitle>{pack.name}</StyledCardTitle>
+            <StyledPrice>${(pack.amountSubunits / 100).toLocaleString()}</StyledPrice>
+            <StyledCredits>{pack.creditsDisplay}</StyledCredits>
             <StyledFeatureList>
-              {features.map((feature) => (
+              {pack.features.map((feature: string) => (
                 <StyledFeatureItem key={feature}>
                   <StyledCheckIcon size={20} strokeWidth={2.5} />
                   {feature}

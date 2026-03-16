@@ -8,16 +8,9 @@ import { AssistantThreadService } from '../assistant/assistant-thread.service';
 import { MessageParam } from '../assistant/assistant.types';
 import { McpAssistantService } from '../assistant/mcp-assistant.service';
 import { RecruitmentAgentRulesService } from '../assistant/recruitment-agent-rules.service';
+import { buildHeartbeatPrompt } from './prompts/heartbeat-prompt.template';
 
 const AUTONOMOUS_THREAD_NAME = 'Autonomous';
-function buildHeartbeatPrompt(threadId: string): string {
-  return `This is an autonomous recruiter heartbeat. Use the tools to see what needs attention:
-1. Call get_pending_recruiter_actions to see active jobs, candidate counts by status, and upcoming client interviews.
-2. Call list_due_reminders to see candidates who are due for follow-up.
-3. Call read_agent_notes with threadId "${threadId}" to see any pending notes from previous runs.
-
-Then take one or two high-value actions (e.g. follow up with a candidate, add to shortlist, move to CV Sent, send shortlist to client). Output a brief summary of what you did.`;
-}
 
 export type AutonomousRecruiterJobData = {
   workspaceId: string;

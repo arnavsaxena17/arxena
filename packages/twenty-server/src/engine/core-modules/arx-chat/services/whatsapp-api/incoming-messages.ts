@@ -46,6 +46,8 @@ export class IncomingWhatsappMessages {
     candidateId: string,
     workspaceId: string,
     messageId?: string,
+    isIncomingMessage: boolean = true,
+    slidingWindowDelayMinutes?: number,
   ): Promise<void> {
     // Use the dedicated EngagedCandidateQueueService for better separation of concerns
     const { EngagedCandidateQueueService } = await import('../candidate-engagement/engaged-candidate-queue.service');
@@ -56,7 +58,13 @@ export class IncomingWhatsappMessages {
       this.engagedCandidateMessageQueueService,
     );
 
-    await queueService.queueCandidateForEngagement(candidateId, workspaceId, messageId);
+    await queueService.queueCandidateForEngagement(
+      candidateId,
+      workspaceId,
+      messageId,
+      isIncomingMessage,
+      slidingWindowDelayMinutes,
+    );
   }
 
 

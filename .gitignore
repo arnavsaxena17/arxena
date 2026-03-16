@@ -1,5 +1,7 @@
 **/**/.env
 .DS_Store
+*.log
+*.pid
 /.idea
 **/**/node_modules/
 .cache

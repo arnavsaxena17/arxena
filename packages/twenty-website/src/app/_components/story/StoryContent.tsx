@@ -333,10 +333,12 @@ type StoryContentProps = {
 export const StoryContent = ({ signUpUrl }: StoryContentProps) => {
   return (
     <StyledSection>
-      <StyledHeadline>The world&apos;s first org chart database</StyledHeadline>
+      <StyledHeadline>
+        Org Chart AI — real-time company structures
+      </StyledHeadline>
       <StyledHeadlineSub>
-        Discovery of people inside companies as easy as finding a destination on
-        a map.
+        Recruitment, done algorithmically: map any company in real time, build
+        lists, fetch contacts, engage on WhatsApp and LinkedIn.
       </StyledHeadlineSub>
 
       <StyledParagraph>
@@ -346,9 +348,10 @@ export const StoryContent = ({ signUpUrl }: StoryContentProps) => {
       </StyledParagraph>
 
       <StyledParagraph>
-        We build org charts from publicly available data. See who&apos;s who,
-        who reports to whom, who&apos;s joining, who&apos;s leaving. For hiring,
-        benchmarking, and diligence.
+        We build real-time org structures from LinkedIn and other data —
+        algorithmically. Navigate any company, see who&apos;s who and who
+        reports to whom, build lists, fetch contacts. Then engage humans on
+        WhatsApp and LinkedIn. For hiring, benchmarking, and diligence.
       </StyledParagraph>
 
       <StyledOrgChartLink href="/org-chart/google">
@@ -357,7 +360,7 @@ export const StoryContent = ({ signUpUrl }: StoryContentProps) => {
 
       <p style={{ margin: '16px 0 0 0' }}>
         <StyledEngageLink href="/engage">
-          Want to reach the right people? Learn about Engagement →
+          Build lists and engage — Learn about Engagement →
         </StyledEngageLink>
       </p>
 
