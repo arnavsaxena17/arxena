@@ -159,21 +159,19 @@ export class McpAssistantService {
           | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
         >;
         const textParts: string[] = [];
-        const toolCalls: OpenAI.Chat.ChatCompletionMessageToolCall[] = [];
         for (const block of content) {
           if (block.type === 'text') textParts.push(block.text);
-          if (block.type === 'tool_use') {
-            toolCalls.push({
-              id: block.id,
-              type: 'function',
-              function: { name: block.name, arguments: JSON.stringify(block.input ?? {}) },
-            });
-          }
+          // IMPORTANT: For OpenAI, historical assistant messages **must not**
+          // include `tool_calls` without corresponding tool responses in the
+          // same payload. We therefore intentionally drop any historical
+          // `tool_use` blocks here and only keep the assistant text. The
+          // current turn's tool calls are handled inside the streaming /
+          // non‑streaming OpenAI flows, where we always append matching
+          // `role: "tool"` messages.
         }
         out.push({
           role: 'assistant',
           content: textParts.join('\n').trim() || null,
-          tool_calls: toolCalls.length > 0 ? toolCalls : undefined,
         });
       }
     }
