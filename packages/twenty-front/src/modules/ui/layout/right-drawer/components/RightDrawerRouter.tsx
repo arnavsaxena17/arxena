@@ -11,6 +11,7 @@ import { NotificationsDrawer } from '@/ui/notifications/components/Notifications
 
 import { RightDrawerAllActionsContent } from '@/action-menu/components/RightDrawerAllActionsContent';
 import { CandidateChatDrawer } from '@/candidate-table/CandidateChatDrawer';
+import { ClientChatDrawer } from '@/candidate-table/ClientChatDrawer';
 import { WhatsappTemplatesProvider } from '@/candidate-table/components/WhatsappTemplatesProvider';
 import { RightDrawerCandidateActionsContent } from '@/candidate-table/RightDrawerCandidateActionsContent';
 import { SimpleActivityDrawer } from '@/candidate-table/SimpleActivityDrawer';
@@ -40,6 +41,7 @@ const RIGHT_DRAWER_PAGES_CONFIG: ComponentByRightDrawerPage = {
   [RightDrawerPages.ViewCalendarEvent]: <RightDrawerCalendarEvent />,
   [RightDrawerPages.ViewRecord]: <RightDrawerRecord />,
   [RightDrawerPages.Copilot]: <RightDrawerAIChat />,
+  [RightDrawerPages.ClientChat]: <ClientChatDrawer />,
   [RightDrawerPages.WorkflowStepSelectTriggerType]: (
     <RightDrawerWorkflowSelectTriggerType />
   ),

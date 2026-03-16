@@ -23,6 +23,22 @@ export type AssistantChatResponse = {
   toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
 };
 
+export type RecruiterMessageMetadata = {
+  jobContextSummary?: string;
+};
+
+export type RecruiterMessageOptions = {
+  maxHistoryMessages?: number;
+  includeJobContext?: boolean;
+  maxResponseCharacters?: number;
+};
+
+export type RecruiterMessageResponse = {
+  text: string;
+  toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
+  metadata?: RecruiterMessageMetadata;
+};
+
 export type StreamEventSender = (event: string, data: unknown) => boolean;
 
 export type AssistantContentBlock =
@@ -49,6 +65,16 @@ export type AssistantThreadTableData = {
   rows: Record<string, unknown>[];
 };
 
+export type AssistantAgentEventRecord = {
+  status: 'started' | 'completed' | 'error' | 'tool_call';
+  threadId?: string;
+  runId?: string;
+  summary?: string;
+  error?: string;
+  toolName?: string;
+  timestamp: number;
+};
+
 export type AgentNote = { summary: string; createdAt?: string; id?: string };
 
 export type AssistantThreadRecord = {
@@ -61,4 +87,5 @@ export type AssistantThreadRecord = {
   updatedAt: Date;
   jobId?: string;
   agentNotes?: AgentNote[];
+  agentEvents?: AssistantAgentEventRecord[];
 };

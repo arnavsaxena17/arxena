@@ -451,6 +451,26 @@ const StyledStreamLogHeader = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing(0.5)};
 `;
 
+const StyledTableSnapshot = styled.div`
+  margin-top: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(1)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  background: ${({ theme }) => theme.background.primary};
+  cursor: pointer;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.border.color.medium};
+    background: ${({ theme }) => theme.background.secondary};
+  }
+`;
+
+const StyledTableSnapshotHint = styled.div`
+  margin-top: ${({ theme }) => theme.spacing(1)};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${({ theme }) => theme.font.color.tertiary};
+`;
+
 const StyledErrorBanner = styled.div`
   display: flex;
   align-items: center;
@@ -1081,7 +1101,26 @@ export const McpClientChat = ({
               </StyledMessage>
             )}
             {msg.tableDataList?.map((tableData, tableIndex) => (
-              <AssistantDetailsTable key={tableIndex} data={tableData} />
+              <StyledTableSnapshot
+                key={tableIndex}
+                onClick={() => {
+                  const mockJobId = '6f0a5d80-8881-4279-b520-797d5acd4804';
+                  const rowsWithJobId = tableData.rows.map((row) => ({
+                    ...row,
+                    // For mocking, always override to the known job with real candidates
+                    jobsId: mockJobId,
+                  }));
+                  onTableData?.({
+                    ...tableData,
+                    rows: rowsWithJobId,
+                  });
+                }}
+              >
+                <AssistantDetailsTable data={tableData} />
+                <StyledTableSnapshotHint>
+                  Click to open the full candidates table on the right.
+                </StyledTableSnapshotHint>
+              </StyledTableSnapshot>
             ))}
             {msg.orgCharts?.map((orgChart, orgChartIndex) => {
               const logoUrl = `${baseUrl}/org-chart/company-logo?website=${encodeURIComponent(orgChart.companyName)}`;

@@ -20,44 +20,15 @@ import { Button, IconMessage, IconPlus } from 'twenty-ui';
 
 const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
 
-const ASSISTANT_THREADS_STORAGE_KEY = 'assistant_threads';
-
-function loadThreadsFromStorage(): AssistantThread[] {
-  try {
-    const raw = localStorage.getItem(ASSISTANT_THREADS_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as AssistantThread[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveThreadsToStorage(threads: AssistantThread[]) {
-  try {
-    localStorage.setItem(ASSISTANT_THREADS_STORAGE_KEY, JSON.stringify(threads));
-  } catch {
-    // ignore
-  }
-}
 
 function createNewThread(name = 'New thread'): AssistantThread {
+  console.log('createNewThread', name);
   return {
     id: crypto.randomUUID(),
     name,
     messages: [],
     lastTableData: null,
   };
-}
-
-/** Show thread name without surrounding double quotes (LLM sometimes returns quoted names). */
-export function displayThreadName(name: string): string {
-  if (!name || typeof name !== 'string') return name ?? '';
-  const t = name.trim();
-  if (t.length >= 2 && t.startsWith('"') && t.endsWith('"')) {
-    return t.slice(1, -1).trim();
-  }
-  return t;
 }
 
 const StyledPageContainer = styled(PageContainer)`
@@ -125,19 +96,16 @@ export const AssistantPage = () => {
   const token = tokenPair?.accessToken?.token;
   const useMock = useMockAssistant();
   const [agentEvents, setAgentEvents] = useState<AssistantAgentEvent[]>([]);
-  const [threads, setThreads] = useState<AssistantThread[]>(() => {
-    if (USE_MOCK_ASSISTANT) {
-      return MOCK_THREADS.map((t) => ({ ...t }));
-    }
-    const loaded = loadThreadsFromStorage();
-    if (loaded.length === 0) return [createNewThread()];
-    return loaded;
-  });
-  const [currentThreadId, setCurrentThreadId] = useState<string>(() => {
-    if (USE_MOCK_ASSISTANT && MOCK_THREADS.length > 0) return MOCK_THREADS[0].id;
-    const loaded = loadThreadsFromStorage();
-    return loaded.length > 0 ? loaded[0].id : '';
-  });
+  const [assistantMode, setAssistantMode] = useState<'fully_autonomous' | 'permissioned'>(
+    'fully_autonomous',
+  );
+  const [assistantModeSaving, setAssistantModeSaving] = useState(false);
+  const [threads, setThreads] = useState<AssistantThread[]>(() =>
+    USE_MOCK_ASSISTANT ? MOCK_THREADS.map((t) => ({ ...t })) : [],
+  );
+  const [currentThreadId, setCurrentThreadId] = useState<string>(() =>
+    USE_MOCK_ASSISTANT && MOCK_THREADS.length > 0 ? MOCK_THREADS[0].id : '',
+  );
   const [threadsLoadedFromBackend, setThreadsLoadedFromBackend] = useState(USE_MOCK_ASSISTANT);
   const [threadsLoading, setThreadsLoading] = useState(false);
   const [editingThreadName, setEditingThreadName] = useState(false);
@@ -263,7 +231,60 @@ export const AssistantPage = () => {
   }, [token, threadsLoadedFromBackend]);
 
   useEffect(() => {
-    if (!useMock) saveThreadsToStorage(threads);
+    if (!baseUrl || !token) return;
+    let cancelled = false;
+    const loadMode = async () => {
+      try {
+        const res = await fetch(`${baseUrl}/workspace-modifications/workspace-keys`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as { assistant_mode?: string };
+        if (data.assistant_mode === 'permissioned' || data.assistant_mode === 'fully_autonomous') {
+          setAssistantMode(data.assistant_mode);
+        }
+      } catch {
+        // ignore – default mode is fine
+      }
+    };
+    loadMode();
+    return () => {
+      cancelled = true;
+    };
+  }, [baseUrl, token]);
+
+  const handleAssistantModeChange = useCallback(
+    async (event: React.ChangeEvent<HTMLSelectElement>) => {
+      const next = event.target.value === 'permissioned' ? 'permissioned' : 'fully_autonomous';
+      setAssistantMode(next);
+      if (!baseUrl || !token) return;
+      setAssistantModeSaving(true);
+      try {
+        await fetch(`${baseUrl}/workspace-modifications/workspace-keys`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ assistant_mode: next }),
+        });
+      } catch {
+        // best-effort
+      } finally {
+        setAssistantModeSaving(false);
+      }
+    },
+    [baseUrl, token],
+  );
+
+  // When running fully in mock mode (no backend), keep threads in local storage.
+  useEffect(() => {
+    if (!useMock) return;
+    try {
+      localStorage.setItem('assistant_threads', JSON.stringify(threads));
+    } catch {
+      // ignore storage errors
+    }
   }, [threads, useMock]);
 
   // Load full thread data when selecting a backend thread (or apply mock thread when in mock mode)
@@ -306,6 +327,7 @@ export const AssistantPage = () => {
         lastTableData?: AssistantTableData;
         jobId?: string | null;
         agentNotes?: Array<{ summary: string; createdAt?: string; id?: string }>;
+        agentEvents?: AssistantAgentEvent[];
         error?: string;
       };
       if (data.error) return;
@@ -331,10 +353,12 @@ export const AssistantPage = () => {
                 lastTableData: data.lastTableData ?? t.lastTableData ?? null,
                 jobId: data.jobId !== undefined ? data.jobId : t.jobId,
                 agentNotes: data.agentNotes ?? t.agentNotes,
+                agentEvents: data.agentEvents ?? t.agentEvents,
               }
             : t,
         );
       });
+      setAgentEvents(data.agentEvents ?? []);
     } catch {
       // ignore errors - thread will remain with current state
     }
@@ -353,6 +377,12 @@ export const AssistantPage = () => {
 
   const currentThread =
     threads.find((t) => t.id === currentThreadId) ?? threads[0] ?? null;
+
+  useEffect(() => {
+    if (useMock && currentThread?.agentEvents && currentThread.agentEvents.length > 0) {
+      setAgentEvents(currentThread.agentEvents);
+    }
+  }, [useMock, currentThread]);
 
   const handleMessagesChange = useCallback(
     (messages: typeof currentThread.messages) => {
@@ -383,9 +413,10 @@ export const AssistantPage = () => {
       const thread = createNewThread();
       setThreads((prev) => [...prev, thread]);
       setCurrentThreadId(thread.id);
+      setAgentEvents([]);
       return;
     }
-    if (baseUrl && token && threadsLoadedFromBackend) {
+    if (baseUrl && token) {
       try {
         const res = await fetch(`${baseUrl}/assistant/threads`, {
           method: 'POST',
@@ -408,6 +439,7 @@ export const AssistantPage = () => {
             };
             setThreads((prev) => [...prev, thread]);
             setCurrentThreadId(threadId);
+          setAgentEvents([]);
             return;
           }
         }
@@ -418,6 +450,7 @@ export const AssistantPage = () => {
     const thread = createNewThread();
     setThreads((prev) => [...prev, thread]);
     setCurrentThreadId(thread.id);
+    setAgentEvents([]);
   }, [token, threadsLoadedFromBackend]);
 
   const handleSelectThread = useCallback(
@@ -427,6 +460,7 @@ export const AssistantPage = () => {
         handleNewThread();
         return;
       }
+      setAgentEvents([]);
       setCurrentThreadId(value);
     },
     [handleNewThread],
@@ -484,16 +518,52 @@ export const AssistantPage = () => {
     !useMock &&
     Boolean(baseUrl && token && currentThreadId && threadsLoadedFromBackend);
 
+  const handleSelectThreadById = useCallback(
+    (threadId: string) => {
+      setAgentEvents([]);
+      setCurrentThreadId(threadId);
+    },
+    [],
+  );
+
   return (
     <StyledPageContainer>
       <StyledPageHeader title="Assistant" Icon={IconMessage}>
-        <Button
-          title="New thread"
-          Icon={IconPlus}
-          variant="primary"
-          onClick={handleNewThread}
-          disabled={threadsLoading && threadsLoadedFromBackend}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: 12,
+              color: '#6b7280',
+            }}
+          >
+            <span>Mode</span>
+            <select
+              value={assistantMode}
+              onChange={handleAssistantModeChange}
+              disabled={assistantModeSaving}
+              style={{
+                fontSize: 12,
+                padding: '4px 8px',
+                borderRadius: 4,
+                border: '1px solid #d1d5db',
+                background: 'white',
+              }}
+            >
+              <option value="fully_autonomous">Autonomous</option>
+              <option value="permissioned">Permissioned</option>
+            </select>
+          </label>
+          <Button
+            title="New thread"
+            Icon={IconPlus}
+            variant="primary"
+            onClick={handleNewThread}
+            disabled={threadsLoading && threadsLoadedFromBackend}
+          />
+        </div>
       </StyledPageHeader>
       <StyledPageBody>
         <StyledSplitLayout isMobile={isMobile}>
@@ -503,7 +573,7 @@ export const AssistantPage = () => {
             currentThreadId={currentThreadId}
             threadsLoading={threadsLoading}
             threadsLoadedFromBackend={threadsLoadedFromBackend}
-            onSelectThread={setCurrentThreadId}
+            onSelectThread={handleSelectThreadById}
             onNewThread={handleNewThread}
           />
           <AssistantChatColumn
@@ -528,6 +598,7 @@ export const AssistantPage = () => {
             maxTableHeight={600}
             threadId={showSync ? currentThreadId ?? undefined : undefined}
             onSync={showSync ? handleSyncTable : undefined}
+            jobIdFromThread={currentThread?.jobId ?? null}
           />
         </StyledSplitLayout>
       </StyledPageBody>

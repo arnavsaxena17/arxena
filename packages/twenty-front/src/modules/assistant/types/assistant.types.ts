@@ -30,6 +30,7 @@ export type AssistantThread = {
   lastTableData: AssistantTableData | null;
   jobId?: string | null;
   agentNotes?: AgentNote[];
+  agentEvents?: AssistantAgentEvent[];
 };
 
 export type AssistantAgentEvent = {

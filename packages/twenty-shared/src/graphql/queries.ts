@@ -3401,6 +3401,10 @@ export const findManyAssistantThreads = `query FindManyAssistantThreads($filter:
         id
         name
         jobId
+        recruiterId
+        agentEvents
+        messages
+        lastTableData
         updatedAt
       }
     }
@@ -3418,9 +3422,42 @@ export const findOneAssistantThread = `query FindOneAssistantThread($id: ID!) {
     messages
     lastTableData
     jobId
+    recruiterId
     agentNotes
+    agentEvents
     createdAt
     updatedAt
   }
 }`;
 
+
+
+
+
+// export const FindOneJob = `
+//   query FindOneJob($objectRecordId: ID!) {
+//     job(filter: {id: {eq: $objectRecordId}}) {
+//         updatedAt
+//         isActive
+//         recruiterId
+//         arxenaSiteId
+//         createdAt
+//         jobCode
+//         searchName
+//         reportsTo
+//         reportees
+//         yearsOfExperience
+//         salaryBracket
+//         companyDetails
+//         talentConsiderations
+//         specificCriteria
+//         description
+//         name
+//         jobLocation
+//         companyId
+//         position
+//         id
+
+//     }
+//   }
+//   `;

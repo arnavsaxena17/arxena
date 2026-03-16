@@ -1,14 +1,24 @@
+import { useArxJDUpload } from '@/arx-jd-upload/hooks/useArxJDUpload';
+import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
+import { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
 import { AssistantActivityFeed } from '@/assistant/components/AssistantActivityFeed';
 import { AssistantThreadNotes } from '@/assistant/components/AssistantThreadNotes';
+import { USE_MOCK_ASSISTANT } from '@/assistant/mocks/mockThreads';
 import type {
   AssistantAgentEvent,
   AssistantThread,
 } from '@/assistant/types/assistant.types';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import { TextInput } from '@/ui/input/components/TextInput';
 import styled from '@emotion/styled';
+import { useCallback, useRef, useState } from 'react';
+import { useRecoilValue } from 'recoil';
+import { IconDotsVertical, IconTrash, IconUpload } from 'twenty-ui';
 
-import { displayThreadName } from './AssistantPage';
+import { displayThreadName } from './AssistantThreadUtils';
 import { McpClientChat } from './McpClientChat';
+
+const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
 
 const StyledChatPanel = styled.div<{ isMobile: boolean }>`
   display: flex;
@@ -64,6 +74,84 @@ const StyledThreadNameInput = styled(TextInput)`
   font-size: ${({ theme }) => theme.font.size.sm};
 `;
 
+const StyledJDHeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing(2)};
+  margin-top: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledJDSummary = styled.div`
+  flex: 1;
+  min-width: 0;
+  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${({ theme }) => theme.font.color.secondary};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const StyledJDMenuContainer = styled.div`
+  position: relative;
+  display: inline-flex;
+`;
+
+const StyledJDMenuButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: ${({ theme }) => theme.spacing(0.5, 1)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  background-color: ${({ theme }) => theme.background.primary};
+  color: ${({ theme }) => theme.font.color.secondary};
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.background.secondary};
+    border-color: ${({ theme }) => theme.border.color.strong};
+    color: ${({ theme }) => theme.font.color.primary};
+  }
+`;
+
+const StyledJDMenuDropdown = styled.div`
+  position: absolute;
+  top: calc(100% + ${({ theme }) => theme.spacing(1)});
+  right: 0;
+  min-width: 200px;
+  background-color: ${({ theme }) => theme.background.primary};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  z-index: 1000;
+`;
+
+const StyledJDMenuAction = styled.button<{ danger?: boolean }>`
+  width: 100%;
+  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme, danger }) =>
+    danger ? theme.color.red : theme.font.color.primary};
+  cursor: pointer;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.background.secondary};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
 type AssistantChatColumnProps = {
   isMobile: boolean;
   agentEvents: AssistantAgentEvent[];
@@ -99,9 +187,87 @@ export const AssistantChatColumn = ({
   onMessageComplete,
   onAgentEvent,
 }: AssistantChatColumnProps) => {
+  const [isJDMenuOpen, setIsJDMenuOpen] = useState(false);
+  const jdMenuRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const tokenPair = useRecoilValue(tokenPairState);
+  const token = tokenPair?.accessToken?.token;
+
+  const parsedJD: ParsedJD | null = useRecoilValue(parsedJDSelector);
+  const {
+    handleFileUpload,
+    handleFileRemoval,
+    isUploading,
+  } = useArxJDUpload('job');
+
+  const hasJD = Boolean(parsedJD?.id);
+
+  const getJDDisplayName = useCallback(() => {
+    if (!parsedJD) return null;
+    const base =
+      parsedJD.jobCode && parsedJD.name
+        ? `${parsedJD.jobCode} - ${parsedJD.name}`
+        : parsedJD.name || 'Job Description';
+    return base.length > 40 ? `${base.slice(0, 37)}...` : base;
+  }, [parsedJD]);
+
+  const handleJDReplaceClick = () => {
+    if (!fileInputRef.current) return;
+    fileInputRef.current.value = '';
+    fileInputRef.current.click();
+  };
+
+  const handleFileInputChange: React.ChangeEventHandler<HTMLInputElement> = async (
+    event,
+  ) => {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+    await handleFileUpload(files);
+  };
+
+  const handleStartMockRun = async () => {
+    console.log("handleStartMockRun called: currentThreadId::", currentThreadId);
+    console.log("handleStartMockRun called: threadsLoadedFromBackend::", threadsLoadedFromBackend);
+    console.log("handleStartMockRun called: currentThread::", currentThread);
+    if (!currentThread || !currentThreadId) return;
+    if (!baseUrl || !token || !threadsLoadedFromBackend) return;
+    console.log("handleStartMockRun called: baseUrl::", baseUrl);
+    console.log("handleStartMockRun called: token::", token);
+    const requirement =
+      'We need senior React developers in Bangalore with 5+ years experience at product companies.';
+
+    try {
+      const response = await fetch(`${baseUrl}/autonomous-recruiter/demo-thread`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          requirement,
+          threadId: currentThreadId,
+          threadName: currentThread.name,
+          maxTurns: 3,
+        }),
+      });
+
+      console.log("handleStartMockRun called: response::", JSON.stringify(response, null, 2));
+      onMessageComplete();
+    } catch {
+      // If anything goes wrong talking to the backend, silently fail for now
+    }
+  };
+
+  const sortedAgentEvents = [...agentEvents].sort(
+    (a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0),
+  );
+
   return (
-    <StyledChatPanel isMobile={isMobile}>
-      <AssistantActivityFeed events={agentEvents} />
+    <StyledChatPanel
+      isMobile={isMobile}
+    >
+      <AssistantActivityFeed events={sortedAgentEvents} />
       <AssistantThreadNotes agentNotes={currentThread?.agentNotes} />
       <StyledThreadSelector aria-busy={threadsLoading}>
         {isMobile && (
@@ -125,14 +291,84 @@ export const AssistantChatColumn = ({
           </StyledThreadSelectRow>
         )}
         {currentThread && (
-          <StyledThreadNameInput
-            value={displayThreadName(currentThread.name)}
-            onChange={(value: string) => onThreadNameChange(value)}
-            placeholder="Thread name"
-            onBlur={() => onThreadNameFocusChange(false)}
-            onFocus={() => onThreadNameFocusChange(true)}
-            fullWidth
-          />
+          <>
+            <StyledThreadNameInput
+              value={displayThreadName(currentThread.name)}
+              onChange={(value: string) => onThreadNameChange(value)}
+              placeholder="Thread name"
+              onBlur={() => onThreadNameFocusChange(false)}
+              onFocus={() => onThreadNameFocusChange(true)}
+              fullWidth
+            />
+            {(parsedJD || isUploading) && (
+              <StyledJDHeaderRow>
+                <StyledJDSummary>
+                  {isUploading
+                    ? 'Uploading job description...'
+                    : `JD attached: ${getJDDisplayName()}`}
+                </StyledJDSummary>
+                <StyledJDMenuContainer ref={jdMenuRef}>
+                  <StyledJDMenuButton
+                    type="button"
+                    onClick={() => setIsJDMenuOpen((open) => !open)}
+                    title="Job description actions"
+                  >
+                    <IconDotsVertical size={14} />
+                  </StyledJDMenuButton>
+                  {isJDMenuOpen && (
+                    <StyledJDMenuDropdown>
+                      <StyledJDMenuAction
+                        type="button"
+                        onClick={handleJDReplaceClick}
+                        disabled={isUploading}
+                      >
+                        <IconUpload size={14} />
+                        Replace JD
+                      </StyledJDMenuAction>
+                      {hasJD && (
+                        <StyledJDMenuAction
+                          type="button"
+                          danger
+                          onClick={async () => {
+                            await handleFileRemoval();
+                            setIsJDMenuOpen(false);
+                          }}
+                          disabled={isUploading}
+                        >
+                          <IconTrash size={14} />
+                          Remove JD
+                        </StyledJDMenuAction>
+                      )}
+                    </StyledJDMenuDropdown>
+                  )}
+                </StyledJDMenuContainer>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx,.txt"
+                  style={{ display: 'none' }}
+                  onChange={handleFileInputChange}
+                />
+              </StyledJDHeaderRow>
+            )}
+            {(USE_MOCK_ASSISTANT || (baseUrl && token)) && (
+              <StyledJDHeaderRow>
+                <StyledJDSummary>
+                  Recruiter + autonomous recruiter demo
+                </StyledJDSummary>
+                <StyledJDMenuContainer>
+                  <StyledJDMenuButton
+                    type="button"
+                    onClick={handleStartMockRun}
+                    title="Start recruiter/autonomous mock run"
+                    disabled={threadsLoading}
+                  >
+                    Start demo
+                  </StyledJDMenuButton>
+                </StyledJDMenuContainer>
+              </StyledJDHeaderRow>
+            )}
+          </>
         )}
       </StyledThreadSelector>
       {currentThread && (
@@ -140,7 +376,7 @@ export const AssistantChatColumn = ({
           messages={currentThread.messages}
           onMessagesChange={onMessagesChange}
           onTableData={onTableData}
-          threadId={currentThreadId || undefined}
+          threadId={threadsLoadedFromBackend ? currentThreadId || undefined : undefined}
           onThreadNameChange={onThreadNameChange}
           onMessageComplete={onMessageComplete}
           onAgentEvent={onAgentEvent}

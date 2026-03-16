@@ -824,6 +824,23 @@ export function getRelationsData(
         toName: 'cvSents',
       },
     },
+    {
+      fromObjectName: "workspaceMember",
+      toObjectName: "assistantThread",
+      relationMetadata: {
+        fromDescription: null,
+        fromIcon: 'IconMessage',
+        fromLabel: 'Assistant Threads',
+        fromName: 'assistantThreads',
+        fromObjectMetadataId: objectsNameIdMap.workspaceMember,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.assistantThread,
+        toDescription: '',
+        toIcon: 'IconUser',
+        toLabel: 'Recruiter',
+        toName: 'recruiter',
+      },
+    },
     // Assistant Thread relations
     // {
     //   relationMetadata: {

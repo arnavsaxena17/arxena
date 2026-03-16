@@ -5,6 +5,7 @@ export const RIGHT_DRAWER_PAGE_ICONS = {
   [RightDrawerPages.ViewCalendarEvent]: 'IconCalendarEvent',
   [RightDrawerPages.ViewRecord]: 'Icon123',
   [RightDrawerPages.Copilot]: 'IconSparkles',
+  [RightDrawerPages.ClientChat]: 'IconMessages',
   [RightDrawerPages.WorkflowStepSelectTriggerType]: 'IconSparkles',
   [RightDrawerPages.WorkflowStepSelectAction]: 'IconSparkles',
   [RightDrawerPages.WorkflowStepEdit]: 'IconSparkles',

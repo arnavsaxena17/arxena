@@ -3,6 +3,7 @@ export enum RightDrawerPages {
   ViewCalendarEvent = 'view-calendar-event',
   ViewRecord = 'view-record',
   Copilot = 'copilot',
+  ClientChat = 'client-chat',
   WorkflowStepSelectTriggerType = 'workflow-step-select-trigger-type',
   WorkflowStepSelectAction = 'workflow-step-select-action',
   WorkflowStepView = 'workflow-step-view',

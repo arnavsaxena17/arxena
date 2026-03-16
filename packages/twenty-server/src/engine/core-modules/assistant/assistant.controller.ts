@@ -20,11 +20,14 @@ export class AssistantController {
   async listThreads(@Req() request: { headers: { authorization?: string } }) {
     const authHeader = request.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
+      console.log('Missing or invalid Authorization header');
       return { error: 'Missing or invalid Authorization header' };
     }
+    console.log('listThreads');
     const apiToken = authHeader.slice(7).replace(/[\r\n]+/g, '');
     try {
       const threads = await this.assistantThreadService.listThreads(apiToken);
+      console.log('threads', threads);
       return { threads };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -38,6 +41,7 @@ export class AssistantController {
     @Req() request: { headers: { authorization?: string }; body?: { name?: string; jobId?: string } },
   ) {
     const authHeader = request.headers.authorization;
+    console.log('createThread', request.body);
     if (!authHeader?.startsWith('Bearer ')) {
       return { error: 'Missing or invalid Authorization header' };
     }
@@ -46,6 +50,7 @@ export class AssistantController {
       const name = request.body?.name ?? 'New thread';
       const jobId = request.body?.jobId;
       const thread = await this.assistantThreadService.createThread(apiToken, name, jobId);
+      console.log('thread that we got ', thread);
       return thread;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

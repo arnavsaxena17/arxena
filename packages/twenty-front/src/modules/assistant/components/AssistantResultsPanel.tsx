@@ -1,7 +1,8 @@
 import {
-    AssistantDetailsTable,
-    AssistantTableData,
+  AssistantDetailsTable,
+  AssistantTableData,
 } from '@/assistant/components/AssistantDetailsTable';
+import { DataTable } from '@/candidate-table/DataTable';
 import { selectedCandidateIdState } from '@/candidate-table/states/states';
 import { AppPath } from '@/types/AppPath';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
@@ -11,10 +12,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 import {
-    IconBriefcase,
-    IconFileText,
-    IconMessage,
-    LightButton,
+  IconBriefcase,
+  IconFileText,
+  IconMessage,
+  LightButton,
 } from 'twenty-ui';
 import { getAppPath } from '~/utils/navigation/getAppPath';
 
@@ -54,6 +55,8 @@ const StyledActionsBar = styled.div`
 
 const StyledTableWrapper = styled.div`
   position: relative;
+  flex: 1;
+  min-height: 0;
 `;
 
 const StyledActionButton = styled(LightButton)`
@@ -67,6 +70,7 @@ type AssistantResultsPanelProps = {
   maxTableHeight?: number;
   threadId?: string;
   onSync?: () => Promise<void>;
+  jobIdFromThread?: string | null;
 };
 
 function getRowId(row: Record<string, unknown>): string | undefined {
@@ -75,7 +79,7 @@ function getRowId(row: Record<string, unknown>): string | undefined {
 }
 
 function getJobIdFromRow(row: Record<string, unknown>): string | undefined {
-  const jobId = row.jobId ?? row.job_id;
+  const jobId = row.jobId ?? row.job_id ?? row.jobsId ?? row.jobs_id;
   return typeof jobId === 'string' ? jobId : undefined;
 }
 
@@ -90,6 +94,7 @@ export const AssistantResultsPanel = ({
   maxTableHeight = 600,
   threadId,
   onSync,
+  jobIdFromThread,
 }: AssistantResultsPanelProps) => {
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -116,6 +121,10 @@ export const AssistantResultsPanel = ({
       ? (tableData.rows[selectedRowIndex] as Record<string, unknown>)
       : null;
 
+  const jobIdFromResults = getJobIdFromTableData(tableData);
+  // Prefer jobId coming from the table data (e.g. snapshot rows)
+  const effectiveJobId = jobIdFromResults ?? jobIdFromThread ?? undefined;
+
   const handleOpenChat = useCallback(() => {
     if (!selectedRow) return;
     const candidateId = getRowId(selectedRow);
@@ -127,15 +136,21 @@ export const AssistantResultsPanel = ({
     });
   }, [selectedRow, openRightDrawer, setSelectedCandidateId]);
 
+  const handleOpenClientChat = useCallback(() => {
+    if (!effectiveJobId) return;
+    openRightDrawer(RightDrawerPages.ClientChat, {
+      title: 'Client chat (mock)',
+      Icon: IconMessage,
+    });
+  }, [effectiveJobId, openRightDrawer]);
+
   const handleOpenInJobs = useCallback(() => {
     navigate(getAppPath(AppPath.Jobs));
   }, [navigate]);
-
-  const jobIdFromResults = getJobIdFromTableData(tableData);
   const handleViewInJob = useCallback(() => {
-    if (!jobIdFromResults) return;
-    navigate(`/job/${jobIdFromResults}`);
-  }, [navigate, jobIdFromResults]);
+    if (!effectiveJobId) return;
+    navigate(`/job/${effectiveJobId}`);
+  }, [navigate, effectiveJobId]);
 
   const handleViewAttachments = useCallback(() => {
     if (!selectedRow) return;
@@ -183,7 +198,7 @@ export const AssistantResultsPanel = ({
           />
         )}
       </StyledResultsHeader>
-      {(hasSelection || jobIdFromResults) && (
+      {(hasSelection || effectiveJobId) && (
         <StyledActionsBar>
           {hasSelection && (
             <>
@@ -199,11 +214,18 @@ export const AssistantResultsPanel = ({
               />
             </>
           )}
-          {jobIdFromResults && (
+          {effectiveJobId && (
             <StyledActionButton
               title="View in job"
               onClick={handleViewInJob}
               Icon={IconBriefcase}
+            />
+          )}
+          {effectiveJobId && (
+            <StyledActionButton
+              title="View client chat"
+              onClick={handleOpenClientChat}
+              Icon={IconMessage}
             />
           )}
           <StyledActionButton
@@ -214,11 +236,15 @@ export const AssistantResultsPanel = ({
         </StyledActionsBar>
       )}
       <StyledTableWrapper>
-        <AssistantDetailsTable
-          data={tableData}
-          maxHeight={maxTableHeight}
-          onSelectRow={(index) => setSelectedRowIndex(index)}
-        />
+        {effectiveJobId ? (
+          <DataTable jobId={effectiveJobId} />
+        ) : (
+          <AssistantDetailsTable
+            data={tableData}
+            maxHeight={maxTableHeight}
+            onSelectRow={(index) => setSelectedRowIndex(index)}
+          />
+        )}
       </StyledTableWrapper>
     </StyledResultsPanel>
   );

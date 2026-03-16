@@ -2,7 +2,7 @@ import type { AssistantThread } from '@/assistant/types/assistant.types';
 import styled from '@emotion/styled';
 import { Button } from 'twenty-ui';
 
-import { displayThreadName } from './AssistantPage';
+import { displayThreadName } from './AssistantThreadUtils';
 
 const StyledThreadSidebar = styled.aside<{ isMobile: boolean }>`
   display: ${({ isMobile }) => (isMobile ? 'none' : 'flex')};

@@ -2133,6 +2133,17 @@ export function getFieldsData(
         type: 'RAW_JSON',
       },
     },
+    {
+      objectName: 'assistantThread',
+      field: {
+        description:
+          'Assistant agent events for this thread (JSON array of { status, summary?, error?, toolName?, runId?, timestamp })',
+        label: 'Agent Events',
+        name: 'agentEvents',
+        objectMetadataId: objectsNameIdMap.assistantThread,
+        type: 'RAW_JSON',
+      },
+    },
     // // Assistant Message fields
     // {
     //   field: {

@@ -37,14 +37,13 @@ const StyledTableContainer = styled.div`
   height: 100%;
   overflow: auto;
   position: relative;
-
-
   .handsontable {
     overflow: visible;
   }
 
   .handsontable .ht_clone_top {
-    z-index: 101;
+    /* Keep header above table content but below right drawer (z-index: 30) */
+    z-index: 20;
   }
 
   /* Hide scrollbar only in header's wtHolder */
@@ -233,6 +232,11 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     // Merge database candidates with search results
     // Note: searchResults now contain TransformedCandidateForTable (extends UserProfile)
     const mergedData = useMemo(() => {
+      // In contexts like Assistant, processedData can be empty even though
+      // rawData (from get-candidates-by-job-id) has candidates. In that case,
+      // fall back to using rawData as the base dataset.
+      const baseProcessedData =
+        processedData.length > 0 ? processedData : (tableState.rawData ?? []);
       // Search results are already transformed to the correct format by the backend
       // They extend UserProfile and have all necessary fields including:
       // - __isFetched, tempId (UI fields)
@@ -246,10 +250,10 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         firstProcessedData: processedData[0]
       });
       
-      // Deduplicate when merging: processedData (saved candidates) takes priority
-      // Create a set of all unique identifiers from processedData
+      // Deduplicate when merging: baseProcessedData (saved/raw candidates) takes priority
+      // Create a set of all unique identifiers from baseProcessedData
       const processedDataIds = new Set<string>();
-      processedData.forEach((candidate: any) => {
+      baseProcessedData.forEach((candidate: any) => {
         const candidateId = candidate.tempId || candidate.id;
         if (candidateId) {
           processedDataIds.add(candidateId);
@@ -263,7 +267,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       });
       
       // Merge with processedData first (saved candidates), then unique searchResults
-      const mergedData = [...processedData, ...uniqueSearchResults];
+      const mergedData = [...baseProcessedData, ...uniqueSearchResults];
       
       // Also deduplicate within each array to be safe
       const deduplicatedMergedData = deduplicateSearchResults(mergedData);
@@ -275,7 +279,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       console.log("mergedData total count:", deduplicatedMergedData.length);
       console.log("mergedData sample (first 2):", deduplicatedMergedData.slice(0, 2));
       return deduplicatedMergedData;
-    }, [searchResults, processedData, deduplicateSearchResults]);
+    }, [searchResults, processedData, tableState.rawData, deduplicateSearchResults]);
 
     // Merge enrichments
     const allAiFilters = useMemo(() => {

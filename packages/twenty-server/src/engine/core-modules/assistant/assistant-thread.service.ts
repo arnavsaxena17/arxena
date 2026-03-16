@@ -2,12 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
-  createAssistantThread,
+  createOneAssistantThread,
   findManyAssistantThreads,
   findOneAssistantThread,
-  updateAssistantThread,
+  updateOneAssistantThread
 } from 'twenty-shared';
 import {
+  AssistantAgentEventRecord,
   AssistantThreadRecord,
   AssistantThreadTableData,
 } from './assistant.types';
@@ -26,12 +27,21 @@ export class AssistantThreadService {
   ) {}
 
   async listThreads(apiToken: string): Promise<{ id: string; name: string; jobId?: string }[]> {
-    const result = await this.staticGraphQLService.executeGraphQL(
-      findManyAssistantThreads,
-      { orderBy: [{ updatedAt: 'Desc' }], limit: 100 },
+    const workspaceMemberId =
+    await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
       apiToken,
     );
-    const edges = result?.assistantThreads?.edges ?? [];
+    if (!workspaceMemberId) {
+      throw new Error('Failed to get workspace member ID');
+    }
+    const result = await this.staticGraphQLService.executeGraphQL(
+      findManyAssistantThreads,
+      { filter: { workspaceMemberId: { eq: workspaceMemberId } }, orderBy: [{ updatedAt: 'DescNullsFirst' }], limit: 100 },
+      apiToken,
+    );
+    console.log("listThreads called: result::", JSON.stringify(result, null, 2));
+    const edges = result?.data.data.assistantThreads?.edges ?? [];
+    console.log("Edges::", edges);
     return edges.map((e: { node: { id: string; name: string; jobId?: string } }) => ({
       id: e.node.id,
       name: e.node.name,
@@ -44,14 +54,24 @@ export class AssistantThreadService {
     name = 'New thread',
     jobId?: string,
   ): Promise<{ id: string; name: string; jobId?: string }> {
-    const input: { name: string; jobId?: string } = { name };
+
+    const workspaceMemberId =
+    await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
+      apiToken,
+    );
+    if (!workspaceMemberId) {
+      throw new Error('Failed to get workspace member ID');
+    }
+    const input: { name: string; jobId?: string; recruiterId: string } = { name, jobId: jobId ?? undefined, recruiterId:workspaceMemberId };
+    console.log("Input::", input);
     if (jobId) input.jobId = jobId;
     const result = await this.staticGraphQLService.executeGraphQL(
-      createAssistantThread,
+      createOneAssistantThread,
       { input },
       apiToken,
     );
-    const created = result?.createAssistantThread;
+    const created = result.data.data.createAssistantThread;
+    console.log("Created::", JSON.stringify(created, null, 2));
     if (!created?.id) {
       throw new Error('Failed to create assistant thread');
     }
@@ -66,12 +86,28 @@ export class AssistantThreadService {
     apiToken: string,
     threadId: string,
   ): Promise<AssistantThreadRecord | null> {
-    const result = await this.staticGraphQLService.executeGraphQL(
-      findOneAssistantThread,
-      { id: threadId },
-      apiToken,
-    );
-    const node = result?.assistantThread;
+    let result: any;
+    try {
+      result = await this.staticGraphQLService.executeGraphQL(
+        findOneAssistantThread,
+        { id: threadId },
+        apiToken,
+      );
+      console.log("getThread called: result::", JSON.stringify(result, null, 2));
+      } catch (error: unknown) {
+      console.log("getThread called: error::", error);
+      const maybeError = error as { extensions?: { code?: string }; message?: string } | null;
+      const code = maybeError?.extensions?.code;
+      const message = maybeError?.message ?? '';
+console.log("getThread called: code::", code);
+console.log("getThread called: message::", message);
+      if (code === 'NOT_FOUND' || /Record not found/i.test(message)) {
+        return null;
+      }
+
+      throw error;
+    }
+    const node = result?.data.data.assistantThread;
     if (!node) return null;
 
     const messages: AssistantThreadMessage[] = Array.isArray(node.messages)
@@ -82,6 +118,27 @@ export class AssistantThreadService {
       ? (node.agentNotes as Array<{ summary: string; createdAt?: string; id?: string }>).filter(
           (n) => n && typeof n.summary === 'string',
         )
+      : undefined;
+
+    const agentEventsRaw = Array.isArray(node.agentEvents)
+      ? (node.agentEvents as Array<Partial<AssistantAgentEventRecord>>)
+      : [];
+
+    const agentEvents: AssistantAgentEventRecord[] | undefined = agentEventsRaw.length
+      ? agentEventsRaw
+          .filter((e) => typeof e?.status === 'string' && typeof e?.timestamp !== 'undefined')
+          .map((e) => ({
+            status: e.status as AssistantAgentEventRecord['status'],
+            threadId: e.threadId,
+            runId: e.runId,
+            summary: e.summary,
+            error: e.error,
+            toolName: e.toolName,
+            timestamp:
+              typeof e.timestamp === 'number'
+                ? e.timestamp
+                : Number(e.timestamp) || Date.now(),
+          }))
       : undefined;
 
     return {
@@ -97,6 +154,7 @@ export class AssistantThreadService {
       updatedAt: node.updatedAt ? new Date(node.updatedAt) : new Date(),
       jobId: node.jobId ?? undefined,
       agentNotes: agentNotes?.length ? agentNotes : undefined,
+      agentEvents,
     };
   }
 
@@ -116,7 +174,7 @@ export class AssistantThreadService {
     ];
 
     await this.staticGraphQLService.executeGraphQL(
-      updateAssistantThread,
+      updateOneAssistantThread,
       {
         id: threadId,
         input: { messages: newMessages },
@@ -131,7 +189,7 @@ export class AssistantThreadService {
     name: string,
   ): Promise<void> {
     await this.staticGraphQLService.executeGraphQL(
-      updateAssistantThread,
+      updateOneAssistantThread,
       { id: threadId, input: { name } },
       apiToken,
     );
@@ -143,7 +201,7 @@ export class AssistantThreadService {
     jobId: string | null,
   ): Promise<void> {
     await this.staticGraphQLService.executeGraphQL(
-      updateAssistantThread,
+      updateOneAssistantThread,
       { id: threadId, input: { jobId: jobId ?? undefined } },
       apiToken,
     );
@@ -155,8 +213,31 @@ export class AssistantThreadService {
     data: AssistantThreadTableData,
   ): Promise<void> {
     await this.staticGraphQLService.executeGraphQL(
-      updateAssistantThread,
+      updateOneAssistantThread,
       { id: threadId, input: { lastTableData: data } },
+      apiToken,
+    );
+  }
+
+  async appendAgentEvent(
+    apiToken: string,
+    threadId: string,
+    event: AssistantAgentEventRecord,
+  ): Promise<void> {
+    const thread = await this.getThread(apiToken, threadId);
+    if (!thread) return;
+
+    const existing = Array.isArray(thread.agentEvents)
+      ? thread.agentEvents
+      : [];
+    const next = [...existing, event].slice(-100);
+
+    await this.staticGraphQLService.executeGraphQL(
+      updateOneAssistantThread,
+      {
+        id: threadId,
+        input: { agentEvents: next },
+      },
       apiToken,
     );
   }

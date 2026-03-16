@@ -775,14 +775,14 @@ mutation CreateOneViewField($input: ViewFieldCreateInput!) {
 }
 `;
 
-export const createAssistantThread = `mutation CreateAssistantThread($input: AssistantThreadCreateInput!) {
+export const createOneAssistantThread = `mutation CreateOneAssistantThread($input: AssistantThreadCreateInput!) {
   createAssistantThread(data: $input) {
     id
     name
   }
 }`;
 
-export const updateAssistantThread = `mutation UpdateAssistantThread($id: ID!, $input: AssistantThreadUpdateInput!) {
+export const updateOneAssistantThread = `mutation UpdateOneAssistantThread($id: ID!, $input: AssistantThreadUpdateInput!) {
   updateAssistantThread(id: $id, data: $input) {
     id
     name

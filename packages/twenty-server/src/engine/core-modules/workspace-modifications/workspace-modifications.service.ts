@@ -478,7 +478,8 @@ export class WorkspaceQueryService {
       ADD COLUMN IF NOT EXISTS is_chrome_extension_installed varchar(255) DEFAULT 'false',
       ADD COLUMN IF NOT EXISTS chrome_extension_id varchar(255),
       ADD COLUMN IF NOT EXISTS linkedin_cookie_auth TEXT,
-      ADD COLUMN IF NOT EXISTS is_org_chart_enabled varchar(255) DEFAULT 'true'
+      ADD COLUMN IF NOT EXISTS is_org_chart_enabled varchar(255) DEFAULT 'true',
+      ADD COLUMN IF NOT EXISTS assistant_mode varchar(32) DEFAULT 'fully_autonomous'
     `;
 
       await this.executeRawQuery(alterTableQuery, [], workspaceId);
@@ -502,7 +503,8 @@ export class WorkspaceQueryService {
         facebook_whatsapp_asset_id,
         is_chrome_extension_installed,
         chrome_extension_id,
-        is_org_chart_enabled
+        is_org_chart_enabled,
+        assistant_mode
       FROM core.workspace 
       WHERE id = $1
     `;
@@ -649,7 +651,8 @@ export class WorkspaceQueryService {
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_asset_id varchar(255),
       ADD COLUMN IF NOT EXISTS is_chrome_extension_installed varchar(255) DEFAULT 'false',
       ADD COLUMN IF NOT EXISTS linkedin_cookie_auth TEXT,
-      ADD COLUMN IF NOT EXISTS is_org_chart_enabled varchar(255) DEFAULT 'true'
+      ADD COLUMN IF NOT EXISTS is_org_chart_enabled varchar(255) DEFAULT 'true',
+      ADD COLUMN IF NOT EXISTS assistant_mode varchar(32) DEFAULT 'fully_autonomous'
     `;
     
     await this.executeRawQuery(alterTableQuery, [], workspaceId);

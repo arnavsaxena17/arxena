@@ -5,12 +5,18 @@ import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queu
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { AssistantThreadService } from '../assistant/assistant-thread.service';
-import { MessageParam } from '../assistant/assistant.types';
+import { AssistantAgentEventRecord } from '../assistant/assistant.types';
 import { McpAssistantService } from '../assistant/mcp-assistant.service';
 import { RecruitmentAgentRulesService } from '../assistant/recruitment-agent-rules.service';
+import { threadMessagesToHistory } from '../assistant/utils/thread-history.util';
 import { buildHeartbeatPrompt } from './prompts/heartbeat-prompt.template';
 
 const AUTONOMOUS_THREAD_NAME = 'Autonomous';
+
+const recordAgentEvent = async (event: AssistantAgentEventRecord): Promise<void> => {
+  // Placeholder for future persistence/analytics of agent events
+  void event;
+};
 
 export type AutonomousRecruiterJobData = {
   workspaceId: string;
@@ -18,33 +24,6 @@ export type AutonomousRecruiterJobData = {
   runId: string;
   timestamp: number;
 };
-
-function threadMessagesToHistory(
-  messages: Array<{ role: 'user' | 'assistant'; content: string; toolCalls?: Array<{ name: string; args: Record<string, unknown> }> }>,
-): MessageParam[] {
-  const out: MessageParam[] = [];
-  const lastK = 20;
-  const slice = messages.slice(-lastK);
-  for (const m of slice) {
-    if (m.role === 'user') {
-      out.push({ role: 'user', content: m.content });
-    } else {
-      const content = [
-        ...(m.content ? [{ type: 'text' as const, text: m.content }] : []),
-        ...(m.toolCalls ?? []).map((tc) => ({
-          type: 'tool_use' as const,
-          id: `tc-${Math.random().toString(36).slice(2)}`,
-          name: tc.name,
-          input: tc.args ?? {},
-        })),
-      ];
-      if (content.length) {
-        out.push({ role: 'assistant', content });
-      }
-    }
-  }
-  return out;
-}
 
 @Processor(MessageQueue.autonomousRecruiterQueue)
 @Injectable()
@@ -146,26 +125,30 @@ export class AutonomousRecruiterProcessor {
         response.toolCalls,
       );
 
-      this.webSocketService.sendToRoom(room, 'assistant.agent_event', {
-        status: 'completed',
+      const completedEvent = {
+        status: 'completed' as const,
         threadId,
         runId,
         summary: response.text?.slice(0, 500) ?? '',
         timestamp: Date.now(),
-      });
+      };
+      this.webSocketService.sendToRoom(room, 'assistant.agent_event', completedEvent);
+      await recordAgentEvent(completedEvent);
       const durationMs = Date.now() - startTime;
       this.logger.log(
         `Heartbeat completed for workspace ${workspaceId}, thread ${threadId}, durationMs=${durationMs}`,
       );
     } catch (err) {
       this.logger.error(`Heartbeat failed for workspace ${workspaceId}: ${(err as Error).message}`);
-      this.webSocketService.sendToRoom(room, 'assistant.agent_event', {
-        status: 'error',
+      const errorEvent = {
+        status: 'error' as const,
         threadId,
         runId,
         error: (err as Error).message,
         timestamp: Date.now(),
-      });
+      };
+      this.webSocketService.sendToRoom(room, 'assistant.agent_event', errorEvent);
+      await recordAgentEvent(errorEvent);
       throw err;
     }
   }
