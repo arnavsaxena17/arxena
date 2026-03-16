@@ -9,6 +9,7 @@ import type {
   AssistantThread,
 } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { TextInput } from '@/ui/input/components/TextInput';
 import styled from '@emotion/styled';
 import { useCallback, useRef, useState } from 'react';
@@ -170,36 +171,15 @@ type AssistantChatColumnProps = {
   onAgentEvent: (event: AssistantAgentEvent) => void;
 };
 
-export const AssistantChatColumn = ({
-  isMobile,
-  agentEvents,
-  threads,
-  currentThread,
-  currentThreadId,
-  threadsLoading,
-  threadsLoadedFromBackend,
-  editingThreadName,
-  onSelectThread,
-  onThreadNameChange,
-  onThreadNameFocusChange,
-  onMessagesChange,
-  onTableData,
-  onMessageComplete,
-  onAgentEvent,
-}: AssistantChatColumnProps) => {
+const AssistantJDSection = () => {
   const [isJDMenuOpen, setIsJDMenuOpen] = useState(false);
   const jdMenuRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const tokenPair = useRecoilValue(tokenPairState);
-  const token = tokenPair?.accessToken?.token;
-
   const parsedJD: ParsedJD | null = useRecoilValue(parsedJDSelector);
-  const {
-    handleFileUpload,
-    handleFileRemoval,
-    isUploading,
-  } = useArxJDUpload('job');
+
+  const { handleFileUpload, handleFileRemoval, isUploading } =
+    useArxJDUpload('job');
 
   const hasJD = Boolean(parsedJD?.id);
 
@@ -225,6 +205,90 @@ export const AssistantChatColumn = ({
     if (!files.length) return;
     await handleFileUpload(files);
   };
+
+  if (!parsedJD && !isUploading) {
+    return null;
+  }
+
+  return (
+    <>
+      <StyledJDHeaderRow>
+        <StyledJDSummary>
+          {isUploading
+            ? 'Uploading job description...'
+            : `JD attached: ${getJDDisplayName()}`}
+        </StyledJDSummary>
+        <StyledJDMenuContainer ref={jdMenuRef}>
+          <StyledJDMenuButton
+            type="button"
+            onClick={() => setIsJDMenuOpen((open) => !open)}
+            title="Job description actions"
+          >
+            <IconDotsVertical size={14} />
+          </StyledJDMenuButton>
+          {isJDMenuOpen && (
+            <StyledJDMenuDropdown>
+              <StyledJDMenuAction
+                type="button"
+                onClick={handleJDReplaceClick}
+                disabled={isUploading}
+              >
+                <IconUpload size={14} />
+                Replace JD
+              </StyledJDMenuAction>
+              {hasJD && (
+                <StyledJDMenuAction
+                  type="button"
+                  danger
+                  onClick={async () => {
+                    await handleFileRemoval();
+                    setIsJDMenuOpen(false);
+                  }}
+                  disabled={isUploading}
+                >
+                  <IconTrash size={14} />
+                  Remove JD
+                </StyledJDMenuAction>
+              )}
+            </StyledJDMenuDropdown>
+          )}
+        </StyledJDMenuContainer>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.doc,.docx,.txt"
+          style={{ display: 'none' }}
+          onChange={handleFileInputChange}
+        />
+      </StyledJDHeaderRow>
+    </>
+  );
+};
+
+export const AssistantChatColumn = ({
+  isMobile,
+  agentEvents,
+  threads,
+  currentThread,
+  currentThreadId,
+  threadsLoading,
+  threadsLoadedFromBackend,
+  editingThreadName,
+  onSelectThread,
+  onThreadNameChange,
+  onThreadNameFocusChange,
+  onMessagesChange,
+  onTableData,
+  onMessageComplete,
+  onAgentEvent,
+}: AssistantChatColumnProps) => {
+  const { objectMetadataItems } = useObjectMetadataItems();
+  const hasJobObjectMetadata = objectMetadataItems.some(
+    (item) => item.nameSingular === 'job',
+  );
+
+  const tokenPair = useRecoilValue(tokenPairState);
+  const token = tokenPair?.accessToken?.token;
 
   const handleStartMockRun = async () => {
     console.log("handleStartMockRun called: currentThreadId::", currentThreadId);
@@ -300,57 +364,7 @@ export const AssistantChatColumn = ({
               onFocus={() => onThreadNameFocusChange(true)}
               fullWidth
             />
-            {(parsedJD || isUploading) && (
-              <StyledJDHeaderRow>
-                <StyledJDSummary>
-                  {isUploading
-                    ? 'Uploading job description...'
-                    : `JD attached: ${getJDDisplayName()}`}
-                </StyledJDSummary>
-                <StyledJDMenuContainer ref={jdMenuRef}>
-                  <StyledJDMenuButton
-                    type="button"
-                    onClick={() => setIsJDMenuOpen((open) => !open)}
-                    title="Job description actions"
-                  >
-                    <IconDotsVertical size={14} />
-                  </StyledJDMenuButton>
-                  {isJDMenuOpen && (
-                    <StyledJDMenuDropdown>
-                      <StyledJDMenuAction
-                        type="button"
-                        onClick={handleJDReplaceClick}
-                        disabled={isUploading}
-                      >
-                        <IconUpload size={14} />
-                        Replace JD
-                      </StyledJDMenuAction>
-                      {hasJD && (
-                        <StyledJDMenuAction
-                          type="button"
-                          danger
-                          onClick={async () => {
-                            await handleFileRemoval();
-                            setIsJDMenuOpen(false);
-                          }}
-                          disabled={isUploading}
-                        >
-                          <IconTrash size={14} />
-                          Remove JD
-                        </StyledJDMenuAction>
-                      )}
-                    </StyledJDMenuDropdown>
-                  )}
-                </StyledJDMenuContainer>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf,.doc,.docx,.txt"
-                  style={{ display: 'none' }}
-                  onChange={handleFileInputChange}
-                />
-              </StyledJDHeaderRow>
-            )}
+            {hasJobObjectMetadata && <AssistantJDSection />}
             {(USE_MOCK_ASSISTANT || (baseUrl && token)) && (
               <StyledJDHeaderRow>
                 <StyledJDSummary>

@@ -7,6 +7,7 @@ import { SettingsRoutes } from '@/app/components/SettingsRoutes';
 import { VerifyEffect } from '@/auth/components/VerifyEffect';
 import { VerifyEmailEffect } from '@/auth/components/VerifyEmailEffect';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { RouteErrorBoundary } from '@/error-handler/components/RouteErrorBoundary';
 import { AppPath } from '@/types/AppPath';
 import { BlankLayout } from '@/ui/layout/page/components/BlankLayout';
 import { DefaultLayout } from '@/ui/layout/page/components/DefaultLayout';
@@ -220,6 +221,7 @@ export const useCreateAppRouter = (
         <Route
           element={<AppRouterProviders />}
           loader={async () => Promise.resolve(null)}
+          errorElement={<RouteErrorBoundary />}
         >
           <Route element={<DefaultLayout />}>
             <Route path={AppPath.Verify} element={<VerifyEffect />} />
