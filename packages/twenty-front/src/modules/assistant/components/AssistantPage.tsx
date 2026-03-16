@@ -472,21 +472,42 @@ export const AssistantPage = () => {
       setThreads((prev) =>
         prev.map((t) => (t.id === currentThreadId ? { ...t, name } : t)),
       );
-      // Persist to backend if using backend threads
-      if (baseUrl && token && threadsLoadedFromBackend && currentThreadId) {
-        fetch(`${baseUrl}/assistant/threads/${currentThreadId}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ name }),
-        }).catch(() => {
-          // ignore errors - name update is best effort
-        });
-      }
     },
-    [baseUrl, token, currentThreadId, threadsLoadedFromBackend],
+    [currentThreadId],
+  );
+
+  const handleThreadNameFocusChange = useCallback(
+    (isEditing: boolean) => {
+      setEditingThreadName(isEditing);
+
+      if (
+        isEditing ||
+        !baseUrl ||
+        !token ||
+        !threadsLoadedFromBackend ||
+        !currentThreadId
+      ) {
+        return;
+      }
+
+      const thread = threads.find((t) => t.id === currentThreadId);
+      if (!thread) {
+        return;
+      }
+
+      const name = thread.name;
+      fetch(`${baseUrl}/assistant/threads/${currentThreadId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name }),
+      }).catch(() => {
+        // ignore errors - name update is best effort
+      });
+    },
+    [baseUrl, token, threadsLoadedFromBackend, currentThreadId, threads],
   );
 
   const handleSyncTable = useCallback(async () => {
@@ -587,7 +608,7 @@ export const AssistantPage = () => {
             editingThreadName={editingThreadName}
             onSelectThread={handleSelectThread}
             onThreadNameChange={handleThreadNameChange}
-            onThreadNameFocusChange={setEditingThreadName}
+            onThreadNameFocusChange={handleThreadNameFocusChange}
             onMessagesChange={handleMessagesChange}
             onTableData={(data) => handleTableData(data)}
             onMessageComplete={loadThreadData}

@@ -93,14 +93,11 @@ export class AssistantThreadService {
         { id: threadId },
         apiToken,
       );
-      console.log("getThread called: result::", JSON.stringify(result, null, 2));
       } catch (error: unknown) {
       console.log("getThread called: error::", error);
       const maybeError = error as { extensions?: { code?: string }; message?: string } | null;
       const code = maybeError?.extensions?.code;
       const message = maybeError?.message ?? '';
-console.log("getThread called: code::", code);
-console.log("getThread called: message::", message);
       if (code === 'NOT_FOUND' || /Record not found/i.test(message)) {
         return null;
       }
@@ -108,6 +105,7 @@ console.log("getThread called: message::", message);
       throw error;
     }
     const node = result?.data.data.assistantThread;
+    console.log("getThread called: node::", JSON.stringify(node, null, 2));
     if (!node) return null;
 
     const messages: AssistantThreadMessage[] = Array.isArray(node.messages)
@@ -188,11 +186,13 @@ console.log("getThread called: message::", message);
     threadId: string,
     name: string,
   ): Promise<void> {
-    await this.staticGraphQLService.executeGraphQL(
+    console.log("updateThreadName called: name::", name);
+    const result = await this.staticGraphQLService.executeGraphQL(
       updateOneAssistantThread,
       { id: threadId, input: { name } },
       apiToken,
     );
+    console.log("updateThreadName called: result::", JSON.stringify(result, null, 2));
   }
 
   async updateThreadJobId(

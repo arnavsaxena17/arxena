@@ -228,6 +228,13 @@ const StyledMessages = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing(3)};
 `;
 
+const StyledMessageLabel = styled.div<{ isUser: boolean }>`
+  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  margin-bottom: ${({ theme }) => theme.spacing(0.5)};
+  text-align: ${({ isUser }) => (isUser ? 'right' : 'left')};
+`;
+
 const StyledMessage = styled.div<{ isUser: boolean }>`
   align-self: ${({ isUser }) => (isUser ? 'flex-end' : 'flex-start')};
   max-width: 85%;
@@ -240,6 +247,11 @@ const StyledMessage = styled.div<{ isUser: boolean }>`
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: break-word;
+`;
+
+const StyledExpandableMessage = styled(StyledMessage)`
+  position: relative;
+  padding-right: ${({ theme }) => theme.spacing(6)};
 `;
 
 const StyledMessageMinimised = styled(StyledMessage)`
@@ -272,6 +284,12 @@ const StyledChevronButton = styled.button`
   &:hover {
     opacity: 0.9;
   }
+`;
+
+const StyledMessageToggleButton = styled(StyledChevronButton)`
+  position: absolute;
+  top: ${({ theme }) => theme.spacing(1)};
+  right: ${({ theme }) => theme.spacing(1)};
 `;
 
 const StyledJsonBlock = styled.div`
@@ -1057,6 +1075,7 @@ export const McpClientChat = ({
         )} */}
         {messages.map((msg, i) => {
           const isAssistant = msg.role === 'assistant';
+          const isUser = msg.role === 'user';
           const longContent = isAssistant && isLongContent(msg.content || '');
           const isExpanded =
             !isAssistant ||
@@ -1070,6 +1089,9 @@ export const McpClientChat = ({
             lastAssistantIndex >= 0;
           return (
           <div key={i}>
+            <StyledMessageLabel isUser={isUser}>
+              {isUser ? 'You' : 'Assistant'}
+            </StyledMessageLabel>
             {showMinimised ? (
               <StyledMessageMinimised isUser={false}>
                 <span title={msg.content || ''}>
@@ -1084,21 +1106,20 @@ export const McpClientChat = ({
                 </StyledChevronButton>
               </StyledMessageMinimised>
             ) : (
-              <StyledMessage isUser={msg.role === 'user'}>
-                {msg.role === 'user'
+              <StyledExpandableMessage isUser={isUser}>
+                {isUser
                   ? parseRichText(msg.content || '')
                   : parseMessageContentWithJson(msg.content || '')}
                 {isAssistant && longContent && i !== lastAssistantIndex && (
-                  <StyledChevronButton
+                  <StyledMessageToggleButton
                     type="button"
                     onClick={() => toggleAssistantExpanded(i)}
                     aria-label="Collapse message"
-                    style={{ marginTop: 8, display: 'block' }}
                   >
                     <IconChevronDown size={16} />
-                  </StyledChevronButton>
+                  </StyledMessageToggleButton>
                 )}
-              </StyledMessage>
+              </StyledExpandableMessage>
             )}
             {msg.tableDataList?.map((tableData, tableIndex) => (
               <StyledTableSnapshot
