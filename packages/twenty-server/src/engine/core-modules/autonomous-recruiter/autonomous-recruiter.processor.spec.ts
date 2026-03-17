@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { AssistantThreadService } from '../assistant/assistant-thread.service';
 import { McpAssistantService } from '../assistant/mcp-assistant.service';
-import { RecruitmentAgentRulesService } from '../assistant/recruitment-agent-rules.service';
+import { AutonomousRecruitmentAgentRulesService } from '../assistant/recruitment-agent-rules.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import {
   AutonomousRecruiterJobData,
@@ -23,7 +23,7 @@ describe('AutonomousRecruiterProcessor', () => {
     getApiKeys: jest.Mock;
     apiKeyService: { generateApiKeyToken: jest.Mock };
   };
-  let recruitmentAgentRulesService: { getSystemPrompt: jest.Mock };
+  let autonomousRecruitmentAgentRulesService: { getSystemPrompt: jest.Mock };
 
   const validJobData: AutonomousRecruiterJobData = {
     workspaceId: 'workspace-1',
@@ -44,7 +44,7 @@ describe('AutonomousRecruiterProcessor', () => {
     mcpAssistantService = {
       processQuery: jest.fn().mockResolvedValue({ text: 'Done.', toolCalls: [] }),
     };
-    recruitmentAgentRulesService = {
+    autonomousRecruitmentAgentRulesService = {
       getSystemPrompt: jest.fn().mockResolvedValue('You are a recruiter.'),
     };
     workspaceQueryService = {
@@ -60,7 +60,7 @@ describe('AutonomousRecruiterProcessor', () => {
         { provide: WorkspaceQueryService, useValue: workspaceQueryService },
         { provide: AssistantThreadService, useValue: assistantThreadService },
         { provide: McpAssistantService, useValue: mcpAssistantService },
-        { provide: RecruitmentAgentRulesService, useValue: recruitmentAgentRulesService },
+        { provide: AutonomousRecruitmentAgentRulesService, useValue: autonomousRecruitmentAgentRulesService },
         { provide: WebSocketService, useValue: webSocketService },
       ],
     }).compile();

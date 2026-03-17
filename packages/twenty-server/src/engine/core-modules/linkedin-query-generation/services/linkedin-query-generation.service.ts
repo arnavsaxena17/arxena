@@ -756,7 +756,7 @@ export class LinkedinQueryGenerationService {
 
     // Only some models support `response_format: { type: "json_schema" }`.
     // For models that don't (e.g. gpt-3.5-turbo), fall back to plain JSON-in-text parsing.
-    const supportsStructuredOutputs = !/^gpt-3\.5/i.test(model);
+    // const supportsStructuredOutputs = !/^gpt-3\.5/i.test(model);
 
     const completion = await openai.chat.completions.create({
       model,
@@ -765,9 +765,10 @@ export class LinkedinQueryGenerationService {
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      ...(supportsStructuredOutputs
-        ? { response_format: zodResponseFormat(schema, name) }
-        : {}),
+      response_format: zodResponseFormat(schema, name)
+      // ...(supportsStructuredOutputs
+      //   ? { response_format: zodResponseFormat(schema, name) }
+      //   : {}),
     });
 
     const content = completion.choices[0]?.message?.content?.trim();

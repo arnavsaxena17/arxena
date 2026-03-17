@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AssistantThreadService } from 'src/engine/core-modules/assistant/assistant-thread.service';
 import type { AssistantThreadRecord } from 'src/engine/core-modules/assistant/assistant.types';
 import { McpAssistantService } from 'src/engine/core-modules/assistant/mcp-assistant.service';
-import { RecruitmentAgentRulesService } from 'src/engine/core-modules/assistant/recruitment-agent-rules.service';
+import { AutonomousRecruitmentAgentRulesService } from 'src/engine/core-modules/assistant/recruitment-agent-rules.service';
 import { AutonomousRecruiterController } from 'src/engine/core-modules/autonomous-recruiter/autonomous-recruiter.controller';
 import { RecruiterMessageService } from 'src/engine/core-modules/autonomous-recruiter/recruiter-message.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
@@ -29,7 +29,7 @@ describe('AutonomousRecruiterController', () => {
   let mcpAssistantService: {
     processQueryStream: jest.Mock;
   };
-  let recruitmentAgentRulesService: {
+  let autonomousRecruitmentAgentRulesService: {
     getSystemPrompt: jest.Mock;
   };
 
@@ -68,7 +68,7 @@ describe('AutonomousRecruiterController', () => {
         },
       }),
     };
-    recruitmentAgentRulesService = {
+    autonomousRecruitmentAgentRulesService = {
       getSystemPrompt: jest.fn().mockResolvedValue('You are an autonomous recruiter.'),
     };
     mcpAssistantService = {
@@ -115,8 +115,8 @@ describe('AutonomousRecruiterController', () => {
         { provide: RecruiterMessageService, useValue: recruiterMessageService },
         { provide: McpAssistantService, useValue: mcpAssistantService },
         {
-          provide: RecruitmentAgentRulesService,
-          useValue: recruitmentAgentRulesService,
+          provide: AutonomousRecruitmentAgentRulesService,
+          useValue: autonomousRecruitmentAgentRulesService,
         },
       ],
     })
@@ -186,8 +186,8 @@ describe('AutonomousRecruiterController', () => {
       },
     );
     expect(recruiterMessageService.generateRecruiterMessageFromThread).toHaveBeenCalledTimes(2);
-    expect(recruitmentAgentRulesService.getSystemPrompt).toHaveBeenCalledTimes(3);
-    expect(recruitmentAgentRulesService.getSystemPrompt).toHaveBeenCalledWith(apiToken);
+    expect(autonomousRecruitmentAgentRulesService.getSystemPrompt).toHaveBeenCalledTimes(3);
+    expect(autonomousRecruitmentAgentRulesService.getSystemPrompt).toHaveBeenCalledWith(apiToken);
     expect(mcpAssistantService.processQueryStream).toHaveBeenCalledTimes(3);
 
     // One append for the initial user requirement, plus one per autonomous turn.

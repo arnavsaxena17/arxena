@@ -7,7 +7,7 @@ import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { AssistantThreadService } from '../assistant/assistant-thread.service';
 import { AssistantAgentEventRecord } from '../assistant/assistant.types';
 import { McpAssistantService } from '../assistant/mcp-assistant.service';
-import { RecruitmentAgentRulesService } from '../assistant/recruitment-agent-rules.service';
+import { AutonomousRecruitmentAgentRulesService } from '../assistant/recruitment-agent-rules.service';
 import { threadMessagesToHistory } from '../assistant/utils/thread-history.util';
 import { buildHeartbeatPrompt } from './prompts/heartbeat-prompt.template';
 
@@ -34,7 +34,7 @@ export class AutonomousRecruiterProcessor {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly assistantThreadService: AssistantThreadService,
     private readonly mcpAssistantService: McpAssistantService,
-    private readonly recruitmentAgentRulesService: RecruitmentAgentRulesService,
+    private readonly autonomousRecruitmentAgentRulesService: AutonomousRecruitmentAgentRulesService,
     private readonly webSocketService: WebSocketService,
   ) {}
 
@@ -102,7 +102,7 @@ export class AutonomousRecruiterProcessor {
     try {
       const thread = await this.assistantThreadService.getThread(apiToken, threadId);
       const history = thread ? threadMessagesToHistory(thread.messages) : [];
-      const systemPrompt = await this.recruitmentAgentRulesService.getSystemPrompt(apiToken);
+      const systemPrompt = await this.autonomousRecruitmentAgentRulesService.getSystemPrompt(apiToken);
 
       const response = await this.mcpAssistantService.processQuery(
         heartbeatPrompt,

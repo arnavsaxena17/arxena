@@ -1,5 +1,44 @@
 const TIMEOUT_MS = 30_000;
 
+type HttpMethod = 'GET' | 'POST';
+
+/** Minimal logger wrapper so MCP server calls are visible in logs. */
+function logMcpRestCall(
+  method: HttpMethod,
+  url: string,
+  status: number | 'ERROR',
+  extra?: {
+    pathPrefix?: string;
+    endpoint?: string;
+    queryParams?: Record<string, string>;
+    requestBodyPreview?: unknown;
+    errorMessage?: string;
+  },
+): void {
+  // Avoid logging full bodies; stringify a small, safe preview instead.
+  const bodyPreview =
+    extra?.requestBodyPreview != null
+      ? JSON.stringify(extra.requestBodyPreview).slice(0, 500)
+      : undefined;
+
+  // eslint-disable-next-line no-console
+  console.log(
+    JSON.stringify(
+      {
+        source: 'mcp-rest-client',
+        method,
+        url,
+        status,
+        pathPrefix: extra?.pathPrefix,
+        endpoint: extra?.endpoint,
+        queryParams: extra?.queryParams,
+        requestBodyPreview: bodyPreview,
+        errorMessage: extra?.errorMessage,
+      },
+    ),
+  );
+}
+
 function buildUrl(
   baseUrl: string,
   pathPrefix: string,
@@ -45,10 +84,22 @@ export async function callRestAPIGet(
 
     if (!response.ok) {
       const text = await response.text();
+      logMcpRestCall('GET', url, response.status, {
+        pathPrefix,
+        endpoint,
+        queryParams,
+        errorMessage: text,
+      });
       throw new Error(
         `REST API call to /${pathPrefix}/${endpoint} failed: ${response.status} ${text}`,
       );
     }
+
+    logMcpRestCall('GET', url, response.status, {
+      pathPrefix,
+      endpoint,
+      queryParams,
+    });
 
     return response.json();
   } finally {
@@ -87,10 +138,24 @@ export async function callRestAPI(
 
     if (!response.ok) {
       const text = await response.text();
+      logMcpRestCall('POST', url, response.status, {
+        pathPrefix,
+        endpoint,
+        queryParams,
+        requestBodyPreview: body,
+        errorMessage: text,
+      });
       throw new Error(
         `REST API call to /${pathPrefix}/${endpoint} failed: ${response.status} ${text}`,
       );
     }
+
+    logMcpRestCall('POST', url, response.status, {
+      pathPrefix,
+      endpoint,
+      queryParams,
+      requestBodyPreview: body,
+    });
 
     return response.json();
   } finally {

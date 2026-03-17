@@ -7,7 +7,7 @@ import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/
 import { AssistantThreadService } from './assistant-thread.service';
 import { AssistantController } from './assistant.controller';
 import { McpAssistantService } from './mcp-assistant.service';
-import { RecruitmentAgentRulesService } from './recruitment-agent-rules.service';
+import { AutonomousRecruitmentAgentRulesService } from './recruitment-agent-rules.service';
 
 @Module({
   imports: [
@@ -18,7 +18,7 @@ import { RecruitmentAgentRulesService } from './recruitment-agent-rules.service'
     GraphQLExecutionModule,
   ],
   controllers: [AssistantController],
-  providers: [McpAssistantService, AssistantThreadService, RecruitmentAgentRulesService],
-  exports: [McpAssistantService, RecruitmentAgentRulesService, AssistantThreadService],
+  providers: [McpAssistantService, AssistantThreadService, AutonomousRecruitmentAgentRulesService],
+  exports: [McpAssistantService, AutonomousRecruitmentAgentRulesService, AssistantThreadService],
 })
 export class AssistantModule {}

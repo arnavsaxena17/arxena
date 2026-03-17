@@ -58,9 +58,7 @@ Parse the raw requirement text and extract structured information, then classify
 - Medium-sized candidate pool
 - Some flexibility in requirements
 
-## Output Format
-
-Return the structured output with: original_requirement, query_type (A|B|C|D), query_type_description, position_title, seniority_level, domain_expertise, technical_skills, industry_terms, certifications, target_companies, company_type, location, experience_range, years_min, years_max, salary_range, age_range, special_notes, precision_vs_recall (high_precision | high_recall | balanced). Use null or empty arrays where a field is not applicable.`;
+`;
 
 export const buildAgent1UserPrompt = (
   rawRequirement: string,

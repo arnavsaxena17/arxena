@@ -39,7 +39,6 @@ export class AssistantThreadService {
       { filter: { recruiterId: { eq: workspaceMemberId } }, orderBy: [{ updatedAt: 'DescNullsFirst' }], limit: 100 },
       apiToken,
     );
-    console.log("listThreads called: result::", JSON.stringify(result, null, 2));
     const edges = result?.data.data.assistantThreads?.edges ?? [];
     console.log("Edges::", edges);
     return edges.map((e: { node: { id: string; name: string; jobId?: string } }) => ({

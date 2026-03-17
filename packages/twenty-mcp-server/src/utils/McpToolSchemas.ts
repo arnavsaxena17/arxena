@@ -239,6 +239,12 @@ export const GENERATE_SEARCH_PARAMETERS_INPUT_DESCRIPTOR: readonly McpInputField
   { key: 'searchFilterId', type: 'string', description: 'Search filter ID. Default is null.', required: false },
 ] as const;
 
+
+export const JOB_BRIEF_UNDERSTANDING_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'jobBrief', type: 'string', description: 'Job brief to understand from the user', required: true },
+] as const;
+
+
 // ==================== Org Chart Tools ====================
 
 /** Descriptor for get_org_chart tool input. */

@@ -1,4 +1,4 @@
-import { findOneAssistantThread, updateAssistantThread } from 'twenty-shared';
+import { findOneAssistantThread, updateOneAssistantThread } from 'twenty-shared';
 import { executeGraphQL } from '../api/graphql-client';
 import { McpTool } from '../types/tool-types';
 
@@ -73,7 +73,7 @@ export const agentNotesTools: McpTool[] = [
       };
       const updated = [...existing, newNote];
 
-      await executeGraphQL(config.baseUrl, config.apiToken, updateAssistantThread, {
+      await executeGraphQL(config.baseUrl, config.apiToken, updateOneAssistantThread, {
         id: threadId,
         input: { agentNotes: updated },
       });

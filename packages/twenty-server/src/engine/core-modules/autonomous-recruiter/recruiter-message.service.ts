@@ -58,15 +58,24 @@ export class RecruiterMessageService {
       jobContext,
       agentNotes: thread.agentNotes,
     });
-
     console.log("recruiterInstruction::", JSON.stringify(recruiterInstruction, null, 2));
-    const shouldAppendUserMessage = options?.appendUserMessageToThread !== false;
+
+    /**
+     * Heuristic safeguard:
+     * If the "userMessage" looks like a scripted, multi-turn transcript
+     * (contains both "Recruiter:" and "Assistant:" labels), treat it as
+     * prompt-only context and do NOT append it into the live thread as a
+     * single 'user' message. This keeps the stored conversation as
+     * clean, role-separated turns and avoids UI bubbles that mix roles.
+     */
+    const looksLikeTranscript =
+      /Recruiter:/i.test(userMessage) && /Assistant:/i.test(userMessage);
+
+    const shouldAppendUserMessage =
+      options?.appendUserMessageToThread !== false && !looksLikeTranscript;
+
     console.log("shouldAppendUserMessage::", JSON.stringify(shouldAppendUserMessage, null, 2));
     if (shouldAppendUserMessage) {
-      // Persist the original, simple recruiter text to the thread so that
-      // conversation history remains human-readable. The richer
-      // recruiterInstruction is used only as the prompt sent to the
-      // autonomous recruiter model.
       await this.assistantThreadService.appendMessage(
         apiToken,
         threadId,
@@ -97,122 +106,32 @@ export class RecruiterMessageService {
    * current assistant thread state and optional job context, using a
    * lightweight LLM call. This message is then fed into the standard
    * recruiter-instruction prompt builder.
+   * When sendEvent is provided (e.g. from demo stream), planner streaming
+   * is emitted as 'planner_text' events with { delta } for the client.
    */
   async generateRecruiterMessageFromThread(
     apiToken: string,
     threadId: string,
     options?: RecruiterMessageOptions,
+    sendEvent?: (event: string, data: unknown) => boolean | void,
   ): Promise<RecruiterMessageResponse> {
     const thread = await this.assistantThreadService.getThread(apiToken, threadId);
     if (!thread) {
       throw new Error(`Assistant thread not found for id=${threadId}`);
     }
 
-    const jobContext =
-      options?.includeJobContext === false || !thread.jobId
-        ? null
-        : await this.jobContextService.fetchJobContext(apiToken, thread.jobId);
+    const lastAssistantMessage = this.getLastAssistantMessageContent(thread.messages);
+    const conversationSummaryParts = this.buildConversationSummary(thread.messages);
 
-    const conversationSummaryParts: string[] = [];
-    const recentMessages = thread.messages.slice(-6);
-    recentMessages.forEach((m) => {
-      const roleLabel = m.role === 'assistant' ? 'Assistant' : 'Recruiter';
-      conversationSummaryParts.push(`${roleLabel}: ${m.content}`);
-    });
-
-    const jobLine = jobContext
-      ? [
-          jobContext.jobTitle ?? jobContext.searchName,
-          jobContext.companyName,
-          jobContext.jobLocation,
-        ]
-          .filter(Boolean)
-          .join(' @ ')
-      : null;
-
-    const plannerPromptLines: string[] = [];
-    plannerPromptLines.push(
-      'You are a senior recruiter planning the next short message to an autonomous recruiter assistant inside Arxena.',
+    const openai = await this.getOpenAIClientForPlanner(apiToken);
+    const rawContent = await this.executePlannerLlmCall(
+      openai,
+      lastAssistantMessage,
+      conversationSummaryParts,
+      sendEvent,
     );
-    plannerPromptLines.push(
-      'Your job is to tell the assistant what to do next in one or two high‑value steps (e.g. filter candidates, fetch contacts, fetch org charts, send chats).',
-    );
-    plannerPromptLines.push('');
-    if (jobLine) {
-      plannerPromptLines.push(`Job: ${jobLine}`);
-      plannerPromptLines.push('');
-    }
-    plannerPromptLines.push('Recent conversation between recruiter and assistant:');
-    plannerPromptLines.push('');
-    plannerPromptLines.push(conversationSummaryParts.join('\n'));
-    plannerPromptLines.push('');
-    plannerPromptLines.push(
-      'Now write the next recruiter message as a single, concise instruction to the assistant about what to do next.',
-    );
-    plannerPromptLines.push(
-      'Do not explain your reasoning. Respond with only the raw message text you would send to the assistant.',
-    );
+    const generatedUserMessage = this.parsePlannerResponse(rawContent);
 
-    const prompt = plannerPromptLines.join('\n');
-
-    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    const { openAIclient: openai } = await this.workspaceQueryService.initializeLLMClients(
-      workspaceId,
-    );
-
-    const plannerSchema = z.object({
-      message: z.string().min(1, 'Message must not be empty'),
-    });
-
-    console.log("plannerPromptLines::", JSON.stringify(plannerPromptLines, null, 2));
-
-    const result = await this.streamProcessingService.executeStreamingLlmCall(
-      () =>
-        this.streamProcessingService.createStreamingCompletion(
-          openai as OpenAI,
-          [
-            {
-              role: 'system' as const,
-              content:
-                'You are a senior recruiter planning the next short instruction to an autonomous recruiter assistant. Respond ONLY with a JSON object matching the expected schema.',
-            },
-            { role: 'user' as const, content: prompt },
-          ],
-          zodResponseFormat(plannerSchema, 'recruiterPlanner'),
-          'gpt-4o',
-        ),
-      {
-        // If we ever want to surface planner streaming to a client, wire sendEvent here.
-        chunkEventName: 'text',
-        chunkPayloadKey: 'delta',
-      },
-    );
-
-    const rawContent = typeof result === 'string' ? result : result.content;
-    if (!rawContent) {
-      console.log("generateRecruiterMessageFromThread: empty content from streaming planner, falling back to default message.");
-      this.logger.warn(
-        'generateRecruiterMessageFromThread: empty content from streaming planner, falling back to default message.',
-      );
-    }
-
-    let generatedUserMessage =
-      'Continue progressing this search with the next one or two high-value actions.';
-    try {
-      if (rawContent) {
-        const parsed = JSON.parse(rawContent);
-        const validated = plannerSchema.parse(parsed);
-        generatedUserMessage = validated.message.trim() || generatedUserMessage;
-      }
-    } catch (error) {
-      this.logger.warn(
-        `generateRecruiterMessageFromThread: failed to parse planner JSON, using fallback message. Error: ${
-          (error as Error).message
-        }`,
-      );
-    }
-
-    console.log("generatedUserMessage::", JSON.stringify(generatedUserMessage, null, 2));
     const recruiterMessageResponse = await this.generateRecruiterMessageWithToken(
       apiToken,
       threadId,
@@ -220,12 +139,139 @@ export class RecruiterMessageService {
       options,
     );
 
-    console.log("recruiterMessageResponse generated: recruiterMessageResponse::", JSON.stringify(recruiterMessageResponse, null, 2)); 
     if (!recruiterMessageResponse) {
       throw new Error('Failed to generate recruiter message');
     }
-    console.log("recruiterMessageResponse::", JSON.stringify(recruiterMessageResponse, null, 2));
-    return recruiterMessageResponse;
+    return { ...recruiterMessageResponse, text: generatedUserMessage };
+  }
+
+  private async fetchJobContextForThread(
+    apiToken: string,
+    thread: { jobId?: string | null },
+    options?: RecruiterMessageOptions,
+  ) {
+    if (options?.includeJobContext === false || !thread.jobId) {
+      return null;
+    }
+    return this.jobContextService.fetchJobContext(apiToken, thread.jobId);
+  }
+
+  private getLastAssistantMessageContent(messages: Array<{ role: string; content: string }>): string {
+    const assistantMessages = messages.filter((m) => m.role === 'assistant');
+    const last = assistantMessages[assistantMessages.length - 1];
+    return last?.content ?? '';
+  }
+
+  private buildConversationSummary(messages: Array<{ role: string; content: string }>): string[] {
+    const recentMessages = messages.slice(-6);
+    return recentMessages.map((m) => {
+      const roleLabel = m.role === 'assistant' ? 'Assistant' : 'Recruiter';
+      return `${roleLabel}: ${m.content}`;
+    });
+  }
+
+  private buildPlannerSystemPrompt(): string {
+    const job = `Salesforce Developer`;
+    const jobDescription = `Salesforce Developer is a software engineer who is responsible for developing and maintaining Salesforce applications.`;
+    const jobLocation = `San Francisco, CA`;
+    const jobSalary = `100,000 - 120,000 USD`;
+    const jobExperience = `5+ years`;
+    const jobSkills = `Salesforce, Salesforce CRM, Salesforce Development, Salesforce Integration, Salesforce Customization`;
+    const jobRequirements = `Salesforce Developer is a software engineer who is responsible for developing and maintaining Salesforce applications.`;
+    const jobResponsibilities = `Salesforce Developer is a software engineer who is responsible for developing and maintaining Salesforce applications.`;
+    const lines: string[] = [
+      'You are a senior recruiter required to deliver a candidate shortlist to the client for a job they have mandated you.',
+      `Job Description: ${jobDescription}`,
+      `Job Location: ${jobLocation}`,
+      `Job Salary: ${jobSalary}`,
+      `Job Experience: ${jobExperience}`,
+      `Job Skills: ${jobSkills}`,
+      `Job Requirements: ${jobRequirements}`,
+      `Job Responsibilities: ${jobResponsibilities}`,
+      'Your job is to tell the assistant your requirements. You have to tell the recruiter the details of the job in terms of client details, salaries, location, years of experience, etc.',
+       'You will tell the details of the ideal cancdidate that you are looking for. ',
+       'When you receive a list of candidates you will work with the agent to shortlist the agent\'s shortlist and reach out to the candidates to get their CVs and other details. ',
+       'You will then send the shortlist to the client for their approval. '
+    ];
+    return lines.join('\n');
+  }
+
+  private buildUserPrompt(userMessage: string, conversationSummaryParts: string[]): string {
+    const lines: string[] = [
+      'The recruiting assistant just responded to the assistant with the following message:',
+      '',
+      userMessage,
+    ];
+  lines.push(
+    'Recent conversation between recruiter and assistant:',
+    '',
+    conversationSummaryParts.join('\n'),
+    '',
+  );
+  return lines.join('\n');
+}
+
+  private async getOpenAIClientForPlanner(apiToken: string): Promise<OpenAI> {
+    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    const { openAIclient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
+    return openAIclient as OpenAI;
+  }
+
+  private readonly plannerSchema = z.object({
+    message: z.string().min(1, 'Message must not be empty'),
+  });
+
+  private async executePlannerLlmCall(
+    openai: OpenAI,
+    userMessage: string,
+    conversationSummaryParts: string[],
+    sendEvent?: (event: string, data: unknown) => boolean | void,
+  ): Promise<string | undefined> {
+    const result = await this.streamProcessingService.executeStreamingLlmCall(
+      () =>
+        this.streamProcessingService.createStreamingCompletion(
+          openai,
+          [
+            {
+              role: 'system' as const,
+              content:this.buildPlannerSystemPrompt()
+            },
+            { role: 'user' as const, content: this.buildUserPrompt(userMessage, conversationSummaryParts) },
+          ],
+          zodResponseFormat(this.plannerSchema, 'recruiterPlanner'),
+          'gpt-4o',
+        ),
+      {
+        chunkEventName: 'text',
+        chunkPayloadKey: 'delta',
+        sendEvent: sendEvent
+          ? (_event, data) => sendEvent('planner_text', data)
+          : undefined,
+      },
+    );
+    const rawContent = typeof result === 'string' ? result : result.content;
+    if (!rawContent) {
+      this.logger.warn(
+        'generateRecruiter MessageFromThread: empty content from streaming planner, falling back to default message.',
+      );
+    }
+    return rawContent;
+  }
+
+  private parsePlannerResponse(rawContent: string | undefined): string {
+    const fallback =
+      'Continue progressing this search with the next one or two high-value actions.';
+    if (!rawContent) return fallback;
+    try {
+      const parsed = JSON.parse(rawContent);
+      const validated = this.plannerSchema.parse(parsed);
+      return validated.message.trim() || fallback;
+    } catch (error) {
+      this.logger.warn(
+        `generateRecruitervMessageFromThread: failed to parse planner JSON, using fallback message. Error: ${(error as Error).message}`,
+      );
+      return fallback;
+    }
   }
 
   private async getApiTokenFromWorkspace(workspaceId: string, schema: string): Promise<string> {

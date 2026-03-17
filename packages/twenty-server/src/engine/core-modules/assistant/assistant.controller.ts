@@ -3,16 +3,18 @@ import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { AssistantThreadService } from './assistant-thread.service';
 import {
-    AssistantChatRequestBody,
-    AssistantContentBlock,
+  AssistantChatRequestBody,
+  AssistantContentBlock,
 } from './assistant.types';
 import { McpAssistantService } from './mcp-assistant.service';
+import { AutonomousRecruitmentAgentRulesService } from './recruitment-agent-rules.service';
 
 @Controller('assistant')
 export class AssistantController {
   constructor(
     private readonly mcpAssistantService: McpAssistantService,
     private readonly assistantThreadService: AssistantThreadService,
+    private readonly autonomousRecruitmentAgentRulesService: AutonomousRecruitmentAgentRulesService,
   ) {}
 
   @Get('threads')
@@ -174,10 +176,16 @@ export class AssistantController {
       },
     );
 
+    const systemPrompt =
+      await this.autonomousRecruitmentAgentRulesService.getSystemPrompt(
+        apiToken,
+      );
+
     const result = await this.mcpAssistantService.processQuery(
       message,
       apiToken,
       history,
+      systemPrompt,
     );
 
     // Persist user + assistant messages (including final toolCalls) when a threadId is provided.
@@ -229,15 +237,27 @@ export class AssistantController {
       return;
     }
 
-    const history = (conversationHistory ?? []).map((m): { role: 'user'; content: string } | { role: 'assistant'; content: AssistantContentBlock[] } => {
-      if (m.role === 'user') {
-        return { role: 'user', content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) };
-      }
-      const content: AssistantContentBlock[] = Array.isArray(m.content)
-        ? (m.content as AssistantContentBlock[])
-        : [{ type: 'text', text: String(m.content) }];
-      return { role: 'assistant', content };
-    });
+    const history = (conversationHistory ?? []).map(
+      (
+        m,
+      ):
+        | { role: 'user'; content: string }
+        | { role: 'assistant'; content: AssistantContentBlock[] } => {
+        if (m.role === 'user') {
+          return {
+            role: 'user',
+            content:
+              typeof m.content === 'string'
+                ? m.content
+                : JSON.stringify(m.content),
+          };
+        }
+        const content: AssistantContentBlock[] = Array.isArray(m.content)
+          ? (m.content as AssistantContentBlock[])
+          : [{ type: 'text', text: String(m.content) }];
+        return { role: 'assistant', content };
+      },
+    );
 
     let isAborted = false;
     const abortHandler = () => {
@@ -289,8 +309,18 @@ export class AssistantController {
     };
 
     try {
-      await this.mcpAssistantService.processQueryStream(message, apiToken, history, sendEvent);
-      
+      const systemPrompt =
+        await this.autonomousRecruitmentAgentRulesService.getSystemPrompt(
+          apiToken,
+        );
+      await this.mcpAssistantService.processQueryStream(
+        message,
+        apiToken,
+        history,
+        sendEvent,
+        systemPrompt,
+      );
+
       // Persist messages and table data if threadId is provided
       if (threadId && !isAborted) {
         try {

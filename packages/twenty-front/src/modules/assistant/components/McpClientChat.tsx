@@ -4,193 +4,15 @@ import {
 } from '@/assistant/components/AssistantDetailsTable';
 import type { AssistantAgentEvent, AssistantChatMessage } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { TextInput } from '@/ui/input/components/TextInput';
 import styled from '@emotion/styled';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { Button, IconChevronDown, IconChevronRight } from 'twenty-ui';
 
-function stripThreadNameQuotes(name: string): string {
-  const t = name.trim();
-  if (t.length >= 2 && t.startsWith('"') && t.endsWith('"')) {
-    return t.slice(1, -1).trim();
-  }
-  return t;
-}
-
-type TextSegment = {
-  type: 'text' | 'bold' | 'markdownLink' | 'url' | 'phone' | 'id';
-  content: string;
-  url?: string;
-  start: number;
-  end: number;
-};
-
-const parseRichText = (text: string): React.ReactNode[] => {
-  const segments: TextSegment[] = [];
-  let key = 0;
-
-  // 1. Find markdown links [text](url) - process first to avoid conflicts
-  const markdownLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-  let match: RegExpExecArray | null;
-  while ((match = markdownLinkRegex.exec(text)) !== null) {
-    segments.push({
-      type: 'markdownLink',
-      content: match[1],
-      url: match[2],
-      start: match.index,
-      end: match.index + match[0].length,
-    });
-  }
-
-  // 2. Find bold text **text**
-  const boldRegex = /\*\*([^*]+)\*\*/g;
-  while ((match = boldRegex.exec(text)) !== null) {
-    // Check if this bold text overlaps with a markdown link
-    const matchIndex = match.index;
-    const matchLength = match[0].length;
-    const overlaps = segments.some(
-      (s) => s.type === 'markdownLink' && s.start < matchIndex + matchLength && s.end > matchIndex,
-    );
-    if (!overlaps) {
-      segments.push({
-        type: 'bold',
-        content: match[1],
-        start: matchIndex,
-        end: matchIndex + matchLength,
-      });
-    }
-  }
-
-  // 3. Find plain URLs (http://, https://, www.)
-  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
-  while ((match = urlRegex.exec(text)) !== null) {
-    // Check if this URL is already part of a markdown link
-    const matchIndex = match.index;
-    const matchLength = match[0].length;
-    const isInMarkdownLink = segments.some(
-      (s) => s.type === 'markdownLink' && s.start <= matchIndex && s.end >= matchIndex + matchLength,
-    );
-    if (!isInMarkdownLink) {
-      let url = match[0];
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        url = 'https://' + url;
-      }
-      segments.push({
-        type: 'url',
-        content: match[0],
-        url,
-        start: matchIndex,
-        end: matchIndex + matchLength,
-      });
-    }
-  }
-
-  // 4. Find phone numbers (various formats)
-  const phoneRegex = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}|\+\d{10,15}/g;
-  while ((match = phoneRegex.exec(text)) !== null) {
-    // Check if this phone number is already part of a processed segment
-    const matchIndex = match.index;
-    const matchLength = match[0].length;
-    const isProcessed = segments.some(
-      (s) => s.start <= matchIndex && s.end >= matchIndex + matchLength,
-    );
-    if (!isProcessed) {
-      const phoneNumber = match[0].replace(/\s/g, '');
-      segments.push({
-        type: 'phone',
-        content: match[0],
-        url: `tel:${phoneNumber}`,
-        start: matchIndex,
-        end: matchIndex + matchLength,
-      });
-    }
-  }
-
-  // 5. Find UUIDs and common ID patterns
-  const uuidRegex = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
-  while ((match = uuidRegex.exec(text)) !== null) {
-    // Check if this ID is already part of a processed segment
-    const matchIndex = match.index;
-    const matchLength = match[0].length;
-    const isProcessed = segments.some(
-      (s) => s.start <= matchIndex && s.end >= matchIndex + matchLength,
-    );
-    if (!isProcessed) {
-      segments.push({
-        type: 'id',
-        content: match[0],
-        url: `#${match[0]}`,
-        start: matchIndex,
-        end: matchIndex + matchLength,
-      });
-    }
-  }
-
-  // Sort segments by start position
-  segments.sort((a, b) => a.start - b.start);
-
-  // Build React nodes from segments
-  const parts: React.ReactNode[] = [];
-  let lastIndex = 0;
-
-  for (const segment of segments) {
-    // Add text before this segment
-    if (segment.start > lastIndex) {
-      const beforeText = text.slice(lastIndex, segment.start);
-      if (beforeText) {
-        parts.push(beforeText);
-      }
-    }
-
-    // Add the segment as appropriate React element
-    switch (segment.type) {
-      case 'bold':
-        parts.push(<strong key={key++}>{segment.content}</strong>);
-        break;
-      case 'markdownLink':
-        parts.push(
-          <a key={key++} href={segment.url} target="_blank" rel="noopener noreferrer">
-            {segment.content}
-          </a>,
-        );
-        break;
-      case 'url':
-        parts.push(
-          <a key={key++} href={segment.url} target="_blank" rel="noopener noreferrer">
-            {segment.content}
-          </a>,
-        );
-        break;
-      case 'phone':
-        parts.push(
-          <a key={key++} href={segment.url}>
-            {segment.content}
-          </a>,
-        );
-        break;
-      case 'id':
-        parts.push(
-          <a key={key++} href={segment.url} style={{ cursor: 'pointer', textDecoration: 'underline' }}>
-            {segment.content}
-          </a>,
-        );
-        break;
-      default:
-        parts.push(segment.content);
-    }
-
-    lastIndex = segment.end;
-  }
-
-  // Add remaining text after the last segment
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
-  }
-
-  return parts.length > 0 ? parts : [text];
-};
+import { useControlledMessages } from '@/assistant/hooks/useControlledMessages';
+import { useMcpStreamingChat } from '@/assistant/hooks/useMcpStreamingChat';
+import { parseMessageContentWithJson, parseRichText } from '@/assistant/utils/richText';
 
 export type { AssistantChatMessage };
 
@@ -322,49 +144,6 @@ const StyledJsonValue = styled.span`
   color: ${({ theme }) => theme.font.color.primary};
 `;
 
-const JSON_BLOCK_REGEX = /```json\s*\n([\s\S]*?)```/g;
-
-function parseMessageContentWithJson(text: string): React.ReactNode[] {
-  const parts: React.ReactNode[] = [];
-  let lastEnd = 0;
-  let match: RegExpExecArray | null;
-  JSON_BLOCK_REGEX.lastIndex = 0;
-  while ((match = JSON_BLOCK_REGEX.exec(text)) !== null) {
-    if (match.index > lastEnd) {
-      parts.push(...parseRichText(text.slice(lastEnd, match.index)));
-    }
-    const jsonStr = match[1].trim();
-    try {
-      const data = JSON.parse(jsonStr) as Record<string, unknown>;
-      parts.push(
-        <StyledJsonBlock key={`json-${match.index}`}>
-          {Object.entries(data).map(([key, value]) => (
-            <StyledJsonRow key={key}>
-              <StyledJsonKey>{key}</StyledJsonKey>
-              <StyledJsonValue>
-                {value === null
-                  ? 'null'
-                  : Array.isArray(value)
-                    ? value.join(', ')
-                    : typeof value === 'object'
-                      ? JSON.stringify(value)
-                      : String(value)}
-              </StyledJsonValue>
-            </StyledJsonRow>
-          ))}
-        </StyledJsonBlock>,
-      );
-    } catch {
-      parts.push(...parseRichText('```json\n' + jsonStr + '\n```'));
-    }
-    lastEnd = match.index + match[0].length;
-  }
-  if (lastEnd < text.length) {
-    parts.push(...parseRichText(text.slice(lastEnd)));
-  }
-  return parts.length > 0 ? parts : parseRichText(text);
-}
-
 const StyledToolCalls = styled.div`
   font-size: ${({ theme }) => theme.font.size.sm};
   color: ${({ theme }) => theme.font.color.tertiary};
@@ -415,6 +194,35 @@ const StyledForm = styled.form`
 const StyledInputWrapper = styled.div`
   flex: 1;
   width: 100%;
+`;
+
+const StyledTextArea = styled.textarea`
+  width: 100%;
+  min-height: ${({ theme }) => theme.spacing(5)};
+  max-height: ${({ theme }) => theme.spacing(20)};
+  resize: none;
+  box-sizing: border-box;
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  padding: ${({ theme }) => theme.spacing(2)};
+  font-family: ${({ theme }) => theme.font.family};
+  font-size: ${({ theme }) => theme.font.size.md};
+  line-height: 1.4;
+  color: ${({ theme }) => theme.font.color.primary};
+  background-color: ${({ theme }) => theme.background.transparent.lighter};
+
+  &:disabled {
+    color: ${({ theme }) => theme.font.color.tertiary};
+  }
+
+  &::placeholder {
+    color: ${({ theme }) => theme.font.color.light};
+  }
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.color.blue};
+  }
 `;
 
 const StyledStreamLog = styled.div`
@@ -523,27 +331,6 @@ const StyledRetryButton = styled.button`
 
 const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
 
-function useControlledMessages(
-  controlled: AssistantChatMessage[] | undefined,
-  onControlledChange: ((m: AssistantChatMessage[]) => void) | undefined,
-): [AssistantChatMessage[], (messages: AssistantChatMessage[] | ((prev: AssistantChatMessage[]) => AssistantChatMessage[])) => void] {
-  const [internal, setInternal] = useState<AssistantChatMessage[]>([]);
-  const isControlled = controlled !== undefined && onControlledChange !== undefined;
-  const messages = isControlled ? controlled : internal;
-  const setMessages = useCallback(
-    (arg: AssistantChatMessage[] | ((prev: AssistantChatMessage[]) => AssistantChatMessage[])) => {
-      if (isControlled && onControlledChange) {
-        const next = typeof arg === 'function' ? arg(controlled) : arg;
-        onControlledChange(next);
-      } else {
-        setInternal((prev) => (typeof arg === 'function' ? arg(prev) : arg));
-      }
-    },
-    [isControlled, controlled, onControlledChange],
-  );
-  return [messages, setMessages];
-}
-
 export const McpClientChat = ({
   messages: controlledMessages,
   onMessagesChange,
@@ -561,18 +348,36 @@ export const McpClientChat = ({
     onMessagesChange,
   );
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [streamLog, setStreamLog] = useState<string[]>([]);
-  const [streamLogMinimized, setStreamLogMinimized] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const [expandedAssistantIndices, setExpandedAssistantIndices] = useState<Set<number>>(() => new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const streamingMessageIndexRef = useRef<number>(-1);
-  const accumulatedContentRef = useRef<string>('');
-  const lastBubbleIsTextRunRef = useRef<boolean>(false);
-  /** During streaming, we always append/update from this ref so we never overwrite or drop previous bubbles (avoids stale prev in controlled mode). */
-  const streamedMessagesRef = useRef<AssistantChatMessage[]>([]);
+  const {
+    sendMessage,
+    loading,
+    streamLog,
+    streamLogMinimized,
+    setStreamLogMinimized,
+    error,
+    setError,
+  } = useMcpStreamingChat({
+    messages,
+    setMessages,
+    threadId,
+    onTableData,
+    onThreadNameChange,
+    onMessageComplete,
+    onStreamMessage,
+    onAgentEvent,
+    token: tokenPair?.accessToken?.token,
+    baseUrl,
+  });
+
+  const sendCurrentMessage = useCallback(() => {
+    if (!input.trim()) return;
+    sendMessage(input);
+    setInput('');
+  }, [input, sendMessage]);
 
   const scrollToBottom = useCallback((instant = false) => {
     if (instant && messagesContainerRef.current) {
@@ -584,12 +389,6 @@ export const McpClientChat = ({
   }, []);
 
   useEffect(() => {
-    // Clear stream log when switching threads (e.g. clicking "New thread")
-    setStreamLog([]);
-    setStreamLogMinimized(false);
-  }, [threadId]);
-
-  useEffect(() => {
     // Scroll instantly during streaming to keep up with content
     const isStreaming = loading && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant';
     // Use requestAnimationFrame to ensure DOM has updated
@@ -598,495 +397,21 @@ export const McpClientChat = ({
     });
   }, [messages, loading, scrollToBottom]);
 
-  const sendMessage = useCallback(
-    async (text: string) => {
-      const token = tokenPair?.accessToken?.token;
-      if (!token || !baseUrl) {
-        setError('Not authenticated or server URL not set.');
-        return;
-      }
-      const trimmed = text.trim();
-      if (!trimmed) return;
-
-      setError(null);
-      setInput('');
-      setStreamLog([]);
-      setStreamLogMinimized(false);
-
-      // Build conversation history from current messages before adding new ones
-      const conversationHistory = messages.map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
-
-      // Initialize streaming state; assistant bubbles are added as events arrive
-      accumulatedContentRef.current = '';
-      lastBubbleIsTextRunRef.current = false;
-      const withUserMessage: AssistantChatMessage[] = [
-        ...messages,
-        { role: 'user' as const, content: trimmed },
-      ];
-      streamedMessagesRef.current = withUserMessage;
-      setMessages(withUserMessage);
-      setLoading(true);
-
-      try {
-
-        const res = await fetch(`${baseUrl}/assistant/chat/stream`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            message: trimmed,
-            conversationHistory,
-            ...(threadId ? { threadId } : {}),
-          }),
-        });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          const errorMessage = data?.error ?? data?.message ?? 'Request failed';
-          setError(errorMessage);
-          const reverted = streamedMessagesRef.current.slice(0, -1);
-          streamedMessagesRef.current = reverted;
-          setMessages(reverted);
-          streamingMessageIndexRef.current = -1;
-          accumulatedContentRef.current = '';
-          setLoading(false);
-          return;
-        }
-
-        const reader = res.body?.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        if (!reader) {
-          setError('Stream not available');
-          const reverted = streamedMessagesRef.current.slice(0, -1);
-          streamedMessagesRef.current = reverted;
-          setMessages(reverted);
-          streamingMessageIndexRef.current = -1;
-          accumulatedContentRef.current = '';
-          setLoading(false);
-          return;
-        }
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const events = buffer.split('\n\n');
-          buffer = events.pop() ?? '';
-          for (const raw of events) {
-            let eventType = 'message';
-            let dataStr = '';
-            for (const line of raw.split('\n')) {
-              if (line.startsWith('event: ')) eventType = line.slice(7).trim();
-              if (line.startsWith('data: ')) dataStr = line.slice(6);
-            }
-            if (!dataStr) continue;
-            try {
-              const data = JSON.parse(dataStr) as Record<string, unknown>;
-              if (eventType === 'agent_event') {
-                const evt = data as Partial<AssistantAgentEvent>;
-                if (evt && typeof evt.status === 'string') {
-                  onAgentEvent?.({
-                    status: evt.status as AssistantAgentEvent['status'],
-                    threadId: evt.threadId,
-                    runId: evt.runId,
-                    summary: typeof evt.summary === 'string' ? evt.summary : undefined,
-                    error: typeof evt.error === 'string' ? evt.error : undefined,
-                    toolName: typeof evt.toolName === 'string' ? evt.toolName : undefined,
-                    timestamp:
-                      typeof evt.timestamp === 'number'
-                        ? evt.timestamp
-                        : Date.now(),
-                  });
-                }
-                continue;
-              }
-              // New bubble per tool_use / status / message; one bubble per run of text deltas; when deltas end, next event opens a new bubble. Always append from streamedMessagesRef so we never overwrite/remove previous bubbles.
-              if (eventType === 'tool_use' && typeof data.name === 'string') {
-                lastBubbleIsTextRunRef.current = false;
-                const toolName = data.name as string;
-                const next = [
-                  ...streamedMessagesRef.current,
-                  {
-                    role: 'assistant' as const,
-                    content: `Using: ${toolName}`,
-                  },
-                ];
-                streamingMessageIndexRef.current = next.length - 1;
-                streamedMessagesRef.current = next;
-                setMessages(next);
-
-                onAgentEvent?.({
-                  status: 'tool_call',
-                  threadId,
-                  runId: undefined,
-                  summary: `Calling ${toolName}`,
-                  toolName,
-                  timestamp: Date.now(),
-                });
-              }
-              if (eventType === 'status' && typeof data.message === 'string') {
-                setStreamLog((prev) => [...prev, data.message as string]);
-                lastBubbleIsTextRunRef.current = false;
-                const statusText = data.message as string;
-                const next = [...streamedMessagesRef.current, { role: 'assistant' as const, content: statusText }];
-                streamingMessageIndexRef.current = next.length - 1;
-                streamedMessagesRef.current = next;
-                setMessages(next);
-              }
-              if (eventType === 'message') {
-                lastBubbleIsTextRunRef.current = false;
-                const msgType = typeof data.type === 'string' ? data.type : '';
-                if (msgType) setStreamLog((prev) => [...prev, msgType]);
-                onStreamMessage?.(msgType, data.data ?? data);
-                const chatMessage = typeof data.chatMessage === 'string' ? data.chatMessage : null;
-                const displayText = chatMessage ?? (msgType
-                  ? `**${msgType}**\n${typeof data.data !== 'undefined' ? JSON.stringify(data.data, null, 2) : ''}`
-                  : '');
-                if (displayText) {
-                  const next = [...streamedMessagesRef.current, { role: 'assistant' as const, content: displayText }];
-                  streamingMessageIndexRef.current = next.length - 1;
-                  streamedMessagesRef.current = next;
-                  setMessages(next);
-                }
-              }
-              if (eventType === 'text' && typeof data.delta === 'string') {
-                const isNewTextRun = !lastBubbleIsTextRunRef.current;
-                if (isNewTextRun) {
-                  accumulatedContentRef.current = data.delta;
-                  lastBubbleIsTextRunRef.current = true;
-                } else {
-                  accumulatedContentRef.current += data.delta;
-                }
-                const prev = streamedMessagesRef.current;
-                const next = [...prev];
-                const streamingIndex = streamingMessageIndexRef.current;
-                if (isNewTextRun) {
-                  next.push({ role: 'assistant' as const, content: accumulatedContentRef.current });
-                  streamingMessageIndexRef.current = next.length - 1;
-                } else if (streamingIndex >= 0 && streamingIndex < next.length && next[streamingIndex]?.role === 'assistant') {
-                  next[streamingIndex] = {
-                    ...next[streamingIndex],
-                    content: accumulatedContentRef.current,
-                  };
-                } else {
-                  next.push({ role: 'assistant' as const, content: accumulatedContentRef.current });
-                  streamingMessageIndexRef.current = next.length - 1;
-                }
-                streamedMessagesRef.current = next;
-                setMessages(next);
-              }
-              if (eventType === 'table_data') {
-                const columns = Array.isArray(data.columns)
-                  ? (data.columns as string[])
-                  : [];
-                const rows = Array.isArray(data.rows) ? data.rows : [];
-                if (columns.length > 0 && rows.length > 0) {
-                  const tableData = { columns, rows: rows as Record<string, unknown>[] };
-                  onTableData?.(tableData);
-                  const prev = streamedMessagesRef.current;
-                  const last = prev[prev.length - 1];
-                  if (last?.role === 'assistant') {
-                    const list = last.tableDataList ?? [];
-                    const next = [...prev.slice(0, -1), { ...last, tableDataList: [...list, tableData] }];
-                    streamedMessagesRef.current = next;
-                    setMessages(next);
-                  }
-                }
-              }
-              if (eventType === 'org_chart') {
-                const orgChartData = data.orgChart as {
-                  companyId?: string;
-                  companyName?: string;
-                  slug?: string;
-                  viewUrl?: string;
-                  country?: string;
-                  functionRoot?: string;
-                } | undefined;
-                if (orgChartData?.companyId && orgChartData?.viewUrl) {
-                  const prev = streamedMessagesRef.current;
-                  const last = prev[prev.length - 1];
-                  if (last?.role === 'assistant') {
-                    const orgCharts = last.orgCharts ?? [];
-                    const companyId = orgChartData.companyId!;
-                    const companyName = orgChartData.companyName || companyId;
-                    const slug = orgChartData.slug || companyId;
-                    const next = [
-                      ...prev.slice(0, -1),
-                      {
-                        ...last,
-                        orgCharts: [
-                          ...orgCharts,
-                          {
-                            companyId,
-                            companyName,
-                            slug,
-                            viewUrl: orgChartData.viewUrl!,
-                            country: orgChartData.country,
-                            functionRoot: orgChartData.functionRoot,
-                          },
-                        ],
-                      },
-                    ];
-                    streamedMessagesRef.current = next;
-                    setMessages(next);
-                  }
-                }
-              }
-              if (eventType === 'done') {
-                const text = typeof data.text === 'string' ? data.text : '';
-                const toolCalls = Array.isArray(data.toolCalls) ? data.toolCalls : undefined;
-
-                const finalContent =
-                  accumulatedContentRef.current.trim() !== ''
-                    ? accumulatedContentRef.current
-                    : text;
-
-                const prev = streamedMessagesRef.current;
-                const next = [...prev];
-                const streamingIndex = streamingMessageIndexRef.current;
-                if (
-                  streamingIndex >= 0 &&
-                  streamingIndex < next.length &&
-                  next[streamingIndex]?.role === 'assistant'
-                ) {
-                  next[streamingIndex] = {
-                    ...next[streamingIndex],
-                    content: finalContent,
-                    toolCalls,
-                  };
-                } else {
-                  const lastIndex = next.length - 1;
-                  const last = next[lastIndex];
-                  if (last?.role === 'assistant') {
-                    next[lastIndex] = { ...last, content: finalContent, toolCalls };
-                  }
-                }
-                streamedMessagesRef.current = next;
-                setMessages(next);
-
-                if (toolCalls && toolCalls.length > 0) {
-                  const names = toolCalls.map((t) => t.name).join(', ');
-                  onAgentEvent?.({
-                    status: 'completed',
-                    threadId,
-                    runId: undefined,
-                    summary: `Completed with tools: ${names}`,
-                    timestamp: Date.now(),
-                  });
-                }
-
-                streamingMessageIndexRef.current = -1;
-                accumulatedContentRef.current = '';
-
-                setStreamLogMinimized(true);
-
-                setTimeout(() => {
-                  onMessageComplete?.();
-                }, 800);
-              }
-              if (eventType === 'error' && typeof data.error === 'string') {
-                setError(data.error);
-                const prev = streamedMessagesRef.current;
-                const lastUserIdx = prev.findLastIndex((m) => m.role === 'user');
-                const next = lastUserIdx >= 0 ? prev.slice(0, lastUserIdx) : prev;
-                streamedMessagesRef.current = next;
-                setMessages(next);
-                streamingMessageIndexRef.current = -1;
-                accumulatedContentRef.current = '';
-              }
-              if (eventType === 'thread_name' && typeof data.name === 'string') {
-                onThreadNameChange?.(stripThreadNameQuotes(data.name));
-              }
-            } catch {
-              // ignore malformed data
-            }
-          }
-        }
-
-        // Process any remaining buffer when stream ends (last event may lack trailing \n\n)
-        if (buffer.trim()) {
-          let eventType = 'message';
-          let dataStr = '';
-          for (const line of buffer.split('\n')) {
-            if (line.startsWith('event: ')) eventType = line.slice(7).trim();
-            if (line.startsWith('data: ')) dataStr = line.slice(6);
-          }
-          if (dataStr) {
-            try {
-              const data = JSON.parse(dataStr) as Record<string, unknown>;
-              if (eventType === 'tool_use' && typeof data.name === 'string') {
-                lastBubbleIsTextRunRef.current = false;
-                const toolName = data.name as string;
-                const next = [
-                  ...streamedMessagesRef.current,
-                  {
-                    role: 'assistant' as const,
-                    content: `Using: ${toolName}`,
-                  },
-                ];
-                streamingMessageIndexRef.current = next.length - 1;
-                streamedMessagesRef.current = next;
-                setMessages(next);
-
-                onAgentEvent?.({
-                  status: 'tool_call',
-                  threadId,
-                  runId: undefined,
-                  summary: `Calling ${toolName}`,
-                  toolName,
-                  timestamp: Date.now(),
-                });
-              }
-              if (eventType === 'status' && typeof data.message === 'string') {
-                setStreamLog((prev) => [...prev, data.message as string]);
-                lastBubbleIsTextRunRef.current = false;
-                const statusText = data.message as string;
-                const next = [...streamedMessagesRef.current, { role: 'assistant' as const, content: statusText }];
-                streamingMessageIndexRef.current = next.length - 1;
-                streamedMessagesRef.current = next;
-                setMessages(next);
-              }
-              if (eventType === 'message') {
-                lastBubbleIsTextRunRef.current = false;
-                const msgType = typeof data.type === 'string' ? data.type : '';
-                if (msgType) setStreamLog((prev) => [...prev, msgType]);
-                onStreamMessage?.(msgType, data.data ?? data);
-                const chatMessage = typeof data.chatMessage === 'string' ? data.chatMessage : null;
-                const displayText = chatMessage ?? (msgType
-                  ? `**${msgType}**\n${typeof data.data !== 'undefined' ? JSON.stringify(data.data, null, 2) : ''}`
-                  : '');
-                if (displayText) {
-                  const next = [...streamedMessagesRef.current, { role: 'assistant' as const, content: displayText }];
-                  streamingMessageIndexRef.current = next.length - 1;
-                  streamedMessagesRef.current = next;
-                  setMessages(next);
-                }
-              }
-              if (eventType === 'text' && typeof data.delta === 'string') {
-                const isNewTextRun = !lastBubbleIsTextRunRef.current;
-                if (isNewTextRun) {
-                  accumulatedContentRef.current = data.delta;
-                  lastBubbleIsTextRunRef.current = true;
-                } else {
-                  accumulatedContentRef.current += data.delta;
-                }
-                const prev = streamedMessagesRef.current;
-                const next = [...prev];
-                const streamingIndex = streamingMessageIndexRef.current;
-                if (isNewTextRun) {
-                  next.push({ role: 'assistant' as const, content: accumulatedContentRef.current });
-                  streamingMessageIndexRef.current = next.length - 1;
-                } else if (streamingIndex >= 0 && streamingIndex < next.length && next[streamingIndex]?.role === 'assistant') {
-                  next[streamingIndex] = {
-                    ...next[streamingIndex],
-                    content: accumulatedContentRef.current,
-                  };
-                } else {
-                  next.push({ role: 'assistant' as const, content: accumulatedContentRef.current });
-                  streamingMessageIndexRef.current = next.length - 1;
-                }
-                streamedMessagesRef.current = next;
-                setMessages(next);
-              }
-              if (eventType === 'table_data') {
-                const columns = Array.isArray(data.columns) ? (data.columns as string[]) : [];
-                const rows = Array.isArray(data.rows) ? data.rows : [];
-                if (columns.length > 0 && rows.length > 0) {
-                  const tableData = { columns, rows: rows as Record<string, unknown>[] };
-                  onTableData?.(tableData);
-                  const prev = streamedMessagesRef.current;
-                  const last = prev[prev.length - 1];
-                  if (last?.role === 'assistant') {
-                    const next = [...prev.slice(0, -1), { ...last, tableDataList: [...(last.tableDataList ?? []), tableData] }];
-                    streamedMessagesRef.current = next;
-                    setMessages(next);
-                  }
-                }
-              }
-              if (eventType === 'done') {
-                const text = typeof data.text === 'string' ? data.text : '';
-                const toolCalls = Array.isArray(data.toolCalls) ? data.toolCalls : undefined;
-                const finalContent =
-                  accumulatedContentRef.current.trim() !== ''
-                    ? accumulatedContentRef.current
-                    : text;
-                const prev = streamedMessagesRef.current;
-                const next = [...prev];
-                const idx = streamingMessageIndexRef.current;
-                if (idx >= 0 && idx < next.length && next[idx]?.role === 'assistant') {
-                  next[idx] = { ...next[idx], content: finalContent, toolCalls };
-                } else {
-                  const lastIdx = next.length - 1;
-                  if (next[lastIdx]?.role === 'assistant') {
-                    next[lastIdx] = { ...next[lastIdx], content: finalContent, toolCalls };
-                  }
-                }
-                streamedMessagesRef.current = next;
-                setMessages(next);
-
-                if (toolCalls && toolCalls.length > 0) {
-                  const names = toolCalls.map((t) => t.name).join(', ');
-                  onAgentEvent?.({
-                    status: 'completed',
-                    threadId,
-                    runId: undefined,
-                    summary: `Completed with tools: ${names}`,
-                    timestamp: Date.now(),
-                  });
-                }
-
-                streamingMessageIndexRef.current = -1;
-                accumulatedContentRef.current = '';
-                setStreamLogMinimized(true);
-                setTimeout(() => onMessageComplete?.(), 800);
-              }
-              if (eventType === 'error' && typeof data.error === 'string') {
-                setError(data.error);
-                const prev = streamedMessagesRef.current;
-                const lastUserIdx = prev.findLastIndex((m) => m.role === 'user');
-                const next = lastUserIdx >= 0 ? prev.slice(0, lastUserIdx) : prev;
-                streamedMessagesRef.current = next;
-                setMessages(next);
-                streamingMessageIndexRef.current = -1;
-                accumulatedContentRef.current = '';
-              }
-              if (eventType === 'thread_name' && typeof data.name === 'string') {
-                onThreadNameChange?.(stripThreadNameQuotes(data.name));
-              }
-            } catch {
-              // ignore malformed data
-            }
-          }
-        }
-      } catch (e) {
-        const message = e instanceof Error ? e.message : 'Network error';
-        setError(message);
-        const prev = streamedMessagesRef.current;
-        const lastUserIdx = prev.findLastIndex((m) => m.role === 'user');
-        const reverted = lastUserIdx >= 0 ? prev.slice(0, lastUserIdx) : prev;
-        streamedMessagesRef.current = reverted;
-        setMessages(reverted);
-        streamingMessageIndexRef.current = -1;
-        accumulatedContentRef.current = '';
-      } finally {
-        setLoading(false);
-      }
-    },
-    [messages, tokenPair, threadId, onMessageComplete, onStreamMessage],
-  );
-
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      sendMessage(input);
+      sendCurrentMessage();
     },
-    [input, sendMessage],
+    [sendCurrentMessage],
   );
+
+  useEffect(() => {
+    const element = inputRef.current;
+    if (!element) return;
+    element.style.height = 'auto';
+    const maxHeight = element.scrollHeight;
+    element.style.height = `${maxHeight}px`;
+  }, [input]);
 
   const lastAssistantIndex = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -1306,13 +631,22 @@ export const McpClientChat = ({
       )}
       <StyledForm onSubmit={handleSubmit} aria-label="Chat input">
         <StyledInputWrapper>
-          <TextInput
+          <StyledTextArea
+            ref={inputRef}
             value={input}
-            onChange={setInput}
+            onChange={(event) => setInput(event.target.value)}
             placeholder="Type your message…"
             disabled={loading}
-            fullWidth
             aria-label="Message"
+            rows={1}
+            onKeyDown={(event) => {
+              // Prevent global hotkeys/shortcuts from triggering while typing in the chat input
+              event.stopPropagation();
+              if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendCurrentMessage();
+              }
+            }}
           />
         </StyledInputWrapper>
         <Button

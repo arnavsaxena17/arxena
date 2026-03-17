@@ -263,6 +263,9 @@ export class CandidateSearchController {
     }
   }
 
+
+
+
   @Get(':searchFilterId/history')
   async getChatHistory(
     @Param('searchFilterId') searchFilterId: string,

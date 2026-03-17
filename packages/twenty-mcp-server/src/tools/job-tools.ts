@@ -5,6 +5,9 @@ import { executeGraphQL } from '../api/graphql-client';
 import { callRestAPI } from '../api/rest-client';
 import { McpTool } from '../types/tool-types';
 
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 function extractJobs(data: unknown): Job[] {
   const result = data as { jobs: Jobs };
   return result?.jobs?.edges?.map((e) => e.node) ?? [];
@@ -144,7 +147,7 @@ export const jobTools: McpTool[] = [
     definition: {
       name: 'create_job',
       description:
-        'Create a new job opening in Arxena. Returns the new job ID. Optionally link to a company via companyId.',
+        'Create a new job opening in Arxena. Returns the new job ID. IMPORTANT: companyId must be an Arxena company UUID (from list_companies, get_company_by_id, or create_company), never a LinkedIn numeric ID.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -156,13 +159,10 @@ export const jobTools: McpTool[] = [
             type: 'string',
             description: 'Job location (e.g. city, remote)',
           },
-          jobCode: {
-            type: 'string',
-            description: 'Internal job code or reference',
-          },
           companyId: {
             type: 'string',
-            description: 'ID of the company this job belongs to (use list_companies or get_company_by_id to get IDs)',
+            description:
+              'Arxena company UUID this job belongs to (use list_companies, get_company_by_id, find_company_by_name, or create_company to get this ID). Do NOT pass LinkedIn IDs here.',
           },
         },
         required: ['name'],
@@ -174,6 +174,12 @@ export const jobTools: McpTool[] = [
       const jobCode = args.jobCode as string | undefined;
       const companyId = args.companyId as string | undefined;
 
+      if (companyId !== undefined && !UUID_REGEX.test(companyId)) {
+        throw new Error(
+          `Invalid companyId "${companyId}". companyId must be an Arxena company UUID (not a LinkedIn numeric ID).`,
+        );
+      }
+
       const input: Record<string, unknown> = {
         name,
         isActive: true,
@@ -182,7 +188,7 @@ export const jobTools: McpTool[] = [
       if (jobCode !== undefined) input.jobCode = jobCode;
       if (companyId !== undefined) input.companyId = companyId;
       if (config.workspaceMemberId) input.recruiterId = config.workspaceMemberId;
-
+      console.log("workspaceMemberId in create job:", config.workspaceMemberId);
       const data = await executeGraphQL<{ createJob: { id: string } }>(
         config.baseUrl,
         config.apiToken,
@@ -193,6 +199,11 @@ export const jobTools: McpTool[] = [
       const jobId = data?.createJob?.id;
       if (!jobId) {
         throw new Error('Failed to create job: no id returned');
+      }
+      if (!UUID_REGEX.test(jobId)) {
+        throw new Error(
+          `Backend returned non-UUID jobId "${jobId}". Job IDs must always be UUIDs.`,
+        );
       }
 
       return {

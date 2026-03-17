@@ -204,8 +204,18 @@ export const companyTools: McpTool[] = [
             description: 'Company name',
           },
           domainName: {
-            type: 'string',
-            description: 'Company domain (e.g. "acme.com")',
+            type: 'object',
+            description: 'Company domain info',
+            properties: {
+              primaryLinkUrl: {
+                type: 'string',
+                description: 'Company domain (e.g. "acme.com")',
+              },
+              primaryLinkLabel: {
+                type: 'string',
+                description: 'Optional label for the domain',
+              },
+            },
           },
           descriptionOneliner: {
             type: 'string',

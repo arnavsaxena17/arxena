@@ -8,6 +8,7 @@
 
 import { Body, Controller, HttpException, HttpStatus, Logger, Post, Req } from '@nestjs/common';
 import { Request } from 'express';
+import { McpAssistantService } from 'src/engine/core-modules/assistant/mcp-assistant.service';
 import { ParsedRequirement } from 'src/engine/core-modules/candidate-search/schemas/parsed-requirement.schema';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
 import { RequirementAnalyzerService } from 'src/engine/core-modules/candidate-search/services/requirement-analyzer.service';
@@ -85,6 +86,7 @@ export class CandidateSearchPipelineController {
     private readonly searchParameterGenerationService: SearchParameterGenerationService,
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly cleanupService: CleanupService,
+    private readonly mcpAssistantService: McpAssistantService,
   ) {}
 
   /**
@@ -828,6 +830,54 @@ Generate answers to the clarification questions above.`;
       });
       
       return { answers: fallbackAnswers.join(' ') };
+    }
+  }
+
+
+
+  @Post('job-brief-understanding')
+  async jobBriefUnderstanding(
+    @Body() body: { jobBrief: string },
+    @Req() req: any,
+  ) {
+    this.logger.log('jobBriefUnderstanding body::', JSON.stringify(body, null, 2));
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+      const SYSTEM_PROMPT = `You are an expert at understanding job briefs and generating a detailed job brief understanding.. 
+
+      You can call find_company_by_name to get information about the company. If inspite of that you don't understand then ask about the  
+      You will try to understand the nature of the company in terms of how long they have been in business, whats their turnover, how many employees, employee culture, number of working days, work hours, etc.
+      You will also probe on understanding the nature of the hiring manager. How do they work, how do they communicate, how do they make decisions, etc. 
+      You will try to ascertain the culture of the firm - is it an MNC, an Indian company, a startup, a family run business, etc.
+      Generate questions until you are satisfied with the understanding of the role and the client.
+      If you are satisfied with the understanding, return 'COMPLETELY_UNDERSTOOD'.
+      If you are not entirely satisfied, generate a few more questions to ask the user and return 'PARTIALLY_UNDERSTOOD'.
+
+      `
+
+      const userPrompt = `Please understand the job brief and generate a detailed job brief understanding.
+      Job Brief: ${body.jobBrief}`;
+
+      const parsed = await this.mcpAssistantService.callJsonWithTools(
+        apiToken,
+        SYSTEM_PROMPT,
+        userPrompt,
+        { allowedToolNames: ['find_company_by_name'] },
+      );
+
+      this.logger.log(
+        `Job brief understanding completed. Parsed response: ${JSON.stringify(parsed, null, 2)}`,
+      );
+      return parsed;
+    } catch (error) {
+      this.logger.error('Job brief understanding failed', error);
+      throw new HttpException(
+        error.message || 'Job brief understanding failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 

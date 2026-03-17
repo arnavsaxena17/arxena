@@ -2,8 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { graphqlQueryToFetchPrompts } from 'twenty-shared';
 import {
-  AUTONOMOUS_RECRUITER_RULES_PROMPT_NAME,
-  getDefaultRecruitmentAgentSystemPrompt,
+  AUTONOMOUS_RECRUITER_SYSTEM_PROMPT,
 } from './prompts/recruitment-agent-rules';
 
 /**
@@ -12,7 +11,7 @@ import {
  * otherwise use the default from recruitment-agent-rules.ts.
  */
 @Injectable()
-export class RecruitmentAgentRulesService {
+export class AutonomousRecruitmentAgentRulesService {
   constructor(private readonly staticGraphQLService: StaticGraphQLService) {}
 
   async getSystemPrompt(apiToken: string): Promise<string> {
@@ -20,7 +19,7 @@ export class RecruitmentAgentRulesService {
       const result = await this.staticGraphQLService.executeGraphQL(
         graphqlQueryToFetchPrompts,
         {
-          filter: { name: { eq: AUTONOMOUS_RECRUITER_RULES_PROMPT_NAME } },
+          filter: { name: { eq: AUTONOMOUS_RECRUITER_SYSTEM_PROMPT } },
           limit: 1,
         },
         apiToken,
@@ -36,6 +35,6 @@ export class RecruitmentAgentRulesService {
     } catch {
       // Fall through to default
     }
-    return getDefaultRecruitmentAgentSystemPrompt();
+    return AUTONOMOUS_RECRUITER_SYSTEM_PROMPT;
   }
 }

@@ -12,6 +12,7 @@ import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin
 import { LinkedInHtmlParserService } from 'src/engine/core-modules/linkedin-search/services/linkedin-html-parser.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { UnipilePoolModule } from '../arx-chat/unipile-pool.module';
+import { McpAssistantService } from '../assistant/mcp-assistant.service';
 import { CandidateSourcingModule } from '../candidate-sourcing/candidate-sourcing.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { LinkedInSearchModule } from '../linkedin-search/linkedin-search.module';
@@ -76,6 +77,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     OrgchartCancelRegistryService,
     // Executive search enhancement services
     PythonOrgChartService,
+    McpAssistantService,
   ],
   exports: [
     CandidateSearchBaseService,
