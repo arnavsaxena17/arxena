@@ -244,6 +244,7 @@ export class CandidateSearchPipelineController {
       searchType: 'classic' | 'sales_navigator' | 'recruiter';
       searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
       model?: string;
+      assistantThreadId?: string;
     },
     @Req() req: Request,
   ): Promise<SearchParametersResult> {
@@ -253,7 +254,7 @@ export class CandidateSearchPipelineController {
         CandidateSearchPipelineController.MCP_REQUEST_SOURCE_VALUE;
       if (fromMcp) {
         this.logger.log(
-          `generate_unresolved_search_parameters invoked via REST (caller: MCP assistant), prompt: "${body?.prompt?.substring(0, 60) ?? ''}..."`,
+          `generate_unresolved search_parameters invoked via REST (caller: MCP assistant), prompt: "${body?.prompt?.substring(0, 60) ?? ''}..."`,
         );
       }
       const apiToken = req.headers.authorization?.replace('Bearer ', '');
@@ -837,7 +838,7 @@ Generate answers to the clarification questions above.`;
 
   @Post('job-brief-understanding')
   async jobBriefUnderstanding(
-    @Body() body: { jobBrief: string },
+    @Body() body: { jobBrief: string; assistantThreadId?: string },
     @Req() req: any,
   ) {
     this.logger.log('jobBriefUnderstanding body::', JSON.stringify(body, null, 2));
@@ -855,7 +856,7 @@ Generate answers to the clarification questions above.`;
       Generate questions until you are satisfied with the understanding of the role and the client.
       If you are satisfied with the understanding, return 'COMPLETELY_UNDERSTOOD'.
       If you are not entirely satisfied, generate a few more questions to ask the user and return 'PARTIALLY_UNDERSTOOD'.
-
+      Return in the form of a json object
       `
 
       const userPrompt = `Please understand the job brief and generate a detailed job brief understanding.

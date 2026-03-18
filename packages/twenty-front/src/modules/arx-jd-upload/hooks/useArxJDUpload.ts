@@ -310,7 +310,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
   }, [parsedJD, removeExistingAttachments, setParsedJD, enqueueSnackBar]);
 
   const handleFileUpload = useCallback(
-    async (acceptedFiles: File[]): Promise<void> => {
+    async (acceptedFiles: File[]): Promise<string | void> => {
       if (acceptedFiles.length === 0) {
         return;
       }
@@ -340,13 +340,11 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
             };
           });
 
-          console.log('parsedData in useArxJDUpload after setParsedJD::', parsedJD);
           enqueueSnackBar('Job description file updated successfully', {
             variant: SnackBarVariant.Success,
           });
 
-          setIsUploading(false);
-          return;
+          return parsedJD.id;
         }
 
         // Original code for creating a new job
@@ -499,6 +497,8 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
         } else {
           throw new Error(uploadJDResponse?.data?.message || 'Failed to process JD');
         }
+
+        return createdJob.id;
       } catch (error: any) {
         console.error('Error processing JD:', error);
         setError(error?.message || 'Failed to process JD');

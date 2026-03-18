@@ -228,6 +228,18 @@ export const SEND_BULK_CHATS_BY_CANDIDATE_IDS_INPUT_DESCRIPTOR: readonly McpInpu
   { key: 'message', type: 'string', description: 'Message content', required: true },
 ] as const;
 
+// ==================== Assistant thread context (tool-level envelope) ====================
+
+/** Optional assistantThreadId for thread-aware tools. Injected by the assistant when threadId is known. */
+export const ASSISTANT_THREAD_ID_OPTIONAL_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  {
+    key: 'assistantThreadId',
+    type: 'string',
+    description: 'ID of the assistant thread invoking this tool (provided by the system). Always pass this when available so object modifications are tied to the correct thread.',
+    required: false,
+  },
+] as const;
+
 // ==================== Candidate Search Tools ====================
 
 /** Descriptor for generate_search_parameters tool input. */
@@ -237,11 +249,13 @@ export const GENERATE_SEARCH_PARAMETERS_INPUT_DESCRIPTOR: readonly McpInputField
   { key: 'prompt', type: 'string', description: 'Prompt for generating search parameters', required: true },
   { key: 'searchCategory', type: 'string', description: 'One of: people, companies, posts, jobs. Default is people.', required: true },
   { key: 'searchFilterId', type: 'string', description: 'Search filter ID. Default is null.', required: false },
+  ...ASSISTANT_THREAD_ID_OPTIONAL_DESCRIPTOR,
 ] as const;
 
 
 export const JOB_BRIEF_UNDERSTANDING_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
   { key: 'jobBrief', type: 'string', description: 'Job brief to understand from the user', required: true },
+  ...ASSISTANT_THREAD_ID_OPTIONAL_DESCRIPTOR,
 ] as const;
 
 

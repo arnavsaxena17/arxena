@@ -113,6 +113,8 @@ export type AssistantThreadRecord = {
   createdAt: Date;
   updatedAt: Date;
   jobId?: string;
+  job?: { id: string; name?: string; jobLocation?: string; company?: { id: string; name?: string } };
   agentNotes?: AgentNote[];
   agentEvents?: AssistantAgentEventRecord[];
+  assistantMode?: 'fully_autonomous' | 'permissioned';
 };

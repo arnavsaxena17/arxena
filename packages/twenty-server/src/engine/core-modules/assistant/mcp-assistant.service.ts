@@ -347,6 +347,7 @@ export class McpAssistantService {
    * Execute a single tool (cache, in-process, or MCP).
    * Caller should call sendEvent('tool_use', { name }) before this (and break if it returns false).
    * Returns textContent and whether result came from cache (caller updates allToolCalls when !fromCache).
+   * When assistantThreadId is provided, it is merged into args so tool handlers receive it.
    */
   private async executeToolAndGetResult(
     client: Client,
@@ -354,8 +355,13 @@ export class McpAssistantService {
     args: Record<string, unknown>,
     apiToken: string,
     sendEvent: StreamEventSender,
+    assistantThreadId?: string,
   ): Promise<{ textContent: string; fromCache: boolean }> {
-    const cacheKey = this.getToolCallCacheKey(name, args);
+    const effectiveArgs =
+      assistantThreadId != null && assistantThreadId !== ''
+        ? { ...args, assistantThreadId }
+        : args;
+    const cacheKey = this.getToolCallCacheKey(name, effectiveArgs);
     const cachedResult = this.getCachedToolResult(cacheKey);
     if (cachedResult !== null) {
       this.logger.log(`Skipping duplicate ${name} call (already executed in this session)`);
@@ -364,7 +370,7 @@ export class McpAssistantService {
     }
     const inProcessResult = await this.runStreamingToolInProcess(
       name,
-      args,
+      effectiveArgs,
       apiToken,
       sendEvent,
     );
@@ -373,11 +379,11 @@ export class McpAssistantService {
       return { textContent: inProcessResult, fromCache: false };
     }
     this.logger.log(
-      `Calling MCP subprocess for tool: ${name} (args: ${JSON.stringify(this.sanitizeArgsForLog(args))})`,
+      `Calling MCP subprocess for tool: ${name} (args: ${JSON.stringify(this.sanitizeArgsForLog(effectiveArgs))})`,
     );
     const result = await client.callTool({
       name,
-      arguments: args,
+      arguments: effectiveArgs,
     });
     const textContent =
       result.content
@@ -983,13 +989,15 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     conversationHistory: MessageParam[] = [],
     sendEvent: StreamEventSender,
     systemPrompt?: string,
+    options?: { assistantThreadId?: string },
   ): Promise<void> {
+    const assistantThreadId = options?.assistantThreadId;
     if (this.provider === 'openai' && this.openai) {
-      const streamResult = await this.processQueryStreamWithOpenAI(query, apiToken, conversationHistory, sendEvent, systemPrompt);
+      const streamResult = await this.processQueryStreamWithOpenAI(query, apiToken, conversationHistory, sendEvent, systemPrompt, assistantThreadId);
       this.logger.log("MCP Client streamResult::", JSON.stringify(streamResult, null, 2));
-      return streamResult;    
+      return streamResult;
     }
-    const streamResult = await this.processQueryStreamWithAnthropic(query, apiToken, conversationHistory, sendEvent, systemPrompt);
+    const streamResult = await this.processQueryStreamWithAnthropic(query, apiToken, conversationHistory, sendEvent, systemPrompt, assistantThreadId);
     this.logger.log("streamResult::", JSON.stringify(streamResult, null, 2));
     return streamResult;
   }
@@ -1039,6 +1047,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     apiToken: string,
     sendEvent: StreamEventSender,
     allToolCalls: Array<{ name: string; args: Record<string, unknown> }>,
+    assistantThreadId?: string,
   ): Promise<{
     toolResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }>;
     textParts: string[];
@@ -1058,6 +1067,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
           toolArgs,
           apiToken,
           sendEvent,
+          assistantThreadId,
         );
         if (!fromCache) allToolCalls.push({ name: block.name, args: toolArgs });
         toolResults.push({
@@ -1077,6 +1087,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     conversationHistory: MessageParam[] = [],
     sendEvent: StreamEventSender,
     systemPrompt?: string,
+    assistantThreadId?: string,
   ): Promise<void> {
     await this.withMcpClient(apiToken, async (client) => {
       const availableTools = await this.fetchAnthropicTools(client);
@@ -1102,6 +1113,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
           apiToken,
           sendEvent,
           allToolCalls,
+          assistantThreadId,
         );
         finalText.push(...textParts);
         const hasToolUse = toolResults.length > 0;
@@ -1122,6 +1134,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     conversationHistory: MessageParam[] = [],
     sendEvent: StreamEventSender,
     systemPrompt?: string,
+    assistantThreadId?: string,
   ): Promise<void> {
     if (!this.openai) {
       sendEvent('error', {
@@ -1143,7 +1156,6 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
       const finalText: string[] = [];
       const allToolCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
       let rounds = 0;
-      this.logger.log(`openaiTools:: ${JSON.stringify(openaiTools, null, 2)}`);
       while (rounds < MAX_TOOL_ROUNDS) {
         rounds += 1;
         const stream = await this.openai!.chat.completions.create({
@@ -1186,6 +1198,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
             args,
             apiToken,
             sendEvent,
+            assistantThreadId,
           );
           if (!fromCache) allToolCalls.push({ name: tc.name, args });
           openaiMessages.push({

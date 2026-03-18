@@ -26,33 +26,64 @@ export class AssistantThreadService {
     private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
-  async listThreads(apiToken: string): Promise<{ id: string; name: string; jobId?: string }[]> {
+  async listThreads(
+    apiToken: string,
+  ): Promise<
+    {
+      id: string;
+      name: string;
+      jobId?: string;
+      job?: { id: string; name?: string; jobLocation?: string; company?: { id: string; name?: string } };
+      assistantMode?: 'fully_autonomous' | 'permissioned';
+    }[]
+  > {
     const workspaceMemberId =
-    await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
-      apiToken,
-    );
+      await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
+        apiToken,
+      );
     if (!workspaceMemberId) {
       throw new Error('Failed to get workspace member ID');
     }
     const result = await this.staticGraphQLService.executeGraphQL(
       findManyAssistantThreads,
-      { filter: { recruiterId: { eq: workspaceMemberId } }, orderBy: [{ updatedAt: 'DescNullsFirst' }], limit: 100 },
+      {
+        filter: { recruiterId: { eq: workspaceMemberId } },
+        orderBy: [{ updatedAt: 'DescNullsFirst' }],
+        limit: 100,
+      },
       apiToken,
     );
-    const edges = result?.data.data.assistantThreads?.edges ?? [];
-    console.log("Edges::", edges);
-    return edges.map((e: { node: { id: string; name: string; jobId?: string } }) => ({
-      id: e.node.id,
-      name: e.node.name,
-      jobId: e.node.jobId ?? undefined,
-    }));
+    const edges = result?.data?.data?.assistantThreads?.edges ?? [];
+    return edges.map(
+      (e: {
+        node: {
+          id: string;
+          name: string;
+          jobId?: string;
+          job?: { id: string; name?: string; jobLocation?: string; company?: { id: string; name?: string } };
+          assistantMode?: 'fully_autonomous' | 'permissioned';
+        };
+      }) => ({
+        id: e.node.id,
+        name: e.node.name,
+        jobId: e.node.jobId ?? undefined,
+        job: e.node.job ?? undefined,
+        assistantMode: e.node.assistantMode ?? 'permissioned',
+      }),
+    );
   }
 
   async createThread(
     apiToken: string,
     name = 'New thread',
     jobId?: string,
-  ): Promise<{ id: string; name: string; jobId?: string }> {
+    assistantMode?: 'fully_autonomous' | 'permissioned',
+  ): Promise<{
+    id: string;
+    name: string;
+    jobId?: string;
+    assistantMode?: 'fully_autonomous' | 'permissioned';
+  }> {
 
     const workspaceMemberId =
     await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
@@ -61,8 +92,18 @@ export class AssistantThreadService {
     if (!workspaceMemberId) {
       throw new Error('Failed to get workspace member ID');
     }
-    const input: { name: string; jobId?: string; recruiterId: string } = { name, jobId: jobId ?? undefined, recruiterId:workspaceMemberId };
+    const input: {
+      name: string;
+      jobId?: string;
+      recruiterId: string;
+      assistantMode?: 'fully_autonomous' | 'permissioned';
+    } = {
+      name,
+      jobId: jobId ?? undefined,
+      recruiterId: workspaceMemberId,
+    };
     if (jobId) input.jobId = jobId;
+    if (assistantMode) input.assistantMode = assistantMode;
     const result = await this.staticGraphQLService.executeGraphQL(
       createOneAssistantThread,
       { input },
@@ -76,6 +117,7 @@ export class AssistantThreadService {
       id: created.id,
       name: created.name ?? name,
       jobId: created.jobId ?? jobId,
+      assistantMode: created.assistantMode ?? assistantMode ?? 'permissioned',
     };
   }
 
@@ -147,8 +189,10 @@ export class AssistantThreadService {
       createdAt: node.createdAt ? new Date(node.createdAt) : new Date(),
       updatedAt: node.updatedAt ? new Date(node.updatedAt) : new Date(),
       jobId: node.jobId ?? undefined,
+      job: node.job ?? undefined,
       agentNotes: agentNotes?.length ? agentNotes : undefined,
       agentEvents,
+      assistantMode: node.assistantMode ?? 'permissioned',
     };
   }
 
@@ -197,6 +241,18 @@ export class AssistantThreadService {
     await this.staticGraphQLService.executeGraphQL(
       updateOneAssistantThread,
       { id: threadId, input: { jobId: jobId ?? undefined } },
+      apiToken,
+    );
+  }
+
+  async updateThreadAssistantMode(
+    apiToken: string,
+    threadId: string,
+    assistantMode: 'fully_autonomous' | 'permissioned',
+  ): Promise<void> {
+    await this.staticGraphQLService.executeGraphQL(
+      updateOneAssistantThread,
+      { id: threadId, input: { assistantMode } },
       apiToken,
     );
   }

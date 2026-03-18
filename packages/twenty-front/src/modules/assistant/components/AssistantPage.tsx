@@ -18,16 +18,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { Button, IconMessage, IconPlus } from 'twenty-ui';
 
-const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
-
-
 function createNewThread(name = 'New thread'): AssistantThread {
-  console.log('createNewThread', name);
   return {
     id: crypto.randomUUID(),
     name,
     messages: [],
     lastTableData: null,
+    assistantMode: 'permissioned',
   };
 }
 
@@ -91,15 +88,12 @@ const useMockAssistant = (): boolean =>
   USE_MOCK_ASSISTANT || !(process.env.REACT_APP_SERVER_BASE_URL ?? '');
 
 export const AssistantPage = () => {
+  const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
   const isMobile = useIsMobile();
   const tokenPair = useRecoilValue(tokenPairState);
   const token = tokenPair?.accessToken?.token;
   const useMock = useMockAssistant();
   const [agentEvents, setAgentEvents] = useState<AssistantAgentEvent[]>([]);
-  const [assistantMode, setAssistantMode] = useState<'fully_autonomous' | 'permissioned'>(
-    'fully_autonomous',
-  );
-  const [assistantModeSaving, setAssistantModeSaving] = useState(false);
   const [threads, setThreads] = useState<AssistantThread[]>(() =>
     USE_MOCK_ASSISTANT ? MOCK_THREADS.map((t) => ({ ...t })) : [],
   );
@@ -109,6 +103,9 @@ export const AssistantPage = () => {
   const [threadsLoadedFromBackend, setThreadsLoadedFromBackend] = useState(USE_MOCK_ASSISTANT);
   const [threadsLoading, setThreadsLoading] = useState(false);
   const [editingThreadName, setEditingThreadName] = useState(false);
+  const [threadPatchInFlightById, setThreadPatchInFlightById] = useState<Record<string, boolean>>(
+    {},
+  );
 
   useEffect(() => {
     if (threads.length > 0 && !threads.some((t) => t.id === currentThreadId)) {
@@ -155,7 +152,13 @@ export const AssistantPage = () => {
           return;
         }
         const data = (await res.json()) as {
-          threads?: Array<{ id: string; name: string; jobId?: string | null }>;
+          threads?: Array<{
+            id: string;
+            name: string;
+            jobId?: string | null;
+            job?: { id: string; name?: string; jobLocation?: string; company?: { id: string; name?: string } } | null;
+            assistantMode?: 'fully_autonomous' | 'permissioned';
+          }>;
           error?: string;
         };
         if (cancelled) {
@@ -175,7 +178,7 @@ export const AssistantPage = () => {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ name: 'New thread' }),
+            body: JSON.stringify({ name: 'New thread', assistantMode: 'permissioned' }),
           });
           if (cancelled) {
             setThreadsLoading(false);
@@ -185,7 +188,12 @@ export const AssistantPage = () => {
             setThreadsLoading(false);
             return;
           }
-          const created = (await createRes.json()) as { id?: string; name?: string };
+          const created = (await createRes.json()) as {
+            id?: string;
+            name?: string;
+            jobId?: string | null;
+            assistantMode?: 'fully_autonomous' | 'permissioned';
+          };
           if (cancelled) {
             setThreadsLoading(false);
             return;
@@ -197,7 +205,8 @@ export const AssistantPage = () => {
                 name: created.name ?? 'New thread',
                 messages: [],
                 lastTableData: null,
-                jobId: (created as { jobId?: string | null }).jobId ?? null,
+                jobId: created.jobId ?? null,
+                assistantMode: created.assistantMode ?? 'permissioned',
               },
             ]);
             setCurrentThreadId(created.id);
@@ -210,6 +219,8 @@ export const AssistantPage = () => {
               messages: [],
               lastTableData: null,
               jobId: t.jobId ?? null,
+              job: t.job ?? null,
+              assistantMode: t.assistantMode ?? 'permissioned',
             })),
           );
           setCurrentThreadId(data.threads[0].id);
@@ -228,54 +239,7 @@ export const AssistantPage = () => {
       clearTimeout(timeoutId);
       setThreadsLoading(false);
     };
-  }, [token, threadsLoadedFromBackend]);
-
-  useEffect(() => {
-    if (!baseUrl || !token) return;
-    let cancelled = false;
-    const loadMode = async () => {
-      try {
-        const res = await fetch(`${baseUrl}/workspace-modifications/workspace-keys`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok || cancelled) return;
-        const data = (await res.json()) as { assistant_mode?: string };
-        if (data.assistant_mode === 'permissioned' || data.assistant_mode === 'fully_autonomous') {
-          setAssistantMode(data.assistant_mode);
-        }
-      } catch {
-        // ignore – default mode is fine
-      }
-    };
-    loadMode();
-    return () => {
-      cancelled = true;
-    };
-  }, [baseUrl, token]);
-
-  const handleAssistantModeChange = useCallback(
-    async (event: React.ChangeEvent<HTMLSelectElement>) => {
-      const next = event.target.value === 'permissioned' ? 'permissioned' : 'fully_autonomous';
-      setAssistantMode(next);
-      if (!baseUrl || !token) return;
-      setAssistantModeSaving(true);
-      try {
-        await fetch(`${baseUrl}/workspace-modifications/workspace-keys`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ assistant_mode: next }),
-        });
-      } catch {
-        // best-effort
-      } finally {
-        setAssistantModeSaving(false);
-      }
-    },
-    [baseUrl, token],
-  );
+  }, [baseUrl, token, threadsLoadedFromBackend]);
 
   // When running fully in mock mode (no backend), keep threads in local storage.
   useEffect(() => {
@@ -326,8 +290,10 @@ export const AssistantPage = () => {
         }>;
         lastTableData?: AssistantTableData;
         jobId?: string | null;
+        job?: { id: string; name?: string; jobLocation?: string; company?: { id: string; name?: string } } | null;
         agentNotes?: Array<{ summary: string; createdAt?: string; id?: string }>;
         agentEvents?: AssistantAgentEvent[];
+        assistantMode?: 'fully_autonomous' | 'permissioned';
         error?: string;
       };
       if (data.error) return;
@@ -352,8 +318,10 @@ export const AssistantPage = () => {
                 messages,
                 lastTableData: data.lastTableData ?? t.lastTableData ?? null,
                 jobId: data.jobId !== undefined ? data.jobId : t.jobId,
+                job: data.job !== undefined ? data.job : t.job,
                 agentNotes: data.agentNotes ?? t.agentNotes,
                 agentEvents: data.agentEvents ?? t.agentEvents,
+                assistantMode: data.assistantMode ?? t.assistantMode ?? 'permissioned',
               }
             : t,
         );
@@ -424,10 +392,15 @@ export const AssistantPage = () => {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ name: 'New thread' }),
+          body: JSON.stringify({ name: 'New thread', assistantMode: 'permissioned' }),
         });
         if (res.ok) {
-          const created = (await res.json()) as { id?: string; name?: string };
+          const created = (await res.json()) as {
+            id?: string;
+            name?: string;
+            jobId?: string | null;
+            assistantMode?: 'fully_autonomous' | 'permissioned';
+          };
           const threadId = created.id;
           if (threadId) {
             const thread: AssistantThread = {
@@ -435,7 +408,8 @@ export const AssistantPage = () => {
               name: created.name ?? 'New thread',
               messages: [],
               lastTableData: null,
-              jobId: (created as { jobId?: string | null }).jobId ?? null,
+                jobId: created.jobId ?? null,
+                assistantMode: created.assistantMode ?? 'permissioned',
             };
             setThreads((prev) => [thread, ...prev]);
             setCurrentThreadId(threadId);
@@ -451,7 +425,109 @@ export const AssistantPage = () => {
     setThreads((prev) => [thread, ...prev]);
     setCurrentThreadId(thread.id);
     setAgentEvents([]);
-  }, [token, threadsLoadedFromBackend]);
+  }, [baseUrl, token, threadsLoadedFromBackend]);
+
+  const patchThread = useCallback(
+    async (
+      threadId: string,
+      patch: { assistantMode?: 'fully_autonomous' | 'permissioned'; jobId?: string | null; name?: string },
+    ) => {
+      // Optimistic update so UI reflects changes immediately (e.g. attach job after JD upload)
+      setThreads((prev) =>
+        prev.map((t) =>
+          t.id === threadId
+            ? {
+                ...t,
+                ...(patch.assistantMode ? { assistantMode: patch.assistantMode } : {}),
+                ...(patch.jobId !== undefined
+                  ? { jobId: patch.jobId, job: patch.jobId ? t.job : null }
+                  : {}),
+                ...(typeof patch.name === 'string' ? { name: patch.name } : {}),
+              }
+            : t,
+        ),
+      );
+
+      if (!baseUrl || !token || !threadsLoadedFromBackend) {
+        return;
+      }
+
+      const refetchThread = async () => {
+        try {
+          const res = await fetch(`${baseUrl}/assistant/threads/${threadId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (!res.ok) return;
+          const data = (await res.json()) as {
+            jobId?: string | null;
+            job?: { id: string; name?: string; jobLocation?: string; company?: { id: string; name?: string } } | null;
+            assistantMode?: 'fully_autonomous' | 'permissioned';
+            name?: string;
+            error?: string;
+          };
+          if (data.error) return;
+          setThreads((prev) =>
+            prev.map((t) =>
+              t.id === threadId
+                ? {
+                    ...t,
+                    ...(typeof data.name === 'string' ? { name: data.name } : {}),
+                    ...(data.jobId !== undefined ? { jobId: data.jobId } : {}),
+                    ...(data.job !== undefined ? { job: data.job } : {}),
+                    ...(data.assistantMode ? { assistantMode: data.assistantMode } : {}),
+                  }
+                : t,
+            ),
+          );
+        } catch {
+          // ignore; best effort refresh
+        }
+      };
+
+      setThreadPatchInFlightById((prev) => ({ ...prev, [threadId]: true }));
+      try {
+        const res = await fetch(`${baseUrl}/assistant/threads/${threadId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(patch),
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          id?: string;
+          name?: string;
+          jobId?: string | null;
+          assistantMode?: 'fully_autonomous' | 'permissioned';
+          error?: string;
+        };
+        if (data.error) return;
+
+        setThreads((prev) =>
+          prev.map((t) =>
+            t.id === threadId
+              ? {
+                  ...t,
+                  ...(typeof data.name === 'string' ? { name: data.name } : {}),
+                  ...(data.jobId !== undefined ? { jobId: data.jobId, job: null } : {}),
+                  ...(data.assistantMode ? { assistantMode: data.assistantMode } : {}),
+                }
+              : t,
+          ),
+        );
+
+        if ('jobId' in patch) {
+          await refetchThread();
+        }
+      } catch {
+        // ignore; best effort
+      } finally {
+        setThreadPatchInFlightById((prev) => ({ ...prev, [threadId]: false }));
+      }
+    },
+    [baseUrl, token, threadsLoadedFromBackend],
+  );
 
   const handleSelectThread = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -551,32 +627,6 @@ export const AssistantPage = () => {
     <StyledPageContainer>
       <StyledPageHeader title="Assistant" Icon={IconMessage}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              fontSize: 12,
-              color: '#6b7280',
-            }}
-          >
-            <span>Mode</span>
-            <select
-              value={assistantMode}
-              onChange={handleAssistantModeChange}
-              disabled={assistantModeSaving}
-              style={{
-                fontSize: 12,
-                padding: '4px 8px',
-                borderRadius: 4,
-                border: '1px solid #d1d5db',
-                background: 'white',
-              }}
-            >
-              <option value="fully_autonomous">Autonomous</option>
-              <option value="permissioned">Permissioned</option>
-            </select>
-          </label>
           <Button
             title="New thread"
             Icon={IconPlus}
@@ -596,6 +646,8 @@ export const AssistantPage = () => {
             threadsLoadedFromBackend={threadsLoadedFromBackend}
             onSelectThread={handleSelectThreadById}
             onNewThread={handleNewThread}
+            onPatchThread={patchThread}
+            threadPatchInFlightById={threadPatchInFlightById}
           />
           <AssistantChatColumn
             isMobile={isMobile}
@@ -613,6 +665,10 @@ export const AssistantPage = () => {
             onTableData={(data) => handleTableData(data)}
             onMessageComplete={loadThreadData}
             onAgentEvent={handleAgentEvent}
+            onPatchThread={patchThread}
+            onUpdateThreadMode={(threadId, assistantMode) =>
+              patchThread(threadId, { assistantMode })
+            }
           />
           <AssistantResultsPanel
             tableData={currentThread?.lastTableData ?? null}

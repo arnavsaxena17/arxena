@@ -2,15 +2,16 @@ import { AssistantActivityFeed } from '@/assistant/components/AssistantActivityF
 import { AssistantThreadNotes } from '@/assistant/components/AssistantThreadNotes';
 import { USE_MOCK_ASSISTANT } from '@/assistant/mocks/mockThreads';
 import type {
-  AssistantAgentEvent,
-  AssistantThread,
+    AssistantAgentEvent,
+    AssistantThread,
 } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { TextInput } from '@/ui/input/components/TextInput';
 import styled from '@emotion/styled';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
+import { IconDotsVertical } from 'twenty-ui';
 
 import { parseServerSentEvent } from '../utils/serverSentEvents';
 import { AssistantJDSection } from './AssistantJDSection';
@@ -73,6 +74,67 @@ const StyledThreadNameInput = styled(TextInput)`
   font-size: ${({ theme }) => theme.font.size.sm};
 `;
 
+const StyledThreadHeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledThreadMenuContainer = styled.div`
+  position: relative;
+  display: inline-flex;
+`;
+
+const StyledThreadMenuButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: ${({ theme }) => theme.spacing(0.75)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  background-color: ${({ theme }) => theme.background.primary};
+  color: ${({ theme }) => theme.font.color.secondary};
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.background.secondary};
+    border-color: ${({ theme }) => theme.border.color.strong};
+    color: ${({ theme }) => theme.font.color.primary};
+  }
+`;
+
+const StyledThreadMenuDropdown = styled.div`
+  position: absolute;
+  top: calc(100% + ${({ theme }) => theme.spacing(1)});
+  right: 0;
+  min-width: 220px;
+  background-color: ${({ theme }) => theme.background.primary};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  z-index: 1000;
+`;
+
+const StyledThreadMenuAction = styled.button`
+  width: 100%;
+  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing(1)};
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.primary};
+  cursor: pointer;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.background.secondary};
+  }
+`;
+
 const StyledJDHeaderRow = styled.div`
   display: flex;
   align-items: center;
@@ -113,6 +175,15 @@ const StyledJDMenuButton = styled.button`
     border-color: ${({ theme }) => theme.border.color.strong};
     color: ${({ theme }) => theme.font.color.primary};
   }
+`;
+
+const StyledJobAttachedRow = styled.div`
+  margin-top: ${({ theme }) => theme.spacing(1)};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${({ theme }) => theme.font.color.secondary};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 type DemoStreamRequestBody = {
@@ -378,6 +449,18 @@ type AssistantChatColumnProps = {
   onTableData: (data: NonNullable<AssistantThread['lastTableData']>) => void;
   onMessageComplete: () => void;
   onAgentEvent: (event: AssistantAgentEvent) => void;
+  onPatchThread: (
+    threadId: string,
+    patch: {
+      assistantMode?: 'fully_autonomous' | 'permissioned';
+      jobId?: string | null;
+      name?: string;
+    },
+  ) => Promise<void> | void;
+  onUpdateThreadMode: (
+    threadId: string,
+    assistantMode: 'fully_autonomous' | 'permissioned',
+  ) => void;
 };
 
 export const AssistantChatColumn = ({
@@ -396,6 +479,8 @@ export const AssistantChatColumn = ({
   onTableData,
   onMessageComplete,
   onAgentEvent,
+  onPatchThread,
+  onUpdateThreadMode,
 }: AssistantChatColumnProps) => {
   const { objectMetadataItems } = useObjectMetadataItems();
   const hasJobObjectMetadata = objectMetadataItems.some(
@@ -407,12 +492,38 @@ export const AssistantChatColumn = ({
 
   const [isDemoRunning, setIsDemoRunning] = useState(false);
   const [isHeartbeatSending, setIsHeartbeatSending] = useState(false);
+  const [isThreadMenuOpen, setIsThreadMenuOpen] = useState(false);
+  const [jdActions, setJdActions] = useState<{
+    openFilePicker: () => void;
+    removeJD: () => Promise<void>;
+    canRemoveJD: boolean;
+    uploadLabel: string;
+  } | null>(null);
+  const threadMenuRef = useRef<HTMLDivElement | null>(null);
   const demoAbortControllerRef = useRef<AbortController | null>(null);
   const demoStreamingTextRef = useRef<string>('');
   const demoStreamingMessagesRef = useRef<AssistantThread['messages']>([]);
   const demoStreamingMessageIndexRef = useRef<number>(-1);
   const demoPlannerTextRef = useRef<string>('');
   const demoPlannerMessageIndexRef = useRef<number>(-1);
+
+  useEffect(() => {
+    if (!isThreadMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const targetNode = event.target as Node | null;
+      if (!targetNode) return;
+      if (threadMenuRef.current?.contains(targetNode)) return;
+      setIsThreadMenuOpen(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+    };
+  }, [isThreadMenuOpen]);
 
   const handleStopDemoRun = useCallback(() => {
     const controller = demoAbortControllerRef.current;
@@ -557,15 +668,93 @@ export const AssistantChatColumn = ({
         )}
         {currentThread && (
           <>
-            <StyledThreadNameInput
-              value={displayThreadName(currentThread.name)}
-              onChange={(value: string) => onThreadNameChange(value)}
-              placeholder="Thread name"
-              onBlur={() => onThreadNameFocusChange(false)}
-              onFocus={() => onThreadNameFocusChange(true)}
-              fullWidth
-            />
-            {hasJobObjectMetadata && <AssistantJDSection />}
+            <StyledThreadHeaderRow>
+              <StyledThreadNameInput
+                value={displayThreadName(currentThread.name)}
+                onChange={(value: string) => onThreadNameChange(value)}
+                placeholder="Thread name"
+                onBlur={() => onThreadNameFocusChange(false)}
+                onFocus={() => onThreadNameFocusChange(true)}
+                fullWidth
+              />
+              <StyledThreadMenuContainer ref={threadMenuRef}>
+                <StyledThreadMenuButton
+                  type="button"
+                  onClick={() => setIsThreadMenuOpen((open) => !open)}
+                  title="Thread actions"
+                  disabled={threadsLoading || !threadsLoadedFromBackend}
+                >
+                  <IconDotsVertical size={14} />
+                </StyledThreadMenuButton>
+                {isThreadMenuOpen && (
+                  <StyledThreadMenuDropdown>
+                    <StyledThreadMenuAction
+                      type="button"
+                      onClick={() => {
+                        const assistantMode = currentThread.assistantMode ?? 'permissioned';
+                        onUpdateThreadMode(
+                          currentThreadId,
+                          assistantMode === 'fully_autonomous'
+                            ? 'permissioned'
+                            : 'fully_autonomous',
+                        );
+                        setIsThreadMenuOpen(false);
+                      }}
+                    >
+                      <span>
+                        Switch to{' '}
+                        {(currentThread.assistantMode ?? 'permissioned') ===
+                        'fully_autonomous'
+                          ? 'permissioned'
+                          : 'autonomous'}
+                      </span>
+                      <span style={{ opacity: 0.7 }}>
+                        {(currentThread.assistantMode ?? 'permissioned') ===
+                        'fully_autonomous'
+                          ? 'Perm'
+                          : 'Auto'}
+                      </span>
+                    </StyledThreadMenuAction>
+                    {jdActions && (
+                      <StyledThreadMenuAction
+                        type="button"
+                        onClick={() => {
+                          jdActions.openFilePicker();
+                          setIsThreadMenuOpen(false);
+                        }}
+                      >
+                        <span>{jdActions.uploadLabel}</span>
+                        <span style={{ opacity: 0.7 }}>JD</span>
+                      </StyledThreadMenuAction>
+                    )}
+                  </StyledThreadMenuDropdown>
+                )}
+              </StyledThreadMenuContainer>
+            </StyledThreadHeaderRow>
+            <StyledJobAttachedRow title={currentThread.jobId ?? undefined}>
+              {currentThread.jobId && (currentThread.job?.name || currentThread.job?.id) ? (
+                <>
+                  Job: {currentThread.job.name ?? currentThread.job.id}
+                  {currentThread.job.company?.name ? ` at ${currentThread.job.company.name}` : ''}
+                </>
+              ) : currentThread.jobId ? (
+                <>Job attached</>
+              ) : (
+                <>No job attached</>
+              )}
+            </StyledJobAttachedRow>
+            {hasJobObjectMetadata && (
+              <AssistantJDSection
+                threadId={currentThreadId}
+                threadJobId={currentThread.jobId}
+                threadJobName={currentThread.job?.name ?? null}
+                onAttachJobToThread={async (jobId) => {
+                  await onPatchThread(currentThreadId, { jobId });
+                }}
+                hideMenu
+                exposeActions={setJdActions}
+              />
+            )}
             {(USE_MOCK_ASSISTANT || (baseUrl && token)) && (
               <StyledJDHeaderRow>
                 <StyledJDSummary>

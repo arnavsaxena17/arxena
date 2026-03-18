@@ -27,6 +27,7 @@ export async function createFields(
         icon: item?.field?.icon,
         objectMetadataId: item?.field?.objectMetadataId,
         options: item?.field?.options,
+        defaultValue: item?.field?.defaultValue,
       },
     };
     try {

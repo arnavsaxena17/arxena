@@ -2,7 +2,7 @@ import type { Job, Jobs } from 'twenty-shared';
 import { graphqlToAddNewJob, graphqlToFindManyJobs } from 'twenty-shared';
 
 import { executeGraphQL } from '../api/graphql-client';
-import { callRestAPI } from '../api/rest-client';
+import { callRestAPI, callRestAPIPatch } from '../api/rest-client';
 import { McpTool } from '../types/tool-types';
 
 const UUID_REGEX =
@@ -147,7 +147,7 @@ export const jobTools: McpTool[] = [
     definition: {
       name: 'create_job',
       description:
-        'Create a new job opening in Arxena. Returns the new job ID. IMPORTANT: companyId must be an Arxena company UUID (from list_companies, get_company_by_id, or create_company), never a LinkedIn numeric ID.',
+        'Create a new job opening in Arxena. Returns the new job ID. IMPORTANT: companyId must be an Arxena company UUID (from list_companies, get_company_by_id, or create_company), never a LinkedIn numeric ID. When assistantThreadId is provided, the new job is attached to that assistant thread.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -164,6 +164,11 @@ export const jobTools: McpTool[] = [
             description:
               'Arxena company UUID this job belongs to (use list_companies, get_company_by_id, find_company_by_name, or create_company to get this ID). Do NOT pass LinkedIn IDs here.',
           },
+          assistantThreadId: {
+            type: 'string',
+            description:
+              'ID of the assistant thread invoking this tool. When provided, the created job is attached to this thread.',
+          },
         },
         required: ['name'],
       },
@@ -173,6 +178,7 @@ export const jobTools: McpTool[] = [
       const jobLocation = args.jobLocation as string | undefined;
       const jobCode = args.jobCode as string | undefined;
       const companyId = args.companyId as string | undefined;
+      const assistantThreadId = args.assistantThreadId as string | undefined;
 
       if (companyId !== undefined && !UUID_REGEX.test(companyId)) {
         throw new Error(
@@ -206,9 +212,24 @@ export const jobTools: McpTool[] = [
         );
       }
 
+      if (assistantThreadId && UUID_REGEX.test(assistantThreadId)) {
+        try {
+          await callRestAPIPatch(
+            config.baseUrl,
+            config.apiToken,
+            'assistant',
+            `threads/${assistantThreadId}`,
+            { jobId },
+          );
+        } catch (err) {
+          console.error('Failed to attach job to assistant thread:', err);
+        }
+      }
+
       return {
         success: true,
         jobId,
+        assistantThreadId: assistantThreadId ?? null,
         message: `Job "${name}" created with ID ${jobId}`,
       };
     },

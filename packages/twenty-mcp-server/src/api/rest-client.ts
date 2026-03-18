@@ -1,6 +1,6 @@
 const TIMEOUT_MS = 30_000;
 
-type HttpMethod = 'GET' | 'POST';
+type HttpMethod = 'GET' | 'POST' | 'PATCH';
 
 /** Minimal logger wrapper so MCP server calls are visible in logs. */
 function logMcpRestCall(
@@ -154,6 +154,57 @@ export async function callRestAPI(
       pathPrefix,
       endpoint,
       queryParams,
+      requestBodyPreview: body,
+    });
+
+    return response.json();
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * Call any REST API with PATCH (e.g. update assistant thread with jobId).
+ */
+export async function callRestAPIPatch(
+  baseUrl: string,
+  apiToken: string,
+  pathPrefix: string,
+  endpoint: string,
+  body: Record<string, unknown> = {},
+): Promise<unknown> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  try {
+    const url = buildUrl(baseUrl, pathPrefix, endpoint);
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiToken}`,
+        [MCP_REQUEST_SOURCE_HEADER]: MCP_REQUEST_SOURCE_VALUE,
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      logMcpRestCall('PATCH', url, response.status, {
+        pathPrefix,
+        endpoint,
+        requestBodyPreview: body,
+        errorMessage: text,
+      });
+      throw new Error(
+        `REST API PATCH /${pathPrefix}/${endpoint} failed: ${response.status} ${text}`,
+      );
+    }
+
+    logMcpRestCall('PATCH', url, response.status, {
+      pathPrefix,
+      endpoint,
       requestBodyPreview: body,
     });
 

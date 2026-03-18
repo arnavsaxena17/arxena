@@ -68,6 +68,24 @@ const StyledThreadSidebarItemTitle = styled.div`
   white-space: nowrap;
 `;
 
+const StyledThreadModeBadge = styled.span<{ mode: 'fully_autonomous' | 'permissioned' }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: ${({ theme }) => theme.spacing(0.5)};
+  padding: 0 ${({ theme }) => theme.spacing(0.75)};
+  border-radius: ${({ theme }) => theme.border.radius.xs};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  background: ${({ theme, mode }) =>
+    mode === 'fully_autonomous'
+      ? theme.background.tertiary
+      : theme.background.quaternary};
+  color: ${({ theme }) => theme.font.color.secondary};
+`;
+
 const StyledThreadSidebarItemSubtitle = styled.div`
   font-size: ${({ theme }) => theme.font.size.xs};
   color: ${({ theme }) => theme.font.color.tertiary};
@@ -84,6 +102,11 @@ type AssistantThreadSidebarProps = {
   threadsLoadedFromBackend: boolean;
   onSelectThread: (threadId: string) => void;
   onNewThread: () => void;
+  onPatchThread: (
+    threadId: string,
+    patch: { assistantMode?: 'fully_autonomous' | 'permissioned'; jobId?: string | null; name?: string },
+  ) => Promise<void> | void;
+  threadPatchInFlightById: Record<string, boolean>;
 };
 
 export const AssistantThreadSidebar = ({
@@ -94,6 +117,8 @@ export const AssistantThreadSidebar = ({
   threadsLoadedFromBackend,
   onSelectThread,
   onNewThread,
+  onPatchThread: _onPatchThread,
+  threadPatchInFlightById: _threadPatchInFlightById,
 }: AssistantThreadSidebarProps) => {
   return (
     <StyledThreadSidebar isMobile={isMobile}>
@@ -126,6 +151,11 @@ export const AssistantThreadSidebar = ({
             >
               <StyledThreadSidebarItemTitle>
                 {displayThreadName(thread.name)}
+                {thread.assistantMode && (
+                  <StyledThreadModeBadge mode={thread.assistantMode}>
+                    {thread.assistantMode === 'fully_autonomous' ? 'Autonomous' : 'Permissioned'}
+                  </StyledThreadModeBadge>
+                )}
               </StyledThreadSidebarItemTitle>
               {previewText && (
                 <StyledThreadSidebarItemSubtitle>

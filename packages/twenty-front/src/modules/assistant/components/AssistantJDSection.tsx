@@ -1,9 +1,10 @@
 import { useArxJDUpload } from '@/arx-jd-upload/hooks/useArxJDUpload';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
-import type { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
+import { createDefaultParsedJD } from '@/arx-jd-upload/utils/createDefaultParsedJD';
+import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import styled from '@emotion/styled';
-import { useCallback, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRecoilState } from 'recoil';
 import { IconDotsVertical, IconTrash, IconUpload } from 'twenty-ui';
 
 const StyledJDHeaderRow = styled.div`
@@ -84,17 +85,48 @@ const StyledJDMenuAction = styled.button<{ danger?: boolean }>`
   }
 `;
 
-export const AssistantJDSection = () => {
+type AssistantJDSectionProps = {
+  threadId: string;
+  threadJobId: string | null | undefined;
+  threadJobName?: string | null;
+  onAttachJobToThread: (jobId: string) => Promise<void> | void;
+  hideMenu?: boolean;
+  exposeActions?: (actions: {
+    openFilePicker: () => void;
+    removeJD: () => Promise<void>;
+    canRemoveJD: boolean;
+    uploadLabel: string;
+  } | null) => void;
+};
+
+export const AssistantJDSection = ({
+  threadId,
+  threadJobId,
+  threadJobName,
+  onAttachJobToThread,
+  hideMenu = false,
+  exposeActions,
+}: AssistantJDSectionProps) => {
   const [isJDMenuOpen, setIsJDMenuOpen] = useState(false);
   const jdMenuRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const pendingAttachJobIdRef = useRef<string | null>(null);
 
-  const parsedJD: ParsedJD | null = useRecoilValue(parsedJDSelector);
+  const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
 
   const { handleFileUpload, handleFileRemoval, isUploading } =
-    useArxJDUpload('job');
+    useArxJDUpload('job', 'edit');
 
-  const hasJD = Boolean(parsedJD?.id);
+  const hasJobAttached = Boolean(threadJobId);
+  const isAttachingJob = Boolean(pendingAttachJobIdRef.current && !threadJobId);
+
+  const { records: attachmentRecords = [] } = useFindManyRecords({
+    objectNameSingular: 'attachment',
+    filter: threadJobId ? { jobId: { eq: threadJobId } } : undefined,
+    skip: !threadJobId,
+  });
+
+  const hasJDFile = attachmentRecords.length > 0;
 
   const getJDDisplayName = useCallback(() => {
     if (!parsedJD) return null;
@@ -105,23 +137,87 @@ export const AssistantJDSection = () => {
     return base.length > 40 ? `${base.slice(0, 37)}...` : base;
   }, [parsedJD]);
 
-  const handleJDReplaceClick = () => {
+  const handleJDReplaceClick = useCallback(() => {
     if (!fileInputRef.current) return;
     fileInputRef.current.value = '';
     fileInputRef.current.click();
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!isJDMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const targetNode = event.target as Node | null;
+      if (!targetNode) return;
+      if (jdMenuRef.current?.contains(targetNode)) return;
+      setIsJDMenuOpen(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+    };
+  }, [isJDMenuOpen]);
 
   const handleFileInputChange: React.ChangeEventHandler<HTMLInputElement> = async (
     event,
   ) => {
     const files = Array.from(event.target.files || []);
     if (!files.length) return;
-    await handleFileUpload(files);
+    const createdOrUpdatedJobId = await handleFileUpload(files);
+    if (!hasJobAttached && typeof createdOrUpdatedJobId === 'string') {
+      pendingAttachJobIdRef.current = createdOrUpdatedJobId;
+      await onAttachJobToThread(createdOrUpdatedJobId);
+    }
+    setIsJDMenuOpen(false);
   };
 
-  if (!parsedJD && !isUploading) {
-    return null;
-  }
+  useEffect(() => {
+    if (threadJobId) {
+      if (pendingAttachJobIdRef.current === threadJobId) {
+        pendingAttachJobIdRef.current = null;
+      }
+      if (parsedJD?.id !== threadJobId) {
+        setParsedJD(
+          createDefaultParsedJD({
+            id: threadJobId,
+            name: threadJobName ?? '',
+          }),
+        );
+      }
+      return;
+    }
+
+    if (
+      pendingAttachJobIdRef.current &&
+      parsedJD?.id === pendingAttachJobIdRef.current
+    ) {
+      return;
+    }
+
+    if (parsedJD) setParsedJD(null);
+  }, [threadId, threadJobId, threadJobName, parsedJD, setParsedJD]);
+
+  useEffect(() => {
+    if (!exposeActions) return;
+    exposeActions({
+      openFilePicker: handleJDReplaceClick,
+      removeJD: async () => {
+        await handleFileRemoval();
+      },
+      canRemoveJD: hasJobAttached && hasJDFile,
+      uploadLabel: hasJDFile ? 'Replace JD' : 'Upload JD',
+    });
+    return () => exposeActions(null);
+  }, [
+    exposeActions,
+    handleJDReplaceClick,
+    handleFileRemoval,
+    hasJDFile,
+    hasJobAttached,
+  ]);
 
   return (
     <>
@@ -129,43 +225,51 @@ export const AssistantJDSection = () => {
         <StyledJDSummary>
           {isUploading
             ? 'Uploading job description...'
-            : `JD attached: ${getJDDisplayName()}`}
+            : isAttachingJob
+              ? 'Attaching job...'
+              : hasJobAttached
+              ? hasJDFile
+                ? `JD attached: ${getJDDisplayName() ?? 'Job Description'}`
+                : 'No JD attached'
+              : 'No job attached (upload a JD to create one)'}
         </StyledJDSummary>
-        <StyledJDMenuContainer ref={jdMenuRef}>
-          <StyledJDMenuButton
-            type="button"
-            onClick={() => setIsJDMenuOpen((open) => !open)}
-            title="Job description actions"
-          >
-            <IconDotsVertical size={14} />
-          </StyledJDMenuButton>
-          {isJDMenuOpen && (
-            <StyledJDMenuDropdown>
-              <StyledJDMenuAction
-                type="button"
-                onClick={handleJDReplaceClick}
-                disabled={isUploading}
-              >
-                <IconUpload size={14} />
-                Replace JD
-              </StyledJDMenuAction>
-              {hasJD && (
+        {!hideMenu && (
+          <StyledJDMenuContainer ref={jdMenuRef}>
+            <StyledJDMenuButton
+              type="button"
+              onClick={() => setIsJDMenuOpen((open) => !open)}
+              title="Job description actions"
+            >
+              <IconDotsVertical size={14} />
+            </StyledJDMenuButton>
+            {isJDMenuOpen && (
+              <StyledJDMenuDropdown>
                 <StyledJDMenuAction
                   type="button"
-                  danger
-                  onClick={async () => {
-                    await handleFileRemoval();
-                    setIsJDMenuOpen(false);
-                  }}
+                  onClick={handleJDReplaceClick}
                   disabled={isUploading}
                 >
-                  <IconTrash size={14} />
-                  Remove JD
+                  <IconUpload size={14} />
+                  {hasJDFile ? 'Replace JD' : 'Upload JD'}
                 </StyledJDMenuAction>
-              )}
-            </StyledJDMenuDropdown>
-          )}
-        </StyledJDMenuContainer>
+                {hasJobAttached && hasJDFile && (
+                  <StyledJDMenuAction
+                    type="button"
+                    danger
+                    onClick={async () => {
+                      await handleFileRemoval();
+                      setIsJDMenuOpen(false);
+                    }}
+                    disabled={isUploading}
+                  >
+                    <IconTrash size={14} />
+                    Remove JD
+                  </StyledJDMenuAction>
+                )}
+              </StyledJDMenuDropdown>
+            )}
+          </StyledJDMenuContainer>
+        )}
         <input
           ref={fileInputRef}
           type="file"

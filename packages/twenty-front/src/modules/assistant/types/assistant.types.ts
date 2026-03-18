@@ -23,14 +23,23 @@ export type AgentNote = {
   id?: string;
 };
 
+export type AssistantThreadJob = {
+  id: string;
+  name?: string;
+  jobLocation?: string;
+  company?: { id: string; name?: string };
+};
+
 export type AssistantThread = {
   id: string;
   name: string;
   messages: AssistantChatMessage[];
   lastTableData: AssistantTableData | null;
   jobId?: string | null;
+  job?: AssistantThreadJob | null;
   agentNotes?: AgentNote[];
   agentEvents?: AssistantAgentEvent[];
+  assistantMode?: 'fully_autonomous' | 'permissioned';
 };
 
 export type AssistantAgentEvent = {

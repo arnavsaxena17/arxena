@@ -45,6 +45,7 @@ describe('AssistantChatColumn', () => {
               onTableData={jest.fn()}
               onMessageComplete={jest.fn()}
               onAgentEvent={jest.fn()}
+              onUpdateThreadMode={jest.fn()}
             />
           </BaseThemeProvider>
         </RecoilRoot>
@@ -77,6 +78,7 @@ describe('AssistantChatColumn', () => {
               onTableData={jest.fn()}
               onMessageComplete={jest.fn()}
               onAgentEvent={jest.fn()}
+              onUpdateThreadMode={jest.fn()}
             />
           </BaseThemeProvider>
         </RecoilRoot>
@@ -111,6 +113,7 @@ describe('AssistantChatColumn', () => {
               onTableData={jest.fn()}
               onMessageComplete={jest.fn()}
               onAgentEvent={jest.fn()}
+              onUpdateThreadMode={jest.fn()}
             />
           </BaseThemeProvider>
         </RecoilRoot>
@@ -147,6 +150,7 @@ describe('AssistantChatColumn', () => {
               onTableData={jest.fn()}
               onMessageComplete={jest.fn()}
               onAgentEvent={jest.fn()}
+              onUpdateThreadMode={jest.fn()}
             />
           </BaseThemeProvider>
         </RecoilRoot>
@@ -192,6 +196,7 @@ describe('AssistantChatColumn', () => {
               onTableData={jest.fn()}
               onMessageComplete={jest.fn()}
               onAgentEvent={jest.fn()}
+              onUpdateThreadMode={jest.fn()}
             />
           </BaseThemeProvider>
         </RecoilRoot>

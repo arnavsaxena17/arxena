@@ -2116,16 +2116,6 @@ export function getFieldsData(
     {
       objectName: 'assistantThread',
       field: {
-        description: 'Optional job context for this thread',
-        label: 'Job',
-        name: 'jobId',
-        objectMetadataId: objectsNameIdMap.assistantThread,
-        type: 'TEXT',
-      },
-    },
-    {
-      objectName: 'assistantThread',
-      field: {
         description: 'Agent scratch pad / pending notes for this thread (JSON array of { summary, createdAt? })',
         label: 'Agent Notes',
         name: 'agentNotes',
@@ -2142,6 +2132,32 @@ export function getFieldsData(
         name: 'agentEvents',
         objectMetadataId: objectsNameIdMap.assistantThread,
         type: 'RAW_JSON',
+      },
+    },
+    {
+      objectName: 'assistantThread',
+      field: {
+        description:
+          'Controls whether this assistant thread runs in fully autonomous or permissioned (human approval) mode',
+        label: 'Assistant Mode',
+        name: 'assistantMode',
+        objectMetadataId: objectsNameIdMap.assistantThread,
+        type: 'SELECT',
+        defaultValue: 'permissioned',
+        options: [
+          {
+            color: 'green',
+            label: 'Fully autonomous',
+            position: 0,
+            value: 'fully_autonomous',
+          },
+          {
+            color: 'blue',
+            label: 'Permissioned',
+            position: 1,
+            value: 'permissioned',
+          },
+        ],
       },
     },
     // // Assistant Message fields

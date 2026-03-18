@@ -1,14 +1,14 @@
 import {
-    BadRequestException,
-    Body,
-    Controller,
-    ForbiddenException,
-    Get,
-    Headers,
-    Param,
-    Post,
-    Req,
-    UseGuards,
+  BadRequestException,
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Headers,
+  Param,
+  Post,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';

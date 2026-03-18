@@ -12,7 +12,7 @@ import type { Request, Response } from 'express';
 import { AssistantThreadService } from 'src/engine/core-modules/assistant/assistant-thread.service';
 import type { AssistantThreadRecord } from 'src/engine/core-modules/assistant/assistant.types';
 import { McpAssistantService } from 'src/engine/core-modules/assistant/mcp-assistant.service';
-import { AUTONOMOUS_RECRUITER_SYSTEM_PROMPT } from 'src/engine/core-modules/assistant/prompts/recruitment-agent-rules';
+import { DEFAULT_AUTONOMOUS_RECRUITER_SYSTEM_PROMPT } from 'src/engine/core-modules/assistant/recruitment-agent-rules.service';
 import { threadMessagesToHistory } from 'src/engine/core-modules/assistant/utils/thread-history.util';
 import { RecruiterMessageService } from 'src/engine/core-modules/autonomous-recruiter/recruiter-message.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
@@ -279,7 +279,7 @@ export class AutonomousRecruiterController {
       apiToken,
       historyBeforeTurn,
       callback,
-      AUTONOMOUS_RECRUITER_SYSTEM_PROMPT,
+      DEFAULT_AUTONOMOUS_RECRUITER_SYSTEM_PROMPT,
     );
 
     const { finalText: autonomousResponse, finalToolCalls: toolCalls } = getResult();

@@ -40,7 +40,11 @@ export class AssistantController {
   @Post('threads')
   @UseGuards(JwtAuthGuard)
   async createThread(
-    @Req() request: { headers: { authorization?: string }; body?: { name?: string; jobId?: string } },
+    @Req()
+    request: {
+      headers: { authorization?: string };
+      body?: { name?: string; jobId?: string; assistantMode?: 'fully_autonomous' | 'permissioned' };
+    },
   ) {
     const authHeader = request.headers.authorization;
     console.log('createThread', request.body);
@@ -51,7 +55,13 @@ export class AssistantController {
     try {
       const name = request.body?.name ?? 'New thread';
       const jobId = request.body?.jobId;
-      const thread = await this.assistantThreadService.createThread(apiToken, name, jobId);
+      const assistantMode = request.body?.assistantMode;
+      const thread = await this.assistantThreadService.createThread(
+        apiToken,
+        name,
+        jobId,
+        assistantMode,
+      );
       console.log('thread that we got ', thread);
       return thread;
     } catch (err) {
@@ -80,6 +90,8 @@ export class AssistantController {
         messages: thread.messages,
         lastTableData: thread.lastTableData ?? null,
         jobId: thread.jobId ?? null,
+        job: thread.job ?? null,
+        assistantMode: thread.assistantMode ?? 'permissioned',
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -91,7 +103,15 @@ export class AssistantController {
   @UseGuards(JwtAuthGuard)
   async updateThread(
     @Param('id') id: string,
-    @Req() request: { headers: { authorization?: string }; body?: { name?: string; jobId?: string | null } },
+    @Req()
+    request: {
+      headers: { authorization?: string };
+      body?: {
+        name?: string;
+        jobId?: string | null;
+        assistantMode?: 'fully_autonomous' | 'permissioned';
+      };
+    },
   ) {
     const authHeader = request.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
@@ -101,6 +121,7 @@ export class AssistantController {
     const body = request.body ?? {};
     const name = body.name;
     const jobId = body.jobId;
+    const assistantMode = body.assistantMode;
 
     try {
       if (typeof name === 'string') {
@@ -113,14 +134,30 @@ export class AssistantController {
           jobId === null || jobId === '' ? null : jobId,
         );
       }
-      if (typeof name !== 'string' && jobId === undefined) {
-        return { error: 'Body must include at least one of "name" or "jobId"' };
+      if (assistantMode === 'fully_autonomous' || assistantMode === 'permissioned') {
+        await this.assistantThreadService.updateThreadAssistantMode(
+          apiToken,
+          id,
+          assistantMode,
+        );
+      }
+      if (
+        typeof name !== 'string' &&
+        jobId === undefined &&
+        assistantMode !== 'fully_autonomous' &&
+        assistantMode !== 'permissioned'
+      ) {
+        return {
+          error:
+            'Body must include at least one of "name", "jobId", or a valid "assistantMode"',
+        };
       }
       const thread = await this.assistantThreadService.getThread(apiToken, id);
       return {
         id,
         name: thread?.name ?? name,
         jobId: thread?.jobId ?? (jobId !== undefined ? jobId : undefined),
+        assistantMode: thread?.assistantMode ?? assistantMode,
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -309,16 +346,20 @@ export class AssistantController {
     };
 
     try {
-      const systemPrompt =
+      let systemPrompt =
         await this.autonomousRecruitmentAgentRulesService.getSystemPrompt(
           apiToken,
         );
+      // if (threadId) {
+      //   systemPrompt += `\n\n**Current thread**\nThe system will inject assistantThreadId into tool calls for this conversation. When you call create_job, job_brief_understanding, generate_unresolved_search_parameters, or other tools that accept assistantThreadId, the value will be provided automatically; you may omit it from your arguments.`;
+      // }
       await this.mcpAssistantService.processQueryStream(
         message,
         apiToken,
         history,
         sendEvent,
         systemPrompt,
+        threadId ? { assistantThreadId: threadId } : undefined,
       );
 
       // Persist messages and table data if threadId is provided

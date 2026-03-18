@@ -3401,7 +3401,17 @@ export const findManyAssistantThreads = `query FindManyAssistantThreads($filter:
         id
         name
         jobId
+        job {
+          id
+          name
+          jobLocation
+          company {
+            id
+            name
+          }
+        }
         recruiterId
+        assistantMode
         agentEvents
         messages
         lastTableData
@@ -3422,9 +3432,19 @@ export const findOneAssistantThread = `query FindOneAssistantThread($id: ID!) {
     messages
     lastTableData
     jobId
+    job {
+      id
+      name
+      jobLocation
+      company {
+        id
+        name
+      }
+    }
     recruiterId
     agentNotes
     agentEvents
+    assistantMode
     createdAt
     updatedAt
   }

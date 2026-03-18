@@ -841,6 +841,23 @@ export function getRelationsData(
         toName: 'recruiter',
       },
     },
+    {
+      fromObjectName: "job",
+      toObjectName: "assistantThread",
+      relationMetadata: {
+        fromDescription: null,
+        fromIcon: 'IconMessage',
+        fromLabel: 'Assistant Threads',
+        fromName: 'assistantThreads',
+        fromObjectMetadataId: objectsNameIdMap.job,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.assistantThread,
+        toDescription: '',
+        toIcon: 'IconTie',
+        toLabel: 'Job',
+        toName: 'job',
+      },
+    },
     // Assistant Thread relations
     // {
     //   relationMetadata: {
