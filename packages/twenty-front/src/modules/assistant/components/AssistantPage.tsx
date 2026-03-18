@@ -4,9 +4,9 @@ import { AssistantResultsPanel } from '@/assistant/components/AssistantResultsPa
 import { AssistantThreadSidebar } from '@/assistant/components/AssistantThreadSidebar';
 import { MOCK_THREADS, USE_MOCK_ASSISTANT } from '@/assistant/mocks/mockThreads';
 import type {
-  AssistantAgentEvent,
-  AssistantChatMessage,
-  AssistantThread,
+    AssistantAgentEvent,
+    AssistantChatMessage,
+    AssistantThread,
 } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
@@ -14,6 +14,7 @@ import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
 import styled from '@emotion/styled';
+import { Loader } from '@ui/feedback/loader/components/Loader';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { Button, IconMessage, IconPlus } from 'twenty-ui';
@@ -84,6 +85,13 @@ const StyledPageHeader = styled(PageHeader)`
   }
 `;
 
+const StyledSmallInlineLoader = styled.div`
+  display: flex;
+  align-items: center;
+  transform: scale(0.65);
+  transform-origin: center;
+`;
+
 const useMockAssistant = (): boolean =>
   USE_MOCK_ASSISTANT || !(process.env.REACT_APP_SERVER_BASE_URL ?? '');
 
@@ -102,6 +110,7 @@ export const AssistantPage = () => {
   );
   const [threadsLoadedFromBackend, setThreadsLoadedFromBackend] = useState(USE_MOCK_ASSISTANT);
   const [threadsLoading, setThreadsLoading] = useState(false);
+  const [isCreatingNewThread, setIsCreatingNewThread] = useState(false);
   const [editingThreadName, setEditingThreadName] = useState(false);
   const [threadPatchInFlightById, setThreadPatchInFlightById] = useState<Record<string, boolean>>(
     {},
@@ -376,56 +385,175 @@ export const AssistantPage = () => {
     [currentThreadId],
   );
 
-  const handleNewThread = useCallback(async () => {
-    if (useMock) {
-      const thread = createNewThread();
-      setThreads((prev) => [thread, ...prev]);
-      setCurrentThreadId(thread.id);
-      setAgentEvents([]);
-      return;
-    }
-    if (baseUrl && token) {
+  const handleNewThread = useCallback(
+    async (e?: React.MouseEvent<HTMLButtonElement>) => {
+      if (e) {
+        // Prevent rapid double-clicks from triggering multiple create requests.
+        e.currentTarget.disabled = true;
+      }
+
+      let shouldProceed = false;
+      setIsCreatingNewThread((prev) => {
+        if (prev) return prev;
+        shouldProceed = true;
+        return true;
+      });
+
+      if (!shouldProceed) return;
+
       try {
-        const res = await fetch(`${baseUrl}/assistant/threads`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ name: 'New thread', assistantMode: 'permissioned' }),
-        });
-        if (res.ok) {
-          const created = (await res.json()) as {
-            id?: string;
-            name?: string;
-            jobId?: string | null;
-            assistantMode?: 'fully_autonomous' | 'permissioned';
-          };
-          const threadId = created.id;
-          if (threadId) {
-            const thread: AssistantThread = {
-              id: threadId,
-              name: created.name ?? 'New thread',
-              messages: [],
-              lastTableData: null,
-                jobId: created.jobId ?? null,
-                assistantMode: created.assistantMode ?? 'permissioned',
-            };
-            setThreads((prev) => [thread, ...prev]);
-            setCurrentThreadId(threadId);
+        if (useMock) {
+          const thread = createNewThread();
+          setThreads((prev) => [thread, ...prev]);
+          setCurrentThreadId(thread.id);
           setAgentEvents([]);
-            return;
+          return;
+        }
+
+        if (baseUrl && token) {
+          try {
+            const res = await fetch(`${baseUrl}/assistant/threads`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ name: 'New thread', assistantMode: 'permissioned' }),
+            });
+
+            if (res.ok) {
+              const created = (await res.json()) as {
+                id?: string;
+                name?: string;
+                jobId?: string | null;
+                assistantMode?: 'fully_autonomous' | 'permissioned';
+              };
+              const threadId = created.id;
+              if (threadId) {
+                const thread: AssistantThread = {
+                  id: threadId,
+                  name: created.name ?? 'New thread',
+                  messages: [],
+                  lastTableData: null,
+                  jobId: created.jobId ?? null,
+                  assistantMode: created.assistantMode ?? 'permissioned',
+                };
+                setThreads((prev) => [thread, ...prev]);
+                setCurrentThreadId(threadId);
+                setAgentEvents([]);
+                return;
+              }
+            }
+          } catch {
+            // fall through to local
           }
         }
-      } catch {
-        // fall through to local
+
+        const thread = createNewThread();
+        setThreads((prev) => [thread, ...prev]);
+        setCurrentThreadId(thread.id);
+        setAgentEvents([]);
+      } finally {
+        setIsCreatingNewThread(false);
       }
-    }
-    const thread = createNewThread();
-    setThreads((prev) => [thread, ...prev]);
-    setCurrentThreadId(thread.id);
-    setAgentEvents([]);
-  }, [baseUrl, token, threadsLoadedFromBackend]);
+    },
+    [baseUrl, token, useMock],
+  );
+
+  const deleteThread = useCallback(
+    async (threadId: string) => {
+      if (!threadId) return;
+
+      // Optimistic local delete when running without a backend.
+      if (useMock) {
+        const nextThreads = threads.filter((t) => t.id !== threadId);
+        setThreads(nextThreads);
+
+        setAgentEvents([]);
+        setEditingThreadName(false);
+
+        if (currentThreadId === threadId) {
+          if (nextThreads.length === 0) {
+            await handleNewThread();
+            return;
+          }
+          setCurrentThreadId(nextThreads[0].id);
+        }
+
+        return;
+      }
+
+      if (!baseUrl || !token) return;
+
+      setThreadsLoading(true);
+      try {
+        const res = await fetch(`${baseUrl}/assistant/threads/${threadId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!res.ok) return;
+
+        const delData = (await res.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        if (delData?.error) return;
+
+        const listRes = await fetch(`${baseUrl}/assistant/threads`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!listRes.ok) return;
+
+        const data = (await listRes.json()) as {
+          threads?: Array<{
+            id: string;
+            name: string;
+            jobId?: string | null;
+            job?: {
+              id: string;
+              name?: string;
+              jobLocation?: string;
+              company?: { id: string; name?: string };
+            } | null;
+            assistantMode?: 'fully_autonomous' | 'permissioned';
+          }>;
+          error?: string;
+        };
+
+        if (data.error || !Array.isArray(data.threads)) return;
+        if (data.threads.length === 0) {
+          // Keep UX consistent: always show at least one thread.
+          // Remove the deleted thread from local state first so we don't briefly show it
+          // alongside the newly created thread (fixes "deleted thread added to new thread").
+          setThreads((prev) => prev.filter((t) => t.id !== threadId));
+          setAgentEvents([]);
+          setEditingThreadName(false);
+          await handleNewThread();
+          return;
+        }
+
+        const nextThreads: AssistantThread[] = data.threads.map((t) => ({
+          id: t.id,
+          name: t.name,
+          messages: [],
+          lastTableData: null,
+          jobId: t.jobId ?? null,
+          job: t.job ?? null,
+          assistantMode: t.assistantMode ?? 'permissioned',
+        }));
+
+        setThreads(nextThreads);
+        setCurrentThreadId(nextThreads[0].id);
+        setAgentEvents([]);
+        setEditingThreadName(false);
+      } catch {
+        // best-effort delete; ignore errors
+      } finally {
+        setThreadsLoading(false);
+      }
+    },
+    [useMock, threads, currentThreadId, baseUrl, token, handleNewThread],
+  );
 
   const patchThread = useCallback(
     async (
@@ -433,6 +561,28 @@ export const AssistantPage = () => {
       patch: { assistantMode?: 'fully_autonomous' | 'permissioned'; jobId?: string | null; name?: string },
     ) => {
       // Optimistic update so UI reflects changes immediately (e.g. attach job after JD upload)
+      // #region agent log
+      fetch('http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Debug-Session-Id': '6b677b',
+        },
+        body: JSON.stringify({
+          sessionId: '6b677b',
+          runId: 'patch-thread',
+          hypothesisId: 'H2',
+          location: 'AssistantPage.tsx:patchThread',
+          message: 'patchThread called',
+          data: {
+            threadId,
+            patchJobId: patch.jobId ?? null,
+            hasJobIdInPatch: 'jobId' in patch,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion agent log
       setThreads((prev) =>
         prev.map((t) =>
           t.id === threadId
@@ -632,8 +782,13 @@ export const AssistantPage = () => {
             Icon={IconPlus}
             variant="primary"
             onClick={handleNewThread}
-            disabled={threadsLoading && threadsLoadedFromBackend}
+            disabled={isCreatingNewThread || (threadsLoading && threadsLoadedFromBackend)}
           />
+          {isCreatingNewThread ? (
+            <StyledSmallInlineLoader data-testid="assistant-new-thread-loader-header" role="status">
+              <Loader color="gray" />
+            </StyledSmallInlineLoader>
+          ) : null}
         </div>
       </StyledPageHeader>
       <StyledPageBody>
@@ -646,6 +801,7 @@ export const AssistantPage = () => {
             threadsLoadedFromBackend={threadsLoadedFromBackend}
             onSelectThread={handleSelectThreadById}
             onNewThread={handleNewThread}
+            isCreatingNewThread={isCreatingNewThread}
             onPatchThread={patchThread}
             threadPatchInFlightById={threadPatchInFlightById}
           />
@@ -665,6 +821,7 @@ export const AssistantPage = () => {
             onTableData={(data) => handleTableData(data)}
             onMessageComplete={loadThreadData}
             onAgentEvent={handleAgentEvent}
+            onDeleteThread={deleteThread}
             onPatchThread={patchThread}
             onUpdateThreadMode={(threadId, assistantMode) =>
               patchThread(threadId, { assistantMode })

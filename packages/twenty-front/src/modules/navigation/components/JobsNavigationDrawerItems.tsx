@@ -3,7 +3,6 @@ import { useLocation } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 import { IconBriefcase, IconUsers } from 'twenty-ui';
 
-import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
 import { jobsRefetchTriggerState, jobsState } from '@/candidate-table/states/states';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
@@ -44,8 +43,6 @@ const StyledSubItemLeftAdornment = styled.div`
 export const JobsNavigationDrawerItems = () => {
   const [localJobs, setLocalJobs] = useState<ApiJob[]>([]);
   const [jobs, setJobs] = useRecoilState(jobsState);
-  const [isLoading, setIsLoading] = useState(true);
-  const [tokenPair] = useRecoilState(tokenPairState);
   const jobsRefetchTrigger = useRecoilState(jobsRefetchTriggerState)[0];
   const { refetchJobs } = useJobRefetch();
   const refetchJobsRef = useRef(refetchJobs);
@@ -85,9 +82,7 @@ export const JobsNavigationDrawerItems = () => {
   // Update local jobs when global jobs state changes
   useEffect(() => {
     if (jobs.length > 0) {
-      console.log('JobsNavigationDrawerItems - Jobs updated from global state:', jobs.length, 'jobs');
       setLocalJobs(jobs);
-      setIsLoading(false);
     }
   }, [jobs]);
 

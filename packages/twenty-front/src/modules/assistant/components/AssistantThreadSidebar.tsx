@@ -1,5 +1,7 @@
 import type { AssistantThread } from '@/assistant/types/assistant.types';
 import styled from '@emotion/styled';
+import { Loader } from '@ui/feedback/loader/components/Loader';
+import type { MouseEvent } from 'react';
 import { Button } from 'twenty-ui';
 
 import { displayThreadName } from './AssistantThreadUtils';
@@ -24,6 +26,19 @@ const StyledThreadSidebarHeader = styled.div`
   font-size: ${({ theme }) => theme.font.size.sm};
   font-weight: ${({ theme }) => theme.font.weight.medium};
   color: ${({ theme }) => theme.font.color.secondary};
+`;
+
+const StyledNewThreadHeaderRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledSmallInlineLoader = styled.div`
+  display: flex;
+  align-items: center;
+  transform: scale(0.65);
+  transform-origin: center;
 `;
 
 const StyledThreadSidebarList = styled.div`
@@ -101,7 +116,8 @@ type AssistantThreadSidebarProps = {
   threadsLoading: boolean;
   threadsLoadedFromBackend: boolean;
   onSelectThread: (threadId: string) => void;
-  onNewThread: () => void;
+  onNewThread: (event?: MouseEvent<HTMLButtonElement>) => void;
+  isCreatingNewThread: boolean;
   onPatchThread: (
     threadId: string,
     patch: { assistantMode?: 'fully_autonomous' | 'permissioned'; jobId?: string | null; name?: string },
@@ -117,6 +133,7 @@ export const AssistantThreadSidebar = ({
   threadsLoadedFromBackend,
   onSelectThread,
   onNewThread,
+  isCreatingNewThread,
   onPatchThread: _onPatchThread,
   threadPatchInFlightById: _threadPatchInFlightById,
 }: AssistantThreadSidebarProps) => {
@@ -124,13 +141,23 @@ export const AssistantThreadSidebar = ({
     <StyledThreadSidebar isMobile={isMobile}>
       <StyledThreadSidebarHeader>
         <span>Threads</span>
-        <Button
-          title="New thread"
-          onClick={onNewThread}
-          size="small"
-          variant="tertiary"
-          disabled={threadsLoading && threadsLoadedFromBackend}
-        />
+        <StyledNewThreadHeaderRight>
+          <Button
+            title="New thread"
+            onClick={onNewThread}
+            size="small"
+            variant="tertiary"
+            disabled={isCreatingNewThread || (threadsLoading && threadsLoadedFromBackend)}
+          />
+          {isCreatingNewThread ? (
+            <StyledSmallInlineLoader
+              data-testid="assistant-new-thread-loader-sidebar"
+              role="status"
+            >
+              <Loader color="gray" />
+            </StyledSmallInlineLoader>
+          ) : null}
+        </StyledNewThreadHeaderRight>
       </StyledThreadSidebarHeader>
       <StyledThreadSidebarList>
         {threads.map((thread) => {

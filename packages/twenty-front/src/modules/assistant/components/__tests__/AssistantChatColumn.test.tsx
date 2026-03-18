@@ -1,11 +1,42 @@
 import { MOCK_THREADS } from '@/assistant/mocks/mockThreads';
 import type { AssistantThread } from '@/assistant/types/assistant.types';
 import { BaseThemeProvider } from '@/ui/theme/components/BaseThemeProvider';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { RecoilRoot } from 'recoil';
+import { TextEncoder } from 'util';
 
+import { tokenPairState } from '@/auth/states/tokenPairState';
+import type { AuthTokenPair } from '~/generated/graphql';
+import { cookieStorage } from '~/utils/cookie-storage';
 import { AssistantChatColumn } from '../AssistantChatColumn';
+
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  // handsontable uses ResizeObserver; mock it for this Jest environment.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (globalThis as any).ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+
+if (typeof globalThis.IntersectionObserver === 'undefined') {
+  // handsontable uses IntersectionObserver; mock it for this Jest environment.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (globalThis as any).IntersectionObserver = class {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    constructor(_callback: any) {}
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+
+if (typeof globalThis.HTMLElement !== 'undefined') {
+  // McpClientChat tries to scroll; JSDOM doesn't implement it.
+  (globalThis.HTMLElement.prototype as any).scrollIntoView ??= jest.fn();
+}
 
 const makeThread = (
   id: string,
@@ -45,6 +76,8 @@ describe('AssistantChatColumn', () => {
               onTableData={jest.fn()}
               onMessageComplete={jest.fn()}
               onAgentEvent={jest.fn()}
+              onDeleteThread={jest.fn()}
+              onPatchThread={jest.fn()}
               onUpdateThreadMode={jest.fn()}
             />
           </BaseThemeProvider>
@@ -78,6 +111,8 @@ describe('AssistantChatColumn', () => {
               onTableData={jest.fn()}
               onMessageComplete={jest.fn()}
               onAgentEvent={jest.fn()}
+              onDeleteThread={jest.fn()}
+              onPatchThread={jest.fn()}
               onUpdateThreadMode={jest.fn()}
             />
           </BaseThemeProvider>
@@ -113,6 +148,8 @@ describe('AssistantChatColumn', () => {
               onTableData={jest.fn()}
               onMessageComplete={jest.fn()}
               onAgentEvent={jest.fn()}
+              onDeleteThread={jest.fn()}
+              onPatchThread={jest.fn()}
               onUpdateThreadMode={jest.fn()}
             />
           </BaseThemeProvider>
@@ -150,6 +187,8 @@ describe('AssistantChatColumn', () => {
               onTableData={jest.fn()}
               onMessageComplete={jest.fn()}
               onAgentEvent={jest.fn()}
+              onDeleteThread={jest.fn()}
+              onPatchThread={jest.fn()}
               onUpdateThreadMode={jest.fn()}
             />
           </BaseThemeProvider>
@@ -171,14 +210,70 @@ describe('AssistantChatColumn', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows a Start demo button in mock mode that appends scripted messages', () => {
+  it('shows a Start demo button in mock mode that appends scripted messages', async () => {
     // Ensure mock flag is treated as true in this test environment
     const mockThread = MOCK_THREADS[0];
     const handleMessagesChange = jest.fn();
+    const nowIso = new Date().toISOString();
+    const dummyTokenPair: AuthTokenPair = {
+      accessToken: {
+        token: 'mock-access-token',
+        expiresAt: nowIso,
+      },
+      refreshToken: {
+        token: 'mock-refresh-token',
+        expiresAt: nowIso,
+      },
+    };
+
+    const encoder = new TextEncoder();
+    const messageSseChunk1 =
+      'event: message\ndata: {"chatMessage":"Demo assistant message"}\n';
+    const messageSseChunk2 = '\n';
+
+    // Mock demo stream endpoint; other fetch calls (agent log, etc.) can be no-ops.
+    const fetchMock = jest.fn((url: unknown) => {
+      const urlStr = typeof url === 'string' ? url : '';
+      if (urlStr.includes('/demo-thread/stream')) {
+        let chunkIndex = 0;
+        return Promise.resolve({
+          ok: true,
+          body: {
+            getReader: () => ({
+              read: async () => {
+                if (chunkIndex === 0) {
+                  chunkIndex += 1;
+                  return {
+                    done: false,
+                    value: encoder.encode(messageSseChunk1),
+                  };
+                }
+                if (chunkIndex === 1) {
+                  chunkIndex += 1;
+                  return { done: false, value: encoder.encode(messageSseChunk2) };
+                }
+
+                return { done: true, value: undefined };
+              },
+            }),
+          },
+        });
+      }
+
+      return Promise.resolve({ ok: true });
+    });
+
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    cookieStorage.clear();
 
     render(
       <MemoryRouter>
-        <RecoilRoot>
+        <RecoilRoot
+          initializeState={({ set }) => {
+            set(tokenPairState, dummyTokenPair);
+          }}
+        >
           <BaseThemeProvider>
             <AssistantChatColumn
               isMobile={false}
@@ -196,6 +291,8 @@ describe('AssistantChatColumn', () => {
               onTableData={jest.fn()}
               onMessageComplete={jest.fn()}
               onAgentEvent={jest.fn()}
+              onDeleteThread={jest.fn()}
+              onPatchThread={jest.fn()}
               onUpdateThreadMode={jest.fn()}
             />
           </BaseThemeProvider>
@@ -210,8 +307,19 @@ describe('AssistantChatColumn', () => {
 
     fireEvent.click(startButton);
 
-    // First call clears messages, subsequent calls progressively add messages
-    expect(handleMessagesChange).toHaveBeenCalled();
+    await waitFor(() => {
+      const streamCalled = fetchMock.mock.calls.some(([url]) => {
+        const urlStr = typeof url === 'string' ? url : '';
+        return urlStr.includes('/demo-thread/stream');
+      });
+
+      expect(streamCalled).toBe(true);
+    });
+
+    await waitFor(() => {
+      const stopButton = screen.getByRole('button', { name: /stop demo/i });
+      expect(stopButton).toBeInTheDocument();
+    });
   });
 });
 

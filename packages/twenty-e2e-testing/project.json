@@ -78,6 +78,24 @@
         ]
       }
     },
+    "test:assistant-pipeline": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "packages/twenty-e2e-testing",
+        "commands": [
+          "yarn playwright test tests/assistant.upload-jd-create-job.spec.ts --project=chrome --no-deps"
+        ]
+      }
+    },
+    "test:assistant-add-job-pipeline": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "packages/twenty-e2e-testing",
+        "commands": [
+          "yarn playwright test tests/assistant.add-new-job.pipeline.spec.ts --project=chrome --no-deps"
+        ]
+      }
+    },
     "test:ui": {
       "executor": "nx:run-commands",
       "options": {

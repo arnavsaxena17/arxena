@@ -30,6 +30,9 @@ describe('AssistantThreadSidebar', () => {
             threadsLoadedFromBackend
             onSelectThread={jest.fn()}
             onNewThread={jest.fn()}
+            isCreatingNewThread={false}
+            onPatchThread={jest.fn()}
+            threadPatchInFlightById={{}}
           />
         </BaseThemeProvider>
       </RecoilRoot>,
@@ -53,6 +56,9 @@ describe('AssistantThreadSidebar', () => {
             threadsLoadedFromBackend
             onSelectThread={handleSelect}
             onNewThread={jest.fn()}
+            isCreatingNewThread={false}
+            onPatchThread={jest.fn()}
+            threadPatchInFlightById={{}}
           />
         </BaseThemeProvider>
       </RecoilRoot>,
@@ -76,6 +82,9 @@ describe('AssistantThreadSidebar', () => {
             threadsLoadedFromBackend
             onSelectThread={jest.fn()}
             onNewThread={handleNew}
+            isCreatingNewThread={false}
+            onPatchThread={jest.fn()}
+            threadPatchInFlightById={{}}
           />
         </BaseThemeProvider>
       </RecoilRoot>,
@@ -97,6 +106,9 @@ describe('AssistantThreadSidebar', () => {
             threadsLoadedFromBackend
             onSelectThread={jest.fn()}
             onNewThread={jest.fn()}
+            isCreatingNewThread={false}
+            onPatchThread={jest.fn()}
+            threadPatchInFlightById={{}}
           />
         </BaseThemeProvider>
       </RecoilRoot>,
@@ -104,6 +116,31 @@ describe('AssistantThreadSidebar', () => {
 
     const rootElement = container.firstChild as HTMLElement | null;
     expect(rootElement).toBeTruthy();
+  });
+
+  it('disables New thread button and shows a loader when creating', () => {
+    render(
+      <RecoilRoot>
+        <BaseThemeProvider>
+          <AssistantThreadSidebar
+            isMobile={false}
+            threads={threads}
+            currentThreadId="t1"
+            threadsLoading={false}
+            threadsLoadedFromBackend
+            onSelectThread={jest.fn()}
+            onNewThread={jest.fn()}
+            isCreatingNewThread
+            onPatchThread={jest.fn()}
+            threadPatchInFlightById={{}}
+          />
+        </BaseThemeProvider>
+      </RecoilRoot>,
+    );
+
+    const button = screen.getByRole('button', { name: /new thread/i });
+    expect(button).toBeDisabled();
+    expect(screen.getByTestId('assistant-new-thread-loader-sidebar')).toBeInTheDocument();
   });
 });
 

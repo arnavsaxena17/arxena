@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { AssistantThreadService } from './assistant-thread.service';
@@ -25,11 +25,9 @@ export class AssistantController {
       console.log('Missing or invalid Authorization header');
       return { error: 'Missing or invalid Authorization header' };
     }
-    console.log('listThreads');
     const apiToken = authHeader.slice(7).replace(/[\r\n]+/g, '');
     try {
       const threads = await this.assistantThreadService.listThreads(apiToken);
-      console.log('threads', threads);
       return { threads };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -159,6 +157,27 @@ export class AssistantController {
         jobId: thread?.jobId ?? (jobId !== undefined ? jobId : undefined),
         assistantMode: thread?.assistantMode ?? assistantMode,
       };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { error: message };
+    }
+  }
+
+  @Delete('threads/:id')
+  @UseGuards(JwtAuthGuard)
+  async deleteThread(
+    @Param('id') id: string,
+    @Req() request: { headers: { authorization?: string } },
+  ) {
+    const authHeader = request.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return { error: 'Missing or invalid Authorization header' };
+    }
+
+    const apiToken = authHeader.slice(7).replace(/[\r\n]+/g, '');
+    try {
+      await this.assistantThreadService.deleteThread(apiToken, id);
+      return { id };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return { error: message };

@@ -2,15 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
-  createOneAssistantThread,
-  findManyAssistantThreads,
-  findOneAssistantThread,
-  updateOneAssistantThread
+    createOneAssistantThread,
+    findManyAssistantThreads,
+    findOneAssistantThread,
+    updateOneAssistantThread
 } from 'twenty-shared';
 import {
-  AssistantAgentEventRecord,
-  AssistantThreadRecord,
-  AssistantThreadTableData,
+    AssistantAgentEventRecord,
+    AssistantThreadRecord,
+    AssistantThreadTableData,
 } from './assistant.types';
 
 type AssistantThreadMessage = {
@@ -265,6 +265,25 @@ export class AssistantThreadService {
     await this.staticGraphQLService.executeGraphQL(
       updateOneAssistantThread,
       { id: threadId, input: { lastTableData: data } },
+      apiToken,
+    );
+  }
+
+  async deleteThread(
+    apiToken: string,
+    threadId: string,
+  ): Promise<void> {
+    const deleteAssistantThreadMutation = `
+      mutation DeleteOneAssistantThread($idToDelete: ID!) {
+        deleteAssistantThread(id: $idToDelete) {
+          id
+        }
+      }
+    `;
+
+    await this.staticGraphQLService.executeGraphQL(
+      deleteAssistantThreadMutation,
+      { idToDelete: threadId },
       apiToken,
     );
   }

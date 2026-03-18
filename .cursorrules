@@ -80,7 +80,7 @@
 - Optional chaining over &&
 - Small focused functions
 - Clear variable names
-- No console.logs in commits
+- Add log statements wherever useful for logging
 - Few comments, prefer code readability
 
 ## GraphQL

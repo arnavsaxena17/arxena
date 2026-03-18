@@ -318,6 +318,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
       setError(null);
       setIsUploading(true);
       const file = acceptedFiles[0];
+      let createdJobId: string | null = null;
 
       try {
         // If we're in edit mode and have a parsedJD, remove existing attachments first, then upload new one
@@ -344,6 +345,28 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
             variant: SnackBarVariant.Success,
           });
 
+          // #region agent log
+          fetch('http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Debug-Session-Id': '6b677b',
+            },
+            body: JSON.stringify({
+              sessionId: '6b677b',
+              runId: 'upload-existing-job',
+              hypothesisId: 'H1',
+              location: 'useArxJDUpload.ts:handleFileUpload',
+              message: 'Updated existing job attachment',
+              data: {
+                jobId: parsedJD.id,
+              },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          // #endregion agent log
+
+          createdJobId = parsedJD.id;
           return parsedJD.id;
         }
 
@@ -357,7 +380,28 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
           isActive: true,
           recruiterId: recruiterDetails?.workspaceMemberId  || currentWorkspaceMember?.id
         });
-        
+        createdJobId = createdJob.id;
+        // #region agent log
+        fetch('http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Debug-Session-Id': '6b677b',
+          },
+          body: JSON.stringify({
+            sessionId: '6b677b',
+            runId: 'jd-flow',
+            hypothesisId: 'H1',
+            location: 'useArxJDUpload.ts:handleFileUpload',
+            message: 'Created job record before JD processing',
+            data: {
+              createdJobId: createdJob.id,
+              jobCode,
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion agent log
 
         const { attachmentAbsoluteURL } = await uploadAttachmentFile(file, {
           targetObjectNameSingular: CoreObjectNameSingular.Job,
@@ -376,6 +420,29 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
             Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
           },
         });
+
+        // #region agent log
+        fetch('http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Debug-Session-Id': '6b677b',
+          },
+          body: JSON.stringify({
+            sessionId: '6b677b',
+            runId: 'jd-flow',
+            hypothesisId: 'H1',
+            location: 'useArxJDUpload.ts:handleFileUpload',
+            message: 'Received uploadJDResponse from backend',
+            data: {
+              hasSuccessField: Object.prototype.hasOwnProperty.call(uploadJDResponse.data ?? {}, 'success'),
+              successValue: (uploadJDResponse.data as any)?.success ?? null,
+              statusValue: (uploadJDResponse.data as any)?.status ?? null,
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion agent log
 
         if (uploadJDResponse.data.success === true) {
           const data = uploadJDResponse.data.data;
@@ -498,10 +565,61 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
           throw new Error(uploadJDResponse?.data?.message || 'Failed to process JD');
         }
 
+        // Ensure any consumers (e.g. navigation drawer) immediately see the new job.
+        triggerJobsRefetch();
+
+        // #region agent log
+        fetch('http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Debug-Session-Id': '6b677b',
+          },
+          body: JSON.stringify({
+            sessionId: '6b677b',
+            runId: 'upload-new-job',
+            hypothesisId: 'H1',
+            location: 'useArxJDUpload.ts:handleFileUpload',
+            message: 'Created new job from JD upload',
+            data: {
+              createdJobId: createdJob.id,
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion agent log
+
         return createdJob.id;
       } catch (error: any) {
         console.error('Error processing JD:', error);
         setError(error?.message || 'Failed to process JD');
+        // #region agent log
+        fetch('http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Debug-Session-Id': '6b677b',
+          },
+          body: JSON.stringify({
+            sessionId: '6b677b',
+            runId: 'jd-flow-error',
+            hypothesisId: 'H1',
+            location: 'useArxJDUpload.ts:handleFileUpload',
+            message: 'Error during JD processing',
+            data: {
+              createdJobId,
+              errorMessage: error instanceof Error ? error.message : String(error),
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion agent log
+
+        // Even if later JD processing fails, return the created job id so that
+        // the assistant thread can still attach to a valid job.
+        if (createdJobId) {
+          return createdJobId;
+        }
       } finally {
         setIsUploading(false);
       }
@@ -522,7 +640,8 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
       generateResolvedSearchParameters,
       parseJobDescriptionFromDetails,
       recruiterDetails?.workspaceMemberId,
-      currentWorkspaceMember?.id
+      currentWorkspaceMember?.id,
+      triggerJobsRefetch,
     ],
   );
 

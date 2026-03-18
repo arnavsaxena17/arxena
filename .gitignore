@@ -53,3 +53,5 @@ dump.rdb
 /flake.nix
 
 .crowdin.yml
+sample_jds/
+sample_jds/**

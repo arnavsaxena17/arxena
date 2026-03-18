@@ -1,9 +1,10 @@
+import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { AssistantActivityFeed } from '@/assistant/components/AssistantActivityFeed';
 import { AssistantThreadNotes } from '@/assistant/components/AssistantThreadNotes';
 import { USE_MOCK_ASSISTANT } from '@/assistant/mocks/mockThreads';
 import type {
-    AssistantAgentEvent,
-    AssistantThread,
+  AssistantAgentEvent,
+  AssistantThread,
 } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
@@ -11,7 +12,9 @@ import { TextInput } from '@/ui/input/components/TextInput';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { IconDotsVertical } from 'twenty-ui';
+import { IconDotsVertical, IconFile, IconX } from 'twenty-ui';
+
+import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 
 import { parseServerSentEvent } from '../utils/serverSentEvents';
 import { AssistantJDSection } from './AssistantJDSection';
@@ -135,6 +138,15 @@ const StyledThreadMenuAction = styled.button`
   }
 `;
 
+const StyledThreadMenuDangerAction = styled(StyledThreadMenuAction)`
+  color: ${({ theme }) => theme.font.color.tertiary};
+
+  &:hover {
+    background-color: ${({ theme }) => theme.background.tertiary};
+    color: ${({ theme }) => theme.font.color.secondary};
+  }
+`;
+
 const StyledJDHeaderRow = styled.div`
   display: flex;
   align-items: center;
@@ -184,6 +196,57 @@ const StyledJobAttachedRow = styled.div`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+`;
+
+const StyledJobAttachedRowContent = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  min-width: 0;
+`;
+
+const StyledJobAttachedText = styled.span`
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const StyledJDAttachedIndicator = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  padding: ${({ theme }) => theme.spacing(0.25)};
+  cursor: pointer;
+  color: ${({ theme }) => theme.font.color.secondary};
+
+  &:hover {
+    background: ${({ theme }) => theme.background.tertiary};
+  }
+`;
+
+const StyledJDRemoveButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  padding: ${({ theme }) => theme.spacing(0.25)};
+  border-radius: ${({ theme }) => theme.border.radius.xs};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  cursor: pointer;
+
+  &:hover {
+    background: ${({ theme }) => theme.background.tertiary};
+    color: ${({ theme }) => theme.font.color.secondary};
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 `;
 
 type DemoStreamRequestBody = {
@@ -449,6 +512,7 @@ type AssistantChatColumnProps = {
   onTableData: (data: NonNullable<AssistantThread['lastTableData']>) => void;
   onMessageComplete: () => void;
   onAgentEvent: (event: AssistantAgentEvent) => void;
+  onDeleteThread: (threadId: string) => Promise<void> | void;
   onPatchThread: (
     threadId: string,
     patch: {
@@ -479,10 +543,12 @@ export const AssistantChatColumn = ({
   onTableData,
   onMessageComplete,
   onAgentEvent,
+  onDeleteThread,
   onPatchThread,
   onUpdateThreadMode,
 }: AssistantChatColumnProps) => {
   const { objectMetadataItems } = useObjectMetadataItems();
+  const parsedJD = useRecoilValue(parsedJDSelector);
   const hasJobObjectMetadata = objectMetadataItems.some(
     (item) => item.nameSingular === 'job',
   );
@@ -493,10 +559,15 @@ export const AssistantChatColumn = ({
   const [isDemoRunning, setIsDemoRunning] = useState(false);
   const [isHeartbeatSending, setIsHeartbeatSending] = useState(false);
   const [isThreadMenuOpen, setIsThreadMenuOpen] = useState(false);
+  const [isDeleteThreadModalOpen, setIsDeleteThreadModalOpen] = useState(false);
+  const [isDeleteThreadLoading, setIsDeleteThreadLoading] = useState(false);
+  const [threadIdToDelete, setThreadIdToDelete] = useState<string | null>(null);
   const [jdActions, setJdActions] = useState<{
     openFilePicker: () => void;
+    openJDViewer: () => void;
     removeJD: () => Promise<void>;
     canRemoveJD: boolean;
+    hasJDFile: boolean;
     uploadLabel: string;
   } | null>(null);
   const threadMenuRef = useRef<HTMLDivElement | null>(null);
@@ -727,26 +798,122 @@ export const AssistantChatColumn = ({
                         <span style={{ opacity: 0.7 }}>JD</span>
                       </StyledThreadMenuAction>
                     )}
+                    <StyledThreadMenuDangerAction
+                      type="button"
+                      disabled={threadsLoading || !threadsLoadedFromBackend}
+                      onClick={() => {
+                        if (!currentThreadId) return;
+
+                        setIsThreadMenuOpen(false);
+                        setThreadIdToDelete(currentThreadId);
+                        setIsDeleteThreadModalOpen(true);
+                      }}
+                    >
+                      <span>Delete thread</span>
+                      <span style={{ opacity: 0.7 }}>Del</span>
+                    </StyledThreadMenuDangerAction>
                   </StyledThreadMenuDropdown>
                 )}
               </StyledThreadMenuContainer>
             </StyledThreadHeaderRow>
             <StyledJobAttachedRow title={currentThread.jobId ?? undefined}>
-              {currentThread.jobId && (currentThread.job?.name || currentThread.job?.id) ? (
-                <>
-                  Job: {currentThread.job.name ?? currentThread.job.id}
-                  {currentThread.job.company?.name ? ` at ${currentThread.job.company.name}` : ''}
-                </>
-              ) : currentThread.jobId ? (
-                <>Job attached</>
-              ) : (
-                <>No job attached</>
-              )}
+              <StyledJobAttachedRowContent>
+                <StyledJobAttachedText>
+                  {(() => {
+                    const hasParsedJD = Boolean(parsedJD?.name || parsedJD?.jobCode);
+                    const hasThreadJobDetails = Boolean(
+                      currentThread.jobId && (currentThread.job?.name || currentThread.job?.id),
+                    );
+                    const hasThreadJobIdOnly = Boolean(currentThread.jobId && !currentThread.job);
+
+                    // #region agent log
+                    if (typeof fetch === 'function') {
+                      fetch(
+                        'http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff',
+                        {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'X-Debug-Session-Id': '6b677b',
+                          },
+                          body: JSON.stringify({
+                            sessionId: '6b677b',
+                            runId: 'render-job-row',
+                            hypothesisId: 'H3',
+                            location: 'AssistantChatColumn.tsx:jobRow',
+                            message: 'Rendering job attachment row',
+                            data: {
+                              currentThreadId,
+                              currentThreadJobId: currentThread.jobId ?? null,
+                              hasParsedJD,
+                              hasThreadJobDetails,
+                              hasThreadJobIdOnly,
+                            },
+                            timestamp: Date.now(),
+                          }),
+                        },
+                      ).catch(() => {});
+                    }
+                    // #endregion agent log
+
+                    if (hasParsedJD) {
+                      return (
+                        <>
+                          Job{' '}
+                          {parsedJD?.jobCode && parsedJD?.name
+                            ? `${parsedJD.jobCode} - ${parsedJD.name}`
+                            : parsedJD?.name ?? 'Job Description'}
+                        </>
+                      );
+                    }
+
+                    if (hasThreadJobDetails) {
+                      return (
+                        <>
+                          Job: {currentThread.job?.name ?? currentThread.job?.id}
+                          {currentThread.job?.company?.name
+                            ? ` at ${currentThread.job.company.name}`
+                            : ''}
+                        </>
+                      );
+                    }
+
+                    if (hasThreadJobIdOnly) {
+                      return <>Job attached</>;
+                    }
+
+                    return <>No job attached</>;
+                  })()}
+                </StyledJobAttachedText>
+                {Boolean(currentThread.jobId && jdActions?.hasJDFile) && (
+                  <>
+                    <StyledJDAttachedIndicator
+                      type="button"
+                      data-testid="assistant-jd-attached-indicator"
+                      title="Open job description"
+                      onClick={() => jdActions?.openJDViewer()}
+                    >
+                      <IconFile size={14} />
+                    </StyledJDAttachedIndicator>
+                    <StyledJDRemoveButton
+                      type="button"
+                      data-testid="assistant-jd-remove-button"
+                      title="Remove JD attachment"
+                      onClick={async () => {
+                        await jdActions?.removeJD();
+                      }}
+                      disabled={!jdActions?.canRemoveJD}
+                    >
+                      <IconX size={14} />
+                    </StyledJDRemoveButton>
+                  </>
+                )}
+              </StyledJobAttachedRowContent>
             </StyledJobAttachedRow>
             {hasJobObjectMetadata && (
               <AssistantJDSection
                 threadId={currentThreadId}
-                threadJobId={currentThread.jobId}
+                jobId={currentThread.jobId}
                 threadJobName={currentThread.job?.name ?? null}
                 onAttachJobToThread={async (jobId) => {
                   await onPatchThread(currentThreadId, { jobId });
@@ -791,6 +958,7 @@ export const AssistantChatColumn = ({
       </StyledThreadSelector>
       {currentThread && (
         <McpClientChat
+          key={currentThread.id}
           messages={currentThread.messages}
           onMessagesChange={onMessagesChange}
           onTableData={onTableData}
@@ -798,6 +966,32 @@ export const AssistantChatColumn = ({
           onThreadNameChange={onThreadNameChange}
           onMessageComplete={onMessageComplete}
           onAgentEvent={onAgentEvent}
+        />
+      )}
+
+      {isDeleteThreadModalOpen && (
+        <ConfirmationModal
+          isOpen={isDeleteThreadModalOpen}
+          setIsOpen={(val) => {
+            setIsDeleteThreadModalOpen(val);
+            if (!val) setThreadIdToDelete(null);
+          }}
+          title="Delete thread"
+          subtitle="This action cannot be undone."
+          onConfirmClick={() => {
+            if (!threadIdToDelete) return;
+
+            setIsDeleteThreadLoading(true);
+            void Promise.resolve(onDeleteThread(threadIdToDelete))
+              .catch(() => {
+                // best-effort; parent is responsible for state updates
+              })
+              .finally(() => {
+                setIsDeleteThreadLoading(false);
+              });
+          }}
+          deleteButtonText="Delete thread"
+          loading={isDeleteThreadLoading}
         />
       )}
     </StyledChatPanel>

@@ -55,7 +55,7 @@ function buildAutonomousRecruiterSystemPrompt(
       "When a recruiter shares a requirement, before creating the job and the company, use the job_brief_understanding tool to understand the job brief and generate a detailed job brief understanding. Use it until the tool returns 'COMPLETELY_UNDERSTOOD'.",
       '',
     ];
-  lines.push(...understandingQueriesSection);
+  // lines.push(...understandingQueriesSection);
 
   const companiesAndJobsSection =
     config?.buildCompaniesAndJobsSection?.() ?? [

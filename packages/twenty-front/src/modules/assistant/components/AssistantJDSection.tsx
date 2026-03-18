@@ -1,3 +1,4 @@
+import { DocumentViewer } from '@/activities/files/components/DocumentViewer';
 import { useArxJDUpload } from '@/arx-jd-upload/hooks/useArxJDUpload';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { createDefaultParsedJD } from '@/arx-jd-upload/utils/createDefaultParsedJD';
@@ -7,12 +8,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { IconDotsVertical, IconTrash, IconUpload } from 'twenty-ui';
 
-const StyledJDHeaderRow = styled.div`
+const StyledJDHeaderRow = styled.div<{ $isCompact?: boolean }>`
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: ${({ theme }) => theme.spacing(2)};
-  margin-top: ${({ theme }) => theme.spacing(1)};
+  margin-top: ${({ theme, $isCompact }) =>
+    $isCompact ? theme.spacing(0.5) : theme.spacing(1)};
 `;
 
 const StyledJDSummary = styled.div`
@@ -23,6 +25,50 @@ const StyledJDSummary = styled.div`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+`;
+
+const StyledJDViewerToggleSummary = styled(StyledJDSummary.withComponent('button'))<{
+  $isClickable: boolean;
+}>`
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: ${({ $isClickable }) => ($isClickable ? 'pointer' : 'default')};
+
+  &:hover {
+    text-decoration: ${({ $isClickable }) => ($isClickable ? 'underline' : 'none')};
+    opacity: ${({ $isClickable }) => ($isClickable ? 0.95 : 1)};
+  }
+`;
+
+const StyledJDViewerContainer = styled.div`
+  margin-top: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledJDViewerHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: ${({ theme }) => theme.spacing(1)};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.secondary};
+`;
+
+const StyledJDViewerCloseButton = styled.button`
+  padding: ${({ theme }) => theme.spacing(0.5, 1)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  background-color: ${({ theme }) => theme.background.primary};
+  color: ${({ theme }) => theme.font.color.secondary};
+  cursor: pointer;
+  font-size: ${({ theme }) => theme.font.size.xs};
+
+  &:hover {
+    background-color: ${({ theme }) => theme.background.secondary};
+    border-color: ${({ theme }) => theme.border.color.strong};
+    color: ${({ theme }) => theme.font.color.primary};
+  }
 `;
 
 const StyledJDMenuContainer = styled.div`
@@ -87,43 +133,55 @@ const StyledJDMenuAction = styled.button<{ danger?: boolean }>`
 
 type AssistantJDSectionProps = {
   threadId: string;
-  threadJobId: string | null | undefined;
+  jobId: string | null | undefined;
   threadJobName?: string | null;
   onAttachJobToThread: (jobId: string) => Promise<void> | void;
   hideMenu?: boolean;
   exposeActions?: (actions: {
     openFilePicker: () => void;
+    openJDViewer: () => void;
     removeJD: () => Promise<void>;
     canRemoveJD: boolean;
+    hasJDFile: boolean;
     uploadLabel: string;
   } | null) => void;
 };
 
 export const AssistantJDSection = ({
   threadId,
-  threadJobId,
+  jobId,
   threadJobName,
   onAttachJobToThread,
   hideMenu = false,
   exposeActions,
 }: AssistantJDSectionProps) => {
   const [isJDMenuOpen, setIsJDMenuOpen] = useState(false);
+  const [isJDViewerOpen, setIsJDViewerOpen] = useState(false);
   const jdMenuRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingAttachJobIdRef = useRef<string | null>(null);
 
   const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
 
+  useEffect(() => {
+    // If the user switches conversations, we must not keep "pending attach"
+    // from the previous thread. Otherwise the previous thread's parsedJD
+    // can remain visible even when the new thread has no `jobId`.
+    pendingAttachJobIdRef.current = null;
+    // Also close the viewer when switching context.
+    setIsJDViewerOpen(false);
+  }, [threadId, jobId]);
+
   const { handleFileUpload, handleFileRemoval, isUploading } =
     useArxJDUpload('job', 'edit');
 
-  const hasJobAttached = Boolean(threadJobId);
-  const isAttachingJob = Boolean(pendingAttachJobIdRef.current && !threadJobId);
+  const hasJobAttached = Boolean(jobId);
+  const isAttachingJob = Boolean(pendingAttachJobIdRef.current && !jobId);
 
   const { records: attachmentRecords = [] } = useFindManyRecords({
     objectNameSingular: 'attachment',
-    filter: threadJobId ? { jobId: { eq: threadJobId } } : undefined,
-    skip: !threadJobId,
+    filter: jobId ? { jobId: { eq: jobId } } : undefined,
+    skip: !jobId,
   });
 
   const hasJDFile = attachmentRecords.length > 0;
@@ -166,23 +224,101 @@ export const AssistantJDSection = ({
   ) => {
     const files = Array.from(event.target.files || []);
     if (!files.length) return;
+    // #region agent log
+    fetch('http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Debug-Session-Id': '6b677b',
+      },
+      body: JSON.stringify({
+        sessionId: '6b677b',
+        runId: 'pre-upload',
+        hypothesisId: 'H1',
+        location: 'AssistantJDSection.tsx:handleFileInputChange',
+        message: 'Before handleFileUpload',
+        data: {
+          hasJobAttached,
+          jobId,
+          fileCount: files.length,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion agent log
+
     const createdOrUpdatedJobId = await handleFileUpload(files);
-    if (!hasJobAttached && typeof createdOrUpdatedJobId === 'string') {
-      pendingAttachJobIdRef.current = createdOrUpdatedJobId;
-      await onAttachJobToThread(createdOrUpdatedJobId);
+
+    // #region agent log
+    fetch('http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Debug-Session-Id': '6b677b',
+      },
+      body: JSON.stringify({
+        sessionId: '6b677b',
+        runId: 'post-upload',
+        hypothesisId: 'H1',
+        location: 'AssistantJDSection.tsx:handleFileInputChange',
+        message: 'After handleFileUpload',
+        data: {
+          createdOrUpdatedJobId: typeof createdOrUpdatedJobId === 'string' ? createdOrUpdatedJobId : null,
+          parsedJDId: parsedJD?.id ?? null,
+          hasJobAttached,
+          jobId,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion agent log
+
+    // Prefer the explicit return value from handleFileUpload, but fall back to
+    // the current parsedJD.id when available. This makes sure that even if the
+    // upload flow succeeds but does not return an id, we still attach the job
+    // that was just created/updated to the assistant thread.
+    const jobIdToAttach =
+      typeof createdOrUpdatedJobId === 'string'
+        ? createdOrUpdatedJobId
+        : parsedJD?.id ?? null;
+
+    if (!hasJobAttached && typeof jobIdToAttach === 'string') {
+      // #region agent log
+      fetch('http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Debug-Session-Id': '6b677b',
+        },
+        body: JSON.stringify({
+          sessionId: '6b677b',
+          runId: 'attach-job',
+          hypothesisId: 'H2',
+          location: 'AssistantJDSection.tsx:handleFileInputChange',
+          message: 'Attaching job to thread',
+          data: {
+            jobIdToAttach,
+            threadId,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion agent log
+      pendingAttachJobIdRef.current = jobIdToAttach;
+      await onAttachJobToThread(jobIdToAttach);
     }
     setIsJDMenuOpen(false);
   };
 
   useEffect(() => {
-    if (threadJobId) {
-      if (pendingAttachJobIdRef.current === threadJobId) {
+    if (jobId) {
+      if (pendingAttachJobIdRef.current === jobId) {
         pendingAttachJobIdRef.current = null;
       }
-      if (parsedJD?.id !== threadJobId) {
+      if (parsedJD?.id !== jobId) {
         setParsedJD(
           createDefaultParsedJD({
-            id: threadJobId,
+            id: jobId,
             name: threadJobName ?? '',
           }),
         );
@@ -198,16 +334,21 @@ export const AssistantJDSection = ({
     }
 
     if (parsedJD) setParsedJD(null);
-  }, [threadId, threadJobId, threadJobName, parsedJD, setParsedJD]);
+  }, [threadId, jobId, threadJobName, parsedJD, setParsedJD]);
+
+  const canViewJD = Boolean(hasJobAttached && hasJDFile && parsedJD?.filePath);
 
   useEffect(() => {
     if (!exposeActions) return;
+    // Expose a click handler so the parent can open the viewer UI.
     exposeActions({
       openFilePicker: handleJDReplaceClick,
+      openJDViewer: () => setIsJDViewerOpen(true),
       removeJD: async () => {
         await handleFileRemoval();
       },
       canRemoveJD: hasJobAttached && hasJDFile,
+      hasJDFile,
       uploadLabel: hasJDFile ? 'Replace JD' : 'Upload JD',
     });
     return () => exposeActions(null);
@@ -219,20 +360,49 @@ export const AssistantJDSection = ({
     hasJobAttached,
   ]);
 
+  const jdSummaryText = isUploading
+    ? 'Uploading job description...'
+    : isAttachingJob
+      ? 'Attaching job...'
+      : hasJobAttached
+        ? hasJDFile
+          ? `JD attached: ${getJDDisplayName() ?? 'Job Description'}`
+          : hideMenu
+            ? 'Upload JD'
+            : 'No JD attached'
+        : hideMenu
+          ? 'Upload JD to attach a job'
+          : 'No job attached';
+
+  const canUploadJD = Boolean(hideMenu && !isUploading && !isAttachingJob);
+  const canOpenSummary = canViewJD || canUploadJD;
+
   return (
     <>
-      <StyledJDHeaderRow>
-        <StyledJDSummary>
-          {isUploading
-            ? 'Uploading job description...'
-            : isAttachingJob
-              ? 'Attaching job...'
-              : hasJobAttached
-              ? hasJDFile
-                ? `JD attached: ${getJDDisplayName() ?? 'Job Description'}`
-                : 'No JD attached'
-              : 'No job attached (upload a JD to create one)'}
-        </StyledJDSummary>
+      <StyledJDHeaderRow $isCompact={hideMenu}>
+        <StyledJDViewerToggleSummary
+          type={canViewJD ? 'button' : 'button'}
+          $isClickable={canOpenSummary}
+          onClick={() => {
+            if (canViewJD) {
+              setIsJDViewerOpen(true);
+              return;
+            }
+
+            if (canUploadJD) {
+              handleJDReplaceClick();
+            }
+          }}
+          title={
+            canViewJD
+              ? 'Click to view job description'
+              : canUploadJD
+                ? 'Upload job description'
+                : undefined
+          }
+        >
+          {jdSummaryText}
+        </StyledJDViewerToggleSummary>
         {!hideMenu && (
           <StyledJDMenuContainer ref={jdMenuRef}>
             <StyledJDMenuButton
@@ -272,12 +442,33 @@ export const AssistantJDSection = ({
         )}
         <input
           ref={fileInputRef}
+          data-testid="assistant-jd-file-input"
           type="file"
           accept=".pdf,.doc,.docx,.txt"
           style={{ display: 'none' }}
           onChange={handleFileInputChange}
         />
       </StyledJDHeaderRow>
+      {isJDViewerOpen && parsedJD?.filePath && (
+        <StyledJDViewerContainer>
+          <StyledJDViewerHeader>
+            <span>
+              Viewing JD:{' '}
+              {getJDDisplayName() ?? parsedJD.name ?? 'Job Description'}
+            </span>
+            <StyledJDViewerCloseButton
+              type="button"
+              onClick={() => setIsJDViewerOpen(false)}
+            >
+              Close
+            </StyledJDViewerCloseButton>
+          </StyledJDViewerHeader>
+          <DocumentViewer
+            documentName={getJDDisplayName() ?? parsedJD.name ?? 'Job Description'}
+            documentUrl={parsedJD.filePath}
+          />
+        </StyledJDViewerContainer>
+      )}
     </>
   );
 };
