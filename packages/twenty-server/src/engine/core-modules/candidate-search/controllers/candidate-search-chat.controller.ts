@@ -38,7 +38,7 @@ export class CandidateSearchChatController {
     let apiToken: string | null = null;
     
     try {
-      this.logger.log(`Processing streaming chat message for searchFilterId: ${body.searchFilterId}`);
+      this.logger.log(`Processing streaming chat message for assistantThreadId: ${body.assistantThreadId}`);
       
       apiToken = extractApiToken(headers);
       if (!apiToken) {
@@ -137,7 +137,7 @@ export class CandidateSearchChatController {
       }
 
       await this.candidateSearchHandlerService.addChatMessage(
-        body.searchFilterId,
+        body.assistantThreadId,
         'user',
         body.message,
         apiToken,
@@ -153,12 +153,12 @@ export class CandidateSearchChatController {
       if (finalAssistantMessage) {
         try {
           await this.candidateSearchHandlerService.addChatMessage(
-            body.searchFilterId,
+            body.assistantThreadId,
             'assistant',
             finalAssistantMessage,
             apiToken,
           );
-          this.logger.log(`Saved assistant message to chat history for searchFilterId: ${body.searchFilterId}`);
+          this.logger.log(`Saved assistant message to chat history for assistantThreadId: ${body.assistantThreadId}`);
         } catch (error) {
           this.logger.error(`Failed to save assistant message to chat history: ${error.message}`);
         }
@@ -178,7 +178,7 @@ export class CandidateSearchChatController {
         try {
           const lastMessage = accumulatedChatMessages[accumulatedChatMessages.length - 1];
           await this.candidateSearchHandlerService.addChatMessage(
-            body.searchFilterId,
+            body.assistantThreadId,
             'assistant',
             lastMessage,
             apiToken,
@@ -200,7 +200,7 @@ export class CandidateSearchChatController {
           if (apiToken) {
             try {
               await this.candidateSearchHandlerService.addChatMessage(
-                body.searchFilterId,
+                body.assistantThreadId,
                 'assistant',
                 `Sorry, I encountered an error: ${errorMessage}`,
                 apiToken,

@@ -1,7 +1,8 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useCallback, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { LinkedInSearchCategory, LinkedInSearchType } from 'twenty-shared';
+export type LinkedInSearchType = 'classic' | 'sales_navigator' | 'recruiter';
+export type LinkedInSearchCategory = 'people' | 'companies' | 'posts' | 'jobs';
 
 export interface SearchParametersResult {
   generatedParameters: any;
@@ -39,7 +40,7 @@ export const useSearchParameters = () => {
     parsedJobDescription: ParsedJobDescription,
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
-    searchFilterId: string
+    assistantThreadId: string,
   ): Promise<any> => {
     if (!tokenPair?.accessToken?.token) {
       throw new Error('No authentication token available');
@@ -59,7 +60,7 @@ export const useSearchParameters = () => {
             parsedJobDescription,
             searchType,
             searchCategory,
-            searchFilterId,
+            assistantThreadId,
           }),
         }
       );
@@ -135,7 +136,7 @@ export const useSearchParameters = () => {
     parsedJobDescription: ParsedJobDescription,
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
-    searchFilterId: string
+    assistantThreadId: string,
   ): Promise<SearchParametersResult> => {
     try {
       // Generate parameters first
@@ -143,7 +144,7 @@ export const useSearchParameters = () => {
         parsedJobDescription,
         searchType,
         searchCategory,
-        searchFilterId
+        assistantThreadId,
       );
 
       // Extract the specific search parameters based on search type and category
@@ -212,7 +213,7 @@ export const useSearchParameters = () => {
     generatedParameters: any,
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
-    searchFilterId: string
+    assistantThreadId: string
   ): boolean => {
     if (!generatedParameters) return false;
     

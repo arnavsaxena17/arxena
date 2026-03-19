@@ -34,9 +34,13 @@ test('Assistant: new thread -> upload JD -> job hydrates + Jobs nav updates', as
 
   // Open the 3-dots menu and pick Upload/Replace JD.
   console.log('Clicking thread actions');
-  await page.getByTitle('Thread actions').click();
+  const threadActionsButton = page.getByTitle('Thread actions');
+  await threadActionsButton.click();
   console.log('Thread actions clicked');
-  await page.getByRole('button', { name: /upload jd|replace jd/i }).click();
+  await threadActionsButton
+    .locator('..')
+    .getByRole('button', { name: /upload jd|replace jd/i })
+    .click();
   console.log('Upload/Replace JD clicked');
   // Selecting a file is done via the hidden file input triggered by the menu action.
   const jdPath = path.resolve(

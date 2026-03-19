@@ -4,7 +4,7 @@ import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { createDefaultParsedJD } from '@/arx-jd-upload/utils/createDefaultParsedJD';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import styled from '@emotion/styled';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { IconDotsVertical, IconTrash, IconUpload } from 'twenty-ui';
 
@@ -175,6 +175,11 @@ export const AssistantJDSection = ({
   const { handleFileUpload, handleFileRemoval, isUploading } =
     useArxJDUpload('job', 'edit');
 
+  const handleFileRemovalRef = useRef(handleFileRemoval);
+  useEffect(() => {
+    handleFileRemovalRef.current = handleFileRemoval;
+  }, [handleFileRemoval]);
+
   const hasJobAttached = Boolean(jobId);
   const isAttachingJob = Boolean(pendingAttachJobIdRef.current && !jobId);
 
@@ -338,27 +343,43 @@ export const AssistantJDSection = ({
 
   const canViewJD = Boolean(hasJobAttached && hasJDFile && parsedJD?.filePath);
 
-  useEffect(() => {
-    if (!exposeActions) return;
-    // Expose a click handler so the parent can open the viewer UI.
-    exposeActions({
+  const exposedActions = useMemo(() => {
+    if (!exposeActions) return null;
+
+    const canRemoveJD = hasJobAttached && hasJDFile;
+    const uploadLabel = hasJDFile ? 'Replace JD' : 'Upload JD';
+
+    return {
       openFilePicker: handleJDReplaceClick,
       openJDViewer: () => setIsJDViewerOpen(true),
       removeJD: async () => {
-        await handleFileRemoval();
+        await handleFileRemovalRef.current();
       },
-      canRemoveJD: hasJobAttached && hasJDFile,
+      canRemoveJD,
       hasJDFile,
-      uploadLabel: hasJDFile ? 'Replace JD' : 'Upload JD',
-    });
-    return () => exposeActions(null);
+      uploadLabel,
+    };
   }, [
     exposeActions,
     handleJDReplaceClick,
-    handleFileRemoval,
     hasJDFile,
     hasJobAttached,
   ]);
+
+  useEffect(() => {
+    if (!exposeActions) return;
+    if (!exposedActions) return;
+
+    exposeActions(exposedActions);
+  }, [exposeActions, exposedActions]);
+
+  useEffect(() => {
+    if (!exposeActions) return;
+
+    return () => {
+      exposeActions(null);
+    };
+  }, [exposeActions]);
 
   const jdSummaryText = isUploading
     ? 'Uploading job description...'

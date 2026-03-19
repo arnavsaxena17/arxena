@@ -248,7 +248,6 @@ export const GENERATE_SEARCH_PARAMETERS_INPUT_DESCRIPTOR: readonly McpInputField
   { key: 'searchType', type: 'string', description: 'One of: classic, sales_navigator, recruiter. Default is classic.', required: true },
   { key: 'prompt', type: 'string', description: 'Prompt for generating search parameters', required: true },
   { key: 'searchCategory', type: 'string', description: 'One of: people, companies, posts, jobs. Default is people.', required: true },
-  { key: 'searchFilterId', type: 'string', description: 'Search filter ID. Default is null.', required: false },
   ...ASSISTANT_THREAD_ID_OPTIONAL_DESCRIPTOR,
 ] as const;
 
@@ -302,7 +301,7 @@ export const SEARCH_LINKEDIN_PEOPLE_INPUT_DESCRIPTOR: readonly McpInputFieldDesc
   { key: 'searchType', type: 'string', description: 'One of: classic, sales_navigator, recruiter', required: true },
   { key: 'searchParameters', type: 'object', description: 'LinkedIn search parameters object (optional if query provided)', required: false },
   { key: 'query', type: 'string', description: 'Natural language query for full search flow (optional if searchParameters provided)', required: false },
-  { key: 'searchFilterId', type: 'string', description: 'Search filter ID (required if using query)', required: false },
+  { key: 'assistantThreadId', type: 'string', description: 'Assistant thread ID for conversation context (required if using query)', required: false },
   { key: 'parsedJD', type: 'object', description: 'Parsed job description (optional, used with query)', required: false },
   { key: 'cursor', type: 'string', description: 'Pagination cursor for continuing search', required: false },
   { key: 'limit', type: 'number', description: 'Maximum number of results to return', required: false },
@@ -314,7 +313,7 @@ export const SEARCH_LINKEDIN_WITH_QUERY_INPUT_DESCRIPTOR: readonly McpInputField
   { key: 'query', type: 'string', description: 'Natural language search query', required: true },
   { key: 'searchType', type: 'string', description: 'One of: classic, sales_navigator, recruiter', required: true },
   { key: 'searchCategory', type: 'string', description: 'One of: people, companies, posts, jobs', required: true },
-  { key: 'searchFilterId', type: 'string', description: 'Search filter ID', required: true },
+  { key: 'assistantThreadId', type: 'string', description: 'Assistant thread ID for conversation context', required: true },
   { key: 'parsedJD', type: 'object', description: 'Parsed job description (optional)', required: false },
   { key: 'includeJd', type: 'boolean', description: 'Whether to include JD in search context', required: false },
 ] as const;

@@ -524,16 +524,24 @@ export class McpAssistantService {
     this.logger.log(
       `Calling MCP subprocess for tool: ${name} (args: ${JSON.stringify(this.sanitizeArgsForLog(effectiveArgs))})`,
     );
-    const result = await client.callTool({
-      name,
-      arguments: effectiveArgs,
-    });
-    const textContent =
-      result.content
-        ?.map((c) => (c.type === 'text' ? c.text : JSON.stringify(c)))
-        .join('\n') ?? '';
-    this.cacheToolResult(cacheKey, textContent);
-    return { textContent, fromCache: false };
+    try {
+      const result = await client.callTool({
+        name,
+        arguments: effectiveArgs,
+      });
+      const textContent =
+        result.content
+          ?.map((c) => (c.type === 'text' ? c.text : JSON.stringify(c)))
+          .join('\n') ?? '';
+      this.cacheToolResult(cacheKey, textContent);
+      return { textContent, fromCache: false };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.error(`MCP tool "${name}" failed: ${message}`, err instanceof Error ? err.stack : undefined);
+      const textContent = JSON.stringify({ error: message });
+      this.cacheToolResult(cacheKey, textContent);
+      return { textContent, fromCache: false };
+    }
   }
 
   /**
@@ -644,18 +652,19 @@ export class McpAssistantService {
 
     if (name === 'search_linkedin_people' || name === 'search_linkedin_with_query') {
       const query = args.query;
-      const searchFilterId = args.searchFilterId;
-      // Only run in-process when we have a valid searchFilterId (candidate-search-chat flow).
-      // For assistant/chat/stream (no searchFilterId), delegate to MCP subprocess so it can
-      // use assistant threads instead of search filters.
+      const assistantThreadId = args.assistantThreadId;
+      // Only run in-process when we have a valid assistantThreadId (candidate-search-chat flow).
+      this.logger.log('This is the search linkedin people tool being called');
+      this.logger.log('query::', query);
+      this.logger.log('assistantThreadId::', assistantThreadId);
       if (
         typeof query !== 'string' ||
         !query.trim() ||
-        typeof searchFilterId !== 'string' ||
-        !searchFilterId.trim()
+        typeof assistantThreadId !== 'string' ||
+        !assistantThreadId.trim()
       ) {
         this.logger.log(
-          `Tool ${name}: missing query or searchFilterId; delegating to MCP subprocess instead of in-process candidate-search handler.`,
+          `Tool ${name}: missing query or assistantThreadId; delegating to MCP subprocess instead of in-process candidate-search handler.`,
         );
         return null;
       }
@@ -665,7 +674,7 @@ export class McpAssistantService {
 
     const body = {
       message: String(args.query ?? args.message ?? ''),
-      searchFilterId: String(args.searchFilterId ?? ''),
+      assistantThreadId: String(args.assistantThreadId ?? ''),
       searchType: (args.searchType as 'classic' | 'sales_navigator' | 'recruiter') ?? 'classic',
       searchCategory: (args.searchCategory as 'people' | 'companies' | 'posts' | 'jobs') ?? 'people',
       parsedJD: args.parsedJD as Record<string, unknown> | undefined,

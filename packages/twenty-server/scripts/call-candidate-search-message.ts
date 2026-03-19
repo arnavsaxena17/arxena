@@ -6,7 +6,7 @@ import { ChatMessageRequest } from '../src/engine/core-modules/candidate-search/
 const BASE_URL = process.env.SERVER_URL || 'http://localhost:3000';
 const ENDPOINT = `${BASE_URL}/candidate-search/message`;
 // const API_TOKEN = process.env.API_TOKEN || 'your-api-token-here';
-const SEARCH_FILTER_ID = '42217337-454b-48c9-838d-768d5f36cc28';
+const ASSISTANT_THREAD_ID = '42217337-454b-48c9-838d-768d5f36cc28';
 const API_TOKEN='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNzhkZTU3ZC0xYzM2LTQyZmMtYTEyYy1kY2U4ZTVlM2Y1MWMiLCJ3b3Jrc3BhY2VJZCI6IjA0Nzk2ZWFkLWM0NDktNGJhOC1hY2FlLWM4YzgzNTNkZTM5ZCIsIndvcmtzcGFjZU1lbWJlcklkIjoiODNlMjYxYjYtZjk3Yy00OWI5LWFjMWEtMjM5ZDM2MGNiOTljIiwidXNlcldvcmtzcGFjZUlkIjoiNjJlMGYwN2QtNjhjMi00ZTZmLWJmMTgtYjFiNTI5ZWU0MjE3IiwiaWF0IjoxNzYzNTI4Mzc4LCJleHAiOjE3NjM3MDgzNzh9.l6zA1n5pfdQeEpkMMdy8iZvGVSJs47mh7vL9CnSUqWA'
 
 // Create a sample parsed job description based on the strategy rubrics example
@@ -137,7 +137,7 @@ const sendMessage = async (
     console.log(`💬 Message: "${message}"`);
     console.log(`📤 Sending request...\n`);
     const payload: ChatMessageRequest = {
-      searchFilterId: SEARCH_FILTER_ID,
+      assistantThreadId: ASSISTANT_THREAD_ID,
       message,
       parsedJD,
       searchType: 'classic',
@@ -216,7 +216,7 @@ const runRecruiterWorkflow = async () => {
   try {
     console.log('🚀 Starting Recruiter Workflow Simulation...');
     console.log(`📍 Endpoint: ${ENDPOINT}`);
-    console.log(`🔑 Search Filter ID: ${SEARCH_FILTER_ID}`);
+    console.log(`🔑 Assistant Thread ID: ${ASSISTANT_THREAD_ID}`);
     console.log(`📦 Preparing workflow steps...\n`);
 
     const parsedJD = createSampleParsedJD();

@@ -1,7 +1,7 @@
 import { ParsedJD } from '../types/ParsedJD';
 
 /**
- * Consolidates search parameters into a single group per ParsedJD with one searchFilterId
+ * Consolidates search parameters into a single group per ParsedJD with one assistantThreadId
  * Merges all search parameters from multiple entries into one consolidated entry
  */
 export const consolidateSearchParameters = (searchParameters: ParsedJD['searchParameters']): ParsedJD['searchParameters'] => {
@@ -184,18 +184,18 @@ export const getSingleSearchParameterGroup = (searchParameters: ParsedJD['search
 };
 
 /**
- * Creates a single search parameter group with searchFilterId
+ * Creates a single search parameter group with assistantThreadId
  * This ensures we always have exactly one group per ParsedJD
  */
 export const createSingleSearchParameterGroup = (
   generatedParameters: any = {},
   resolvedParameters: any = {},
-  searchFilterId?: string
+  assistantThreadId?: string,
 ): ParsedJD['searchParameters'] => {
   const group = {
     generatedSearchParameters: generatedParameters,
     resolvedSearchParameters: resolvedParameters,
-    ...(searchFilterId && { searchFilterId })
+    ...(assistantThreadId && { assistantThreadId }),
   };
 
   return [group];

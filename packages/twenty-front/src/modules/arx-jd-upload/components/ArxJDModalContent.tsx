@@ -1,7 +1,6 @@
 import { useTheme } from '@emotion/react';
 import { CircularProgressBar } from 'twenty-ui';
 
-import { LinkedInSearchCategory, LinkedInSearchType } from 'twenty-shared';
 import { ParsedJD } from '../types/ParsedJD';
 import { ArxJDStepperContainer } from './ArxJDStepperContainer';
 import { RecruiterDetails } from './JobDetailsForm';
@@ -22,24 +21,16 @@ type ArxJDModalContentProps = {
   onCreateJobFromName?: (jobName: string) => Promise<void>;
   onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
   isEditMode?: boolean;
-  onSearchFilterUpdate?: (
-    searchFilters: {
+  onAssistantThreadUpdate?: (
+    assistantThreads: {
       id: string;
       name: string;
-      searchFilterParameter?: any;
-      searchFilterName?: string;
-      searchFilterFields?: any;
-      chatHistory?: Array<{
-        id: string;
-        role: 'user' | 'assistant';
-        content: string;
-        timestamp: string;
-      }>;
+      assistantParameters?: any;
       enrichmentConfigs?: any[];
       columnFilters?: any[];
     }[],
-    searchType: LinkedInSearchType,
-    searchCategory: LinkedInSearchCategory,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     generatedParameters: any,
     resolvedParameters: any
   ) => Promise<void>;
@@ -60,7 +51,7 @@ export const ArxJDModalContent = ({
   onCreateJobFromName,
   onRecruiterInfoChange,
   isEditMode = false,
-  onSearchFilterUpdate,
+  onAssistantThreadUpdate,
 }: ArxJDModalContentProps) => {
   const theme = useTheme();
 
@@ -119,7 +110,7 @@ export const ArxJDModalContent = ({
       onRecruiterInfoChange={onRecruiterInfoChange}
       isEditMode={isEditMode}
       onCreateJobFromName={onCreateJobFromName}
-      onSearchFilterUpdate={onSearchFilterUpdate}
+      onAssistantThreadUpdate={onAssistantThreadUpdate}
     />
   );
 };

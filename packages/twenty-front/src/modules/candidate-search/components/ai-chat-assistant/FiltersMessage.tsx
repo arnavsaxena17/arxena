@@ -1,6 +1,7 @@
-import { FiltersResponse } from '@/candidate-search/types/candidate-search.types';
+import { CandidateSearchFilter } from '@/candidate-search/types/candidate-search.types';
 import styled from '@emotion/styled';
 import React from 'react';
+import { FiltersResponse } from 'twenty-shared';
 import { Button, IconCheck, IconFilter } from 'twenty-ui';
 
 const StyledMessageContainer = styled.div`
@@ -237,11 +238,11 @@ export const FiltersMessage: React.FC<FiltersMessageProps> = ({
           <StyledFiltersList>
             {filters.candidateSearchFilters.slice(0, 5).map((filter, index) => (
               <StyledFilterItem key={index}>
-                <StyledFilterColumn>{filter.label}</StyledFilterColumn>
-                <StyledFilterCondition>({filter.type})</StyledFilterCondition>
+                <StyledFilterColumn>{(filter as CandidateSearchFilter).label}</StyledFilterColumn>
+                <StyledFilterCondition>({(filter as CandidateSearchFilter).type})</StyledFilterCondition>
                 <StyledFilterValue>
-                  {filter.value !== undefined ? String(filter.value) : ''}
-                  {filter.min !== undefined && filter.max !== undefined ? `${filter.min} - ${filter.max}` : ''}
+                  {((filter as CandidateSearchFilter).value !== undefined ? String((filter as CandidateSearchFilter).value) : '')}
+                  {((filter as CandidateSearchFilter).min !== undefined && (filter as CandidateSearchFilter).max !== undefined ? `${(filter as CandidateSearchFilter).min} - ${(filter as CandidateSearchFilter).max}` : '')}
                 </StyledFilterValue>
               </StyledFilterItem>
             ))}

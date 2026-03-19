@@ -96,39 +96,31 @@ export const CandidateSearchModal = () => {
   // Use Recoil state for ParsedJD
   const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
   
-  // Get updateSearchFilterRecord function from useArxJDUpload hook
-  const { updateSearchFilterRecord } = useArxJDUpload('job');
+  const { updateAssistantThreadRecord } = useArxJDUpload('job');
   
   // Get strategy execution function
   
-  // Create a wrapper function that provides the searchFilterId
-  const handleSearchFilterUpdate = useCallback(async (
+  const handleAssistantThreadUpdate = useCallback(async (
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
     generatedParameters: any,
     resolvedParameters: any
   ) => {
-    // Get the current parsedJD at the time of execution
     const currentParsedJD = parsedJD;
-    const searchFilters = currentParsedJD?.searchFilters;
-    
-    if (searchFilters) {
-      try {
-        await updateSearchFilterRecord(
-          searchFilters,
-          searchType,
-          searchCategory,
-          generatedParameters,
-          resolvedParameters
-        );
-        console.log('✅ Successfully saved search parameters to backend via updateSearchFilterRecord');
-      } catch (error) {
-        console.error('❌ Failed to save search parameters to backend:', error);
-      }
-    } else {
-      console.log('⚠️ No searchFilterId available - cannot save to backend');
+    const threads = currentParsedJD?.assistantThreads ?? [];
+    try {
+      await updateAssistantThreadRecord(
+        Array.isArray(threads) ? threads : [],
+        searchType,
+        searchCategory,
+        generatedParameters,
+        resolvedParameters
+      );
+      console.log('✅ Successfully saved search parameters to backend');
+    } catch (error) {
+      console.error('❌ Failed to save search parameters to backend:', error);
     }
-  }, [updateSearchFilterRecord]);
+  }, [parsedJD, updateAssistantThreadRecord]);
   
   // Create a unique key for this search to persist data - use job ID if available
   const persistenceKey = useMemo(() => 
@@ -291,21 +283,11 @@ export const CandidateSearchModal = () => {
         ['keywords', 'industry', 'location', 'company', 'school', 'network_distance', 'profile_language'].includes(key)
       );
 
-    // Find resolved search parameters from parsedJD for the current search type/category
-    const resolvedSearchParametersFromParsedJD = currentParsedJD?.searchFilters?.find((param: any) => 
-      param.resolvedSearchParameters && 
-      Object.keys(param.resolvedSearchParameters).some(key => 
-        key.includes(searchType) && key.includes(searchCategory)
-      )
-    )?.searchFilterParameter?.resolvedSearchParameters;
+    const resolvedSearchParametersFromParsedJD =
+      currentParsedJD?.assistantThreads?.[0]?.assistantParameters?.resolvedSearchParameters;
 
-    // Find generated search parameters from parsedJD for the current search type/category
-    const generatedSearchParameters = currentParsedJD?.searchFilters?.find((param: any) => 
-      param.generatedSearchParameters && 
-      Object.keys(param.generatedSearchParameters).some(key => 
-        key.includes(searchType) && key.includes(searchCategory)
-      )
-    )?.searchFilterParameter?.generatedSearchParameters;
+    const generatedSearchParameters =
+      currentParsedJD?.assistantThreads?.[0]?.assistantParameters?.generatedSearchParameters;
 
     // Use resolved parameters from searchParameters if they contain actual search criteria,
     // otherwise fall back to resolved parameters from parsedJD
@@ -733,7 +715,7 @@ export const CandidateSearchModal = () => {
                 onSearchRef={(fn: () => void) => { 
                   searchFunctionRef.current = fn; 
                 }}
-              onSearchFilterUpdate={handleSearchFilterUpdate}
+              onAssistantThreadUpdate={handleAssistantThreadUpdate}
               />
           </StyledPanelContent>
         </StyledLeftPanel>

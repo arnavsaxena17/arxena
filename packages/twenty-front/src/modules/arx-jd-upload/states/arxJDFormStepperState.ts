@@ -58,12 +58,12 @@ export const parsedJDSelector = selector<ParsedJD | null>({
           companyDetails: '',
           filePath: '',
           parsedJobDescription: undefined as any,
-          searchFilters: job.searchFilter?.edges?.map(edge => ({
+          assistantThreads: (job as any).assistantThread?.edges?.map((edge: any) => ({
             id: edge.node.id,
             name: edge.node.name,
-            searchFilterParameter: edge.node.searchFilterParameter,
-            searchFilterName: edge.node.searchFilterName,
-            searchFilterFields: edge.node.searchFilterFields,
+            assistantParameters: edge.node.assistantParameters,
+            enrichmentConfigs: edge.node.enrichmentConfigs,
+            columnFilters: edge.node.columnFilters,
           })) || [],
           chatFlow: undefined as any,
           videoInterview: undefined as any,

@@ -3,7 +3,7 @@ import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { cleanSearchParameters } from '@/arx-jd-upload/utils/searchParametersUtils';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SearchParametersManager } from '@/candidate-search/components/search-components/SearchParametersManager';
-import { activeSearchFilterIdState, searchConfigState } from '@/candidate-search/states/searchConfigState';
+import { activeAssistantThreadIdState, searchConfigState } from '@/candidate-search/states/searchConfigState';
 import { chatMessagesSelector, resolvedParametersSelector } from '@/candidate-table/states/states';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
@@ -21,7 +21,7 @@ type SearchParametersFormProps = {
   isLoading: boolean;
   onSearchRef?: (searchFn: () => void) => void;
   generatedParameters?: any;
-  onSearchFilterUpdate?: (  
+  onAssistantThreadUpdate?: (  
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
     generatedParameters: any,
@@ -37,7 +37,7 @@ export const SearchParametersForm = ({
   isLoading,
   onSearchRef,
   generatedParameters,
-  onSearchFilterUpdate,
+  onAssistantThreadUpdate,
   searchType: propSearchType,
   searchCategory: propSearchCategory,
   initialParameters,
@@ -48,9 +48,9 @@ export const SearchParametersForm = ({
   const [resolvedParameters, setResolvedParameters] = useRecoilState(resolvedParametersSelector);
   const [chatMessages, setChatMessages] = useRecoilState(chatMessagesSelector);
   
-  // Use global active searchFilterId state (synced with AIChatAssistant)
-  const activeSearchFilterId = useRecoilValue(activeSearchFilterIdState);
-  const searchFilterId = activeSearchFilterId || parsedJD?.searchFilters?.[0]?.id;
+  const activeAssistantThreadId = useRecoilValue(activeAssistantThreadIdState);
+  const assistantThreadId =
+    activeAssistantThreadId || parsedJD?.assistantThreads?.[0]?.id;
   
   // Use props if provided, otherwise fall back to Recoil state
   const searchType = propSearchType || searchConfig.searchType;
@@ -84,14 +84,14 @@ export const SearchParametersForm = ({
 
   // Helper function to check if search parameters exist for a given search type and category
   const checkHasSearchParameters = useCallback((searchType: LinkedInSearchType, searchCategory: LinkedInSearchCategory) => {
-    return hasSearchParameters(resolvedParameters, searchType, searchCategory, searchFilterId || '');
-  }, [resolvedParameters, hasSearchParameters, searchFilterId]);
+    return hasSearchParameters(resolvedParameters, searchType, searchCategory, assistantThreadId || '');
+  }, [resolvedParameters, hasSearchParameters, assistantThreadId]);
 
   // Helper function to generate missing search parameters
   const generateMissingSearchParameters = useCallback(async (
     searchType: LinkedInSearchType, 
     searchCategory: LinkedInSearchCategory,
-    searchFilterId: string
+    assistantThreadId: string
   ) => {
     if (!parsedJD?.parsedJobDescription) {
       console.log('Missing parsed job description for parameter generation');
@@ -103,7 +103,7 @@ export const SearchParametersForm = ({
         parsedJD?.parsedJobDescription,
         searchType,
         searchCategory,
-        searchFilterId
+        assistantThreadId
       );
       
       // Update resolved parameters with the new generated and resolved parameters
@@ -113,9 +113,9 @@ export const SearchParametersForm = ({
       }));
       
       // Save to backend if we have the necessary props
-      if (onSearchFilterUpdate && result.resolvedParameters && parsedJD?.searchFilters?.[0]?.id) {
+      if (onAssistantThreadUpdate && result.resolvedParameters && assistantThreadId) {
         try {
-          await onSearchFilterUpdate(
+          await onAssistantThreadUpdate(
             searchType,
             searchCategory,
             result.generatedParameters,
@@ -132,7 +132,7 @@ export const SearchParametersForm = ({
       console.error('Failed to generate search parameters:', error);
       return null;
     }
-  }, [parsedJD?.parsedJobDescription, generateSearchParameters, onSearchFilterUpdate, parsedJD?.searchFilters, searchFilterId]);
+  }, [parsedJD?.parsedJobDescription, generateSearchParameters, onAssistantThreadUpdate, assistantThreadId]);
 
   // Handler for search type changes
   const handleSearchTypeChange = useCallback(async (newSearchType: LinkedInSearchType) => {
@@ -143,8 +143,8 @@ export const SearchParametersForm = ({
     // Check if we have parameters for this search type and category
     if (!checkHasSearchParameters(newSearchType, searchCategory)) {
       console.log(`Missing parameters for ${newSearchType} ${searchCategory}, generating...`);
-      if (searchFilterId) {
-        await generateMissingSearchParameters(newSearchType, searchCategory, searchFilterId);
+      if (assistantThreadId) {
+        await generateMissingSearchParameters(newSearchType, searchCategory, assistantThreadId);
       }
     }
   }, [searchCategory, checkHasSearchParameters, generateMissingSearchParameters, setSearchConfig]);
@@ -154,8 +154,8 @@ export const SearchParametersForm = ({
     setSearchConfig(prev => ({ ...prev, searchCategory: newSearchCategory }));
     if (!checkHasSearchParameters(searchType, newSearchCategory)) {
       console.log(`Missing parameters for ${searchType} ${newSearchCategory}, generating...`);
-      if (searchFilterId) {
-        await generateMissingSearchParameters(searchType, newSearchCategory, searchFilterId);
+      if (assistantThreadId) {
+        await generateMissingSearchParameters(searchType, newSearchCategory, assistantThreadId);
       }
     }
   }, [searchType, checkHasSearchParameters, generateMissingSearchParameters, setSearchConfig]);
@@ -165,24 +165,17 @@ export const SearchParametersForm = ({
 
   // Initialize resolved parameters from parsedJD ONLY ONCE on component mount
   useEffect(() => {
-    if (!hasInitializedFromParsedJD && parsedJD?.searchFilters) {
-      for (const searchFilter of parsedJD.searchFilters) {
-        if (searchFilter.searchFilterParameter?.resolvedSearchParameters) {
-          console.log('One-time initialization of resolved parameters from parsedJD:', 
-            searchFilter.searchFilterParameter.resolvedSearchParameters);
-          
-          // Only initialize if resolvedParameters is completely empty
-          const hasExistingResolvedParams = resolvedParameters && Object.keys(resolvedParameters).length > 0;
-          
-          if (!hasExistingResolvedParams) {
-            setResolvedParameters(searchFilter.searchFilterParameter.resolvedSearchParameters);
-          }
-          break;
-        }
+    const threadResolved = parsedJD?.assistantThreads?.[0]?.assistantParameters?.resolvedSearchParameters;
+    if (!hasInitializedFromParsedJD && threadResolved) {
+      console.log('One-time initialization of resolved parameters from assistantThread:', threadResolved);
+
+      const hasExistingResolvedParams = resolvedParameters && Object.keys(resolvedParameters).length > 0;
+      if (!hasExistingResolvedParams) {
+        setResolvedParameters(threadResolved);
       }
       setHasInitializedFromParsedJD(true);
     }
-  }, [hasInitializedFromParsedJD, parsedJD?.searchFilters, setResolvedParameters, resolvedParameters]);
+  }, [hasInitializedFromParsedJD, parsedJD?.assistantThreads, setResolvedParameters, resolvedParameters]);
 
   // Watch for real-time updates to resolvedParameters from AIChatAssistant
   useEffect(() => {
@@ -278,7 +271,7 @@ export const SearchParametersForm = ({
     });
     
     // Save to backend if we have the necessary props
-    if (parsedJD?.searchFilters?.[0]?.id && onSearchFilterUpdate) {
+    if (assistantThreadId && onAssistantThreadUpdate) {
       try {
         // Convert searchType to camelCase to match backend parameter key construction
         const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_: string  , letter: string) => letter.toUpperCase());
@@ -291,15 +284,15 @@ export const SearchParametersForm = ({
         };
 
         console.log('Saving user-modified parameters to backend:', {
-          searchFilterId: parsedJD.searchFilters?.[0]?.id,
+          assistantThreadId,
           searchType,
           searchCategory,
           parameterKey,
           backendResolvedParameters,
-          note: 'User modified parameters are being saved to searchFilter'
+          note: 'User modified parameters are being saved to assistantThread'
         });
         
-        await onSearchFilterUpdate(
+        await onAssistantThreadUpdate(
           searchType,
           searchCategory,
           generatedParameters, // Use existing generated parameters
@@ -311,7 +304,7 @@ export const SearchParametersForm = ({
         console.error('Failed to save user-modified parameters to backend:', error);
       }
     }
-  }, [parsedJD?.searchFilters, onSearchFilterUpdate, searchType, searchCategory, generatedParameters]);
+  }, [assistantThreadId, onAssistantThreadUpdate, searchType, searchCategory, generatedParameters]);
 
 
 const handleClear = async () => {
@@ -387,20 +380,20 @@ const handleClear = async () => {
   console.log('CandidateSearchParametersForm.handleClear resolvedParameters:', resolvedParameters);
   
   // Save cleared parameters to backend to ensure persistence after page reload
-  if (parsedJD?.searchFilters?.[0]?.id && onSearchFilterUpdate) {
+  if (assistantThreadId && onAssistantThreadUpdate) {
     try {
       console.log('Saving cleared parameters to backend:', {
-        searchFilterId: parsedJD.searchFilters?.[0]?.id,
+        assistantThreadId,
         searchType,
         searchCategory,
-        note: 'Cleared parameters are being saved to searchFilter'
+        note: 'Cleared parameters are being saved to assistantThread'
       });
       
       // Create cleared parameters object for backend - remove the parameter key entirely
       const clearedBackendParams: any = {};
       // Don't include the parameterKey at all - this will remove it from the backend
       
-      await onSearchFilterUpdate(
+      await onAssistantThreadUpdate(
         searchType,
         searchCategory,
         generatedParameters, // Use existing generated parameters
@@ -494,7 +487,7 @@ const handleClear = async () => {
           generatedParameters={generatedParameters}
           resolvedParameters={stableResolvedParameters}
           initialParameters={initialParameters}
-          onSearchFilterUpdate={onSearchFilterUpdate}
+          onAssistantThreadUpdate={onAssistantThreadUpdate}
           onSearch={stableSearchFunction}
           onClear={handleClear}
         />

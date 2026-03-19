@@ -1,6 +1,6 @@
 import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
-import { activeSearchFilterIdState } from '@/candidate-search/states/searchConfigState';
+import { activeAssistantThreadIdState } from '@/candidate-search/states/searchConfigState';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { ProcessedData } from '@/candidate-table/ProcessedData';
 import { TableColumns } from '@/candidate-table/TableColumns';
@@ -89,21 +89,19 @@ export const jobsState = atom<
     createdAt?: string;
     jobLocation?: string;
     searchName?: string;
-    searchFilter?: {
+    assistantThread?: {
       edges?: Array<{
         node: {
           id: string;
           name: string;
-          searchFilterParameter?: any;
-          searchFilterName?: string;
-          searchFilterFields?: any;
+          messages?: any[];
+          assistantParameters?: any;
           enrichmentConfigs?: any[];
           columnFilters?: any[];
-          columnSortConfigs?: any;
-          chatHistory?: any[];
-          searchStrategy?: any;
+          assistantSearchStrategy?: any;
           isActive?: boolean;
           jobId?: string;
+          recruiterId?: string;
         }
       }>
     };
@@ -360,7 +358,7 @@ export const resolvedParametersState = atom<any>({
   default: null,
 });
 
-// Selector for chat messages - derives from searchFilter.chatHistory and merges with stored state
+// Selector for chat messages - derives from assistantThread.messages and merges with stored state
 export const chatMessagesSelector = selector({
   key: 'candidate-table/chatMessagesSelector',
   get: ({ get }) => {
@@ -375,8 +373,8 @@ export const chatMessagesSelector = selector({
       return stored.length > 0 ? stored : [];
     }
 
-    // For now, return stored messages. In the future, this could fetch from searchFilter.chatHistory
-    // via the job's searchFilterId using a GraphQL query
+    // For now, return stored messages. In the future, this could fetch from assistantThread.messages
+    // via the job's assistantThreadId using a GraphQL query
     return stored;
   },
   set: ({ set }, newValue) => {
@@ -384,7 +382,7 @@ export const chatMessagesSelector = selector({
   },
 });
 
-// Selector for search plans - derives from searchFilter data and merges with stored state
+// Selector for search plans - derives from assistantThread data and merges with stored state
 export const searchPlansSelector = selector({
   key: 'candidate-table/searchPlansSelector',
   get: ({ get }) => {
@@ -399,8 +397,8 @@ export const searchPlansSelector = selector({
       return stored.length > 0 ? stored : [];
     }
 
-    // For now, return stored plans. In the future, this could fetch from searchFilter.enrichmentConfigs
-    // and other searchFilter fields via the job's searchFilterId using a GraphQL query
+    // For now, return stored plans. In the future, this could fetch from assistantThread.enrichmentConfigs
+    // and other assistantThread fields via the job's assistantThreadId using a GraphQL query
     return stored;
   },
   set: ({ set }, newValue) => {
@@ -408,7 +406,7 @@ export const searchPlansSelector = selector({
   },
 });
 
-// Selector for resolved parameters - derives from searchFilter.searchFilterParameter and merges with stored state
+// Selector for resolved parameters - derives from assistantThread.assistantParameters and merges with stored state
 // Configuration management helpers
 export const updateFilterConfig = (setTableState: any) => (filterUpdates: Partial<FilterConfig>) => {
   setTableState((prev: TableState) => ({
@@ -465,29 +463,14 @@ export const resolvedParametersSelector = selector({
     const jobs = get(jobsState);
     const stored = get(resolvedParametersState);
     const parsedJD = get(parsedJDSelector);
-    const activeSearchFilterId = get(activeSearchFilterIdState);
+    const activeId = get(activeAssistantThreadIdState);
 
-    // PRIORITY 1: Check if parsedJD has updated resolved parameters for the ACTIVE searchFilter
-    if (parsedJD?.searchFilters && activeSearchFilterId) {
-      const activeSearchFilter = parsedJD.searchFilters.find(sf => sf.id === activeSearchFilterId);
-      if (activeSearchFilter?.searchFilterParameter?.resolvedSearchParameters) {
-        console.log("Loading resolved parameters for ACTIVE searchFilter:", activeSearchFilterId);
-        console.log('searchFilter.searchFilterParameter.resolvedSearchParameters:', activeSearchFilter.searchFilterParameter.resolvedSearchParameters);
-        return activeSearchFilter.searchFilterParameter.resolvedSearchParameters;
+    if (parsedJD?.assistantThreads && activeId) {
+      const activeThread = parsedJD.assistantThreads.find(t => t.id === activeId);
+      if (activeThread?.assistantParameters?.resolvedSearchParameters) {
+        return activeThread.assistantParameters.resolvedSearchParameters as Record<string, unknown>;
       }
     }
-    
-    // Fallback: Check any searchFilter that has resolvedSearchParameters (legacy behavior)
-    if (parsedJD?.searchFilters) {
-      for (const searchFilter of parsedJD.searchFilters) {
-        if (searchFilter.searchFilterParameter?.resolvedSearchParameters) {
-          console.log("parsedJD.searchFilters (fallback)", parsedJD.searchFilters);
-          console.log('searchFilter.searchFilterParameter.resolvedSearchParameters Loading resolved parameters from parsedJD (user updates):', searchFilter.searchFilterParameter.resolvedSearchParameters);
-          return searchFilter.searchFilterParameter.resolvedSearchParameters;
-        }
-      }
-    }
-
     const job = jobs.find(j => j.id === jobId);
 
     // If no job found, return stored parameters or null
@@ -495,17 +478,13 @@ export const resolvedParametersSelector = selector({
       return stored;
     }
 
-    // PRIORITY 2: Extract resolved parameters from job's searchFilter data (database)
-    const searchFilterEdges = job?.searchFilter?.edges || [];
-    
-    if (searchFilterEdges.length > 0) {
-      // Get the first search filter's parameters
-      const searchFilterNode = searchFilterEdges[0]?.node;
-      const searchFilterParameter = searchFilterNode?.searchFilterParameter;
-      
-      if (searchFilterParameter?.resolvedSearchParameters) {
-        console.log('Loading resolved parameters from database:', searchFilterParameter.resolvedSearchParameters);
-        return searchFilterParameter.resolvedSearchParameters;
+    // PRIORITY 2: Extract resolved parameters from job's assistantThread data (database)
+    const assistantThreadEdges = (job as any)?.assistantThread?.edges || [];
+    if (assistantThreadEdges.length > 0) {
+      const threadNode = assistantThreadEdges[0]?.node;
+      const assistantParameters = threadNode?.assistantParameters;
+      if (assistantParameters?.resolvedSearchParameters) {
+        return assistantParameters.resolvedSearchParameters;
       }
     }
 
@@ -523,45 +502,23 @@ export const enrichmentsSelector = selector({
     const jobId = get(jobIdAtom);
     const jobs = get(jobsState);
     const parsedJD = get(parsedJDSelector);
-    const activeSearchFilterId = get(activeSearchFilterIdState);
+    const activeId = get(activeAssistantThreadIdState)
 
-    // PRIORITY 1: Check if parsedJD has updated enrichments for the ACTIVE searchFilter
-    if (parsedJD?.searchFilters && activeSearchFilterId) {
-      const activeSearchFilter = parsedJD.searchFilters.find(sf => sf.id === activeSearchFilterId);
-      if (activeSearchFilter?.enrichmentConfigs && activeSearchFilter.enrichmentConfigs.length > 0) {
-        console.log('Loading enrichments for ACTIVE searchFilter:', activeSearchFilterId);
-        console.log('enrichmentConfigs:', activeSearchFilter.enrichmentConfigs);
-        return activeSearchFilter.enrichmentConfigs;
+    if (parsedJD?.assistantThreads && activeId) {
+      const activeThread = parsedJD.assistantThreads.find(t => t.id === activeId);
+      if (activeThread?.enrichmentConfigs && activeThread.enrichmentConfigs.length > 0) {
+        return activeThread.enrichmentConfigs;
       }
     }
-    
-    // Fallback: Check any searchFilter that has enrichments (legacy behavior)
-    if (parsedJD?.searchFilters) {
-      for (const searchFilter of parsedJD.searchFilters) {
-        if (searchFilter.enrichmentConfigs && searchFilter.enrichmentConfigs.length > 0) {
-          console.log('Loading enrichments from parsedJD (fallback):', searchFilter.enrichmentConfigs);
-          return searchFilter.enrichmentConfigs;
-        }
-      }
-    }
-
     const job = jobs.find(j => j.id === jobId);
+    if (!job) return [];
 
-    // If no job found, return empty array
-    if (!job) {
-      return [];
-    }
-
-    // PRIORITY 2: Extract enrichments from job's searchFilter data (database)
-    const searchFilterEdges = job?.searchFilter?.edges || [];
-    
-    if (searchFilterEdges.length > 0) {
-      // Get the first search filter's enrichments
-      const searchFilterNode = searchFilterEdges[0]?.node;
-      
-      if (searchFilterNode?.enrichmentConfigs && searchFilterNode.enrichmentConfigs.length > 0) {
-        console.log('Loading enrichments from database:', searchFilterNode.enrichmentConfigs);
-        return searchFilterNode.enrichmentConfigs;
+    // PRIORITY 2: Extract enrichments from job's assistantThread data (database)
+    const assistantThreadEdges = (job as any)?.assistantThread?.edges || [];
+    if (assistantThreadEdges.length > 0) {
+      const threadNode = assistantThreadEdges[0]?.node;
+      if (threadNode?.enrichmentConfigs && threadNode.enrichmentConfigs.length > 0) {
+        return threadNode.enrichmentConfigs;
       }
     }
 
@@ -576,49 +533,24 @@ export const filtersSelector = selector({
     const jobId = get(jobIdAtom);
     const jobs = get(jobsState);
     const parsedJD = get(parsedJDSelector);
-    const activeSearchFilterId = get(activeSearchFilterIdState);
+    const activeId = get(activeAssistantThreadIdState);
 
-    // PRIORITY 1: Check if parsedJD has updated filters for the ACTIVE searchFilter
-    if (parsedJD?.searchFilters && activeSearchFilterId) {
-      const activeSearchFilter = parsedJD.searchFilters.find(sf => sf.id === activeSearchFilterId);
-      if (activeSearchFilter?.columnFilters && activeSearchFilter.columnFilters.length > 0) {
-        console.log('Loading filters for ACTIVE searchFilter:', activeSearchFilterId);
-        console.log('columnFilters:', activeSearchFilter.columnFilters);
-        return activeSearchFilter.columnFilters;
+    if (parsedJD?.assistantThreads && activeId) {
+      const activeThread = parsedJD.assistantThreads.find(t => t.id === activeId);
+      if (activeThread?.columnFilters && Array.isArray(activeThread.columnFilters) && activeThread.columnFilters.length > 0) {
+        return activeThread.columnFilters;
       }
     }
-    
-    // Fallback: Check any searchFilter that has filters (legacy behavior)
-    if (parsedJD?.searchFilters) {
-      for (const searchFilter of parsedJD.searchFilters) {
-        if (searchFilter.columnFilters && searchFilter.columnFilters.length > 0) {
-          console.log('Loading filters from parsedJD (fallback):', searchFilter.columnFilters);
-          return searchFilter.columnFilters;
-        }
-      }
-    }
-
     const job = jobs.find(j => j.id === jobId);
+    if (!job) return [];
 
-    // If no job found, return empty array
-    if (!job) {
-      return [];
-    }
-
-    // PRIORITY 2: Extract filters from job's searchFilter data (database)
-    const searchFilterEdges = job?.searchFilter?.edges || [];
-    
-    if (searchFilterEdges.length > 0) {
-      // Get the first search filter's filters
-      const searchFilterNode = searchFilterEdges[0]?.node;
-      
-      if (searchFilterNode?.columnFilters && searchFilterNode.columnFilters.length > 0) {
-        console.log('Loading filters from database:', searchFilterNode.columnFilters);
-        return searchFilterNode.columnFilters;
+    const assistantThreadEdges = (job as any)?.assistantThread?.edges || [];
+    if (assistantThreadEdges.length > 0) {
+      const threadNode = assistantThreadEdges[0]?.node;
+      if (threadNode?.columnFilters && threadNode.columnFilters.length > 0) {
+        return threadNode.columnFilters;
       }
     }
-
-    // PRIORITY 3: Fallback to empty array if no database data found
     return [];
   },
 });
@@ -629,45 +561,14 @@ export const sortsSelector = selector({
     const jobId = get(jobIdAtom);
     const jobs = get(jobsState);
     const parsedJD = get(parsedJDSelector);
-    const activeSearchFilterId = get(activeSearchFilterIdState);
+    const activeId = get(activeAssistantThreadIdState);
 
-    // PRIORITY 1: Check if parsedJD has updated sorts for the ACTIVE searchFilter
-    if (parsedJD?.searchFilters && activeSearchFilterId) {
-      const activeSearchFilter = parsedJD.searchFilters.find(sf => sf.id === activeSearchFilterId);
-      if (activeSearchFilter) {
-        // Check flattened structure first
-        if (activeSearchFilter.sortColumns && activeSearchFilter.sortColumns.length > 0) {
-          console.log('Loading sorts for ACTIVE searchFilter (flattened):', activeSearchFilterId);
-          console.log('sortColumns:', activeSearchFilter.sortColumns);
-          return {
-            name: activeSearchFilter.sortStrategyName || 'Generated Strategy',
-            description: activeSearchFilter.sortStrategyDescription || 'Generated sorting strategy',
-            reasoning: activeSearchFilter.sortStrategyReasoning || 'Generated reasoning',
-            sortColumns: activeSearchFilter.sortColumns
-          };
-        }
+    if (parsedJD?.assistantThreads && activeId) {
+      const activeThread = parsedJD.assistantThreads.find(t => t.id === activeId);
+      if (activeThread?.sortColumns && Array.isArray(activeThread.sortColumns) && activeThread.sortColumns.length > 0) {
+        return activeThread.sortColumns;
       }
     }
-    
-    // Fallback: Check any searchFilter that has sorts (legacy behavior)
-    if (parsedJD?.searchFilters) {
-      for (const searchFilter of parsedJD.searchFilters) {
-        // Check flattened structure first
-        if (searchFilter.sortColumns && searchFilter.sortColumns.length > 0) {
-          console.log('Loading sorts from parsedJD (fallback - flattened structure):', {
-            sortColumns: searchFilter.sortColumns,
-            strategyName: searchFilter.sortStrategyName
-          });
-          return {
-            name: searchFilter.sortStrategyName || 'Generated Strategy',
-            description: searchFilter.sortStrategyDescription || 'Generated sorting strategy',
-            reasoning: searchFilter.sortStrategyReasoning || 'Generated reasoning',
-            sortColumns: searchFilter.sortColumns
-          };
-        }
-      }
-    }
-
     const job = jobs.find(j => j.id === jobId);
 
     // If no job found, return null
@@ -675,16 +576,15 @@ export const sortsSelector = selector({
       return null;
     }
 
-    // PRIORITY 2: Extract sorts from job's searchFilter data (database)
-    const searchFilterEdges = job?.searchFilter?.edges || [];
-    
-    if (searchFilterEdges.length > 0) {
-      // Get the first search filter's sorts
-      const searchFilterNode = searchFilterEdges[0]?.node;
-      
-      if (searchFilterNode?.columnSortConfigs) {
-        console.log('Loading sorts from database:', searchFilterNode.columnSortConfigs);
-        return searchFilterNode.columnSortConfigs;
+    // PRIORITY 2: Extract sorts from job's assistantThread data (database)
+    const assistantThreadEdges = (job as any)?.assistantThread?.edges || [];
+    if (assistantThreadEdges.length > 0) {
+      const threadNode = assistantThreadEdges[0]?.node;
+      if (threadNode?.columnSortConfigs) {
+        return threadNode.columnSortConfigs;
+      }
+      if (threadNode?.assistantSearchStrategy) {
+        return threadNode.assistantSearchStrategy;
       }
     }
 

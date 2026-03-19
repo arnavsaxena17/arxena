@@ -1,4 +1,5 @@
-import { ParsedJD, SearchFilter } from '@/arx-jd-upload/types/ParsedJD';
+import type { AssistantThreadSummary } from '@/arx-jd-upload/types/ParsedJD';
+import { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import { useEffect, useRef, useState } from 'react';
@@ -217,9 +218,9 @@ const StyledJDToggleSection = styled.div`
 type ChatHeaderProps = {
   title?: string;
   onClearChat?: () => void;
-  searchFilters?: SearchFilter[];
-  currentSearchFilterId?: string;
-  onSearchFilterSelect?: (searchFilterId: string) => void;
+  assistantThreads?: AssistantThreadSummary[];
+  currentAssistantThreadId?: string;
+  onAssistantThreadSelect?: (assistantThreadId: string) => void;
   onJDRemove?: () => Promise<void>;
   onJDReplace?: () => void;
   hasJD?: boolean;
@@ -237,9 +238,9 @@ type ChatHeaderProps = {
 export const ChatHeader = ({ 
   title = 'Arx Search Assistant', 
   onClearChat,
-  searchFilters = [] as SearchFilter[],
-  currentSearchFilterId,
-  onSearchFilterSelect,
+  assistantThreads = [] as AssistantThreadSummary[],
+  currentAssistantThreadId,
+  onAssistantThreadSelect,
   onJDRemove,
   onJDReplace,
   hasJD = false,
@@ -311,9 +312,9 @@ export const ChatHeader = ({
     }
   }, [isMenuDropdownOpen]);
 
-  const handleSearchFilterClick = (searchFilterId: string) => {
-    if (onSearchFilterSelect) {
-      onSearchFilterSelect(searchFilterId);
+  const handleAssistantThreadClick = (assistantThreadId: string) => {
+    if (onAssistantThreadSelect) {
+      onAssistantThreadSelect(assistantThreadId);
     }
     setIsMenuDropdownOpen(false);
   };
@@ -347,8 +348,8 @@ export const ChatHeader = ({
   };
 
   // Find the current filter to display its name
-  const currentFilter = searchFilters.find(f => f.id === currentSearchFilterId);
-  const currentFilterId = currentFilter?.id || 'No filter selected';
+  const currentAssistantThread = assistantThreads.find(f => f.id === currentAssistantThreadId);
+  const currentAssistantThreadName = currentAssistantThread?.name || 'No assistant thread selected';
   const isLinkedInWarning = linkedInStatus ? linkedInStatus.count >= linkedInStatus.warningThreshold : false;
   const isLinkedInMaxed = linkedInStatus ? linkedInStatus.count >= linkedInStatus.limit : false;
 
@@ -382,7 +383,7 @@ export const ChatHeader = ({
             )}
           </StyledJDBadge>
         )}
-        {/* {currentSearchFilterId && (
+        {/* {currentAssistantThreadId && (
           <StyledCurrentFilterBadge title={currentFilterId}>
             {currentFilterId.slice(0, 10)}...
           </StyledCurrentFilterBadge>
@@ -451,16 +452,16 @@ export const ChatHeader = ({
                   </StyledMenuAction>
                 </StyledMenuSection>
               )}
-              {searchFilters.length > 0 && (
+              {assistantThreads.length > 0 && (
                 <StyledMenuSection>
-                  <StyledMenuSectionTitle>Search Filters</StyledMenuSectionTitle>
-                  {searchFilters.map((filter) => (
+                  <StyledMenuSectionTitle>Assistant Threads</StyledMenuSectionTitle>
+                  {assistantThreads.map((assistantThread) => (
                     <StyledMenuAction
-                      key={filter.id}
-                      onClick={() => handleSearchFilterClick(filter.id)}
-                      active={filter.id === currentSearchFilterId}
+                      key={assistantThread.id}
+                      onClick={() => handleAssistantThreadClick(assistantThread.id)}
+                      active={assistantThread.id === currentAssistantThreadId}
                     >
-                      {filter.searchFilterName || filter.name || `Filter ${filter.id.slice(0, 8)}`}
+                      {assistantThread.name || `Assistant Thread ${assistantThread.id.slice(0, 8)}`}
                     </StyledMenuAction>
                   ))}
                 </StyledMenuSection>

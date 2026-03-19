@@ -2,7 +2,7 @@ import { useArxJDUpload } from '@/arx-jd-upload/hooks/useArxJDUpload';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SearchParametersForm } from '@/candidate-search/components/search-components/SearchParametersForm';
-import { activeSearchFilterIdState } from '@/candidate-search/states/searchConfigState';
+import { activeAssistantThreadIdState } from '@/candidate-search/states/searchConfigState';
 import {
   addRecentSearch,
   isSearchPanelOpenState,
@@ -308,8 +308,8 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
   const [searchMetadata, setSearchMetadata] = useRecoilState(searchMetadataState);
   
   const parsedJD = useRecoilValue(parsedJDSelector);
-  const activeSearchFilterId = useRecoilValue(activeSearchFilterIdState);
-  const { updateSearchFilterRecord } = useArxJDUpload('job');
+  const activeAssistantThreadId = useRecoilValue(activeAssistantThreadIdState);
+  const { updateAssistantThreadRecord } = useArxJDUpload('job');
   const { enqueueSnackBar } = useSnackBar();
   const [tokenPair] = useRecoilState(tokenPairState);
   const jobId = useRecoilValue(jobIdAtom);
@@ -376,40 +376,39 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
     }
   }, [searchParameters, hasInitializedFromStorage]);
 
-  // Create a wrapper function that provides the searchFilterId
-  const handleSearchFilterUpdate = useCallback(async (
+  // Persist current plan state to assistant thread
+  const handleAssistantThreadUpdate = useCallback(async (
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
     generatedParameters: any,
     resolvedParameters: any
   ) => {
     const currentParsedJD = parsedJD;
-    const searchFilters = currentParsedJD?.searchFilters;
+    const assistantThreads = currentParsedJD?.assistantThreads;
     
-    if (searchFilters) {
+    if (assistantThreads) {
       try {
-        await updateSearchFilterRecord(
-          searchFilters.map(sf => ({
-            id: sf.id,
-            name: sf.name || '',
-            searchFilterParameter: sf.searchFilterParameter,
-            searchFilterName: sf.searchFilterName,
-            searchFilterFields: sf.searchFilterFields,
-            chatHistory: sf.chatHistory,
+        await updateAssistantThreadRecord(
+          assistantThreads.map(t => ({
+            id: t.id,
+            name: t.name || '',
+            assistantParameters: t.assistantParameters,
+            enrichmentConfigs: t.enrichmentConfigs,
+            columnFilters: t.columnFilters,
           })),
           searchType,
           searchCategory,
           generatedParameters,
           resolvedParameters
         );
-        console.log('✅ Successfully saved search parameters to backend via updateSearchFilterRecord');
+        console.log('✅ Successfully saved search parameters to backend via updateAssistantThreadRecord');
       } catch (error) {
         console.error('❌ Failed to save search parameters to backend:', error);
       }
     } else {
-      console.log('⚠️ No searchFilterId available - cannot save to backend');
+      console.log('⚠️ No assistantThreadId available - cannot save to backend');
     }
-  }, [updateSearchFilterRecord, parsedJD]);
+  }, [updateAssistantThreadRecord, parsedJD]);
 
   const handleSearch = useCallback(async (
     searchType: LinkedInSearchType,
@@ -572,30 +571,28 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
 
   // Extract search strategies from parsedJD
   const searchStrategies = useMemo(() => {
-    if (!parsedJD?.searchFilters) return [];
+    if (!parsedJD?.assistantThreads) return [];
     console.log('SearchPanel - Extracting strategies from parsedJD:', {
-      searchFilters: parsedJD.searchFilters,
-      activeSearchFilterId,
+      assistantThreads: parsedJD.assistantThreads,
+      activeAssistantThreadId,
       parsedJD
     });
     
-    // Get the active search filter or first available
-    const currentSearchFilterId = activeSearchFilterId || parsedJD.searchFilters[0]?.id;
-    console.log('SearchPanel - Current search filter ID:', currentSearchFilterId);
-    const searchFilter = parsedJD.searchFilters.find(sf => sf.id === currentSearchFilterId) || parsedJD.searchFilters[0];
-    console.log('SearchPanel - Search filter:', searchFilter);
+    // Get the active assistant thread or first available
+    const currentAssistantThreadId = activeAssistantThreadId || parsedJD.assistantThreads[0]?.id;
+    console.log('SearchPanel - Current assistant thread ID:', currentAssistantThreadId);
+    const thread = parsedJD.assistantThreads.find(t => t.id === currentAssistantThreadId) || parsedJD.assistantThreads[0];
+    console.log('SearchPanel - Assistant thread:', thread);
     
-    // Early return if no search filter found
-    if (!searchFilter) {
+    if (!thread) {
       return [];
     }
     
-    const searchFilterParameter = searchFilter.searchFilterParameter as any;
-    const generatedParams = searchFilterParameter?.generatedSearchParameters as any || {};
-    const resolvedParamsRoot = searchFilterParameter?.resolvedSearchParameters as any || {};
+    const generatedParams = (thread.assistantParameters as any)?.generatedSearchParameters as any || {};
+    const resolvedParamsRoot = (thread.assistantParameters as any)?.resolvedSearchParameters as any || {};
 
     console.log('SearchPanel - Extracting strategies from generatedParams:', {
-      searchFilterId: currentSearchFilterId,
+      assistantThreadId: currentAssistantThreadId,
       generatedParamsKeys: Object.keys(generatedParams || {}),
       hasStrategies: !!generatedParams?.classicPeopleSearchStrategies,
       strategiesCount: generatedParams?.classicPeopleSearchStrategies?.length || 0,
@@ -669,7 +666,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
     }
 
     return strategies;
-  }, [parsedJD, activeSearchFilterId]);
+  }, [parsedJD, activeAssistantThreadId]);
 
   if (!isOpen) {
     return null;
@@ -772,7 +769,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
           <SearchParametersForm
             onSearch={handleSearch}
             isLoading={false}
-            onSearchFilterUpdate={handleSearchFilterUpdate}
+            onAssistantThreadUpdate={handleAssistantThreadUpdate}
             searchType={searchConfig.searchType}
             searchCategory={searchConfig.searchCategory}
             initialParameters={searchParameters}

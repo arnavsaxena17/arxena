@@ -1,25 +1,18 @@
-import {
-  SearchFilter as BaseSearchFilter,
-  type AiFilterConfig,
-  type AiFiltersResponse,
-  type FiltersResponse,
-  type HandsontableFilter,
-  type SortColumn,
-  type SortStrategy,
-  type SortsResponse
-} from 'twenty-shared';
-
-export type { AiFilterConfig, AiFiltersResponse };
+export type AiFilterConfig = {
+  id: string;
+  name: string;
+  [key: string]: unknown;
+};
 
   import {
-    ClassicCompaniesSearchParameters,
-    ClassicJobsSearchParameters,
-    ClassicPeopleSearchParameters,
-    RecruiterPeopleSearchParameters,
-    SalesNavigatorCompaniesSearchParameters,
-    SalesNavigatorPeopleSearchParameters,
-    SearchParametersResponse,
-  } from '@/candidate-search/types/candidate-search.types';
+  ClassicCompaniesSearchParameters,
+  ClassicJobsSearchParameters,
+  ClassicPeopleSearchParameters,
+  RecruiterPeopleSearchParameters,
+  SalesNavigatorCompaniesSearchParameters,
+  SalesNavigatorPeopleSearchParameters,
+  SearchParametersResponse,
+} from '@/candidate-search/types/candidate-search.types';
 
 export type ParsedJD = {
   name: string;
@@ -36,11 +29,12 @@ export type ParsedJD = {
   id?: string;
   parsedJobDescription?: any;
   filePath?: string;
-  searchFilters?: SearchFilter[];
+  /** Assistant threads used for candidate-search chat (replaces searchFilters for chat flow) */
+  assistantThreads?: AssistantThreadSummary[];
   searchParameters?: Array<{
     generatedSearchParameters?: GeneratedSearchParameters;
     resolvedSearchParameters?: GeneratedSearchParameters;
-    searchFilterId?: string;
+    assistantThreadId?: string;
   }>;
   chatFlow: {
     order: {
@@ -67,22 +61,19 @@ export type ParsedJD = {
   };
 };
 
-// Extended SearchFilter interface for frontend - adds frontend-specific fields
-export interface SearchFilter extends BaseSearchFilter {
-  // Direct properties instead of nested objects
-  aiFilterConfigs?: AiFilterConfig[];
-  /** @deprecated use aiFilterConfigs */
+/** Summary of an assistant thread for candidate-search (id, name, parameters, enrichments) */
+export type AssistantThreadSummary = {
+  id: string;
+  name: string;
+  assistantParameters?: {
+    generatedSearchParameters?: Record<string, unknown>;
+    resolvedSearchParameters?: Record<string, unknown>;
+    [key: string]: unknown;
+  };
   enrichmentConfigs?: AiFilterConfig[];
-  columnFilters?: HandsontableFilter[];
-  sortColumns?: SortColumn[];  // Direct access to sort columns
-  sortStrategyName?: string;   // Strategy name for reference
-  sortStrategyDescription?: string; // Strategy description
-  sortStrategyReasoning?: string;   // Strategy reasoning
-  
-  // Legacy field names for backward compatibility
-  // searchStrategy?: SortStrategy;     // Keep for backward compatibility
-  columnSortConfigs?: SortStrategy; // Keep for backward compatibility
-}
+  columnFilters?: unknown[];
+  [key: string]: unknown;
+};
 
 // Generated Search Parameters (frontend-specific with typed parameters)
 export interface GeneratedSearchParameters {
@@ -100,6 +91,9 @@ export type {
   ClassicJobsSearchParameters,
   // LinkedIn Search Parameter Types
   ClassicPeopleSearchParameters,
-  FiltersResponse, HandsontableFilter, RecruiterPeopleSearchParameters, SalesNavigatorCompaniesSearchParameters, SalesNavigatorPeopleSearchParameters, SearchParametersResponse, SortColumn, SortStrategy, SortsResponse
+  RecruiterPeopleSearchParameters,
+  SalesNavigatorCompaniesSearchParameters,
+  SalesNavigatorPeopleSearchParameters,
+  SearchParametersResponse
 };
 

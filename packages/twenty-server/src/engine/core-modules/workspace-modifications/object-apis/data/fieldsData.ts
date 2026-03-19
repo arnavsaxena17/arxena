@@ -1213,127 +1213,6 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'searchFilter',
-      field: {
-        description: '',
-        label: 'searchFilterFields',
-        name: 'searchFilterFields',
-        objectMetadataId: objectsNameIdMap.searchFilter,
-        type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'searchFilter',
-      field: {
-        description: '',
-        label: 'searchFilterName',
-        name: 'searchFilterName',
-        objectMetadataId: objectsNameIdMap.searchFilter,
-        type: 'TEXT',
-      },
-    },
-    {
-      objectName: 'searchFilter',
-      field: {
-        description: 'Search filter parameters for this search plan',
-        label: 'searchFilterParameter',
-        name: 'searchFilterParameter',
-        objectMetadataId: objectsNameIdMap.searchFilter,
-        type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'searchFilter',
-      field: {
-        description: '',
-        label: 'searchStrategy',
-        name: 'searchStrategy',
-        objectMetadataId: objectsNameIdMap.searchFilter,
-        type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'searchFilter',
-      field: {
-        description: 'Enrichment configurations for this search plan',
-        label: 'enrichmentConfigs',
-        name: 'enrichmentConfigs',
-        objectMetadataId: objectsNameIdMap.searchFilter,
-        type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'searchFilter',
-      field: {
-        description: 'Column sort configurations for this search plan',
-        label: 'columnSortConfigs',
-        name: 'columnSortConfigs',
-        objectMetadataId: objectsNameIdMap.searchFilter,
-        type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'searchFilter',
-      field: {
-        description: 'Column filters for candidate filtering',
-        label: 'columnFilters',
-        name: 'columnFilters',
-        objectMetadataId: objectsNameIdMap.searchFilter,
-        type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'searchFilter',
-      field: {
-        description: 'Chat history for this search plan',
-        label: 'chatHistory',
-        name: 'chatHistory',
-        objectMetadataId: objectsNameIdMap.searchFilter,
-        type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'searchFilter',
-      field: {
-        description: 'Whether this search filter is currently active',
-        label: 'isActive',
-        name: 'isActive',
-        objectMetadataId: objectsNameIdMap.searchFilter,
-        type: 'BOOLEAN',
-        defaultValue: false,
-      },
-    },
-    {
-      objectName: 'searchFilter',
-      field: {
-        description: 'Generated search parameter variations for this search plan',
-        label: 'Search Parameters',
-        name: 'searchParameters',
-        objectMetadataId: objectsNameIdMap.searchFilter,
-        type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'searchFilter',
-      field: {
-        description: 'Generated enrichment configurations for candidate evaluation',
-        label: 'Enrichments',
-        name: 'enrichments',
-        objectMetadataId: objectsNameIdMap.searchFilter,
-        type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'searchFilter',
-      field: {
-        description: 'Generated filter configurations for candidate shortlisting',
-        label: 'Filters',
-        name: 'filters',
-        objectMetadataId: objectsNameIdMap.searchFilter,
-        type: 'RAW_JSON',
-      },
-    },
-    {
       objectName: 'candidateEnrichment',
       field: {
         description: '',
@@ -2158,6 +2037,57 @@ export function getFieldsData(
             value: 'permissioned',
           },
         ],
+      },
+    },
+    {
+      objectName: 'assistantThread',
+      field: {
+        description: 'Search/assistant parameters for this thread (generated and resolved search parameters)',
+        label: 'Assistant Parameters',
+        name: 'assistantParameters',
+        objectMetadataId: objectsNameIdMap.assistantThread,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      objectName: 'assistantThread',
+      field: {
+        description: 'Enrichment configurations for this thread',
+        label: 'Enrichment Configs',
+        name: 'enrichmentConfigs',
+        objectMetadataId: objectsNameIdMap.assistantThread,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      objectName: 'assistantThread',
+      field: {
+        description: 'Column filters for candidate filtering',
+        label: 'Column Filters',
+        name: 'columnFilters',
+        objectMetadataId: objectsNameIdMap.assistantThread,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      objectName: 'assistantThread',
+      field: {
+        description: 'Search strategy for this thread',
+        label: 'Assistant Search Strategy',
+        name: 'assistantSearchStrategy',
+        objectMetadataId: objectsNameIdMap.assistantThread,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      objectName: 'assistantThread',
+      field: {
+        description: 'Whether this thread is currently active',
+        label: 'Is Active',
+        name: 'isActive',
+        objectMetadataId: objectsNameIdMap.assistantThread,
+        type: 'BOOLEAN',
+        defaultValue: false,
       },
     },
     // // Assistant Message fields

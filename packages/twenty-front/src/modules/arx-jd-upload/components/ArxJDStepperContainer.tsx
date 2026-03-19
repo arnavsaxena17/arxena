@@ -2,13 +2,14 @@ import styled from '@emotion/styled';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Loader } from 'twenty-ui';
 
-
+import { AssistantThread } from '@/assistant/types/assistant.types';
 import {
   LinkedInSearchCategory,
   LinkedInSearchType
 } from 'twenty-shared';
 import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
 import { FormComponentProps } from '../types/FormComponentProps';
+import type { AssistantThreadSummary } from '../types/ParsedJD';
 import { ArxJDFormStepper } from './ArxJDFormStepper';
 import { ArxJDModalLayout } from './ArxJDModalLayout';
 import { ArxJDStepBar } from './ArxJDStepBar';
@@ -62,8 +63,8 @@ export type ArxJDStepperContainerProps = FormComponentProps & {
   onCancel?: () => void;
   onSubmit?: () => void;
   showFooter?: boolean;
-  getRootProps?: () => Record<string, any>;
-  getInputProps?: () => Record<string, any>;
+  getRootProps?: () => Record<string, unknown>;
+  getInputProps?: () => Record<string, unknown>;
   isDragActive?: boolean;
   isUploading?: boolean;
   error?: string | null;
@@ -75,26 +76,13 @@ export type ArxJDStepperContainerProps = FormComponentProps & {
   onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
   isEditMode?: boolean;
   onCreateJobFromName?: (jobName: string) => Promise<void>;
-  onSearchFilterUpdate?: (
-    searchFilters: {
-      id: string;
-      name: string;
-      searchFilterParameter?: any;
-      searchFilterName?: string;
-      searchFilterFields?: any;
-      chatHistory?: Array<{
-        id: string;
-        role: 'user' | 'assistant';
-        content: string;
-        timestamp: string;
-      }>;
-      enrichmentConfigs?: any[];
-      columnFilters?: any[];
-    }[],
+  onAssistantThreadUpdate?: (
+    assistantThread: AssistantThread,
+    assistantThreads: AssistantThreadSummary[],
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
-    generatedParameters: any,
-    resolvedParameters: any
+    generatedParameters: unknown,
+    resolvedParameters: unknown,
   ) => Promise<void>;
 };
 
@@ -116,7 +104,7 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
   onRecruiterInfoChange,
   isEditMode = false,
   onCreateJobFromName,
-  onSearchFilterUpdate,
+  onAssistantThreadUpdate,
 }) => {
   const { activeStep, nextStep, prevStep, setStep, validationMessage, currentStepType, availableSteps: hookAvailableSteps } = useArxJDFormStepper(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -234,7 +222,7 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
                 onRecruiterInfoChange={handleRecruiterInfoChange}
                 isEditMode={isEditMode}
                 onCreateJobFromName={onCreateJobFromName}
-                onSearchFilterUpdate={onSearchFilterUpdate}
+                onAssistantThreadUpdate={onAssistantThreadUpdate}
               />
             </StyledContent>
           </>

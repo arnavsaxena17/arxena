@@ -266,19 +266,22 @@ export class CandidateSearchController {
 
 
 
-  @Get(':searchFilterId/history')
+  @Get(':assistantThreadId/history')
   async getChatHistory(
-    @Param('searchFilterId') searchFilterId: string,
+    @Param('assistantThreadId') assistantThreadId: string,
     @Headers() headers: any
   ) {
     try {
       const apiToken = headers.authorization.split(' ')[1];
-        
-      const searchFilter = await this.candidateSearchHandlerService.getSearchFilter(searchFilterId, apiToken);
-      
+
+      const thread = await this.candidateSearchHandlerService.getAssistantThreadContext(
+        assistantThreadId,
+        apiToken,
+      );
+
       return {
         success: true,
-        chatHistory: searchFilter.chatHistory || [],
+        chatHistory: thread.messages || [],
       };
     } catch (error) {
       console.error('Error in getChatHistory:', error);
@@ -291,18 +294,24 @@ export class CandidateSearchController {
 
   @Post('compute-tokens')
   async computeTokens(
-    @Body() { searchFilterId, enrichmentId }: { searchFilterId: string; enrichmentId: string },
+    @Body() { assistantThreadId, enrichmentId }: { assistantThreadId: string; enrichmentId: string },
     @Headers() headers: any
   ) {
     try {
       const apiToken = headers.authorization.split(' ')[1];
-      
-      if (!searchFilterId || !enrichmentId) {
-        throw new HttpException('searchFilterId and enrichmentId are required', HttpStatus.BAD_REQUEST);
+
+      if (!assistantThreadId || !enrichmentId) {
+        throw new HttpException(
+          'assistantThreadId and enrichmentId are required',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
-      const searchFilter = await this.candidateSearchHandlerService.getSearchFilter(searchFilterId, apiToken);
-      const enrichment = searchFilter.enrichmentConfigs?.find((e: any) => e.id === enrichmentId);
+      const thread = await this.candidateSearchHandlerService.getAssistantThreadContext(
+        assistantThreadId,
+        apiToken,
+      );
+      const enrichment = thread.enrichmentConfigs?.find((e: { id: string }) => e.id === enrichmentId);
       
       if (!enrichment) {
         throw new HttpException('AI filter not found', HttpStatus.NOT_FOUND);

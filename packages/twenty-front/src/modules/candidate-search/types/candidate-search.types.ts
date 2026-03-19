@@ -6,7 +6,7 @@ import {
   SearchAiFilterField
 } from 'twenty-shared';
 
-export type { AiFiltersResponse };
+export type { AiFiltersResponse, LinkedInSearchCategory, LinkedInSearchType };
 // Re-export with alias for backward compatibility
 export type EnrichmentField = SearchAiFilterField;
 export type BaseLinkedInSearchParameters = {
@@ -579,7 +579,7 @@ export type SearchParametersManagerProps = {
   generatedParameters?: any;
   resolvedParameters?: any;
   initialParameters?: any;
-  onSearchFilterUpdate?: (
+  onAssistantThreadUpdate?: (
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
     generatedParameters: any,

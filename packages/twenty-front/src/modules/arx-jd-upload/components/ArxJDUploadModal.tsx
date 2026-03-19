@@ -50,7 +50,7 @@ export const ArxJDUploadModal = ({
     handleCreateJobFromName,
     resetUploadState,
     updateRecruiterDetails,
-    updateSearchFilterRecord,
+    updateAssistantThreadRecord,
     apiKeys,
   } = useArxJDUpload(objectNameSingular, modalMode);
 
@@ -153,24 +153,24 @@ export const ArxJDUploadModal = ({
           console.log('Using existing job data for parsedJobDescription (edit mode):', parsedJobDescription);
         }
 
-        // Get searchFilterId for reference
-        let searchFilterId: string | undefined = undefined;
+        // Get assistantThreadId for reference
+        let assistantThreadId: string | undefined = undefined;
         try {
-          console.log('Raw jobData.searchFilter:', jobData?.searchFilter);
-          const searchFilterEdges = jobData?.searchFilter?.edges || [];
-          console.log('SearchFilter edges:', searchFilterEdges);
+          console.log('Raw jobData.assistantThread:', jobData?.assistantThread);
+          const assistantThreadEdges = jobData?.assistantThread?.edges || [];
+          console.log('AssistantThread edges:', assistantThreadEdges);
           
-          if (searchFilterEdges.length > 0) {
-            // Get the first search filter ID for reference
-            searchFilterId = searchFilterEdges[0]?.node?.id;
-            console.log('Found searchFilterId:', searchFilterId);
+          if (assistantThreadEdges.length > 0) {
+            // Get the first assistant thread ID for reference
+            assistantThreadId = assistantThreadEdges[0]?.node?.id;
+            console.log('Found assistantThreadId:', assistantThreadId);
           }
         } catch (e) {
-          console.warn('Failed to get searchFilterId:', e);
+          console.warn('Failed to get assistantThreadId:', e);
         }
         
         // Create a parsed JD from the job data
-        console.log('Creating parsedData with searchFilterId:', searchFilterId);
+        console.log('Creating parsedData with assistantThreadId:', assistantThreadId);
         const parsedData = createDefaultParsedJD({
           id: jobData.id,
           name: jobData.name || '',
@@ -183,12 +183,12 @@ export const ArxJDUploadModal = ({
           companyName: jobData.company?.name,
           filePath: attachment?.fullPath,
           parsedJobDescription: parsedJobDescription, // Use the fetched ParsedJobDescription
-          searchFilters: jobData.searchFilter?.edges?.map((edge: any) => ({
+          assistantThreads: jobData.assistantThread?.edges?.map((edge: any) => ({
             id: edge.node.id,
             name: edge.node.name,
-            searchFilterParameter: edge.node.searchFilterParameter,
-            searchFilterName: edge.node.searchFilterName,
-            searchFilterFields: edge.node.searchFilterFields,
+            assistantParameters: edge.node.assistantParameters,
+            enrichmentConfigs: edge.node.enrichmentConfigs,
+            columnFilters: edge.node.columnFilters,
           })),
           chatFlow: {
             order: {
@@ -207,10 +207,9 @@ export const ArxJDUploadModal = ({
           },
         });
         
-        console.log('Final parsedData with searchFilterId:', {
-          searchFilterId: parsedData.searchFilters?.[0]?.id,
+        console.log('Final parsedData with assistantThreadId:', {
+          assistantThreadId: parsedData.assistantThreads?.[0]?.id,
           id: parsedData.id,
-          note: 'Search parameters are now stored in searchFilters[].searchFilterParameter'
         });
         
         setParsedJD(parsedData);
@@ -316,7 +315,11 @@ export const ArxJDUploadModal = ({
   console.log('ArxJDUploadModal - modalTitle:', modalTitle, 'isEditMode:', isEditMode);
 
   return (
-    <ArxJDUploadDropzone onDrop={handleFileUpload}>
+    <ArxJDUploadDropzone
+      onDrop={async (acceptedFiles) => {
+        await handleFileUpload(acceptedFiles);
+      }}
+    >
       {({ getRootProps, getInputProps, isDragActive }) => (
         <ArxJDModalLayout
           isOpen={true}
@@ -334,12 +337,14 @@ export const ArxJDUploadModal = ({
             isDragActive={isDragActive}
             onCancel={closeModal}
             onSubmit={handleSubmit}
-            handleFileUpload={handleFileUpload}
+            handleFileUpload={async (files) => {
+              await handleFileUpload(files);
+            }}
             handleFileRemoval={handleFileRemoval}
             onCreateJobFromName={handleCreateJobFromNameWithClose}
             onRecruiterInfoChange={updateRecruiterDetails}
             isEditMode={isEditMode}
-            onSearchFilterUpdate={updateSearchFilterRecord}
+            onAssistantThreadUpdate={updateAssistantThreadRecord}
           />
         </ArxJDModalLayout>
       )}

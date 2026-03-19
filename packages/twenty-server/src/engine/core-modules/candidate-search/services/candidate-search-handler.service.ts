@@ -13,10 +13,9 @@ import {
 import { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { PythonOrgChartService } from 'src/engine/core-modules/org-chart/services/python-org-chart.service';
 import {
-  graphqlToFindManySearchFilters,
+  findOneAssistantThread,
   OrgChartData,
-  SearchFilter,
-  UpdateOneSearchFilter,
+  updateOneAssistantThread,
 } from 'twenty-shared';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
@@ -31,6 +30,20 @@ import {
 } from '../types/candidate-search-request.type';
 import { ChatMessageRequest } from '../types/search-plan.types';
 import { calculateCost } from '../utils/cost-calculation.util';
+
+/** Thread context from assistantThread used where searchFilter was previously used. */
+type AssistantThreadContext = {
+  id: string;
+  jobId?: string;
+  messages: Array<{ role: string; content: string; toolCalls?: unknown }>;
+  assistantParameters?: {
+    generatedSearchParameters?: Record<string, unknown>;
+    resolvedSearchParameters?: Record<string, unknown>;
+    pendingClarification?: { questions: string[]; timestamp?: string };
+    [key: string]: unknown;
+  };
+  enrichmentConfigs?: Array<{ id: string; selectedModel?: string; [key: string]: unknown }>;
+};
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
 import { mapLinkedinSearchQueriesToGeneratedParameters } from '../utils/linkedin-query-generation-mapper.util';
 import { hasMeaningfulOrgChartFunctionRootFilter } from '../utils/orgchart-filter.util';
@@ -219,7 +232,7 @@ export class CandidateSearchHandlerService {
   async handleSearchParametersAndResultsGenerationStream(
     rawQuery: string,
     cleanedQuery: string,
-    searchFilterId: string,
+    assistantThreadId: string,
     parsedJD: ParsedJobDescription,
     searchType: 'classic' | 'sales_navigator' | 'recruiter' = 'classic',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs' = 'people',
@@ -237,7 +250,7 @@ export class CandidateSearchHandlerService {
 
       this.validateSearchParametersInput(parsedJD, searchType, searchCategory);
       const context = await this.prepareSearchContext(
-        searchFilterId,
+        assistantThreadId,
         searchType,
         searchCategory,
         apiToken,
@@ -396,7 +409,7 @@ export class CandidateSearchHandlerService {
     context: {
       accountId: string;
       searchParamKey: string;
-      searchFilter: SearchFilter;
+      searchFilter: AssistantThreadContext;
       jobId?: string;
     },
     apiToken: string,
@@ -467,7 +480,7 @@ export class CandidateSearchHandlerService {
         sendEvent,
       );
 
-      await this.updateSearchFilterWithParameters(
+      await this.updateAssistantThreadWithParameters(
         context.searchFilter,
         context.searchParamKey,
         unresolvedSearchParams,
@@ -666,7 +679,7 @@ export class CandidateSearchHandlerService {
   }
 
   private async prepareSearchContext(
-    searchFilterId: string,
+    assistantThreadId: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     apiToken: string,
@@ -674,17 +687,20 @@ export class CandidateSearchHandlerService {
   ): Promise<{
     accountId: string;
     searchParamKey: string;
-    searchFilter: SearchFilter;
+    searchFilter: AssistantThreadContext;
     jobId?: string;
   }> {
     const accountId = await this.candidateSearchBaseService.getLinkedInAccountId(
       apiToken,
     );
     const searchParamKey = constructSearchParamKey(searchType, searchCategory);
-    const searchFilter = await this.getSearchFilter(searchFilterId, apiToken);
+    const searchFilter = await this.getAssistantThreadContext(
+      assistantThreadId,
+      apiToken,
+    );
     const jobId = searchFilter?.jobId;
 
-    this.logger.log(`searchFilter:: ${JSON.stringify(searchFilter, null, 2)}`);
+    this.logger.log(`assistantThread context:: ${JSON.stringify(searchFilter, null, 2)}`);
     this.logger.log(
       `Generating search parameters for ${searchType} ${searchCategory}`,
     );
@@ -777,31 +793,31 @@ export class CandidateSearchHandlerService {
     return { unresolvedSearchParams, resolvedParams };
   }
 
-  private async updateSearchFilterWithParameters(
-    searchFilter: SearchFilter,
+  private async updateAssistantThreadWithParameters(
+    threadContext: AssistantThreadContext,
     searchParamKey: string,
     searchParams: GeneratedSearchParameters,
     resolvedParams: GeneratedSearchParameters,
     apiToken: string,
     sendEvent?: (event: string, data: any) => void,
   ): Promise<void> {
-    const updatedSearchFilterParameter = {
-      ...searchFilter.searchFilterParameter,
+    const updatedAssistantParameters = {
+      ...threadContext.assistantParameters,
       generatedSearchParameters: {
-        ...searchFilter.searchFilterParameter?.generatedSearchParameters,
+        ...threadContext.assistantParameters?.generatedSearchParameters,
         [searchParamKey]: searchParams[searchParamKey],
       },
       resolvedSearchParameters: {
-        ...searchFilter.searchFilterParameter?.resolvedSearchParameters,
+        ...threadContext.assistantParameters?.resolvedSearchParameters,
         [searchParamKey]: resolvedParams,
       },
     };
 
     sendEvent?.('status', { message: 'Saving parameters...' });
-    await this.updateSearchFilterParameters(
-      searchFilter.id,
-      updatedSearchFilterParameter,
-      searchFilter.chatHistory,
+    await this.updateAssistantThreadParameters(
+      threadContext.id,
+      updatedAssistantParameters,
+      threadContext.messages,
       apiToken,
     );
   }
@@ -1185,39 +1201,53 @@ export class CandidateSearchHandlerService {
       };
     }
   }
-  async getSearchFilter(searchFilterId: string, apiToken: string) {
-    const query = graphqlToFindManySearchFilters;
-
+  async getAssistantThreadContext(
+    assistantThreadId: string,
+    apiToken: string,
+  ): Promise<AssistantThreadContext> {
     const graphQLResponse = await this.staticGraphQLService.executeGraphQL(
-      query,
-      { filter: { id: { eq: searchFilterId } } },
+      findOneAssistantThread,
+      { id: assistantThreadId },
       apiToken,
     );
 
-    if (!graphQLResponse.data?.data?.searchFilters?.edges?.[0]?.node) {
-      throw new HttpException('Search filter not found', HttpStatus.NOT_FOUND);
+    const node = graphQLResponse?.data?.data?.assistantThread;
+    if (!node) {
+      throw new HttpException('Assistant thread not found', HttpStatus.NOT_FOUND);
     }
-    return graphQLResponse.data.data.searchFilters.edges[0].node;
+
+    const messages = Array.isArray(node.messages)
+      ? (node.messages as Array<{ role: string; content: string; toolCalls?: unknown }>)
+      : [];
+
+    const enrichmentConfigs = Array.isArray(node.enrichmentConfigs)
+      ? (node.enrichmentConfigs as AssistantThreadContext['enrichmentConfigs'])
+      : undefined;
+
+    return {
+      id: node.id,
+      jobId: node.jobId ?? undefined,
+      messages,
+      assistantParameters:
+        node.assistantParameters && typeof node.assistantParameters === 'object'
+          ? (node.assistantParameters as AssistantThreadContext['assistantParameters'])
+          : undefined,
+      enrichmentConfigs,
+    };
   }
+
   async addChatMessage(
-    searchFilterId: string,
+    assistantThreadId: string,
     role: 'user' | 'assistant',
     content: string,
     apiToken: string,
-  ) {
-    const searchFilter = await this.getSearchFilter(searchFilterId, apiToken);
-    const currentHistory = searchFilter.chatHistory || [];
-    const newMessage = {
-      id: Date.now().toString(),
-      role,
-      content,
-      timestamp: new Date().toISOString(),
-    };
-    const updatedHistory = [...currentHistory, newMessage];
-    const updateMutation = UpdateOneSearchFilter;
+  ): Promise<void> {
+    const thread = await this.getAssistantThreadContext(assistantThreadId, apiToken);
+    const newMessage = { role, content };
+    const updatedMessages = [...thread.messages, newMessage];
     await this.staticGraphQLService.executeGraphQL(
-      updateMutation,
-      { idToUpdate: searchFilterId, input: { chatHistory: updatedHistory } },
+      updateOneAssistantThread,
+      { id: assistantThreadId, input: { messages: updatedMessages } },
       apiToken,
     );
   }
@@ -1239,15 +1269,15 @@ export class CandidateSearchHandlerService {
         ? ({ ...DEFAULT_PARSED_JD_MESSAGE_STREAM, ...body.parsedJD } as ParsedJobDescription)
         : DEFAULT_PARSED_JD_MESSAGE_STREAM;
 
-    const searchFilter = await this.getSearchFilter(body.searchFilterId, apiToken);
-    const chatHistory = searchFilter.chatHistory ?? [];
+    const thread = await this.getAssistantThreadContext(body.assistantThreadId, apiToken);
+    const chatHistory = thread.messages ?? [];
 
     let rawJDText = '';
-    if (body.includeJd !== false && searchFilter.jobId) {
+    if (body.includeJd !== false && thread.jobId) {
       try {
         rawJDText =
           (await this.jobDescriptionService.getJDContentFromJobAttachments(
-            searchFilter.jobId,
+            thread.jobId,
             apiToken,
           )) ?? '';
       } catch (err) {
@@ -1260,7 +1290,7 @@ export class CandidateSearchHandlerService {
     const messageClassification = await this.classifyMessageService.classifyMessage(
       body.message,
       apiToken,
-      chatHistory,
+      chatHistory as Array<{ role: 'user' | 'assistant'; content: string; timestamp?: string }>,
       rawJDText,
     );
 
@@ -1283,7 +1313,7 @@ export class CandidateSearchHandlerService {
 
     switch (messageClassification.type) {
       case 'clarification_response': {
-        const pendingClarification = searchFilter.searchFilterParameter?.pendingClarification;
+        const pendingClarification = thread.assistantParameters?.pendingClarification;
         const clarificationQuestions = pendingClarification?.questions ?? [];
         const previousUserMessages = chatHistory.filter((msg: { role: string }) => msg.role === 'user');
         const originalQuery =
@@ -1303,7 +1333,7 @@ export class CandidateSearchHandlerService {
         response = await this.handleSearchParametersAndResultsGenerationStream(
           body.message,
           cleanedCombinedQuery,
-          body.searchFilterId,
+          body.assistantThreadId,
           parsedJD,
           body.searchType ?? 'classic',
           body.searchCategory ?? 'people',
@@ -1321,7 +1351,7 @@ export class CandidateSearchHandlerService {
         response = await this.handleSearchParametersAndResultsGenerationStream(
           body.message,
           cleanedQuery,
-          body.searchFilterId,
+          body.assistantThreadId,
           parsedJD,
           body.searchType ?? 'classic',
           body.searchCategory ?? 'people',
@@ -1383,20 +1413,19 @@ export class CandidateSearchHandlerService {
     return rows;
   }
 
-  private async updateSearchFilterParameters(
-    searchFilterId: string,
-    updatedSearchFilterParameter: any,
-    chatHistory: any,
+  private async updateAssistantThreadParameters(
+    assistantThreadId: string,
+    updatedAssistantParameters: AssistantThreadContext['assistantParameters'],
+    messages: AssistantThreadContext['messages'],
     apiToken: string,
   ): Promise<void> {
-    const updateMutation = UpdateOneSearchFilter;
     await this.staticGraphQLService.executeGraphQL(
-      updateMutation,
+      updateOneAssistantThread,
       {
-        idToUpdate: searchFilterId,
+        id: assistantThreadId,
         input: {
-          searchFilterParameter: updatedSearchFilterParameter,
-          chatHistory: chatHistory,
+          assistantParameters: updatedAssistantParameters ?? undefined,
+          messages,
         },
       },
       apiToken,
@@ -1404,27 +1433,26 @@ export class CandidateSearchHandlerService {
   }
 
   private async storeClarificationContext(
-    searchFilterId: string,
+    assistantThreadId: string,
     questions: string[],
     apiToken: string,
   ): Promise<void> {
     try {
-      const searchFilter = await this.getSearchFilter(searchFilterId, apiToken);
-      const searchFilterParameter = searchFilter.searchFilterParameter || {};
-      
-      // Store clarification in searchFilterParameter metadata
-      const updatedParameter = {
-        ...searchFilterParameter,
+      const thread = await this.getAssistantThreadContext(assistantThreadId, apiToken);
+      const assistantParameters = thread.assistantParameters ?? {};
+
+      const updatedAssistantParameters = {
+        ...assistantParameters,
         pendingClarification: {
           questions,
           timestamp: new Date().toISOString(),
         },
       };
 
-      await this.updateSearchFilterParameters(
-        searchFilterId,
-        updatedParameter,
-        searchFilter.chatHistory,
+      await this.updateAssistantThreadParameters(
+        assistantThreadId,
+        updatedAssistantParameters,
+        thread.messages,
         apiToken,
       );
     } catch (error) {

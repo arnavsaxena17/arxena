@@ -9,25 +9,25 @@ import { FiltersResponse, SortsResponse } from 'twenty-shared';
 
 export interface UseSearchPlanGenerationReturn {
   generateSearchParameters: (
-    searchFilterId: string,
+    assistantThreadId: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'jobs'
   ) => Promise<SearchParametersResponse | null>;
   
   generateEnrichments: (
-    searchFilterId: string,
+    assistantThreadId: string,
     sampleResults?: LinkedInSearchResult[],
     columnData?: Record<string, any[]>
   ) => Promise<AiFiltersResponse | null>;
   
   generateFilters: (
-    searchFilterId: string,
+    assistantThreadId: string,
     aiFilters: AiFiltersResponse,
     dataDistribution?: Record<string, { min: number; max: number; avg: number; count: number }>
   ) => Promise<FiltersResponse | null>;
   
   generateSorts: (
-    searchFilterId: string,
+    assistantThreadId: string,
     searchParameters: SearchParametersResponse,
     aiFilters: AiFiltersResponse,
     filters: FiltersResponse,
@@ -35,7 +35,7 @@ export interface UseSearchPlanGenerationReturn {
   ) => Promise<SortsResponse | null>;
   
   generateCompletePlan: (
-    searchFilterId: string,
+    assistantThreadId: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'jobs',
     sampleResults?: any[],
@@ -128,7 +128,7 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
   }, [tokenPair?.accessToken?.token, parsedJD]);
 
   const generateSearchParameters = useCallback(async (
-    searchFilterId: string,
+    assistantThreadId: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'jobs'
   ): Promise<SearchParametersResponse | null> => {
@@ -137,7 +137,7 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
       setError('No parsed job description available');
       return null;
     }
-    console.log("searchFilterId", searchFilterId);
+    console.log("assistantThreadId", assistantThreadId);
     console.log("searchType", searchType);
     console.log("searchCategory", searchCategory);
 
@@ -151,7 +151,7 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
         parsedJobDescription,
         searchType,
         searchCategory,
-        searchFilterId
+        assistantThreadId
       );
 
       // The backend now returns both generated and resolved parameters
@@ -203,7 +203,7 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
   }, [parsedJD, createParsedJobDescription, generateSearchParams]);
 
   const generateEnrichments = useCallback(async (
-    searchFilterId: string,
+    assistantThreadId: string,
     sampleResults?: LinkedInSearchResult[],
     columnData?: Record<string, any[]>
   ): Promise<AiFiltersResponse | null> => {
@@ -214,7 +214,7 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
     }
 
     const request = {
-      searchFilterId,
+      assistantThreadId,
       parsedJD: createParsedJobDescription(),
       sampleResults,
       columnData,
@@ -224,7 +224,7 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
   }, [parsedJD, createParsedJobDescription, makeRequest]);
 
   const generateFilters = useCallback(async (
-    searchFilterId: string,
+    assistantThreadId: string,
     aiFilters: AiFiltersResponse,
     dataDistribution?: Record<string, { min: number; max: number; avg: number; count: number }>
   ): Promise<FiltersResponse | null> => {
@@ -234,7 +234,7 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
     }
 
     const request = {
-      searchFilterId,
+      assistantThreadId,
       parsedJD: createParsedJobDescription(),
       enrichments: aiFilters,
       dataDistribution,
@@ -244,7 +244,7 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
   }, [parsedJD, createParsedJobDescription, makeRequest]);
 
   const generateSorts = useCallback(async (
-    searchFilterId: string,
+    assistantThreadId: string,
     searchParameters: SearchParametersResponse,
     aiFilters: AiFiltersResponse,
     filters: FiltersResponse,
@@ -256,7 +256,7 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
     }
 
     const request = {
-      searchFilterId,
+      assistantThreadId,
       parsedJD: createParsedJobDescription(),
       searchParameters,
       enrichments: aiFilters,
@@ -268,7 +268,7 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
   }, [parsedJD, createParsedJobDescription, makeRequest]);
 
   const generateCompletePlan = useCallback(async (
-    searchFilterId: string,
+    assistantThreadId: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'jobs',
     sampleResults?: any[],
@@ -288,7 +288,7 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
       jdText: parsedJD.parsedJobDescription?.jobTitle || parsedJD.name || '',
       searchType,
       searchCategory,
-      searchFilterId,
+      assistantThreadId,
       sampleResults,
       dataDistribution,
     };

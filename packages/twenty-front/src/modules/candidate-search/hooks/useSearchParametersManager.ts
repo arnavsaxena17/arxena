@@ -10,7 +10,7 @@ export const useSearchParametersManager = (
   generatedParameters?: any,
   resolvedParameters?: any,
   onParametersChange?: (parameters: any) => void,
-  onSearchFilterUpdate?: (
+  onAssistantThreadUpdate?: (
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
     generatedParameters: any,
@@ -19,7 +19,7 @@ export const useSearchParametersManager = (
   initialParameters?: any
 ) => {
   const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
-  const searchFilterId = parsedJD?.searchFilters?.[0]?.id;
+  const assistantThreadId = parsedJD?.assistantThreads?.[0]?.id;
   
   // Helper function to construct parameter key matching backend logic
   const constructParameterKey = (searchType: LinkedInSearchType, searchCategory: LinkedInSearchCategory): string => {
@@ -30,25 +30,38 @@ export const useSearchParametersManager = (
 
   // Create a stable reference to search parameters to prevent infinite loops
   const stableSearchParameters = useMemo(() => {
-    if (!parsedJD?.searchFilters) return null;
+    if (!parsedJD?.assistantThreads) return null;
     
     const parameterKey = constructParameterKey(searchType, searchCategory);
     
-    // Find the relevant parameters for this search type/category
-    const relevantParams = parsedJD.searchFilters.find(filter => {
-      const searchFilterParam = filter.searchFilterParameter;
-      if (!searchFilterParam) return false;
+    // Find the relevant assistant thread (single-thread model for this UI)
+    const relevantThread = parsedJD.assistantThreads[0];
+    const assistantParameters = relevantThread?.assistantParameters;
+    if (!assistantParameters) {
+      return {
+        data: parsedJD.assistantThreads,
+        relevantParams: undefined,
+        contentKey: 'no-relevant-params',
+      };
+    }
       
-      // Check if this parameter entry contains the specific search type/category key
-      const hasGenerated = searchFilterParam.generatedSearchParameters && (searchFilterParam.generatedSearchParameters as any)[parameterKey];
-      const hasResolved = searchFilterParam.resolvedSearchParameters && (searchFilterParam.resolvedSearchParameters as any)[parameterKey];
+    // Check if this parameter entry contains the specific search type/category key
+    const hasGenerated =
+      assistantParameters.generatedSearchParameters &&
+      (assistantParameters.generatedSearchParameters as any)[parameterKey];
+    const hasResolved =
+      assistantParameters.resolvedSearchParameters &&
+      (assistantParameters.resolvedSearchParameters as any)[parameterKey];
       
-      // Also check for the exact parameter key in resolvedSearchParameters
-      const hasExactResolved = searchFilterParam.resolvedSearchParameters && (searchFilterParam.resolvedSearchParameters as any)[parameterKey];
+    // Also check for the exact parameter key in resolvedSearchParameters
+    const hasExactResolved =
+      assistantParameters.resolvedSearchParameters &&
+      (assistantParameters.resolvedSearchParameters as any)[parameterKey];
       
-      // Check if resolvedSearchParameters contains direct parameters for this search type
-      const hasDirectParams = searchFilterParam.resolvedSearchParameters && 
-        Object.keys(searchFilterParam.resolvedSearchParameters).some(key => {
+    // Check if resolvedSearchParameters contains direct parameters for this search type
+    const hasDirectParams =
+      assistantParameters.resolvedSearchParameters &&
+      Object.keys(assistantParameters.resolvedSearchParameters).some(key => {
           // Check if the key matches the parameter key exactly
           if (key === parameterKey) return true;
           
@@ -73,23 +86,20 @@ export const useSearchParametersManager = (
           ];
           return directParamKeys.includes(key);
         });
-      
-      return hasGenerated || hasResolved || hasExactResolved || hasDirectParams;
-    });
     
     // Create a content key only for the relevant parameters
-    const contentKey = relevantParams ? JSON.stringify({
-      generated: relevantParams.searchFilterParameter?.generatedSearchParameters,
-      resolved: relevantParams.searchFilterParameter?.resolvedSearchParameters,
+    const contentKey = (hasGenerated || hasResolved || hasExactResolved || hasDirectParams) ? JSON.stringify({
+      generated: assistantParameters.generatedSearchParameters,
+      resolved: assistantParameters.resolvedSearchParameters,
       parameterKey
     }) : 'no-relevant-params';
     
     return {
-      data: parsedJD.searchFilters,
-      relevantParams: relevantParams?.searchFilterParameter,
+      data: parsedJD.assistantThreads,
+      relevantParams: assistantParameters,
       contentKey
     };
-  }, [parsedJD?.searchFilters, searchType, searchCategory]);
+  }, [parsedJD?.assistantThreads, searchType, searchCategory]);
 
   // Create a stable reference to resolvedParameters to detect actual changes
   const stableResolvedParameters = useMemo(() => {
@@ -344,25 +354,19 @@ export const useSearchParametersManager = (
 
     // Also check parsedJD for display information
     let displayInfo: any = {};
-    if (parsedJD?.searchFilters) {
-      for (const searchFilter of parsedJD.searchFilters) {
-        const searchFilterParam = searchFilter.searchFilterParameter;
-        if (searchFilterParam?.resolvedSearchParameters) {
-          // Extract display information for each parameter type
-          const resolvedParams = searchFilterParam.resolvedSearchParameters as any;
-          if (resolvedParams.industry_display) {
-            displayInfo.industry_display = resolvedParams.industry_display;
-          }
-          if (resolvedParams.location_display) {
-            displayInfo.location_display = resolvedParams.location_display;
-          }
-          if (resolvedParams.company_display) {
-            displayInfo.company_display = resolvedParams.company_display;
-          }
-          if (resolvedParams.school_display) {
-            displayInfo.school_display = resolvedParams.school_display;
-          }
-        }
+    const resolvedFromThread = parsedJD?.assistantThreads?.[0]?.assistantParameters?.resolvedSearchParameters as any;
+    if (resolvedFromThread) {
+      if (resolvedFromThread.industry_display) {
+        displayInfo.industry_display = resolvedFromThread.industry_display;
+      }
+      if (resolvedFromThread.location_display) {
+        displayInfo.location_display = resolvedFromThread.location_display;
+      }
+      if (resolvedFromThread.company_display) {
+        displayInfo.company_display = resolvedFromThread.company_display;
+      }
+      if (resolvedFromThread.school_display) {
+        displayInfo.school_display = resolvedFromThread.school_display;
       }
     }
     
@@ -598,29 +602,23 @@ export const useSearchParametersManager = (
     }
     
     // Also preserve existing display information from parsedJD if not in updatedParams
-    if (parsedJD?.searchFilters) {
-      for (const searchFilter of parsedJD.searchFilters) {
-        const searchFilterParam = searchFilter.searchFilterParameter;
-        if (searchFilterParam?.resolvedSearchParameters) {
-          const resolvedParams = searchFilterParam.resolvedSearchParameters as any;
-          if (!displayInfo.industry_display && resolvedParams.industry_display) {
-            displayInfo.industry_display = resolvedParams.industry_display;
-          }
-          if (!displayInfo.location_display && resolvedParams.location_display) {
-            displayInfo.location_display = resolvedParams.location_display;
-          }
-          if (!displayInfo.company_display && resolvedParams.company_display) {
-            displayInfo.company_display = resolvedParams.company_display;
-          }
-          if (!displayInfo.school_display && resolvedParams.school_display) {
-            displayInfo.school_display = resolvedParams.school_display;
-          }
-        }
+    const existingResolved = parsedJD?.assistantThreads?.[0]?.assistantParameters?.resolvedSearchParameters as any;
+    if (existingResolved) {
+      if (!displayInfo.industry_display && existingResolved.industry_display) {
+        displayInfo.industry_display = existingResolved.industry_display;
+      }
+      if (!displayInfo.location_display && existingResolved.location_display) {
+        displayInfo.location_display = existingResolved.location_display;
+      }
+      if (!displayInfo.company_display && existingResolved.company_display) {
+        displayInfo.company_display = existingResolved.company_display;
+      }
+      if (!displayInfo.school_display && existingResolved.school_display) {
+        displayInfo.school_display = existingResolved.school_display;
       }
     }
     
-    // TODO: Update utility functions to work with new searchFilters structure
-    // For now, we'll update the searchFilters directly
+    // Update the ParsedJD state (single-thread model)
     // const updatedSearchParams = updateSearchParameterEntry(
     //   parsedJD.searchParameters,
     //   searchType,
@@ -629,54 +627,34 @@ export const useSearchParametersManager = (
     //   { ...updatedParams, ...displayInfo }
     // );
     
-    // Update the parsedJD state with searchFilters structure
+    // Update the parsedJD state with assistantThreads structure
     setParsedJD(prevParsedJD => {
       if (!prevParsedJD) return prevParsedJD;
-      
-      // Find existing search filter or create new one
-      const existingFilterIndex = prevParsedJD.searchFilters?.findIndex(filter => 
-        filter.searchFilterParameter?.resolvedSearchParameters
-      ) ?? -1;
       
       const parameterKey = constructParameterKey(searchType, searchCategory);
       const resolvedParams = { ...updatedParams, ...displayInfo };
       
-      if (existingFilterIndex >= 0 && prevParsedJD.searchFilters) {
-        // Update existing filter
-        const updatedFilters = [...prevParsedJD.searchFilters];
-        const existingFilter = updatedFilters[existingFilterIndex];
-        updatedFilters[existingFilterIndex] = {
-          ...existingFilter,
-          searchFilterParameter: {
-            ...existingFilter.searchFilterParameter,
-            resolvedSearchParameters: {
-              ...existingFilter.searchFilterParameter?.resolvedSearchParameters,
-              [parameterKey]: resolvedParams
-            }
-          }
-        };
-        
-        return {
-          ...prevParsedJD,
-          searchFilters: updatedFilters
-        };
-      } else {
-        // Create new filter
-        const newFilter = {
-          id: `search-filter-${Date.now()}`,
-          name: `${searchType}_${searchCategory}`,
-          searchFilterParameter: {
-            resolvedSearchParameters: {
-              [parameterKey]: resolvedParams
-            }
-          }
-        };
-        
-        return {
-          ...prevParsedJD,
-          searchFilters: [...(prevParsedJD.searchFilters || []), newFilter]
-        };
+      const updatedThreads = [...(prevParsedJD.assistantThreads || [])];
+      if (updatedThreads.length === 0) {
+        return prevParsedJD;
       }
+
+      const existingThread = updatedThreads[0];
+      updatedThreads[0] = {
+        ...existingThread,
+        assistantParameters: {
+          ...existingThread.assistantParameters,
+          resolvedSearchParameters: {
+            ...(existingThread.assistantParameters?.resolvedSearchParameters || {}),
+            [parameterKey]: resolvedParams,
+          },
+        },
+      };
+
+      return {
+        ...prevParsedJD,
+        assistantThreads: updatedThreads,
+      };
     });
     
   }, [parsedJD, searchType, searchCategory, setParsedJD]);
@@ -712,13 +690,13 @@ export const useSearchParametersManager = (
   }, [parameters, onParametersChange, saveParametersToRecoil]);
 
   // Function to update search filter record when parameters change (with debouncing)
-  const updateSearchFilterRecord = useCallback(async (
+  const updateAssistantThreadRecord = useCallback(async (
     newSearchType: LinkedInSearchType,
     newSearchCategory: LinkedInSearchCategory,
     newGeneratedParameters: any,
     newResolvedParameters: any
   ) => {
-    if (!searchFilterId || !onSearchFilterUpdate) {
+    if (!assistantThreadId || !onAssistantThreadUpdate) {
       return;
     }
 
@@ -732,17 +710,17 @@ export const useSearchParametersManager = (
       try {
 
         
-        await onSearchFilterUpdate(
+        await onAssistantThreadUpdate(
           newSearchType,
           newSearchCategory,
           newGeneratedParameters,
           newResolvedParameters
         );
       } catch (error) {
-        console.error('Failed to update search filter record:', error);
+        console.error('Failed to update assistant thread record:', error);
       }
     }, 500); // 500ms debounce delay
-  }, [searchFilterId, onSearchFilterUpdate]);
+  }, [assistantThreadId, onAssistantThreadUpdate]);
 
   // Cleanup debounce timers on unmount
   useEffect(() => {

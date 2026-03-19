@@ -66,11 +66,13 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
   const { updateOneRecord: updateOneCompanyRecord } = useUpdateOneRecord({ 
     objectNameSingular: 'company' 
   });
-  const { createOneRecord: createOneSearchFilterRecord } = useCreateOneRecord({ 
-    objectNameSingular: 'searchFilter' 
+
+
+  const { createOneRecord: createOneAssistantThreadRecord } = useCreateOneRecord({
+    objectNameSingular: 'assistantThread',
   });
-  const { updateOneRecord: updateOneSearchFilterRecord } = useUpdateOneRecord({ 
-    objectNameSingular: 'searchFilter' 
+  const { updateOneRecord: updateOneAssistantThreadRecord } = useUpdateOneRecord({
+    objectNameSingular: 'assistantThread',
   });
   const { createOneRecord: createOneCandidateFieldRecord } = useCreateOneRecord({ 
     objectNameSingular: 'candidateField' 
@@ -516,7 +518,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
             meetingScheduling,
             filePath,
             parsedJobDescription: _parsedJobDescription,
-            searchFilters: _searchFilters,
+            assistantThreads,
             ...updateData
           } = parsedData;
 
@@ -631,7 +633,6 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
       uploadAttachmentFile,
       findBestCompanyMatch,
       createOneCompanyRecord,
-      createOneSearchFilterRecord,
       setParsedJD,
       objectNameSingular,
       enqueueSnackBar,
@@ -679,7 +680,18 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
       
       // If we're in edit mode (parsedJD.id exists), only update the existing job
       if (parsedJD.id) {
-        const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchFilters, searchParameters, ...jobData } = parsedJD;
+        const {
+          companyName,
+          chatFlow,
+          videoInterview,
+          meetingScheduling,
+          existingChatQuestions,
+          parsedJobDescription,
+          filePath,
+          assistantThreads,
+          searchParameters,
+          ...jobData
+        } = parsedJD;
         
         // If we have a company name, try to match it and update the companyId
         if (typeof parsedJD?.companyName === 'string' && parsedJD?.companyName !== '') {
@@ -723,7 +735,18 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
             typeof matchedCompany.id === 'string' &&
             matchedCompany.id !== '' 
           ) {
-            const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchFilters, searchParameters, ...jobData } = parsedJD;
+            const {
+              companyName,
+              chatFlow,
+              videoInterview,
+              meetingScheduling,
+              existingChatQuestions,
+              parsedJobDescription,
+              filePath,
+              assistantThreads,
+              searchParameters,
+              ...jobData
+            } = parsedJD;
             createdJob = await createOneRecord({
               ...jobData,
               isActive: true,
@@ -736,7 +759,18 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
             }
           } else {
             // No company match found, create job without companyId
-            const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchFilters, searchParameters, ...jobData } = parsedJD;
+            const {
+              companyName,
+              chatFlow,
+              videoInterview,
+              meetingScheduling,
+              existingChatQuestions,
+              parsedJobDescription,
+              filePath,
+              assistantThreads,
+              searchParameters,
+              ...jobData
+            } = parsedJD;
             createdJob = await createOneRecord({
               ...jobData,
               isActive: true,
@@ -744,7 +778,18 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
           }
         } else {
           // No company name, create job without companyId
-          const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchFilters, searchParameters, ...jobData } = parsedJD;
+          const {
+            companyName,
+            chatFlow,
+            videoInterview,
+            meetingScheduling,
+            existingChatQuestions,
+            parsedJobDescription,
+            filePath,
+            assistantThreads,
+            searchParameters,
+            ...jobData
+          } = parsedJD;
           createdJob = await createOneRecord({
             ...jobData,
             isActive: true,
@@ -840,20 +885,12 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
     setParsedJD(null); // Reset the parsed JD state
   }, [setParsedJD]);
 
-  // Function to update search filter record with new search parameters
-  const updateSearchFilterRecord = useCallback(async (
-    searchFilters: {
+  // Persist search plan state to assistant thread
+  const updateAssistantThreadRecord = useCallback(async (
+    assistantThreads: {
       id: string;
-      name: string;
-      searchFilterParameter?: any;
-      searchFilterName?: string;
-      searchFilterFields?: any;
-      chatHistory?: Array<{
-        id: string;
-        role: 'user' | 'assistant';
-        content: string;
-        timestamp: string;
-      }>;
+      name?: string;
+      assistantParameters?: any;
       enrichmentConfigs?: any[];
       columnFilters?: any[];
     }[],
@@ -862,142 +899,73 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
     generatedParameters: any,
     resolvedParameters: any
   ) => {
-    if (!searchFilters || searchFilters.length === 0) {
-      console.error('No search filters provided for update');
-      
-      // Try to create a new search filter record if we have a job ID
-      if (parsedJD?.id) {
-        console.log('Attempting to create new SearchFilter record for job:', parsedJD.id);
-        try {
-          const searchFilterName = `${searchType}_${searchCategory}`;
-          console.log('Creating SearchFilter with parameters:', {
-            jobId: parsedJD.id,
-            recruiterId: currentWorkspaceMember?.id,
-            searchFilterName,
-            generatedParams: generatedParameters,
-            resolvedParams: resolvedParameters
-          });
-          
-          const createdSearchFilter = await createOneSearchFilterRecord({
-            name: 'search filter',
-            jobId: parsedJD.id,
-            recruiterId: currentWorkspaceMember?.id,
-            searchFilterName,
-            searchFilterParameter: {
-              generatedSearchParameters: generatedParameters,
-              resolvedSearchParameters: resolvedParameters,
-            },
-          });
-          
-          const newSearchFilterId = createdSearchFilter?.id;
-          console.log('SearchFilter creation result:', {
-            createdSearchFilter,
-            newSearchFilterId,
-            hasId: !!newSearchFilterId
-          });
-          
-          if (newSearchFilterId) {
-            console.log('Successfully created new SearchFilter record:', {
-              id: newSearchFilterId,
-              searchFilterName,
-              generatedParams: generatedParameters,
-              resolvedParams: resolvedParameters
-            });
-            
-            // Update the parsedJD with the new searchFilterId
-            setParsedJD(prev => {
-              if (!prev) return null;
-              
-              console.log('Updated parsedJD with new SearchFilter:', {
-                searchType,
-                searchCategory,
-                newSearchFilterId,
-                note: 'Search parameters are now stored in searchFilters[].searchFilterParameter'
-              });
-              
-              return {
-                ...prev,
-                searchFilters: [{
-                  id: newSearchFilterId,
-                  name: 'search filter',
-                  searchFilterParameter: {
-                    generatedSearchParameters: generatedParameters,
-                    resolvedSearchParameters: resolvedParameters,
-                  },
-                  searchFilterName,
-                  searchFilterFields: null,
-                }]
-              };
-            });
-            
-            return;
-          } else {
-            console.error('SearchFilter was created but no ID was returned:', createdSearchFilter);
-            enqueueSnackBar('SearchFilter was created but no ID was returned', {
-              variant: SnackBarVariant.Error,
-            });
-          }
-        } catch (createError) {
-          console.error('Failed to create new SearchFilter record:', createError);
-          enqueueSnackBar(`Failed to create search filter: ${createError instanceof Error ? createError.message : 'Unknown error'}`, {
-            variant: SnackBarVariant.Error,
-          });
+    const assistantParameters = {
+      generatedSearchParameters: generatedParameters,
+      resolvedSearchParameters: resolvedParameters,
+    };
+
+    if (!assistantThreads || assistantThreads.length === 0) {
+      if (!parsedJD?.id || !currentWorkspaceMember?.id) {
+        enqueueSnackBar('Cannot create assistant thread - no job or recruiter', {
+          variant: SnackBarVariant.Error,
+        });
+        return;
+      }
+      try {
+        const displayName = `Search - ${searchType}_${searchCategory} - ${new Date().toISOString().slice(0, 10)}`;
+        const newThread = await createOneAssistantThreadRecord({
+          name: displayName,
+          jobId: parsedJD.id,
+          recruiterId: currentWorkspaceMember.id,
+          assistantParameters,
+          messages: [],
+        });
+        if (newThread?.id) {
+          setParsedJD(prev =>
+            prev
+              ? {
+                  ...prev,
+                  assistantThreads: [
+                    {
+                      id: newThread.id,
+                      name: displayName,
+                      assistantParameters,
+                      enrichmentConfigs: [],
+                      columnFilters: [],
+                    },
+                    ...(prev.assistantThreads || []),
+                  ],
+                }
+              : null,
+          );
+          return;
         }
-      } else {
-        console.error('Cannot create SearchFilter record - no job ID available');
-        enqueueSnackBar('Cannot create SearchFilter record - no job ID available', {
+      } catch (createError) {
+        console.error('Failed to create assistant thread:', createError);
+        enqueueSnackBar(`Failed to create thread: ${createError instanceof Error ? createError.message : 'Unknown error'}`, {
           variant: SnackBarVariant.Error,
         });
       }
       return;
     }
-    
-    // Use the first search filter for updating
-    const searchFilterId = searchFilters[0].id;
-    const searchFilterName = `${searchType}_${searchCategory}`;
-    console.log('Updating SearchFilter record with merged parameters:', {
-      id: searchFilterId,
-      searchFilterName,
-      generatedParams: generatedParameters,
-      resolvedParams: resolvedParameters,
-      note: 'These are the merged parameters (current + previous) being saved to database'
-    });
+
+    const assistantThreadId = assistantThreads[0].id;
+    const displayName = `${searchType}_${searchCategory}`;
     try {
-      
-      await updateOneSearchFilterRecord({
-        idToUpdate: searchFilterId,
+      await updateOneAssistantThreadRecord({
+        idToUpdate: assistantThreadId,
         updateOneRecordInput: {
-          searchFilterName,
-          searchFilterParameter: {
-            generatedSearchParameters: generatedParameters,
-            resolvedSearchParameters: resolvedParameters,
-          },
+          name: displayName,
+          assistantParameters,
         },
       });
-
-      console.log('Successfully updated SearchFilter record with merged parameters:', {
-        id: searchFilterId,
-        searchFilterName,
-        generatedParams: generatedParameters,
-        resolvedParams: resolvedParameters,
-        note: 'Merged parameters (current + previous) have been saved to database'
-      });
-      
-      // Note: searchParameters are now stored in searchFilters[].searchFilterParameter
-      console.log('Search parameters updated in searchFilters[].searchFilterParameter:', {
-        searchType,
-        searchCategory,
-        generatedParameters,
-        resolvedParameters,
-        note: 'Search parameters are now stored in searchFilters[].searchFilterParameter'
-      });
     } catch (error) {
-      console.error('Failed to update SearchFilter record:', error);
-      enqueueSnackBar(`Failed to update search filter: ${error instanceof Error ? error.message : 'Unknown error'}`, {
+      console.error('Failed to update assistant thread:', error);
+      enqueueSnackBar(`Failed to update thread: ${error instanceof Error ? error.message : 'Unknown error'}`, {
         variant: SnackBarVariant.Error,
       });
     }
-  }, [updateOneSearchFilterRecord, createOneSearchFilterRecord, enqueueSnackBar, parsedJD?.id, currentWorkspaceMember?.id, setParsedJD]);
+  }, [createOneAssistantThreadRecord, updateOneAssistantThreadRecord, enqueueSnackBar, parsedJD?.id, currentWorkspaceMember?.id, setParsedJD]);
 
   // Function to create a job from just the name
   const handleCreateJobFromName = useCallback(async (jobName: string) => {
@@ -1070,7 +1038,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
     resetUploadState,
     updateRecruiterDetails,
     updateCompanyWithDetails,
-    updateSearchFilterRecord,
+    updateAssistantThreadRecord,
     apiKeys,
   };
 };

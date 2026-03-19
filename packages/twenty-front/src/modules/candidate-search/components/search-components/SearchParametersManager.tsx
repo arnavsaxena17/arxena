@@ -1,14 +1,14 @@
-import { useCallback } from 'react';
 import { SearchParametersManagerProps } from '@/candidate-search/types/candidate-search.types';
+import { useCallback } from 'react';
 import { useParameterHandlers } from '../../hooks/useParameterHandlers';
 import { useSearchParametersManager } from '../../hooks/useSearchParametersManager';
 import {
-    StyledContainer,
-    StyledGeneratedLabel,
-    StyledGeneratedSection,
-    StyledResolvedLabel,
-    StyledResolvedSection,
-    StyledScrollableContent,
+  StyledContainer,
+  StyledGeneratedLabel,
+  StyledGeneratedSection,
+  StyledResolvedLabel,
+  StyledResolvedSection,
+  StyledScrollableContent,
 } from '../../styles/SearchParametersManager.styled';
 import { ClassicCompaniesParameters, ClassicJobsParameters, ClassicPeopleParameters } from './filter-renderers/ClassicParameterRenderers';
 import { RecruiterPeopleParameters } from './filter-renderers/RecruiterParameterRenderers';
@@ -21,7 +21,7 @@ export const SearchParametersManager = ({
   generatedParameters,
   resolvedParameters,
   initialParameters,
-  onSearchFilterUpdate,
+  onAssistantThreadUpdate,
   onSearch,
   onClear,
 }: SearchParametersManagerProps) => {
@@ -37,7 +37,7 @@ export const SearchParametersManager = ({
     generatedParameters,
     resolvedParameters,
     onParametersChange,
-    onSearchFilterUpdate,
+    onAssistantThreadUpdate,
     initialParameters
   );
 
@@ -47,10 +47,8 @@ export const SearchParametersManager = ({
 
   // Wrap onSearch to pass current parameters (preserving user-modified keywords)
   const handleSearch = useCallback(() => {
-    // Pass current parameters to onSearch so it uses the form's current state
-    // instead of potentially overwritten resolvedParameters
     if (onSearch) {
-      onSearch(parameters);
+      onSearch();
     }
   }, [onSearch, parameters]);
 

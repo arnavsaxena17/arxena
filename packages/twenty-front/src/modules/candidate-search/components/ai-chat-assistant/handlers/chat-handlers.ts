@@ -1,7 +1,8 @@
-import type { AiFiltersResponse, FiltersResponse, ParsedJD, SortsResponse } from '@/arx-jd-upload/types/ParsedJD';
+import type { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
 import { addSearchResults, persistSearchMetadataToStorage } from '@/candidate-search/states/searchResultsState';
-import type { SearchParametersResponse } from '@/candidate-search/types/candidate-search.types';
+import type { AiFiltersResponse, SearchParametersResponse } from '@/candidate-search/types/candidate-search.types';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import type { FiltersResponse, SortsResponse } from 'twenty-shared';
 import type { ChatMessage } from '../types/chat-message.types';
 import { clearLocalStorage } from '../utils/storage-helpers';
 
@@ -22,12 +23,12 @@ type ChatHandlerDeps = {
   setIsProcessing: (isProcessing: boolean) => void;
   setIsTerminated?: (isTerminated: boolean) => void;
   setParsedJD: React.Dispatch<React.SetStateAction<ParsedJD | null>>;
-  currentSearchFilterId: string;
-  setSelectedSearchFilterId: (id: string) => void;
+  currentAssistantThreadId: string;
+  setActiveAssistantThreadId?: (id: string) => void;
   setHasLoadedAiFilters?: (hasLoaded: boolean) => void;
   setHasLoadedFilters?: (hasLoaded: boolean) => void;
   setHasLoadedSorts?: (hasLoaded: boolean) => void;
-  createOneSearchFilterRecord?: (data: any) => Promise<any>;
+  createOneAssistantThreadRecord?: (data: any) => Promise<any>;
   currentWorkspaceMember?: { id: string } | null;
   setSearchResults?: React.Dispatch<React.SetStateAction<any[]>>;
   setSearchMetadata?: React.Dispatch<React.SetStateAction<any>>;
@@ -41,10 +42,10 @@ export const createClearChatHandler = (deps: ChatHandlerDeps) => {
       // Clear chat messages from state (this includes all message types: search_parameters, enrichments, filters, sorts, etc.)
       deps.setChatMessages([]);
       
-      // Clear all localStorage data for this search filter
-      if (deps.currentSearchFilterId) {
-        clearLocalStorage(deps.currentSearchFilterId, 'chatMessages');
-        clearLocalStorage(deps.currentSearchFilterId, 'resolvedParameters');
+      // Clear all localStorage data for this assistant thread
+      if (deps.currentAssistantThreadId) {
+        clearLocalStorage(deps.currentAssistantThreadId, 'chatMessages');
+        clearLocalStorage(deps.currentAssistantThreadId, 'resolvedParameters');
       }
       
       // Reset all state variables to start fresh for the next search
@@ -69,80 +70,43 @@ export const createClearChatHandler = (deps: ChatHandlerDeps) => {
         deps.setIsTerminated(false);
       }
       
-      // Create a new search filter for the next iteration
-      if (deps.createOneSearchFilterRecord && deps.parsedJD?.id && deps.currentWorkspaceMember?.id) {
-        console.log('Creating new search filter after clear...');
-        
-        const searchFilterName = `${deps.searchConfig.searchType}_${deps.searchConfig.searchCategory}`;
+      if (deps.createOneAssistantThreadRecord && deps.parsedJD?.id && deps.currentWorkspaceMember?.id) {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-        const searchFilterDisplayName = `Search Filter - ${timestamp}`;
-        
-        const newSearchFilter = await deps.createOneSearchFilterRecord({
-          name: searchFilterDisplayName,
+        const displayName = `Search - ${deps.searchConfig.searchType}_${deps.searchConfig.searchCategory} - ${timestamp}`;
+        const newThread = await deps.createOneAssistantThreadRecord({
+          name: displayName,
           jobId: deps.parsedJD.id,
           recruiterId: deps.currentWorkspaceMember.id,
-          searchFilterName,
-          searchFilterParameter: {
-            generatedSearchParameters: {},
-            resolvedSearchParameters: {},
-          },
+          assistantParameters: { generatedSearchParameters: {}, resolvedSearchParameters: {} },
+          messages: [],
         });
-        
-        console.log('New search filter created:', newSearchFilter);
-        
-        // Update parsedJD to add the new search filter at the beginning of the array (making it the active one)
-        if (newSearchFilter?.id) {
-          deps.setSelectedSearchFilterId(newSearchFilter.id);
+        if (newThread?.id) {
+          if (deps.setActiveAssistantThreadId) deps.setActiveAssistantThreadId(newThread.id);
           if (deps.parsedJD?.id) {
-            localStorage.setItem(
-              `lastSelectedSearchFilter_${deps.parsedJD.id}`,
-              newSearchFilter.id
-            );
+            localStorage.setItem(`lastSelectedAssistantThread_${deps.parsedJD.id}`, newThread.id);
           }
-          deps.setParsedJD(prev => {
-            if (!prev) return null;
-            
-            // Insert new search filter at the beginning so it becomes the active one
-            const updatedSearchFilters = [
-              {
-                id: newSearchFilter.id,
-                name: searchFilterDisplayName,
-                searchFilterName,
-                searchFilterParameter: {
-                  generatedSearchParameters: {},
-                  resolvedSearchParameters: {},
-                },
-                aiFilterConfigs: [],
-                columnFilters: [],
-                sortColumns: [],
-              },
-              ...(prev.searchFilters || [])
-            ];
-            
-            return {
-              ...prev,
-              searchFilters: updatedSearchFilters
-            };
-          });
-          
-          deps.enqueueSnackBar(`Chat cleared successfully. New search filter created.`, {
-            variant: SnackBarVariant.Success,
-          });
+          const summary = {
+            id: newThread.id,
+            name: displayName,
+            assistantParameters: { generatedSearchParameters: {}, resolvedSearchParameters: {} },
+            enrichmentConfigs: [],
+            columnFilters: [],
+          };
+          deps.setParsedJD(prev =>
+            prev ? { ...prev, assistantThreads: [summary, ...(prev.assistantThreads || [])] } : null,
+          );
+          deps.enqueueSnackBar('Chat cleared. New assistant thread created.', { variant: SnackBarVariant.Success });
         } else {
-          deps.enqueueSnackBar('Chat cleared but failed to create new search filter. Please try again.', {
-            variant: SnackBarVariant.Warning,
-          });
+          deps.enqueueSnackBar('Chat cleared but failed to create new thread.', { variant: SnackBarVariant.Warning });
         }
       } else {
-        deps.enqueueSnackBar('Chat and all generated data cleared successfully. You can start a new search now.', {
+        deps.enqueueSnackBar('Chat and all generated data cleared. You can start a new search now.', {
           variant: SnackBarVariant.Success,
         });
       }
     } catch (error) {
-      console.error('Error creating new search filter:', error);
-      deps.enqueueSnackBar('Chat cleared but failed to create new search filter. Please try again.', {
-        variant: SnackBarVariant.Warning,
-      });
+      console.error('Error creating new assistant thread:', error);
+      deps.enqueueSnackBar('Chat cleared but failed to create new thread.', { variant: SnackBarVariant.Warning });
     }
   };
 };
@@ -150,10 +114,10 @@ export const createClearChatHandler = (deps: ChatHandlerDeps) => {
 export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
   return async (userMessage: string, abortController?: AbortController) => {
     try {
-      if (!deps.currentSearchFilterId) {
+      if (!deps.currentAssistantThreadId) {
         await deps.addMessage({
           type: 'assistant',
-          content: 'Please create a search filter first before I can help you generate search components.',
+          content: 'Please create an assistant thread first before I can help you generate search components.',
         });
         return;
       }
@@ -186,16 +150,16 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
       };
 
       const body = {
-        searchFilterId: deps.currentSearchFilterId,
+        assistantThreadId: deps.currentAssistantThreadId,
         message: userMessage,
         parsedJD: parsedJobDescription,
         searchType: deps.searchConfig.searchType || 'classic',
         searchCategory: deps.searchConfig.searchCategory || 'people',
-        sampleResults: [], 
+        sampleResults: [],
         dataDistribution: {},
-        includeJd: deps.includeJD !== false, // Default to true if not specified
+        includeJd: deps.includeJD !== false,
       };
-      console.log('body to send to server for search filter', JSON.stringify(body, null, 2));
+      console.log('body to send to server for candidate-search-chat', JSON.stringify(body, null, 2));
 
       // Try streaming first, fallback to regular if not supported
       try {
@@ -246,10 +210,10 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
               deps.setParsedJD(prev => {
                 if (!prev) return null;
                 
-                const updatedSearchFilters = [...(prev.searchFilters || [])];
-                const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === deps.currentSearchFilterId);
+                const updatedThreads = [...(prev.assistantThreads || [])];
+                const threadIndex = updatedThreads.findIndex(t => t.id === deps.currentAssistantThreadId);
                 
-                if (searchFilterIndex !== -1) {
+                if (threadIndex !== -1) {
                   // Handle both formats: generatedSearchParameters (direct) or generatedParams (wrapped)
                   const responseData = result.data;
                   
@@ -279,7 +243,7 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
                                     [];
                   
                   // Merge generatedSearchParameters to preserve strategies array
-                  const existingGeneratedParams = updatedSearchFilters[searchFilterIndex].searchFilterParameter?.generatedSearchParameters || {};
+                  const existingGeneratedParams = updatedThreads[threadIndex].assistantParameters?.generatedSearchParameters || {};
                   
                   // Build merged params - ensure both search params and strategies are at top level
                   const mergedGeneratedParams: any = {
@@ -292,7 +256,7 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
                   };
                   
                   console.log('chat-handlers (non-streaming) - Saving search parameters to parsedJD:', {
-                    searchFilterId: deps.currentSearchFilterId,
+                    assistantThreadId: deps.currentAssistantThreadId,
                     parameterKey,
                     strategiesCount: strategies.length,
                     mergedGeneratedParamsKeys: Object.keys(mergedGeneratedParams),
@@ -300,19 +264,19 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
                     hasSearchParams: !!mergedGeneratedParams[parameterKey]
                   });
                   
-                  updatedSearchFilters[searchFilterIndex] = {
-                    ...updatedSearchFilters[searchFilterIndex],
-                    searchFilterParameter: {
-                      ...updatedSearchFilters[searchFilterIndex].searchFilterParameter,
+                  updatedThreads[threadIndex] = {
+                    ...updatedThreads[threadIndex],
+                    assistantParameters: {
+                      ...updatedThreads[threadIndex].assistantParameters,
                       generatedSearchParameters: mergedGeneratedParams,
                       resolvedSearchParameters: responseData.resolvedSearchParameters || responseData.resolvedParams,
-                    }
+                    },
                   };
                 }
                 
                 return {
                   ...prev,
-                  searchFilters: updatedSearchFilters
+                  assistantThreads: updatedThreads
                 };
               });
             }
@@ -349,20 +313,19 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
               deps.setParsedJD(prev => {
                 if (!prev) return null;
                 
-                const updatedSearchFilters = [...(prev.searchFilters || [])];
-                const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === deps.currentSearchFilterId);
+                const updatedThreads = [...(prev.assistantThreads || [])];
+                const threadIndex = updatedThreads.findIndex(t => t.id === deps.currentAssistantThreadId);
                 
-                if (searchFilterIndex !== -1) {
-                  updatedSearchFilters[searchFilterIndex] = {
-                    ...updatedSearchFilters[searchFilterIndex],
-                    aiFilterConfigs: aiFiltersList,
-                    enrichmentConfigs: aiFiltersList
+                if (threadIndex !== -1) {
+                  updatedThreads[threadIndex] = {
+                    ...updatedThreads[threadIndex],
+                    enrichmentConfigs: aiFiltersList,
                   };
                 }
                 
                 return {
                   ...prev,
-                  searchFilters: updatedSearchFilters
+                  assistantThreads: updatedThreads
                 };
               });
             }
@@ -396,19 +359,19 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
               deps.setParsedJD(prev => {
                 if (!prev) return null;
                 
-                const updatedSearchFilters = [...(prev.searchFilters || [])];
-                const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === deps.currentSearchFilterId);
+                const updatedThreads = [...(prev.assistantThreads || [])];
+                const threadIndex = updatedThreads.findIndex(t => t.id === deps.currentAssistantThreadId);
                 
-                if (searchFilterIndex !== -1) {
-                  updatedSearchFilters[searchFilterIndex] = {
-                    ...updatedSearchFilters[searchFilterIndex],
+                if (threadIndex !== -1) {
+                  updatedThreads[threadIndex] = {
+                    ...updatedThreads[threadIndex],
                     columnFilters: result.data.handsontableFilters
                   };
                 }
                 
                 return {
                   ...prev,
-                  searchFilters: updatedSearchFilters
+                  assistantThreads: updatedThreads
                 };
               });
             }
@@ -442,20 +405,19 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
               deps.setParsedJD(prev => {
                 if (!prev) return null;
                 
-                const updatedSearchFilters = [...(prev.searchFilters || [])];
-                const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === deps.currentSearchFilterId);
+                const updatedThreads = [...(prev.assistantThreads || [])];
+                const threadIndex = updatedThreads.findIndex(t => t.id === deps.currentAssistantThreadId);
                 
-                if (searchFilterIndex !== -1) {
-                  updatedSearchFilters[searchFilterIndex] = {
-                    ...updatedSearchFilters[searchFilterIndex],
-                    // Note: columnSortConfigs might need to be added to the type definition
-                    columnSortConfigs: result.data.sortStrategy
-                  } as any;
+                if (threadIndex !== -1) {
+                  updatedThreads[threadIndex] = {
+                    ...updatedThreads[threadIndex],
+                    assistantSearchStrategy: result.data.sortStrategy,
+                  };
                 }
                 
                 return {
                   ...prev,
-                  searchFilters: updatedSearchFilters
+                  assistantThreads: updatedThreads
                 };
               });
             }
@@ -1089,19 +1051,19 @@ async function handleStreamingResponse(
                       deps.setCurrentSearchParameters(searchParamsData);
                       deps.setParsedJD(prev => {
                         if (!prev) return null;
-                        const updatedSearchFilters = [...(prev.searchFilters || [])];
-                        const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === deps.currentSearchFilterId);
+                        const updatedThreads = [...(prev.assistantThreads || [])];
+                        const threadIndex = updatedThreads.findIndex(t => t.id === deps.currentAssistantThreadId);
                         
                         console.log('chat-handlers (streaming) - Processing search parameters:', {
-                          currentSearchFilterId: deps.currentSearchFilterId,
-                          searchFilterIndex,
-                          availableFilterIds: updatedSearchFilters.map(sf => sf.id),
+                          currentAssistantThreadId: deps.currentAssistantThreadId,
+                          threadIndex,
+                          availableThreadIds: updatedThreads.map(t => t.id),
                           hasGeneratedParams: !!data.data.generatedParams,
                           hasGeneratedSearchParameters: !!data.data.generatedSearchParameters,
                           dataKeys: Object.keys(data.data)
                         });
                         
-                        if (searchFilterIndex !== -1) {
+                        if (threadIndex !== -1) {
                           // Handle both formats: generatedSearchParameters (direct) or generatedParams (wrapped)
                           const responseData = data.data;
                           
@@ -1150,7 +1112,7 @@ async function handleStreamingResponse(
                           });
                           
                           // Merge generatedSearchParameters to preserve strategies array
-                          const existingGeneratedParams = updatedSearchFilters[searchFilterIndex].searchFilterParameter?.generatedSearchParameters || {};
+                          const existingGeneratedParams = updatedThreads[threadIndex].assistantParameters?.generatedSearchParameters || {};
                           
                           // Build merged params - ensure both search params and strategies are at top level
                           const mergedGeneratedParams: any = {
@@ -1163,7 +1125,7 @@ async function handleStreamingResponse(
                           };
                           
                           console.log('chat-handlers (streaming) - Saving search parameters to parsedJD:', {
-                            searchFilterId: deps.currentSearchFilterId,
+                            assistantThreadId: deps.currentAssistantThreadId,
                             parameterKey,
                             strategiesCount: strategies.length,
                             mergedGeneratedParamsKeys: Object.keys(mergedGeneratedParams),
@@ -1172,65 +1134,64 @@ async function handleStreamingResponse(
                             mergedGeneratedParams
                           });
                           
-                          updatedSearchFilters[searchFilterIndex] = {
-                            ...updatedSearchFilters[searchFilterIndex],
-                            searchFilterParameter: {
-                              ...updatedSearchFilters[searchFilterIndex].searchFilterParameter,
+                          updatedThreads[threadIndex] = {
+                            ...updatedThreads[threadIndex],
+                            assistantParameters: {
+                              ...updatedThreads[threadIndex].assistantParameters,
                               generatedSearchParameters: mergedGeneratedParams,
                               resolvedSearchParameters: responseData.resolvedSearchParameters || responseData.resolvedParams,
-                            }
+                            },
                           };
                         } else {
                           console.warn('chat-handlers (streaming) - Search filter not found:', {
-                            currentSearchFilterId: deps.currentSearchFilterId,
-                            availableFilterIds: updatedSearchFilters.map(sf => sf.id)
+                            currentAssistantThreadId: deps.currentAssistantThreadId,
+                            availableThreadIds: updatedThreads.map(t => t.id)
                           });
                         }
-                        return { ...prev, searchFilters: updatedSearchFilters };
+                        return { ...prev, assistantThreads: updatedThreads };
                       });
                     } else if (data.type === 'enrichments' && data.data) {
                       deps.setCurrentAiFilters(data.data);
                       const aiFiltersList = data.data.aiFilters ?? (data.data as any).enrichments;
                       deps.setParsedJD(prev => {
                         if (!prev) return null;
-                        const updatedSearchFilters = [...(prev.searchFilters || [])];
-                        const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === deps.currentSearchFilterId);
-                        if (searchFilterIndex !== -1) {
-                          updatedSearchFilters[searchFilterIndex] = {
-                            ...updatedSearchFilters[searchFilterIndex],
-                            aiFilterConfigs: aiFiltersList,
-                            enrichmentConfigs: aiFiltersList
+                        const updatedThreads = [...(prev.assistantThreads || [])];
+                        const threadIndex = updatedThreads.findIndex(t => t.id === deps.currentAssistantThreadId);
+                        if (threadIndex !== -1) {
+                          updatedThreads[threadIndex] = {
+                            ...updatedThreads[threadIndex],
+                            enrichmentConfigs: aiFiltersList,
                           };
                         }
-                        return { ...prev, searchFilters: updatedSearchFilters };
+                        return { ...prev, assistantThreads: updatedThreads };
                       });
                     } else if (data.type === 'filters' && data.data) {
                       deps.setCurrentFilters(data.data);
                       deps.setParsedJD(prev => {
                         if (!prev) return null;
-                        const updatedSearchFilters = [...(prev.searchFilters || [])];
-                        const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === deps.currentSearchFilterId);
-                        if (searchFilterIndex !== -1) {
-                          updatedSearchFilters[searchFilterIndex] = {
-                            ...updatedSearchFilters[searchFilterIndex],
+                        const updatedThreads = [...(prev.assistantThreads || [])];
+                        const threadIndex = updatedThreads.findIndex(t => t.id === deps.currentAssistantThreadId);
+                        if (threadIndex !== -1) {
+                          updatedThreads[threadIndex] = {
+                            ...updatedThreads[threadIndex],
                             columnFilters: data.data.handsontableFilters
                           };
                         }
-                        return { ...prev, searchFilters: updatedSearchFilters };
+                        return { ...prev, assistantThreads: updatedThreads };
                       });
                     } else if (data.type === 'sorts' && data.data) {
                       deps.setCurrentSorts(data.data);
                       deps.setParsedJD(prev => {
                         if (!prev) return null;
-                        const updatedSearchFilters = [...(prev.searchFilters || [])];
-                        const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === deps.currentSearchFilterId);
-                        if (searchFilterIndex !== -1) {
-                          updatedSearchFilters[searchFilterIndex] = {
-                            ...updatedSearchFilters[searchFilterIndex],
-                            columnSortConfigs: data.data.sortStrategy
-                          } as any;
+                        const updatedThreads = [...(prev.assistantThreads || [])];
+                        const threadIndex = updatedThreads.findIndex(t => t.id === deps.currentAssistantThreadId);
+                        if (threadIndex !== -1) {
+                          updatedThreads[threadIndex] = {
+                            ...updatedThreads[threadIndex],
+                            assistantSearchStrategy: data.data.sortStrategy,
+                          };
                         }
-                        return { ...prev, searchFilters: updatedSearchFilters };
+                        return { ...prev, assistantThreads: updatedThreads };
                       });
                     }
                   }

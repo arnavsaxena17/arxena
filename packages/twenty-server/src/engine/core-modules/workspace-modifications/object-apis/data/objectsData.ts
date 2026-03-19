@@ -125,16 +125,6 @@ const allObjects = [
     {
         "object": {
             "description": "",
-            "icon": "IconFilterSearch",
-            "labelPlural": "Search Filters",
-            "labelSingular": "Search Filter",
-            "nameSingular": "searchFilter",
-            "namePlural": "searchFilters"
-        }
-    },
-    {
-        "object": {
-            "description": "",
             "icon": "IconUsers",
             "labelPlural": "Client Contacts",
             "labelSingular": "Client Contact",
@@ -345,7 +335,6 @@ const OBJECTS_TO_EXCLUDE = [
   'candidateEnrichment',
   'candidateReminder',
   'clientContact',
-  'searchFilter',
   'phoneCall',
   'textMessage',
   'shortlist',

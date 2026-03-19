@@ -1,6 +1,7 @@
 import { addSearchResults, persistSearchMetadataToStorage } from '@/candidate-search/states/searchResultsState';
-import type { SearchParametersResponse, SortsResponse } from '@/candidate-search/types/candidate-search.types';
+import type { SearchParametersResponse } from '@/candidate-search/types/candidate-search.types';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import type { SortsResponse } from 'twenty-shared';
 import { saveToLocalStorage } from '../utils/storage-helpers';
 
 type ActionHandlerDeps = {
@@ -12,7 +13,7 @@ type ActionHandlerDeps = {
   setResolvedParameters: React.Dispatch<React.SetStateAction<any>>;
   setSearchConfig: (config: { searchType: any; searchCategory: any }) => void;
   setParsedJD?: React.Dispatch<React.SetStateAction<any>>;
-  currentSearchFilterId: string;
+  currentAssistantThreadId: string;
   jobId?: string;
 };
 
@@ -45,8 +46,8 @@ export const createSearchVariationSelectHandler = (deps: ActionHandlerDeps) => {
           };
           
           // Save to localStorage for persistence
-          if (deps.currentSearchFilterId) {
-            saveToLocalStorage(deps.currentSearchFilterId, 'resolvedParameters', updated);
+          if (deps.currentAssistantThreadId) {
+            saveToLocalStorage(deps.currentAssistantThreadId, 'resolvedParameters', updated);
           }
           
           return updated;
@@ -154,43 +155,42 @@ export const createApplyParametersHandler = (deps: ActionHandlerDeps) => {
           note: 'Deep merge applied to ensure AI values override existing values'
         });
         
-        // Save to localStorage for persistence
-        if (deps.currentSearchFilterId) {
-          saveToLocalStorage(deps.currentSearchFilterId, 'resolvedParameters', updated);
+        if (deps.currentAssistantThreadId) {
+          saveToLocalStorage(deps.currentAssistantThreadId, 'resolvedParameters', updated);
         }
         
         return updated;
       });
       
       // Also update parsedJD state if available
-      if (deps.setParsedJD && deps.currentSearchFilterId) {
+      if (deps.setParsedJD && deps.currentAssistantThreadId) {
         deps.setParsedJD((prev: any) => {
           if (!prev) return null;
           
-          const updatedSearchFilters = [...(prev.searchFilters || [])];
-          const searchFilterIndex = updatedSearchFilters.findIndex((sf: any) => sf.id === deps.currentSearchFilterId);
+          const updatedThreads = [...(prev.assistantThreads || [])];
+          const threadIndex = updatedThreads.findIndex((t: any) => t.id === deps.currentAssistantThreadId);
           
-          if (searchFilterIndex !== -1) {
-            updatedSearchFilters[searchFilterIndex] = {
-              ...updatedSearchFilters[searchFilterIndex],
-              searchFilterParameter: {
-                ...updatedSearchFilters[searchFilterIndex].searchFilterParameter,
+          if (threadIndex !== -1) {
+            updatedThreads[threadIndex] = {
+              ...updatedThreads[threadIndex],
+              assistantParameters: {
+                ...updatedThreads[threadIndex].assistantParameters,
                 resolvedSearchParameters: {
-                  ...updatedSearchFilters[searchFilterIndex].searchFilterParameter?.resolvedSearchParameters,
-                  ...parameters
-                }
-              }
+                  ...updatedThreads[threadIndex].assistantParameters?.resolvedSearchParameters,
+                  ...parameters,
+                },
+              },
             };
             
             console.log('Updated parsedJD with applied parameters:', {
-              searchFilterId: deps.currentSearchFilterId,
+              assistantThreadId: deps.currentAssistantThreadId,
               parameters
             });
           }
           
           return {
             ...prev,
-            searchFilters: updatedSearchFilters
+            assistantThreads: updatedThreads
           };
         });
       }
@@ -210,6 +210,7 @@ type ViewStrategyResultsHandlerDeps = {
   setSearchMetadata: React.Dispatch<React.SetStateAction<any>>;
   jobId?: string;
   enqueueSnackBar: (message: string, options: { variant: SnackBarVariant }) => void;
+  tokenPair?: { accessToken?: { token?: string } } | null;
 };
 
 export const createViewStrategyResultsHandler = (deps: ViewStrategyResultsHandlerDeps) => {

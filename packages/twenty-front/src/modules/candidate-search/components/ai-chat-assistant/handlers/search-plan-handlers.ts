@@ -1,14 +1,15 @@
-import type { FiltersResponse, ParsedJD, SortsResponse } from '@/arx-jd-upload/types/ParsedJD';
+import type { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
 import type { AiFiltersResponse, SearchParametersResponse } from '@/candidate-search/types/candidate-search.types';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import type { FiltersResponse, SortsResponse } from 'twenty-shared';
 import type { ChatMessage } from '../types/chat-message.types';
 import { saveToLocalStorage } from '../utils/storage-helpers';
 
 type SearchPlanGenerationService = {
-  generateSearchParameters: (searchFilterId: string, searchType: 'classic' | 'sales_navigator' | 'recruiter', searchCategory: 'people' | 'companies' | 'jobs') => Promise<SearchParametersResponse | null>;
-  generateEnrichments: (searchFilterId: string) => Promise<AiFiltersResponse | null>;
-  generateFilters: (searchFilterId: string, aiFilters: AiFiltersResponse) => Promise<FiltersResponse | null>;
-  generateSorts: (searchFilterId: string, searchParams: SearchParametersResponse, aiFilters: AiFiltersResponse, filters: FiltersResponse) => Promise<SortsResponse | null>;
+  generateSearchParameters: (assistantThreadId: string, searchType: 'classic' | 'sales_navigator' | 'recruiter', searchCategory: 'people' | 'companies' | 'jobs') => Promise<SearchParametersResponse | null>;
+  generateEnrichments: (assistantThreadId: string) => Promise<AiFiltersResponse | null>;
+  generateFilters: (assistantThreadId: string, aiFilters: AiFiltersResponse) => Promise<FiltersResponse | null>;
+  generateSorts: (assistantThreadId: string, searchParams: SearchParametersResponse, aiFilters: AiFiltersResponse, filters: FiltersResponse) => Promise<SortsResponse | null>;
   isGenerating: boolean;
 };
 
@@ -23,7 +24,7 @@ type SearchPlanHandlerDeps = {
   setCurrentSorts: (sorts: SortsResponse | null) => void;
   setResolvedParameters: React.Dispatch<React.SetStateAction<any>>;
   setParsedJD: React.Dispatch<React.SetStateAction<ParsedJD | null>>;
-  currentSearchFilterId: string;
+  currentAssistantThreadId: string;
   currentSearchParameters: SearchParametersResponse | null;
   currentAiFilters: AiFiltersResponse | null;
   searchConfig: { searchType: string; searchCategory: string };
@@ -36,8 +37,8 @@ export const createSearchParametersHandler = (deps: SearchPlanHandlerDeps) => {
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'jobs'
   ) => {
-    if (!deps.currentSearchFilterId) {
-      deps.enqueueSnackBar('No search filter found. Please create a search filter first.', {
+    if (!deps.currentAssistantThreadId) {
+      deps.enqueueSnackBar('No assistant thread found. Please create a thread first.', {
         variant: SnackBarVariant.Error,
       });
       return;
@@ -45,7 +46,7 @@ export const createSearchParametersHandler = (deps: SearchPlanHandlerDeps) => {
 
     try {
       const result = await deps.searchPlanGeneration.generateSearchParameters(
-        deps.currentSearchFilterId,
+        deps.currentAssistantThreadId,
         searchType,
         searchCategory
       );
@@ -73,22 +74,22 @@ export const createSearchParametersHandler = (deps: SearchPlanHandlerDeps) => {
           console.log('AIChatAssistant - Updated resolved parameters:', updated);
           
           // Save to localStorage for persistence
-          if (deps.currentSearchFilterId) {
-            saveToLocalStorage(deps.currentSearchFilterId, 'resolvedParameters', updated);
+          if (deps.currentAssistantThreadId) {
+            saveToLocalStorage(deps.currentAssistantThreadId, 'resolvedParameters', updated);
           }
           
           return updated;
         });
         
         // Also update parsedJD state to ensure PRIORITY 1 in resolvedParametersSelector returns correct data
-        if (deps.currentSearchFilterId) {
+        if (deps.currentAssistantThreadId) {
           deps.setParsedJD(prev => {
             if (!prev) return null;
-            
-            const updatedSearchFilters = [...(prev.searchFilters || [])];
-            const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === deps.currentSearchFilterId);
-            
-            if (searchFilterIndex !== -1) {
+
+            const updatedThreads = [...(prev.assistantThreads || [])];
+            const threadIndex = updatedThreads.findIndex(t => t.id === deps.currentAssistantThreadId);
+
+            if (threadIndex !== -1) {
               // Check if result has strategies (from streaming response format)
               const resultData = result as any;
               // Strategies can be in multiple locations depending on response format
@@ -104,7 +105,7 @@ export const createSearchParametersHandler = (deps: SearchPlanHandlerDeps) => {
                                    resultData[parameterKey] ||
                                    {};
               
-              const existingGeneratedParams = updatedSearchFilters[searchFilterIndex].searchFilterParameter?.generatedSearchParameters || {};
+              const existingGeneratedParams = updatedThreads[threadIndex].assistantParameters?.generatedSearchParameters || {};
               
               // Build merged generatedSearchParameters with strategies at top level
               const mergedGeneratedParams = {
@@ -116,23 +117,23 @@ export const createSearchParametersHandler = (deps: SearchPlanHandlerDeps) => {
                 })
               };
               
-              updatedSearchFilters[searchFilterIndex] = {
-                ...updatedSearchFilters[searchFilterIndex],
-                searchFilterParameter: {
-                  ...updatedSearchFilters[searchFilterIndex].searchFilterParameter,
+              updatedThreads[threadIndex] = {
+                ...updatedThreads[threadIndex],
+                assistantParameters: {
+                  ...updatedThreads[threadIndex].assistantParameters,
                   generatedSearchParameters: mergedGeneratedParams,
                   resolvedSearchParameters: {
-                    ...updatedSearchFilters[searchFilterIndex].searchFilterParameter?.resolvedSearchParameters,
-                    [parameterKey]: resolvedParams
-                  }
-                }
+                    ...updatedThreads[threadIndex].assistantParameters?.resolvedSearchParameters,
+                    [parameterKey]: resolvedParams,
+                  },
+                },
               };
               
               console.log('AIChatAssistant - Updated parsedJD with resolved parameters:', {
                 parameterKey,
                 resolvedParams,
                 strategiesCount: strategies?.length || 0,
-                searchFilterId: deps.currentSearchFilterId,
+                assistantThreadId: deps.currentAssistantThreadId,
                 mergedGeneratedParamsKeys: Object.keys(mergedGeneratedParams),
                 hasStrategies: !!mergedGeneratedParams.classicPeopleSearchStrategies
               });
@@ -140,7 +141,7 @@ export const createSearchParametersHandler = (deps: SearchPlanHandlerDeps) => {
             
             return {
               ...prev,
-              searchFilters: updatedSearchFilters
+              assistantThreads: updatedThreads
             };
           });
         }
@@ -176,8 +177,8 @@ export const createSearchParametersHandler = (deps: SearchPlanHandlerDeps) => {
 
 export const createAiFiltersHandler = (deps: SearchPlanHandlerDeps) => {
   return async () => {
-    if (!deps.currentSearchFilterId) {
-      deps.enqueueSnackBar('No search filter found. Please create a search filter first.', {
+    if (!deps.currentAssistantThreadId) {
+      deps.enqueueSnackBar('No assistant thread found. Please create a thread first.', {
         variant: SnackBarVariant.Error,
       });
       return;
@@ -185,7 +186,7 @@ export const createAiFiltersHandler = (deps: SearchPlanHandlerDeps) => {
 
     try {
       const result = await deps.searchPlanGeneration.generateEnrichments(
-        deps.currentSearchFilterId
+        deps.currentAssistantThreadId
       );
 
       console.log(`handleGenerateAiFilters - Result: ${JSON.stringify(result, null, 2)}`);
@@ -195,22 +196,21 @@ export const createAiFiltersHandler = (deps: SearchPlanHandlerDeps) => {
         const filtersList = result.aiFilters ?? (result as any).enrichments ?? [];
         
         // Save AI filters to parsedJD state
-        if (deps.currentSearchFilterId) {
+        if (deps.currentAssistantThreadId) {
           deps.setParsedJD(prev => {
             if (!prev) return null;
             
-            const updatedSearchFilters = [...(prev.searchFilters || [])];
-            const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === deps.currentSearchFilterId);
+            const updatedThreads = [...(prev.assistantThreads || [])];
+            const threadIndex = updatedThreads.findIndex(t => t.id === deps.currentAssistantThreadId);
             
-            if (searchFilterIndex !== -1) {
-              updatedSearchFilters[searchFilterIndex] = {
-                ...updatedSearchFilters[searchFilterIndex],
-                aiFilterConfigs: filtersList,
-                enrichmentConfigs: filtersList
+            if (threadIndex !== -1) {
+              updatedThreads[threadIndex] = {
+                ...updatedThreads[threadIndex],
+                enrichmentConfigs: filtersList,
               };
               
               console.log('AIChatAssistant - Saved AI filters to parsedJD:', {
-                searchFilterId: deps.currentSearchFilterId,
+                assistantThreadId: deps.currentAssistantThreadId,
                 aiFiltersCount: filtersList.length,
                 aiFilters: filtersList.map((e: any) => ({ id: e.id, name: e.name }))
               });
@@ -218,7 +218,7 @@ export const createAiFiltersHandler = (deps: SearchPlanHandlerDeps) => {
             
             return {
               ...prev,
-              searchFilters: updatedSearchFilters
+              assistantThreads: updatedThreads
             };
           });
         }
@@ -254,7 +254,7 @@ export const createAiFiltersHandler = (deps: SearchPlanHandlerDeps) => {
 
 export const createFiltersHandler = (deps: SearchPlanHandlerDeps) => {
   return async () => {
-    if (!deps.currentSearchFilterId || !deps.currentAiFilters) {
+    if (!deps.currentAssistantThreadId || !deps.currentAiFilters) {
       deps.enqueueSnackBar('No search filter or AI filters found. Please generate AI filters first.', {
         variant: SnackBarVariant.Error,
       });
@@ -263,7 +263,7 @@ export const createFiltersHandler = (deps: SearchPlanHandlerDeps) => {
 
     try {
       const result = await deps.searchPlanGeneration.generateFilters(
-        deps.currentSearchFilterId,
+        deps.currentAssistantThreadId,
         deps.currentAiFilters
       );
 
@@ -273,21 +273,21 @@ export const createFiltersHandler = (deps: SearchPlanHandlerDeps) => {
         deps.setCurrentFilters(result);
         
         // Save filters to parsedJD state
-        if (deps.currentSearchFilterId) {
+        if (deps.currentAssistantThreadId) {
           deps.setParsedJD(prev => {
             if (!prev) return null;
             
-            const updatedSearchFilters = [...(prev.searchFilters || [])];
-            const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === deps.currentSearchFilterId);
+            const updatedThreads = [...(prev.assistantThreads || [])];
+            const threadIndex = updatedThreads.findIndex(t => t.id === deps.currentAssistantThreadId);
             
-            if (searchFilterIndex !== -1) {
-              updatedSearchFilters[searchFilterIndex] = {
-                ...updatedSearchFilters[searchFilterIndex],
+            if (threadIndex !== -1) {
+              updatedThreads[threadIndex] = {
+                ...updatedThreads[threadIndex],
                 columnFilters: result.handsontableFilters
               };
               
               console.log('AIChatAssistant - Saved filters to parsedJD:', {
-                searchFilterId: deps.currentSearchFilterId,
+                assistantThreadId: deps.currentAssistantThreadId,
                 filtersCount: result.handsontableFilters.length,
                 filters: result.handsontableFilters.map((f: { column: string; type: string }) => ({ column: f.column, type: f.type }))
               });
@@ -295,7 +295,7 @@ export const createFiltersHandler = (deps: SearchPlanHandlerDeps) => {
             
             return {
               ...prev,
-              searchFilters: updatedSearchFilters
+              assistantThreads: updatedThreads
             };
           });
         }
@@ -326,8 +326,8 @@ export const createFiltersHandler = (deps: SearchPlanHandlerDeps) => {
 
 export const createSortsHandler = (deps: SearchPlanHandlerDeps) => {
   return async () => {
-    if (!deps.currentSearchFilterId) {
-      deps.enqueueSnackBar('No search filter found. Please create a search filter first.', {
+    if (!deps.currentAssistantThreadId) {
+      deps.enqueueSnackBar('No assistant thread found. Please create a thread first.', {
         variant: SnackBarVariant.Error,
       });
       return;
@@ -353,7 +353,7 @@ export const createSortsHandler = (deps: SearchPlanHandlerDeps) => {
       // If we have existing AI filters but no local state, regenerate to get the response object
       if (!aiFiltersToUse && deps.hasExistingEnrichments()) {
         console.log('Regenerating AI filters to get response object for sorts generation');
-        aiFiltersToUse = await deps.searchPlanGeneration.generateEnrichments(deps.currentSearchFilterId);
+        aiFiltersToUse = await deps.searchPlanGeneration.generateEnrichments(deps.currentAssistantThreadId);
         if (aiFiltersToUse) {
           deps.setCurrentAiFilters(aiFiltersToUse);
         }
@@ -365,7 +365,7 @@ export const createSortsHandler = (deps: SearchPlanHandlerDeps) => {
         // We need to determine the search type and category from the existing data
         const validSearchCategory = deps.searchConfig.searchCategory === 'posts' ? 'people' : deps.searchConfig.searchCategory;
         searchParametersToUse = await deps.searchPlanGeneration.generateSearchParameters(
-          deps.currentSearchFilterId,
+          deps.currentAssistantThreadId,
           deps.searchConfig.searchType as 'classic' | 'sales_navigator' | 'recruiter',
           validSearchCategory as 'people' | 'companies' | 'jobs'
         );
@@ -382,7 +382,7 @@ export const createSortsHandler = (deps: SearchPlanHandlerDeps) => {
       }
 
       const result = await deps.searchPlanGeneration.generateSorts(
-        deps.currentSearchFilterId,
+        deps.currentAssistantThreadId,
         searchParametersToUse,
         aiFiltersToUse,
         // We need filters for sorts generation, but we can create a minimal one if not available
@@ -401,25 +401,21 @@ export const createSortsHandler = (deps: SearchPlanHandlerDeps) => {
         deps.setCurrentSorts(result);
         
         // Save sorts to parsedJD state
-        if (deps.currentSearchFilterId) {
+        if (deps.currentAssistantThreadId) {
           deps.setParsedJD(prev => {
             if (!prev) return null;
             
-            const updatedSearchFilters = [...(prev.searchFilters || [])];
-            const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === deps.currentSearchFilterId);
+            const updatedThreads = [...(prev.assistantThreads || [])];
+            const threadIndex = updatedThreads.findIndex(t => t.id === deps.currentAssistantThreadId);
             
-            if (searchFilterIndex !== -1) {
-              updatedSearchFilters[searchFilterIndex] = {
-                ...updatedSearchFilters[searchFilterIndex],
-                // Store flattened sort data
-                sortColumns: result.sortStrategy.sortColumns,
-                sortStrategyName: result.sortStrategy.name,
-                sortStrategyDescription: result.sortStrategy.description,
-                sortStrategyReasoning: result.sortStrategy.reasoning,
+            if (threadIndex !== -1) {
+              updatedThreads[threadIndex] = {
+                ...updatedThreads[threadIndex],
+                assistantSearchStrategy: result.sortStrategy,
               };
               
               console.log('AIChatAssistant - Saved sorts to parsedJD:', {
-                searchFilterId: deps.currentSearchFilterId,
+                assistantThreadId: deps.currentAssistantThreadId,
                 sortColumnsCount: result.sortStrategy.sortColumns.length,
                 sortStrategy: result.sortStrategy.name
               });
@@ -427,7 +423,7 @@ export const createSortsHandler = (deps: SearchPlanHandlerDeps) => {
             
             return {
               ...prev,
-              searchFilters: updatedSearchFilters
+              assistantThreads: updatedThreads
             };
           });
         }

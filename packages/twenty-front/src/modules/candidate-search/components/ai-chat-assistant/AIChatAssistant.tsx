@@ -5,7 +5,7 @@ import { ParsedJD, SearchParametersResponse } from '@/arx-jd-upload/types/Parsed
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useSearchPlanGeneration } from '@/candidate-search/hooks/useSearchPlanGeneration';
-import { activeSearchFilterIdState, searchConfigState } from '@/candidate-search/states/searchConfigState';
+import { activeAssistantThreadIdState, searchConfigState } from '@/candidate-search/states/searchConfigState';
 import { searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { dataTableApplySortsFunctionState } from '@/candidate-table/states/dataTableApplySortsFunctionState';
 import { chatMessagesSelector, filtersSelector, jobIdAtom, resolvedParametersSelector, sortsSelector } from '@/candidate-table/states/states';
@@ -16,7 +16,7 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import type { AiFilterConfig } from 'twenty-shared';
-import { AiFiltersResponse, ChatMessage as BackendChatMessage, FiltersResponse, LinkedInSearchType, SortsResponse } from 'twenty-shared';
+import { AiFiltersResponse, FiltersResponse, LinkedInSearchType, SortsResponse } from 'twenty-shared';
 import { Loader } from 'twenty-ui';
 import { ChatHeader } from './ChatHeader';
 import { ChatInput } from './ChatInput';
@@ -69,13 +69,14 @@ export const AIChatAssistant = ({
   onJDReplace,
   onParsedJDUpdate,
 }: AIChatAssistantProps) => {
+  type BackendChatMessage = { role: 'user' | 'assistant'; content: string; timestamp?: string; id?: string };
   const [enrichments] = useRecoilState(enrichmentsState);
   const { enqueueSnackBar } = useSnackBar();
   const { destroyOneRecord } = useDestroyOneRecord({ objectNameSingular: 'attachment' });
   const { findManyAttachments } = useFindManyAttachments();
   const { uploadAttachmentFile } = useUploadAttachmentFile();
-  const { createOneRecord: createOneSearchFilterRecord } = useCreateOneRecord({ 
-    objectNameSingular: 'searchFilter' 
+  const { createOneRecord: createOneAssistantThreadRecord } = useCreateOneRecord({
+    objectNameSingular: 'assistantThread',
   });
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
 
@@ -87,110 +88,91 @@ export const AIChatAssistant = ({
   const [searchMetadata, setSearchMetadata] = useRecoilState(searchMetadataState);
   const jobId = useRecoilValue(jobIdAtom);
   
-  // Get all search filters from parsedJD
-  const allSearchFilters = parsedJD?.searchFilters || [];
-  
-  // Use global Recoil state for selected search filter (so form stays in sync)
-  const [selectedSearchFilterId, setSelectedSearchFilterId] = useRecoilState(activeSearchFilterIdState);
-  
-  // Auto-create search filter if none exists when component mounts
+  const [activeAssistantThreadId, setActiveAssistantThreadId] = useRecoilState(activeAssistantThreadIdState);
+
+  const allAssistantThreads = parsedJD?.assistantThreads || [];
+
+  // Auto-create assistant thread if none exists when component mounts (candidate-search chat is keyed by assistantThreadId)
   useEffect(() => {
-    const createInitialSearchFilter = async () => {
-      // Only create if we have parsedJD with an id, but no search filters
-      // Use ref to prevent multiple simultaneous creations
+    const createInitialAssistantThread = async () => {
       if (
-        parsedJD?.id &&
-        (!parsedJD.searchFilters || parsedJD.searchFilters.length === 0) &&
-        createOneSearchFilterRecord &&
-        currentWorkspaceMember?.id &&
-        !isCreatingSearchFilterRef.current
+        !parsedJD?.id ||
+        !currentWorkspaceMember?.id ||
+        !createOneAssistantThreadRecord ||
+        isCreatingAssistantThreadRef.current
       ) {
-        isCreatingSearchFilterRef.current = true;
-        try {
-          const searchFilterName = `${searchConfig.searchType}_${searchConfig.searchCategory}`;
-          const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-          const searchFilterDisplayName = `Search Filter - ${timestamp}`;
-          
-          const newSearchFilter = await createOneSearchFilterRecord({
-            name: searchFilterDisplayName,
-            jobId: parsedJD.id,
-            recruiterId: currentWorkspaceMember.id,
-            searchFilterName,
-            searchFilterParameter: {
-              generatedSearchParameters: {},
-              resolvedSearchParameters: {},
-            },
-          });
-          
-          if (newSearchFilter?.id) {
-            // Update parsedJD to include the new search filter
-            setParsedJD(prev => {
-              if (!prev) return null;
-              
-              const updatedSearchFilters = [
-                {
-                  id: newSearchFilter.id,
-                  name: searchFilterDisplayName,
-                  searchFilterName,
-                  searchFilterParameter: {
-                    generatedSearchParameters: {},
-                    resolvedSearchParameters: {},
-                  },
-                  enrichmentConfigs: [],
-                  columnFilters: [],
-                  sortColumns: [],
-                },
-                ...(prev.searchFilters || [])
-              ];
-              
-              return {
-                ...prev,
-                searchFilters: updatedSearchFilters
-              };
-            });
-            
-            // Set the new search filter as selected
-            setSelectedSearchFilterId(newSearchFilter.id);
-            
-            // Save to localStorage for persistence
-            localStorage.setItem(
-              `lastSelectedSearchFilter_${parsedJD.id}`,
-              newSearchFilter.id
-            );
-            
-            console.log('Auto-created initial search filter:', newSearchFilter.id);
-          }
-        } catch (error) {
-          console.error('Error auto-creating initial search filter:', error);
-          // Don't show error to user as this is a background operation
-        } finally {
-          isCreatingSearchFilterRef.current = false;
+        return;
+      }
+      if (activeAssistantThreadId) {
+        return;
+      }
+      isCreatingAssistantThreadRef.current = true;
+      try {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        const displayName = `Search - ${searchConfig.searchType}_${searchConfig.searchCategory} - ${timestamp}`;
+        const newThread = await createOneAssistantThreadRecord({
+          name: displayName,
+          jobId: parsedJD.id,
+          recruiterId: currentWorkspaceMember.id,
+          assistantParameters: { generatedSearchParameters: {}, resolvedSearchParameters: {} },
+          messages: [],
+        });
+        if (newThread?.id) {
+          const summary = {
+            id: newThread.id,
+            name: displayName,
+            assistantParameters: { generatedSearchParameters: {}, resolvedSearchParameters: {} },
+            enrichmentConfigs: [],
+            columnFilters: [],
+          };
+          setParsedJD(prev =>
+            prev
+              ? { ...prev, assistantThreads: [summary, ...(prev.assistantThreads || [])] }
+              : null,
+          );
+          setActiveAssistantThreadId(newThread.id);
+          localStorage.setItem(`lastSelectedAssistantThread_${parsedJD.id}`, newThread.id);
+          console.log('Auto-created initial assistant thread:', newThread.id);
         }
+      } catch (error) {
+        console.error('Error auto-creating initial assistant thread:', error);
+      } finally {
+        isCreatingAssistantThreadRef.current = false;
       }
     };
-    
-    createInitialSearchFilter();
-  }, [parsedJD?.id, parsedJD?.searchFilters, createOneSearchFilterRecord, currentWorkspaceMember?.id, searchConfig.searchType, searchConfig.searchCategory, setParsedJD, setSelectedSearchFilterId]);
+    createInitialAssistantThread();
+  }, [
+    parsedJD?.id,
+    currentWorkspaceMember?.id,
+    createOneAssistantThreadRecord,
+    searchConfig.searchType,
+    searchConfig.searchCategory,
+    setParsedJD,
+    setActiveAssistantThreadId,
+    activeAssistantThreadId,
+  ]);
 
-  // Initialize selectedSearchFilterId if empty
+  // Initialize activeAssistantThreadId from saved or first thread/filter
   useEffect(() => {
-    if (!selectedSearchFilterId && parsedJD?.searchFilters?.[0]?.id) {
-      const firstFilterId = parsedJD.searchFilters[0].id;
-      
-      // Try to load last selected filter from localStorage
-      const savedFilterId = localStorage.getItem(`lastSelectedSearchFilter_${parsedJD?.id}`);
-      
-      // Verify the saved filter still exists in the current search filters
-      if (savedFilterId && allSearchFilters.some(sf => sf.id === savedFilterId)) {
-        setSelectedSearchFilterId(savedFilterId);
-      } else {
-        setSelectedSearchFilterId(firstFilterId);
-      }
-    }
-  }, [parsedJD?.searchFilters, parsedJD?.id, selectedSearchFilterId, setSelectedSearchFilterId, allSearchFilters]);
-  
-  // Use selectedSearchFilterId as the current search filter ID
-  const currentSearchFilterId = selectedSearchFilterId || parsedJD?.searchFilters?.[0]?.id || '';
+    if (activeAssistantThreadId) return;
+    const firstThreadId = parsedJD?.assistantThreads?.[0]?.id;
+    if (!firstThreadId) return;
+    const saved = localStorage.getItem(`lastSelectedAssistantThread_${parsedJD?.id}`);
+    const validSaved = saved && allAssistantThreads.some(t => t.id === saved);
+    const id = validSaved ? saved : firstThreadId;
+    setActiveAssistantThreadId(id);
+  }, [
+    parsedJD?.assistantThreads,
+    parsedJD?.id,
+    activeAssistantThreadId,
+    setActiveAssistantThreadId,
+    allAssistantThreads,
+  ]);
+
+  const currentAssistantThreadId =
+    activeAssistantThreadId ||
+    parsedJD?.assistantThreads?.[0]?.id ||
+    '';
   
   const [chatInput, setChatInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -206,15 +188,13 @@ export const AIChatAssistant = ({
   const searchPlanGeneration = useSearchPlanGeneration();
   const tokenPair = useRecoilValue(tokenPairState);
 
-  // Function to fetch chat history from backend
-  const fetchChatHistoryFromBackend = useCallback(async (searchFilterId: string) => {
-    if (!searchFilterId || !tokenPair?.accessToken?.token) {
+  const fetchChatHistoryFromBackend = useCallback(async (assistantThreadId: string) => {
+    if (!assistantThreadId || !tokenPair?.accessToken?.token) {
       return null;
     }
-
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/${searchFilterId}/history`,
+        `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/${assistantThreadId}/history`,
         {
           method: 'GET',
           headers: {
@@ -248,18 +228,18 @@ export const AIChatAssistant = ({
     }
   }, [tokenPair?.accessToken?.token]);
 
-  // Load chat history from backend when component mounts or search filter changes
+  // Load chat history from backend when component mounts or thread changes
   useEffect(() => {
     const loadChatHistory = async () => {
-      if (!currentSearchFilterId || !tokenPair?.accessToken?.token) {
+      if (!currentAssistantThreadId || !tokenPair?.accessToken?.token) {
         return;
       }
 
       // First try to load from localStorage (faster, may be more up-to-date)
-      const savedMessages = loadFromLocalStorage(currentSearchFilterId, 'chatMessages');
+      const savedMessages = loadFromLocalStorage(currentAssistantThreadId, 'chatMessages');
       
       // Then fetch from backend to ensure we have the latest
-      const backendMessages = await fetchChatHistoryFromBackend(currentSearchFilterId);
+      const backendMessages = await fetchChatHistoryFromBackend(currentAssistantThreadId);
       
       // Merge: prefer backend if it exists and has messages, otherwise use localStorage
       if (backendMessages && backendMessages.length > 0) {
@@ -282,7 +262,7 @@ export const AIChatAssistant = ({
           new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         );
         setChatMessages(allMessages);
-        saveToLocalStorage(currentSearchFilterId, 'chatMessages', allMessages);
+        saveToLocalStorage(currentAssistantThreadId, 'chatMessages', allMessages);
       } else if (savedMessages && Array.isArray(savedMessages) && savedMessages.length > 0) {
         // Only localStorage available
         setChatMessages(savedMessages);
@@ -295,27 +275,27 @@ export const AIChatAssistant = ({
           timestamp: new Date(),
         };
         setChatMessages([welcomeMessage]);
-        saveToLocalStorage(currentSearchFilterId, 'chatMessages', [welcomeMessage]);
+        saveToLocalStorage(currentAssistantThreadId, 'chatMessages', [welcomeMessage]);
       }
     };
 
     loadChatHistory();
-  }, [currentSearchFilterId, tokenPair?.accessToken?.token, fetchChatHistoryFromBackend, setChatMessages]);
+  }, [currentAssistantThreadId, tokenPair?.accessToken?.token, fetchChatHistoryFromBackend, setChatMessages]);
 
   // Auto-save chatMessages to localStorage whenever they change
   useEffect(() => {
-    if (currentSearchFilterId && chatMessages.length > 0) {
+    if (currentAssistantThreadId && chatMessages.length > 0) {
       // Debounce the save to avoid excessive localStorage writes
       const timeoutId = setTimeout(() => {
-        saveToLocalStorage(currentSearchFilterId, 'chatMessages', chatMessages);
+        saveToLocalStorage(currentAssistantThreadId, 'chatMessages', chatMessages);
       }, 500); // 500ms debounce
 
       return () => clearTimeout(timeoutId);
     }
-  }, [chatMessages, currentSearchFilterId]);
+  }, [chatMessages, currentAssistantThreadId]);
   const applyGeneratedSorts = useRecoilValue(dataTableApplySortsFunctionState);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const isCreatingSearchFilterRef = useRef(false);
+  const isCreatingAssistantThreadRef = useRef(false);
   
   // Flags to track if data has been initially loaded from database
   // Initialize to TRUE to prevent auto-loading of existing metadata
@@ -326,39 +306,39 @@ export const AIChatAssistant = ({
   
   // Load existing data from database selectors
   const existingAiFilters: AiFilterConfig[] = useMemo(() => {
-    const currentFilter = parsedJD?.searchFilters?.find(sf => sf.id === currentSearchFilterId);
-    return currentFilter?.aiFilterConfigs ?? [];
-  }, [parsedJD?.searchFilters, currentSearchFilterId]);
+    const thread = parsedJD?.assistantThreads?.find(t => t.id === currentAssistantThreadId);
+    return (thread?.enrichmentConfigs as AiFilterConfig[] | undefined) ?? [];
+  }, [parsedJD?.assistantThreads, currentAssistantThreadId]);
   const existingFilters = useRecoilValue(filtersSelector);
   const existingSorts = useRecoilValue(sortsSelector);
   // Debug logging moved to useEffect to prevent repeated logging
 
   // Helper functions to check for existing data in the currently selected search filter
   const hasExistingSearchParameters = useCallback(() => {
-    const currentFilter = parsedJD?.searchFilters?.find(sf => sf.id === currentSearchFilterId);
-    return !!(currentFilter?.searchFilterParameter?.generatedSearchParameters && 
-      Object.keys(currentFilter.searchFilterParameter.generatedSearchParameters).length > 0);
-  }, [parsedJD?.searchFilters, currentSearchFilterId]);
+    const thread = parsedJD?.assistantThreads?.find(t => t.id === currentAssistantThreadId);
+    const generated = thread?.assistantParameters?.generatedSearchParameters;
+    return !!(generated && typeof generated === 'object' && Object.keys(generated).length > 0);
+  }, [parsedJD?.assistantThreads, currentAssistantThreadId]);
 
   const hasExistingAiFilters = useCallback(() => {
-    const currentFilter = parsedJD?.searchFilters?.find(sf => sf.id === currentSearchFilterId);
-    return !!(currentFilter?.aiFilterConfigs && currentFilter.aiFilterConfigs.length > 0) || existingAiFilters.length > 0;
-  }, [parsedJD?.searchFilters, currentSearchFilterId, existingAiFilters]);
+    const thread = parsedJD?.assistantThreads?.find(t => t.id === currentAssistantThreadId);
+    return !!(thread?.enrichmentConfigs && thread.enrichmentConfigs.length > 0) || existingAiFilters.length > 0;
+  }, [parsedJD?.assistantThreads, currentAssistantThreadId, existingAiFilters]);
 
   const hasExistingFilters = useCallback(() => {
-    const currentFilter = parsedJD?.searchFilters?.find(sf => sf.id === currentSearchFilterId);
-    return !!(currentFilter?.columnFilters && currentFilter.columnFilters.length > 0) || existingFilters.length > 0;
-  }, [parsedJD?.searchFilters, currentSearchFilterId, existingFilters]);
+    const thread = parsedJD?.assistantThreads?.find(t => t.id === currentAssistantThreadId);
+    const columnFilters = thread?.columnFilters;
+    return !!(Array.isArray(columnFilters) && columnFilters.length > 0) || existingFilters.length > 0;
+  }, [parsedJD?.assistantThreads, currentAssistantThreadId, existingFilters]);
 
   const hasExistingSorts = useCallback(() => {
-    const currentFilter = parsedJD?.searchFilters?.find(sf => sf.id === currentSearchFilterId);
-    return !!(currentFilter?.sortColumns && currentFilter.sortColumns.length > 0) || !!existingSorts;
-  }, [parsedJD?.searchFilters, currentSearchFilterId, existingSorts]);
+    return !!existingSorts;
+  }, [existingSorts]);
 
   const hasExistingEnrichments = useCallback(() => {
-    const currentFilter = parsedJD?.searchFilters?.find(sf => sf.id === currentSearchFilterId);
-    return !!(currentFilter?.enrichmentConfigs && currentFilter.enrichmentConfigs.length > 0);
-  }, [parsedJD?.searchFilters, currentSearchFilterId]);
+    const thread = parsedJD?.assistantThreads?.find(t => t.id === currentAssistantThreadId);
+    return !!(thread?.enrichmentConfigs && thread.enrichmentConfigs.length > 0);
+  }, [parsedJD?.assistantThreads, currentAssistantThreadId]);
   
   // Debug logging for button states (only log when parsedJD changes)
   useEffect(() => {
@@ -371,13 +351,12 @@ export const AIChatAssistant = ({
         currentSearchParameters: !!currentSearchParameters,
         currentAiFilters: !!currentAiFilters,
         parsedJD: {
-          hasSearchFilters: !!parsedJD?.searchFilters?.length,
-          searchFiltersData: parsedJD?.searchFilters?.map(sf => ({
-            hasSearchFilterParameter: !!sf.searchFilterParameter?.generatedSearchParameters,
-            hasAiFilterConfigs: !!sf.aiFilterConfigs?.length,
-            hasColumnFilters: !!sf.columnFilters?.length,
-            hasSortColumns: !!sf.sortColumns?.length
-          }))
+          assistantThreads: parsedJD?.assistantThreads?.map(t => ({
+            id: t.id,
+            hasAssistantParameters: !!t.assistantParameters,
+            enrichmentCount: t.enrichmentConfigs?.length ?? 0,
+            columnFiltersCount: (t.columnFilters as unknown[] | undefined)?.length ?? 0,
+          })),
         }
       });
     }
@@ -425,24 +404,22 @@ export const AIChatAssistant = ({
       const updated = [...prev, newMessage];
       
       // Save to localStorage for persistence
-      if (currentSearchFilterId) {
-        saveToLocalStorage(currentSearchFilterId, 'chatMessages', updated);
+      if (currentAssistantThreadId) {
+        saveToLocalStorage(currentAssistantThreadId, 'chatMessages', updated);
       }
       
       return updated;
     });
     
-    // Save to backend if we have a searchFilterId
-    if (parsedJD?.searchFilters?.[0]?.id && tokenPair?.accessToken?.token) {
+    if (parsedJD?.assistantThreads?.[0]?.id && tokenPair?.accessToken?.token) {
       try {
         console.log ("addMessage - Saving chat message to backend::");
-        // await sendChatMessage(message.content, parsedJD.searchFilters[0].id, tokenPair);
       } catch (error) {
         console.error('Error saving chat message to backend:', error);
         // Don't show error to user as the message is still added locally
       }
     }
-  }, [setChatMessages, parsedJD?.searchFilters, tokenPair]);
+  }, [setChatMessages, parsedJD?.assistantThreads, tokenPair]);
 
   // Load existing AI filters from database when component mounts
   useEffect(() => {
@@ -586,14 +563,14 @@ export const AIChatAssistant = ({
     setCurrentSorts,
     setResolvedParameters,
     setParsedJD,
-    currentSearchFilterId,
+    currentAssistantThreadId,
     currentSearchParameters,
     currentAiFilters,
     searchConfig,
     hasExistingSearchParameters,
     hasExistingAiFilters,
     hasExistingEnrichments,
-  }), [parsedJD, searchPlanGeneration, addMessage, enqueueSnackBar, currentSearchFilterId, currentSearchParameters, currentAiFilters, searchConfig, hasExistingSearchParameters, hasExistingAiFilters, hasExistingEnrichments]);
+  }), [parsedJD, searchPlanGeneration, addMessage, enqueueSnackBar, currentAssistantThreadId, currentSearchParameters, currentAiFilters, searchConfig, hasExistingSearchParameters, hasExistingAiFilters, hasExistingEnrichments]);
 
   const actionHandlerDeps = useMemo(() => ({
     enqueueSnackBar,
@@ -604,9 +581,9 @@ export const AIChatAssistant = ({
     setResolvedParameters,
     setSearchConfig,
     setParsedJD,
-    currentSearchFilterId,
+    currentAssistantThreadId,
     jobId,
-  }), [enqueueSnackBar, currentSearchParameters, currentSorts, applyGeneratedSorts, currentSearchFilterId, jobId]);
+  }), [enqueueSnackBar, currentSearchParameters, currentSorts, applyGeneratedSorts, currentAssistantThreadId, jobId]);
 
   const chatHandlerDeps = useMemo(() => ({
     parsedJD,
@@ -625,18 +602,18 @@ export const AIChatAssistant = ({
     setIsProcessing,
     setIsTerminated,
     setParsedJD,
-    currentSearchFilterId,
-    setSelectedSearchFilterId,
+    currentAssistantThreadId,
+    setActiveAssistantThreadId,
     setHasLoadedAiFilters,
     setHasLoadedFilters,
     setHasLoadedSorts,
-    createOneSearchFilterRecord,
+    createOneAssistantThreadRecord,
     currentWorkspaceMember,
     setSearchResults,
     setSearchMetadata,
     jobId,
     includeJD,
-  }), [parsedJD, tokenPair, searchConfig, addMessage, enqueueSnackBar, currentSearchFilterId, setSelectedSearchFilterId, createOneSearchFilterRecord, currentWorkspaceMember, setSearchResults, setSearchMetadata, jobId, includeJD, setIsTerminated]);
+  }), [parsedJD, tokenPair, searchConfig, addMessage, enqueueSnackBar, currentAssistantThreadId, setActiveAssistantThreadId, createOneAssistantThreadRecord, currentWorkspaceMember, setSearchResults, setSearchMetadata, jobId, includeJD, setIsTerminated]);
 
   // Create handler instances using grouped dependencies
   const handleJDRemove = useMemo(() => createJDRemoveHandler(fileHandlerDeps), [fileHandlerDeps]);
@@ -665,60 +642,18 @@ export const AIChatAssistant = ({
   const handleClearChat = useMemo(() => createClearChatHandler(chatHandlerDeps), [chatHandlerDeps]);
   const chatSubmitHandler = useMemo(() => createChatSubmitHandler(chatHandlerDeps), [chatHandlerDeps]);
 
-  // Handler for switching between search filters
-  const handleSearchFilterSwitch = useCallback(async (newSearchFilterId: string) => {
-    if (newSearchFilterId === currentSearchFilterId) {
-      return; // No need to switch if it's the same filter
-    }
+  const handleSearchFilterSwitch = useCallback(async (_assistantThreadId: string) => {
+    // Candidate-search is keyed only by assistantThreadId now. Thread switching is handled
+    // via `activeAssistantThreadIdState` and `lastSelectedAssistantThread_*`.
+    return;
+  }, []);
 
-    console.log('Switching search filter:', {
-      from: currentSearchFilterId,
-      to: newSearchFilterId
-    });
-
-    // Update the selected search filter ID
-    setSelectedSearchFilterId(newSearchFilterId);
-    
-    // Save to localStorage for persistence
+  const handleAssistantThreadSwitch = useCallback((assistantThreadId: string) => {
+    setActiveAssistantThreadId(assistantThreadId);
     if (parsedJD?.id) {
-      localStorage.setItem(`lastSelectedSearchFilter_${parsedJD.id}`, newSearchFilterId);
+      localStorage.setItem(`lastSelectedAssistantThread_${parsedJD.id}`, assistantThreadId);
     }
-
-    // Load chat messages for the new filter (will be handled by the useEffect that watches currentSearchFilterId)
-    // But we can pre-load from localStorage for immediate display
-    const savedMessages = loadFromLocalStorage(newSearchFilterId, 'chatMessages');
-    if (savedMessages && Array.isArray(savedMessages) && savedMessages.length > 0) {
-      setChatMessages(savedMessages);
-    } else {
-      // Set empty array - the useEffect will load from backend or create welcome message
-      setChatMessages([]);
-    }
-
-    // Load resolved parameters for the new filter
-    const savedResolvedParams = loadFromLocalStorage(newSearchFilterId, 'resolvedParameters');
-    if (savedResolvedParams) {
-      setResolvedParameters(savedResolvedParams);
-    } else {
-      setResolvedParameters({});
-    }
-
-    // Reset current state for search plan components
-    setCurrentSearchParameters(null);
-    setCurrentAiFilters(null);
-    setCurrentFilters(null);
-    setCurrentSorts(null);
-    setSelectedSearchVariation(null);
-    setIsTerminated(false);
-
-    // IMPORTANT: Set load flags to TRUE to prevent auto-loading from database
-    // This gives users a clean slate - they need to explicitly generate or load data
-    // This prevents old metadata from automatically appearing when switching filters
-    setHasLoadedAiFilters(true);
-    setHasLoadedFilters(true);
-    setHasLoadedSorts(true);
-
-    console.log('Search filter switched successfully to:', newSearchFilterId);
-  }, [currentSearchFilterId, parsedJD?.id, setChatMessages, setResolvedParameters, setSelectedSearchFilterId]);
+  }, [parsedJD?.id, setActiveAssistantThreadId]);
 
   const handleStopStreaming = useCallback(() => {
     if (abortControllerRef.current) {
@@ -821,9 +756,9 @@ export const AIChatAssistant = ({
     <>
       <ChatHeader 
         onClearChat={handleClearChat}
-        searchFilters={allSearchFilters}
-        currentSearchFilterId={currentSearchFilterId}
-        onSearchFilterSelect={handleSearchFilterSwitch}
+        assistantThreads={allAssistantThreads}
+        currentAssistantThreadId={currentAssistantThreadId}
+        onAssistantThreadSelect={handleAssistantThreadSwitch}
         onJDRemove={handleJDRemove}
         onJDReplace={handleJDReplaceTrigger}
         hasJD={hasJD}

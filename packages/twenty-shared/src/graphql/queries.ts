@@ -209,35 +209,6 @@ export const graphqlQueryToFindVideoInterviewTemplatesByJobId = `query FindManyV
 }`;
 
 
-export const graphqlToFindManySearchFilters = `query FindManySearchFilters($filter: SearchFilterFilterInput, $orderBy: [SearchFilterOrderByInput], $lastCursor: String, $limit: Int) {
-  searchFilters(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
-    edges {
-      node {
-        id
-        name
-        searchFilterName
-        searchFilterParameter
-        enrichmentConfigs
-        columnFilters
-        chatHistory
-        searchStrategy
-        isActive
-        jobId
-      }
-      cursor
-      __typename
-    }
-    pageInfo {
-      hasNextPage
-      startCursor
-      endCursor
-      __typename
-    }
-    totalCount
-    __typename
-  }
-}`;
-
 export const graphqlToFindManyCompanies = `query FindManyCompanies($filter: CompanyFilterInput, $orderBy: [CompanyOrderByInput], $lastCursor: String, $limit: Int) {
   companies(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {
@@ -300,21 +271,19 @@ const graphqlToFindManyJobsFull = `query FindManyJobs($filter: JobFilterInput, $
         createdAt
         jobCode
         jobLocation
-        searchFilter {
+        assistantThreads {
           edges{
             node{
               id
               name
-              searchFilterParameter
-              searchFilterName
-              searchFilterFields
+              messages
+              assistantParameters
               enrichmentConfigs
               columnFilters
-              columnSortConfigs
-              chatHistory
-              searchStrategy
+              assistantSearchStrategy
               isActive
               jobId
+              recruiterId
             }
           }
         }
@@ -443,21 +412,19 @@ const graphqlToFindManyJobsWithPromptsFull = `query FindManyJobs($filter: JobFil
                 }
             }
         }
-        searchFilter {
+        assistantThreads {
           edges{
             node{
               id
               name
-              searchFilterParameter
-              searchFilterName
-              searchFilterFields
+              messages
+              assistantParameters
               enrichmentConfigs
               columnFilters
-              columnSortConfigs
-              chatHistory
-              searchStrategy
+              assistantSearchStrategy
               isActive
               jobId
+              recruiterId
             }
           }
         }
@@ -3415,6 +3382,11 @@ export const findManyAssistantThreads = `query FindManyAssistantThreads($filter:
         agentEvents
         messages
         lastTableData
+        assistantParameters
+        enrichmentConfigs
+        columnFilters
+        assistantSearchStrategy
+        isActive
         updatedAt
       }
     }
@@ -3445,6 +3417,11 @@ export const findOneAssistantThread = `query FindOneAssistantThread($id: ID!) {
     agentNotes
     agentEvents
     assistantMode
+    assistantParameters
+    enrichmentConfigs
+    columnFilters
+    assistantSearchStrategy
+    isActive
     createdAt
     updatedAt
   }

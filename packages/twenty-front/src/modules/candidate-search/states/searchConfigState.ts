@@ -14,9 +14,8 @@ export const searchConfigState = atom<SearchConfig>({
   },
 });
 
-// Global state to track the currently active searchFilterId
-// This ensures AIChatAssistant and SearchParametersForm stay in sync
-export const activeSearchFilterIdState = atom<string>({
-  key: 'candidate-search/activeSearchFilterIdState',
+// Global state for the current assistant thread id (candidate-search chat session)
+export const activeAssistantThreadIdState = atom<string>({
+  key: 'candidate-search/activeAssistantThreadIdState',
   default: '',
 });

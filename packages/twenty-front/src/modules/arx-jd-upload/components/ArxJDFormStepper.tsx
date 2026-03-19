@@ -6,9 +6,11 @@ import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-sear
 import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
 import { ArxJDFormStepType } from '../states/arxJDFormStepperState';
 import { FormComponentProps } from '../types/FormComponentProps';
+import type { AssistantThreadSummary } from '../types/ParsedJD';
 import { ArxJDStepHeading } from './ArxJDStepHeading';
 import { ArxJDUploadStep } from './ArxJDUploadStep';
 // import { ChatFlowSection } from './ChatFlowSection';
+import { AssistantThread } from '@/assistant/types/assistant.types';
 import { ChatQuestionsSection } from './ChatQuestionsSection';
 import { JobDetailsForm, RecruiterDetails } from './JobDetailsForm';
 import { MeetingSchedulingSection } from './MeetingSchedulingSection';
@@ -32,8 +34,8 @@ const StyledContentWrapper = styled.div`
 
 export type ArxJDFormStepperProps = FormComponentProps & {
   // Add dropzone props to handle file uploads
-  getRootProps?: () => Record<string, any>;
-  getInputProps?: () => Record<string, any>;
+  getRootProps?: () => Record<string, unknown>;
+  getInputProps?: () => Record<string, unknown>;
   isDragActive?: boolean;
   isUploading?: boolean;
   error?: string | null;
@@ -44,26 +46,13 @@ export type ArxJDFormStepperProps = FormComponentProps & {
   onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
   isEditMode?: boolean;
   onCreateJobFromName?: (jobName: string) => Promise<void>;
-  onSearchFilterUpdate?: (
-    searchFilters: {
-      id: string;
-      name: string;
-      searchFilterParameter?: any;
-      searchFilterName?: string;
-      searchFilterFields?: any;
-      chatHistory?: Array<{
-        id: string;
-        role: 'user' | 'assistant';
-        content: string;
-        timestamp: string;
-      }>;
-      enrichmentConfigs?: any[];
-      columnFilters?: any[];
-    }[],
+  onAssistantThreadUpdate?: (
+    assistantThread: AssistantThread,
+    assistantThreads: AssistantThreadSummary[],
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
-    generatedParameters: any,
-    resolvedParameters: any
+    generatedParameters: unknown,
+    resolvedParameters: unknown,
   ) => Promise<void>;
 };
 
@@ -82,7 +71,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
   onRecruiterInfoChange,
   isEditMode = false,
   onCreateJobFromName,
-  onSearchFilterUpdate,
+  onAssistantThreadUpdate,
 }) => {
   const theme = useTheme();
   const { activeStep, nextStep, prevStep, setStep, availableSteps, currentStepType, isFirstStep, isLastStep } =

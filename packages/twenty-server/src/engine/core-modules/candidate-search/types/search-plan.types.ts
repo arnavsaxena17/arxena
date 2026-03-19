@@ -175,7 +175,7 @@ export interface SortsResponse {
 // Message processing types
 export interface ChatMessageRequest {
   includeJd?: boolean;
-  searchFilterId: string;
+  assistantThreadId: string;
   message: string;
   parsedJD: ParsedJobDescription;
   searchType?: 'classic' | 'sales_navigator' | 'recruiter';
