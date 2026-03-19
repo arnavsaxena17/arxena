@@ -35,53 +35,11 @@ test('Assistant: add new job pipeline including JD upload and chat questions', a
 
   const dialogsLocator = page.getByRole('dialog');
 
-  // #region agent log
-  await fetch('http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'fa70e8' },
-    body: JSON.stringify({
-      sessionId: 'fa70e8',
-      runId: 'pre-fix',
-      hypothesisId: 'H1_modal_not_opening_or_wrong_ui',
-      location: 'assistant.add-new-job.pipeline.spec.ts:add-job-click',
-      message: 'state right after clicking Add New Job',
-      data: {
-        urlAfterClick: page.url(),
-        dialogsCountAfterClick: await dialogsLocator.count(),
-        fileInputVisibleAfterClick: await fileInputLocator.first().isVisible().catch(() => false),
-        uploadJobDescriptionTitleCountAfterClick: await uploadJobDescriptionTitle.count(),
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
+  
 
   try {
     await expect(uploadJobDescriptionTitle).toBeVisible({ timeout: 30_000 });
   } catch (error) {
-    // #region agent log
-    await fetch('http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'fa70e8' },
-      body: JSON.stringify({
-        sessionId: 'fa70e8',
-        runId: 'pre-fix',
-        hypothesisId: 'H2_title_mismatch_or_modal_never_opens_or_slow_render',
-        location: 'assistant.add-new-job.pipeline.spec.ts:add-job-modal-title-wait',
-        message: 'state when upload modal title not found',
-        data: {
-          urlNow: page.url(),
-          dialogsCountNow: await dialogsLocator.count(),
-          dialogVisibleNow: await dialogsLocator.first().isVisible().catch(() => false),
-          fileInputCountNow: await fileInputLocator.count(),
-          fileInputVisibleNow: await fileInputLocator.first().isVisible().catch(() => false),
-          uploadJobDescriptionTitleCountNow: await uploadJobDescriptionTitle.count(),
-          uploadJobDescriptionTitleVisibleNow: await uploadJobDescriptionTitle.isVisible().catch(() => false),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
 
     throw error;
   }
@@ -166,27 +124,7 @@ test('Assistant: add new job pipeline including JD upload and chat questions', a
   const creatingJobProcessText = page.getByText(/Creating job process/i).first();
   const addNewJobDescriptionTitle = page.getByText(/Add a New Job Description/i).first();
 
-  // #region agent log
-  await fetch('http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'fa70e8' },
-    body: JSON.stringify({
-      sessionId: 'fa70e8',
-      runId: 'pre-fix_modal-close-check-1',
-      hypothesisId: 'H3_modal_not_closed_blocks_navigation',
-      location: 'assistant.add-new-job.pipeline.spec.ts:post-create-wait',
-      message: 'state right after waiting for creating job process hidden',
-      data: {
-        urlNow: page.url(),
-        creatingJobProcessVisibleNow: await creatingJobProcessText.isVisible().catch(() => false),
-        addNewJobDescriptionTitleVisibleNow: await addNewJobDescriptionTitle.isVisible().catch(() => false),
-        dialogsCountNow: await dialogsLocator.count(),
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-
+ 
   await expect(addNewJobDescriptionTitle).toBeHidden({ timeout: 180_000 });
 
   // After finish, we land back on /jobs. Click the newest job (createdAt-desc) by using the first "Active" footer.
@@ -196,53 +134,11 @@ test('Assistant: add new job pipeline including JD upload and chat questions', a
 
   const searchCandidates = page.getByPlaceholder(/Search candidates/i).first();
 
-  // #region agent log
-  await fetch('http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'fa70e8' },
-    body: JSON.stringify({
-      sessionId: 'fa70e8',
-      runId: 'pre-fix_modal-close-check-1',
-      hypothesisId: 'H4_navigation_click_flaky_due_to_overlay',
-      location: 'assistant.add-new-job.pipeline.spec.ts:before-active-click',
-      message: 'state before clicking newest Active job',
-      data: {
-        urlNow: page.url(),
-        searchCandidatesVisibleNow: await searchCandidates.isVisible().catch(() => false),
-        searchCandidatesCountNow: await page.getByPlaceholder(/Search candidates/i).count(),
-        addNewJobDescriptionTitleVisibleNow: await addNewJobDescriptionTitle.isVisible().catch(() => false),
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-
   await newestActiveStatus.click({ force: true });
 
   try {
     await expect(searchCandidates).toBeVisible({ timeout: 60_000 });
   } catch (e) {
-    // Fallback: click the first visible job-card title.
-    // #region agent log
-    await fetch('http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'fa70e8' },
-      body: JSON.stringify({
-        sessionId: 'fa70e8',
-        runId: 'pre-fix_modal-close-check-1',
-        hypothesisId: 'H5_fallback_h3_click_does_not_navigate',
-        location: 'assistant.add-new-job.pipeline.spec.ts:active-click-search-candidates-timeout',
-        message: 'search candidates not visible after clicking Active; attempting fallback',
-        data: {
-          urlNow: page.url(),
-          searchCandidatesVisibleNow: await searchCandidates.isVisible().catch(() => false),
-          searchCandidatesCountNow: await page.getByPlaceholder(/Search candidates/i).count(),
-          dialogsCountNow: await dialogsLocator.count(),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
 
     await page.locator('h3').first().click({ force: true });
     await expect(page.getByPlaceholder(/Search candidates/i).first()).toBeVisible({ timeout: 60_000 });

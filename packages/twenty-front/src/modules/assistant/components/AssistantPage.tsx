@@ -4,9 +4,9 @@ import { AssistantResultsPanel } from '@/assistant/components/AssistantResultsPa
 import { AssistantThreadSidebar } from '@/assistant/components/AssistantThreadSidebar';
 import { MOCK_THREADS, USE_MOCK_ASSISTANT } from '@/assistant/mocks/mockThreads';
 import type {
-    AssistantAgentEvent,
-    AssistantChatMessage,
-    AssistantThread,
+  AssistantAgentEvent,
+  AssistantChatMessage,
+  AssistantThread,
 } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
@@ -561,28 +561,6 @@ export const AssistantPage = () => {
       patch: { assistantMode?: 'fully_autonomous' | 'permissioned'; jobId?: string | null; name?: string },
     ) => {
       // Optimistic update so UI reflects changes immediately (e.g. attach job after JD upload)
-      // #region agent log
-      fetch('http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Debug-Session-Id': '6b677b',
-        },
-        body: JSON.stringify({
-          sessionId: '6b677b',
-          runId: 'patch-thread',
-          hypothesisId: 'H2',
-          location: 'AssistantPage.tsx:patchThread',
-          message: 'patchThread called',
-          data: {
-            threadId,
-            patchJobId: patch.jobId ?? null,
-            hasJobIdInPatch: 'jobId' in patch,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion agent log
       setThreads((prev) =>
         prev.map((t) =>
           t.id === threadId

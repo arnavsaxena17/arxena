@@ -43,10 +43,6 @@ export const InstallArxenaApp = () => {
   const onboardingStatus = useOnboardingStatus();
   const isInstallAppStep = onboardingStatus === OnboardingStatus?.INSTALL_ARXENA_APP;
 
-  // #region agent log
-  fetch('http://127.0.0.1:7288/ingest/52cd5fe2-bcf6-4472-b235-3dcac07357d0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7275da'},body:JSON.stringify({sessionId:'7275da',location:'InstallArxenaApp.tsx:render',message:'InstallArxenaApp status check',data:{onboardingStatus: onboardingStatus ?? 'undefined',isInstallAppStep,returningNull:!isInstallAppStep},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
-
   useEffect(() => {
     setSystemInfo(getSystemInfo());
   }, []);
@@ -69,9 +65,6 @@ export const InstallArxenaApp = () => {
   }
 
   if (!isInstallAppStep) {
-    // #region agent log
-    fetch('http://127.0.0.1:7288/ingest/52cd5fe2-bcf6-4472-b235-3dcac07357d0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7275da'},body:JSON.stringify({sessionId:'7275da',location:'InstallArxenaApp.tsx:guard',message:'Returning null - not INSTALL_APP step',data:{onboardingStatus: onboardingStatus ?? 'undefined'},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
     return null;
   }
 

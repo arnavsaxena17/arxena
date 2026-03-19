@@ -229,54 +229,8 @@ export const AssistantJDSection = ({
   ) => {
     const files = Array.from(event.target.files || []);
     if (!files.length) return;
-    // #region agent log
-    fetch('http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Debug-Session-Id': '6b677b',
-      },
-      body: JSON.stringify({
-        sessionId: '6b677b',
-        runId: 'pre-upload',
-        hypothesisId: 'H1',
-        location: 'AssistantJDSection.tsx:handleFileInputChange',
-        message: 'Before handleFileUpload',
-        data: {
-          hasJobAttached,
-          jobId,
-          fileCount: files.length,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion agent log
 
     const createdOrUpdatedJobId = await handleFileUpload(files);
-
-    // #region agent log
-    fetch('http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Debug-Session-Id': '6b677b',
-      },
-      body: JSON.stringify({
-        sessionId: '6b677b',
-        runId: 'post-upload',
-        hypothesisId: 'H1',
-        location: 'AssistantJDSection.tsx:handleFileInputChange',
-        message: 'After handleFileUpload',
-        data: {
-          createdOrUpdatedJobId: typeof createdOrUpdatedJobId === 'string' ? createdOrUpdatedJobId : null,
-          parsedJDId: parsedJD?.id ?? null,
-          hasJobAttached,
-          jobId,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion agent log
 
     // Prefer the explicit return value from handleFileUpload, but fall back to
     // the current parsedJD.id when available. This makes sure that even if the
@@ -288,27 +242,6 @@ export const AssistantJDSection = ({
         : parsedJD?.id ?? null;
 
     if (!hasJobAttached && typeof jobIdToAttach === 'string') {
-      // #region agent log
-      fetch('http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Debug-Session-Id': '6b677b',
-        },
-        body: JSON.stringify({
-          sessionId: '6b677b',
-          runId: 'attach-job',
-          hypothesisId: 'H2',
-          location: 'AssistantJDSection.tsx:handleFileInputChange',
-          message: 'Attaching job to thread',
-          data: {
-            jobIdToAttach,
-            threadId,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion agent log
       pendingAttachJobIdRef.current = jobIdToAttach;
       await onAttachJobToThread(jobIdToAttach);
     }

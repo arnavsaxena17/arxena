@@ -826,36 +826,6 @@ export const AssistantChatColumn = ({
                     );
                     const hasThreadJobIdOnly = Boolean(currentThread.jobId && !currentThread.job);
 
-                    // #region agent log
-                    if (typeof fetch === 'function') {
-                      fetch(
-                        'http://127.0.0.1:7288/ingest/a3b608c9-4874-4748-b52c-6d28745b8eff',
-                        {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            'X-Debug-Session-Id': '6b677b',
-                          },
-                          body: JSON.stringify({
-                            sessionId: '6b677b',
-                            runId: 'render-job-row',
-                            hypothesisId: 'H3',
-                            location: 'AssistantChatColumn.tsx:jobRow',
-                            message: 'Rendering job attachment row',
-                            data: {
-                              currentThreadId,
-                              currentThreadJobId: currentThread.jobId ?? null,
-                              hasParsedJD,
-                              hasThreadJobDetails,
-                              hasThreadJobIdOnly,
-                            },
-                            timestamp: Date.now(),
-                          }),
-                        },
-                      ).catch(() => {});
-                    }
-                    // #endregion agent log
-
                     if (hasParsedJD) {
                       return (
                         <>
