@@ -2,10 +2,13 @@ import {
   AssistantDetailsTable,
   AssistantTableData,
 } from '@/assistant/components/AssistantDetailsTable';
+import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { DataTable } from '@/candidate-table/DataTable';
 import { selectedCandidateIdState } from '@/candidate-table/states/states';
+import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { AppPath } from '@/types/AppPath';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
+import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useState } from 'react';
@@ -18,6 +21,9 @@ import {
   LightButton,
 } from 'twenty-ui';
 import { getAppPath } from '~/utils/navigation/getAppPath';
+
+/** Virtual jobId used for assistant-fetched LinkedIn candidates in DataTable. */
+export const ASSISTANT_SEARCH_JOB_ID = '__search__';
 
 const StyledResultsPanel = styled.div`
   flex: 1;
@@ -71,6 +77,7 @@ type AssistantResultsPanelProps = {
   threadId?: string;
   onSync?: () => Promise<void>;
   jobIdFromThread?: string | null;
+  onSelectionChange?: (ids: string[]) => void;
 };
 
 function getRowId(row: Record<string, unknown>): string | undefined {
@@ -95,16 +102,50 @@ export const AssistantResultsPanel = ({
   threadId,
   onSync,
   jobIdFromThread,
+  onSelectionChange,
 }: AssistantResultsPanelProps) => {
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
   const [syncing, setSyncing] = useState(false);
   const navigate = useNavigate();
   const { openRightDrawer } = useRightDrawer();
   const setSelectedCandidateId = useSetRecoilState(selectedCandidateIdState);
+  const setSearchResults = useSetRecoilState(searchResultsState);
 
   useEffect(() => {
     setSelectedRowIndex(null);
   }, [tableData]);
+
+  const jobIdFromResults = getJobIdFromTableData(tableData);
+  // Prefer jobId coming from the table data (e.g. snapshot rows)
+  const effectiveJobId = jobIdFromResults ?? jobIdFromThread ?? undefined;
+
+  // When there's no real jobId but table rows exist (LinkedIn/search candidates),
+  // populate searchResultsState so DataTable can display them.
+  useEffect(() => {
+    if (effectiveJobId || !tableData?.rows?.length) return;
+    setSearchResults(tableData.rows as any[]);
+    return () => {
+      setSearchResults([]);
+    };
+  }, [tableData, effectiveJobId, setSearchResults]);
+
+  // Read selection from the DataTable's context store for the active jobId instance.
+  // When effectiveJobId is present, DataTable keyed by effectiveJobId owns the selection;
+  // for the virtual search table we use ASSISTANT_SEARCH_JOB_ID.
+  const activeContextKey = effectiveJobId ?? ASSISTANT_SEARCH_JOB_ID;
+  const searchTableRule = useRecoilComponentValueV2(
+    contextStoreTargetedRecordsRuleComponentState,
+    activeContextKey,
+  );
+
+  useEffect(() => {
+    if (!onSelectionChange) return;
+    const ids =
+      searchTableRule.mode === 'selection'
+        ? searchTableRule.selectedRecordIds
+        : [];
+    onSelectionChange(ids);
+  }, [searchTableRule, onSelectionChange]);
 
   const handleSync = useCallback(async () => {
     if (!onSync) return;
@@ -120,10 +161,6 @@ export const AssistantResultsPanel = ({
     tableData && tableData.rows?.length && selectedRowIndex != null && selectedRowIndex >= 0 && selectedRowIndex < tableData.rows.length
       ? (tableData.rows[selectedRowIndex] as Record<string, unknown>)
       : null;
-
-  const jobIdFromResults = getJobIdFromTableData(tableData);
-  // Prefer jobId coming from the table data (e.g. snapshot rows)
-  const effectiveJobId = jobIdFromResults ?? jobIdFromThread ?? undefined;
 
   const handleOpenChat = useCallback(() => {
     if (!selectedRow) return;
@@ -164,7 +201,12 @@ export const AssistantResultsPanel = ({
     });
   }, [selectedRow, openRightDrawer, setSelectedCandidateId]);
 
-  if (!tableData || !tableData.rows?.length || !tableData.columns?.length) {
+  // Determine whether to show DataTable (real job or LinkedIn candidates) or AssistantDetailsTable
+  const hasTableRows = Boolean(tableData?.rows?.length && tableData?.columns?.length);
+  const showDataTable = hasTableRows;
+  const dataTableJobId = effectiveJobId ?? ASSISTANT_SEARCH_JOB_ID;
+
+  if (!hasTableRows) {
     return (
       <StyledResultsPanel>
         <StyledResultsHeader>
@@ -198,7 +240,7 @@ export const AssistantResultsPanel = ({
           />
         )}
       </StyledResultsHeader>
-      {(hasSelection || effectiveJobId) && (
+      {!showDataTable && (hasSelection || effectiveJobId) && (
         <StyledActionsBar>
           {hasSelection && (
             <>
@@ -236,11 +278,11 @@ export const AssistantResultsPanel = ({
         </StyledActionsBar>
       )}
       <StyledTableWrapper>
-        {effectiveJobId ? (
-          <DataTable jobId={effectiveJobId} />
+        {showDataTable ? (
+          <DataTable jobId={dataTableJobId} />
         ) : (
           <AssistantDetailsTable
-            data={tableData}
+            data={tableData!}
             maxHeight={maxTableHeight}
             onSelectRow={(index) => setSelectedRowIndex(index)}
           />

@@ -30,6 +30,8 @@ export type AssistantThreadJob = {
   company?: { id: string; name?: string };
 };
 
+export type LinkedInSearchType = 'classic' | 'sales_navigator' | 'recruiter';
+
 export type AssistantThread = {
   id: string;
   name: string;
@@ -40,6 +42,7 @@ export type AssistantThread = {
   agentNotes?: AgentNote[];
   agentEvents?: AssistantAgentEvent[];
   assistantMode?: 'fully_autonomous' | 'permissioned';
+  searchType?: LinkedInSearchType;
 };
 
 export type AssistantAgentEvent = {

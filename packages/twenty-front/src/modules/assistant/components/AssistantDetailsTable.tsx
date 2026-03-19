@@ -70,6 +70,9 @@ const truncatedRenderer: ColumnRenderer = (
 export type AssistantTableData = {
   columns: string[];
   rows: Record<string, unknown>[];
+  tableId?: string;
+  tableType?: string;
+  label?: string;
 };
 
 type AssistantDetailsTableProps = {

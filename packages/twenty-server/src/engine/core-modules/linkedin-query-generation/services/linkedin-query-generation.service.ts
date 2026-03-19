@@ -655,14 +655,39 @@ export class LinkedinQueryGenerationService {
         });
       }
     } else {
-      // Both are within limits or not factored, return as-is
-      queries.push({
-        ...query,
-        keywords: query.keywords,
-        job_title: query.job_title,
-        company: this.sanitizeArray(query.company),
-        location: this.sanitizeArray(query.location),
-      });
+      // Verify the full expression actually fits within LinkedIn's term limits.
+      // parseFactoredExpression can misparse multi-AND expressions (e.g. A AND B AND C),
+      // reporting orTerms.length <= 6 even when extractTerms returns > 6 total terms.
+      const actualKeywordsCount = this.extractTerms(query.keywords).length;
+      const actualJobTitleCount = this.extractTerms(query.job_title).length;
+      if (
+        actualKeywordsCount <= 6 &&
+        actualJobTitleCount <= 6 &&
+        actualKeywordsCount + actualJobTitleCount <= 10
+      ) {
+        queries.push({
+          ...query,
+          keywords: query.keywords,
+          job_title: query.job_title,
+          company: this.sanitizeArray(query.company),
+          location: this.sanitizeArray(query.location),
+        });
+      } else {
+        // Complex factored expression still exceeds limits — simplify to the anchor (AND) terms only.
+        const simplifiedKeywords = keywordsFactored
+          ? this.termsToExpression(keywordsFactored.andTerms.slice(0, 6))
+          : this.termsToExpression(this.extractTerms(query.keywords).slice(0, 6));
+        const simplifiedJobTitle = jobTitleFactored
+          ? this.termsToExpression(jobTitleFactored.andTerms.slice(0, 6))
+          : this.termsToExpression(this.extractTerms(query.job_title ?? null).slice(0, 6));
+        queries.push({
+          ...query,
+          keywords: simplifiedKeywords,
+          job_title: simplifiedJobTitle,
+          company: this.sanitizeArray(query.company),
+          location: this.sanitizeArray(query.location),
+        });
+      }
     }
 
     return queries.length > 0 ? queries : [query];

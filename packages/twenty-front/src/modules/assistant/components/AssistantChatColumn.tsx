@@ -3,8 +3,9 @@ import { AssistantActivityFeed } from '@/assistant/components/AssistantActivityF
 import { AssistantThreadNotes } from '@/assistant/components/AssistantThreadNotes';
 import { USE_MOCK_ASSISTANT } from '@/assistant/mocks/mockThreads';
 import type {
-  AssistantAgentEvent,
-  AssistantThread,
+    AssistantAgentEvent,
+    AssistantThread,
+    LinkedInSearchType,
 } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
@@ -146,6 +147,26 @@ const StyledThreadMenuDangerAction = styled(StyledThreadMenuAction)`
     color: ${({ theme }) => theme.font.color.secondary};
   }
 `;
+
+const StyledThreadMenuSectionTitle = styled.div`
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+`;
+
+const StyledThreadMenuActionActive = styled(StyledThreadMenuAction)<{ active?: boolean }>`
+  background-color: ${({ theme, active }) =>
+    active ? theme.background.transparent.light : 'transparent'};
+`;
+
+const SEARCH_TYPE_OPTIONS: { value: LinkedInSearchType; label: string }[] = [
+  { value: 'classic', label: 'Classic' },
+  { value: 'sales_navigator', label: 'Sales Navigator' },
+  { value: 'recruiter', label: 'Recruiter' },
+];
 
 const StyledJDHeaderRow = styled.div`
   display: flex;
@@ -519,12 +540,14 @@ type AssistantChatColumnProps = {
       assistantMode?: 'fully_autonomous' | 'permissioned';
       jobId?: string | null;
       name?: string;
+      searchType?: LinkedInSearchType;
     },
   ) => Promise<void> | void;
   onUpdateThreadMode: (
     threadId: string,
     assistantMode: 'fully_autonomous' | 'permissioned',
   ) => void;
+  selectedCandidateIds?: string[];
 };
 
 export const AssistantChatColumn = ({
@@ -546,6 +569,7 @@ export const AssistantChatColumn = ({
   onDeleteThread,
   onPatchThread,
   onUpdateThreadMode,
+  selectedCandidateIds,
 }: AssistantChatColumnProps) => {
   const { objectMetadataItems } = useObjectMetadataItems();
   const parsedJD = useRecoilValue(parsedJDSelector);
@@ -786,6 +810,22 @@ export const AssistantChatColumn = ({
                           : 'Auto'}
                       </span>
                     </StyledThreadMenuAction>
+                    <StyledThreadMenuSectionTitle>
+                      Search Type
+                    </StyledThreadMenuSectionTitle>
+                    {SEARCH_TYPE_OPTIONS.map((opt) => (
+                      <StyledThreadMenuActionActive
+                        key={opt.value}
+                        type="button"
+                        active={opt.value === (currentThread.searchType ?? 'classic')}
+                        onClick={() => {
+                          onPatchThread(currentThreadId, { searchType: opt.value });
+                          setIsThreadMenuOpen(false);
+                        }}
+                      >
+                        <span>{opt.label}</span>
+                      </StyledThreadMenuActionActive>
+                    ))}
                     {jdActions && (
                       <StyledThreadMenuAction
                         type="button"
@@ -936,6 +976,7 @@ export const AssistantChatColumn = ({
           onThreadNameChange={onThreadNameChange}
           onMessageComplete={onMessageComplete}
           onAgentEvent={onAgentEvent}
+          selectedCandidateIds={selectedCandidateIds}
         />
       )}
 

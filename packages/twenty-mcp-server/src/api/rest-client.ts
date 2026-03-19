@@ -1,4 +1,4 @@
-const TIMEOUT_MS = 30_000;
+const TIMEOUT_MS = 90_000; // 90s — query-generation pipeline can take ~30–40s across 4 LLM agents
 
 type HttpMethod = 'GET' | 'POST' | 'PATCH';
 
@@ -21,8 +21,9 @@ function logMcpRestCall(
       ? JSON.stringify(extra.requestBodyPreview).slice(0, 500)
       : undefined;
 
+  // Use stderr so logs are visible in parent process without corrupting MCP stdio protocol
   // eslint-disable-next-line no-console
-  console.log(
+  console.error(
     JSON.stringify(
       {
         source: 'mcp-rest-client',

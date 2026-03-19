@@ -29,7 +29,7 @@ export const fetchSearchResultsCache = async (
   jobId: string | undefined,
   accessToken: string | undefined,
 ): Promise<{ results: any[]; metadata: SearchMetadata } | null> => {
-  if (!jobId || jobId === 'job-id' || !accessToken) return null;
+  if (!jobId || jobId === 'job-id' || jobId === '__search__' || !accessToken) return null;
   const baseUrl = getBaseUrl();
   if (!baseUrl) return null;
   try {

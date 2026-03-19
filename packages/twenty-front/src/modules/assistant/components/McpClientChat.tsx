@@ -8,7 +8,7 @@ import styled from '@emotion/styled';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { Button, IconChevronDown, IconChevronRight } from 'twenty-ui';
+import { Button, IconChevronDown, IconChevronRight, Loader } from 'twenty-ui';
 
 import { useControlledMessages } from '@/assistant/hooks/useControlledMessages';
 import { useMcpStreamingChat } from '@/assistant/hooks/useMcpStreamingChat';
@@ -27,6 +27,8 @@ export type McpClientChatProps = {
   onStreamMessage?: (type: string, data: unknown) => void;
   /** Called when backend sends an assistant agent event over SSE (event: agent_event) */
   onAgentEvent?: (event: AssistantAgentEvent) => void;
+  /** Candidate IDs selected in the results DataTable, sent along with each chat message */
+  selectedCandidateIds?: string[];
 };
 
 const StyledContainer = styled.div`
@@ -329,6 +331,26 @@ const StyledRetryButton = styled.button`
   }
 `;
 
+const StyledExecutionTimerBanner = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(1.5, 2)};
+  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  background: ${({ theme }) => theme.background.tertiary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.secondary};
+`;
+
+const StyledExecutionTimerLeft = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1.5)};
+`;
+
 const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
 
 export const McpClientChat = ({
@@ -340,6 +362,7 @@ export const McpClientChat = ({
   onMessageComplete,
   onStreamMessage,
   onAgentEvent,
+  selectedCandidateIds,
 }: McpClientChatProps) => {
   const tokenPair = useRecoilValue(tokenPairState);
   const navigate = useNavigate();
@@ -350,6 +373,7 @@ export const McpClientChat = ({
   const [input, setInput] = useState('');
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const [expandedAssistantIndices, setExpandedAssistantIndices] = useState<Set<number>>(() => new Set());
+  const [requestElapsedSeconds, setRequestElapsedSeconds] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const {
@@ -371,6 +395,7 @@ export const McpClientChat = ({
     onAgentEvent,
     token: tokenPair?.accessToken?.token,
     baseUrl,
+    selectedCandidateIds,
   });
 
   const sendCurrentMessage = useCallback(() => {
@@ -378,6 +403,24 @@ export const McpClientChat = ({
     sendMessage(input);
     setInput('');
   }, [input, sendMessage]);
+
+  useEffect(() => {
+    if (!loading) {
+      setRequestElapsedSeconds(0);
+      return;
+    }
+
+    const start = Date.now();
+    setRequestElapsedSeconds(0);
+
+    const intervalId = window.setInterval(() => {
+      setRequestElapsedSeconds(Math.floor((Date.now() - start) / 1000));
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [loading]);
 
   const scrollToBottom = useCallback((instant = false) => {
     if (instant && messagesContainerRef.current) {
@@ -503,28 +546,27 @@ export const McpClientChat = ({
                 )}
               </StyledExpandableMessage>
             )}
-            {msg.tableDataList?.map((tableData, tableIndex) => (
-              <StyledTableSnapshot
-                key={tableIndex}
-                onClick={() => {
-                  const mockJobId = '6f0a5d80-8881-4279-b520-797d5acd4804';
-                  const rowsWithJobId = tableData.rows.map((row) => ({
-                    ...row,
-                    // For mocking, always override to the known job with real candidates
-                    jobsId: mockJobId,
-                  }));
-                  onTableData?.({
-                    ...tableData,
-                    rows: rowsWithJobId,
-                  });
-                }}
-              >
-                <AssistantDetailsTable data={tableData} />
-                <StyledTableSnapshotHint>
-                  Click to open the full candidates table on the right.
-                </StyledTableSnapshotHint>
-              </StyledTableSnapshot>
-            ))}
+            {msg.tableDataList?.map((tableData, tableIndex) => {
+              const previewData = {
+                ...tableData,
+                rows: tableData.rows.slice(0, 5),
+              };
+              return (
+                <StyledTableSnapshot
+                  key={tableIndex}
+                  onClick={() => {
+                    onTableData?.(tableData);
+                  }}
+                >
+                  <AssistantDetailsTable data={previewData} maxHeight={180} />
+                  <StyledTableSnapshotHint>
+                    {tableData.rows.length > 5
+                      ? `Showing 5 of ${tableData.rows.length} candidates. Click to view all in the panel.`
+                      : 'Click to view in the panel.'}
+                  </StyledTableSnapshotHint>
+                </StyledTableSnapshot>
+              );
+            })}
             {msg.orgCharts?.map((orgChart, orgChartIndex) => {
               const logoUrl = `${baseUrl}/org-chart/company-logo?website=${encodeURIComponent(orgChart.companyName)}`;
               return (
@@ -628,6 +670,15 @@ export const McpClientChat = ({
             Dismiss
           </StyledRetryButton>
         </StyledErrorBanner>
+      )}
+      {loading && (
+        <StyledExecutionTimerBanner role="status" aria-live="polite">
+          <StyledExecutionTimerLeft>
+            <Loader color="gray" />
+            <span>Waiting for server response...</span>
+          </StyledExecutionTimerLeft>
+          <span>{requestElapsedSeconds}s</span>
+        </StyledExecutionTimerBanner>
       )}
       <StyledForm onSubmit={handleSubmit} aria-label="Chat input">
         <StyledInputWrapper>

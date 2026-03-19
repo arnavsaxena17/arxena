@@ -473,7 +473,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     // }
 
     const refreshData = useCallback(async (specificIds?: string[]) => {
-      if (!jobId || jobId === "job-id") return;
+      if (!jobId || jobId === "job-id" || jobId === '__search__') return;
       try {
         const requestBody = specificIds?.length 
           ? { jobId, candidateIds: specificIds }
@@ -963,7 +963,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     }
 
     const loadData = useCallback(async () => {
-      if (!jobId || jobId === "job-id") return;
+      if (!jobId || jobId === "job-id" || jobId === '__search__') return;
       
       try {
         setTableState(prev => ({ ...prev, isLoading: true }));
@@ -1051,6 +1051,9 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
     // Load persisted search results and metadata from backend cache on mount or when jobId changes
     useEffect(() => {
+      // '__search__' is a virtual jobId used by the assistant for LinkedIn candidates;
+      // searchResultsState is populated externally (by AssistantResultsPanel), so skip here.
+      if (jobId === '__search__') return;
       if (!jobId || jobId === 'job-id') {
         setSearchResults([]);
         setSearchMetadata({ totalCount: 0, currentPage: 0, totalPages: 0 });
@@ -1078,7 +1081,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
     // Persist search results and metadata to backend cache whenever they change
     useEffect(() => {
-      if (!jobId || jobId === 'job-id') return;
+      if (!jobId || jobId === 'job-id' || jobId === '__search__') return;
       const accessToken = tokenPair?.accessToken?.token;
       if (!accessToken) return;
       if (searchResults.length > 0) {

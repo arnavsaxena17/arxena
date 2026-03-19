@@ -117,4 +117,5 @@ export type AssistantThreadRecord = {
   agentNotes?: AgentNote[];
   agentEvents?: AssistantAgentEventRecord[];
   assistantMode?: 'fully_autonomous' | 'permissioned';
+  searchType?: 'classic' | 'sales_navigator' | 'recruiter';
 };

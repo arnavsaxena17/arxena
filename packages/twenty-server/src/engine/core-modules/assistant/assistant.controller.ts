@@ -1,13 +1,18 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
+import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
+import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { AssistantThreadService } from './assistant-thread.service';
 import {
-  AssistantChatRequestBody,
-  AssistantContentBlock,
+    AssistantChatRequestBody,
+    AssistantContentBlock,
 } from './assistant.types';
 import { McpAssistantService } from './mcp-assistant.service';
 import { AutonomousRecruitmentAgentRulesService } from './recruitment-agent-rules.service';
+
+const TABLE_DATA_CACHE_TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days
 
 @Controller('assistant')
 export class AssistantController {
@@ -15,6 +20,8 @@ export class AssistantController {
     private readonly mcpAssistantService: McpAssistantService,
     private readonly assistantThreadService: AssistantThreadService,
     private readonly autonomousRecruitmentAgentRulesService: AutonomousRecruitmentAgentRulesService,
+    @InjectCacheStorage(CacheStorageNamespace.EngineCandidateSearch)
+    private readonly tableDataCache: CacheStorageService,
   ) {}
 
   @Get('threads')
@@ -82,14 +89,31 @@ export class AssistantController {
     try {
       const thread = await this.assistantThreadService.getThread(apiToken, id);
       if (!thread) return { error: 'Thread not found' };
+
+      // Resolve lastTableData from whichever storage format is present:
+      //   - New: { tables: [{ ref, tableType, ... }] } → resolve the most recent entry from Redis
+      //   - Legacy cacheRef: { cacheRef: 'key' } → resolve directly from Redis
+      //   - Legacy inline: { columns, rows } → use as-is
+      let lastTableData = thread.lastTableData ?? null;
+      const raw = lastTableData as any;
+      if (raw?.tables && Array.isArray(raw.tables) && raw.tables.length > 0) {
+        const lastEntry = raw.tables[raw.tables.length - 1];
+        const cached = await this.tableDataCache.get<{ columns: string[]; rows: Record<string, unknown>[] }>(lastEntry.ref);
+        lastTableData = cached ? { ...cached, tableId: lastEntry.tableId, tableType: lastEntry.tableType, label: lastEntry.label } as any : null;
+      } else if (raw?.cacheRef && typeof raw.cacheRef === 'string') {
+        const cached = await this.tableDataCache.get<{ columns: string[]; rows: Record<string, unknown>[] }>(raw.cacheRef);
+        lastTableData = cached ?? null;
+      }
+
       return {
         id: thread.id,
         name: thread.name,
         messages: thread.messages,
-        lastTableData: thread.lastTableData ?? null,
+        lastTableData,
         jobId: thread.jobId ?? null,
         job: thread.job ?? null,
         assistantMode: thread.assistantMode ?? 'permissioned',
+        searchType: thread.searchType ?? null,
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -108,6 +132,7 @@ export class AssistantController {
         name?: string;
         jobId?: string | null;
         assistantMode?: 'fully_autonomous' | 'permissioned';
+        searchType?: 'classic' | 'sales_navigator' | 'recruiter';
       };
     },
   ) {
@@ -120,6 +145,7 @@ export class AssistantController {
     const name = body.name;
     const jobId = body.jobId;
     const assistantMode = body.assistantMode;
+    const searchType = body.searchType;
 
     try {
       if (typeof name === 'string') {
@@ -139,15 +165,21 @@ export class AssistantController {
           assistantMode,
         );
       }
-      if (
-        typeof name !== 'string' &&
-        jobId === undefined &&
-        assistantMode !== 'fully_autonomous' &&
-        assistantMode !== 'permissioned'
-      ) {
+      if (searchType === 'classic' || searchType === 'sales_navigator' || searchType === 'recruiter') {
+        await this.assistantThreadService.updateThreadSearchType(apiToken, id, searchType);
+      }
+      const hasValidUpdate =
+        typeof name === 'string' ||
+        jobId !== undefined ||
+        assistantMode === 'fully_autonomous' ||
+        assistantMode === 'permissioned' ||
+        searchType === 'classic' ||
+        searchType === 'sales_navigator' ||
+        searchType === 'recruiter';
+      if (!hasValidUpdate) {
         return {
           error:
-            'Body must include at least one of "name", "jobId", or a valid "assistantMode"',
+            'Body must include at least one of "name", "jobId", "searchType", or a valid "assistantMode"',
         };
       }
       const thread = await this.assistantThreadService.getThread(apiToken, id);
@@ -156,6 +188,7 @@ export class AssistantController {
         name: thread?.name ?? name,
         jobId: thread?.jobId ?? (jobId !== undefined ? jobId : undefined),
         assistantMode: thread?.assistantMode ?? assistantMode,
+        searchType: thread?.searchType ?? searchType,
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -329,7 +362,32 @@ export class AssistantController {
     res.setHeader('X-Accel-Buffering', 'no');
 
     const threadId = body.threadId;
-    let lastTableData: { columns: string[]; rows: Record<string, unknown>[] } | null = null;
+    let threadSearchType: 'classic' | 'sales_navigator' | 'recruiter' = 'classic';
+    if (threadId) {
+      try {
+        const thread = await this.assistantThreadService.getThread(apiToken, threadId);
+        if (thread?.searchType) {
+          threadSearchType = thread.searchType;
+        }
+      } catch {
+        // best-effort; use default
+      }
+    }
+
+    // Registry of all tables emitted during this stream; each entry holds its full data
+    // until the stream ends, then data is flushed to Redis and only metadata kept.
+    type TableEntry = {
+      tableId: string;
+      ref: string;
+      tableType: string;
+      label: string;
+      columns: string[];
+      count: number;
+      createdAt: number;
+      data: { columns: string[]; rows: Record<string, unknown>[] };
+    };
+    const tableRegistry: TableEntry[] = [];
+
     let finalText = '';
     let finalToolCalls: Array<{ name: string; args: Record<string, unknown> }> | undefined = undefined;
 
@@ -340,14 +398,22 @@ export class AssistantController {
       try {
         res.write(`event: ${event}\n`);
         res.write(`data: ${JSON.stringify(data)}\n\n`);
-        // Track table data and final response for persistence
+        // Collect each table_data emission into the registry
         if (event === 'table_data' && typeof data === 'object' && data !== null) {
-          const d = data as { columns?: unknown; rows?: unknown };
+          const d = data as { columns?: unknown; rows?: unknown; tableId?: unknown; tableType?: unknown; label?: unknown };
           if (Array.isArray(d.columns) && Array.isArray(d.rows)) {
-            lastTableData = {
+            const tableId = typeof d.tableId === 'string' ? d.tableId : crypto.randomUUID();
+            const ref = threadId ? `thread:${threadId}:table:${tableId}` : `table:${tableId}`;
+            tableRegistry.push({
+              tableId,
+              ref,
+              tableType: typeof d.tableType === 'string' ? d.tableType : 'data',
+              label: typeof d.label === 'string' ? d.label : `${(d.rows as unknown[]).length} results`,
               columns: d.columns as string[],
-              rows: d.rows as Record<string, unknown>[],
-            };
+              count: (d.rows as unknown[]).length,
+              createdAt: Date.now(),
+              data: { columns: d.columns as string[], rows: d.rows as Record<string, unknown>[] },
+            });
           }
         }
         if (event === 'done' && typeof data === 'object' && data !== null) {
@@ -378,7 +444,9 @@ export class AssistantController {
         history,
         sendEvent,
         systemPrompt,
-        threadId ? { assistantThreadId: threadId } : undefined,
+        threadId
+          ? { assistantThreadId: threadId, searchType: threadSearchType }
+          : undefined,
       );
 
       // Persist messages and table data if threadId is provided
@@ -430,11 +498,31 @@ export class AssistantController {
             }
           }
 
-          if (lastTableData) {
+          if (tableRegistry.length > 0) {
+            // Persist each table's rows to Redis under its own unique key.
+            await Promise.all(
+              tableRegistry.map((entry) =>
+                this.tableDataCache.set(entry.ref, entry.data, TABLE_DATA_CACHE_TTL_SECONDS),
+              ),
+            );
+            // Merge new tables into any existing metadata registry on the thread,
+            // so that multiple searches/sessions accumulate rather than overwrite.
+            const newMeta = tableRegistry.map(({ data: _data, ...meta }) => meta);
+            let existingTables: typeof newMeta = [];
+            try {
+              const currentThread = await this.assistantThreadService.getThread(apiToken, threadId);
+              const currentRaw = currentThread?.lastTableData as any;
+              if (currentRaw?.tables && Array.isArray(currentRaw.tables)) {
+                existingTables = currentRaw.tables;
+              }
+            } catch {
+              // best-effort; proceed with new tables only
+            }
+            const mergedRegistry = { tables: [...existingTables, ...newMeta] };
             await this.assistantThreadService.setThreadTableData(
               apiToken,
               threadId,
-              lastTableData,
+              mergedRegistry as any,
             );
           }
         } catch (persistErr) {

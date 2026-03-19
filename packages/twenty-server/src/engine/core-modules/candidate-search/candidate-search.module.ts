@@ -21,6 +21,7 @@ import { WorkspaceModificationsModule } from '../workspace-modifications/workspa
 import { CandidateSearchPipelineController } from './controllers/candidate-search-pipeline.controller';
 import { CandidateSearchController } from './controllers/candidate-search.controller';
 import { SearchParametersPrompts } from './prompts/search-parameters-prompts';
+import { AssistantThreadService } from './services/assistant-thread.service';
 import { BooltreeHintService } from './services/booltree-hint.service';
 import { CandidateSearchHandlerService } from './services/candidate-search-handler.service';
 import { ClassifyMessageService } from './services/classify-message.service';
@@ -28,11 +29,15 @@ import { CleanupService } from './services/cleanup.service';
 import { CompanyExpanderService } from './services/company-expander.service';
 import { JobDescriptionService } from './services/job-description.service';
 import { JobTitleExpanderService } from './services/job-title-expander.service';
+import { OrgChartCacheService } from './services/orgchart-cache.service';
 import { OrgchartCancelRegistryService } from './services/orgchart-cancel-registry.service';
+import { OrgChartSearchService } from './services/orgchart-search.service';
 import { PythonQueryGenerationService } from './services/python-query-generation.service';
 import { QueryConstructorService } from './services/query-constructor.service';
 import { RequirementAnalyzerService } from './services/requirement-analyzer.service';
+import { SearchResponseBuilderService } from './services/search-response-builder.service';
 import { SearchResultsCacheService } from './services/search-results-cache.service';
+import { StrategyExecutionService } from './services/strategy-execution.service';
 import { FileUtils } from './utils/file.utils';
 import { LinkedinParameterResolver } from './utils/linkedin-parameter-resolver.util';
 import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
@@ -47,6 +52,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
   ],
   controllers: [CandidateSearchController, CandidateSearchChatController, CandidateSearchPipelineController],
   providers: [
+    AssistantThreadService,
     CandidateSearchBaseService,
     CandidateSearchHandlerService,
     StreamProcessingService,
@@ -73,7 +79,11 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     QueryConstructorService,
     CleanupService,
     ClassifyMessageService,
+    SearchResponseBuilderService,
+    StrategyExecutionService,
     SearchResultsCacheService,
+    OrgChartCacheService,
+    OrgChartSearchService,
     OrgchartCancelRegistryService,
     // Executive search enhancement services
     PythonOrgChartService,

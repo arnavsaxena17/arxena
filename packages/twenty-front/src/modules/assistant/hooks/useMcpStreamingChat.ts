@@ -23,6 +23,8 @@ type UseMcpStreamingChatParams = {
   onAgentEvent?: (event: AssistantAgentEvent) => void;
   token?: string;
   baseUrl: string;
+  /** Candidate IDs selected in the results DataTable; forwarded to the backend on each request */
+  selectedCandidateIds?: string[];
 };
 
 const stripThreadNameQuotes = (name: string): string => {
@@ -50,6 +52,7 @@ export const useMcpStreamingChat = ({
   onAgentEvent,
   token,
   baseUrl,
+  selectedCandidateIds,
 }: UseMcpStreamingChatParams) => {
   const [loading, setLoading] = useState(false);
   const [streamLog, setStreamLog] = useState<string[]>([]);
@@ -232,16 +235,16 @@ export const useMcpStreamingChat = ({
       }
 
       if (eventType === 'table_data') {
-        const columns = Array.isArray((data as { columns?: unknown }).columns)
-          ? (data as { columns: string[] }).columns
-          : [];
-        const rows = Array.isArray((data as { rows?: unknown }).rows)
-          ? (data as { rows: unknown[] }).rows
-          : [];
+        const d = data as { columns?: unknown; rows?: unknown; tableId?: unknown; tableType?: unknown; label?: unknown };
+        const columns = Array.isArray(d.columns) ? (d.columns as string[]) : [];
+        const rows = Array.isArray(d.rows) ? (d.rows as unknown[]) : [];
         if (columns.length > 0 && rows.length > 0) {
           const tableData = {
             columns,
             rows: rows as Record<string, unknown>[],
+            ...(typeof d.tableId === 'string' ? { tableId: d.tableId } : {}),
+            ...(typeof d.tableType === 'string' ? { tableType: d.tableType } : {}),
+            ...(typeof d.label === 'string' ? { label: d.label } : {}),
           };
           onTableData?.(tableData);
           const prev = streamedMessagesRef.current;
@@ -433,6 +436,7 @@ export const useMcpStreamingChat = ({
             message: trimmed,
             conversationHistory,
             ...(threadId ? { threadId } : {}),
+            ...(selectedCandidateIds?.length ? { selectedCandidateIds } : {}),
           }),
         });
 
@@ -506,7 +510,7 @@ export const useMcpStreamingChat = ({
         setLoading(false);
       }
     },
-    [baseUrl, handleSseEvent, messages, setMessages, threadId, token],
+    [baseUrl, handleSseEvent, messages, selectedCandidateIds, setMessages, threadId, token],
   );
 
   return {

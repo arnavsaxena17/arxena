@@ -26,6 +26,7 @@ function createNewThread(name = 'New thread'): AssistantThread {
     messages: [],
     lastTableData: null,
     assistantMode: 'permissioned',
+    searchType: 'classic',
   };
 }
 
@@ -115,6 +116,7 @@ export const AssistantPage = () => {
   const [threadPatchInFlightById, setThreadPatchInFlightById] = useState<Record<string, boolean>>(
     {},
   );
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (threads.length > 0 && !threads.some((t) => t.id === currentThreadId)) {
@@ -208,16 +210,17 @@ export const AssistantPage = () => {
             return;
           }
           if (created.id) {
-            setThreads([
-              {
-                id: created.id,
-                name: created.name ?? 'New thread',
-                messages: [],
-                lastTableData: null,
-                jobId: created.jobId ?? null,
-                assistantMode: created.assistantMode ?? 'permissioned',
-              },
-            ]);
+          setThreads([
+            {
+              id: created.id,
+              name: created.name ?? 'New thread',
+              messages: [],
+              lastTableData: null,
+              jobId: created.jobId ?? null,
+              assistantMode: created.assistantMode ?? 'permissioned',
+              searchType: 'classic',
+            },
+          ]);
             setCurrentThreadId(created.id);
           }
         } else {
@@ -230,6 +233,7 @@ export const AssistantPage = () => {
               jobId: t.jobId ?? null,
               job: t.job ?? null,
               assistantMode: t.assistantMode ?? 'permissioned',
+              searchType: (t as { searchType?: 'classic' | 'sales_navigator' | 'recruiter' }).searchType ?? 'classic',
             })),
           );
           setCurrentThreadId(data.threads[0].id);
@@ -291,19 +295,20 @@ export const AssistantPage = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) return;
-      const data = (await res.json()) as {
-        messages?: Array<{
-          role: 'user' | 'assistant';
-          content: string;
-          toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
-        }>;
-        lastTableData?: AssistantTableData;
-        jobId?: string | null;
-        job?: { id: string; name?: string; jobLocation?: string; company?: { id: string; name?: string } } | null;
-        agentNotes?: Array<{ summary: string; createdAt?: string; id?: string }>;
-        agentEvents?: AssistantAgentEvent[];
-        assistantMode?: 'fully_autonomous' | 'permissioned';
-        error?: string;
+        const data = (await res.json()) as {
+          messages?: Array<{
+            role: 'user' | 'assistant';
+            content: string;
+            toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
+          }>;
+          lastTableData?: AssistantTableData;
+          jobId?: string | null;
+          job?: { id: string; name?: string; jobLocation?: string; company?: { id: string; name?: string } } | null;
+          agentNotes?: Array<{ summary: string; createdAt?: string; id?: string }>;
+          agentEvents?: AssistantAgentEvent[];
+          assistantMode?: 'fully_autonomous' | 'permissioned';
+          searchType?: 'classic' | 'sales_navigator' | 'recruiter';
+          error?: string;
       };
       if (data.error) return;
 
@@ -331,6 +336,7 @@ export const AssistantPage = () => {
                 agentNotes: data.agentNotes ?? t.agentNotes,
                 agentEvents: data.agentEvents ?? t.agentEvents,
                 assistantMode: data.assistantMode ?? t.assistantMode ?? 'permissioned',
+                searchType: data.searchType ?? t.searchType ?? 'classic',
               }
             : t,
         );
@@ -437,6 +443,7 @@ export const AssistantPage = () => {
                   lastTableData: null,
                   jobId: created.jobId ?? null,
                   assistantMode: created.assistantMode ?? 'permissioned',
+                  searchType: (created as { searchType?: 'classic' | 'sales_navigator' | 'recruiter' }).searchType ?? 'classic',
                 };
                 setThreads((prev) => [thread, ...prev]);
                 setCurrentThreadId(threadId);
@@ -558,7 +565,12 @@ export const AssistantPage = () => {
   const patchThread = useCallback(
     async (
       threadId: string,
-      patch: { assistantMode?: 'fully_autonomous' | 'permissioned'; jobId?: string | null; name?: string },
+      patch: {
+        assistantMode?: 'fully_autonomous' | 'permissioned';
+        jobId?: string | null;
+        name?: string;
+        searchType?: 'classic' | 'sales_navigator' | 'recruiter';
+      },
     ) => {
       // Optimistic update so UI reflects changes immediately (e.g. attach job after JD upload)
       setThreads((prev) =>
@@ -571,6 +583,7 @@ export const AssistantPage = () => {
                   ? { jobId: patch.jobId, job: patch.jobId ? t.job : null }
                   : {}),
                 ...(typeof patch.name === 'string' ? { name: patch.name } : {}),
+                ...(patch.searchType ? { searchType: patch.searchType } : {}),
               }
             : t,
         ),
@@ -586,27 +599,29 @@ export const AssistantPage = () => {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (!res.ok) return;
-          const data = (await res.json()) as {
-            jobId?: string | null;
-            job?: { id: string; name?: string; jobLocation?: string; company?: { id: string; name?: string } } | null;
-            assistantMode?: 'fully_autonomous' | 'permissioned';
-            name?: string;
-            error?: string;
-          };
-          if (data.error) return;
-          setThreads((prev) =>
-            prev.map((t) =>
-              t.id === threadId
-                ? {
-                    ...t,
-                    ...(typeof data.name === 'string' ? { name: data.name } : {}),
-                    ...(data.jobId !== undefined ? { jobId: data.jobId } : {}),
-                    ...(data.job !== undefined ? { job: data.job } : {}),
-                    ...(data.assistantMode ? { assistantMode: data.assistantMode } : {}),
-                  }
-                : t,
-            ),
-          );
+        const data = (await res.json()) as {
+          jobId?: string | null;
+          job?: { id: string; name?: string; jobLocation?: string; company?: { id: string; name?: string } } | null;
+          assistantMode?: 'fully_autonomous' | 'permissioned';
+          name?: string;
+          searchType?: 'classic' | 'sales_navigator' | 'recruiter';
+          error?: string;
+        };
+        if (data.error) return;
+        setThreads((prev) =>
+          prev.map((t) =>
+            t.id === threadId
+              ? {
+                  ...t,
+                  ...(typeof data.name === 'string' ? { name: data.name } : {}),
+                  ...(data.jobId !== undefined ? { jobId: data.jobId } : {}),
+                  ...(data.job !== undefined ? { job: data.job } : {}),
+                  ...(data.assistantMode ? { assistantMode: data.assistantMode } : {}),
+                  ...(data.searchType ? { searchType: data.searchType } : {}),
+                }
+              : t,
+          ),
+        );
         } catch {
           // ignore; best effort refresh
         }
@@ -628,6 +643,7 @@ export const AssistantPage = () => {
           name?: string;
           jobId?: string | null;
           assistantMode?: 'fully_autonomous' | 'permissioned';
+          searchType?: 'classic' | 'sales_navigator' | 'recruiter';
           error?: string;
         };
         if (data.error) return;
@@ -640,6 +656,7 @@ export const AssistantPage = () => {
                   ...(typeof data.name === 'string' ? { name: data.name } : {}),
                   ...(data.jobId !== undefined ? { jobId: data.jobId, job: null } : {}),
                   ...(data.assistantMode ? { assistantMode: data.assistantMode } : {}),
+                  ...(data.searchType ? { searchType: data.searchType } : {}),
                 }
               : t,
           ),
@@ -804,6 +821,7 @@ export const AssistantPage = () => {
             onUpdateThreadMode={(threadId, assistantMode) =>
               patchThread(threadId, { assistantMode })
             }
+            selectedCandidateIds={selectedCandidateIds}
           />
           <AssistantResultsPanel
             tableData={currentThread?.lastTableData ?? null}
@@ -811,6 +829,7 @@ export const AssistantPage = () => {
             threadId={showSync ? currentThreadId ?? undefined : undefined}
             onSync={showSync ? handleSyncTable : undefined}
             jobIdFromThread={currentThread?.jobId ?? null}
+            onSelectionChange={setSelectedCandidateIds}
           />
         </StyledSplitLayout>
       </StyledPageBody>

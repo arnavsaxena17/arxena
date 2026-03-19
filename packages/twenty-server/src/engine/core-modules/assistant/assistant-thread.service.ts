@@ -177,6 +177,14 @@ export class AssistantThreadService {
           }))
       : undefined;
 
+    const assistantParameters =
+      node.assistantParameters && typeof node.assistantParameters === 'object'
+        ? (node.assistantParameters as Record<string, unknown>)
+        : undefined;
+    const searchType =
+      (assistantParameters?.searchType as 'classic' | 'sales_navigator' | 'recruiter') ??
+      undefined;
+
     return {
       id: node.id,
       name: node.name ?? 'New thread',
@@ -193,6 +201,7 @@ export class AssistantThreadService {
       agentNotes: agentNotes?.length ? agentNotes : undefined,
       agentEvents,
       assistantMode: node.assistantMode ?? 'permissioned',
+      searchType,
     };
   }
 
@@ -253,6 +262,30 @@ export class AssistantThreadService {
     await this.staticGraphQLService.executeGraphQL(
       updateOneAssistantThread,
       { id: threadId, input: { assistantMode } },
+      apiToken,
+    );
+  }
+
+  async updateThreadSearchType(
+    apiToken: string,
+    threadId: string,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  ): Promise<void> {
+    const result = await this.staticGraphQLService.executeGraphQL(
+      findOneAssistantThread,
+      { id: threadId },
+      apiToken,
+    );
+    const node = result?.data?.data?.assistantThread;
+    if (!node) return;
+    const currentParams =
+      node.assistantParameters && typeof node.assistantParameters === 'object'
+        ? (node.assistantParameters as Record<string, unknown>)
+        : {};
+    const merged = { ...currentParams, searchType };
+    await this.staticGraphQLService.executeGraphQL(
+      updateOneAssistantThread,
+      { id: threadId, input: { assistantParameters: merged } },
       apiToken,
     );
   }

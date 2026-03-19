@@ -7,10 +7,10 @@ import * as path from 'path';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
-  AssistantChatResponse,
-  McpModelProvider,
-  MessageParam,
-  StreamEventSender,
+    AssistantChatResponse,
+    McpModelProvider,
+    MessageParam,
+    StreamEventSender,
 } from './assistant.types';
 
 const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
@@ -213,6 +213,7 @@ export class McpAssistantService {
       apiToken: string;
       systemPrompt?: string;
       assistantThreadId?: string;
+      searchType?: 'classic' | 'sales_navigator' | 'recruiter';
       sendEvent?: StreamEventSender;
     },
   ): Promise<OpenAI.Chat.ChatCompletionMessageParam[]> {
@@ -221,6 +222,7 @@ export class McpAssistantService {
       apiToken,
       systemPrompt,
       assistantThreadId,
+      searchType,
       sendEvent,
     } = opts;
 
@@ -308,6 +310,7 @@ export class McpAssistantService {
             apiToken,
             silentSendEvent,
             assistantThreadId,
+            searchType,
           );
           toolContent = result.textContent;
           toolResultsByToolUseId.set(toolUse.id, toolContent);
@@ -496,6 +499,7 @@ export class McpAssistantService {
    * Caller should call sendEvent('tool_use', { name }) before this (and break if it returns false).
    * Returns textContent and whether result came from cache (caller updates allToolCalls when !fromCache).
    * When assistantThreadId is provided, it is merged into args so tool handlers receive it.
+   * When searchType is provided, it is merged into args so tool handlers receive it.
    */
   private async executeToolAndGetResult(
     client: Client,
@@ -504,11 +508,15 @@ export class McpAssistantService {
     apiToken: string,
     sendEvent: StreamEventSender,
     assistantThreadId?: string,
+    searchType?: 'classic' | 'sales_navigator' | 'recruiter',
   ): Promise<{ textContent: string; fromCache: boolean }> {
-    const effectiveArgs =
-      assistantThreadId != null && assistantThreadId !== ''
-        ? { ...args, assistantThreadId }
-        : args;
+    let effectiveArgs = { ...args };
+    if (assistantThreadId != null && assistantThreadId !== '') {
+      effectiveArgs = { ...effectiveArgs, assistantThreadId };
+    }
+    if (searchType) {
+      effectiveArgs = { ...effectiveArgs, searchType };
+    }
     const cacheKey = this.getToolCallCacheKey(name, effectiveArgs);
     const cachedResult = this.getCachedToolResult(cacheKey);
     if (cachedResult !== null) {
@@ -553,31 +561,52 @@ export class McpAssistantService {
         return { textContent: fallback, fromCache: false };
       }
       this.cacheToolResult(cacheKey, textContent);
+      this.logger.log(`MCP tool "${name}" result (first 300 chars): ${textContent.slice(0, 300)}`);
       return { textContent, fromCache: false };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       this.logger.error(`MCP tool "${name}" failed: ${message}`, err instanceof Error ? err.stack : undefined);
       const textContent = JSON.stringify({ error: message });
-      this.cacheToolResult(cacheKey, textContent);
+      // Do NOT cache errors so the LLM can retry on transient failures (e.g. timeout)
       return { textContent, fromCache: false };
     }
   }
 
   /**
    * If tool result is JSON with list-like data, emit table_data event for UI.
+   * Pass toolName to infer the table type (candidates, jobs, companies, etc.).
    */
-  private emitTableDataIfJson(sendEvent: StreamEventSender, textContent: string): void {
+  private emitTableDataIfJson(sendEvent: StreamEventSender, textContent: string, toolName?: string): void {
     if (!textContent) return;
     try {
       const parsed = JSON.parse(textContent) as unknown;
       const rows = this.extractTableRowsFromToolResult(parsed);
       if (rows.length > 0) {
         const columns = [...new Set(rows.flatMap((r) => Object.keys(r)))];
-        sendEvent('table_data', { columns, rows });
+        const tableType = this.inferTableType(toolName, columns);
+        const tableId = crypto.randomUUID();
+        const label = `${rows.length} ${tableType} result${rows.length !== 1 ? 's' : ''}`;
+        sendEvent('table_data', { tableId, tableType, label, columns, rows });
       }
     } catch {
       // not JSON or not a list of objects – ignore
     }
+  }
+
+  private inferTableType(toolName?: string, columns?: string[]): string {
+    if (toolName) {
+      if (toolName.includes('job')) return 'jobs';
+      if (toolName.includes('compan')) return 'companies';
+      if (toolName.includes('contact') || toolName.includes('person') || toolName.includes('people') || toolName.includes('candidate')) return 'candidates';
+    }
+    // Fallback: infer from column names
+    if (columns) {
+      const colSet = new Set(columns.map((c) => c.toLowerCase()));
+      if (colSet.has('jobLocation') || colSet.has('joblocation')) return 'jobs';
+      if (colSet.has('domain') || colSet.has('website')) return 'companies';
+      if (colSet.has('headline') || colSet.has('jobtitle') || colSet.has('linkedinurl')) return 'candidates';
+    }
+    return 'data';
   }
 
   /**
@@ -706,6 +735,22 @@ export class McpAssistantService {
         apiToken,
         (event, data) => sendEvent(event, data),
       );
+      if (result.response?.error) {
+        const errorMessage =
+          typeof result.response.error === 'string'
+            ? result.response.error
+            : JSON.stringify(result.response.error);
+
+        const toolErrorResult = JSON.stringify({
+          text: '',
+          error: errorMessage,
+        });
+
+        this.cacheToolResult(cacheKey, toolErrorResult);
+
+        return toolErrorResult;
+      }
+
       const candidates = this.candidateSearchHandlerService.extractCandidatesFromResponse(
         result.response,
       );
@@ -1179,14 +1224,34 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     conversationHistory: MessageParam[] = [],
     sendEvent: StreamEventSender,
     systemPrompt?: string,
-    options?: { assistantThreadId?: string },
+    options?: {
+      assistantThreadId?: string;
+      searchType?: 'classic' | 'sales_navigator' | 'recruiter';
+    },
   ): Promise<void> {
     const assistantThreadId = options?.assistantThreadId;
+    const threadSearchType = options?.searchType;
     if (this.provider === 'openai' && this.openai) {
-      const streamResult = await this.processQueryStreamWithOpenAI(query, apiToken, conversationHistory, sendEvent, systemPrompt, assistantThreadId);
+      const streamResult = await this.processQueryStreamWithOpenAI(
+        query,
+        apiToken,
+        conversationHistory,
+        sendEvent,
+        systemPrompt,
+        assistantThreadId,
+        threadSearchType,
+      );
       return streamResult;
     }
-    const streamResult = await this.processQueryStreamWithAnthropic(query, apiToken, conversationHistory, sendEvent, systemPrompt, assistantThreadId);
+    const streamResult = await this.processQueryStreamWithAnthropic(
+      query,
+      apiToken,
+      conversationHistory,
+      sendEvent,
+      systemPrompt,
+      assistantThreadId,
+      threadSearchType,
+    );
     return streamResult;
   }
 
@@ -1236,6 +1301,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     sendEvent: StreamEventSender,
     allToolCalls: Array<{ name: string; args: Record<string, unknown> }>,
     assistantThreadId?: string,
+    searchType?: 'classic' | 'sales_navigator' | 'recruiter',
   ): Promise<{
     toolResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }>;
     textParts: string[];
@@ -1256,6 +1322,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
           apiToken,
           sendEvent,
           assistantThreadId,
+          searchType,
         );
         if (!fromCache) allToolCalls.push({ name: block.name, args: toolArgs });
         toolResults.push({
@@ -1263,7 +1330,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
           tool_use_id: block.id,
           content: textContent,
         });
-        this.emitTableDataIfJson(sendEvent, textContent);
+        this.emitTableDataIfJson(sendEvent, textContent, block.name);
       }
     }
     return { toolResults, textParts };
@@ -1276,6 +1343,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     sendEvent: StreamEventSender,
     systemPrompt?: string,
     assistantThreadId?: string,
+    threadSearchType?: 'classic' | 'sales_navigator' | 'recruiter',
   ): Promise<void> {
     await this.withMcpClient(apiToken, async (client) => {
       const availableTools = await this.fetchAnthropicTools(client);
@@ -1302,6 +1370,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
           sendEvent,
           allToolCalls,
           assistantThreadId,
+          threadSearchType,
         );
         finalText.push(...textParts);
         const hasToolUse = toolResults.length > 0;
@@ -1323,6 +1392,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     sendEvent: StreamEventSender,
     systemPrompt?: string,
     assistantThreadId?: string,
+    threadSearchType?: 'classic' | 'sales_navigator' | 'recruiter',
   ): Promise<void> {
     if (!this.openai) {
       sendEvent('error', {
@@ -1343,6 +1413,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
           apiToken,
           systemPrompt,
           assistantThreadId,
+          searchType: threadSearchType,
           sendEvent: () => true,
         },
       );
@@ -1393,6 +1464,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
             apiToken,
             sendEvent,
             assistantThreadId,
+            threadSearchType,
           );
           if (!fromCache) allToolCalls.push({ name: tc.name, args });
           openaiMessages.push({
@@ -1400,7 +1472,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
             tool_call_id: tc.id,
             content: textContent,
           });
-          this.emitTableDataIfJson(sendEvent, textContent);
+          this.emitTableDataIfJson(sendEvent, textContent, tc.name);
         }
       }
 

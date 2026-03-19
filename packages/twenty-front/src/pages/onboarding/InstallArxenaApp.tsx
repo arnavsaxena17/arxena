@@ -41,7 +41,7 @@ export const InstallArxenaApp = () => {
   const [isDownloading, setIsDownloading] = useState(false);
 
   const onboardingStatus = useOnboardingStatus();
-  const isInstallAppStep = onboardingStatus === OnboardingStatus?.INSTALL_ARXENA_APP;
+  const isInstallAppStep = onboardingStatus === OnboardingStatus.INSTALL_APP;
 
   useEffect(() => {
     setSystemInfo(getSystemInfo());
@@ -56,9 +56,9 @@ export const InstallArxenaApp = () => {
     } finally {
       setIsDownloading(false);
     }
-  }, [advanceToNextStep, systemInfo]);
+  }, [systemInfo]);
 
-  const handleSkip = useCallback(async () => {}, []);
+  const handleSkip = useCallback((): void => {}, []);
 
   if (onboardingStatus === undefined || onboardingStatus === null) {
     return <Loader />;
