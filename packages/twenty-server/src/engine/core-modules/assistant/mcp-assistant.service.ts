@@ -709,9 +709,16 @@ export class McpAssistantService {
       const candidates = this.candidateSearchHandlerService.extractCandidatesFromResponse(
         result.response,
       );
+      // Only return a summary + reference to the LLM — full candidate data stays in Redis cache.
+      // This prevents the tool result (100 candidates × full JSON) from bloating the context window.
       const toolResult = JSON.stringify({
         text: result.response?.chatMessage ?? result.assistantMessage ?? '',
-        ...(candidates.length > 0 ? { candidates } : {}),
+        ...(candidates.length > 0
+          ? {
+              candidateCount: candidates.length,
+              searchRef: String(args.assistantThreadId ?? ''),
+            }
+          : {}),
         ...(result.response?.error ? { error: result.response.error } : {}),
       });
       // Cache the result
