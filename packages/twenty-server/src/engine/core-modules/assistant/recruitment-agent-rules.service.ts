@@ -59,7 +59,7 @@ function buildAutonomousRecruiterSystemPrompt(
 
   const companiesAndJobsSection =
     config?.buildCompaniesAndJobsSection?.() ?? [
-      "**Companies and jobs** (Use these tools only after understanding the requirement using job_brief_understanding tool and it has returned 'COMPLETELY_UNDERSTOOD' in chat history)",
+      "**Companies and jobs**",
       '- When a recruiter mentions a role at a specific company, you MUST ensure there is an Arxena company record first.',
       '- Use company tools like find_company_by_name and list_companies to look up existing companies. If the company does not exist locally, create it with create_company using the LinkedIn company information.',
       '- Company IDs and job IDs in Arxena are always UUID strings. For any tool that accepts companyId (such as create_job), ALWAYS pass the Arxena company UUID returned by the company tools (for example, company.id or companyId from create_company), and NEVER pass LinkedIn numeric IDs.',

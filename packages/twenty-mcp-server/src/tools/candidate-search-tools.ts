@@ -1,10 +1,8 @@
 import {
   EXPAND_COMPANIES_INPUT_DESCRIPTOR,
   EXPAND_JOB_TITLES_INPUT_DESCRIPTOR,
-  GENERATE_SEARCH_PARAMETERS_INPUT_DESCRIPTOR,
   JOB_BRIEF_UNDERSTANDING_INPUT_DESCRIPTOR,
-  PARSE_JOB_DESCRIPTION_INPUT_DESCRIPTOR,
-  RESOLVE_PARAMETERS_INPUT_DESCRIPTOR
+  PARSE_JOB_DESCRIPTION_INPUT_DESCRIPTOR
 } from '../utils/McpToolSchemas';
 
 import { callRestAPI } from '../api/rest-client';
@@ -50,42 +48,42 @@ export const candidateSearchTools: McpTool[] = [
   },
 
 
-  {
-    definition: {
-      name: 'generate_unresolved_search_parameters',
-      description:
-        'Generate unresolved search parameters from a query. IMPORTANT: Do not call this tool multiple times with the same query parameters - results are cached and duplicate calls will be skipped. Only call once per unique query.',
-      inputSchema: descriptorToInputSchema(GENERATE_SEARCH_PARAMETERS_INPUT_DESCRIPTOR),
-    },
-    handler: async (args, config) => {
-      const body = args as Record<string, unknown>;
-      return callRestAPI(
-        config.baseUrl,
-        config.apiToken,
-        'candidate-search/pipeline',
-        'generate-unresolved-search-parameters',
-        body,
-      );
-    },
-  },
-  {
-    definition: {
-      name: 'resolve_parameters',
-      description:
-        'Resolve search parameter names to LinkedIn IDs. Pass searchParameters, searchType, and searchCategory.',
-      inputSchema: descriptorToInputSchema(RESOLVE_PARAMETERS_INPUT_DESCRIPTOR),
-    },
-    handler: async (args, config) => {
-      const body = args as Record<string, unknown>;
-      return callRestAPI(
-        config.baseUrl,
-        config.apiToken,
-        'candidate-search',
-        'resolve-parameters',
-        body,
-      );
-    },
-  },
+  // {
+  //   definition: {
+  //     name: 'generate_unresolved_search_parameters',
+  //     description:
+  //       'Generate unresolved search parameters from a query. IMPORTANT: Do not call this tool multiple times with the same query parameters - results are cached and duplicate calls will be skipped. Only call once per unique query.',
+  //     inputSchema: descriptorToInputSchema(GENERATE_SEARCH_PARAMETERS_INPUT_DESCRIPTOR),
+  //   },
+  //   handler: async (args, config) => {
+  //     const body = args as Record<string, unknown>;
+  //     return callRestAPI(
+  //       config.baseUrl,
+  //       config.apiToken,
+  //       'candidate-search/pipeline',
+  //       'generate-unresolved-search-parameters',
+  //       body,
+  //     );
+  //   },
+  // },
+  // {
+  //   definition: {
+  //     name: 'resolve_parameters',
+  //     description:
+  //       'Resolve search parameter names to LinkedIn IDs. Pass searchParameters, searchType, and searchCategory.',
+  //     inputSchema: descriptorToInputSchema(RESOLVE_PARAMETERS_INPUT_DESCRIPTOR),
+  //   },
+  //   handler: async (args, config) => {
+  //     const body = args as Record<string, unknown>;
+  //     return callRestAPI(
+  //       config.baseUrl,
+  //       config.apiToken,
+  //       'candidate-search',
+  //       'resolve-parameters',
+  //       body,
+  //     );
+  //   },
+  // },
   {
     definition: {
       name: 'expand_companies',

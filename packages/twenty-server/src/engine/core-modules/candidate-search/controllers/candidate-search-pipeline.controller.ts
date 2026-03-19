@@ -866,7 +866,15 @@ Generate answers to the clarification questions above.`;
         apiToken,
         SYSTEM_PROMPT,
         userPrompt,
-        { allowedToolNames: ['find_company_by_name'] },
+        {
+          allowedToolNames: [
+            'find_company_by_name',
+            // Internal tools are explicitly allowed here so the assistant
+            // can use candidate-search pipeline steps when needed.
+            // 'generate_unresolved_search_parameters',
+            // 'resolve_parameters',
+          ],
+        },
       );
 
       this.logger.log(

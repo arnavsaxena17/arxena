@@ -26,6 +26,16 @@ const STREAMING_TOOL_NAMES = [
   'generate_unresolved_search_parameters',
 ] as const;
 
+/**
+ * Tools that should NOT be offered to the "general" assistant flows.
+ * They can still be explicitly enabled per-endpoint via `allowedToolNames`
+ * in `callJsonWithTools`.
+ */
+const INTERNAL_TOOL_NAMES = new Set<string>([
+  'generate_unresolved_search_parameters',
+  'resolve_parameters',
+]);
+
 @Injectable()
 export class McpAssistantService {
   private readonly logger: Logger = new Logger(McpAssistantService.name); 
@@ -176,7 +186,136 @@ export class McpAssistantService {
         });
       }
     }
-    currentUserContent += '\n\job_brief_understanding is NOT_COMPLETELY_UNDERSTOOD';
+    // currentUserContent += '\n\job_brief_understanding is NOT_COMPLETELY_UNDERSTOOD';
+    out.push({ role: 'user', content: currentUserContent });
+    return out;
+  }
+
+  /**
+   * OpenAI requires historical `assistant.tool_calls` to be paired with matching
+   * `role: "tool"` messages in the *same* payload.
+   *
+   * Our thread persistence currently stores tool call inputs (`toolCalls`) but
+   * not tool outputs. To make OpenAI history coherent, we execute any
+   * historical tools that don't have a persisted `tool_result` yet, then
+   * inject their `role: "tool"` responses.
+   */
+  private async historyToOpenAIMessagesWithExecutedTools(
+    history: MessageParam[],
+    currentUserContent: string,
+    opts: {
+      client: Client;
+      apiToken: string;
+      systemPrompt?: string;
+      assistantThreadId?: string;
+      sendEvent?: StreamEventSender;
+    },
+  ): Promise<OpenAI.Chat.ChatCompletionMessageParam[]> {
+    const {
+      client,
+      apiToken,
+      systemPrompt,
+      assistantThreadId,
+      sendEvent,
+    } = opts;
+
+    const silentSendEvent: StreamEventSender = sendEvent
+      ? sendEvent
+      : () => true;
+
+    const out: OpenAI.Chat.ChatCompletionMessageParam[] = [];
+    if (systemPrompt) {
+      out.push({ role: 'system', content: systemPrompt });
+    }
+
+    // Collect any persisted tool results so we can avoid re-executing.
+    const toolResultsByToolUseId = new Map<string, string>();
+    for (const m of history) {
+      if (m.role !== 'user' || typeof m.content === 'string') continue;
+      for (const tr of m.content) {
+        toolResultsByToolUseId.set(tr.tool_use_id, tr.content);
+      }
+    }
+
+    for (const m of history) {
+      if (m.role === 'user') {
+        // If it's tool_result blocks, we'll inject matching `role: "tool"` messages
+        // when we see corresponding historical `assistant.tool_calls`.
+        if (typeof m.content === 'string') {
+          out.push({ role: 'user', content: m.content });
+        }
+        continue;
+      }
+
+      if (m.role !== 'assistant') continue;
+
+      const content = m.content as Array<
+        | { type: 'text'; text: string }
+        | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
+      >;
+
+      const textParts: string[] = [];
+      const toolUses: Array<{
+        id: string;
+        name: string;
+        input: Record<string, unknown>;
+      }> = [];
+
+      for (const block of content) {
+        if (block.type === 'text') {
+          textParts.push(block.text);
+          continue;
+        }
+        toolUses.push({ id: block.id, name: block.name, input: block.input ?? {} });
+      }
+
+      if (toolUses.length === 0) {
+        out.push({
+          role: 'assistant',
+          content: textParts.join('\n').trim() || null,
+        });
+        continue;
+      }
+
+      const toolCallParams: Array<{
+        id: string;
+        type: 'function';
+        function: { name: string; arguments: string };
+      }> = toolUses.map((tu) => ({
+        id: tu.id,
+        type: 'function' as const,
+        function: { name: tu.name, arguments: JSON.stringify(tu.input ?? {}) },
+      }));
+
+      out.push({
+        role: 'assistant',
+        content: textParts.join('\n').trim() || null,
+        tool_calls: toolCallParams,
+      });
+
+      for (const toolUse of toolUses) {
+        let toolContent = toolResultsByToolUseId.get(toolUse.id);
+        if (toolContent == null) {
+          const result = await this.executeToolAndGetResult(
+            client,
+            toolUse.name,
+            toolUse.input ?? {},
+            apiToken,
+            silentSendEvent,
+            assistantThreadId,
+          );
+          toolContent = result.textContent;
+          toolResultsByToolUseId.set(toolUse.id, toolContent);
+        }
+
+        out.push({
+          role: 'tool',
+          tool_call_id: toolUse.id,
+          content: toolContent ?? '',
+        });
+      }
+    }
+
     out.push({ role: 'user', content: currentUserContent });
     return out;
   }
@@ -270,16 +409,18 @@ export class McpAssistantService {
     client: Client,
   ): Promise<Anthropic.Messages.Tool[]> {
     const toolsResult = await client.listTools();
-    return toolsResult.tools.map((t) => ({
-      name: t.name,
-      description: t.description ?? '',
-      input_schema: {
-        type: 'object' as const,
-        ...(typeof t.inputSchema === 'object' && t.inputSchema !== null
-          ? (t.inputSchema as Record<string, unknown>)
-          : {}),
-      },
-    })) as Anthropic.Messages.Tool[];
+    return toolsResult.tools
+      .filter((t) => !INTERNAL_TOOL_NAMES.has(t.name))
+      .map((t) => ({
+        name: t.name,
+        description: t.description ?? '',
+        input_schema: {
+          type: 'object' as const,
+          ...(typeof t.inputSchema === 'object' && t.inputSchema !== null
+            ? (t.inputSchema as Record<string, unknown>)
+            : {}),
+        },
+      })) as Anthropic.Messages.Tool[];
   }
 
   /**
@@ -290,11 +431,13 @@ export class McpAssistantService {
   ): Promise<OpenAI.Chat.Completions.ChatCompletionTool[]> {
     const toolsResult = await client.listTools();
     return this.mcpToolsToOpenAITools(
-      toolsResult.tools.map((t) => ({
-        name: t.name,
-        description: t.description ?? '',
-        input_schema: t.inputSchema,
-      })),
+      toolsResult.tools
+        .filter((t) => !INTERNAL_TOOL_NAMES.has(t.name))
+        .map((t) => ({
+          name: t.name,
+          description: t.description ?? '',
+          input_schema: t.inputSchema,
+        })),
     );
   }
 
@@ -692,7 +835,8 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
             ? (t.inputSchema as Record<string, unknown>)
             : {}),
         },
-      })) as Anthropic.Messages.Tool[];
+      }))
+      .filter((t) => !INTERNAL_TOOL_NAMES.has(t.name)) as Anthropic.Messages.Tool[];
 
       const messages: MessageParam[] = [
         ...conversationHistory,
@@ -806,14 +950,25 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     try {
       const toolsResult = await client.listTools();
       const openaiTools = this.mcpToolsToOpenAITools(
-        toolsResult.tools.map((t) => ({
-          name: t.name,
-          description: t.description ?? '',
-          input_schema: t.inputSchema,
-        })),
+        toolsResult.tools
+          .filter((t) => !INTERNAL_TOOL_NAMES.has(t.name))
+          .map((t) => ({
+            name: t.name,
+            description: t.description ?? '',
+            input_schema: t.inputSchema,
+          })),
       );
 
-      let openaiMessages = this.historyToOpenAIMessages(conversationHistory, query, systemPrompt);
+      let openaiMessages = await this.historyToOpenAIMessagesWithExecutedTools(
+        conversationHistory,
+        query,
+        {
+          client,
+          apiToken,
+          systemPrompt,
+          sendEvent: () => true,
+        },
+      );
       const finalText: string[] = [];
       const toolCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
       let rounds = 0;
@@ -915,7 +1070,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
           ? allTools.filter(
               (t) => t.type === 'function' && options.allowedToolNames!.includes(t.function.name),
             )
-          : allTools;
+          : allTools.filter((t) => t.type === 'function' && !INTERNAL_TOOL_NAMES.has(t.function.name));
 
       let messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
         { role: 'system', content: systemPrompt },
@@ -1147,10 +1302,16 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     this.logger.log(`MCP Client System Prompt:, ${systemPrompt}`);
     await this.withMcpClient(apiToken, async (client) => {
       const openaiTools = await this.fetchOpenAITools(client);
-      let openaiMessages = this.historyToOpenAIMessages(
+      let openaiMessages = await this.historyToOpenAIMessagesWithExecutedTools(
         conversationHistory,
         query,
-        systemPrompt,
+        {
+          client,
+          apiToken,
+          systemPrompt,
+          assistantThreadId,
+          sendEvent: () => true,
+        },
       );
       this.logger.log(`MCP Client openaiMessages:, ${JSON.stringify(openaiMessages, null, 2)}`);
       const finalText: string[] = [];
