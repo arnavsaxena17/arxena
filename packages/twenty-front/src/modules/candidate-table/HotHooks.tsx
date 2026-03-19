@@ -224,7 +224,7 @@ export const afterSelectionEnd = (
     console.log("selectedIds in afterSelectionEnd", selectedIds);
     
     // Handle chat drawer opening
-    if (selectedIds.length === 1 && column === 1) {
+    if (selectedIds.length === 1 && column !== 0 && row === row2) {
       const physicalRow = hot.toPhysicalRow(row);
       const selectedRow = hot.getSourceDataAtRow(physicalRow);
       console.log("selectedRow in afterSelectionEnd", selectedRow);

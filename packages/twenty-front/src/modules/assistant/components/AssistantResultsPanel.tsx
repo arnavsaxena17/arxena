@@ -1,10 +1,13 @@
+import { ActionMenuComponentInstanceContext } from '@/action-menu/states/contexts/ActionMenuComponentInstanceContext';
 import {
   AssistantDetailsTable,
   AssistantTableData,
 } from '@/assistant/components/AssistantDetailsTable';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { DataTable } from '@/candidate-table/DataTable';
+import { HotTableActionMenu } from '@/candidate-table/HotTableActionMenu';
 import { selectedCandidateIdState } from '@/candidate-table/states/states';
+import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { AppPath } from '@/types/AppPath';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
@@ -96,6 +99,82 @@ function getJobIdFromTableData(tableData: AssistantTableData | null): string | u
   return getJobIdFromRow(first);
 }
 
+function parseCompanyFromHeadline(headline: string): string {
+  if (!headline) return '';
+
+  const patterns = [
+    /at\s+([^|]+)/i,
+    /@\s+([^|]+)/i,
+    /\|\s*([^|]+)/,
+    /-\s*([^-]+)$/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = headline.match(pattern);
+    if (match?.[1]) {
+      const company = match[1].trim();
+      if (company.length > 0 && company.length < 100) {
+        return company;
+      }
+    }
+  }
+
+  return '';
+}
+
+/**
+ * Transform a raw table row (from MCP table_data events) into a minimal
+ * TransformedCandidateForTable-compatible shape that DataTable can display.
+ * The key requirement is a unique `tempId` so deduplicateSearchResults keeps
+ * the row instead of dropping it.
+ */
+function transformRowForDataTable(row: Record<string, unknown>): Record<string, unknown> {
+  const linkedinUrl = String(row.linkedinUrl ?? row.linkedin_url ?? '');
+  const headline = String(row.headline ?? '');
+  const companyFromHeadline = parseCompanyFromHeadline(headline);
+  // Derive a stable ID from the LinkedIn URL slug; fall back to UUID.
+  const slug = linkedinUrl.split('/in/')[1]?.replace(/\/$/, '') ?? '';
+  const tempId = String(row.tempId ?? row.id ?? (slug || crypto.randomUUID()));
+
+  const name = String(row.name ?? row.fullName ?? '');
+  const nameParts = name.trim().split(/\s+/);
+
+  return {
+    ...row,
+    id: row.id ?? null,
+    tempId,
+    __isFetched: true,
+    fullName: name,
+    firstName: nameParts[0] ?? '',
+    lastName: nameParts.slice(1).join(' '),
+    jobTitle: String(row.jobTitle ?? row.job_title ?? headline),
+    headline,
+    company: String(row.company ?? row.jobCompanyName ?? companyFromHeadline),
+    jobCompanyName: String(
+      row.jobCompanyName ?? row.company ?? companyFromHeadline,
+    ),
+    location: String(row.location ?? row.locationName ?? ''),
+    locationName: String(row.location ?? row.locationName ?? ''),
+    // Wrap LinkedIn URL in object format expected by DataTable columns
+    linkedinUrl: linkedinUrl ? { primaryLinkUrl: linkedinUrl } : (row.linkedinUrl ?? undefined),
+    phoneNumber: row.phoneNumber ?? { primaryPhoneNumber: '' },
+    email: row.email ?? { primaryEmail: '' },
+    // UI state defaults expected by DataTable
+    candConversationStatus: row.candConversationStatus ?? '',
+    status: row.status ?? '',
+    startChat: false,
+    stopChat: false,
+    whatsappMessages: row.whatsappMessages ?? { edges: [] },
+    emailMessages: row.emailMessages ?? { edges: [] },
+    candidateFieldValues: row.candidateFieldValues ?? { edges: [] },
+    candidateReminders: row.candidateReminders ?? { edges: [] },
+    uniqueStringKey: tempId,
+    peopleId: row.peopleId ?? null,
+    updatedAt: row.updatedAt ?? '',
+    createdAt: row.createdAt ?? '',
+  };
+}
+
 export const AssistantResultsPanel = ({
   tableData,
   maxTableHeight = 600,
@@ -120,10 +199,14 @@ export const AssistantResultsPanel = ({
   const effectiveJobId = jobIdFromResults ?? jobIdFromThread ?? undefined;
 
   // When there's no real jobId but table rows exist (LinkedIn/search candidates),
-  // populate searchResultsState so DataTable can display them.
+  // transform rows to add tempId/UI fields then populate searchResultsState so
+  // DataTable can display them (deduplicateSearchResults requires tempId or id).
   useEffect(() => {
     if (effectiveJobId || !tableData?.rows?.length) return;
-    setSearchResults(tableData.rows as any[]);
+    const transformed = (tableData.rows as Record<string, unknown>[]).map(
+      transformRowForDataTable,
+    );
+    setSearchResults(transformed as any[]);
     return () => {
       setSearchResults([]);
     };
@@ -201,8 +284,14 @@ export const AssistantResultsPanel = ({
     });
   }, [selectedRow, openRightDrawer, setSelectedCandidateId]);
 
-  // Determine whether to show DataTable (real job or LinkedIn candidates) or AssistantDetailsTable
+  // Determine whether to show DataTable (real job candidates) or AssistantDetailsTable
+  // (raw assistant/LinkedIn search results). DataTable requires rows with id/tempId fields;
+  // LinkedIn candidate rows only have name/headline/linkedinUrl so they must use
+  // AssistantDetailsTable which renders whatever columns are provided.
   const hasTableRows = Boolean(tableData?.rows?.length && tableData?.columns?.length);
+  // Always use DataTable when rows exist — LinkedIn rows without a real jobId
+  // are pushed (transformed with tempId) into searchResultsState above so
+  // DataTable can display them via the __search__ virtual jobId.
   const showDataTable = hasTableRows;
   const dataTableJobId = effectiveJobId ?? ASSISTANT_SEARCH_JOB_ID;
 
@@ -240,6 +329,17 @@ export const AssistantResultsPanel = ({
           />
         )}
       </StyledResultsHeader>
+      {showDataTable && (
+        <ContextStoreComponentInstanceContext.Provider
+          value={{ instanceId: dataTableJobId }}
+        >
+          <ActionMenuComponentInstanceContext.Provider
+            value={{ instanceId: dataTableJobId }}
+          >
+            <HotTableActionMenu tableId={dataTableJobId} />
+          </ActionMenuComponentInstanceContext.Provider>
+        </ContextStoreComponentInstanceContext.Provider>
+      )}
       {!showDataTable && (hasSelection || effectiveJobId) && (
         <StyledActionsBar>
           {hasSelection && (

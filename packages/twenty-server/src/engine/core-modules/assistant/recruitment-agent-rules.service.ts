@@ -64,6 +64,7 @@ function buildAutonomousRecruiterSystemPrompt(
       '- Use company tools like find_company_by_name and list_companies to look up existing companies. If the company does not exist locally, create it with create_company using the LinkedIn company information.',
       '- Company IDs and job IDs in Arxena are always UUID strings. For any tool that accepts companyId (such as create_job), ALWAYS pass the Arxena company UUID returned by the company tools (for example, company.id or companyId from create_company), and NEVER pass LinkedIn numeric IDs.',
       '- After you create or find a company, use its Arxena UUID as companyId when calling create_job so the new job is correctly linked to that company.',
+      '- IMPORTANT: Before searching for candidates for a specific role, check if a relevant job already exists (use find_job_by_name or list_active_jobs). If no job exists for the role, create one with create_job first. This ensures search results are properly linked to a job in the system.',
       '',
     ];
   lines.push(...companiesAndJobsSection);

@@ -7,10 +7,10 @@ import * as path from 'path';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
-    AssistantChatResponse,
-    McpModelProvider,
-    MessageParam,
-    StreamEventSender,
+  AssistantChatResponse,
+  McpModelProvider,
+  MessageParam,
+  StreamEventSender,
 } from './assistant.types';
 
 const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
@@ -41,16 +41,25 @@ const INTERNAL_TOOL_NAMES = new Set<string>([
   'generate_linkedin_query_agent4',
 ]);
 
+const createAbortError = (): Error => {
+  const error = new Error('Request aborted');
+  error.name = 'AbortError';
+  return error;
+};
+
 @Injectable()
 export class McpAssistantService {
-  private readonly logger: Logger = new Logger(McpAssistantService.name); 
+  private readonly logger: Logger = new Logger(McpAssistantService.name);
   private readonly provider: McpModelProvider;
   private readonly anthropic: Anthropic;
   private readonly openai: OpenAI | null;
   private readonly serverBaseUrl: string;
   private readonly mcpServerScriptPath: string;
   // Cache for recent tool calls to prevent duplicates (key: toolName + normalized args, value: { result, timestamp })
-  private readonly toolCallCache = new Map<string, { result: string; timestamp: number }>();
+  private readonly toolCallCache = new Map<
+    string,
+    { result: string; timestamp: number }
+  >();
   private readonly CACHE_TTL_MS = 30_000; // 30 seconds cache TTL
 
   constructor(
@@ -67,9 +76,19 @@ export class McpAssistantService {
         ? new OpenAI({ apiKey: openaiKey })
         : null;
     this.serverBaseUrl =
-      process.env.SERVER_BASE_URL ?? process.env.ARXENA_SITE_BASE_URL ?? 'http://localhost:3000';
+      process.env.SERVER_BASE_URL ??
+      process.env.ARXENA_SITE_BASE_URL ??
+      'http://localhost:3000';
     // Resolve relative to this file: from dist/engine/core-modules/assistant -> 6 levels up = packages/ -> sibling twenty-mcp-server
-    const packagesDir = path.resolve(__dirname, '..', '..', '..', '..', '..', '..');
+    const packagesDir = path.resolve(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      '..',
+      '..',
+      '..',
+    );
     this.mcpServerScriptPath =
       process.env.MCP_SERVER_SCRIPT_PATH ??
       path.join(packagesDir, 'twenty-mcp-server', 'dist', 'index.js');
@@ -80,8 +99,16 @@ export class McpAssistantService {
     return raw === 'openai' ? 'openai' : 'anthropic';
   }
 
+  private throwIfAborted(signal?: AbortSignal): void {
+    if (signal?.aborted) {
+      throw createAbortError();
+    }
+  }
+
   /** Sanitize tool args for logging (redact tokens, truncate long strings). */
-  private sanitizeArgsForLog(args: Record<string, unknown>): Record<string, unknown> {
+  private sanitizeArgsForLog(
+    args: Record<string, unknown>,
+  ): Record<string, unknown> {
     const out: Record<string, unknown> = {};
     const redactKeys = ['apiToken', 'api_token', 'token', 'password'];
     for (const [k, v] of Object.entries(args)) {
@@ -96,7 +123,9 @@ export class McpAssistantService {
     return out;
   }
 
-  private flattenRowForTable(row: Record<string, unknown>): Record<string, unknown> {
+  private flattenRowForTable(
+    row: Record<string, unknown>,
+  ): Record<string, unknown> {
     const flat: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(row)) {
       if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
@@ -111,15 +140,27 @@ export class McpAssistantService {
     return flat;
   }
 
-  private extractTableRowsFromToolResult(parsed: unknown): Record<string, unknown>[] {
+  private extractTableRowsFromToolResult(
+    parsed: unknown,
+  ): Record<string, unknown>[] {
     let rows: Record<string, unknown>[] = [];
-    if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'object' && parsed[0] !== null) {
+    if (
+      Array.isArray(parsed) &&
+      parsed.length > 0 &&
+      typeof parsed[0] === 'object' &&
+      parsed[0] !== null
+    ) {
       rows = parsed as Record<string, unknown>[];
     } else if (typeof parsed === 'object' && parsed !== null) {
       const obj = parsed as Record<string, unknown>;
       for (const key of TABLE_LIST_KEYS) {
         const list = obj[key];
-        if (Array.isArray(list) && list.length > 0 && typeof list[0] === 'object' && list[0] !== null) {
+        if (
+          Array.isArray(list) &&
+          list.length > 0 &&
+          typeof list[0] === 'object' &&
+          list[0] !== null
+        ) {
           rows = list as Record<string, unknown>[];
           break;
         }
@@ -172,7 +213,12 @@ export class McpAssistantService {
       if (m.role === 'assistant') {
         const content = m.content as Array<
           | { type: 'text'; text: string }
-          | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
+          | {
+              type: 'tool_use';
+              id: string;
+              name: string;
+              input: Record<string, unknown>;
+            }
         >;
         const textParts: string[] = [];
         for (const block of content) {
@@ -258,7 +304,12 @@ export class McpAssistantService {
 
       const content = m.content as Array<
         | { type: 'text'; text: string }
-        | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
+        | {
+            type: 'tool_use';
+            id: string;
+            name: string;
+            input: Record<string, unknown>;
+          }
       >;
 
       const textParts: string[] = [];
@@ -273,7 +324,11 @@ export class McpAssistantService {
           textParts.push(block.text);
           continue;
         }
-        toolUses.push({ id: block.id, name: block.name, input: block.input ?? {} });
+        toolUses.push({
+          id: block.id,
+          name: block.name,
+          input: block.input ?? {},
+        });
       }
 
       if (toolUses.length === 0) {
@@ -331,21 +386,27 @@ export class McpAssistantService {
   /**
    * Generate a cache key from tool name and normalized arguments
    */
-  private getToolCallCacheKey(name: string, args: Record<string, unknown>): string {
+  private getToolCallCacheKey(
+    name: string,
+    args: Record<string, unknown>,
+  ): string {
     // Normalize args by sorting keys and stringifying
     const normalized = JSON.stringify(
       Object.keys(args)
         .sort()
-        .reduce((acc, key) => {
-          const value = args[key];
-          // Normalize string values (trim whitespace, lowercase for comparison)
-          if (typeof value === 'string') {
-            acc[key] = value.trim().toLowerCase();
-          } else {
-            acc[key] = value;
-          }
-          return acc;
-        }, {} as Record<string, unknown>),
+        .reduce(
+          (acc, key) => {
+            const value = args[key];
+            // Normalize string values (trim whitespace, lowercase for comparison)
+            if (typeof value === 'string') {
+              acc[key] = value.trim().toLowerCase();
+            } else {
+              acc[key] = value;
+            }
+            return acc;
+          },
+          {} as Record<string, unknown>,
+        ),
     );
     return `${name}:${normalized}`;
   }
@@ -390,9 +451,14 @@ export class McpAssistantService {
    */
   private async withMcpClient<T>(
     apiToken: string,
+    signal: AbortSignal | undefined,
     fn: (client: Client) => Promise<T>,
   ): Promise<T> {
-    const client = new Client({ name: 'arxena-assistant-client', version: '1.0.0' });
+    this.throwIfAborted(signal);
+    const client = new Client({
+      name: 'arxena-assistant-client',
+      version: '1.0.0',
+    });
     const transport = new StdioClientTransport({
       command: process.execPath,
       args: [this.mcpServerScriptPath],
@@ -402,10 +468,16 @@ export class McpAssistantService {
         ARXENA_BASE_URL: this.serverBaseUrl,
       },
     });
+    const abortHandler = () => {
+      void client.close().catch(() => undefined);
+    };
+    signal?.addEventListener('abort', abortHandler, { once: true });
     await client.connect(transport);
     try {
+      this.throwIfAborted(signal);
       return await fn(client);
     } finally {
+      signal?.removeEventListener('abort', abortHandler);
       await client.close();
     }
   }
@@ -458,7 +530,12 @@ export class McpAssistantService {
     sendEvent: StreamEventSender,
   ): Promise<{
     content: string;
-    toolCallsList: Array<{ id: string; name: string; args: string; index: number }>;
+    toolCallsList: Array<{
+      id: string;
+      name: string;
+      args: string;
+      index: number;
+    }>;
   }> {
     let content = '';
     const toolCallsAccum = new Map<
@@ -509,7 +586,9 @@ export class McpAssistantService {
     sendEvent: StreamEventSender,
     assistantThreadId?: string,
     searchType?: 'classic' | 'sales_navigator' | 'recruiter',
+    abortSignal?: AbortSignal,
   ): Promise<{ textContent: string; fromCache: boolean }> {
+    this.throwIfAborted(abortSignal);
     let effectiveArgs = { ...args };
     if (assistantThreadId != null && assistantThreadId !== '') {
       effectiveArgs = { ...effectiveArgs, assistantThreadId };
@@ -520,7 +599,9 @@ export class McpAssistantService {
     const cacheKey = this.getToolCallCacheKey(name, effectiveArgs);
     const cachedResult = this.getCachedToolResult(cacheKey);
     if (cachedResult !== null) {
-      this.logger.log(`Skipping duplicate ${name} call (already executed in this session)`);
+      this.logger.log(
+        `Skipping duplicate ${name} call (already executed in this session)`,
+      );
       sendEvent?.('status', { message: `Skipping duplicate ${name} call...` });
       return { textContent: cachedResult, fromCache: true };
     }
@@ -529,6 +610,7 @@ export class McpAssistantService {
       effectiveArgs,
       apiToken,
       sendEvent,
+      abortSignal,
     );
     if (inProcessResult !== null) {
       this.logger.log(`Tool "${name}" completed in-process.`);
@@ -538,10 +620,12 @@ export class McpAssistantService {
       `Calling MCP subprocess for tool: ${name} (args: ${JSON.stringify(this.sanitizeArgsForLog(effectiveArgs))})`,
     );
     try {
+      this.throwIfAborted(abortSignal);
       const result = await client.callTool({
         name,
         arguments: effectiveArgs,
       });
+      this.throwIfAborted(abortSignal);
       const textContent =
         result.content
           ?.map((c) => (c.type === 'text' ? c.text : JSON.stringify(c)))
@@ -561,11 +645,36 @@ export class McpAssistantService {
         return { textContent: fallback, fromCache: false };
       }
       this.cacheToolResult(cacheKey, textContent);
-      this.logger.log(`MCP tool "${name}" result (first 300 chars): ${textContent.slice(0, 300)}`);
+      this.logger.log(
+        `MCP tool "${name}" result (first 300 chars): ${textContent.slice(0, 300)}`,
+      );
+
+      // When create_job succeeds, emit a job_attached event so the frontend
+      // can link the new job to the current thread without extra LLM turns.
+      if (name === 'create_job') {
+        try {
+          const parsed = JSON.parse(textContent) as Record<string, unknown>;
+          const jobId =
+            (parsed.id as string | undefined) ??
+            (parsed.jobId as string | undefined) ??
+            ((parsed.job as Record<string, unknown> | undefined)?.id as
+              | string
+              | undefined);
+          if (typeof jobId === 'string' && jobId) {
+            sendEvent('job_attached', { jobId });
+          }
+        } catch {
+          // textContent not JSON – ignore
+        }
+      }
+
       return { textContent, fromCache: false };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      this.logger.error(`MCP tool "${name}" failed: ${message}`, err instanceof Error ? err.stack : undefined);
+      this.logger.error(
+        `MCP tool "${name}" failed: ${message}`,
+        err instanceof Error ? err.stack : undefined,
+      );
       const textContent = JSON.stringify({ error: message });
       // Do NOT cache errors so the LLM can retry on transient failures (e.g. timeout)
       return { textContent, fromCache: false };
@@ -576,7 +685,11 @@ export class McpAssistantService {
    * If tool result is JSON with list-like data, emit table_data event for UI.
    * Pass toolName to infer the table type (candidates, jobs, companies, etc.).
    */
-  private emitTableDataIfJson(sendEvent: StreamEventSender, textContent: string, toolName?: string): void {
+  private emitTableDataIfJson(
+    sendEvent: StreamEventSender,
+    textContent: string,
+    toolName?: string,
+  ): void {
     if (!textContent) return;
     try {
       const parsed = JSON.parse(textContent) as unknown;
@@ -597,14 +710,25 @@ export class McpAssistantService {
     if (toolName) {
       if (toolName.includes('job')) return 'jobs';
       if (toolName.includes('compan')) return 'companies';
-      if (toolName.includes('contact') || toolName.includes('person') || toolName.includes('people') || toolName.includes('candidate')) return 'candidates';
+      if (
+        toolName.includes('contact') ||
+        toolName.includes('person') ||
+        toolName.includes('people') ||
+        toolName.includes('candidate')
+      )
+        return 'candidates';
     }
     // Fallback: infer from column names
     if (columns) {
       const colSet = new Set(columns.map((c) => c.toLowerCase()));
       if (colSet.has('jobLocation') || colSet.has('joblocation')) return 'jobs';
       if (colSet.has('domain') || colSet.has('website')) return 'companies';
-      if (colSet.has('headline') || colSet.has('jobtitle') || colSet.has('linkedinurl')) return 'candidates';
+      if (
+        colSet.has('headline') ||
+        colSet.has('jobtitle') ||
+        colSet.has('linkedinurl')
+      )
+        return 'candidates';
     }
     return 'data';
   }
@@ -633,35 +757,55 @@ export class McpAssistantService {
     args: Record<string, unknown>,
     apiToken: string,
     sendEvent: StreamEventSender,
+    abortSignal?: AbortSignal,
   ): Promise<string | null> {
-    const isStreamingTool = STREAMING_TOOL_NAMES.includes(name as (typeof STREAMING_TOOL_NAMES)[number]);
+    this.throwIfAborted(abortSignal);
+    const isStreamingTool = STREAMING_TOOL_NAMES.includes(
+      name as (typeof STREAMING_TOOL_NAMES)[number],
+    );
     if (!isStreamingTool) {
       this.logger.warn(
         `Tool "${name}" not in STREAMING_TOOL_NAMES [${STREAMING_TOOL_NAMES.join(', ')}]; delegating to MCP subprocess. ` +
           'If this tool should run in-process and produce server logs, add it to STREAMING_TOOL_NAMES in mcp-assistant.service.ts.',
       );
-      this.logger.log(`Tool call: ${name} (args: ${JSON.stringify(this.sanitizeArgsForLog(args))})`);
+      this.logger.log(
+        `Tool call: ${name} (args: ${JSON.stringify(this.sanitizeArgsForLog(args))})`,
+      );
       return null;
     }
-    this.logger.log(`Executing tool in-process: ${name} (args: ${JSON.stringify(this.sanitizeArgsForLog(args))})`);
+    this.logger.log(
+      `Executing tool in-process: ${name} (args: ${JSON.stringify(this.sanitizeArgsForLog(args))})`,
+    );
 
     // Check cache for duplicate calls
     const cacheKey = this.getToolCallCacheKey(name, args);
     const cachedResult = this.getCachedToolResult(cacheKey);
     if (cachedResult !== null) {
-      this.logger.log(`Returning cached result for ${name} (duplicate call detected)`);
+      this.logger.log(
+        `Returning cached result for ${name} (duplicate call detected)`,
+      );
       sendEvent?.('status', { message: `Using cached result for ${name}...` });
       return cachedResult;
     }
 
     const isGenerateSearchParams =
-      name === 'generate_search_parameters' || name === 'generate_unresolved_search_parameters';
+      name === 'generate_search_parameters' ||
+      name === 'generate_unresolved_search_parameters';
     if (isGenerateSearchParams) {
-      sendEvent?.('status', { message: 'Generating search parameters from LinkedIn query generation...' });
-      this.logger.log(`Generating search parameters from LinkedIn query generation...`);
+      sendEvent?.('status', {
+        message:
+          'Generating search parameters from LinkedIn query generation...',
+      });
+      this.logger.log(
+        `Generating search parameters from LinkedIn query generation...`,
+      );
       const prompt = (args.prompt ?? args.query) as string | undefined;
-      const searchType = (args.searchType as 'classic' | 'sales_navigator' | 'recruiter') ?? 'classic';
-      const searchCategory = (args.searchCategory as 'people' | 'companies' | 'posts' | 'jobs') ?? 'people';
+      const searchType =
+        (args.searchType as 'classic' | 'sales_navigator' | 'recruiter') ??
+        'classic';
+      const searchCategory =
+        (args.searchCategory as 'people' | 'companies' | 'posts' | 'jobs') ??
+        'people';
       if (typeof prompt !== 'string' || !prompt.trim()) {
         this.logger.warn(
           `Tool ${name}: missing or empty prompt/query (prompt=${typeof prompt}, value length=${typeof prompt === 'string' ? prompt.length : 0}); delegating to MCP.`,
@@ -669,12 +813,16 @@ export class McpAssistantService {
         return null;
       }
       if (searchCategory !== 'people') {
-        this.logger.log(`Tool ${name}: searchCategory=${searchCategory}; only people is supported, returning error to caller.`);
+        this.logger.log(
+          `Tool ${name}: searchCategory=${searchCategory}; only people is supported, returning error to caller.`,
+        );
         return JSON.stringify({
-          error: 'Only people search is supported for generate_search_parameters with streaming.',
+          error:
+            'Only people search is supported for generate_search_parameters with streaming.',
         });
       }
       try {
+        this.throwIfAborted(abortSignal);
         const rawQuery = (args.rawQuery as string) ?? prompt;
         const unresolvedSearchParams =
           await this.candidateSearchHandlerService.generateUnresolvedSearchParametersFromLinkedinQueryGeneration(
@@ -682,7 +830,10 @@ export class McpAssistantService {
             searchType,
             sendEvent,
           );
-        sendEvent?.('status', { message: 'Produced unresolved search parameters...' });
+        this.throwIfAborted(abortSignal);
+        sendEvent?.('status', {
+          message: 'Produced unresolved search parameters...',
+        });
         this.logger.log(`Produced unresolved search parameters...`);
         const result = JSON.stringify(unresolvedSearchParams);
         // Cache the result
@@ -694,11 +845,18 @@ export class McpAssistantService {
           `Tool ${name} failed (in-process): ${message}`,
           err instanceof Error ? err.stack : undefined,
         );
-        return JSON.stringify({ error: message, searchParameters: null, searchStrategies: null });
+        return JSON.stringify({
+          error: message,
+          searchParameters: null,
+          searchStrategies: null,
+        });
       }
     }
 
-    if (name === 'search_linkedin_people' || name === 'search_linkedin_with_query') {
+    if (
+      name === 'search_linkedin_people' ||
+      name === 'search_linkedin_with_query'
+    ) {
       const query = args.query;
       const assistantThreadId = args.assistantThreadId;
       // Only run in-process when we have a valid assistantThreadId (candidate-search-chat flow).
@@ -723,18 +881,25 @@ export class McpAssistantService {
     const body = {
       message: String(args.query ?? args.message ?? ''),
       assistantThreadId: String(args.assistantThreadId ?? ''),
-      searchType: (args.searchType as 'classic' | 'sales_navigator' | 'recruiter') ?? 'classic',
-      searchCategory: (args.searchCategory as 'people' | 'companies' | 'posts' | 'jobs') ?? 'people',
+      searchType:
+        (args.searchType as 'classic' | 'sales_navigator' | 'recruiter') ??
+        'classic',
+      searchCategory:
+        (args.searchCategory as 'people' | 'companies' | 'posts' | 'jobs') ??
+        'people',
       parsedJD: args.parsedJD as Record<string, unknown> | undefined,
       includeJd: args.includeJd !== false,
     };
 
     try {
-      const result = await this.candidateSearchHandlerService.handleMessageStream(
-        body,
-        apiToken,
-        (event, data) => sendEvent(event, data),
-      );
+      const result =
+        await this.candidateSearchHandlerService.handleMessageStream(
+          body,
+          apiToken,
+          (event, data) => sendEvent(event, data),
+          abortSignal,
+        );
+      this.throwIfAborted(abortSignal);
       if (result.response?.error) {
         const errorMessage =
           typeof result.response.error === 'string'
@@ -751,9 +916,10 @@ export class McpAssistantService {
         return toolErrorResult;
       }
 
-      const candidates = this.candidateSearchHandlerService.extractCandidatesFromResponse(
-        result.response,
-      );
+      const candidates =
+        this.candidateSearchHandlerService.extractCandidatesFromResponse(
+          result.response,
+        );
       // Only return a summary + reference to the LLM — full candidate data stays in Redis cache.
       // This prevents the tool result (100 candidates × full JSON) from bloating the context window.
       const toolResult = JSON.stringify({
@@ -778,7 +944,11 @@ export class McpAssistantService {
   /** Strip surrounding double quotes from LLM output so the name is shown plainly. */
   private stripThreadNameQuotes(name: string): string {
     const trimmed = name.trim();
-    if (trimmed.length >= 2 && trimmed.startsWith('"') && trimmed.endsWith('"')) {
+    if (
+      trimmed.length >= 2 &&
+      trimmed.startsWith('"') &&
+      trimmed.endsWith('"')
+    ) {
       return trimmed.slice(1, -1).trim();
     }
     return trimmed;
@@ -812,7 +982,9 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
         const raw =
           response.choices[0]?.message?.content?.trim() ?? 'New thread';
         const name = this.stripThreadNameQuotes(raw);
-        return name.length > 50 ? name.substring(0, 47) + '...' : name || 'New thread';
+        return name.length > 50
+          ? name.substring(0, 47) + '...'
+          : name || 'New thread';
       } else {
         const response = await this.anthropic.messages.create({
           model: CLAUDE_MODEL,
@@ -827,7 +999,9 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
         const text = response.content[0];
         const raw = text.type === 'text' ? text.text.trim() : 'New thread';
         const name = this.stripThreadNameQuotes(raw);
-        return name.length > 50 ? name.substring(0, 47) + '...' : name || 'New thread';
+        return name.length > 50
+          ? name.substring(0, 47) + '...'
+          : name || 'New thread';
       }
     } catch (err) {
       const fallback =
@@ -838,12 +1012,17 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     }
   }
 
-  async listTools(apiToken: string): Promise<Array<{ name: string; description: string; input_schema: unknown }>> {
-    const client = new Client({ name: 'arxena-assistant-client', version: '1.0.0' });
+  async listTools(
+    apiToken: string,
+  ): Promise<
+    Array<{ name: string; description: string; input_schema: unknown }>
+  > {
+    const client = new Client({
+      name: 'arxena-assistant-client',
+      version: '1.0.0',
+    });
     const workspaceMemberId =
-      await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
-        apiToken,
-      );
+      await this.workspaceQueryService.getWorkspaceMemberIdFromToken(apiToken);
     const transport = new StdioClientTransport({
       command: process.execPath,
       args: [this.mcpServerScriptPath],
@@ -876,9 +1055,19 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     systemPrompt?: string,
   ): Promise<AssistantChatResponse> {
     if (this.provider === 'openai' && this.openai) {
-      return this.processQueryWithOpenAI(query, apiToken, conversationHistory, systemPrompt);
+      return this.processQueryWithOpenAI(
+        query,
+        apiToken,
+        conversationHistory,
+        systemPrompt,
+      );
     }
-    return this.processQueryWithAnthropic(query, apiToken, conversationHistory, systemPrompt);
+    return this.processQueryWithAnthropic(
+      query,
+      apiToken,
+      conversationHistory,
+      systemPrompt,
+    );
   }
 
   private async processQueryWithAnthropic(
@@ -887,11 +1076,12 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     conversationHistory: MessageParam[] = [],
     systemPrompt?: string,
   ): Promise<AssistantChatResponse> {
-    const client = new Client({ name: 'arxena-assistant-client', version: '1.0.0' });
+    const client = new Client({
+      name: 'arxena-assistant-client',
+      version: '1.0.0',
+    });
     const workspaceMemberId =
-      await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
-        apiToken,
-      );
+      await this.workspaceQueryService.getWorkspaceMemberIdFromToken(apiToken);
     const transport = new StdioClientTransport({
       command: process.execPath,
       args: [this.mcpServerScriptPath],
@@ -906,17 +1096,20 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
 
     try {
       const toolsResult = await client.listTools();
-      const availableTools = toolsResult.tools.map((t) => ({
-        name: t.name,
-        description: t.description ?? '',
-        input_schema: {
-          type: 'object' as const,
-          ...(typeof t.inputSchema === 'object' && t.inputSchema !== null
-            ? (t.inputSchema as Record<string, unknown>)
-            : {}),
-        },
-      }))
-      .filter((t) => !INTERNAL_TOOL_NAMES.has(t.name)) as Anthropic.Messages.Tool[];
+      const availableTools = toolsResult.tools
+        .map((t) => ({
+          name: t.name,
+          description: t.description ?? '',
+          input_schema: {
+            type: 'object' as const,
+            ...(typeof t.inputSchema === 'object' && t.inputSchema !== null
+              ? (t.inputSchema as Record<string, unknown>)
+              : {}),
+          },
+        }))
+        .filter(
+          (t) => !INTERNAL_TOOL_NAMES.has(t.name),
+        ) as Anthropic.Messages.Tool[];
 
       const messages: MessageParam[] = [
         ...conversationHistory,
@@ -932,18 +1125,28 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
       });
 
       const finalText: string[] = [];
-      const toolCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
+      const toolCalls: Array<{ name: string; args: Record<string, unknown> }> =
+        [];
       let rounds = 0;
 
       while (rounds < MAX_TOOL_ROUNDS) {
         rounds += 1;
         const assistantContent = response.content as Array<
           | { type: 'text'; text: string }
-          | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
+          | {
+              type: 'tool_use';
+              id: string;
+              name: string;
+              input: Record<string, unknown>;
+            }
         >;
 
         let hasToolUse = false;
-        const toolResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }> = [];
+        const toolResults: Array<{
+          type: 'tool_result';
+          tool_use_id: string;
+          content: string;
+        }> = [];
 
         for (const block of assistantContent) {
           if (block.type === 'text') {
@@ -1008,13 +1211,16 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     systemPrompt?: string,
   ): Promise<AssistantChatResponse> {
     if (!this.openai) {
-      throw new Error('OpenAI client not configured. Set MCP_MODEL_PROVIDER=openai and OPENAI_API_KEY.');
-    }
-    const client = new Client({ name: 'arxena-assistant-client', version: '1.0.0' });
-    const workspaceMemberId =
-      await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
-        apiToken,
+      throw new Error(
+        'OpenAI client not configured. Set MCP_MODEL_PROVIDER=openai and OPENAI_API_KEY.',
       );
+    }
+    const client = new Client({
+      name: 'arxena-assistant-client',
+      version: '1.0.0',
+    });
+    const workspaceMemberId =
+      await this.workspaceQueryService.getWorkspaceMemberIdFromToken(apiToken);
     const transport = new StdioClientTransport({
       command: process.execPath,
       args: [this.mcpServerScriptPath],
@@ -1050,7 +1256,8 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
         },
       );
       const finalText: string[] = [];
-      const toolCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
+      const toolCalls: Array<{ name: string; args: Record<string, unknown> }> =
+        [];
       let rounds = 0;
 
       while (rounds < MAX_TOOL_ROUNDS) {
@@ -1081,7 +1288,8 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
           if (tc.type !== 'function') continue;
           const args = (() => {
             try {
-              return (JSON.parse(tc.function.arguments ?? '{}') ?? {}) as Record<string, unknown>;
+              return (JSON.parse(tc.function.arguments ?? '{}') ??
+                {}) as Record<string, unknown>;
             } catch {
               return {};
             }
@@ -1129,13 +1337,16 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     },
   ): Promise<unknown> {
     if (!this.openai) {
-      throw new Error('OpenAI client not configured. Set MCP_MODEL_PROVIDER=openai and OPENAI_API_KEY.');
+      throw new Error(
+        'OpenAI client not configured. Set MCP_MODEL_PROVIDER=openai and OPENAI_API_KEY.',
+      );
     }
 
-    const model = options?.model ?? process.env.MCP_OPENAI_MODEL ?? OPENAI_MCP_MODEL;
+    const model =
+      options?.model ?? process.env.MCP_OPENAI_MODEL ?? OPENAI_MCP_MODEL;
     const maxTokens = options?.maxTokens ?? 2000;
 
-    return this.withMcpClient(apiToken, async (client) => {
+    return this.withMcpClient(apiToken, undefined, async (client) => {
       const toolsResult = await client.listTools();
       const allTools = this.mcpToolsToOpenAITools(
         toolsResult.tools.map((t) => ({
@@ -1148,9 +1359,15 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
       const tools =
         options?.allowedToolNames && options.allowedToolNames.length > 0
           ? allTools.filter(
-              (t) => t.type === 'function' && options.allowedToolNames!.includes(t.function.name),
+              (t) =>
+                t.type === 'function' &&
+                options.allowedToolNames!.includes(t.function.name),
             )
-          : allTools.filter((t) => t.type === 'function' && !INTERNAL_TOOL_NAMES.has(t.function.name));
+          : allTools.filter(
+              (t) =>
+                t.type === 'function' &&
+                !INTERNAL_TOOL_NAMES.has(t.function.name),
+            );
 
       let messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
         { role: 'system', content: systemPrompt },
@@ -1186,7 +1403,10 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
           const toolName = toolCall.function.name;
           const toolArgs = (() => {
             try {
-              return JSON.parse(toolCall.function.arguments || '{}') as Record<string, unknown>;
+              return JSON.parse(toolCall.function.arguments || '{}') as Record<
+                string,
+                unknown
+              >;
             } catch {
               return {};
             }
@@ -1227,10 +1447,12 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     options?: {
       assistantThreadId?: string;
       searchType?: 'classic' | 'sales_navigator' | 'recruiter';
+      abortSignal?: AbortSignal;
     },
   ): Promise<void> {
     const assistantThreadId = options?.assistantThreadId;
     const threadSearchType = options?.searchType;
+    const abortSignal = options?.abortSignal;
     if (this.provider === 'openai' && this.openai) {
       const streamResult = await this.processQueryStreamWithOpenAI(
         query,
@@ -1240,6 +1462,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
         systemPrompt,
         assistantThreadId,
         threadSearchType,
+        abortSignal,
       );
       return streamResult;
     }
@@ -1251,6 +1474,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
       systemPrompt,
       assistantThreadId,
       threadSearchType,
+      abortSignal,
     );
     return streamResult;
   }
@@ -1261,19 +1485,28 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     availableTools: Anthropic.Messages.Tool[],
     systemPrompt: string | undefined,
     sendEvent: StreamEventSender,
+    abortSignal?: AbortSignal,
   ): Promise<
     Array<
       | { type: 'text'; text: string }
-      | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
+      | {
+          type: 'tool_use';
+          id: string;
+          name: string;
+          input: Record<string, unknown>;
+        }
     >
   > {
-    const stream = this.anthropic.messages.stream({
-      model: CLAUDE_MODEL,
-      max_tokens: MAX_TOKENS,
-      ...(systemPrompt ? { system: systemPrompt } : {}),
-      messages: messages as Anthropic.MessageParam[],
-      tools: availableTools,
-    });
+    const stream = this.anthropic.messages.stream(
+      {
+        model: CLAUDE_MODEL,
+        max_tokens: MAX_TOKENS,
+        ...(systemPrompt ? { system: systemPrompt } : {}),
+        messages: messages as Anthropic.MessageParam[],
+        tools: availableTools,
+      },
+      abortSignal ? { signal: abortSignal } : undefined,
+    );
     stream.on('text', (delta: string) => {
       sendEvent('text', { delta });
     });
@@ -1281,9 +1514,15 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
       sendEvent('error', { error: err.message });
     });
     const finalMessage = await stream.finalMessage();
+    this.throwIfAborted(abortSignal);
     return finalMessage.content as Array<
       | { type: 'text'; text: string }
-      | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
+      | {
+          type: 'tool_use';
+          id: string;
+          name: string;
+          input: Record<string, unknown>;
+        }
     >;
   }
 
@@ -1294,7 +1533,12 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
   private async processAnthropicAssistantContent(
     assistantContent: Array<
       | { type: 'text'; text: string }
-      | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
+      | {
+          type: 'tool_use';
+          id: string;
+          name: string;
+          input: Record<string, unknown>;
+        }
     >,
     client: Client,
     apiToken: string,
@@ -1302,13 +1546,23 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     allToolCalls: Array<{ name: string; args: Record<string, unknown> }>,
     assistantThreadId?: string,
     searchType?: 'classic' | 'sales_navigator' | 'recruiter',
+    abortSignal?: AbortSignal,
   ): Promise<{
-    toolResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }>;
+    toolResults: Array<{
+      type: 'tool_result';
+      tool_use_id: string;
+      content: string;
+    }>;
     textParts: string[];
   }> {
     const textParts: string[] = [];
-    const toolResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }> = [];
+    const toolResults: Array<{
+      type: 'tool_result';
+      tool_use_id: string;
+      content: string;
+    }> = [];
     for (const block of assistantContent) {
+      this.throwIfAborted(abortSignal);
       if (block.type === 'text') {
         textParts.push(block.text);
       }
@@ -1323,6 +1577,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
           sendEvent,
           assistantThreadId,
           searchType,
+          abortSignal,
         );
         if (!fromCache) allToolCalls.push({ name: block.name, args: toolArgs });
         toolResults.push({
@@ -1344,34 +1599,42 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     systemPrompt?: string,
     assistantThreadId?: string,
     threadSearchType?: 'classic' | 'sales_navigator' | 'recruiter',
+    abortSignal?: AbortSignal,
   ): Promise<void> {
-    await this.withMcpClient(apiToken, async (client) => {
+    await this.withMcpClient(apiToken, abortSignal, async (client) => {
       const availableTools = await this.fetchAnthropicTools(client);
       const messages: MessageParam[] = [
         ...conversationHistory,
         { role: 'user', content: query },
       ];
       const finalText: string[] = [];
-      const allToolCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
+      const allToolCalls: Array<{
+        name: string;
+        args: Record<string, unknown>;
+      }> = [];
       let rounds = 0;
 
       while (rounds < MAX_TOOL_ROUNDS) {
+        this.throwIfAborted(abortSignal);
         rounds += 1;
         const assistantContent = await this.streamAnthropicRound(
           messages,
           availableTools,
           systemPrompt,
           sendEvent,
+          abortSignal,
         );
-        const { toolResults, textParts } = await this.processAnthropicAssistantContent(
-          assistantContent,
-          client,
-          apiToken,
-          sendEvent,
-          allToolCalls,
-          assistantThreadId,
-          threadSearchType,
-        );
+        const { toolResults, textParts } =
+          await this.processAnthropicAssistantContent(
+            assistantContent,
+            client,
+            apiToken,
+            sendEvent,
+            allToolCalls,
+            assistantThreadId,
+            threadSearchType,
+            abortSignal,
+          );
         finalText.push(...textParts);
         const hasToolUse = toolResults.length > 0;
         if (!hasToolUse) break;
@@ -1393,17 +1656,19 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     systemPrompt?: string,
     assistantThreadId?: string,
     threadSearchType?: 'classic' | 'sales_navigator' | 'recruiter',
+    abortSignal?: AbortSignal,
   ): Promise<void> {
     if (!this.openai) {
       sendEvent('error', {
-        error: 'OpenAI client not configured. Set MCP_MODEL_PROVIDER=openai and OPENAI_API_KEY.',
+        error:
+          'OpenAI client not configured. Set MCP_MODEL_PROVIDER=openai and OPENAI_API_KEY.',
       });
       sendEvent('done', { text: '', toolCalls: undefined });
       return;
     }
 
     this.logger.log(`MCP Client System Prompt:, ${systemPrompt}`);
-    await this.withMcpClient(apiToken, async (client) => {
+    await this.withMcpClient(apiToken, abortSignal, async (client) => {
       const openaiTools = await this.fetchOpenAITools(client);
       let openaiMessages = await this.historyToOpenAIMessagesWithExecutedTools(
         conversationHistory,
@@ -1417,19 +1682,28 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
           sendEvent: () => true,
         },
       );
-      this.logger.log(`MCP Client openaiMessages:, ${JSON.stringify(openaiMessages, null, 2)}`);
+      this.logger.log(
+        `MCP Client openaiMessages:, ${JSON.stringify(openaiMessages, null, 2)}`,
+      );
       const finalText: string[] = [];
-      const allToolCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
+      const allToolCalls: Array<{
+        name: string;
+        args: Record<string, unknown>;
+      }> = [];
       let rounds = 0;
       while (rounds < MAX_TOOL_ROUNDS) {
+        this.throwIfAborted(abortSignal);
         rounds += 1;
-        const stream = await this.openai!.chat.completions.create({
-          model: process.env.MCP_OPENAI_MODEL ?? OPENAI_MCP_MODEL,
-          max_tokens: MAX_TOKENS,
-          messages: openaiMessages,
-          tools: openaiTools,
-          stream: true,
-        });
+        const stream = await this.openai!.chat.completions.create(
+          {
+            model: process.env.MCP_OPENAI_MODEL ?? OPENAI_MCP_MODEL,
+            max_tokens: MAX_TOKENS,
+            messages: openaiMessages,
+            tools: openaiTools,
+            stream: true,
+          },
+          abortSignal ? { signal: abortSignal } : undefined,
+        );
         const { content, toolCallsList } = await this.consumeOpenAIStream(
           stream,
           sendEvent,
@@ -1437,21 +1711,25 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
         if (content) finalText.push(content);
         if (toolCallsList.length === 0) break;
 
-        const assistantMessage: OpenAI.Chat.ChatCompletionAssistantMessageParam = {
-          role: 'assistant',
-          content: content || null,
-          tool_calls: toolCallsList.map((t) => ({
-            id: t.id,
-            type: 'function' as const,
-            function: { name: t.name, arguments: t.args },
-          })),
-        };
+        const assistantMessage: OpenAI.Chat.ChatCompletionAssistantMessageParam =
+          {
+            role: 'assistant',
+            content: content || null,
+            tool_calls: toolCallsList.map((t) => ({
+              id: t.id,
+              type: 'function' as const,
+              function: { name: t.name, arguments: t.args },
+            })),
+          };
         openaiMessages = [...openaiMessages, assistantMessage];
 
         for (const tc of toolCallsList) {
           const args = (() => {
             try {
-              return (JSON.parse(tc.args || '{}') ?? {}) as Record<string, unknown>;
+              return (JSON.parse(tc.args || '{}') ?? {}) as Record<
+                string,
+                unknown
+              >;
             } catch {
               return {};
             }
@@ -1465,6 +1743,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
             sendEvent,
             assistantThreadId,
             threadSearchType,
+            abortSignal,
           );
           if (!fromCache) allToolCalls.push({ name: tc.name, args });
           openaiMessages.push({

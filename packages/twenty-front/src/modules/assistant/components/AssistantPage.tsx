@@ -319,6 +319,21 @@ export const AssistantPage = () => {
         toolCalls: m.toolCalls,
       }));
 
+      // Restore the last table snapshot to the last assistant message so table
+      // previews survive page reloads (tableDataList is frontend-only and not
+      // persisted per-message in the backend).
+      if (data.lastTableData) {
+        const lastAssistantIdx = frontendMessages.findLastIndex(
+          (m) => m.role === 'assistant',
+        );
+        if (lastAssistantIdx >= 0) {
+          frontendMessages[lastAssistantIdx] = {
+            ...frontendMessages[lastAssistantIdx],
+            tableDataList: [data.lastTableData],
+          };
+        }
+      }
+
       setThreads((prev) => {
         const thread = prev.find((t) => t.id === currentThreadId);
         const currentCount = thread?.messages?.length ?? 0;
@@ -390,6 +405,7 @@ export const AssistantPage = () => {
     },
     [currentThreadId],
   );
+
 
   const handleNewThread = useCallback(
     async (e?: React.MouseEvent<HTMLButtonElement>) => {
@@ -674,6 +690,17 @@ export const AssistantPage = () => {
     [baseUrl, token, threadsLoadedFromBackend],
   );
 
+  // Called when the MCP assistant creates a job (via create_job tool) and emits
+  // job_attached SSE. Optimistically links the job to the current thread and
+  // persists it to the backend via patchThread.
+  const handleJobAttached = useCallback(
+    (jobId: string) => {
+      if (!currentThreadId) return;
+      patchThread(currentThreadId, { jobId });
+    },
+    [currentThreadId, patchThread],
+  );
+
   const handleSelectThread = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const value = e.target.value;
@@ -821,6 +848,7 @@ export const AssistantPage = () => {
             onUpdateThreadMode={(threadId, assistantMode) =>
               patchThread(threadId, { assistantMode })
             }
+            onJobAttached={handleJobAttached}
             selectedCandidateIds={selectedCandidateIds}
           />
           <AssistantResultsPanel

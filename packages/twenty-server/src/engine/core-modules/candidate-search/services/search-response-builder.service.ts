@@ -110,15 +110,11 @@ export class SearchResponseBuilderService {
       const allCandidates = strategyResults.flatMap(
         (sr) => sr.result?.transformedCandidates || [],
       );
-      const columns = ['name', 'headline', 'jobTitle', 'linkedinUrl'];
-      const rows = allCandidates
-        .map((c: any) => ({
-          name: c.name || c.fullName || '',
-          headline: c.headline || c.linkedinHeadline || '',
-          jobTitle: c.jobTitle || '',
-          linkedinUrl: c.linkedinUrl || '',
-        }))
-        .filter((r: { name: string }) => r.name);
+      const columns = ['name', 'headline', 'jobTitle', 'jobCompanyName'];
+      const rows = allCandidates.filter((candidate: any) => {
+        const candidateName = candidate?.name || candidate?.fullName;
+        return typeof candidateName === 'string' && candidateName.trim().length > 0;
+      });
       if (rows.length > 0) {
         const tableId = crypto.randomUUID();
         const label = `${rows.length} candidate${rows.length !== 1 ? 's' : ''}`;

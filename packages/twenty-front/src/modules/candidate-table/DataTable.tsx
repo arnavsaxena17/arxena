@@ -963,7 +963,12 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     }
 
     const loadData = useCallback(async () => {
-      if (!jobId || jobId === "job-id" || jobId === '__search__') return;
+      if (!jobId || jobId === "job-id" || jobId === '__search__') {
+        // For virtual job IDs (assistant search), ensure we're not stuck in a
+        // loading state left over from a previous real-job DataTable render.
+        setTableState(prev => prev.isLoading ? { ...prev, isLoading: false } : prev);
+        return;
+      }
       
       try {
         setTableState(prev => ({ ...prev, isLoading: true }));

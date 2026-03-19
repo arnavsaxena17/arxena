@@ -21,6 +21,7 @@ type UseMcpStreamingChatParams = {
   onMessageComplete?: () => void;
   onStreamMessage?: (type: string, data: unknown) => void;
   onAgentEvent?: (event: AssistantAgentEvent) => void;
+  onJobAttached?: (jobId: string) => void;
   token?: string;
   baseUrl: string;
   /** Candidate IDs selected in the results DataTable; forwarded to the backend on each request */
@@ -50,6 +51,7 @@ export const useMcpStreamingChat = ({
   onMessageComplete,
   onStreamMessage,
   onAgentEvent,
+  onJobAttached,
   token,
   baseUrl,
   selectedCandidateIds,
@@ -63,6 +65,7 @@ export const useMcpStreamingChat = ({
   const accumulatedContentRef = useRef<string>('');
   const lastBubbleIsTextRunRef = useRef<boolean>(false);
   const streamedMessagesRef = useRef<AssistantChatMessage[]>(messages);
+  const activeRequestControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     streamedMessagesRef.current = messages;
@@ -95,6 +98,24 @@ export const useMcpStreamingChat = ({
     setLoading(false);
   };
 
+  const resetStreamingRefs = () => {
+    streamingMessageIndexRef.current = -1;
+    accumulatedContentRef.current = '';
+    lastBubbleIsTextRunRef.current = false;
+    activeRequestControllerRef.current = null;
+  };
+
+  const stopMessage = useCallback(() => {
+    const controller = activeRequestControllerRef.current;
+    if (!controller) {
+      return;
+    }
+    setStreamLog((prev) => [...prev, 'Stopping run...']);
+    controller.abort('user_stop');
+    activeRequestControllerRef.current = null;
+    setLoading(false);
+  }, []);
+
   const handleSseEvent = useCallback(
     (eventType: string, data: Record<string, unknown>) => {
       if (eventType === 'agent_event') {
@@ -106,11 +127,10 @@ export const useMcpStreamingChat = ({
             runId: evt.runId,
             summary: typeof evt.summary === 'string' ? evt.summary : undefined,
             error: typeof evt.error === 'string' ? evt.error : undefined,
-            toolName: typeof evt.toolName === 'string' ? evt.toolName : undefined,
+            toolName:
+              typeof evt.toolName === 'string' ? evt.toolName : undefined,
             timestamp:
-              typeof evt.timestamp === 'number'
-                ? evt.timestamp
-                : Date.now(),
+              typeof evt.timestamp === 'number' ? evt.timestamp : Date.now(),
           });
         }
         return;
@@ -161,13 +181,9 @@ export const useMcpStreamingChat = ({
         if (msgType) {
           setStreamLog((prev) => [...prev, msgType]);
         }
-        onStreamMessage?.(
-          msgType,
-          (data as { data?: unknown }).data ?? data,
-        );
+        onStreamMessage?.(msgType, (data as { data?: unknown }).data ?? data);
         const chatMessage =
-          typeof (data as { chatMessage?: unknown }).chatMessage ===
-          'string'
+          typeof (data as { chatMessage?: unknown }).chatMessage === 'string'
             ? (data as { chatMessage?: string }).chatMessage
             : null;
         const displayText =
@@ -175,11 +191,7 @@ export const useMcpStreamingChat = ({
           (msgType
             ? `**${msgType}**\n${
                 typeof (data as { data?: unknown }).data !== 'undefined'
-                  ? JSON.stringify(
-                      (data as { data?: unknown }).data,
-                      null,
-                      2,
-                    )
+                  ? JSON.stringify((data as { data?: unknown }).data, null, 2)
                   : ''
               }`
             : '');
@@ -235,7 +247,13 @@ export const useMcpStreamingChat = ({
       }
 
       if (eventType === 'table_data') {
-        const d = data as { columns?: unknown; rows?: unknown; tableId?: unknown; tableType?: unknown; label?: unknown };
+        const d = data as {
+          columns?: unknown;
+          rows?: unknown;
+          tableId?: unknown;
+          tableType?: unknown;
+          label?: unknown;
+        };
         const columns = Array.isArray(d.columns) ? (d.columns as string[]) : [];
         const rows = Array.isArray(d.rows) ? (d.rows as unknown[]) : [];
         if (columns.length > 0 && rows.length > 0) {
@@ -243,7 +261,9 @@ export const useMcpStreamingChat = ({
             columns,
             rows: rows as Record<string, unknown>[],
             ...(typeof d.tableId === 'string' ? { tableId: d.tableId } : {}),
-            ...(typeof d.tableType === 'string' ? { tableType: d.tableType } : {}),
+            ...(typeof d.tableType === 'string'
+              ? { tableType: d.tableType }
+              : {}),
             ...(typeof d.label === 'string' ? { label: d.label } : {}),
           };
           onTableData?.(tableData);
@@ -263,16 +283,18 @@ export const useMcpStreamingChat = ({
       }
 
       if (eventType === 'org_chart') {
-        const orgChartData = (data as {
-          orgChart?: {
-            companyId?: string;
-            companyName?: string;
-            slug?: string;
-            viewUrl?: string;
-            country?: string;
-            functionRoot?: string;
-          };
-        }).orgChart;
+        const orgChartData = (
+          data as {
+            orgChart?: {
+              companyId?: string;
+              companyName?: string;
+              slug?: string;
+              viewUrl?: string;
+              country?: string;
+              functionRoot?: string;
+            };
+          }
+        ).orgChart;
         if (orgChartData?.companyId && orgChartData?.viewUrl) {
           const prev = streamedMessagesRef.current;
           const last = prev[prev.length - 1];
@@ -313,9 +335,11 @@ export const useMcpStreamingChat = ({
         const toolCalls = Array.isArray(
           (data as { toolCalls?: unknown }).toolCalls,
         )
-          ? (data as {
-              toolCalls: { name: string; args: Record<string, unknown> }[];
-            }).toolCalls
+          ? (
+              data as {
+                toolCalls: { name: string; args: Record<string, unknown> }[];
+              }
+            ).toolCalls
           : undefined;
 
         const finalContent =
@@ -395,9 +419,18 @@ export const useMcpStreamingChat = ({
         const name = (data as { name: string }).name;
         onThreadNameChange?.(stripThreadNameQuotes(name));
       }
+
+      if (
+        eventType === 'job_attached' &&
+        typeof (data as { jobId?: unknown }).jobId === 'string'
+      ) {
+        const jobId = (data as { jobId: string }).jobId;
+        onJobAttached?.(jobId);
+      }
     },
     [
       onAgentEvent,
+      onJobAttached,
       onMessageComplete,
       onStreamMessage,
       onTableData,
@@ -426,6 +459,8 @@ export const useMcpStreamingChat = ({
       initializeStreamingState(trimmed);
 
       try {
+        const controller = new AbortController();
+        activeRequestControllerRef.current = controller;
         const res = await fetch(`${baseUrl}/assistant/chat/stream`, {
           method: 'POST',
           headers: {
@@ -438,6 +473,7 @@ export const useMcpStreamingChat = ({
             ...(threadId ? { threadId } : {}),
             ...(selectedCandidateIds?.length ? { selectedCandidateIds } : {}),
           }),
+          signal: controller.signal,
         });
 
         if (!res.ok) {
@@ -475,7 +511,10 @@ export const useMcpStreamingChat = ({
               continue;
             }
             try {
-              const data = JSON.parse(parsed.dataStr) as Record<string, unknown>;
+              const data = JSON.parse(parsed.dataStr) as Record<
+                string,
+                unknown
+              >;
               handleSseEvent(parsed.eventType, data);
             } catch {
               // ignore malformed data
@@ -487,7 +526,10 @@ export const useMcpStreamingChat = ({
           const parsed = parseServerSentEvent(buffer);
           if (parsed) {
             try {
-              const data = JSON.parse(parsed.dataStr) as Record<string, unknown>;
+              const data = JSON.parse(parsed.dataStr) as Record<
+                string,
+                unknown
+              >;
               handleSseEvent(parsed.eventType, data);
             } catch {
               // ignore malformed data
@@ -495,22 +537,33 @@ export const useMcpStreamingChat = ({
           }
         }
       } catch (e) {
-        const message =
-          e instanceof Error ? e.message : 'Network error';
+        if (e instanceof DOMException && e.name === 'AbortError') {
+          setStreamLog((prev) => [...prev, 'Run stopped.']);
+          resetStreamingRefs();
+          return;
+        }
+        const message = e instanceof Error ? e.message : 'Network error';
         setError(message);
         const prev = streamedMessagesRef.current;
         const lastUserIdx = prev.findLastIndex((m) => m.role === 'user');
-        const reverted =
-          lastUserIdx >= 0 ? prev.slice(0, lastUserIdx) : prev;
+        const reverted = lastUserIdx >= 0 ? prev.slice(0, lastUserIdx) : prev;
         streamedMessagesRef.current = reverted;
         setMessages(reverted);
-        streamingMessageIndexRef.current = -1;
-        accumulatedContentRef.current = '';
+        resetStreamingRefs();
       } finally {
+        activeRequestControllerRef.current = null;
         setLoading(false);
       }
     },
-    [baseUrl, handleSseEvent, messages, selectedCandidateIds, setMessages, threadId, token],
+    [
+      baseUrl,
+      handleSseEvent,
+      messages,
+      selectedCandidateIds,
+      setMessages,
+      threadId,
+      token,
+    ],
   );
 
   return {
@@ -521,6 +574,6 @@ export const useMcpStreamingChat = ({
     setStreamLogMinimized,
     error,
     setError,
+    stopMessage,
   };
 };
-

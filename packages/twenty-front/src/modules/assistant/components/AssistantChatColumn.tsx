@@ -548,6 +548,7 @@ type AssistantChatColumnProps = {
     assistantMode: 'fully_autonomous' | 'permissioned',
   ) => void;
   selectedCandidateIds?: string[];
+  onJobAttached?: (jobId: string) => void;
 };
 
 export const AssistantChatColumn = ({
@@ -570,6 +571,7 @@ export const AssistantChatColumn = ({
   onPatchThread,
   onUpdateThreadMode,
   selectedCandidateIds,
+  onJobAttached,
 }: AssistantChatColumnProps) => {
   const { objectMetadataItems } = useObjectMetadataItems();
   const parsedJD = useRecoilValue(parsedJDSelector);
@@ -976,6 +978,7 @@ export const AssistantChatColumn = ({
           onThreadNameChange={onThreadNameChange}
           onMessageComplete={onMessageComplete}
           onAgentEvent={onAgentEvent}
+          onJobAttached={onJobAttached}
           selectedCandidateIds={selectedCandidateIds}
         />
       )}

@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { Request, Response } from 'express';
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
@@ -6,8 +17,8 @@ import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/typ
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { AssistantThreadService } from './assistant-thread.service';
 import {
-    AssistantChatRequestBody,
-    AssistantContentBlock,
+  AssistantChatRequestBody,
+  AssistantContentBlock,
 } from './assistant.types';
 import { McpAssistantService } from './mcp-assistant.service';
 import { AutonomousRecruitmentAgentRulesService } from './recruitment-agent-rules.service';
@@ -48,7 +59,11 @@ export class AssistantController {
     @Req()
     request: {
       headers: { authorization?: string };
-      body?: { name?: string; jobId?: string; assistantMode?: 'fully_autonomous' | 'permissioned' };
+      body?: {
+        name?: string;
+        jobId?: string;
+        assistantMode?: 'fully_autonomous' | 'permissioned';
+      };
     },
   ) {
     const authHeader = request.headers.authorization;
@@ -98,10 +113,23 @@ export class AssistantController {
       const raw = lastTableData as any;
       if (raw?.tables && Array.isArray(raw.tables) && raw.tables.length > 0) {
         const lastEntry = raw.tables[raw.tables.length - 1];
-        const cached = await this.tableDataCache.get<{ columns: string[]; rows: Record<string, unknown>[] }>(lastEntry.ref);
-        lastTableData = cached ? { ...cached, tableId: lastEntry.tableId, tableType: lastEntry.tableType, label: lastEntry.label } as any : null;
+        const cached = await this.tableDataCache.get<{
+          columns: string[];
+          rows: Record<string, unknown>[];
+        }>(lastEntry.ref);
+        lastTableData = cached
+          ? ({
+              ...cached,
+              tableId: lastEntry.tableId,
+              tableType: lastEntry.tableType,
+              label: lastEntry.label,
+            } as any)
+          : null;
       } else if (raw?.cacheRef && typeof raw.cacheRef === 'string') {
-        const cached = await this.tableDataCache.get<{ columns: string[]; rows: Record<string, unknown>[] }>(raw.cacheRef);
+        const cached = await this.tableDataCache.get<{
+          columns: string[];
+          rows: Record<string, unknown>[];
+        }>(raw.cacheRef);
         lastTableData = cached ?? null;
       }
 
@@ -158,15 +186,26 @@ export class AssistantController {
           jobId === null || jobId === '' ? null : jobId,
         );
       }
-      if (assistantMode === 'fully_autonomous' || assistantMode === 'permissioned') {
+      if (
+        assistantMode === 'fully_autonomous' ||
+        assistantMode === 'permissioned'
+      ) {
         await this.assistantThreadService.updateThreadAssistantMode(
           apiToken,
           id,
           assistantMode,
         );
       }
-      if (searchType === 'classic' || searchType === 'sales_navigator' || searchType === 'recruiter') {
-        await this.assistantThreadService.updateThreadSearchType(apiToken, id, searchType);
+      if (
+        searchType === 'classic' ||
+        searchType === 'sales_navigator' ||
+        searchType === 'recruiter'
+      ) {
+        await this.assistantThreadService.updateThreadSearchType(
+          apiToken,
+          id,
+          searchType,
+        );
       }
       const hasValidUpdate =
         typeof name === 'string' ||
@@ -232,7 +271,11 @@ export class AssistantController {
   @Post('chat')
   @UseGuards(JwtAuthGuard)
   async chat(
-    @Req() request: { headers: { authorization?: string }; body: AssistantChatRequestBody },
+    @Req()
+    request: {
+      headers: { authorization?: string };
+      body: AssistantChatRequestBody;
+    },
   ) {
     const authHeader = request.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
@@ -299,7 +342,10 @@ export class AssistantController {
       } catch (persistErr) {
         // Best-effort persistence; log and continue returning the response.
         // eslint-disable-next-line no-console
-        console.error('Failed to persist non-stream chat messages:', persistErr);
+        console.error(
+          'Failed to persist non-stream chat messages:',
+          persistErr,
+        );
       }
     }
 
@@ -315,7 +361,9 @@ export class AssistantController {
   ): Promise<void> {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
-      res.status(401).json({ error: 'Missing or invalid Authorization header' });
+      res
+        .status(401)
+        .json({ error: 'Missing or invalid Authorization header' });
       return;
     }
     const apiToken = authHeader.slice(7).replace(/[\r\n]+/g, '');
@@ -349,8 +397,12 @@ export class AssistantController {
     );
 
     let isAborted = false;
+    const requestAbortController = new AbortController();
     const abortHandler = () => {
       isAborted = true;
+      if (!requestAbortController.signal.aborted) {
+        requestAbortController.abort();
+      }
     };
     res.on('close', abortHandler);
     req.on('close', abortHandler);
@@ -362,10 +414,14 @@ export class AssistantController {
     res.setHeader('X-Accel-Buffering', 'no');
 
     const threadId = body.threadId;
-    let threadSearchType: 'classic' | 'sales_navigator' | 'recruiter' = 'classic';
+    let threadSearchType: 'classic' | 'sales_navigator' | 'recruiter' =
+      'classic';
     if (threadId) {
       try {
-        const thread = await this.assistantThreadService.getThread(apiToken, threadId);
+        const thread = await this.assistantThreadService.getThread(
+          apiToken,
+          threadId,
+        );
         if (thread?.searchType) {
           threadSearchType = thread.searchType;
         }
@@ -389,7 +445,9 @@ export class AssistantController {
     const tableRegistry: TableEntry[] = [];
 
     let finalText = '';
-    let finalToolCalls: Array<{ name: string; args: Record<string, unknown> }> | undefined = undefined;
+    let finalToolCalls:
+      | Array<{ name: string; args: Record<string, unknown> }>
+      | undefined = undefined;
 
     const sendEvent = (event: string, data: unknown): boolean => {
       if (isAborted || res.closed || res.destroyed) return false;
@@ -399,20 +457,39 @@ export class AssistantController {
         res.write(`event: ${event}\n`);
         res.write(`data: ${JSON.stringify(data)}\n\n`);
         // Collect each table_data emission into the registry
-        if (event === 'table_data' && typeof data === 'object' && data !== null) {
-          const d = data as { columns?: unknown; rows?: unknown; tableId?: unknown; tableType?: unknown; label?: unknown };
+        if (
+          event === 'table_data' &&
+          typeof data === 'object' &&
+          data !== null
+        ) {
+          const d = data as {
+            columns?: unknown;
+            rows?: unknown;
+            tableId?: unknown;
+            tableType?: unknown;
+            label?: unknown;
+          };
           if (Array.isArray(d.columns) && Array.isArray(d.rows)) {
-            const tableId = typeof d.tableId === 'string' ? d.tableId : crypto.randomUUID();
-            const ref = threadId ? `thread:${threadId}:table:${tableId}` : `table:${tableId}`;
+            const tableId =
+              typeof d.tableId === 'string' ? d.tableId : crypto.randomUUID();
+            const ref = threadId
+              ? `thread:${threadId}:table:${tableId}`
+              : `table:${tableId}`;
             tableRegistry.push({
               tableId,
               ref,
               tableType: typeof d.tableType === 'string' ? d.tableType : 'data',
-              label: typeof d.label === 'string' ? d.label : `${(d.rows as unknown[]).length} results`,
+              label:
+                typeof d.label === 'string'
+                  ? d.label
+                  : `${(d.rows as unknown[]).length} results`,
               columns: d.columns as string[],
               count: (d.rows as unknown[]).length,
               createdAt: Date.now(),
-              data: { columns: d.columns as string[], rows: d.rows as Record<string, unknown>[] },
+              data: {
+                columns: d.columns as string[],
+                rows: d.rows as Record<string, unknown>[],
+              },
             });
           }
         }
@@ -420,7 +497,10 @@ export class AssistantController {
           const d = data as { text?: unknown; toolCalls?: unknown };
           if (typeof d.text === 'string') finalText = d.text;
           if (Array.isArray(d.toolCalls)) {
-            finalToolCalls = d.toolCalls as Array<{ name: string; args: Record<string, unknown> }>;
+            finalToolCalls = d.toolCalls as Array<{
+              name: string;
+              args: Record<string, unknown>;
+            }>;
           }
         }
         return true;
@@ -444,22 +524,29 @@ export class AssistantController {
         history,
         sendEvent,
         systemPrompt,
-        threadId
-          ? { assistantThreadId: threadId, searchType: threadSearchType }
-          : undefined,
+        {
+          ...(threadId
+            ? { assistantThreadId: threadId, searchType: threadSearchType }
+            : {}),
+          abortSignal: requestAbortController.signal,
+        },
       );
 
       // Persist messages and table data if threadId is provided
       if (threadId && !isAborted) {
         try {
           // Get thread to check first exchange and message count for naming
-          const thread = await this.assistantThreadService.getThread(apiToken, threadId);
+          const thread = await this.assistantThreadService.getThread(
+            apiToken,
+            threadId,
+          );
           const messageCountBeforeTurn = thread?.messages.length ?? 0;
           const isFirstExchange = messageCountBeforeTurn === 0;
           // After this turn we will have messageCountBeforeTurn + 2 messages (user + assistant)
           const messageCountAfterTurn = messageCountBeforeTurn + 2;
           const shouldRegenerateName =
-            isFirstExchange || (messageCountAfterTurn >= 4 && messageCountAfterTurn % 4 === 0);
+            isFirstExchange ||
+            (messageCountAfterTurn >= 4 && messageCountAfterTurn % 4 === 0);
 
           // Persist user message
           await this.assistantThreadService.appendMessage(
@@ -482,10 +569,11 @@ export class AssistantController {
             // Generate thread name: after first response and again every ~4 messages (4, 8, 12, ...)
             if (finalText && shouldRegenerateName) {
               try {
-                const generatedName = await this.mcpAssistantService.generateThreadName(
-                  message,
-                  finalText,
-                );
+                const generatedName =
+                  await this.mcpAssistantService.generateThreadName(
+                    message,
+                    finalText,
+                  );
                 await this.assistantThreadService.updateThreadName(
                   apiToken,
                   threadId,
@@ -502,15 +590,24 @@ export class AssistantController {
             // Persist each table's rows to Redis under its own unique key.
             await Promise.all(
               tableRegistry.map((entry) =>
-                this.tableDataCache.set(entry.ref, entry.data, TABLE_DATA_CACHE_TTL_SECONDS),
+                this.tableDataCache.set(
+                  entry.ref,
+                  entry.data,
+                  TABLE_DATA_CACHE_TTL_SECONDS,
+                ),
               ),
             );
             // Merge new tables into any existing metadata registry on the thread,
             // so that multiple searches/sessions accumulate rather than overwrite.
-            const newMeta = tableRegistry.map(({ data: _data, ...meta }) => meta);
+            const newMeta = tableRegistry.map(
+              ({ data: _data, ...meta }) => meta,
+            );
             let existingTables: typeof newMeta = [];
             try {
-              const currentThread = await this.assistantThreadService.getThread(apiToken, threadId);
+              const currentThread = await this.assistantThreadService.getThread(
+                apiToken,
+                threadId,
+              );
               const currentRaw = currentThread?.lastTableData as any;
               if (currentRaw?.tables && Array.isArray(currentRaw.tables)) {
                 existingTables = currentRaw.tables;
@@ -532,7 +629,12 @@ export class AssistantController {
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      if (!isAborted && !res.closed && !res.destroyed) {
+      if (
+        !requestAbortController.signal.aborted &&
+        !isAborted &&
+        !res.closed &&
+        !res.destroyed
+      ) {
         sendEvent('error', { error: message });
       }
     } finally {

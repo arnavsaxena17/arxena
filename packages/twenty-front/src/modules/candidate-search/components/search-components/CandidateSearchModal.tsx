@@ -1,6 +1,8 @@
 import { useArxJDUpload } from '@/arx-jd-upload/hooks/useArxJDUpload';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
+import type { AssistantThreadSummary } from '@/arx-jd-upload/types/ParsedJD';
 import { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
+import type { AssistantThread } from '@/assistant/types/assistant.types';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { ActionButtons } from '@/candidate-search/components/ai-chat-assistant/ActionButtons';
@@ -10,6 +12,7 @@ import { ModalHeader } from '@/candidate-search/components/ai-chat-assistant/Mod
 import { CandidateSearchResultsTable } from '@/candidate-search/components/search-components/search-table/CandidateSearchResultsTable';
 import { SearchParametersForm } from '@/candidate-search/components/search-components/SearchParametersForm';
 import { isCandidateSearchModalOpenState } from '@/candidate-search/states/candidateSearchModalState';
+import { activeAssistantThreadIdState } from '@/candidate-search/states/searchConfigState';
 import {
   CandidateSearchState,
   LinkedInSearchCategory,
@@ -92,6 +95,7 @@ export const CandidateSearchModal = () => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const [currentWorkspaceMember] = useRecoilState(currentWorkspaceMemberState);
   const currentJobId = useRecoilValue(jobIdAtom);
+  const activeAssistantThreadId = useRecoilValue(activeAssistantThreadIdState);
   
   // Use Recoil state for ParsedJD
   const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
@@ -103,14 +107,24 @@ export const CandidateSearchModal = () => {
   const handleAssistantThreadUpdate = useCallback(async (
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
-    generatedParameters: any,
-    resolvedParameters: any
+    generatedParameters: unknown,
+    resolvedParameters: unknown
   ) => {
     const currentParsedJD = parsedJD;
-    const threads = currentParsedJD?.assistantThreads ?? [];
+    const threads: AssistantThreadSummary[] = Array.isArray(currentParsedJD?.assistantThreads)
+      ? currentParsedJD.assistantThreads
+      : [];
+    const assistantThreadId = activeAssistantThreadId ?? threads[0]?.id;
+    const assistantThread: AssistantThread = {
+      id: assistantThreadId ?? '',
+      name: threads.find((t) => t.id === assistantThreadId)?.name ?? threads[0]?.name ?? '',
+      messages: [],
+      lastTableData: null,
+    };
     try {
       await updateAssistantThreadRecord(
-        Array.isArray(threads) ? threads : [],
+        assistantThread,
+        threads,
         searchType,
         searchCategory,
         generatedParameters,
@@ -120,7 +134,7 @@ export const CandidateSearchModal = () => {
     } catch (error) {
       console.error('❌ Failed to save search parameters to backend:', error);
     }
-  }, [parsedJD, updateAssistantThreadRecord]);
+  }, [parsedJD, updateAssistantThreadRecord, activeAssistantThreadId]);
   
   // Create a unique key for this search to persist data - use job ID if available
   const persistenceKey = useMemo(() => 
@@ -211,12 +225,12 @@ export const CandidateSearchModal = () => {
   useEffect(() => {
     if (!isCandidateSearchModalOpen) {
       // Clear display data from parsedJD when modal is closed
-      setParsedJD((prevParsedJD: any) => {
+      setParsedJD((prevParsedJD: ParsedJD | null) => {
         if (!prevParsedJD?.searchParameters) return prevParsedJD;
         
-        const updatedSearchParameters = prevParsedJD.searchParameters.map((searchParam: any) => {
+        const updatedSearchParameters = prevParsedJD.searchParameters.map((searchParam) => {
           if (searchParam.resolvedSearchParameters) {
-            const updatedResolved = { ...searchParam.resolvedSearchParameters };
+            const updatedResolved: Record<string, unknown> = { ...searchParam.resolvedSearchParameters };
             
             // Clear display data for all parameter types to prevent persistence
             const displayKeys = ['industry_display', 'location_display', 'company_display', 'school_display'];

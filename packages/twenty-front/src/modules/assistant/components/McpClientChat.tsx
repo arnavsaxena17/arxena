@@ -2,17 +2,29 @@ import {
   AssistantDetailsTable,
   AssistantTableData,
 } from '@/assistant/components/AssistantDetailsTable';
-import type { AssistantAgentEvent, AssistantChatMessage } from '@/assistant/types/assistant.types';
+import type {
+  AssistantAgentEvent,
+  AssistantChatMessage,
+} from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { Button, IconChevronDown, IconChevronRight, Loader } from 'twenty-ui';
 
 import { useControlledMessages } from '@/assistant/hooks/useControlledMessages';
 import { useMcpStreamingChat } from '@/assistant/hooks/useMcpStreamingChat';
-import { parseMessageContentWithJson, parseRichText } from '@/assistant/utils/richText';
+import {
+  parseMessageContentWithJson,
+  parseRichText,
+} from '@/assistant/utils/richText';
 
 export type { AssistantChatMessage };
 
@@ -29,6 +41,8 @@ export type McpClientChatProps = {
   onAgentEvent?: (event: AssistantAgentEvent) => void;
   /** Candidate IDs selected in the results DataTable, sent along with each chat message */
   selectedCandidateIds?: string[];
+  /** Called when the MCP backend creates a job and emits job_attached with its ID */
+  onJobAttached?: (jobId: string) => void;
 };
 
 const StyledContainer = styled.div`
@@ -363,6 +377,7 @@ export const McpClientChat = ({
   onStreamMessage,
   onAgentEvent,
   selectedCandidateIds,
+  onJobAttached,
 }: McpClientChatProps) => {
   const tokenPair = useRecoilValue(tokenPairState);
   const navigate = useNavigate();
@@ -372,12 +387,15 @@ export const McpClientChat = ({
   );
   const [input, setInput] = useState('');
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
-  const [expandedAssistantIndices, setExpandedAssistantIndices] = useState<Set<number>>(() => new Set());
+  const [expandedAssistantIndices, setExpandedAssistantIndices] = useState<
+    Set<number>
+  >(() => new Set());
   const [requestElapsedSeconds, setRequestElapsedSeconds] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const {
     sendMessage,
+    stopMessage,
     loading,
     streamLog,
     streamLogMinimized,
@@ -393,6 +411,7 @@ export const McpClientChat = ({
     onMessageComplete,
     onStreamMessage,
     onAgentEvent,
+    onJobAttached,
     token: tokenPair?.accessToken?.token,
     baseUrl,
     selectedCandidateIds,
@@ -425,7 +444,8 @@ export const McpClientChat = ({
   const scrollToBottom = useCallback((instant = false) => {
     if (instant && messagesContainerRef.current) {
       // Direct scroll for instant updates during streaming
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      messagesContainerRef.current.scrollTop =
+        messagesContainerRef.current.scrollHeight;
     } else {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
@@ -433,7 +453,10 @@ export const McpClientChat = ({
 
   useEffect(() => {
     // Scroll instantly during streaming to keep up with content
-    const isStreaming = loading && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant';
+    const isStreaming =
+      loading &&
+      messages.length > 0 &&
+      messages[messages.length - 1]?.role === 'assistant';
     // Use requestAnimationFrame to ensure DOM has updated
     requestAnimationFrame(() => {
       scrollToBottom(isStreaming);
@@ -468,7 +491,8 @@ export const McpClientChat = ({
   const isLongContent = useCallback((content: string) => {
     const c = (content || '').trim();
     if (c.length > TRUNCATE_THRESHOLD) return true;
-    if (c.includes('```json') || c.includes('{"original_requirement"')) return true;
+    if (c.includes('```json') || c.includes('{"original_requirement"'))
+      return true;
     return false;
   }, []);
 
@@ -513,123 +537,132 @@ export const McpClientChat = ({
             !isExpanded &&
             lastAssistantIndex >= 0;
           return (
-          <div key={i}>
-            <StyledMessageLabel isUser={isUser}>
-              {isUser ? 'You' : 'Assistant'}
-            </StyledMessageLabel>
-            {showMinimised ? (
-              <StyledMessageMinimised isUser={false}>
-                <span title={msg.content || ''}>
-                  {getMinimisedSummary(msg.content || '')}
-                </span>
-                <StyledChevronButton
-                  type="button"
-                  onClick={() => toggleAssistantExpanded(i)}
-                  aria-label="Expand message"
-                >
-                  <IconChevronRight size={16} />
-                </StyledChevronButton>
-              </StyledMessageMinimised>
-            ) : (
-              <StyledExpandableMessage isUser={isUser}>
-                {isUser
-                  ? parseRichText(msg.content || '')
-                  : parseMessageContentWithJson(msg.content || '')}
-                {isAssistant && longContent && i !== lastAssistantIndex && (
-                  <StyledMessageToggleButton
+            <div key={i}>
+              <StyledMessageLabel isUser={isUser}>
+                {isUser ? 'You' : 'Assistant'}
+              </StyledMessageLabel>
+              {showMinimised ? (
+                <StyledMessageMinimised isUser={false}>
+                  <span title={msg.content || ''}>
+                    {getMinimisedSummary(msg.content || '')}
+                  </span>
+                  <StyledChevronButton
                     type="button"
                     onClick={() => toggleAssistantExpanded(i)}
-                    aria-label="Collapse message"
+                    aria-label="Expand message"
                   >
-                    <IconChevronDown size={16} />
-                  </StyledMessageToggleButton>
-                )}
-              </StyledExpandableMessage>
-            )}
-            {msg.tableDataList?.map((tableData, tableIndex) => {
-              const previewData = {
-                ...tableData,
-                rows: tableData.rows.slice(0, 5),
-              };
-              return (
-                <StyledTableSnapshot
-                  key={tableIndex}
-                  onClick={() => {
-                    onTableData?.(tableData);
-                  }}
-                >
-                  <AssistantDetailsTable data={previewData} maxHeight={180} />
-                  <StyledTableSnapshotHint>
-                    {tableData.rows.length > 5
-                      ? `Showing 5 of ${tableData.rows.length} candidates. Click to view all in the panel.`
-                      : 'Click to view in the panel.'}
-                  </StyledTableSnapshotHint>
-                </StyledTableSnapshot>
-              );
-            })}
-            {msg.orgCharts?.map((orgChart, orgChartIndex) => {
-              const logoUrl = `${baseUrl}/org-chart/company-logo?website=${encodeURIComponent(orgChart.companyName)}`;
-              return (
-                <StyledOrgChartPreview key={orgChartIndex}>
-                  <StyledOrgChartLink
-                    href={orgChart.viewUrl}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      navigate(orgChart.viewUrl);
+                    <IconChevronRight size={16} />
+                  </StyledChevronButton>
+                </StyledMessageMinimised>
+              ) : (
+                <StyledExpandableMessage isUser={isUser}>
+                  {isUser
+                    ? parseRichText(msg.content || '')
+                    : parseMessageContentWithJson(msg.content || '')}
+                  {isAssistant && longContent && i !== lastAssistantIndex && (
+                    <StyledMessageToggleButton
+                      type="button"
+                      onClick={() => toggleAssistantExpanded(i)}
+                      aria-label="Collapse message"
+                    >
+                      <IconChevronDown size={16} />
+                    </StyledMessageToggleButton>
+                  )}
+                </StyledExpandableMessage>
+              )}
+              {msg.tableDataList?.map((tableData, tableIndex) => {
+                const previewData = {
+                  ...tableData,
+                  rows: tableData.rows.slice(0, 5),
+                };
+                return (
+                  <StyledTableSnapshot
+                    key={tableIndex}
+                    onClick={() => {
+                      onTableData?.(tableData);
                     }}
                   >
-                    <StyledOrgChartImage
-                      src={logoUrl}
-                      alt={`${orgChart.companyName} org chart`}
-                      onError={(e) => {
-                        // Fallback to a placeholder if logo fails to load
-                        (e.target as HTMLImageElement).style.display = 'none';
+                    <div style={{ pointerEvents: 'none' }}>
+                      <AssistantDetailsTable
+                        data={previewData}
+                        maxHeight={180}
+                      />
+                    </div>
+                    <StyledTableSnapshotHint>
+                      {tableData.rows.length > 5
+                        ? `Showing 5 of ${tableData.rows.length} candidates. Click to view all in the panel.`
+                        : 'Click to view in the panel.'}
+                    </StyledTableSnapshotHint>
+                  </StyledTableSnapshot>
+                );
+              })}
+              {msg.orgCharts?.map((orgChart, orgChartIndex) => {
+                const logoUrl = `${baseUrl}/org-chart/company-logo?website=${encodeURIComponent(orgChart.companyName)}`;
+                return (
+                  <StyledOrgChartPreview key={orgChartIndex}>
+                    <StyledOrgChartLink
+                      href={orgChart.viewUrl}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigate(orgChart.viewUrl);
                       }}
-                    />
-                  </StyledOrgChartLink>
-                  <StyledOrgChartInfo>
-                    <div>
-                      <strong>{orgChart.companyName}</strong>
-                    </div>
-                    {orgChart.country && orgChart.country !== 'global' && (
-                      <div>Country: {orgChart.country}</div>
-                    )}
-                    {orgChart.functionRoot && orgChart.functionRoot !== 'fullcompany' && (
-                      <div>Function: {orgChart.functionRoot}</div>
-                    )}
-                    <div>
-                      <StyledOrgChartLink
-                        href={orgChart.viewUrl}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          navigate(orgChart.viewUrl);
+                    >
+                      <StyledOrgChartImage
+                        src={logoUrl}
+                        alt={`${orgChart.companyName} org chart`}
+                        onError={(e) => {
+                          // Fallback to a placeholder if logo fails to load
+                          (e.target as HTMLImageElement).style.display = 'none';
                         }}
-                      >
-                        View full org chart →
-                      </StyledOrgChartLink>
-                    </div>
-                  </StyledOrgChartInfo>
-                </StyledOrgChartPreview>
-              );
-            })}
-            {msg.toolCalls && msg.toolCalls.length > 0 && (
-              <StyledToolCalls>
-                Used: {msg.toolCalls.map((t) => t.name).join(', ')}
-              </StyledToolCalls>
-            )}
-          </div>
+                      />
+                    </StyledOrgChartLink>
+                    <StyledOrgChartInfo>
+                      <div>
+                        <strong>{orgChart.companyName}</strong>
+                      </div>
+                      {orgChart.country && orgChart.country !== 'global' && (
+                        <div>Country: {orgChart.country}</div>
+                      )}
+                      {orgChart.functionRoot &&
+                        orgChart.functionRoot !== 'fullcompany' && (
+                          <div>Function: {orgChart.functionRoot}</div>
+                        )}
+                      <div>
+                        <StyledOrgChartLink
+                          href={orgChart.viewUrl}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            navigate(orgChart.viewUrl);
+                          }}
+                        >
+                          View full org chart →
+                        </StyledOrgChartLink>
+                      </div>
+                    </StyledOrgChartInfo>
+                  </StyledOrgChartPreview>
+                );
+              })}
+              {msg.toolCalls && msg.toolCalls.length > 0 && (
+                <StyledToolCalls>
+                  Used: {msg.toolCalls.map((t) => t.name).join(', ')}
+                </StyledToolCalls>
+              )}
+            </div>
           );
         })}
-        {loading && messages.length > 0 && messages[messages.length - 1]?.role === 'user' && (
-          <StyledMessage isUser={false}>Thinking…</StyledMessage>
-        )}
+        {loading &&
+          messages.length > 0 &&
+          messages[messages.length - 1]?.role === 'user' && (
+            <StyledMessage isUser={false}>Thinking…</StyledMessage>
+          )}
         <div ref={messagesEndRef} />
       </StyledMessages>
-      {streamLog.length > 0 && (
-        streamLogMinimized ? (
+      {streamLog.length > 0 &&
+        (streamLogMinimized ? (
           <StyledStreamLogMinimized role="log">
             <span>
-              Stream log ({streamLog.length} {streamLog.length === 1 ? 'item' : 'items'})
+              Stream log ({streamLog.length}{' '}
+              {streamLog.length === 1 ? 'item' : 'items'})
             </span>
             <StyledStreamLogExpandButton
               type="button"
@@ -657,8 +690,7 @@ export const McpClientChat = ({
               <div key={idx}>{line}</div>
             ))}
           </StyledStreamLog>
-        )
-      )}
+        ))}
       {error && (
         <StyledErrorBanner role="alert">
           <StyledErrorText>{error}</StyledErrorText>
@@ -701,10 +733,10 @@ export const McpClientChat = ({
           />
         </StyledInputWrapper>
         <Button
-          title={loading ? 'Thinking…' : 'Send'}
-          type="submit"
-          disabled={loading}
-          aria-label={loading ? 'Sending' : 'Send message'}
+          title={loading ? 'Stop' : 'Send'}
+          type={loading ? 'button' : 'submit'}
+          onClick={loading ? stopMessage : undefined}
+          aria-label={loading ? 'Stop message' : 'Send message'}
         />
       </StyledForm>
     </StyledContainer>
