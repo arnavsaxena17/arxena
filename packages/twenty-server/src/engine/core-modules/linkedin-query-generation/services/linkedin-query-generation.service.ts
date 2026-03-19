@@ -702,6 +702,7 @@ export class LinkedinQueryGenerationService {
             temperature,
             messages,
             stream: true,
+            response_format: zodResponseFormat(schema, name),
           });
 
         const { content: accumulatedContent } =
@@ -731,6 +732,7 @@ export class LinkedinQueryGenerationService {
         temperature,
         messages,
         stream: true,
+        response_format: zodResponseFormat(schema, name),
       });
       let accumulatedContent = '';
       for await (const chunk of stream) {
