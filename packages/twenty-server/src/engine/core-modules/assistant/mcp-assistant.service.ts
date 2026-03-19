@@ -34,6 +34,11 @@ const STREAMING_TOOL_NAMES = [
 const INTERNAL_TOOL_NAMES = new Set<string>([
   'generate_unresolved_search_parameters',
   'resolve_parameters',
+  // LinkedIn query generation internals (expose only the orchestrator tool to general assistant flows)
+  'generate_linkedin_query_agent1',
+  'generate_linkedin_query_agent2',
+  'generate_linkedin_query_agent3',
+  'generate_linkedin_query_agent4',
 ]);
 
 @Injectable()
@@ -533,6 +538,20 @@ export class McpAssistantService {
         result.content
           ?.map((c) => (c.type === 'text' ? c.text : JSON.stringify(c)))
           .join('\n') ?? '';
+
+      if (!result.content || textContent.trim() === '') {
+        this.logger.warn(
+          `MCP tool "${name}" returned empty content. Raw result: ${JSON.stringify(result)}`,
+        );
+        const fallback = JSON.stringify({
+          error: `Tool "${name}" returned empty content`,
+          toolName: name,
+          hasContent: !!result.content,
+          rawResult: result,
+        });
+        this.cacheToolResult(cacheKey, fallback);
+        return { textContent: fallback, fromCache: false };
+      }
       this.cacheToolResult(cacheKey, textContent);
       return { textContent, fromCache: false };
     } catch (err) {
@@ -1158,11 +1177,9 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     const assistantThreadId = options?.assistantThreadId;
     if (this.provider === 'openai' && this.openai) {
       const streamResult = await this.processQueryStreamWithOpenAI(query, apiToken, conversationHistory, sendEvent, systemPrompt, assistantThreadId);
-      this.logger.log("MCP Client streamResult::", JSON.stringify(streamResult, null, 2));
       return streamResult;
     }
     const streamResult = await this.processQueryStreamWithAnthropic(query, apiToken, conversationHistory, sendEvent, systemPrompt, assistantThreadId);
-    this.logger.log("streamResult::", JSON.stringify(streamResult, null, 2));
     return streamResult;
   }
 

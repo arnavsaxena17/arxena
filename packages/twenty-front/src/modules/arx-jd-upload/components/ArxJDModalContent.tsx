@@ -2,17 +2,20 @@ import { useTheme } from '@emotion/react';
 import { CircularProgressBar } from 'twenty-ui';
 
 import { ParsedJD } from '../types/ParsedJD';
-import { ArxJDStepperContainer } from './ArxJDStepperContainer';
+import { ArxJDStepperContainer, type ArxJDStepperContainerProps } from './ArxJDStepperContainer';
 import { RecruiterDetails } from './JobDetailsForm';
 import { UploadForm } from './UploadForm';
+
+type GetRootProps = NonNullable<ArxJDStepperContainerProps['getRootProps']>;
+type GetInputProps = NonNullable<ArxJDStepperContainerProps['getInputProps']>;
 
 type ArxJDModalContentProps = {
   parsedJD: ParsedJD | null;
   setParsedJD: (jd: ParsedJD) => void;
   isUploading: boolean;
   error: string | null;
-  getRootProps: any;
-  getInputProps: any;
+  getRootProps: GetRootProps;
+  getInputProps: GetInputProps;
   isDragActive: boolean;
   onCancel: () => void;
   onSubmit: () => void;
@@ -21,19 +24,7 @@ type ArxJDModalContentProps = {
   onCreateJobFromName?: (jobName: string) => Promise<void>;
   onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
   isEditMode?: boolean;
-  onAssistantThreadUpdate?: (
-    assistantThreads: {
-      id: string;
-      name: string;
-      assistantParameters?: any;
-      enrichmentConfigs?: any[];
-      columnFilters?: any[];
-    }[],
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
-    generatedParameters: any,
-    resolvedParameters: any
-  ) => Promise<void>;
+  onAssistantThreadUpdate?: ArxJDStepperContainerProps['onAssistantThreadUpdate'];
 };
 
 export const ArxJDModalContent = ({

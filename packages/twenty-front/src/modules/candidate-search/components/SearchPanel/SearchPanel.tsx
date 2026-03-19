@@ -1,5 +1,6 @@
 import { useArxJDUpload } from '@/arx-jd-upload/hooks/useArxJDUpload';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
+import type { AssistantThread } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SearchParametersForm } from '@/candidate-search/components/search-components/SearchParametersForm';
 import { activeAssistantThreadIdState } from '@/candidate-search/states/searchConfigState';
@@ -380,22 +381,32 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
   const handleAssistantThreadUpdate = useCallback(async (
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
-    generatedParameters: any,
-    resolvedParameters: any
+    generatedParameters: unknown,
+    resolvedParameters: unknown,
   ) => {
     const currentParsedJD = parsedJD;
     const assistantThreads = currentParsedJD?.assistantThreads;
     
-    if (assistantThreads) {
+    if (assistantThreads && assistantThreads.length > 0) {
       try {
+        const assistantThreadId =
+          activeAssistantThreadId ?? assistantThreads[0]?.id;
+
+        // `useArxJDUpload.updateAssistantThreadRecord` uses `assistantThread.id` only;
+        // construct a minimal thread object for type-safety.
+        const assistantThread: AssistantThread = {
+          id: assistantThreadId,
+          name:
+            assistantThreads.find((t) => t.id === assistantThreadId)?.name ??
+            assistantThreads[0]?.name ??
+            '',
+          messages: [],
+          lastTableData: null,
+        };
+
         await updateAssistantThreadRecord(
-          assistantThreads.map(t => ({
-            id: t.id,
-            name: t.name || '',
-            assistantParameters: t.assistantParameters,
-            enrichmentConfigs: t.enrichmentConfigs,
-            columnFilters: t.columnFilters,
-          })),
+          assistantThread,
+          assistantThreads,
           searchType,
           searchCategory,
           generatedParameters,
@@ -408,7 +419,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
     } else {
       console.log('⚠️ No assistantThreadId available - cannot save to backend');
     }
-  }, [updateAssistantThreadRecord, parsedJD]);
+  }, [updateAssistantThreadRecord, parsedJD, activeAssistantThreadId]);
 
   const handleSearch = useCallback(async (
     searchType: LinkedInSearchType,

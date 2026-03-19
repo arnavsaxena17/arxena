@@ -18,12 +18,14 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { gql, useMutation } from '@apollo/client';
 
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
+import type { AssistantThread } from '@/assistant/types/assistant.types';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import {
   companyInfoType, graphQLToUpdateOneWorkspaceMemberProfile, isDefined, LinkedInSearchCategory,
   LinkedInSearchType
 } from 'twenty-shared';
 import { RecruiterDetails } from '../components/JobDetailsForm';
+import type { AssistantThreadSummary } from '../types/ParsedJD';
 import { createDefaultParsedJD } from '../utils/createDefaultParsedJD';
 import { useApiKeysRecoil } from './useApiKeysRecoil';
 import { useJobDescriptionParser } from './useJobDescriptionParser';
@@ -885,26 +887,34 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
     setParsedJD(null); // Reset the parsed JD state
   }, [setParsedJD]);
 
+  const toRecord = (value: unknown): Record<string, unknown> | undefined => {
+    if (value === null || value === undefined) {
+      return undefined;
+    }
+    if (typeof value !== 'object') {
+      return undefined;
+    }
+    if (Array.isArray(value)) {
+      return undefined;
+    }
+    return value as Record<string, unknown>;
+  };
+
   // Persist search plan state to assistant thread
   const updateAssistantThreadRecord = useCallback(async (
-    assistantThreads: {
-      id: string;
-      name?: string;
-      assistantParameters?: any;
-      enrichmentConfigs?: any[];
-      columnFilters?: any[];
-    }[],
+    assistantThread: AssistantThread,
+    assistantThreads: AssistantThreadSummary[],
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
-    generatedParameters: any,
-    resolvedParameters: any
+    generatedParameters: unknown,
+    resolvedParameters: unknown,
   ) => {
     const assistantParameters = {
-      generatedSearchParameters: generatedParameters,
-      resolvedSearchParameters: resolvedParameters,
+      generatedSearchParameters: toRecord(generatedParameters),
+      resolvedSearchParameters: toRecord(resolvedParameters),
     };
 
-    if (!assistantThreads || assistantThreads.length === 0) {
+    if (assistantThreads.length === 0) {
       if (!parsedJD?.id || !currentWorkspaceMember?.id) {
         enqueueSnackBar('Cannot create assistant thread - no job or recruiter', {
           variant: SnackBarVariant.Error,
@@ -949,7 +959,13 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
       return;
     }
 
-    const assistantThreadId = assistantThreads[0].id;
+    const assistantThreadId = assistantThread?.id ?? assistantThreads[0]?.id;
+    if (!assistantThreadId) {
+      enqueueSnackBar('Cannot update assistant thread - missing thread id', {
+        variant: SnackBarVariant.Error,
+      });
+      return;
+    }
     const displayName = `${searchType}_${searchCategory}`;
     try {
       await updateOneAssistantThreadRecord({
