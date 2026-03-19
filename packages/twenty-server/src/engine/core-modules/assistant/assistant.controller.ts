@@ -235,6 +235,31 @@ export class AssistantController {
     }
   }
 
+  @Get('threads/:id/tables/:tableId')
+  @UseGuards(JwtAuthGuard)
+  async getThreadTable(
+    @Param('id') threadId: string,
+    @Param('tableId') tableId: string,
+    @Req() request: { headers: { authorization?: string } },
+  ) {
+    const authHeader = request.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return { error: 'Missing or invalid Authorization header' };
+    }
+    try {
+      const ref = `thread:${threadId}:table:${tableId}`;
+      const cached = await this.tableDataCache.get<{
+        columns: string[];
+        rows: Record<string, unknown>[];
+      }>(ref);
+      if (!cached) return { error: 'Table not found or expired' };
+      return { columns: cached.columns, rows: cached.rows, tableId };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { error: message };
+    }
+  }
+
   @Delete('threads/:id')
   @UseGuards(JwtAuthGuard)
   async deleteThread(

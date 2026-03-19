@@ -21,44 +21,83 @@ export class LinkedInHtmlParserService {
       const dom = new JSDOM(html);
       const document = dom.window.document;
 
-      // --- New SDUI structure: each result card is <a href="/in/..."> wrapping role="listitem" ---
-      const newStyleCards = Array.from(
-        document.querySelectorAll('a[href*="/in/"]')
-      ).filter((a) => a.querySelector('[role="listitem"]')) as Element[];
+      // --- Selector probe: log counts for all known candidate selectors ---
+      const selectorProbes: Array<{ label: string; selector: string }> = [
+        { label: 'legacy data-view-name', selector: '[data-view-name="people-search-result"]' },
+        { label: 'role=listitem', selector: '[role="listitem"]' },
+        { label: 'li with /in/ link', selector: 'li:has(a[href*="/in/"])' },
+        { label: 'reusable-search result li', selector: 'li.reusable-search__result-container' },
+        { label: 'search-result div', selector: 'div[data-view-name="search-result"]' },
+        { label: 'entity-result', selector: '.entity-result' },
+        { label: 'data-entity-urn', selector: '[data-entity-urn]' },
+        { label: 'a href /in/', selector: 'a[href*="/in/"]' },
+        { label: 'ul.reusable-search__entity-result-list > li', selector: 'ul.reusable-search__entity-result-list > li' },
+      ];
+      const probeCounts = selectorProbes.map(({ label, selector }) => {
+        try {
+          return `${label}: ${document.querySelectorAll(selector).length}`;
+        } catch {
+          return `${label}: ERROR`;
+        }
+      });
+      this.logger.log(`[HTML Parser probe] Selector hit counts: ${probeCounts.join(' | ')}`);
 
-      // --- Legacy structure: data-view-name="people-search-result" ---
+      // Run ALL selector strategies simultaneously — both v1 and v2 structures can coexist on the
+      // same page. Collect results from each strategy, then deduplicate by public_identifier / name.
+
+      // Strategy A (2025 current): role="listitem" divs with profile links inside
+      const listitemCards = Array.from(
+        document.querySelectorAll('[role="listitem"]')
+      ) as Element[];
+
+      // Strategy B (legacy): data-view-name="people-search-result"
       const legacyCards = Array.from(
         document.querySelectorAll('[data-view-name="people-search-result"]')
       ) as Element[];
 
-      const cardElements = newStyleCards.length > 0 ? newStyleCards : legacyCards;
+      // Strategy C: outer <a href="/in/..."> wrapping a role="listitem" child (earlier SDUI attempt)
+      const wrappingLinkCards = Array.from(
+        document.querySelectorAll('a[href*="/in/"]')
+      ).filter((a) => a.querySelector('[role="listitem"]')) as Element[];
 
-      if (cardElements.length === 0) {
+      const totalCandidateElements = listitemCards.length + legacyCards.length + wrappingLinkCards.length;
+      if (totalCandidateElements === 0) {
         this.logger.warn('No people search results found in HTML');
         return [];
       }
 
-      this.logger.log(`Found ${cardElements.length} result cards (${newStyleCards.length > 0 ? 'new SDUI' : 'legacy'} structure)`);
+      this.logger.log(
+        `Card counts — role=listitem: ${listitemCards.length}, legacy: ${legacyCards.length}, wrappingLink: ${wrappingLinkCards.length}`
+      );
 
-      // Extract profile picture URLs from rehydration script (fallback when DOM has no img)
+      // Extract profile picture URLs from rehydration script (shared across all strategies)
       const rehydrationUrls = this.extractProfilePictureUrlsFromRehydration(html);
 
+      // Parse each strategy's cards
+      const seen = new Set<string>();
       const results: LinkedInPeopleSearchResult[] = [];
 
-      cardElements.forEach((card, index) => {
-        try {
-          const result = newStyleCards.length > 0
-            ? this.parseNewStyleCard(card, index, rehydrationUrls)
-            : this.parseResultCard(card, index, rehydrationUrls);
-          if (result) {
+      const parseAndAdd = (cards: Element[], strategyLabel: string) => {
+        cards.forEach((card, index) => {
+          try {
+            const result = this.parseResultCard(card, index, rehydrationUrls);
+            if (!result) return;
+            // Deduplicate by public_identifier; fall back to name for anonymous members
+            const key = result.public_identifier || result.name || `anon_${strategyLabel}_${index}`;
+            if (seen.has(key)) return;
+            seen.add(key);
             results.push(result);
+          } catch (error) {
+            this.logger.warn(`[${strategyLabel}] Failed to parse card ${index}: ${error}`);
           }
-        } catch (error) {
-          this.logger.warn(`Failed to parse result card ${index}: ${error}`);
-        }
-      });
+        });
+      };
 
-      this.logger.log(`Parsed ${results.length} LinkedIn search results from HTML`);
+      parseAndAdd(listitemCards, 'role=listitem');
+      parseAndAdd(legacyCards, 'legacy');
+      parseAndAdd(wrappingLinkCards, 'wrappingLink');
+
+      this.logger.log(`Parsed ${results.length} unique LinkedIn search results from HTML`);
       return results;
     } catch (error) {
       this.logger.error(`Failed to parse LinkedIn HTML: ${error}`);
@@ -236,10 +275,14 @@ export class LinkedInHtmlParserService {
     rehydrationUrls: string[] = [],
   ): LinkedInPeopleSearchResult | null {
     try {
-      // Stable selector: name and profile URL (data-view-name is not dynamically generated)
-      const nameLink = card.querySelector('a[data-view-name="search-result-lockup-title"]');
+      // Find the profile link: the first a[href*="/in/"] with non-empty text is the name link.
+      // Multiple empty links to the same profile exist (picture, connect button, etc.) — skip those.
+      const allProfileLinks = Array.from(card.querySelectorAll('a[href*="/in/"]')) as Element[];
+      const nameLink = allProfileLinks.find(a => a.textContent?.trim()) || null;
+      // Profile URL: use name link first, fall back to any /in/ link in the card
+      const anyProfileLink = allProfileLinks[0] || null;
       let name = nameLink?.textContent?.trim() || '';
-      let profileUrlRaw = nameLink?.getAttribute('href') || null;
+      const profileUrlRaw = nameLink?.getAttribute('href') || anyProfileLink?.getAttribute('href') || null;
       const profileUrl = profileUrlRaw
         ? (profileUrlRaw.startsWith('http') ? profileUrlRaw : `https://www.linkedin.com${profileUrlRaw}`)
         : null;
@@ -248,13 +291,13 @@ export class LinkedInHtmlParserService {
         ? this.extractPublicIdentifier(profileUrl)
         : null;
 
-      // Name container = <p> containing the name link (or first <p> if no link, e.g. "LinkedIn Member")
-      const nameContainer =
-        nameLink?.closest('p') || card.querySelector('p');
+      // Name container = first <p> in the card (contains "Name • 2nd" or "LinkedIn Member")
+      const nameContainer = card.querySelector('p');
       const containerText = nameContainer?.textContent?.trim() || '';
-      if (!name && containerText && /^LinkedIn Member$/i.test(containerText.trim())) {
+      if (!name && /LinkedIn Member/i.test(containerText)) {
         name = 'LinkedIn Member';
       }
+      // Network distance from "• 2nd", "• 3rd+" etc. appended to the name in paragraph 0
       const networkDistanceText = name ? containerText.replace(name, '').trim() : containerText;
       const networkDistance = this.parseNetworkDistance(networkDistanceText);
 

@@ -15,9 +15,65 @@ import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
 import styled from '@emotion/styled';
 import { Loader } from '@ui/feedback/loader/components/Loader';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { Button, IconMessage, IconPlus } from 'twenty-ui';
+
+// ── localStorage persistence helpers ────────────────────────────────────────
+// Only lightweight refs (no rows/columns) are stored locally.
+// Actual table data is fetched from the backend Redis cache on reload.
+type PersistedTableRef = {
+  idx: number;
+  tables: Array<{ tableId: string; label?: string; count?: number; tableType?: string }>;
+};
+
+function saveThreadTablesLocal(threadId: string, messages: AssistantChatMessage[]) {
+  const refs: PersistedTableRef[] = messages
+    .map((m, idx) => {
+      const list = m.tableDataList;
+      if (!list || list.length === 0) return null;
+      return {
+        idx,
+        tables: list.map((t) => ({
+          tableId: t.tableId ?? '',
+          label: t.label,
+          count: t.rows?.length,
+          tableType: t.tableType,
+        })).filter((t) => t.tableId),
+      };
+    })
+    .filter((x): x is PersistedTableRef => x !== null && x.tables.length > 0);
+  try {
+    localStorage.setItem(`thread_tablerefs_v1_${threadId}`, JSON.stringify(refs));
+  } catch { /* ignore quota errors */ }
+}
+
+function loadThreadTableRefsLocal(threadId: string): PersistedTableRef[] {
+  try {
+    const raw = localStorage.getItem(`thread_tablerefs_v1_${threadId}`);
+    if (!raw) return [];
+    return JSON.parse(raw) as PersistedTableRef[];
+  } catch {
+    return [];
+  }
+}
+
+function saveThreadEventsLocal(threadId: string, events: AssistantAgentEvent[]) {
+  try {
+    localStorage.setItem(`thread_events_v1_${threadId}`, JSON.stringify(events));
+  } catch { /* ignore quota errors */ }
+}
+
+function loadThreadEventsLocal(threadId: string): AssistantAgentEvent[] {
+  try {
+    const raw = localStorage.getItem(`thread_events_v1_${threadId}`);
+    if (!raw) return [];
+    return JSON.parse(raw) as AssistantAgentEvent[];
+  } catch {
+    return [];
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────
 
 function createNewThread(name = 'New thread'): AssistantThread {
   return {
@@ -117,6 +173,10 @@ export const AssistantPage = () => {
     {},
   );
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<string[]>([]);
+  // Ref so async callbacks always read the latest currentThreadId without
+  // becoming stale closures that omit themselves from the dep array.
+  const currentThreadIdRef = useRef(currentThreadId);
+  useEffect(() => { currentThreadIdRef.current = currentThreadId; }, [currentThreadId]);
 
   useEffect(() => {
     if (threads.length > 0 && !threads.some((t) => t.id === currentThreadId)) {
@@ -319,10 +379,48 @@ export const AssistantPage = () => {
         toolCalls: m.toolCalls,
       }));
 
-      // Restore the last table snapshot to the last assistant message so table
-      // previews survive page reloads (tableDataList is frontend-only and not
-      // persisted per-message in the backend).
-      if (data.lastTableData) {
+      // Restore per-message table data: read lightweight refs from localStorage,
+      // then fetch the actual rows/columns from Redis via the backend endpoint.
+      const tableRefs = loadThreadTableRefsLocal(currentThreadId);
+      if (tableRefs.length > 0 && baseUrl && token) {
+        await Promise.all(
+          tableRefs.map(async ({ idx, tables }) => {
+            if (idx >= frontendMessages.length || !frontendMessages[idx]) return;
+            const fetched = await Promise.all(
+              tables.map(async ({ tableId, label, tableType }) => {
+                if (!tableId) return null;
+                try {
+                  const res = await fetch(
+                    `${baseUrl}/assistant/threads/${currentThreadId}/tables/${tableId}`,
+                    { headers: { Authorization: `Bearer ${token}` } },
+                  );
+                  if (!res.ok) return null;
+                  const d = (await res.json()) as {
+                    columns?: string[];
+                    rows?: Record<string, unknown>[];
+                    error?: string;
+                  };
+                  if (d.error || !d.columns || !d.rows) return null;
+                  return {
+                    columns: d.columns,
+                    rows: d.rows,
+                    tableId,
+                    label,
+                    tableType,
+                  } as AssistantTableData;
+                } catch {
+                  return null;
+                }
+              }),
+            );
+            const resolved = fetched.filter((t): t is AssistantTableData => t !== null);
+            if (resolved.length > 0) {
+              frontendMessages[idx] = { ...frontendMessages[idx], tableDataList: resolved };
+            }
+          }),
+        );
+      } else if (data.lastTableData) {
+        // Fallback: no refs saved yet — attach the single backend table to last assistant msg.
         const lastAssistantIdx = frontendMessages.findLastIndex(
           (m) => m.role === 'assistant',
         );
@@ -356,7 +454,15 @@ export const AssistantPage = () => {
             : t,
         );
       });
-      setAgentEvents(data.agentEvents ?? []);
+
+      // Restore agent events: prefer backend data, fall back to localStorage.
+      const backendEvents = data.agentEvents ?? [];
+      const localEvents = loadThreadEventsLocal(currentThreadId);
+      const restoredEvents =
+        backendEvents.length > 0
+          ? backendEvents
+          : localEvents;
+      setAgentEvents(restoredEvents);
     } catch {
       // ignore errors - thread will remain with current state
     }
@@ -369,7 +475,11 @@ export const AssistantPage = () => {
   const handleAgentEvent = useCallback((event: AssistantAgentEvent) => {
     setAgentEvents((prev) => {
       const next = [...prev, event];
-      return next.length > 50 ? next.slice(-50) : next;
+      const capped = next.length > 50 ? next.slice(-50) : next;
+      // Persist so summaries survive page reloads.
+      const tid = currentThreadIdRef.current;
+      if (tid) saveThreadEventsLocal(tid, capped);
+      return capped;
     });
   }, []);
 
@@ -384,14 +494,17 @@ export const AssistantPage = () => {
 
   const handleMessagesChange = useCallback(
     (messages: typeof currentThread.messages) => {
-      if (!currentThreadId) return;
+      const tid = currentThreadIdRef.current;
+      if (!tid) return;
       setThreads((prev) =>
         prev.map((t) =>
-          t.id === currentThreadId ? { ...t, messages } : t,
+          t.id === tid ? { ...t, messages } : t,
         ),
       );
+      // Persist per-message table data so it survives page reloads.
+      saveThreadTablesLocal(tid, messages);
     },
-    [currentThreadId],
+    [],
   );
 
   const handleTableData = useCallback(
@@ -708,7 +821,8 @@ export const AssistantPage = () => {
         handleNewThread();
         return;
       }
-      setAgentEvents([]);
+      const localEvents = loadThreadEventsLocal(value);
+      setAgentEvents(localEvents);
       setCurrentThreadId(value);
     },
     [handleNewThread],
@@ -789,7 +903,10 @@ export const AssistantPage = () => {
 
   const handleSelectThreadById = useCallback(
     (threadId: string) => {
-      setAgentEvents([]);
+      // Restore persisted events immediately (loadThreadData will also restore,
+      // but this avoids a flicker while the fetch is in-flight).
+      const localEvents = loadThreadEventsLocal(threadId);
+      setAgentEvents(localEvents);
       setCurrentThreadId(threadId);
     },
     [],

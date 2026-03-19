@@ -1,11 +1,9 @@
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
-import { AssistantActivityFeed } from '@/assistant/components/AssistantActivityFeed';
 import { AssistantThreadNotes } from '@/assistant/components/AssistantThreadNotes';
-import { USE_MOCK_ASSISTANT } from '@/assistant/mocks/mockThreads';
 import type {
-    AssistantAgentEvent,
-    AssistantThread,
-    LinkedInSearchType,
+  AssistantAgentEvent,
+  AssistantThread,
+  LinkedInSearchType,
 } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
@@ -27,6 +25,7 @@ const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
 const StyledChatPanel = styled.div<{ isMobile: boolean }>`
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   ${({ isMobile }) =>
     isMobile
       ? 'min-height: 40%; max-height: 60%; min-width: 0;'
@@ -740,7 +739,7 @@ export const AssistantChatColumn = ({
     <StyledChatPanel
       isMobile={isMobile}
     >
-      <AssistantActivityFeed events={sortedAgentEvents} />
+      {/* <AssistantActivityFeed events={sortedAgentEvents} /> */}
       <AssistantThreadNotes agentNotes={currentThread?.agentNotes} />
       <StyledThreadSelector aria-busy={threadsLoading}>
         {isMobile && (
@@ -934,7 +933,7 @@ export const AssistantChatColumn = ({
                 exposeActions={setJdActions}
               />
             )}
-            {(USE_MOCK_ASSISTANT || (baseUrl && token)) && (
+            {/* {(USE_MOCK_ASSISTANT || (baseUrl && token)) && (
               <StyledJDHeaderRow>
                 <StyledJDSummary>
                   Recruiter + autonomous recruiter demo
@@ -964,7 +963,7 @@ export const AssistantChatColumn = ({
                   </StyledJDMenuButton>
                 </StyledJDMenuContainer>
               </StyledJDHeaderRow>
-            )}
+            )} */}
           </>
         )}
       </StyledThreadSelector>

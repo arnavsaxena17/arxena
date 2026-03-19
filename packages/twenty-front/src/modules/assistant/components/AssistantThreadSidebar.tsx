@@ -45,7 +45,9 @@ const StyledThreadSidebarList = styled.div`
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: ${({ theme }) => theme.spacing(1, 1, 2)};
+  scrollbar-width: thin;
 `;
 
 const StyledThreadSidebarItem = styled.button<{ isActive: boolean }>`

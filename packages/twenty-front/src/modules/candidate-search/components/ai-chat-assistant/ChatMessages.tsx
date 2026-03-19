@@ -6,7 +6,7 @@ import { AiFiltersMessage } from './AiFiltersMessage';
 import { FiltersMessage } from './FiltersMessage';
 import { SearchParametersMessage } from './SearchParametersMessage';
 import { SortsMessage } from './SortsMessage';
-import { JsonMessageViewer } from './components/JsonMessageViewer';
+import { JsonMessageViewer } from '@/utils/JsonMessageViewer';
 
 const StyledChatMessages = styled.div`
   flex: 1;

@@ -11,13 +11,12 @@ import styled from '@emotion/styled';
 import React, {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { Button, IconChevronDown, IconChevronRight, Loader } from 'twenty-ui';
+import { Button, IconChevronDown, Loader } from 'twenty-ui';
 
 import { useControlledMessages } from '@/assistant/hooks/useControlledMessages';
 import { useMcpStreamingChat } from '@/assistant/hooks/useMcpStreamingChat';
@@ -54,16 +53,51 @@ const StyledContainer = styled.div`
   margin: 0 auto;
   padding: ${({ theme }) => theme.spacing(4)};
   min-height: 0;
+  position: relative;
+`;
+
+const StyledMessagesWrapper = styled.div`
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
 `;
 
 const StyledMessages = styled.div`
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(3)};
   margin-bottom: ${({ theme }) => theme.spacing(3)};
+  scrollbar-width: thin;
+`;
+
+const StyledScrollToBottomButton = styled.button`
+  position: absolute;
+  bottom: ${({ theme }) => theme.spacing(4)};
+  right: ${({ theme }) => theme.spacing(3)};
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: ${({ theme }) => theme.background.primary};
+  color: ${({ theme }) => theme.font.color.secondary};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  z-index: 10;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.background.secondary};
+    border-color: ${({ theme }) => theme.border.color.strong};
+  }
 `;
 
 const StyledMessageLabel = styled.div<{ isUser: boolean }>`
@@ -87,78 +121,7 @@ const StyledMessage = styled.div<{ isUser: boolean }>`
   overflow-wrap: break-word;
 `;
 
-const StyledExpandableMessage = styled(StyledMessage)`
-  position: relative;
-  padding-right: ${({ theme }) => theme.spacing(6)};
-`;
 
-const StyledMessageMinimised = styled(StyledMessage)`
-  max-height: 2.5em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  & > span:first-of-type {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-`;
-
-const StyledChevronButton = styled.button`
-  flex-shrink: 0;
-  padding: ${({ theme }) => theme.spacing(0.25)};
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: ${({ theme }) => theme.font.color.tertiary};
-  background: transparent;
-  border: none;
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  cursor: pointer;
-  &:hover {
-    opacity: 0.9;
-  }
-`;
-
-const StyledMessageToggleButton = styled(StyledChevronButton)`
-  position: absolute;
-  top: ${({ theme }) => theme.spacing(1)};
-  right: ${({ theme }) => theme.spacing(1)};
-`;
-
-const StyledJsonBlock = styled.div`
-  margin: ${({ theme }) => theme.spacing(1, 0)};
-  padding: ${({ theme }) => theme.spacing(1, 2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background: ${({ theme }) => theme.background.tertiary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  font-size: ${({ theme }) => theme.font.size.sm};
-`;
-
-const StyledJsonRow = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(0.25, 0)};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
-  &:last-of-type {
-    border-bottom: none;
-  }
-`;
-
-const StyledJsonKey = styled.span`
-  flex-shrink: 0;
-  color: ${({ theme }) => theme.font.color.tertiary};
-  min-width: 140px;
-`;
-
-const StyledJsonValue = styled.span`
-  word-break: break-word;
-  color: ${({ theme }) => theme.font.color.primary};
-`;
 
 const StyledToolCalls = styled.div`
   font-size: ${({ theme }) => theme.font.size.sm};
@@ -241,57 +204,6 @@ const StyledTextArea = styled.textarea`
   }
 `;
 
-const StyledStreamLog = styled.div`
-  flex-shrink: 0;
-  max-height: 120px;
-  overflow-y: auto;
-  padding: ${({ theme }) => theme.spacing(1, 2)};
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background: ${({ theme }) => theme.background.tertiary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.tertiary};
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(0.5)};
-`;
-
-const StyledStreamLogMinimized = styled.div`
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(1, 2)};
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background: ${({ theme }) => theme.background.tertiary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.tertiary};
-`;
-
-const StyledStreamLogExpandButton = styled.button`
-  flex-shrink: 0;
-  padding: ${({ theme }) => theme.spacing(0.5, 1)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.tertiary};
-  background: transparent;
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  cursor: pointer;
-  &:hover {
-    opacity: 0.9;
-  }
-`;
-
-const StyledStreamLogHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: ${({ theme }) => theme.spacing(0.5)};
-`;
 
 const StyledTableSnapshot = styled.div`
   margin-top: ${({ theme }) => theme.spacing(1)};
@@ -387,19 +299,15 @@ export const McpClientChat = ({
   );
   const [input, setInput] = useState('');
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
-  const [expandedAssistantIndices, setExpandedAssistantIndices] = useState<
-    Set<number>
-  >(() => new Set());
   const [requestElapsedSeconds, setRequestElapsedSeconds] = useState(0);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const isUserScrolledUpRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const {
     sendMessage,
     stopMessage,
     loading,
-    streamLog,
-    streamLogMinimized,
-    setStreamLogMinimized,
     error,
     setError,
   } = useMcpStreamingChat({
@@ -441,23 +349,49 @@ export const McpClientChat = ({
     };
   }, [loading]);
 
-  const scrollToBottom = useCallback((instant = false) => {
-    if (instant && messagesContainerRef.current) {
-      // Direct scroll for instant updates during streaming
-      messagesContainerRef.current.scrollTop =
-        messagesContainerRef.current.scrollHeight;
-    } else {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
+  const checkIsNearBottom = useCallback(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 120;
   }, []);
 
+  const scrollToBottom = useCallback((instant = false) => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    if (instant) {
+      el.scrollTop = el.scrollHeight;
+    } else {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    }
+    isUserScrolledUpRef.current = false;
+    setShowScrollButton(false);
+  }, []);
+
+  // Track user scroll position to decide whether to auto-scroll
   useEffect(() => {
-    // Scroll instantly during streaming to keep up with content
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const handleScroll = () => {
+      const nearBottom = checkIsNearBottom();
+      if (nearBottom) {
+        isUserScrolledUpRef.current = false;
+        setShowScrollButton(false);
+      } else {
+        isUserScrolledUpRef.current = true;
+        setShowScrollButton(true);
+      }
+    };
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, [checkIsNearBottom]);
+
+  useEffect(() => {
+    // Only auto-scroll when user hasn't manually scrolled up
+    if (isUserScrolledUpRef.current) return;
     const isStreaming =
       loading &&
       messages.length > 0 &&
       messages[messages.length - 1]?.role === 'assistant';
-    // Use requestAnimationFrame to ensure DOM has updated
     requestAnimationFrame(() => {
       scrollToBottom(isStreaming);
     });
@@ -479,218 +413,119 @@ export const McpClientChat = ({
     element.style.height = `${maxHeight}px`;
   }, [input]);
 
-  const lastAssistantIndex = useMemo(() => {
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i]?.role === 'assistant') return i;
-    }
-    return -1;
-  }, [messages]);
-
-  const TRUNCATE_THRESHOLD = 120;
-
-  const isLongContent = useCallback((content: string) => {
-    const c = (content || '').trim();
-    if (c.length > TRUNCATE_THRESHOLD) return true;
-    if (c.includes('```json') || c.includes('{"original_requirement"'))
-      return true;
-    return false;
-  }, []);
-
-  const getMinimisedSummary = useCallback((content: string) => {
-    const trimmed = content.trim();
-    if (!trimmed) return '—';
-    if (trimmed.startsWith('Using: ')) return trimmed;
-    const maxLen = 80;
-    if (trimmed.length <= maxLen) return trimmed;
-    return trimmed.slice(0, maxLen).trim() + '…';
-  }, []);
-
-  const toggleAssistantExpanded = useCallback((index: number) => {
-    setExpandedAssistantIndices((prev) => {
-      const next = new Set(prev);
-      if (next.has(index)) next.delete(index);
-      else next.add(index);
-      return next;
-    });
-  }, []);
-
   return (
     <StyledContainer>
-      <StyledMessages ref={messagesContainerRef}>
-        {/* {messages.length === 0 && (
-          <StyledMessage isUser={false}>
-            Ask anything about jobs, candidates, companies, or people. I can use Arxena tools to look up data for you.
-          </StyledMessage>
-        )} */}
-        {messages.map((msg, i) => {
-          const isAssistant = msg.role === 'assistant';
-          const isUser = msg.role === 'user';
-          const longContent = isAssistant && isLongContent(msg.content || '');
-          const isExpanded =
-            !isAssistant ||
-            !longContent ||
-            expandedAssistantIndices.has(i) ||
-            i === lastAssistantIndex;
-          const showMinimised =
-            isAssistant &&
-            longContent &&
-            !isExpanded &&
-            lastAssistantIndex >= 0;
-          return (
-            <div key={i}>
-              <StyledMessageLabel isUser={isUser}>
-                {isUser ? 'You' : 'Assistant'}
-              </StyledMessageLabel>
-              {showMinimised ? (
-                <StyledMessageMinimised isUser={false}>
-                  <span title={msg.content || ''}>
-                    {getMinimisedSummary(msg.content || '')}
-                  </span>
-                  <StyledChevronButton
-                    type="button"
-                    onClick={() => toggleAssistantExpanded(i)}
-                    aria-label="Expand message"
-                  >
-                    <IconChevronRight size={16} />
-                  </StyledChevronButton>
-                </StyledMessageMinimised>
-              ) : (
-                <StyledExpandableMessage isUser={isUser}>
+      <StyledMessagesWrapper>
+        <StyledMessages ref={messagesContainerRef}>
+          {messages.map((msg, i) => {
+            const isUser = msg.role === 'user';
+            return (
+              <div key={i}>
+                <StyledMessageLabel isUser={isUser}>
+                  {isUser ? 'You' : 'Assistant'}
+                </StyledMessageLabel>
+                <StyledMessage isUser={isUser}>
                   {isUser
                     ? parseRichText(msg.content || '')
                     : parseMessageContentWithJson(msg.content || '')}
-                  {isAssistant && longContent && i !== lastAssistantIndex && (
-                    <StyledMessageToggleButton
-                      type="button"
-                      onClick={() => toggleAssistantExpanded(i)}
-                      aria-label="Collapse message"
-                    >
-                      <IconChevronDown size={16} />
-                    </StyledMessageToggleButton>
-                  )}
-                </StyledExpandableMessage>
-              )}
-              {msg.tableDataList?.map((tableData, tableIndex) => {
-                const previewData = {
-                  ...tableData,
-                  rows: tableData.rows.slice(0, 5),
-                };
-                return (
-                  <StyledTableSnapshot
-                    key={tableIndex}
-                    onClick={() => {
-                      onTableData?.(tableData);
-                    }}
-                  >
-                    <div style={{ pointerEvents: 'none' }}>
-                      <AssistantDetailsTable
-                        data={previewData}
-                        maxHeight={180}
-                      />
-                    </div>
-                    <StyledTableSnapshotHint>
-                      {tableData.rows.length > 5
-                        ? `Showing 5 of ${tableData.rows.length} candidates. Click to view all in the panel.`
-                        : 'Click to view in the panel.'}
-                    </StyledTableSnapshotHint>
-                  </StyledTableSnapshot>
-                );
-              })}
-              {msg.orgCharts?.map((orgChart, orgChartIndex) => {
-                const logoUrl = `${baseUrl}/org-chart/company-logo?website=${encodeURIComponent(orgChart.companyName)}`;
-                return (
-                  <StyledOrgChartPreview key={orgChartIndex}>
-                    <StyledOrgChartLink
-                      href={orgChart.viewUrl}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        navigate(orgChart.viewUrl);
+                </StyledMessage>
+                {msg.tableDataList?.map((tableData, tableIndex) => {
+                  const previewData = {
+                    ...tableData,
+                    rows: tableData.rows.slice(0, 5),
+                  };
+                  return (
+                    <StyledTableSnapshot
+                      key={tableIndex}
+                      onClick={() => {
+                        onTableData?.(tableData);
                       }}
                     >
-                      <StyledOrgChartImage
-                        src={logoUrl}
-                        alt={`${orgChart.companyName} org chart`}
-                        onError={(e) => {
-                          // Fallback to a placeholder if logo fails to load
-                          (e.target as HTMLImageElement).style.display = 'none';
+                      <div style={{ pointerEvents: 'none' }}>
+                        <AssistantDetailsTable
+                          data={previewData}
+                          maxHeight={180}
+                        />
+                      </div>
+                      <StyledTableSnapshotHint>
+                        {tableData.rows.length > 5
+                          ? `Showing 5 of ${tableData.rows.length} candidates. Click to view all in the panel.`
+                          : 'Click to view in the panel.'}
+                      </StyledTableSnapshotHint>
+                    </StyledTableSnapshot>
+                  );
+                })}
+                {msg.orgCharts?.map((orgChart, orgChartIndex) => {
+                  const logoUrl = `${baseUrl}/org-chart/company-logo?website=${encodeURIComponent(orgChart.companyName)}`;
+                  return (
+                    <StyledOrgChartPreview key={orgChartIndex}>
+                      <StyledOrgChartLink
+                        href={orgChart.viewUrl}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          navigate(orgChart.viewUrl);
                         }}
-                      />
-                    </StyledOrgChartLink>
-                    <StyledOrgChartInfo>
-                      <div>
-                        <strong>{orgChart.companyName}</strong>
-                      </div>
-                      {orgChart.country && orgChart.country !== 'global' && (
-                        <div>Country: {orgChart.country}</div>
-                      )}
-                      {orgChart.functionRoot &&
-                        orgChart.functionRoot !== 'fullcompany' && (
-                          <div>Function: {orgChart.functionRoot}</div>
-                        )}
-                      <div>
-                        <StyledOrgChartLink
-                          href={orgChart.viewUrl}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            navigate(orgChart.viewUrl);
+                      >
+                        <StyledOrgChartImage
+                          src={logoUrl}
+                          alt={`${orgChart.companyName} org chart`}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
                           }}
-                        >
-                          View full org chart →
-                        </StyledOrgChartLink>
-                      </div>
-                    </StyledOrgChartInfo>
-                  </StyledOrgChartPreview>
-                );
-              })}
-              {msg.toolCalls && msg.toolCalls.length > 0 && (
-                <StyledToolCalls>
-                  Used: {msg.toolCalls.map((t) => t.name).join(', ')}
-                </StyledToolCalls>
-              )}
-            </div>
-          );
-        })}
-        {loading &&
-          messages.length > 0 &&
-          messages[messages.length - 1]?.role === 'user' && (
-            <StyledMessage isUser={false}>Thinking…</StyledMessage>
-          )}
-        <div ref={messagesEndRef} />
-      </StyledMessages>
-      {streamLog.length > 0 &&
-        (streamLogMinimized ? (
-          <StyledStreamLogMinimized role="log">
-            <span>
-              Stream log ({streamLog.length}{' '}
-              {streamLog.length === 1 ? 'item' : 'items'})
-            </span>
-            <StyledStreamLogExpandButton
-              type="button"
-              onClick={() => setStreamLogMinimized(false)}
-              aria-label="Expand stream log"
-            >
-              Expand
-            </StyledStreamLogExpandButton>
-          </StyledStreamLogMinimized>
-        ) : (
-          <StyledStreamLog role="log" aria-live="polite">
-            <StyledStreamLogHeader>
-              <span>Stream log</span>
-              {!loading && (
-                <StyledStreamLogExpandButton
-                  type="button"
-                  onClick={() => setStreamLogMinimized(true)}
-                  aria-label="Minimize stream log"
-                >
-                  Minimize
-                </StyledStreamLogExpandButton>
-              )}
-            </StyledStreamLogHeader>
-            {streamLog.map((line, idx) => (
-              <div key={idx}>{line}</div>
-            ))}
-          </StyledStreamLog>
-        ))}
+                        />
+                      </StyledOrgChartLink>
+                      <StyledOrgChartInfo>
+                        <div>
+                          <strong>{orgChart.companyName}</strong>
+                        </div>
+                        {orgChart.country && orgChart.country !== 'global' && (
+                          <div>Country: {orgChart.country}</div>
+                        )}
+                        {orgChart.functionRoot &&
+                          orgChart.functionRoot !== 'fullcompany' && (
+                            <div>Function: {orgChart.functionRoot}</div>
+                          )}
+                        <div>
+                          <StyledOrgChartLink
+                            href={orgChart.viewUrl}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              navigate(orgChart.viewUrl);
+                            }}
+                          >
+                            View full org chart →
+                          </StyledOrgChartLink>
+                        </div>
+                      </StyledOrgChartInfo>
+                    </StyledOrgChartPreview>
+                  );
+                })}
+                {msg.toolCalls && msg.toolCalls.length > 0 && (
+                  <StyledToolCalls>
+                    Used: {msg.toolCalls.map((t) => t.name).join(', ')}
+                  </StyledToolCalls>
+                )}
+              </div>
+            );
+          })}
+          {loading &&
+            messages.length > 0 &&
+            messages[messages.length - 1]?.role === 'user' && (
+              <StyledMessage isUser={false}>Thinking…</StyledMessage>
+            )}
+          <div ref={messagesEndRef} />
+        </StyledMessages>
+        {showScrollButton && (
+          <StyledScrollToBottomButton
+            type="button"
+            onClick={() => scrollToBottom(false)}
+            title="Scroll to bottom"
+            aria-label="Scroll to bottom"
+          >
+            <IconChevronDown size={16} />
+          </StyledScrollToBottomButton>
+        )}
+      </StyledMessagesWrapper>
       {error && (
         <StyledErrorBanner role="alert">
           <StyledErrorText>{error}</StyledErrorText>

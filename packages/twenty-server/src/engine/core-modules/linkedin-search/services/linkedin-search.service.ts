@@ -285,8 +285,12 @@ export class LinkedInSearchService {
       // Fallback: if HTML parser returned 0 results but the page is substantial (real data
       // was returned — not an empty page), the parser may be outdated. Try the JSON endpoint.
       if (items.length === 0 && htmlLength > 50000) {
+        // Dump a larger HTML sample to help diagnose which selectors are needed
+        const diagnosticSample = typeof html === 'string'
+          ? html.substring(0, 10000).replace(/\s+/g, ' ')
+          : '';
         this.logger.warn(
-          `HTML parser returned 0 results despite ${htmlLength}-byte response. Falling back to JSON endpoint.`
+          `HTML parser returned 0 results despite ${htmlLength}-byte response. Falling back to JSON endpoint.\nDiagnostic HTML sample (first 10KB):\n${diagnosticSample}`
         );
         const jsonRequest = {
           api: 'classic' as const,
