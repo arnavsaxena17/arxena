@@ -270,6 +270,7 @@ export class LinkedInSearchService {
           ? html.substring(0, 2000).replace(/\s+/g, ' ')
           : JSON.stringify(responseData).substring(0, 1000);
 
+      this.logger.log(`LinkedIn raw response: htmlLength=${htmlLength}, sample=${sample}`);
 
       if (typeof html !== 'string') {
         this.logger.error('Expected HTML string in response data');
@@ -280,6 +281,25 @@ export class LinkedInSearchService {
       const items = this.htmlParser.parseLinkedInSearchResults(html);
       this.logger.log(`items in searchPeopleClassicRaw:: ${JSON.stringify(items, null, 2)}`);
       this.logger.log(`Parsed ${items.length} LinkedIn search results from HTML`);
+
+      // Fallback: if HTML parser returned 0 results but the page is substantial (real data
+      // was returned — not an empty page), the parser may be outdated. Try the JSON endpoint.
+      if (items.length === 0 && htmlLength > 50000) {
+        this.logger.warn(
+          `HTML parser returned 0 results despite ${htmlLength}-byte response. Falling back to JSON endpoint.`
+        );
+        const jsonRequest = {
+          api: 'classic' as const,
+          category: 'people' as const,
+          ...request,
+        };
+        return this.search(jsonRequest, accountId, {
+          cursor: options.cursor,
+          limit: options.limit,
+          workspaceId: options.workspaceId,
+        });
+      }
+
       // Build LinkedInSearchResponse
       const searchResponse: LinkedInSearchResponse = {
         object: 'LinkedinSearch',

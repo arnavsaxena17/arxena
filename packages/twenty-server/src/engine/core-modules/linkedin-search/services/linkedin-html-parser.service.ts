@@ -10,7 +10,9 @@ export class LinkedInHtmlParserService {
   private readonly logger = new Logger(LinkedInHtmlParserService.name);
 
   /**
-   * Parse HTML response from LinkedIn raw search endpoint
+   * Parse HTML response from LinkedIn raw search endpoint.
+   * Supports both the legacy DOM structure (data-view-name="people-search-result")
+   * and the newer SDUI structure where results are <a href="/in/..."> wrapping role="listitem".
    * @param html HTML string from Unipile raw endpoint
    * @returns Array of LinkedInPeopleSearchResult
    */
@@ -19,24 +21,35 @@ export class LinkedInHtmlParserService {
       const dom = new JSDOM(html);
       const document = dom.window.document;
 
-      // Find all people search result cards
-      const resultCards = document.querySelectorAll('[data-view-name="people-search-result"]');
-      
-      if (resultCards.length === 0) {
+      // --- New SDUI structure: each result card is <a href="/in/..."> wrapping role="listitem" ---
+      const newStyleCards = Array.from(
+        document.querySelectorAll('a[href*="/in/"]')
+      ).filter((a) => a.querySelector('[role="listitem"]')) as Element[];
+
+      // --- Legacy structure: data-view-name="people-search-result" ---
+      const legacyCards = Array.from(
+        document.querySelectorAll('[data-view-name="people-search-result"]')
+      ) as Element[];
+
+      const cardElements = newStyleCards.length > 0 ? newStyleCards : legacyCards;
+
+      if (cardElements.length === 0) {
         this.logger.warn('No people search results found in HTML');
         return [];
       }
+
+      this.logger.log(`Found ${cardElements.length} result cards (${newStyleCards.length > 0 ? 'new SDUI' : 'legacy'} structure)`);
 
       // Extract profile picture URLs from rehydration script (fallback when DOM has no img)
       const rehydrationUrls = this.extractProfilePictureUrlsFromRehydration(html);
 
       const results: LinkedInPeopleSearchResult[] = [];
 
-      resultCards.forEach((card, index) => {
+      cardElements.forEach((card, index) => {
         try {
-          const cardElement = card as Element;
-          // this.logger.log(`[Profile ${index} HTML]\n${cardElement.outerHTML}`);
-          const result = this.parseResultCard(cardElement, index, rehydrationUrls);
+          const result = newStyleCards.length > 0
+            ? this.parseNewStyleCard(card, index, rehydrationUrls)
+            : this.parseResultCard(card, index, rehydrationUrls);
           if (result) {
             results.push(result);
           }
@@ -51,6 +64,166 @@ export class LinkedInHtmlParserService {
       this.logger.error(`Failed to parse LinkedIn HTML: ${error}`);
       return [];
     }
+  }
+
+  /**
+   * Parse a result card from the new LinkedIn SDUI DOM structure.
+   * Structure: outer <a href="/in/publicIdentifier/"> wraps a role="listitem" div.
+   * Inside: <figure aria-label="Name">, inner <a href="/in/...">Name</a>, <p> tags for
+   * headline / location, and a snippet div for Current/Past positions.
+   */
+  private parseNewStyleCard(
+    card: Element,
+    index: number,
+    rehydrationUrls: string[] = [],
+  ): LinkedInPeopleSearchResult | null {
+    // Profile URL from outer <a>
+    const profileUrlRaw = card.getAttribute('href') || '';
+    const profileUrl = profileUrlRaw.startsWith('http')
+      ? profileUrlRaw
+      : profileUrlRaw
+        ? `https://www.linkedin.com${profileUrlRaw}`
+        : null;
+
+    const publicIdentifier = profileUrl ? this.extractPublicIdentifier(profileUrl) : null;
+
+    // Skip non-profile cards (e.g. nav links)
+    if (!publicIdentifier) return null;
+
+    // Name: prefer inner <a href="/in/..."> text; fallback to <figure aria-label>
+    const innerProfileLink = card.querySelector(`a[href*="/in/${publicIdentifier}"]`);
+    let name = innerProfileLink?.textContent?.trim() || '';
+    if (!name) {
+      const figure = card.querySelector('figure[aria-label]');
+      name = figure?.getAttribute('aria-label')?.trim() || '';
+    }
+    // LinkedIn Member (3rd+ connection with hidden name)
+    if (!name) {
+      const memberP = Array.from(card.querySelectorAll('p')).find(
+        (p) => p.textContent?.trim() === 'LinkedIn Member',
+      );
+      if (memberP) name = 'LinkedIn Member';
+    }
+
+    // Network distance from span text like "• 3rd+"
+    const allSpans = Array.from(card.querySelectorAll('span'));
+    const distanceSpan = allSpans.find((s) =>
+      /^[•·]\s*(1st|2nd|3rd\+?|Out-of-network)/i.test(s.textContent?.trim() || ''),
+    );
+    const networkDistance = this.parseNetworkDistance(distanceSpan?.textContent?.trim() || '');
+
+    // All <p> tags in document order; skip name-containing p and empty ones
+    const nameContainer = innerProfileLink?.closest('p');
+    const allParagraphs = Array.from(card.querySelectorAll('p'));
+    const nameIdx = nameContainer ? allParagraphs.indexOf(nameContainer) : -1;
+
+    const contentParagraphs: string[] = [];
+    for (let i = nameIdx + 1; i < allParagraphs.length; i++) {
+      // Normalize whitespace: LinkedIn injects decorative <span> </span> separators
+      // that produce runs of spaces in textContent
+      const text = (allParagraphs[i].textContent || '').replace(/\s+/g, ' ').trim();
+      if (!text) continue;
+      contentParagraphs.push(text);
+    }
+
+    const positionPrefixes = /^(Current|Former|Previous|Past):\s*/i;
+    const headline = contentParagraphs.find((t) => !positionPrefixes.test(t) && !this.looksLikeLocation(t)) || '';
+    const location =
+      contentParagraphs.find((t) => this.looksLikeLocation(t)) ||
+      (contentParagraphs.length > 1 ? contentParagraphs[1] : null);
+
+    const currentJobSnippet = contentParagraphs.find((t) => /^Current:/i.test(t)) || null;
+    const allPositionSnippets = contentParagraphs.filter((t) => positionPrefixes.test(t));
+
+    // Profile picture
+    const profilePictureElement =
+      card.querySelector('figure img') ||
+      card.querySelector('img') ||
+      card.querySelector('figure [style*="background-image"]') ||
+      card.querySelector('[style*="background-image"]');
+    let profilePictureUrl: string | null = null;
+    if (profilePictureElement) {
+      profilePictureUrl =
+        profilePictureElement.getAttribute('src') ||
+        profilePictureElement.getAttribute('data-src') ||
+        this.extractSrcFromSrcset(profilePictureElement.getAttribute('srcset')) ||
+        this.extractBackgroundImageUrl(profilePictureElement);
+    }
+    if (!profilePictureUrl && rehydrationUrls[index]) {
+      profilePictureUrl = rehydrationUrls[index];
+    }
+
+    const nameParts = this.parseName(name);
+    let currentRole = '';
+    let currentCompany: string | null = null;
+    if (currentJobSnippet) {
+      const afterCurrent = currentJobSnippet.replace(/^Current:\s*/i, '').trim();
+      const parsed = this.extractTitleAndCompany(afterCurrent);
+      currentRole = parsed.title;
+      currentCompany = parsed.company;
+    }
+
+    const workExperience = this.parsePastPositionsFromSnippets(allPositionSnippets);
+    const followersCount = this.parseFollowersFromCard(card);
+
+    return {
+      object: 'SearchResult',
+      type: 'PEOPLE',
+      id: publicIdentifier || `parsed_${index}_${Date.now()}`,
+      public_identifier: publicIdentifier,
+      public_profile_url: profileUrl,
+      profile_url: profileUrl,
+      profile_picture_url: profilePictureUrl,
+      profile_picture_url_large: profilePictureUrl,
+      member_urn: null,
+      name: name || `${nameParts.firstName} ${nameParts.lastName}`.trim(),
+      first_name: nameParts.firstName,
+      last_name: nameParts.lastName,
+      network_distance: networkDistance,
+      location: location,
+      industry: null,
+      keywords_match: '',
+      headline: headline,
+      connections_count: 0,
+      followers_count: followersCount,
+      pending_invitation: false,
+      can_send_inmail: false,
+      hiddenCandidate: false,
+      interestLikelihood: '',
+      privacySettings: {
+        allowConnectionsBrowse: false,
+        showPremiumSubscriberIcon: false,
+      },
+      skills: [],
+      premium: false,
+      verified: false,
+      open_profile: false,
+      shared_connections_count: 0,
+      recent_posts_count: 0,
+      recently_hired: false,
+      mentioned_in_the_news: false,
+      current_positions:
+        currentCompany || currentRole
+          ? [
+              {
+                company: currentCompany || '',
+                company_id: null,
+                description: currentJobSnippet || null,
+                role: currentRole,
+                location: location,
+                industry: [],
+                tenure_at_role: { years: 0, months: 0 },
+                tenure_at_company: { years: 0, months: 0 },
+                start: { year: new Date().getFullYear() },
+                skills: null,
+              },
+            ]
+          : [],
+      education: [],
+      work_experience: workExperience,
+      certifications: [],
+      projects: [],
+    };
   }
 
   /**
