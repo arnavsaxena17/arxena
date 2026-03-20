@@ -49,21 +49,23 @@ export const threadMessagesToHistory = (
       });
     }
 
-    const toolResults = (message.toolResults ?? [])
-      .map((toolResult, toolIndex) => {
+    const toolResults = (message.toolResults ?? []).flatMap(
+      (toolResult, toolIndex) => {
         const content = toolResult.content?.trim();
 
         if (!content) {
-          return null;
+          return [];
         }
 
-        return {
-          type: 'tool_result' as const,
-          tool_use_id: `tc-${index}-${toolIndex}`,
-          content,
-        };
-      })
-      .filter((toolResult) => toolResult !== null);
+        return [
+          {
+            type: 'tool_result' as const,
+            tool_use_id: `tc-${index}-${toolIndex}`,
+            content,
+          },
+        ];
+      },
+    );
 
     if (toolResults.length > 0) {
       out.push({

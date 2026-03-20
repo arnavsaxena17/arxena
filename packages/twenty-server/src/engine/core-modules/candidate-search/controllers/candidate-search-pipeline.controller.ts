@@ -783,7 +783,7 @@ Generate answers to the clarification questions above.`;
           },
         ],
         temperature: 0.7,
-        max_tokens: 500,
+        // max_tokens: 500,
       });
 
       const answers = completion.choices[0]?.message?.content || '';
@@ -995,7 +995,7 @@ Compare the model outputs above and determine which model performs best.`;
           },
         ],
         temperature: 0.3,
-        max_tokens: 2000,
+        // max_tokens: 2000,
         response_format: { type: 'json_object' },
       });
 

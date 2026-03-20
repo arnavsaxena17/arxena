@@ -109,7 +109,7 @@ async function cleanupQuery(
       { role: 'user', content: getUserPrompt(rawQuery) },
     ],
     temperature: 0.3,
-    max_tokens: 500,
+    // max_tokens: 500,
     response_format: zodResponseFormat(queryCleanupSchema, 'queryCleanup'),
   });
 

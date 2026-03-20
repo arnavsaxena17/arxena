@@ -231,7 +231,7 @@ export class AiFilteringProcessorService {
           messages: messages,
           temperature: 0,
           response_format: { type: 'json_object' },
-          max_tokens: 1000,
+          // max_tokens: 1000,
         });
 
         const responseText = completion.choices[0]?.message?.content;
