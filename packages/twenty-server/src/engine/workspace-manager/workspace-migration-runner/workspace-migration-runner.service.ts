@@ -369,12 +369,17 @@ export class WorkspaceMigrationRunnerService {
             columnMigration,
           );
           break;
-        case WorkspaceMigrationColumnActionType.DROP:
-          await queryRunner.dropColumn(
-            `${schemaName}.${tableName}`,
+        case WorkspaceMigrationColumnActionType.DROP: {
+          const tablePath = `${schemaName}.${tableName}`;
+          const hasCol = await queryRunner.hasColumn(
+            tablePath,
             columnMigration.columnName,
           );
+          if (hasCol) {
+            await queryRunner.dropColumn(tablePath, columnMigration.columnName);
+          }
           break;
+        }
         case WorkspaceMigrationColumnActionType.CREATE_COMMENT:
           await this.createComment(
             queryRunner,
@@ -552,13 +557,8 @@ export class WorkspaceMigrationRunnerService {
     );
 
     if (!foreignKeyName) {
-      // Todo: Remove this temporary hack tied to 0.32 upgrade
-      if (migrationColumn.columnName === 'activityId') {
-        return;
-      }
-      throw new Error(
-        `Foreign key not found for column ${migrationColumn.columnName}`,
-      );
+      // Already dropped or DB drift vs metadata — treat as success (idempotent).
+      return;
     }
 
     await queryRunner.dropForeignKey(
