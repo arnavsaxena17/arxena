@@ -19,6 +19,7 @@
     "test:linkedin-query-generation": "npx tsx -r tsconfig-paths/register scripts/test-linkedin-query-generation.ts",
     "test:candidate-search-flow": "npx tsx -r tsconfig-paths/register scripts/testing/test-candidate-search-flow.ts",
     "test:yuga-orgchart": "npx tsx -r tsconfig-paths/register scripts/test-yuga-orgchart.ts",
+    "test:unipile-parameters": "npx tsx -r tsconfig-paths/register scripts/test-unipile-parameters.ts",
     "voice-call:initiate": "npx tsx -r tsconfig-paths/register scripts/voice-call-initiate.ts",
     "voice-call:list": "npx tsx -r tsconfig-paths/register scripts/voice-call-list.ts",
     "voice-call:webhook-simulate": "npx tsx -r tsconfig-paths/register scripts/voice-call-webhook-simulate.ts",

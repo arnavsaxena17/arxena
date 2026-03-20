@@ -9,13 +9,13 @@ import { LinkedInCompanySearchResult, LinkedInJobSearchResult, LinkedInPeopleSea
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 
 import {
-    GeneratedSearchParameters
+  GeneratedSearchParameters
 } from '../types/candidate-search-request.type';
 import {
-    FileUtils,
-    generateLinkedInSearchUrl,
-    LinkedinParameterResolver,
-    ParameterSanitizer,
+  FileUtils,
+  generateLinkedInSearchUrl,
+  LinkedinParameterResolver,
+  ParameterSanitizer,
 } from '../utils';
 import { JobDescriptionService } from './job-description.service';
 // import { QuerySimplificationService } from './query-simplification.service';
@@ -23,6 +23,32 @@ import { JobDescriptionService } from './job-description.service';
 @Injectable()
 export class CandidateSearchBaseService {
   protected readonly logger = new Logger(CandidateSearchBaseService.name);
+  private static readonly LINKEDIN_PARAMETER_TYPE_MAP: Record<string, string> = {
+    LOCATION: 'LOCATION',
+    locations: 'LOCATION',
+    location: 'LOCATION',
+    INDUSTRY: 'INDUSTRY',
+    industries: 'INDUSTRY',
+    industry: 'INDUSTRY',
+    COMPANY: 'COMPANY',
+    companies: 'COMPANY',
+    company: 'COMPANY',
+    SCHOOL: 'SCHOOL',
+    schools: 'SCHOOL',
+    school: 'SCHOOL',
+    JOB_TITLE: 'JOB_TITLE',
+    'job-titles': 'JOB_TITLE',
+    'job-title': 'JOB_TITLE',
+    SKILL: 'SKILL',
+    skills: 'SKILL',
+    skill: 'SKILL',
+    SAVED_SEARCHES: 'SAVED_SEARCHES',
+    'saved-searches': 'SAVED_SEARCHES',
+    'saved-search': 'SAVED_SEARCHES',
+    RECENT_SEARCHES: 'RECENT_SEARCHES',
+    'recent-searches': 'RECENT_SEARCHES',
+    'recent-search': 'RECENT_SEARCHES',
+  };
   
   // Cache for individual parameter resolutions: Map<"parameterType:parameterName:accountId", resolvedId>
   // e.g., "company:Apollo Hospitals:account123" -> "15053"
@@ -648,7 +674,9 @@ export class CandidateSearchBaseService {
   async getLinkedInAccountId(apiToken: string): Promise<string> {
     const envOverride = process.env.UNIPILE_LINKEDIN_ACCOUNT_ID?.trim();
     if (envOverride) {
-      this.logger.debug(`Using UNIPILE_LINKEDIN_ACCOUNT_ID env override for LinkedIn search`);
+      this.logger.debug(
+        'Using UNIPILE_LINKEDIN_ACCOUNT_ID env override for LinkedIn search',
+      );
       return envOverride;
     }
 
@@ -686,14 +714,16 @@ export class CandidateSearchBaseService {
   ): Promise<any> {
     try {
       const accountId = await this.getLinkedInAccountId(apiToken || '');
+      const normalizedParameterType =
+        CandidateSearchBaseService.LINKEDIN_PARAMETER_TYPE_MAP[parameterType] ?? parameterType;
       
       const result = await this.linkedInSearchService.getSearchParameters(
-        parameterType as any,
+        normalizedParameterType as any,
         accountId,
         { keywords, limit }
       );
 
-      this.logger.log(`Fetched ${result.items.length} LinkedIn parameters for type: ${parameterType}`);
+      this.logger.log(`Fetched ${result.items.length} LinkedIn parameters for type: ${normalizedParameterType}`);
       return result;
     } catch (error) {
       this.logger.error(`Failed to fetch LinkedIn parameters for type: ${parameterType}`, error);
@@ -1072,4 +1102,3 @@ export class CandidateSearchBaseService {
     });
   }
 }
-

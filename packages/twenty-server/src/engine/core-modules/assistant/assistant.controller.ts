@@ -17,13 +17,125 @@ import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/typ
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { AssistantThreadService } from './assistant-thread.service';
 import {
+  AssistantAgentEventRecord,
   AssistantChatRequestBody,
   AssistantContentBlock,
+  AssistantThreadMessage,
+  AssistantThreadTableReference,
 } from './assistant.types';
 import { McpAssistantService } from './mcp-assistant.service';
 import { AutonomousRecruitmentAgentRulesService } from './recruitment-agent-rules.service';
 
 const TABLE_DATA_CACHE_TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days
+
+const summarizeObjectEntries = (
+  obj: Record<string, unknown>,
+  preferredKeys: string[],
+) => {
+  const parts = preferredKeys
+    .map((key) => {
+      const value = obj[key];
+      if (value == null) return null;
+      if (Array.isArray(value)) {
+        return value.length > 0 ? `${key}: ${value.join(', ')}` : null;
+      }
+      if (typeof value === 'string' || typeof value === 'number') {
+        return `${key}: ${value}`;
+      }
+      return null;
+    })
+    .filter((value): value is string => Boolean(value));
+
+  return parts.slice(0, 3).join(' | ');
+};
+
+const summarizeMessageEvent = (
+  eventType: string,
+  payload: Record<string, unknown>,
+): string | null => {
+  const chatMessage =
+    typeof payload.chatMessage === 'string' ? payload.chatMessage.trim() : '';
+  if (chatMessage) return chatMessage;
+
+  const data =
+    payload.data && typeof payload.data === 'object'
+      ? (payload.data as Record<string, unknown>)
+      : null;
+
+  if (!data) {
+    return eventType ? eventType.replace(/_/g, ' ') : null;
+  }
+
+  if (eventType === 'parsed_requirement') {
+    const details = summarizeObjectEntries(data, [
+      'position_title',
+      'original_requirement',
+      'query_type_description',
+    ]);
+    return details ? `Parsed requirement: ${details}` : 'Parsed requirement';
+  }
+
+  if (eventType === 'primary_query') {
+    const query =
+      data.query && typeof data.query === 'object'
+        ? (data.query as Record<string, unknown>)
+        : null;
+    const details = query
+      ? summarizeObjectEntries(query, ['job_title', 'keywords', 'location'])
+      : summarizeObjectEntries(data, ['recommended_strategy', 'splitting_reason']);
+    return details ? `Built primary query: ${details}` : 'Built primary query';
+  }
+
+  if (eventType === 'query_set' || eventType === 'splitting_strategy') {
+    const count =
+      typeof data.total_queries === 'number'
+        ? data.total_queries
+        : typeof data.query_count === 'number'
+          ? data.query_count
+          : Array.isArray(data.queries)
+            ? data.queries.length
+            : Array.isArray(data.query_set)
+              ? data.query_set.length
+              : null;
+    return count != null
+      ? `Generated ${count} search quer${count === 1 ? 'y' : 'ies'}`
+      : 'Generated search queries';
+  }
+
+  if (eventType === 'unresolved_search_parameters') {
+    return 'Produced unresolved search parameters';
+  }
+
+  if (eventType === 'orchestrator_result') {
+    return 'Prepared orchestrated search strategy';
+  }
+
+  if (eventType === 'master_lists') {
+    return 'Generated master lists';
+  }
+
+  const count =
+    typeof data.count === 'number'
+      ? data.count
+      : typeof data.totalCount === 'number'
+        ? data.totalCount
+        : typeof data.total === 'number'
+          ? data.total
+          : null;
+  if (count != null) {
+    return `${eventType.replace(/_/g, ' ')}: ${count} item${count === 1 ? '' : 's'}`;
+  }
+
+  const genericDetails = summarizeObjectEntries(data, [
+    'label',
+    'query_type_description',
+    'recommended_strategy',
+  ]);
+
+  return genericDetails
+    ? `${eventType.replace(/_/g, ' ')}: ${genericDetails}`
+    : eventType.replace(/_/g, ' ');
+};
 
 @Controller('assistant')
 export class AssistantController {
@@ -63,6 +175,7 @@ export class AssistantController {
         name?: string;
         jobId?: string;
         assistantMode?: 'fully_autonomous' | 'permissioned';
+        searchType?: 'classic' | 'sales_navigator' | 'recruiter';
       };
     },
   ) {
@@ -76,11 +189,13 @@ export class AssistantController {
       const name = request.body?.name ?? 'New thread';
       const jobId = request.body?.jobId;
       const assistantMode = request.body?.assistantMode;
+      const searchType = request.body?.searchType;
       const thread = await this.assistantThreadService.createThread(
         apiToken,
         name,
         jobId,
         assistantMode,
+        searchType,
       );
       console.log('thread that we got ', thread);
       return thread;
@@ -140,6 +255,8 @@ export class AssistantController {
         lastTableData,
         jobId: thread.jobId ?? null,
         job: thread.job ?? null,
+        agentNotes: thread.agentNotes ?? [],
+        agentEvents: thread.agentEvents ?? [],
         assistantMode: thread.assistantMode ?? 'permissioned',
         searchType: thread.searchType ?? null,
       };
@@ -440,7 +557,7 @@ export class AssistantController {
 
     const threadId = body.threadId;
     let threadSearchType: 'classic' | 'sales_navigator' | 'recruiter' =
-      'classic';
+      'recruiter';
     if (threadId) {
       try {
         const thread = await this.assistantThreadService.getThread(
@@ -468,11 +585,49 @@ export class AssistantController {
       data: { columns: string[]; rows: Record<string, unknown>[] };
     };
     const tableRegistry: TableEntry[] = [];
+    const persistedMessages: AssistantThreadMessage[] = [
+      { role: 'user', content: message },
+    ];
+    const persistedAgentEvents: AssistantAgentEventRecord[] = [];
 
     let finalText = '';
     let finalToolCalls:
       | Array<{ name: string; args: Record<string, unknown> }>
       | undefined = undefined;
+
+    const pushAssistantMessage = (content: string) => {
+      const trimmed = content.trim();
+      if (!trimmed) return;
+      persistedMessages.push({
+        role: 'assistant',
+        content: trimmed,
+      });
+    };
+
+    const pushAgentEvent = (event: AssistantAgentEventRecord) => {
+      persistedAgentEvents.push(event);
+    };
+
+    const attachTableReferenceToLatestAssistantMessage = (
+      ref: AssistantThreadTableReference,
+    ) => {
+      for (let i = persistedMessages.length - 1; i >= 0; i -= 1) {
+        const message = persistedMessages[i];
+        if (message.role !== 'assistant') continue;
+        const tableReferences = message.tableReferences ?? [];
+        persistedMessages[i] = {
+          ...message,
+          tableReferences: [...tableReferences, ref],
+        };
+        return;
+      }
+
+      persistedMessages.push({
+        role: 'assistant',
+        content: ref.label ?? 'Generated results table',
+        tableReferences: [ref],
+      });
+    };
 
     const sendEvent = (event: string, data: unknown): boolean => {
       if (isAborted || res.closed || res.destroyed) return false;
@@ -516,7 +671,63 @@ export class AssistantController {
                 rows: d.rows as Record<string, unknown>[],
               },
             });
+            attachTableReferenceToLatestAssistantMessage({
+              tableId,
+              ref,
+              tableType: typeof d.tableType === 'string' ? d.tableType : 'data',
+              label:
+                typeof d.label === 'string'
+                  ? d.label
+                  : `${(d.rows as unknown[]).length} results`,
+              count: (d.rows as unknown[]).length,
+              columns: d.columns as string[],
+              createdAt: Date.now(),
+            });
           }
+        }
+        if (event === 'tool_use' && typeof data === 'object' && data !== null) {
+          const d = data as { name?: unknown };
+          if (typeof d.name === 'string' && d.name.trim()) {
+            pushAssistantMessage(`Using: ${d.name}`);
+            pushAgentEvent({
+              status: 'tool_call',
+              threadId,
+              toolName: d.name,
+              summary: `Calling ${d.name}`,
+              timestamp: Date.now(),
+            });
+          }
+        }
+        if (event === 'status' && typeof data === 'object' && data !== null) {
+          const d = data as { message?: unknown };
+          if (typeof d.message === 'string' && d.message.trim()) {
+            pushAssistantMessage(d.message);
+          }
+        }
+        if (event === 'message' && typeof data === 'object' && data !== null) {
+          const summary = summarizeMessageEvent(
+            typeof (data as { type?: unknown }).type === 'string'
+              ? ((data as { type: string }).type as string)
+              : '',
+            data as Record<string, unknown>,
+          );
+          if (summary) {
+            pushAssistantMessage(summary);
+          }
+        }
+        if (
+          event === 'error' &&
+          typeof data === 'object' &&
+          data !== null &&
+          typeof (data as { error?: unknown }).error === 'string'
+        ) {
+          pushAgentEvent({
+            status: 'error',
+            threadId,
+            error: (data as { error: string }).error,
+            summary: 'Assistant run failed',
+            timestamp: Date.now(),
+          });
         }
         if (event === 'done' && typeof data === 'object' && data !== null) {
           const d = data as { text?: unknown; toolCalls?: unknown };
@@ -527,6 +738,22 @@ export class AssistantController {
               args: Record<string, unknown>;
             }>;
           }
+          if (finalText.trim() || (finalToolCalls && finalToolCalls.length > 0)) {
+            pushAssistantMessage(finalText || 'Completed');
+            const lastMessage = persistedMessages[persistedMessages.length - 1];
+            if (lastMessage?.role === 'assistant') {
+              lastMessage.toolCalls = finalToolCalls;
+            }
+          }
+          pushAgentEvent({
+            status: 'completed',
+            threadId,
+            summary:
+              finalToolCalls && finalToolCalls.length > 0
+                ? `Completed with tools: ${finalToolCalls.map((toolCall) => toolCall.name).join(', ')}`
+                : 'Assistant run completed',
+            timestamp: Date.now(),
+          });
         }
         return true;
       } catch {
@@ -567,30 +794,27 @@ export class AssistantController {
           );
           const messageCountBeforeTurn = thread?.messages.length ?? 0;
           const isFirstExchange = messageCountBeforeTurn === 0;
-          // After this turn we will have messageCountBeforeTurn + 2 messages (user + assistant)
-          const messageCountAfterTurn = messageCountBeforeTurn + 2;
+          const messageCountAfterTurn =
+            messageCountBeforeTurn + persistedMessages.length;
           const shouldRegenerateName =
             isFirstExchange ||
             (messageCountAfterTurn >= 4 && messageCountAfterTurn % 4 === 0);
 
-          // Persist user message
-          await this.assistantThreadService.appendMessage(
+          await this.assistantThreadService.appendMessages(
             apiToken,
             threadId,
-            'user',
-            message,
+            persistedMessages,
           );
 
-          // Persist assistant message if we have final text
-          if (finalText || finalToolCalls) {
-            await this.assistantThreadService.appendMessage(
+          if (persistedAgentEvents.length > 0) {
+            await this.assistantThreadService.appendAgentEvents(
               apiToken,
               threadId,
-              'assistant',
-              finalText || '',
-              finalToolCalls,
+              persistedAgentEvents,
             );
+          }
 
+          if (finalText || finalToolCalls) {
             // Generate thread name: after first response and again every ~4 messages (4, 8, 12, ...)
             if (finalText && shouldRegenerateName) {
               try {

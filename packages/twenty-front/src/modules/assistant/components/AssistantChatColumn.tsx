@@ -818,7 +818,7 @@ export const AssistantChatColumn = ({
                       <StyledThreadMenuActionActive
                         key={opt.value}
                         type="button"
-                        active={opt.value === (currentThread.searchType ?? 'classic')}
+                        active={opt.value === (currentThread.searchType ?? 'recruiter')}
                         onClick={() => {
                           onPatchThread(currentThreadId, { searchType: opt.value });
                           setIsThreadMenuOpen(false);

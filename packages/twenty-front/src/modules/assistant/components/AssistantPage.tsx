@@ -32,17 +32,21 @@ function saveThreadTablesLocal(threadId: string, messages: AssistantChatMessage[
     .map((m, idx) => {
       const list = m.tableDataList;
       if (!list || list.length === 0) return null;
-      return {
-        idx,
-        tables: list.map((t) => ({
-          tableId: t.tableId ?? '',
-          label: t.label,
-          count: t.rows?.length,
-          tableType: t.tableType,
-        })).filter((t) => t.tableId),
-      };
+      const tables = list
+        .map((t) => {
+          const tableId = t.tableId ?? '';
+          if (!tableId) return null;
+          const item: PersistedTableRef['tables'][number] = { tableId };
+          if (t.label !== undefined) item.label = t.label;
+          if (t.rows !== undefined) item.count = t.rows.length;
+          if (t.tableType !== undefined) item.tableType = t.tableType;
+          return item;
+        })
+        .filter((t): t is PersistedTableRef['tables'][number] => t !== null);
+      if (tables.length === 0) return null;
+      return { idx, tables };
     })
-    .filter((x): x is PersistedTableRef => x !== null && x.tables.length > 0);
+    .filter((x): x is PersistedTableRef => x !== null);
   try {
     localStorage.setItem(`thread_tablerefs_v1_${threadId}`, JSON.stringify(refs));
   } catch { /* ignore quota errors */ }
@@ -249,7 +253,11 @@ export const AssistantPage = () => {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ name: 'New thread', assistantMode: 'permissioned' }),
+            body: JSON.stringify({
+              name: 'New thread',
+              assistantMode: 'permissioned',
+              searchType: 'classic',
+            }),
           });
           if (cancelled) {
             setThreadsLoading(false);
@@ -278,7 +286,9 @@ export const AssistantPage = () => {
               lastTableData: null,
               jobId: created.jobId ?? null,
               assistantMode: created.assistantMode ?? 'permissioned',
-              searchType: 'classic',
+              searchType:
+                (created as { searchType?: 'classic' | 'sales_navigator' | 'recruiter' })
+                  .searchType ?? 'classic',
             },
           ]);
             setCurrentThreadId(created.id);
@@ -360,6 +370,15 @@ export const AssistantPage = () => {
             role: 'user' | 'assistant';
             content: string;
             toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
+            tableReferences?: Array<{
+              tableId: string;
+              ref: string;
+              tableType?: string;
+              label?: string;
+              count?: number;
+              columns?: string[];
+              createdAt?: number;
+            }>;
           }>;
           lastTableData?: AssistantTableData;
           jobId?: string | null;
@@ -377,11 +396,31 @@ export const AssistantPage = () => {
         role: m.role,
         content: m.content,
         toolCalls: m.toolCalls,
+        tableReferences: m.tableReferences,
       }));
 
-      // Restore per-message table data: read lightweight refs from localStorage,
-      // then fetch the actual rows/columns from Redis via the backend endpoint.
-      const tableRefs = loadThreadTableRefsLocal(currentThreadId);
+      // Restore per-message table data: prefer backend-persisted table refs,
+      // then fall back to localStorage for older threads.
+      const tableRefsFromMessages: PersistedTableRef[] = frontendMessages
+        .map((m, idx) => {
+          const tables = (m.tableReferences ?? [])
+            .map((t) => {
+              if (!t.tableId) return null;
+              const item: PersistedTableRef['tables'][number] = { tableId: t.tableId };
+              if (t.label !== undefined) item.label = t.label;
+              if (t.count !== undefined) item.count = t.count;
+              if (t.tableType !== undefined) item.tableType = t.tableType;
+              return item;
+            })
+            .filter((t): t is PersistedTableRef['tables'][number] => t !== null);
+          if (tables.length === 0) return null;
+          return { idx, tables };
+        })
+        .filter((x): x is PersistedTableRef => x !== null);
+      const tableRefs =
+        tableRefsFromMessages.length > 0
+          ? tableRefsFromMessages
+          : loadThreadTableRefsLocal(currentThreadId);
       if (tableRefs.length > 0 && baseUrl && token) {
         await Promise.all(
           tableRefs.map(async ({ idx, tables }) => {
@@ -449,7 +488,7 @@ export const AssistantPage = () => {
                 agentNotes: data.agentNotes ?? t.agentNotes,
                 agentEvents: data.agentEvents ?? t.agentEvents,
                 assistantMode: data.assistantMode ?? t.assistantMode ?? 'permissioned',
-                searchType: data.searchType ?? t.searchType ?? 'classic',
+                searchType: data.searchType ?? t.searchType ?? 'recruiter',
               }
             : t,
         );
@@ -493,7 +532,7 @@ export const AssistantPage = () => {
   }, [useMock, currentThread]);
 
   const handleMessagesChange = useCallback(
-    (messages: typeof currentThread.messages) => {
+    (messages: AssistantChatMessage[]) => {
       const tid = currentThreadIdRef.current;
       if (!tid) return;
       setThreads((prev) =>
@@ -553,7 +592,11 @@ export const AssistantPage = () => {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${token}`,
               },
-              body: JSON.stringify({ name: 'New thread', assistantMode: 'permissioned' }),
+              body: JSON.stringify({
+                name: 'New thread',
+                assistantMode: 'permissioned',
+                searchType: 'recruiter',
+              }),
             });
 
             if (res.ok) {
@@ -572,7 +615,7 @@ export const AssistantPage = () => {
                   lastTableData: null,
                   jobId: created.jobId ?? null,
                   assistantMode: created.assistantMode ?? 'permissioned',
-                  searchType: (created as { searchType?: 'classic' | 'sales_navigator' | 'recruiter' }).searchType ?? 'classic',
+                  searchType: (created as { searchType?: 'classic' | 'sales_navigator' | 'recruiter' }).searchType ?? 'recruiter',
                 };
                 setThreads((prev) => [thread, ...prev]);
                 setCurrentThreadId(threadId);

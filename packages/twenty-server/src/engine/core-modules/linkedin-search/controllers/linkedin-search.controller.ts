@@ -488,39 +488,6 @@ export class LinkedInSearchController {
   }
 
   /**
-   * Get LinkedIn search parameters
-   */
-  @Get('parameters/:type')
-  async getSearchParameters(
-    @Param('type') type: LinkedInSearchParameterType,
-    @Query('account_id') accountId: string | undefined,
-    @Query('limit') limit?: number,
-    @Query('keywords') keywords?: string,
-    @Headers() headers?: any,
-  ): Promise<LinkedInSearchParametersList> {
-    try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
-
-      this.logger.log(`Getting LinkedIn search parameters for type: ${type}, account: ${resolvedAccountId}`);
-      
-      const result = await this.linkedInSearchService.getSearchParameters(
-        type,
-        resolvedAccountId,
-        { limit, keywords }
-      );
-
-      this.logger.log(`Retrieved ${result.items.length} parameters for type: ${type}`);
-      return result;
-    } catch (error) {
-      this.logger.error('Failed to get LinkedIn search parameters', error);
-      throw new HttpException(
-        error.message || 'Failed to get LinkedIn search parameters',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  /**
    * Get location parameters
    */
   @Get('parameters/locations')
@@ -767,6 +734,58 @@ export class LinkedInSearchController {
       this.logger.error('Failed to get LinkedIn recent searches parameters', error);
       throw new HttpException(
         error.message || 'Failed to get LinkedIn recent searches parameters',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Map URL path segment values to LinkedIn API enum values.
+   * Unipile API expects uppercase enum (e.g. SKILL, LOCATION), not plural path values (skills, locations).
+   */
+  private static readonly PARAM_TYPE_MAP: Record<string, LinkedInSearchParameterType> = {
+    skills: 'SKILL',
+    locations: 'LOCATION',
+    industries: 'INDUSTRY',
+    companies: 'COMPANY',
+    schools: 'SCHOOL',
+    'job-titles': 'JOB_TITLE',
+    'saved-searches': 'SAVED_SEARCHES',
+    'recent-searches': 'RECENT_SEARCHES',
+  };
+
+  /**
+   * Get LinkedIn search parameters (generic fallback for types not covered by specific routes).
+   * Must be declared after specific routes (locations, skills, etc.) so they take precedence.
+   */
+  @Get('parameters/:type')
+  async getSearchParameters(
+    @Param('type') type: string,
+    @Query('account_id') accountId: string | undefined,
+    @Query('limit') limit?: number,
+    @Query('keywords') keywords?: string,
+    @Headers() headers?: any,
+  ): Promise<LinkedInSearchParametersList> {
+    try {
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+
+      const apiType: LinkedInSearchParameterType =
+        LinkedInSearchController.PARAM_TYPE_MAP[type] ?? (type as LinkedInSearchParameterType);
+
+      this.logger.log(`Getting LinkedIn search parameters for type: ${apiType}, account: ${resolvedAccountId}`);
+
+      const result = await this.linkedInSearchService.getSearchParameters(
+        apiType,
+        resolvedAccountId,
+        { limit, keywords }
+      );
+
+      this.logger.log(`Retrieved ${result.items.length} parameters for type: ${apiType}`);
+      return result;
+    } catch (error) {
+      this.logger.error('Failed to get LinkedIn search parameters', error);
+      throw new HttpException(
+        error.message || 'Failed to get LinkedIn search parameters',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

@@ -19,6 +19,16 @@ const MAX_TOKENS = 4096;
 const MAX_TOOL_ROUNDS = 10;
 
 const TABLE_LIST_KEYS = ['companies', 'jobs', 'candidates', 'people'] as const;
+
+/** Tools that, when they return an error, should break the assistant flow and surface the error to the user. */
+const LINKEDIN_SEARCH_ERROR_TOOLS = new Set([
+  'search_linkedin_parameters',
+  'search_linkedin_with_query',
+  'search_linkedin_people',
+  'generate_linkedin_query_set',
+  'search_candidates',
+]);
+
 const STREAMING_TOOL_NAMES = [
   'search_linkedin_with_query',
   'search_linkedin_people',
@@ -103,6 +113,42 @@ export class McpAssistantService {
     if (signal?.aborted) {
       throw createAbortError();
     }
+  }
+
+  /** Check if a LinkedIn search tool returned an error that should break the flow. */
+  private isLinkedInSearchError(toolName: string, textContent: string): boolean {
+    if (!LINKEDIN_SEARCH_ERROR_TOOLS.has(toolName)) return false;
+    if (textContent.startsWith('Error:')) return true;
+    if (
+      textContent.toLowerCase().includes('failed') &&
+      (textContent.includes('500') || textContent.includes('REST API'))
+    ) {
+      return true;
+    }
+    try {
+      const parsed = JSON.parse(textContent) as Record<string, unknown>;
+      return typeof parsed === 'object' && parsed !== null && 'error' in parsed;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Extract a user-friendly error message from tool error content. */
+  private extractLinkedInSearchErrorMessage(textContent: string): string {
+    try {
+      const parsed = JSON.parse(textContent) as Record<string, unknown>;
+      const err = parsed?.error;
+      if (typeof err === 'string') {
+        return err.length > 200 ? err.slice(0, 200) + '...' : err;
+      }
+    } catch {
+      // not JSON
+    }
+    if (textContent.startsWith('Error:')) {
+      const msg = textContent.slice(6).trim();
+      return msg.length > 200 ? msg.slice(0, 200) + '...' : msg;
+    }
+    return textContent.length > 200 ? textContent.slice(0, 200) + '...' : textContent;
   }
 
   /** Sanitize tool args for logging (redact tokens, truncate long strings). */
@@ -861,8 +907,8 @@ export class McpAssistantService {
       const assistantThreadId = args.assistantThreadId;
       // Only run in-process when we have a valid assistantThreadId (candidate-search-chat flow).
       this.logger.log('This is the search linkedin people tool being called');
-      this.logger.log('query::', query);
-      this.logger.log('assistantThreadId::', assistantThreadId);
+      this.logger.log(`query:: ${query}`);
+      this.logger.log(`assistantThreadId:: ${assistantThreadId}`);
       if (
         typeof query !== 'string' ||
         !query.trim() ||
@@ -1554,6 +1600,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
       content: string;
     }>;
     textParts: string[];
+    linkedInSearchError?: string;
   }> {
     const textParts: string[] = [];
     const toolResults: Array<{
@@ -1586,6 +1633,17 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
           content: textContent,
         });
         this.emitTableDataIfJson(sendEvent, textContent, block.name);
+        if (this.isLinkedInSearchError(block.name, textContent)) {
+          const userMessage = this.extractLinkedInSearchErrorMessage(textContent);
+          this.logger.warn(
+            `[McpAssistantService] LinkedIn search tool "${block.name}" failed; breaking flow. Error: ${userMessage.slice(0, 100)}`,
+          );
+          return {
+            toolResults,
+            textParts,
+            linkedInSearchError: `LinkedIn search failed: ${userMessage}`,
+          };
+        }
       }
     }
     return { toolResults, textParts };
@@ -1624,7 +1682,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
           sendEvent,
           abortSignal,
         );
-        const { toolResults, textParts } =
+        const { toolResults, textParts, linkedInSearchError } =
           await this.processAnthropicAssistantContent(
             assistantContent,
             client,
@@ -1636,6 +1694,11 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
             abortSignal,
           );
         finalText.push(...textParts);
+        if (linkedInSearchError) {
+          sendEvent('error', { error: linkedInSearchError });
+          this.emitStreamComplete(sendEvent, linkedInSearchError, allToolCalls);
+          return;
+        }
         const hasToolUse = toolResults.length > 0;
         if (!hasToolUse) break;
 
@@ -1752,6 +1815,18 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
             content: textContent,
           });
           this.emitTableDataIfJson(sendEvent, textContent, tc.name);
+          if (this.isLinkedInSearchError(tc.name, textContent)) {
+            const linkedInSearchError = this.extractLinkedInSearchErrorMessage(
+              textContent,
+            );
+            const userMessage = `LinkedIn search failed: ${linkedInSearchError}`;
+            this.logger.warn(
+              `[McpAssistantService] LinkedIn search tool "${tc.name}" failed; breaking flow.`,
+            );
+            sendEvent('error', { error: userMessage });
+            this.emitStreamComplete(sendEvent, userMessage, allToolCalls);
+            return;
+          }
         }
       }
 

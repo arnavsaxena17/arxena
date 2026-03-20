@@ -30,6 +30,36 @@ import { handleStreamingResponse } from '../api/streaming-client';
 import { McpTool } from '../types/tool-types';
 import { descriptorToInputSchema } from '../utils/input-schema';
 
+const LINKEDIN_PARAMETER_TYPE_MAP: Record<string, string> = {
+  LOCATION: 'LOCATION',
+  locations: 'LOCATION',
+  location: 'LOCATION',
+  INDUSTRY: 'INDUSTRY',
+  industries: 'INDUSTRY',
+  industry: 'INDUSTRY',
+  COMPANY: 'COMPANY',
+  companies: 'COMPANY',
+  company: 'COMPANY',
+  SCHOOL: 'SCHOOL',
+  schools: 'SCHOOL',
+  school: 'SCHOOL',
+  JOB_TITLE: 'JOB_TITLE',
+  'job-titles': 'JOB_TITLE',
+  'job-title': 'JOB_TITLE',
+  SKILL: 'SKILL',
+  skills: 'SKILL',
+  skill: 'SKILL',
+  SAVED_SEARCHES: 'SAVED_SEARCHES',
+  'saved-searches': 'SAVED_SEARCHES',
+  'saved-search': 'SAVED_SEARCHES',
+  RECENT_SEARCHES: 'RECENT_SEARCHES',
+  'recent-searches': 'RECENT_SEARCHES',
+  'recent-search': 'RECENT_SEARCHES',
+};
+
+const normalizeLinkedInParameterType = (parameterType: string): string =>
+  LINKEDIN_PARAMETER_TYPE_MAP[parameterType] ?? parameterType;
+
 export const linkedinSearchTools: McpTool[] = [
   // ==================== LinkedIn Search Tools ====================
 
@@ -261,6 +291,14 @@ export const linkedinSearchTools: McpTool[] = [
             parameterType: {
               ...baseSchema.properties.parameterType,
               enum: [
+                'LOCATION',
+                'INDUSTRY',
+                'COMPANY',
+                'SCHOOL',
+                'JOB_TITLE',
+                'SKILL',
+                'SAVED_SEARCHES',
+                'RECENT_SEARCHES',
                 'locations',
                 'industries',
                 'companies',
@@ -285,87 +323,13 @@ export const linkedinSearchTools: McpTool[] = [
       const queryParams: Record<string, string> = {};
       if (keywords) queryParams.keywords = keywords;
       if (limit) queryParams.limit = String(limit);
+      const normalizedType = normalizeLinkedInParameterType(parameterType);
 
-      // Handle special endpoints
-      if (parameterType === 'locations') {
-        return callRestAPIGet(
-          config.baseUrl,
-          config.apiToken,
-          'linkedin-search',
-          'parameters/locations',
-          queryParams,
-        );
-      }
-      if (parameterType === 'industries') {
-        return callRestAPIGet(
-          config.baseUrl,
-          config.apiToken,
-          'linkedin-search',
-          'parameters/industries',
-          queryParams,
-        );
-      }
-      if (parameterType === 'companies') {
-        return callRestAPIGet(
-          config.baseUrl,
-          config.apiToken,
-          'linkedin-search',
-          'parameters/companies',
-          queryParams,
-        );
-      }
-      if (parameterType === 'schools') {
-        return callRestAPIGet(
-          config.baseUrl,
-          config.apiToken,
-          'linkedin-search',
-          'parameters/schools',
-          queryParams,
-        );
-      }
-      if (parameterType === 'job-titles') {
-        return callRestAPIGet(
-          config.baseUrl,
-          config.apiToken,
-          'linkedin-search',
-          'parameters/job-titles',
-          queryParams,
-        );
-      }
-      if (parameterType === 'skills') {
-        return callRestAPIGet(
-          config.baseUrl,
-          config.apiToken,
-          'linkedin-search',
-          'parameters/skills',
-          queryParams,
-        );
-      }
-      if (parameterType === 'saved-searches') {
-        return callRestAPIGet(
-          config.baseUrl,
-          config.apiToken,
-          'linkedin-search',
-          'parameters/saved-searches',
-          queryParams,
-        );
-      }
-      if (parameterType === 'recent-searches') {
-        return callRestAPIGet(
-          config.baseUrl,
-          config.apiToken,
-          'linkedin-search',
-          'parameters/recent-searches',
-          queryParams,
-        );
-      }
-
-      // Default: use generic endpoint
       return callRestAPIGet(
         config.baseUrl,
         config.apiToken,
         'linkedin-search',
-        `parameters/${parameterType}`,
+        `parameters/${normalizedType}`,
         queryParams,
       );
     },

@@ -85,11 +85,22 @@ export type AssistantThreadMessage = {
   role: 'user' | 'assistant';
   content: string;
   toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
+  tableReferences?: AssistantThreadTableReference[];
 };
 
 export type AssistantThreadTableData = {
   columns: string[];
   rows: Record<string, unknown>[];
+};
+
+export type AssistantThreadTableReference = {
+  tableId: string;
+  ref: string;
+  tableType?: string;
+  label?: string;
+  count?: number;
+  columns?: string[];
+  createdAt?: number;
 };
 
 export type AssistantAgentEventRecord = {

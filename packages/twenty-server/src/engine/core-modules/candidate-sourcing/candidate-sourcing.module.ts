@@ -55,6 +55,7 @@ import { ProcessResumeUploadsService } from './jobs/process-resume-uploads.servi
 import { DataSourceTransformerFactoryService } from './services/data-source-transformer-factory.service';
 import { ApnaDatabaseTransformerService } from './services/data-sources/apna-database-transformer.service';
 import { HiringNaukriTransformerService } from './services/data-sources/hiring-naukri-transformer.service';
+import { LinkedInRecruiterPeopleTransformerService } from './services/data-sources/linkedin-recruiter-people-transformer.service';
 import { LinkedinPremiumJobsTransformerService } from './services/data-sources/linkedin-premium-jobs-transformer.service';
 import { LinkedinPremiumTransformerService } from './services/data-sources/linkedin-premium-transformer.service';
 import { LinkedinRecruiterJobsTransformerService } from './services/data-sources/linkedin-recruiter-jobs-transformer.service';
@@ -140,6 +141,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     LinkedinPremiumJobsTransformerService,
     LinkedinSalesNavigatorTransformerService,
     LinkedInSearchTransformerService,
+    LinkedInRecruiterPeopleTransformerService,
     ParsedCVTransformerService,
     ResumeReadParseUploadService,
     ProcessResumeUploadsService,
@@ -158,6 +160,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     ResumeReadParseUploadService,
     FilterDescriptionProcessorService,
     LinkedInSearchTransformerService,
+    LinkedInRecruiterPeopleTransformerService,
     CandidateWorkspaceGraphQLService,
   ],
 })

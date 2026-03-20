@@ -14,6 +14,15 @@ export type AssistantChatMessage = {
   content: string;
   toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
   tableDataList?: AssistantTableData[];
+  tableReferences?: Array<{
+    tableId: string;
+    ref: string;
+    tableType?: string;
+    label?: string;
+    count?: number;
+    columns?: string[];
+    createdAt?: number;
+  }>;
   orgCharts?: OrgChartPreview[];
 };
 

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CandidateRelevanceScoring } from 'src/engine/core-modules/candidate-search/schemas/candidate-relevance-scoring.schema';
 import { WorkspaceMemberProfileUnipileService } from '../../arx-chat/services/workspace-member-profile-unipile.service';
+import { LinkedInRecruiterPeopleTransformerService } from '../../candidate-sourcing/services/data-sources/linkedin-recruiter-people-transformer.service';
 import { LinkedInSearchTransformerService, TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { ResumeReadParseUploadService } from '../../candidate-sourcing/services/resume-read-parse-upload.service';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
@@ -69,6 +70,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     parameterSanitizer: ParameterSanitizer,
     fileUtils: FileUtils,
     linkedinSearchResultTransformer: LinkedInSearchTransformerService,
+    private readonly linkedinRecruiterPeopleTransformer: LinkedInRecruiterPeopleTransformerService,
     staticGraphQLService: StaticGraphQLService,
     resumeReadParseUploadService: ResumeReadParseUploadService,
     jobDescriptionService: JobDescriptionService,
@@ -633,13 +635,18 @@ export class SearchExecutionService extends CandidateSearchBaseService {
 
     let transformedCandidates: TransformedCandidateForTable[] = [];
     if (searchResults.items && searchCategory === 'people') {
-      transformedCandidates = this.linkedinSearchResultTransformer.transformSearchResultsToTableFormat(
+      const transformer =
+        searchType === 'recruiter'
+          ? this.linkedinRecruiterPeopleTransformer
+          : this.linkedinSearchResultTransformer;
+
+      transformedCandidates = transformer.transformSearchResultsToTableFormat(
         searchResults.items,
         'linkedin_search_job',
         `${searchType} ${searchCategory} search results`,
       );
       
-      transformedCandidates = this.linkedinSearchResultTransformer.addMetadataToCandidates(
+      transformedCandidates = transformer.addMetadataToCandidates(
         transformedCandidates,
         {
           searchType,
@@ -1016,13 +1023,18 @@ export class SearchExecutionService extends CandidateSearchBaseService {
       return [];
     }
 
-    let transformed = this.linkedinSearchResultTransformer.transformSearchResultsToTableFormat(
+    const transformer =
+      searchType === 'recruiter'
+        ? this.linkedinRecruiterPeopleTransformer
+        : this.linkedinSearchResultTransformer;
+
+    let transformed = transformer.transformSearchResultsToTableFormat(
       items,
       'linkedin_search_job',
       `${searchType} ${searchCategory} search results`,
     );
     
-    transformed = this.linkedinSearchResultTransformer.addMetadataToCandidates(
+    transformed = transformer.addMetadataToCandidates(
       transformed,
       {
         searchType,

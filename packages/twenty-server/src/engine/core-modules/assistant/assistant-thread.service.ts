@@ -11,12 +11,14 @@ import {
     AssistantAgentEventRecord,
     AssistantThreadRecord,
     AssistantThreadTableData,
+    AssistantThreadTableReference,
 } from './assistant.types';
 
 type AssistantThreadMessage = {
   role: 'user' | 'assistant';
   content: string;
   toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
+  tableReferences?: AssistantThreadTableReference[];
 };
 
 @Injectable()
@@ -78,11 +80,13 @@ export class AssistantThreadService {
     name = 'New thread',
     jobId?: string,
     assistantMode?: 'fully_autonomous' | 'permissioned',
+    searchType?: 'classic' | 'sales_navigator' | 'recruiter',
   ): Promise<{
     id: string;
     name: string;
     jobId?: string;
     assistantMode?: 'fully_autonomous' | 'permissioned';
+    searchType?: 'classic' | 'sales_navigator' | 'recruiter';
   }> {
 
     const workspaceMemberId =
@@ -97,6 +101,7 @@ export class AssistantThreadService {
       jobId?: string;
       recruiterId: string;
       assistantMode?: 'fully_autonomous' | 'permissioned';
+      assistantParameters?: Record<string, unknown>;
     } = {
       name,
       jobId: jobId ?? undefined,
@@ -104,6 +109,13 @@ export class AssistantThreadService {
     };
     if (jobId) input.jobId = jobId;
     if (assistantMode) input.assistantMode = assistantMode;
+    if (
+      searchType === 'classic' ||
+      searchType === 'sales_navigator' ||
+      searchType === 'recruiter'
+    ) {
+      input.assistantParameters = { searchType };
+    }
     const result = await this.staticGraphQLService.executeGraphQL(
       createOneAssistantThread,
       { input },
@@ -118,6 +130,7 @@ export class AssistantThreadService {
       name: created.name ?? name,
       jobId: created.jobId ?? jobId,
       assistantMode: created.assistantMode ?? assistantMode ?? 'permissioned',
+      searchType,
     };
   }
 
@@ -211,13 +224,14 @@ export class AssistantThreadService {
     role: 'user' | 'assistant',
     content: string,
     toolCalls?: Array<{ name: string; args: Record<string, unknown> }>,
+    tableReferences?: AssistantThreadTableReference[],
   ): Promise<void> {
     const thread = await this.getThread(apiToken, threadId);
     if (!thread) return;
 
     const newMessages: AssistantThreadMessage[] = [
       ...thread.messages,
-      { role, content, toolCalls },
+      { role, content, toolCalls, tableReferences },
     ];
 
     await this.staticGraphQLService.executeGraphQL(
@@ -225,6 +239,25 @@ export class AssistantThreadService {
       {
         id: threadId,
         input: { messages: newMessages },
+      },
+      apiToken,
+    );
+  }
+
+  async appendMessages(
+    apiToken: string,
+    threadId: string,
+    messages: AssistantThreadMessage[],
+  ): Promise<void> {
+    if (messages.length === 0) return;
+    const thread = await this.getThread(apiToken, threadId);
+    if (!thread) return;
+
+    await this.staticGraphQLService.executeGraphQL(
+      updateOneAssistantThread,
+      {
+        id: threadId,
+        input: { messages: [...thread.messages, ...messages] },
       },
       apiToken,
     );
@@ -333,6 +366,28 @@ export class AssistantThreadService {
       ? thread.agentEvents
       : [];
     const next = [...existing, event].slice(-100);
+
+    await this.staticGraphQLService.executeGraphQL(
+      updateOneAssistantThread,
+      {
+        id: threadId,
+        input: { agentEvents: next },
+      },
+      apiToken,
+    );
+  }
+
+  async appendAgentEvents(
+    apiToken: string,
+    threadId: string,
+    events: AssistantAgentEventRecord[],
+  ): Promise<void> {
+    if (events.length === 0) return;
+    const thread = await this.getThread(apiToken, threadId);
+    if (!thread) return;
+
+    const existing = Array.isArray(thread.agentEvents) ? thread.agentEvents : [];
+    const next = [...existing, ...events].slice(-200);
 
     await this.staticGraphQLService.executeGraphQL(
       updateOneAssistantThread,
