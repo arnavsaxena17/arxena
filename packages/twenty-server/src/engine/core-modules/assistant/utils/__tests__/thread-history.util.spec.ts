@@ -45,6 +45,54 @@ describe('threadMessagesToHistory', () => {
     });
   });
 
+  it('preserves assistant tool results as follow-up user tool_result blocks', () => {
+    const messages: AssistantThreadMessage[] = [
+      {
+        role: 'assistant',
+        content: 'Generated query set.',
+        toolCalls: [
+          {
+            name: 'generate_iterative_linkedin_query_set',
+            args: { rawRequirement: 'Pulmonologist in Mumbai' },
+          },
+        ],
+        toolResults: [
+          {
+            content:
+              '{"final_query_set":{"search_query_set":[{"job_title":"Pulmonologist","location":["Mumbai"]}]}}',
+          },
+        ],
+      },
+    ];
+
+    const history = threadMessagesToHistory(messages, { lastK: 10 });
+
+    expect(history).toHaveLength(2);
+    expect(history[0]).toEqual({
+      role: 'assistant',
+      content: [
+        { type: 'text', text: 'Generated query set.' },
+        {
+          type: 'tool_use',
+          id: 'tc-0-0',
+          name: 'generate_iterative_linkedin_query_set',
+          input: { rawRequirement: 'Pulmonologist in Mumbai' },
+        },
+      ],
+    });
+    expect(history[1]).toEqual({
+      role: 'user',
+      content: [
+        {
+          type: 'tool_result',
+          tool_use_id: 'tc-0-0',
+          content:
+            '{"final_query_set":{"search_query_set":[{"job_title":"Pulmonologist","location":["Mumbai"]}]}}',
+        },
+      ],
+    });
+  });
+
   it('limits to the last K messages', () => {
     const messages: AssistantThreadMessage[] = [];
     for (let i = 0; i < 30; i += 1) {
@@ -75,4 +123,3 @@ describe('threadMessagesToHistory', () => {
     expect(history[0]).toEqual({ role: 'user', content: 'User message' });
   });
 });
-

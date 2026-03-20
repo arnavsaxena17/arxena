@@ -18,6 +18,7 @@ type AssistantThreadMessage = {
   role: 'user' | 'assistant';
   content: string;
   toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
+  toolResults?: Array<{ content: string }>;
   tableReferences?: AssistantThreadTableReference[];
 };
 
@@ -203,6 +204,12 @@ export class AssistantThreadService {
       name: node.name ?? 'New thread',
       workspaceId: '', // not stored per-thread; resolved from token when needed
       messages,
+      assistantParameters,
+      assistantSearchStrategy:
+        node.assistantSearchStrategy &&
+        typeof node.assistantSearchStrategy === 'object'
+          ? (node.assistantSearchStrategy as Record<string, unknown>)
+          : undefined,
       lastTableData:
         node.lastTableData && typeof node.lastTableData === 'object'
           ? (node.lastTableData as AssistantThreadTableData)
@@ -225,13 +232,14 @@ export class AssistantThreadService {
     content: string,
     toolCalls?: Array<{ name: string; args: Record<string, unknown> }>,
     tableReferences?: AssistantThreadTableReference[],
+    toolResults?: Array<{ content: string }>,
   ): Promise<void> {
     const thread = await this.getThread(apiToken, threadId);
     if (!thread) return;
 
     const newMessages: AssistantThreadMessage[] = [
       ...thread.messages,
-      { role, content, toolCalls, tableReferences },
+      { role, content, toolCalls, toolResults, tableReferences },
     ];
 
     await this.staticGraphQLService.executeGraphQL(
@@ -304,21 +312,91 @@ export class AssistantThreadService {
     threadId: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
   ): Promise<void> {
+    await this.mergeAssistantParameters(apiToken, threadId, { searchType });
+  }
+
+  async mergeAssistantParameters(
+    apiToken: string,
+    threadId: string,
+    partial: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
     const result = await this.staticGraphQLService.executeGraphQL(
       findOneAssistantThread,
       { id: threadId },
       apiToken,
     );
     const node = result?.data?.data?.assistantThread;
-    if (!node) return;
+    if (!node) {
+      throw new Error('Assistant thread not found');
+    }
     const currentParams =
       node.assistantParameters && typeof node.assistantParameters === 'object'
         ? (node.assistantParameters as Record<string, unknown>)
         : {};
-    const merged = { ...currentParams, searchType };
+    const merged = { ...currentParams, ...partial };
     await this.staticGraphQLService.executeGraphQL(
       updateOneAssistantThread,
       { id: threadId, input: { assistantParameters: merged } },
+      apiToken,
+    );
+
+    return merged;
+  }
+
+  async appendIterativeProgressLog(
+    apiToken: string,
+    threadId: string,
+    entry: {
+      message: string;
+      stage?: string;
+      createdAt?: string;
+    },
+  ): Promise<Record<string, unknown> | null> {
+    const thread = await this.getThread(apiToken, threadId);
+    if (!thread) return null;
+
+    const assistantParameters =
+      thread.assistantParameters &&
+      typeof thread.assistantParameters === 'object'
+        ? (thread.assistantParameters as Record<string, unknown>)
+        : {};
+    const iterativeState =
+      assistantParameters.iterativeQueryState &&
+      typeof assistantParameters.iterativeQueryState === 'object'
+        ? (assistantParameters.iterativeQueryState as Record<string, unknown>)
+        : {};
+    const existingLog = Array.isArray(iterativeState.progressLog)
+      ? (iterativeState.progressLog as Array<Record<string, unknown>>)
+      : [];
+
+    const nextLog = [
+      ...existingLog,
+      {
+        message: entry.message,
+        ...(entry.stage ? { stage: entry.stage } : {}),
+        createdAt: entry.createdAt ?? new Date().toISOString(),
+      },
+    ].slice(-20);
+
+    const merged = await this.mergeAssistantParameters(apiToken, threadId, {
+      iterativeQueryState: {
+        ...iterativeState,
+        progressLog: nextLog,
+        updatedAt: new Date().toISOString(),
+      },
+    });
+
+    return merged;
+  }
+
+  async setThreadSearchStrategy(
+    apiToken: string,
+    threadId: string,
+    strategy: Record<string, unknown>,
+  ): Promise<void> {
+    await this.staticGraphQLService.executeGraphQL(
+      updateOneAssistantThread,
+      { id: threadId, input: { assistantSearchStrategy: strategy } },
       apiToken,
     );
   }

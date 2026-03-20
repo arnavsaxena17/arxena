@@ -504,9 +504,11 @@ export class SearchParametersPrompts {
     
     const sampleResultsText = sampleResults.map((result, idx) => formatResult(result, idx + 1)).join('\n\n');
 
-    return `Validate these LinkedIn search results against the original query:
+    return `Validate these LinkedIn search results against the recruiter requirement below.
+If it includes "User steering updates", treat those as extra constraints on top of the base requirement.
 
-    ORIGINAL QUERY: ${userMessage}
+    RECRUITER REQUIREMENT (base + any steering from iterative query):
+    ${userMessage}
 
     SEARCH RESULTS (${sampleResults.length} of ${searchResults.length} total):
     ${sampleResultsText}
@@ -629,7 +631,7 @@ export class SearchParametersPrompts {
       ? `SOURCING STRATEGY: ${strategyText}`
       : '';
 
-    return `ORIGINAL QUERY: ${userMessage}
+    return `RECRUITER REQUIREMENT (base + any steering from iterative query): ${userMessage}
     
     ${strategyInfo ? `\n${strategyInfo}` : ''}
     ${hasEducationRequirements ? `\nEducation Requirements: ${educationRequirementsText}` : ''}
@@ -643,7 +645,8 @@ export class SearchParametersPrompts {
     Skills: ${candidateInfo.skills}
     ${candidateInfo.education ? `Education: ${candidateInfo.education}` : 'Education: Not available'}
 
-    Score the relevance of this candidate against the search query above.`;
+    If the recruiter requirement lists steering updates, apply them as additional constraints when scoring.
+    Score the relevance of this candidate against the requirement above.`;
   }
 
 

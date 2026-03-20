@@ -108,3 +108,122 @@ export interface OrchestratorResult {
         total_queries_generated: number;
       };
 }
+
+export type IterativeGenerationMode = 'offline' | 'live';
+
+export type QueryActionType =
+  | 'drop_job_title'
+  | 'drop_keywords'
+  | 'split_mixed_query'
+  | 'relax_company_filter'
+  | 'preserve_location'
+  | 'enforce_limits'
+  | 'add_broader_variant';
+
+export interface QueryVerificationFinding {
+  code:
+    | 'linkedin_limit_error'
+    | 'empty_field_warning'
+    | 'duplicate_query_warning'
+    | 'overlapping_title_keywords'
+    | 'constraint_load_high'
+    | 'company_filter_too_strict'
+    | 'low_breadth'
+    | 'family_overlap_high'
+    | 'live_preview_unavailable'
+    | 'live_preview_low_volume'
+    | 'live_preview_low_diversity';
+  severity: 'error' | 'warning' | 'info';
+  message: string;
+}
+
+export interface QueryVerificationResult {
+  valid: boolean;
+  score: number;
+  overlap_score: number;
+  breadth_score: number;
+  constraint_load_score: number;
+  role_signal_score: number;
+  expected_candidate_volume_score: number;
+  live_preview_score: number | null;
+  relevance_score: number | null;
+  findings: QueryVerificationFinding[];
+  recommended_actions: QueryActionType[];
+  summary: string;
+}
+
+export interface LivePreviewQueryResult {
+  query_index: number;
+  item_count: number;
+  unique_company_count: number;
+  unique_title_count: number;
+  relevance_score: number | null;
+  quality_assessment: 'high' | 'medium' | 'low' | null;
+  reasoning: string | null;
+}
+
+export interface LivePreviewResult {
+  attempted: boolean;
+  succeeded: boolean;
+  fallback_reason?: string | null;
+  preview_score: number | null;
+  queries: LivePreviewQueryResult[];
+}
+
+export interface IterativeQueryCandidate {
+  candidate_id: string;
+  source: 'seed' | 'refined';
+  label: string;
+  query_set: SearchQuerySet;
+  score: number;
+  summary: string;
+  verification_result: QueryVerificationResult;
+  live_preview?: LivePreviewResult | null;
+  rejection_reason?: string | null;
+}
+
+export interface QueryIteration {
+  round: number;
+  candidates: IterativeQueryCandidate[];
+  winner_candidate_id: string;
+  winner_score: number;
+  improvement_from_previous: number | null;
+}
+
+export interface RankedAlternativeQuerySet {
+  query_set: SearchQuerySet;
+  score: number;
+  summary: string;
+  rejection_reason?: string | null;
+}
+
+export interface IterativeVerificationSummary {
+  mode: IterativeGenerationMode;
+  final_score: number;
+  termination_reason:
+    | 'max_iterations_reached'
+    | 'good_enough'
+    | 'no_meaningful_improvement';
+  live_preview_used: boolean;
+  live_preview_fallback_reason?: string | null;
+}
+
+export interface TargetProfilePreviewItem {
+  archetype: string;
+  sample_profile: string;
+  retrieval_focus: 'title' | 'keywords' | 'mixed';
+}
+
+export interface TargetProfileValidationPreview {
+  recruiter_validation_question: string;
+  positive_examples: TargetProfilePreviewItem[];
+  negative_examples: TargetProfilePreviewItem[];
+}
+
+export interface IterativeQuerySetResult {
+  final_query_set: SearchQuerySet;
+  ranked_alternatives: RankedAlternativeQuerySet[];
+  iterations: QueryIteration[];
+  verification_summary: IterativeVerificationSummary;
+  target_profile_preview?: TargetProfileValidationPreview;
+}

@@ -21,6 +21,8 @@ export interface AiFilterConfig {
 // Mapping from frontend model values to actual OpenAI model names
 const MODEL_MAPPING: Record<string, string> = {
   'gpt35turbo': 'gpt-3.5-turbo',
+  'gpt51chatlatest': 'gpt-5.1-chat-latest',
+  'gpt54mini': 'gpt-5.4-mini',
   'gpt4o': 'gpt-4o',
   'gpt4omini': 'gpt-4o-mini',
   'gpt4ominisearchpreview': 'gpt-4o-mini-search-preview',
@@ -50,7 +52,7 @@ export class AiFilteringProcessorService {
    * Maps frontend model values to actual OpenAI model names
    */
   private mapModelName(frontendModel: string): string {
-    const mappedModel = MODEL_MAPPING[frontendModel] || frontendModel || 'gpt-4o';
+    const mappedModel = MODEL_MAPPING[frontendModel] || frontendModel || 'gpt-5.1-chat-latest';
 
     if (frontendModel && !MODEL_MAPPING[frontendModel]) {
     } else if (frontendModel && MODEL_MAPPING[frontendModel]) {

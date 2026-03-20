@@ -8,10 +8,10 @@ import {
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { CandidateDataService } from './candidate-data.service';
-import { CandidateFieldValueService } from './candidate-field-value.service';
 import { AiFilterConfig, AiFilteringProcessorService } from './ai-filtering-processor.service';
 import { AiFilteringProgressPubSubService } from './ai-filtering-progress-pubsub.service';
+import { CandidateDataService } from './candidate-data.service';
+import { CandidateFieldValueService } from './candidate-field-value.service';
 
 export interface ProcessAiFiltersRequest {
   aiFilters: AiFilter[];
@@ -142,7 +142,7 @@ export class AiFilteringService {
       const aiFilterConfigs: AiFilterConfig[] = validAiFilters.map(e => ({
         modelName: e.modelName,
         prompt: e.prompt,
-        selectedModel: e.selectedModel || 'gpt-4o',
+        selectedModel: e.selectedModel || 'gpt-5.1-chat-latest',
         fields: e.fields || [],
         selectedMetadataFields: e.selectedMetadataFields || [],
         embeddingsModel: false
@@ -296,7 +296,7 @@ export class AiFilteringService {
       const aiFilterConfigs: AiFilterConfig[] = validAiFilters.map(e => ({
         modelName: e.modelName,
         prompt: e.prompt,
-        selectedModel: e.selectedModel || 'gpt-4o',
+        selectedModel: e.selectedModel || 'gpt-5.1-chat-latest',
         fields: e.fields || [],
         selectedMetadataFields: e.selectedMetadataFields || [],
         embeddingsModel: false

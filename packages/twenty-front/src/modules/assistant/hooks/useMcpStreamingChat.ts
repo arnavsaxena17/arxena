@@ -37,10 +37,65 @@ const stripThreadNameQuotes = (name: string): string => {
 };
 
 const buildConversationHistory = (historyMessages: AssistantChatMessage[]) =>
-  historyMessages.map((m) => ({
-    role: m.role,
-    content: m.content,
-  }));
+  historyMessages.flatMap((message, messageIndex) => {
+    if (message.role === 'user') {
+      return [{ role: 'user' as const, content: message.content }];
+    }
+
+    const assistantContent = [
+      ...(message.content
+        ? [{ type: 'text' as const, text: message.content }]
+        : []),
+      ...((message.toolCalls ?? []).map((toolCall, toolIndex) => ({
+        type: 'tool_use' as const,
+        id: `tc-${messageIndex}-${toolIndex}`,
+        name: toolCall.name,
+        input: toolCall.args ?? {},
+      }))),
+    ];
+
+    const history: Array<{
+      role: 'user' | 'assistant';
+      content: string | Array<unknown>;
+    }> = [];
+
+    if (assistantContent.length > 0) {
+      history.push({
+        role: 'assistant',
+        content: assistantContent,
+      });
+    }
+
+    const toolResults = (message.toolResults ?? []).map((toolResult, toolIndex) => ({
+      type: 'tool_result' as const,
+      tool_use_id: `tc-${messageIndex}-${toolIndex}`,
+      content: toolResult.content,
+    }));
+
+    if (toolResults.length > 0) {
+      history.push({
+        role: 'user',
+        content: toolResults,
+      });
+    }
+
+    return history;
+  });
+
+const mergeTableColumns = (
+  currentColumns: string[],
+  incomingColumns: string[],
+): string[] => {
+  const mergedColumns = [...currentColumns];
+
+  for (const column of incomingColumns) {
+    if (!mergedColumns.includes(column)) {
+      mergedColumns.push(column);
+    }
+  }
+
+  return mergedColumns;
+};
 
 export const useMcpStreamingChat = ({
   messages,
@@ -271,6 +326,43 @@ export const useMcpStreamingChat = ({
           const last = prev[prev.length - 1];
           if (last?.role === 'assistant') {
             const list = last.tableDataList ?? [];
+            const candidateTableIndex = list.findIndex(
+              (item) => item.tableType === 'candidates',
+            );
+
+            if (
+              (tableData.tableType === 'candidates' || candidateTableIndex >= 0) &&
+              candidateTableIndex >= 0
+            ) {
+              const existingTable = list[candidateTableIndex];
+              const mergedTable = {
+                ...existingTable,
+                ...tableData,
+                columns: mergeTableColumns(
+                  existingTable.columns,
+                  tableData.columns,
+                ),
+                rows:
+                  tableData.tableId &&
+                  existingTable.tableId &&
+                  tableData.tableId === existingTable.tableId
+                    ? tableData.rows
+                    : [...existingTable.rows, ...tableData.rows],
+              };
+              const nextTableDataList = [...list];
+
+              nextTableDataList[candidateTableIndex] = mergedTable;
+
+              const next = [
+                ...prev.slice(0, -1),
+                { ...last, tableDataList: nextTableDataList },
+              ];
+
+              streamedMessagesRef.current = next;
+              setMessages(next);
+              return;
+            }
+
             const next = [
               ...prev.slice(0, -1),
               { ...last, tableDataList: [...list, tableData] },
@@ -341,6 +433,15 @@ export const useMcpStreamingChat = ({
               }
             ).toolCalls
           : undefined;
+        const toolResults = Array.isArray(
+          (data as { toolResults?: unknown }).toolResults,
+        )
+          ? (
+              data as {
+                toolResults: { content: string }[];
+              }
+            ).toolResults
+          : undefined;
 
         const finalContent =
           accumulatedContentRef.current.trim() !== ''
@@ -359,6 +460,7 @@ export const useMcpStreamingChat = ({
             ...next[streamingIndex],
             content: finalContent,
             toolCalls,
+            toolResults,
           };
         } else {
           const lastIndex = next.length - 1;
@@ -368,6 +470,7 @@ export const useMcpStreamingChat = ({
               ...last,
               content: finalContent,
               toolCalls,
+              toolResults,
             };
           }
         }

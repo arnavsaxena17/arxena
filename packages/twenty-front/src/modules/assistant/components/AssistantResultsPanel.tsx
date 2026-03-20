@@ -11,8 +11,8 @@ import { ContextStoreComponentInstanceContext } from '@/context-store/states/con
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { AppPath } from '@/types/AppPath';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
-import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
+import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -194,15 +194,17 @@ export const AssistantResultsPanel = ({
     setSelectedRowIndex(null);
   }, [tableData]);
 
-  const jobIdFromResults = getJobIdFromTableData(tableData);
-  // Prefer jobId coming from the table data (e.g. snapshot rows)
-  const effectiveJobId = jobIdFromResults ?? jobIdFromThread ?? undefined;
+  const jobIdFromRows = getJobIdFromTableData(tableData);
+  // Thread job is for navigation (e.g. “View in job”) — not for binding DataTable data.
+  // LinkedIn search rows usually omit jobId; falling back to thread jobId made the panel
+  // load the job’s GraphQL candidates instead of hydrating these snapshot rows (wrong count).
+  const jobIdForThreadActions = jobIdFromRows ?? jobIdFromThread ?? undefined;
+  const dataTableJobId = jobIdFromRows ?? ASSISTANT_SEARCH_JOB_ID;
 
-  // When there's no real jobId but table rows exist (LinkedIn/search candidates),
-  // transform rows to add tempId/UI fields then populate searchResultsState so
-  // DataTable can display them (deduplicateSearchResults requires tempId or id).
+  // When rows are not tied to a CRM job (no jobId on data), push snapshot rows into Recoil
+  // so DataTable (__search__) shows the same people as the chat preview.
   useEffect(() => {
-    if (effectiveJobId || !tableData?.rows?.length) return;
+    if (jobIdFromRows || !tableData?.rows?.length) return;
     const transformed = (tableData.rows as Record<string, unknown>[]).map(
       transformRowForDataTable,
     );
@@ -210,12 +212,10 @@ export const AssistantResultsPanel = ({
     return () => {
       setSearchResults([]);
     };
-  }, [tableData, effectiveJobId, setSearchResults]);
+  }, [tableData, jobIdFromRows, setSearchResults]);
 
   // Read selection from the DataTable's context store for the active jobId instance.
-  // When effectiveJobId is present, DataTable keyed by effectiveJobId owns the selection;
-  // for the virtual search table we use ASSISTANT_SEARCH_JOB_ID.
-  const activeContextKey = effectiveJobId ?? ASSISTANT_SEARCH_JOB_ID;
+  const activeContextKey = dataTableJobId;
   const searchTableRule = useRecoilComponentValueV2(
     contextStoreTargetedRecordsRuleComponentState,
     activeContextKey,
@@ -257,20 +257,20 @@ export const AssistantResultsPanel = ({
   }, [selectedRow, openRightDrawer, setSelectedCandidateId]);
 
   const handleOpenClientChat = useCallback(() => {
-    if (!effectiveJobId) return;
+    if (!jobIdForThreadActions) return;
     openRightDrawer(RightDrawerPages.ClientChat, {
       title: 'Client chat (mock)',
       Icon: IconMessage,
     });
-  }, [effectiveJobId, openRightDrawer]);
+  }, [jobIdForThreadActions, openRightDrawer]);
 
   const handleOpenInJobs = useCallback(() => {
     navigate(getAppPath(AppPath.Jobs));
   }, [navigate]);
   const handleViewInJob = useCallback(() => {
-    if (!effectiveJobId) return;
-    navigate(`/job/${effectiveJobId}`);
-  }, [navigate, effectiveJobId]);
+    if (!jobIdForThreadActions) return;
+    navigate(`/job/${jobIdForThreadActions}`);
+  }, [navigate, jobIdForThreadActions]);
 
   const handleViewAttachments = useCallback(() => {
     if (!selectedRow) return;
@@ -289,11 +289,7 @@ export const AssistantResultsPanel = ({
   // LinkedIn candidate rows only have name/headline/linkedinUrl so they must use
   // AssistantDetailsTable which renders whatever columns are provided.
   const hasTableRows = Boolean(tableData?.rows?.length && tableData?.columns?.length);
-  // Always use DataTable when rows exist — LinkedIn rows without a real jobId
-  // are pushed (transformed with tempId) into searchResultsState above so
-  // DataTable can display them via the __search__ virtual jobId.
   const showDataTable = hasTableRows;
-  const dataTableJobId = effectiveJobId ?? ASSISTANT_SEARCH_JOB_ID;
 
   if (!hasTableRows) {
     return (
@@ -340,7 +336,7 @@ export const AssistantResultsPanel = ({
           </ActionMenuComponentInstanceContext.Provider>
         </ContextStoreComponentInstanceContext.Provider>
       )}
-      {!showDataTable && (hasSelection || effectiveJobId) && (
+      {!showDataTable && (hasSelection || jobIdForThreadActions) && (
         <StyledActionsBar>
           {hasSelection && (
             <>
@@ -356,14 +352,14 @@ export const AssistantResultsPanel = ({
               />
             </>
           )}
-          {effectiveJobId && (
+          {jobIdForThreadActions && (
             <StyledActionButton
               title="View in job"
               onClick={handleViewInJob}
               Icon={IconBriefcase}
             />
           )}
-          {effectiveJobId && (
+          {jobIdForThreadActions && (
             <StyledActionButton
               title="View client chat"
               onClick={handleOpenClientChat}

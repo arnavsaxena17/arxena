@@ -27,6 +27,21 @@ type PersistedTableRef = {
   tables: Array<{ tableId: string; label?: string; count?: number; tableType?: string }>;
 };
 
+function mergeTableColumns(
+  currentColumns: string[],
+  incomingColumns: string[],
+): string[] {
+  const mergedColumns = [...currentColumns];
+
+  for (const column of incomingColumns) {
+    if (!mergedColumns.includes(column)) {
+      mergedColumns.push(column);
+    }
+  }
+
+  return mergedColumns;
+}
+
 function saveThreadTablesLocal(threadId: string, messages: AssistantChatMessage[]) {
   const refs: PersistedTableRef[] = messages
     .map((m, idx) => {
@@ -370,6 +385,7 @@ export const AssistantPage = () => {
             role: 'user' | 'assistant';
             content: string;
             toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
+            toolResults?: Array<{ content: string }>;
             tableReferences?: Array<{
               tableId: string;
               ref: string;
@@ -381,6 +397,8 @@ export const AssistantPage = () => {
             }>;
           }>;
           lastTableData?: AssistantTableData;
+          assistantParameters?: Record<string, unknown> | null;
+          assistantSearchStrategy?: Record<string, unknown> | null;
           jobId?: string | null;
           job?: { id: string; name?: string; jobLocation?: string; company?: { id: string; name?: string } } | null;
           agentNotes?: Array<{ summary: string; createdAt?: string; id?: string }>;
@@ -396,6 +414,7 @@ export const AssistantPage = () => {
         role: m.role,
         content: m.content,
         toolCalls: m.toolCalls,
+        toolResults: m.toolResults,
         tableReferences: m.tableReferences,
       }));
 
@@ -483,6 +502,9 @@ export const AssistantPage = () => {
                 ...t,
                 messages,
                 lastTableData: data.lastTableData ?? t.lastTableData ?? null,
+                assistantParameters: data.assistantParameters ?? t.assistantParameters,
+                assistantSearchStrategy:
+                  data.assistantSearchStrategy ?? t.assistantSearchStrategy,
                 jobId: data.jobId !== undefined ? data.jobId : t.jobId,
                 job: data.job !== undefined ? data.job : t.job,
                 agentNotes: data.agentNotes ?? t.agentNotes,
@@ -551,7 +573,29 @@ export const AssistantPage = () => {
       if (!currentThreadId) return;
       setThreads((prev) =>
         prev.map((t) =>
-          t.id === currentThreadId ? { ...t, lastTableData: data } : t,
+          t.id === currentThreadId
+            ? {
+                ...t,
+                lastTableData:
+                  t.lastTableData?.tableType === 'candidates' &&
+                  data.tableType === 'candidates'
+                    ? {
+                        ...t.lastTableData,
+                        ...data,
+                        columns: mergeTableColumns(
+                          t.lastTableData.columns,
+                          data.columns,
+                        ),
+                        rows:
+                          t.lastTableData.tableId &&
+                          data.tableId &&
+                          t.lastTableData.tableId === data.tableId
+                            ? data.rows
+                            : [...t.lastTableData.rows, ...data.rows],
+                      }
+                    : data,
+              }
+            : t,
         ),
       );
     },
@@ -777,6 +821,8 @@ export const AssistantPage = () => {
           assistantMode?: 'fully_autonomous' | 'permissioned';
           name?: string;
           searchType?: 'classic' | 'sales_navigator' | 'recruiter';
+          assistantParameters?: Record<string, unknown> | null;
+          assistantSearchStrategy?: Record<string, unknown> | null;
           error?: string;
         };
         if (data.error) return;
@@ -790,6 +836,12 @@ export const AssistantPage = () => {
                   ...(data.job !== undefined ? { job: data.job } : {}),
                   ...(data.assistantMode ? { assistantMode: data.assistantMode } : {}),
                   ...(data.searchType ? { searchType: data.searchType } : {}),
+                  ...(data.assistantParameters !== undefined
+                    ? { assistantParameters: data.assistantParameters ?? undefined }
+                    : {}),
+                  ...(data.assistantSearchStrategy !== undefined
+                    ? { assistantSearchStrategy: data.assistantSearchStrategy ?? undefined }
+                    : {}),
                 }
               : t,
           ),
@@ -816,6 +868,8 @@ export const AssistantPage = () => {
           jobId?: string | null;
           assistantMode?: 'fully_autonomous' | 'permissioned';
           searchType?: 'classic' | 'sales_navigator' | 'recruiter';
+          assistantParameters?: Record<string, unknown> | null;
+          assistantSearchStrategy?: Record<string, unknown> | null;
           error?: string;
         };
         if (data.error) return;
@@ -829,6 +883,12 @@ export const AssistantPage = () => {
                   ...(data.jobId !== undefined ? { jobId: data.jobId, job: null } : {}),
                   ...(data.assistantMode ? { assistantMode: data.assistantMode } : {}),
                   ...(data.searchType ? { searchType: data.searchType } : {}),
+                  ...(data.assistantParameters !== undefined
+                    ? { assistantParameters: data.assistantParameters ?? undefined }
+                    : {}),
+                  ...(data.assistantSearchStrategy !== undefined
+                    ? { assistantSearchStrategy: data.assistantSearchStrategy ?? undefined }
+                    : {}),
                 }
               : t,
           ),

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { CandidateSearchChatController } from 'src/engine/core-modules/candidate-search/controllers/candidate-search-chat.controller';
 import { CandidateScoringService } from 'src/engine/core-modules/candidate-search/services/candidate-scoring.service';
@@ -12,7 +12,6 @@ import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin
 import { LinkedInHtmlParserService } from 'src/engine/core-modules/linkedin-search/services/linkedin-html-parser.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { UnipilePoolModule } from '../arx-chat/unipile-pool.module';
-import { McpAssistantService } from '../assistant/mcp-assistant.service';
 import { CandidateSourcingModule } from '../candidate-sourcing/candidate-sourcing.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { LinkedInSearchModule } from '../linkedin-search/linkedin-search.module';
@@ -49,10 +48,14 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     WorkspaceModificationsModule,
     CandidateSourcingModule,
     GraphQLExecutionModule,
+    forwardRef(() => {
+      // Lazy require avoids circular import: AssistantModule imports CandidateSearchModule.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      return require('../assistant/assistant.module').AssistantModule;
+    }),
   ],
   controllers: [CandidateSearchController, CandidateSearchChatController, CandidateSearchPipelineController],
   providers: [
-    AssistantThreadService,
     CandidateSearchBaseService,
     CandidateSearchHandlerService,
     StreamProcessingService,
@@ -73,6 +76,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     // QuerySimplificationService,
     RequirementAnalyzerService,
     JobTitleExpanderService,
+    AssistantThreadService,
     PythonQueryGenerationService,
     CompanyExpanderService,
     BooltreeHintService,
@@ -87,11 +91,11 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     OrgchartCancelRegistryService,
     // Executive search enhancement services
     PythonOrgChartService,
-    McpAssistantService,
   ],
   exports: [
     CandidateSearchBaseService,
     CandidateSearchHandlerService,
+    ResultValidationService,
     StreamProcessingService,
   ],
 })

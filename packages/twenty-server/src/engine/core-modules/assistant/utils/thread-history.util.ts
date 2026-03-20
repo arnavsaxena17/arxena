@@ -43,8 +43,30 @@ export const threadMessagesToHistory = (
         content: contentBlocks,
       });
     }
+
+    const toolResults = (message.toolResults ?? [])
+      .map((toolResult, toolIndex) => {
+        const content = toolResult.content?.trim();
+
+        if (!content) {
+          return null;
+        }
+
+        return {
+          type: 'tool_result' as const,
+          tool_use_id: `tc-${index}-${toolIndex}`,
+          content,
+        };
+      })
+      .filter((toolResult) => toolResult !== null);
+
+    if (toolResults.length > 0) {
+      out.push({
+        role: 'user',
+        content: toolResults,
+      });
+    }
   });
 
   return out;
 };
-

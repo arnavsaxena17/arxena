@@ -72,7 +72,7 @@ function buildAutonomousRecruiterSystemPrompt(
   const generatingQueriesSection =
     config?.buildGeneratingQueriesSection?.() ?? [
       '**Generating Queries**',
-      'Use the generate_linkedin_query_set tool to generate a query/ search parameters for the candidate search. Use search_linkedin_parameters with the queries. Do not use search_linkedin_parameters before generate_linkedin_query_set.',
+      'Use the generate_iterative_linkedin_query_set tool to generate a query/ search parameters for the candidate search. Use search_linkedin_parameters with the queries. Do not use search_linkedin_parameters before generate_linkedin_query_set.',
       '',
     ];
   lines.push(...generatingQueriesSection);

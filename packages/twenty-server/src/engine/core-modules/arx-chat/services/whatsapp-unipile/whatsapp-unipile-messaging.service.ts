@@ -18,6 +18,14 @@ export class WhatsappUnipileMessagingService {
   private baseUrl: string;
   private accessToken: string;
 
+  private resolveCandidatePrimaryPhone(candidate: CandidateNode): string | undefined {
+    const fromPerson = candidate?.people?.phones?.primaryPhoneNumber;
+    const fromCandidate = candidate?.phoneNumber?.primaryPhoneNumber;
+    const raw = fromPerson || fromCandidate;
+    const trimmed = raw?.trim();
+    return trimmed || undefined;
+  }
+
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
@@ -125,9 +133,8 @@ export class WhatsappUnipileMessagingService {
         return { status: 'failed', message: 'WhatsApp Unipile account not configured' };
       }
 
-      // Get the phone number for the candidate
-      const phoneNumber = candidate.people?.phones?.primaryPhoneNumber;
-      
+      const phoneNumber = this.resolveCandidatePrimaryPhone(candidate);
+
       if (!phoneNumber) {
         console.log('Phone number not found for candidate');
         return { status: 'failed', message: 'Phone number not found for candidate' };
@@ -225,8 +232,8 @@ export class WhatsappUnipileMessagingService {
         return { status: 'failed', message: 'WhatsApp Unipile account not configured' };
       }
 
-      const phoneNumber = candidate.people?.phones?.primaryPhoneNumber;
-      
+      const phoneNumber = this.resolveCandidatePrimaryPhone(candidate);
+
       if (!phoneNumber) {
         console.log('Phone number not found for candidate');
         return { status: 'failed', message: 'Phone number not found for candidate' };

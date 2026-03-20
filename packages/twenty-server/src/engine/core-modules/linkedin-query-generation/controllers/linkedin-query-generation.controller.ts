@@ -5,9 +5,11 @@ import {
   HttpStatus,
   Logger,
   Post,
+  Req,
 } from '@nestjs/common';
 
 import {
+  GenerateIterativeQuerySetDto,
   GenerateQuerySetBatchDto,
   GenerateQuerySetDto,
   RunAgent1Dto,
@@ -19,10 +21,12 @@ import {
 import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
 import {
   FactoredQuery,
+  IterativeQuerySetResult,
   MasterLists,
   OrchestratorResult,
   ParsedRequirement
 } from 'src/engine/core-modules/linkedin-query-generation/types/linkedin-query-generation.types';
+import { IterativeLinkedinQueryGenerationService } from '../services/iterative-linkedin-query-generation.service';
 
 @Controller('linkedin-query-generation')
 export class LinkedinQueryGenerationController {
@@ -30,6 +34,7 @@ export class LinkedinQueryGenerationController {
 
   constructor(
     private readonly linkedinQueryGenerationService: LinkedinQueryGenerationService,
+    private readonly iterativeLinkedinQueryGenerationService: IterativeLinkedinQueryGenerationService,
   ) {}
 
   @Post('agent1/parse')
@@ -124,6 +129,40 @@ export class LinkedinQueryGenerationController {
       this.logger.error('Query set generation failed', error.stack || error);
       throw new HttpException(
         error.message || 'Query set generation failed',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('generate/iterative')
+  async generateIterative(
+    @Body() body: GenerateIterativeQuerySetDto,
+    @Req() req: any,
+  ): Promise<IterativeQuerySetResult> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+
+      return await this.iterativeLinkedinQueryGenerationService.generateIterativeSearchQuerySet(
+        body.rawRequirement,
+        {
+          mode: body.mode,
+          searchType: body.searchType,
+          queryIpLocation: body.queryIpLocation,
+          maxIterations: body.maxIterations,
+          returnAlternatives: body.returnAlternatives,
+          verbose: body.verbose,
+          model: body.model,
+          temperature: body.temperature,
+          apiToken,
+        },
+      );
+    } catch (error) {
+      this.logger.error(
+        'Iterative query set generation failed',
+        error.stack || error,
+      );
+      throw new HttpException(
+        error.message || 'Iterative query set generation failed',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

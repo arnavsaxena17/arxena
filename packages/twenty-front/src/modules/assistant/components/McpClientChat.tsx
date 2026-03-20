@@ -5,6 +5,8 @@ import {
 import type {
   AssistantAgentEvent,
   AssistantChatMessage,
+  AssistantIterativeQueryResult,
+  AssistantIterativeQueryState,
 } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
@@ -42,6 +44,9 @@ export type McpClientChatProps = {
   selectedCandidateIds?: string[];
   /** Called when the MCP backend creates a job and emits job_attached with its ID */
   onJobAttached?: (jobId: string) => void;
+  assistantParameters?: Record<string, unknown> & {
+    iterativeQueryState?: AssistantIterativeQueryState;
+  };
 };
 
 const StyledContainer = styled.div`
@@ -271,13 +276,88 @@ const StyledExecutionTimerBanner = styled.div`
   color: ${({ theme }) => theme.font.color.secondary};
 `;
 
+const StyledStatusLog = styled.div`
+  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(2)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  background: ${({ theme }) => theme.background.tertiary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.secondary};
+`;
+
+const StyledStatusLogHeader = styled.div`
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${({ theme }) => theme.font.color.primary};
+  margin-bottom: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledStatusLogList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(0.75)};
+  max-height: 140px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+`;
+
 const StyledExecutionTimerLeft = styled.div`
   display: inline-flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing(1.5)};
 `;
 
+const StyledMiniButton = styled.button`
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  background: ${({ theme }) => theme.background.primary};
+  color: ${({ theme }) => theme.font.color.primary};
+  padding: ${({ theme }) => theme.spacing(1.5, 2.5)};
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+`;
+
+const StyledComposerActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1.5)};
+`;
+
+const StyledComposerMeta = styled.div`
+  margin-top: ${({ theme }) => theme.spacing(1.5)};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.secondary};
+  white-space: pre-wrap;
+`;
+
 const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+
+const formatIterativeAssistantMessage = (
+  result: AssistantIterativeQueryResult,
+  steeringMessage?: string,
+) => {
+  const header = steeringMessage
+    ? `Applied steering: ${steeringMessage}\n\n`
+    : '';
+  const summary = `Final query set (${result.final_query_set.search_query_set.length} queries, score ${result.verification_summary.final_score.toFixed(2)}).`;
+  const queries = result.final_query_set.search_query_set
+    .map((query, index) => {
+      const parts = [
+        query.job_title ? `job_title=${query.job_title}` : null,
+        query.keywords ? `keywords=${query.keywords}` : null,
+        query.location?.length ? `location=${query.location.join(', ')}` : null,
+        query.company?.length ? `company=${query.company.join(', ')}` : null,
+      ].filter((value): value is string => Boolean(value));
+      return `${index + 1}. ${parts.join(' | ')}`;
+    })
+    .join('\n');
+
+  return `${header}${summary}\n${queries}`;
+};
 
 export const McpClientChat = ({
   messages: controlledMessages,
@@ -290,6 +370,7 @@ export const McpClientChat = ({
   onAgentEvent,
   selectedCandidateIds,
   onJobAttached,
+  assistantParameters,
 }: McpClientChatProps) => {
   const tokenPair = useRecoilValue(tokenPairState);
   const navigate = useNavigate();
@@ -298,6 +379,11 @@ export const McpClientChat = ({
     onMessagesChange,
   );
   const [input, setInput] = useState('');
+  const [iterativeLoading, setIterativeLoading] = useState(false);
+  const [iterativeError, setIterativeError] = useState<string | null>(null);
+  const [iterativeState, setIterativeState] = useState<AssistantIterativeQueryState | null>(
+    () => assistantParameters?.iterativeQueryState ?? null,
+  );
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const [requestElapsedSeconds, setRequestElapsedSeconds] = useState(0);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -308,6 +394,7 @@ export const McpClientChat = ({
     sendMessage,
     stopMessage,
     loading,
+    streamLog,
     error,
     setError,
   } = useMcpStreamingChat({
@@ -330,6 +417,96 @@ export const McpClientChat = ({
     sendMessage(input);
     setInput('');
   }, [input, sendMessage]);
+
+  useEffect(() => {
+    const savedState = assistantParameters?.iterativeQueryState ?? null;
+    setIterativeState(savedState);
+  }, [assistantParameters]);
+
+  const runIterativeQuery = useCallback(
+    async () => {
+      if (!threadId || !tokenPair?.accessToken?.token || !baseUrl) {
+        setIterativeError('Thread, token, or server base URL is missing.');
+        return;
+      }
+
+      const trimmedInput = input.trim();
+      if (!trimmedInput) {
+        setIterativeError('Enter a steering instruction before refining the query set.');
+        return;
+      }
+
+      const baseRequirement =
+        iterativeState?.baseRequirement ??
+        messages.find(
+          (message) =>
+            message.role === 'user' &&
+            !message.content.startsWith('Steer query set:'),
+        )?.content ??
+        trimmedInput;
+
+      setIterativeLoading(true);
+      setIterativeError(null);
+
+      try {
+        const res = await fetch(`${baseUrl}/assistant/threads/${threadId}/iterative-query`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${tokenPair.accessToken.token}`,
+          },
+          body: JSON.stringify({
+            rawRequirement: baseRequirement,
+            steeringMessage: trimmedInput,
+            maxIterations: 4,
+          }),
+        });
+
+        const data = (await res.json()) as {
+          error?: string;
+          assistantMessage?: string;
+          iterativeQueryState?: AssistantIterativeQueryState;
+          result?: AssistantIterativeQueryResult;
+        };
+
+        if (!res.ok || data.error) {
+          throw new Error(data.error ?? 'Failed to generate iterative query set');
+        }
+
+        const nextState = data.iterativeQueryState ?? null;
+        setIterativeState(nextState);
+        setInput('');
+
+        const assistantMessage =
+          data.assistantMessage ??
+          (data.result ? formatIterativeAssistantMessage(data.result, trimmedInput) : '');
+
+        if (assistantMessage) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: 'user',
+              content: `Steer query set: ${trimmedInput}`,
+            },
+            { role: 'assistant', content: assistantMessage },
+          ]);
+        }
+      } catch (err) {
+        setIterativeError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setIterativeLoading(false);
+      }
+    },
+    [
+      baseUrl,
+      input,
+      iterativeState?.baseRequirement,
+      messages,
+      setMessages,
+      threadId,
+      tokenPair?.accessToken?.token,
+    ],
+  );
 
   useEffect(() => {
     if (!loading) {
@@ -400,9 +577,12 @@ export const McpClientChat = ({
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
+      if (loading || iterativeLoading) {
+        return;
+      }
       sendCurrentMessage();
     },
-    [sendCurrentMessage],
+    [iterativeLoading, loading, sendCurrentMessage],
   );
 
   useEffect(() => {
@@ -547,6 +727,16 @@ export const McpClientChat = ({
           <span>{requestElapsedSeconds}s</span>
         </StyledExecutionTimerBanner>
       )}
+      {loading && streamLog.length > 0 && (
+        <StyledStatusLog role="status" aria-live="polite">
+          <StyledStatusLogHeader>Live Progress</StyledStatusLogHeader>
+          <StyledStatusLogList>
+            {streamLog.slice(-6).map((entry, index) => (
+              <div key={`${index}-${entry}`}>{entry}</div>
+            ))}
+          </StyledStatusLogList>
+        </StyledStatusLog>
+      )}
       <StyledForm onSubmit={handleSubmit} aria-label="Chat input">
         <StyledInputWrapper>
           <StyledTextArea
@@ -554,26 +744,65 @@ export const McpClientChat = ({
             value={input}
             onChange={(event) => setInput(event.target.value)}
             placeholder="Type your message…"
-            disabled={loading}
+            disabled={iterativeLoading}
             aria-label="Message"
             rows={1}
             onKeyDown={(event) => {
               // Prevent global hotkeys/shortcuts from triggering while typing in the chat input
               event.stopPropagation();
-              if (event.key === 'Enter' && !event.shiftKey) {
+              if (event.key === 'Enter' && !event.shiftKey && !loading && !iterativeLoading) {
                 event.preventDefault();
                 sendCurrentMessage();
               }
             }}
           />
         </StyledInputWrapper>
-        <Button
-          title={loading ? 'Stop' : 'Send'}
-          type={loading ? 'button' : 'submit'}
-          onClick={loading ? stopMessage : undefined}
-          aria-label={loading ? 'Stop message' : 'Send message'}
-        />
+        <StyledComposerActions>
+          {loading && (
+            <StyledMiniButton
+              type="button"
+              onClick={() => void runIterativeQuery()}
+              disabled={!threadId || iterativeLoading || !input.trim()}
+              title={
+                iterativeState?.baseRequirement
+                  ? 'Steer the saved iterative query set'
+                  : 'Create or steer the iterative query set using the current conversation'
+              }
+            >
+              {iterativeLoading ? 'Steering…' : 'Steer'}
+            </StyledMiniButton>
+          )}
+          <Button
+            title={loading ? 'Stop' : 'Send'}
+            type={loading ? 'button' : 'submit'}
+            onClick={loading ? stopMessage : undefined}
+            aria-label={loading ? 'Stop message' : 'Send message'}
+          />
+        </StyledComposerActions>
       </StyledForm>
+      {(iterativeError || iterativeState) && (
+        <StyledComposerMeta>
+          {iterativeError
+            ? `Error: ${iterativeError}`
+            : `Saved requirement: ${iterativeState?.baseRequirement ?? 'Not set yet'}\nSteering turns: ${
+                iterativeState?.steeringHistory?.length ?? 0
+              }${
+                iterativeState?.progressLog?.length
+                  ? `\nLatest milestone: ${
+                      iterativeState.progressLog[
+                        iterativeState.progressLog.length - 1
+                      ]?.message ?? ''
+                    }`
+                  : ''
+              }${
+                iterativeState?.lastResult
+                  ? `\nLatest query-set score: ${iterativeState.lastResult.verification_summary.final_score.toFixed(
+                      2,
+                    )}`
+                  : ''
+              }`}
+        </StyledComposerMeta>
+      )}
     </StyledContainer>
   );
 };

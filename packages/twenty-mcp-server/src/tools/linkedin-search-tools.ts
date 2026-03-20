@@ -16,6 +16,7 @@ import {
   GENERATE_LINKEDIN_QUERY_AGENT3_INPUT_DESCRIPTOR,
   GENERATE_LINKEDIN_QUERY_AGENT4_INPUT_DESCRIPTOR,
   GENERATE_LINKEDIN_QUERY_BATCH_INPUT_DESCRIPTOR,
+  GENERATE_ITERATIVE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR,
   GENERATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR,
   GET_CONTACT_ENRICHMENT_JOB_INPUT_DESCRIPTOR,
   SEARCH_LINKEDIN_COMPANIES_INPUT_DESCRIPTOR,
@@ -363,6 +364,58 @@ export const linkedinSearchTools: McpTool[] = [
         {
           rawRequirement,
           queryIpLocation,
+          model,
+          temperature,
+          verbose,
+        },
+      );
+    },
+  },
+
+  {
+    definition: {
+      name: 'generate_iterative_linkedin_query_set',
+      description:
+        'Generate and refine LinkedIn query sets iteratively. Supports offline verification by default and optional live preview validation when LinkedIn search context is available.',
+      inputSchema: descriptorToInputSchema(
+        GENERATE_ITERATIVE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR,
+      ),
+    },
+    handler: async (args, config) => {
+      const {
+        rawRequirement,
+        mode,
+        searchType,
+        queryIpLocation,
+        maxIterations,
+        returnAlternatives,
+        model,
+        temperature,
+        verbose,
+      } = args as {
+        rawRequirement: string;
+        mode?: 'offline' | 'live';
+        searchType?: 'classic' | 'sales_navigator' | 'recruiter';
+        queryIpLocation?: string;
+        maxIterations?: number;
+        returnAlternatives?: boolean;
+        model?: string;
+        temperature?: number;
+        verbose?: boolean;
+      };
+
+      return callRestAPI(
+        config.baseUrl,
+        config.apiToken,
+        'linkedin-query-generation',
+        'generate/iterative',
+        {
+          rawRequirement,
+          mode,
+          searchType,
+          queryIpLocation,
+          maxIterations,
+          returnAlternatives,
           model,
           temperature,
           verbose,

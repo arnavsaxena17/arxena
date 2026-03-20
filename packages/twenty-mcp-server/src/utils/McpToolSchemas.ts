@@ -352,6 +352,19 @@ export const GENERATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR: readonly McpInputFiel
   { key: 'verbose', type: 'boolean', description: 'Whether to include verbose output', required: false },
 ] as const;
 
+/** Descriptor for generate_iterative_linkedin_query_set tool input. */
+export const GENERATE_ITERATIVE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'rawRequirement', type: 'string', description: 'Raw natural language search requirement', required: true },
+  { key: 'mode', type: 'string', description: 'Iterative mode: offline or live', required: false },
+  { key: 'searchType', type: 'string', description: 'One of: classic, sales_navigator, recruiter', required: false },
+  { key: 'queryIpLocation', type: 'string', description: 'Optional IP location for context', required: false },
+  { key: 'maxIterations', type: 'number', description: 'Maximum refinement rounds (default 4)', required: false },
+  { key: 'returnAlternatives', type: 'boolean', description: 'Whether to return ranked alternatives', required: false },
+  { key: 'model', type: 'string', description: 'Optional LLM model to use', required: false },
+  { key: 'temperature', type: 'number', description: 'Optional temperature for LLM', required: false },
+  { key: 'verbose', type: 'boolean', description: 'Whether to include verbose output', required: false },
+] as const;
+
 /** Descriptor for generate_linkedin_query_agent1 tool input. */
 export const GENERATE_LINKEDIN_QUERY_AGENT1_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
   { key: 'rawRequirement', type: 'string', description: 'Raw natural language search requirement', required: true },

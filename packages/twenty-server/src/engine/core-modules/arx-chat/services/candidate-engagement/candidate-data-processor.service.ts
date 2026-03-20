@@ -159,7 +159,7 @@ export class CandidateDataProcessorService {
 
           // Use OpenAI to extract structured data
           const completion = await openaiClient.chat.completions.create({
-            model: 'gpt-4o',
+            model: 'gpt-5.1-chat-latest',
             messages: [
               {
                 role: 'system',

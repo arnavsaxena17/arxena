@@ -8,7 +8,6 @@ import { ToolCallingAgents } from 'src/engine/core-modules/arx-chat/services/llm
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
-const modelName = 'gpt-4o';
 
 export class StageWiseClassification {
   constructor(
@@ -114,7 +113,7 @@ export class StageWiseClassification {
     
     try {
       const completion = await openAIclient.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'gpt-5.1-chat-latest',
         messages: messagesToLLM,
         response_format: zodResponseFormat(
           new ToolCallingAgents(

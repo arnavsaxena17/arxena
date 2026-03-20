@@ -133,7 +133,7 @@ Guidelines:
             model: 'gpt-4o-mini',
             messages,
             response_format: zodResponseFormat(AIFilterModelSchema, 'ai_filter_model'),
-            max_tokens: 2000,
+            // max_tokens: 2000,
             temperature: 0,
           });
 

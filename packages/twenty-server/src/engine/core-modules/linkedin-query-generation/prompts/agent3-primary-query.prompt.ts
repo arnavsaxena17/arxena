@@ -4,7 +4,7 @@ import {
   QueryType,
 } from 'src/engine/core-modules/linkedin-query-generation/types/linkedin-query-generation.types';
 
-const AGENT3_BASE = `You are an expert LinkedIn search query builder. You build the ideal (unlimited) primary query from master lists and determine if it must be broken into multiple queries.
+const AGENT3_BASE = `You are an expert LinkedIn search query builder. You build a high-recall primary query from master lists and determine if it must be broken into multiple queries.
 
 ## LinkedIn Term Limits (for later splitting)
 
@@ -15,13 +15,18 @@ const AGENT3_BASE = `You are an expert LinkedIn search query builder. You build 
 
 ## Your Task
 
-Build the **primary query** using ALL terms from the master lists for the filters this query type uses. For \`company\`, use **master_lists.companies.all_companies** (the expanded list), NOT parsed_requirement.target_companies (which may only list examples). **Set to \`null\` any filter this query type does not use** (so LinkedIn returns all candidates on that dimension):
+Build the **primary query** using the strongest terms from the master lists for the filters this query type uses. Prefer broader recall over overly narrow combinations. For \`company\`, use **master_lists.companies.all_companies** only when company filtering is clearly necessary, not just because example companies were mentioned. **Set to \`null\` any filter this query type does not use** (so LinkedIn returns all candidates on that dimension):
 - **Type A:** \`keywords\` = null (use job_title + company only).
 - **Type B:** \`job_title\` = null (use keywords + company only).
 - **Type C:** Use job_title + keywords; \`company\` = null only if master_lists.companies indicates no company filter (use_company_filter: false).
 - **Type D:** \`job_title\` = null, \`company\` = null (use keywords only).
 
-Do not limit terms yet. Then count terms and decide:
+Important recall rule:
+- Do **not** combine \`job_title\` and \`keywords\` when they mostly express the same signal.
+- If \`job_title\` and \`keywords\` overlap heavily, prefer leaving one field null and allowing later stages to create broader variants.
+- It is better to produce multiple broader query families than one narrow mixed query that collapses recall.
+
+Do not hard-trim terms yet. Then count terms and decide:
 - \`needs_splitting\`: true if keywords >6 OR job_title >6 OR combined >10 (count only non-null filters).
 - \`recommended_strategy\`: which strategy the next step should use (A–D)
 
@@ -68,7 +73,10 @@ export const buildAgent3UserPrompt = (
     ${JSON.stringify(masterLists, null, 2)}
 
     Instructions:
-    - Build one primary query using ALL terms from master lists. Use \`master_lists.keywords.all_terms\` and \`master_lists.job_titles.all_terms\` (the exhaustive lists) as OR expressions. For company filter, use master_lists.companies.all_companies in full — do not limit to parsed_requirement.target_companies. Do not factor common terms; Stage 4 will produce factored expressions and break into multiple queries if needed.
+    - Build one primary query using the strongest and least-redundant terms from the master lists. Do not force every available term into the same query.
+    - If title terms and keyword terms overlap semantically, prefer the field that carries clearer role signal and leave the overlapping field null.
+    - For company filter, use master_lists.companies.all_companies only when company membership is a meaningful hard constraint. If the companies are examples or likely to hurt recall, prefer \`company = null\`.
+    - Do not factor common terms; Stage 4 will produce factored expressions and later stages can create broader split variants if needed.
     - Count discrete terms in keywords and job_title; set term_counts and combined.
     - Set needs_splitting and recommended_strategy (A–D) for the next step.
     ${locationInstruction}Return the object with primary_query only.`;

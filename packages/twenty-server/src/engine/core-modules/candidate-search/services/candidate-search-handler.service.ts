@@ -37,6 +37,7 @@ import { SearchParameterGenerationService } from './search-parameter-generation.
 import { SearchResponseBuilderService } from './search-response-builder.service';
 import { StrategyExecutionService } from './strategy-execution.service';
 
+import { buildIterativeRequirement } from 'src/engine/core-modules/assistant/utils/assistant-iterative-query.utils';
 import type { TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 
 export type HandlerMessageStreamSendEvent = (
@@ -109,6 +110,84 @@ export class CandidateSearchHandlerService {
       error.name = 'AbortError';
       throw error;
     }
+  }
+
+  /**
+   * Validation/scoring need the recruiter's natural-language requirement, including
+   * iterative steering (POST .../iterative-query). Assistant search passes LinkedIn
+   * keywords as body.message; prefer effectiveRequirement (base + steering), then thread
+   * strategy, then chat.
+   */
+  private resolveRecruiterRequirementForValidationScoring(
+    thread: AssistantThreadContext,
+    fallbackSearchText: string,
+  ): string {
+    const ap = thread.assistantParameters;
+    const iterativeState =
+      ap?.iterativeQueryState && typeof ap.iterativeQueryState === 'object'
+        ? (ap.iterativeQueryState as Record<string, unknown>)
+        : undefined;
+
+    const effectiveFromIterative =
+      typeof iterativeState?.effectiveRequirement === 'string'
+        ? iterativeState.effectiveRequirement.trim()
+        : '';
+    if (effectiveFromIterative) {
+      return effectiveFromIterative;
+    }
+
+    const baseFromIterative =
+      typeof iterativeState?.baseRequirement === 'string'
+        ? iterativeState.baseRequirement.trim()
+        : '';
+    const steeringFromIterative = Array.isArray(iterativeState?.steeringHistory)
+      ? (iterativeState.steeringHistory as Array<Record<string, unknown>>)
+      : [];
+    if (baseFromIterative && steeringFromIterative.length > 0) {
+      return buildIterativeRequirement(baseFromIterative, steeringFromIterative);
+    }
+    if (baseFromIterative) {
+      return baseFromIterative;
+    }
+
+    const strategy = thread.assistantSearchStrategy;
+    if (strategy && typeof strategy === 'object') {
+      const s = strategy as Record<string, unknown>;
+      const effectiveFromStrategy =
+        typeof s.effectiveRequirement === 'string'
+          ? s.effectiveRequirement.trim()
+          : '';
+      if (effectiveFromStrategy) {
+        return effectiveFromStrategy;
+      }
+      const baseFromStrategy =
+        typeof s.baseRequirement === 'string' ? s.baseRequirement.trim() : '';
+      const steeringFromStrategy = Array.isArray(s.steeringHistory)
+        ? (s.steeringHistory as Array<Record<string, unknown>>)
+        : [];
+      if (baseFromStrategy && steeringFromStrategy.length > 0) {
+        return buildIterativeRequirement(baseFromStrategy, steeringFromStrategy);
+      }
+      if (baseFromStrategy) {
+        return baseFromStrategy;
+      }
+    }
+
+    const userMsgs =
+      thread.messages?.filter(
+        (m) =>
+          m.role === 'user' &&
+          typeof m.content === 'string' &&
+          m.content.trim().length > 0 &&
+          !m.content.startsWith('Steer query set:'),
+      ) ?? [];
+    const lastUser = userMsgs[userMsgs.length - 1];
+    const fromChat = lastUser?.content?.trim() ?? '';
+    if (fromChat) {
+      return fromChat;
+    }
+
+    return fallbackSearchText;
   }
 
   async handleSearchParametersAndResultsGenerationStream(
@@ -734,6 +813,16 @@ export class CandidateSearchHandlerService {
           body.message,
           apiToken,
         );
+        const threadForRequirement =
+          await this.assistantThreadService.getAssistantThreadContext(
+            body.assistantThreadId,
+            apiToken,
+          );
+        const requirementForScoring =
+          this.resolveRecruiterRequirementForValidationScoring(
+            threadForRequirement,
+            body.message,
+          );
         response = await this.handleSearchParametersAndResultsGenerationStream(
           body.message,
           cleanedQuery,
@@ -742,7 +831,7 @@ export class CandidateSearchHandlerService {
           body.searchType ?? 'classic',
           body.searchCategory ?? 'people',
           apiToken,
-          body.message,
+          requirementForScoring,
           sendEvent as (event: string, data: unknown) => void,
           body.includeJd !== false,
           false,

@@ -13,6 +13,8 @@ export type AssistantThreadContext = {
     pendingClarification?: { questions: string[]; timestamp?: string };
     [key: string]: unknown;
   };
+  /** Present on GraphQL thread; used e.g. for baseRequirement after iterative steering */
+  assistantSearchStrategy?: Record<string, unknown>;
   enrichmentConfigs?: Array<{
     id: string;
     selectedModel?: string;
@@ -63,6 +65,11 @@ export class AssistantThreadService {
       assistantParameters:
         node.assistantParameters && typeof node.assistantParameters === 'object'
           ? (node.assistantParameters as AssistantThreadContext['assistantParameters'])
+          : undefined,
+      assistantSearchStrategy:
+        node.assistantSearchStrategy &&
+        typeof node.assistantSearchStrategy === 'object'
+          ? (node.assistantSearchStrategy as Record<string, unknown>)
           : undefined,
       enrichmentConfigs,
     };

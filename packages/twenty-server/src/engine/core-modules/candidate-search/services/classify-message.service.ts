@@ -50,12 +50,12 @@ export class ClassifyMessageService {
       const userPrompt = prompt.user.replace('{{message}}', message);
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'gpt-5.1-chat-latest',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-        temperature: 0.1,
+        // temperature: 0.1,
         response_format: zodResponseFormat(
           messageClassificationSchema,
           'messageClassification',

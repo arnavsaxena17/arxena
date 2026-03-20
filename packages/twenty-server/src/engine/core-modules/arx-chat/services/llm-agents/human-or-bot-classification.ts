@@ -23,7 +23,7 @@ export class HumanLikeLLM {
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const { openAIclient } =
         await this.workspaceQueryService.initializeLLMClients(workspaceId);
-      const modelName = 'gpt-4o';
+      const modelName = 'gpt-5.1-chat-latest';
 
       if (responseMessage?.content != null && responseMessage?.content != '') {
         const checkBotTypeMessages: ChatCompletionMessageParam[] = [

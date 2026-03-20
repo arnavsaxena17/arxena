@@ -103,7 +103,7 @@ async function cleanupQuery(
   rawQuery: string
 ): Promise<{ cleanedQuery: string; reasoning: string | null }> {
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o',
+    model: 'gpt-5.1-chat-latest',
     messages: [
       { role: 'system', content: QUERY_CLEANUP_SYSTEM },
       { role: 'user', content: getUserPrompt(rawQuery) },

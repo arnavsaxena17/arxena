@@ -239,7 +239,7 @@ export class RecruiterMessageService {
             { role: 'user' as const, content: this.buildUserPrompt(userMessage, conversationSummaryParts) },
           ],
           zodResponseFormat(this.plannerSchema, 'recruiterPlanner'),
-          'gpt-4o',
+          'gpt-5.1-chat-latest',
         ),
       {
         chunkEventName: 'text',

@@ -81,10 +81,18 @@ export type AssistantChatRequestBody = {
   }>;
 };
 
+export type AssistantIterativeQueryRequestBody = {
+  rawRequirement?: string;
+  steeringMessage?: string;
+  queryIpLocation?: string;
+  maxIterations?: number;
+};
+
 export type AssistantThreadMessage = {
   role: 'user' | 'assistant';
   content: string;
   toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
+  toolResults?: Array<{ content: string }>;
   tableReferences?: AssistantThreadTableReference[];
 };
 
@@ -120,6 +128,8 @@ export type AssistantThreadRecord = {
   name: string;
   workspaceId: string;
   messages: AssistantThreadMessage[];
+  assistantParameters?: Record<string, unknown>;
+  assistantSearchStrategy?: Record<string, unknown>;
   lastTableData: AssistantThreadTableData | null;
   createdAt: Date;
   updatedAt: Date;

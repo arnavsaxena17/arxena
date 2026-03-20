@@ -22,7 +22,7 @@ import { MessagingControls } from 'src/engine/core-modules/arx-chat/services/mes
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
-const modelName = 'gpt-4o';
+const modelName = 'gpt-5.1-chat-latest';
 // import { Transformations } from '../candidate-engagement/transformations';
 
 export class OpenAIArxMultiStepClient {

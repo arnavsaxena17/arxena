@@ -68,6 +68,7 @@ export class LinkedinQueryGenerationService {
     rawRequirement: string,
     options?: LlmOptions,
   ): Promise<ParsedRequirement> {
+    console.log(`Running Agent 1 with raw requirement: ${rawRequirement}`);
     const systemPrompt = AGENT1_SYSTEM_PROMPT;
     const userPrompt = buildAgent1UserPrompt(rawRequirement, options?.queryIpLocation);
     
@@ -98,6 +99,8 @@ export class LinkedinQueryGenerationService {
     parsedRequirement: ParsedRequirement,
     options?: LlmOptions,
   ): Promise<MasterLists> {
+
+    console.log(`Running Agent 2 with parsed requirement: ${JSON.stringify(parsedRequirement, null, 2)}`);
     const systemPrompt = getAgent2SystemPrompt(parsedRequirement.query_type);
     const userPrompt = buildAgent2UserPrompt(parsedRequirement, options?.queryIpLocation);
     

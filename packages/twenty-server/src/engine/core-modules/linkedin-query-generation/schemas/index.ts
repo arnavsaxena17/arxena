@@ -19,4 +19,16 @@ export {
     type SearchQuery,
     type TermCounts
 } from './search-query.schema';
-
+export {
+    targetProfileSetSchema,
+    type TargetProfileSet,
+    type TargetProfile,
+} from './iterative-target-profile.schema';
+export {
+    queryVerificationResultSchema,
+    type QueryVerificationResultSchema,
+} from './iterative-query-verifier.schema';
+export {
+    iterativeQueryRefinerSchema,
+    type IterativeQueryRefinerResult,
+} from './iterative-query-refiner.schema';

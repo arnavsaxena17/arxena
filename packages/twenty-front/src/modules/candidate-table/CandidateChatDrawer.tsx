@@ -60,18 +60,26 @@ const MessageContainer = styled.div`
   flex-direction: column;
 `;
 
-const MessageBubble = styled.div<{ isSent: boolean }>`
+const MessageBubble = styled.div<{ isSent: boolean; deliveryFailed?: boolean }>`
   max-width: 70%;
   margin: ${props => props.isSent ? '8px 8px 8px auto' : '8px'};
   padding: 12px 16px;
   border-radius: 16px;
-  background-color: ${props => props.isSent ? '#2563eb' : '#f3f4f6'};
+  background-color: ${props => {
+    if (props.deliveryFailed && props.isSent) {
+      return '#1e40af';
+    }
+    return props.isSent ? '#2563eb' : '#f3f4f6';
+  }};
   color: ${props => props.isSent ? 'white' : 'inherit'};
   font-size: 14px;
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
   position: relative;
+  border: ${props =>
+    props.deliveryFailed ? `2px solid ${props.theme.color.red}` : 'none'};
+  box-sizing: border-box;
 
   ${props => props.isSent ? `
     border-bottom-right-radius: 4px;
@@ -750,9 +758,13 @@ export const CandidateChatDrawer = React.memo(() => {
         },
       );
       
-      // Check if the response indicates failure
       if (response.data.status === 'failed') {
-        showSnackbar(`Failed to send message: ${response.data.message || 'Unknown error'}`, 'error');
+        const detail =
+          typeof response.data.message === 'string'
+            ? response.data.message
+            : 'Unknown error';
+        showSnackbar(`Failed to send message: ${detail}`, 'error');
+        await fetchMessages();
         return;
       }
       
@@ -783,7 +795,17 @@ export const CandidateChatDrawer = React.memo(() => {
       showSnackbar('Message sent successfully', 'success');
     } catch (error) {
       console.error('Error sending message:', error);
-      showSnackbar('Failed to send message', 'error');
+      const ax = axios.isAxiosError(error) ? error : null;
+      const body = ax?.response?.data as
+        | { message?: string; status?: string }
+        | undefined;
+      const serverMsg =
+        typeof body?.message === 'string' ? body.message : undefined;
+      showSnackbar(
+        serverMsg || (error instanceof Error ? error.message : 'Failed to send message'),
+        'error',
+      );
+      await fetchMessages();
     } finally {
       setIsSendingMessage(false);
     }
@@ -894,12 +916,13 @@ export const CandidateChatDrawer = React.memo(() => {
                 const isSent = message.name === 'botMessage';
                 const status = message.whatsappDeliveryStatus || 'sent';
                 const isDoNotRespond = isSent && isDoNotRespondMessage(message.message);
+                const deliveryFailed = isSent && status === 'failed';
                 return (
                   <MessageGroup key={message.id}>
                     {isDoNotRespond ? (
                       <DoNotRespondBubble>AI chose not to respond</DoNotRespondBubble>
                     ) : (
-                      <MessageBubble isSent={isSent}>
+                      <MessageBubble isSent={isSent} deliveryFailed={deliveryFailed}>
                         {message.message}
                       </MessageBubble>
                     )}

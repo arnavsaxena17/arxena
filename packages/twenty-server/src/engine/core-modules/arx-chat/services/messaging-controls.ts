@@ -3,6 +3,7 @@ import fs from 'fs';
 import mime from 'mime-types';
 import path from 'path';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
+import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
 import { LinkedinUnipileMessagingService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile/linkedin-unipile-messaging.service';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
@@ -12,13 +13,13 @@ import { WhatsappUnipileMessagingService } from 'src/engine/core-modules/arx-cha
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
-  Attachment,
-  AttachmentMessageObject,
-  CandidateNode,
-  ChatControlsObjType,
-  ChatHistoryItem,
-  Job,
-  whatappUpdateMessageObjType
+    Attachment,
+    AttachmentMessageObject,
+    CandidateNode,
+    ChatControlsObjType,
+    ChatHistoryItem,
+    Job,
+    whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -27,6 +28,71 @@ export class MessagingControls {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
+
+  /**
+   * Writes a failed outbound row to WhatsApp message history so the candidate chat drawer
+   * shows the attempt and reason after refresh (skips engagement side-effects).
+   */
+  private async persistFailedOutboundChatMessage(
+    candidate: CandidateNode | undefined,
+    whatappUpdateMessageObj: whatappUpdateMessageObjType,
+    apiToken: string,
+    failureReason: string,
+  ): Promise<void> {
+    if (!candidate?.id) {
+      return;
+    }
+    const attempted =
+      whatappUpdateMessageObj.messages[0]?.content ||
+      whatappUpdateMessageObj.messages[0]?.text ||
+      '';
+    if (!String(attempted).trim()) {
+      return;
+    }
+    const reason = failureReason?.trim() || 'Send failed';
+    try {
+      const updateChat = UpdateChat.create(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+      );
+      const failedObj: whatappUpdateMessageObjType = {
+        ...whatappUpdateMessageObj,
+        id: uuidv4(),
+        messages: [
+          {
+            content: `${String(attempted).trim()}\n\n— Send failed: ${reason}`,
+          },
+        ],
+        whatsappDeliveryStatus: 'failed',
+        whatsappMessageId: `send_failed_${uuidv4()}`,
+      };
+      await updateChat.updateCandidateEngagementDataInTable(
+        candidate,
+        failedObj,
+        apiToken,
+        true,
+      );
+    } catch (err) {
+      console.error('persistFailedOutboundChatMessage:', err);
+    }
+  }
+
+  private async failSendAndPersist(
+    candidate: CandidateNode | undefined,
+    whatappUpdateMessageObj: whatappUpdateMessageObjType,
+    apiToken: string,
+    detail: string | undefined,
+    fallbackUserMessage: string,
+  ): Promise<{ status: 'failed'; message: string }> {
+    const message = detail?.trim() ? detail.trim() : fallbackUserMessage;
+    await this.persistFailedOutboundChatMessage(
+      candidate,
+      whatappUpdateMessageObj,
+      apiToken,
+      message,
+    );
+    return { status: 'failed', message };
+  }
   async sendWhatsappMessageToCandidate(
     messageText: string,
     candidate: CandidateNode,
@@ -251,9 +317,14 @@ export class MessagingControls {
           apiToken,
         );
         
-        // Check if Baileys API returned a failure status
         if (response?.status === 'failed') {
-          return { status: 'failed', message: 'Failed to send message via Baileys' };
+          return this.failSendAndPersist(
+            candidate,
+            whatappUpdateMessageObj,
+            apiToken,
+            response.message,
+            'Failed to send message via Baileys',
+          );
         }
         return { status: 'success' };
       } else if (whatsapp_key === 'whatsapp-web') {
@@ -284,9 +355,15 @@ export class MessagingControls {
         );
 
         if (response?.status === 'failed') {
-          return { status: 'failed', message: 'Failed to send message via LinkedIn Unipile' };
+          return this.failSendAndPersist(
+            candidate,
+            whatappUpdateMessageObj,
+            apiToken,
+            response.message,
+            'Failed to send message via LinkedIn Unipile',
+          );
         }
-        
+
         return { status: 'success' };
       } else if (whatsapp_key === 'linkedin-premium') {
         const response = await new LinkedinUnipileMessagingService(
@@ -301,9 +378,14 @@ export class MessagingControls {
           apiToken,
         );
         
-        // Check if LinkedIn API returned a failure status
         if (response?.status === 'failed') {
-          return { status: 'failed', message: 'Failed to send message via LinkedIn Unipile' };
+          return this.failSendAndPersist(
+            candidate,
+            whatappUpdateMessageObj,
+            apiToken,
+            response.message,
+            'Failed to send message via LinkedIn Unipile',
+          );
         }
         return { status: 'success' };
       } else if (whatsapp_key === 'linkedin-inmail') {
@@ -319,9 +401,14 @@ export class MessagingControls {
           apiToken,
         );
         
-        // Check if LinkedIn InMail API returned a failure status
         if (response?.status === 'failed') {
-          return { status: 'failed', message: 'Failed to send InMail via LinkedIn Unipile' };
+          return this.failSendAndPersist(
+            candidate,
+            whatappUpdateMessageObj,
+            apiToken,
+            response.message,
+            'Failed to send InMail via LinkedIn Unipile',
+          );
         }
         return { status: 'success' };
       } else if (whatsapp_key === 'whatsapp-unipile') {
@@ -337,18 +424,37 @@ export class MessagingControls {
           apiToken,
         );
         
-        // Check if WhatsApp Unipile API returned a failure status
         if (response?.status === 'failed') {
-          return { status: 'failed', message: 'Failed to send message via WhatsApp Unipile' };
+          return this.failSendAndPersist(
+            candidate,
+            whatappUpdateMessageObj,
+            apiToken,
+            response.message,
+            'Failed to send message via WhatsApp Unipile',
+          );
         }
         return { status: 'success' };
       } else {
         console.log('No valid whatsapp API selected');
-        return { status: 'failed', message: 'No valid WhatsApp API selected' };
+        return this.failSendAndPersist(
+          candidate,
+          whatappUpdateMessageObj,
+          apiToken,
+          'No valid WhatsApp API selected',
+          'No valid WhatsApp API selected',
+        );
       }
     } catch (error) {
       console.log('Error in sendWhatsappMessage:', error);
-      return { status: 'failed', message: 'Error sending WhatsApp message' };
+      const msg =
+        error instanceof Error ? error.message : 'Error sending WhatsApp message';
+      await this.persistFailedOutboundChatMessage(
+        candidate,
+        whatappUpdateMessageObj,
+        apiToken,
+        msg,
+      );
+      return { status: 'failed', message: msg };
     }
   }
 
@@ -506,7 +612,12 @@ export class MessagingControls {
       );
       
       if (response?.status === 'failed') {
-        return { status: 'failed', message: 'Failed to send attachment via WhatsApp Unipile' };
+        return {
+          status: 'failed',
+          message:
+            response.message?.trim() ||
+            'Failed to send attachment via WhatsApp Unipile',
+        };
       }
       return { status: 'success' };
     }

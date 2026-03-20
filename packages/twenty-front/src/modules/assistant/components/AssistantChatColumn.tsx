@@ -971,6 +971,7 @@ export const AssistantChatColumn = ({
         <McpClientChat
           key={currentThread.id}
           messages={currentThread.messages}
+          assistantParameters={currentThread.assistantParameters}
           onMessagesChange={onMessagesChange}
           onTableData={onTableData}
           threadId={threadsLoadedFromBackend ? currentThreadId || undefined : undefined}
@@ -1010,4 +1011,3 @@ export const AssistantChatColumn = ({
     </StyledChatPanel>
   );
 };
-
