@@ -2,27 +2,27 @@ import { Injectable } from '@nestjs/common';
 
 import { isDefined } from 'class-validator';
 import {
-    QueryRunner,
-    Table,
-    TableColumn,
-    TableForeignKey,
-    TableIndex,
-    TableUnique,
+  QueryRunner,
+  Table,
+  TableColumn,
+  TableForeignKey,
+  TableIndex,
+  TableUnique,
 } from 'typeorm';
 
 import { IndexType } from 'src/engine/metadata-modules/index-metadata/index-metadata.entity';
 import {
-    WorkspaceMigrationColumnAction,
-    WorkspaceMigrationColumnActionType,
-    WorkspaceMigrationColumnAlter,
-    WorkspaceMigrationColumnCreate,
-    WorkspaceMigrationColumnCreateRelation,
-    WorkspaceMigrationColumnDropRelation,
-    WorkspaceMigrationForeignTable,
-    WorkspaceMigrationIndexAction,
-    WorkspaceMigrationIndexActionType,
-    WorkspaceMigrationTableAction,
-    WorkspaceMigrationTableActionType,
+  WorkspaceMigrationColumnAction,
+  WorkspaceMigrationColumnActionType,
+  WorkspaceMigrationColumnAlter,
+  WorkspaceMigrationColumnCreate,
+  WorkspaceMigrationColumnCreateRelation,
+  WorkspaceMigrationColumnDropRelation,
+  WorkspaceMigrationForeignTable,
+  WorkspaceMigrationIndexAction,
+  WorkspaceMigrationIndexActionType,
+  WorkspaceMigrationTableAction,
+  WorkspaceMigrationTableActionType,
 } from 'src/engine/metadata-modules/workspace-migration/workspace-migration.entity';
 import { WorkspaceMigrationService } from 'src/engine/metadata-modules/workspace-migration/workspace-migration.service';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
@@ -162,7 +162,11 @@ export class WorkspaceMigrationRunnerService {
           schemaName,
           tableMigration.name,
         );
-        await queryRunner.dropTable(`${schemaName}.${tableMigration.name}`);
+        // Use SQL instead of TypeORM dropTable: TypeORM drops indexes from stale
+        // metadata and fails with "index does not exist" when DB drifted.
+        await queryRunner.query(
+          `DROP TABLE IF EXISTS "${schemaName}"."${tableMigration.name}" CASCADE`,
+        );
         break;
       case 'create_foreign_table':
         await this.createForeignTable(

@@ -11,8 +11,8 @@ import { ObjectMetadataEntity } from 'src/engine/metadata-modules/object-metadat
 import { RelationMetadataEntity } from 'src/engine/metadata-modules/relation-metadata/relation-metadata.entity';
 import { WorkspaceMigrationEntity } from 'src/engine/metadata-modules/workspace-migration/workspace-migration.entity';
 import {
-  RelationMetadataIndexByObjectRole,
-  WorkspaceMigrationObjectFactory,
+    RelationMetadataIndexByObjectRole,
+    WorkspaceMigrationObjectFactory,
 } from 'src/engine/workspace-manager/workspace-migration-builder/factories/workspace-migration-object.factory';
 import { WorkspaceObjectComparator } from 'src/engine/workspace-manager/workspace-sync-metadata/comparators/workspace-object.comparator';
 import { StandardObjectFactory } from 'src/engine/workspace-manager/workspace-sync-metadata/factories/standard-object.factory';
