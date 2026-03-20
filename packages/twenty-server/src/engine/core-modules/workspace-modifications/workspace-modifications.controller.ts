@@ -1,14 +1,16 @@
 import {
-  BadRequestException,
-  Body,
-  Controller,
-  ForbiddenException,
-  Get,
-  Headers,
-  Param,
-  Post,
-  Req,
-  UseGuards,
+    BadRequestException,
+    Body,
+    Controller,
+    ForbiddenException,
+    Get,
+    Headers,
+    HttpException,
+    HttpStatus,
+    Param,
+    Post,
+    Req,
+    UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -149,13 +151,25 @@ export class WorkspaceModificationsController {
     await this.workspaceQueryService.updateWorkspaceKeys(workspace.id, {
       is_org_chart_enabled: 'false',
     });
-    const result = await this.metadataUpdateService.updateMetadata(
-      token,
-      origin,
-    );
-    return {
-      ...result,
-    };
+    try {
+      const result = await this.metadataUpdateService.updateMetadata(
+        token,
+        origin,
+      );
+      return {
+        success: true,
+        ...result,
+      };
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Metadata update failed';
+      throw new HttpException(
+        { success: false, message },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Post('create-metadata-structure')
@@ -166,18 +180,49 @@ export class WorkspaceModificationsController {
   ) {
     const token = authHeader?.split(' ')[1];
     const origin = (req.headers.origin as string) || '';
-    await this.workspaceQueryService.createMetadataStructure(token, origin);
-    return { message: 'Metadata structure creation completed' };
+    try {
+      await this.workspaceQueryService.createMetadataStructure(token, origin);
+      return {
+        success: true,
+        message: 'Metadata structure creation completed',
+      };
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Metadata structure creation failed';
+      throw new HttpException(
+        { success: false, message },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Post('update-metadata-structure')
   @UseGuards(JwtAuthGuard)
-  async updateMetadataStructure(@Headers('authorization') authHeader: string, @Req() req: Request) {
+  async updateMetadataStructure(
+    @Headers('authorization') authHeader: string,
+    @Req() req: Request,
+  ) {
     const token = authHeader.split(' ')[1];
     const origin = req.headers.origin;
-    console.log("Updating metadata structure");
-    const result = await this.metadataUpdateService.updateMetadata(token, origin || '');
-    return result;
+    console.log('Updating metadata structure');
+    try {
+      const result = await this.metadataUpdateService.updateMetadata(
+        token,
+        origin || '',
+      );
+      return { success: true, ...result };
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Metadata structure update failed';
+      throw new HttpException(
+        { success: false, message },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Get('user')

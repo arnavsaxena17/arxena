@@ -205,7 +205,16 @@ export class UnipileWebhookService {
    */
   private async handleMessageWebhook(payload: UnipileMessageWebhook): Promise<void> {
     const { account_id, account_type, event, chat_id, message_id, message, sender, timestamp } = payload;
-    
+
+    // WhatsApp group chats: Unipile lists every participant in `attendees`; more than four means a group — skip logging and CRM processing.
+    if (
+      event === 'message_received' &&
+      account_type === 'WHATSAPP' &&
+      payload.attendees.length > 4
+    ) {
+      return;
+    }
+
     this.logger.log(`Message event: ${event} in chat ${chat_id} from ${sender.attendee_name}`);
 
     // TODO: Process message based on event type

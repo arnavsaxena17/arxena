@@ -10,7 +10,10 @@ import { WorkspaceSyncContext } from 'src/engine/workspace-manager/workspace-syn
 import { ObjectMetadataEntity } from 'src/engine/metadata-modules/object-metadata/object-metadata.entity';
 import { RelationMetadataEntity } from 'src/engine/metadata-modules/relation-metadata/relation-metadata.entity';
 import { WorkspaceMigrationEntity } from 'src/engine/metadata-modules/workspace-migration/workspace-migration.entity';
-import { WorkspaceMigrationObjectFactory } from 'src/engine/workspace-manager/workspace-migration-builder/factories/workspace-migration-object.factory';
+import {
+  RelationMetadataIndexByObjectRole,
+  WorkspaceMigrationObjectFactory,
+} from 'src/engine/workspace-manager/workspace-migration-builder/factories/workspace-migration-object.factory';
 import { WorkspaceObjectComparator } from 'src/engine/workspace-manager/workspace-sync-metadata/comparators/workspace-object.comparator';
 import { StandardObjectFactory } from 'src/engine/workspace-manager/workspace-sync-metadata/factories/standard-object.factory';
 import { WorkspaceMetadataUpdaterService } from 'src/engine/workspace-manager/workspace-sync-metadata/services/workspace-metadata-updater.service';
@@ -58,7 +61,12 @@ export class WorkspaceSyncObjectMetadataService {
         where: {
           workspaceId: context.workspaceId,
         },
-        relations: ['toObjectMetadata', 'toFieldMetadata'],
+        relations: [
+          'toObjectMetadata',
+          'toFieldMetadata',
+          'fromObjectMetadata',
+          'fromFieldMetadata',
+        ],
       });
 
     const relationMetadataByFromObjectMetadataId: Record<
@@ -78,6 +86,29 @@ export class WorkspaceSyncObjectMetadataService {
       },
       {} as Record<string, RelationMetadataEntity[]>,
     );
+
+    const relationMetadataByToObjectMetadataId: Record<
+      string,
+      RelationMetadataEntity[]
+    > = originalRelationMetadataCollection.reduce(
+      (acc, relationMetadata) => {
+        const toObjectMetadataId = relationMetadata.toObjectMetadataId;
+
+        if (!acc[toObjectMetadataId]) {
+          acc[toObjectMetadataId] = [];
+        }
+
+        acc[toObjectMetadataId].push(relationMetadata);
+
+        return acc;
+      },
+      {} as Record<string, RelationMetadataEntity[]>,
+    );
+
+    const relationMetadataIndex: RelationMetadataIndexByObjectRole = {
+      byFromObjectMetadataId: relationMetadataByFromObjectMetadataId,
+      byToObjectMetadataId: relationMetadataByToObjectMetadataId,
+    };
 
     // Create standard object metadata collection
     const standardObjectMetadataCollection = this.standardObjectFactory.create(
@@ -161,7 +192,7 @@ export class WorkspaceSyncObjectMetadataService {
       await this.workspaceMigrationObjectFactory.create(
         storage.objectMetadataDeleteCollection,
         WorkspaceMigrationBuilderAction.DELETE,
-        relationMetadataByFromObjectMetadataId,
+        relationMetadataIndex,
       );
 
     this.logger.log('Saving migrations');

@@ -8,6 +8,7 @@ export type RelationToDelete = {
   toObjectMetadataId: string;
   fromObjectName: string;
   toObjectName: string;
+  fromObjectMetadataIsCustom: boolean;
   toFieldMetadataIsCustom: boolean;
   toObjectMetadataIsCustom: boolean;
   direction: string;

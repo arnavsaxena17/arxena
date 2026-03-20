@@ -4,6 +4,7 @@ import { FieldMetadataType } from 'twenty-shared';
 
 import { WorkspaceMigrationBuilderAction } from 'src/engine/workspace-manager/workspace-migration-builder/interfaces/workspace-migration-builder-action.interface';
 
+import { computeColumnName } from 'src/engine/metadata-modules/field-metadata/utils/compute-column-name.util';
 import { ObjectMetadataEntity } from 'src/engine/metadata-modules/object-metadata/object-metadata.entity';
 import { RelationMetadataEntity } from 'src/engine/metadata-modules/relation-metadata/relation-metadata.entity';
 import { generateMigrationName } from 'src/engine/metadata-modules/workspace-migration/utils/generate-migration-name.util';
@@ -15,6 +16,11 @@ import {
 } from 'src/engine/metadata-modules/workspace-migration/workspace-migration.entity';
 import { WorkspaceMigrationFactory } from 'src/engine/metadata-modules/workspace-migration/workspace-migration.factory';
 import { computeObjectTargetTable } from 'src/engine/utils/compute-object-target-table.util';
+
+export type RelationMetadataIndexByObjectRole = {
+  byFromObjectMetadataId: Record<string, RelationMetadataEntity[]>;
+  byToObjectMetadataId: Record<string, RelationMetadataEntity[]>;
+};
 
 export interface ObjectMetadataUpdate {
   current: ObjectMetadataEntity;
@@ -40,10 +46,7 @@ export class WorkspaceMigrationObjectFactory {
   async create(
     objectMetadataCollection: ObjectMetadataEntity[],
     action: WorkspaceMigrationBuilderAction.DELETE,
-    relationMetadataByFromObjectMetadataId: Record<
-      string,
-      RelationMetadataEntity[]
-    >,
+    relationMetadataIndex: RelationMetadataIndexByObjectRole,
   ): Promise<Partial<WorkspaceMigrationEntity>[]>;
 
   async create(
@@ -51,10 +54,7 @@ export class WorkspaceMigrationObjectFactory {
       | ObjectMetadataEntity[]
       | ObjectMetadataUpdate[],
     action: WorkspaceMigrationBuilderAction,
-    relationMetadataByFromObjectMetadataId?: Record<
-      string,
-      RelationMetadataEntity[]
-    >,
+    relationMetadataIndex?: RelationMetadataIndexByObjectRole,
   ): Promise<Partial<WorkspaceMigrationEntity>[]> {
     switch (action) {
       case WorkspaceMigrationBuilderAction.CREATE:
@@ -68,10 +68,7 @@ export class WorkspaceMigrationObjectFactory {
       case WorkspaceMigrationBuilderAction.DELETE:
         return this.deleteObjectMigration(
           objectMetadataCollectionOrObjectMetadataUpdateCollection as ObjectMetadataEntity[],
-          relationMetadataByFromObjectMetadataId as Record<
-            string,
-            RelationMetadataEntity[]
-          >,
+          relationMetadataIndex as RelationMetadataIndexByObjectRole,
         );
       default:
         return [];
@@ -153,23 +150,19 @@ export class WorkspaceMigrationObjectFactory {
 
   private async deleteObjectMigration(
     objectMetadataCollection: ObjectMetadataEntity[],
-    relationMetadataByFromObjectMetadataId: Record<
-      string,
-      RelationMetadataEntity[]
-    >,
+    relationMetadataIndex: RelationMetadataIndexByObjectRole,
   ): Promise<Partial<WorkspaceMigrationEntity>[]> {
     const workspaceMigrations: Partial<WorkspaceMigrationEntity>[] = [];
 
     for (const objectMetadata of objectMetadataCollection) {
-      const relationMetadataCollection =
-        relationMetadataByFromObjectMetadataId[objectMetadata.id];
+      const relationsWhereDeletedObjectIsFrom =
+        relationMetadataIndex.byFromObjectMetadataId[objectMetadata.id] ?? [];
+      const relationsWhereDeletedObjectIsTo =
+        relationMetadataIndex.byToObjectMetadataId[objectMetadata.id] ?? [];
 
-      workspaceMigrations.push({
-        workspaceId: objectMetadata.workspaceId,
-        name: generateMigrationName(`delete-${objectMetadata.nameSingular}`),
-        isCustom: false,
-        migrations: [
-          ...(relationMetadataCollection ?? []).map(
+      const dropIncomingOrOutgoingForeignKeyMigrations: WorkspaceMigrationTableAction[] =
+        [
+          ...relationsWhereDeletedObjectIsFrom.map(
             (relationMetadata) =>
               ({
                 name: computeObjectTargetTable(
@@ -179,11 +172,40 @@ export class WorkspaceMigrationObjectFactory {
                 columns: [
                   {
                     action: WorkspaceMigrationColumnActionType.DROP_FOREIGN_KEY,
-                    columnName: `${relationMetadata.toFieldMetadata.name}Id`,
+                    columnName: computeColumnName(
+                      relationMetadata.toFieldMetadata.name,
+                      { isForeignKey: true },
+                    ),
                   },
                 ],
               }) satisfies WorkspaceMigrationTableAction,
           ),
+          ...relationsWhereDeletedObjectIsTo.map(
+            (relationMetadata) =>
+              ({
+                name: computeObjectTargetTable(
+                  relationMetadata.fromObjectMetadata,
+                ),
+                action: WorkspaceMigrationTableActionType.ALTER,
+                columns: [
+                  {
+                    action: WorkspaceMigrationColumnActionType.DROP_FOREIGN_KEY,
+                    columnName: computeColumnName(
+                      relationMetadata.fromFieldMetadata.name,
+                      { isForeignKey: true },
+                    ),
+                  },
+                ],
+              }) satisfies WorkspaceMigrationTableAction,
+          ),
+        ];
+
+      workspaceMigrations.push({
+        workspaceId: objectMetadata.workspaceId,
+        name: generateMigrationName(`delete-${objectMetadata.nameSingular}`),
+        isCustom: false,
+        migrations: [
+          ...dropIncomingOrOutgoingForeignKeyMigrations,
           {
             name: computeObjectTargetTable(objectMetadata),
             action: WorkspaceMigrationTableActionType.DROP,

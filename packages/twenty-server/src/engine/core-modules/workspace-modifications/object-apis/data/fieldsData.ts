@@ -2022,7 +2022,8 @@ export function getFieldsData(
         name: 'assistantMode',
         objectMetadataId: objectsNameIdMap.assistantThread,
         type: 'SELECT',
-        defaultValue: 'permissioned',
+        // SELECT defaults must satisfy IsQuotedString: literal single quotes around the option value
+        defaultValue: "'permissioned'",
         options: [
           {
             color: 'green',

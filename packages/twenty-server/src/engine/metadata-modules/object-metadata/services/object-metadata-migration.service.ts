@@ -190,6 +190,7 @@ export class ObjectMetadataMigrationService {
         toObjectMetadataId: relation.toObjectMetadata.id,
         fromObjectName: relation.fromObjectMetadata.nameSingular,
         toObjectName: relation.toObjectMetadata.nameSingular,
+        fromObjectMetadataIsCustom: relation.fromObjectMetadata.isCustom,
         toFieldMetadataIsCustom: relation.toFieldMetadata.isCustom,
         toObjectMetadataIsCustom: relation.toObjectMetadata.isCustom,
         direction:
@@ -243,6 +244,33 @@ export class ObjectMetadataMigrationService {
                   action: WorkspaceMigrationColumnActionType.DROP,
                   columnName: computeColumnName(
                     relationToDelete.toFieldMetadataName,
+                    { isForeignKey: true },
+                  ),
+                } satisfies WorkspaceMigrationColumnDrop,
+              ],
+            },
+          ],
+        );
+      }
+
+      if (relationToDelete.direction === 'to') {
+        await this.workspaceMigrationService.createCustomMigration(
+          generateMigrationName(
+            `delete-${relationToDelete.fromObjectName}-${relationToDelete.toObjectName}`,
+          ),
+          workspaceId,
+          [
+            {
+              name: computeTableName(
+                relationToDelete.fromObjectName,
+                relationToDelete.fromObjectMetadataIsCustom,
+              ),
+              action: WorkspaceMigrationTableActionType.ALTER,
+              columns: [
+                {
+                  action: WorkspaceMigrationColumnActionType.DROP,
+                  columnName: computeColumnName(
+                    relationToDelete.fromFieldMetadataName,
                     { isForeignKey: true },
                   ),
                 } satisfies WorkspaceMigrationColumnDrop,

@@ -13,6 +13,28 @@ const StyledButtonContainer = styled.div`
   margin-top: 16px;
 `;
 
+type NestErrorBody = {
+  message?: string | string[];
+  success?: boolean;
+};
+
+const messageFromFailedResponse = async (
+  response: Response,
+  fallback: string,
+): Promise<string> => {
+  try {
+    const body = (await response.json()) as NestErrorBody;
+    if (body.message !== undefined) {
+      return Array.isArray(body.message)
+        ? body.message.join(', ')
+        : body.message;
+    }
+  } catch {
+    // ignore JSON parse errors
+  }
+  return fallback;
+};
+
 const StyledButton = styled.button<{
   variant?: 'primary' | 'secondary';
   submitted?: boolean;
@@ -187,7 +209,12 @@ export const MetadataStructureSection = () => {
       );
 
       if (!response.ok) {
-        throw new Error('Failed to upgrade to Engagement Workflows');
+        throw new Error(
+          await messageFromFailedResponse(
+            response,
+            'Failed to upgrade to Engagement Workflows',
+          ),
+        );
       }
 
       enqueueSnackBar('Upgraded to Engagement Workflows successfully', {
@@ -227,7 +254,12 @@ export const MetadataStructureSection = () => {
       );
 
       if (!response.ok) {
-        throw new Error('Failed to create metadata structure');
+        throw new Error(
+          await messageFromFailedResponse(
+            response,
+            'Failed to create metadata structure',
+          ),
+        );
       }
 
       enqueueSnackBar('Started metadata structure creation process', {
@@ -265,7 +297,12 @@ export const MetadataStructureSection = () => {
       );
 
       if (!response.ok) {
-        throw new Error('Failed to update metadata structure');
+        throw new Error(
+          await messageFromFailedResponse(
+            response,
+            'Failed to update metadata structure',
+          ),
+        );
       }
 
       enqueueSnackBar('Started metadata structure update process', {

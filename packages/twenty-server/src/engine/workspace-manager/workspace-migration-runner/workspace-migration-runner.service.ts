@@ -157,6 +157,11 @@ export class WorkspaceMigrationRunnerService {
         break;
       }
       case WorkspaceMigrationTableActionType.DROP:
+        await this.dropForeignKeysReferencingTable(
+          queryRunner,
+          schemaName,
+          tableMigration.name,
+        );
         await queryRunner.dropTable(`${schemaName}.${tableMigration.name}`);
         break;
       case 'create_foreign_table':
@@ -556,6 +561,41 @@ export class WorkspaceMigrationRunnerService {
       `${schemaName}.${tableName}`,
       foreignKeyName,
     );
+  }
+
+  /**
+   * Drops FK constraints on other tables that reference the given table.
+   * Required before DROP TABLE when dependents are not covered by migration ordering.
+   */
+  private async dropForeignKeysReferencingTable(
+    queryRunner: QueryRunner,
+    schemaName: string,
+    referencedTableName: string,
+  ): Promise<void> {
+    const referencingConstraints: {
+      constraint_name: string;
+      table_name: string;
+    }[] = await queryRunner.query(
+      `
+      SELECT con.conname AS constraint_name, rel.relname AS table_name
+      FROM pg_constraint con
+      INNER JOIN pg_class rel ON rel.oid = con.conrelid
+      INNER JOIN pg_namespace nsp ON nsp.oid = rel.relnamespace
+      INNER JOIN pg_class ref_rel ON ref_rel.oid = con.confrelid
+      INNER JOIN pg_namespace ref_nsp ON ref_nsp.oid = ref_rel.relnamespace
+      WHERE con.contype = 'f'
+        AND nsp.nspname = $1
+        AND ref_nsp.nspname = $1
+        AND ref_rel.relname = $2
+    `,
+      [schemaName, referencedTableName],
+    );
+
+    for (const row of referencingConstraints) {
+      await queryRunner.query(
+        `ALTER TABLE "${schemaName}"."${row.table_name}" DROP CONSTRAINT IF EXISTS "${row.constraint_name}"`,
+      );
+    }
   }
 
   private async getForeignKeyName(

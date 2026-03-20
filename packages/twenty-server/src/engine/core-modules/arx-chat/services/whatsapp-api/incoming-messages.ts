@@ -320,6 +320,10 @@ export class IncomingWhatsappMessages {
   async receiveIncomingMessageFromWhatsappUnipile(
     payload: UnipileMessageWebhook,
   ) {
+    if (payload.attendees.length > 4) {
+      return;
+    }
+
     console.log('Received WhatsApp Unipile message:', payload);
 
     const { 

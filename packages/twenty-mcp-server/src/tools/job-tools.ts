@@ -115,17 +115,23 @@ export const jobTools: McpTool[] = [
       const activeOnly = args.activeOnly !== false;
 
       const filter: Record<string, unknown> = {
-        name: { like: `%${nameQuery}%` },
+        name: { ilike: `%${nameQuery}%` },
       };
       if (activeOnly) {
         filter.isActive = { eq: true };
       }
 
+      const variables = {
+        filter,
+        limit: 10,
+        orderBy: [{ position: 'AscNullsFirst' }],
+      };
+
       const data = await executeGraphQL(
         config.baseUrl,
         config.apiToken,
         graphqlToFindManyJobs,
-        { filter, limit: 10 },
+        variables,
       );
 
       const jobs = extractJobs(data);
