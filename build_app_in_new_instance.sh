@@ -174,6 +174,7 @@ set_deploy_status TWENTY_FRONT kept-existing-files
 set_deploy_status TWENTY_SHARED kept-existing-files
 set_deploy_status TWENTY_ORGCHART kept-existing-files
 set_deploy_status TWENTY_WEBSITE kept-existing-files
+set_deploy_status TWENTY_MCP_SERVER kept-existing-files
 
 if deploy_component TWENTY_SERVER "twenty-server dist" "$REPO_DIR/packages/twenty-server/dist" \
   /home/ubuntu/twenty/packages/twenty-server/dist \
@@ -220,10 +221,13 @@ deploy_component TWENTY_EMAILS "twenty-emails dist" "$REPO_DIR/packages/twenty-e
   /home/ubuntu/twenty/dist/packages/twenty-emails \
   /home/ubuntu/dist/packages/twenty-emails || true
 
-deploy_component TWENTY_MCP_SERVER "twenty-mcp-server dist" "$REPO_DIR/packages/twenty-mcp-server/dist" \
+if deploy_component TWENTY_MCP_SERVER "twenty-mcp-server dist" "$REPO_DIR/packages/twenty-mcp-server/dist" \
   /home/ubuntu/twenty/packages/twenty-mcp-server/dist \
   /home/ubuntu/twenty/dist/packages/twenty-mcp-server \
-  /home/ubuntu/dist/packages/twenty-mcp-server || true
+  /home/ubuntu/dist/packages/twenty-mcp-server; then
+  DEPLOYMENTS_APPLIED=1
+  set_deploy_status TWENTY_MCP_SERVER updated
+fi
 
 if deploy_component TWENTY_WEBSITE "twenty-website .next" "$REPO_DIR/packages/twenty-website/.next" \
   /home/ubuntu/twenty/packages/twenty-website/.next \
@@ -265,7 +269,7 @@ else
 fi
 
 echo "Final required build summary before shutdown:"
-for build_name in TWENTY_SERVER TWENTY_FRONT TWENTY_ORGCHART TWENTY_SHARED TWENTY_WEBSITE; do
+for build_name in TWENTY_SERVER TWENTY_FRONT TWENTY_ORGCHART TWENTY_SHARED TWENTY_WEBSITE TWENTY_MCP_SERVER; do
   echo " - ${build_name}: build=$(get_build_status "$build_name"), files=$(get_deploy_status "$build_name")"
 done
 

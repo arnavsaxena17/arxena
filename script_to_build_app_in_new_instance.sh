@@ -125,6 +125,7 @@ required_builds=(
   TWENTY_ORGCHART
   TWENTY_SHARED
   TWENTY_WEBSITE
+  TWENTY_MCP_SERVER
 )
 
 echo "Build summary:"
@@ -139,9 +140,9 @@ for build_name in "${required_builds[@]}"; do
 done
 
 if [ "$all_required_success" = true ]; then
-  echo "Required build check passed: twenty-server, twenty-front, twenty-orgchart, twenty-shared, and twenty-website all built successfully."
+  echo "Required build check passed: twenty-server, twenty-front, twenty-orgchart, twenty-shared, twenty-website, and twenty-mcp-server all built successfully."
   exit 0
 fi
 
-echo "Required build check failed: one or more of twenty-server, twenty-front, twenty-orgchart, twenty-shared, or twenty-website did not build successfully."
+echo "Required build check failed: one or more of twenty-server, twenty-front, twenty-orgchart, twenty-shared, twenty-website, or twenty-mcp-server did not build successfully."
 exit 1
