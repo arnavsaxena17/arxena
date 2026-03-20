@@ -10,6 +10,7 @@ import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/typ
 
 import { AssistantThreadService } from './assistant-thread.service';
 import {
+    AssistantStatusMessagePolicy,
     AssistantAgentEventRecord,
     AssistantChatRequestBody,
     AssistantThreadMessage,
@@ -24,6 +25,12 @@ import { normalizeAssistantConversationHistory } from './utils/assistant-convers
 import { summarizeMessageEvent } from './utils/assistant-message-event-summary.utils';
 
 const TABLE_DATA_CACHE_TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days
+
+const DEFAULT_STATUS_MESSAGE_POLICY: AssistantStatusMessagePolicy = {
+  persistToThread: true,
+  showInUi: true,
+  includeInConversationHistory: true,
+};
 
 type TableRegistryEntry = {
   tableId: string;
@@ -102,6 +109,8 @@ export class AssistantChatStreamService {
     const threadId = body.threadId;
     let threadSearchType: 'classic' | 'sales_navigator' | 'recruiter' =
       'recruiter';
+    let statusMessagePolicy: AssistantStatusMessagePolicy =
+      DEFAULT_STATUS_MESSAGE_POLICY;
 
     if (threadId) {
       try {
@@ -112,6 +121,29 @@ export class AssistantChatStreamService {
 
         if (thread?.searchType) {
           threadSearchType = thread.searchType;
+        }
+        const rawStatusMessagePolicy =
+          thread?.assistantParameters &&
+          typeof thread.assistantParameters === 'object'
+            ? (
+                thread.assistantParameters as {
+                  statusMessagePolicy?: Partial<AssistantStatusMessagePolicy>;
+                }
+              ).statusMessagePolicy
+            : undefined;
+
+        if (rawStatusMessagePolicy && typeof rawStatusMessagePolicy === 'object') {
+          statusMessagePolicy = {
+            persistToThread:
+              rawStatusMessagePolicy.persistToThread ??
+              DEFAULT_STATUS_MESSAGE_POLICY.persistToThread,
+            showInUi:
+              rawStatusMessagePolicy.showInUi ??
+              DEFAULT_STATUS_MESSAGE_POLICY.showInUi,
+            includeInConversationHistory:
+              rawStatusMessagePolicy.includeInConversationHistory ??
+              DEFAULT_STATUS_MESSAGE_POLICY.includeInConversationHistory,
+          };
         }
       } catch {
         // best-effort; use default
@@ -132,13 +164,17 @@ export class AssistantChatStreamService {
       | Array<{ content: string }>
       | undefined = undefined;
 
-    const pushAssistantMessage = (content: string) => {
+    const pushAssistantMessage = (
+      content: string,
+      options?: { isStatus?: boolean },
+    ) => {
       const trimmed = content.trim();
 
       if (!trimmed) return;
       persistedMessages.push({
         role: 'assistant',
         content: trimmed,
+        ...(options?.isStatus ? { isStatus: true } : {}),
       });
     };
 
@@ -412,8 +448,12 @@ export class AssistantChatStreamService {
         if (event === 'status' && typeof data === 'object' && data !== null) {
           const d = data as { message?: unknown };
 
-          if (typeof d.message === 'string' && d.message.trim()) {
-            pushAssistantMessage(d.message);
+          if (
+            statusMessagePolicy.persistToThread &&
+            typeof d.message === 'string' &&
+            d.message.trim()
+          ) {
+            pushAssistantMessage(d.message, { isStatus: true });
           }
         }
         if (event === 'tool_result' && typeof data === 'object' && data !== null) {

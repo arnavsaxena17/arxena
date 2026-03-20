@@ -8,13 +8,18 @@ const DEFAULT_LAST_K = 20;
 
 export const threadMessagesToHistory = (
   messages: AssistantThreadMessage[],
-  options?: { lastK?: number },
+  options?: { includeStatusMessages?: boolean; lastK?: number },
 ): MessageParam[] => {
   const out: MessageParam[] = [];
+  const includeStatusMessages = options?.includeStatusMessages ?? true;
   const lastK = options?.lastK ?? DEFAULT_LAST_K;
   const slice = messages.slice(-lastK);
 
   slice.forEach((message, index) => {
+    if (message.isStatus && !includeStatusMessages) {
+      return;
+    }
+
     if (message.role === 'user') {
       out.push({ role: 'user', content: message.content });
       return;

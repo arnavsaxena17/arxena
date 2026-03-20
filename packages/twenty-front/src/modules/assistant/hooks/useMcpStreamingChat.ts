@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   AssistantAgentEvent,
   AssistantChatMessage,
+  AssistantStatusMessagePolicy,
 } from '@/assistant/types/assistant.types';
 
 import type { AssistantTableData } from '../components/AssistantDetailsTable';
@@ -26,6 +27,13 @@ type UseMcpStreamingChatParams = {
   baseUrl: string;
   /** Candidate IDs selected in the results DataTable; forwarded to the backend on each request */
   selectedCandidateIds?: string[];
+  statusMessagePolicy?: Partial<AssistantStatusMessagePolicy>;
+};
+
+const DEFAULT_STATUS_MESSAGE_POLICY: AssistantStatusMessagePolicy = {
+  persistToThread: true,
+  showInUi: true,
+  includeInConversationHistory: true,
 };
 
 const stripThreadNameQuotes = (name: string): string => {
@@ -36,8 +44,23 @@ const stripThreadNameQuotes = (name: string): string => {
   return t;
 };
 
-const buildConversationHistory = (historyMessages: AssistantChatMessage[]) =>
+const buildConversationHistory = (
+  historyMessages: AssistantChatMessage[],
+  statusMessagePolicy?: Partial<AssistantStatusMessagePolicy>,
+) =>
   historyMessages.flatMap((message, messageIndex) => {
+    const effectiveStatusMessagePolicy = {
+      ...DEFAULT_STATUS_MESSAGE_POLICY,
+      ...(statusMessagePolicy ?? {}),
+    };
+
+    if (
+      message.isStatus &&
+      !effectiveStatusMessagePolicy.includeInConversationHistory
+    ) {
+      return [];
+    }
+
     if (message.role === 'user') {
       return [{ role: 'user' as const, content: message.content }];
     }
@@ -110,6 +133,7 @@ export const useMcpStreamingChat = ({
   token,
   baseUrl,
   selectedCandidateIds,
+  statusMessagePolicy,
 }: UseMcpStreamingChatParams) => {
   const [loading, setLoading] = useState(false);
   const [streamLog, setStreamLog] = useState<string[]>([]);
@@ -217,16 +241,29 @@ export const useMcpStreamingChat = ({
       }
 
       if (eventType === 'status' && typeof data.message === 'string') {
-        setStreamLog((prev) => [...prev, data.message as string]);
-        lastBubbleIsTextRunRef.current = false;
         const statusText = data.message as string;
-        const next = [
-          ...streamedMessagesRef.current,
-          { role: 'assistant' as const, content: statusText },
-        ];
-        streamingMessageIndexRef.current = next.length - 1;
-        streamedMessagesRef.current = next;
-        setMessages(next);
+
+        if ((statusMessagePolicy?.showInUi ?? true) === true) {
+          setStreamLog((prev) => [...prev, statusText]);
+        }
+
+        if (
+          (statusMessagePolicy?.showInUi ?? true) ||
+          (statusMessagePolicy?.includeInConversationHistory ?? true)
+        ) {
+          lastBubbleIsTextRunRef.current = false;
+          const next = [
+            ...streamedMessagesRef.current,
+            {
+              role: 'assistant' as const,
+              content: statusText,
+              isStatus: true,
+            },
+          ];
+          streamingMessageIndexRef.current = next.length - 1;
+          streamedMessagesRef.current = next;
+          setMessages(next);
+        }
         return;
       }
 
@@ -539,6 +576,7 @@ export const useMcpStreamingChat = ({
       onTableData,
       onThreadNameChange,
       setMessages,
+      statusMessagePolicy,
       threadId,
     ],
   );
@@ -558,7 +596,10 @@ export const useMcpStreamingChat = ({
       setStreamLog([]);
       setStreamLogMinimized(false);
 
-      const conversationHistory = buildConversationHistory(messages);
+      const conversationHistory = buildConversationHistory(
+        messages,
+        statusMessagePolicy,
+      );
       initializeStreamingState(trimmed);
 
       try {

@@ -101,7 +101,18 @@ export class AutonomousRecruiterProcessor {
 
     try {
       const thread = await this.assistantThreadService.getThread(apiToken, threadId);
-      const history = thread ? threadMessagesToHistory(thread.messages) : [];
+      const includeStatusMessages =
+        thread?.assistantParameters &&
+        typeof thread.assistantParameters === 'object'
+          ? (
+              thread.assistantParameters as {
+                statusMessagePolicy?: { includeInConversationHistory?: boolean };
+              }
+            ).statusMessagePolicy?.includeInConversationHistory ?? true
+          : true;
+      const history = thread
+        ? threadMessagesToHistory(thread.messages, { includeStatusMessages })
+        : [];
       const systemPrompt = await this.autonomousRecruitmentAgentRulesService.getSystemPrompt(apiToken);
 
       const response = await this.mcpAssistantService.processQuery(

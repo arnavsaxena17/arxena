@@ -2,6 +2,7 @@ import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { AssistantThreadNotes } from '@/assistant/components/AssistantThreadNotes';
 import type {
   AssistantAgentEvent,
+  AssistantStatusMessagePolicy,
   AssistantThread,
   LinkedInSearchType,
 } from '@/assistant/types/assistant.types';
@@ -166,6 +167,12 @@ const SEARCH_TYPE_OPTIONS: { value: LinkedInSearchType; label: string }[] = [
   { value: 'sales_navigator', label: 'Sales Navigator' },
   { value: 'recruiter', label: 'Recruiter' },
 ];
+
+const DEFAULT_STATUS_MESSAGE_POLICY: AssistantStatusMessagePolicy = {
+  persistToThread: true,
+  showInUi: true,
+  includeInConversationHistory: true,
+};
 
 const StyledJDHeaderRow = styled.div`
   display: flex;
@@ -540,6 +547,7 @@ type AssistantChatColumnProps = {
       jobId?: string | null;
       name?: string;
       searchType?: LinkedInSearchType;
+      statusMessagePolicy?: Partial<AssistantStatusMessagePolicy>;
     },
   ) => Promise<void> | void;
   onUpdateThreadMode: (
@@ -827,6 +835,46 @@ export const AssistantChatColumn = ({
                         <span>{opt.label}</span>
                       </StyledThreadMenuActionActive>
                     ))}
+                    <StyledThreadMenuSectionTitle>
+                      Status Messages
+                    </StyledThreadMenuSectionTitle>
+                    {(() => {
+                      const statusMessagePolicy = {
+                        ...DEFAULT_STATUS_MESSAGE_POLICY,
+                        ...(currentThread.assistantParameters?.statusMessagePolicy ?? {}),
+                      };
+                      const statusOptions: Array<{
+                        key: keyof AssistantStatusMessagePolicy;
+                        label: string;
+                      }> = [
+                        { key: 'persistToThread', label: 'Persist to thread' },
+                        { key: 'showInUi', label: 'Show in UI' },
+                        {
+                          key: 'includeInConversationHistory',
+                          label: 'Send to LLM history',
+                        },
+                      ];
+
+                      return statusOptions.map((option) => (
+                        <StyledThreadMenuActionActive
+                          key={option.key}
+                          type="button"
+                          active={statusMessagePolicy[option.key]}
+                          onClick={() => {
+                            onPatchThread(currentThreadId, {
+                              statusMessagePolicy: {
+                                [option.key]: !statusMessagePolicy[option.key],
+                              },
+                            });
+                          }}
+                        >
+                          <span>{option.label}</span>
+                          <span style={{ opacity: 0.7 }}>
+                            {statusMessagePolicy[option.key] ? 'On' : 'Off'}
+                          </span>
+                        </StyledThreadMenuActionActive>
+                      ));
+                    })()}
                     {jdActions && (
                       <StyledThreadMenuAction
                         type="button"

@@ -6,6 +6,7 @@ import { MOCK_THREADS, USE_MOCK_ASSISTANT } from '@/assistant/mocks/mockThreads'
 import type {
   AssistantAgentEvent,
   AssistantChatMessage,
+  AssistantStatusMessagePolicy,
   AssistantThread,
 } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
@@ -384,6 +385,7 @@ export const AssistantPage = () => {
           messages?: Array<{
             role: 'user' | 'assistant';
             content: string;
+            isStatus?: boolean;
             toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
             toolResults?: Array<{ content: string }>;
             tableReferences?: Array<{
@@ -413,6 +415,7 @@ export const AssistantPage = () => {
       const frontendMessages: AssistantChatMessage[] = messagesFromApi.map((m) => ({
         role: m.role,
         content: m.content,
+        isStatus: m.isStatus,
         toolCalls: m.toolCalls,
         toolResults: m.toolResults,
         tableReferences: m.tableReferences,
@@ -786,6 +789,7 @@ export const AssistantPage = () => {
         jobId?: string | null;
         name?: string;
         searchType?: 'classic' | 'sales_navigator' | 'recruiter';
+        statusMessagePolicy?: Partial<AssistantStatusMessagePolicy>;
       },
     ) => {
       // Optimistic update so UI reflects changes immediately (e.g. attach job after JD upload)
@@ -800,6 +804,19 @@ export const AssistantPage = () => {
                   : {}),
                 ...(typeof patch.name === 'string' ? { name: patch.name } : {}),
                 ...(patch.searchType ? { searchType: patch.searchType } : {}),
+                ...(patch.statusMessagePolicy
+                  ? {
+                      assistantParameters: {
+                        ...(t.assistantParameters ?? {}),
+                        statusMessagePolicy: {
+                          ...((t.assistantParameters?.statusMessagePolicy as
+                            | Partial<AssistantStatusMessagePolicy>
+                            | undefined) ?? {}),
+                          ...patch.statusMessagePolicy,
+                        },
+                      },
+                    }
+                  : {}),
               }
             : t,
         ),

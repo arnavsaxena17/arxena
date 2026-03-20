@@ -246,8 +246,19 @@ export class AutonomousRecruiterController {
       apiToken,
       thread.id,
     );
+    const includeStatusMessages =
+      refreshedThreadBeforeTurn?.assistantParameters &&
+      typeof refreshedThreadBeforeTurn.assistantParameters === 'object'
+        ? (
+            refreshedThreadBeforeTurn.assistantParameters as {
+              statusMessagePolicy?: { includeInConversationHistory?: boolean };
+            }
+          ).statusMessagePolicy?.includeInConversationHistory ?? true
+        : true;
     const historyBeforeTurn = refreshedThreadBeforeTurn
-      ? threadMessagesToHistory(refreshedThreadBeforeTurn.messages)
+      ? threadMessagesToHistory(refreshedThreadBeforeTurn.messages, {
+          includeStatusMessages,
+        })
       : [];
 
     if (isFirstTurn) {
@@ -417,4 +428,3 @@ export class AutonomousRecruiterController {
     return { status: 'queued', runId };
   }
 }
-

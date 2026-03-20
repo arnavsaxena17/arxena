@@ -8,6 +8,7 @@ import {
     updateOneAssistantThread
 } from 'twenty-shared';
 import {
+    AssistantStatusMessagePolicy,
     AssistantAgentEventRecord,
     AssistantThreadRecord,
     AssistantThreadTableData,
@@ -17,9 +18,16 @@ import {
 type AssistantThreadMessage = {
   role: 'user' | 'assistant';
   content: string;
+  isStatus?: boolean;
   toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
   toolResults?: Array<{ content: string }>;
   tableReferences?: AssistantThreadTableReference[];
+};
+
+export const DEFAULT_STATUS_MESSAGE_POLICY: AssistantStatusMessagePolicy = {
+  persistToThread: true,
+  showInUi: true,
+  includeInConversationHistory: true,
 };
 
 @Injectable()

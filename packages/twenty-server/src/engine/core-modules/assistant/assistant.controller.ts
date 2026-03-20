@@ -22,6 +22,7 @@ import { AssistantThreadService } from './assistant-thread.service';
 import {
   AssistantChatRequestBody,
   AssistantIterativeQueryRequestBody,
+  AssistantStatusMessagePolicy,
   MessageParam,
 } from './assistant.types';
 import { McpAssistantService } from './mcp-assistant.service';
@@ -73,6 +74,7 @@ export class AssistantController {
         jobId?: string;
         assistantMode?: 'fully_autonomous' | 'permissioned';
         searchType?: 'classic' | 'sales_navigator' | 'recruiter';
+        statusMessagePolicy?: Partial<AssistantStatusMessagePolicy>;
       };
     },
   ) {
@@ -87,6 +89,7 @@ export class AssistantController {
       const jobId = request.body?.jobId;
       const assistantMode = request.body?.assistantMode;
       const searchType = request.body?.searchType;
+      const statusMessagePolicy = request.body?.statusMessagePolicy;
       const thread = await this.assistantThreadService.createThread(
         apiToken,
         name,
@@ -94,6 +97,11 @@ export class AssistantController {
         assistantMode,
         searchType,
       );
+      if (statusMessagePolicy) {
+        await this.assistantThreadService.mergeAssistantParameters(apiToken, thread.id, {
+          statusMessagePolicy,
+        });
+      }
 
       console.log('thread that we got ', thread);
 
@@ -159,6 +167,7 @@ export class AssistantController {
         jobId?: string | null;
         assistantMode?: 'fully_autonomous' | 'permissioned';
         searchType?: 'classic' | 'sales_navigator' | 'recruiter';
+        statusMessagePolicy?: Partial<AssistantStatusMessagePolicy>;
       };
     },
   ) {
@@ -172,6 +181,7 @@ export class AssistantController {
     const jobId = body.jobId;
     const assistantMode = body.assistantMode;
     const searchType = body.searchType;
+    const statusMessagePolicy = body.statusMessagePolicy;
 
     try {
       if (typeof name === 'string') {
@@ -205,6 +215,11 @@ export class AssistantController {
           searchType,
         );
       }
+      if (statusMessagePolicy && typeof statusMessagePolicy === 'object') {
+        await this.assistantThreadService.mergeAssistantParameters(apiToken, id, {
+          statusMessagePolicy,
+        });
+      }
       const hasValidUpdate =
         typeof name === 'string' ||
         jobId !== undefined ||
@@ -212,7 +227,8 @@ export class AssistantController {
         assistantMode === 'permissioned' ||
         searchType === 'classic' ||
         searchType === 'sales_navigator' ||
-        searchType === 'recruiter';
+        searchType === 'recruiter' ||
+        Boolean(statusMessagePolicy && typeof statusMessagePolicy === 'object');
 
       if (!hasValidUpdate) {
         return {

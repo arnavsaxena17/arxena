@@ -23,6 +23,12 @@ export type AssistantChatResponse = {
   toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
 };
 
+export type AssistantStatusMessagePolicy = {
+  persistToThread: boolean;
+  showInUi: boolean;
+  includeInConversationHistory: boolean;
+};
+
 export type RecruiterMessageMetadata = {
   jobContextSummary?: string;
 };
@@ -91,6 +97,7 @@ export type AssistantIterativeQueryRequestBody = {
 export type AssistantThreadMessage = {
   role: 'user' | 'assistant';
   content: string;
+  isStatus?: boolean;
   toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
   toolResults?: Array<{ content: string }>;
   tableReferences?: AssistantThreadTableReference[];

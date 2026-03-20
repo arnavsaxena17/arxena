@@ -7,6 +7,7 @@ import type {
   AssistantChatMessage,
   AssistantIterativeQueryResult,
   AssistantIterativeQueryState,
+  AssistantStatusMessagePolicy,
 } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
@@ -46,6 +47,7 @@ export type McpClientChatProps = {
   onJobAttached?: (jobId: string) => void;
   assistantParameters?: Record<string, unknown> & {
     iterativeQueryState?: AssistantIterativeQueryState;
+    statusMessagePolicy?: Partial<AssistantStatusMessagePolicy>;
   };
 };
 
@@ -410,6 +412,7 @@ export const McpClientChat = ({
     token: tokenPair?.accessToken?.token,
     baseUrl,
     selectedCandidateIds,
+    statusMessagePolicy: assistantParameters?.statusMessagePolicy,
   });
 
   const sendCurrentMessage = useCallback(() => {
@@ -597,7 +600,13 @@ export const McpClientChat = ({
     <StyledContainer>
       <StyledMessagesWrapper>
         <StyledMessages ref={messagesContainerRef}>
-          {messages.map((msg, i) => {
+          {messages
+            .filter(
+              (msg) =>
+                !msg.isStatus ||
+                assistantParameters?.statusMessagePolicy?.showInUi !== false,
+            )
+            .map((msg, i) => {
             const isUser = msg.role === 'user';
             return (
               <div key={i}>

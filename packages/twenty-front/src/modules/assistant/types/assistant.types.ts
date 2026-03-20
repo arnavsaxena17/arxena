@@ -12,6 +12,7 @@ export type OrgChartPreview = {
 export type AssistantChatMessage = {
   role: 'user' | 'assistant';
   content: string;
+  isStatus?: boolean;
   toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
   toolResults?: Array<{ content: string }>;
   tableDataList?: AssistantTableData[];
@@ -41,6 +42,12 @@ export type AssistantThreadJob = {
 };
 
 export type LinkedInSearchType = 'classic' | 'sales_navigator' | 'recruiter';
+
+export type AssistantStatusMessagePolicy = {
+  persistToThread: boolean;
+  showInUi: boolean;
+  includeInConversationHistory: boolean;
+};
 
 export type AssistantIterativeQueryResult = {
   final_query_set: {
@@ -101,6 +108,7 @@ export type AssistantThread = {
   lastTableData: AssistantTableData | null;
   assistantParameters?: Record<string, unknown> & {
     iterativeQueryState?: AssistantIterativeQueryState;
+    statusMessagePolicy?: Partial<AssistantStatusMessagePolicy>;
   };
   assistantSearchStrategy?: Record<string, unknown>;
   jobId?: string | null;
