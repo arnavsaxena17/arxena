@@ -1,20 +1,20 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
 import {
-  LinkedInClassicCompaniesSearchRequest,
-  LinkedInClassicJobsSearchRequest,
-  LinkedInSalesNavigatorCompaniesSearchRequest,
+    LinkedInClassicCompaniesSearchRequest,
+    LinkedInClassicJobsSearchRequest,
+    LinkedInSalesNavigatorCompaniesSearchRequest,
 } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
 import { OrgChartData } from 'twenty-shared';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import {
-  ClassicPeopleSearchStrategyResult,
-  GeneratedSearchParameters,
-  ParsedJobDescription,
-  RecruiterPeopleSearchStrategyResult,
-  ResultValidationResult,
-  SalesNavigatorPeopleSearchStrategyResult,
+    ClassicPeopleSearchStrategyResult,
+    GeneratedSearchParameters,
+    ParsedJobDescription,
+    RecruiterPeopleSearchStrategyResult,
+    ResultValidationResult,
+    SalesNavigatorPeopleSearchStrategyResult,
 } from '../types/candidate-search-request.type';
 import { ChatMessageRequest } from '../types/search-plan.types';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
@@ -71,6 +71,7 @@ type SearchExecutionResult = {
     paging?: { total_count?: number; page_count?: number };
   } | null;
   transformedCandidates?: unknown[];
+  streamTableId?: string;
   validationResults?: Array<{
     page: number;
     validation: ResultValidationResult;

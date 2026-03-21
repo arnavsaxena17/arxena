@@ -12,6 +12,7 @@ type SearchExecutionResult = {
   itemCount: number;
   searchResults?: unknown;
   transformedCandidates?: unknown[];
+  streamTableId?: string;
   searchMetadata?: unknown;
   validationResults?: Array<{
     page: number;
@@ -116,7 +117,17 @@ export class SearchResponseBuilderService {
         return typeof candidateName === 'string' && candidateName.trim().length > 0;
       });
       if (rows.length > 0) {
-        const tableId = crypto.randomUUID();
+        const streamIds = strategyResults
+          .map((sr) => sr.result?.streamTableId)
+          .filter(
+            (id): id is string =>
+              typeof id === 'string' && id.length > 0,
+          );
+        const uniqueStreamIds = [...new Set(streamIds)];
+        const tableId =
+          uniqueStreamIds.length === 1
+            ? uniqueStreamIds[0]
+            : crypto.randomUUID();
         const label = `${rows.length} candidate${rows.length !== 1 ? 's' : ''}`;
         sendEvent('table_data', {
           tableId,

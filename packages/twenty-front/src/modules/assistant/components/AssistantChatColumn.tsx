@@ -912,13 +912,19 @@ export const AssistantChatColumn = ({
               <StyledJobAttachedRowContent>
                 <StyledJobAttachedText>
                   {(() => {
-                    const hasParsedJD = Boolean(parsedJD?.name || parsedJD?.jobCode);
+                    // parsedJD is global (job record page, JD upload). Only treat it as this
+                    // thread's job when ids match — otherwise a job page visit leaks into /assistant.
+                    const showParsedJDForThread = Boolean(
+                      (parsedJD?.name || parsedJD?.jobCode) &&
+                      currentThread.jobId &&
+                      parsedJD?.id === currentThread.jobId,
+                    );
                     const hasThreadJobDetails = Boolean(
                       currentThread.jobId && (currentThread.job?.name || currentThread.job?.id),
                     );
                     const hasThreadJobIdOnly = Boolean(currentThread.jobId && !currentThread.job);
 
-                    if (hasParsedJD) {
+                    if (showParsedJDForThread) {
                       return (
                         <>
                           Job{' '}

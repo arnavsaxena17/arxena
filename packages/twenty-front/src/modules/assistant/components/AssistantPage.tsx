@@ -267,53 +267,7 @@ export const AssistantPage = () => {
         }
         setThreadsLoadedFromBackend(true);
         if (data.threads.length === 0) {
-          const createRes = await fetch(`${baseUrl}/assistant/threads`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              name: 'New thread',
-              assistantMode: 'permissioned',
-              searchType: 'classic',
-            }),
-          });
-          if (cancelled) {
-            setThreadsLoading(false);
-            return;
-          }
-          if (!createRes.ok) {
-            setThreadsLoading(false);
-            return;
-          }
-          const created = (await createRes.json()) as {
-            id?: string;
-            name?: string;
-            jobId?: string | null;
-            assistantMode?: 'fully_autonomous' | 'permissioned';
-          };
-          if (cancelled) {
-            setThreadsLoading(false);
-            return;
-          }
-          if (created.id) {
-          setThreads([
-            {
-              id: created.id,
-              name: created.name ?? 'New thread',
-              messages: [],
-              lastTableData: null,
-              resultsPanelOrgChart: null,
-              jobId: created.jobId ?? null,
-              assistantMode: created.assistantMode ?? 'permissioned',
-              searchType:
-                (created as { searchType?: 'classic' | 'sales_navigator' | 'recruiter' })
-                  .searchType ?? 'classic',
-            },
-          ]);
-            setCurrentThreadId(created.id);
-          }
+          setThreads([]);
         } else {
           setThreads(
             data.threads.map((t) => ({

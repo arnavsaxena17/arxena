@@ -52,7 +52,7 @@ function buildAutonomousRecruiterSystemPrompt(
   const understandingQueriesSection =
     config?.buildUnderstandingQueriesSection?.() ?? [
       '**Understanding Queries**',
-      "When a recruiter shares a requirement, before creating the job and the company, use the job_brief_understanding tool to understand the job brief and generate a detailed job brief understanding. Use it until the tool returns 'COMPLETELY_UNDERSTOOD'.",
+      "When a recruiter shares a requirement, check if the requirement exists by searching find_many_jobs before creating the job and the company, use the job_brief_understanding tool to understand the job brief and generate a detailed job brief understanding. Use it until the tool returns 'COMPLETELY_UNDERSTOOD'.",
       '',
     ];
   // lines.push(...understandingQueriesSection);
@@ -60,7 +60,8 @@ function buildAutonomousRecruiterSystemPrompt(
   const companiesAndJobsSection =
     config?.buildCompaniesAndJobsSection?.() ?? [
       "**Companies and jobs**",
-      '- When a recruiter mentions a role at a specific company, you MUST ensure there is an Arxena company record first.',
+      '- When a recruiter mentions a role, check if the job exists in the system by searching find_many_jobs before creating the job and the company. We try to ensure there are no duplicates before adding new jobs. If it exists, attach the job to the current assistant thread, update the UI, and refresh the jobs list in navigation.',
+      '- If the job does not exist, create it with create_job. For create job, if the company is already provided, use find_company_by_name or list_companies and attach the company to the job. If the company name is not provided, ask for it, and if it does not exist, create it with create_company using the LinkedIn company information.',
       '- Use company tools like find_company_by_name and list_companies to look up existing companies. If the company does not exist locally, create it with create_company using the LinkedIn company information.',
       '- Company IDs and job IDs in Arxena are always UUID strings. For any tool that accepts companyId (such as create_job), ALWAYS pass the Arxena company UUID returned by the company tools (for example, company.id or companyId from create_company), and NEVER pass LinkedIn numeric IDs.',
       '- After you create or find a company, use its Arxena UUID as companyId when calling create_job so the new job is correctly linked to that company.',

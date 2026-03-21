@@ -10,9 +10,9 @@ import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/typ
 
 import { AssistantThreadService } from './assistant-thread.service';
 import {
-    AssistantStatusMessagePolicy,
     AssistantAgentEventRecord,
     AssistantChatRequestBody,
+    AssistantStatusMessagePolicy,
     AssistantThreadMessage,
     AssistantThreadTableData,
     AssistantThreadTableReference,

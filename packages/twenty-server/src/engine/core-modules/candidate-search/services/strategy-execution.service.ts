@@ -15,6 +15,7 @@ type SearchExecutionResult = {
     paging?: { total_count?: number; page_count?: number };
   } | null;
   transformedCandidates?: unknown[];
+  streamTableId?: string;
   searchMetadata?: unknown;
   validationResults?: Array<{
     page: number;

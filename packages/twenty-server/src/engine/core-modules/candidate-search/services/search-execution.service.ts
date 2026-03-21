@@ -7,23 +7,23 @@ import { ResumeReadParseUploadService } from '../../candidate-sourcing/services/
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
 import {
-  LinkedInSearchConfig,
-  LinkedInSearchResponse,
-  LinkedInSearchResult
+    LinkedInSearchConfig,
+    LinkedInSearchResponse,
+    LinkedInSearchResult
 } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import {
-  ClassicPeopleSearchStrategyResult,
-  GeneratedSearchParameters,
-  ParsedJobDescription,
-  RecruiterPeopleSearchStrategyResult,
-  ResultValidationResult,
-  SalesNavigatorPeopleSearchStrategyResult
+    ClassicPeopleSearchStrategyResult,
+    GeneratedSearchParameters,
+    ParsedJobDescription,
+    RecruiterPeopleSearchStrategyResult,
+    ResultValidationResult,
+    SalesNavigatorPeopleSearchStrategyResult
 } from '../types/candidate-search-request.type';
 import {
-  FileUtils,
-  LinkedinParameterResolver,
-  ParameterSanitizer
+    FileUtils,
+    LinkedinParameterResolver,
+    ParameterSanitizer
 } from '../utils';
 import { CandidateScoringService } from './candidate-scoring.service';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
@@ -40,6 +40,8 @@ type SearchExecutionPreview = {
   itemCount: number;
   searchResults: LinkedInSearchResponse | null;
   transformedCandidates?: TransformedCandidateForTable[];
+  /** When set, final assistant `table_data` should reuse this id so rows are not duplicated in the UI */
+  streamTableId?: string;
   searchMetadata?: {
     searchType: 'classic' | 'sales_navigator' | 'recruiter';
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
@@ -339,6 +341,22 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     sendEvent?: (event: string, data: any) => boolean | void,
   ): Promise<SearchExecutionPreview | null> {
     const pageLimit = 10;
+    let stateForPartialCatch: {
+      allItems: LinkedInSearchResult[];
+      allTransformedCandidates: TransformedCandidateForTable[];
+      currentCursor: string | undefined;
+      currentPage: number;
+      firstPageConfig: LinkedInSearchConfig;
+      validationResults: Array<{
+        page: number;
+        validation: ResultValidationResult;
+        timestamp: string;
+      }>;
+      candidateScores: Map<string, CandidateRelevanceScoring>;
+      totalCountFromAPI: number | undefined;
+      totalPagesAvailable: number | undefined;
+      streamTableId?: string;
+    } | null = null;
 
     try {
       if (!strategy.parameters) {
@@ -371,6 +389,8 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         (rawFromParams === true || rawFromEnv);
 
       const maxPagesToFetch = 10; // Cap to top 10 pages to limit pagination and align with org-chart requirements
+      const streamTableId =
+        sendEvent && searchCategory === 'people' ? crypto.randomUUID() : undefined;
       const state = {
         allItems: [] as LinkedInSearchResult[],
         allTransformedCandidates: [] as TransformedCandidateForTable[],
@@ -385,7 +405,13 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         candidateScores: new Map<string, CandidateRelevanceScoring>(),
         totalCountFromAPI: undefined as number | undefined,
         totalPagesAvailable: undefined as number | undefined,
+        streamTableId,
       };
+      stateForPartialCatch = state;
+
+      let paginationFetchError:
+        | { message: string; code?: string; details?: string }
+        | undefined;
 
       this.logger.log(
         `Executing multi-page search for strategy ${strategy.id} (${strategy.label || 'unnamed'})`,
@@ -404,30 +430,67 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           candidatesCollectedSoFar: state.allItems.length,
         });
 
-        const pageResult = await this.fetchPage(
-          strategyResolvedParams,
-          searchType,
-          searchCategory,
-          apiToken,
-          state.currentCursor,
-          pageLimit,
-          sendEvent,
-          state.currentPage,
-        );
+        let pageResult: {
+          items: LinkedInSearchResult[];
+          transformed: TransformedCandidateForTable[];
+          cursor?: string | null;
+          config?: LinkedInSearchConfig;
+          paging?: { total_count: number };
+        } | null;
+        try {
+          pageResult = await this.fetchPage(
+            strategyResolvedParams,
+            searchType,
+            searchCategory,
+            apiToken,
+            state.currentCursor,
+            pageLimit,
+            sendEvent,
+            state.currentPage,
+          );
+        } catch (fetchErr) {
+          const errorMessage =
+            fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+          const errorCode =
+            fetchErr instanceof Error && 'code' in fetchErr
+              ? String((fetchErr as { code?: string }).code)
+              : undefined;
+          this.logger.error(
+            `Fetch failed for strategy ${strategy.id} at page ${state.currentPage}:`,
+            fetchErr,
+          );
+          paginationFetchError = {
+            message: errorMessage,
+            ...(errorCode ? { code: errorCode } : {}),
+            details:
+              state.allItems.length > 0
+                ? `Stopped after page ${state.currentPage - 1}. ${errorMessage}`
+                : errorMessage,
+          };
+          sendEvent?.('status', {
+            message:
+              state.allItems.length > 0
+                ? `Could not load page ${state.currentPage}; returning ${state.allItems.length} candidate${state.allItems.length !== 1 ? 's' : ''} from earlier pages.`
+                : `Search request failed: ${errorMessage}`,
+          });
+          break;
+        }
 
         if (!pageResult || pageResult.items.length === 0) {
           break;
         }
 
+        const page = pageResult;
+
         // Store first page config and pagination info.
         // For raw classic people searches, ignore paging.total_count for the same reason as above:
         // it only represents the current page, not the total result set.
-        if (state.currentPage === 1 && pageResult.config) {
-          state.firstPageConfig = pageResult.config;
-          if (!useRawClassicPeople && pageResult.paging?.total_count !== undefined) {
-            state.totalCountFromAPI = pageResult.paging.total_count;
+        if (state.currentPage === 1 && page.config) {
+          state.firstPageConfig = page.config;
+          if (!useRawClassicPeople && page.paging?.total_count !== undefined) {
+            state.totalCountFromAPI = page.paging.total_count;
             state.totalPagesAvailable = Math.ceil(
-              pageResult.paging.total_count / pageLimit,
+              page.paging.total_count / pageLimit,
             );
 
             this.logger.log(
@@ -452,7 +515,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         );
         const newItems: LinkedInSearchResult[] = [];
         const newTransformed: TransformedCandidateForTable[] = [];
-        pageResult.items.forEach((item, idx) => {
+        page.items.forEach((item, idx) => {
           const key =
             (item as { public_identifier?: string }).public_identifier ??
             item.id ??
@@ -461,22 +524,30 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           if (seenKeys.has(key)) return;
           seenKeys.add(key);
           newItems.push(item);
-          if (pageResult.transformed[idx]) newTransformed.push(pageResult.transformed[idx]);
+          if (page.transformed[idx]) newTransformed.push(page.transformed[idx]);
         });
         state.allItems.push(...newItems);
         state.allTransformedCandidates.push(...newTransformed);
-        state.currentCursor = pageResult.cursor ?? undefined;
+        state.currentCursor = page.cursor ?? undefined;
 
         this.logger.log(
-          `Strategy ${strategy.id} page ${state.currentPage}: ${pageResult.items.length} candidates (total: ${state.allItems.length})`,
+          `Strategy ${strategy.id} page ${state.currentPage}: ${page.items.length} candidates (total: ${state.allItems.length})`,
         );
 
+        if (newItems.length > 0) {
+          this.emitProgressiveCandidateTable(
+            sendEvent,
+            state.streamTableId,
+            state.allTransformedCandidates,
+            state.candidateScores,
+          );
+        }
 
         sendEvent?.('pageResults', {
           page: state.currentPage,
-          candidatesReceived: pageResult.items.length,
+          candidatesReceived: page.items.length,
           totalCandidates: state.allItems.length,
-          totalCountFromAPI: state.totalCountFromAPI ?? pageResult.paging?.total_count,
+          totalCountFromAPI: state.totalCountFromAPI ?? page.paging?.total_count,
           totalPages: state.totalPagesAvailable,
           strategyId: strategy.id,
           strategyLabel: strategy.label,
@@ -497,8 +568,8 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         // Process page if validation/scoring is enabled
         if (userMessage) {
           const shouldContinue = await this.processPageResults(
-            pageResult.items,
-            pageResult.transformed,
+            page.items,
+            page.transformed,
             state.currentPage,
             state.allItems.length,
             strategy,
@@ -509,6 +580,8 @@ export class SearchExecutionService extends CandidateSearchBaseService {
             apiToken,
             state.candidateScores,
             state.validationResults,
+            state.allTransformedCandidates,
+            state.streamTableId,
             sendEvent,
           );
 
@@ -549,7 +622,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         `Total pages available: ${state.totalPagesAvailable ?? 'unknown'}`,
       );
 
-      return this.buildResponse(
+      const preview = this.buildResponse(
         state.allItems,
         state.allTransformedCandidates,
         state.firstPageConfig,
@@ -562,10 +635,95 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         searchType,
         searchCategory,
         strategy.id,
+        state.streamTableId,
       );
+      if (paginationFetchError) {
+        return {
+          ...preview,
+          error: paginationFetchError,
+        };
+      }
+      return preview;
     } catch (error) {
+      if (stateForPartialCatch && stateForPartialCatch.allItems.length > 0) {
+        this.attachScoresToAllCandidates(
+          stateForPartialCatch.allTransformedCandidates,
+          stateForPartialCatch.allItems,
+          stateForPartialCatch.candidateScores,
+        );
+        this.sendFinalBatch(
+          stateForPartialCatch.allTransformedCandidates,
+          stateForPartialCatch.candidateScores,
+          strategy,
+          sendEvent,
+        );
+        this.emitProgressiveCandidateTable(
+          sendEvent,
+          stateForPartialCatch.streamTableId,
+          stateForPartialCatch.allTransformedCandidates,
+          stateForPartialCatch.candidateScores,
+        );
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorCode =
+          error instanceof Error && 'code' in error
+            ? String((error as { code?: string }).code)
+            : undefined;
+        return {
+          ...this.buildResponse(
+            stateForPartialCatch.allItems,
+            stateForPartialCatch.allTransformedCandidates,
+            stateForPartialCatch.firstPageConfig,
+            stateForPartialCatch.currentCursor,
+            stateForPartialCatch.currentPage,
+            stateForPartialCatch.totalCountFromAPI,
+            stateForPartialCatch.totalPagesAvailable,
+            stateForPartialCatch.validationResults,
+            undefined,
+            searchType,
+            searchCategory,
+            strategy.id,
+            stateForPartialCatch.streamTableId,
+          ),
+          error: {
+            message: errorMessage,
+            ...(errorCode ? { code: errorCode } : {}),
+            details: errorMessage,
+          },
+        };
+      }
       return this.handleError(error, strategy);
     }
+  }
+
+  private emitProgressiveCandidateTable(
+    sendEvent: ((event: string, data: unknown) => boolean | void) | undefined,
+    streamTableId: string | undefined,
+    allTransformed: TransformedCandidateForTable[],
+    candidateScores: Map<string, CandidateRelevanceScoring>,
+  ): void {
+    if (!sendEvent || !streamTableId) {
+      return;
+    }
+    const withScores = this.attachScoresToCandidates(
+      allTransformed,
+      candidateScores,
+    );
+    const columns = ['name', 'headline', 'jobTitle', 'jobCompanyName'];
+    const rows = withScores.filter((candidate) => {
+      const candidateName = candidate.name?.trim() ?? '';
+      return candidateName.length > 0;
+    });
+    if (rows.length === 0) {
+      return;
+    }
+    const label = `${rows.length} candidate${rows.length !== 1 ? 's' : ''}`;
+    sendEvent('table_data', {
+      tableId: streamTableId,
+      tableType: 'candidates',
+      label,
+      columns,
+      rows,
+    });
   }
 
   private shouldAbort(sendEvent?: (event: string, data: any) => boolean | void): boolean {
@@ -679,6 +837,8 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     apiToken: string,
     candidateScores: Map<string, CandidateRelevanceScoring>,
     validationResults: Array<{ page: number; validation: ResultValidationResult; timestamp: string }>,
+    allTransformedCandidates: TransformedCandidateForTable[],
+    streamTableId: string | undefined,
     sendEvent?: (event: string, data: any) => boolean | void,
   ): Promise<boolean> {
     if (this.shouldAbort(sendEvent)) {
@@ -734,6 +894,13 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         transformedCandidates: pageTransformedWithScores,
         totalCandidatesSoFar: totalItemsCount,
       });
+
+      this.emitProgressiveCandidateTable(
+        sendEvent,
+        streamTableId,
+        allTransformedCandidates,
+        candidateScores,
+      );
     }
 
     // Decide whether to continue
@@ -893,6 +1060,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     strategyId: string,
+    streamTableId?: string,
   ): SearchExecutionPreview {
     const finalResponse: LinkedInSearchResponse = {
       object: 'LinkedinSearch',
@@ -915,6 +1083,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
       itemCount: allItems.length,
       searchResults: finalResponse,
       transformedCandidates: allTransformedCandidates.length > 0 ? allTransformedCandidates : undefined,
+      ...(streamTableId ? { streamTableId } : {}),
       searchMetadata: {
         searchType,
         searchCategory,
