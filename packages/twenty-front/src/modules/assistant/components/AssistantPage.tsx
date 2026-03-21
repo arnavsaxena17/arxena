@@ -8,8 +8,10 @@ import type {
   AssistantChatMessage,
   AssistantStatusMessagePolicy,
   AssistantThread,
+  OrgChartPreview,
 } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
@@ -101,6 +103,7 @@ function createNewThread(name = 'New thread'): AssistantThread {
     name,
     messages: [],
     lastTableData: null,
+    resultsPanelOrgChart: null,
     assistantMode: 'permissioned',
     searchType: 'classic',
   };
@@ -177,6 +180,7 @@ export const AssistantPage = () => {
   const isMobile = useIsMobile();
   const tokenPair = useRecoilValue(tokenPairState);
   const token = tokenPair?.accessToken?.token;
+  const { triggerJobsRefetch } = useJobRefetch();
   const useMock = useMockAssistant();
   const [agentEvents, setAgentEvents] = useState<AssistantAgentEvent[]>([]);
   const [threads, setThreads] = useState<AssistantThread[]>(() =>
@@ -300,6 +304,7 @@ export const AssistantPage = () => {
               name: created.name ?? 'New thread',
               messages: [],
               lastTableData: null,
+              resultsPanelOrgChart: null,
               jobId: created.jobId ?? null,
               assistantMode: created.assistantMode ?? 'permissioned',
               searchType:
@@ -316,6 +321,7 @@ export const AssistantPage = () => {
               name: t.name,
               messages: [],
               lastTableData: null,
+              resultsPanelOrgChart: null,
               jobId: t.jobId ?? null,
               job: t.job ?? null,
               assistantMode: t.assistantMode ?? 'permissioned',
@@ -579,6 +585,7 @@ export const AssistantPage = () => {
           t.id === currentThreadId
             ? {
                 ...t,
+                resultsPanelOrgChart: null,
                 lastTableData:
                   t.lastTableData?.tableType === 'candidates' &&
                   data.tableType === 'candidates'
@@ -604,6 +611,24 @@ export const AssistantPage = () => {
     },
     [currentThreadId],
   );
+
+  const handleOrgChartPanelSelect = useCallback((org: OrgChartPreview) => {
+    if (!currentThreadId) return;
+    setThreads((prev) =>
+      prev.map((t) =>
+        t.id === currentThreadId ? { ...t, resultsPanelOrgChart: org } : t,
+      ),
+    );
+  }, [currentThreadId]);
+
+  const handleDismissResultsOrgChart = useCallback(() => {
+    if (!currentThreadId) return;
+    setThreads((prev) =>
+      prev.map((t) =>
+        t.id === currentThreadId ? { ...t, resultsPanelOrgChart: null } : t,
+      ),
+    );
+  }, [currentThreadId]);
 
 
   const handleNewThread = useCallback(
@@ -660,6 +685,7 @@ export const AssistantPage = () => {
                   name: created.name ?? 'New thread',
                   messages: [],
                   lastTableData: null,
+                  resultsPanelOrgChart: null,
                   jobId: created.jobId ?? null,
                   assistantMode: created.assistantMode ?? 'permissioned',
                   searchType: (created as { searchType?: 'classic' | 'sales_navigator' | 'recruiter' }).searchType ?? 'recruiter',
@@ -763,6 +789,7 @@ export const AssistantPage = () => {
           name: t.name,
           messages: [],
           lastTableData: null,
+          resultsPanelOrgChart: null,
           jobId: t.jobId ?? null,
           job: t.job ?? null,
           assistantMode: t.assistantMode ?? 'permissioned',
@@ -923,15 +950,17 @@ export const AssistantPage = () => {
     [baseUrl, token, threadsLoadedFromBackend],
   );
 
-  // Called when the MCP assistant creates a job (via create_job tool) and emits
-  // job_attached SSE. Optimistically links the job to the current thread and
-  // persists it to the backend via patchThread.
+  // Called when the MCP assistant resolves a job (create_job, get_job_by_id, or a
+  // single-result find_job_by_name) and emits job_attached SSE. Updates local thread
+  // state, PATCHes the backend, refetches full thread (job summary), and refreshes
+  // the jobs list for the left navigation drawer.
   const handleJobAttached = useCallback(
     (jobId: string) => {
       if (!currentThreadId) return;
       patchThread(currentThreadId, { jobId });
+      triggerJobsRefetch();
     },
-    [currentThreadId, patchThread],
+    [currentThreadId, patchThread, triggerJobsRefetch],
   );
 
   const handleSelectThread = useCallback(
@@ -1078,6 +1107,7 @@ export const AssistantPage = () => {
             onThreadNameFocusChange={handleThreadNameFocusChange}
             onMessagesChange={handleMessagesChange}
             onTableData={(data) => handleTableData(data)}
+            onOrgChartSelect={handleOrgChartPanelSelect}
             onMessageComplete={loadThreadData}
             onAgentEvent={handleAgentEvent}
             onDeleteThread={deleteThread}
@@ -1095,6 +1125,8 @@ export const AssistantPage = () => {
             onSync={showSync ? handleSyncTable : undefined}
             jobIdFromThread={currentThread?.jobId ?? null}
             onSelectionChange={setSelectedCandidateIds}
+            orgChart={currentThread?.resultsPanelOrgChart ?? null}
+            onDismissOrgChart={handleDismissResultsOrgChart}
           />
         </StyledSplitLayout>
       </StyledPageBody>

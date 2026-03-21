@@ -2,6 +2,7 @@ import type { AssistantTableData } from '@/assistant/components/AssistantDetails
 import type { AssistantThread } from '@/assistant/types/assistant.types';
 
 const MOCK_CANDIDATES_TABLE: AssistantTableData = {
+  tableType: 'candidates',
   // Base candidate data enriched with AI filter outputs so that
   // the assistant results panel + main candidate table can
   // demonstrate enrichment columns (relevance*, matchReasons, etc.).
@@ -68,6 +69,7 @@ const MOCK_CANDIDATES_TABLE: AssistantTableData = {
 };
 
 const MOCK_CLIENT_SHORTLIST_TABLE: AssistantTableData = {
+  tableType: 'data',
   columns: ['candidateName', 'role', 'stage', 'clientFeedback', 'priority'],
   rows: [
     {

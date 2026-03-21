@@ -1,8 +1,9 @@
 import { ActionMenuComponentInstanceContext } from '@/action-menu/states/contexts/ActionMenuComponentInstanceContext';
 import {
-  AssistantDetailsTable,
-  AssistantTableData,
+    AssistantDetailsTable,
+    AssistantTableData,
 } from '@/assistant/components/AssistantDetailsTable';
+import type { OrgChartPreview } from '@/assistant/types/assistant.types';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { DataTable } from '@/candidate-table/DataTable';
 import { HotTableActionMenu } from '@/candidate-table/HotTableActionMenu';
@@ -14,16 +15,21 @@ import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import styled from '@emotion/styled';
-import { useCallback, useEffect, useState } from 'react';
+import { Loader } from '@ui/feedback/loader/components/Loader';
+import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 import {
-  IconBriefcase,
-  IconFileText,
-  IconMessage,
-  LightButton,
+    IconBriefcase,
+    IconFileText,
+    IconMessage,
+    LightButton,
 } from 'twenty-ui';
 import { getAppPath } from '~/utils/navigation/getAppPath';
+
+const LazyArxOrgChart = React.lazy(() =>
+  import('@/orgchart/ArxOrgChart').then((m) => ({ default: m.ArxOrgChart })),
+);
 
 /** Virtual jobId used for assistant-fetched LinkedIn candidates in DataTable. */
 export const ASSISTANT_SEARCH_JOB_ID = '__search__';
@@ -68,6 +74,24 @@ const StyledTableWrapper = styled.div`
   min-height: 0;
 `;
 
+const StyledOrgChartPanel = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 400px;
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  overflow: hidden;
+  background: ${({ theme }) => theme.background.secondary};
+`;
+
+const StyledOrgChartLoader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+`;
+
 const StyledActionButton = styled(LightButton)`
   display: flex;
   align-items: center;
@@ -81,6 +105,8 @@ type AssistantResultsPanelProps = {
   onSync?: () => Promise<void>;
   jobIdFromThread?: string | null;
   onSelectionChange?: (ids: string[]) => void;
+  orgChart?: OrgChartPreview | null;
+  onDismissOrgChart?: () => void;
 };
 
 function getRowId(row: Record<string, unknown>): string | undefined {
@@ -182,6 +208,8 @@ export const AssistantResultsPanel = ({
   onSync,
   jobIdFromThread,
   onSelectionChange,
+  orgChart,
+  onDismissOrgChart,
 }: AssistantResultsPanelProps) => {
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -204,7 +232,13 @@ export const AssistantResultsPanel = ({
   // When rows are not tied to a CRM job (no jobId on data), push snapshot rows into Recoil
   // so DataTable (__search__) shows the same people as the chat preview.
   useEffect(() => {
-    if (jobIdFromRows || !tableData?.rows?.length) return;
+    if (
+      tableData?.tableType !== 'candidates' ||
+      jobIdFromRows ||
+      !tableData?.rows?.length
+    ) {
+      return;
+    }
     const transformed = (tableData.rows as Record<string, unknown>[]).map(
       transformRowForDataTable,
     );
@@ -284,12 +318,40 @@ export const AssistantResultsPanel = ({
     });
   }, [selectedRow, openRightDrawer, setSelectedCandidateId]);
 
-  // Determine whether to show DataTable (real job candidates) or AssistantDetailsTable
-  // (raw assistant/LinkedIn search results). DataTable requires rows with id/tempId fields;
-  // LinkedIn candidate rows only have name/headline/linkedinUrl so they must use
-  // AssistantDetailsTable which renders whatever columns are provided.
+  // Full CRM candidate DataTable only for candidate-shaped tool results; jobs, companies,
+  // interviews, etc. use plain Handsontable (AssistantDetailsTable).
   const hasTableRows = Boolean(tableData?.rows?.length && tableData?.columns?.length);
-  const showDataTable = hasTableRows;
+  const showDataTable =
+    hasTableRows && tableData?.tableType === 'candidates';
+
+  if (orgChart?.companyId) {
+    return (
+      <StyledResultsPanel>
+        <StyledResultsHeader>
+          <StyledResultsTitle>
+            Org chart — {orgChart.companyName}
+          </StyledResultsTitle>
+          {onDismissOrgChart && (
+            <StyledActionButton title="Back to table" onClick={onDismissOrgChart} />
+          )}
+        </StyledResultsHeader>
+        <StyledOrgChartPanel>
+          <Suspense
+            fallback={
+              <StyledOrgChartLoader>
+                <Loader />
+              </StyledOrgChartLoader>
+            }
+          >
+            <LazyArxOrgChart
+              companyId={orgChart.companyId}
+              companyName={orgChart.companyName}
+            />
+          </Suspense>
+        </StyledOrgChartPanel>
+      </StyledResultsPanel>
+    );
+  }
 
   if (!hasTableRows) {
     return (
@@ -336,9 +398,10 @@ export const AssistantResultsPanel = ({
           </ActionMenuComponentInstanceContext.Provider>
         </ContextStoreComponentInstanceContext.Provider>
       )}
-      {!showDataTable && (hasSelection || jobIdForThreadActions) && (
+      {(jobIdForThreadActions ||
+        (hasSelection && tableData?.tableType === 'candidates')) && (
         <StyledActionsBar>
-          {hasSelection && (
+          {hasSelection && tableData?.tableType === 'candidates' && (
             <>
               <StyledActionButton
                 title="View chat"

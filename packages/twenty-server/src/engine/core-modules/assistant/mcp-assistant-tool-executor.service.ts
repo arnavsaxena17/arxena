@@ -17,6 +17,125 @@ export class McpAssistantToolExecutorService {
   ) {}
 
   /**
+   * Notify the assistant UI to link the current thread to a job (SSE → patch + refetch).
+   * create_job, get_job_by_id (success), and an unambiguous find_job_by_name (single row).
+   */
+  private tryEmitJobAttachedFromToolResult(
+    toolName: string,
+    textContent: string,
+    sendEvent: StreamEventSender,
+  ): void {
+    try {
+      if (toolName === 'create_job') {
+        const parsed = JSON.parse(textContent) as Record<string, unknown>;
+        const jobId =
+          (parsed.id as string | undefined) ??
+          (parsed.jobId as string | undefined) ??
+          ((parsed.job as Record<string, unknown> | undefined)?.id as
+            | string
+            | undefined);
+        if (typeof jobId === 'string' && jobId) {
+          sendEvent('job_attached', { jobId });
+        }
+        return;
+      }
+      if (toolName === 'get_job_by_id') {
+        const parsed = JSON.parse(textContent) as {
+          status?: string;
+          job?: { id?: string };
+        };
+        if (parsed.status === 'Success' && typeof parsed.job?.id === 'string') {
+          sendEvent('job_attached', { jobId: parsed.job.id });
+        }
+        return;
+      }
+      if (toolName === 'find_job_by_name') {
+        const parsed = JSON.parse(textContent) as {
+          count?: unknown;
+          jobs?: Array<{ id?: string }>;
+        };
+        if (
+          parsed.count === 1 &&
+          Array.isArray(parsed.jobs) &&
+          parsed.jobs.length === 1 &&
+          typeof parsed.jobs[0]?.id === 'string'
+        ) {
+          sendEvent('job_attached', { jobId: parsed.jobs[0].id });
+        }
+      }
+    } catch {
+      // not JSON or unexpected shape
+    }
+  }
+
+  /**
+   * Emit org_chart SSE so McpClientChat can show a snippet and the results panel
+   * can open ArxOrgChart (same payload shape as streaming MCP client events).
+   */
+  private tryEmitOrgChartFromToolResult(
+    toolName: string,
+    textContent: string,
+    sendEvent: StreamEventSender,
+  ): void {
+    if (
+      toolName !== 'get_org_chart' &&
+      toolName !== 'search_org_charts_by_country' &&
+      toolName !== 'search_org_charts_by_function'
+    ) {
+      return;
+    }
+    try {
+      const parsed = JSON.parse(textContent) as Record<string, unknown>;
+
+      const emitOne = (o: Record<string, unknown>) => {
+        const companyId = o.companyId;
+        const viewUrl = o.viewUrl;
+        if (
+          typeof companyId !== 'string' ||
+          !companyId ||
+          typeof viewUrl !== 'string' ||
+          !viewUrl
+        ) {
+          return;
+        }
+        sendEvent('org_chart', {
+          orgChart: {
+            companyId,
+            companyName:
+              typeof o.companyName === 'string' && o.companyName
+                ? o.companyName
+                : companyId,
+            slug:
+              typeof o.slug === 'string' && o.slug ? o.slug : companyId,
+            viewUrl,
+            ...(typeof o.country === 'string' ? { country: o.country } : {}),
+            ...(typeof o.functionRoot === 'string'
+              ? { functionRoot: o.functionRoot }
+              : {}),
+          },
+        });
+      };
+
+      if (toolName === 'get_org_chart') {
+        emitOne(parsed);
+        return;
+      }
+
+      const orgCharts = parsed.orgCharts;
+      if (!Array.isArray(orgCharts)) {
+        return;
+      }
+      for (const item of orgCharts) {
+        if (item && typeof item === 'object') {
+          emitOne(item as Record<string, unknown>);
+        }
+      }
+    } catch {
+      // not JSON or unexpected shape
+    }
+  }
+
+  /**
    * OpenAI requires historical `assistant.tool_calls` to be paired with matching
    * `role: "tool"` messages in the *same* payload.
    */
@@ -174,6 +293,7 @@ export class McpAssistantToolExecutorService {
         `Skipping duplicate ${name} call (already executed in this session)`,
       );
       sendEvent?.('status', { message: `Skipping duplicate ${name} call...` });
+      this.tryEmitOrgChartFromToolResult(name, cachedResult, sendEvent);
       return { textContent: cachedResult, fromCache: true };
     }
     const inProcessResult =
@@ -221,22 +341,8 @@ export class McpAssistantToolExecutorService {
         `MCP tool "${name}" result (first 300 chars): ${textContent.slice(0, 300)}`,
       );
 
-      if (name === 'create_job') {
-        try {
-          const parsed = JSON.parse(textContent) as Record<string, unknown>;
-          const jobId =
-            (parsed.id as string | undefined) ??
-            (parsed.jobId as string | undefined) ??
-            ((parsed.job as Record<string, unknown> | undefined)?.id as
-              | string
-              | undefined);
-          if (typeof jobId === 'string' && jobId) {
-            sendEvent('job_attached', { jobId });
-          }
-        } catch {
-          // textContent not JSON – ignore
-        }
-      }
+      this.tryEmitJobAttachedFromToolResult(name, textContent, sendEvent);
+      this.tryEmitOrgChartFromToolResult(name, textContent, sendEvent);
 
       return { textContent, fromCache: false };
     } catch (err) {

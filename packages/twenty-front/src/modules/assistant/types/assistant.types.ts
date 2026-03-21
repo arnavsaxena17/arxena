@@ -106,6 +106,8 @@ export type AssistantThread = {
   name: string;
   messages: AssistantChatMessage[];
   lastTableData: AssistantTableData | null;
+  /** When set, the results panel shows this org chart instead of the table. */
+  resultsPanelOrgChart?: OrgChartPreview | null;
   assistantParameters?: Record<string, unknown> & {
     iterativeQueryState?: AssistantIterativeQueryState;
     statusMessagePolicy?: Partial<AssistantStatusMessagePolicy>;

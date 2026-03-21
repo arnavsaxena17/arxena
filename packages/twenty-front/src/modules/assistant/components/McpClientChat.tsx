@@ -1,31 +1,32 @@
 import {
-  AssistantDetailsTable,
-  AssistantTableData,
+    AssistantDetailsTable,
+    AssistantTableData,
 } from '@/assistant/components/AssistantDetailsTable';
 import type {
-  AssistantAgentEvent,
-  AssistantChatMessage,
-  AssistantIterativeQueryResult,
-  AssistantIterativeQueryState,
-  AssistantStatusMessagePolicy,
+    AssistantAgentEvent,
+    AssistantChatMessage,
+    AssistantIterativeQueryResult,
+    AssistantIterativeQueryState,
+    AssistantStatusMessagePolicy,
+    OrgChartPreview,
 } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
+    useCallback,
+    useEffect,
+    useRef,
+    useState,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { Button, IconChevronDown, Loader } from 'twenty-ui';
+import { Button, IconChevronDown, IconHierarchy2, Loader } from 'twenty-ui';
 
 import { useControlledMessages } from '@/assistant/hooks/useControlledMessages';
 import { useMcpStreamingChat } from '@/assistant/hooks/useMcpStreamingChat';
 import {
-  parseMessageContentWithJson,
-  parseRichText,
+    parseMessageContentWithJson,
+    parseRichText,
 } from '@/assistant/utils/richText';
 
 export type { AssistantChatMessage };
@@ -34,6 +35,8 @@ export type McpClientChatProps = {
   messages?: AssistantChatMessage[];
   onMessagesChange?: (messages: AssistantChatMessage[]) => void;
   onTableData?: (data: AssistantTableData) => void;
+  /** Opens the org chart in the assistant results panel (right column). */
+  onOrgChartSelect?: (org: OrgChartPreview) => void;
   threadId?: string;
   onThreadNameChange?: (name: string) => void;
   onMessageComplete?: () => void;
@@ -43,7 +46,7 @@ export type McpClientChatProps = {
   onAgentEvent?: (event: AssistantAgentEvent) => void;
   /** Candidate IDs selected in the results DataTable, sent along with each chat message */
   selectedCandidateIds?: string[];
-  /** Called when the MCP backend creates a job and emits job_attached with its ID */
+  /** Called when the MCP backend attaches a job to the thread (create_job, get_job_by_id, or unambiguous find_job_by_name) */
   onJobAttached?: (jobId: string) => void;
   assistantParameters?: Record<string, unknown> & {
     iterativeQueryState?: AssistantIterativeQueryState;
@@ -136,38 +139,60 @@ const StyledToolCalls = styled.div`
   margin-top: ${({ theme }) => theme.spacing(1)};
 `;
 
-const StyledOrgChartPreview = styled.div`
+const StyledOrgChartSnippetRow = styled.div`
   margin-top: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(2)};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  background-color: ${({ theme }) => theme.background.secondary};
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(0.5)};
 `;
 
-const StyledOrgChartImage = styled.img`
-  max-width: 200px;
-  max-height: 150px;
+const StyledOrgChartSnippetButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(2)};
+  width: 100%;
+  padding: ${({ theme }) => theme.spacing(1.5, 2)};
   border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  background: ${({ theme }) => theme.background.secondary};
   cursor: pointer;
-  transition: opacity 0.2s;
+  text-align: left;
+  font-family: inherit;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.primary};
+
   &:hover {
-    opacity: 0.8;
+    background: ${({ theme }) => theme.background.tertiary};
+    border-color: ${({ theme }) => theme.border.color.strong};
   }
 `;
 
-const StyledOrgChartLink = styled.a`
-  display: inline-block;
+const StyledOrgChartSnippetLabel = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  gap: ${({ theme }) => theme.spacing(0.25)};
+`;
+
+const StyledOrgChartSnippetName = styled.span`
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+`;
+
+const StyledOrgChartSnippetHint = styled.span`
+  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${({ theme }) => theme.font.color.tertiary};
+`;
+
+const StyledOrgChartFullPageLink = styled.a`
+  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${({ theme }) => theme.color.blue};
   text-decoration: none;
-  color: ${({ theme }) => theme.font.color.primary};
+  padding-left: ${({ theme }) => theme.spacing(0.25)};
+
   &:hover {
     text-decoration: underline;
   }
-`;
-
-const StyledOrgChartInfo = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(1)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
 `;
 
 const StyledForm = styled.form`
@@ -365,6 +390,7 @@ export const McpClientChat = ({
   messages: controlledMessages,
   onMessagesChange,
   onTableData,
+  onOrgChartSelect,
   threadId,
   onThreadNameChange,
   onMessageComplete,
@@ -623,6 +649,10 @@ export const McpClientChat = ({
                     ...tableData,
                     rows: tableData.rows.slice(0, 5),
                   };
+                  const previewKind =
+                    tableData.tableType === 'candidates'
+                      ? 'candidates'
+                      : tableData.tableType ?? 'rows';
                   return (
                     <StyledTableSnapshot
                       key={tableIndex}
@@ -638,57 +668,39 @@ export const McpClientChat = ({
                       </div>
                       <StyledTableSnapshotHint>
                         {tableData.rows.length > 5
-                          ? `Showing 5 of ${tableData.rows.length} candidates. Click to view all in the panel.`
+                          ? `Showing 5 of ${tableData.rows.length} ${previewKind}. Click to view all in the panel.`
                           : 'Click to view in the panel.'}
                       </StyledTableSnapshotHint>
                     </StyledTableSnapshot>
                   );
                 })}
-                {msg.orgCharts?.map((orgChart, orgChartIndex) => {
-                  const logoUrl = `${baseUrl}/org-chart/company-logo?website=${encodeURIComponent(orgChart.companyName)}`;
-                  return (
-                    <StyledOrgChartPreview key={orgChartIndex}>
-                      <StyledOrgChartLink
-                        href={orgChart.viewUrl}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          navigate(orgChart.viewUrl);
-                        }}
-                      >
-                        <StyledOrgChartImage
-                          src={logoUrl}
-                          alt={`${orgChart.companyName} org chart`}
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
-                      </StyledOrgChartLink>
-                      <StyledOrgChartInfo>
-                        <div>
-                          <strong>{orgChart.companyName}</strong>
-                        </div>
-                        {orgChart.country && orgChart.country !== 'global' && (
-                          <div>Country: {orgChart.country}</div>
-                        )}
-                        {orgChart.functionRoot &&
-                          orgChart.functionRoot !== 'fullcompany' && (
-                            <div>Function: {orgChart.functionRoot}</div>
-                          )}
-                        <div>
-                          <StyledOrgChartLink
-                            href={orgChart.viewUrl}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              navigate(orgChart.viewUrl);
-                            }}
-                          >
-                            View full org chart →
-                          </StyledOrgChartLink>
-                        </div>
-                      </StyledOrgChartInfo>
-                    </StyledOrgChartPreview>
-                  );
-                })}
+                {msg.orgCharts?.map((orgChart, orgChartIndex) => (
+                  <StyledOrgChartSnippetRow key={orgChartIndex}>
+                    <StyledOrgChartSnippetButton
+                      type="button"
+                      onClick={() => onOrgChartSelect?.(orgChart)}
+                    >
+                      <IconHierarchy2 size={22} />
+                      <StyledOrgChartSnippetLabel>
+                        <StyledOrgChartSnippetName>
+                          {orgChart.companyName}
+                        </StyledOrgChartSnippetName>
+                        <StyledOrgChartSnippetHint>
+                          Show org chart in results panel
+                        </StyledOrgChartSnippetHint>
+                      </StyledOrgChartSnippetLabel>
+                    </StyledOrgChartSnippetButton>
+                    <StyledOrgChartFullPageLink
+                      href={orgChart.viewUrl}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigate(orgChart.viewUrl);
+                      }}
+                    >
+                      Open full org chart page →
+                    </StyledOrgChartFullPageLink>
+                  </StyledOrgChartSnippetRow>
+                ))}
                 {msg.toolCalls && msg.toolCalls.length > 0 && (
                   <StyledToolCalls>
                     Used: {msg.toolCalls.map((t) => t.name).join(', ')}

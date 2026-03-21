@@ -13,6 +13,32 @@ function extractJobs(data: unknown): Job[] {
   return result?.jobs?.edges?.map((e) => e.node) ?? [];
 }
 
+/** When the assistant injects assistantThreadId, persist the active job on that thread (REST). */
+async function patchAssistantThreadJobId(
+  config: { baseUrl: string; apiToken: string },
+  assistantThreadId: string | undefined,
+  jobId: string,
+): Promise<void> {
+  if (
+    !assistantThreadId ||
+    !UUID_REGEX.test(assistantThreadId) ||
+    !UUID_REGEX.test(jobId)
+  ) {
+    return;
+  }
+  try {
+    await callRestAPIPatch(
+      config.baseUrl,
+      config.apiToken,
+      'assistant',
+      `threads/${assistantThreadId}`,
+      { jobId },
+    );
+  } catch (err) {
+    console.error('Failed to attach job to assistant thread:', err);
+  }
+}
+
 export const jobTools: McpTool[] = [
   {
     definition: {
@@ -63,7 +89,8 @@ export const jobTools: McpTool[] = [
   {
     definition: {
       name: 'get_job_by_id',
-      description: 'Get detailed information about a specific job by its ID.',
+      description:
+        'Get detailed information about a specific job by its ID. When called from the assistant with a thread context, the job is attached to that assistant thread.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -77,6 +104,7 @@ export const jobTools: McpTool[] = [
     },
     handler: async (args, config) => {
       const jobId = args.jobId as string;
+      const assistantThreadId = args.assistantThreadId as string | undefined;
 
       const result = await callRestAPI(
         config.baseUrl,
@@ -86,6 +114,15 @@ export const jobTools: McpTool[] = [
         { jobId },
       );
 
+      const resultObj = result as { status?: string; job?: { id?: string } };
+      if (
+        resultObj?.status === 'Success' &&
+        typeof resultObj.job?.id === 'string' &&
+        resultObj.job.id === jobId
+      ) {
+        await patchAssistantThreadJobId(config, assistantThreadId, jobId);
+      }
+
       return result;
     },
   },
@@ -94,7 +131,7 @@ export const jobTools: McpTool[] = [
     definition: {
       name: 'find_job_by_name',
       description:
-        'Search for jobs by name or company. Returns matching jobs with their IDs. Useful when you know part of the job title or company name.',
+        'Search for jobs by name or company. Returns matching jobs with their IDs. If exactly one job matches, it is attached to the current assistant thread (when invoked from the assistant). Use get_job_by_id to attach after disambiguating multiple matches.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -113,6 +150,7 @@ export const jobTools: McpTool[] = [
     handler: async (args, config) => {
       const nameQuery = args.nameQuery as string;
       const activeOnly = args.activeOnly !== false;
+      const assistantThreadId = args.assistantThreadId as string | undefined;
 
       const filter: Record<string, unknown> = {
         name: { ilike: `%${nameQuery}%` },
@@ -135,6 +173,9 @@ export const jobTools: McpTool[] = [
       );
 
       const jobs = extractJobs(data);
+      if (jobs.length === 1 && jobs[0]?.id) {
+        await patchAssistantThreadJobId(config, assistantThreadId, jobs[0].id);
+      }
       return {
         count: jobs.length,
         jobs: jobs.map((j) => ({

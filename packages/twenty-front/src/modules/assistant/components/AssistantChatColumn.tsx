@@ -5,6 +5,7 @@ import type {
   AssistantStatusMessagePolicy,
   AssistantThread,
   LinkedInSearchType,
+  OrgChartPreview,
 } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
@@ -537,6 +538,7 @@ type AssistantChatColumnProps = {
   onThreadNameFocusChange: (isEditing: boolean) => void;
   onMessagesChange: (messages: AssistantThread['messages']) => void;
   onTableData: (data: NonNullable<AssistantThread['lastTableData']>) => void;
+  onOrgChartSelect?: (org: OrgChartPreview) => void;
   onMessageComplete: () => void;
   onAgentEvent: (event: AssistantAgentEvent) => void;
   onDeleteThread: (threadId: string) => Promise<void> | void;
@@ -572,6 +574,7 @@ export const AssistantChatColumn = ({
   onThreadNameFocusChange,
   onMessagesChange,
   onTableData,
+  onOrgChartSelect,
   onMessageComplete,
   onAgentEvent,
   onDeleteThread,
@@ -1022,6 +1025,7 @@ export const AssistantChatColumn = ({
           assistantParameters={currentThread.assistantParameters}
           onMessagesChange={onMessagesChange}
           onTableData={onTableData}
+          onOrgChartSelect={onOrgChartSelect}
           threadId={threadsLoadedFromBackend ? currentThreadId || undefined : undefined}
           onThreadNameChange={onThreadNameChange}
           onMessageComplete={onMessageComplete}

@@ -8,6 +8,8 @@ export const inferTableType = (
   if (toolName) {
     if (toolName.includes('job')) return 'jobs';
     if (toolName.includes('compan')) return 'companies';
+    if (toolName.includes('interview')) return 'interviews';
+    if (toolName.includes('screen')) return 'screenings';
     if (
       toolName.includes('contact') ||
       toolName.includes('person') ||

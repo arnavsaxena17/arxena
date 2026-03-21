@@ -65,6 +65,7 @@ function buildAutonomousRecruiterSystemPrompt(
       '- Company IDs and job IDs in Arxena are always UUID strings. For any tool that accepts companyId (such as create_job), ALWAYS pass the Arxena company UUID returned by the company tools (for example, company.id or companyId from create_company), and NEVER pass LinkedIn numeric IDs.',
       '- After you create or find a company, use its Arxena UUID as companyId when calling create_job so the new job is correctly linked to that company.',
       '- IMPORTANT: Before searching for candidates for a specific role, check if a relevant job already exists (use find_job_by_name or list_active_jobs). If no job exists for the role, create one with create_job first. This ensures search results are properly linked to a job in the system.',
+      '- When you identify the correct job for this conversation, call get_job_by_id with that job ID (or rely on find_job_by_name when it returns exactly one match). The app attaches that job to the current assistant thread, updates the UI, and refreshes the jobs list in navigation.',
       '',
     ];
   lines.push(...companiesAndJobsSection);
