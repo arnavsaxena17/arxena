@@ -1,0 +1,56 @@
+{
+  "sales_channel — Channel Partner Manager – Telecom Gujarat": {
+    "recruiter": {
+      "detailed": {
+        "gpt-4.1-mini": {
+          "score": 8,
+          "weaknesses": [
+            "Role filter uses AND logic (\"(channel OR partner) AND sales\"), which sharply reduces recall.",
+            "Role filter is slightly verbose; could use shorter stems (e.g., \"channel OR partner OR alliance\") without AND.",
+            "Keywords in both queries are somewhat broad, especially the second query, which may introduce noise (e.g., \"distribution\" and \"B2B\" are generic).",
+            "Location coverage is good, but the first query could have included a broader region as a secondary archetype."
+          ],
+          "verdict": "Mediocre. The queries show some understanding of the requirement and archetype coverage, but the use of AND logic in the role filter is a significant error, and keyword/role discipline is lacking. Usable but needs revision for better recall and precision.",
+          "queries": [
+            {
+              "keywords": "telecom OR \"telecom equipment\"",
+              "location": [
+                {
+                  "name": "Gujarat, India",
+                  "priority": "CAN_HAVE",
+                  "scope": "CURRENT_OR_OPEN_TO_RELOCATE"
+                }
+              ],
+              "role": [
+                {
+                  "keywords": "(channel OR partner) AND sales",
+                  "priority": "MUST_HAVE",
+                  "scope": "CURRENT_OR_PAST"
+                }
+              ],
+              "company": null
+            },
+            {
+              "keywords": "telecom OR telco OR \"telecom equipment\" OR distribution OR B2B",
+              "location": [
+                {
+                  "name": "India",
+                  "priority": "CAN_HAVE",
+                  "scope": "CURRENT_OR_OPEN_TO_RELOCATE"
+                }
+              ],
+              "role": [
+                {
+                  "keywords": "channel OR partner OR alliance",
+                  "priority": "MUST_HAVE",
+                  "scope": "CURRENT_OR_PAST"
+                }
+              ],
+              "company": null
+            }
+          ]
+        }
+      }
+    }
+  }
+}

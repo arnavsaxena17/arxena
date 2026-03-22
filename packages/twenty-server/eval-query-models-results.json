@@ -1,0 +1,1593 @@
+[
+  {
+    "modelId": "gpt-4.1",
+    "modelLabel": "gpt-4.1",
+    "reqId": "sales_cbo",
+    "reqLabel": "CBO – Marketplace Startup (Sales)",
+    "score": {
+      "stemQuality": 3,
+      "filterAssignment": 3,
+      "tierCoverage": 2,
+      "keywordsNonNull": 1,
+      "locationHandling": 1,
+      "total": 10
+    },
+    "queries": [
+      {
+        "keywords": "marketplace OR supply OR demand OR \"unit economics\" OR \"category head\" OR \"business head\"",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "chief OR head OR lead OR director OR business OR category",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": [
+          {
+            "keywords": "Swiggy OR Zomato",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "marketplace OR \"supply demand\" OR \"unit economics\" OR \"category head\" OR platform",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "business OR category OR operations OR strategy",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      }
+    ],
+    "raw": "{\"searchRequests\":[{\"keywords\":\"marketplace OR supply OR demand OR \\\"unit economics\\\" OR \\\"category head\\\" OR \\\"business head\\\"\",\"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"chief OR head OR lead OR director OR business OR category\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":[{\"keywords\":\"Swiggy OR Zomato\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"marketplace OR \\\"supply demand\\\" OR \\\"unit economics\\\" OR \\\"category head\\\" OR platform\",\"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"business OR category OR operations OR strategy\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"}]}",
+    "error": null,
+    "durationMs": 3166,
+    "inputTokens": 1671,
+    "outputTokens": 177,
+    "costUsd": 0.004758
+  },
+  {
+    "modelId": "gpt-4.1",
+    "modelLabel": "gpt-4.1",
+    "reqId": "eng_vp",
+    "reqLabel": "VP Engineering – Fintech Bangalore (Engineering)",
+    "score": {
+      "stemQuality": 2,
+      "filterAssignment": 3,
+      "tierCoverage": 2,
+      "keywordsNonNull": 1,
+      "locationHandling": 1,
+      "total": 9
+    },
+    "queries": [
+      {
+        "keywords": "fintech OR payments OR lending OR platform",
+        "location": [
+          {
+            "id": "105556591",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT",
+            "title": ""
+          }
+        ],
+        "industry": null,
+        "role": [
+          {
+            "keywords": "VP OR \"vice president\" OR head",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          },
+          {
+            "keywords": "engineering OR technology OR tech OR product",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": [
+          {
+            "keywords": "startup OR scaleup OR \"early stage\" OR \"growth stage\"",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "fintech OR payments OR lending",
+        "location": [
+          {
+            "id": "105556591",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT",
+            "title": ""
+          }
+        ],
+        "industry": null,
+        "role": [
+          {
+            "keywords": "VP OR head OR director",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          },
+          {
+            "keywords": "engineering OR technology OR product",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": [
+          {
+            "keywords": "startup OR scaleup OR \"product company\"",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "fintech OR payments OR lending OR banking",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "VP OR head OR director",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          },
+          {
+            "keywords": "engineering OR technology OR product",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": [
+          {
+            "keywords": "startup OR company",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "api": "recruiter",
+        "category": "people"
+      }
+    ],
+    "raw": "{\"searchRequests\":[{\"keywords\":\"fintech OR payments OR lending OR platform\",\"location\":[{\"id\":\"105556591\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT\",\"title\":\"\"}],\"industry\":null,\"role\":[{\"keywords\":\"VP OR \\\"vice president\\\" OR head\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"},{\"keywords\":\"engineering OR technology OR tech OR product\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":[{\"keywords\":\"startup OR scaleup OR \\\"early stage\\\" OR \\\"growth stage\\\"\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"fintech OR payments OR lending\",\"location\":[{\"id\":\"105556591\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT\",\"title\":\"\"}],\"industry\":null,\"role\":[{\"keywords\":\"VP OR head OR director\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"},{\"keywords\":\"engineering OR technology OR product\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":[{\"keywords\":\"startup OR scaleup OR \\\"product company\\\"\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"fintech OR payments OR lending OR banking\",\"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"VP OR head OR director\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"},{\"keywords\":\"engineering OR technology OR product\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":[{\"keywords\":\"startup OR company\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"api\":\"recruiter\",\"category\":\"people\"}]}",
+    "error": null,
+    "durationMs": 4010,
+    "inputTokens": 1660,
+    "outputTokens": 356,
+    "costUsd": 0.006168
+  },
+  {
+    "modelId": "gpt-4.1",
+    "modelLabel": "gpt-4.1",
+    "reqId": "tech_cio",
+    "reqLabel": "CIO – Private Bank (Technology Leadership)",
+    "score": {
+      "stemQuality": 2,
+      "filterAssignment": 3,
+      "tierCoverage": 2,
+      "keywordsNonNull": 1,
+      "locationHandling": 1,
+      "total": 9
+    },
+    "queries": [
+      {
+        "keywords": "CIO OR \"chief information officer\" OR \"core banking\" OR transformation OR \"digital banking\"",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "CIO OR \"chief information officer\" OR \"head of technology\" OR \"technology head\" OR \"IT head\" OR \"information technology\"",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": [
+          {
+            "keywords": "HDFC OR Axis OR Kotak",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "banking OR fintech OR \"core banking\" OR transformation OR \"digital banking\"",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "technology OR CIO OR \"digital\" OR \"information officer\" OR \"IT head\"",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      }
+    ],
+    "raw": "{\"searchRequests\":[{\"keywords\":\"CIO OR \\\"chief information officer\\\" OR \\\"core banking\\\" OR transformation OR \\\"digital banking\\\"\",\"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"CIO OR \\\"chief information officer\\\" OR \\\"head of technology\\\" OR \\\"technology head\\\" OR \\\"IT head\\\" OR \\\"information technology\\\"\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":[{\"keywords\":\"HDFC OR Axis OR Kotak\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"banking OR fintech OR \\\"core banking\\\" OR transformation OR \\\"digital banking\\\"\",\"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"technology OR CIO OR \\\"digital\\\" OR \\\"information officer\\\" OR \\\"IT head\\\"\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"}]}",
+    "error": null,
+    "durationMs": 3890,
+    "inputTokens": 1666,
+    "outputTokens": 200,
+    "costUsd": 0.004932
+  },
+  {
+    "modelId": "gpt-4.1",
+    "modelLabel": "gpt-4.1",
+    "reqId": "mfg_pharma",
+    "reqLabel": "VP Operations – Pharma API, USFDA (Manufacturing)",
+    "score": {
+      "stemQuality": 2,
+      "filterAssignment": 3,
+      "tierCoverage": 2,
+      "keywordsNonNull": 1,
+      "locationHandling": 1,
+      "total": 9
+    },
+    "queries": [
+      {
+        "keywords": "pharma OR API OR formulations OR USFDA",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "VP OR \"vice president\" OR head OR director OR operations OR manufacturing",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": [
+          {
+            "keywords": "Aurobindo OR Cipla OR Lupin",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "pharma OR API OR formulations OR USFDA",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "operations OR manufacturing OR plant OR factory OR site",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      }
+    ],
+    "raw": "{\"searchRequests\":[{\"keywords\":\"pharma OR API OR formulations OR USFDA\",\"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"VP OR \\\"vice president\\\" OR head OR director OR operations OR manufacturing\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":[{\"keywords\":\"Aurobindo OR Cipla OR Lupin\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"pharma OR API OR formulations OR USFDA\",\"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"operations OR manufacturing OR plant OR factory OR site\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"}]}",
+    "error": null,
+    "durationMs": 2472,
+    "inputTokens": 1669,
+    "outputTokens": 162,
+    "costUsd": 0.004634
+  },
+  {
+    "modelId": "gpt-4.1",
+    "modelLabel": "gpt-4.1",
+    "reqId": "scm_cpo",
+    "reqLabel": "CPO – Automotive OEM (Supply Chain)",
+    "score": {
+      "stemQuality": 3,
+      "filterAssignment": 3,
+      "tierCoverage": 2,
+      "keywordsNonNull": 1,
+      "locationHandling": 1,
+      "total": 10
+    },
+    "queries": [
+      {
+        "keywords": "automotive OR OEM OR automobile OR supplier OR sourcing OR procurement OR vendor",
+        "location": [
+          {
+            "id": "102713516",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT",
+            "title": ""
+          }
+        ],
+        "industry": null,
+        "role": [
+          {
+            "keywords": "procurement OR sourcing OR supply OR purchasing OR CPO OR purchase OR supplier development",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          },
+          {
+            "keywords": "chief OR head OR director OR VP OR president",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": [
+          {
+            "keywords": "Maruti OR \"Tata Motors\"",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "automotive OR OEM OR automobile OR procurement OR supplier development",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "procurement OR sourcing OR supply OR purchasing OR purchase OR supplier development",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          },
+          {
+            "keywords": "head OR director OR VP OR chief OR president",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      }
+    ],
+    "raw": "{\"searchRequests\":[{\"keywords\":\"automotive OR OEM OR automobile OR supplier OR sourcing OR procurement OR vendor\",\"location\":[{\"id\":\"102713516\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT\",\"title\":\"\"}],\"industry\":null,\"role\":[{\"keywords\":\"procurement OR sourcing OR supply OR purchasing OR CPO OR purchase OR supplier development\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"},{\"keywords\":\"chief OR head OR director OR VP OR president\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":[{\"keywords\":\"Maruti OR \\\"Tata Motors\\\"\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"automotive OR OEM OR automobile OR procurement OR supplier development\",\"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"procurement OR sourcing OR supply OR purchasing OR purchase OR supplier development\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"},{\"keywords\":\"head OR director OR VP OR chief OR president\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"}]}",
+    "error": null,
+    "durationMs": 3570,
+    "inputTokens": 1662,
+    "outputTokens": 241,
+    "costUsd": 0.005252
+  },
+  {
+    "modelId": "gpt-4.1",
+    "modelLabel": "gpt-4.1",
+    "reqId": "fin_gcfo",
+    "reqLabel": "Group CFO – Infrastructure Conglomerate (Finance)",
+    "score": {
+      "stemQuality": 3,
+      "filterAssignment": 3,
+      "tierCoverage": 2,
+      "keywordsNonNull": 1,
+      "locationHandling": 1,
+      "total": 10
+    },
+    "queries": [
+      {
+        "keywords": "CA OR chartered OR accountant OR ICWA OR ICAI OR accounting OR \"project accounting\" OR infra OR \"infrastructure\"",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "CFO OR \"chief financial\" OR finance",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": [
+          {
+            "keywords": "L&T OR Larsen OR Shapoorji OR GMR",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "CA OR chartered OR accountant OR ICWA OR ICAI OR accounting OR \"project accounting\" OR infra OR \"infrastructure\"",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "CFO OR \"chief financial\" OR finance",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      }
+    ],
+    "raw": "{\"searchRequests\":[{\"keywords\":\"CA OR chartered OR accountant OR ICWA OR ICAI OR accounting OR \\\"project accounting\\\" OR infra OR \\\"infrastructure\\\"\",\"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"CFO OR \\\"chief financial\\\" OR finance\", \"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":[{\"keywords\":\"L&T OR Larsen OR Shapoorji OR GMR\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"CA OR chartered OR accountant OR ICWA OR ICAI OR accounting OR \\\"project accounting\\\" OR infra OR \\\"infrastructure\\\"\",\"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"CFO OR \\\"chief financial\\\" OR finance\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"}]}",
+    "error": null,
+    "durationMs": 2661,
+    "inputTokens": 1669,
+    "outputTokens": 194,
+    "costUsd": 0.00489
+  },
+  {
+    "modelId": "gpt-4.1",
+    "modelLabel": "gpt-4.1",
+    "reqId": "banking_cro",
+    "reqLabel": "CRO – NBFC, Credit Risk (Banking)",
+    "score": {
+      "stemQuality": 3,
+      "filterAssignment": 3,
+      "tierCoverage": 2,
+      "keywordsNonNull": 1,
+      "locationHandling": 1,
+      "total": 10
+    },
+    "queries": [
+      {
+        "keywords": "NBFC OR lending OR fintech OR \"retail underwriting\" OR \"credit risk\"",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "risk OR \"credit\" OR CRO",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": [
+          {
+            "keywords": "Bajaj Finance",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "NBFC OR lending OR fintech OR \"retail underwriting\" OR \"credit risk\"",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "risk OR \"credit\"",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      }
+    ],
+    "raw": "{\"searchRequests\":[{\"keywords\":\"NBFC OR lending OR fintech OR \\\"retail underwriting\\\" OR \\\"credit risk\\\"\",\"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"risk OR \\\"credit\\\" OR CRO\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":[{\"keywords\":\"Bajaj Finance\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"NBFC OR lending OR fintech OR \\\"retail underwriting\\\" OR \\\"credit risk\\\"\",\"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"risk OR \\\"credit\\\"\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"}]}",
+    "error": null,
+    "durationMs": 2589,
+    "inputTokens": 1664,
+    "outputTokens": 160,
+    "costUsd": 0.004608
+  },
+  {
+    "modelId": "gpt-4.1",
+    "modelLabel": "gpt-4.1",
+    "reqId": "legal_gc",
+    "reqLabel": "General Counsel – Series D Startup (Legal)",
+    "score": {
+      "stemQuality": 3,
+      "filterAssignment": 3,
+      "tierCoverage": 2,
+      "keywordsNonNull": 1,
+      "locationHandling": 1,
+      "total": 10
+    },
+    "queries": [
+      {
+        "keywords": "general counsel OR legal OR litigation OR regulatory OR compliance OR law",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "general counsel OR legal head OR CLO OR ",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": [
+          {
+            "keywords": "Ola OR Oyo OR ",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "general counsel OR legal OR litigation OR regulatory OR compliance OR law OR contracts OR disputes",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "general counsel OR legal head OR CLO OR legal",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      }
+    ],
+    "raw": "{\"searchRequests\":[{\"keywords\":\"general counsel OR legal OR litigation OR regulatory OR compliance OR law\",\"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"general counsel OR legal head OR CLO OR \"  \t,\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":[{\"keywords\":\"Ola OR Oyo OR \"  \t,\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"general counsel OR legal OR litigation OR regulatory OR compliance OR law OR contracts OR disputes\",\"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"general counsel OR legal head OR CLO OR legal\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"}]}",
+    "error": null,
+    "durationMs": 2326,
+    "inputTokens": 1664,
+    "outputTokens": 168,
+    "costUsd": 0.004672
+  },
+  {
+    "modelId": "gpt-4.1",
+    "modelLabel": "gpt-4.1",
+    "reqId": "pe_partner",
+    "reqLabel": "Partner – Growth Equity Fund $500M AUM (PE/Investments)",
+    "score": {
+      "stemQuality": 3,
+      "filterAssignment": 3,
+      "tierCoverage": 2,
+      "keywordsNonNull": 1,
+      "locationHandling": 1,
+      "total": 10
+    },
+    "queries": [
+      {
+        "keywords": "growth equity OR \"private equity\" OR \"Chrys Capital\" OR consumer OR tech OR technology OR internet OR SaaS OR ecommerce OR fintech",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "partner OR principal OR investment OR investing OR \"deal team\" OR associate",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": [
+          {
+            "keywords": "Chrys OR \"Chrys Capital\" OR \"True North\" OR Everstone OR Multiples OR WestBridge OR Elevation OR Lightspeed OR Nexus OR Accel OR Matrix OR Sequoia OR Temasek OR Warburg OR KKR OR Blackstone OR Carlyle OR TPG OR General Atlantic OR Baring OR Bain OR Apax OR Advent OR Investcorp OR Gaja OR Avendus",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "growth OR \"private equity\" OR investing OR \"consumer\" OR tech OR technology OR SaaS OR ecommerce OR internet OR fintech",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "partner OR principal OR investment OR investing OR \"deal team\" OR associate",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "equity OR investing OR \"investment professional\" OR venture OR private OR consumer OR technology OR tech",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "partner OR principal OR investment OR investing",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      }
+    ],
+    "raw": "{\"searchRequests\":[{\"keywords\":\"growth equity OR \\\"private equity\\\" OR \\\"Chrys Capital\\\" OR consumer OR tech OR technology OR internet OR SaaS OR ecommerce OR fintech\",\"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"partner OR principal OR investment OR investing OR \\\"deal team\\\" OR associate\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":[{\"keywords\":\"Chrys OR \\\"Chrys Capital\\\" OR \\\"True North\\\" OR Everstone OR Multiples OR WestBridge OR Elevation OR Lightspeed OR Nexus OR Accel OR Matrix OR Sequoia OR Temasek OR Warburg OR KKR OR Blackstone OR Carlyle OR TPG OR General Atlantic OR Baring OR Bain OR Apax OR Advent OR Investcorp OR Gaja OR Avendus\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"growth OR \\\"private equity\\\" OR investing OR \\\"consumer\\\" OR tech OR technology OR SaaS OR ecommerce OR internet OR fintech\",\"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"partner OR principal OR investment OR investing OR \\\"deal team\\\" OR associate\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"equity OR investing OR \\\"investment professional\\\" OR venture OR private OR consumer OR technology OR tech\",\"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"partner OR principal OR investment OR investing\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"}]}",
+    "error": null,
+    "durationMs": 4300,
+    "inputTokens": 1668,
+    "outputTokens": 342,
+    "costUsd": 0.006072
+  },
+  {
+    "modelId": "gpt-4.1",
+    "modelLabel": "gpt-4.1",
+    "reqId": "healthcare_cmo",
+    "reqLabel": "Chief Medical Officer – Hospital Chains Delhi NCR (Healthcare)",
+    "score": {
+      "stemQuality": 3,
+      "filterAssignment": 3,
+      "tierCoverage": 2,
+      "keywordsNonNull": 1,
+      "locationHandling": 1,
+      "total": 10
+    },
+    "queries": [
+      {
+        "keywords": "CMO OR \"Chief Medical Officer\" OR \"medical director\" OR NABH OR JCI OR \"quality accreditation\" OR \"clinical governance\"",
+        "location": [
+          {
+            "id": "102713516",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT",
+            "title": ""
+          }
+        ],
+        "industry": null,
+        "role": [
+          {
+            "keywords": "CMO OR \"Chief Medical Officer\" OR \"medical director\"",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          },
+          {
+            "keywords": "hospital OR \"hospital chain\" OR healthcare",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "CMO OR \"Chief Medical Officer\" OR \"medical director\" OR NABH OR JCI OR \"quality accreditation\" OR \"clinical governance\"",
+        "location": [
+          {
+            "id": "102713516",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT",
+            "title": ""
+          }
+        ],
+        "industry": null,
+        "role": [
+          {
+            "keywords": "CMO OR \"Chief Medical Officer\" OR \"medical director\"",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          },
+          {
+            "keywords": "hospital OR healthcare",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      }
+    ],
+    "raw": "{\"searchRequests\":[{\"keywords\":\"CMO OR \\\"Chief Medical Officer\\\" OR \\\"medical director\\\" OR NABH OR JCI OR \\\"quality accreditation\\\" OR \\\"clinical governance\\\"\",\"location\":[{\"id\":\"102713516\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT\",\"title\":\"\"}],\"industry\":null,\"role\":[{\"keywords\":\"CMO OR \\\"Chief Medical Officer\\\" OR \\\"medical director\\\"\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"},{\"keywords\":\"hospital OR \\\"hospital chain\\\" OR healthcare\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"CMO OR \\\"Chief Medical Officer\\\" OR \\\"medical director\\\" OR NABH OR JCI OR \\\"quality accreditation\\\" OR \\\"clinical governance\\\"\",\"location\":[{\"id\":\"102713516\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT\",\"title\":\"\"}],\"industry\":null,\"role\":[{\"keywords\":\"CMO OR \\\"Chief Medical Officer\\\" OR \\\"medical director\\\"\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"},{\"keywords\":\"hospital OR healthcare\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"}]}",
+    "error": null,
+    "durationMs": 3584,
+    "inputTokens": 1660,
+    "outputTokens": 261,
+    "costUsd": 0.005408
+  },
+  {
+    "modelId": "gpt-4.1-nano",
+    "modelLabel": "gpt-4.1-nano",
+    "reqId": "sales_cbo",
+    "reqLabel": "CBO – Marketplace Startup (Sales)",
+    "score": {
+      "stemQuality": 3,
+      "filterAssignment": 3,
+      "tierCoverage": 2,
+      "keywordsNonNull": 1,
+      "locationHandling": 1,
+      "total": 10
+    },
+    "queries": [
+      {
+        "keywords": "marketplace OR ",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "category OR head",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          },
+          {
+            "keywords": "supply OR demand OR ",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "marketplace OR ",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "category OR head",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          },
+          {
+            "keywords": "supply OR demand OR ",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "marketplace OR ",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "category OR head",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          },
+          {
+            "keywords": "supply OR demand OR ",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      }
+    ],
+    "raw": "{\"searchRequests\":[{\"keywords\":\"marketplace OR \"   , \"location\":null, \"industry\":null, \"role\":[{\"keywords\":\"category OR head\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"},{\"keywords\":\"supply OR demand OR \"   , \"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"marketplace OR \"   , \"location\":null, \"industry\":null, \"role\":[{\"keywords\":\"category OR head\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"},{\"keywords\":\"supply OR demand OR \"   , \"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"marketplace OR \"   , \"location\":null, \"industry\":null, \"role\":[{\"keywords\":\"category OR head\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"},{\"keywords\":\"supply OR demand OR \"   , \"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"}]}",
+    "error": null,
+    "durationMs": 2412,
+    "inputTokens": 1671,
+    "outputTokens": 243,
+    "costUsd": 0.0002643
+  },
+  {
+    "modelId": "gpt-4.1-nano",
+    "modelLabel": "gpt-4.1-nano",
+    "reqId": "eng_vp",
+    "reqLabel": "VP Engineering – Fintech Bangalore (Engineering)",
+    "score": {
+      "stemQuality": 0,
+      "filterAssignment": 3,
+      "tierCoverage": 2,
+      "keywordsNonNull": 1,
+      "locationHandling": 1,
+      "total": 7
+    },
+    "queries": [
+      {
+        "keywords": "fintech OR payments OR lending",
+        "location": [
+          {
+            "id": "105556591",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_OPEN_TO_RELOCATE",
+            "title": ""
+          }
+        ],
+        "industry": null,
+        "role": [
+          {
+            "keywords": "VP OR vice president OR ",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          },
+          {
+            "keywords": "engineering OR tech OR technology",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "fintech OR payments OR lending",
+        "location": [
+          {
+            "id": "105556591",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_OPEN_TO_RELOCATE",
+            "title": ""
+          }
+        ],
+        "industry": null,
+        "role": [
+          {
+            "keywords": "VP OR vice president OR ",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          },
+          {
+            "keywords": "engineering OR tech OR technology",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "fintech OR payments OR lending",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "VP OR vice president OR ",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          },
+          {
+            "keywords": "engineering OR tech OR technology",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      }
+    ],
+    "raw": "{\"searchRequests\":[{\"keywords\":\"fintech OR payments OR lending\",\"location\":[{\"id\":\"105556591\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_OPEN_TO_RELOCATE\",\"title\":\"\"}],\"industry\":null,\"role\":[{\"keywords\":\"VP OR vice president OR \",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"},{\"keywords\":\"engineering OR tech OR technology\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"fintech OR payments OR lending\",\"location\":[{\"id\":\"105556591\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_OPEN_TO_RELOCATE\",\"title\":\"\"}],\"industry\":null,\"role\":[{\"keywords\":\"VP OR vice president OR \",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"},{\"keywords\":\"engineering OR tech OR technology\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"fintech OR payments OR lending\",\"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"VP OR vice president OR \",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"},{\"keywords\":\"engineering OR tech OR technology\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"}]}",
+    "error": null,
+    "durationMs": 2371,
+    "inputTokens": 1660,
+    "outputTokens": 284,
+    "costUsd": 0.0002796
+  },
+  {
+    "modelId": "gpt-4.1-nano",
+    "modelLabel": "gpt-4.1-nano",
+    "reqId": "tech_cio",
+    "reqLabel": "CIO – Private Bank (Technology Leadership)",
+    "score": {
+      "stemQuality": 3,
+      "filterAssignment": 3,
+      "tierCoverage": 2,
+      "keywordsNonNull": 1,
+      "locationHandling": 1,
+      "total": 10
+    },
+    "queries": [
+      {
+        "keywords": "bank OR banking OR fintech OR financial",
+        "location": [
+          {
+            "id": "102713516",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT",
+            "title": ""
+          }
+        ],
+        "industry": null,
+        "role": [
+          {
+            "keywords": "cio OR chief OR chief executive OR tech OR technology OR transformation",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "bank OR banking OR fintech OR financial",
+        "location": [
+          {
+            "id": "102713516",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT",
+            "title": ""
+          }
+        ],
+        "industry": null,
+        "role": [
+          {
+            "keywords": "cio OR chief OR chief executive OR tech OR technology OR transformation",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "bank OR banking",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "cio OR chief OR chief executive",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      }
+    ],
+    "raw": "{\"searchRequests\":[{\"keywords\":\"bank OR banking OR fintech OR financial\",\"location\":[{\"id\":\"102713516\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT\",\"title\":\"\"}],\"industry\":null,\"role\":[{\"keywords\":\"cio OR chief OR chief executive OR tech OR technology OR transformation\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"bank OR banking OR fintech OR financial\",\"location\":[{\"id\":\"102713516\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT\",\"title\":\"\"}],\"industry\":null,\"role\":[{\"keywords\":\"cio OR chief OR chief executive OR tech OR technology OR transformation\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"bank OR banking\",\"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"cio OR chief OR chief executive\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"}]}",
+    "error": null,
+    "durationMs": 1809,
+    "inputTokens": 1666,
+    "outputTokens": 225,
+    "costUsd": 0.0002566
+  },
+  {
+    "modelId": "gpt-4.1-nano",
+    "modelLabel": "gpt-4.1-nano",
+    "reqId": "mfg_pharma",
+    "reqLabel": "VP Operations – Pharma API, USFDA (Manufacturing)",
+    "score": {
+      "stemQuality": 0,
+      "filterAssignment": 3,
+      "tierCoverage": 1,
+      "keywordsNonNull": 1,
+      "locationHandling": 1,
+      "total": 6
+    },
+    "queries": [
+      {
+        "keywords": "API OR pharmaceutical OR pharma OR ",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "VP OR vicepresident OR vice president",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          },
+          {
+            "keywords": "operations OR ops",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": [
+          {
+            "keywords": "Aurobindo OR Cipla OR Lupin",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "API OR pharmaceutical OR pharma",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "VP OR vicepresident OR vice president",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          },
+          {
+            "keywords": "operations OR ops",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": [
+          {
+            "keywords": "Aurobindo OR Cipla OR Lupin",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "API OR pharmaceutical OR pharma",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "VP OR vicepresident OR vice president",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          },
+          {
+            "keywords": "operations OR ops",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": [
+          {
+            "keywords": "Aurobindo OR Cipla OR Lupin",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "api": "recruiter",
+        "category": "people"
+      }
+    ],
+    "raw": "{\"searchRequests\":[\n  {\n    \"keywords\": \"API OR pharmaceutical OR pharma OR \"\n                 ,\"location\": null,\n    \"industry\": null,\n    \"role\": [\n      {\n        \"keywords\": \"VP OR vicepresident OR vice president\",\n        \"priority\": \"MUST_HAVE\",\n        \"scope\": \"CURRENT_OR_PAST\"\n      },\n      {\n        \"keywords\": \"operations OR ops\",\n        \"priority\": \"MUST_HAVE\",\n        \"scope\": \"CURRENT_OR_PAST\"\n      }\n    ],\n    \"company\": [\n      {\n        \"keywords\": \"Aurobindo OR Cipla OR Lupin\",\n        \"priority\": \"CAN_HAVE\",\n        \"scope\": \"CURRENT_OR_PAST\"\n      }\n    ],\n    \"api\": \"recruiter\",\n    \"category\": \"people\"\n  },\n  {\n    \"keywords\": \"API OR pharmaceutical OR pharma\",\n    \"location\": null,\n    \"industry\": null,\n    \"role\": [\n      {\n        \"keywords\": \"VP OR vicepresident OR vice president\",\n        \"priority\": \"MUST_HAVE\",\n        \"scope\": \"CURRENT_OR_PAST\"\n      },\n      {\n        \"keywords\": \"operations OR ops\",\n        \"priority\": \"MUST_HAVE\",\n        \"scope\": \"CURRENT_OR_PAST\"\n      }\n    ],\n    \"company\": [\n      {\n        \"keywords\": \"Aurobindo OR Cipla OR Lupin\",\n        \"priority\": \"CAN_HAVE\",\n        \"scope\": \"CURRENT_OR_PAST\"\n      }\n    ],\n    \"api\": \"recruiter\",\n    \"category\": \"people\"\n  },\n  {\n    \"keywords\": \"API OR pharmaceutical OR pharma\",\n    \"location\": null,\n    \"industry\": null,\n    \"role\": [\n      {\n        \"keywords\": \"VP OR vicepresident OR vice president\",\n        \"priority\": \"MUST_HAVE\",\n        \"scope\": \"CURRENT_OR_PAST\"\n      },\n      {\n        \"keywords\": \"operations OR ops\",\n        \"priority\": \"MUST_HAVE\",\n        \"scope\": \"CURRENT_OR_PAST\"\n      }\n    ],\n    \"company\": [\n      {\n        \"keywords\": \"Aurobindo OR Cipla OR Lupin\",\n        \"priority\": \"CAN_HAVE\",\n        \"scope\": \"CURRENT_OR_PAST\"\n      }\n    ],\n    \"api\": \"recruiter\",\n    \"category\": \"people\"\n  }\n]}",
+    "error": null,
+    "durationMs": 3716,
+    "inputTokens": 1669,
+    "outputTokens": 500,
+    "costUsd": 0.0003669
+  },
+  {
+    "modelId": "gpt-4.1-nano",
+    "modelLabel": "gpt-4.1-nano",
+    "reqId": "scm_cpo",
+    "reqLabel": "CPO – Automotive OEM (Supply Chain)",
+    "score": {
+      "stemQuality": 3,
+      "filterAssignment": 2,
+      "tierCoverage": 2,
+      "keywordsNonNull": 1,
+      "locationHandling": 1,
+      "total": 9
+    },
+    "queries": [
+      {
+        "keywords": "procurement OR purchasing OR sourcing",
+        "location": [
+          {
+            "id": "102713516",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT",
+            "title": ""
+          }
+        ],
+        "industry": null,
+        "role": [
+          {
+            "keywords": "chief OR head OR leader",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": [
+          {
+            "keywords": "Maruti OR Tata Motors",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "procurement OR purchasing OR sourcing",
+        "location": [
+          {
+            "id": "102713516",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT",
+            "title": ""
+          }
+        ],
+        "industry": null,
+        "role": [
+          {
+            "keywords": "director OR VP OR senior",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": [
+          {
+            "keywords": "Maruti OR Tata Motors",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "supplier OR vendor OR sub-contractor",
+        "location": [
+          {
+            "id": "102713516",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT",
+            "title": ""
+          }
+        ],
+        "industry": null,
+        "role": null,
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      }
+    ],
+    "raw": "{\"searchRequests\":[{\"keywords\":\"procurement OR purchasing OR sourcing\",\"location\":[{\"id\":\"102713516\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT\",\"title\":\"\"}],\"industry\":null,\"role\":[{\"keywords\":\"chief OR head OR leader\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":[{\"keywords\":\"Maruti OR Tata Motors\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"procurement OR purchasing OR sourcing\",\"location\":[{\"id\":\"102713516\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT\",\"title\":\"\"}],\"industry\":null,\"role\":[{\"keywords\":\"director OR VP OR senior\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":[{\"keywords\":\"Maruti OR Tata Motors\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"supplier OR vendor OR sub-contractor\",\"location\":[{\"id\":\"102713516\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT\",\"title\":\"\"}],\"industry\":null,\"role\":null,\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"}]}",
+    "error": null,
+    "durationMs": 2231,
+    "inputTokens": 1662,
+    "outputTokens": 252,
+    "costUsd": 0.00026700000000000004
+  },
+  {
+    "modelId": "gpt-4.1-nano",
+    "modelLabel": "gpt-4.1-nano",
+    "reqId": "fin_gcfo",
+    "reqLabel": "Group CFO – Infrastructure Conglomerate (Finance)",
+    "score": {
+      "stemQuality": 3,
+      "filterAssignment": 3,
+      "tierCoverage": 1,
+      "keywordsNonNull": 1,
+      "locationHandling": 1,
+      "total": 9
+    },
+    "queries": [
+      {
+        "keywords": "group OR CFO OR ",
+        "location": [
+          {
+            "id": "102713516",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_OPEN_TO_RELOCATE",
+            "title": ""
+          }
+        ],
+        "industry": null,
+        "role": [
+          {
+            "keywords": "CFO OR financial OR controller",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": [
+          {
+            "keywords": "L&T OR Shapoorji OR GMR",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "infrastructure OR conglomerate OR construction",
+        "location": [
+          {
+            "id": "102713516",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_OPEN_TO_RELOCATE",
+            "title": ""
+          }
+        ],
+        "industry": null,
+        "role": [
+          {
+            "keywords": "CFO OR finance OR financial",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": [
+          {
+            "keywords": "L&T OR Shapoorji OR GMR",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "CFO OR financial OR controller",
+        "location": [
+          {
+            "id": "102713516",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_OPEN_TO_RELOCATE",
+            "title": ""
+          }
+        ],
+        "industry": null,
+        "role": [
+          {
+            "keywords": "CFO OR financial OR controller",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": [
+          {
+            "keywords": "L&T OR Shapoorji OR GMR",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "api": "recruiter",
+        "category": "people"
+      }
+    ],
+    "raw": "{\"searchRequests\":[{\"keywords\":\"group OR CFO OR \"\r\n\r\n\r\n \n \n \n \n \n\n \n \n \n \n \n\n \n \n \n\n \n \n\n \n \n \n\n \n \n\n \n \n\n \n \n \n \n\n \n \n \n \n\n \n \n\n \n \n\n \n  ,\"location\":[{\"id\":\"102713516\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_OPEN_TO_RELOCATE\",\"title\":\"\"}],\"industry\":null,\"role\":[{\"keywords\":\"CFO OR financial OR controller\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":[{\"keywords\":\"L&T OR Shapoorji OR GMR\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}] ,\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"infrastructure OR conglomerate OR construction\",\"location\":[{\"id\":\"102713516\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_OPEN_TO_RELOCATE\",\"title\":\"\"}],\"industry\":null,\"role\":[{\"keywords\":\"CFO OR finance OR financial\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":[{\"keywords\":\"L&T OR Shapoorji OR GMR\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}] ,\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"CFO OR financial OR controller\",\"location\":[{\"id\":\"102713516\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_OPEN_TO_RELOCATE\",\"title\":\"\"}],\"industry\":null,\"role\":[{\"keywords\":\"CFO OR financial OR controller\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":[{\"keywords\":\"L&T OR Shapoorji OR GMR\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}] ,\"api\":\"recruiter\",\"category\":\"people\"}]}",
+    "error": null,
+    "durationMs": 2453,
+    "inputTokens": 1669,
+    "outputTokens": 363,
+    "costUsd": 0.0003121
+  },
+  {
+    "modelId": "gpt-4.1-nano",
+    "modelLabel": "gpt-4.1-nano",
+    "reqId": "banking_cro",
+    "reqLabel": "CRO – NBFC, Credit Risk (Banking)",
+    "score": {
+      "stemQuality": 3,
+      "filterAssignment": 2,
+      "tierCoverage": 2,
+      "keywordsNonNull": 1,
+      "locationHandling": 1,
+      "total": 9
+    },
+    "queries": [
+      {
+        "keywords": "risk OR credit OR underwriting",
+        "location": [
+          {
+            "id": "102713516",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT",
+            "title": ""
+          }
+        ],
+        "industry": null,
+        "role": [
+          {
+            "keywords": "chief OR head OR leader",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": [
+          {
+            "keywords": "Bajaj Finance",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "risk OR credit",
+        "location": [
+          {
+            "id": "102713516",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT",
+            "title": ""
+          }
+        ],
+        "industry": null,
+        "role": [
+          {
+            "keywords": "head OR leader OR officer",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "risk OR credit OR underwriting",
+        "location": null,
+        "industry": null,
+        "role": null,
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      }
+    ],
+    "raw": "{\"searchRequests\":[{\"keywords\":\"risk OR credit OR underwriting\",\"location\":[{\"id\":\"102713516\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT\",\"title\":\"\"}],\"industry\":null,\"role\":[{\"keywords\":\"chief OR head OR leader\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":[{\"keywords\":\"Bajaj Finance\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"risk OR credit\",\"location\":[{\"id\":\"102713516\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT\",\"title\":\"\"}],\"industry\":null,\"role\":[{\"keywords\":\"head OR leader OR officer\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"risk OR credit OR underwriting\",\"location\":null,\"industry\":null,\"role\":null,\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"}]}",
+    "error": null,
+    "durationMs": 2108,
+    "inputTokens": 1664,
+    "outputTokens": 205,
+    "costUsd": 0.0002484
+  },
+  {
+    "modelId": "gpt-4.1-nano",
+    "modelLabel": "gpt-4.1-nano",
+    "reqId": "legal_gc",
+    "reqLabel": "General Counsel – Series D Startup (Legal)",
+    "score": {
+      "stemQuality": 3,
+      "filterAssignment": 3,
+      "tierCoverage": 1,
+      "keywordsNonNull": 1,
+      "locationHandling": 1,
+      "total": 9
+    },
+    "queries": [
+      {
+        "keywords": "litigation OR legal OR ",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "general OR counsel OR legal OR litigation",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "litigation OR legal OR ",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "general OR counsel OR legal OR litigation",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "litigation OR legal OR ",
+        "location": null,
+        "industry": null,
+        "role": [
+          {
+            "keywords": "general OR counsel OR legal OR litigation",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      }
+    ],
+    "raw": "{\"searchRequests\":[{\"keywords\":\"litigation OR legal OR \" , \"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"general OR counsel OR legal OR litigation\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"litigation OR legal OR \",\"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"general OR counsel OR legal OR litigation\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"litigation OR legal OR \",\"location\":null,\"industry\":null,\"role\":[{\"keywords\":\"general OR counsel OR legal OR litigation\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"}]}",
+    "error": null,
+    "durationMs": 1584,
+    "inputTokens": 1664,
+    "outputTokens": 179,
+    "costUsd": 0.00023799999999999998
+  },
+  {
+    "modelId": "gpt-4.1-nano",
+    "modelLabel": "gpt-4.1-nano",
+    "reqId": "pe_partner",
+    "reqLabel": "Partner – Growth Equity Fund $500M AUM (PE/Investments)",
+    "score": {
+      "stemQuality": 3,
+      "filterAssignment": 0,
+      "tierCoverage": 2,
+      "keywordsNonNull": 1,
+      "locationHandling": 1,
+      "total": 7
+    },
+    "queries": [
+      {
+        "keywords": "venture OR growth OR private equity OR PE",
+        "location": [
+          {
+            "id": "102713516",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT",
+            "title": ""
+          }
+        ],
+        "industry": null,
+        "role": [
+          {
+            "keywords": "associate OR investment OR analyst",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "consumer OR tech OR technology",
+        "location": [
+          {
+            "id": "102713516",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT",
+            "title": ""
+          }
+        ],
+        "industry": null,
+        "role": null,
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "growth OR scale OR expansion OR AUM",
+        "location": [
+          {
+            "id": "102713516",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT",
+            "title": ""
+          }
+        ],
+        "industry": null,
+        "role": null,
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "associate OR analyst OR investment OR track record",
+        "location": [
+          {
+            "id": "102713516",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT",
+            "title": ""
+          }
+        ],
+        "industry": null,
+        "role": null,
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      }
+    ],
+    "raw": "{\"searchRequests\":[{\"keywords\":\"venture OR growth OR private equity OR PE\",\"location\":[{\"id\":\"102713516\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT\",\"title\":\"\"}],\"industry\":null,\"role\":[{\"keywords\":\"associate OR investment OR analyst\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"consumer OR tech OR technology\",\"location\":[{\"id\":\"102713516\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT\",\"title\":\"\"}],\"industry\":null,\"role\":null,\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"growth OR scale OR expansion OR AUM\",\"location\":[{\"id\":\"102713516\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT\",\"title\":\"\"}],\"industry\":null,\"role\":null,\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\": \"associate OR analyst OR investment OR track record\",\"location\":[{\"id\":\"102713516\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT\",\"title\":\"\"}],\"industry\":null,\"role\":null,\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"}]}",
+    "error": null,
+    "durationMs": 2163,
+    "inputTokens": 1668,
+    "outputTokens": 250,
+    "costUsd": 0.00026680000000000003
+  },
+  {
+    "modelId": "gpt-4.1-nano",
+    "modelLabel": "gpt-4.1-nano",
+    "reqId": "healthcare_cmo",
+    "reqLabel": "Chief Medical Officer – Hospital Chains Delhi NCR (Healthcare)",
+    "score": {
+      "stemQuality": 3,
+      "filterAssignment": 3,
+      "tierCoverage": 1,
+      "keywordsNonNull": 1,
+      "locationHandling": 1,
+      "total": 9
+    },
+    "queries": [
+      {
+        "keywords": "chief OR ",
+        "location": [
+          {
+            "id": "102713516",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_OPEN_TO_RELOCATE",
+            "title": ""
+          }
+        ],
+        "industry": {
+          "include": [
+            "hospital",
+            "healthcare"
+          ],
+          "exclude": null
+        },
+        "role": [
+          {
+            "keywords": "chief OR chief medical officer OR CMO",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "hospital OR chain OR chain OR group OR network",
+        "location": [
+          {
+            "id": "102713516",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_OPEN_TO_RELOCATE",
+            "title": ""
+          }
+        ],
+        "industry": {
+          "include": [
+            "hospital",
+            "healthcare"
+          ],
+          "exclude": null
+        },
+        "role": [
+          {
+            "keywords": "chief OR CMO",
+            "priority": "CAN_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      },
+      {
+        "keywords": "hospital OR chain OR hospital chain OR hospital network OR hospital group",
+        "location": [
+          {
+            "id": "102713516",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_OPEN_TO_RELOCATE",
+            "title": ""
+          }
+        ],
+        "industry": {
+          "include": [
+            "hospital",
+            "healthcare"
+          ],
+          "exclude": null
+        },
+        "role": [
+          {
+            "keywords": "chief OR CMO",
+            "priority": "MUST_HAVE",
+            "scope": "CURRENT_OR_PAST"
+          }
+        ],
+        "company": null,
+        "api": "recruiter",
+        "category": "people"
+      }
+    ],
+    "raw": "{\"searchRequests\":[{\"keywords\":\"chief OR \"\n            ,\"location\":[{\"id\":\"102713516\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_OPEN_TO_RELOCATE\",\"title\":\"\"}]\n            ,\"industry\":{\"include\":[\"hospital\",\"healthcare\"] ,\"exclude\":null}\n            ,\"role\":[{\"keywords\":\"chief OR chief medical officer OR CMO\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}]\n            ,\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"hospital OR chain OR chain OR group OR network\",\"location\":[{\"id\":\"102713516\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_OPEN_TO_RELOCATE\",\"title\":\"\"}]\n            ,\"industry\":{\"include\":[\"hospital\",\"healthcare\"],\"exclude\":null}\n            ,\"role\":[{\"keywords\":\"chief OR CMO\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}]\n            ,\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"},{\"keywords\":\"hospital OR chain OR hospital chain OR hospital network OR hospital group\",\"location\":[{\"id\":\"102713516\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_OPEN_TO_RELOCATE\",\"title\":\"\"}]\n            ,\"industry\":{\"include\":[\"hospital\",\"healthcare\"],\"exclude\":null}\n            ,\"role\":[{\"keywords\":\"chief OR CMO\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}]\n            ,\"company\":null,\"api\":\"recruiter\",\"category\":\"people\"}]}",
+    "error": null,
+    "durationMs": 2113,
+    "inputTokens": 1660,
+    "outputTokens": 304,
+    "costUsd": 0.00028760000000000005
+  }
+]

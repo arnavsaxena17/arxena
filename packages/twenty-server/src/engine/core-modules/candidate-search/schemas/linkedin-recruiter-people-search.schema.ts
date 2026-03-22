@@ -55,10 +55,10 @@ export const recruiterPeopleSearchSchema = z.object({
     title: z.string().nullable(),
   })).nullable(),
   // location_within_area: z.number().nullable(),
-  industry: z.object({
-    include: z.array(z.string()).nullable(),
-    exclude: z.array(z.string()).nullable(),
-  }).nullable(),
+  // industry: z.object({
+  //   include: z.array(z.string()).nullable(),
+  //   exclude: z.array(z.string()).nullable(),
+  // }).nullable(),
   role: z.array(z.union([
     z.object({
       id: z.string(),
@@ -188,13 +188,4 @@ export const recruiterPeopleSearchSchema = z.object({
   //   timespan: z.number().nullable(),
   // })).nullable(),
   // notes: z.array(z.string()).nullable(),
-});
-
-
-export const recruiterPeopleSearchStrategiesSchema = z.object({
-  results: z
-    .array(recruiterPeopleSearchSchema)
-    .min(2, 'Generate at least 2 distinct search parameter sets for cumulative coverage')
-    .describe('Array of 2-5 distinct search parameter objects; vary keywords, location breadth, and filters'),
-  reasoning: z.string().nullable(),
 });

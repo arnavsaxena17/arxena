@@ -17,10 +17,10 @@ export const salesNavigatorPeopleSearchSchema = z.object({
   //     exclude: z.array(z.string()).nullable(),
   //     within_area: z.number().nullable(),
   // }).nullable().describe('Filter by postal code with optional radius in miles (within_area)'),
-  industry: z.object({
-    include: z.array(z.string()).nullable(),
-    exclude: z.array(z.string()).nullable(),
-  }).nullable().describe('Filter by the industry of their current company. Use include to only show results in listed industries, exclude to hide results from listed industries'),
+  // industry: z.object({
+  //   include: z.array(z.string()).nullable(),
+  //   exclude: z.array(z.string()).nullable(),
+  // }).nullable().describe('Filter by the industry of their current company. Use include to only show results in listed industries, exclude to hide results from listed industries'),
   // first_name: z.string().nullable().describe('First name of the person'),
   // last_name: z.string().nullable().describe('Last name of the person'),
   // tenure: z.array(z.object({
