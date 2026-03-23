@@ -357,6 +357,7 @@ export class BillingResolver {
   > {
     const workspaces = await this.workspaceRepository.find({
       select: ['id', 'displayName', 'createdAt'],
+      order: { createdAt: 'DESC' },
     });
     const creditsRows = await this.workspaceCreditsRepository.find();
     const creditsByWorkspaceId = new Map(

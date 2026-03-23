@@ -11,7 +11,7 @@ import { useMutation, useQuery } from '@apollo/client';
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { useState } from 'react';
-import { Button, H2Title, Section } from 'twenty-ui';
+import { Button, H2Title, Section, useIsMobile } from 'twenty-ui';
 
 type WorkspaceCreditsRow = {
   workspaceId: string;
@@ -33,32 +33,84 @@ const StyledTableCell = styled(TableCell)`
 `;
 
 const StyledActionsInner = styled.div`
-  display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
+  display: flex;
   flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing(2)};
 `;
 
 const StyledSelect = styled.select`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  background: ${({ theme }) => theme.background.primary};
   border-radius: ${({ theme }) => theme.border.radius.sm};
   border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
   color: ${({ theme }) => theme.font.color.primary};
   font-size: ${({ theme }) => theme.font.size.sm};
   min-width: 120px;
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
 `;
 
 const StyledShortWorkspaceId = styled.span`
+  color: ${({ theme }) => theme.font.color.secondary};
   font-family: monospace;
   font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
 `;
 
 const StyledCreatedAt = styled.span`
   font-size: ${({ theme }) => theme.font.size.sm};
   color: ${({ theme }) => theme.font.color.secondary};
   white-space: nowrap;
+`;
+
+const StyledMobileCardList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(3)};
+  margin-top: ${({ theme }) => theme.spacing(3)};
+`;
+
+const StyledMobileCard = styled.div`
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(3)};
+`;
+
+const StyledMobileMeta = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledMobileWorkspaceName = styled.span`
+  color: ${({ theme }) => theme.font.color.primary};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  overflow-wrap: anywhere;
+`;
+
+const StyledMobileCreditsRow = styled.div`
+  color: ${({ theme }) => theme.font.color.secondary};
+  display: flex;
+  flex-wrap: wrap;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  gap: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(4)};
+`;
+
+const StyledMobileCreditItem = styled.span`
+  white-space: nowrap;
+`;
+
+const StyledMobileActionsColumn = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(2)};
+  margin-top: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledMobileSelect = styled(StyledSelect)`
+  min-width: 0;
+  width: 100%;
 `;
 
 const TABLE_GRID =
@@ -78,6 +130,7 @@ const totalCredits = (row: WorkspaceCreditsRow) =>
 
 export const SettingsAdminWorkspaceCredits = () => {
   const { t } = useLingui();
+  const isMobile = useIsMobile();
   const { enqueueSnackBar } = useSnackBar();
   const { data, loading, refetch } = useQuery<{
     adminListWorkspacesWithCredits: WorkspaceCreditsRow[];
@@ -96,7 +149,9 @@ export const SettingsAdminWorkspaceCredits = () => {
   const handleAdjust = async (workspaceId: string) => {
     const delta = parseInt(deltaInput, 10);
     if (Number.isNaN(delta) || delta === 0) {
-      enqueueSnackBar(t`Enter a non-zero number`, { variant: SnackBarVariant.Error });
+      enqueueSnackBar(t`Enter a non-zero number`, {
+        variant: SnackBarVariant.Error,
+      });
       return;
     }
     setAdjustingWorkspaceId(workspaceId);
@@ -132,6 +187,66 @@ export const SettingsAdminWorkspaceCredits = () => {
         />
         {loading ? (
           <p>{t`Loading...`}</p>
+        ) : isMobile ? (
+          <StyledMobileCardList>
+            {rows.map((row) => (
+              <StyledMobileCard key={row.workspaceId}>
+                <StyledMobileMeta>
+                  <StyledShortWorkspaceId title={row.workspaceId}>
+                    {shortWorkspaceId(row.workspaceId)}
+                  </StyledShortWorkspaceId>
+                  <StyledCreatedAt>
+                    {formatWorkspaceCreatedAt(row.workspaceCreatedAt)}
+                  </StyledCreatedAt>
+                  <StyledMobileWorkspaceName>
+                    {row.workspaceName || '—'}
+                  </StyledMobileWorkspaceName>
+                </StyledMobileMeta>
+                <StyledMobileCreditsRow>
+                  <StyledMobileCreditItem>
+                    {t`Org chart`}: {row.orgChartCredits}
+                  </StyledMobileCreditItem>
+                  <StyledMobileCreditItem>
+                    {t`Email`}: {row.emailContactCredits}
+                  </StyledMobileCreditItem>
+                  <StyledMobileCreditItem>
+                    {t`Phone`}: {row.phoneContactCredits}
+                  </StyledMobileCreditItem>
+                  <StyledMobileCreditItem>
+                    {t`Total`}: {totalCredits(row)}
+                  </StyledMobileCreditItem>
+                </StyledMobileCreditsRow>
+                <StyledMobileActionsColumn>
+                  <StyledMobileSelect
+                    value={creditType}
+                    onChange={(e) =>
+                      setCreditType(e.target.value as CreditType)
+                    }
+                    aria-label={t`Credit type`}
+                  >
+                    <option value="ORG_CHART">{t`Org chart`}</option>
+                    <option value="EMAIL_CONTACT">{t`Email`}</option>
+                    <option value="PHONE_CONTACT">{t`Phone`}</option>
+                  </StyledMobileSelect>
+                  <TextInput
+                    value={deltaInput}
+                    onChange={(v) => setDeltaInput(v)}
+                    placeholder={t`Amount (+ / -)`}
+                    fullWidth
+                  />
+                  <Button
+                    title={t`Apply`}
+                    fullWidth
+                    onClick={() => handleAdjust(row.workspaceId)}
+                    disabled={
+                      adjustingWorkspaceId === row.workspaceId ||
+                      !deltaInput.trim()
+                    }
+                  />
+                </StyledMobileActionsColumn>
+              </StyledMobileCard>
+            ))}
+          </StyledMobileCardList>
         ) : (
           <StyledTable>
             <TableRow gridAutoColumns={TABLE_GRID}>
@@ -145,10 +260,7 @@ export const SettingsAdminWorkspaceCredits = () => {
               <TableHeader>{t`Actions`}</TableHeader>
             </TableRow>
             {rows.map((row) => (
-              <TableRow
-                key={row.workspaceId}
-                gridAutoColumns={TABLE_GRID}
-              >
+              <TableRow key={row.workspaceId} gridAutoColumns={TABLE_GRID}>
                 <StyledTableCell>
                   <StyledShortWorkspaceId title={row.workspaceId}>
                     {shortWorkspaceId(row.workspaceId)}
