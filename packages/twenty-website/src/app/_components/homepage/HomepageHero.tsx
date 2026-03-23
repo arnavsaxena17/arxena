@@ -213,58 +213,13 @@ const StyledSectionAnchor = styled.section`
   scroll-margin-top: 60px;
 `;
 
-const StyledPricingSection = styled.section`
-  width: 100%;
-  max-width: 900px;
+const StyledEngageCrossSell = styled.p`
+  font-size: 15px;
+  color: #474747;
   margin: 0 auto;
-  padding: 48px 24px;
-`;
-
-const StyledPricingTitle = styled.h2`
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 0 0 24px 0;
-  color: #141414;
+  padding: 0 24px 48px;
   text-align: center;
-`;
-
-const StyledPricingGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  margin-bottom: 32px;
-
-  @media (max-width: 640px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const StyledPricingCard = styled.div`
-  padding: 24px;
-  background: #fafafa;
-  border: 1px solid rgba(20, 20, 20, 0.08);
-  border-radius: 12px;
-  text-align: center;
-`;
-
-const StyledPricingCardTitle = styled.div`
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: #141414;
-`;
-
-const StyledPricingCardPrice = styled.div`
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #141414;
-  margin-bottom: 4px;
-`;
-
-const StyledPricingCardCredits = styled.div`
-  font-size: 14px;
-  color: #818181;
-  margin-bottom: 16px;
+  max-width: 560px;
 `;
 
 function getLogoAbbreviation(website?: string, companyName?: string): string {
@@ -296,27 +251,6 @@ const EXAMPLE_COMPANIES = [
   { companyId: 'cisco', name: 'Cisco', website: 'cisco.com' },
 ];
 
-const PRICING_TIERS = [
-  {
-    name: '1 org chart',
-    price: 799,
-    credits: '1 credit (<100 employees)',
-    useCase: 'One-off mapping',
-  },
-  {
-    name: '5 org charts',
-    price: 2499,
-    credits: '5 credits',
-    useCase: 'Individual recruiters',
-  },
-  {
-    name: '15 org charts',
-    price: 4999,
-    credits: '15 credits',
-    useCase: 'TA teams, agencies',
-  },
-];
-
 type HomepageHeroProps = {
   signInUrl: string;
   signUpUrl: string;
@@ -337,9 +271,7 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
         <StyledLogoWrapper>
           <Logo variant="hero" />
         </StyledLogoWrapper>
-        <StyledTitle>
-          Org Chart AI — real-time company structures
-        </StyledTitle>
+        <StyledTitle>Org Chart AI — real-time company structures</StyledTitle>
         <StyledSearchWrapper>
           <OrgChartSearch
             placeholder="Search any company's org chart"
@@ -422,41 +354,10 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
         structures, algorithmically clustered
       </StyledSocialProof>
 
-      <StyledSectionAnchor id="pricing">
-        <StyledPricingSection>
-          <StyledPricingTitle>Simple pricing</StyledPricingTitle>
-          <StyledPricingGrid>
-            {PRICING_TIERS.map(({ name, price, credits, useCase }) => (
-              <StyledPricingCard key={name}>
-                <StyledPricingCardTitle>{name}</StyledPricingCardTitle>
-                <StyledPricingCardPrice>
-                  ${price.toLocaleString()}
-                </StyledPricingCardPrice>
-                <StyledPricingCardCredits>{credits}</StyledPricingCardCredits>
-                <div style={{ fontSize: 13, color: '#818181' }}>{useCase}</div>
-              </StyledPricingCard>
-            ))}
-          </StyledPricingGrid>
-          <div style={{ textAlign: 'center' }}>
-            <StyledPrimaryCta href="/pricing">
-              View full pricing
-            </StyledPrimaryCta>
-          </div>
-          <p
-            style={{
-              margin: '24px 0 0 0',
-              textAlign: 'center',
-              fontSize: 15,
-              color: '#474747',
-            }}
-          >
-            Build lists, get contacts, engage on WhatsApp & LinkedIn —{' '}
-            <StyledEngageLink href="/engage">
-              Learn more →
-            </StyledEngageLink>
-          </p>
-        </StyledPricingSection>
-      </StyledSectionAnchor>
+      <StyledEngageCrossSell>
+        Build lists, get contacts, engage on WhatsApp & LinkedIn —{' '}
+        <StyledEngageLink href="/engage">Learn more →</StyledEngageLink>
+      </StyledEngageCrossSell>
 
       <StyledSectionAnchor id="contact">
         <ContactUsSection />

@@ -18,14 +18,14 @@ import { AdminWorkspaceCreditsRowOutput } from 'src/engine/core-modules/billing/
 import { BillingPlanOutput } from 'src/engine/core-modules/billing/dtos/outputs/billing-plan.output';
 import { BillingProductPricesOutput } from 'src/engine/core-modules/billing/dtos/outputs/billing-product-prices.output';
 import {
-    BillingProviderEnum,
-    BillingProviderOutput,
+  BillingProviderEnum,
+  BillingProviderOutput,
 } from 'src/engine/core-modules/billing/dtos/outputs/billing-provider.output';
 import { BillingSessionOutput } from 'src/engine/core-modules/billing/dtos/outputs/billing-session.output';
 import { BillingUpdateOutput } from 'src/engine/core-modules/billing/dtos/outputs/billing-update.output';
 import { CreditPackOutput } from 'src/engine/core-modules/billing/dtos/outputs/credit-pack.output';
 import {
-    CreditTransactionsOutput,
+  CreditTransactionsOutput,
 } from 'src/engine/core-modules/billing/dtos/outputs/credit-transaction.output';
 import { EngagementPlanOutput } from 'src/engine/core-modules/billing/dtos/outputs/engagement-plan.output';
 import { RazorpayOrderOutput } from 'src/engine/core-modules/billing/dtos/outputs/razorpay-order.output';
@@ -356,7 +356,7 @@ export class BillingResolver {
     AdminWorkspaceCreditsRowOutput[]
   > {
     const workspaces = await this.workspaceRepository.find({
-      select: ['id', 'displayName'],
+      select: ['id', 'displayName', 'createdAt'],
     });
     const creditsRows = await this.workspaceCreditsRepository.find();
     const creditsByWorkspaceId = new Map(
@@ -366,6 +366,7 @@ export class BillingResolver {
       const credits = creditsByWorkspaceId.get(workspace.id);
       return {
         workspaceId: workspace.id,
+        workspaceCreatedAt: workspace.createdAt,
         workspaceName: workspace.displayName ?? '',
         orgChartCredits: credits?.orgChartCredits ?? 0,
         emailContactCredits: credits?.emailContactCredits ?? 0,

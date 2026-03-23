@@ -203,7 +203,7 @@ export const PricingContent = ({ signUpUrl }: PricingContentProps) => {
                 </StyledFeatureItem>
               ))}
             </StyledFeatureList>
-            <StyledCtaButton href={signUpUrl}>Start free</StyledCtaButton>
+            <StyledCtaButton href={signUpUrl}>Start for free</StyledCtaButton>
           </StyledCard>
         ))}
       </StyledCardsGrid>

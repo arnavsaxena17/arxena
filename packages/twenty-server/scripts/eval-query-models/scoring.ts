@@ -1,9 +1,9 @@
 import OpenAI from 'openai';
-import { z } from 'zod';
 import { zodResponseFormat } from 'openai/helpers/zod';
+import { z } from 'zod';
 
 import type { SearchType } from './constants';
-import { buildEvalPrompt } from './eval-prompt';
+import { buildEvalPrompt } from './prompts/eval-prompt';
 import type { AnySearchRequest } from './schemas';
 
 export interface ScoreBreakdown {

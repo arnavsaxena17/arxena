@@ -7,11 +7,11 @@ import {
   SIMPLE_CLASSIC_PROMPT,
   SIMPLE_RECRUITER_PROMPT,
   SIMPLE_SALES_NAV_PROMPT,
-} from './generation-prompts';
+} from './prompts/generation-prompts';
 import {
-    multiClassicSchema,
-    multiRecruiterSchema,
-    multiSalesNavSchema,
+  multiClassicSchema,
+  multiRecruiterSchema,
+  multiSalesNavSchema,
 } from './schemas';
 
 export function getSearchTypeConfig(searchType: SearchType, promptMode: PromptMode = 'detailed') {

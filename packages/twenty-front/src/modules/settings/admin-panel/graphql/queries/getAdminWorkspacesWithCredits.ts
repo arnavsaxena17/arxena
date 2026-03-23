@@ -4,6 +4,7 @@ export const GET_ADMIN_WORKSPACES_WITH_CREDITS = gql`
   query GetAdminWorkspacesWithCredits {
     adminListWorkspacesWithCredits {
       workspaceId
+      workspaceCreatedAt
       workspaceName
       orgChartCredits
       emailContactCredits

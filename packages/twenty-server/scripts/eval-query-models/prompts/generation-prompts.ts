@@ -27,7 +27,7 @@ STEP 1 — THINK IN PROFILES BEFORE WRITING FILTERS
 Before choosing any filter field, reason through the following. This thinking
 shapes every filter decision that follows.
 
-POSITIVE ARCHETYPES (2–3 concrete sample profiles to surface):
+ARCHETYPES (A few concrete sample profiles to surface):
   For each archetype, state separately:
   • Title patterns: how this person's job title likely reads on LinkedIn
     (e.g. "Plant Head – EV Battery Division", "VP Operations", "Site Director")
@@ -38,11 +38,8 @@ POSITIVE ARCHETYPES (2–3 concrete sample profiles to surface):
     (e.g. "reach via title stem", "reach via domain keyword", "reach via company signal")
   Make archetypes MECE: distinct functional or seniority buckets, no overlap.
 
-NEGATIVE ARCHETYPES (1–2 profile types that look similar but should not dominate):
-  (e.g. "sales managers at battery distributors — have battery in profile but wrong function")
-
 COVERAGE CHECK:
-  For each positive archetype, verify:
+  For each archetype, verify:
   • Which filter field best captures their title pattern?
   • Which filter field best captures their profile keywords?
   • Does a narrow filter exclude them? Does a broad filter drown them in negatives?
@@ -602,19 +599,14 @@ QUOTED STRINGS: use double quotes around multi-word phrases.
   ✗  seven or more OR-terms         (exceeds limit)
 
 ═══════════════════════════════════════════════════
-AND-ANCHORING IN CLASSIC — USE past_company[] NOT AND IN KEYWORDS
+AND-ANCHORING IN CLASSIC — USE NOT AND IN KEYWORDS
 ═══════════════════════════════════════════════════
 In Classic, keywords is a TITLE-ONLY boolean (OR, max 6 terms). Adding AND or domain
 words here destroys recall. The domain anchoring is achieved differently:
 
-  Domain anchor for Classic = past_company[] or company[]
-  • "FMCG background" → past_company: ["Hindustan Unilever", "Nestlé India", "ITC", "Marico"]
-    This anchors the title OR-chain to candidates from that sector.
-  • Named hard targets → company[] for current-employer filter
-
-When keywords lacks a natural anchor via past_company[], use a tight 4–6 title variant
-OR-chain that is inherently sector-specific (e.g. "Cardiothoracic Surgeon" is already
-focused; "plant head" is broad and needs anchoring via past_company[] if sector matters).
+When keywords lacks a natural anchor, use a tight 4–6 title variant
+OR-chain that is inherently sector-specific (e.g. "Cardiothoracic" is already
+focused; "head" is broad and needs anchoring).
 
 SIGNS keywords needs an anchor:
   • Title variants span multiple unrelated functions: "sales" OR "operations" OR "finance"
@@ -628,10 +620,12 @@ COMPANY FIELD — USE SPARINGLY
 company[] = hard filter restricting results to current employees of those firms.
 Use ONLY for a small, explicit, verified target list (≤ ~15 named companies).
 
-"companies like HUL, Nestlé, ITC" → category signal.
-Do NOT put these in company[]. Do NOT put domain words in keywords either.
-Instead, use past_company[] in Tier 2/3 to surface "background from X segment":
-  past_company: ["Hindustan Unilever", "Nestlé India", "ITC", "Marico", "Dabur", "Britannia"]
+"companies like HUL, Nestlé, ITC, etc." → category signal, has to go in keywords.
+Do NOT put these in company[]. Put domain stems in keywords instead (e.g. "(FMCG OR CPG OR \"consumer goods\") / ("food" OR "beverage" OR "dairy") etc.)
+"only from the MBB companies" -> MBB is an exact bounded category, so can go in company[].
+Goes in company[] as "McKinsey OR BCG OR Bain"
+"only from the big 4 companies" -> Big 4 is an exact bounded category, so can go in company[].
+Goes in company[] as "Deloitte OR PwC OR EY OR KPMG"
 
 This correctly searches for people who CAME FROM that segment, not who currently
 work there — which is usually the actual intent for executive search.
@@ -640,13 +634,12 @@ work there — which is usually the actual intent for executive search.
 LOCATION — TIER 1 vs TIER 2/3
 ═══════════════════════════════════════════════════
 TIER 1 CITIES (Mumbai, Delhi, Bengaluru, Pune, Hyderabad, Chennai, etc.):
-  City-focus query: city + state, e.g. "Mumbai, Maharashtra, India"
-  National sweep query: "India"
+  City-focus query: city + state, e.g. "Mumbai, Maharashtra, India". 
+  If possible choose the nomenclature of linkedin - "Greater Mumbai Region/ Area"
 
 TIER 2/3 LOCATIONS (smaller cities, industrial towns):
   Regional query: city + state + adjacent states as separate location entries
                (local pool is thin; relocation is the default assumption)
-  National sweep query: "India" or null
   Never restrict tier 2/3 searches to city-only — you will find almost no one.
 
 ═══════════════════════════════════════════════════
@@ -655,7 +648,7 @@ FIELD RULES
 keywords (title/credential boolean, max 6 OR terms):
   • Job title OR-variations for the target seniority band
   • Specialist: credential stems e.g. "pulmonologist" OR "chest physician" OR "respiratory"
-  • No AND, no domain words — domain anchoring via past_company[] instead
+  • No AND, no domain words — domain anchoring via company[] instead
 
 advanced_keywords.title (exact current title field search):
   • Adds precision on top of keywords in Tier 1 — pins the strictest title interpretation
@@ -666,16 +659,12 @@ company[] (current employer, hard list only):
   • Named target companies, ≤ ~15
   • Drop in all queries except the company-path query
 
-past_company[] (former employer):
-  • Primary tool for "background from segment X" — use in Tier 2/3
-  • The domain anchor for Classic keywords — more useful than company[] for category signals
-
 location[] (plain text):
-  • ["Mumbai, Maharashtra, India", "Pune, Maharashtra, India"] — NOT numeric IDs
-  • Tier 1: city level; Tier 2/3: state + adjacent states; broadest: country
+  • ["Mumbai, Maharashtra, India", "Pune, Maharashtra, India", "Greater Mumbai Region/ Area", "Greater Pune Region/ Area"]
+  • Tier 1: city level; Tier 2/3: state + adjacent states
 
 school[]:
-  • Only when pedigree is an explicit requirement ("IIT grad", "XLRI")
+  • Only when pedigree is an explicit requirement ("IIT","IIM","FMS","XLRI")
 
 ═══════════════════════════════════════════════════
 COVERAGE STRATEGY
@@ -709,14 +698,13 @@ EXAMPLES
 
 ── Hard company list: Group CFO, infrastructure ──
 Query 1 — tight title path, named companies, key metros:
-  keywords: "\"Group CFO\" OR CFO OR \"Chief Financial Officer\" OR \"Finance Director\""
+  keywords: "CFO OR \"Chief Financial\" OR \"Finance Director\"" AND "infrastructure"
   location: ["Mumbai, Maharashtra, India", "Delhi, India"]
   company: ["L&T", "Shapoorji Pallonji", "GMR Group"]
 
-Query 2 — broader title variants, national sweep, past-company anchor:
+Query 2 — broader title variants, national sweep:
   keywords: "CFO OR \"Chief Financial Officer\" OR \"Finance Director\" OR \"VP Finance\" OR \"Financial Controller\""
   location: ["India"]
-  past_company: ["L&T", "Shapoorji Pallonji", "GMR Group", "Adani", "GVK"]
 
 Query 3 — widest title sweep, expanded past-company anchor, no location filter:
   keywords: "CFO OR \"Chief Financial Officer\" OR \"Finance Director\" OR \"VP Finance\" OR Treasurer"

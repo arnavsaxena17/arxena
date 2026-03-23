@@ -209,13 +209,11 @@ export const EngagementContent = ({ signUpUrl }: EngagementContentProps) => {
   return (
     <StyledSection>
       <StyledHeadline>
-        You&apos;ve mapped the org and built your list. Now engage.
+        Automated engagment.
       </StyledHeadline>
       <StyledHeadlineSub>
-        Our AI reaches out from your own WhatsApp and LinkedIn accounts.
-        Messages go from you — human-like — across any channel. Use real-time
-        org charts to build lists, then we help you reach the right people. You
-        only talk to people who respond.
+        Our AI is indistinguishable from a human, sending connection requests and outreach from your own WhatsApp and LinkedIn accounts.
+        Use real-time to org charts to build lists, then reach the people to see who is interested in you.
       </StyledHeadlineSub>
 
       <EngagementChatDemo />
@@ -236,7 +234,7 @@ export const EngagementContent = ({ signUpUrl }: EngagementContentProps) => {
         Data sources: LinkedIn, Naukri, Indeed, Glassdoor, and more.
       </StyledDataSources>
 
-      <StyledCardsGrid>
+      {/* <StyledCardsGrid>
         {ENGAGEMENT_TIERS.map(({ name, price, features }) => (
           <StyledCard key={name}>
             <StyledCardTitle>{name}</StyledCardTitle>
@@ -255,14 +253,14 @@ export const EngagementContent = ({ signUpUrl }: EngagementContentProps) => {
             <StyledCtaButton href={signUpUrl}>Start engaging</StyledCtaButton>
           </StyledCard>
         ))}
-      </StyledCardsGrid>
-
+      </StyledCardsGrid> */}
+{/* 
       <StyledFooterLine>
         Includes real-time org charts for all campaign targets. No double-paying.
-      </StyledFooterLine>
+      </StyledFooterLine> */}
 
       <StyledCtaSection>
-        <StyledCtaButton href={signUpUrl}>Start engaging</StyledCtaButton>
+        <StyledCtaButton href={signUpUrl}>Start for free</StyledCtaButton>
       </StyledCtaSection>
     </StyledSection>
   );

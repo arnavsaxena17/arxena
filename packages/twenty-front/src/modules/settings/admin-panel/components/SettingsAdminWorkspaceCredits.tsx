@@ -15,6 +15,7 @@ import { Button, H2Title, Section } from 'twenty-ui';
 
 type WorkspaceCreditsRow = {
   workspaceId: string;
+  workspaceCreatedAt: string;
   workspaceName: string;
   orgChartCredits: number;
   emailContactCredits: number;
@@ -47,6 +48,30 @@ const StyledSelect = styled.select`
   font-size: ${({ theme }) => theme.font.size.sm};
   min-width: 120px;
 `;
+
+const StyledShortWorkspaceId = styled.span`
+  font-family: monospace;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.secondary};
+`;
+
+const StyledCreatedAt = styled.span`
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.secondary};
+  white-space: nowrap;
+`;
+
+const TABLE_GRID =
+  'minmax(0, 0.55fr) minmax(0, 0.85fr) minmax(0, 2fr) 1fr 1fr 1fr 1fr 3fr';
+
+const shortWorkspaceId = (id: string) => `${id.slice(0, 8)}…`;
+
+const formatWorkspaceCreatedAt = (iso: string) =>
+  new Date(iso).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
 
 const totalCredits = (row: WorkspaceCreditsRow) =>
   row.orgChartCredits + row.emailContactCredits + row.phoneContactCredits;
@@ -109,8 +134,9 @@ export const SettingsAdminWorkspaceCredits = () => {
           <p>{t`Loading...`}</p>
         ) : (
           <StyledTable>
-            <TableRow gridAutoColumns="1.5fr 2fr 1fr 1fr 1fr 1fr 3fr">
+            <TableRow gridAutoColumns={TABLE_GRID}>
               <TableHeader>{t`Workspace ID`}</TableHeader>
+              <TableHeader>{t`Created`}</TableHeader>
               <TableHeader>{t`Name`}</TableHeader>
               <TableHeader align="right">{t`Org chart`}</TableHeader>
               <TableHeader align="right">{t`Email`}</TableHeader>
@@ -121,12 +147,17 @@ export const SettingsAdminWorkspaceCredits = () => {
             {rows.map((row) => (
               <TableRow
                 key={row.workspaceId}
-                gridAutoColumns="1.5fr 2fr 1fr 1fr 1fr 1fr 3fr"
+                gridAutoColumns={TABLE_GRID}
               >
                 <StyledTableCell>
-                  <span style={{ fontFamily: 'monospace', fontSize: '0.85em' }}>
-                    {row.workspaceId}
-                  </span>
+                  <StyledShortWorkspaceId title={row.workspaceId}>
+                    {shortWorkspaceId(row.workspaceId)}
+                  </StyledShortWorkspaceId>
+                </StyledTableCell>
+                <StyledTableCell>
+                  <StyledCreatedAt>
+                    {formatWorkspaceCreatedAt(row.workspaceCreatedAt)}
+                  </StyledCreatedAt>
                 </StyledTableCell>
                 <StyledTableCell>{row.workspaceName || '—'}</StyledTableCell>
                 <StyledTableCell align="right">

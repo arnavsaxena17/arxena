@@ -37,6 +37,7 @@ const recruiterPeopleRequestSchema = z.object({
   role:     z.array(recruiterRoleItemSchema).nullable(),
   company:  z.array(recruiterCompanyItemSchema).nullable(),
 });
+
 const multiRecruiterSchema = z.object({
   searchRequests: z.array(recruiterPeopleRequestSchema).min(2).max(5)
     .describe('Recruiter people search bodies, one per distinct candidate archetype or access path'),
@@ -64,7 +65,7 @@ const classicEvalSchema = z.object({
   // ),
   location: z.array(z.string()).nullable().describe('Location text e.g. "Mumbai, Maharashtra, India"'),
   company: z.array(z.string()).nullable().describe('Current company names'),
-  past_company: z.array(z.string()).nullable().describe('Past company names'),
+  // past_company: z.array(z.string()).nullable().describe('Past company names'),
   school: z.array(z.string()).nullable(),
   // advanced_keywords: z.object({
   //   first_name:  z.string().nullable().optional(),
@@ -88,10 +89,7 @@ export type ClassicSearchRequest = z.infer<typeof classicPeopleRequestSchema>;
 export type AnySearchRequest = RecruiterSearchRequest | SalesNavSearchRequest | ClassicSearchRequest;
 
 export {
-  recruiterPeopleRequestSchema,
-  multiRecruiterSchema,
-  salesNavPeopleRequestSchema,
-  multiSalesNavSchema,
   classicPeopleRequestSchema,
-  multiClassicSchema,
+  multiClassicSchema, multiRecruiterSchema, multiSalesNavSchema, recruiterPeopleRequestSchema, salesNavPeopleRequestSchema
 };
+

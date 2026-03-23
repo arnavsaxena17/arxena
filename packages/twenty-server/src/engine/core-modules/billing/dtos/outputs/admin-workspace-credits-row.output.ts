@@ -1,11 +1,14 @@
 /* @license Enterprise */
 
-import { Field, ObjectType } from '@nestjs/graphql';
+import { Field, GraphQLISODateTime, ObjectType } from '@nestjs/graphql';
 
 @ObjectType()
 export class AdminWorkspaceCreditsRowOutput {
   @Field()
   workspaceId: string;
+
+  @Field(() => GraphQLISODateTime)
+  workspaceCreatedAt: Date;
 
   @Field()
   workspaceName: string;

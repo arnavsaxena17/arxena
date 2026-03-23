@@ -1,4 +1,4 @@
-import type { SearchType } from './constants';
+import type { SearchType } from '../constants';
 
 export function buildEvalPrompt(searchType: SearchType): string {
 
