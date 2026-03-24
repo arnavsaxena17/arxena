@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { spawn } from 'child_process';
+import { readFile } from 'fs/promises';
 import * as path from 'path';
 import type { OrgChartData } from 'twenty-shared';
 
@@ -48,6 +49,36 @@ export class PythonOrgChartService {
 
     // Default: assume cwd is /.../arx/arxena
     return path.resolve(cwd, '..', 'arxena-site', 'arxenas3', 'model_arxena');
+  }
+
+  /**
+   * arxena-site/arxenas3/static/yuga_labs_all_org_chart_assist.json — checked into
+   * arxena-site beside model_arxena (under arxenas3).
+   */
+  getYugaLabsStaticAssistPath(): string {
+    return path.join(
+      this.resolveModelArxenaRoot(),
+      '..',
+      'static',
+      'yuga_labs_all_org_chart_assist.json',
+    );
+  }
+
+  /**
+   * Load the pre-built Yuga Labs org chart JSON when HTTP/CLI build is unavailable.
+   */
+  async loadYugaLabsStaticAssistOrNull(): Promise<OrgChartData | null> {
+    const filePath = this.getYugaLabsStaticAssistPath();
+    try {
+      const raw = await readFile(filePath, 'utf8');
+      return JSON.parse(raw) as OrgChartData;
+    } catch (err) {
+      this.logger.warn(
+        `Could not read Yuga Labs static org chart at ${filePath}`,
+        err as Error,
+      );
+      return null;
+    }
   }
 
   private getPythonCliPath(): string {

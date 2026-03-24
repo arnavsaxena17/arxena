@@ -7,34 +7,34 @@
     "searchType": "recruiter",
     "promptMode": "detailed",
     "score": {
-      "dim1": 1,
-      "dim2": 2,
-      "dim3": 2,
+      "dim1": 2,
+      "dim2": 3,
+      "dim3": 1,
       "dim4": 1,
       "dim5": 2,
-      "dim6": 0,
-      "total": 8,
+      "dim6": 1,
+      "total": 10,
       "weaknesses": [
-        "Role filter uses AND logic (\"(channel OR partner) AND sales\"), which sharply reduces recall.",
-        "Role filter is slightly verbose; could use shorter stems (e.g., \"channel OR partner OR alliance\") without AND.",
-        "Keywords in both queries are somewhat broad, especially the second query, which may introduce noise (e.g., \"distribution\" and \"B2B\" are generic).",
-        "Location coverage is good, but the first query could have included a broader region as a secondary archetype."
+        "Role stems are slightly verbose and use AND logic (e.g., '(channel OR partner) AND sales'), which can over-narrow results.",
+        "Keywords in the second query are a broad OR-chain with some under-anchoring (e.g., 'distribution' and 'B2B' are generic and may introduce noise).",
+        "No explicit B2B anchor in the first query's keywords, risking under-anchoring for the B2B focus.",
+        "Both queries use similar role/title logic, so archetype coverage is only moderate."
       ],
       "reasoning": {
-        "stemQuality": "Role filter uses AND logic and is slightly verbose (\"(channel OR partner) AND sales\"). The second query is better but still not optimal; could be shorter stems.",
-        "filterAssignment": "Role and keywords are mostly used correctly, but the use of AND logic in role[] is a moderate error. Also, keywords in the second query mix domain and business model signals, which is acceptable but not ideal.",
-        "archetypeCoverage": "Two queries target different archetypes: one is more focused on Gujarat, the other is broader (India-wide) and includes more generic distribution/B2B signals.",
-        "signalCompleteness": "Core signals (telecom, channel/partner, B2B, Gujarat/India) are present in at least one query.",
-        "locationQuality": "Location names are clear and appropriate: \"Gujarat, India\" and \"India\". The Gujarat query uses CURRENT_OR_OPEN_TO_RELOCATE, which is correct for a tier 2/3 location.",
-        "keywordDiscipline": "Over-narrowing in the first query due to AND logic in role[], and the second query's keywords are somewhat over-broad, risking noise. Both queries could be leaner and more disciplined."
+        "stemQuality": "Role stems are mostly short but use AND logic and are slightly verbose (e.g., '(channel OR partner) AND sales'). The second query is better with 'channel OR partner OR alliance', but overall, not fully optimal.",
+        "filterAssignment": "Signals are mostly in the right fields: telecom domain in keywords, role stems in role[]. However, the use of 'sales' in the role stem and 'B2B' in keywords is inconsistent. No misuse of company[].",
+        "archetypeCoverage": "Both queries are variations on the same theme (role/title + telecom keywords), with only minor differences in keyword breadth. They do not represent meaningfully distinct access paths.",
+        "signalCompleteness": "Core signals (telecom, channel/partner, Gujarat, B2B) are present across the queries, though B2B is missing in the first query.",
+        "locationQuality": "'Gujarat, India' is a clear, recognisable location string, and the use of CURRENT_OR_OPEN_TO_RELOCATE is correct for a tier 2/3 location.",
+        "keywordDiscipline": "First query is slightly over-narrowed with AND logic in role. Second query is under-anchored with a broad OR-chain in keywords, including generic terms like 'distribution' and 'B2B' without a strong telecom anchor. Neither query is perfectly balanced."
       },
-      "verdict": "Mediocre. The queries show some understanding of the requirement and archetype coverage, but the use of AND logic in the role filter is a significant error, and keyword/role discipline is lacking. Usable but needs revision for better recall and precision."
+      "verdict": "Competent queries with some structural issues: mild over-narrowing in role stems, under-anchoring in keywords, and only moderate archetype coverage. Usable but not optimal."
     },
     "queries": [
       {
         "api": "recruiter",
         "category": "people",
-        "keywords": "telecom OR \"telecom equipment\"",
+        "keywords": "telecom OR telco OR \"telecom equipment\"",
         "location": [
           {
             "name": "Gujarat, India",
@@ -54,10 +54,10 @@
       {
         "api": "recruiter",
         "category": "people",
-        "keywords": "telecom OR telco OR \"telecom equipment\" OR distribution OR B2B",
+        "keywords": "telecom OR telco OR \"channel partner\" OR distribution OR B2B",
         "location": [
           {
-            "name": "India",
+            "name": "Gujarat, India",
             "priority": "CAN_HAVE",
             "scope": "CURRENT_OR_OPEN_TO_RELOCATE"
           }
@@ -72,13 +72,13 @@
         "company": null
       }
     ],
-    "raw": "{\"searchRequests\":[{\"api\":\"recruiter\",\"category\":\"people\",\"keywords\":\"telecom OR \\\"telecom equipment\\\"\",\"location\":[{\"name\":\"Gujarat, India\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_OPEN_TO_RELOCATE\"}],\"role\":[{\"keywords\":\"(channel OR partner) AND sales\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null},{\"api\":\"recruiter\",\"category\":\"people\",\"keywords\":\"telecom OR telco OR \\\"telecom equipment\\\" OR distribution OR B2B\",\"location\":[{\"name\":\"India\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_OPEN_TO_RELOCATE\"}],\"role\":[{\"keywords\":\"channel OR partner OR alliance\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null}]}",
+    "raw": "{\"searchRequests\":[{\"api\":\"recruiter\",\"category\":\"people\",\"keywords\":\"telecom OR telco OR \\\"telecom equipment\\\"\",\"location\":[{\"name\":\"Gujarat, India\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_OPEN_TO_RELOCATE\"}],\"role\":[{\"keywords\":\"(channel OR partner) AND sales\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null},{\"api\":\"recruiter\",\"category\":\"people\",\"keywords\":\"telecom OR telco OR \\\"channel partner\\\" OR distribution OR B2B\",\"location\":[{\"name\":\"Gujarat, India\",\"priority\":\"CAN_HAVE\",\"scope\":\"CURRENT_OR_OPEN_TO_RELOCATE\"}],\"role\":[{\"keywords\":\"channel OR partner OR alliance\",\"priority\":\"MUST_HAVE\",\"scope\":\"CURRENT_OR_PAST\"}],\"company\":null}]}",
     "error": null,
-    "durationMs": 2683,
-    "inputTokens": 4306,
-    "outputTokens": 167,
+    "durationMs": 4065,
+    "inputTokens": 4282,
+    "outputTokens": 173,
     "cachedTokens": 0,
     "costUsd": 0.0019896000000000002,
-    "evalCostUsd": 0.008974
+    "evalCostUsd": 0.01004
   }
 ]

@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ThemeProvider } from '@emotion/react';
 import styled from '@emotion/styled';
@@ -15,12 +15,12 @@ import { companySearchLightTheme } from '@/lib/company-search';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- orgchart-core is used alongside dynamic OrgChartDiagram
 import {
-  OrgChartDiagramHandle,
-  OrgChartFilters,
-  OrgChartSearchControls,
-  OrgChartSignUpModal,
-  useCompanyInfoLookup,
-  useOrgChartFilterOptions,
+    OrgChartDiagramHandle,
+    OrgChartFilters,
+    OrgChartSearchControls,
+    OrgChartSignUpModal,
+    useCompanyInfoLookup,
+    useOrgChartFilterOptions,
 } from 'twenty-orgchart/orgchart-core';
 import { OrgChartNodeData, toSlug } from 'twenty-shared';
 
@@ -86,10 +86,57 @@ const StyledHeader = styled.header`
 
 const StyledDiagramArea = styled.div`
   flex: 1;
+  display: flex;
+  flex-direction: column;
   position: relative;
   min-height: 0;
   overflow: hidden;
   background: ${({ theme }) => theme.background.secondary};
+`;
+
+const StyledDiagramBody = styled.div`
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+`;
+
+const StyledPreviewPersistentBanner = styled.div`
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
+  border-bottom: 1px solid ${({ theme }) => theme.border.color.medium};
+  background: ${({ theme }) => theme.background.tertiary};
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  text-align: center;
+`;
+
+const StyledPreviewBannerSignupLink = styled(Link)`
+  display: inline-block;
+  padding: ${({ theme }) => theme.spacing(0.75)}
+    ${({ theme }) => theme.spacing(1.5)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: none;
+  background: ${({ theme }) => theme.color.blue};
+  color: #ffffff;
+  font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    opacity: 0.92;
+    color: #ffffff;
+  }
+
+  &:active {
+    opacity: 0.85;
+  }
 `;
 
 const StyledSearchOverlay = styled.div`
@@ -380,6 +427,17 @@ export const OrgChartPageClient = ({
     onViewAllCandidates: () => {},
   };
 
+  const hasPreviewOrgChartNodes = useMemo(
+    () => nodeDataArray.some((n) => n.nodeState === 'preview'),
+    [nodeDataArray],
+  );
+
+  const showPreviewPersistentBanner =
+    hasPreviewOrgChartNodes && nodeDataArray.length > 0;
+
+  const showNodeCapabilitiesHoverHint =
+    process.env.NEXT_PUBLIC_EXPERIMENTAL_ORGCHART_NODE_HOVER_HINTS === 'true';
+
   return (
     <div
       style={{
@@ -414,49 +472,68 @@ export const OrgChartPageClient = ({
           </StyledHeader>
 
           <StyledDiagramArea>
-            {nodeDataArray.length > 0 && (
-              <>
-                <OrgChartDiagram
-                  onDiagramReady={handleDiagramReady}
-                  nodeDataArray={nodeDataArray}
-                  onNodeClick={handleNodeClick}
-                  defaultAvatarUrl="/img/default-avatar.jpg"
-                  iconUrls={{
-                    lock: '/img/lock.png',
-                    linkedin: '/img/linkedin-icon-png-circle-2.png',
-                    download: '/img/download-icon.png',
-                    similarItems: '/img/similar-items.png',
-                  }}
+            {showPreviewPersistentBanner && (
+              <StyledPreviewPersistentBanner>
+                <span>
+                  This is a preview of the org chart. Get the full org chart for
+                  free when you sign up.
+                </span>
+                <StyledPreviewBannerSignupLink href={signUpUrl}>
+                  Sign up free
+                </StyledPreviewBannerSignupLink>
+              </StyledPreviewPersistentBanner>
+            )}
+            <StyledDiagramBody>
+              {nodeDataArray.length > 0 && (
+                <>
+                  <OrgChartDiagram
+                    onDiagramReady={handleDiagramReady}
+                    nodeDataArray={nodeDataArray}
+                    onNodeClick={handleNodeClick}
+                    showNodeCapabilitiesHoverHint={
+                      showNodeCapabilitiesHoverHint
+                    }
+                    nodeCapabilitiesHoverCompanyName={companyName}
+                    defaultAvatarUrl="/img/default-avatar.jpg"
+                    iconUrls={{
+                      lock: '/img/lock.png',
+                      linkedin: '/img/linkedin-icon-png-circle-2.png',
+                      download: '/img/download-icon.png',
+                      similarItems: '/img/similar-items.png',
+                    }}
+                  />
+                  <StyledTopRightActionsOverlay>
+                    <StyledTopRightActionButton
+                      type="button"
+                      onClick={() => diagramHandleRef.current?.zoomToFit()}
+                    >
+                      Zoom to fit
+                    </StyledTopRightActionButton>
+                    <StyledTopRightActionButton
+                      type="button"
+                      onClick={() =>
+                        diagramHandleRef.current?.centerContent()
+                      }
+                    >
+                      Center
+                    </StyledTopRightActionButton>
+                  </StyledTopRightActionsOverlay>
+                  <StyledSearchOverlay>
+                    <OrgChartSearchControls {...searchControlsProps} />
+                  </StyledSearchOverlay>
+                </>
+              )}
+              {clickedNode && (
+                <OrgChartSignUpModal
+                  node={clickedNode}
+                  onClose={handleCloseSignUpModal}
+                  signUpUrl={signUpUrl}
+                  companyName={companyName}
+                  selectedCountry={selectedCountry}
+                  selectedFunctionRoot={selectedFunctionRoot}
                 />
-                <StyledTopRightActionsOverlay>
-                  <StyledTopRightActionButton
-                    type="button"
-                    onClick={() => diagramHandleRef.current?.zoomToFit()}
-                  >
-                    Zoom to fit
-                  </StyledTopRightActionButton>
-                  <StyledTopRightActionButton
-                    type="button"
-                    onClick={() => diagramHandleRef.current?.centerContent()}
-                  >
-                    Center
-                  </StyledTopRightActionButton>
-                </StyledTopRightActionsOverlay>
-                <StyledSearchOverlay>
-                  <OrgChartSearchControls {...searchControlsProps} />
-                </StyledSearchOverlay>
-              </>
-            )}
-            {clickedNode && (
-              <OrgChartSignUpModal
-                node={clickedNode}
-                onClose={handleCloseSignUpModal}
-                signUpUrl={signUpUrl}
-                companyName={companyName}
-                selectedCountry={selectedCountry}
-                selectedFunctionRoot={selectedFunctionRoot}
-              />
-            )}
+              )}
+            </StyledDiagramBody>
           </StyledDiagramArea>
 
           <OrgChartHiredFromRibbon companyId={companyId} />

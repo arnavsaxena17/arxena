@@ -24,9 +24,7 @@ import {
 import { BillingSessionOutput } from 'src/engine/core-modules/billing/dtos/outputs/billing-session.output';
 import { BillingUpdateOutput } from 'src/engine/core-modules/billing/dtos/outputs/billing-update.output';
 import { CreditPackOutput } from 'src/engine/core-modules/billing/dtos/outputs/credit-pack.output';
-import {
-  CreditTransactionsOutput,
-} from 'src/engine/core-modules/billing/dtos/outputs/credit-transaction.output';
+import { CreditTransactionsOutput } from 'src/engine/core-modules/billing/dtos/outputs/credit-transaction.output';
 import { EngagementPlanOutput } from 'src/engine/core-modules/billing/dtos/outputs/engagement-plan.output';
 import { RazorpayOrderOutput } from 'src/engine/core-modules/billing/dtos/outputs/razorpay-order.output';
 import { RequestInvoiceForCreditsOutput } from 'src/engine/core-modules/billing/dtos/outputs/request-invoice-for-credits.output';
@@ -51,6 +49,7 @@ import { formatBillingDatabaseProductToGraphqlDTO } from 'src/engine/core-module
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { FeatureFlagKey } from 'src/engine/core-modules/feature-flag/enums/feature-flag-key.enum';
 import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
+import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthUser } from 'src/engine/decorators/auth/auth-user.decorator';
@@ -60,6 +59,11 @@ import { SettingsPermissionsGuard } from 'src/engine/guards/settings-permissions
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 import { PermissionsGraphqlApiExceptionFilter } from 'src/engine/metadata-modules/permissions/utils/permissions-graphql-api-exception.filter';
+
+type AdminWorkspaceCreatorEmailRow = {
+  workspaceId: string;
+  email: string;
+};
 
 @Resolver()
 @UseFilters(PermissionsGraphqlApiExceptionFilter)
@@ -82,6 +86,8 @@ export class BillingResolver {
     private readonly workspaceCreditsRepository: Repository<WorkspaceCredits>,
     @InjectRepository(Workspace, 'core')
     private readonly workspaceRepository: Repository<Workspace>,
+    @InjectRepository(UserWorkspace, 'core')
+    private readonly userWorkspaceRepository: Repository<UserWorkspace>,
   ) {}
 
   @Query(() => BillingProductPricesOutput)
@@ -133,15 +139,19 @@ export class BillingResolver {
     }: BillingCheckoutSessionInput,
   ) {
     const provider = this.environmentService.get('BILLING_PROVIDER');
+
     if (provider === 'razorpay') {
       const { subscriptionId, keyId, callbackUrl } =
-        await this.billingPortalWorkspaceService.computeRazorpayCheckoutSession({
-          workspace,
-          successUrlPath: successUrlPath ?? '',
-          successReturnUrl,
-          razorpayPlanId,
-          quantity,
-        });
+        await this.billingPortalWorkspaceService.computeRazorpayCheckoutSession(
+          {
+            workspace,
+            successUrlPath: successUrlPath ?? '',
+            successReturnUrl,
+            razorpayPlanId,
+            quantity,
+          },
+        );
+
       return {
         url: null,
         razorpaySubscriptionId: subscriptionId,
@@ -230,9 +240,12 @@ export class BillingResolver {
   @Query(() => BillingProviderOutput)
   billingProvider(): BillingProviderOutput {
     const provider = this.environmentService.get('BILLING_PROVIDER');
+
     return {
       provider:
-        provider === 'razorpay' ? BillingProviderEnum.razorpay : BillingProviderEnum.stripe,
+        provider === 'razorpay'
+          ? BillingProviderEnum.razorpay
+          : BillingProviderEnum.stripe,
     };
   }
 
@@ -255,11 +268,21 @@ export class BillingResolver {
       order: { unitAmount: 'ASC' },
     });
     const GBP_10999_SUBUNITS = 1099900; // 10999 GBP in pence
+
     return prices
-      .filter((p): p is BillingPrice & { razorpayPlanId: string } => p.razorpayPlanId != null && p.razorpayPlanId !== '')
-      .filter((p) => !(p.currency === 'GBP' && Number(p.unitAmount) === GBP_10999_SUBUNITS))
+      .filter(
+        (p): p is BillingPrice & { razorpayPlanId: string } =>
+          p.razorpayPlanId != null && p.razorpayPlanId !== '',
+      )
+      .filter(
+        (p) =>
+          !(
+            p.currency === 'GBP' && Number(p.unitAmount) === GBP_10999_SUBUNITS
+          ),
+      )
       .map((p) => {
         const isYearly = p.interval === SubscriptionInterval.Year;
+
         return {
           id: p.razorpayPlanId,
           name: p.nickname ?? p.razorpayPlanId,
@@ -283,6 +306,7 @@ export class BillingResolver {
         limit,
         cursor,
       });
+
     return {
       items: items.map((t) => ({
         id: t.id,
@@ -304,6 +328,7 @@ export class BillingResolver {
     const row = await this.workspaceCreditsRepository.findOne({
       where: { workspaceId: workspace.id },
     });
+
     return {
       orgChartCredits: row?.orgChartCredits ?? 0,
       emailContactCredits: row?.emailContactCredits ?? 0,
@@ -322,6 +347,7 @@ export class BillingResolver {
       workspace.id,
       input.creditPackKey,
     );
+
     return {
       orderId: result.orderId,
       amount: result.amount,
@@ -347,6 +373,7 @@ export class BillingResolver {
       billingEmail: input.billingEmail,
       vatNumber: input.vatNumber,
     });
+
     return { success: true };
   }
 
@@ -359,22 +386,43 @@ export class BillingResolver {
       select: ['id', 'displayName', 'createdAt'],
       order: { createdAt: 'DESC' },
     });
+    const creatorRows =
+      await this.userWorkspaceRepository
+        .createQueryBuilder('uw')
+        .innerJoin('uw.user', 'user')
+        .select('uw.workspaceId', 'workspaceId')
+        .addSelect('user.email', 'email')
+        .where('uw.deletedAt IS NULL')
+        .andWhere('user.deletedAt IS NULL')
+        .distinctOn(['uw.workspaceId'])
+        .orderBy('uw.workspaceId', 'ASC')
+        .addOrderBy('uw.createdAt', 'ASC')
+        .getRawMany<AdminWorkspaceCreatorEmailRow>();
+    const creatorEmailByWorkspaceId = new Map<string, string>(
+      creatorRows.map((row) => [row.workspaceId, row.email]),
+    );
     const creditsRows = await this.workspaceCreditsRepository.find();
-    const creditsByWorkspaceId = new Map(
+    const creditsByWorkspaceId = new Map<string, WorkspaceCredits>(
       creditsRows.map((row) => [row.workspaceId, row]),
     );
-    return workspaces.map((workspace) => {
-      const credits = creditsByWorkspaceId.get(workspace.id);
-      return {
-        workspaceId: workspace.id,
-        workspaceCreatedAt: workspace.createdAt,
-        workspaceName: workspace.displayName ?? '',
-        orgChartCredits: credits?.orgChartCredits ?? 0,
-        emailContactCredits: credits?.emailContactCredits ?? 0,
-        phoneContactCredits: credits?.phoneContactCredits ?? 0,
-      };
-    });
-  }
+
+    return workspaces.map(
+      (workspace): AdminWorkspaceCreditsRowOutput => {
+        const credits = creditsByWorkspaceId.get(workspace.id);
+
+        return {
+          workspaceId: workspace.id,
+          workspaceCreatedAt: workspace.createdAt,
+          workspaceName: workspace.displayName ?? '',
+          workspaceCreatorEmail:
+            creatorEmailByWorkspaceId.get(workspace.id) ?? null,
+          orgChartCredits: credits?.orgChartCredits ?? 0,
+          emailContactCredits: credits?.emailContactCredits ?? 0,
+          phoneContactCredits: credits?.phoneContactCredits ?? 0,
+        };
+      },
+    );
+  } 
 
   @Mutation(() => Boolean)
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
@@ -387,6 +435,7 @@ export class BillingResolver {
       input.creditType as 'org_chart' | 'email_contact' | 'phone_contact',
       input.delta,
     );
+
     return true;
   }
 }

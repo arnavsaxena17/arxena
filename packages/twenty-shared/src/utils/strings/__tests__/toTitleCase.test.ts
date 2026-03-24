@@ -82,8 +82,8 @@ describe('toTitleCase', () => {
   it('skips title case for masked/anonymized when skipIfMasked', () => {
     expect(toTitleCase('xxx', { skipIfMasked: true })).toBe('xxx');
     expect(toTitleCase('xxxx xxx', { skipIfMasked: true })).toBe('xxxx xxx');
-    expect(toTitleCase('unknown linkedin member', { skipIfMasked: true })).toBe(
-      'unknown linkedin member',
+    expect(toTitleCase('out of network profile', { skipIfMasked: true })).toBe(
+      'out of network profile',
     );
     expect(toTitleCase('xx yy', { skipIfMasked: true })).toBe('xx yy');
   });
@@ -97,7 +97,7 @@ describe('isMaskedOrAnonymized', () => {
   it('returns true for masked/anonymized strings', () => {
     expect(isMaskedOrAnonymized('xxx')).toBe(true);
     expect(isMaskedOrAnonymized('xxxx xxx')).toBe(true);
-    expect(isMaskedOrAnonymized('unknown linkedin member')).toBe(true);
+    expect(isMaskedOrAnonymized('out of network profile')).toBe(true);
     expect(isMaskedOrAnonymized('xx yy')).toBe(true);
   });
 

@@ -36,7 +36,7 @@ export type UseOrgChartActionsParams = {
 };
 
 type OrgChartSearchProgressEvent = {
-  event?: 'status' | 'paginationInfo' | 'pageResults' | 'complete';
+  event?: 'status' | 'paginationInfo' | 'pageResults' | 'complete' | 'error';
   requestId?: string;
   mode?: string;
   data?: {
@@ -185,6 +185,30 @@ export const useOrgChartActions = ({
         }
       };
 
+      if (payload.event === 'error') {
+        const msg =
+          typeof eventData.message === 'string' && eventData.message.length > 0
+            ? eventData.message
+            : 'Organization chart request failed.';
+        if (payload.mode === 'entire_company' && companyId) {
+          closeSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`);
+        }
+        enqueueSnackBar(msg, {
+          variant: SnackBarVariant.Error,
+          dedupeKey: payload.requestId
+            ? `orgchart-request-error-${payload.requestId}`
+            : 'orgchart-request-error',
+          duration: 8000,
+        });
+        setContextError(msg);
+        setContextProgressMessage(null);
+        setContextProgressPage(null);
+        setContextProgressTotalPages(null);
+        setContextProgressTotalCandidates(null);
+        setIsContextLoading(false);
+        return;
+      }
+
       if (payload.event === 'status') {
         if (eventData.message) {
           setContextProgressMessage(eventData.message);
@@ -245,7 +269,13 @@ export const useOrgChartActions = ({
         }
       }
     },
-    [activeOrgChartRequestId, companyId, updateSnackBarByDedupeKey],
+    [
+      activeOrgChartRequestId,
+      companyId,
+      updateSnackBarByDedupeKey,
+      closeSnackBarByDedupeKey,
+      enqueueSnackBar,
+    ],
   );
 
   useEffect(() => {
@@ -460,6 +490,31 @@ export const useOrgChartActions = ({
         normalizeCandidateItem(item, index),
       );
 
+      const orgChartErrorFromResponse =
+        json &&
+        typeof json === 'object' &&
+        typeof (json as { orgChartError?: unknown }).orgChartError === 'string'
+          ? (json as { orgChartError: string }).orgChartError.trim()
+          : '';
+
+      if (orgChartErrorFromResponse.length > 0) {
+        setContextError(orgChartErrorFromResponse);
+        setContextProgressMessage(null);
+        setContextProgressPage(null);
+        setContextProgressTotalPages(null);
+        setContextProgressTotalCandidates(null);
+        enqueueSnackBar(orgChartErrorFromResponse, {
+          variant: SnackBarVariant.Error,
+          dedupeKey: requestId
+            ? `orgchart-request-error-${requestId}`
+            : undefined,
+          duration: 8000,
+        });
+        if (mode === 'entire_company' && companyId) {
+          closeSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`);
+        }
+      }
+
       if (!isHeaderOrgChartRequest) {
         setContextResults(normalized);
       }
@@ -496,14 +551,21 @@ export const useOrgChartActions = ({
           err instanceof Error ? err.message : 'Failed to fetch candidates';
         setContextError(errorMessage);
         setContextProgressMessage(null);
+        setContextProgressPage(null);
+        setContextProgressTotalPages(null);
+        setContextProgressTotalCandidates(null);
         if (mode === 'entire_company' || mode === 'function_grade') {
           closeSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`);
-          enqueueSnackBar(errorMessage, {
-            variant: SnackBarVariant.Error,
-            dedupeKey: `orgchart-entire-company-${companyId}-error`,
-            duration: 5000,
-          });
         }
+        enqueueSnackBar(errorMessage, {
+          variant: SnackBarVariant.Error,
+          dedupeKey:
+            companyId &&
+            (mode === 'entire_company' || mode === 'function_grade')
+              ? `orgchart-entire-company-${companyId}-error`
+              : undefined,
+          duration: 6000,
+        });
       } else {
         setContextError('Search stopped.');
         setContextProgressMessage(null);

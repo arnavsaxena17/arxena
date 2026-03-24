@@ -707,6 +707,8 @@ export class CandidateSearchController {
       )}`,
     );
 
+    let orgChartError: string | undefined;
+
     let shouldWriteCompanyOrgChartCache = true;
 
     if (mode === 'entire_company') {
@@ -1035,6 +1037,19 @@ export class CandidateSearchController {
             `Failed to build org chart from cached candidates for company="${resolvedCompanyName}"`,
             error as Error,
           );
+          const buildFailureMessage =
+            error instanceof Error
+              ? error.message
+              : 'Failed to build organization chart from cached people.';
+          orgChartError = buildFailureMessage;
+          await this.emitOrgchartSearchProgressForToken(apiToken, {
+            requestId,
+            mode,
+            searchType,
+            companyName: resolvedCompanyName,
+            event: 'error',
+            data: { message: buildFailureMessage },
+          });
           const baseItems = Array.isArray(cachedCandidateList.items)
             ? cachedCandidateList.items
             : [];
@@ -1048,6 +1063,7 @@ export class CandidateSearchController {
             itemCount: filteredItems.length,
             items: filteredItems,
             orgChart: undefined,
+            orgChartError,
             isCached: true,
             cacheSource: 'candidate_list',
             cachedAt: cachedCandidateList.cachedAt,
@@ -1111,6 +1127,19 @@ export class CandidateSearchController {
           `Failed to build org chart from LinkedIn orgchart search for company="${resolvedCompanyName}"`,
           error as Error,
         );
+        const buildFailureMessage =
+          error instanceof Error
+            ? error.message
+            : 'Failed to build organization chart after people search.';
+        orgChartError = buildFailureMessage;
+        await this.emitOrgchartSearchProgressForToken(apiToken, {
+          requestId,
+          mode,
+          searchType,
+          companyName: resolvedCompanyName,
+          event: 'error',
+          data: { message: buildFailureMessage },
+        });
       }
       const shouldCacheBuiltOrgChartFromLinkedIn =
         orgChart &&
@@ -1202,6 +1231,19 @@ export class CandidateSearchController {
           `Failed to build function-grade org chart for company="${resolvedCompanyName}"`,
           error as Error,
         );
+        const buildFailureMessage =
+          error instanceof Error
+            ? error.message
+            : 'Failed to build organization chart for this function.';
+        orgChartError = buildFailureMessage;
+        await this.emitOrgchartSearchProgressForToken(apiToken, {
+          requestId,
+          mode,
+          searchType,
+          companyName: resolvedCompanyName,
+          event: 'error',
+          data: { message: buildFailureMessage },
+        });
       }
 
       if (
@@ -1232,9 +1274,51 @@ export class CandidateSearchController {
       itemCount: result.itemCount,
       items: result.items,
       orgChart,
+      ...(orgChartError ? { orgChartError } : {}),
       isCached: result.isCached ?? false,
       cacheSource: result.cacheSource ?? 'none',
     };
+  }
+
+  /**
+   * Notify the client when org-chart layout fails after a successful people search
+   * (same channel as {@link OrgChartSearchService} progress events).
+   */
+  private async emitOrgchartSearchProgressForToken(
+    apiToken: string,
+    payload: {
+      requestId?: string;
+      mode: OrgchartSearchMode;
+      searchType: OrgchartSearchType;
+      companyName: string;
+      event: string;
+      data: Record<string, unknown>;
+    },
+  ): Promise<void> {
+    try {
+      const authContext =
+        await this.workspaceQueryService.accessTokenService.validateToken(
+          apiToken,
+        );
+      const workspaceMemberId = authContext.workspaceMemberId;
+      if (!workspaceMemberId) {
+        return;
+      }
+      this.workspaceQueryService.webSocketService.sendToUser(
+        workspaceMemberId,
+        'orgchart-search-progress',
+        {
+          event: payload.event,
+          requestId: payload.requestId,
+          mode: payload.mode,
+          searchType: payload.searchType,
+          companyName: payload.companyName,
+          data: payload.data,
+        },
+      );
+    } catch {
+      // Invalid token or missing member id — response body still carries orgChartError.
+    }
   }
 
   /**

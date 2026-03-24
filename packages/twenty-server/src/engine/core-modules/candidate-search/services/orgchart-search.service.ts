@@ -687,15 +687,34 @@ export class OrgChartSearchService {
           : mode ?? 'chart';
     const jobName = `orgchart-${normalizedCompanyName.replace(/\s+/g, '-')}-${jobNameSuffix}`;
 
-    const orgChart =
-      await this.pythonOrgChartService.createOrgChartFromStandardizedPeople({
-        people,
-        jobName,
-        jobId: normalizedCompanyId || undefined,
-        functionRoot: fn,
-      });
+    const yugaNormalizedId = normalizedCompanyId.replace(/-/g, '_').toLowerCase();
+    const isYugaLabsCompany =
+      yugaNormalizedId === 'yuga_labs' ||
+      normalizedCompanyName.toLowerCase().trim() === 'yuga labs';
 
-    return orgChart;
+    try {
+      return await this.pythonOrgChartService.createOrgChartFromStandardizedPeople(
+        {
+          people,
+          jobName,
+          jobId: normalizedCompanyId || undefined,
+          functionRoot: fn,
+        },
+      );
+    } catch (error) {
+      if (!isYugaLabsCompany) {
+        throw error;
+      }
+      const staticChart =
+        await this.pythonOrgChartService.loadYugaLabsStaticAssistOrNull();
+      if (!staticChart) {
+        throw error;
+      }
+      this.logger.warn(
+        `Yuga Labs org chart build failed; using static yuga_labs_all_org_chart_assist.json. ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return staticChart;
+    }
   }
 
   private createSimpleCompanyStrategy(

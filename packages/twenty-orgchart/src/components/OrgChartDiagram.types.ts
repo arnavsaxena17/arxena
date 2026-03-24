@@ -34,6 +34,10 @@ export type OrgChartDiagramProps = {
   onNodeDoubleClick?: (node: OrgChartNodeData) => void;
   onDownloadNode?: (node: OrgChartNodeData) => void;
   onSimilarPeople?: (node: OrgChartNodeData) => void;
+  /** Experimental: show a hover tooltip on each node describing outreach capabilities. */
+  showNodeCapabilitiesHoverHint?: boolean;
+  /** Company name for personalized hover copy (e.g. "These are the … at Acme."). */
+  nodeCapabilitiesHoverCompanyName?: string;
 };
 
 export type OrgChartDiagramHandle = {

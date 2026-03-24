@@ -684,7 +684,8 @@ export const OrgChartResultModal = ({
           <StyledContextModalTitle>{title}</StyledContextModalTitle>
         </StyledContextModalHeader>
         <StyledContextModalBody>
-          {isLoading && (
+          {error && <StyledErrorMessage>{error}</StyledErrorMessage>}
+          {isLoading && !error && (
             <StyledLoadingMessage>
               <StyledLoadingRow>
                 <StyledSpinner />
@@ -711,9 +712,6 @@ export const OrgChartResultModal = ({
               )}
             </StyledLoadingMessage>
           )}
-          {!isLoading && error && (
-            <StyledErrorMessage>{error}</StyledErrorMessage>
-          )}
           {!isLoading && !error && booleanKeywordsString && (
             <StyledContextResultItem>
               <StyledContextResultName>Boolean string</StyledContextResultName>
@@ -722,9 +720,9 @@ export const OrgChartResultModal = ({
               </StyledContextResultMeta>
             </StyledContextResultItem>
           )}
-          {!isLoading &&
-            !error &&
-            !booleanKeywordsString &&
+          {!booleanKeywordsString &&
+            results.length > 0 &&
+            (!isLoading || error) &&
             results.map((item) => (
               <ResultItem
                 key={item.id}
@@ -737,7 +735,7 @@ export const OrgChartResultModal = ({
           {!isLoading &&
             !error &&
             !booleanKeywordsString &&
-            !results.length && (
+            results.length === 0 && (
               <StyledContextResultMeta>{emptyMessage}</StyledContextResultMeta>
             )}
         </StyledContextModalBody>

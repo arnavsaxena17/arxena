@@ -14,6 +14,7 @@ import { StripeModule } from 'src/engine/core-modules/billing/stripe/stripe.modu
 import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
 import { EmailSenderJob } from 'src/engine/core-modules/email/email-sender.job';
 import { EmailModule } from 'src/engine/core-modules/email/email.module';
+import { TheOrgModule } from 'src/engine/core-modules/theorg/theorg.module';
 import { UserWorkspaceModule } from 'src/engine/core-modules/user-workspace/user-workspace.module';
 import { UserVarsModule } from 'src/engine/core-modules/user/user-vars/user-vars.module';
 import { UserModule } from 'src/engine/core-modules/user/user.module';
@@ -44,6 +45,7 @@ import { WorkflowModule } from 'src/modules/workflow/workflow.module';
     UserModule,
     UserVarsModule,
     EmailModule,
+    TheOrgModule,
     DataSeedDemoWorkspaceModule,
     BillingModule,
     UserWorkspaceModule,

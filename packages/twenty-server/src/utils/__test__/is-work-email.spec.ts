@@ -9,6 +9,10 @@ describe('isWorkEmail', () => {
     expect(isWorkEmail('user@gmail.com')).toBe(false);
   });
 
+  it('should return false for disposable email even when domain casing differs', () => {
+    expect(isWorkEmail('user@Mailinator.com')).toBe(false);
+  });
+
   it('should return false for an empty email string', () => {
     expect(isWorkEmail('')).toBe(false);
   });

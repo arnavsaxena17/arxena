@@ -38,7 +38,153 @@ const DEFAULT_LINKEDIN_ICON = '/img/linkedin-icon-png-circle-2.png';
 const DEFAULT_DOWNLOAD_ICON = '/img/download-icon.png';
 const DEFAULT_SIMILAR_ITEMS_ICON = '/img/similar-items.png';
 
+const NODE_CAPABILITY_ITEMS = [
+  'Fetch names & contact details',
+  'Send LinkedIn connection requests',
+  'Let AI connect for you',
+  'Reach people on WhatsApp',
+] as const;
 
+const NODE_CAPABILITIES_BULLETS = NODE_CAPABILITY_ITEMS.map(
+  (line) => `• ${line}`,
+).join('\n');
+
+/** Walk up from a GraphObject inside a tooltip to the hovered node's data. */
+const getOrgChartDataFromToolTipObject = (
+  obj: go.GraphObject,
+): OrgChartNodeData | undefined => {
+  let current: go.GraphObject | null = obj;
+  for (let i = 0; i < 8 && current !== null; i += 1) {
+    const containing: go.Part | null = current.part;
+    if (containing instanceof go.Adornment) {
+      const adorned = containing.adornedPart;
+      if (adorned instanceof go.Node) {
+        return adorned.data as OrgChartNodeData | undefined;
+      }
+      return undefined;
+    }
+    if (containing === null) return undefined;
+    current = containing;
+  }
+  return undefined;
+};
+
+const normStr = (v: unknown): string =>
+  typeof v === 'string' ? v.trim().toLowerCase() : '';
+
+const parentKeyOnData = (d: go.ObjectData): go.Key | undefined => {
+  const p = d.parent;
+  if (p === undefined || p === null) return undefined;
+  return p as go.Key;
+};
+
+const isRootNodeData = (model: go.TreeModel, d: go.ObjectData): boolean => {
+  const pk = parentKeyOnData(d);
+  if (pk === undefined) return true;
+  return model.findNodeDataForKey(pk) === null;
+};
+
+const countSubtreeNodes = (model: go.TreeModel, rootKey: go.Key): number => {
+  const childrenByParent = new Map<go.Key, go.Key[]>();
+  for (const d of model.nodeDataArray) {
+    const k = d.key as go.Key;
+    const pk = parentKeyOnData(d);
+    if (pk === undefined) continue;
+    if (model.findNodeDataForKey(pk) === null) continue;
+    const list = childrenByParent.get(pk) ?? [];
+    list.push(k);
+    childrenByParent.set(pk, list);
+  }
+  let n = 0;
+  const stack: go.Key[] = [rootKey];
+  const seen = new Set<go.Key>();
+  while (stack.length > 0) {
+    const k = stack.pop()!;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    n += 1;
+    const ch = childrenByParent.get(k);
+    if (ch) {
+      for (let i = 0; i < ch.length; i += 1) stack.push(ch[i]!);
+    }
+  }
+  return n;
+};
+
+/** CEO / main tree root when the model is a forest — not `findTreeRoots().first()`. */
+const pickOrgChartRootData = (model: go.TreeModel): go.ObjectData | null => {
+  const roots = model.nodeDataArray.filter((d) => isRootNodeData(model, d));
+  if (roots.length === 0) return null;
+  if (roots.length === 1) return roots[0]!;
+
+  const ceoByStd = roots.find(
+    (d) => normStr(d.std_function) === 'ceo' && normStr(d.std_grade) === 'ceo',
+  );
+  if (ceoByStd) return ceoByStd;
+
+  const ceoByHeadline = roots.find((d) => {
+    const h = normStr(d.headline);
+    return (
+      /\bceo\b/u.test(h) ||
+      h.includes('chief executive') ||
+      h.includes('ceo leadership')
+    );
+  });
+  if (ceoByHeadline) return ceoByHeadline;
+
+  let best = roots[0]!;
+  let bestCount = countSubtreeNodes(model, best.key as go.Key);
+  for (let i = 1; i < roots.length; i += 1) {
+    const r = roots[i]!;
+    const c = countSubtreeNodes(model, r.key as go.Key);
+    if (c > bestCount) {
+      best = r;
+      bestCount = c;
+    }
+  }
+  return best;
+};
+
+const getOrgChartRootNode = (diagram: go.Diagram): go.Node | null => {
+  const { model } = diagram;
+  if (model instanceof go.TreeModel) {
+    const data = pickOrgChartRootData(model);
+    if (data !== null) {
+      const node = diagram.findNodeForKey(data.key as go.Key);
+      if (node) return node;
+    }
+  }
+  const fromTree = diagram.findTreeRoots().first();
+  if (fromTree) return fromTree;
+  return diagram.nodes.first();
+};
+
+/**
+ * Zoom around a node (CEO). Avoid `decreaseZoom(0.3)` — in GoJS that multiplies scale by 0.3.
+ * Retry when bounds are not ready yet (first paint / async layout).
+ */
+const applyZoomAroundNode = (diagram: go.Diagram, node: go.Node): boolean => {
+  const key = node.data?.key as go.Key | undefined;
+  const part =
+    key !== undefined ? diagram.findNodeForKey(key) : node;
+  if (!part || !(part instanceof go.Node)) return false;
+
+  const raw = part.actualBounds;
+  if (raw.width < 4 || raw.height < 4) return false;
+
+  const padded = raw.copy().inflate(140, 140);
+  diagram.zoomToRect(padded, go.AutoScale.Uniform);
+  diagram.centerRect(part.actualBounds);
+
+  const lo = diagram.minScale;
+  const hi = diagram.maxScale;
+  // Slightly more zoom-out than before (~18%) so the root isn’t edge-to-edge in the viewport.
+  const nextScale = Math.max(lo, Math.min(hi, diagram.scale * 0.5));
+  diagram.scale = nextScale;
+  diagram.centerRect(part.actualBounds);
+  diagram.commandHandler.scrollToPart(part);
+  return true;
+};
 
 const StyledDiagramWrapper = styled.div`
   width: 100%;
@@ -79,6 +225,8 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       onNodeDoubleClick,
       onDownloadNode,
       onSimilarPeople,
+      showNodeCapabilitiesHoverHint = false,
+      nodeCapabilitiesHoverCompanyName,
     },
     ref,
   ) => {
@@ -95,8 +243,21 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
 
     const handleModelChange = useCallback(() => {}, []);
 
+    const capabilitiesHoverCompanyLabel =
+      (nodeCapabilitiesHoverCompanyName ?? '').trim() || 'this company';
+
     const createNodeTemplate = useCallback((): go.Node => {
       const $ = go.GraphObject.make;
+
+      const buildCapabilitiesHoverIntro = (
+        data: OrgChartNodeData | undefined,
+      ): string => {
+        const role =
+          typeof data?.headline === 'string' && data.headline.trim()
+            ? data.headline.trim()
+            : 'people in this role';
+        return `These are the ${role} teams at ${capabilitiesHoverCompanyLabel}.`;
+      };
 
       const findSize = (size: unknown): number => {
         const n =
@@ -259,6 +420,92 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
           ),
         );
 
+      const capabilitiesIntroBinding = new go.Binding(
+        'text',
+        '',
+        (_val: unknown, obj: go.GraphObject) =>
+          buildCapabilitiesHoverIntro(getOrgChartDataFromToolTipObject(obj)),
+      ).ofObject();
+
+      const nodeHoverToolTip = showNodeCapabilitiesHoverHint
+        ? $(
+            'ToolTip',
+            {
+              isShadowed: true,
+              shadowOffset: new go.Point(0, 3),
+              'Border.fill': '#ffffff',
+              'Border.stroke': '#e2e8f0',
+              'Border.strokeWidth': 1,
+            },
+            $(
+              go.Panel,
+              'Horizontal',
+              { stretch: go.Stretch.Horizontal },
+              $(
+                go.Shape,
+                'Rectangle',
+                {
+                  width: 4,
+                  stretch: go.Stretch.Vertical,
+                  fill: '#00a4a4',
+                  strokeWidth: 0,
+                },
+              ),
+              $(
+                go.Panel,
+                'Vertical',
+                {
+                  margin: new go.Margin(12, 14, 14, 12),
+                  defaultAlignment: go.Spot.Left,
+                  stretch: go.Stretch.Horizontal,
+                },
+                $(
+                  go.TextBlock,
+                  {
+                    font: '600 12.5pt system-ui, Segoe UI, sans-serif',
+                    stroke: '#0f172a',
+                    wrap: go.TextBlock.WrapFit,
+                    maxSize: new go.Size(292, NaN),
+                    textAlign: 'left',
+                  },
+                  capabilitiesIntroBinding,
+                ),
+                $(
+                  go.Shape,
+                  'Rectangle',
+                  {
+                    height: 1,
+                    stretch: go.Stretch.Horizontal,
+                    fill: '#e2e8f0',
+                    strokeWidth: 0,
+                    margin: new go.Margin(12, 0, 10, 0),
+                  },
+                ),
+                $(
+                  go.TextBlock,
+                  {
+                    text: 'With Arxena you can',
+                    font: '600 9.5pt system-ui, Segoe UI, sans-serif',
+                    stroke: '#64748b',
+                    margin: new go.Margin(0, 0, 6, 0),
+                  },
+                ),
+                $(
+                  go.TextBlock,
+                  {
+                    text: NODE_CAPABILITIES_BULLETS,
+                    font: '10.5pt system-ui, Segoe UI, sans-serif',
+                    stroke: '#334155',
+                    wrap: go.TextBlock.WrapFit,
+                    maxSize: new go.Size(292, NaN),
+                    textAlign: 'left',
+                  },
+                ),
+              ),
+            ),
+          )
+        : undefined;
+
       const node = $(
         go.Node,
         'Auto',
@@ -294,6 +541,16 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
             }
           },
         },
+        ...(showNodeCapabilitiesHoverHint && nodeHoverToolTip !== undefined
+          ? [
+              new go.Binding(
+                'toolTip',
+                'nodeState',
+                (state: unknown) =>
+                  state === 'preview' ? nodeHoverToolTip : null,
+              ),
+            ]
+          : []),
         $(
           go.Panel,
           'Auto',
@@ -580,6 +837,8 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       onNodeDoubleClick,
       onDownloadNode,
       onSimilarPeople,
+      showNodeCapabilitiesHoverHint,
+      capabilitiesHoverCompanyLabel,
     ]);
 
     const initDiagram = useCallback((): go.Diagram => {
@@ -588,8 +847,11 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       const diagram = $(
         go.Diagram,
         {
+          ...(showNodeCapabilitiesHoverHint
+            ? { 'toolManager.hoverDelay': 0 }
+            : {}),
           'undoManager.isEnabled': true,
-          initialContentAlignment: go.Spot.Center,
+          initialContentAlignment: go.Spot.Default,
           validCycle: go.Diagram.CycleDestinationTree,
           layout: $(
             go.TreeLayout,
@@ -621,6 +883,11 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
         { routing: go.Link.Orthogonal, corner: 5 },
         $(go.Shape, { strokeWidth: 4, stroke: '#00a4a4' }),
       );
+
+      // Extra scrollable space so the tree root (top of doc) can be centered in the viewport;
+      // default scrollMargin is 0 and centerRect cannot scroll past document bounds.
+      // Document coords: extra L/R so wide trees (CEO far from x=0) can scroll to center.
+      diagram.scrollMargin = new go.Margin(800, 4000, 800, 4000);
 
       const levelColors: string[] = [
         '#AC193D',
@@ -684,7 +951,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       }
 
       return diagram;
-    }, [createNodeTemplate, onBackgroundContextAction]);
+    }, [createNodeTemplate, onBackgroundContextAction, showNodeCapabilitiesHoverHint]);
 
     const getDiagram = useCallback((): go.Diagram | null => {
       const diagramHost = diagramRef.current as unknown as {
@@ -736,11 +1003,9 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
         const safeIndex = ((index % keys.length) + keys.length) % keys.length;
         const key = keys[safeIndex];
         const part = diagram.findPartForKey(key);
-        if (!part) return;
+        if (!part || !(part instanceof go.Node)) return;
 
-        diagram.zoomToRect(part.actualBounds);
-        diagram.centerRect(part.actualBounds);
-        diagram.commandHandler.decreaseZoom(0.3);
+        applyZoomAroundNode(diagram, part);
         currentResultIndexRef.current = safeIndex;
       },
       [getDiagram],
@@ -784,9 +1049,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
 
         const first = results.first();
         if (first) {
-          diagram.zoomToRect(first.actualBounds);
-          diagram.centerRect(first.actualBounds);
-          diagram.commandHandler.decreaseZoom(0.3);
+          applyZoomAroundNode(diagram, first);
         } else {
           diagram.commandHandler.zoomToFit();
         }
@@ -826,9 +1089,18 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
     const centerContent = useCallback(() => {
       const diagram = getDiagram();
       if (!diagram) return;
-      diagram.scale = 1;
-      const rootNode = diagram.nodes.first();
-      if (rootNode) diagram.commandHandler.scrollToPart(rootNode);
+      const rootNode = getOrgChartRootNode(diagram);
+      if (!rootNode) {
+        diagram.commandHandler.zoomToFit();
+        return;
+      }
+      if (!applyZoomAroundNode(diagram, rootNode)) {
+        requestAnimationFrame(() => {
+          const d = getDiagram();
+          const r = d ? getOrgChartRootNode(d) : null;
+          if (d && r) applyZoomAroundNode(d, r);
+        });
+      }
     }, [getDiagram]);
 
     const handle = {
@@ -866,21 +1138,52 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       const diagram = getDiagram();
       if (!diagram) return;
 
+      let settleTimer: ReturnType<typeof setTimeout> | undefined;
+
       const handleInitialLayout = () => {
         if (hasCenteredRef.current) return;
-        hasCenteredRef.current = true;
-        const rootNode = diagram.nodes.first();
-        if (rootNode) {
-          diagram.zoomToRect(rootNode.actualBounds);
-          diagram.centerRect(rootNode.actualBounds);
-          diagram.commandHandler.decreaseZoom(0.3);
-        } else {
-          diagram.commandHandler.zoomToFit();
-        }
+
+        const tryCenter = (): boolean => {
+          const rootNode = getOrgChartRootNode(diagram);
+          if (!rootNode) {
+            diagram.commandHandler.zoomToFit();
+            return true;
+          }
+          return applyZoomAroundNode(diagram, rootNode);
+        };
+
+        const frameCenterOnRoot = () => {
+          if (hasCenteredRef.current) return;
+          if (tryCenter()) {
+            hasCenteredRef.current = true;
+            return;
+          }
+          requestAnimationFrame(() => {
+            if (hasCenteredRef.current) return;
+            if (tryCenter()) {
+              hasCenteredRef.current = true;
+              return;
+            }
+            settleTimer = setTimeout(() => {
+              if (hasCenteredRef.current) return;
+              if (tryCenter()) {
+                hasCenteredRef.current = true;
+                return;
+              }
+              diagram.commandHandler.zoomToFit();
+              hasCenteredRef.current = true;
+            }, 320);
+          });
+        };
+
+        requestAnimationFrame(() => {
+          requestAnimationFrame(frameCenterOnRoot);
+        });
       };
 
       diagram.addDiagramListener('InitialLayoutCompleted', handleInitialLayout);
       return () => {
+        if (settleTimer !== undefined) clearTimeout(settleTimer);
         diagram.removeDiagramListener('InitialLayoutCompleted', handleInitialLayout);
       };
     }, [getDiagram, nodeDataArray]);

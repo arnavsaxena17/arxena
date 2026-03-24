@@ -6,26 +6,27 @@ import { WorkspaceActivationStatus } from 'twenty-shared';
 import { Repository } from 'typeorm';
 
 import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
+import {
+  AuthException,
+  AuthExceptionCode,
+} from 'src/engine/core-modules/auth/auth.exception';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
 import {
   AuthProviderWithPasswordType,
   ExistingUserOrPartialUserWithPicture,
   SignInUpBaseParams,
 } from 'src/engine/core-modules/auth/types/signInUp.type';
+import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { DomainManagerService } from 'src/engine/core-modules/domain-manager/services/domain-manager.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { FileUploadService } from 'src/engine/core-modules/file/file-upload/services/file-upload.service';
 import { OnboardingService } from 'src/engine/core-modules/onboarding/onboarding.service';
+import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { UserWorkspaceService } from 'src/engine/core-modules/user-workspace/user-workspace.service';
 import { UserService } from 'src/engine/core-modules/user/services/user.service';
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { WorkspaceInvitationService } from 'src/engine/core-modules/workspace-invitation/services/workspace-invitation.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
-import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
-import {
-  AuthException,
-  AuthExceptionCode,
-} from 'src/engine/core-modules/auth/auth.exception';
 
 jest.mock('src/utils/image', () => {
   return {
@@ -115,6 +116,12 @@ describe('SignInUpService', () => {
           provide: DomainManagerService,
           useValue: {
             generateSubdomain: jest.fn(),
+          },
+        },
+        {
+          provide: WorkspaceCreditsService,
+          useValue: {
+            getOrCreate: jest.fn().mockResolvedValue(undefined),
           },
         },
       ],
@@ -217,7 +224,7 @@ describe('SignInUpService', () => {
       userData: {
         type: 'newUserWithPicture',
         newUserWithPicture: {
-          email: 'newuser@example.com',
+          email: 'newuser@company.com',
           picture: 'pictureUrl',
         },
       },
@@ -309,6 +316,30 @@ describe('SignInUpService', () => {
       new AuthException(
         'User is not part of the workspace',
         AuthExceptionCode.FORBIDDEN_EXCEPTION,
+      ),
+    );
+  });
+
+  it('should reject signUp on new workspace with a personal email domain', async () => {
+    const params: SignInUpBaseParams &
+      ExistingUserOrPartialUserWithPicture &
+      AuthProviderWithPasswordType = {
+      authParams: { provider: 'password', password: 'validPassword' },
+      userData: {
+        type: 'newUserWithPicture',
+        newUserWithPicture: {
+          email: 'newuser@gmail.com',
+          picture: 'pictureUrl',
+        },
+      },
+    };
+
+    jest.spyOn(environmentService, 'get').mockReturnValue(false);
+
+    await expect(() => service.signInUp(params)).rejects.toThrow(
+      new AuthException(
+        'Please sign up with your work email address. Personal, disposable, and free email providers are not supported for new accounts.',
+        AuthExceptionCode.INVALID_INPUT,
       ),
     );
   });

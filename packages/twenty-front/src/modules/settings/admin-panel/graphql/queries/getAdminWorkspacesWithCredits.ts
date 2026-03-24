@@ -6,6 +6,7 @@ export const GET_ADMIN_WORKSPACES_WITH_CREDITS = gql`
       workspaceId
       workspaceCreatedAt
       workspaceName
+      workspaceCreatorEmail
       orgChartCredits
       emailContactCredits
       phoneContactCredits

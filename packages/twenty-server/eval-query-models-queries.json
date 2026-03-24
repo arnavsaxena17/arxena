@@ -3,17 +3,17 @@
     "recruiter": {
       "detailed": {
         "gpt-4.1-mini": {
-          "score": 8,
+          "score": 10,
           "weaknesses": [
-            "Role filter uses AND logic (\"(channel OR partner) AND sales\"), which sharply reduces recall.",
-            "Role filter is slightly verbose; could use shorter stems (e.g., \"channel OR partner OR alliance\") without AND.",
-            "Keywords in both queries are somewhat broad, especially the second query, which may introduce noise (e.g., \"distribution\" and \"B2B\" are generic).",
-            "Location coverage is good, but the first query could have included a broader region as a secondary archetype."
+            "Role stems are slightly verbose and use AND logic (e.g., '(channel OR partner) AND sales'), which can over-narrow results.",
+            "Keywords in the second query are a broad OR-chain with some under-anchoring (e.g., 'distribution' and 'B2B' are generic and may introduce noise).",
+            "No explicit B2B anchor in the first query's keywords, risking under-anchoring for the B2B focus.",
+            "Both queries use similar role/title logic, so archetype coverage is only moderate."
           ],
-          "verdict": "Mediocre. The queries show some understanding of the requirement and archetype coverage, but the use of AND logic in the role filter is a significant error, and keyword/role discipline is lacking. Usable but needs revision for better recall and precision.",
+          "verdict": "Competent queries with some structural issues: mild over-narrowing in role stems, under-anchoring in keywords, and only moderate archetype coverage. Usable but not optimal.",
           "queries": [
             {
-              "keywords": "telecom OR \"telecom equipment\"",
+              "keywords": "telecom OR telco OR \"telecom equipment\"",
               "location": [
                 {
                   "name": "Gujarat, India",
@@ -31,10 +31,10 @@
               "company": null
             },
             {
-              "keywords": "telecom OR telco OR \"telecom equipment\" OR distribution OR B2B",
+              "keywords": "telecom OR telco OR \"channel partner\" OR distribution OR B2B",
               "location": [
                 {
-                  "name": "India",
+                  "name": "Gujarat, India",
                   "priority": "CAN_HAVE",
                   "scope": "CURRENT_OR_OPEN_TO_RELOCATE"
                 }

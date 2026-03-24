@@ -7,4 +7,5 @@ export enum CacheStorageNamespace {
   EngineCandidateSearch = 'engine:candidate-search',
   EngineContactEnrichment = 'engine:contact-enrichment',
   EngineApify = 'engine:apify',
+  EngineTheOrg = 'engine:theorg',
 }

@@ -30,4 +30,5 @@ export enum MessageQueue {
   contactEnrichmentQueue = 'contact-enrichment-queue',
   metadataStructureQueue = 'metadata-structure-queue',
   autonomousRecruiterQueue = 'autonomous-recruiter-queue',
+  theOrgQueue = 'theorg-queue',
 }

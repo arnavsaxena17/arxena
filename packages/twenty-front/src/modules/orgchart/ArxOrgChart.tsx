@@ -1,10 +1,12 @@
 import styled from '@emotion/styled';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { useDebouncedCallback } from 'use-debounce';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
+import { AppPath } from '@/types/AppPath';
 import { useUnipile } from '@/unipile/contexts/UnipileContext';
 import {
   OrgChartDiagram,
@@ -50,9 +52,52 @@ const StyledContainer = styled.div`
 
 const StyledDiagramArea = styled.div`
   flex: 1;
+  display: flex;
+  flex-direction: column;
   position: relative;
   min-height: 300px;
   background: ${({ theme }) => theme.background.secondary};
+`;
+
+const StyledDiagramBody = styled.div`
+  flex: 1;
+  min-height: 0;
+  position: relative;
+`;
+
+const StyledPreviewPersistentBanner = styled.div`
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
+  border-bottom: 1px solid ${({ theme }) => theme.border.color.medium};
+  background: ${({ theme }) => theme.background.tertiary};
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  text-align: center;
+`;
+
+const StyledPreviewBannerSignupButton = styled.button`
+  padding: ${({ theme }) => theme.spacing(0.75)} ${({ theme }) => theme.spacing(1.5)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: none;
+  background: ${({ theme }) => theme.accent.primary};
+  color: ${({ theme }) => theme.font.color.inverted};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    opacity: 0.92;
+  }
+
+  &:active {
+    opacity: 0.85;
+  }
 `;
 
 const StyledSearchOverlay = styled.div`
@@ -198,6 +243,7 @@ export const ArxOrgChart = ({
   onBack,
   jobId,
 }: ArxOrgChartProps) => {
+  const navigate = useNavigate();
   const [selectedCountry, setSelectedCountry] = useState<string | undefined>();
   const [selectedFunctionRoot, setSelectedFunctionRoot] = useState<
     string | undefined
@@ -226,13 +272,14 @@ export const ArxOrgChart = ({
   const tokenPair = useRecoilValue(tokenPairState);
   const accessToken = tokenPair?.accessToken?.token ?? undefined;
   const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+  const showNodeCapabilitiesHoverHint =
+    process.env.REACT_APP_EXPERIMENTAL_ORGCHART_NODE_HOVER_HINTS === 'true';
   const { isLinkedinConnected } = useUnipile();
 
   const {
     company: fallbackCompanyInfo,
     lookupByName,
   } = useCompanyInfoLookup({ baseUrl, accessToken });
-console.log("Company name in ArxOrgChart::", companyName);
   const { refetchJobs } = useJobRefetch();
   const effectiveEmployeeCount =
     unipileCompanyProfile?.employee_count ??
@@ -315,15 +362,6 @@ console.log("Company name in ArxOrgChart::", companyName);
     typeof (orgSource as Record<string, unknown> | null)?.is_blank_template ===
     'boolean' &&
     (orgSource as Record<string, unknown>).is_blank_template === true;
-
-  // const hasPreviewOrLockNodes = useMemo(() => {
-  //   return nodeDataArray.some(
-  //     (n) => n.nodeState === 'preview' || n.nodeState === 'lock',
-  //   );
-  // }, [nodeDataArray]);
-
-  // const isPreviewMode = isBlankTemplate || hasPreviewOrLockNodes;
-  // const isPreviewMode = isBlankTemplate;
 
   const filterOptions = useOrgChartFilterOptions(orgData);
 
@@ -574,6 +612,17 @@ console.log("Company name in ArxOrgChart::", companyName);
     });
   }, [orgData, actions.enrichedNodes, baseUrl]);
 
+  const hasPreviewOrgChartNodes = useMemo(
+    () => nodeDataArray.some((n) => n.nodeState === 'preview'),
+    [nodeDataArray],
+  );
+
+  const showPreviewPersistentBanner =
+    hasPreviewOrgChartNodes &&
+    !isLoading &&
+    !error &&
+    nodeDataArray.length > 0;
+
   const handleSearch = () => {
     const handle = diagramHandleRef.current;
     if (!handle) return;
@@ -709,6 +758,24 @@ console.log("Company name in ArxOrgChart::", companyName);
       <OrgChartHeader {...headerProps} />
 
       <StyledDiagramArea>
+        {showPreviewPersistentBanner && (
+          <StyledPreviewPersistentBanner>
+            <span>
+              {accessToken
+                ? 'This is a preview of the org chart. Generate the full org chart from the toolbar to see all employees.'
+                : 'This is a preview of the org chart. Get the full org chart for free when you sign up.'}
+            </span>
+            {!accessToken && (
+              <StyledPreviewBannerSignupButton
+                type="button"
+                onClick={() => navigate(AppPath.SignInUp)}
+              >
+                Sign up free
+              </StyledPreviewBannerSignupButton>
+            )}
+          </StyledPreviewPersistentBanner>
+        )}
+        <StyledDiagramBody>
         {isLoading && (
           <StyledLoadingMessage>Loading org chart...</StyledLoadingMessage>
         )}
@@ -749,6 +816,10 @@ console.log("Company name in ArxOrgChart::", companyName);
             <OrgChartDiagram
               ref={diagramHandleRef}
               nodeDataArray={nodeDataArray}
+              showNodeCapabilitiesHoverHint={showNodeCapabilitiesHoverHint}
+              nodeCapabilitiesHoverCompanyName={
+                effectiveCompanyName ?? undefined
+              }
               iconUrls={{
                 lock: '/img/lock.png',
                 linkedin: '/img/linkedin-icon-png-circle-2.png',
@@ -893,6 +964,7 @@ console.log("Company name in ArxOrgChart::", companyName);
           queueStartChatAfter={true}
           onSuccess={actions.closeAddResultsToJobModal}
         />
+        </StyledDiagramBody>
       </StyledDiagramArea>
     </StyledContainer>
   );

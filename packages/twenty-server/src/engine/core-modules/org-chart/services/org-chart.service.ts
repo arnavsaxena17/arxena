@@ -253,16 +253,17 @@ export class OrgChartService {
          *   - /.../arx/arxena/packages/twenty-server
          */
         const cwd = process.cwd();
+        const cwdBase = path.basename(cwd);
+        const parentBase = path.basename(path.dirname(cwd));
+
         let arxenaSiteRoot: string;
 
-        if (
-          path.basename(cwd) === 'packages' ||
-          path.basename(path.dirname(cwd)) === 'packages'
-        ) {
-          // e.g. /.../arx/arxena/packages or /.../arx/arxena/packages/twenty-server
-          arxenaSiteRoot = path.resolve(cwd, '..', '..', 'arxena-site');
+        if (cwdBase === 'twenty-server' && parentBase === 'packages') {
+          // /.../arx/arxena/packages/twenty-server -> /.../arx/arxena-site
+          arxenaSiteRoot = path.resolve(cwd, '..', '..', '..', 'arxena-site');
+        } else if (cwdBase === 'packages') {
+          arxenaSiteRoot = path.resolve(cwd, '..', 'arxena-site');
         } else {
-          // e.g. /.../arx/arxena
           arxenaSiteRoot = path.resolve(cwd, '..', 'arxena-site');
         }
 

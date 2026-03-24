@@ -6,10 +6,10 @@ import wyw from '@wyw-in-js/vite';
 import fs from 'fs';
 import path from 'path';
 import {
-  createLogger,
-  defineConfig,
-  loadEnv,
-  searchForWorkspaceRoot,
+    createLogger,
+    defineConfig,
+    loadEnv,
+    searchForWorkspaceRoot,
 } from 'vite';
 import checker from 'vite-plugin-checker';
 import svgr from 'vite-plugin-svgr';
@@ -23,6 +23,7 @@ export default defineConfig(({ command, mode }) => {
   const {
     IS_ORG_CHART_ENABLED,
     REACT_APP_SERVER_BASE_URL,
+    REACT_APP_EXPERIMENTAL_ORGCHART_NODE_HOVER_HINTS,
     VITE_BUILD_SOURCEMAP,
     VITE_DISABLE_TYPESCRIPT_CHECKER,
     VITE_DISABLE_ESLINT_CHECKER,
@@ -205,10 +206,12 @@ export default defineConfig(({ command, mode }) => {
       _env_: {
         IS_ORG_CHART_ENABLED,
         REACT_APP_SERVER_BASE_URL,
+        REACT_APP_EXPERIMENTAL_ORGCHART_NODE_HOVER_HINTS,
       },
       'process.env': {
         IS_ORG_CHART_ENABLED,
         REACT_APP_SERVER_BASE_URL,
+        REACT_APP_EXPERIMENTAL_ORGCHART_NODE_HOVER_HINTS,
       },
     },
     css: {

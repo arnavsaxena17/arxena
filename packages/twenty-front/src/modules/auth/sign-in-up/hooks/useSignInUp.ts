@@ -9,12 +9,14 @@ import {
   signInUpStepState,
 } from '@/auth/states/signInUpStepState';
 import { SignInUpMode } from '@/auth/types/signInUpMode';
+import { isAllowedEmailForNewWorkspaceSignup } from '@/auth/utils/isAllowedEmailForNewWorkspaceSignup';
 import { useReadCaptchaToken } from '@/captcha/hooks/useReadCaptchaToken';
 import { useRequestFreshCaptchaToken } from '@/captcha/hooks/useRequestFreshCaptchaToken';
 import { AppPath } from '@/types/AppPath';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useRecoilState } from 'recoil';
+import { isDefined } from 'twenty-shared';
 import { useIsMatchingLocation } from '~/hooks/useIsMatchingLocation';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -32,6 +34,11 @@ export const useSignInUp = (form: UseFormReturn<Form>) => {
     searchParams.get('inviteToken') ?? undefined;
 
   const [isInviteMode] = useState(() => isMatchingLocation(AppPath.Invite));
+
+  const isJoiningExistingWorkspace =
+    isInviteMode ||
+    isDefined(workspaceInviteHash) ||
+    isDefined(workspacePersonalInviteToken);
 
   const {
     signInWithCredentials,
@@ -64,6 +71,20 @@ export const useSignInUp = (form: UseFormReturn<Form>) => {
       },
       onCompleted: (data) => {
         requestFreshCaptchaToken();
+        const email = form.getValues('email').toLowerCase().trim();
+        if (
+          !data?.checkUserExists.exists &&
+          !isJoiningExistingWorkspace &&
+          !isAllowedEmailForNewWorkspaceSignup(email)
+        ) {
+          enqueueSnackBar(
+            'Please use your work email address to create an account. Personal, disposable, and free addresses are not supported.',
+            {
+              variant: SnackBarVariant.Error,
+            },
+          );
+          return;
+        }
         if (data?.checkUserExists.exists) {
           setSignInUpMode(SignInUpMode.SignIn);
         } else {
@@ -80,6 +101,7 @@ export const useSignInUp = (form: UseFormReturn<Form>) => {
     requestFreshCaptchaToken,
     setSignInUpStep,
     setSignInUpMode,
+    isJoiningExistingWorkspace,
   ]);
 
   const submitCredentials: SubmitHandler<Form> = useCallback(
@@ -97,8 +119,22 @@ export const useSignInUp = (form: UseFormReturn<Form>) => {
             token,
           );
         } else {
+          const email = data.email.toLowerCase().trim();
+          if (
+            !isJoiningExistingWorkspace &&
+            !isAllowedEmailForNewWorkspaceSignup(email)
+          ) {
+            enqueueSnackBar(
+              'Please use your work email address to create an account. Personal, disposable, and free addresses are not supported.',
+              {
+                variant: SnackBarVariant.Error,
+              },
+            );
+            requestFreshCaptchaToken();
+            return;
+          }
           await signUpWithCredentials(
-            data.email.toLowerCase().trim(),
+            email,
             data.password,
             workspaceInviteHash,
             workspacePersonalInviteToken,
@@ -116,6 +152,7 @@ export const useSignInUp = (form: UseFormReturn<Form>) => {
       readCaptchaToken,
       signInUpMode,
       isInviteMode,
+      isJoiningExistingWorkspace,
       signInWithCredentials,
       signUpWithCredentials,
       workspaceInviteHash,

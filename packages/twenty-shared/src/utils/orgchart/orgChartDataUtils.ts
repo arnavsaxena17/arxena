@@ -108,7 +108,7 @@ const isUnknownCandidate = (candidate: Candidate | null | undefined): boolean =>
       '') as string;
 
   return (
-    fullName === 'unknown linkedin member' ||
+    fullName === 'out of network profile' ||
     fullName === '' ||
     (typeof linkedinUrl === 'string' &&
       linkedinUrl.includes('search/results/people/headless'))

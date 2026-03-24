@@ -13,6 +13,9 @@ export class AdminWorkspaceCreditsRowOutput {
   @Field()
   workspaceName: string;
 
+  @Field(() => String, { nullable: true })
+  workspaceCreatorEmail?: string | null;
+
   @Field()
   orgChartCredits: number;
 

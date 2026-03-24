@@ -68,6 +68,7 @@ import { MailerModule } from './gmail-sender/gmail-sender.module';
 import { GoogleDriveModule } from './google-drive/google-drive.module';
 // import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
 import { SearchModelsModule } from './search-models/search-models.module';
+import { TheOrgModule } from './theorg/theorg.module';
 import { WhiskeySocketsBaileysWhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.module';
 // import { RecruitmentAgentModule } from "src/engine/core-modules/recruitment-agent/recruitment-agent.module";
 
@@ -102,6 +103,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     AutonomousRecruiterModule,
     ExtensionBridgeModule,
     SearchModelsModule,
+    TheOrgModule,
     LinkedinQueryGenerationModule,
     // BaileysModule,
     // ...conditionalImports,
@@ -195,6 +197,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     CandidateSourcingModule,
     AssistantModule,
     SearchModelsModule,
+    TheOrgModule,
     LinkedinQueryGenerationModule,
     // GoogleSheetsModule,
     GoogleDriveModule,

@@ -17,6 +17,7 @@ type WorkspaceCreditsRow = {
   workspaceId: string;
   workspaceCreatedAt: string;
   workspaceName: string;
+  workspaceCreatorEmail?: string | null;
   orgChartCredits: number;
   emailContactCredits: number;
   phoneContactCredits: number;
@@ -89,6 +90,12 @@ const StyledMobileWorkspaceName = styled.span`
   overflow-wrap: anywhere;
 `;
 
+const StyledCreatorEmail = styled.span`
+  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  overflow-wrap: anywhere;
+`;
+
 const StyledMobileCreditsRow = styled.div`
   color: ${({ theme }) => theme.font.color.secondary};
   display: flex;
@@ -114,7 +121,7 @@ const StyledMobileSelect = styled(StyledSelect)`
 `;
 
 const TABLE_GRID =
-  'minmax(0, 0.55fr) minmax(0, 0.85fr) minmax(0, 2fr) 1fr 1fr 1fr 1fr 3fr';
+  'minmax(0, 0.55fr) minmax(0, 0.85fr) minmax(0, 1.4fr) minmax(0, 1.6fr) 1fr 1fr 1fr 1fr 3fr';
 
 const shortWorkspaceId = (id: string) => `${id.slice(0, 8)}…`;
 
@@ -201,6 +208,9 @@ export const SettingsAdminWorkspaceCredits = () => {
                   <StyledMobileWorkspaceName>
                     {row.workspaceName || '—'}
                   </StyledMobileWorkspaceName>
+                  <StyledCreatorEmail>
+                    {t`Creator email`}: {row.workspaceCreatorEmail || '—'}
+                  </StyledCreatorEmail>
                 </StyledMobileMeta>
                 <StyledMobileCreditsRow>
                   <StyledMobileCreditItem>
@@ -253,6 +263,7 @@ export const SettingsAdminWorkspaceCredits = () => {
               <TableHeader>{t`Workspace ID`}</TableHeader>
               <TableHeader>{t`Created`}</TableHeader>
               <TableHeader>{t`Name`}</TableHeader>
+              <TableHeader>{t`Creator email`}</TableHeader>
               <TableHeader align="right">{t`Org chart`}</TableHeader>
               <TableHeader align="right">{t`Email`}</TableHeader>
               <TableHeader align="right">{t`Phone`}</TableHeader>
@@ -272,6 +283,11 @@ export const SettingsAdminWorkspaceCredits = () => {
                   </StyledCreatedAt>
                 </StyledTableCell>
                 <StyledTableCell>{row.workspaceName || '—'}</StyledTableCell>
+                <StyledTableCell>
+                  <StyledCreatorEmail>
+                    {row.workspaceCreatorEmail || '—'}
+                  </StyledCreatorEmail>
+                </StyledTableCell>
                 <StyledTableCell align="right">
                   {row.orgChartCredits}
                 </StyledTableCell>
