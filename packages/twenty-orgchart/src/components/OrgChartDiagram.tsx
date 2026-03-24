@@ -49,6 +49,9 @@ const NODE_CAPABILITIES_BULLETS = NODE_CAPABILITY_ITEMS.map(
   (line) => `• ${line}`,
 ).join('\n');
 
+/** How long preview-node capability tooltips stay visible (GoJS ToolManager). */
+const PREVIEW_CAPABILITIES_TOOLTIP_DURATION_MS = 2000;
+
 /** Walk up from a GraphObject inside a tooltip to the hovered node's data. */
 const getOrgChartDataFromToolTipObject = (
   obj: go.GraphObject,
@@ -183,6 +186,15 @@ const applyZoomAroundNode = (diagram: go.Diagram, node: go.Node): boolean => {
   diagram.scale = nextScale;
   diagram.centerRect(part.actualBounds);
   diagram.commandHandler.scrollToPart(part);
+
+  // Shift framing so content sits higher in the viewport (~30% of visible height in doc space).
+  const vb = diagram.viewportBounds;
+  if (vb.height > 0 && Number.isFinite(vb.height)) {
+    const nudgeY = vb.height * 0.3;
+    const pos = diagram.position;
+    diagram.position = new go.Point(pos.x, pos.y + nudgeY);
+  }
+
   return true;
 };
 
@@ -848,7 +860,11 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
         go.Diagram,
         {
           ...(showNodeCapabilitiesHoverHint
-            ? { 'toolManager.hoverDelay': 0 }
+            ? {
+                'toolManager.hoverDelay': 0,
+                'toolManager.toolTipDuration':
+                  PREVIEW_CAPABILITIES_TOOLTIP_DURATION_MS,
+              }
             : {}),
           'undoManager.isEnabled': true,
           initialContentAlignment: go.Spot.Default,
