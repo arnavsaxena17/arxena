@@ -212,6 +212,25 @@ export class SupportChatSyncService {
     },
   ) {
     const { personId, companyId, event, aiDecision } = args;
+    const properties = {
+      channel: 'chatwoot',
+      event: event.event,
+      conversationId: event.conversationId,
+      displayId: event.displayId,
+      conversationStatus: event.conversationStatus,
+      content: event.content,
+      summary: aiDecision.summary,
+      aiDecision: aiDecision.decision,
+      aiReason: aiDecision.reason,
+      labels: event.labels,
+      referer: event.referer,
+      contactEmail: event.contact.email,
+      contactPhoneNumber: event.contact.phoneNumber,
+      chatwootConversationUrl: this.buildConversationUrl(
+        event.accountId,
+        event.conversationId,
+      ),
+    };
     const repository =
       await this.twentyORMGlobalManager.getRepositoryForWorkspace(
         workspaceId,
@@ -222,25 +241,7 @@ export class SupportChatSyncService {
       id: v4(),
       name: 'support-chat-conversation',
       happensAt: event.createdAt ? new Date(event.createdAt) : new Date(),
-      properties: {
-        channel: 'chatwoot',
-        event: event.event,
-        conversationId: event.conversationId,
-        displayId: event.displayId,
-        conversationStatus: event.conversationStatus,
-        content: event.content,
-        summary: aiDecision.summary,
-        aiDecision: aiDecision.decision,
-        aiReason: aiDecision.reason,
-        labels: event.labels,
-        referer: event.referer,
-        contactEmail: event.contact.email,
-        contactPhoneNumber: event.contact.phoneNumber,
-        chatwootConversationUrl: this.buildConversationUrl(
-          event.accountId,
-          event.conversationId,
-        ),
-      } as JSON,
+      properties: properties as unknown as JSON,
       linkedRecordCachedName: `Chatwoot conversation #${event.displayId ?? event.conversationId}`,
       linkedRecordId: event.conversationId,
       linkedObjectMetadataId: null,
@@ -271,7 +272,7 @@ export class SupportChatSyncService {
       return explicitDomain;
     }
 
-    if (!email.includes('@')) {
+    if (!email || !email.includes('@')) {
       return null;
     }
 
