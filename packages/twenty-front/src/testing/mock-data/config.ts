@@ -20,6 +20,10 @@ export const mockedClientConfig: ClientConfig = {
   support: {
     supportDriver: 'front',
     supportFrontChatId: null,
+    supportChatwootBaseUrl: null,
+    supportChatwootWebsiteToken: null,
+    supportChatwootInboxIdentifier: null,
+    supportAiEnabled: false,
     __typename: 'Support',
   },
   sentry: {

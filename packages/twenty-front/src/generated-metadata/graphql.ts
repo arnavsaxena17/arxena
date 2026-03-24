@@ -1833,6 +1833,10 @@ export type Support = {
   __typename?: 'Support';
   supportDriver: Scalars['String']['output'];
   supportFrontChatId?: Maybe<Scalars['String']['output']>;
+  supportChatwootBaseUrl?: Maybe<Scalars['String']['output']>;
+  supportChatwootWebsiteToken?: Maybe<Scalars['String']['output']>;
+  supportChatwootInboxIdentifier?: Maybe<Scalars['String']['output']>;
+  supportAiEnabled?: Maybe<Scalars['Boolean']['output']>;
 };
 
 export type SystemHealth = {

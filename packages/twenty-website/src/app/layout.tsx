@@ -6,6 +6,7 @@ import Script from 'next/script';
 import { isPhase2Exposed } from '@/lib/sitemap';
 
 import { WebSiteStructuredData } from './_components/StructuredData';
+import { WebsiteSupportChat } from './_components/support/WebsiteSupportChat';
 import { ConditionalFooter } from './_components/ui/layout/footer';
 import EmotionRootStyleRegistry from './emotion-root-style-registry';
 
@@ -82,17 +83,7 @@ export default async function RootLayout({
           <div className="container">{children}</div>
           <ConditionalFooter phase2Exposed={isPhase2Exposed()} />
         </EmotionRootStyleRegistry>
-        <Script
-          id="tawk-to"
-          strategy="lazyOnload"
-          dangerouslySetInnerHTML={{
-            __html: `var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-(function(){ var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
-s1.async=true; s1.src='https://embed.tawk.to/61401352d326717cb6814b43/1ffh4mvd2';
-s1.charset='UTF-8'; s1.setAttribute('crossorigin','*');
-s0.parentNode.insertBefore(s1,s0); })();`,
-          }}
-        />
+        <WebsiteSupportChat />
       </body>
     </html>
   );

@@ -7,5 +7,9 @@ export const supportChatState = createState<Support>({
   defaultValue: {
     supportDriver: 'none',
     supportFrontChatId: null,
+    supportChatwootBaseUrl: null,
+    supportChatwootWebsiteToken: null,
+    supportChatwootInboxIdentifier: null,
+    supportAiEnabled: false,
   },
 });

@@ -35,6 +35,10 @@ export const GET_CLIENT_CONFIG = gql`
       support {
         supportDriver
         supportFrontChatId
+        supportChatwootBaseUrl
+        supportChatwootWebsiteToken
+        supportChatwootInboxIdentifier
+        supportAiEnabled
       }
       sentry {
         dsn

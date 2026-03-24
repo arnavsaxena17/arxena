@@ -32,7 +32,14 @@ const meta: Meta<typeof SupportDropdown> = {
       setCurrentWorkspace(mockCurrentWorkspace);
       setCurrentWorkspaceMember(mockedWorkspaceMemberData);
       setCurrentUser(mockedUserData);
-      setSupportChat({ supportDriver: 'front', supportFrontChatId: '1234' });
+      setSupportChat({
+        supportDriver: 'front',
+        supportFrontChatId: '1234',
+        supportChatwootBaseUrl: null,
+        supportChatwootWebsiteToken: null,
+        supportChatwootInboxIdentifier: null,
+        supportAiEnabled: false,
+      });
 
       return <Story />;
     },

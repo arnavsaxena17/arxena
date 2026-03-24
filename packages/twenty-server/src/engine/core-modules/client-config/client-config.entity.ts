@@ -34,6 +34,18 @@ class Support {
 
   @Field(() => String, { nullable: true })
   supportFrontChatId?: string;
+
+  @Field(() => String, { nullable: true })
+  supportChatwootBaseUrl?: string;
+
+  @Field(() => String, { nullable: true })
+  supportChatwootWebsiteToken?: string;
+
+  @Field(() => String, { nullable: true })
+  supportChatwootInboxIdentifier?: string;
+
+  @Field(() => Boolean, { nullable: true })
+  supportAiEnabled?: boolean;
 }
 
 @ObjectType()

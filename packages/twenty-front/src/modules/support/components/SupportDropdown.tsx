@@ -1,4 +1,5 @@
 import { SupportButton } from '@/support/components/SupportButton';
+import { useSupportChat } from '@/support/hooks/useSupportChat';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
@@ -8,9 +9,10 @@ export const SupportDropdown = () => {
   const dropdownId = `support-field-active-action-dropdown`;
 
   const { closeDropdown } = useDropdown(dropdownId);
+  const { openSupportChat } = useSupportChat();
 
   const handleTalkToUs = () => {
-    window.FrontChat?.('show');
+    openSupportChat();
     closeDropdown();
   };
 

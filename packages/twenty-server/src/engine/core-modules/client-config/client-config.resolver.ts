@@ -60,6 +60,16 @@ export class ClientConfigResolver {
         supportFrontChatId: this.environmentService.get(
           'SUPPORT_FRONT_CHAT_ID',
         ),
+        supportChatwootBaseUrl: this.environmentService.get(
+          'SUPPORT_CHATWOOT_BASE_URL',
+        ),
+        supportChatwootWebsiteToken: this.environmentService.get(
+          'SUPPORT_CHATWOOT_WEBSITE_TOKEN',
+        ),
+        supportChatwootInboxIdentifier: this.environmentService.get(
+          'SUPPORT_CHATWOOT_INBOX_IDENTIFIER',
+        ),
+        supportAiEnabled: this.environmentService.get('SUPPORT_AI_ENABLED'),
       },
       sentry: {
         environment: this.environmentService.get('SENTRY_ENVIRONMENT'),

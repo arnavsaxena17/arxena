@@ -153,6 +153,10 @@ describe('useAuth', () => {
     expect(state.supportChat).toEqual({
       supportDriver: 'none',
       supportFrontChatId: null,
+      supportChatwootBaseUrl: null,
+      supportChatwootWebsiteToken: null,
+      supportChatwootInboxIdentifier: null,
+      supportAiEnabled: false,
     });
     expect(state.isDebugMode).toBe(false);
   });

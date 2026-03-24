@@ -11,7 +11,7 @@ const StyledButtonContainer = styled.div`
 `;
 
 export const SupportButton = () => {
-  const { loading, isFrontChatLoaded } = useSupportChat();
+  const { loading, isSupportChatReady } = useSupportChat();
 
   const isNavigationDrawerExpanded = useRecoilValue(
     isNavigationDrawerExpandedState,
@@ -20,7 +20,7 @@ export const SupportButton = () => {
     return <SupportButtonSkeletonLoader />;
   }
 
-  if (!isFrontChatLoaded) {
+  if (!isSupportChatReady) {
     return;
   }
 

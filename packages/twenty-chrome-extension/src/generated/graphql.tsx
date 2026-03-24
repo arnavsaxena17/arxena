@@ -6472,6 +6472,10 @@ export enum SubscriptionStatus {
 export type Support = {
   supportDriver: Scalars['String'];
   supportFrontChatId?: Maybe<Scalars['String']>;
+  supportChatwootBaseUrl?: Maybe<Scalars['String']>;
+  supportChatwootWebsiteToken?: Maybe<Scalars['String']>;
+  supportChatwootInboxIdentifier?: Maybe<Scalars['String']>;
+  supportAiEnabled?: Maybe<Scalars['Boolean']>;
 };
 
 export type Telemetry = {

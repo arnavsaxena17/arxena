@@ -31,7 +31,7 @@ export const useSupportChat = () => {
   const currentUser = useRecoilValue(currentUserState);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const supportChat = useRecoilValue(supportChatState);
-  const [isFrontChatLoaded, setIsFrontChatLoaded] = useState(false);
+  const [isSupportChatReady, setIsSupportChatReady] = useState(false);
   const loading = useIsPrefetchLoading();
 
   const configureFront = useCallback(
@@ -65,7 +65,74 @@ export const useSupportChat = () => {
               currentWorkspaceMember.name.lastName,
             userHash: currentUser?.supportUserHash,
           });
-          setIsFrontChatLoaded(true);
+          setIsSupportChatReady(true);
+        },
+      });
+    },
+    [],
+  );
+
+  const configureChatwoot = useCallback(
+    (
+      baseUrl: string,
+      websiteToken: string,
+      currentUser: Pick<User, 'email' | 'supportUserHash'> | null,
+      currentWorkspaceMember: Pick<WorkspaceMember, 'name'> | null,
+    ) => {
+      const sdkUrl = `${baseUrl.replace(/\/$/, '')}/packs/js/sdk.js`;
+      let script = document.querySelector(`script[src="${sdkUrl}"]`);
+
+      if (isDefined(script) && !window.chatwootSDK) {
+        script.parentNode?.removeChild(script);
+        script = null;
+      }
+
+      window.chatwootSettings = {
+        hideMessageBubble: true,
+        position: 'right',
+        locale: 'en',
+        darkMode: 'auto',
+        launcherTitle: 'Chat with Arxena',
+      };
+
+      const onReady = () => {
+        if (
+          isNonEmptyString(currentUser?.email) &&
+          isDefined(currentWorkspaceMember)
+        ) {
+          window.$chatwoot?.setUser?.(currentUser.email, {
+            email: currentUser.email,
+            name:
+              currentWorkspaceMember.name.firstName +
+              ' ' +
+              currentWorkspaceMember.name.lastName,
+          });
+          window.$chatwoot?.setCustomAttributes?.({
+            source: 'twenty-front',
+            product: 'arxena',
+          });
+        }
+        setIsSupportChatReady(true);
+      };
+
+      window.addEventListener('chatwoot:ready', onReady, { once: true });
+
+      if (window.chatwootSDK) {
+        window.chatwootSDK.run({
+          websiteToken,
+          baseUrl,
+        });
+        return;
+      }
+
+      insertScript({
+        src: sdkUrl,
+        defer: true,
+        onLoad: () => {
+          window.chatwootSDK?.run({
+            websiteToken,
+            baseUrl,
+          });
         },
       });
     },
@@ -78,7 +145,7 @@ export const useSupportChat = () => {
       isNonEmptyString(supportChat.supportFrontChatId) &&
       isNonEmptyString(currentUser?.email) &&
       isDefined(currentWorkspaceMember) &&
-      !isFrontChatLoaded
+      !isSupportChatReady
     ) {
       setTimeout(() => {
         configureFront(
@@ -91,11 +158,46 @@ export const useSupportChat = () => {
   }, [
     configureFront,
     currentUser,
-    isFrontChatLoaded,
+    isSupportChatReady,
     supportChat?.supportDriver,
     supportChat.supportFrontChatId,
     currentWorkspaceMember,
   ]);
 
-  return { loading, isFrontChatLoaded };
+  useEffect(() => {
+    if (
+      supportChat?.supportDriver === 'chatwoot' &&
+      isNonEmptyString(supportChat.supportChatwootBaseUrl) &&
+      isNonEmptyString(supportChat.supportChatwootWebsiteToken) &&
+      !isSupportChatReady
+    ) {
+      configureChatwoot(
+        supportChat.supportChatwootBaseUrl,
+        supportChat.supportChatwootWebsiteToken,
+        currentUser,
+        currentWorkspaceMember,
+      );
+    }
+  }, [
+    configureChatwoot,
+    currentUser,
+    currentWorkspaceMember,
+    isSupportChatReady,
+    supportChat?.supportDriver,
+    supportChat.supportChatwootBaseUrl,
+    supportChat.supportChatwootWebsiteToken,
+  ]);
+
+  const openSupportChat = useCallback(() => {
+    if (supportChat?.supportDriver === 'front') {
+      window.FrontChat?.('show');
+      return;
+    }
+
+    if (supportChat?.supportDriver === 'chatwoot') {
+      window.$chatwoot?.toggle?.('open');
+    }
+  }, [supportChat?.supportDriver]);
+
+  return { loading, isSupportChatReady, openSupportChat };
 };

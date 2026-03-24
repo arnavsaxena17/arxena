@@ -9,6 +9,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   IsUrl,
   ValidateIf,
   validateSync,
@@ -758,6 +759,82 @@ export class EnvironmentVariables {
   @ValidateIf((env) => env.SUPPORT_DRIVER === SupportDriver.Front)
   @IsString()
   SUPPORT_FRONT_HMAC_KEY: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.SupportChatConfig,
+    description: 'Base URL of the Chatwoot instance used for support chat',
+  })
+  @ValidateIf((env) => env.SUPPORT_DRIVER === SupportDriver.Chatwoot)
+  @IsString()
+  SUPPORT_CHATWOOT_BASE_URL: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.SupportChatConfig,
+    sensitive: true,
+    description: 'Website token used to initialize the Chatwoot widget',
+  })
+  @ValidateIf((env) => env.SUPPORT_DRIVER === SupportDriver.Chatwoot)
+  @IsString()
+  SUPPORT_CHATWOOT_WEBSITE_TOKEN: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.SupportChatConfig,
+    description:
+      'Numeric Chatwoot account identifier used for server-side conversation APIs',
+  })
+  @ValidateIf((env) => env.SUPPORT_DRIVER === SupportDriver.Chatwoot)
+  @IsString()
+  SUPPORT_CHATWOOT_ACCOUNT_ID: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.SupportChatConfig,
+    sensitive: true,
+    description:
+      'API access token used by twenty-server to send messages into Chatwoot',
+  })
+  @ValidateIf((env) => env.SUPPORT_DRIVER === SupportDriver.Chatwoot)
+  @IsString()
+  SUPPORT_CHATWOOT_API_ACCESS_TOKEN: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.SupportChatConfig,
+    sensitive: true,
+    description:
+      'Webhook signing secret configured on the Chatwoot webhook pointing to twenty-server',
+  })
+  @ValidateIf((env) => env.SUPPORT_DRIVER === SupportDriver.Chatwoot)
+  @IsString()
+  SUPPORT_CHATWOOT_WEBHOOK_SECRET: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.SupportChatConfig,
+    description:
+      'Workspace ID in Twenty where support contacts and activities should be synced',
+  })
+  @ValidateIf((env) => env.SUPPORT_DRIVER === SupportDriver.Chatwoot)
+  @IsUUID()
+  SUPPORT_CHAT_WORKSPACE_ID: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.SupportChatConfig,
+    description:
+      'Optional inbox identifier exposed to clients for public API flows or routing metadata',
+  })
+  @ValidateIf((env) => env.SUPPORT_DRIVER === SupportDriver.Chatwoot)
+  @IsString()
+  @IsOptional()
+  SUPPORT_CHATWOOT_INBOX_IDENTIFIER: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.SupportChatConfig,
+    description:
+      'Enable AI auto-replies for support conversations handled through Chatwoot',
+  })
+  @CastToBoolean()
+  @ValidateIf((env) => env.SUPPORT_DRIVER === SupportDriver.Chatwoot)
+  @IsBoolean()
+  @IsOptional()
+  SUPPORT_AI_ENABLED: boolean = false;
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.ServerConfig,
