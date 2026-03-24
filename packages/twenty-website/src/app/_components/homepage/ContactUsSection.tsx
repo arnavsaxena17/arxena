@@ -7,6 +7,8 @@ import {
   IconMessageChatbot,
 } from '@tabler/icons-react';
 
+import { openSupportChat } from '../support/openSupportChat';
+
 const StyledContactSection = styled.section`
   width: 100%;
   max-width: 900px;
@@ -99,18 +101,6 @@ const StyledContactCardSubtitle = styled.div`
   text-align: center;
 `;
 
-const openTawkChat = () => {
-  if (typeof window !== 'undefined' && window.Tawk_API?.maximize) {
-    window.Tawk_API.maximize();
-  }
-};
-
-declare global {
-  interface Window {
-    Tawk_API?: { maximize?: () => void };
-  }
-}
-
 export const ContactUsSection = () => {
   return (
     <StyledContactSection>
@@ -134,7 +124,7 @@ export const ContactUsSection = () => {
           <StyledContactCardTitle>WhatsApp</StyledContactCardTitle>
           <StyledContactCardSubtitle>Message us</StyledContactCardSubtitle>
         </StyledContactCard>
-        <StyledContactCardButton type="button" onClick={openTawkChat}>
+        <StyledContactCardButton type="button" onClick={openSupportChat}>
           <StyledContactIcon>
             <IconMessageChatbot size={28} stroke={1.5} />
           </StyledContactIcon>

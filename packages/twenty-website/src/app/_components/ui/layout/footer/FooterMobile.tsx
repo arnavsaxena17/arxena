@@ -4,6 +4,8 @@ import styled from '@emotion/styled';
 
 import { COMPANY_INFO } from '@/lib/company-info';
 
+import { openSupportChat } from '../../../support/openSupportChat';
+
 import {
     DiscordIcon,
     GithubIcon2,
@@ -135,7 +137,7 @@ export const FooterMobile = ({ phase2Exposed = false }: FooterMobileProps) => {
         </StyledLink>
         <StyledChatButton
           type="button"
-          onClick={() => window.Tawk_API?.maximize?.()}
+          onClick={openSupportChat}
         >
           Chat with us
         </StyledChatButton>

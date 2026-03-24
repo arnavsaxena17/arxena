@@ -2,19 +2,19 @@
 
 import { useEffect } from 'react';
 
-declare global {
-  interface Window {
-    chatwootSettings?: Record<string, unknown>;
-    chatwootSDK?: {
-      run: (args: { websiteToken: string; baseUrl: string }) => void;
-    };
-    $chatwoot?: {
-      setCustomAttributes?: (attributes: Record<string, unknown>) => void;
-    };
-  }
-}
-
 const SDK_PATH = '/packs/js/sdk.js';
+
+type ChatwootWindow = Window & {
+  chatwootSettings?: Record<string, unknown>;
+  chatwootSDK?: {
+    run: (args: { websiteToken: string; baseUrl: string }) => void;
+  };
+  $chatwoot?: {
+    toggle?: (state?: 'open' | 'close') => void;
+    toggleBubbleVisibility?: (visibility: 'show' | 'hide') => void;
+    setCustomAttributes?: (attributes: Record<string, unknown>) => void;
+  };
+};
 
 export const WebsiteSupportChat = () => {
   useEffect(() => {
@@ -26,8 +26,9 @@ export const WebsiteSupportChat = () => {
     }
 
     const sdkUrl = `${baseUrl.replace(/\/$/, '')}${SDK_PATH}`;
+    const chatwootWindow = window as ChatwootWindow;
 
-    window.chatwootSettings = {
+    chatwootWindow.chatwootSettings = {
       hideMessageBubble: false,
       position: 'right',
       locale: 'en',
@@ -37,7 +38,7 @@ export const WebsiteSupportChat = () => {
     };
 
     const onReady = () => {
-      window.$chatwoot?.setCustomAttributes?.({
+      chatwootWindow.$chatwoot?.setCustomAttributes?.({
         source: 'twenty-website',
         currentPage: window.location.pathname,
         currentUrl: window.location.href,
@@ -48,8 +49,8 @@ export const WebsiteSupportChat = () => {
 
     window.addEventListener('chatwoot:ready', onReady, { once: true });
 
-    if (window.chatwootSDK) {
-      window.chatwootSDK.run({ websiteToken, baseUrl });
+    if (chatwootWindow.chatwootSDK) {
+      chatwootWindow.chatwootSDK.run({ websiteToken, baseUrl });
       return;
     }
 
@@ -64,7 +65,7 @@ export const WebsiteSupportChat = () => {
     script.async = true;
     script.defer = true;
     script.onload = () => {
-      window.chatwootSDK?.run({ websiteToken, baseUrl });
+      chatwootWindow.chatwootSDK?.run({ websiteToken, baseUrl });
     };
     document.body.appendChild(script);
 

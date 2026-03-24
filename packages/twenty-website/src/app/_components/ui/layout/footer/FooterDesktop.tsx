@@ -4,6 +4,8 @@ import styled from '@emotion/styled';
 
 import { COMPANY_INFO } from '@/lib/company-info';
 
+import { openSupportChat } from '../../../support/openSupportChat';
+
 import {
     DiscordIcon,
     GithubIcon2,
@@ -130,7 +132,7 @@ export const FooterDesktop = ({ phase2Exposed = false }: FooterDesktopProps) => 
           </RightSideFooterLink>
           <RightSideFooterButton
             type="button"
-            onClick={() => window.Tawk_API?.maximize?.()}
+            onClick={openSupportChat}
           >
             Chat with us
           </RightSideFooterButton>
