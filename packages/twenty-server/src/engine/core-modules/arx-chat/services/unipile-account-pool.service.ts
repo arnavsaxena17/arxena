@@ -14,6 +14,15 @@ const DISCONNECT_EXCLUDED_ACCOUNT_IDS = new Set([
   ...(process.env.UNIPILE_DISCONNECT_EXCLUDED_ACCOUNT_IDS?.split(',').map((id) => id.trim()).filter(Boolean) ?? []),
 ]);
 
+/**
+ * Automatic Unipile teardown (WebSocket last-tab + LinkedIn inactivity cron) is opt-in.
+ * Default off so linked WhatsApp/LinkedIn accounts are not deleted on tab close or cron.
+ */
+const isUnipileAutomaticMemberDisconnectEnabled = (): boolean => {
+  const v = process.env.UNIPILE_MEMBER_AUTO_DISCONNECT?.trim().toLowerCase();
+  return v === 'true' || v === '1' || v === 'yes';
+};
+
 export type EnsureAccountResult =
   | { accountId: string }
   | { redirectUrl: string }
@@ -111,13 +120,17 @@ export class UnipileAccountPoolService {
   }
 
   /**
-   * Disconnect Unipile account for member (tab close, inactivity).
-   * Only for pool participants - skips if keepLinkedinConnected.
+   * Disconnect Unipile account for member (tab close, inactivity cron).
+   * No-op unless UNIPILE_MEMBER_AUTO_DISCONNECT is true (see module-level note).
    */
   async disconnectForMember(
     workspaceMemberId: string,
     accountType?: UnipileAccountType,
   ): Promise<void> {
+    if (!isUnipileAutomaticMemberDisconnectEnabled()) {
+      return;
+    }
+
     const rows = accountType
       ? await this.metadataDataSource.query(
           `SELECT account_id, workspace_id, account_type FROM metadata.unipile_accounts 
@@ -188,6 +201,10 @@ export class UnipileAccountPoolService {
    * disconnected by this cron - they are for engagement/messaging.
    */
   async disconnectInactiveAccounts(): Promise<number> {
+    if (!isUnipileAutomaticMemberDisconnectEnabled()) {
+      return 0;
+    }
+
     const thresholdMinutes = parseInt(
       process.env.UNIPILE_INACTIVITY_DISCONNECT_MINUTES || '30',
       10,
