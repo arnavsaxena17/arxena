@@ -672,14 +672,14 @@ export class UpdateChat {
             ) as Promise<allStatuses>,
           ]);
 
-          console.log(
-            'This is the candidate status::',
-            candidate,
-            'for the candidate::',
-            candidateId,
-            'and the status is::',
-            candidateStatus,
-          );
+          // console.log(
+          //   'This is the candidate status::',
+          //   candidate,
+          //   'for the candidate::',
+          //   candidateId,
+          //   'and the status is::',
+          //   candidateStatus,
+          // );
 
           return {
             candidateId,
@@ -764,7 +764,6 @@ export class UpdateChat {
       'This is the message being updated in the database ',
       whatappUpdateMessageObj?.messages[0]?.content || '',
     );
-    console.log('This is the user candidateProfileObj::', candidate);
     const createNewWhatsappMessageUpdateVariables = {
       input: {
         position: 'first',
@@ -934,15 +933,15 @@ export class UpdateChat {
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     apiToken: string,
   ) {
-    console.log('whatappUpdateMessageObj::', whatappUpdateMessageObj);
-    console.log('Updating candidate engagement status and chat counts');
-    console.log('Candidate profile object::', candidate);
-    console.log('Whatapp update message object::', whatappUpdateMessageObj);
+    // console.log('whatappUpdateMessageObj::', whatappUpdateMessageObj);
+    // console.log('Updating candidate engagement status and chat counts');
+    // console.log('Candidate profile object::', candidate);
+    // console.log('Whatapp update message object::', whatappUpdateMessageObj);
 
     await this.updateCandidatesWithChatCount([candidate?.id], apiToken);
 
     const results = await this.processCandidatesChatsGetStatuses(apiToken, [candidate?.jobs?.id],[candidate?.id], "updateCandidateEngagementStatusAndChatCounts");
-    console.log('Results from updating candidate engagement status and chat counts::', results);
+    // console.log('Results from updating candidate engagement status and chat counts::', results);
     return results;
   }
 

@@ -1,4 +1,5 @@
 // websocket/websocket.gateway.ts
+import { Logger } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -24,7 +25,9 @@ import { WebSocketService } from './websocket.service';
 
 
 export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
-  @WebSocketServer() server: Server; 
+  private readonly logger = new Logger(WebSocketGateway.name);
+
+  @WebSocketServer() server: Server;
   private connectedClients: Map<string, Set<string>> = new Map(); // workspaceMemberId -> Set of GENERAL-SOCKET socketIds
 
   constructor(
@@ -34,26 +37,34 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
 
   afterInit(server: Server) {
     this.webSocketService.setServer(server);
-    console.log('WebSocket Gateway initialized');
   }
 
   private getRecruiterRoom(recruiterId: string): string {
     return `general-recruiter-${recruiterId}`;
   }
 
-  private addClientToWorkspaceMember(workspaceMemberId: string, socketId: string, workspaceMemberName?: string) {
+  private addClientToWorkspaceMember(workspaceMemberId: string, socketId: string) {
     if (!this.connectedClients.has(workspaceMemberId)) {
       this.connectedClients.set(workspaceMemberId, new Set());
     }
     this.connectedClients.get(workspaceMemberId)?.add(socketId);
-    console.log(`Added GENERAL-SOCKET client ${socketId} for workspace member ${workspaceMemberName}`);
   }
 
-  private removeClientFromWorkspaceMember(socketId: string, workspaceMemberName?: string) {
+  private displayNameFromHandshakeQuery(
+    query: Socket['handshake']['query'],
+  ): string | undefined {
+    const raw = query?.userName ?? query?.workspaceMemberName;
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    if (typeof value !== 'string' || value === 'undefined' || value === 'null') {
+      return undefined;
+    }
+    return value;
+  }
+
+  private removeClientFromWorkspaceMember(socketId: string): string | null {
     for (const [workspaceMemberId, clients] of this.connectedClients.entries()) {
       if (clients.has(socketId)) {
         clients.delete(socketId);
-        console.log(`Removed GENERAL-SOCKET client ${socketId} for workspace member ${workspaceMemberName}`);
         if (clients.size === 0) {
           this.connectedClients.delete(workspaceMemberId);
         }
@@ -72,7 +83,9 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     try {
       const token = client?.handshake?.query?.token;
       const workspaceMemberId = client?.handshake?.query?.userId;
-      const workspaceMemberName = client?.handshake?.query?.userName;
+      const workspaceMemberName = this.displayNameFromHandshakeQuery(
+        client.handshake.query,
+      );
       if (!token || typeof token !== 'string') {
         throw new Error('Invalid or missing token');
       }
@@ -87,21 +100,24 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
       // Check if there's already an active GENERAL-SOCKET connection for this workspace member
       // Note: We only track general-socket connections here, not baileys-socket connections
       const existingClients = this.getClientsForWorkspaceMember(workspaceMemberId);
-      if (existingClients.length > 0) {
-        console.log(`Found ${existingClients.length} existing GENERAL-SOCKET connections for workspace member ${workspaceMemberId}, cleaning up...`);
-        // Disconnect existing GENERAL-SOCKET clients to prevent multiple connections
+      const hadPriorSessions = existingClients.length > 0;
+      if (hadPriorSessions) {
+        const recruiterRoom = this.getRecruiterRoom(workspaceMemberId);
         for (const existingClientId of existingClients) {
-          const existingClient = this.server.sockets.sockets.get(existingClientId);
-          if (existingClient) {
-            console.log(`Disconnecting existing GENERAL-SOCKET client ${existingClientId}`);
-            existingClient.disconnect();
-          }
+          const existingClient =
+            this.server.sockets.sockets.get(existingClientId);
+          existingClient?.to(recruiterRoom).emit('user_disconnected', {
+            clientId: existingClientId,
+            workspaceMemberId,
+            workspaceMemberName,
+            timestamp: new Date().toISOString(),
+          });
+          this.removeClientFromWorkspaceMember(existingClientId);
+          existingClient?.disconnect();
         }
-        // Clear the mapping
-        this.removeClientFromWorkspaceMember(existingClients[0], workspaceMemberName as string);
       }
       // Add to tracking
-      this.addClientToWorkspaceMember(workspaceMemberId, client.id, workspaceMemberName as string);
+      this.addClientToWorkspaceMember(workspaceMemberId, client.id);
       
       // Set up user mapping in WebSocketService
       this.webSocketService.setUserIdMapping(workspaceMemberId, client.id);
@@ -126,25 +142,39 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
         name: workspaceMemberName
       });
 
-      console.log(`Client ${client.id} joined rooms: ${recruiterRoom}, ${workspaceMemberName}`);
+      const label = workspaceMemberName ? ` ${workspaceMemberName}` : '';
+      if (hadPriorSessions) {
+        this.logger.log(
+          `General socket: reconnect ${workspaceMemberId}${label} (${client.id}, dropped ${existingClients.length})`,
+        );
+      } else {
+        this.logger.log(
+          `General socket: connect ${workspaceMemberId}${label} (${client.id})`,
+        );
+      }
 
     } catch (error) {
-      console.error('Error in handleConnection:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(err.message, err.stack);
       client.emit('connection_error', { message: error.message });
       client.disconnect();
     }
   }
 
   handleDisconnect(client: Socket) {
-    const workspaceMemberName = client?.handshake?.query?.workspaceMemberName;
-    const workspaceMemberId = this.removeClientFromWorkspaceMember(client.id, workspaceMemberName as string);
+    const workspaceMemberId = this.removeClientFromWorkspaceMember(client.id);
 
     if (workspaceMemberId) {
       // Remove user mapping from WebSocketService
       this.webSocketService.removeUserIdMapping(workspaceMemberId);
 
       const recruiterRoom = this.getRecruiterRoom(workspaceMemberId);
-      console.log(`Client ${client.id} disconnected from rooms: ${recruiterRoom}, ${workspaceMemberId}, ${workspaceMemberName}`);
+      const workspaceMemberName =
+        this.displayNameFromHandshakeQuery(client.handshake.query);
+      const label = workspaceMemberName ? ` ${workspaceMemberName}` : '';
+      this.logger.log(
+        `General socket: disconnected ${workspaceMemberId}${label} (${client.id})`,
+      );
 
       // Notify others in the room about the disconnection
       client.to(recruiterRoom).emit('user_disconnected', {
@@ -155,16 +185,16 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
       });
 
       // Disconnect Unipile pool account when last client for this member disconnects (tab close)
-      if (this.getClientsForWorkspaceMember(workspaceMemberId).length === 0) {
-        this.unipileAccountPoolService
-          .disconnectForMember(workspaceMemberId)
-          .catch((err) =>
-            console.warn(
-              `Unipile disconnectForMember failed for ${workspaceMemberId}:`,
-              err,
-            ),
-          );
-      }
+      // if (this.getClientsForWorkspaceMember(workspaceMemberId).length === 0) {
+      //   this.unipileAccountPoolService
+      //     .disconnectForMember(workspaceMemberId)
+      //     .catch((err) =>
+      //       console.warn(
+      //         `Unipile disconnectForMember failed for ${workspaceMemberId}:`,
+      //         err,
+      //       ),
+      //     );
+      // }
     }
   }
 
@@ -174,11 +204,9 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     @MessageBody() payload: { recruiterId: string; message: any }
   ): void {
     if (!payload.recruiterId) {
-      console.error('Invalid message payload: missing recruiterId');
+      this.logger.warn('Invalid message payload: missing recruiterId');
       return;
     }
-
-    console.log(`Message received from ${client.id} for recruiter ${payload.recruiterId}:`, payload);
     const recruiterRoom = this.getRecruiterRoom(payload.recruiterId);
     this.server.to(recruiterRoom).emit('message', {
       ...payload.message,
@@ -193,12 +221,11 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     @MessageBody() data: { room: string }
   ): void {
     if (!data.room) {
-      console.error('Invalid room data: missing room');
+      this.logger.warn('Invalid join_room: missing room');
       return;
     }
 
     client.join(data.room);
-    console.log(`Client ${client.id} joined room: ${data.room}`);
     client.emit('room_joined', {
       room: data.room,
       message: `You joined room: ${data.room}`
@@ -217,12 +244,11 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     @MessageBody() data: { room: string }
   ): void {
     if (!data.room) {
-      console.error('Invalid room data: missing room');
+      this.logger.warn('Invalid leave_room: missing room');
       return;
     }
 
     client.leave(data.room);
-    console.log(`Client ${client.id} left room: ${data.room}`);
     client.emit('room_left', {
       room: data.room,
       message: `You left room: ${data.room}`

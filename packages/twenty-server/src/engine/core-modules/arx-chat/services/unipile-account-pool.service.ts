@@ -144,8 +144,8 @@ export class UnipileAccountPoolService {
         );
 
     if (!rows?.length) {
-      this.logger.log(
-        `No pool account found for workspace member ${workspaceMemberId}, skipping disconnect`,
+      this.logger.debug(
+        `Unipile pool: no account for member ${workspaceMemberId}, skip disconnect`,
       );
       return;
     }

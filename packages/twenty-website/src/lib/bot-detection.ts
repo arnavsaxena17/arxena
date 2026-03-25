@@ -43,6 +43,70 @@ export function isBlockedBot(userAgent: string | null): boolean {
 }
 
 /**
+ * CloudFront sends viewer IP as `IPv4:port` or `[IPv6]:port` in this header
+ * when the origin request policy includes CloudFront-Viewer-Address.
+ */
+export function parseCloudFrontViewerAddress(
+  raw: string | null | undefined,
+): string | null {
+  if (!raw || typeof raw !== 'string') {
+    return null;
+  }
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return null;
+  }
+  if (trimmed.startsWith('[')) {
+    const close = trimmed.indexOf(']');
+    if (close === -1) {
+      return null;
+    }
+    const ip = trimmed.slice(1, close).trim();
+    return ip.length > 0 ? ip : null;
+  }
+  const lastColon = trimmed.lastIndexOf(':');
+  if (lastColon === -1) {
+    return trimmed;
+  }
+  const possiblePort = trimmed.slice(lastColon + 1);
+  if (/^\d{1,5}$/.test(possiblePort)) {
+    const host = trimmed.slice(0, lastColon).trim();
+    return host.length > 0 ? host : null;
+  }
+  return trimmed;
+}
+
+/**
+ * Best-effort client IP behind CloudFront, ALB, nginx, etc.
+ * Prefer CloudFront-Viewer-Address when present (reliable viewer IP from AWS).
+ */
+export function getClientIpFromHeaders(headers: Headers): string | null {
+  const cfViewer = parseCloudFrontViewerAddress(
+    headers.get('cloudfront-viewer-address'),
+  );
+  if (cfViewer) {
+    return cfViewer;
+  }
+  const cfConnecting = headers.get('cf-connecting-ip')?.trim();
+  if (cfConnecting) {
+    return cfConnecting;
+  }
+  const trueClient = headers.get('true-client-ip')?.trim();
+  if (trueClient) {
+    return trueClient;
+  }
+  const xff = headers.get('x-forwarded-for')?.split(',')[0]?.trim();
+  if (xff) {
+    return xff;
+  }
+  const realIp = headers.get('x-real-ip')?.trim();
+  if (realIp) {
+    return realIp;
+  }
+  return null;
+}
+
+/**
  * Returns request metadata for logging (User-Agent, referer, IP).
  */
 export function getRequestMetadata(request: Request): {
@@ -54,8 +118,6 @@ export function getRequestMetadata(request: Request): {
   return {
     userAgent: headers.get('user-agent'),
     referer: headers.get('referer'),
-    clientIp:
-      headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-      headers.get('x-real-ip'),
+    clientIp: getClientIpFromHeaders(headers),
   };
 }

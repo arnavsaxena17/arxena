@@ -35,7 +35,6 @@ export class WebSocketService {
       socket.on('disconnect', () => {
         if (userId) {
           this.removeSocketConnection(userId, socket.id);
-          console.log(`Removed socket connection for user ${userId}: ${socket.id}`);
         }
       });
 

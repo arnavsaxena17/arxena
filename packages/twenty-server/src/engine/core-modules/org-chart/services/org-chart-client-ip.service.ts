@@ -20,17 +20,92 @@ export class OrgChartClientIpService {
     private readonly ruleRepository: Repository<OrgChartClientIpRuleEntity>,
   ) {}
 
-  static extractClientIpFromRequest(req: Request): string | null {
-    const fromProxy = req.headers['x-org-chart-client-ip'];
-    if (typeof fromProxy === 'string' && fromProxy.trim().length > 0) {
-      return OrgChartClientIpService.normalizeIp(fromProxy);
+  static parseCloudFrontViewerAddress(
+    raw: string | null | undefined,
+  ): string | null {
+    if (!raw || typeof raw !== 'string') {
+      return null;
     }
-    const forwarded = req.headers['x-forwarded-for'];
-    if (typeof forwarded === 'string' && forwarded.trim().length > 0) {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      return null;
+    }
+    if (trimmed.startsWith('[')) {
+      const close = trimmed.indexOf(']');
+      if (close === -1) {
+        return null;
+      }
+      const ip = trimmed.slice(1, close).trim();
+      return ip.length > 0 ? ip : null;
+    }
+    const lastColon = trimmed.lastIndexOf(':');
+    if (lastColon === -1) {
+      return trimmed;
+    }
+    const possiblePort = trimmed.slice(lastColon + 1);
+    if (/^\d{1,5}$/.test(possiblePort)) {
+      const host = trimmed.slice(0, lastColon).trim();
+      return host.length > 0 ? host : null;
+    }
+    return trimmed;
+  }
+
+  private static headerString(
+    req: Request,
+    name: string,
+  ): string | undefined {
+    const v = req.headers[name];
+    if (typeof v === 'string') {
+      return v;
+    }
+    if (Array.isArray(v) && v.length > 0 && typeof v[0] === 'string') {
+      return v[0];
+    }
+    return undefined;
+  }
+
+  static extractClientIpFromRequest(req: Request): string | null {
+    const fromWebsiteProxy =
+      OrgChartClientIpService.headerString(req, 'x-org-chart-client-ip');
+    if (fromWebsiteProxy && fromWebsiteProxy.trim().length > 0) {
+      return OrgChartClientIpService.normalizeIp(fromWebsiteProxy);
+    }
+    const cfViewer = OrgChartClientIpService.parseCloudFrontViewerAddress(
+      OrgChartClientIpService.headerString(req, 'cloudfront-viewer-address'),
+    );
+    if (cfViewer) {
+      return OrgChartClientIpService.normalizeIp(cfViewer);
+    }
+    const cfConnecting = OrgChartClientIpService.headerString(
+      req,
+      'cf-connecting-ip',
+    )?.trim();
+    if (cfConnecting) {
+      return OrgChartClientIpService.normalizeIp(cfConnecting);
+    }
+    const trueClient = OrgChartClientIpService.headerString(
+      req,
+      'true-client-ip',
+    )?.trim();
+    if (trueClient) {
+      return OrgChartClientIpService.normalizeIp(trueClient);
+    }
+    const forwarded = OrgChartClientIpService.headerString(
+      req,
+      'x-forwarded-for',
+    );
+    if (forwarded && forwarded.trim().length > 0) {
       const first = forwarded.split(',')[0]?.trim();
       if (first) {
         return OrgChartClientIpService.normalizeIp(first);
       }
+    }
+    const realIp = OrgChartClientIpService.headerString(
+      req,
+      'x-real-ip',
+    )?.trim();
+    if (realIp) {
+      return OrgChartClientIpService.normalizeIp(realIp);
     }
     const socketIp = req.socket?.remoteAddress;
     if (socketIp) {

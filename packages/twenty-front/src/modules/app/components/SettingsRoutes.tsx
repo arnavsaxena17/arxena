@@ -1,13 +1,11 @@
 import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
-import { Chats } from '@/baileys/Chats';
 import { SettingsProtectedRouteWrapper } from '@/settings/components/SettingsProtectedRouteWrapper';
 import { SettingsSkeletonLoader } from '@/settings/components/SettingsSkeletonLoader';
 import { SettingsPath } from '@/types/SettingsPath';
 import { SettingsFeatures } from 'twenty-shared';
 import { FeatureFlagKey } from '~/generated-metadata/graphql';
-import { SettingsSearchPlans } from '~/pages/settings/accounts/SettingsSearchPlans';
 
 const SettingsAccountsCalendars = lazy(() =>
   import('~/pages/settings/accounts/SettingsAccountsCalendars').then(
@@ -315,7 +313,7 @@ export const SettingsRoutes = ({
       <Route path={SettingsPath.FacebookSignUp} element={<SettingsAccountsFacebookSignUp />} />
       <Route path={SettingsPath.LinkedinSignUp} element={<SettingsAccountsLinkedinSignUp />} />
       <Route path={SettingsPath.WhatsappUnipile} element={<SettingsAccountsWhatsappUnipile />} />
-      <Route path={SettingsPath.SearchPlans} element={<SettingsSearchPlans />} />
+      {/* <Route path={SettingsPath.SearchPlans} element={<SettingsSearchPlans />} /> */}
       <Route element={ <SettingsProtectedRouteWrapper requiredFeatureFlag={FeatureFlagKey.IsBillingPlansEnabled} /> } >
       <Route path={SettingsPath.Billing} element={<SettingsBilling />} /> 
     </Route>
@@ -387,10 +385,10 @@ export const SettingsRoutes = ({
         path={SettingsPath.Integrations}
         element={<SettingsIntegrations />}
       />
-      <Route
+      {/* <Route
         path={SettingsPath.Chats}
         element={<Chats />}
-      />
+      /> */}
       <Route
         path={SettingsPath.IntegrationDatabase}
         element={<SettingsIntegrationDatabase />}

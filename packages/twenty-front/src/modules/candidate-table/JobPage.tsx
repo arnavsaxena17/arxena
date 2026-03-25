@@ -56,7 +56,7 @@ import { IconCheckbox } from 'twenty-ui';
 import { FloatingAIChat } from '@/candidate-search/components/FloatingAIChat/FloatingAIChat';
 import { CandidateSearchModal } from '@/candidate-search/components/search-components/CandidateSearchModal';
 import { SearchPanel } from '@/candidate-search/components/SearchPanel/SearchPanel';
-import { SearchPanelToggle } from '@/candidate-search/components/SearchPanel/SearchPanelToggle';
+// import { SearchPanelToggle } from '@/candidate-search/components/SearchPanel/SearchPanelToggle';
 import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
 import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
 import { Mixpanel } from '~/mixpanel';
@@ -761,7 +761,8 @@ export const JobPage: React.FC = () => {
                   {isNewSearchUIEnabled && (
                     <>
                       {/* Search Panel Toggle */}
-                      <SearchPanelToggle />
+                      {/* commented out for now, will see if we need it later */}
+                      {/* <SearchPanelToggle /> */}
                       
                       {/* Search Panel */}
                       <SearchPanel />

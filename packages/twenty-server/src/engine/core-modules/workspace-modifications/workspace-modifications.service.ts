@@ -623,7 +623,6 @@ export class WorkspaceQueryService {
     is_org_chart_enabled?: string;
   }> {
     try {
-      console.log('Getting workspace api keys for workspace:', workspaceId);
       // First, ensure all necessary columns exist
       const alterTableQuery = `
       ALTER TABLE core.workspace
