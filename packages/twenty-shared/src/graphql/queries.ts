@@ -271,7 +271,7 @@ const graphqlToFindManyJobsFull = `query FindManyJobs($filter: JobFilterInput, $
         createdAt
         jobCode
         jobLocation
-        assistantThreads {
+        assistantThread {
           edges{
             node{
               id
@@ -412,7 +412,7 @@ const graphqlToFindManyJobsWithPromptsFull = `query FindManyJobs($filter: JobFil
                 }
             }
         }
-        assistantThreads {
+        assistantThread {
           edges{
             node{
               id
