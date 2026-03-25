@@ -3,13 +3,12 @@ import { SETTINGS_ADMIN_TABS } from '@/settings/admin-panel/constants/SettingsAd
 import { SETTINGS_ADMIN_TABS_ID } from '@/settings/admin-panel/constants/SettingsAdminTabsId';
 import { TabList } from '@/ui/layout/tab/components/TabList';
 import styled from '@emotion/styled';
-import { IconBrandWhatsapp } from '@tabler/icons-react';
+import { IconBrandWhatsapp, IconNetwork } from '@tabler/icons-react';
 import {
   IconCurrencyDollar,
   IconHeart,
-  IconNetwork,
   IconSettings2,
-  IconVariable,
+  IconVariable
 } from 'twenty-ui';
 
 const StyledTabListContainer = styled.div`
