@@ -300,15 +300,15 @@ export function processOrgChartToNodeData(
         : orderedCandidates.length;
     node.allCandidates = orderedCandidates.slice();
 
-    if (typeof console !== 'undefined') {
-      console.log('[orgchart/processOrgChartToNodeData]', {
-        headline: node.headline,
-        key: node.key,
-        totalPeople: node.total_people,
-        allCandidatesLength: orderedCandidates.length,
-        rawLenCandidates: raw.len_candidates,
-      });
-    }
+    // if (typeof console !== 'undefined') {
+    //   console.log('[orgchart/processOrgChartToNodeData]', {
+    //     headline: node.headline,
+    //     key: node.key,
+    //     totalPeople: node.total_people,
+    //     allCandidatesLength: orderedCandidates.length,
+    //     rawLenCandidates: raw.len_candidates,
+    //   });
+    // }
 
     const PERSON_ROW_HEIGHT = 48;
     node.height_0 = orderedCandidates.length >= 1 ? PERSON_ROW_HEIGHT : 0;
