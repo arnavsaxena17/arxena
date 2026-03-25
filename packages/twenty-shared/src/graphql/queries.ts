@@ -241,6 +241,76 @@ export const graphqlToFindManyCompanies = `query FindManyCompanies($filter: Comp
   }
 }`;
 
+// const graphqlToFindManyJobsFull = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
+//   jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+//     edges {
+//       node {
+//         __typename
+//         updatedAt
+//         isActive
+//         arxenaSiteId
+//         chatFlowOrder
+//         engagementProcessingDelayMinutes
+//         jobCode
+//         searchName
+//         reportsTo
+//         reportees
+//         yearsOfExperience
+//         salaryBracket
+//         companyDetails
+//         pathPosition
+//         talentConsiderations
+//         specificCriteria
+//         companyId
+//         position
+//         description
+//         name
+//         jobLocation
+//         id
+//         recruiterId
+//         createdAt
+//         jobCode
+//         jobLocation
+//         assistantThreads {
+//           edges{
+//             node{
+//               id
+//               name
+//               messages
+//               assistantParameters
+//               enrichmentConfigs
+//               columnFilters
+//               assistantSearchStrategy
+//               isActive
+//               jobId
+//               recruiterId
+//             }
+//           }
+//         }
+//         attachments{
+//             edges{
+//                 node{
+//                     id
+//                     name
+//                 }
+//             }
+//         }
+
+//       }
+//       cursor
+//       __typename
+//     }
+//     pageInfo {
+//       hasNextPage
+//       startCursor
+//       endCursor
+//       __typename
+//     }
+//     totalCount
+//     __typename
+//   }
+// }`;
+
 const graphqlToFindManyJobsFull = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
   jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {
@@ -271,22 +341,6 @@ const graphqlToFindManyJobsFull = `query FindManyJobs($filter: JobFilterInput, $
         createdAt
         jobCode
         jobLocation
-        assistantThreads {
-          edges{
-            node{
-              id
-              name
-              messages
-              assistantParameters
-              enrichmentConfigs
-              columnFilters
-              assistantSearchStrategy
-              isActive
-              jobId
-              recruiterId
-            }
-          }
-        }
         attachments{
             edges{
                 node{
@@ -375,7 +429,87 @@ export function getGraphqlToFindManyJobs(isOrgChartEnabled: boolean): string {
 export const graphqlToFindManyJobs = isOrgChartEnabledEnv
   ? graphqlToFindManyJobsOrgChart
   : graphqlToFindManyJobsFull;
-const graphqlToFindManyJobsWithPromptsFull = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
+
+//   const graphqlToFindManyJobsWithPromptsFull = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
+//   jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+//     edges {
+//       node {
+//         __typename
+//         updatedAt
+//         isActive
+//         arxenaSiteId
+//         chatFlowOrder
+//         engagementProcessingDelayMinutes
+//         jobCode
+//         searchName
+//         reportsTo
+//         reportees
+//         yearsOfExperience
+//         salaryBracket
+//         companyDetails
+//         pathPosition
+//         talentConsiderations
+//         specificCriteria
+//         companyId
+//         position
+//         description
+//         name
+//         jobLocation
+//         id
+//         recruiterId
+//         createdAt
+//         prompt{
+//             edges{
+//                 node{
+//                     id
+//                     name
+//                     prompt
+//                 }
+//             }
+//         }
+//         assistantThreads {
+//           edges{
+//             node{
+//               id
+//               name
+//               messages
+//               assistantParameters
+//               enrichmentConfigs
+//               columnFilters
+//               assistantSearchStrategy
+//               isActive
+//               jobId
+//               recruiterId
+//             }
+//           }
+//         }
+//         name
+//         jobCode
+//         jobLocation
+//         attachments{
+//             edges{
+//                 node{
+//                     id
+//                     name
+//                 }
+//             }
+//         }
+
+//       }
+//       cursor
+//       __typename
+//     }
+//     pageInfo {
+//       hasNextPage
+//       startCursor
+//       endCursor
+//       __typename
+//     }
+//     totalCount
+//     __typename
+//   }
+// }`;
+  const graphqlToFindManyJobsWithPromptsFull = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
   jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {
       node {
@@ -411,22 +545,6 @@ const graphqlToFindManyJobsWithPromptsFull = `query FindManyJobs($filter: JobFil
                     prompt
                 }
             }
-        }
-        assistantThreads {
-          edges{
-            node{
-              id
-              name
-              messages
-              assistantParameters
-              enrichmentConfigs
-              columnFilters
-              assistantSearchStrategy
-              isActive
-              jobId
-              recruiterId
-            }
-          }
         }
         name
         jobCode
