@@ -1,7 +1,37 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
+/**
+ * Next.js treats POST + application/x-www-form-urlencoded as a potential Server Action
+ * (see getIsServerAction in next/dist/server/lib/server-action-request-meta.js).
+ * Scanners and bots often POST urlencoded bodies without `Next-Action`, which triggers
+ * "Failed to find Server Action" / "Missing 'next-action' header" and noisy error logs.
+ * Real Server Action requests from Next include the Next-Action header.
+ */
+function isMalformedServerActionStylePost(request: NextRequest): boolean {
+  if (request.method !== 'POST') {
+    return false;
+  }
+  const pathname = request.nextUrl.pathname;
+  if (pathname.startsWith('/api/') || pathname.startsWith('/_next/')) {
+    return false;
+  }
+  const contentType = request.headers.get('content-type') ?? '';
+  const baseType = contentType.split(';')[0]?.trim() ?? '';
+  if (baseType !== 'application/x-www-form-urlencoded') {
+    return false;
+  }
+  if (request.headers.get('next-action')) {
+    return false;
+  }
+  return true;
+}
+
 export function middleware(request: NextRequest) {
+  if (isMalformedServerActionStylePost(request)) {
+    return new NextResponse(null, { status: 400 });
+  }
+
   const requestHeaders = new Headers(request.headers);
 
   // Bots and proxied requests often omit Origin. Next.js Server Actions validation

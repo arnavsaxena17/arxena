@@ -1165,7 +1165,6 @@ export class BaileysWhatsappService {
   }
 
   async handleDeleteForEveryoneMessage(msg: any, candidateProfile: CandidateNode, apiToken: string) {
-    console.log('This is the candidateProfile:', candidateProfile);
     const whatsappMessageToGetDeleted = await this.fetchWhatsappMessageById(
       msg?.message?.protocolMessage?.key?.id,
       apiToken

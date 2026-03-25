@@ -8,6 +8,10 @@ import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-gra
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 type UnipileAccountType = 'linkedin' | 'whatsapp';
+type WorkspaceMemberLinkedinCookieTokens = {
+  linkedinLiAtToken: string | null;
+  linkedinLiAToken: string | null;
+};
 
 @Injectable()
 export class WorkspaceMemberProfileUnipileService {
@@ -19,6 +23,166 @@ export class WorkspaceMemberProfileUnipileService {
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly workspaceQueryService: WorkspaceQueryService,
   ) {}
+
+  private async ensureWorkspaceMemberProfileTableContext(workspaceId: string) {
+    const schema = this.workspaceQueryService.getDataSourceSchema(workspaceId);
+    const profileTable =
+      await this.workspaceQueryService.resolveWorkspaceMemberProfileTableName(
+        schema,
+      );
+
+    if (!profileTable) {
+      throw new Error(
+        `Workspace member profile table not found for workspace ${workspaceId}`,
+      );
+    }
+
+    return { schema, profileTable };
+  }
+
+  private async ensureWorkspaceMemberProfileRowExists(
+    workspaceId: string,
+    workspaceMemberId: string,
+    schema: string,
+    profileTable: string,
+  ): Promise<void> {
+    const hasTypeColumn = await this.workspaceQueryService.checkIfColumnExists(
+      schema,
+      profileTable,
+      'typeWorkspaceMember',
+      { silent: true },
+    );
+
+    const insertQuery = hasTypeColumn
+      ? `INSERT INTO ${schema}."${profileTable}"
+          ("id", "workspaceMemberId", "createdAt", "updatedAt", "typeWorkspaceMember")
+         SELECT gen_random_uuid(), $1, NOW(), NOW(), 'recruiterType'
+         WHERE NOT EXISTS (
+           SELECT 1 FROM ${schema}."${profileTable}" p
+           WHERE p."workspaceMemberId" = $1
+         )`
+      : `INSERT INTO ${schema}."${profileTable}"
+          ("id", "workspaceMemberId", "createdAt", "updatedAt")
+         SELECT gen_random_uuid(), $1, NOW(), NOW()
+         WHERE NOT EXISTS (
+           SELECT 1 FROM ${schema}."${profileTable}" p
+           WHERE p."workspaceMemberId" = $1
+         )`;
+
+    await this.workspaceQueryService.workspaceDataSourceService.executeRawQuery(
+      insertQuery,
+      [workspaceMemberId],
+      workspaceId,
+    );
+  }
+
+  private async ensureLinkedinCookieColumns(
+    workspaceId: string,
+    schema: string,
+    profileTable: string,
+  ): Promise<void> {
+    const hasLiAtColumn = await this.workspaceQueryService.checkIfColumnExists(
+      schema,
+      profileTable,
+      'linkedinLiAtToken',
+      { silent: true },
+    );
+
+    if (!hasLiAtColumn) {
+      await this.workspaceQueryService.workspaceDataSourceService.executeRawQuery(
+        `ALTER TABLE ${schema}."${profileTable}"
+         ADD COLUMN IF NOT EXISTS "linkedinLiAtToken" TEXT`,
+        [],
+        workspaceId,
+      );
+    }
+
+    const hasLiAColumn = await this.workspaceQueryService.checkIfColumnExists(
+      schema,
+      profileTable,
+      'linkedinLiAToken',
+      { silent: true },
+    );
+
+    if (!hasLiAColumn) {
+      await this.workspaceQueryService.workspaceDataSourceService.executeRawQuery(
+        `ALTER TABLE ${schema}."${profileTable}"
+         ADD COLUMN IF NOT EXISTS "linkedinLiAToken" TEXT`,
+        [],
+        workspaceId,
+      );
+    }
+  }
+
+  async updateWorkspaceMemberLinkedinCookieTokens(
+    workspaceId: string,
+    workspaceMemberId: string,
+    tokens: Partial<WorkspaceMemberLinkedinCookieTokens>,
+  ): Promise<void> {
+    const { schema, profileTable } =
+      await this.ensureWorkspaceMemberProfileTableContext(workspaceId);
+
+    await this.ensureLinkedinCookieColumns(workspaceId, schema, profileTable);
+    await this.ensureWorkspaceMemberProfileRowExists(
+      workspaceId,
+      workspaceMemberId,
+      schema,
+      profileTable,
+    );
+
+    const updates: string[] = [];
+    const parameters: Array<string | null> = [];
+
+    if (tokens.linkedinLiAtToken !== undefined) {
+      parameters.push(tokens.linkedinLiAtToken);
+      updates.push(`"linkedinLiAtToken" = $${parameters.length}`);
+    }
+
+    if (tokens.linkedinLiAToken !== undefined) {
+      parameters.push(tokens.linkedinLiAToken);
+      updates.push(`"linkedinLiAToken" = $${parameters.length}`);
+    }
+
+    if (updates.length === 0) {
+      return;
+    }
+
+    parameters.push(workspaceMemberId);
+
+    await this.workspaceQueryService.workspaceDataSourceService.executeRawQuery(
+      `UPDATE ${schema}."${profileTable}"
+       SET ${updates.join(', ')},
+           "updatedAt" = NOW()
+       WHERE "workspaceMemberId" = $${parameters.length}`,
+      parameters,
+      workspaceId,
+    );
+  }
+
+  async getWorkspaceMemberLinkedinCookieTokens(
+    workspaceId: string,
+    workspaceMemberId: string,
+  ): Promise<WorkspaceMemberLinkedinCookieTokens> {
+    const { schema, profileTable } =
+      await this.ensureWorkspaceMemberProfileTableContext(workspaceId);
+
+    await this.ensureLinkedinCookieColumns(workspaceId, schema, profileTable);
+
+    const rows =
+      await this.workspaceQueryService.workspaceDataSourceService.executeRawQuery(
+        `SELECT "linkedinLiAtToken", "linkedinLiAToken"
+         FROM ${schema}."${profileTable}"
+         WHERE "workspaceMemberId" = $1
+         LIMIT 1`,
+        [workspaceMemberId],
+        workspaceId,
+      );
+
+    return {
+      linkedinLiAtToken: rows?.[0]?.linkedinLiAtToken ?? null,
+      linkedinLiAToken: rows?.[0]?.linkedinLiAToken ?? null,
+    };
+  }
 
   /**
    * Get Unipile account ID for a workspace member from workspaceMemberProfile only.

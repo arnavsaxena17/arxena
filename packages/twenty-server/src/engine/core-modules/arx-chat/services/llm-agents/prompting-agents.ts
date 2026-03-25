@@ -1,9 +1,9 @@
 import {
-    allStatusesArray,
-    CandidateNode,
-    graphqlQueryToFetchPrompts,
-    Job,
-    statusesArray
+  allStatusesArray,
+  CandidateNode,
+  graphqlQueryToFetchPrompts,
+  Job,
+  statusesArray
 } from 'twenty-shared';
 import { z } from 'zod';
 
@@ -61,7 +61,6 @@ export class PromptingAgents {
       'Job Name:',
       candidate?.jobs?.name,
     );
-    // console.log('This is the job Id:', jobId);
     const { questionArray, questionIdArray } = await new FilterCandidates(
       this.workspaceQueryService,
       this.staticGraphQLService,

@@ -649,7 +649,6 @@ export class UpdateChat {
 
 
         const recruiterId = candidate?.jobs?.recruiterId;
-        console.log('This is the job ID::', jobId);
 
         if (jobId == '') {
           console.log('Job ID is not present for the candidate::', candidateId);

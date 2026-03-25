@@ -36,6 +36,13 @@ interface LinkedinCookieAuthDto {
   user_agent: string;
 }
 
+interface LinkedinExtensionCookieSyncDto {
+  li_at?: string;
+  li_a?: string;
+  user_agent?: string;
+  page_url?: string;
+}
+
 interface LinkedinCheckpointDto {
   account_id: string;
   provider: 'LINKEDIN';
@@ -301,6 +308,176 @@ export class LinkedinUnipileController {
       this.logger.error('Failed to connect LinkedIn with cookie:', error);
       throw error;
     }
+  }
+
+  @Post('extension/sync-cookies')
+  async syncExtensionCookies(
+    @Body() body: LinkedinExtensionCookieSyncDto,
+    @AuthWorkspace() workspace: Workspace,
+    @Req() request: {
+      workspaceMemberId?: string;
+      headers?: { authorization?: string };
+    },
+  ) {
+    const workspaceMemberId = request.workspaceMemberId;
+    const authToken =
+      request.headers?.authorization?.replace(/^Bearer\s+/i, '') ?? '';
+
+    if (!workspaceMemberId) {
+      throw new HttpException(
+        'workspaceMemberId required (user auth only)',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (!authToken) {
+      throw new HttpException(
+        'Authorization header required',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const normalizeToken = (value?: string) => {
+      if (typeof value !== 'string') {
+        return undefined;
+      }
+
+      const trimmed = value.trim();
+
+      return trimmed ? trimmed : undefined;
+    };
+
+    const liAtToken = normalizeToken(body.li_at);
+    const liAToken = normalizeToken(body.li_a);
+    const userAgent = normalizeToken(body.user_agent);
+
+    if (liAtToken !== undefined || liAToken !== undefined) {
+      await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberLinkedinCookieTokens(
+        workspace.id,
+        workspaceMemberId,
+        {
+          ...(liAtToken !== undefined && { linkedinLiAtToken: liAtToken }),
+          ...(liAToken !== undefined && { linkedinLiAToken: liAToken }),
+        },
+      );
+    }
+
+    const storedCookies =
+      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
+        workspace.id,
+        workspaceMemberId,
+      );
+
+    const effectiveLiAtToken = liAtToken ?? storedCookies.linkedinLiAtToken;
+    const effectiveLiAToken = liAToken ?? storedCookies.linkedinLiAToken;
+
+    let accountId =
+      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+        workspaceMemberId,
+        workspace.id,
+        authToken,
+        'linkedin',
+      );
+
+    let accountStatus:
+      | 'connected'
+      | 'disconnected'
+      | 'pending'
+      | 'checkpoint_required'
+      | 'not_connected' = 'not_connected';
+    let isConnected = false;
+
+    if (accountId) {
+      const account = await this.fetchAccountByIdIfExists(accountId);
+
+      if (account) {
+        accountStatus = this.mapAccountStatus(account);
+        isConnected =
+          accountStatus === 'connected' || accountStatus === 'pending';
+      } else {
+        accountStatus = 'disconnected';
+      }
+    }
+
+    const reconnectSourceToken = effectiveLiAtToken ?? effectiveLiAToken;
+    const shouldAttemptReconnect =
+      Boolean(reconnectSourceToken) &&
+      (!accountId || accountStatus === 'disconnected');
+
+    let reconnectAttempted = false;
+    let reconnectSucceeded = false;
+    let reconnectMessage: string | null = null;
+
+    if (shouldAttemptReconnect) {
+      reconnectAttempted = true;
+
+      try {
+        const result = await this.makeUnipileRequest(
+          '/api/v1/accounts',
+          'POST',
+          {
+            provider: 'LINKEDIN',
+            access_token: reconnectSourceToken,
+            ...(userAgent && { user_agent: userAgent }),
+          },
+          { returnStatus: true },
+        );
+
+        const { status, data } = result;
+        const nextAccountId = data?.id || data?.account_id || null;
+        const isCheckpoint =
+          (status === 202 && data?.account_id) ||
+          (data?.object === 'Checkpoint' && data?.account_id);
+
+        if (nextAccountId) {
+          await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberUnipileAccountId(
+            workspaceMemberId,
+            authToken,
+            'linkedin',
+            nextAccountId,
+          );
+          accountId = nextAccountId;
+        }
+
+        if (isCheckpoint) {
+          accountStatus = 'checkpoint_required';
+          isConnected = false;
+          reconnectMessage = 'LinkedIn checkpoint required';
+          reconnectSucceeded = true;
+        } else if (nextAccountId) {
+          accountStatus = 'connected';
+          isConnected = true;
+          reconnectSucceeded = true;
+        }
+      } catch (error) {
+        reconnectMessage =
+          error instanceof Error ? error.message : 'Failed to reconnect';
+        this.logger.warn(
+          `LinkedIn extension reconnect failed for member ${workspaceMemberId}: ${reconnectMessage}`,
+        );
+      }
+    }
+
+    return {
+      success: true,
+      cookies: {
+        hasLiAt: Boolean(storedCookies.linkedinLiAtToken),
+        hasLiA: Boolean(storedCookies.linkedinLiAToken),
+      },
+      linkedin: {
+        accountId,
+        status: accountStatus,
+        connected: isConnected,
+      },
+      reconnect: {
+        attempted: reconnectAttempted,
+        succeeded: reconnectSucceeded,
+        message: reconnectMessage,
+      },
+      context: {
+        pageUrl: body.page_url ?? null,
+      },
+    };
   }
 
   @Post('accounts/update-member')

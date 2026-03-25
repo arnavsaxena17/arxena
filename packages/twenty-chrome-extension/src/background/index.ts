@@ -1,5 +1,34 @@
 import { isDefined } from 'twenty-shared';
 
+const LINKEDIN_HOST_REGEX = /(?:^|\.)linkedin\.com$/i;
+const LINKEDIN_PAGE_REGEX = /^https?:\/\/(?:[\w-]+\.)?linkedin\.com/i;
+
+type LinkedinSyncStatus = {
+  success: boolean;
+  authenticated: boolean;
+  onLinkedinPage: boolean;
+  cookies?: {
+    hasLiAt: boolean;
+    hasLiA: boolean;
+  };
+  linkedin?: {
+    accountId: string | null;
+    status:
+      | 'connected'
+      | 'disconnected'
+      | 'pending'
+      | 'checkpoint_required'
+      | 'not_connected';
+    connected: boolean;
+  };
+  reconnect?: {
+    attempted: boolean;
+    succeeded: boolean;
+    message: string | null;
+  };
+  error?: string;
+};
+
 // Open options page programmatically in a new tab.
 // chrome.runtime.onInstalled.addListener((details) => {
 //   if (details.reason === 'install') {
@@ -69,6 +98,143 @@ const setTokenStateFromCookie = (cookie: string) => {
   }
 };
 
+const getStoredAccessToken = async (): Promise<string | null> => {
+  const store = await chrome.storage.local.get(['accessToken']);
+  const accessToken = store.accessToken;
+
+  if (!isDefined(accessToken)) {
+    return null;
+  }
+
+  if (typeof accessToken === 'string') {
+    return accessToken;
+  }
+
+  if (typeof accessToken?.token === 'string') {
+    return accessToken.token;
+  }
+
+  return null;
+};
+
+const getServerBaseUrl = async (): Promise<string> => {
+  const store = await chrome.storage.local.get(['serverBaseUrl']);
+
+  return isDefined(store.serverBaseUrl)
+    ? store.serverBaseUrl
+    : import.meta.env.VITE_SERVER_BASE_URL;
+};
+
+const getLinkedinCookieValues = async (): Promise<{
+  liAt: string | null;
+  liA: string | null;
+}> => {
+  const cookies = await chrome.cookies.getAll({});
+  const linkedinCookies = cookies.filter(
+    (cookie) =>
+      LINKEDIN_HOST_REGEX.test(cookie.domain.replace(/^\./, '')) &&
+      (cookie.name === 'li_at' || cookie.name === 'li_a'),
+  );
+
+  return {
+    liAt: linkedinCookies.find((cookie) => cookie.name === 'li_at')?.value ?? null,
+    liA: linkedinCookies.find((cookie) => cookie.name === 'li_a')?.value ?? null,
+  };
+};
+
+const syncLinkedinCookiesWithBackend = async (input: {
+  pageUrl?: string;
+  userAgent?: string;
+}): Promise<LinkedinSyncStatus> => {
+  const pageUrl = input.pageUrl ?? '';
+
+  if (!LINKEDIN_PAGE_REGEX.test(pageUrl)) {
+    return {
+      success: false,
+      authenticated: true,
+      onLinkedinPage: false,
+      error: 'Open the extension on a LinkedIn page.',
+    };
+  }
+
+  const accessToken = await getStoredAccessToken();
+
+  if (!accessToken) {
+    const status = {
+      success: false,
+      authenticated: false,
+      onLinkedinPage: true,
+      error: 'Sign in to Arxena in the extension first.',
+    } satisfies LinkedinSyncStatus;
+
+    await chrome.storage.local.set({ linkedinSyncStatus: status });
+    return status;
+  }
+
+  const { liAt, liA } = await getLinkedinCookieValues();
+  const serverBaseUrl = await getServerBaseUrl();
+
+  try {
+    const response = await fetch(
+      `${serverBaseUrl.replace(/\/$/, '')}/linkedin-unipile/extension/sync-cookies`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          li_at: liAt ?? undefined,
+          li_a: liA ?? undefined,
+          user_agent: input.userAgent ?? navigator.userAgent,
+          page_url: pageUrl,
+        }),
+      },
+    );
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(
+        data?.message ||
+          data?.error ||
+          `HTTP ${response.status}: ${response.statusText}`,
+      );
+    }
+
+    const status = {
+      success: Boolean(data?.success),
+      authenticated: true,
+      onLinkedinPage: true,
+      cookies: data?.cookies ?? {
+        hasLiAt: Boolean(liAt),
+        hasLiA: Boolean(liA),
+      },
+      linkedin: data?.linkedin,
+      reconnect: data?.reconnect,
+    } satisfies LinkedinSyncStatus;
+
+    await chrome.storage.local.set({ linkedinSyncStatus: status });
+
+    return status;
+  } catch (error) {
+    const status = {
+      success: false,
+      authenticated: true,
+      onLinkedinPage: true,
+      error: error instanceof Error ? error.message : 'Failed to sync LinkedIn cookies',
+      cookies: {
+        hasLiAt: Boolean(liAt),
+        hasLiA: Boolean(liA),
+      },
+    } satisfies LinkedinSyncStatus;
+
+    await chrome.storage.local.set({ linkedinSyncStatus: status });
+
+    return status;
+  }
+};
+
 chrome.cookies.onChanged.addListener(async ({ cookie }) => {
   if (cookie.name === 'tokenPair') {
     const store = await chrome.storage.local.get(['clientUrl']);
@@ -105,6 +271,44 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   
   return true;
+});
+
+chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
+  if (message.action === 'syncLinkedinCookies') {
+    syncLinkedinCookiesWithBackend({
+      pageUrl: message.pageUrl,
+      userAgent: message.userAgent,
+    })
+      .then((status) => sendResponse(status))
+      .catch((error) =>
+        sendResponse({
+          success: false,
+          authenticated: true,
+          onLinkedinPage: Boolean(message.pageUrl),
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Failed to sync LinkedIn cookies',
+        } satisfies LinkedinSyncStatus),
+      );
+
+    return true;
+  }
+
+  if (message.action === 'getLinkedinSyncStatus') {
+    chrome.storage.local
+      .get(['linkedinSyncStatus'])
+      .then((store) => {
+        sendResponse(
+          (store.linkedinSyncStatus as LinkedinSyncStatus | undefined) ?? null,
+        );
+      })
+      .catch(() => sendResponse(null));
+
+    return true;
+  }
+
+  return false;
 });
 
 // Handle notification button clicks

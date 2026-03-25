@@ -10,7 +10,16 @@ const nextConfig = {
       serverActions: {
         // Allow Server Actions from our domains when requests are forwarded (e.g. behind proxy/CDN).
         // Bots/crawlers often omit Origin; middleware sets it from Host when missing.
-        allowedOrigins: ['arxena.com', 'www.arxena.com', 'localhost:3000'],
+        allowedOrigins: [
+          'arxena.com',
+          'www.arxena.com',
+          'app.arxena.com',
+          'localhost:3000',
+          'localhost:3001',
+        ],
+        // Multi-process / rolling deploys: set NEXT_SERVER_ACTIONS_ENCRYPTION_KEY (base64 AES
+        // 16/24/32 bytes) at build time so all instances share action IDs — see
+        // https://nextjs.org/docs/messages/failed-to-find-server-action
       },
     },
   async rewrites() {

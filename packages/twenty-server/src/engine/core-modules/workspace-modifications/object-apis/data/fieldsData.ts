@@ -531,6 +531,28 @@ export function getFieldsData(
     {
       objectName: 'workspaceMemberProfile',
       field: {
+        description: 'Latest LinkedIn li_at cookie captured from the extension',
+        icon: 'IconCookie',
+        label: 'LinkedIn li_at Token',
+        name: 'linkedinLiAtToken',
+        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        type: 'TEXT',
+      },
+    },
+    {
+      objectName: 'workspaceMemberProfile',
+      field: {
+        description: 'Latest LinkedIn Recruiter li_a cookie captured from the extension',
+        icon: 'IconCookie',
+        label: 'LinkedIn li_a Token',
+        name: 'linkedinLiAToken',
+        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        type: 'TEXT',
+      },
+    },
+    {
+      objectName: 'workspaceMemberProfile',
+      field: {
         description: 'Unipile account ID for WhatsApp',
         icon: 'IconPhone',
         label: 'WhatsApp Unipile Account ID',
