@@ -44,7 +44,7 @@ export class OrgChartClientIpRuleEntity {
   chartsServed: number;
 
   /** Latest User-Agent seen for this IP (from org-chart requests only). */
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @Column({ type: 'varchar', length: 1024, nullable: true })
   lastUserAgent: string | null;
 
