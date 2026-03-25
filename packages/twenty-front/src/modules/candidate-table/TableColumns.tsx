@@ -86,6 +86,9 @@ export const MESSAGING_CHANNEL_OPTIONS = [
   'linkedin-sock'
 ];
 
+/** Fits longest option (whatsapp-unipile) on one line with dropdown padding */
+const MESSAGING_CHANNEL_COLUMN_WIDTH = 190;
+
 const COLUMN_TITLE_OVERRIDES: Record<string, string> = {
   candConversationStatus: 'Bot Status',
 };
@@ -631,8 +634,8 @@ export const TableColumns = ({
   };
 
   const messagingChannelRenderer: ColumnRenderer = (instance, td, row, column, prop, value, cellProperties) => {
-    // Use dropdown renderer for messaging channel
     Handsontable.renderers.DropdownRenderer(instance, td, row, column, prop, value, cellProperties);
+    td.style.whiteSpace = 'nowrap';
     return td;
   };
 
@@ -669,7 +672,7 @@ export const TableColumns = ({
       columns.push({
         data: column,
         title: getColumnTitle(column),
-        width: 150,
+        width: isMessagingChannelField ? MESSAGING_CHANNEL_COLUMN_WIDTH : 150,
         renderer: column === 'lastMessage' ? dateRenderer : 
                  isStatusField ? statusRenderer :
                  isMessagingChannelField ? messagingChannelRenderer : 
@@ -773,6 +776,7 @@ export const TableColumns = ({
                isRelevanceScoreField ? 100 :
                isRelevanceLabelField ? 140 :
                isArrayField ? 200 :
+               isMessagingChannelField ? MESSAGING_CHANNEL_COLUMN_WIDTH :
                smallFields.includes(key) ? 40 : 150,
         renderer: renderer,
         type: isStatusField || isMessagingChannelField ? 'dropdown' : 'text',
