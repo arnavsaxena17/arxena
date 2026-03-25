@@ -304,14 +304,14 @@ export class UnipileAccountPoolService {
       '_workspaceMemberProfile',
       'workspaceMemberProfile',
     ] as const;
-    const fkColumns = [
-      'workspaceMemberId',
-      '_workspaceMemberId',
-      'recruiterId',
-      '_recruiterId',
-    ] as const;
 
     for (const table of profileTables) {
+      const fkColumns =
+        await this.workspaceQueryService.getWorkspaceMemberProfileToWorkspaceMemberFkColumns(
+          workspaceId,
+          schema,
+          table,
+        );
       for (const fkCol of fkColumns) {
         try {
           await this.workspaceQueryService.executeRawQuery(

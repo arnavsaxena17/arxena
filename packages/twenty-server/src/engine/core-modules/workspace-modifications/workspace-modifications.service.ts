@@ -26,10 +26,12 @@ const WORKSPACE_MEMBER_PROFILE_TABLE_CANDIDATES = [
   'workspaceMemberProfile',
 ] as const;
 
-/** Physical FK column names seen across Twenty / Arxena workspace schemas */
+/** Literal fallbacks when pg_catalog has no FK metadata (drifted / legacy schemas). */
 const WORKSPACE_MEMBER_PROFILE_FK_COLUMN_CANDIDATES = [
   'workspaceMemberId',
   '_workspaceMemberId',
+  'memberId',
+  '_memberId',
   'recruiterId',
   '_recruiterId',
 ] as const;
@@ -231,8 +233,15 @@ export class WorkspaceQueryService {
           whatsappUnipileAccountId: string | null;
         };
 
+        const fkColumns =
+          await this.getWorkspaceMemberProfileToWorkspaceMemberFkColumns(
+            workspaceId,
+            schema,
+            tableName,
+          );
+
         let rows: ProfileRow[] | null = null;
-        for (const fkCol of WORKSPACE_MEMBER_PROFILE_FK_COLUMN_CANDIDATES) {
+        for (const fkCol of fkColumns) {
           try {
             rows = await this.executeRawQuery(
               `SELECT "${fkCol}" AS "workspaceMemberId", "linkedinUnipileAccountId", "whatsappUnipileAccountId"
@@ -325,7 +334,13 @@ export class WorkspaceQueryService {
         if (!tableExists) {
           continue;
         }
-        for (const fkCol of WORKSPACE_MEMBER_PROFILE_FK_COLUMN_CANDIDATES) {
+        const fkColumns =
+          await this.getWorkspaceMemberProfileToWorkspaceMemberFkColumns(
+            workspaceId,
+            schema,
+            tableName,
+          );
+        for (const fkCol of fkColumns) {
           try {
             const rows = await this.executeRawQuery(
               `SELECT 1 FROM ${schema}."${tableName}" WHERE "${profileColumn}" = $1 AND "${fkCol}" IS NOT NULL LIMIT 1`,
@@ -605,6 +620,64 @@ export class WorkspaceQueryService {
       );
       return false;
     }
+  }
+
+  /**
+   * Columns on tenant workspaceMemberProfile table that FK-reference workspaceMember (from pg_catalog),
+   * then known literal fallbacks. Use for raw SQL where join column name varies by workspace age / migrations.
+   */
+  async getWorkspaceMemberProfileToWorkspaceMemberFkColumns(
+    workspaceId: string,
+    schema: string,
+    tableName: string,
+  ): Promise<string[]> {
+    let fromCatalog: Record<string, unknown>[] | null = null;
+    try {
+      fromCatalog = await this.workspaceDataSourceService.executeRawQuery(
+        `SELECT DISTINCT a.attname::text AS "column_name"
+         FROM pg_constraint c
+         JOIN pg_class tbl ON tbl.oid = c.conrelid
+         JOIN pg_namespace ns ON ns.oid = tbl.relnamespace
+         JOIN pg_class ref ON ref.oid = c.confrelid
+         JOIN pg_namespace ref_ns ON ref_ns.oid = ref.relnamespace
+         JOIN LATERAL unnest(c.conkey) AS conkey_attnum(attnum) ON true
+         JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = conkey_attnum.attnum AND NOT a.attisdropped
+         WHERE c.contype = 'f'
+           AND ns.nspname = $1
+           AND tbl.relname = $2
+           AND ref_ns.nspname = $1
+           AND ref.relname IN ('_workspaceMember', 'workspaceMember')
+         ORDER BY 1`,
+        [schema, tableName],
+        workspaceId,
+      );
+    } catch {
+      fromCatalog = null;
+    }
+
+    const catalogNames: string[] = [];
+    if (Array.isArray(fromCatalog)) {
+      for (const row of fromCatalog) {
+        const name = row.column_name;
+        if (typeof name === 'string' && name.length > 0) {
+          catalogNames.push(name);
+        }
+      }
+    }
+
+    const merged: string[] = [];
+    const seen = new Set<string>();
+    for (const n of [
+      ...catalogNames,
+      ...WORKSPACE_MEMBER_PROFILE_FK_COLUMN_CANDIDATES,
+    ]) {
+      if (!seen.has(n)) {
+        seen.add(n);
+        merged.push(n);
+      }
+    }
+
+    return merged;
   }
 
   async executeRawQuery(
