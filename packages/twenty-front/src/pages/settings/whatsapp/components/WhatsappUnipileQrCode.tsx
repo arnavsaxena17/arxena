@@ -145,6 +145,15 @@ const LoadingSpinner = styled.div`
   }
 `;
 
+const CONNECTION_FAILED_AUTO_REFRESH_DELAY_MS = 2000;
+
+const isConnectionFailedErrorMessage = (message: string | null): boolean => {
+  if (!message) {
+    return false;
+  }
+  return message.includes('Connection failed');
+};
+
 const StatusIndicator = styled.div<{ status: 'connecting' | 'connected' | 'error' }>`
   display: flex;
   align-items: center;
@@ -305,30 +314,80 @@ export const WhatsappUnipileQrCode: React.FC<WhatsappUnipileQrCodeProps> = ({
     }
   }, [accessToken, startPolling]);
 
+  const handleGenerateNew = useCallback(() => {
+    setPollingInterval((prev) => {
+      if (prev) {
+        clearInterval(prev);
+      }
+      return null;
+    });
+    setQrCode(null);
+    setStatus('connecting');
+    pollingStartTimeRef.current = null;
+    setError(null);
+    requestQrCode();
+  }, [requestQrCode]);
+
   useEffect(() => {
     // Request QR code on mount
     requestQrCode();
 
     // Cleanup polling on unmount
     return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
+      setPollingInterval((prev) => {
+        if (prev) {
+          clearInterval(prev);
+        }
+        return null;
+      });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
 
-  const handleGenerateNew = () => {
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-      setPollingInterval(null);
+  useEffect(() => {
+    if (!isConnectionFailedErrorMessage(error) || loading) {
+      return undefined;
     }
-    setQrCode(null);
-    setStatus('connecting');
-    pollingStartTimeRef.current = null;
-    setError(null);
-    requestQrCode();
-  };
+
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    const runRefreshWhenVisible = () => {
+      if (document.visibilityState !== 'visible') {
+        return;
+      }
+      handleGenerateNew();
+    };
+
+    const schedule = () => {
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
+      timeoutId = setTimeout(() => {
+        if (document.visibilityState !== 'visible') {
+          document.addEventListener('visibilitychange', onVisible);
+          return;
+        }
+        runRefreshWhenVisible();
+      }, CONNECTION_FAILED_AUTO_REFRESH_DELAY_MS);
+    };
+
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') {
+        return;
+      }
+      document.removeEventListener('visibilitychange', onVisible);
+      schedule();
+    };
+
+    schedule();
+
+    return () => {
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [error, loading, handleGenerateNew]);
 
   return (
     <Card>

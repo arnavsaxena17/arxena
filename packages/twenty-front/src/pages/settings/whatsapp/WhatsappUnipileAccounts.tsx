@@ -38,9 +38,9 @@ export const WhatsappUnipileAccounts = () => {
       ]}
     >
       <SettingsPageContainer>
-        {!hasConnectedAccounts && (
+        {/* {!hasConnectedAccounts && ( */}
           <WhatsappUnipileQrCode onConnected={handleAccountConnected} />
-        )}
+        {/* )} */}
         <ConnectedWhatsappUnipileAccounts 
           onAccountConnected={handleAccountConnected}
           onAccountsLoaded={handleAccountsLoaded}
