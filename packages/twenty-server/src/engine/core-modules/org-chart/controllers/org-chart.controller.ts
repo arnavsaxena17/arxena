@@ -1,15 +1,15 @@
 import {
-  Body,
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  Logger,
-  Param,
-  Post,
-  Query,
-  Req,
-  Res,
+    Body,
+    Controller,
+    Get,
+    HttpException,
+    HttpStatus,
+    Logger,
+    Param,
+    Post,
+    Query,
+    Req,
+    Res,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
@@ -22,9 +22,10 @@ import { OrgChartNodePeopleDto } from '../dto/org-chart-node-people.dto';
 import { OrgChartQueryDto } from '../dto/org-chart-query.dto';
 import { CompanyLogoService } from '../services/company-logo.service';
 import { ImageProxyService } from '../services/image-proxy.service';
+import { OrgChartClientIpService } from '../services/org-chart-client-ip.service';
 import { OrgChartEsService } from '../services/org-chart-es.service';
-import { OrgChartService } from '../services/org-chart.service';
 import { OrgChartTheOrgEnrichmentService } from '../services/org-chart-theorg-enrichment.service';
+import { OrgChartService } from '../services/org-chart.service';
 
 @Controller('org-chart')
 export class OrgChartController {
@@ -40,6 +41,7 @@ export class OrgChartController {
     private readonly unipileCompanyService: UnipileCompanyService,
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly orgChartClientIpService: OrgChartClientIpService,
   ) {}
 
   private getAuthToken(req: Request): string | undefined {
@@ -753,13 +755,32 @@ export class OrgChartController {
       throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
     }
     const normalizedCompanyId = this.normalizeCompanyId(companyId);
+    const clientIp =
+      OrgChartClientIpService.extractClientIpFromRequest(req);
+    const clientUserAgent =
+      OrgChartClientIpService.extractClientUserAgentFromRequest(req);
+    const ipDecision =
+      await this.orgChartClientIpService.recordRequestAndGetDecision(
+        clientIp,
+        clientUserAgent,
+      );
+    if (ipDecision?.blocked) {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+    const serveCachedOnly = ipDecision?.serveCachedOnly === true;
     try {
       const authToken = this.getAuthToken(req);
       const result = await this.orgChartService.getOrgChart(
         normalizedCompanyId,
-        options,
+        { ...options, serveCachedOnly },
         authToken,
       );
+      if (
+        clientIp &&
+        this.orgChartClientIpService.shouldCountAsChartServed(result)
+      ) {
+        await this.orgChartClientIpService.recordChartServed(clientIp);
+      }
       return { result, status: 'ok' };
     } catch (error) {
       this.logger.error(`Get org chart failed for ${companyId}`, error);

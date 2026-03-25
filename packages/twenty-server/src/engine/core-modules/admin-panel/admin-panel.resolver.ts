@@ -9,10 +9,13 @@ import { EnvironmentVariablesOutput } from 'src/engine/core-modules/admin-panel/
 import { ImpersonateInput } from 'src/engine/core-modules/admin-panel/dtos/impersonate.input';
 import { ImpersonateOutput } from 'src/engine/core-modules/admin-panel/dtos/impersonate.output';
 import { SystemHealth } from 'src/engine/core-modules/admin-panel/dtos/system-health.dto';
+import { UpsertOrgChartClientIpRuleInput } from 'src/engine/core-modules/admin-panel/dtos/upsert-org-chart-client-ip-rule.input';
 import { UpdateWorkspaceFeatureFlagInput } from 'src/engine/core-modules/admin-panel/dtos/update-workspace-feature-flag.input';
 import { UserLookup } from 'src/engine/core-modules/admin-panel/dtos/user-lookup.entity';
 import { UserLookupInput } from 'src/engine/core-modules/admin-panel/dtos/user-lookup.input';
 import { AuthGraphqlApiExceptionFilter } from 'src/engine/core-modules/auth/filters/auth-graphql-api-exception.filter';
+import { OrgChartClientIpRuleEntity } from 'src/engine/core-modules/org-chart/org-chart-client-ip-rule.entity';
+import { OrgChartClientIpService } from 'src/engine/core-modules/org-chart/services/org-chart-client-ip.service';
 import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
@@ -30,6 +33,7 @@ export class AdminPanelResolver {
     private adminService: AdminPanelService,
     private adminPanelHealthService: AdminPanelHealthService,
     private readonly workspaceService: WorkspaceService,
+    private readonly orgChartClientIpService: OrgChartClientIpService,
   ) {}
 
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
@@ -77,6 +81,34 @@ export class AdminPanelResolver {
     await this.workspaceService.deleteWorkspace(workspaceId);
 
     return true;
+  }
+
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
+  @Query(() => [OrgChartClientIpRuleEntity])
+  async orgChartClientIpRules(): Promise<OrgChartClientIpRuleEntity[]> {
+    return this.orgChartClientIpService.listRules();
+  }
+
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
+  @Mutation(() => OrgChartClientIpRuleEntity)
+  async upsertOrgChartClientIpRule(
+    @Args('input') input: UpsertOrgChartClientIpRuleInput,
+  ): Promise<OrgChartClientIpRuleEntity> {
+    return this.orgChartClientIpService.upsertRule(input);
+  }
+
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
+  @Mutation(() => Boolean)
+  async deleteOrgChartClientIpRule(@Args('id') id: string): Promise<boolean> {
+    return this.orgChartClientIpService.deleteRule(id);
+  }
+
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
+  @Mutation(() => Boolean)
+  async resetOrgChartClientIpRuleCounters(
+    @Args('id') id: string,
+  ): Promise<boolean> {
+    return this.orgChartClientIpService.resetCounters(id);
   }
 
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)

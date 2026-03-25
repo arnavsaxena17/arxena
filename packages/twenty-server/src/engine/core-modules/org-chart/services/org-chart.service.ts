@@ -69,6 +69,7 @@ export class OrgChartService {
           website?: string;
           country?: string;
           functionRoot?: string;
+          serveCachedOnly?: boolean;
         },
     authTokenOptional?: string,
   ): Promise<Record<string, unknown>> {
@@ -77,6 +78,7 @@ export class OrgChartService {
       website?: string;
       country?: string;
       functionRoot?: string;
+      serveCachedOnly?: boolean;
     } = {};
 
     let authToken: string | undefined;
@@ -92,15 +94,15 @@ export class OrgChartService {
       authToken = authTokenOptional;
     }
 
-    // Prefer fetching org charts directly from Elasticsearch when configured.
-    const esResult = await this.orgChartEsService.getOrgChartByCompanyId(
-      companyId,
-      options,
-    );
+    if (!options.serveCachedOnly) {
+      const esResult = await this.orgChartEsService.getOrgChartByCompanyId(
+        companyId,
+        options,
+      );
 
-    if (esResult) {
-
-      return esResult;
+      if (esResult) {
+        return esResult;
+      }
     }
 
     const cacheKey = this.buildCompanyOrgChartCacheKey(

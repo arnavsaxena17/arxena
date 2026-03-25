@@ -80,6 +80,10 @@ export async function GET(
       method: 'GET',
       headers: {
         ...(authHeader && { Authorization: authHeader }),
+        ...(clientIp && { 'X-Org-Chart-Client-Ip': clientIp }),
+        ...(effectiveUserAgent && {
+          'X-Org-Chart-Client-User-Agent': effectiveUserAgent,
+        }),
       },
     });
 

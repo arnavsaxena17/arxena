@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { TerminusModule } from '@nestjs/terminus';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { OrgChartClientIpModule } from 'src/engine/core-modules/org-chart/org-chart-client-ip.module';
+
 import { AdminPanelHealthService } from 'src/engine/core-modules/admin-panel/admin-panel-health.service';
 import { AdminPanelResolver } from 'src/engine/core-modules/admin-panel/admin-panel.resolver';
 import { AdminPanelService } from 'src/engine/core-modules/admin-panel/admin-panel.service';
@@ -16,6 +18,7 @@ import { WorkspaceModule } from 'src/engine/core-modules/workspace/workspace.mod
 
 @Module({
   imports: [
+    OrgChartClientIpModule,
     TypeOrmModule.forFeature([User, Workspace, FeatureFlag], 'core'),
     AuthModule,
     DomainManagerModule,

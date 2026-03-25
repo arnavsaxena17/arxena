@@ -50,6 +50,20 @@ const DEFAULT_CHAT_QUESTIONS = [
   'Who do you report to, which functions report to you?',
 ];
 
+/** Empty arrays are truthy in JS — do not use `questions || fallback` or `[]` wins over defaults. */
+const resolveChatQuestionsList = (
+  flowQuestions: string[] | undefined,
+  existing: string[],
+): string[] => {
+  if (flowQuestions !== undefined && flowQuestions.length > 0) {
+    return flowQuestions;
+  }
+  if (existing.length > 0) {
+    return existing;
+  }
+  return [...DEFAULT_CHAT_QUESTIONS];
+};
+
 export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
   parsedJD,
   setParsedJD,
@@ -123,13 +137,20 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
     fetchExistingQuestions();
   }, [parsedJD?.id, tokenPair?.accessToken?.token]);
 
+  if (parsedJD === null) {
+    return null;
+  }
+
   // Prevent hotkey propagation when typing in inputs
   const handleKeyDown = (e: React.KeyboardEvent) => {
     e.stopPropagation();
   };
 
   const handleChatQuestionAdd = () => {
-    const currentQuestions = parsedJD.chatFlow?.questions || existingQuestions;
+    const currentQuestions = resolveChatQuestionsList(
+      parsedJD.chatFlow?.questions,
+      existingQuestions,
+    );
     const newQuestion = '';
     
     // Only add if it's not a duplicate
@@ -153,7 +174,10 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
   };
 
   const handleChatQuestionRemove = async (index: number) => {
-    const currentQuestions = parsedJD.chatFlow?.questions || existingQuestions;
+    const currentQuestions = resolveChatQuestionsList(
+      parsedJD.chatFlow?.questions,
+      existingQuestions,
+    );
     const questionToRemove = currentQuestions[index];
     const questionId = questionFieldIds[questionToRemove];
 
@@ -196,7 +220,10 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
     });
   };
 
-  const displayQuestions = parsedJD.chatFlow?.questions || existingQuestions;
+  const displayQuestions = resolveChatQuestionsList(
+    parsedJD.chatFlow?.questions,
+    existingQuestions,
+  );
 
   if (isLoading) {
     return <div>Loading questions...</div>;
@@ -221,17 +248,21 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
               onChange={(e) => {
                 const newValue = e.target.value;
                 const questions = [...displayQuestions];
-                
+
                 // Only update if the new value is not a duplicate
                 if (!isDuplicateQuestion(questions, newValue, index)) {
                   questions[index] = newValue;
-                  
-                  // Update existingChatQuestions to reflect the current state
-                  const updatedExistingQuestions = [...existingQuestions];
-                  if (index < updatedExistingQuestions.length) {
-                    updatedExistingQuestions[index] = newValue;
-                  }
-                  
+
+                  const updatedExistingQuestions = questions.map((q, i) => {
+                    if (i === index) {
+                      return newValue;
+                    }
+                    if (i < existingQuestions.length) {
+                      return existingQuestions[i];
+                    }
+                    return displayQuestions[i] ?? q;
+                  });
+
                   setParsedJD({
                     ...parsedJD,
                     existingChatQuestions: updatedExistingQuestions,

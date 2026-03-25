@@ -12,6 +12,8 @@ import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 
+import { OrgChartClientIpModule } from 'src/engine/core-modules/org-chart/org-chart-client-ip.module';
+
 import { OrgChartController } from './controllers/org-chart.controller';
 import { ArxenaBackendService } from './services/arxena-backend.service';
 import { CompanyLogoService } from './services/company-logo.service';
@@ -26,6 +28,7 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
 
 @Module({
   imports: [
+    OrgChartClientIpModule,
     ApifyModule,
     BillingModule,
     ContactEnrichmentModule,

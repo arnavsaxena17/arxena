@@ -5,10 +5,11 @@ import { TabList } from '@/ui/layout/tab/components/TabList';
 import styled from '@emotion/styled';
 import { IconBrandWhatsapp } from '@tabler/icons-react';
 import {
-    IconCurrencyDollar,
-    IconHeart,
-    IconSettings2,
-    IconVariable,
+  IconCurrencyDollar,
+  IconHeart,
+  IconNetwork,
+  IconSettings2,
+  IconVariable,
 } from 'twenty-ui';
 
 const StyledTabListContainer = styled.div`
@@ -45,6 +46,11 @@ export const SettingsAdminContent = () => {
       id: SETTINGS_ADMIN_TABS.WORKSPACE_CREDITS,
       title: 'Workspace Credits',
       Icon: IconCurrencyDollar,
+    },
+    {
+      id: SETTINGS_ADMIN_TABS.ORG_CHART_CLIENT_IPS,
+      title: 'Org chart IPs',
+      Icon: IconNetwork,
     },
   ];
 
