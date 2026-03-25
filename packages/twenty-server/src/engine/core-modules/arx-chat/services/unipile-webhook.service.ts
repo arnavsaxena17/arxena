@@ -6,14 +6,14 @@ import { MessageQueue } from '../../message-queue/message-queue.constants';
 import { MessageQueueService } from '../../message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import type {
-  CreateWebhookDto,
-  UnipileAccountStatusWebhook,
-  UnipileEmailWebhook,
-  UnipileMessageWebhook,
-  UnipileNewRelationWebhook,
-  UnipileTrackingEmailWebhook,
-  UnipileWebhookAttachment,
-  UnipileWebhookPayload,
+    CreateWebhookDto,
+    UnipileAccountStatusWebhook,
+    UnipileEmailWebhook,
+    UnipileMessageWebhook,
+    UnipileNewRelationWebhook,
+    UnipileTrackingEmailWebhook,
+    UnipileWebhookAttachment,
+    UnipileWebhookPayload,
 } from '../types/unipile-webhook.types';
 import { UnipileAttachmentStorageUtil } from '../utils/unipile-attachment-storage.util';
 import { UnipileAccountPoolService } from './unipile-account-pool.service';
@@ -396,10 +396,9 @@ export class UnipileWebhookService {
         );
       }
     } else if (parsed.workspaceId) {
-      await this.workspaceQueryService.updateWorkspaceKeys(parsed.workspaceId, {
-        [accountType === 'LINKEDIN' ? 'linkedin_unipile_account_id' : 'whatsapp_unipile_account_id']:
-          accountId,
-      });
+      this.logger.warn(
+        `Unipile account connected without workspaceMemberId in hosted name; cannot map per-member. workspaceId=${parsed.workspaceId} accountType=${accountType}. Use hosted auth name "memberId|workspaceId". Workspace-wide Unipile keys are deprecated.`,
+      );
     }
   }
 

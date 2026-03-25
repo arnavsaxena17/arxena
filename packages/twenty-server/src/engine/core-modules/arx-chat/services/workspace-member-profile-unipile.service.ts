@@ -21,13 +21,13 @@ export class WorkspaceMemberProfileUnipileService {
   ) {}
 
   /**
-   * Get Unipile account ID for a workspace member.
-   * Step 1: If workspaceMemberId provided, check workspaceMemberProfile for linkedinUnipileAccountId / whatsappUnipileAccountId
-   * Step 2 (fallback): If profile has no account or workspaceMemberId is null, return core.workspace.linkedin_unipile_account_id / whatsapp_unipile_account_id
+   * Get Unipile account ID for a workspace member from workspaceMemberProfile only.
+   * Workspace-wide whatsapp_unipile_account_id / linkedin_unipile_account_id keys are deprecated
+   * (multiple members may each have their own Unipile account).
    */
   async getWorkspaceMemberUnipileAccountId(
     workspaceMemberId: string | null,
-    workspaceId: string,
+    _workspaceId: string,
     authToken: string,
     type: UnipileAccountType,
   ): Promise<string | null> {
@@ -35,31 +35,22 @@ export class WorkspaceMemberProfileUnipileService {
       type === 'linkedin' ? 'linkedinUnipileAccountId' : 'whatsappUnipileAccountId';
 
     try {
-      if (workspaceMemberId) {
-        const response = await this.staticGraphQLService.executeGraphQL(
-          findWorkspaceMemberProfiles,
-          { filter: { workspaceMemberId: { eq: workspaceMemberId } }, limit: 1 },
-          authToken,
-        );
-
-        const profile = response?.data?.data?.workspaceMemberProfiles?.edges?.[0]
-          ?.node;
-        const profileAccountId = profile?.[fieldName];
-
-        if (profileAccountId && String(profileAccountId).trim()) {
-          return String(profileAccountId).trim();
-        }
+      if (!workspaceMemberId) {
+        return null;
       }
 
-      const workspaceKey =
-        type === 'linkedin' ? 'linkedin_unipile_account_id' : 'whatsapp_unipile_account_id';
-      const workspaceAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
-        workspaceId,
-        workspaceKey,
+      const response = await this.staticGraphQLService.executeGraphQL(
+        findWorkspaceMemberProfiles,
+        { filter: { workspaceMemberId: { eq: workspaceMemberId } }, limit: 1 },
+        authToken,
       );
 
-      if (workspaceAccountId && String(workspaceAccountId).trim()) {
-        return String(workspaceAccountId).trim();
+      const profile = response?.data?.data?.workspaceMemberProfiles?.edges?.[0]
+        ?.node;
+      const profileAccountId = profile?.[fieldName];
+
+      if (profileAccountId && String(profileAccountId).trim()) {
+        return String(profileAccountId).trim();
       }
 
       return null;
@@ -68,12 +59,8 @@ export class WorkspaceMemberProfileUnipileService {
         `Failed to get ${fieldName} for workspace member ${workspaceMemberId}:`,
         error,
       );
-      const workspaceKey =
-        type === 'linkedin' ? 'linkedin_unipile_account_id' : 'whatsapp_unipile_account_id';
-      return this.workspaceQueryService.getWorkspaceApiKey(
-        workspaceId,
-        workspaceKey,
-      );
+
+      return null;
     }
   }
 
@@ -138,6 +125,22 @@ export class WorkspaceMemberProfileUnipileService {
         authToken,
       );
 
+      try {
+        const workspaceId =
+          await this.workspaceQueryService.getWorkspaceIdFromToken(authToken);
+        await this.workspaceQueryService.upsertUnipileMemberAccountMapping(
+          workspaceMemberId,
+          workspaceId,
+          accountId,
+          type === 'linkedin' ? 'LINKEDIN' : 'WHATSAPP',
+        );
+      } catch (mappingError) {
+        this.logger.warn(
+          `Failed to sync metadata.unipile_accounts for ${workspaceMemberId}:`,
+          mappingError,
+        );
+      }
+
       this.logger.log(
         `Updated ${fieldName} for workspace member ${workspaceMemberId}`,
       );
@@ -182,6 +185,11 @@ export class WorkspaceMemberProfileUnipileService {
           input: { [fieldName]: null },
         },
         authToken,
+      );
+
+      await this.workspaceQueryService.deleteUnipileMemberAccountMapping(
+        workspaceMemberId,
+        type === 'linkedin' ? 'LINKEDIN' : 'WHATSAPP',
       );
     } catch (error) {
       this.logger.warn(

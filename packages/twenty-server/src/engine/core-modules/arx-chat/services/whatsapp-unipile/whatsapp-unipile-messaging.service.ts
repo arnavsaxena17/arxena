@@ -80,32 +80,25 @@ export class WhatsappUnipileMessagingService {
   }
 
   /**
-   * Prefer whatsappUnipileAccountId on the workspace member profile (JWT → workspace member id);
-   * falls back to workspace key whatsapp_unipile_account_id when the Unipile service is not wired
-   * or profile has no account id (see WorkspaceMemberProfileUnipileService).
+   * Resolve WhatsApp Unipile account id from workspace member profile (JWT → workspace member id).
+   * Workspace-wide whatsapp_unipile_account_id key is deprecated.
    */
   private async resolveWhatsappUnipileAccountId(
     apiToken: string,
   ): Promise<string | null> {
+    if (!this.workspaceMemberProfileUnipileService) {
+      return null;
+    }
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    if (this.workspaceMemberProfileUnipileService) {
-      const workspaceMemberId =
-        await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
-          apiToken,
-        );
-      return this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
-        workspaceMemberId,
-        workspaceId,
-        apiToken,
-        'whatsapp',
-      );
-    }
-    const fromWorkspace = await this.workspaceQueryService.getWorkspaceApiKey(
+    const workspaceMemberId =
+      await this.workspaceQueryService.getWorkspaceMemberIdFromToken(apiToken);
+    return this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+      workspaceMemberId,
       workspaceId,
-      'whatsapp_unipile_account_id',
+      apiToken,
+      'whatsapp',
     );
-    return fromWorkspace?.trim() ? fromWorkspace.trim() : null;
   }
 
   /**

@@ -174,13 +174,11 @@ export class UnipileAccountPoolService {
     accountId: string,
     accountType: UnipileAccountType = 'LINKEDIN',
   ): Promise<void> {
-    await this.metadataDataSource.query(
-      `INSERT INTO metadata.unipile_accounts 
-       (workspace_member_id, workspace_id, account_id, account_type, status, last_active, created_at)
-       VALUES ($1, $2, $3, $4, 'OK', NOW(), NOW())
-       ON CONFLICT (workspace_member_id, account_type) 
-       DO UPDATE SET account_id = $3, workspace_id = $2, last_active = NOW(), status = 'OK'`,
-      [workspaceMemberId, workspaceId, accountId, accountType],
+    await this.workspaceQueryService.upsertUnipileMemberAccountMapping(
+      workspaceMemberId,
+      workspaceId,
+      accountId,
+      accountType,
     );
   }
 
