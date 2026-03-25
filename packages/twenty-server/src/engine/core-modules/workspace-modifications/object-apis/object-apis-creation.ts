@@ -1,12 +1,12 @@
 import axios from 'axios';
 import {
-    createViewFieldMutation,
-    findManyViewsQuery,
-    FindManyWorkspaceMembers,
-    graphqlQueryToGetCurrentUser,
-    graphqlToCreateOnePrompt,
-    graphQLToCreateOneWorkspaceMemberProfile,
-    queryObjectMetadataItems,
+  createViewFieldMutation,
+  findManyViewsQuery,
+  FindManyWorkspaceMembers,
+  graphqlQueryToGetCurrentUser,
+  graphqlToCreateOnePrompt,
+  graphQLToCreateOneWorkspaceMemberProfile,
+  queryObjectMetadataItems,
 } from 'twenty-shared';
 
 // import { getCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
@@ -32,8 +32,8 @@ import { createObjectMetadataItems } from './services/object-service';
 import { createRelations } from './services/relation-service';
 import { createVideoInterviewModels } from './services/videoInterviewModelService';
 import {
-    createVideoInterviewTemplates,
-    getJobIds,
+  createVideoInterviewTemplates,
+  getJobIds,
 } from './services/videoInterviewTemplateService';
 import { executeQuery } from './utils/graphqlClient';
 
@@ -625,16 +625,13 @@ export class CreateMetaDataStructure {
           console.log('Error creating Arx Enrichments:', error);
         }
       }
+      await this.createPrompts(apiToken);
 
       if (shouldCreateApiKeys) {
         try {
           const apiKeyService = new ApiKeyService();
           const workspaceMemberId =
             await this.createAndUpdateWorkspaceMember(apiToken, origin);
-
-          await this.createPrompts(apiToken);
-
-  
           const apiKey = await apiKeyService.createApiKey(apiToken, origin);
 
           console.log('API key created successfully:', apiKey);

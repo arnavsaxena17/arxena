@@ -241,76 +241,6 @@ export const graphqlToFindManyCompanies = `query FindManyCompanies($filter: Comp
   }
 }`;
 
-// const graphqlToFindManyJobsFull = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
-//   jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
-//     edges {
-//       node {
-//         __typename
-//         updatedAt
-//         isActive
-//         arxenaSiteId
-//         chatFlowOrder
-//         engagementProcessingDelayMinutes
-//         jobCode
-//         searchName
-//         reportsTo
-//         reportees
-//         yearsOfExperience
-//         salaryBracket
-//         companyDetails
-//         pathPosition
-//         talentConsiderations
-//         specificCriteria
-//         companyId
-//         position
-//         description
-//         name
-//         jobLocation
-//         id
-//         recruiterId
-//         createdAt
-//         jobCode
-//         jobLocation
-//         assistantThreads {
-//           edges{
-//             node{
-//               id
-//               name
-//               messages
-//               assistantParameters
-//               enrichmentConfigs
-//               columnFilters
-//               assistantSearchStrategy
-//               isActive
-//               jobId
-//               recruiterId
-//             }
-//           }
-//         }
-//         attachments{
-//             edges{
-//                 node{
-//                     id
-//                     name
-//                 }
-//             }
-//         }
-
-//       }
-//       cursor
-//       __typename
-//     }
-//     pageInfo {
-//       hasNextPage
-//       startCursor
-//       endCursor
-//       __typename
-//     }
-//     totalCount
-//     __typename
-//   }
-// }`;
-
 const graphqlToFindManyJobsFull = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
   jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {
@@ -341,6 +271,22 @@ const graphqlToFindManyJobsFull = `query FindManyJobs($filter: JobFilterInput, $
         createdAt
         jobCode
         jobLocation
+        assistantThreads {
+          edges{
+            node{
+              id
+              name
+              messages
+              assistantParameters
+              enrichmentConfigs
+              columnFilters
+              assistantSearchStrategy
+              isActive
+              jobId
+              recruiterId
+            }
+          }
+        }
         attachments{
             edges{
                 node{
@@ -429,87 +375,7 @@ export function getGraphqlToFindManyJobs(isOrgChartEnabled: boolean): string {
 export const graphqlToFindManyJobs = isOrgChartEnabledEnv
   ? graphqlToFindManyJobsOrgChart
   : graphqlToFindManyJobsFull;
-
-//   const graphqlToFindManyJobsWithPromptsFull = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
-//   jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
-//     edges {
-//       node {
-//         __typename
-//         updatedAt
-//         isActive
-//         arxenaSiteId
-//         chatFlowOrder
-//         engagementProcessingDelayMinutes
-//         jobCode
-//         searchName
-//         reportsTo
-//         reportees
-//         yearsOfExperience
-//         salaryBracket
-//         companyDetails
-//         pathPosition
-//         talentConsiderations
-//         specificCriteria
-//         companyId
-//         position
-//         description
-//         name
-//         jobLocation
-//         id
-//         recruiterId
-//         createdAt
-//         prompt{
-//             edges{
-//                 node{
-//                     id
-//                     name
-//                     prompt
-//                 }
-//             }
-//         }
-//         assistantThreads {
-//           edges{
-//             node{
-//               id
-//               name
-//               messages
-//               assistantParameters
-//               enrichmentConfigs
-//               columnFilters
-//               assistantSearchStrategy
-//               isActive
-//               jobId
-//               recruiterId
-//             }
-//           }
-//         }
-//         name
-//         jobCode
-//         jobLocation
-//         attachments{
-//             edges{
-//                 node{
-//                     id
-//                     name
-//                 }
-//             }
-//         }
-
-//       }
-//       cursor
-//       __typename
-//     }
-//     pageInfo {
-//       hasNextPage
-//       startCursor
-//       endCursor
-//       __typename
-//     }
-//     totalCount
-//     __typename
-//   }
-// }`;
-  const graphqlToFindManyJobsWithPromptsFull = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
+const graphqlToFindManyJobsWithPromptsFull = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
   jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {
       node {
@@ -545,6 +411,22 @@ export const graphqlToFindManyJobs = isOrgChartEnabledEnv
                     prompt
                 }
             }
+        }
+        assistantThreads {
+          edges{
+            node{
+              id
+              name
+              messages
+              assistantParameters
+              enrichmentConfigs
+              columnFilters
+              assistantSearchStrategy
+              isActive
+              jobId
+              recruiterId
+            }
+          }
         }
         name
         jobCode
@@ -1807,143 +1689,6 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
 
 
 
-// export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
-//   people(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
-//     pageInfo {
-//       hasNextPage
-//       startCursor
-//       endCursor
-//       __typename
-//     }
-//     edges {
-//       cursor
-//       node {
-//         candidates {
-//             edges{
-//                 node{
-//                     id
-//                     name
-//                     source
-//                     campaign
-//                     people {
-//                       id
-//                       name {
-//                         firstName
-//                         lastName
-//                       }
-//                     }
-//                     candidateFieldValues{
-//                       edges{
-//                         node{
-//                             id
-//                             name
-//                             candidateFields{
-//                                 name
-//                                 id
-//                             }
-//                         }
-//                       }
-//                     }
-
-//                     whatsappProvider
-//                     lastEngagementChatControl
-//                     candConversationStatus
-//                     jobs {
-//                        name
-//                        id
-//                        isActive
-//                        jobLocation
-//                        createdAt
-//                        updatedAt
-//                        companyDetails
-//                        jobCode
-//                        recruiterId
-//                        company{
-//                         name
-//                         id
-//                         domainName{
-//                           primaryLinkUrl
-//                         }
-//                         descriptionOneliner
-//                       }
-//                     }
-//                     engagementStatus
-//                     messagingChannel
-//                     whatsappProvider
-//                     startVideoInterviewChat
-//                     startChatCompleted
-//                     startMeetingSchedulingChat
-//                     chatCount
-//                     startMeetingSchedulingChatCompleted
-//                     startVideoInterviewChat
-//                     startVideoInterviewChatCompleted
-//                     remarks
-//                     phoneNumber{
-//                       primaryPhoneNumber
-//                     }
-//                     startChat
-//                     status
-//                     updatedAt
-//                     stopChat
-//                     candidateReminders{
-//                       edges{
-//                           node{
-//                               remindCandidateAtTimestamp
-//                               remindCandidateDuration
-//                               isReminderActive
-//                               name
-//                           }
-//                       }
-//                     }
-//                     whatsappMessages {
-//                       edges {
-//                         node {
-//                           recruiterId
-//                           message
-//                           candidateId
-//                           jobsId
-//                           position
-//                           phoneTo
-//                           messageObj
-//                           updatedAt
-//                           createdAt
-//                           lastEngagementChatControl
-//                           id
-//                           name
-//                           phoneFrom
-//                           whatsappDeliveryStatus
-//                         }
-//                       }
-//                     }
-//                 }
-//             }
-//         }
-//         name {
-//           firstName
-//           lastName
-//         }
-//         linkedinLink{
-//           primaryLinkLabel
-//           primaryLinkUrl
-//           secondaryLinks
-//         }
-//         phones{
-//           primaryPhoneNumber
-//         }
-//         emails{
-//             primaryEmail
-//         }
-//         salary
-//         city
-//         jobTitle
-//         id
-//         uniqueStringKey
-//         position 
-//       }
-//     }
-//   }
-// }`;
-
 export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
   people(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     pageInfo {
@@ -2022,7 +1767,6 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                     status
                     updatedAt
                     stopChat
-
                     whatsappMessages {
                       edges {
                         node {

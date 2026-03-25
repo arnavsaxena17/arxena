@@ -323,7 +323,6 @@ const allObjects = [
 ];
 
 const OBJECTS_TO_EXCLUDE = [
-  'prompt',
   'videoInterview',
   'videoInterviewTemplate',
   'videoInterviewModel',
@@ -339,7 +338,6 @@ const OBJECTS_TO_EXCLUDE = [
   'textMessage',
   'shortlist',
   'recruiterInterview',
-  'assistantThread',
   'screening',
   'offer'
 ];
