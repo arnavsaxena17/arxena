@@ -1807,6 +1807,143 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
 
 
 
+// export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
+//   people(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+//     pageInfo {
+//       hasNextPage
+//       startCursor
+//       endCursor
+//       __typename
+//     }
+//     edges {
+//       cursor
+//       node {
+//         candidates {
+//             edges{
+//                 node{
+//                     id
+//                     name
+//                     source
+//                     campaign
+//                     people {
+//                       id
+//                       name {
+//                         firstName
+//                         lastName
+//                       }
+//                     }
+//                     candidateFieldValues{
+//                       edges{
+//                         node{
+//                             id
+//                             name
+//                             candidateFields{
+//                                 name
+//                                 id
+//                             }
+//                         }
+//                       }
+//                     }
+
+//                     whatsappProvider
+//                     lastEngagementChatControl
+//                     candConversationStatus
+//                     jobs {
+//                        name
+//                        id
+//                        isActive
+//                        jobLocation
+//                        createdAt
+//                        updatedAt
+//                        companyDetails
+//                        jobCode
+//                        recruiterId
+//                        company{
+//                         name
+//                         id
+//                         domainName{
+//                           primaryLinkUrl
+//                         }
+//                         descriptionOneliner
+//                       }
+//                     }
+//                     engagementStatus
+//                     messagingChannel
+//                     whatsappProvider
+//                     startVideoInterviewChat
+//                     startChatCompleted
+//                     startMeetingSchedulingChat
+//                     chatCount
+//                     startMeetingSchedulingChatCompleted
+//                     startVideoInterviewChat
+//                     startVideoInterviewChatCompleted
+//                     remarks
+//                     phoneNumber{
+//                       primaryPhoneNumber
+//                     }
+//                     startChat
+//                     status
+//                     updatedAt
+//                     stopChat
+//                     candidateReminders{
+//                       edges{
+//                           node{
+//                               remindCandidateAtTimestamp
+//                               remindCandidateDuration
+//                               isReminderActive
+//                               name
+//                           }
+//                       }
+//                     }
+//                     whatsappMessages {
+//                       edges {
+//                         node {
+//                           recruiterId
+//                           message
+//                           candidateId
+//                           jobsId
+//                           position
+//                           phoneTo
+//                           messageObj
+//                           updatedAt
+//                           createdAt
+//                           lastEngagementChatControl
+//                           id
+//                           name
+//                           phoneFrom
+//                           whatsappDeliveryStatus
+//                         }
+//                       }
+//                     }
+//                 }
+//             }
+//         }
+//         name {
+//           firstName
+//           lastName
+//         }
+//         linkedinLink{
+//           primaryLinkLabel
+//           primaryLinkUrl
+//           secondaryLinks
+//         }
+//         phones{
+//           primaryPhoneNumber
+//         }
+//         emails{
+//             primaryEmail
+//         }
+//         salary
+//         city
+//         jobTitle
+//         id
+//         uniqueStringKey
+//         position 
+//       }
+//     }
+//   }
+// }`;
+
 export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
   people(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     pageInfo {
@@ -1885,16 +2022,7 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                     status
                     updatedAt
                     stopChat
-                    candidateReminders{
-                      edges{
-                          node{
-                              remindCandidateAtTimestamp
-                              remindCandidateDuration
-                              isReminderActive
-                              name
-                          }
-                      }
-                    }
+
                     whatsappMessages {
                       edges {
                         node {
