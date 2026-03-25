@@ -300,34 +300,26 @@ export class UnipileAccountPoolService {
     const fieldName =
       type === 'linkedin' ? 'linkedinUnipileAccountId' : 'whatsappUnipileAccountId';
     const schema = this.workspaceQueryService.getDataSourceSchema(workspaceId);
-    const profileTables = [
-      '_workspaceMemberProfile',
-      'workspaceMemberProfile',
-    ] as const;
+    const profileTable =
+      await this.workspaceQueryService.resolveWorkspaceMemberProfileTableName(
+        schema,
+      );
 
-    for (const table of profileTables) {
-      const fkColumns =
-        await this.workspaceQueryService.getWorkspaceMemberProfileToWorkspaceMemberFkColumns(
-          workspaceId,
-          schema,
-          table,
-        );
-      for (const fkCol of fkColumns) {
-        try {
-          await this.workspaceQueryService.executeRawQuery(
-            `UPDATE ${schema}."${table}" SET "${fieldName}" = NULL WHERE "${fkCol}" = $1`,
-            [workspaceMemberId],
-            workspaceId,
-          );
-          return;
-        } catch {
-          // Table or FK column name mismatch; try next combination.
-        }
-      }
+    if (!profileTable) {
+      return;
     }
 
-    this.logger.warn(
-      `Failed to clear ${fieldName} for workspace member ${workspaceMemberId}: no matching workspaceMemberProfile table/FK column`,
-    );
+    try {
+      await this.workspaceQueryService.executeRawQuery(
+        `UPDATE ${schema}."${profileTable}" SET "${fieldName}" = NULL WHERE "workspaceMemberId" = $1`,
+        [workspaceMemberId],
+        workspaceId,
+      );
+    } catch (err) {
+      this.logger.warn(
+        `Failed to clear ${fieldName} for workspace member ${workspaceMemberId}:`,
+        err instanceof Error ? err.message : err,
+      );
+    }
   }
 }

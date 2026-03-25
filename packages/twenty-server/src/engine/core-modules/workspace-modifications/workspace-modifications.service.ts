@@ -19,22 +19,7 @@ import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { CreateMetaDataStructure } from './object-apis/object-apis-creation';
 
-type UnipileMemberMappingAccountType = 'WHATSAPP' | 'LINKEDIN';
-
-const WORKSPACE_MEMBER_PROFILE_TABLE_CANDIDATES = [
-  '_workspaceMemberProfile',
-  'workspaceMemberProfile',
-] as const;
-
-/** Literal fallbacks when pg_catalog has no FK metadata (drifted / legacy schemas). */
-const WORKSPACE_MEMBER_PROFILE_FK_COLUMN_CANDIDATES = [
-  'workspaceMemberId',
-  '_workspaceMemberId',
-  'memberId',
-  '_memberId',
-  'recruiterId',
-  '_recruiterId',
-] as const;
+export type UnipileAccountMappingType = 'LINKEDIN' | 'WHATSAPP';
 
 @Injectable()
 export class WorkspaceQueryService {
@@ -135,248 +120,144 @@ export class WorkspaceQueryService {
   }
 
   /**
-   * Idempotent: speeds up webhook resolution (account_id → workspace).
-   * Migration 1740800000000 also creates this index for deploy-time consistency.
+   * Physical table for workspaceMemberProfile: Twenty uses `_workspaceMemberProfile` in tenant schemas;
+   * some paths historically used `workspaceMemberProfile` without the prefix.
    */
-  private async ensureUnipileAccountsWebhookLookupIndex(): Promise<void> {
-    await this.metadataDataSource.query(`
-      CREATE INDEX IF NOT EXISTS idx_unipile_accounts_account_id_type
-      ON metadata.unipile_accounts (account_id, account_type)
-    `);
-  }
-
-  /**
-   * metadata.unipile_accounts: one row per (workspace_member_id, account_type), keyed by Unipile account_id.
-   */
-  async upsertUnipileMemberAccountMapping(
-    workspaceMemberId: string,
-    workspaceId: string,
-    accountId: string,
-    accountType: UnipileMemberMappingAccountType,
-  ): Promise<void> {
-    await this.ensureUnipileAccountsWebhookLookupIndex();
-    await this.metadataDataSource.query(
-      `INSERT INTO metadata.unipile_accounts
-       (workspace_member_id, workspace_id, account_id, account_type, status, last_active, created_at)
-       VALUES ($1, $2, $3, $4, 'OK', NOW(), NOW())
-       ON CONFLICT (workspace_member_id, account_type)
-       DO UPDATE SET account_id = $3, workspace_id = $2, last_active = NOW(), status = 'OK'`,
-      [workspaceMemberId, workspaceId, accountId, accountType],
-    );
-  }
-
-  async deleteUnipileMemberAccountMapping(
-    workspaceMemberId: string,
-    accountType: UnipileMemberMappingAccountType,
-  ): Promise<void> {
-    await this.metadataDataSource.query(
-      `DELETE FROM metadata.unipile_accounts WHERE workspace_member_id = $1 AND account_type = $2`,
-      [workspaceMemberId, accountType],
-    );
-  }
-
-  /**
-   * All Unipile account ids linked to members of this workspace (for filtering Unipile API lists).
-   */
-  async getUnipileAccountIdsForWorkspace(
-    workspaceId: string,
-    accountType: UnipileMemberMappingAccountType,
-  ): Promise<string[]> {
-    await this.ensureUnipileAccountsWebhookLookupIndex();
-    const rows = await this.metadataDataSource.query(
-      `SELECT account_id FROM metadata.unipile_accounts
-       WHERE workspace_id = $1 AND account_type = $2 AND account_id IS NOT NULL AND TRIM(account_id) <> ''`,
-      [workspaceId, accountType],
-    );
-    if (!Array.isArray(rows)) {
-      return [];
+  async resolveWorkspaceMemberProfileTableName(
+    schema: string,
+  ): Promise<'_workspaceMemberProfile' | 'workspaceMemberProfile' | null> {
+    if (await this.checkIfTableExists(schema, '_workspaceMemberProfile')) {
+      return '_workspaceMemberProfile';
+    }
+    if (await this.checkIfTableExists(schema, 'workspaceMemberProfile')) {
+      return 'workspaceMemberProfile';
     }
 
-    return rows
-      .map((row: { account_id: string }) => String(row.account_id ?? '').trim())
-      .filter(Boolean);
+    return null;
   }
 
   /**
-   * One-off / maintenance: copy linkedinUnipileAccountId / whatsappUnipileAccountId from tenant
-   * workspaceMemberProfile into metadata.unipile_accounts for webhook and API filtering.
+   * Indexed mapping (metadata.unipile_accounts), maintained when a member links Unipile in profile.
    */
-  async backfillUnipileMemberAccountMappingsFromTenantProfiles(): Promise<{
-    workspacesScanned: number;
-    mappingsWritten: number;
-  }> {
-    await this.ensureUnipileAccountsWebhookLookupIndex();
-    let workspacesScanned = 0;
-    let mappingsWritten = 0;
+  private async findWorkspaceIdFromUnipileMetadataMapping(
+    accountId: string,
+    accountType: UnipileAccountMappingType,
+  ): Promise<string | null> {
+    try {
+      const rows = await this.metadataDataSource.query(
+        `SELECT workspace_id FROM metadata.unipile_accounts
+         WHERE account_id = $1 AND account_type = $2
+         LIMIT 1`,
+        [accountId, accountType],
+      );
 
+      return rows?.[0]?.workspace_id ?? null;
+    } catch (error) {
+      console.error(
+        'findWorkspaceIdFromUnipileMetadataMapping: query failed',
+        accountId,
+        accountType,
+        error,
+      );
+
+      return null;
+    }
+  }
+
+  /**
+   * Fallback: scan each tenant schema's workspaceMemberProfile for the Unipile account column.
+   */
+  private async findWorkspaceIdFromTenantMemberProfilesByUnipileColumn(
+    accountId: string,
+    columnName: 'whatsappUnipileAccountId' | 'linkedinUnipileAccountId',
+  ): Promise<string | null> {
     const workspaceIds = await this.getWorkspaces();
+    if (workspaceIds.length === 0) {
+      return null;
+    }
+
     const dataSources = await this.dataSourceRepository.find({
-      where: { workspaceId: In(workspaceIds) },
+      where: {
+        workspaceId: In(workspaceIds),
+      },
     });
     const workspaceIdsWithDataSources = new Set(
-      dataSources.map((dataSource) => dataSource.workspaceId),
+      dataSources.map((ds) => ds.workspaceId),
     );
 
-    for (const workspaceId of workspaceIdsWithDataSources) {
-      workspacesScanned++;
-      const schema = this.getDataSourceSchema(workspaceId);
-
-      for (const tableName of WORKSPACE_MEMBER_PROFILE_TABLE_CANDIDATES) {
-        const tableExists = await this.checkIfTableExists(schema, tableName);
-        if (!tableExists) {
-          continue;
-        }
-
-        type ProfileRow = {
-          workspaceMemberId: string;
-          linkedinUnipileAccountId: string | null;
-          whatsappUnipileAccountId: string | null;
-        };
-
-        const fkColumns =
-          await this.getWorkspaceMemberProfileToWorkspaceMemberFkColumns(
-            workspaceId,
-            schema,
-            tableName,
-          );
-
-        let rows: ProfileRow[] | null = null;
-        for (const fkCol of fkColumns) {
-          try {
-            rows = await this.executeRawQuery(
-              `SELECT "${fkCol}" AS "workspaceMemberId", "linkedinUnipileAccountId", "whatsappUnipileAccountId"
-               FROM ${schema}."${tableName}"
-               WHERE ("linkedinUnipileAccountId" IS NOT NULL AND TRIM("linkedinUnipileAccountId") <> '')
-                  OR ("whatsappUnipileAccountId" IS NOT NULL AND TRIM("whatsappUnipileAccountId") <> '')`,
-              [],
-              workspaceId,
-            );
-            if (Array.isArray(rows)) {
-              break;
-            }
-          } catch {
-            rows = null;
-          }
-        }
-
-        if (!rows || !Array.isArray(rows)) {
-          continue;
-        }
-
-        for (const row of rows) {
-          const memberId = row.workspaceMemberId;
-          if (!memberId) {
-            continue;
-          }
-          const li = row.linkedinUnipileAccountId?.trim();
-          const wa = row.whatsappUnipileAccountId?.trim();
-          if (li) {
-            await this.upsertUnipileMemberAccountMapping(
-              memberId,
-              workspaceId,
-              li,
-              'LINKEDIN',
-            );
-            mappingsWritten++;
-          }
-          if (wa) {
-            await this.upsertUnipileMemberAccountMapping(
-              memberId,
-              workspaceId,
-              wa,
-              'WHATSAPP',
-            );
-            mappingsWritten++;
-          }
-        }
-
-        break;
+    for (const workspaceId of workspaceIds) {
+      if (!workspaceIdsWithDataSources.has(workspaceId)) {
+        continue;
       }
-    }
 
-    return { workspacesScanned, mappingsWritten };
-  }
-
-  private async findWorkspaceIdFromUnipileMemberAccountMapping(
-    accountId: string,
-    accountType: UnipileMemberMappingAccountType,
-  ): Promise<string | null> {
-    await this.ensureUnipileAccountsWebhookLookupIndex();
-    const result = await this.metadataDataSource.query(
-      `SELECT workspace_id FROM metadata.unipile_accounts
-       WHERE account_id = $1 AND account_type = $2 LIMIT 1`,
-      [accountId, accountType],
-    );
-    const workspaceId = result?.[0]?.workspace_id;
-
-    return workspaceId ? String(workspaceId) : null;
-  }
-
-  /**
-   * Fallback when metadata.unipile_accounts is empty or stale: scan each tenant schema's workspaceMemberProfile.
-   */
-  private async findWorkspaceIdByScanningWorkspaceMemberProfiles(
-    accountId: string,
-    profileColumn: 'whatsappUnipileAccountId' | 'linkedinUnipileAccountId',
-  ): Promise<string | null> {
-    const workspaceIds = await this.getWorkspaces();
-    const dataSources = await this.dataSourceRepository.find({
-      where: { workspaceId: In(workspaceIds) },
-    });
-    const workspaceIdsWithDataSources = new Set(
-      dataSources.map((dataSource) => dataSource.workspaceId),
-    );
-
-    for (const workspaceId of workspaceIdsWithDataSources) {
       const schema = this.getDataSourceSchema(workspaceId);
-      for (const tableName of WORKSPACE_MEMBER_PROFILE_TABLE_CANDIDATES) {
-        const tableExists = await this.checkIfTableExists(schema, tableName);
-        if (!tableExists) {
-          continue;
+      const profileTable = await this.resolveWorkspaceMemberProfileTableName(
+        schema,
+      );
+
+      if (!profileTable) {
+        continue;
+      }
+
+      const columnExists = await this.checkIfColumnExists(
+        schema,
+        profileTable,
+        columnName,
+        { silent: true },
+      );
+
+      if (!columnExists) {
+        continue;
+      }
+
+      try {
+        const rows = await this.workspaceDataSourceService.executeRawQuery(
+          `SELECT 1 FROM ${schema}."${profileTable}" WHERE "${columnName}" = $1 LIMIT 1`,
+          [accountId],
+          workspaceId,
+        );
+
+        if (rows?.length) {
+          return workspaceId;
         }
-        const fkColumns =
-          await this.getWorkspaceMemberProfileToWorkspaceMemberFkColumns(
-            workspaceId,
-            schema,
-            tableName,
-          );
-        for (const fkCol of fkColumns) {
-          try {
-            const rows = await this.executeRawQuery(
-              `SELECT 1 FROM ${schema}."${tableName}" WHERE "${profileColumn}" = $1 AND "${fkCol}" IS NOT NULL LIMIT 1`,
-              [accountId],
-              workspaceId,
-            );
-            if (Array.isArray(rows) && rows.length > 0) {
-              return workspaceId;
-            }
-          } catch {
-            // Wrong FK column name or missing Unipile columns for this workspace.
-          }
-        }
+      } catch (error) {
+        console.error(
+          `findWorkspaceIdFromTenantMemberProfilesByUnipileColumn: workspace ${workspaceId}`,
+          error,
+        );
       }
     }
 
     return null;
   }
 
-  private async findWorkspaceIdByUnipileAccountId(
+  async upsertUnipileMemberAccountMapping(
+    workspaceMemberId: string,
+    workspaceId: string,
     accountId: string,
-    mappingType: UnipileMemberMappingAccountType,
-    profileColumn: 'whatsappUnipileAccountId' | 'linkedinUnipileAccountId',
-  ): Promise<string | null> {
-    const fromMapping =
-      await this.findWorkspaceIdFromUnipileMemberAccountMapping(
-        accountId,
-        mappingType,
-      );
-    if (fromMapping) {
-      return fromMapping;
-    }
+    accountType: UnipileAccountMappingType,
+  ): Promise<void> {
+    await this.metadataDataSource.query(
+      `INSERT INTO metadata.unipile_accounts
+        (workspace_member_id, workspace_id, account_id, account_type, last_active)
+       VALUES ($1, $2, $3, $4, NOW())
+       ON CONFLICT (workspace_member_id, account_type)
+       DO UPDATE SET
+         account_id = EXCLUDED.account_id,
+         workspace_id = EXCLUDED.workspace_id,
+         last_active = NOW()`,
+      [workspaceMemberId, workspaceId, accountId, accountType],
+    );
+  }
 
-    return this.findWorkspaceIdByScanningWorkspaceMemberProfiles(
-      accountId,
-      profileColumn,
+  async deleteUnipileMemberAccountMapping(
+    workspaceMemberId: string,
+    accountType: UnipileAccountMappingType,
+  ): Promise<void> {
+    await this.metadataDataSource.query(
+      `DELETE FROM metadata.unipile_accounts
+       WHERE workspace_member_id = $1 AND account_type = $2`,
+      [workspaceMemberId, accountType],
     );
   }
 
@@ -391,9 +272,17 @@ export class WorkspaceQueryService {
     }
 
     try {
-      return await this.findWorkspaceIdByUnipileAccountId(
+      const fromMapping = await this.findWorkspaceIdFromUnipileMetadataMapping(
         accountId,
         'WHATSAPP',
+      );
+
+      if (fromMapping) {
+        return fromMapping;
+      }
+
+      return await this.findWorkspaceIdFromTenantMemberProfilesByUnipileColumn(
+        accountId,
         'whatsappUnipileAccountId',
       );
     } catch (error) {
@@ -420,9 +309,17 @@ export class WorkspaceQueryService {
     }
 
     try {
-      return await this.findWorkspaceIdByUnipileAccountId(
+      const fromMapping = await this.findWorkspaceIdFromUnipileMetadataMapping(
         accountId,
         'LINKEDIN',
+      );
+
+      if (fromMapping) {
+        return fromMapping;
+      }
+
+      return await this.findWorkspaceIdFromTenantMemberProfilesByUnipileColumn(
+        accountId,
         'linkedinUnipileAccountId',
       );
     } catch (error) {
@@ -620,64 +517,6 @@ export class WorkspaceQueryService {
       );
       return false;
     }
-  }
-
-  /**
-   * Columns on tenant workspaceMemberProfile table that FK-reference workspaceMember (from pg_catalog),
-   * then known literal fallbacks. Use for raw SQL where join column name varies by workspace age / migrations.
-   */
-  async getWorkspaceMemberProfileToWorkspaceMemberFkColumns(
-    workspaceId: string,
-    schema: string,
-    tableName: string,
-  ): Promise<string[]> {
-    let fromCatalog: Record<string, unknown>[] | null = null;
-    try {
-      fromCatalog = await this.workspaceDataSourceService.executeRawQuery(
-        `SELECT DISTINCT a.attname::text AS "column_name"
-         FROM pg_constraint c
-         JOIN pg_class tbl ON tbl.oid = c.conrelid
-         JOIN pg_namespace ns ON ns.oid = tbl.relnamespace
-         JOIN pg_class ref ON ref.oid = c.confrelid
-         JOIN pg_namespace ref_ns ON ref_ns.oid = ref.relnamespace
-         JOIN LATERAL unnest(c.conkey) AS conkey_attnum(attnum) ON true
-         JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = conkey_attnum.attnum AND NOT a.attisdropped
-         WHERE c.contype = 'f'
-           AND ns.nspname = $1
-           AND tbl.relname = $2
-           AND ref_ns.nspname = $1
-           AND ref.relname IN ('_workspaceMember', 'workspaceMember')
-         ORDER BY 1`,
-        [schema, tableName],
-        workspaceId,
-      );
-    } catch {
-      fromCatalog = null;
-    }
-
-    const catalogNames: string[] = [];
-    if (Array.isArray(fromCatalog)) {
-      for (const row of fromCatalog) {
-        const name = row.column_name;
-        if (typeof name === 'string' && name.length > 0) {
-          catalogNames.push(name);
-        }
-      }
-    }
-
-    const merged: string[] = [];
-    const seen = new Set<string>();
-    for (const n of [
-      ...catalogNames,
-      ...WORKSPACE_MEMBER_PROFILE_FK_COLUMN_CANDIDATES,
-    ]) {
-      if (!seen.has(n)) {
-        seen.add(n);
-        merged.push(n);
-      }
-    }
-
-    return merged;
   }
 
   async executeRawQuery(

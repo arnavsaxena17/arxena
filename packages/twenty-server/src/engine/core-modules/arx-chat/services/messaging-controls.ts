@@ -347,9 +347,6 @@ export class MessagingControls {
         const response = await new LinkedinUnipileMessagingService(
           this.workspaceQueryService,
           this.staticGraphQLService,
-          undefined,
-          undefined,
-          this.workspaceMemberProfileUnipileService,
         ).sendLinkedinMessageVIAUnipileAPI(
           whatappUpdateMessageObj,
           candidate,
@@ -374,9 +371,6 @@ export class MessagingControls {
         const response = await new LinkedinUnipileMessagingService(
           this.workspaceQueryService,
           this.staticGraphQLService,
-          undefined,
-          undefined,
-          this.workspaceMemberProfileUnipileService,
         ).sendLinkedinMessageVIAUnipileAPI(
           whatappUpdateMessageObj,
           candidate,
@@ -400,9 +394,6 @@ export class MessagingControls {
         const response = await new LinkedinUnipileMessagingService(
           this.workspaceQueryService,
           this.staticGraphQLService,
-          undefined,
-          undefined,
-          this.workspaceMemberProfileUnipileService,
         ).sendLinkedinInMailVIAUnipileAPI(
           whatappUpdateMessageObj,
           candidate,
@@ -596,9 +587,6 @@ export class MessagingControls {
       await new LinkedinUnipileMessagingService(
         this.workspaceQueryService,
         this.staticGraphQLService,
-        undefined,
-        undefined,
-        this.workspaceMemberProfileUnipileService,
       ).sendLinkedinAttachmentMessage(
         attachmentMessage,
         candidate,
@@ -609,9 +597,6 @@ export class MessagingControls {
       await new LinkedinUnipileMessagingService(
         this.workspaceQueryService,
         this.staticGraphQLService,
-        undefined,
-        undefined,
-        this.workspaceMemberProfileUnipileService,
       ).sendLinkedinInMailAttachmentMessage(
         attachmentMessage,
         candidate,

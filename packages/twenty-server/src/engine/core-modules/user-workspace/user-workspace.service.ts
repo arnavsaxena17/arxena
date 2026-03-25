@@ -25,6 +25,7 @@ import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.
 import { WorkspaceEventEmitter } from 'src/engine/workspace-event-emitter/workspace-event-emitter';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import { assert } from 'src/utils/assert';
+import { WorkspaceMemberProfileProvisioningService } from 'src/engine/core-modules/user-workspace/workspace-member-profile-provisioning.service';
 
 export class UserWorkspaceService extends TypeOrmQueryService<UserWorkspace> {
   constructor(
@@ -40,6 +41,7 @@ export class UserWorkspaceService extends TypeOrmQueryService<UserWorkspace> {
     private readonly workspaceEventEmitter: WorkspaceEventEmitter,
     private readonly domainManagerService: DomainManagerService,
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly workspaceMemberProfileProvisioningService: WorkspaceMemberProfileProvisioningService,
   ) {
     super(userWorkspaceRepository);
   }
@@ -110,6 +112,11 @@ export class UserWorkspaceService extends TypeOrmQueryService<UserWorkspace> {
       ],
       workspaceId,
     });
+
+    await this.workspaceMemberProfileProvisioningService.ensureWorkspaceMemberProfileForNewMember(
+      workspaceId,
+      workspaceMember[0].id,
+    );
   }
 
   async addUserToWorkspace(user: User, workspace: Workspace) {

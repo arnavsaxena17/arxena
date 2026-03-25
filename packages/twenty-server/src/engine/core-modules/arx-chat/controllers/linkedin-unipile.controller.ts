@@ -466,21 +466,9 @@ export class LinkedinUnipileController {
       const workspaceKeys = await this.workspaceQueryService.getWorkspaceKeys(workspace.id);
       const linkedinUrl = workspaceKeys.linkedin_url;
       const linkedinUnipileAccountId = workspaceKeys.linkedin_unipile_account_id;
-      const memberLinkedinAccountIds =
-        await this.workspaceQueryService.getUnipileAccountIdsForWorkspace(
-          workspace.id,
-          'LINKEDIN',
-        );
-      const memberAccountIdSet = new Set(memberLinkedinAccountIds);
 
-      if (
-        !linkedinUrl &&
-        !linkedinUnipileAccountId &&
-        memberLinkedinAccountIds.length === 0
-      ) {
-        this.logger.warn(
-          `No linkedin_url, workspace linkedin_unipile_account_id, or member-linked accounts for workspace ${workspace.id}, skipping Unipile accounts call`,
-        );
+      if (!linkedinUrl && !linkedinUnipileAccountId) {
+        this.logger.warn(`No linkedin_url or linkedin_unipile_account_id for workspace ${workspace.id}, skipping Unipile accounts call`);
         return {
           success: true,
           accounts: [],
@@ -491,9 +479,7 @@ export class LinkedinUnipileController {
       const response = await this.makeUnipileRequest('/api/v1/accounts?provider=linkedin');
       this.logger.log('Getting getAllAccounts response');
 
-      this.logger.log(
-        `Filtering LinkedIn accounts for workspace ${workspace.id} with linkedin_url: ${linkedinUrl ?? 'none'}, linkedin_unipile_account_id: ${linkedinUnipileAccountId ?? 'none'}, member mapped ids: ${memberLinkedinAccountIds.length}`,
-      );
+      this.logger.log(`Filtering LinkedIn accounts for workspace ${workspace.id} with linkedin_url: ${linkedinUrl ?? 'none'}, linkedin_unipile_account_id: ${linkedinUnipileAccountId ?? 'none'}`);
       
       // Transform and filter the response to match our expected format
       const allAccounts = (response.items || []).map((item: any) => ({
@@ -509,12 +495,8 @@ export class LinkedinUnipileController {
         groups: item.groups || [],
       }));
       
-      // Include if: member-linked Unipile id, workspace key id, or linkedin_url match
+      // Include account if: (1) it matches workspace linkedin_url by publicIdentifier, or (2) it is the workspace's linkedin_unipile_account_id
       const accounts = allAccounts.filter((account: any) => {
-        if (memberAccountIdSet.has(account.id)) {
-          this.logger.log(`Account ${account.id} matches metadata.unipile_accounts (member-linked)`);
-          return true;
-        }
         if (linkedinUnipileAccountId && account.id === linkedinUnipileAccountId) {
           this.logger.log(`Account ${account.id} matches workspace linkedin_unipile_account_id`);
           return true;
@@ -542,11 +524,9 @@ export class LinkedinUnipileController {
         return matches;
       });
 
-      const fetchAndPushIfMissing = async (accountId: string, label: string) => {
-        if (accounts.some((a: any) => a.id === accountId)) {
-          return;
-        }
-        const single = await this.fetchAccountByIdIfExists(accountId);
+      // If workspace has linkedin_unipile_account_id but it's not in the list (e.g. newly connected or not in this page), fetch it by id
+      if (linkedinUnipileAccountId && !accounts.some((a: any) => a.id === linkedinUnipileAccountId)) {
+        const single = await this.fetchAccountByIdIfExists(linkedinUnipileAccountId);
         if (single) {
           const mapped = {
             id: single.id,
@@ -561,18 +541,8 @@ export class LinkedinUnipileController {
             groups: single.groups || [],
           };
           accounts.push(mapped);
-          this.logger.log(`Included ${label} account ${accountId} from single-account fetch`);
+          this.logger.log(`Included workspace linked account ${linkedinUnipileAccountId} from single-account fetch`);
         }
-      };
-
-      if (linkedinUnipileAccountId) {
-        await fetchAndPushIfMissing(
-          linkedinUnipileAccountId,
-          'workspace linked',
-        );
-      }
-      for (const mid of memberLinkedinAccountIds) {
-        await fetchAndPushIfMissing(mid, 'member-linked');
       }
       
       this.logger.log(`Filtered ${accounts.length} LinkedIn accounts from ${allAccounts.length} total accounts`);
@@ -731,7 +701,6 @@ export class LinkedinUnipileController {
         this.staticGraphQLService,
         this.unipileApiUrl,
         this.unipileAccessToken,
-        this.workspaceMemberProfileUnipileService,
       );
 
       const response = await messagingService.sendMessage(
@@ -765,7 +734,6 @@ export class LinkedinUnipileController {
         this.staticGraphQLService,
         this.unipileApiUrl,
         this.unipileAccessToken,
-        this.workspaceMemberProfileUnipileService,
       );
 
       const response = await messagingService.sendInvitation(

@@ -11,7 +11,6 @@ import {
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -29,42 +28,9 @@ export class LinkedinUnipileMessagingService {
     private readonly staticGraphQLService: StaticGraphQLService,
     baseUrl?: string,
     accessToken?: string,
-    private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
   ) {
     this.baseUrl = baseUrl || process.env.UNIPILE_API_URL || '';
     this.accessToken = accessToken || process.env.UNIPILE_ACCESS_TOKEN || '';
-  }
-
-  /**
-   * Prefer workspaceMemberProfile linkedinUnipileAccountId; legacy fallback workspace key linkedin_unipile_account_id.
-   */
-  private async resolveLinkedinUnipileAccountId(
-    apiToken: string,
-  ): Promise<string | null> {
-    const workspaceId =
-      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    if (this.workspaceMemberProfileUnipileService) {
-      const workspaceMemberId =
-        await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
-          apiToken,
-        );
-      const fromProfile =
-        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
-          workspaceMemberId,
-          workspaceId,
-          apiToken,
-          'linkedin',
-        );
-      if (fromProfile?.trim()) {
-        return fromProfile.trim();
-      }
-    }
-    const fromKey = await this.workspaceQueryService.getWorkspaceApiKey(
-      workspaceId,
-      'linkedin_unipile_account_id',
-    );
-
-    return fromKey?.trim() ? fromKey.trim() : null;
   }
 
 
@@ -470,11 +436,15 @@ export class LinkedinUnipileMessagingService {
         return { status: 'failed', message: 'Candidate node not found' };
       }
 
-      const linkedinAccountId =
-        await this.resolveLinkedinUnipileAccountId(apiToken);
+      // Get LinkedIn account ID from workspace settings
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const linkedinAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
+        workspaceId,
+        'linkedin_unipile_account_id',
+      );
 
       if (!linkedinAccountId) {
-        console.log('LinkedIn Unipile account ID not found for member or workspace');
+        console.log('LinkedIn account ID not found in workspace settings');
         return { status: 'failed', message: 'LinkedIn account not configured' };
       }
 
@@ -568,11 +538,15 @@ export class LinkedinUnipileMessagingService {
         return { status: 'failed', message: 'Candidate node not found' };
       }
 
-      const linkedinAccountId =
-        await this.resolveLinkedinUnipileAccountId(apiToken);
+      // Get LinkedIn account ID from workspace settings
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const linkedinAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
+        workspaceId,
+        'linkedin_unipile_account_id',
+      );
 
       if (!linkedinAccountId) {
-        console.log('LinkedIn Unipile account ID not found for member or workspace');
+        console.log('LinkedIn account ID not found in workspace settings');
         return { status: 'failed', message: 'LinkedIn account not configured' };
       }
 
@@ -672,10 +646,14 @@ export class LinkedinUnipileMessagingService {
     try {
       console.log('Sending LinkedIn attachment message:', attachmentMessage);
 
-      linkedinAccountId = await this.resolveLinkedinUnipileAccountId(apiToken);
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      linkedinAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
+        workspaceId,
+        'linkedin_unipile_account_id',
+      );
 
       if (!linkedinAccountId) {
-        console.log('LinkedIn Unipile account ID not found for member or workspace');
+        console.log('LinkedIn account ID not found in workspace settings');
         return { status: 'failed', message: 'LinkedIn account not configured' };
       }
 
@@ -785,10 +763,14 @@ export class LinkedinUnipileMessagingService {
     try {
       console.log('Sending LinkedIn InMail attachment message:', attachmentMessage);
 
-      linkedinAccountId = await this.resolveLinkedinUnipileAccountId(apiToken);
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      linkedinAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
+        workspaceId,
+        'linkedin_unipile_account_id',
+      );
 
       if (!linkedinAccountId) {
-        console.log('LinkedIn Unipile account ID not found for member or workspace');
+        console.log('LinkedIn account ID not found in workspace settings');
         return { status: 'failed', message: 'LinkedIn account not configured' };
       }
 

@@ -396,9 +396,10 @@ export class UnipileWebhookService {
         );
       }
     } else if (parsed.workspaceId) {
-      this.logger.warn(
-        `Unipile account connected without workspaceMemberId in hosted name; cannot map per-member. workspaceId=${parsed.workspaceId} accountType=${accountType}. Use hosted auth name "memberId|workspaceId". Workspace-wide Unipile keys are deprecated.`,
-      );
+      await this.workspaceQueryService.updateWorkspaceKeys(parsed.workspaceId, {
+        [accountType === 'LINKEDIN' ? 'linkedin_unipile_account_id' : 'whatsapp_unipile_account_id']:
+          accountId,
+      });
     }
   }
 
