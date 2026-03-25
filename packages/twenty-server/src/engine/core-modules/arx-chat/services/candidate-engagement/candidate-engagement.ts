@@ -1,20 +1,20 @@
 import {
-    CandidateEdge,
-    CandidateNode,
-    ChatControlsObjType,
-    chatControlType,
-    ChatHistoryItem,
-    getGraphqlToFindManyJobs,
-    graphqlToFetchAllCandidateData,
-    graphqlToFetchAllCandidateDataWithFieldValues,
-    graphQlToFetchWhatsappMessages,
-    graphQltoUpdateOneCandidate,
-    Job,
-    JobEdge,
-    MessageNode,
-    PageInfo,
-    RecruiterProfileType,
-    whatappUpdateMessageObjType
+  CandidateEdge,
+  CandidateNode,
+  ChatControlsObjType,
+  chatControlType,
+  ChatHistoryItem,
+  getGraphqlToFindManyJobs,
+  graphqlToFetchAllCandidateData,
+  graphqlToFetchAllCandidateDataWithFieldValues,
+  graphQlToFetchWhatsappMessages,
+  graphQltoUpdateOneCandidate,
+  Job,
+  JobEdge,
+  MessageNode,
+  PageInfo,
+  RecruiterProfileType,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { ChatFlowConfigBuilder } from 'src/engine/core-modules/arx-chat/services/chat-flow-config';
@@ -199,7 +199,6 @@ export class CandidateEngagementArx {
       whatsappMessageId: 'NA',
       typeOfMessage: candidate?.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
     };
-    console.log('This is the whatappUpdateMessageObj::', whatappUpdateMessageObj);
 
     return whatappUpdateMessageObj;
   }

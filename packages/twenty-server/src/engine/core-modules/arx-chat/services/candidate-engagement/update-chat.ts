@@ -819,7 +819,6 @@ export class UpdateChat {
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     apiToken: string,
   ) {
-    console.log('This is the whatappUpdateMessageObj in updateCandidateEngagementStatus::', whatappUpdateMessageObj);
     const candidateEngagementStatus = whatappUpdateMessageObj.messageType !== 'botMessage';
 
     console.log( 'Updating candidate engagement status to:', candidateEngagementStatus, 'for candidate id::', candidate?.id);
@@ -892,8 +891,6 @@ export class UpdateChat {
     apiToken: string,
     isAfterMessageSent = false,
   ) {
-    console.log('Updating candidate engagement status in table');
-    console.log('This is the whatappUpdateMessageObj::', whatappUpdateMessageObj);
 
     if (candidate?.name === '') return;
     console.log('Candidate information retrieved successfully');

@@ -48,7 +48,6 @@ export class PromptingAgents {
     candidateJob: Job,
     apiToken: string,
   ) {
-    console.log('This is the job::::%s', candidateJob);
     let questions: string[] = [];
     const location = candidateJob.jobLocation;
     // const questions = ["What is your current & expected CTC?", "Who do you report to and which functions report to you?", "Are you okay to relocate to {location}?"];
@@ -191,7 +190,6 @@ export class PromptingAgents {
       '',
     );
 
-    console.log('cleanedTemplate replace Templates::', cleanedTemplate);
 
     return cleanedTemplate;
   }
@@ -250,7 +248,6 @@ export class PromptingAgents {
       throw new Error('Recruiter profile not found for job');
     }
 
-    console.log('recruiterProfile in getstartprompt::', recruiterProfile);
 
     // Process candidate name using NameProcessor
     const nameProcessor = new NameProcessor();

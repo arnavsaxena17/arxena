@@ -80,19 +80,34 @@ export class WhatsappUnipileMessagingService {
   }
 
   /**
-   * Resolve WhatsApp Unipile account id from workspace member profile (JWT → workspace member id).
-   * Workspace-wide whatsapp_unipile_account_id key is deprecated.
+   * Job.recruiterId is the workspace member id of the assigned recruiter (see RecruiterProfileService).
+   */
+  private jobRecruiterAsWorkspaceMemberId(
+    candidateJob: Job | undefined | null,
+  ): string | null {
+    const id = candidateJob?.recruiterId?.trim();
+    return id || null;
+  }
+
+  /**
+   * Resolve WhatsApp Unipile account id from workspace member profile.
+   * Uses JWT workspaceMemberId when present; otherwise falls back to the job's recruiter
+   * workspace member id (needed for API-key tokens from workers/cron).
    */
   private async resolveWhatsappUnipileAccountId(
     apiToken: string,
+    candidateJob: Job | undefined | null,
   ): Promise<string | null> {
     if (!this.workspaceMemberProfileUnipileService) {
       return null;
     }
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    const workspaceMemberId =
+    const workspaceMemberIdFromToken =
       await this.workspaceQueryService.getWorkspaceMemberIdFromToken(apiToken);
+    const workspaceMemberId =
+      workspaceMemberIdFromToken ??
+      this.jobRecruiterAsWorkspaceMemberId(candidateJob);
     return this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
       workspaceMemberId,
       workspaceId,
@@ -145,11 +160,15 @@ export class WhatsappUnipileMessagingService {
         return { status: 'failed', message: 'Candidate node not found' };
       }
 
-      const whatsappAccountId =
-        await this.resolveWhatsappUnipileAccountId(apiToken);
+      const whatsappAccountId = await this.resolveWhatsappUnipileAccountId(
+        apiToken,
+        candidateJob,
+      );
 
       if (!whatsappAccountId) {
-        console.log('WhatsApp Unipile account ID not found in workspace settings');
+        console.log(
+          'WhatsApp Unipile account ID not found on workspace member profile (auth token or job recruiter)',
+        );
         return { status: 'failed', message: 'WhatsApp Unipile account not configured' };
       }
 
@@ -241,11 +260,15 @@ export class WhatsappUnipileMessagingService {
     try {
       console.log('Sending WhatsApp attachment message via Unipile:', attachmentMessage);
 
-      const whatsappAccountId =
-        await this.resolveWhatsappUnipileAccountId(apiToken);
+      const whatsappAccountId = await this.resolveWhatsappUnipileAccountId(
+        apiToken,
+        candidateJob,
+      );
 
       if (!whatsappAccountId) {
-        console.log('WhatsApp Unipile account ID not found in workspace settings');
+        console.log(
+          'WhatsApp Unipile account ID not found on workspace member profile (auth token or job recruiter)',
+        );
         return { status: 'failed', message: 'WhatsApp Unipile account not configured' };
       }
 
