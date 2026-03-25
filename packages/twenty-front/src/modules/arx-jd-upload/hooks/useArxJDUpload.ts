@@ -31,7 +31,36 @@ import { useApiKeysRecoil } from './useApiKeysRecoil';
 import { useJobDescriptionParser } from './useJobDescriptionParser';
 import { useSearchParameters } from './useSearchParameters';
 
+/** Compare domains ignoring trailing slashes, protocol, and leading www. */
+const normalizeWebsiteUrlForMatch = (raw: string): string => {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return '';
+  }
+  try {
+    const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    const u = new URL(withProtocol);
+    const host = u.hostname.toLowerCase().replace(/^www\./, '');
+    const path = (u.pathname || '/').replace(/\/+$/, '') || '';
+    return path ? `${host}${path}` : host;
+  } catch {
+    return trimmed.toLowerCase().replace(/^www\./, '').replace(/\/+$/, '');
+  }
+};
 
+/** GraphQL / Postgres reject `companyId: ""`; omit the field instead of clearing the relation incorrectly. */
+const omitEmptyStringCompanyId = <T extends Record<string, unknown>>(payload: T): T => {
+  const id = payload.companyId;
+  const isEmpty =
+    id === '' ||
+    id === null ||
+    (typeof id === 'string' && id.trim() === '');
+  if (!isEmpty) {
+    return payload;
+  }
+  const { companyId: _removed, ...rest } = payload;
+  return rest as T;
+};
 
 export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' | 'edit') => {
   const navigate = useNavigate();
@@ -231,10 +260,13 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
         return null;
       }
 
-      // First try exact domain match
+      // First try domain match (normalized: trailing slash, protocol, www)
       if (companyWebsiteUrl) {
+        const needle = normalizeWebsiteUrlForMatch(companyWebsiteUrl);
         const domainMatch = companiesWithName.find(
-          company => company.domainName.primaryLinkUrl === companyWebsiteUrl
+          (company) =>
+            needle !== '' &&
+            normalizeWebsiteUrlForMatch(company.domainName.primaryLinkUrl) === needle,
         );
         if (domainMatch) {
           return {
@@ -411,6 +443,16 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
                 enqueueSnackBar(`Failed to create new company: ${companyCreateError instanceof Error ? companyCreateError.message : 'Unknown error'}`, {
                   variant: SnackBarVariant.Error,
                 });
+                const existingAfterDuplicate = findBestCompanyMatch(
+                  data.companyName,
+                  data.companyWebsiteUrl,
+                );
+                if (existingAfterDuplicate?.id) {
+                  companyId = existingAfterDuplicate.id;
+                  enqueueSnackBar('Linked job to existing company', {
+                    variant: SnackBarVariant.Success,
+                  });
+                }
               }
             } else if (matchedCompany && matchedCompany.id) {
               companyId = matchedCompany.id;
@@ -588,7 +630,10 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
           searchParameters,
           ...jobData
         } = parsedJD;
-        
+        const jobPayloadBase = omitEmptyStringCompanyId(
+          jobData as Record<string, unknown>,
+        ) as typeof jobData;
+
         // If we have a company name, try to match it and update the companyId
         if (typeof parsedJD?.companyName === 'string' && parsedJD?.companyName !== '') {
           const matchedCompany = findBestCompanyMatch(parsedJD.companyName, '');
@@ -596,7 +641,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
             createdJob = await updateOneRecord({
               idToUpdate: parsedJD.id,
               updateOneRecordInput: {
-                ...jobData,
+                ...jobPayloadBase,
                 companyId: matchedCompany.id,
               },
             });
@@ -609,14 +654,14 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
             // No company match found, just update the job without companyId
             createdJob = await updateOneRecord({
               idToUpdate: parsedJD.id,
-              updateOneRecordInput: jobData,
+              updateOneRecordInput: jobPayloadBase,
             });
           }
         } else {
           // No company name, just update the job
           createdJob = await updateOneRecord({
             idToUpdate: parsedJD.id,
-            updateOneRecordInput: jobData,
+            updateOneRecordInput: jobPayloadBase,
           });
         }
       } else {
@@ -643,8 +688,11 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
               searchParameters,
               ...jobData
             } = parsedJD;
+            const jobPayloadBase = omitEmptyStringCompanyId(
+              jobData as Record<string, unknown>,
+            ) as typeof jobData;
             createdJob = await createOneRecord({
-              ...jobData,
+              ...jobPayloadBase,
               isActive: true,
               companyId: matchedCompany.id,
             });
@@ -667,8 +715,11 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
               searchParameters,
               ...jobData
             } = parsedJD;
+            const jobPayloadBase = omitEmptyStringCompanyId(
+              jobData as Record<string, unknown>,
+            ) as typeof jobData;
             createdJob = await createOneRecord({
-              ...jobData,
+              ...jobPayloadBase,
               isActive: true,
             });
           }
@@ -686,8 +737,11 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
             searchParameters,
             ...jobData
           } = parsedJD;
+          const jobPayloadBase = omitEmptyStringCompanyId(
+            jobData as Record<string, unknown>,
+          ) as typeof jobData;
           createdJob = await createOneRecord({
-            ...jobData,
+            ...jobPayloadBase,
             isActive: true,
           });
         }

@@ -13,7 +13,6 @@ export interface ApiKey {
   linkedin_unipile_account_id?: string;
   whatsapp_unipile_account_id?: string;
   linkedin_profile_id?: string;
-  linkedin_cookie_auth?: string;
   whatsapp_web_phone_number?: string;
   facebook_whatsapp_asset_id?: string;
   is_chrome_extension_installed?: string;

@@ -121,7 +121,6 @@ export class WorkspaceModificationsController {
       whatsapp_web_phone_number?: string;
       linkedin_unipile_account_id?: string;
       linkedin_profile_id?: string;
-      linkedin_cookie_auth?: string;
       is_chrome_extension_installed?: string;
       chrome_extension_id?: string;
       is_org_chart_enabled?: string;

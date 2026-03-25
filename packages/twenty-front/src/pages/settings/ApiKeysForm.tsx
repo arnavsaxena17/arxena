@@ -127,7 +127,6 @@ export const ApiKeysForm = () => {
   {renderInput('linkedin_url', 'Linkedin Profile URL')}
   {renderInput('linkedin_profile_id', 'Linkedin Profile ID')}
   {renderInput('linkedin_unipile_account_id', 'Linkedin Unipile Account ID')}
-  {renderInput('linkedin_cookie_auth', 'LinkedIn cookie (from extension)')}
   {renderInput('whatsapp_unipile_account_id', 'Whatsapp Unipile Account ID')}
   {renderInput('whatsapp_key', 'WhatsApp Key')}
   {renderInput('anthropic_key', 'Anthropic Key')}
@@ -151,7 +150,6 @@ export const ApiKeysForm = () => {
       {renderInput('linkedin_url', 'Linkedin Profile URL')}
       {renderInput('linkedin_profile_id', 'Linkedin Profile ID')}
       {renderInput('linkedin_unipile_account_id', 'Linkedin Unipile Account ID')}
-      {renderInput('linkedin_cookie_auth', 'LinkedIn cookie (from extension)')}
       {renderInput( 'whatsapp_web_phone_number', 'WhatsApp Web Phone Number', )}
       {renderInput('whatsapp_unipile_account_id', 'Whatsapp Unipile Account ID')}
       {renderInput('is_org_chart_enabled', 'Is Org Chart Enabled (true/false)')}

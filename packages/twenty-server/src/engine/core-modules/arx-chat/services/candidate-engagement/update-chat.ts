@@ -325,22 +325,19 @@ export class UpdateChat {
 
 
   async resetMessagesFromWhatsapp(candidateId: string, apiToken: string) {
-    console.log('This is the candidate ID::', candidateId);
-
     const whatsappMessages = await new FilterCandidates(
       this.workspaceQueryService,
       this.staticGraphQLService,
     ).fetchAllWhatsappMessages(candidateId, apiToken);
     for (const message of whatsappMessages) {
-      console.log('Deleting message::', message);
       try {
         const deleteMessageResponse = await this.staticGraphQLService.executeGraphQL(deleteOneWhatsappMessage, { idToDelete: message.id }, apiToken);
         // console.log('deleteMessageResponse::', deleteMessageResponse.data);
-        console.log('Successfully deleted message:', message.id);
       } catch (error) {
         console.error('Error deleting message:', message.id, error);
       }
     }
+    console.log('Successfully deleted messages:');
   }
 
   async createInterimChat(
