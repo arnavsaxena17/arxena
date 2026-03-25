@@ -951,6 +951,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         column,
         row,
         row2,
+        column2,
         setTableState,
         setSelectedCandidateId,
         setUnreadMessagesCounts,

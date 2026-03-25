@@ -1,16 +1,13 @@
 import { Injectable } from '@nestjs/common';
 
 import {
-    FindManyVideoInterviewModels,
-    getExistingRelationsQuery,
-    getGraphqlToFindManyJobs,
-    Job,
-    PageInfo,
+  FindManyVideoInterviewModels,
+  getGraphqlToFindManyJobs,
+  Job,
+  PageInfo
 } from 'twenty-shared';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { CreateMetaDataStructure } from 'src/engine/core-modules/workspace-modifications/object-apis/object-apis-creation';
-import { createRelations } from 'src/engine/core-modules/workspace-modifications/object-apis/services/relation-service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 @Injectable()
@@ -20,28 +17,7 @@ export class CandidateWorkspaceGraphQLService {
     private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
-  async checkExistingRelations(
-    objectMetadataId: string,
-    apiToken: string,
-  ): Promise<any[]> {
-    try {
-      const response = await this.staticGraphQLService.executeGraphQL(
-        getExistingRelationsQuery,
-        { objectMetadataId },
-        apiToken,
-      );
 
-      const relations = response?.data?.data?.relations as {
-        edges: any[];
-        pageInfo: PageInfo;
-      } | undefined;
-      const relationEdges = relations?.edges?.map((edge: any) => edge.node) || ([] as any[]);
-      return relationEdges;
-    } catch (error) {
-      console.error('Error checking existing relations:', error);
-      return [];
-    }
-  }
 
   async getVideoInterviewModels(apiToken: string): Promise<any[]> {
     try {
@@ -68,89 +44,6 @@ export class CandidateWorkspaceGraphQLService {
     }
   }
 
-  async createRelationsBasedonObjectMap(
-    jobCandidateObjectId: string,
-    jobCandidateObjectName: string,
-    apiToken: string,
-    origin: string,
-  ): Promise<void> {
-    const objectsNameIdMap = await new CreateMetaDataStructure(
-      this.workspaceQueryService,
-      this.staticGraphQLService,
-    ).fetchObjectsNameIdMap(apiToken, origin);
-
-    const existingRelations = await this.checkExistingRelations(
-      jobCandidateObjectId,
-      apiToken,
-    );
-
-    const relationsToCreate = [
-      {
-        relationMetadata: {
-          fromObjectMetadataId: objectsNameIdMap['person'],
-          toObjectMetadataId: jobCandidateObjectId,
-          relationType: 'ONE_TO_MANY' as const,
-          fromName: jobCandidateObjectName,
-          toName: 'person',
-          fromDescription: 'Job Candidate',
-          toDescription: 'Person',
-          fromLabel: 'Job Candidate',
-          toLabel: 'Person',
-          fromIcon: 'IconUserCheck',
-          toIcon: 'IconUser',
-        },
-      },
-      {
-        relationMetadata: {
-          fromObjectMetadataId: objectsNameIdMap['candidate'],
-          toObjectMetadataId: jobCandidateObjectId,
-          relationType: 'ONE_TO_MANY' as const,
-          fromName: jobCandidateObjectName,
-          toName: 'candidate',
-          fromDescription: 'Job Candidate',
-          toDescription: 'Candidate',
-          fromLabel: 'Job Candidate',
-          toLabel: 'Candidate',
-          fromIcon: 'IconUserCheck',
-          toIcon: 'IconUser',
-        },
-      },
-      {
-        relationMetadata: {
-          fromObjectMetadataId: objectsNameIdMap['job'],
-          toObjectMetadataId: jobCandidateObjectId,
-          relationType: 'ONE_TO_MANY' as const,
-          fromName: jobCandidateObjectName,
-          toName: 'job',
-          fromDescription: 'Job Candidate',
-          toDescription: 'Job',
-          fromLabel: 'Job Candidate',
-          toLabel: 'Job',
-          fromIcon: 'IconUserCheck',
-          toIcon: 'IconUser',
-        },
-      },
-    ].filter((relation) => {
-      return !existingRelations.some(
-        (existing) =>
-          existing.fromObjectMetadataId ===
-            relation.relationMetadata.fromObjectMetadataId &&
-          existing.toObjectMetadataId ===
-            relation.relationMetadata.toObjectMetadataId,
-      );
-    });
-
-    console.log('Relations to create:', relationsToCreate);
-    if (relationsToCreate.length > 0) {
-      try {
-        await createRelations(relationsToCreate, apiToken, origin);
-      } catch (error) {
-        if (!error.message?.includes('already exists')) {
-          throw error;
-        }
-      }
-    }
-  }
 
   async getJobDetails(
     jobId: string,

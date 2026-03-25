@@ -183,13 +183,10 @@ export class CreateMetaDataStructure {
     console.log("createAndUpdateWorkspaceMember::", origin);
     const currentWorkspaceMemberResponse = await this.staticGraphQLService.executeGraphQL(FindManyWorkspaceMembers, { limit: 60, orderBy: [{ createdAt: 'AscNullsLast' }] }, apiToken);
 
-
-
     console.log(
       'This is the curent workspace member response first:',
       JSON.stringify(currentWorkspaceMemberResponse?.data, null, 2),
     );
-
 
     const currentWorkspaceMemberId =
       currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node
@@ -533,6 +530,7 @@ export class CreateMetaDataStructure {
       const shouldCreateVideoInterviews = true;
       const shouldCreateArxEnrichments = true;
       const shouldCreateApiKeys = true;
+      const shouldCreatePrompts = true;
       const shoudUpdateCandidateViewField = true;
       const shouldCreateDatabaseIndices = true;
 
@@ -625,8 +623,18 @@ export class CreateMetaDataStructure {
           console.log('Error creating Arx Enrichments:', error);
         }
       }
-      await this.createPrompts(apiToken);
 
+      console.log('Creating prompts...');
+      if (shouldCreatePrompts) {
+        try {
+          await this.createPrompts(apiToken);
+          console.log('Prompts created successfully');
+        } catch (error) {
+          console.log('Error creating prompts:', error);
+        }
+      }
+
+      console.log('Creating API keys...');
       if (shouldCreateApiKeys) {
         try {
           const apiKeyService = new ApiKeyService();
@@ -682,10 +690,6 @@ export class CreateMetaDataStructure {
           console.log('Error updating candidate view field:', error);
         }
       }
-
-
-      
-
     } catch (error) {
       console.log('Error creating metadata structure:', error);
     }

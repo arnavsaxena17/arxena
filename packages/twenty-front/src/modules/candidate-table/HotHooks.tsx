@@ -200,11 +200,23 @@ export const getPermanentId = (rowData: Record<string, unknown>, rawData: Candid
   return fallbackId;
 };
 
+const getColumnDataKey = (hot: any, visualColumnIndex: number): string | undefined => {
+  const columns = hot.getSettings()?.columns as Array<{ data?: string }> | undefined;
+  return columns?.[visualColumnIndex]?.data;
+};
+
+/** True when selection is a single cell on the candidate name column (opens chat drawer). */
+const isSingleCellNameColumn = (hot: any, column: number, column2: number): boolean => {
+  if (column !== column2) return false;
+  return getColumnDataKey(hot, column) === 'name';
+};
+
 export const afterSelectionEnd = (
   tableRef: any,
   column: number,
   row: number,
   row2: number,
+  column2: number,
   setTableState: any,
   setSelectedCandidateId: SetterOrUpdater<string | null>,
   setUnreadMessagesCounts: SetterOrUpdater<Record<string, number>>,
@@ -223,8 +235,8 @@ export const afterSelectionEnd = (
     const selectedIds = hot.getSelected();
     console.log("selectedIds in afterSelectionEnd", selectedIds);
     
-    // Handle chat drawer opening
-    if (selectedIds.length === 1 && column !== 0 && row === row2) {
+    // Handle chat drawer opening (name column only; not other cells / ranges)
+    if (selectedIds.length === 1 && row === row2 && isSingleCellNameColumn(hot, column, column2)) {
       const physicalRow = hot.toPhysicalRow(row);
       const selectedRow = hot.getSourceDataAtRow(physicalRow);
       console.log("selectedRow in afterSelectionEnd", selectedRow);
