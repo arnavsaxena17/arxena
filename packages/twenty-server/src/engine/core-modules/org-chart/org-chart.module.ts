@@ -6,6 +6,7 @@ import { ContactEnrichmentModule } from 'src/engine/core-modules/contact-enrichm
 import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
 import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-execution.module';
 import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
+import { TheOrgModule } from 'src/engine/core-modules/theorg/theorg.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
@@ -17,6 +18,8 @@ import { CompanyLogoService } from './services/company-logo.service';
 import { ImageProxyService } from './services/image-proxy.service';
 import { OrgChartEsService } from './services/org-chart-es.service';
 import { OrgChartService } from './services/org-chart.service';
+import { OrgChartTheOrgEnrichmentService } from './services/org-chart-theorg-enrichment.service';
+import { OrgChartS3Service } from './services/orgchart-s3.service';
 import { PdlAutocompleteService } from './services/pdl-autocomplete.service';
 import { PeopleEsService } from './services/people-es.service';
 import { PythonOrgChartService } from './services/python-org-chart.service';
@@ -29,6 +32,7 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
     EnvironmentModule,
     GraphQLExecutionModule,
     LinkedInSearchModule,
+    TheOrgModule,
     WorkspaceModificationsModule,
   ],
   controllers: [OrgChartController],
@@ -36,6 +40,7 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
     UnipileCompanyService,
     WorkspaceMemberProfileUnipileService,
     OrgChartService,
+    OrgChartTheOrgEnrichmentService,
     ArxenaBackendService,
     OrgChartEsService,
     PeopleEsService,
@@ -43,7 +48,8 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
     CompanyLogoService,
     ImageProxyService,
     PythonOrgChartService,
+    OrgChartS3Service,
   ],
-  exports: [OrgChartService],
+  exports: [OrgChartService, OrgChartS3Service, OrgChartTheOrgEnrichmentService],
 })
 export class OrgChartModule {}

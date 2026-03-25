@@ -12,12 +12,14 @@ import { HealthModule } from 'src/engine/core-modules/health/health.module';
 import { RedisClientModule } from 'src/engine/core-modules/redis-client/redis-client.module';
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { WorkspaceModule } from 'src/engine/core-modules/workspace/workspace.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Workspace, FeatureFlag], 'core'),
     AuthModule,
     DomainManagerModule,
+    WorkspaceModule,
     HealthModule,
     RedisClientModule,
     TerminusModule,

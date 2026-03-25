@@ -15,6 +15,7 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 
 import { ArxenaBackendService } from './arxena-backend.service';
 import { OrgChartEsService } from './org-chart-es.service';
+import { OrgChartS3Service } from './orgchart-s3.service';
 import { PdlAutocompleteService } from './pdl-autocomplete.service';
 import { PeopleEsService } from './people-es.service';
 
@@ -33,6 +34,7 @@ export class OrgChartService {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     private readonly workspaceCreditsService: WorkspaceCreditsService,
+    private readonly orgChartS3Service: OrgChartS3Service,
     @InjectCacheStorage(CacheStorageNamespace.EngineOrgChart)
     private readonly orgChartCacheStorageService: CacheStorageService,
   ) {}
@@ -117,7 +119,16 @@ export class OrgChartService {
       return cachedOrgChartPayload.orgChart;
     }
 
-    // No ES document and no cache: serve static blank org chart template so the
+    // Redis miss: try S3 as a persistent fallback before serving blank template.
+    const s3OrgChart = await this.orgChartS3Service.getOrgChart(companyId);
+    if (s3OrgChart) {
+      this.logger.log(
+        `Serving org chart from S3 fallback for companyId=${companyId}`,
+      );
+      return s3OrgChart as Record<string, unknown>;
+    }
+
+    // No ES document, no Redis cache and no S3 data: serve static blank org chart template so the
     // frontend can show a placeholder structure instead of empty. No credits debited for blank.
     const blankChart = await this.getBlankOrgChartPlaceholder(companyId, options);
     if (blankChart) {

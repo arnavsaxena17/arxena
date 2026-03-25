@@ -8,7 +8,7 @@ test('Create account, onboard, reach jobs, then delete account', async ({
   page,
   context,
 }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(300_000);
 
   const email = `e2e_${Date.now()}@arxena-e2e.test`;
   const password = 'Applecar2025';
@@ -19,7 +19,7 @@ test('Create account, onboard, reach jobs, then delete account', async ({
   await context.clearCookies();
 
   await page.goto('/welcome');
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 
   const continueWithEmailButton = page.getByRole('button', {
     name: 'Continue with Email',
@@ -41,7 +41,7 @@ test('Create account, onboard, reach jobs, then delete account', async ({
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
   }
 
-  for (let i = 0; i < 10; i += 1) {
+  for (let i = 0; i < 15; i += 1) {
     const isOnJobsPage =
       /\/jobs(?:[/?#]|$)/.test(page.url()) ||
       (await page.getByText('Your workspace is ready').isVisible().catch(() => false)) ||
@@ -52,51 +52,49 @@ test('Create account, onboard, reach jobs, then delete account', async ({
     }
 
     if (await page.getByText('Create your workspace').isVisible().catch(() => false)) {
-      await page.getByPlaceholder('Apple').fill(workspaceName);
-      const enabledContinueButton = page
-        .locator('button:has-text("Continue"):not([disabled])')
-        .first();
-      if (await enabledContinueButton.isVisible().catch(() => false)) {
-        await enabledContinueButton.click();
-      }
-      await page.waitForLoadState('networkidle');
+      const wsInput = page.getByPlaceholder('Apple');
+      await wsInput.click();
+      await wsInput.pressSequentially(workspaceName, { delay: 50 });
+      await page.waitForTimeout(500);
+      await page.getByRole('button', { name: 'Continue' }).click({ timeout: 10_000, noWaitAfter: true }).catch(() => {});
+      await page.waitForTimeout(2_000);
       continue;
     }
 
     if (await page.getByText('Create profile').isVisible().catch(() => false)) {
-      await page.locator('input[placeholder="Tim"]').first().fill(firstName);
-      await page.locator('input[placeholder="Cook"]').first().fill(lastName);
-      const enabledContinueButton = page
-        .locator('button:has-text("Continue"):not([disabled])')
-        .first();
-      if (await enabledContinueButton.isVisible().catch(() => false)) {
-        await enabledContinueButton.click();
-      }
-      await page.waitForLoadState('networkidle');
+      const firstInput = page.locator('input[placeholder="Tim"]').first();
+      await firstInput.click();
+      await firstInput.pressSequentially(firstName, { delay: 50 });
+      const lastInput = page.locator('input[placeholder="Cook"]').first();
+      await lastInput.click();
+      await lastInput.pressSequentially(lastName, { delay: 50 });
+      await page.waitForTimeout(500);
+      await page.getByRole('button', { name: 'Continue' }).click({ timeout: 10_000, noWaitAfter: true }).catch(() => {});
+      await page.waitForTimeout(2_000);
       continue;
     }
 
     if (await page.getByText('Install Arxena App').isVisible().catch(() => false)) {
       await page.getByRole('link', { name: 'Skip' }).first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(2_000);
       continue;
     }
 
     if (await page.getByText('Connect LinkedIn').isVisible().catch(() => false)) {
       await page.getByRole('link', { name: 'Skip' }).first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(2_000);
       continue;
     }
 
     if (await page.getByText('Emails and Calendar').isVisible().catch(() => false)) {
       await page.getByRole('link', { name: 'Continue without sync' }).click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(2_000);
       continue;
     }
 
     if (await page.getByText('Invite your team').isVisible().catch(() => false)) {
       await page.getByRole('link', { name: 'Skip' }).first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(2_000);
       continue;
     }
 

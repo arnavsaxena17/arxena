@@ -15,6 +15,7 @@ import { UnipilePoolModule } from '../arx-chat/unipile-pool.module';
 import { CandidateSourcingModule } from '../candidate-sourcing/candidate-sourcing.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { LinkedInSearchModule } from '../linkedin-search/linkedin-search.module';
+import { OrgChartModule } from '../org-chart/org-chart.module';
 import { PythonOrgChartService } from '../org-chart/services/python-org-chart.service';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
 import { CandidateSearchPipelineController } from './controllers/candidate-search-pipeline.controller';
@@ -48,6 +49,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     WorkspaceModificationsModule,
     CandidateSourcingModule,
     GraphQLExecutionModule,
+    OrgChartModule,
     forwardRef(() => {
       // Lazy require avoids circular import: AssistantModule imports CandidateSearchModule.
       // eslint-disable-next-line @typescript-eslint/no-require-imports

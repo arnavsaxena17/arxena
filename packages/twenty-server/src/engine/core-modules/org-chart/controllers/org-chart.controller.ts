@@ -1,15 +1,15 @@
 import {
-    Body,
-    Controller,
-    Get,
-    HttpException,
-    HttpStatus,
-    Logger,
-    Param,
-    Post,
-    Query,
-    Req,
-    Res,
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Query,
+  Req,
+  Res,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
@@ -24,6 +24,7 @@ import { CompanyLogoService } from '../services/company-logo.service';
 import { ImageProxyService } from '../services/image-proxy.service';
 import { OrgChartEsService } from '../services/org-chart-es.service';
 import { OrgChartService } from '../services/org-chart.service';
+import { OrgChartTheOrgEnrichmentService } from '../services/org-chart-theorg-enrichment.service';
 
 @Controller('org-chart')
 export class OrgChartController {
@@ -32,6 +33,7 @@ export class OrgChartController {
   constructor(
     private readonly orgChartService: OrgChartService,
     private readonly orgChartEsService: OrgChartEsService,
+    private readonly orgChartTheOrgEnrichmentService: OrgChartTheOrgEnrichmentService,
     private readonly companyLogoService: CompanyLogoService,
     private readonly imageProxyService: ImageProxyService,
     private readonly apifyEmployeeCountService: ApifyEmployeeCountService,
@@ -625,6 +627,63 @@ export class OrgChartController {
         error instanceof Error
           ? error.message
           : 'Failed to fetch manual org chart',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * GET /org-chart/:companyId/theorg-enriched
+   *
+   * Fetches the existing org chart from ES/S3, appends real-name leadership
+   * data from TheOrg, passes all people through the Python org-chart builder,
+   * and returns the merged, fully-classified org chart.
+   *
+   * Query params:
+   *   companyName  – human-readable company name (e.g. "Litify")
+   *   theOrgSlug   – TheOrg company slug (defaults to companyId)
+   *   country      – optional country filter forwarded to the base chart lookup
+   *   functionRoot – optional function-root filter
+   *
+   * NOTE: This route must be declared BEFORE `:companyId/:country` so that
+   * "theorg-enriched" is not consumed as the :country parameter.
+   */
+  @Get(':companyId/theorg-enriched')
+  async getTheOrgEnrichedOrgChart(
+    @Param('companyId') companyId: string,
+    @Query('companyName') companyName: string | undefined,
+    @Query('theOrgSlug') theOrgSlug: string | undefined,
+    @Query('country') country: string | undefined,
+    @Query('functionRoot') functionRoot: string | undefined,
+    @Req() req: Request,
+  ) {
+    if (!companyId || companyId.includes('/') || companyId.includes('..')) {
+      throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
+    }
+
+    const normalizedCompanyId = this.normalizeCompanyId(companyId);
+
+    try {
+      const result =
+        await this.orgChartTheOrgEnrichmentService.getEnrichedOrgChart(
+          normalizedCompanyId,
+          {
+            companyName,
+            theOrgSlug: theOrgSlug ?? normalizedCompanyId,
+            country,
+            functionRoot,
+          },
+        );
+      return { result, status: 'ok' };
+    } catch (error) {
+      this.logger.error(
+        `TheOrg-enriched org chart failed for companyId=${companyId}`,
+        error,
+      );
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to build TheOrg-enriched org chart',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

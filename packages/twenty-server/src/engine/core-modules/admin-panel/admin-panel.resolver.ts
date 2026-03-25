@@ -1,6 +1,8 @@
 import { UseFilters, UseGuards } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 
+import { GraphQLError } from 'graphql';
+
 import { AdminPanelHealthService } from 'src/engine/core-modules/admin-panel/admin-panel-health.service';
 import { AdminPanelService } from 'src/engine/core-modules/admin-panel/admin-panel.service';
 import { EnvironmentVariablesOutput } from 'src/engine/core-modules/admin-panel/dtos/environment-variables.output';
@@ -11,6 +13,9 @@ import { UpdateWorkspaceFeatureFlagInput } from 'src/engine/core-modules/admin-p
 import { UserLookup } from 'src/engine/core-modules/admin-panel/dtos/user-lookup.entity';
 import { UserLookupInput } from 'src/engine/core-modules/admin-panel/dtos/user-lookup.input';
 import { AuthGraphqlApiExceptionFilter } from 'src/engine/core-modules/auth/filters/auth-graphql-api-exception.filter';
+import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
+import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { ImpersonateGuard } from 'src/engine/guards/impersonate-guard';
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
@@ -24,6 +29,7 @@ export class AdminPanelResolver {
   constructor(
     private adminService: AdminPanelService,
     private adminPanelHealthService: AdminPanelHealthService,
+    private readonly workspaceService: WorkspaceService,
   ) {}
 
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
@@ -52,6 +58,23 @@ export class AdminPanelResolver {
       updateFlagInput.featureFlag,
       updateFlagInput.value,
     );
+
+    return true;
+  }
+
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
+  @Mutation(() => Boolean)
+  async adminDeleteWorkspace(
+    @AuthWorkspace() workspace: Workspace,
+    @Args('workspaceId') workspaceId: string,
+  ): Promise<boolean> {
+    if (workspace.id === workspaceId) {
+      throw new GraphQLError(
+        'Cannot delete the workspace you are currently signed into',
+      );
+    }
+
+    await this.workspaceService.deleteWorkspace(workspaceId);
 
     return true;
   }

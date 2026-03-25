@@ -1,17 +1,21 @@
+import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { ADMIN_ADJUST_WORKSPACE_CREDITS } from '@/settings/admin-panel/graphql/mutations/adminAdjustWorkspaceCredits';
+import { ADMIN_DELETE_WORKSPACE } from '@/settings/admin-panel/graphql/mutations/adminDeleteWorkspace';
 import { GET_ADMIN_WORKSPACES_WITH_CREDITS } from '@/settings/admin-panel/graphql/queries/getAdminWorkspacesWithCredits';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TextInput } from '@/ui/input/components/TextInput';
+import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 import { Table } from '@/ui/layout/table/components/Table';
 import { TableCell } from '@/ui/layout/table/components/TableCell';
 import { TableHeader } from '@/ui/layout/table/components/TableHeader';
 import { TableRow } from '@/ui/layout/table/components/TableRow';
 import { useMutation, useQuery } from '@apollo/client';
 import styled from '@emotion/styled';
-import { useLingui } from '@lingui/react/macro';
+import { Trans, useLingui } from '@lingui/react/macro';
 import { useState } from 'react';
-import { Button, H2Title, Section, useIsMobile } from 'twenty-ui';
+import { useRecoilValue } from 'recoil';
+import { Button, H2Title, IconTrash, Section, useIsMobile } from 'twenty-ui';
 
 type WorkspaceCreditsRow = {
   workspaceId: string;
@@ -121,7 +125,7 @@ const StyledMobileSelect = styled(StyledSelect)`
 `;
 
 const TABLE_GRID =
-  'minmax(0, 0.55fr) minmax(0, 0.85fr) minmax(0, 1.4fr) minmax(0, 1.6fr) 1fr 1fr 1fr 1fr 3fr';
+  'minmax(0, 0.55fr) minmax(0, 0.85fr) minmax(0, 1.4fr) minmax(0, 1.6fr) 1fr 1fr 1fr 1fr 3fr minmax(88px, auto)';
 
 const shortWorkspaceId = (id: string) => `${id.slice(0, 8)}…`;
 
@@ -138,6 +142,7 @@ const totalCredits = (row: WorkspaceCreditsRow) =>
 export const SettingsAdminWorkspaceCredits = () => {
   const { t } = useLingui();
   const isMobile = useIsMobile();
+  const currentWorkspace = useRecoilValue(currentWorkspaceState);
   const { enqueueSnackBar } = useSnackBar();
   const { data, loading, refetch } = useQuery<{
     adminListWorkspacesWithCredits: WorkspaceCreditsRow[];
@@ -145,9 +150,17 @@ export const SettingsAdminWorkspaceCredits = () => {
   const [adjustCredits] = useMutation<{ adminAdjustWorkspaceCredits: boolean }>(
     ADMIN_ADJUST_WORKSPACE_CREDITS,
   );
+  const [deleteWorkspaceMutation] = useMutation<{
+    adminDeleteWorkspace: boolean;
+  }>(ADMIN_DELETE_WORKSPACE);
   const [adjustingWorkspaceId, setAdjustingWorkspaceId] = useState<
     string | null
   >(null);
+  const [deletingWorkspaceId, setDeletingWorkspaceId] = useState<string | null>(
+    null,
+  );
+  const [workspacePendingDelete, setWorkspacePendingDelete] =
+    useState<WorkspaceCreditsRow | null>(null);
   const [creditType, setCreditType] = useState<CreditType>('EMAIL_CONTACT');
   const [deltaInput, setDeltaInput] = useState('');
 
@@ -185,8 +198,51 @@ export const SettingsAdminWorkspaceCredits = () => {
     }
   };
 
+  const setDeleteModalOpen = (open: boolean) => {
+    if (!open) {
+      setWorkspacePendingDelete(null);
+    }
+  };
+
+  const handleConfirmDeleteWorkspace = async () => {
+    if (!workspacePendingDelete) {
+      return;
+    }
+    const workspaceId = workspacePendingDelete.workspaceId;
+    setDeletingWorkspaceId(workspaceId);
+    try {
+      await deleteWorkspaceMutation({ variables: { workspaceId } });
+      enqueueSnackBar(t`Workspace deleted`, { variant: SnackBarVariant.Success });
+      await refetch();
+    } catch (err) {
+      enqueueSnackBar(
+        err instanceof Error ? err.message : t`Failed to delete workspace`,
+        { variant: SnackBarVariant.Error },
+      );
+    } finally {
+      setDeletingWorkspaceId(null);
+    }
+  };
+
   return (
     <>
+      <ConfirmationModal
+        isOpen={workspacePendingDelete !== null}
+        setIsOpen={setDeleteModalOpen}
+        title={t`Delete workspace`}
+        subtitle={
+          workspacePendingDelete ? (
+            <Trans>
+              This permanently deletes workspace{' '}
+              <strong>{workspacePendingDelete.workspaceName || '—'}</strong>{' '}
+              and all of its data. This cannot be undone.
+            </Trans>
+          ) : null
+        }
+        onConfirmClick={handleConfirmDeleteWorkspace}
+        deleteButtonText={t`Delete workspace`}
+        loading={deletingWorkspaceId === workspacePendingDelete?.workspaceId}
+      />
       <Section>
         <H2Title
           title={t`Workspace Credits`}
@@ -253,6 +309,18 @@ export const SettingsAdminWorkspaceCredits = () => {
                       !deltaInput.trim()
                     }
                   />
+                  <Button
+                    accent="danger"
+                    variant="secondary"
+                    title={t`Delete workspace`}
+                    Icon={IconTrash}
+                    fullWidth
+                    onClick={() => setWorkspacePendingDelete(row)}
+                    disabled={
+                      row.workspaceId === currentWorkspace?.id ||
+                      deletingWorkspaceId === row.workspaceId
+                    }
+                  />
                 </StyledMobileActionsColumn>
               </StyledMobileCard>
             ))}
@@ -269,6 +337,7 @@ export const SettingsAdminWorkspaceCredits = () => {
               <TableHeader align="right">{t`Phone`}</TableHeader>
               <TableHeader align="right">{t`Total`}</TableHeader>
               <TableHeader>{t`Actions`}</TableHeader>
+              <TableHeader>{t`Delete`}</TableHeader>
             </TableRow>
             {rows.map((row) => (
               <TableRow key={row.workspaceId} gridAutoColumns={TABLE_GRID}>
@@ -328,6 +397,19 @@ export const SettingsAdminWorkspaceCredits = () => {
                       }
                     />
                   </StyledActionsInner>
+                </StyledTableCell>
+                <StyledTableCell>
+                  <Button
+                    accent="danger"
+                    variant="secondary"
+                    title={t`Delete workspace`}
+                    Icon={IconTrash}
+                    onClick={() => setWorkspacePendingDelete(row)}
+                    disabled={
+                      row.workspaceId === currentWorkspace?.id ||
+                      deletingWorkspaceId === row.workspaceId
+                    }
+                  />
                 </StyledTableCell>
               </TableRow>
             ))}
