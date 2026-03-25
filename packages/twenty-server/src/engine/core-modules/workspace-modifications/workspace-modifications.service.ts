@@ -26,6 +26,14 @@ const WORKSPACE_MEMBER_PROFILE_TABLE_CANDIDATES = [
   'workspaceMemberProfile',
 ] as const;
 
+/** Physical FK column names seen across Twenty / Arxena workspace schemas */
+const WORKSPACE_MEMBER_PROFILE_FK_COLUMN_CANDIDATES = [
+  'workspaceMemberId',
+  '_workspaceMemberId',
+  'recruiterId',
+  '_recruiterId',
+] as const;
+
 @Injectable()
 export class WorkspaceQueryService {
   constructor(
@@ -223,21 +231,26 @@ export class WorkspaceQueryService {
           whatsappUnipileAccountId: string | null;
         };
 
-        let rows: ProfileRow[];
-        try {
-          rows = await this.executeRawQuery(
-            `SELECT "workspaceMemberId", "linkedinUnipileAccountId", "whatsappUnipileAccountId"
-             FROM ${schema}."${tableName}"
-             WHERE ("linkedinUnipileAccountId" IS NOT NULL AND TRIM("linkedinUnipileAccountId") <> '')
-                OR ("whatsappUnipileAccountId" IS NOT NULL AND TRIM("whatsappUnipileAccountId") <> '')`,
-            [],
-            workspaceId,
-          );
-        } catch {
-          continue;
+        let rows: ProfileRow[] | null = null;
+        for (const fkCol of WORKSPACE_MEMBER_PROFILE_FK_COLUMN_CANDIDATES) {
+          try {
+            rows = await this.executeRawQuery(
+              `SELECT "${fkCol}" AS "workspaceMemberId", "linkedinUnipileAccountId", "whatsappUnipileAccountId"
+               FROM ${schema}."${tableName}"
+               WHERE ("linkedinUnipileAccountId" IS NOT NULL AND TRIM("linkedinUnipileAccountId") <> '')
+                  OR ("whatsappUnipileAccountId" IS NOT NULL AND TRIM("whatsappUnipileAccountId") <> '')`,
+              [],
+              workspaceId,
+            );
+            if (Array.isArray(rows)) {
+              break;
+            }
+          } catch {
+            rows = null;
+          }
         }
 
-        if (!Array.isArray(rows)) {
+        if (!rows || !Array.isArray(rows)) {
           continue;
         }
 
@@ -312,17 +325,19 @@ export class WorkspaceQueryService {
         if (!tableExists) {
           continue;
         }
-        try {
-          const rows = await this.executeRawQuery(
-            `SELECT 1 FROM ${schema}."${tableName}" WHERE "${profileColumn}" = $1 LIMIT 1`,
-            [accountId],
-            workspaceId,
-          );
-          if (Array.isArray(rows) && rows.length > 0) {
-            return workspaceId;
+        for (const fkCol of WORKSPACE_MEMBER_PROFILE_FK_COLUMN_CANDIDATES) {
+          try {
+            const rows = await this.executeRawQuery(
+              `SELECT 1 FROM ${schema}."${tableName}" WHERE "${profileColumn}" = $1 AND "${fkCol}" IS NOT NULL LIMIT 1`,
+              [accountId],
+              workspaceId,
+            );
+            if (Array.isArray(rows) && rows.length > 0) {
+              return workspaceId;
+            }
+          } catch {
+            // Wrong FK column name or missing Unipile columns for this workspace.
           }
-        } catch {
-          // Column or table mismatch for this workspace; try next candidate.
         }
       }
     }
@@ -540,15 +555,26 @@ export class WorkspaceQueryService {
     schema: string,
     tableName: string,
     columnName: string,
+    options?: { silent?: boolean },
   ): Promise<boolean> {
+    const silent = options?.silent === true;
+
     try {
-      console.log(`checkIfColumnExists: Checking if column ${columnName} exists in table ${tableName} in schema ${schema}`);
-      
+      if (!silent) {
+        console.log(
+          `checkIfColumnExists: Checking if column ${columnName} exists in table ${tableName} in schema ${schema}`,
+        );
+      }
+
       if (!schema || !tableName || !columnName) {
-        console.error('checkIfColumnExists: Invalid parameters:', { schema, tableName, columnName });
+        console.error('checkIfColumnExists: Invalid parameters:', {
+          schema,
+          tableName,
+          columnName,
+        });
         return false;
       }
-      
+
       const query = `
         SELECT EXISTS (
           SELECT FROM information_schema.columns 
@@ -565,11 +591,18 @@ export class WorkspaceQueryService {
       ]);
 
       const exists = result[0]?.exists;
-      console.log(`checkIfColumnExists: Column ${columnName} exists in table ${tableName} in schema ${schema}: ${exists}`);
-      
+      if (!silent) {
+        console.log(
+          `checkIfColumnExists: Column ${columnName} exists in table ${tableName} in schema ${schema}: ${exists}`,
+        );
+      }
+
       return Boolean(exists);
     } catch (error) {
-      console.error(`checkIfColumnExists: Error checking if column ${columnName} exists in table ${tableName} in schema ${schema}:`, error);
+      console.error(
+        `checkIfColumnExists: Error checking if column ${columnName} exists in table ${tableName} in schema ${schema}:`,
+        error,
+      );
       return false;
     }
   }
