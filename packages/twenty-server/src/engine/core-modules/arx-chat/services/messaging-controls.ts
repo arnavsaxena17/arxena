@@ -10,6 +10,7 @@ import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/servic
 import { BaileysWhatsappAPI } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/baileys/callBaileys';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { WhatsappUnipileMessagingService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-unipile-messaging.service';
+import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
@@ -27,6 +28,7 @@ export class MessagingControls {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
   ) {}
 
   /**
@@ -415,6 +417,7 @@ export class MessagingControls {
         const response = await new WhatsappUnipileMessagingService(
           this.workspaceQueryService,
           this.staticGraphQLService,
+          this.workspaceMemberProfileUnipileService,
         ).sendWhatsappMessageVIAUnipileAPI(
           whatappUpdateMessageObj,
           candidate,
@@ -604,6 +607,7 @@ export class MessagingControls {
       const response = await new WhatsappUnipileMessagingService(
         this.workspaceQueryService,
         this.staticGraphQLService,
+        this.workspaceMemberProfileUnipileService,
       ).sendWhatsappAttachmentMessage(
         attachmentMessage,
         candidate,
@@ -722,8 +726,9 @@ export class MessagingControls {
 
     await new MessagingControls(
       this.workspaceQueryService,
-        this.staticGraphQLService,
-      ).sendAttachmentMessageOnWhatsapp(
+      this.staticGraphQLService,
+      this.workspaceMemberProfileUnipileService,
+    ).sendAttachmentMessageOnWhatsapp(
       attachmentMessageObj,
       candidate,
       candidateJob,

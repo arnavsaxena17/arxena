@@ -31,6 +31,7 @@ import { HumanLikeLLM } from 'src/engine/core-modules/arx-chat/services/llm-agen
 import { ToolCallsProcessing } from 'src/engine/core-modules/arx-chat/services/llm-agents/tool-calls-processing';
 import { MessagingControls } from 'src/engine/core-modules/arx-chat/services/messaging-controls';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import {
     formatChat
 } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
@@ -48,6 +49,7 @@ export class ArxChatEndpoint {
     private readonly engagedCandidateQueueService: EngagedCandidateQueueService,
     private readonly updateChat: UpdateChat,
     private readonly messagingControls: MessagingControls,
+    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
   ) {}
 
   @Post('start-chat')
@@ -526,10 +528,7 @@ export class ArxChatEndpoint {
     };
 
     // Use MessagingControls to send the message
-    const sendResult = await new MessagingControls(
-      this.workspaceQueryService,
-      this.staticGraphQLService,
-    ).sendWhatsappMessage(
+    const sendResult = await this.messagingControls.sendWhatsappMessage(
       whatappUpdateMessageObjForSending,
       candidateNode,
       candidateJob as Job,
@@ -816,7 +815,8 @@ export class ArxChatEndpoint {
       };
       await new ToolCallsProcessing(
         this.workspaceQueryService,
-        this.staticGraphQLService, 
+        this.staticGraphQLService,
+        this.workspaceMemberProfileUnipileService,
       ).shareJDtoCandidate(
         candidateNode,
         candidateNode.jobs,

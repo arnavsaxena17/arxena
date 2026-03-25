@@ -1,6 +1,7 @@
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { MessagingControls } from 'src/engine/core-modules/arx-chat/services/messaging-controls';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/utils/attachment-processes';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -15,6 +16,7 @@ export class ToolCallsProcessing {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
   ) {}
   async shareJDtoCandidate(
     candidate: CandidateNode,
@@ -56,7 +58,11 @@ export class ToolCallsProcessing {
     }
     const attachment = jobAttachments?.node ?? '';
 
-    await new MessagingControls(this.workspaceQueryService, this.staticGraphQLService).sendJDViaWhatsapp(
+    await new MessagingControls(
+      this.workspaceQueryService,
+      this.staticGraphQLService,
+      this.workspaceMemberProfileUnipileService,
+    ).sendJDViaWhatsapp(
       candidate,
       candidateJob,
       attachment,

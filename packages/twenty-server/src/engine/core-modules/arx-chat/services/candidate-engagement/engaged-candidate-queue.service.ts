@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CandidateEngagementArx } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
+import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { GoogleContactsService } from 'src/engine/core-modules/google-contacts/google-contacts.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
@@ -25,6 +26,7 @@ export class EngagedCandidateQueueService {
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly engagedCandidateMessageQueueService?: MessageQueueService,
     @InjectMessageQueue(MessageQueue.googleContactsQueue) private readonly googleContactsMessageQueueService?: MessageQueueService,
     private readonly googleContactsService?: GoogleContactsService,
+    private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
   ) {}
   async queueCandidateForEngagement(
     candidateId: string,
@@ -211,6 +213,7 @@ export class EngagedCandidateQueueService {
         const candidateEngagement = CandidateEngagementArx.create(
           this.workspaceQueryService,
           this.staticGraphQLService,
+          this.workspaceMemberProfileUnipileService,
         );
         
         const systemPrompt = await candidateEngagement.getSystemPrompt(

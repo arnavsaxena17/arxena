@@ -11,6 +11,7 @@ import {
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
+import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -29,6 +30,7 @@ export class WhatsappUnipileMessagingService {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
     baseUrl?: string,
     accessToken?: string,
   ) {
@@ -78,6 +80,35 @@ export class WhatsappUnipileMessagingService {
   }
 
   /**
+   * Prefer whatsappUnipileAccountId on the workspace member profile (JWT → workspace member id);
+   * falls back to workspace key whatsapp_unipile_account_id when the Unipile service is not wired
+   * or profile has no account id (see WorkspaceMemberProfileUnipileService).
+   */
+  private async resolveWhatsappUnipileAccountId(
+    apiToken: string,
+  ): Promise<string | null> {
+    const workspaceId =
+      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    if (this.workspaceMemberProfileUnipileService) {
+      const workspaceMemberId =
+        await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
+          apiToken,
+        );
+      return this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+        workspaceMemberId,
+        workspaceId,
+        apiToken,
+        'whatsapp',
+      );
+    }
+    const fromWorkspace = await this.workspaceQueryService.getWorkspaceApiKey(
+      workspaceId,
+      'whatsapp_unipile_account_id',
+    );
+    return fromWorkspace?.trim() ? fromWorkspace.trim() : null;
+  }
+
+  /**
    * Send a WhatsApp message via Unipile
    */
   async sendMessage(
@@ -121,12 +152,8 @@ export class WhatsappUnipileMessagingService {
         return { status: 'failed', message: 'Candidate node not found' };
       }
 
-      // Get WhatsApp account ID from workspace settings
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const whatsappAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
-        workspaceId,
-        'whatsapp_unipile_account_id',
-      );
+      const whatsappAccountId =
+        await this.resolveWhatsappUnipileAccountId(apiToken);
 
       if (!whatsappAccountId) {
         console.log('WhatsApp Unipile account ID not found in workspace settings');
@@ -221,11 +248,8 @@ export class WhatsappUnipileMessagingService {
     try {
       console.log('Sending WhatsApp attachment message via Unipile:', attachmentMessage);
 
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const whatsappAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
-        workspaceId,
-        'whatsapp_unipile_account_id',
-      );
+      const whatsappAccountId =
+        await this.resolveWhatsappUnipileAccountId(apiToken);
 
       if (!whatsappAccountId) {
         console.log('WhatsApp Unipile account ID not found in workspace settings');

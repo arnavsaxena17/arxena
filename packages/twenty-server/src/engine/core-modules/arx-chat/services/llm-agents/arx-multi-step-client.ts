@@ -19,6 +19,7 @@ import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/cand
 import { HumanLikeLLM } from 'src/engine/core-modules/arx-chat/services/llm-agents/human-or-bot-classification';
 import { ToolCallingAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/tool-calling-agents';
 import { MessagingControls } from 'src/engine/core-modules/arx-chat/services/messaging-controls';
+import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -30,6 +31,7 @@ export class OpenAIArxMultiStepClient {
     private readonly candidate: CandidateNode,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
     // private readonly googleContactsQueue: Queue,
   ) {}
 
@@ -44,6 +46,8 @@ export class OpenAIArxMultiStepClient {
       const newSystemPrompt = await new CandidateEngagementArx(
         this.workspaceQueryService,
         this.staticGraphQLService,
+        undefined,
+        this.workspaceMemberProfileUnipileService,
       ).getSystemPrompt(this.candidate, candidateJob, chatControl, apiToken);
 
       if (!newSystemPrompt) {
@@ -64,6 +68,7 @@ export class OpenAIArxMultiStepClient {
       const tools = await new ChatControls(
         this.workspaceQueryService,
         this.staticGraphQLService,
+        this.workspaceMemberProfileUnipileService,
       ).getTools(candidateJob, chatControl);
       const responseMessage = await this.getHumanLikeResponseMessageFromLLM(
         updatedMostRecentMessagesBasedOnNewSystemPrompt,
@@ -108,6 +113,7 @@ export class OpenAIArxMultiStepClient {
       await new MessagingControls(
         this.workspaceQueryService,
         this.staticGraphQLService,
+        this.workspaceMemberProfileUnipileService,
       ).sendWhatsappMessageToCandidate(
         mostRecentMessageArr.slice(-1)[0].content || '',
         this.candidate,
@@ -217,6 +223,7 @@ export class OpenAIArxMultiStepClient {
           const availableFunctions = new ToolCallingAgents(
             this.workspaceQueryService,
             this.staticGraphQLService,
+            this.workspaceMemberProfileUnipileService,
           ).getAvailableFunctions(candidateJob, apiToken);
           const functionToCall = availableFunctions[functionName];
           // @ts-ignore
@@ -238,7 +245,8 @@ export class OpenAIArxMultiStepClient {
         }
         const tools = await new ChatControls(
           this.workspaceQueryService,
-          this.staticGraphQLService, 
+          this.staticGraphQLService,
+          this.workspaceMemberProfileUnipileService,
           ).getTools(candidateJob, chatControl);
         const response = await openAIclient.chat.completions.create({
           model: modelName,
@@ -285,6 +293,7 @@ export class OpenAIArxMultiStepClient {
           await new MessagingControls(
             this.workspaceQueryService,
             this.staticGraphQLService,
+            this.workspaceMemberProfileUnipileService,
           ).sendWhatsappMessageToCandidate(
             response?.choices[0]?.message?.content || '',
             this.candidate,

@@ -2,10 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { CandidateEngagementArx } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { ChatFlowConfigBuilder } from 'src/engine/core-modules/arx-chat/services/chat-flow-config';
+import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import {
-  ChatControlsObjType,
-  chatControlType,
+    ChatControlsObjType,
+    chatControlType,
 } from 'twenty-shared';
 import { Process } from '../../../message-queue/decorators/process.decorator';
 import { Processor } from '../../../message-queue/decorators/processor.decorator';
@@ -54,6 +55,7 @@ export class EngagedCandidateProcessor {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
   ) {
     this.logger.log('EngagedCandidateProcessor initialized');
     this.chatFlowConfigBuilder = new ChatFlowConfigBuilder(
@@ -154,6 +156,7 @@ export class EngagedCandidateProcessor {
       const candidateEngagement = CandidateEngagementArx.create(
         this.workspaceQueryService,
         this.staticGraphQLService,
+        this.workspaceMemberProfileUnipileService,
       );
 
       const chatControl = {
@@ -206,7 +209,10 @@ export class EngagedCandidateProcessor {
       const queueService = new EngagedCandidateQueueService(
         this.workspaceQueryService,
         this.staticGraphQLService,
-        undefined, // MessageQueueService will be injected by DI
+        undefined,
+        undefined,
+        undefined,
+        this.workspaceMemberProfileUnipileService,
       );
 
       // Use the candidate we already fetched by ID (not by phone number search)
@@ -399,6 +405,7 @@ export class EngagedCandidateProcessor {
         const candidateEngagement = CandidateEngagementArx.create(
           this.workspaceQueryService,
           this.staticGraphQLService,
+          this.workspaceMemberProfileUnipileService,
         );
 
         // Get the candidate's job and determine which chat controls to process

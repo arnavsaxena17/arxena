@@ -21,6 +21,7 @@ import { ChatFlowConfigBuilder } from 'src/engine/core-modules/arx-chat/services
 import { OpenAIArxMultiStepClient } from 'src/engine/core-modules/arx-chat/services/llm-agents/arx-multi-step-client';
 import { PromptingAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/prompting-agents';
 import { TimeManagement } from 'src/engine/core-modules/arx-chat/services/time-management';
+import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -69,6 +70,8 @@ export class CandidateEngagementArx {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
     @Optional() private readonly updateChat?: any, // UpdateChat type to avoid circular dependency
+    @Optional()
+    private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
   ) {
     this.chatFlowConfigBuilder = new ChatFlowConfigBuilder(
       workspaceQueryService,
@@ -80,9 +83,15 @@ export class CandidateEngagementArx {
   static create(
     workspaceQueryService: WorkspaceQueryService,
     staticGraphQLService: StaticGraphQLService,
+    workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
   ): CandidateEngagementArx {
     // Create instance without UpdateChat dependency to avoid circular import
-    const instance = new CandidateEngagementArx(workspaceQueryService, staticGraphQLService, undefined);
+    const instance = new CandidateEngagementArx(
+      workspaceQueryService,
+      staticGraphQLService,
+      undefined,
+      workspaceMemberProfileUnipileService,
+    );
     return instance;
   }
 
@@ -285,6 +294,7 @@ export class CandidateEngagementArx {
           candidate,
           this.workspaceQueryService,
           this.staticGraphQLService,
+          this.workspaceMemberProfileUnipileService,
         ).createCompletion(
           mostRecentMessageArr,
           candidateJob as Job,

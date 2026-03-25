@@ -16,6 +16,7 @@ import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/cand
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { ScheduledJobService } from 'src/engine/core-modules/arx-chat/services/scheduled-job.service';
+import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import {
     addHoursInDate,
     toIsoString
@@ -36,6 +37,7 @@ export class ToolCallingAgents {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
   ) {}
   currentConversationStage = z.object({
     stageOfTheConversation: z.enum(allStatusesArray),
@@ -242,6 +244,7 @@ export class ToolCallingAgents {
       await new ToolCallsProcessing(
         this.workspaceQueryService,
         this.staticGraphQLService,
+        this.workspaceMemberProfileUnipileService,
       ).shareJDtoCandidate(candidate, candidateJob, chatControl, apiToken);
       console.log(
         'Function Called:  candidateProfileDataNodeObj:any',
@@ -270,6 +273,7 @@ export class ToolCallingAgents {
       await new ToolCallsProcessing(
         this.workspaceQueryService,
         this.staticGraphQLService,
+        this.workspaceMemberProfileUnipileService,
       ).updateCandidateStatus(candidate, inputs.candidateStatus, apiToken);
 
       return 'Updated the candidate profile.';
@@ -312,6 +316,7 @@ export class ToolCallingAgents {
     await new ToolCallsProcessing(
       this.workspaceQueryService,
       this.staticGraphQLService,
+      this.workspaceMemberProfileUnipileService,
     ).updateAnswerInDatabase(
       candidate,
       AnswerMessageObj,

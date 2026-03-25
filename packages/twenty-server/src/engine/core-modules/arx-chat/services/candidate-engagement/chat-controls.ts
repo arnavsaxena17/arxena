@@ -10,6 +10,7 @@ import {
 import { ToolCallingAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/tool-calling-agents';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
+import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -17,6 +18,7 @@ export class ChatControls {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
   ) {}
 
   async getTools(candidateJob: Job, chatControl: ChatControlsObjType) {
@@ -24,16 +26,19 @@ export class ChatControls {
       return new ToolCallingAgents(
         this.workspaceQueryService,
         this.staticGraphQLService,
+        this.workspaceMemberProfileUnipileService,
       ).getStartChatTools(candidateJob);
     } else if (chatControl.chatControlType === 'startVideoInterviewChat') {
       return new ToolCallingAgents(
         this.workspaceQueryService,
         this.staticGraphQLService,
+        this.workspaceMemberProfileUnipileService,
         ).getVideoInterviewTools(candidateJob);
     } else if (chatControl.chatControlType === 'startMeetingSchedulingChat') {
       return new ToolCallingAgents(
         this.workspaceQueryService,
         this.staticGraphQLService,
+        this.workspaceMemberProfileUnipileService,
         ).getStartMeetingSchedulingTools(candidateJob);
     }
   }

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
@@ -47,6 +48,7 @@ export class VoiceCallService {
   constructor(
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
   ) {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (apiKey) {
@@ -102,6 +104,7 @@ export class VoiceCallService {
     const candidateEngagement = CandidateEngagementArx.create(
       this.workspaceQueryService,
       this.staticGraphQLService,
+      this.workspaceMemberProfileUnipileService,
     );
     const systemPrompt = await candidateEngagement.getSystemPrompt(
       candidateNode as CandidateNode,
@@ -183,6 +186,7 @@ export class VoiceCallService {
     const candidateEngagement = CandidateEngagementArx.create(
       this.workspaceQueryService,
       this.staticGraphQLService,
+      this.workspaceMemberProfileUnipileService,
     );
     const systemPrompt = await candidateEngagement.getSystemPrompt(
       candidateNode as CandidateNode,
@@ -263,6 +267,7 @@ export class VoiceCallService {
       const candidateEngagement = CandidateEngagementArx.create(
         this.workspaceQueryService,
         this.staticGraphQLService,
+        this.workspaceMemberProfileUnipileService,
       );
       const filter = { peopleId: { eq: personId } };
       const res = await this.staticGraphQLService.executeGraphQL(
