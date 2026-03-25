@@ -527,7 +527,7 @@ export class CreateMetaDataStructure {
           'true') === 'true';
       const objectCreationArr = getObjectCreationArr(isOrgChartEnabled);
 
-      const shouldCreateVideoInterviews = true;
+      const shouldCreateVideoInterviews = false;
       const shouldCreateArxEnrichments = true;
       const shouldCreateApiKeys = true;
       const shouldCreatePrompts = true;
@@ -617,6 +617,7 @@ export class CreateMetaDataStructure {
 
       if (shouldCreateArxEnrichments) {
         try {
+          console.log('Creating Arx Enrichments...');
           await createArxAiFilters(apiToken);
           console.log('Arx Enrichments created successfully');
         } catch (error) {
@@ -627,6 +628,7 @@ export class CreateMetaDataStructure {
       console.log('Creating prompts...');
       if (shouldCreatePrompts) {
         try {
+          console.log('Creating prompts...');
           await this.createPrompts(apiToken);
           console.log('Prompts created successfully');
         } catch (error) {
@@ -637,6 +639,7 @@ export class CreateMetaDataStructure {
       console.log('Creating API keys...');
       if (shouldCreateApiKeys) {
         try {
+          console.log('Creating API keys...');
           const apiKeyService = new ApiKeyService();
           const workspaceMemberId =
             await this.createAndUpdateWorkspaceMember(apiToken, origin);

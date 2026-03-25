@@ -12,10 +12,20 @@ export default defineConfig({
 
   plugins: [
     react({
-      plugins: [['@lingui/swc-plugin', {}]],
+      plugins: [
+        [
+          '@lingui/swc-plugin',
+          {
+            runtimeModules: {
+              i18n: ['@lingui/core', 'i18n'],
+              trans: ['@lingui/react', 'Trans'],
+            },
+          },
+        ],
+      ],
     }),
     lingui({
-      configPath: path.resolve(__dirname, './lingui.config.ts'),
+      configPath: path.resolve(__dirname, './lingui.config.js'),
     }),
     tsconfigPaths(),
     dts({

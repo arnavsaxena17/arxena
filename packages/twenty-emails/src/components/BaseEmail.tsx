@@ -1,4 +1,4 @@
-import { Messages, setupI18n } from '@lingui/core';
+import { Messages, i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { Container, Html } from '@react-email/components';
 import { PropsWithChildren } from 'react';
@@ -43,9 +43,7 @@ type BaseEmailProps = PropsWithChildren<{
   locale: keyof typeof APP_LOCALES;
 }>;
 
-const i18n = setupI18n();
-
-const messages: Record<keyof typeof APP_LOCALES, Messages> = {
+const localeMessages: Record<keyof typeof APP_LOCALES, Messages> = {
   en: enMessages,
   'pseudo-en': pseudoEnMessages,
   'af-ZA': afMessages,
@@ -79,11 +77,11 @@ const messages: Record<keyof typeof APP_LOCALES, Messages> = {
   'zh-TW': zhHantMessages,
 };
 
-(Object.entries(messages) as [keyof typeof APP_LOCALES, any][]).forEach(
-  ([locale, message]) => {
-    i18n.load(locale, message);
-  },
-);
+(
+  Object.entries(localeMessages) as [keyof typeof APP_LOCALES, Messages][]
+).forEach(([locale, message]) => {
+  i18n.load(locale, message);
+});
 
 i18n.activate(SOURCE_LOCALE);
 

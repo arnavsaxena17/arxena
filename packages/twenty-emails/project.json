@@ -43,7 +43,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
-        "command": "lingui compile --typescript"
+        "command": "npx lingui compile --verbose"
       }
     }
   }

@@ -7,7 +7,9 @@
   "license": "AGPL-3.0",
   "main": "./dist/index.js",
   "scripts": {
-    "build": "npx vite build"
+    "build": "npx lingui compile --verbose && npx vite build",
+    "lingui:compile": "npx lingui compile --verbose",
+    "lingui:extract": "npx lingui extract --clean --verbose"
   },
   "dependencies": {
     "twenty-shared": "workspace:*"

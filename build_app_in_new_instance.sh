@@ -260,6 +260,11 @@ if [ "$DEPLOYMENTS_APPLIED" -eq 1 ]; then
   cd "$REPO_DIR/packages/twenty-front"
   npx lingui compile --verbose || npx nx run twenty-front:lingui:compile
 
+  # Compile lingui catalogs for transactional emails (twenty-emails)
+  cd "$REPO_DIR/packages/twenty-emails"
+  mkdir -p src/locales/generated
+  npx lingui compile --verbose || npx nx run twenty-emails:lingui:compile
+
   echo "Restarting NGINX and PM2"
   # 6. Restart services
   sudo systemctl restart nginx

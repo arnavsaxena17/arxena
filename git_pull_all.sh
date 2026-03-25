@@ -41,6 +41,17 @@ STEP_END=$(date +%s)
 echo "Frontend build completed in $((STEP_END - STEP_START)) seconds"
 echo ""
 
+# Build twenty-emails (Lingui catalogs + Vite)
+echo ">>> Building twenty-emails..."
+STEP_START=$(date +%s)
+cd ~/twenty/packages/twenty-emails
+mkdir -p src/locales/generated
+npx lingui extract --clean --verbose
+yarn build
+STEP_END=$(date +%s)
+echo "twenty-emails build completed in $((STEP_END - STEP_START)) seconds"
+echo ""
+
 # Restart PM2
 echo ">>> Restarting PM2 processes..."
 STEP_START=$(date +%s)

@@ -111,6 +111,9 @@ build_step() {
 
 	echo "Building twenty-emails package"
 	cd ~/twenty/packages/twenty-emails/
+	mkdir -p src/locales/generated
+	npx lingui extract --clean --verbose
+	ls -la src/locales/
 	build_step TWENTY_EMAILS yarn build
 
 	echo "Building twenty-mcp-server package"
