@@ -9,7 +9,7 @@ services:
         EXECJS_RUNTIME: 'Disabled'
         RAILS_ENV: 'production'
         RAILS_SERVE_STATIC_FILES: 'true'
-        NODE_OPTIONS: '--max-old-space-size=2048 --openssl-legacy-provider'
+        NODE_OPTIONS: '--max-old-space-size=4096 --openssl-legacy-provider'
     env_file: .env
     volumes:
       - ./storage:/app/storage
