@@ -143,11 +143,21 @@ export class ProcessCandidatesService {
       console.log(`Queueing ${rawCandidatesData.length} raw candidates for processing`);
       const batchSize = 30;
 
+      const rawRows = rawCandidatesData.filter(Boolean) as Record<string, unknown>[];
+      if (rawRows.length > 0) {
+        const sample = rawRows[0];
+        console.log(
+          '[queueRawData] sample raw row keys (first 40):',
+          Object.keys(sample).slice(0, 40),
+        );
+      }
       const deduplicatedRawData = deduplicateLooseUploadRows(
-        rawCandidatesData.filter(Boolean) as Record<string, unknown>[],
+        rawRows,
         this.dataProcessingUtils,
       );
-      console.log(`Deduplicated ${rawCandidatesData.length} raw candidates to ${deduplicatedRawData.length} unique records`);
+      console.log(
+        `Deduplicated ${rawCandidatesData.length} raw candidates to ${deduplicatedRawData.length} unique records (keys: phone/email/url/usk/id, spreadsheet columns, or raw_row:index if no identity)`,
+      );
 
       const totalBatches = Math.ceil(deduplicatedRawData.length / batchSize);
       console.log(`Breaking up ${deduplicatedRawData.length} raw candidates into ${totalBatches} batches of ~${batchSize} each`);

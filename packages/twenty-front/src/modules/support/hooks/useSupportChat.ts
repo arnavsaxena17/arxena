@@ -91,7 +91,7 @@ export const useSupportChat = () => {
       }
 
       window.chatwootSettings = {
-        hideMessageBubble: true,
+        hideMessageBubble: false,
         position: 'right',
         locale: 'en',
         darkMode: 'auto',

@@ -59,13 +59,20 @@ export const extractPhoneRawForUploadDedup = (
     return fromPhonesShape(per.phones) ?? fromPhonesShape(per.phone);
   };
 
+  const fromSpreadsheetColumns =
+    p['Phone number (phones)'] ??
+    p['Phone number (phoneNumber)'] ??
+    p['Phone Number'] ??
+    p.phone_number;
+
   return (
     fromPhonesShape(p.phones) ??
     fromPhonesShape(p.phone) ??
     fromPerson(p.person) ??
     p.phoneNumbers ??
     p.phoneNumber ??
-    (Array.isArray(p.phoneNumbers) ? (p.phoneNumbers as unknown[])[0] : undefined)
+    (Array.isArray(p.phoneNumbers) ? (p.phoneNumbers as unknown[])[0] : undefined) ??
+    fromSpreadsheetColumns
   );
 };
 
@@ -97,12 +104,20 @@ export const extractEmailRawForUploadDedup = (
     return fromEmailsShape(per.emails) ?? fromEmailsShape(per.email);
   };
 
+  const fromSpreadsheetColumns =
+    p['Email (emails)'] ??
+    p['Email (email)'] ??
+    p['Email ID'] ??
+    p.email_address;
+
   return (
     fromEmailsShape(p.emails) ??
     fromEmailsShape(p.email) ??
     fromPerson(p.person) ??
     p.emailAddress ??
-    p.emailAddresses
+    p.emailAddresses ??
+    p.email ??
+    fromSpreadsheetColumns
   );
 };
 
@@ -217,13 +232,34 @@ export const getUploadProfileDedupMapKey = (
   return 'anon:empty';
 };
 
+/**
+ * Pre-transform spreadsheet rows often only have `Phone Number` / `Email ID` columns.
+ * If we returned `anon:empty` for every row, dedup would collapse the whole upload to one record.
+ */
+export const getUploadProfileDedupMapKeyOrRowFallback = (
+  profile: LooseProfile,
+  dataProcessingUtils: DataProcessingUtils,
+  rowIndex: number,
+): string => {
+  const k = getUploadProfileDedupMapKey(profile, dataProcessingUtils);
+  if (k === 'anon:empty') {
+    return `raw_row:${rowIndex}`;
+  }
+  return k;
+};
+
 export const deduplicateProfilesForUpload = <T extends LooseProfile>(
   profiles: T[],
   dataProcessingUtils: DataProcessingUtils,
 ): T[] => {
   const map = new Map<string, T>();
-  for (const profile of profiles) {
-    const k = getUploadProfileDedupMapKey(profile, dataProcessingUtils);
+  for (let i = 0; i < profiles.length; i++) {
+    const profile = profiles[i];
+    const k = getUploadProfileDedupMapKeyOrRowFallback(
+      profile,
+      dataProcessingUtils,
+      i,
+    );
     map.set(k, profile);
   }
   return Array.from(map.values());
@@ -234,8 +270,9 @@ export const deduplicateLooseUploadRows = (
   dataProcessingUtils: DataProcessingUtils,
 ): Record<string, unknown>[] => {
   const map = new Map<string, Record<string, unknown>>();
-  for (const row of rows) {
-    const k = getUploadProfileDedupMapKey(row, dataProcessingUtils);
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const k = getUploadProfileDedupMapKeyOrRowFallback(row, dataProcessingUtils, i);
     map.set(k, row);
   }
   return Array.from(map.values());
