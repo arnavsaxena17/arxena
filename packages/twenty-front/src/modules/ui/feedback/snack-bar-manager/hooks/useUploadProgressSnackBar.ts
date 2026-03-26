@@ -1,12 +1,15 @@
 import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useUploadProgressSseSession } from '@/websocket-context/hooks/useUploadProgressSseSession';
 import { useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 import { useUploadProgress } from '../../../../websocket-context/useUploadProgress';
 
 export const useUploadProgressSnackBar = () => {
   const { enqueueSnackBar } = useSnackBar();
+  const { beginUploadProgressSseSession, endUploadProgressSseSessionAfterDelay } =
+    useUploadProgressSseSession();
   const { uploadProgress, isConnected, error } = useUploadProgress();
   const currentSnackBarId = useRef<string | null>(null);
   const refreshDataFunction = useRecoilValue(dataTableRefreshFunctionState);
@@ -162,6 +165,7 @@ export const useUploadProgressSnackBar = () => {
 
   // Test function to trigger backend upload progress events
   const testBackendProgress = async () => {
+    beginUploadProgressSseSession();
     try {
       console.log('🧪 [useUploadProgressSnackBar] Testing backend progress...');
       const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/upload-progress/test-publish`, {
@@ -174,6 +178,8 @@ export const useUploadProgressSnackBar = () => {
       console.log('🧪 [useUploadProgressSnackBar] Backend test result:', result);
     } catch (error) {
       console.error('🧪 [useUploadProgressSnackBar] Backend test error:', error);
+    } finally {
+      endUploadProgressSseSessionAfterDelay();
     }
   };
 

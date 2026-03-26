@@ -136,4 +136,116 @@ export class WorkspaceMemberProfileProvisioningService {
       );
     }
   }
+
+  /**
+   * Keeps workspaceMemberProfile in sync with workspaceMember (name, email, phone).
+   * Ensures a profile row exists, then updates display fields. Safe to call on CREATED/UPDATED.
+   */
+  async syncWorkspaceMemberProfileFromWorkspaceMemberData(
+    workspaceId: string,
+    workspaceMemberId: string,
+    member: {
+      name?: { firstName?: string; lastName?: string } | null;
+      userEmail?: string | null;
+      phoneNumber?: string | null;
+    },
+  ): Promise<void> {
+    await this.ensureWorkspaceMemberProfileForNewMember(
+      workspaceId,
+      workspaceMemberId,
+    );
+
+    const schema =
+      this.workspaceDataSourceService.getSchemaName(workspaceId);
+    const profileTable =
+      await this.resolveWorkspaceMemberProfileTableName(schema);
+
+    if (!profileTable) {
+      return;
+    }
+
+    const firstName = member.name?.firstName ?? '';
+    const lastName = member.name?.lastName ?? '';
+    const displayName =
+      [firstName, lastName].filter(Boolean).join(' ').trim() || 'Untitled';
+    const email = member.userEmail ?? '';
+    const phone = member.phoneNumber ?? '';
+
+    const hasNameColumn = await this.checkIfColumnExists(
+      schema,
+      profileTable,
+      'name',
+    );
+    const hasFirstNameColumn = await this.checkIfColumnExists(
+      schema,
+      profileTable,
+      'firstName',
+    );
+    const hasLastNameColumn = await this.checkIfColumnExists(
+      schema,
+      profileTable,
+      'lastName',
+    );
+    const hasEmailColumn = await this.checkIfColumnExists(
+      schema,
+      profileTable,
+      'email',
+    );
+    const hasPhoneColumn = await this.checkIfColumnExists(
+      schema,
+      profileTable,
+      'phoneNumber',
+    );
+
+    const setParts: string[] = ['"updatedAt" = NOW()'];
+    const params: unknown[] = [];
+    let paramIndex = 1;
+
+    if (hasNameColumn) {
+      setParts.push(`"name" = $${paramIndex}`);
+      params.push(displayName);
+      paramIndex += 1;
+    }
+    if (hasFirstNameColumn) {
+      setParts.push(`"firstName" = $${paramIndex}`);
+      params.push(firstName);
+      paramIndex += 1;
+    }
+    if (hasLastNameColumn) {
+      setParts.push(`"lastName" = $${paramIndex}`);
+      params.push(lastName);
+      paramIndex += 1;
+    }
+    if (hasEmailColumn) {
+      setParts.push(`"email" = $${paramIndex}`);
+      params.push(email);
+      paramIndex += 1;
+    }
+    if (hasPhoneColumn) {
+      setParts.push(`"phoneNumber" = $${paramIndex}`);
+      params.push(phone);
+      paramIndex += 1;
+    }
+
+    if (setParts.length === 1) {
+      return;
+    }
+
+    params.push(workspaceMemberId);
+
+    try {
+      await this.workspaceDataSourceService.executeRawQuery(
+        `UPDATE ${schema}."${profileTable}"
+         SET ${setParts.join(', ')}
+         WHERE "workspaceMemberId" = $${paramIndex}`,
+        params,
+        workspaceId,
+      );
+    } catch (error) {
+      console.error(
+        `syncWorkspaceMemberProfileFromWorkspaceMemberData failed for member ${workspaceMemberId} workspace ${workspaceId}:`,
+        error,
+      );
+    }
+  }
 }

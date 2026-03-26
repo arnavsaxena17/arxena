@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { axiosRequestForMetadata } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { resolveIsOrgChartEnabledFromWorkspace } from 'twenty-shared';
 import { WorkspaceQueryService } from '../../workspace-modifications.service';
 import { getFieldsData } from '../data/fieldsData';
 import { getObjectCreationArr } from '../data/objectsData';
@@ -524,10 +525,9 @@ export class MetadataUpdateService {
         await this.workspaceQueryService.getWorkspaceIdFromToken(token);
       const workspaceKeys =
         await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
-      const isOrgChartEnabled =
-        (workspaceKeys?.is_org_chart_enabled ??
-          process.env.IS_ORG_CHART_ENABLED ??
-          'true') === 'true';
+      const isOrgChartEnabled = resolveIsOrgChartEnabledFromWorkspace(
+        workspaceKeys?.is_org_chart_enabled,
+      );
 
       // Fetch the metadata once
       const currentMetadata = await this.fetchCurrentMetadata(token);

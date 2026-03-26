@@ -4,6 +4,7 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import styled from '@emotion/styled';
 import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
+import { isOrgChartEnabledEnv } from 'twenty-shared';
 import { useWebSocketEvent } from '../../modules/websocket-context/useWebSocketEvent';
 import { useWebSocket } from '../../modules/websocket-context/WebSocketContextProvider';
 
@@ -176,6 +177,7 @@ export const MetadataStructureSection = () => {
   }, [connected, enqueueSnackBar]);
 
   useEffect(() => {
+    console.log("workspace useeffect??")
     if (!tokenPair?.accessToken?.token) return;
     fetch(
       `${process.env.REACT_APP_SERVER_BASE_URL}/workspace-modifications/workspace-keys`,
@@ -188,9 +190,11 @@ export const MetadataStructureSection = () => {
       .then((res) => res.json())
       .then((keys) => {
         const flag = keys?.is_org_chart_enabled;
-        setIsOrgChartEnabled(flag === undefined ? true : flag === 'true');
+        setIsOrgChartEnabled(
+          flag === undefined ? isOrgChartEnabledEnv : flag === 'true',
+        );
       })
-      .catch(() => setIsOrgChartEnabled(true));
+      .catch(() => setIsOrgChartEnabled(isOrgChartEnabledEnv));
   }, [tokenPair?.accessToken?.token]);
 
   const handleUpgradeToEngagementWorkflows = async () => {

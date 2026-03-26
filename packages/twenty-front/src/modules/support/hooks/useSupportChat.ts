@@ -13,16 +13,19 @@ const insertScript = ({
   innerHTML,
   onLoad,
   defer = false,
+  crossOrigin,
 }: {
   src?: string;
   innerHTML?: string;
   onLoad?: (...args: any[]) => void;
   defer?: boolean;
+  crossOrigin?: HTMLScriptElement['crossOrigin'];
 }) => {
   const script = document.createElement('script');
   if (isNonEmptyString(src)) script.src = src;
   if (isNonEmptyString(innerHTML)) script.innerHTML = innerHTML;
   if (isDefined(onLoad)) script.onload = onLoad;
+  if (isNonEmptyString(crossOrigin)) script.crossOrigin = crossOrigin;
   script.defer = defer;
   document.body.appendChild(script);
 };
@@ -128,6 +131,7 @@ export const useSupportChat = () => {
       insertScript({
         src: sdkUrl,
         defer: true,
+        crossOrigin: 'anonymous',
         onLoad: () => {
           window.chatwootSDK?.run({
             websiteToken,

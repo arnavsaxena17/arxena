@@ -20,8 +20,13 @@ export class UploadProgressPubSubService implements OnModuleDestroy {
   private readonly messageHandlers = new Map<string, (progressData: UploadProgressData) => void>();
   private subscriberClient: any = null;
 
-  constructor(private readonly redisClientService: RedisClientService) {
-    // Set up a separate subscriber client for Redis pub-sub
+  constructor(private readonly redisClientService: RedisClientService) {}
+
+  /** Lazily create the Redis subscriber so idle processes do not hold an extra connection. */
+  private ensureSubscriberClient() {
+    if (this.subscriberClient) {
+      return;
+    }
     this.setupSubscriberClient();
   }
 
@@ -88,6 +93,7 @@ export class UploadProgressPubSubService implements OnModuleDestroy {
     recruiterId: string, 
     callback: (progressData: UploadProgressData) => void
   ): Promise<void> {
+    this.ensureSubscriberClient();
     try {
       const channel = `${this.CHANNEL_PREFIX}${recruiterId}`;
       
@@ -119,6 +125,10 @@ export class UploadProgressPubSubService implements OnModuleDestroy {
       
       // Remove the callback for this channel
       this.messageHandlers.delete(channel);
+
+      if (!this.subscriberClient) {
+        return;
+      }
       
       await this.subscriberClient.unsubscribe(channel);
       this.logger.log(`Unsubscribed from progress updates for recruiter ${recruiterId}`);

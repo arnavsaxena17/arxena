@@ -57,6 +57,7 @@ export class DataProcessingUtils {
         candidateData['Email ID'] ||
         candidateData['Email (emails)'] ||
         candidateData['Email (email)'] ||
+        candidateData.emails ||
         candidateData.email ||
         candidateData.email_address ||
         candidateData.emailAddress;
@@ -69,6 +70,7 @@ export class DataProcessingUtils {
         candidateData['Phone Number'] ||
         candidateData['Phone number (phones)'] ||
         candidateData['Phone number (phoneNumber)'] ||
+        candidateData.phones ||
         candidateData.phone ||
         candidateData.phoneNumber ||
         candidateData.phone_number ||
@@ -126,7 +128,11 @@ export class DataProcessingUtils {
     return phones
       .map(phone => {
         // Extract phone number from object structures
-        if (typeof phone === 'object') {
+        if (typeof phone === 'object' && phone !== null) {
+          const po = phone as Record<string, unknown>;
+          if (typeof po.primaryPhoneNumber === 'string' && po.primaryPhoneNumber.trim()) {
+            return po.primaryPhoneNumber;
+          }
           if (phone.number) return phone.number;
           if (phone.value) return phone.value;
           if (phone.formattedNumber) return phone.formattedNumber;
@@ -201,7 +207,14 @@ export class DataProcessingUtils {
           if (typeof phone === 'string') {
             return phone;
           } else if (typeof phone === 'object' && phone) {
-            return phone.number || phone.value || phone.formattedNumber || phone.phoneNumber || '';
+            return (
+              phone.primaryPhoneNumber ||
+              phone.number ||
+              phone.value ||
+              phone.formattedNumber ||
+              phone.phoneNumber ||
+              ''
+            );
           }
           return '';
         })
@@ -321,8 +334,12 @@ export class DataProcessingUtils {
     
     return emailArray
       .map(email => {
-        // Extract email from object structures
-        if (typeof email === 'object') {
+        // Extract email from object structures (GraphQL-style primaryEmail first)
+        if (typeof email === 'object' && email !== null) {
+          const eo = email as Record<string, unknown>;
+          if (typeof eo.primaryEmail === 'string' && eo.primaryEmail.trim()) {
+            return eo.primaryEmail;
+          }
           if (email.email) return email.email;
           if (email.value) return email.value;
           if (email.emailAddress) return email.emailAddress;
@@ -384,7 +401,13 @@ export class DataProcessingUtils {
           if (typeof email === 'string') {
             return email;
           } else if (typeof email === 'object' && email) {
-            return email.email || email.value || email.primaryEmail || '';
+            return (
+              email.primaryEmail ||
+              email.email ||
+              email.value ||
+              email.emailAddress ||
+              ''
+            );
           }
           return '';
         })

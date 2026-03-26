@@ -18,26 +18,28 @@ import { ObjectMetadataEntity } from 'src/engine/metadata-modules/object-metadat
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
 
-@Module({
+import { WorkspaceMemberProfileSyncListener } from 'src/engine/core-modules/user-workspace/listeners/workspace-member-profile-sync.listener';
+
+const userWorkspaceNestjsQueryFeature = NestjsQueryGraphQLModule.forFeature({
   imports: [
-    NestjsQueryGraphQLModule.forFeature({
-      imports: [
-        NestjsQueryTypeOrmModule.forFeature(
-          [User, UserWorkspace, Workspace, TwoFactorMethod],
-          'core',
-        ),
-        NestjsQueryTypeOrmModule.forFeature([ObjectMetadataEntity], 'metadata'),
-        TypeORMModule,
-        DataSourceModule,
-        WorkspaceDataSourceModule,
-        WorkspaceInvitationModule,
-        DomainManagerModule,
-        TwentyORMModule,
-      ],
-      services: [UserWorkspaceService, WorkspaceMemberProfileProvisioningService],
-    }),
+    NestjsQueryTypeOrmModule.forFeature(
+      [User, UserWorkspace, Workspace, TwoFactorMethod],
+      'core',
+    ),
+    NestjsQueryTypeOrmModule.forFeature([ObjectMetadataEntity], 'metadata'),
+    TypeORMModule,
+    DataSourceModule,
+    WorkspaceDataSourceModule,
+    WorkspaceInvitationModule,
+    DomainManagerModule,
+    TwentyORMModule,
   ],
-  exports: [UserWorkspaceService],
-  providers: [UserWorkspaceService, UserWorkspaceResolver],
+  services: [UserWorkspaceService, WorkspaceMemberProfileProvisioningService],
+});
+
+@Module({
+  imports: [userWorkspaceNestjsQueryFeature],
+  exports: [userWorkspaceNestjsQueryFeature],
+  providers: [UserWorkspaceResolver, WorkspaceMemberProfileSyncListener],
 })
 export class UserWorkspaceModule {}

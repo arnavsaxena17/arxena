@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { FieldMetadataType } from 'twenty-shared';
+import { FieldMetadataType, isOrgChartEnabledEnv } from 'twenty-shared';
 
 import { DataSourceService } from 'src/engine/metadata-modules/data-source/data-source.service';
 import { CreateFieldInput } from 'src/engine/metadata-modules/field-metadata/dtos/create-field.input';
@@ -59,7 +59,7 @@ export class MetadataStructureSeedService {
       );
     const objectsNameIdMap = await this.buildObjectsNameIdMap(workspaceId);
 
-    const objectCreationArr = getObjectCreationArr(true);
+    const objectCreationArr = getObjectCreationArr(isOrgChartEnabledEnv);
 
     for (const item of objectCreationArr) {
       if (!item?.object) continue;
@@ -84,7 +84,7 @@ export class MetadataStructureSeedService {
       objectsNameIdMap[created.nameSingular] = created.id;
     }
 
-    const fieldsData = getFieldsData(objectsNameIdMap, true);
+    const fieldsData = getFieldsData(objectsNameIdMap, isOrgChartEnabledEnv);
     const fieldInputs: CreateFieldInput[] = [];
     for (const item of fieldsData) {
       const objId = item?.field?.objectMetadataId;
@@ -108,7 +108,7 @@ export class MetadataStructureSeedService {
       );
     }
 
-    const relationsData = getRelationsData(objectsNameIdMap, true);
+    const relationsData = getRelationsData(objectsNameIdMap, isOrgChartEnabledEnv);
     for (const item of relationsData) {
       if (!item?.relationMetadata) continue;
       const r = item.relationMetadata;

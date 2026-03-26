@@ -116,7 +116,7 @@ export const UploadResumesStep = ({
   // Get onClose from context to close modal after successful upload
   const { onClose } = useSpreadsheetImportInternal();
   const { enqueueSnackBar } = useSnackBar();
-  
+
   // Get refresh function from parent context if available
 
   const isAllSelected = selectedFiles.size === files.length;
@@ -147,7 +147,7 @@ export const UploadResumesStep = ({
     }
 
     setIsUploading(true);
-    
+
     try {
       // Create FormData for file upload with only selected files
       const formData = new FormData();

@@ -57,6 +57,12 @@ export type SpreadsheetImportDialogOptions<FieldNames extends string> = {
   rtl?: boolean;
   // Allow header selection
   selectHeader?: boolean;
+  /**
+   * When true, keep upload-progress SSE open for the whole time this import modal is open
+   * (UploadStep → … → ValidationStep / resume upload). Used for candidate imports that
+   * enqueue backend jobs with Redis/SSE progress.
+   */
+  enableUploadProgressSseWhileOpen?: boolean;
 };
 
 export type ImportedRow = Array<string | undefined>;

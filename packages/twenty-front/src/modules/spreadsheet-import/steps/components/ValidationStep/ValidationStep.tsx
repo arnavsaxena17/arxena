@@ -3,14 +3,14 @@ import { SpreadsheetImportTable } from '@/spreadsheet-import/components/Spreadsh
 import { StepNavigationButton } from '@/spreadsheet-import/components/StepNavigationButton';
 import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpreadsheetImportInternal';
 import {
-  ColumnType,
-  Columns,
+    ColumnType,
+    Columns,
 } from '@/spreadsheet-import/steps/components/MatchColumnsStep/MatchColumnsStep';
 import { SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/SpreadsheetImportStep';
 import { SpreadsheetImportStepType } from '@/spreadsheet-import/steps/types/SpreadsheetImportStepType';
 import {
-  ImportValidationResult,
-  ImportedStructuredRow,
+    ImportValidationResult,
+    ImportedStructuredRow,
 } from '@/spreadsheet-import/types';
 import { addErrorsAndRunHooks } from '@/spreadsheet-import/utils/dataMutations';
 import { DeduplicationStats } from '@/spreadsheet-import/utils/mergeWorkbooks';
@@ -20,13 +20,13 @@ import { useDialogManager } from '@/ui/feedback/dialog-manager/hooks/useDialogMa
 import { Modal } from '@/ui/layout/modal/components/Modal';
 import styled from '@emotion/styled';
 import {
-  Dispatch,
-  SetStateAction,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
+    Dispatch,
+    SetStateAction,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
 } from 'react';
 // @ts-expect-error Todo: remove usage of react-data-grid`
 import { RowsChangeData } from 'react-data-grid';

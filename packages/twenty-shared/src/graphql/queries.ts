@@ -365,8 +365,17 @@ const graphqlToFindManyJobsOrgChart = `query FindManyJobs($filter: JobFilterInpu
   }
 }`;
 
-const isOrgChartEnabledEnv =
-  (typeof process !== 'undefined' ? process.env?.IS_ORG_CHART_ENABLED : undefined) === 'true';
+/** Toggle org-chart Job GraphQL variants in this bundle. Runtime behavior uses workspace `is_org_chart_enabled` and `getGraphqlToFindManyJobs`. */
+export const isOrgChartEnabledEnv = false;
+
+export function resolveIsOrgChartEnabledFromWorkspace(
+  workspaceValue: string | null | undefined,
+): boolean {
+  if (workspaceValue == null || String(workspaceValue).trim() === '') {
+    return isOrgChartEnabledEnv;
+  }
+  return String(workspaceValue).trim() === 'true';
+}
 
 export function getGraphqlToFindManyJobs(isOrgChartEnabled: boolean): string {
   return isOrgChartEnabled ? graphqlToFindManyJobsOrgChart : graphqlToFindManyJobsFull;

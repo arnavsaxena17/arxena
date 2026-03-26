@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { MOBILE_VIEWPORT } from 'twenty-ui';
 
 import { useSpreadsheetImportInitialStep } from '@/spreadsheet-import/hooks/useSpreadsheetImportInitialStep';
@@ -65,9 +65,9 @@ export const SpreadsheetImportStepperContainer = () => {
     ? ['uploadStep', 'uploadResumesStep'] as const
     : steps;
 
-  const handleStepStateChange = (stepState: SpreadsheetImportStep) => {
+  const handleStepStateChange = useCallback((stepState: SpreadsheetImportStep) => {
     setCurrentStepState(stepState);
-  };
+  }, []);
 
   return (
     <>

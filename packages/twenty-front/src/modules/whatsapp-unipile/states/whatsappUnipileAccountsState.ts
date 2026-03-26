@@ -1,5 +1,8 @@
 import { atom, selector } from 'recoil';
-import type { UnipileWhatsappAccount } from 'twenty-shared';
+import { UnipileWhatsappAccount } from 'twenty-shared';
+
+import { workspaceMemberProfileUnipileFieldsState } from '@/unipile/states/workspaceMemberProfileUnipileFieldsState';
+import { hasMatchingConnectedWhatsappAccount } from '@/unipile/utils/matchUnipileToWorkspaceMemberProfile';
 
 export const whatsappUnipileAccountsState = atom<UnipileWhatsappAccount[]>({
   key: 'whatsappUnipileAccountsState',
@@ -14,3 +17,12 @@ export const isWhatsappUnipileLoggedInSelector = selector<boolean>({
   },
 });
 
+/** True when a connected WhatsApp Unipile account matches workspace member profile phone (or stored whatsappUnipileAccountId). */
+export const isWhatsappUnipileConnectedSelector = selector<boolean>({
+  key: 'isWhatsappUnipileConnectedSelector',
+  get: ({ get }) =>
+    hasMatchingConnectedWhatsappAccount(
+      get(whatsappUnipileAccountsState),
+      get(workspaceMemberProfileUnipileFieldsState),
+    ),
+});

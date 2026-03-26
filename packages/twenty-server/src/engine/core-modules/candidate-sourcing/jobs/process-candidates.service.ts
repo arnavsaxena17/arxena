@@ -9,12 +9,18 @@ import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decora
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { DataSourceTransformerFactoryService } from '../services/data-source-transformer-factory.service';
+import { DataProcessingUtils } from '../utils/data-processing.utils';
+import {
+  deduplicateLooseUploadRows,
+  deduplicateProfilesForUpload,
+} from '../utils/upload-profile-dedup.utils';
 
 export class ProcessCandidatesService {
   constructor(
     @InjectMessageQueue(MessageQueue.candidateQueue)
     private readonly messageQueueService: MessageQueueService,
     private readonly dataSourceTransformerFactory: DataSourceTransformerFactoryService,
+    private readonly dataProcessingUtils: DataProcessingUtils,
   ) {}
 
   /**
@@ -136,21 +142,11 @@ export class ProcessCandidatesService {
     try {
       console.log(`Queueing ${rawCandidatesData.length} raw candidates for processing`);
       const batchSize = 30;
-      const uniqueStringKeyToProfileMap = new Map<string, any>();
-      
-      // Deduplicate raw data based on unique identifiers if available
-      rawCandidatesData.forEach((candidate) => {
-        if (candidate && candidate.uniqueStringKey && candidate.uniqueStringKey !== '') {
-          uniqueStringKeyToProfileMap.set(candidate.uniqueStringKey, candidate);
-        } else if (candidate && candidate.id && candidate.id !== '') {
-          uniqueStringKeyToProfileMap.set(candidate.id, candidate);
-        } else {
-          // Use index as fallback for unique key
-          uniqueStringKeyToProfileMap.set(`raw_${uniqueStringKeyToProfileMap.size}`, candidate);
-        }
-      });
-      
-      const deduplicatedRawData = Array.from(uniqueStringKeyToProfileMap.values());
+
+      const deduplicatedRawData = deduplicateLooseUploadRows(
+        rawCandidatesData.filter(Boolean) as Record<string, unknown>[],
+        this.dataProcessingUtils,
+      );
       console.log(`Deduplicated ${rawCandidatesData.length} raw candidates to ${deduplicatedRawData.length} unique records`);
 
       const totalBatches = Math.ceil(deduplicatedRawData.length / batchSize);
@@ -234,17 +230,10 @@ export class ProcessCandidatesService {
     try {
       console.log(`Queueing ${data.length} candidates for processing`);
       const batchSize = 30;
-      const uniqueStringKeyToProfileMap = new Map<string, UserProfile>();
-      data.forEach((candidate) => {
-        if (
-          candidate &&
-          candidate.uniqueStringKey &&
-          candidate.uniqueStringKey !== ''
-        ) {
-          uniqueStringKeyToProfileMap.set(candidate.uniqueStringKey, candidate);
-        }
-      });
-      const deduplicatedProfiles = Array.from(uniqueStringKeyToProfileMap.values());
+      const deduplicatedProfiles = deduplicateProfilesForUpload(
+        data,
+        this.dataProcessingUtils,
+      );
       const uniqueCandidates = new Set();
       for (const candidate of data) {
         uniqueCandidates.add(candidate.uniqueStringKey);

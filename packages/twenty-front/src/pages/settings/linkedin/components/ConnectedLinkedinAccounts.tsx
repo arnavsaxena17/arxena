@@ -1,11 +1,24 @@
 import { css } from '@emotion/react';
 import styled from '@emotion/styled';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import type { UnipileLinkedinAccount } from 'twenty-shared';
 import { Mixpanel } from '~/mixpanel';
 import { tokenPairState } from '~/modules/auth/states/tokenPairState';
 import { linkedinUnipileAccountsState } from '~/modules/linkedin-unipile/states/linkedinUnipileAccountsState';
+import { workspaceMemberProfileUnipileFieldsState } from '~/modules/unipile/states/workspaceMemberProfileUnipileFieldsState';
+import {
+    filterLinkedinAccountsForWorkspaceMemberProfile,
+    hasMatchingConnectedLinkedinAccount,
+    linkedinAccountMatchesWorkspaceMemberProfile,
+    shouldRestrictLinkedinByProfile,
+} from '~/modules/unipile/utils/matchUnipileToWorkspaceMemberProfile';
 import { getLinkedinService } from '~/pages/settings/linkedin/services/linkedin-backend.service';
 
 const AccountsContainer = styled.div`
@@ -65,17 +78,25 @@ const AccountStatus = styled.span<{ status: string }>`
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  
-  ${props => {
+
+  ${(props) => {
     switch (props.status) {
       case 'connected':
-        return css`color: #059669;`;
+        return css`
+          color: #059669;
+        `;
       case 'disconnected':
-        return css`color: #dc2626;`;
+        return css`
+          color: #dc2626;
+        `;
       case 'pending':
-        return css`color: #d97706;`;
+        return css`
+          color: #d97706;
+        `;
       default:
-        return css`color: #6b7280;`;
+        return css`
+          color: #6b7280;
+        `;
     }
   }}
 `;
@@ -96,7 +117,9 @@ const AccountActions = styled.div`
   gap: 0.5rem;
 `;
 
-const ActionButton = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
+const ActionButton = styled.button<{
+  variant?: 'primary' | 'secondary' | 'danger';
+}>`
   padding: 0.5rem 0.75rem;
   border-radius: 4px;
   font-size: 0.75rem;
@@ -105,25 +128,31 @@ const ActionButton = styled.button<{ variant?: 'primary' | 'secondary' | 'danger
   cursor: pointer;
   transition: all 0.2s ease;
 
-  ${props => {
+  ${(props) => {
     switch (props.variant) {
       case 'primary':
         return css`
           background-color: #0077b5;
           color: white;
-          &:hover { background-color: #005885; }
+          &:hover {
+            background-color: #005885;
+          }
         `;
       case 'danger':
         return css`
           background-color: #dc2626;
           color: white;
-          &:hover { background-color: #b91c1c; }
+          &:hover {
+            background-color: #b91c1c;
+          }
         `;
       default:
         return css`
           background-color: #f3f4f6;
           color: #374151;
-          &:hover { background-color: #e5e7eb; }
+          &:hover {
+            background-color: #e5e7eb;
+          }
         `;
     }
   }}
@@ -157,7 +186,7 @@ const RetryButton = styled.button`
   cursor: pointer;
   margin-top: 0.5rem;
   transition: background-color 0.2s ease;
-  
+
   &:hover {
     background-color: #005885;
   }
@@ -169,89 +198,132 @@ interface ConnectedLinkedinAccountsProps {
   onAccountsLoaded?: (hasConnected: boolean) => void;
 }
 
-export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps> = ({
-  refreshTrigger,
-  onAccountConnected,
-  onAccountsLoaded,
-}) => {
+export const ConnectedLinkedinAccounts: React.FC<
+  ConnectedLinkedinAccountsProps
+> = ({ refreshTrigger, onAccountConnected, onAccountsLoaded }) => {
   const [accounts, setAccounts] = useState<UnipileLinkedinAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const previousAccountsRef = useRef<UnipileLinkedinAccount[]>([]);
-  
+
   // Get access token from Recoil state
   const tokenPair = useRecoilValue(tokenPairState);
   const accessToken = tokenPair?.accessToken?.token;
-  const setLinkedinUnipileAccounts = useSetRecoilState(linkedinUnipileAccountsState);
-  
+  const setLinkedinUnipileAccounts = useSetRecoilState(
+    linkedinUnipileAccountsState,
+  );
+  const workspaceMemberProfileUnipileFields = useRecoilValue(
+    workspaceMemberProfileUnipileFieldsState,
+  );
+
   const loadAccounts = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       if (!accessToken) {
-        setError('Authentication token not available. Please refresh the page and try again.');
+        setError(
+          'Authentication token not available. Please refresh the page and try again.',
+        );
         return;
       }
-      
+
       const service = getLinkedinService();
       const allAccounts = await service.getAllAccounts(accessToken);
-      
+
       // Filter to only show LinkedIn accounts
-      const accountList = allAccounts.filter(acc => acc.type === 'LINKEDIN');
-      
+      const accountList = allAccounts.filter((acc) => acc.type === 'LINKEDIN');
+
       // Check if there's a new connected account that wasn't in the previous list
-      const previousAccountIds = previousAccountsRef.current.map(acc => acc.id);
-      const newConnectedAccounts = accountList.filter(acc => 
-        acc.status === 'connected' && 
-        acc.type === 'LINKEDIN' && 
-        !previousAccountIds.includes(acc.id)
+      const previousAccountIds = previousAccountsRef.current.map(
+        (acc) => acc.id,
       );
-      
-      // Update workspace member profile with the first new connected LinkedIn account ID
-      if (newConnectedAccounts.length > 0) {
-        const newAccountId = newConnectedAccounts[0].id;
-        const account = newConnectedAccounts[0];
-        if (account.type === 'LINKEDIN') {
-          try {
-            const service = getLinkedinService();
-            const result = await service.updateMemberAccount(newAccountId, accessToken);
-            if (!result.success) {
-              console.error('Failed to update workspace member profile with LinkedIn account ID');
-            }
-          } catch (apiKeyError) {
-            console.error('Failed to update workspace member profile with LinkedIn account ID:', apiKeyError);
+      const newConnectedAccounts = accountList.filter(
+        (acc) =>
+          acc.status === 'connected' &&
+          acc.type === 'LINKEDIN' &&
+          !previousAccountIds.includes(acc.id),
+      );
+
+      const accountToPersist = newConnectedAccounts.find((acc) => {
+        if (acc.type !== 'LINKEDIN') {
+          return false;
+        }
+        if (
+          !workspaceMemberProfileUnipileFields ||
+          !shouldRestrictLinkedinByProfile(workspaceMemberProfileUnipileFields)
+        ) {
+          return true;
+        }
+        return linkedinAccountMatchesWorkspaceMemberProfile(
+          workspaceMemberProfileUnipileFields,
+          acc,
+        );
+      });
+
+      if (accountToPersist?.type === 'LINKEDIN') {
+        try {
+          const service = getLinkedinService();
+          const result = await service.updateMemberAccount(
+            accountToPersist.id,
+            accessToken,
+          );
+          if (!result.success) {
+            console.error(
+              'Failed to update workspace member profile with LinkedIn account ID',
+            );
           }
+        } catch (apiKeyError) {
+          console.error(
+            'Failed to update workspace member profile with LinkedIn account ID:',
+            apiKeyError,
+          );
         }
       }
-      
+
       setAccounts(accountList);
       previousAccountsRef.current = accountList;
       setLinkedinUnipileAccounts(accountList);
-      
-      // Check if there are any connected LinkedIn accounts
-      const hasConnected = accountList.some(acc => acc.status === 'connected' && acc.type === 'LINKEDIN');
+
+      const hasConnected = hasMatchingConnectedLinkedinAccount(
+        accountList,
+        workspaceMemberProfileUnipileFields,
+      );
       if (onAccountsLoaded) {
         onAccountsLoaded(hasConnected);
       }
-      
+
       // Call the callback if there were new accounts connected
       if (newConnectedAccounts.length > 0 && onAccountConnected) {
         onAccountConnected();
       }
     } catch (err) {
       console.error('Failed to load LinkedIn accounts:', err);
-      
+
       // Provide more specific error messages based on the error type
       if (err instanceof Error) {
         if (err.message.includes('403') || err.message.includes('Forbidden')) {
-          setError('Access denied. Please check your permissions or contact support.');
-        } else if (err.message.includes('401') || err.message.includes('Unauthorized')) {
-          setError('Authentication failed. Please refresh the page and try again.');
-        } else if (err.message.includes('500') || err.message.includes('Internal Server Error')) {
+          setError(
+            'Access denied. Please check your permissions or contact support.',
+          );
+        } else if (
+          err.message.includes('401') ||
+          err.message.includes('Unauthorized')
+        ) {
+          setError(
+            'Authentication failed. Please refresh the page and try again.',
+          );
+        } else if (
+          err.message.includes('500') ||
+          err.message.includes('Internal Server Error')
+        ) {
           setError('Server error. Please try again later or contact support.');
-        } else if (err.message.includes('Failed to communicate with Unipile API')) {
-          setError('LinkedIn service is temporarily unavailable. Please try again later.');
+        } else if (
+          err.message.includes('Failed to communicate with Unipile API')
+        ) {
+          setError(
+            'LinkedIn service is temporarily unavailable. Please try again later.',
+          );
         } else {
           setError(`Failed to load accounts: ${err.message}`);
         }
@@ -266,6 +338,7 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
     onAccountConnected,
     onAccountsLoaded,
     setLinkedinUnipileAccounts,
+    workspaceMemberProfileUnipileFields,
   ]);
 
   useEffect(() => {
@@ -286,13 +359,16 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
       const service = getLinkedinService();
       const currentUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
       console.log('currentUrl::::', currentUrl);
-      
-      const response = await (service as any).createHostedAuthLink({
-        type: 'reconnect',
-        reconnect_account: accountId,
-        success_redirect_url: `${currentUrl}?linkedin_reconnect=success`,
-        failure_redirect_url: `${currentUrl}?linkedin_reconnect=failure`,
-      }, accessToken);
+
+      const response = await (service as any).createHostedAuthLink(
+        {
+          type: 'reconnect',
+          reconnect_account: accountId,
+          success_redirect_url: `${currentUrl}?linkedin_reconnect=success`,
+          failure_redirect_url: `${currentUrl}?linkedin_reconnect=failure`,
+        },
+        accessToken,
+      );
 
       if (response.success && response.hosted_link) {
         window.location.href = response.hosted_link;
@@ -304,14 +380,18 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
   };
 
   const handleDisconnect = async (accountId: string) => {
-    if (!window.confirm('Are you sure you want to disconnect this LinkedIn account?')) {
+    if (
+      !window.confirm(
+        'Are you sure you want to disconnect this LinkedIn account?',
+      )
+    ) {
       return;
     }
 
     try {
       const service = getLinkedinService();
       const result = await service.disconnectAccount(accountId, accessToken);
-      
+
       if (result.success) {
         await loadAccounts(); // Refresh the list
       } else {
@@ -338,6 +418,15 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
     return username.substring(0, 2).toUpperCase();
   };
 
+  const displayedAccounts = useMemo(
+    () =>
+      filterLinkedinAccountsForWorkspaceMemberProfile(
+        accounts,
+        workspaceMemberProfileUnipileFields,
+      ),
+    [accounts, workspaceMemberProfileUnipileFields],
+  );
+
   if (loading) {
     return (
       <AccountsContainer>
@@ -350,28 +439,31 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
   return (
     <AccountsContainer>
       <AccountsTitle>Connected LinkedIn Accounts</AccountsTitle>
-      
+
       {error && (
         <ErrorContainer>
           {error}
           <br />
-          <RetryButton onClick={loadAccounts}>
-            Retry
-          </RetryButton>
+          <RetryButton onClick={loadAccounts}>Retry</RetryButton>
         </ErrorContainer>
       )}
 
       {accounts.length === 0 ? (
         <EmptyState>
-          No LinkedIn accounts connected yet. Use the form above to connect your first account.
+          No LinkedIn accounts connected yet. Use the form above to connect your
+          first account.
+        </EmptyState>
+      ) : displayedAccounts.length === 0 ? (
+        <EmptyState>
+          No connected LinkedIn account matches the LinkedIn URL on your
+          workspace member profile. Update your profile URL or connect the
+          account that matches it.
         </EmptyState>
       ) : (
-        accounts.map((account) => (
+        displayedAccounts.map((account) => (
           <AccountCard key={account.id}>
             <AccountInfo>
-              <Avatar>
-                {getInitials(account.username)}
-              </Avatar>
+              <Avatar>{getInitials(account.username)}</Avatar>
               <AccountDetails>
                 <AccountName>{account.username}</AccountName>
                 <AccountStatus status={account.status}>
@@ -380,7 +472,7 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
                 <AccountId>{account.id}</AccountId>
               </AccountDetails>
             </AccountInfo>
-            
+
             <AccountActions>
               {account.status === 'disconnected' && (
                 <ActionButton
@@ -390,7 +482,7 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
                   Reconnect
                 </ActionButton>
               )}
-              
+
               {account.status === 'connected' && (
                 <ActionButton
                   variant="secondary"
@@ -399,7 +491,7 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
                   Resync
                 </ActionButton>
               )}
-              
+
               <ActionButton
                 variant="danger"
                 onClick={() => handleDisconnect(account.id)}

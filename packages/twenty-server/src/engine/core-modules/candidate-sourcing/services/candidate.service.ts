@@ -18,6 +18,7 @@ import {
   mutationToUpdateOnePerson,
   PageInfo,
   PersonNode,
+  resolveIsOrgChartEnabledFromWorkspace,
   updateOneCandidateFieldValue,
   UserProfile
 } from 'twenty-shared';
@@ -26,6 +27,14 @@ import { NameProcessor } from '../../workspace-modifications/object-apis/data/na
 import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
 import { generateCompleteMappings, mapArxCandidateToPersonNode, processArxCandidate } from 'src/engine/core-modules/candidate-sourcing/utils/data-transformation-utility';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
+import {
+  CandidateUploadLookup,
+  deduplicateProfilesForUpload,
+  extractUploadUrlBucket,
+  findExistingCandidateForUpload,
+  getUploadProfileDedupMapKey,
+  normalizeUrlForDedup,
+} from 'src/engine/core-modules/candidate-sourcing/utils/upload-profile-dedup.utils';
 import { v4 } from 'uuid';
 
 import axios from 'axios';
@@ -40,6 +49,13 @@ import { PersonService } from './person.service';
 
 // Forward reference type to avoid circular dependency
 type ProcessCandidatesServiceRef = ProcessCandidatesService;
+
+type UploadExistingCandidateNode = {
+  id: string;
+  peopleId?: string;
+  phoneNumber?: { primaryPhoneNumber?: string } | string;
+  email?: { primaryEmail?: string } | string;
+};
 
 // import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
 
@@ -148,47 +164,217 @@ export class CandidateService {
     }
   }
 
+  private indexCandidateNodeInUploadLookup(
+    node: Record<string, unknown> | undefined,
+    lookup: CandidateUploadLookup,
+  ): void {
+    if (!node?.id) {
+      return;
+    }
+    const usk = node.uniqueStringKey;
+    if (typeof usk === 'string' && usk.trim() !== '') {
+      lookup.byUniqueStringKey.set(usk, node);
+    }
+    const email = node.email as { primaryEmail?: string } | undefined;
+    const em = email?.primaryEmail;
+    if (typeof em === 'string' && em.trim() !== '') {
+      lookup.byEmail.set(em.toLowerCase().trim(), node);
+    }
+    const phone = node.phoneNumber as { primaryPhoneNumber?: string } | undefined;
+    const ph = phone?.primaryPhoneNumber;
+    if (typeof ph === 'string' && ph.trim() !== '') {
+      const cleaned = this.dataProcessingUtils.cleanPhoneNumber(ph);
+      if (cleaned) {
+        lookup.byPhone.set(cleaned, node);
+      }
+    }
+    const li = (node.linkedinUrl as { primaryLinkUrl?: string } | undefined)?.primaryLinkUrl;
+    if (typeof li === 'string' && li.trim() !== '') {
+      lookup.byLinkedinUrl.set(normalizeLinkedInUrl(li), node);
+    }
+    const hir = (node.hiringNaukriUrl as { primaryLinkUrl?: string } | undefined)?.primaryLinkUrl;
+    if (typeof hir === 'string' && hir.trim() !== '') {
+      lookup.byHiringNaukriUrl.set(normalizeUrlForDedup(hir), node);
+    }
+    const res = (node.resdexNaukriUrl as { primaryLinkUrl?: string } | undefined)?.primaryLinkUrl;
+    if (typeof res === 'string' && res.trim() !== '') {
+      lookup.byResdexNaukriUrl.set(normalizeUrlForDedup(res), node);
+    }
+  }
+
+  private chunkArray<T>(items: T[], size: number): T[][] {
+    const out: T[][] = [];
+    for (let i = 0; i < items.length; i += size) {
+      out.push(items.slice(i, i + size));
+    }
+    return out;
+  }
+
+  /**
+   * Loads existing candidates for this job keyed by uniqueStringKey, email, phone, and profile URLs
+   * so uploads do not create duplicates when uniqueStringKey is name-only but phone/email/URL match.
+   */
   async batchCheckExistingCandidates(
-    uniqueStringKeys: string[],
+    profiles: UserProfile[],
     jobId: string,
     apiToken: string,
-  ): Promise<Map<string, any>> {
-    const variables = {
-      filter: {
-        uniqueStringKey: { in: uniqueStringKeys },
-        jobsId: { eq: jobId },
-      },
+  ): Promise<CandidateUploadLookup> {
+    const lookup: CandidateUploadLookup = {
+      byUniqueStringKey: new Map(),
+      byEmail: new Map(),
+      byPhone: new Map(),
+      byLinkedinUrl: new Map(),
+      byHiringNaukriUrl: new Map(),
+      byResdexNaukriUrl: new Map(),
     };
-    
-    console.log('GraphQL variables being sent:', JSON.stringify(variables, null, 2));
-    console.log('Looking for uniqueStringKeys:', uniqueStringKeys);
-    console.log('Looking for jobId:', jobId);
-    console.log('Looking for candidates:', uniqueStringKeys.length);
-    if (uniqueStringKeys.length === 0) {
-      console.log('No uniqueStringKeys provided, returning empty candidatesMap');
-      return new Map<string, any>();
-    }
 
-    const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, variables, apiToken);
-
-    const candidatesMap = new Map<string, any>();
-    const candidates = response?.data?.data?.candidates as {
-      edges: CandidatesEdge[];
-      pageInfo: PageInfo;
-    } | undefined;
-
-    if (!response?.data?.data?.candidates) {
-      console.log('No candidates found in response');
-      console.log('Available response keys:', Object.keys(response?.data || {}));
-      return candidatesMap;
-    }
-    candidates?.edges?.forEach((edge: any) => {
-      if (edge?.node?.uniqueStringKey) {
-        candidatesMap.set(edge.node.uniqueStringKey, edge.node);
+    const ingestNodes = (nodes: unknown[]) => {
+      for (const node of nodes) {
+        this.indexCandidateNodeInUploadLookup(node as Record<string, unknown>, lookup);
       }
-    });
+    };
 
-    return candidatesMap;
+    const runCandidatesQuery = async (filter: Record<string, unknown>) => {
+      const variables = { filter, limit: 200 };
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFetchAllCandidateData,
+        variables,
+        apiToken,
+      );
+      const candidates = response?.data?.data?.candidates as
+        | { edges: CandidatesEdge[]; pageInfo: PageInfo }
+        | undefined;
+      const edges = candidates?.edges || [];
+      return edges.map((e) => e.node).filter(Boolean);
+    };
+
+    const usks = [
+      ...new Set(
+        profiles.map((p) => p.uniqueStringKey).filter((k): k is string => Boolean(k && k.trim())),
+      ),
+    ];
+    for (const part of this.chunkArray(usks, 30)) {
+      if (part.length === 0) {
+        continue;
+      }
+      const nodes = await runCandidatesQuery({
+        and: [{ jobsId: { eq: jobId } }, { uniqueStringKey: { in: part } }],
+      });
+      ingestNodes(nodes);
+    }
+
+    const emails = new Set<string>();
+    const phones = new Set<string>();
+    const linkedins = new Set<string>();
+    const hirings = new Set<string>();
+    const resdexs = new Set<string>();
+
+    for (const p of profiles) {
+      const emailData = this.dataProcessingUtils.parseEmails(
+        p.emailAddress ?? p.emailAddresses,
+      );
+      if (emailData.primaryEmail && emailData.primaryEmail.trim() !== '') {
+        emails.add(emailData.primaryEmail.toLowerCase().trim());
+      }
+      const phoneData = this.dataProcessingUtils.parsePhoneNumbers(
+        p.phoneNumbers ?? p.phoneNumber,
+      );
+      if (phoneData.primaryPhoneNumber && phoneData.primaryPhoneNumber.trim() !== '') {
+        const c = this.dataProcessingUtils.cleanPhoneNumber(phoneData.primaryPhoneNumber);
+        if (c) {
+          phones.add(c);
+        }
+      }
+      const urls = extractUploadUrlBucket(p);
+      if (urls.linkedinNorm) {
+        linkedins.add(urls.linkedinNorm);
+      }
+      if (urls.hiringNorm) {
+        hirings.add(urls.hiringNorm);
+      }
+      if (urls.resdexNorm) {
+        resdexs.add(urls.resdexNorm);
+      }
+    }
+
+    for (const part of this.chunkArray([...emails], 30)) {
+      if (part.length === 0) {
+        continue;
+      }
+      const nodes = await runCandidatesQuery({
+        and: [{ jobsId: { eq: jobId } }, { email: { primaryEmail: { in: part } } }],
+      });
+      ingestNodes(nodes);
+    }
+
+    for (const part of this.chunkArray([...phones], 30)) {
+      if (part.length === 0) {
+        continue;
+      }
+      const nodes = await runCandidatesQuery({
+        and: [
+          { jobsId: { eq: jobId } },
+          { phoneNumber: { primaryPhoneNumber: { in: part } } },
+        ],
+      });
+      ingestNodes(nodes);
+    }
+
+    for (const part of this.chunkArray([...linkedins], 30)) {
+      if (part.length === 0) {
+        continue;
+      }
+      const nodes = await runCandidatesQuery({
+        and: [
+          { jobsId: { eq: jobId } },
+          { linkedinUrl: { primaryLinkUrl: { in: part } } },
+        ],
+      });
+      ingestNodes(nodes);
+    }
+
+    for (const part of this.chunkArray([...hirings], 30)) {
+      if (part.length === 0) {
+        continue;
+      }
+      const nodes = await runCandidatesQuery({
+        and: [
+          { jobsId: { eq: jobId } },
+          { hiringNaukriUrl: { primaryLinkUrl: { in: part } } },
+        ],
+      });
+      ingestNodes(nodes);
+    }
+
+    for (const part of this.chunkArray([...resdexs], 30)) {
+      if (part.length === 0) {
+        continue;
+      }
+      const nodes = await runCandidatesQuery({
+        and: [
+          { jobsId: { eq: jobId } },
+          { resdexNaukriUrl: { primaryLinkUrl: { in: part } } },
+        ],
+      });
+      ingestNodes(nodes);
+    }
+
+    console.log(
+      'Candidate upload lookup sizes — usk:',
+      lookup.byUniqueStringKey.size,
+      'email:',
+      lookup.byEmail.size,
+      'phone:',
+      lookup.byPhone.size,
+      'li:',
+      lookup.byLinkedinUrl.size,
+      'hiring:',
+      lookup.byHiringNaukriUrl.size,
+      'resdex:',
+      lookup.byResdexNaukriUrl.size,
+    );
+
+    return lookup;
   }
 
   private async processBatches(
@@ -225,25 +411,28 @@ export class CandidateService {
       uniqueStringKeys,
     );
 
+    const existingCandidatesLookup = await this.batchCheckExistingCandidates(
+      data,
+      jobObject.id,
+      apiToken,
+    );
+
     await this.processPeopleBatch(
       data,
       uniqueStringKeys,
       results,
       tracking,
       apiToken,
+      existingCandidatesLookup,
     );
 
-    // Get existing candidates before processing
-    const existingCandidatesMap = await this.batchCheckExistingCandidates(
-      uniqueStringKeys,
-      jobObject.id,
-      apiToken,
-    );
-
-    // Filter data to only include new candidates
-    const newCandidatesData = data.filter(profile => {
-      const key = profile?.uniqueStringKey;
-      return key && !existingCandidatesMap.get(key);
+    // Filter data to only include new candidates (match by URL, phone, email, then uniqueStringKey)
+    const newCandidatesData = data.filter((profile) => {
+      return !findExistingCandidateForUpload(
+        existingCandidatesLookup,
+        profile,
+        this.dataProcessingUtils,
+      );
     });
 
     // Update processing stats for candidates
@@ -263,6 +452,7 @@ export class CandidateService {
       results,
       tracking,
       apiToken,
+      existingCandidatesLookup,
     );
     } catch (error) {
       console.error('Error in processCandidatesBatch:', error);
@@ -524,23 +714,22 @@ export class CandidateService {
         candidates.map((x) => x.uniqueStringKey).length,
       );
 
-      // Create a Map to deduplicate candidates by uniqueStringKey
-      const uniqueStringKeyToProfileMap = new Map<string, UserProfile>();
+      // Deduplicate by profile URL (resdex / hiring / linkedin), then phone, email, then uniqueStringKey
+      let deduplicatedProfiles = deduplicateProfilesForUpload(
+        candidates,
+        this.dataProcessingUtils,
+      );
 
-      // Populate the map with the latest profile for each unique key
-      // Skip candidates with empty uniqueStringKey
-      candidates.forEach((candidate) => {
-        if (
-          candidate &&
-          candidate.uniqueStringKey &&
-          candidate.uniqueStringKey !== ''
-        ) {
-          uniqueStringKeyToProfileMap.set(candidate.uniqueStringKey, candidate);
+      deduplicatedProfiles = deduplicatedProfiles.map((p, idx) => {
+        if (p.uniqueStringKey && p.uniqueStringKey.trim() !== '') {
+          return p;
         }
+        const generated = getUploadProfileDedupMapKey(p, this.dataProcessingUtils);
+        if (generated === 'anon:empty') {
+          return { ...p, uniqueStringKey: `upload_missing_${chunkNumber}_${idx}` };
+        }
+        return { ...p, uniqueStringKey: generated };
       });
-
-      // Convert the map values back to an array of UserProfile objects
-      const deduplicatedProfiles = Array.from(uniqueStringKeyToProfileMap.values());
 
       const duplicatesRemoved = candidates.length - deduplicatedProfiles.length;
       console.log(
@@ -718,6 +907,7 @@ export class CandidateService {
     results: any,
     tracking: any,
     apiToken: string,
+    candidatesLookup: CandidateUploadLookup,
   ) {
     try {
       console.log('This is tracking in processPeopleBatch:', tracking);
@@ -738,6 +928,17 @@ export class CandidateService {
         const key = profile?.uniqueStringKey;
 
         if (!key) continue;
+
+        const existingCandForPerson = findExistingCandidateForUpload(
+          candidatesLookup,
+          profile,
+          this.dataProcessingUtils,
+        ) as UploadExistingCandidateNode | undefined;
+        if (existingCandForPerson?.peopleId) {
+          tracking.personIdMap.set(key, existingCandForPerson.peopleId);
+          peopleToSkip++;
+          continue;
+        }
 
         const personObj = personDetailsMap?.get(key);
         if (!personObj || !personObj?.name?.firstName) {
@@ -857,6 +1058,7 @@ export class CandidateService {
     results: any,
     tracking: any,
     apiToken: string,
+    candidatesLookup: CandidateUploadLookup,
   ) {
     try {
       console.log('Starting processCandidatesBatch with jobObject:', jobObject);
@@ -873,18 +1075,11 @@ export class CandidateService {
 
       console.log('This is tracking in processCandidatesBatch:', tracking);
   
-      const uniqueStringKeys = batch
-        .map((p) => p?.uniqueStringKey)
-        .filter(Boolean);
-  
-      console.log('Checking candidates with keys:', uniqueStringKeys);
-      const candidatesMap = await this.batchCheckExistingCandidates(
-        uniqueStringKeys,
-        jobObject.id,
-        apiToken,
+      console.log(
+        'Checking candidates with keys:',
+        batch.map((p) => p?.uniqueStringKey),
       );
-  
-      console.log('Candidates map:', candidatesMap);
+      console.log('Using precomputed candidates lookup for upload batch');
       const workspaceId = await this.getWorkspaceIdFromToken(apiToken);
       console.log('Workspace ID:', workspaceId);
   
@@ -914,7 +1109,11 @@ export class CandidateService {
         if (!key) continue;
         console.log("This is the candidates uniqueStringKey:", key);
         // console.log("This is the candidates candidatesMap:", candidatesMap);
-        const existingCandidate = candidatesMap.get(key);
+        const existingCandidate = findExistingCandidateForUpload(
+          candidatesLookup,
+          profile,
+          this.dataProcessingUtils,
+        ) as UploadExistingCandidateNode | undefined;
         let personId = tracking.personIdMap.get(key);
         
         console.log(`- personId: ${personId}`);
@@ -1048,7 +1247,11 @@ export class CandidateService {
             return false;
           };
 
-          const candidatePhone = existingCandidate?.phoneNumber?.primaryPhoneNumber || existingCandidate?.phoneNumber;
+          const rawCandPhone = existingCandidate?.phoneNumber;
+          const candidatePhone =
+            typeof rawCandPhone === 'string'
+              ? rawCandPhone
+              : rawCandPhone?.primaryPhoneNumber || '';
           console.log('Current candidate phone:', candidatePhone);
           const profilePhone = profile?.phoneNumbers?.[0] || profile?.phoneNumber || profile?.phoneNumbers?.[0];
           console.log('Profile phone:', profilePhone);
@@ -1072,7 +1275,11 @@ export class CandidateService {
           }
           
           const profileUrl = profile?.profileUrl;
-          const candidateEmail = existingCandidate?.email?.primaryEmail || existingCandidate?.email;
+          const rawCandEmail = existingCandidate?.email;
+          const candidateEmail =
+            typeof rawCandEmail === 'string'
+              ? rawCandEmail
+              : rawCandEmail?.primaryEmail || '';
           console.log('Current candidate email:', candidateEmail);
           const profileEmail = profile?.emailAddress?.[0] || profile?.emailAddresses?.[0];
           console.log('Profile email:', profileEmail);
@@ -1820,10 +2027,9 @@ export class CandidateService {
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const workspaceKeys =
         await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
-      const isOrgChartEnabled =
-        (workspaceKeys?.is_org_chart_enabled ??
-          process.env.IS_ORG_CHART_ENABLED ??
-          'true') === 'true';
+      const isOrgChartEnabled = resolveIsOrgChartEnabledFromWorkspace(
+        workspaceKeys?.is_org_chart_enabled,
+      );
       const query =
         getGraphqlToFindManyJobsWithCandidateValues(isOrgChartEnabled);
 

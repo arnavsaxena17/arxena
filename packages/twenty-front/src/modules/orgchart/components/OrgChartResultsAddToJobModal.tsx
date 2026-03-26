@@ -9,12 +9,13 @@ import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
 import { jobsState } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useUploadProgressSseSession } from '@/websocket-context/hooks/useUploadProgressSseSession';
 import { graphqlToAddNewJob } from 'twenty-shared';
 
 import type { ContextResultItem } from '../types';
 import {
-  getSuggestedJobNameFromContext,
-  toLinkedInPremiumCandidate,
+    getSuggestedJobNameFromContext,
+    toLinkedInPremiumCandidate,
 } from '../utils/orgChartUtils';
 
 const StyledBackdrop = styled.div`
@@ -193,6 +194,8 @@ export const OrgChartResultsAddToJobModal = ({
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const jobs = useRecoilValue(jobsState);
   const { refetchJobs } = useJobRefetch();
+  const { beginUploadProgressSseSession, endUploadProgressSseSessionAfterDelay } =
+    useUploadProgressSseSession();
 
   const [jobMode, setJobMode] = useState<'new' | 'existing'>('new');
   const [newJobName, setNewJobName] = useState('');
@@ -324,6 +327,7 @@ export const OrgChartResultsAddToJobModal = ({
     }
 
     setIsSubmitting(true);
+    beginUploadProgressSseSession();
     try {
       const candidatesPayload = selected.map(toLinkedInPremiumCandidate);
       const body: Record<string, unknown> = {
@@ -379,6 +383,7 @@ export const OrgChartResultsAddToJobModal = ({
       });
     } finally {
       setIsSubmitting(false);
+      endUploadProgressSseSessionAfterDelay();
     }
   }, [
     selectedCandidateIds,
@@ -396,6 +401,8 @@ export const OrgChartResultsAddToJobModal = ({
     refetchJobs,
     onSuccess,
     onClose,
+    beginUploadProgressSseSession,
+    endUploadProgressSseSessionAfterDelay,
   ]);
 
   if (!isOpen) return null;

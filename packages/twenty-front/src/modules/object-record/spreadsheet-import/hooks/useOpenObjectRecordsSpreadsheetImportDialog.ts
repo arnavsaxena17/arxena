@@ -11,8 +11,8 @@ import { useCallback, useMemo } from 'react';
 import { useIcons } from 'twenty-ui';
 
 import {
-  FieldMetadataType,
-  RelationDefinitionType,
+    FieldMetadataType,
+    RelationDefinitionType,
 } from '~/generated-metadata/graphql';
 
 export const useOpenObjectRecordsSpreadsheetImportDialog = (
@@ -104,6 +104,7 @@ export const useOpenObjectRecordsSpreadsheetImportDialog = (
 
     openSpreadsheetImportDialog({
       ...options,
+      enableUploadProgressSseWhileOpen: objectNameSingular === 'candidate',
       onSubmit: async (data) => {
         console.log("data", data);
         const createInputs = data.validStructuredRows.map((record) => {

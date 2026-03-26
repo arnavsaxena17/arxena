@@ -34,6 +34,7 @@ export const useShowAuthModal = () => {
     if (
       !isLoggedIn ||
       onboardingStatus === OnboardingStatus.PROFILE_CREATION ||
+      onboardingStatus === OnboardingStatus.COLLECT_PHONE_NUMBER ||
       onboardingStatus === OnboardingStatus.WORKSPACE_ACTIVATION ||
       onboardingStatus === OnboardingStatus.CONNECT_LINKEDIN ||
       onboardingStatus === OnboardingStatus.SYNC_EMAIL ||

@@ -21,7 +21,6 @@ export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   const {
-    IS_ORG_CHART_ENABLED,
     REACT_APP_SERVER_BASE_URL,
     REACT_APP_EXPERIMENTAL_ORGCHART_NODE_HOVER_HINTS,
     VITE_BUILD_SOURCEMAP,
@@ -204,12 +203,10 @@ export default defineConfig(({ command, mode }) => {
 
     define: {
       _env_: {
-        IS_ORG_CHART_ENABLED,
         REACT_APP_SERVER_BASE_URL,
         REACT_APP_EXPERIMENTAL_ORGCHART_NODE_HOVER_HINTS,
       },
       'process.env': {
-        IS_ORG_CHART_ENABLED,
         REACT_APP_SERVER_BASE_URL,
         REACT_APP_EXPERIMENTAL_ORGCHART_NODE_HOVER_HINTS,
       },

@@ -32,6 +32,7 @@ export const usePageChangeEffectNavigateLocation = () => {
     isMatchingOngoingUserCreationRoute ||
     isMatchingLocation(AppPath.CreateWorkspace) ||
     isMatchingLocation(AppPath.CreateProfile) ||
+    isMatchingLocation(AppPath.CollectPhoneNumber) ||
     isMatchingLocation(AppPath.ConnectLinkedin) ||
     isMatchingLocation(AppPath.SyncEmails) ||
     isMatchingLocation(AppPath.InviteTeam);
@@ -55,6 +56,8 @@ export const usePageChangeEffectNavigateLocation = () => {
         onboardingStatus === OnboardingStatus.WORKSPACE_ACTIVATION) ||
       (isMatchingLocation(AppPath.CreateProfile) &&
         onboardingStatus === OnboardingStatus.PROFILE_CREATION) ||
+      (isMatchingLocation(AppPath.CollectPhoneNumber) &&
+        onboardingStatus === OnboardingStatus.COLLECT_PHONE_NUMBER) ||
       (isMatchingLocation(AppPath.ConnectLinkedin) &&
         onboardingStatus === OnboardingStatus.CONNECT_LINKEDIN) ||
       (isMatchingLocation(AppPath.SyncEmails) &&
@@ -87,6 +90,13 @@ export const usePageChangeEffectNavigateLocation = () => {
     !isMatchingLocation(AppPath.CreateProfile)
   ) {
     return AppPath.CreateProfile;
+  }
+
+  if (
+    onboardingStatus === OnboardingStatus.COLLECT_PHONE_NUMBER &&
+    !isMatchingLocation(AppPath.CollectPhoneNumber)
+  ) {
+    return AppPath.CollectPhoneNumber;
   }
 
   if (

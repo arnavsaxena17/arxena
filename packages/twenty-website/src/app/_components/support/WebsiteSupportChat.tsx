@@ -62,6 +62,7 @@ export const WebsiteSupportChat = () => {
 
     const script = document.createElement('script');
     script.src = sdkUrl;
+    script.crossOrigin = 'anonymous';
     script.async = true;
     script.defer = true;
     script.onload = () => {

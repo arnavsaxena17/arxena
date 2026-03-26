@@ -8,12 +8,13 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
 import { jobsState } from '@/candidate-table/states/states';
 import {
-  candidateToLinkedInPremiumFormat,
-  deduplicateCandidatesByPeopleId,
-  type CandidateNodeFromApi,
+    candidateToLinkedInPremiumFormat,
+    deduplicateCandidatesByPeopleId,
+    type CandidateNodeFromApi,
 } from '@/candidate-table/utils/mergeCandidatesUtils';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useUploadProgressSseSession } from '@/websocket-context/hooks/useUploadProgressSseSession';
 import { graphqlToAddNewJob } from 'twenty-shared';
 
 const StyledBackdrop = styled.div`
@@ -179,6 +180,8 @@ export const MergeJobsModal = ({
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const jobs = useRecoilValue(jobsState);
   const { refetchJobs } = useJobRefetch();
+  const { beginUploadProgressSseSession, endUploadProgressSseSessionAfterDelay } =
+    useUploadProgressSseSession();
 
   const [createJob] = useMutation(gql(graphqlToAddNewJob));
 
@@ -293,29 +296,34 @@ export const MergeJobsModal = ({
         queue_start_chat_after: false,
       };
 
-      const response = await fetch(
-        `${baseUrl}/candidate-sourcing/upload-profiles`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+      beginUploadProgressSseSession();
+      try {
+        const response = await fetch(
+          `${baseUrl}/candidate-sourcing/upload-profiles`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+            },
+            body: JSON.stringify(body),
           },
-          body: JSON.stringify(body),
-        },
-      );
-
-      const result = await response.json();
-      if (result.status === 'ok' || result.status === 'success') {
-        enqueueSnackBar(
-          `Adding ${deduped.length} candidate(s) to ${jobName}. You will see progress in the notification.`,
-          { variant: SnackBarVariant.Success, duration: 4000 },
         );
-        refetchJobs();
-        onSuccess?.();
-        onClose();
-      } else {
-        throw new Error(result.message || result.error || 'Merge failed');
+
+        const result = await response.json();
+        if (result.status === 'ok' || result.status === 'success') {
+          enqueueSnackBar(
+            `Adding ${deduped.length} candidate(s) to ${jobName}. You will see progress in the notification.`,
+            { variant: SnackBarVariant.Success, duration: 4000 },
+          );
+          refetchJobs();
+          onSuccess?.();
+          onClose();
+        } else {
+          throw new Error(result.message || result.error || 'Merge failed');
+        }
+      } finally {
+        endUploadProgressSseSessionAfterDelay();
       }
     } catch (err) {
       const message =
@@ -340,6 +348,8 @@ export const MergeJobsModal = ({
     refetchJobs,
     onSuccess,
     onClose,
+    beginUploadProgressSseSession,
+    endUploadProgressSseSessionAfterDelay,
   ]);
 
   if (!isOpen) return null;

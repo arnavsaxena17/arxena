@@ -14,6 +14,7 @@ import {
   MessageNode,
   PageInfo,
   RecruiterProfileType,
+  resolveIsOrgChartEnabledFromWorkspace,
   whatappUpdateMessageObjType
 } from 'twenty-shared';
 
@@ -1027,10 +1028,9 @@ export class CandidateEngagementArx {
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const workspaceKeys =
         await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
-      const isOrgChartEnabled =
-        (workspaceKeys?.is_org_chart_enabled ??
-          process.env.IS_ORG_CHART_ENABLED ??
-          'true') === 'true';
+      const isOrgChartEnabled = resolveIsOrgChartEnabledFromWorkspace(
+        workspaceKeys?.is_org_chart_enabled,
+      );
       const query = getGraphqlToFindManyJobs(isOrgChartEnabled);
 
       const response = await this.staticGraphQLService.executeGraphQL(

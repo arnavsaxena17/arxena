@@ -3,6 +3,7 @@ import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
+import { isOrgChartEnabledEnv } from 'twenty-shared';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -622,6 +623,13 @@ export class WorkspaceQueryService {
     is_org_chart_enabled?: string;
   }> {
     try {
+      const workspaceDataSourceReady =
+        await this.workspaceDataSourceService.checkSchemaExists(workspaceId);
+
+      if (!workspaceDataSourceReady) {
+        return {};
+      }
+
       // First, ensure all necessary columns exist
       const alterTableQuery = `
       ALTER TABLE core.workspace
@@ -641,7 +649,7 @@ export class WorkspaceQueryService {
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_asset_id varchar(255),
       ADD COLUMN IF NOT EXISTS is_chrome_extension_installed varchar(255) DEFAULT 'false',
       ADD COLUMN IF NOT EXISTS chrome_extension_id varchar(255),
-      ADD COLUMN IF NOT EXISTS is_org_chart_enabled varchar(255) DEFAULT 'true'
+      ADD COLUMN IF NOT EXISTS is_org_chart_enabled varchar(255)
     `;
 
       await this.executeRawQuery(alterTableQuery, [], workspaceId);
@@ -676,25 +684,34 @@ export class WorkspaceQueryService {
       );
 
       if (result && result[0]) {
+        const row = result[0];
+        const rawIsOrgChartEnabled = row.is_org_chart_enabled;
+        const isOrgChartEnabledNormalized =
+          rawIsOrgChartEnabled != null &&
+          String(rawIsOrgChartEnabled).trim() !== ''
+            ? String(rawIsOrgChartEnabled).trim()
+            : isOrgChartEnabledEnv
+              ? 'true'
+              : 'false';
+
         return {
-          openaikey: result[0].openaikey,
-          twilio_account_sid: result[0].twilio_account_sid,
-          twilio_auth_token: result[0].twilio_auth_token,
-          linkedin_url: result[0].linkedin_url,
-          whatsapp_key: result[0].whatsapp_key,
-          linkedin_unipile_account_id: result[0].linkedin_unipile_account_id,
-          whatsapp_unipile_account_id: result[0].whatsapp_unipile_account_id,
-          linkedin_profile_id: result[0].linkedin_profile_id,
-          anthropic_key: result[0].anthropic_key,
-          facebook_whatsapp_api_token: result[0].facebook_whatsapp_api_token,
-          facebook_whatsapp_phone_number_id: result[0].facebook_whatsapp_phone_number_id,
-          whatsapp_web_phone_number: result[0].whatsapp_web_phone_number,
-          facebook_whatsapp_app_id: result[0].facebook_whatsapp_app_id,
-          facebook_whatsapp_asset_id: result[0].facebook_whatsapp_asset_id,
-          is_chrome_extension_installed:
-            result[0].is_chrome_extension_installed,
-          chrome_extension_id: result[0].chrome_extension_id,
-          is_org_chart_enabled: result[0].is_org_chart_enabled,
+          openaikey: row.openaikey,
+          twilio_account_sid: row.twilio_account_sid,
+          twilio_auth_token: row.twilio_auth_token,
+          linkedin_url: row.linkedin_url,
+          whatsapp_key: row.whatsapp_key,
+          linkedin_unipile_account_id: row.linkedin_unipile_account_id,
+          whatsapp_unipile_account_id: row.whatsapp_unipile_account_id,
+          linkedin_profile_id: row.linkedin_profile_id,
+          anthropic_key: row.anthropic_key,
+          facebook_whatsapp_api_token: row.facebook_whatsapp_api_token,
+          facebook_whatsapp_phone_number_id: row.facebook_whatsapp_phone_number_id,
+          whatsapp_web_phone_number: row.whatsapp_web_phone_number,
+          facebook_whatsapp_app_id: row.facebook_whatsapp_app_id,
+          facebook_whatsapp_asset_id: row.facebook_whatsapp_asset_id,
+          is_chrome_extension_installed: row.is_chrome_extension_installed,
+          chrome_extension_id: row.chrome_extension_id,
+          is_org_chart_enabled: isOrgChartEnabledNormalized,
         };
       }
 
@@ -722,6 +739,13 @@ export class WorkspaceQueryService {
     keyName: string,
   ): Promise<string | null> {
     try {
+      const workspaceDataSourceReady =
+        await this.workspaceDataSourceService.checkSchemaExists(workspaceId);
+
+      if (!workspaceDataSourceReady) {
+        return null;
+      }
+
       // Convert camelCase to snake_case for database column names
       const columnName = keyName.replace(
         /[A-Z]/g,
@@ -808,7 +832,7 @@ export class WorkspaceQueryService {
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_app_id varchar(255),
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_asset_id varchar(255),
       ADD COLUMN IF NOT EXISTS is_chrome_extension_installed varchar(255) DEFAULT 'false',
-      ADD COLUMN IF NOT EXISTS is_org_chart_enabled varchar(255) DEFAULT 'true'
+      ADD COLUMN IF NOT EXISTS is_org_chart_enabled varchar(255) DEFAULT 'false'
     `;
     
     await this.executeRawQuery(alterTableQuery, [], workspaceId);

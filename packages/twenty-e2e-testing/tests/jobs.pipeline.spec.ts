@@ -162,11 +162,12 @@ test('Jobs org chart pipeline: full company, leadership, functions, geos, nodes'
   expect(login, 'DEFAULT_LOGIN must be set').toBeTruthy();
   expect(password, 'DEFAULT_PASSWORD must be set').toBeTruthy();
 
+  const workspaceOrigin = process.env.WORKSPACE_ORIGIN || 'http://localhost:3001';
   const loginPage = new LoginPage(page);
 
-  await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 90_000 });
+  await page.goto(workspaceOrigin, { waitUntil: 'domcontentloaded', timeout: 90_000 });
 
-  const isAlreadyInApp = () => /\/(welcome|jobs)(?:[/?#]|$)/.test(page.url());
+  const isAlreadyInApp = () => /\/jobs(?:[/?#]|$)/.test(page.url());
 
   if (!isAlreadyInApp()) {
     if (await loginPage.hasVisibleLoginWithEmailButton()) {
@@ -194,7 +195,7 @@ test('Jobs org chart pipeline: full company, leadership, functions, geos, nodes'
 
   await completeOnboardingIfNeeded(page);
   if (!/\/jobs(?:[/?#]|$)/.test(page.url())) {
-    await page.goto('/jobs', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    await page.goto(`${workspaceOrigin}/jobs`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
   }
   await page.waitForURL(/\/jobs(?:[/?#]|$)/, { timeout: 60_000 });
   await expect(page).toHaveURL(/\/jobs(?:[/?#]|$)/);
@@ -209,7 +210,7 @@ test('Jobs org chart pipeline: full company, leadership, functions, geos, nodes'
   const companySearchInput = page.getByPlaceholder(
     'Search company for org charts...',
   );
-  await expect(companySearchInput).toBeVisible();
+  await expect(companySearchInput).toBeVisible({ timeout: 60_000 });
   await companySearchInput.click();
   await companySearchInput.fill(TEST_COMPANY);
 

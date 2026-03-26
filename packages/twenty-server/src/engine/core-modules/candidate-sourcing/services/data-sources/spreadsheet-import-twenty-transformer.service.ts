@@ -41,13 +41,23 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
   }
 
   private processSpreadsheetContactData(candidateData: any, userProfile: UserProfile): void {
-    // Process phone numbers - spreadsheet import uses specific field names
-    const phoneNumberKey = candidateData['Phone number (phones)'] || 
-                          candidateData['Phone number (phoneNumber)'] || 
-                          candidateData['Phone Number'] ||
-                          candidateData.phoneNumber || 
-                          candidateData.phone_number;
-    
+    // Process phone numbers - prefer GraphQL-style nested phones (primaryPhoneNumber), then flat keys
+    const phonesShape = candidateData.phones ?? candidateData.phone;
+    const fromNested =
+      phonesShape &&
+      typeof phonesShape === 'object' &&
+      typeof phonesShape.primaryPhoneNumber === 'string'
+        ? phonesShape.primaryPhoneNumber
+        : undefined;
+
+    const phoneNumberKey =
+      fromNested ||
+      candidateData['Phone number (phones)'] ||
+      candidateData['Phone number (phoneNumber)'] ||
+      candidateData['Phone Number'] ||
+      candidateData.phoneNumber ||
+      candidateData.phone_number;
+
     console.log("Phone input created from candidate data:", phoneNumberKey);
     
     if (phoneNumberKey) {
@@ -56,13 +66,23 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
       userProfile.phoneNumber = phones[0] || '';
     }
 
-    // Process email addresses - spreadsheet import uses specific field names
-    const emailKey = candidateData['Email (emails)'] || 
-                    candidateData['Email (email)'] || 
-                    candidateData['Email ID'] ||
-                    candidateData.email || 
-                    candidateData.email_address;
-    
+    // Process email — prefer GraphQL-style nested emails / email (primaryEmail), then flat keys
+    const emailsShape = candidateData.emails ?? candidateData.email;
+    const emailFromNested =
+      emailsShape &&
+      typeof emailsShape === 'object' &&
+      typeof emailsShape.primaryEmail === 'string'
+        ? emailsShape.primaryEmail
+        : undefined;
+
+    const emailKey =
+      emailFromNested ||
+      candidateData['Email (emails)'] ||
+      candidateData['Email (email)'] ||
+      candidateData['Email ID'] ||
+      candidateData.email ||
+      candidateData.email_address;
+
     console.log("Email input created from candidate data:", emailKey);
     
     if (emailKey) {

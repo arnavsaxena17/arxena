@@ -121,6 +121,31 @@ const StyledEmptyIcon = styled.div`
   color: ${({ theme }) => theme.font.color.tertiary};
 `;
 
+const StyledEmptyIconButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  border: none;
+  padding: 0;
+  border-radius: 50%;
+  background-color: ${({ theme }) => theme.background.tertiary};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  cursor: pointer;
+
+  &:hover {
+    color: ${({ theme }) => theme.font.color.secondary};
+    background-color: ${({ theme }) => theme.background.secondary};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.blue};
+    outline-offset: 2px;
+  }
+`;
+
 const StyledEmptyTitle = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing(1)};
   font-weight: ${({ theme }) => theme.font.weight.medium};
@@ -174,6 +199,7 @@ const StyledClearButton = styled.button`
 
 interface DataTableProps {
     jobId: string;
+    onImportCandidatesClick?: () => void;
 }
 
 type ColumnRenderer = (
@@ -188,7 +214,7 @@ type ColumnRenderer = (
 
 
 
-export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; clearAllFiltersAndSorts: () => void; toggleSortingControls?: () => void; applyGeneratedSorts?: (sorts: any) => void; loadMoreCandidates?: (pages?: number) => Promise<void>; hasMoreCandidates?: boolean; isLoadingMore?: boolean }, DataTableProps>(({ jobId }, ref) => {
+export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; clearAllFiltersAndSorts: () => void; toggleSortingControls?: () => void; applyGeneratedSorts?: (sorts: any) => void; loadMoreCandidates?: (pages?: number) => Promise<void>; hasMoreCandidates?: boolean; isLoadingMore?: boolean }, DataTableProps>(({ jobId, onImportCandidatesClick }, ref) => {
     const tableRef = useRef<any>(null);
     const tableState = useRecoilValue(tableStateAtom);
     const setTableState = useSetRecoilState(tableStateAtom);
@@ -1364,9 +1390,19 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     if (!mergedData.length && !tableState.isLoading) {
       return (
         <StyledEmptyContainer>
-          <StyledEmptyIcon>
-            <IconPlus size={24} />
-          </StyledEmptyIcon>
+          {onImportCandidatesClick ? (
+            <StyledEmptyIconButton
+              type="button"
+              aria-label="Import candidates"
+              onClick={onImportCandidatesClick}
+            >
+              <IconPlus size={24} />
+            </StyledEmptyIconButton>
+          ) : (
+            <StyledEmptyIcon>
+              <IconPlus size={24} />
+            </StyledEmptyIcon>
+          )}
           <StyledEmptyTitle>No candidates found</StyledEmptyTitle>
           <StyledEmptyDescription>
             There are no candidates available for this job.

@@ -59,6 +59,7 @@ import { SearchPanel } from '@/candidate-search/components/SearchPanel/SearchPan
 // import { SearchPanelToggle } from '@/candidate-search/components/SearchPanel/SearchPanelToggle';
 import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
 import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
+import { useUploadProgressSseSession } from '@/websocket-context/hooks/useUploadProgressSseSession';
 import { Mixpanel } from '~/mixpanel';
 import { WORKSPACE_CREDITS } from '~/modules/billing/graphql/workspaceCredits';
 import { useBaileysConnection } from '../baileys/contexts/BaileysContext';
@@ -156,6 +157,8 @@ export const JobPage: React.FC = () => {
   const { hasSelectedRecord, selectedRecordId } = useSelectedRecordForEnrichment();
   const { checkDataIntegrityOfJob } = useCheckDataIntegrityOfJob();
   const { enqueueSnackBar } = useSnackBar();
+  const { beginUploadProgressSseSession, endUploadProgressSseSessionAfterDelay } =
+    useUploadProgressSseSession();
   const { isBaileysLoggedIn } = useBaileysConnection();
   const { isLinkedinConnected, isWhatsappUnipileConnected } = useUnipile();
   const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileConnected;
@@ -354,6 +357,7 @@ export const JobPage: React.FC = () => {
       return;
     }
 
+    beginUploadProgressSseSession();
     try {
       console.log('Saving selected candidates:', candidates.length);
       
@@ -413,8 +417,19 @@ export const JobPage: React.FC = () => {
       enqueueSnackBar('Failed to save candidates. Please try again.', {
         variant: SnackBarVariant.Error,
       });
+    } finally {
+      endUploadProgressSseSessionAfterDelay();
     }
-  }, [jobId, currentJob, currentWorkspaceMember, tokenPair, setSearchResults, enqueueSnackBar]);
+  }, [
+    jobId,
+    currentJob,
+    currentWorkspaceMember,
+    tokenPair,
+    setSearchResults,
+    enqueueSnackBar,
+    beginUploadProgressSseSession,
+    endUploadProgressSseSessionAfterDelay,
+  ]);
 
   const handleDiscardSelected = useCallback(() => {
     // Find selected candidates from search results (these are the fetched candidates that can be discarded)
@@ -783,7 +798,11 @@ export const JobPage: React.FC = () => {
                     </>
                   )}
                   
-                  <DataTable ref={dataTableRef} jobId={jobId} />
+                  <DataTable
+                    ref={dataTableRef}
+                    jobId={jobId}
+                    onImportCandidatesClick={handleImportCandidates}
+                  />
                 </TableContainer>
                 
                 <div style={{ 

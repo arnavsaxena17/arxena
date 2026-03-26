@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
@@ -9,11 +9,13 @@ import { apiKeysErrorState, apiKeysLoadingState, apiKeysState, originalApiKeysSt
 
 export const ApiKeysProvider = ({ children }: { children: React.ReactNode }) => {
   const [tokenPair] = useRecoilState(tokenPairState);
-  const [apiKeys, setApiKeys] = useRecoilState(apiKeysState);
-  const [originalKeys, setOriginalKeys] = useRecoilState(originalApiKeysState);
+  const setApiKeys = useSetRecoilState(apiKeysState);
+  const setOriginalKeys = useSetRecoilState(originalApiKeysState);
   const setLoading = useSetRecoilState(apiKeysLoadingState);
   const setError = useSetRecoilState(apiKeysErrorState);
   const { enqueueSnackBar } = useSnackBar();
+
+  const lastFetchedTokenRef = useRef<string | null>(null);
 
   const fetchApiKeys = useCallback(async () => {
     if (!tokenPair?.accessToken?.token) {
@@ -23,8 +25,7 @@ export const ApiKeysProvider = ({ children }: { children: React.ReactNode }) => 
     try {
       setLoading(true);
       setError(null);
-      console.log('fetching api keys in ApiKeysProvider');
-      
+
       const response = await fetch(
         `${process.env.REACT_APP_SERVER_BASE_URL}/workspace-modifications/workspace-keys`,
         {
@@ -39,7 +40,6 @@ export const ApiKeysProvider = ({ children }: { children: React.ReactNode }) => 
       }
 
       const data = await response.json();
-      console.log('data for all keys', data);
       setApiKeys(data);
       setOriginalKeys(data);
     } catch (error) {
@@ -53,12 +53,21 @@ export const ApiKeysProvider = ({ children }: { children: React.ReactNode }) => 
     }
   }, [tokenPair?.accessToken?.token, setApiKeys, setOriginalKeys, setLoading, setError, enqueueSnackBar]);
 
-  // Fetch API keys when the component mounts or when token changes
+  // Fetch once per access token. Do not use `Object.keys(apiKeys).length === 0`:
+  // the server returns `{}` when the workspace schema is not ready yet (e.g. onboarding),
+  // which is a valid loaded state and must not retrigger fetch in a loop.
   useEffect(() => {
-    if (tokenPair?.accessToken?.token && Object.keys(apiKeys).length === 0) {
-      fetchApiKeys();
+    const token = tokenPair?.accessToken?.token;
+    if (!token) {
+      lastFetchedTokenRef.current = null;
+      return;
     }
-  }, [tokenPair?.accessToken?.token, fetchApiKeys, apiKeys]);
+    if (lastFetchedTokenRef.current === token) {
+      return;
+    }
+    lastFetchedTokenRef.current = token;
+    void fetchApiKeys();
+  }, [tokenPair?.accessToken?.token, fetchApiKeys]);
 
   return <>{children}</>;
 };

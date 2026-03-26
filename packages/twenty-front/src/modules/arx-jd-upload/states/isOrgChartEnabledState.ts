@@ -1,4 +1,5 @@
 import { selector } from 'recoil';
+import { isOrgChartEnabledEnv } from 'twenty-shared';
 
 import { apiKeysState } from './apiKeysState';
 
@@ -8,7 +9,7 @@ export const isOrgChartEnabledState = selector<boolean>({
     const apiKeys = get(apiKeysState);
     const flag = apiKeys?.is_org_chart_enabled;
     if (flag === undefined) {
-      return process.env.IS_ORG_CHART_ENABLED === 'true';
+      return isOrgChartEnabledEnv;
     }
     return flag === 'true';
   },

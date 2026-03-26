@@ -8,6 +8,7 @@ import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
 import { jobsState } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useUploadProgressSseSession } from '@/websocket-context/hooks/useUploadProgressSseSession';
 
 const DEFAULT_AVATAR =
   'https://st2.depositphotos.com/4111759/12123/v/950/depositphotos_121232442-stock-illustration-male-default-placeholder-avatar-profile.jpg';
@@ -252,6 +253,8 @@ export const OrgChartAddToJobModal = ({
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const jobs = useRecoilValue(jobsState);
   const { refetchJobs } = useJobRefetch();
+  const { beginUploadProgressSseSession, endUploadProgressSseSessionAfterDelay } =
+    useUploadProgressSseSession();
 
   const [selectedJobId, setSelectedJobId] = useState<string>('');
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(new Set());
@@ -322,6 +325,7 @@ export const OrgChartAddToJobModal = ({
     }
 
     setIsSubmitting(true);
+    beginUploadProgressSseSession();
     try {
       const candidatesPayload = selected.map(toLinkedInPremiumCandidate);
       const nodeStdFunction = node
@@ -381,6 +385,7 @@ export const OrgChartAddToJobModal = ({
       });
     } finally {
       setIsSubmitting(false);
+      endUploadProgressSseSessionAfterDelay();
     }
   }, [
     selectedJob,
@@ -393,6 +398,8 @@ export const OrgChartAddToJobModal = ({
     enqueueSnackBar,
     onSuccess,
     onClose,
+    beginUploadProgressSseSession,
+    endUploadProgressSseSessionAfterDelay,
   ]);
 
   if (!isOpen) return null;

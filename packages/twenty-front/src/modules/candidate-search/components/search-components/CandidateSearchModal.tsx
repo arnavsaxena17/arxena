@@ -14,13 +14,14 @@ import { SearchParametersForm } from '@/candidate-search/components/search-compo
 import { isCandidateSearchModalOpenState } from '@/candidate-search/states/candidateSearchModalState';
 import { activeAssistantThreadIdState } from '@/candidate-search/states/searchConfigState';
 import {
-  CandidateSearchState,
-  LinkedInSearchCategory,
-  LinkedInSearchResult,
-  LinkedInSearchType
+    CandidateSearchState,
+    LinkedInSearchCategory,
+    LinkedInSearchResult,
+    LinkedInSearchType
 } from '@/candidate-search/types/candidate-search.types';
 import { jobIdAtom } from '@/candidate-table/states/states';
 import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousHotkeyScope';
+import { useUploadProgressSseSession } from '@/websocket-context/hooks/useUploadProgressSseSession';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
@@ -91,6 +92,8 @@ const StyledPanelContent = styled.div`
 
 
 export const CandidateSearchModal = () => {
+  const { beginUploadProgressSseSession, endUploadProgressSseSessionAfterDelay } =
+    useUploadProgressSseSession();
   const [isCandidateSearchModalOpen, setIsCandidateSearchModalOpen] = useRecoilState(isCandidateSearchModalOpenState);
   const [tokenPair] = useRecoilState(tokenPairState);
   const [currentWorkspaceMember] = useRecoilState(currentWorkspaceMemberState);
@@ -644,6 +647,7 @@ export const CandidateSearchModal = () => {
     setIsUploading(true);
     setSearchState(prev => ({ ...prev, error: undefined }));
 
+    beginUploadProgressSseSession();
     try {
       console.log('Uploading selected candidates:', searchState.selectedCandidates.length);
       
@@ -700,8 +704,17 @@ export const CandidateSearchModal = () => {
       }));
     } finally {
       setIsUploading(false);
+      endUploadProgressSseSessionAfterDelay();
     }
-  }, [searchState.selectedCandidates, parsedJD, tokenPair, currentWorkspaceMember, clearPersistedData]);
+  }, [
+    searchState.selectedCandidates,
+    parsedJD,
+    tokenPair,
+    currentWorkspaceMember,
+    clearPersistedData,
+    beginUploadProgressSseSession,
+    endUploadProgressSseSessionAfterDelay,
+  ]);
 
   const handleSkipSearch = useCallback(() => {
     closeModal();

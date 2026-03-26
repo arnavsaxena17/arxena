@@ -481,6 +481,7 @@ export enum FeatureFlagKey {
   IsAirtableIntegrationEnabled = 'IsAirtableIntegrationEnabled',
   IsAnalyticsV2Enabled = 'IsAnalyticsV2Enabled',
   IsBillingPlansEnabled = 'IsBillingPlansEnabled',
+  IsCollectPhoneNumberInOnboarding = 'IsCollectPhoneNumberInOnboarding',
   IsCommandMenuV2Enabled = 'IsCommandMenuV2Enabled',
   IsCopilotEnabled = 'IsCopilotEnabled',
   IsCustomDomainEnabled = 'IsCustomDomainEnabled',
@@ -1166,6 +1167,7 @@ export type ObjectIndexMetadatasConnection = {
 
 /** Onboarding status */
 export enum OnboardingStatus {
+  COLLECT_PHONE_NUMBER = 'COLLECT_PHONE_NUMBER',
   COMPLETED = 'COMPLETED',
   CONNECT_LINKEDIN = 'CONNECT_LINKEDIN',
   INSTALL_APP = 'INSTALL_APP',

@@ -21,6 +21,7 @@ import { UserThemeProviderEffect } from '@/ui/theme/components/AppThemeProvider'
 import { BaseThemeProvider } from '@/ui/theme/components/BaseThemeProvider';
 import { PageFavicon } from '@/ui/utilities/page-favicon/components/PageFavicon';
 import { PageTitle } from '@/ui/utilities/page-title/components/PageTitle';
+import { WorkspaceMemberProfileUnipileSyncEffect } from '@/unipile/components/WorkspaceMemberProfileUnipileSyncEffect';
 import { UserProvider } from '@/users/components/UserProvider';
 import { UserProviderEffect } from '@/users/components/UserProviderEffect';
 import { WebSocketProvider } from '@/websocket-context/WebSocketContextProvider';
@@ -43,7 +44,6 @@ export const AppRouterProviders = () => {
   console.log('pageTitle', pageTitle);
   return (
     <ApolloProvider>
-
       <BaseThemeProvider>
         <ClientConfigProviderEffect />
         <ClientConfigProvider>
@@ -52,36 +52,37 @@ export const AppRouterProviders = () => {
             <UserProviderEffect />
             <WorkspaceProviderEffect />
             <UserProvider>
+              <WorkspaceMemberProfileUnipileSyncEffect />
               <AuthProvider>
                 <ApiKeysProvider>
-                <ApolloMetadataClientProvider>
-                  <ObjectMetadataItemsProvider>
-                    <ObjectMetadataItemsGater>
-                      <PrefetchDataProvider>
-                        <UserThemeProviderEffect />
-                        <SnackBarProvider>
-                          <DialogManagerScope dialogManagerScopeId="dialog-manager">
-                            <DialogManager>
-                              <ModalProvider>
-                                <StrictMode>
-                                  <PromiseRejectionEffect />
-                                  <GotoHotkeysEffectsProvider />
-                                  <PageTitle title={pageTitle} />
-                                  <PageFavicon />
-                                  <WebSocketProvider>
-                                    <Outlet />
-                                  </WebSocketProvider>
-                                </StrictMode>
-                              </ModalProvider>
-                            </DialogManager>
-                          </DialogManagerScope>
-                        </SnackBarProvider>
-                        <MainContextStoreProvider />
-                      </PrefetchDataProvider>
-                      <PageChangeEffect />
-                    </ObjectMetadataItemsGater>
-                  </ObjectMetadataItemsProvider>
-                </ApolloMetadataClientProvider>
+                  <ApolloMetadataClientProvider>
+                    <ObjectMetadataItemsProvider>
+                      <ObjectMetadataItemsGater>
+                        <PrefetchDataProvider>
+                          <UserThemeProviderEffect />
+                          <SnackBarProvider>
+                            <DialogManagerScope dialogManagerScopeId="dialog-manager">
+                              <DialogManager>
+                                <ModalProvider>
+                                  <StrictMode>
+                                    <PromiseRejectionEffect />
+                                    <GotoHotkeysEffectsProvider />
+                                    <PageTitle title={pageTitle} />
+                                    <PageFavicon />
+                                    <WebSocketProvider>
+                                      <Outlet />
+                                    </WebSocketProvider>
+                                  </StrictMode>
+                                </ModalProvider>
+                              </DialogManager>
+                            </DialogManagerScope>
+                          </SnackBarProvider>
+                          <MainContextStoreProvider />
+                        </PrefetchDataProvider>
+                        <PageChangeEffect />
+                      </ObjectMetadataItemsGater>
+                    </ObjectMetadataItemsProvider>
+                  </ApolloMetadataClientProvider>
                 </ApiKeysProvider>
               </AuthProvider>
             </UserProvider>

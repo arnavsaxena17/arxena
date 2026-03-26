@@ -15,7 +15,7 @@ test('Login test', async ({ loginPage, page }) => {
     await page.goto('/');
   });
   await test.step(
-    'Logging in '.concat(page.url(), ' as ', process.env.DEFAULT_LOGIN),
+    'Logging in '.concat(page.url(), ' as ', process.env.DEFAULT_LOGIN || 'arnav@arxena.com'),
     async () => {
       await page.waitForLoadState('networkidle');
       const shouldUseEmailEntryButton =
@@ -26,10 +26,10 @@ test('Login test', async ({ loginPage, page }) => {
       }
 
       await loginPage.expectPasswordStepHidden();
-      await loginPage.typeEmail(process.env.DEFAULT_LOGIN);
+      await loginPage.typeEmail(process.env.DEFAULT_LOGIN || 'arnav@arxena.com');
       await loginPage.clickContinueButton();
       await loginPage.expectPasswordStepVisible();
-      await loginPage.typePassword(process.env.DEFAULT_PASSWORD);
+      await loginPage.typePassword(process.env.DEFAULT_PASSWORD || 'Applecar2025');
       await page.waitForLoadState('networkidle');
       await loginPage.submitPasswordStep();
       await page.waitForURL(/\/jobs(?:[/?#]|$)/);

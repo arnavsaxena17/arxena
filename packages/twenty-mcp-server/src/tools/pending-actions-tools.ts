@@ -1,9 +1,10 @@
 import {
-    getGraphqlToFindManyJobs,
-    graphqlQueryToFindCvsent,
-    graphqlQueryToFindScheduledClientMeetings,
-    graphqlQueryToFindShortlists,
-    graphqlToFetchAllCandidateData,
+  getGraphqlToFindManyJobs,
+  graphqlQueryToFindCvsent,
+  graphqlQueryToFindScheduledClientMeetings,
+  graphqlQueryToFindShortlists,
+  graphqlToFetchAllCandidateData,
+  resolveIsOrgChartEnabledFromWorkspace,
 } from 'twenty-shared';
 import { executeGraphQL } from '../api/graphql-client';
 import { McpTool } from '../types/tool-types';
@@ -20,12 +21,13 @@ async function getIsOrgChartEnabled(
         headers: { Authorization: `Bearer ${apiToken}` },
       },
     );
-    if (!res.ok) return process.env.IS_ORG_CHART_ENABLED === 'true';
+    if (!res.ok) {
+      return resolveIsOrgChartEnabledFromWorkspace(undefined);
+    }
     const keys = await res.json();
-    const flag = keys?.is_org_chart_enabled ?? process.env.IS_ORG_CHART_ENABLED ?? 'true';
-    return flag === 'true';
+    return resolveIsOrgChartEnabledFromWorkspace(keys?.is_org_chart_enabled);
   } catch {
-    return process.env.IS_ORG_CHART_ENABLED === 'true';
+    return resolveIsOrgChartEnabledFromWorkspace(undefined);
   }
 }
 

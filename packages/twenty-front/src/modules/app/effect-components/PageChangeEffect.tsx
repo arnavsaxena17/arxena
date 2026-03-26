@@ -55,10 +55,19 @@ export const PageChangeEffect = () => {
   }, [location, previousLocation]);
 
   useEffect(() => {
-    if (isDefined(pageChangeEffectNavigateLocation)) {
-      navigate(pageChangeEffectNavigateLocation);
+    if (!isDefined(pageChangeEffectNavigateLocation)) {
+      return;
     }
-  }, [navigate, pageChangeEffectNavigateLocation]);
+    const targetPath = pageChangeEffectNavigateLocation.startsWith('/')
+      ? pageChangeEffectNavigateLocation
+      : `/${pageChangeEffectNavigateLocation}`;
+    if (
+      matchPath({ path: targetPath, end: true }, location.pathname) !== null
+    ) {
+      return;
+    }
+    navigate(pageChangeEffectNavigateLocation);
+  }, [navigate, pageChangeEffectNavigateLocation, location.pathname]);
 
   useEffect(() => {
     const isLeavingRecordIndexPage = !!matchPath(

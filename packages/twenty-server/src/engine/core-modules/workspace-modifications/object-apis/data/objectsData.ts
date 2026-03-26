@@ -1,4 +1,4 @@
-
+import { isOrgChartEnabledEnv } from 'twenty-shared';
 
 const allObjects = [
     {
@@ -343,9 +343,7 @@ const OBJECTS_TO_EXCLUDE = [
 ];
 
 export function getObjectsToExclude(isOrgChartEnabled?: boolean): string[] {
-  const enabled =
-    isOrgChartEnabled ??
-    (process.env.IS_ORG_CHART_ENABLED === 'true');
+  const enabled = isOrgChartEnabled ?? isOrgChartEnabledEnv;
   if (!enabled) {
     return [];
   }
@@ -354,9 +352,12 @@ export function getObjectsToExclude(isOrgChartEnabled?: boolean): string[] {
 
 export function getObjectCreationArr(isOrgChartEnabled?: boolean) {
   const objectsToExclude = getObjectsToExclude(isOrgChartEnabled);
-  return allObjects.filter(
-    (object) => !objectsToExclude.includes(object.object.nameSingular),
-  );
+  console.log("Is org cahrt enabled:", isOrgChartEnabled)
+  const objectsToCreate = allObjects.filter(
+      (object) => !objectsToExclude.includes(object.object.nameSingular),
+    );
+    console.log("Objects to created:", objectsToCreate)
+  return objectsToCreate
 }
 
 export const objectCreationArr = allObjects.filter(

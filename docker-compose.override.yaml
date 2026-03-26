@@ -1,0 +1,4 @@
+services:
+  rails:
+    ports:
+      - "3003:3000"

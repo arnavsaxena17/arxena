@@ -2,25 +2,39 @@ import { useRecoilCallback, useRecoilValue } from 'recoil';
 
 import { CurrentUser, currentUserState } from '@/auth/states/currentUserState';
 import {
-    CurrentWorkspace,
-    currentWorkspaceState,
+  CurrentWorkspace,
+  currentWorkspaceState,
 } from '@/auth/states/currentWorkspaceState';
 import { skipOptionalOnboardingStepsState } from '@/client-config/states/skipOptionalOnboardingStepsState';
 import { useConnectLinkedinOnboardingState } from '@/client-config/states/useConnectLinkedinOnboardingState';
 import { isDefined } from 'twenty-shared';
-import { OnboardingStatus } from '~/generated/graphql';
+import { FeatureFlagKey, OnboardingStatus } from '~/generated/graphql';
 
 const getNextOnboardingStatus = (
   currentUser: CurrentUser | null,
   currentWorkspace: CurrentWorkspace | null,
   useConnectLinkedinOnboarding: boolean,
   skipOptionalOnboardingSteps: boolean,
+  collectPhoneNumberInOnboarding: boolean,
 ) => {
   if (currentUser?.onboardingStatus === OnboardingStatus.WORKSPACE_ACTIVATION) {
     return OnboardingStatus.PROFILE_CREATION;
   }
 
   if (currentUser?.onboardingStatus === OnboardingStatus.PROFILE_CREATION) {
+    // Phone collection takes priority over skipOptionalOnboardingSteps
+    if (collectPhoneNumberInOnboarding) {
+      return OnboardingStatus.COLLECT_PHONE_NUMBER;
+    }
+    if (skipOptionalOnboardingSteps) {
+      return OnboardingStatus.COMPLETED;
+    }
+    return useConnectLinkedinOnboarding
+      ? OnboardingStatus.CONNECT_LINKEDIN
+      : OnboardingStatus.SYNC_EMAIL;
+  }
+
+  if (currentUser?.onboardingStatus === OnboardingStatus.COLLECT_PHONE_NUMBER) {
     if (skipOptionalOnboardingSteps) {
       return OnboardingStatus.COMPLETED;
     }
@@ -52,6 +66,12 @@ export const useSetNextOnboardingStatus = () => {
     skipOptionalOnboardingStepsState,
   );
 
+  // Default true: show phone step unless flag is explicitly set to false
+  const collectPhoneNumberInOnboarding =
+    currentWorkspace?.featureFlags?.find(
+      (flag) => flag.key === FeatureFlagKey.IsCollectPhoneNumberInOnboarding,
+    )?.value ?? true;
+
   return useRecoilCallback(
     ({ set }) =>
       () => {
@@ -60,6 +80,7 @@ export const useSetNextOnboardingStatus = () => {
           currentWorkspace,
           useConnectLinkedinOnboarding,
           skipOptionalOnboardingSteps,
+          collectPhoneNumberInOnboarding,
         );
         set(currentUserState, (current) => {
           if (isDefined(current)) {
@@ -76,6 +97,7 @@ export const useSetNextOnboardingStatus = () => {
       currentUser,
       useConnectLinkedinOnboarding,
       skipOptionalOnboardingSteps,
+      collectPhoneNumberInOnboarding,
     ],
   );
 };

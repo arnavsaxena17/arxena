@@ -51,7 +51,8 @@ test.describe('Litify org chart node fetch (canvas)', () => {
       if (url.includes('/jobs') && req.method() === 'POST') network.jobsCreate.push(url);
     });
 
-    await page.goto('/org-chart/litify', { waitUntil: 'domcontentloaded', timeout: 120_000 });
+    const workspaceOrigin = process.env.WORKSPACE_ORIGIN || 'http://localhost:3001';
+    await page.goto(`${workspaceOrigin}/org-chart/litify`, { waitUntil: 'domcontentloaded', timeout: 120_000 });
     await page.waitForSelector('.orgchart-diagram canvas', {
       state: 'visible',
       timeout: 180_000,

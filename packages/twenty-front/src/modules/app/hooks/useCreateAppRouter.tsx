@@ -26,6 +26,7 @@ import { NotFound } from '~/pages/not-found/NotFound';
 import { RecordIndexPage } from '~/pages/object-record/RecordIndexPage';
 import { RecordShowPage } from '~/pages/object-record/RecordShowPage';
 import { ChooseYourPlan } from '~/pages/onboarding/ChooseYourPlan';
+import { CollectPhoneNumber } from '~/pages/onboarding/CollectPhoneNumber';
 import { ConnectLinkedin } from '~/pages/onboarding/ConnectLinkedin';
 import { CreateProfile } from '~/pages/onboarding/CreateProfile';
 import { CreateWorkspace } from '~/pages/onboarding/CreateWorkspace';
@@ -234,6 +235,7 @@ export const useCreateAppRouter = (
               element={<CreateWorkspace />}
             />
             <Route path={AppPath.CreateProfile} element={<CreateProfile />} />
+            <Route path={AppPath.CollectPhoneNumber} element={<CollectPhoneNumber />} />
             <Route path={AppPath.ConnectLinkedin} element={<ConnectLinkedin />} />
             <Route path={AppPath.SyncEmails} element={<SyncEmails />} />
             <Route path={AppPath.InviteTeam} element={<InviteTeam />} />

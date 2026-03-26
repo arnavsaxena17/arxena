@@ -1,10 +1,7 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-
-// Global singleton for SSE connection to prevent multiple instances
-let globalEventSource: EventSource | null = null;
-let globalConnectionCount = 0;
+import { uploadProgressSseSessionCountState } from './states/uploadProgressSseSessionCountState';
 
 export interface UploadProgressData {
   step: string;
@@ -23,6 +20,7 @@ export const useUploadProgress = () => {
   const [error, setError] = useState<string | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const tokenPair = useRecoilValue(tokenPairState);
+  const uploadProgressSessionCount = useRecoilValue(uploadProgressSseSessionCountState);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef<number>(0);
   const maxReconnectAttempts = 2; // Reduce max attempts to prevent excessive reconnections
@@ -35,20 +33,32 @@ export const useUploadProgress = () => {
     const currentToken = tokenPair?.accessToken?.token;
     const tokenChanged = lastTokenRef.current !== currentToken;
     const tokenPairChanged = lastTokenPairRef.current !== tokenPair;
-    
+    const shouldConnect =
+      uploadProgressSessionCount > 0 && !!tokenPair?.accessToken?.token;
+
     console.log('🔄 useUploadProgress useEffect triggered', {
       hasToken: !!currentToken,
+      uploadProgressSessionCount,
+      shouldConnect,
       tokenPreview: currentToken?.substring(0, 20) + '...',
       isConnected: eventSourceRef.current?.readyState,
       reconnectAttempts: reconnectAttemptsRef.current,
       tokenChanged,
       lastToken: lastTokenRef.current?.substring(0, 20) + '...',
       tokenPairChanged,
-      sameTokenValue: lastTokenRef.current === currentToken
+      sameTokenValue: lastTokenRef.current === currentToken,
     });
-    
-    if (!tokenPair?.accessToken?.token) {
-      console.warn('No access token available for upload progress streaming');
+
+    if (!shouldConnect) {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+      setIsConnected(false);
       return;
     }
 
@@ -188,7 +198,7 @@ export const useUploadProgress = () => {
       }
       setIsConnected(false);
     };
-  }, [tokenPair?.accessToken?.token]); // Only depend on the actual token value, not the entire tokenPair object
+  }, [tokenPair?.accessToken?.token, uploadProgressSessionCount]);
 
   // Cleanup on unmount
   useEffect(() => {

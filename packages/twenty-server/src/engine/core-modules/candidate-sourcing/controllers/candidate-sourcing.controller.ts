@@ -39,6 +39,7 @@ import {
   PersonEdge,
   PersonNode,
   queries,
+  resolveIsOrgChartEnabledFromWorkspace,
   UpdateOneJob,
   UserProfile,
 } from 'twenty-shared';
@@ -253,10 +254,9 @@ export class CandidateSourcingController {
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
     const workspaceKeys =
       await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
-    const isOrgChartEnabled =
-      (workspaceKeys?.is_org_chart_enabled ??
-        process.env.IS_ORG_CHART_ENABLED ??
-        'true') === 'true';
+    const isOrgChartEnabled = resolveIsOrgChartEnabledFromWorkspace(
+      workspaceKeys?.is_org_chart_enabled,
+    );
     const query = getGraphqlToFindManyJobs(isOrgChartEnabled);
     const variables = {
       filter: { pathPosition: { in: [path_position] } },
@@ -937,10 +937,9 @@ export class CandidateSourcingController {
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const workspaceKeys =
         await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
-      const isOrgChartEnabled =
-        (workspaceKeys?.is_org_chart_enabled ??
-          process.env.IS_ORG_CHART_ENABLED ??
-          'true') === 'true';
+      const isOrgChartEnabled = resolveIsOrgChartEnabledFromWorkspace(
+        workspaceKeys?.is_org_chart_enabled,
+      );
       const query = getGraphqlToFindManyJobs(isOrgChartEnabled);
 
       // Use the same GraphQL query as get-all-jobs but with a filter
@@ -992,10 +991,9 @@ export class CandidateSourcingController {
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const workspaceKeys =
         await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
-      const isOrgChartEnabled =
-        (workspaceKeys?.is_org_chart_enabled ??
-          process.env.IS_ORG_CHART_ENABLED ??
-          'true') === 'true';
+      const isOrgChartEnabled = resolveIsOrgChartEnabledFromWorkspace(
+        workspaceKeys?.is_org_chart_enabled,
+      );
       const query = getGraphqlToFindManyJobs(isOrgChartEnabled);
 
       const responseFromGetAllJobs =

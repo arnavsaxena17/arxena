@@ -10,10 +10,8 @@ import { z } from 'zod';
 import { SubTitle } from '@/auth/components/SubTitle';
 import { Title } from '@/auth/components/Title';
 import { useAuth } from '@/auth/hooks/useAuth';
-import { currentUserState } from '@/auth/states/currentUserState';
 import { currentWorkspaceMembersState } from '@/auth/states/currentWorkspaceMembersStates';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
-import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
@@ -96,50 +94,13 @@ export const CreateProfile = () => {
   const setNextOnboardingStatus = useSetNextOnboardingStatus();
   const { enqueueSnackBar } = useSnackBar();
 
-  const currentUser = useRecoilValue(currentUserState);
-  const currentWorkspace = useRecoilValue(currentWorkspaceState);
   const currentWorkspaceMembers = useRecoilValue(currentWorkspaceMembersState);
   const { updateOneRecord } = useUpdateOneRecord<WorkspaceMember>({
     objectNameSingular: CoreObjectNameSingular.WorkspaceMember,
   });
 
-  const signupUserOnArxena = async (userData: any) => {
-    try {
-      let arxenaSiteBaseUrl = '';
-      if (process.env.NODE_ENV === 'development') {
-        arxenaSiteBaseUrl =
-          process.env.REACT_APP_ARXENA_SITE_BASE_URL || 'http://localhost:5050';
-      } else {
-        arxenaSiteBaseUrl =
-          process.env.REACT_APP_ARXENA_SITE_BASE_URL || 'https://arxena.com';
-      }
-      const requestParams = new URLSearchParams({
-        full_name: userData?.fullName,
-        email: userData?.email,
-        phone: userData?.phone,
-        token: userData?.token,
-        password: userData?.password,
-        origin: userData?.origin || '',
-        visitor_fp: userData?.visitorFp || '',
-        currentWorkspaceMemberId: userData?.currentWorkspaceMemberId || '',
-        twentyId: userData?.twentyId || '',
-        currentWorkspaceId: userData?.currentWorkspaceId || '',
-      });
-
-      const response = await fetch(arxenaSiteBaseUrl + '/auth/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          // 'Authorization': `Bearer ${userData.token}`, // Ensure the token is sent in the headers
-        },
-        body: requestParams,
-      });
-      const data = await response.json();
-      return data;
-    } catch {
-      // Signup on Arxena site is best-effort; continue onboarding on failure
-    }
-  };
+  // Arxena signup is now handled in CollectPhoneNumber (after phone is collected),
+  // so it runs once with complete user data (name + phone).
 
   // Form
   const {
@@ -201,33 +162,11 @@ export const CreateProfile = () => {
                 firstName: data.firstName,
                 lastName: data.lastName,
               },
-              colorScheme: 'System',
+              colorScheme: 'System' as const,
             };
           }
           return current;
         });
-
-        const userData = {
-          fullName:
-            data?.firstName !== '' && data?.lastName !== ''
-              ? data?.firstName + ' ' + data?.lastName
-              : currentUser?.email.toLowerCase().trim(),
-          email: currentUser?.email.toLowerCase().trim(), // Note: gmail/hotmail/yahoo emails are rejected by the backend
-          phone: '+1234567890',
-          password: 'password',
-          visitorFp: 'some-fingerprint-value',
-          token: 'some',
-          currentWorkspaceMemberId: workspaceMemberId,
-          currentWorkspaceId: currentWorkspace?.id,
-          twentyId: currentUser?.id,
-          origin: currentWorkspace?.subdomain || '',
-        };
-
-        try {
-          await signupUserOnArxena(userData);
-        } catch {
-          // Continue onboarding on Arxena signup failure
-        }
 
         Mixpanel.track('onboarding_step', { stepName: 'create_profile' });
         setNextOnboardingStatus();

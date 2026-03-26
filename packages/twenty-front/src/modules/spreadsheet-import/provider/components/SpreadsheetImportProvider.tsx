@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 
 import { spreadsheetImportDialogState } from '@/spreadsheet-import/states/spreadsheetImportDialogState';
+import { useUploadProgressSseSession } from '@/websocket-context/hooks/useUploadProgressSseSession';
 
 import { matchColumnsState } from '@/spreadsheet-import/steps/components/MatchColumnsStep/components/states/initialComputedColumnsState';
 import { SpreadsheetImport } from './SpreadsheetImport';
@@ -16,6 +17,26 @@ export const SpreadsheetImportProvider = (
   );
 
   const setMatchColumnsState = useSetRecoilState(matchColumnsState);
+  const { beginUploadProgressSseSession, endUploadProgressSseSessionAfterDelay } =
+    useUploadProgressSseSession();
+
+  const shouldHoldUploadProgressSse =
+    spreadsheetImportDialog.isOpen &&
+    spreadsheetImportDialog.options?.enableUploadProgressSseWhileOpen === true;
+
+  useEffect(() => {
+    if (!shouldHoldUploadProgressSse) {
+      return;
+    }
+    beginUploadProgressSseSession();
+    return () => {
+      endUploadProgressSseSessionAfterDelay();
+    };
+  }, [
+    shouldHoldUploadProgressSse,
+    beginUploadProgressSseSession,
+    endUploadProgressSseSessionAfterDelay,
+  ]);
 
   const handleClose = () => {
     setSpreadsheetImportDialog({

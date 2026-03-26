@@ -15,4 +15,5 @@ export enum FeatureFlagKey {
   IsRichTextV2Enabled = 'IS_RICH_TEXT_V2_ENABLED',
   IsNewRelationEnabled = 'IS_NEW_RELATION_ENABLED',
   IsPermissionsEnabled = 'IS_PERMISSIONS_ENABLED',
+  IsCollectPhoneNumberInOnboarding = 'IS_COLLECT_PHONE_NUMBER_IN_ONBOARDING',
 }

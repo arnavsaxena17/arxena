@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 
 import {
-  FindManyVideoInterviewModels,
-  getGraphqlToFindManyJobs,
-  Job,
-  PageInfo
+    FindManyVideoInterviewModels,
+    getGraphqlToFindManyJobs,
+    Job,
+    PageInfo,
+    resolveIsOrgChartEnabledFromWorkspace,
 } from 'twenty-shared';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -101,10 +102,9 @@ export class CandidateWorkspaceGraphQLService {
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const workspaceKeys =
         await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
-      const isOrgChartEnabled =
-        (workspaceKeys?.is_org_chart_enabled ??
-          process.env.IS_ORG_CHART_ENABLED ??
-          'true') === 'true';
+      const isOrgChartEnabled = resolveIsOrgChartEnabledFromWorkspace(
+        workspaceKeys?.is_org_chart_enabled,
+      );
       const query = getGraphqlToFindManyJobs(isOrgChartEnabled);
 
       const response = await this.staticGraphQLService.executeGraphQL(

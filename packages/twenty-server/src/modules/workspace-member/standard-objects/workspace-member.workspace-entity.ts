@@ -130,6 +130,17 @@ export class WorkspaceMemberWorkspaceEntity extends BaseWorkspaceEntity {
   userEmail: string;
 
   @WorkspaceField({
+    standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.phoneNumber,
+    type: FieldMetadataType.TEXT,
+    label: msg`Phone Number`,
+    description: msg`Workspace member phone number`,
+    icon: 'IconPhone',
+    defaultValue: "''",
+  })
+  @WorkspaceIsNullable()
+  phoneNumber: string | null;
+
+  @WorkspaceField({
     standardId: WORKSPACE_MEMBER_STANDARD_FIELD_IDS.userId,
     type: FieldMetadataType.UUID,
     label: msg`User Id`,

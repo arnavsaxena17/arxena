@@ -3,10 +3,14 @@ import {
   createViewFieldMutation,
   findManyViewsQuery,
   FindManyWorkspaceMembers,
+  findWorkspaceMemberProfiles,
   graphqlQueryToGetCurrentUser,
   graphqlToCreateOnePrompt,
   graphQLToCreateOneWorkspaceMemberProfile,
+  graphQLToUpdateOneWorkspaceMemberProfile,
+  isOrgChartEnabledEnv,
   queryObjectMetadataItems,
+  resolveIsOrgChartEnabledFromWorkspace,
 } from 'twenty-shared';
 
 // import { getCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
@@ -201,34 +205,68 @@ export class CreateMetaDataStructure {
     const currentUser = await this.getCurrentUser(apiToken, origin);
 
     console.log('currentUser', currentUser);
-    const createResponse = await this.staticGraphQLService.executeGraphQL(graphQLToCreateOneWorkspaceMemberProfile, {
-            input: {
-              typeWorkspaceMember: 'recruiterType',
-              name: currentWorkspaceMemberName,
-              workspaceMemberId: currentWorkspaceMemberId,
-              firstName:
-                currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0]
-                  .node.name.firstName,
-              lastName:
-                currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0]
-                  .node.name.lastName,
-              email:
-                currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0]
-                  .node.userEmail,
-              phoneNumber:
-                currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0]
-                  .node.phoneNumber,
-              companyName: currentUser.workspaces[0].workspace.displayName,
-              companyDescription: 'A Global Recruitment Firm',
-              position: 'first',
-            },
+
+    const memberNode =
+      currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node;
+    const profilePayload = {
+      typeWorkspaceMember: 'recruiterType' as const,
+      name: currentWorkspaceMemberName,
+      workspaceMemberId: currentWorkspaceMemberId,
+      firstName: memberNode.name.firstName,
+      lastName: memberNode.name.lastName,
+      email: memberNode.userEmail,
+      phoneNumber: memberNode.phoneNumber,
+      companyName: currentUser.workspaces[0].workspace.displayName,
+      jobTitle:'Senior Recruiter',
+      companyDescription: 'A Global Recruitment Firm',
+      position: 'first',
+    };
+
+    const existingProfileResponse =
+      await this.staticGraphQLService.executeGraphQL(
+        findWorkspaceMemberProfiles,
+        {
+          filter: { workspaceMemberId: { eq: currentWorkspaceMemberId } },
+          limit: 1,
+        },
+        apiToken,
+      );
+
+    const existingProfileId =
+      existingProfileResponse?.data?.data?.workspaceMemberProfiles?.edges?.[0]
+        ?.node?.id;
+
+    if (existingProfileId) {
+      const { workspaceMemberId: _omitMemberId, ...profileUpdateInput } =
+        profilePayload;
+      const updateResponse =
+        await this.staticGraphQLService.executeGraphQL(
+          graphQLToUpdateOneWorkspaceMemberProfile,
+          {
+            idToUpdate: existingProfileId,
+            input: profileUpdateInput,
           },
-        apiToken);
-
-      console.log('Workpace member created successfully', createResponse.data);
-
-      return currentWorkspaceMemberId;
+          apiToken,
+        );
+      console.log(
+        'Workspace member profile updated successfully',
+        updateResponse.data,
+      );
+    } else {
+      const createResponse =
+        await this.staticGraphQLService.executeGraphQL(
+          graphQLToCreateOneWorkspaceMemberProfile,
+          { input: profilePayload },
+          apiToken,
+        );
+      console.log(
+        'Workspace member profile created successfully',
+        createResponse.data,
+      );
     }
+
+    return currentWorkspaceMemberId;
+  }
 
   async createPrompts(apiToken: string) {
     for (const prompt of prompts) {
@@ -259,6 +297,7 @@ export class CreateMetaDataStructure {
       whatsapp_web_phone_number:'',
       facebook_whatsapp_app_id: process.env.FACEBOOK_WHATSAPP_APP_ID,
       facebook_whatsapp_asset_id: process.env.FACEBOOK_WHATSAPP_ASSET_ID,
+      is_org_chart_enabled: isOrgChartEnabledEnv ? 'true' : 'false',
       // waba_phone_number: undefined,
       // company_description_oneliner: 'A Global Recruitment Firm',
       // company_name: 'Arxena Inc',
@@ -521,10 +560,11 @@ export class CreateMetaDataStructure {
 
       const workspaceKeys =
         await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
-      const isOrgChartEnabled =
-        (workspaceKeys?.is_org_chart_enabled ??
-          process.env.IS_ORG_CHART_ENABLED ??
-          'true') === 'true';
+      const isOrgChartEnabled = resolveIsOrgChartEnabledFromWorkspace(
+        workspaceKeys?.is_org_chart_enabled,
+      );
+      console.log('workspace keys:', workspaceKeys?.is_org_chart_enabled);
+        console.log("workspace isOrgChartEnabled:", isOrgChartEnabled)
       const objectCreationArr = getObjectCreationArr(isOrgChartEnabled);
 
       const shouldCreateVideoInterviews = false;

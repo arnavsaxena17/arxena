@@ -18,7 +18,7 @@ import { useIsCurrentLocationOnAWorkspace } from '@/domain-manager/hooks/useIsCu
 import { useIsCurrentLocationOnDefaultDomain } from '@/domain-manager/hooks/useIsCurrentLocationOnDefaultDomain';
 import { DEFAULT_WORKSPACE_NAME } from '@/ui/navigation/navigation-drawer/constants/DefaultWorkspaceName';
 import { useMemo } from 'react';
-import { isDefined } from 'twenty-shared';
+import { isDefined, isOrgChartEnabledEnv } from 'twenty-shared';
 import { AnimatedEaseIn } from 'twenty-ui';
 
 import { useWorkspaceFromInviteHash } from '@/auth/sign-in-up/hooks/useWorkspaceFromInviteHash';
@@ -74,7 +74,7 @@ export const SignInUp = () => {
         : workspacePublicData?.displayName;
 
     if (workspaceName === 'Arxena') {
-      if (process.env.IS_ORG_CHART_ENABLED === 'true') {
+      if (isOrgChartEnabledEnv) {
         return t`Start for free, no credit card required!`;
       }
       return t`Welcome to Arxena.`;
