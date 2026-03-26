@@ -148,6 +148,55 @@ cd /home/ubuntu/twenty/tools/chatwoot-local
 docker compose logs --tail=200 rails sidekiq
 ```
 
+## Widget CORS troubleshooting
+
+If the website widget or app widget fails with a browser error like:
+
+```text
+Access to script at 'https://support.arxena.com/packs/js/sdk.js' has been blocked by CORS policy:
+The 'Access-Control-Allow-Origin' header contains multiple values '*, *', but only one is allowed.
+```
+
+the problem is not the frontend embed code. It means both layers are adding
+the same CORS headers:
+
+- Chatwoot already sends `Access-Control-Allow-Origin` for `/packs/js/sdk.js`
+- nginx on `support.arxena.com` must not add duplicate `Access-Control-Allow-*`
+
+Sanity check the upstream Chatwoot app directly on the host:
+
+```bash
+curl -sD - -o /dev/null 'http://127.0.0.1:3003/packs/js/sdk.js' \
+  -H 'Host: support.arxena.com' \
+  -H 'Origin: https://arxena.com'
+```
+
+That upstream response should contain only one `access-control-allow-origin`
+header. If the public `https://support.arxena.com/packs/js/sdk.js` response
+shows two copies, remove the nginx `add_header Access-Control-Allow-*` lines
+from `/etc/nginx/sites-enabled/support-arxena.conf`, then reload nginx:
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+If the widget works on `arxena.com` but the iframe is still blocked on
+`app.arxena.com`, check the main app shell headers too:
+
+```bash
+curl -sD - -o /dev/null 'https://app.arxena.com/welcome'
+```
+
+If that response includes:
+
+- `Cross-Origin-Embedder-Policy: require-corp`
+- `Cross-Origin-Opener-Policy: same-origin`
+
+then Chromium can block the cross-origin Chatwoot iframe even when the Chatwoot
+headers are correct. Remove those two headers from the `location /` block in
+`/etc/nginx/sites-enabled/twenty.conf`, reload nginx, and retest the widget.
+
 ## Important note
 
 `git push` from the main repo at `/Users/arnavsaxena/MEGA/arx/arxena` will not
