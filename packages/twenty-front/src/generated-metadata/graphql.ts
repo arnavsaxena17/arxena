@@ -288,6 +288,7 @@ export type ClientConfig = {
   isMultiWorkspaceEnabled: Scalars['Boolean']['output'];
   publicFeatureFlags: Array<PublicFeatureFlag>;
   sentry: Sentry;
+  signInBackgroundUseOrgChartMock: Scalars['Boolean']['output'];
   signInPrefilled: Scalars['Boolean']['output'];
   support: Support;
 };

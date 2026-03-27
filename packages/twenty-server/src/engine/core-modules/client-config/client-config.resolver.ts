@@ -45,6 +45,9 @@ export class ClientConfigResolver {
         sso: [],
       },
       signInPrefilled: this.environmentService.get('SIGN_IN_PREFILLED'),
+      signInBackgroundUseOrgChartMock: this.environmentService.get(
+        'SIGN_IN_BACKGROUND_USE_ORG_CHART_MOCK',
+      ),
       isMultiWorkspaceEnabled: this.environmentService.get(
         'IS_MULTIWORKSPACE_ENABLED',
       ),

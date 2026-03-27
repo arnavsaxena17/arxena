@@ -1,8 +1,8 @@
 import { AuthModal } from '@/auth/components/AuthModal';
+import { signInBackgroundUseOrgChartMockState } from '@/client-config/states/signInBackgroundUseOrgChartMockState';
 import { CommandMenuRouter } from '@/command-menu/components/CommandMenuRouter';
 import { AppErrorBoundary } from '@/error-handler/components/AppErrorBoundary';
 import { KeyboardShortcutMenu } from '@/keyboard-shortcut-menu/components/KeyboardShortcutMenu';
-import { AppNavigationDrawer } from '@/navigation/components/AppNavigationDrawer';
 import { MobileNavigationBar } from '@/navigation/components/MobileNavigationBar';
 import { useIsSettingsPage } from '@/navigation/hooks/useIsSettingsPage';
 import { OBJECT_SETTINGS_WIDTH } from '@/settings/data-model/constants/ObjectSettings';
@@ -15,6 +15,7 @@ import { Global, css, useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
 import { Outlet } from 'react-router-dom';
+import { useRecoilValue } from 'recoil';
 import { useScreenSize } from 'twenty-ui';
 
 const StyledLayout = styled.div`
@@ -49,10 +50,6 @@ const StyledPageContainer = styled(motion.div)`
   min-height: 0;
 `;
 
-const StyledAppNavigationDrawer = styled(AppNavigationDrawer)`
-  flex-shrink: 0;
-`;
-
 const StyledAppNavigationDrawerMock = styled(SignInAppNavigationDrawerMock)`
   flex-shrink: 0;
 `;
@@ -69,6 +66,9 @@ export const DefaultLayout = () => {
   const theme = useTheme();
   const windowsWidth = useScreenSize().width;
   const showAuthModal = useShowAuthModal();
+  const signInBackgroundUseOrgChartMock = useRecoilValue(
+    signInBackgroundUseOrgChartMockState,
+  );
 
   return (
     <>
@@ -101,12 +101,10 @@ export const DefaultLayout = () => {
           transition={{ duration: theme.animation.duration.normal }}
         >
           {showAuthModal ? (
-            <StyledAppNavigationDrawerMock />
-          ) : (
-            <StyledAppNavigationDrawer />
-          )}
-          {showAuthModal ? (
             <>
+              {!signInBackgroundUseOrgChartMock && (
+                <StyledAppNavigationDrawerMock />
+              )}
               <SignInBackgroundMockPage />
               <AnimatePresence mode="wait">
                 <LayoutGroup>

@@ -17,6 +17,7 @@ import { isMicrosoftMessagingEnabledState } from '@/client-config/states/isMicro
 import { isMultiWorkspaceEnabledState } from '@/client-config/states/isMultiWorkspaceEnabledState';
 import { labPublicFeatureFlagsState } from '@/client-config/states/labPublicFeatureFlagsState';
 import { sentryConfigState } from '@/client-config/states/sentryConfigState';
+import { signInBackgroundUseOrgChartMockState } from '@/client-config/states/signInBackgroundUseOrgChartMockState';
 import { skipOptionalOnboardingStepsState } from '@/client-config/states/skipOptionalOnboardingStepsState';
 import { supportChatState } from '@/client-config/states/supportChatState';
 import { useConnectLinkedinOnboardingState } from '@/client-config/states/useConnectLinkedinOnboardingState';
@@ -92,6 +93,10 @@ export const ClientConfigProviderEffect = () => {
     skipOptionalOnboardingStepsState,
   );
 
+  const setSignInBackgroundUseOrgChartMock = useSetRecoilState(
+    signInBackgroundUseOrgChartMockState,
+  );
+
   const { data, loading, error } = useGetClientConfigQuery({
     skip: clientConfigApiStatus.isLoaded,
   });
@@ -132,6 +137,9 @@ export const ClientConfigProviderEffect = () => {
     setIsDebugMode(data?.clientConfig.debugMode);
     setIsAnalyticsEnabled(data?.clientConfig.analyticsEnabled);
     setIsDeveloperDefaultSignInPrefilled(data?.clientConfig.signInPrefilled);
+    setSignInBackgroundUseOrgChartMock(
+      data?.clientConfig.signInBackgroundUseOrgChartMock ?? false,
+    );
     setIsMultiWorkspaceEnabled(data?.clientConfig.isMultiWorkspaceEnabled);
     setIsEmailVerificationRequired(
       data?.clientConfig.isEmailVerificationRequired,
@@ -177,6 +185,7 @@ export const ClientConfigProviderEffect = () => {
     data,
     setIsDebugMode,
     setIsDeveloperDefaultSignInPrefilled,
+    setSignInBackgroundUseOrgChartMock,
     setIsMultiWorkspaceEnabled,
     setIsEmailVerificationRequired,
     setSupportChat,

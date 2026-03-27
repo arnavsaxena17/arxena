@@ -1,4 +1,6 @@
+import { signInBackgroundUseOrgChartMockState } from '@/client-config/states/signInBackgroundUseOrgChartMockState';
 import styled from '@emotion/styled';
+import { useRecoilValue } from 'recoil';
 import { IconBuildingSkyscraper } from 'twenty-ui';
 
 import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-store/contexts/RecordFieldValueSelectorContext';
@@ -15,11 +17,12 @@ const StyledTableContainer = styled.div`
   width: 100%;
 `;
 
-/** Set to `false` to use the companies table mock instead of the Salesforce-style org chart. */
-const SIGN_IN_BACKGROUND_USE_ORG_CHART_MOCK = true;
-
 export const SignInBackgroundMockPage = () => {
-  if (SIGN_IN_BACKGROUND_USE_ORG_CHART_MOCK) {
+  const signInBackgroundUseOrgChartMock = useRecoilValue(
+    signInBackgroundUseOrgChartMockState,
+  );
+
+  if (signInBackgroundUseOrgChartMock) {
     return <SignInBackgroundOrgChartMockPage />;
   }
 

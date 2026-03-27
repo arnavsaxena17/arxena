@@ -2,17 +2,17 @@ import { LogLevel, Logger } from '@nestjs/common';
 
 import { plainToClass } from 'class-transformer';
 import {
-  IsBoolean,
-  IsDefined,
-  IsEnum,
-  IsIn,
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsUUID,
-  IsUrl,
-  ValidateIf,
-  validateSync,
+    IsBoolean,
+    IsDefined,
+    IsEnum,
+    IsIn,
+    IsNumber,
+    IsOptional,
+    IsString,
+    IsUUID,
+    IsUrl,
+    ValidateIf,
+    validateSync,
 } from 'class-validator';
 
 import { EmailDriver } from 'src/engine/core-modules/email/interfaces/email.interface';
@@ -57,6 +57,16 @@ export class EnvironmentVariables {
   @IsBoolean()
   @ValidateIf((env) => env.AUTH_PASSWORD_ENABLED)
   SIGN_IN_PREFILLED = false;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'When true, sign-in background uses the org chart mock and hides the fake navigation drawer',
+  })
+  @CastToBoolean()
+  @IsOptional()
+  @IsBoolean()
+  SIGN_IN_BACKGROUND_USE_ORG_CHART_MOCK = false;
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.Other,

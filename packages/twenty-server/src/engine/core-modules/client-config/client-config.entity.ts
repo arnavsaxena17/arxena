@@ -108,6 +108,9 @@ export class ClientConfig {
   signInPrefilled: boolean;
 
   @Field(() => Boolean)
+  signInBackgroundUseOrgChartMock: boolean;
+
+  @Field(() => Boolean)
   isMultiWorkspaceEnabled: boolean;
 
   @Field(() => Boolean)

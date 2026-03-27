@@ -25,6 +25,7 @@ export const GET_CLIENT_CONFIG = gql`
         }
       }
       signInPrefilled
+      signInBackgroundUseOrgChartMock
       isMultiWorkspaceEnabled
       isEmailVerificationRequired
       defaultSubdomain
