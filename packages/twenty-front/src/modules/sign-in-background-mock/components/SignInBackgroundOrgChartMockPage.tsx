@@ -16,7 +16,7 @@ const StyledDiagramOuter = styled.div`
 export const SignInBackgroundOrgChartMockPage = () => {
   return (
     <PageContainer>
-      <PageHeader title="Salesforce" Icon={IconHierarchy2}>
+      <PageHeader title="AI guessed Org Chart" Icon={IconHierarchy2}>
         <PageHotkeysEffect onAddButtonClick={() => {}} />
       </PageHeader>
       <PageBody>

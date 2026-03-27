@@ -10,6 +10,8 @@ import { OrgChartData } from 'twenty-shared';
 type MockCandidate = {
   full_name: string;
   job_title: string;
+  /** Stable varied photo per person (Picsum seed); requires network to load. */
+  image: string;
 };
 
 type MockOrgNodeDraft = {
@@ -86,19 +88,21 @@ const makeNames = (count: number, startIndex: number): string[] =>
     return `${FIRST_NAMES[idx % FIRST_NAMES.length]} ${LAST_NAMES[(idx * 7) % LAST_NAMES.length]}`;
   });
 
-const assignTitles = (names: string[], titles: string[]): MockCandidate[] =>
-  names.map((full_name, i) => ({
-    full_name,
-    job_title: titles[i % titles.length] ?? titles[0] ?? '',
-  }));
-
 const buildMockOrgChartNodes = (): MockOrgNode[] => {
   let nameOffset = 0;
+  let profileImageSeed = 0;
   const takeNames = (count: number) => {
     const names = makeNames(count, nameOffset);
     nameOffset += count;
     return names;
   };
+
+  const assignTitles = (names: string[], titles: string[]): MockCandidate[] =>
+    names.map((full_name, i) => ({
+      full_name,
+      job_title: titles[i % titles.length] ?? titles[0] ?? '',
+      image: `https://picsum.photos/seed/${profileImageSeed++}/64/64`,
+    }));
 
   const nodes: MockOrgNode[] = [];
 
@@ -128,7 +132,7 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 1,
+    key: 1100000,
     parent: 1000000,
     headline: 'SALES LEADERSHIP',
     std_grade_category: 'senior',
@@ -149,8 +153,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 2,
-    parent: 1,
+    key: 1110000,
+    parent: 1100000,
     headline: 'SALES TEAM',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -171,8 +175,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 9,
-    parent: 1,
+    key: 1120000,
+    parent: 1100000,
     headline: 'ACCOUNTS LEADERSHIP',
     std_grade_category: 'senior',
     std_grade: 'leadership',
@@ -191,8 +195,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 10,
-    parent: 9,
+    key: 1121000,
+    parent: 1120000,
     headline: 'ACCOUNTS MANAGERS',
     std_grade_category: 'mid',
     std_grade: 'mid',
@@ -212,8 +216,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 8,
-    parent: 10,
+    key: 1121100,
+    parent: 1121000,
     headline: 'ACCOUNTS TEAM',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -233,8 +237,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 26,
-    parent: 10,
+    key: 1121200,
+    parent: 1121000,
     headline: 'SALES MARKETING TEAM',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -253,8 +257,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 45,
-    parent: 10,
+    key: 1121300,
+    parent: 1121000,
     headline: 'SALES ENTERPRISE TEAM',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -273,8 +277,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 47,
-    parent: 10,
+    key: 1121400,
+    parent: 1121000,
     headline: 'SALES SOLUTIONS TEAM',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -293,8 +297,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 31,
-    parent: 1,
+    key: 1130000,
+    parent: 1100000,
     headline: 'CUSTOMER SUCCESS LEADERSHIP',
     std_grade_category: 'senior',
     std_grade: 'leadership',
@@ -313,8 +317,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 33,
-    parent: 31,
+    key: 1131000,
+    parent: 1130000,
     headline: 'CUSTOMER SUCCESS MANAGERS',
     std_grade_category: 'mid',
     std_grade: 'mid',
@@ -333,8 +337,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 32,
-    parent: 33,
+    key: 1131100,
+    parent: 1131000,
     headline: 'CUSTOMER SUCCESS TEAM',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -354,7 +358,7 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 5,
+    key: 1200000,
     parent: 1000000,
     headline: 'ENGINEERING LEADERSHIP',
     std_grade_category: 'senior',
@@ -374,8 +378,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 3,
-    parent: 5,
+    key: 1210000,
+    parent: 1200000,
     headline: 'ENGINEERING MANAGERS',
     std_grade_category: 'mid',
     std_grade: 'mid',
@@ -395,8 +399,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 4,
-    parent: 3,
+    key: 1211000,
+    parent: 1210000,
     headline: 'ENGINEERING TEAM',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -416,8 +420,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 27,
-    parent: 3,
+    key: 1212000,
+    parent: 1210000,
     headline: 'SYSTEMS TEAM',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -436,8 +440,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 36,
-    parent: 3,
+    key: 1213000,
+    parent: 1210000,
     headline: 'CONTROL TEAM',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -456,8 +460,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 16,
-    parent: 5,
+    key: 1220000,
+    parent: 1200000,
     headline: 'QUALITY MANAGERS',
     std_grade_category: 'mid',
     std_grade: 'mid',
@@ -476,8 +480,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 17,
-    parent: 16,
+    key: 1221000,
+    parent: 1220000,
     headline: 'QUALITY TEAM',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -496,8 +500,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 24,
-    parent: 5,
+    key: 1230000,
+    parent: 1200000,
     headline: 'PROGRAM MANAGERS',
     std_grade_category: 'mid',
     std_grade: 'mid',
@@ -516,8 +520,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 25,
-    parent: 5,
+    key: 1240000,
+    parent: 1200000,
     headline: 'SECURITY LEADERSHIP',
     std_grade_category: 'senior',
     std_grade: 'leadership',
@@ -536,8 +540,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 28,
-    parent: 5,
+    key: 1250000,
+    parent: 1200000,
     headline: 'ARCHITECT MANAGERS',
     std_grade_category: 'mid',
     std_grade: 'mid',
@@ -556,8 +560,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 29,
-    parent: 28,
+    key: 1251000,
+    parent: 1250000,
     headline: 'ARCHITECT TEAM',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -576,7 +580,7 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 34,
+    key: 1300000,
     parent: 1000000,
     headline: 'SOLUTIONS LEADERSHIP',
     std_grade_category: 'senior',
@@ -595,8 +599,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 14,
-    parent: 34,
+    key: 1310000,
+    parent: 1300000,
     headline: 'SOFTWARE TEAM',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -616,8 +620,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 18,
-    parent: 34,
+    key: 1320000,
+    parent: 1300000,
     headline: 'INFORMATION TECHNOLOGY TEAM',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -636,8 +640,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 22,
-    parent: 34,
+    key: 1330000,
+    parent: 1300000,
     headline: 'DATA TEAM',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -656,8 +660,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 39,
-    parent: 34,
+    key: 1340000,
+    parent: 1300000,
     headline: 'CONTENT TEAM',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -676,8 +680,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 35,
-    parent: 34,
+    key: 1350000,
+    parent: 1300000,
     headline: 'SOLUTIONS TEAM',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -696,7 +700,7 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 19,
+    key: 1400000,
     parent: 1000000,
     headline: 'PRODUCT LEADERSHIP',
     std_grade_category: 'senior',
@@ -713,8 +717,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 20,
-    parent: 19,
+    key: 1410000,
+    parent: 1400000,
     headline: 'PRODUCT TEAM',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -734,8 +738,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 38,
-    parent: 19,
+    key: 1420000,
+    parent: 1400000,
     headline: 'PRODUCT DEVELOPMENT LEADERSHIP',
     std_grade_category: 'senior',
     std_grade: 'leadership',
@@ -751,8 +755,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 41,
-    parent: 19,
+    key: 1430000,
+    parent: 1400000,
     headline: 'MARKETING PRODUCT LEADERSHIP',
     std_grade_category: 'senior',
     std_grade: 'leadership',
@@ -770,7 +774,7 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 11,
+    key: 1500000,
     parent: 1000000,
     headline: 'OPERATIONS LEADERSHIP',
     std_grade_category: 'senior',
@@ -790,8 +794,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 12,
-    parent: 11,
+    key: 1510000,
+    parent: 1500000,
     headline: 'OPERATIONS TEAM',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -811,7 +815,7 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 6,
+    key: 1600000,
     parent: 1000000,
     headline: 'PROJECTS MANAGERS',
     std_grade_category: 'mid',
@@ -831,7 +835,7 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 13,
+    key: 1700000,
     parent: 1000000,
     headline: 'FINANCE LEADERSHIP',
     std_grade_category: 'senior',
@@ -848,7 +852,7 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 15,
+    key: 1800000,
     parent: 1000000,
     headline: 'HUMAN RESOURCES LEADERSHIP',
     std_grade_category: 'senior',
@@ -868,8 +872,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 21,
-    parent: 15,
+    key: 1810000,
+    parent: 1800000,
     headline: 'TRAINING DEVELOPMENT MANAGERS',
     std_grade_category: 'mid',
     std_grade: 'mid',
@@ -888,7 +892,7 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 23,
+    key: 1900000,
     parent: 1000000,
     headline: 'PLANNING STRATEGIC LEADERSHIP',
     std_grade_category: 'senior',
@@ -908,7 +912,7 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 30,
+    key: 2000000,
     parent: 1000000,
     headline: 'CREATIVE LEADERSHIP',
     std_grade_category: 'senior',
@@ -925,8 +929,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 43,
-    parent: 30,
+    key: 2010000,
+    parent: 2000000,
     headline: 'USER EXPERIENCE MANAGERS',
     std_grade_category: 'mid',
     std_grade: 'mid',
@@ -942,8 +946,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 42,
-    parent: 43,
+    key: 2011000,
+    parent: 2010000,
     headline: 'USER EXPERIENCE TEAM',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -962,8 +966,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 37,
-    parent: 43,
+    key: 2012000,
+    parent: 2010000,
     headline: 'WRITER EDITOR TEAM',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -982,7 +986,7 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 40,
+    key: 2100000,
     parent: 1000000,
     headline: 'DELIVERY LEADERSHIP',
     std_grade_category: 'senior',
@@ -1001,7 +1005,7 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 44,
+    key: 2200000,
     parent: 1000000,
     headline: 'SERVICE DELIVERY LEADERSHIP',
     std_grade_category: 'senior',
@@ -1018,8 +1022,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 46,
-    parent: 44,
+    key: 2210000,
+    parent: 2200000,
     headline: 'SERVICE ENGINEERING MANAGERS',
     std_grade_category: 'mid',
     std_grade: 'mid',
@@ -1035,8 +1039,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 7,
-    parent: 46,
+    key: 2211000,
+    parent: 2210000,
     headline: 'SUPPORT SERVICE TEAM',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -1055,7 +1059,7 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 48,
+    key: 2300000,
     parent: 1000000,
     headline: 'MIDDLE MANAGEMENT',
     std_grade_category: 'mid',
@@ -1075,8 +1079,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   push({
-    key: 49,
-    parent: 48,
+    key: 2310000,
+    parent: 2300000,
     headline: 'ENTRY',
     std_grade_category: 'entry',
     std_grade: 'entry',
@@ -1095,7 +1099,7 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   nodes.push({
-    key: 51,
+    key: 2400000,
     parent: 1000000,
     headline: '+4 MORE FUNCTIONS',
     std_grade_category: 'ceoassist',
@@ -1115,8 +1119,8 @@ const buildMockOrgChartNodes = (): MockOrgNode[] => {
   });
 
   nodes.push({
-    key: 57,
-    parent: 5,
+    key: 1260000,
+    parent: 1200000,
     headline: '+5 MORE FUNCTIONS',
     std_grade_category: 'engineeringassist',
     std_grade: 'engineeringassist',

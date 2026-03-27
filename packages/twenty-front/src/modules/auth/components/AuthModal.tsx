@@ -11,7 +11,7 @@ const StyledContent = styled(Modal.Content)`
 type AuthModalProps = { children: React.ReactNode };
 
 export const AuthModal = ({ children }: AuthModalProps) => (
-  <Modal padding={'none'} modalVariant="primary">
+  <Modal padding={'none'} modalVariant="primary" isBackdropPointerPassthrough>
     <ScrollWrapper
       contextProviderName="modalContent"
       componentInstanceId="scroll-wrapper-modal-content"

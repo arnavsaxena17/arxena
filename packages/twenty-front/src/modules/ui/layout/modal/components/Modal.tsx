@@ -6,6 +6,7 @@ import {
   useListenClickOutside,
 } from '@/ui/utilities/pointer-event/hooks/useListenClickOutside';
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
+import { css } from '@emotion/react';
 import styled from '@emotion/styled';
 import { motion } from 'framer-motion';
 import React, { useEffect, useRef } from 'react';
@@ -16,6 +17,7 @@ const StyledModalDiv = styled(motion.div)<{
   padding?: ModalPadding;
   isMobile: boolean;
   modalVariant: ModalVariants;
+  $backdropPointerPassthrough?: boolean;
 }>`
   display: flex;
   flex-direction: column;
@@ -64,6 +66,12 @@ const StyledModalDiv = styled(motion.div)<{
   height: ${({ isMobile, theme }) =>
     isMobile ? theme.modal.size.fullscreen : 'auto'};
   max-height: ${({ isMobile }) => (isMobile ? 'none' : '90dvh')};
+
+  ${({ $backdropPointerPassthrough }) =>
+    $backdropPointerPassthrough &&
+    css`
+      pointer-events: auto;
+    `}
 `;
 
 const StyledHeader = styled.div`
@@ -94,6 +102,7 @@ const StyledFooter = styled.div`
 
 const StyledBackDrop = styled(motion.div)<{
   modalVariant: ModalVariants;
+  $backdropPointerPassthrough?: boolean;
 }>`
   align-items: center;
   background: ${({ theme, modalVariant }) =>
@@ -111,6 +120,12 @@ const StyledBackDrop = styled(motion.div)<{
   width: 100%;
   z-index: 9999;
   user-select: none;
+
+  ${({ $backdropPointerPassthrough }) =>
+    $backdropPointerPassthrough &&
+    css`
+      pointer-events: none;
+    `}
 `;
 
 type ModalHeaderProps = React.PropsWithChildren & {
@@ -137,7 +152,7 @@ const ModalFooter = ({ children, className }: ModalFooterProps) => (
   <StyledFooter className={className}>{children}</StyledFooter>
 );
 
-export type ModalSize = 'small' | 'medium' | 'large' |  'xl';
+export type ModalSize = 'small' | 'medium' | 'large' | 'xl';
 export type ModalPadding = 'none' | 'small' | 'medium' | 'large';
 export type ModalVariants = 'primary' | 'secondary' | 'tertiary';
 
@@ -148,6 +163,12 @@ export type ModalProps = React.PropsWithChildren & {
   hotkeyScope?: ModalHotkeyScope;
   onEnter?: () => void;
   modalVariant?: ModalVariants;
+  /**
+   * When true, the dimmed backdrop does not capture pointer or wheel events, so content
+   * behind the modal (e.g. the sign-in org chart) can be panned and interacted with.
+   * The modal panel still receives events.
+   */
+  isBackdropPointerPassthrough?: boolean;
 } & (
     | { isClosable: true; onClose: () => void }
     | { isClosable?: false; onClose?: never }
@@ -169,6 +190,7 @@ export const Modal = ({
   isClosable = false,
   onClose,
   modalVariant = 'primary',
+  isBackdropPointerPassthrough = false,
 }: ModalProps) => {
   const isMobile = useIsMobile();
   const modalRef = useRef<HTMLDivElement>(null);
@@ -227,6 +249,7 @@ export const Modal = ({
       className="modal-backdrop"
       onMouseDown={stopEventPropagation}
       modalVariant={modalVariant}
+      $backdropPointerPassthrough={isBackdropPointerPassthrough}
     >
       <StyledModalDiv
         ref={modalRef}
@@ -240,6 +263,7 @@ export const Modal = ({
         variants={modalAnimation}
         className={className}
         isMobile={isMobile}
+        $backdropPointerPassthrough={isBackdropPointerPassthrough}
       >
         {children}
       </StyledModalDiv>
