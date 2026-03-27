@@ -1,7 +1,7 @@
 import styled from '@emotion/styled';
 import { IconSitemap, IconX } from '@tabler/icons-react';
 
-import type { OrgChartNodeData } from 'twenty-shared';
+import { formatOrgChartSliceLabel, type OrgChartNodeData } from 'twenty-shared';
 
 const StyledBackdrop = styled.div`
   position: absolute;
@@ -208,16 +208,10 @@ export type OrgChartSignUpModalProps = {
   selectedFunctionRoot?: string;
 };
 
-const formatLabel = (s: string): string =>
-  s
-    .split(/[-_]/)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(' ');
-
 export const OrgChartSignUpModal = ({
   node,
   onClose,
-  signUpUrl = '/sign-up',
+  signUpUrl = '/welcome',
   companyName,
   selectedCountry,
   selectedFunctionRoot,
@@ -234,10 +228,12 @@ export const OrgChartSignUpModal = ({
 
   const sliceParts: string[] = [];
   if (selectedCountry && selectedCountry !== 'global') {
-    sliceParts.push(`by geography (e.g. ${formatLabel(selectedCountry)})`);
+    sliceParts.push(`by geography (e.g. ${formatOrgChartSliceLabel(selectedCountry)})`);
   }
   if (selectedFunctionRoot && selectedFunctionRoot !== 'fullcompany') {
-    sliceParts.push(`by function (e.g. ${formatLabel(selectedFunctionRoot)})`);
+    sliceParts.push(
+      `by function (e.g. ${formatOrgChartSliceLabel(selectedFunctionRoot)})`,
+    );
   }
   if (sliceParts.length === 0) {
     sliceParts.push('by geography or function');

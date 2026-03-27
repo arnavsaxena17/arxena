@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { useDebouncedCallback } from 'use-debounce';
@@ -7,8 +7,11 @@ import { useDebouncedCallback } from 'use-debounce';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
 import { AppPath } from '@/types/AppPath';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useUnipile } from '@/unipile/contexts/UnipileContext';
 import {
+  normalizeCompanyIdForUrl,
   OrgChartDiagram,
   OrgChartSearchControls,
   useCompanyInfoLookup,
@@ -250,6 +253,7 @@ export const ArxOrgChart = ({
   >();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResultCount, setSearchResultCount] = useState<number | null>(null);
+  const [isTheOrgEnrichedLoading, setIsTheOrgEnrichedLoading] = useState(false);
   const [exactEmployeeCount, setExactEmployeeCount] = useState<number | null>(
     null,
   );
@@ -281,6 +285,7 @@ export const ArxOrgChart = ({
     lookupByName,
   } = useCompanyInfoLookup({ baseUrl, accessToken });
   const { refetchJobs } = useJobRefetch();
+  const { enqueueSnackBar } = useSnackBar();
   const effectiveEmployeeCount =
     unipileCompanyProfile?.employee_count ??
     exactEmployeeCount ??
@@ -295,6 +300,7 @@ export const ArxOrgChart = ({
     website,
     employeeCount: effectiveEmployeeCount,
   });
+  const { applyOrgChartOverride } = actions;
 
   const jobOrgChartHook = useJobOrgChartData(
     { jobId, jobName: companyName ?? effectiveCompanyName },
@@ -350,7 +356,8 @@ export const ArxOrgChart = ({
   }, [refetchJobs]);
 
   const orgSource = isJobMode
-    ? ((data?.orgChart as Record<string, unknown> | null) ?? null)
+    ? (actions.latestOrgChart ??
+        ((data?.orgChart as Record<string, unknown> | null) ?? null))
     : actions.latestOrgChart ?? ((data as Record<string, unknown> | null) ?? null);
 
   const orgData = useMemo(
@@ -472,7 +479,7 @@ export const ArxOrgChart = ({
         if (!cancelled) setExactEmployeeCount(null);
       }
     };
-    fetchEmployeeCount();
+    // fetchEmployeeCount();
     return () => {
       cancelled = true;
     };
@@ -689,6 +696,85 @@ export const ArxOrgChart = ({
       }),
   };
 
+  const fetchTheOrgEnrichedOrgChart = useCallback(async () => {
+    if (!companyId?.trim() || !baseUrl?.trim()) {
+      enqueueSnackBar('Missing company or server URL', {
+        variant: SnackBarVariant.Error,
+      });
+      return;
+    }
+    setIsTheOrgEnrichedLoading(true);
+    try {
+      const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
+      const canonicalCompanyId = normalizeCompanyIdForUrl(companyId);
+      const params = new URLSearchParams();
+      const nameToSend = effectiveCompanyName?.trim();
+      if (nameToSend) {
+        params.set('companyName', nameToSend);
+      }
+      if (selectedCountry?.trim()) {
+        params.set('country', selectedCountry.trim());
+      }
+      if (selectedFunctionRoot?.trim()) {
+        params.set('functionRoot', selectedFunctionRoot.trim());
+      }
+      const qs = params.toString();
+      const url = `${normalizedBaseUrl}/org-chart/${encodeURIComponent(
+        canonicalCompanyId,
+      )}/theorg-enriched${qs ? `?${qs}` : ''}`;
+      const res = await fetch(url, {
+        headers: {
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+      });
+      const json = (await res.json()) as {
+        status?: string;
+        result?: Record<string, unknown>;
+        message?: string | string[];
+      };
+      if (!res.ok) {
+        const rawMsg = json?.message;
+        const msg =
+          typeof rawMsg === 'string' && rawMsg
+            ? rawMsg
+            : Array.isArray(rawMsg)
+              ? rawMsg.join(', ')
+              : `Request failed (${res.status})`;
+        throw new Error(msg);
+      }
+      if (json?.status === 'ok' && json.result) {
+        applyOrgChartOverride(json.result);
+        enqueueSnackBar('Loaded TheOrg leadership org chart', {
+          variant: SnackBarVariant.Success,
+          duration: 4000,
+        });
+        window.setTimeout(() => {
+          diagramHandleRef.current?.zoomToFit();
+        }, 150);
+      } else {
+        throw new Error('Invalid response from TheOrg-enriched endpoint');
+      }
+    } catch (e) {
+      enqueueSnackBar(
+        e instanceof Error
+          ? e.message
+          : 'Failed to load TheOrg leadership chart',
+        { variant: SnackBarVariant.Error, duration: 6000 },
+      );
+    } finally {
+      setIsTheOrgEnrichedLoading(false);
+    }
+  }, [
+    companyId,
+    baseUrl,
+    accessToken,
+    effectiveCompanyName,
+    selectedCountry,
+    selectedFunctionRoot,
+    applyOrgChartOverride,
+    enqueueSnackBar,
+  ]);
+
   const unipileLocationName = unipileCompanyProfile?.locations?.[0]
     ? [
         unipileCompanyProfile.locations[0].city,
@@ -846,6 +932,17 @@ export const ArxOrgChart = ({
                 onClick={searchControlsProps.onViewAllCandidates}
               >
                 View all candidates
+              </StyledTopRightActionButton>
+              <StyledTopRightActionButton
+                type="button"
+                disabled={isTheOrgEnrichedLoading}
+                onClick={() => {
+                  void fetchTheOrgEnrichedOrgChart();
+                }}
+              >
+                {isTheOrgEnrichedLoading
+                  ? 'Loading TheOrg…'
+                  : 'TheOrg leadership'}
               </StyledTopRightActionButton>
               <StyledTopRightActionButton
                 type="button"

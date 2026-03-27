@@ -190,4 +190,172 @@ describe('TheOrgService', () => {
       path: 'theorg-test/companies/hawkins-cookers/latest.json',
     });
   });
+
+  it('maps org chart node profile images into orgChartPeople profileImageUrl', async () => {
+    const companyHtml = `
+      <html>
+        <body>
+          <script id="__NEXT_DATA__" type="application/json">${JSON.stringify({
+            props: {
+              pageProps: {
+                initialCompany: {
+                  id: 'company-1',
+                  slug: 'litify',
+                  name: 'Litify',
+                  industries: [{ title: 'Legal Tech' }],
+                  stats: { positionCount: 1 },
+                },
+                __APOLLO_STATE__: {
+                  'FlatPosition:1': {
+                    id: 1,
+                    fullName: 'Tom Mavis',
+                    role: 'Vice President, Business Development',
+                    slug: 'tom-mavis',
+                    profileImage: {
+                      endpoint: 'https://cdn.theorg.com',
+                      ext: 'jpg',
+                      uri: 'e8fe8757-d356-4e6f-b055-c494040c2315',
+                      versions: ['thumb', 'xsmall', 'small', 'medium', 'large'],
+                    },
+                  },
+                },
+                initialNodes: [
+                  {
+                    id: 'p-11236725',
+                    title: 'Tom Mavis',
+                    containingNodeId: null,
+                    order: 0,
+                    parentId: null,
+                    section: 'orgChart',
+                    type: 'leaf',
+                    reportCount: 0,
+                    node: {
+                      position: {
+                        id: 11236725,
+                        fullName: 'Tom Mavis',
+                        role: 'Vice President, Business Development',
+                        slug: 'tom-mavis',
+                        claimedBy: null,
+                        hasNotes: false,
+                        profileImage: {
+                          endpoint: 'https://cdn.theorg.com',
+                          ext: 'jpg',
+                          uri: 'e8fe8757-d356-4e6f-b055-c494040c2315',
+                          versions: ['thumb', 'xsmall', 'small', 'medium', 'large'],
+                        },
+                        social: null,
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          })}</script>
+        </body>
+      </html>
+    `;
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => companyHtml,
+    }) as any;
+
+    const result = await service.fetchCompanyDetails('litify', {
+      mode: 'orgchart',
+    });
+
+    expect(result.orgChartPeople).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'Tom Mavis',
+          profileImageUrl:
+            'https://cdn.theorg.com/e8fe8757-d356-4e6f-b055-c494040c2315_medium.jpg',
+        }),
+      ]),
+    );
+    expect(result.people).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'Tom Mavis',
+          profileImageUrl:
+            'https://cdn.theorg.com/e8fe8757-d356-4e6f-b055-c494040c2315_medium.jpg',
+        }),
+      ]),
+    );
+  });
+
+  it('maps team member profile images into teamPeople profileImageUrl', async () => {
+    const companyHtml = `
+      <html>
+        <body>
+          <script id="__NEXT_DATA__" type="application/json">${JSON.stringify({
+            props: {
+              pageProps: {
+                initialCompany: {
+                  id: 'company-1',
+                  slug: 'litify',
+                  name: 'Litify',
+                  industries: [{ title: 'Legal Tech' }],
+                  stats: { positionCount: 0 },
+                },
+                initialTeams: [
+                  {
+                    id: 'leadership-team-id',
+                    slug: 'leadership-team',
+                    name: 'Leadership Team',
+                    description: 'Leadership Team',
+                    memberCount: 1,
+                    members: [
+                      {
+                        id: 11236725,
+                        fullName: 'Tom Mavis',
+                        role: 'Vice President, Business Development',
+                        slug: 'tom-mavis',
+                        parentPositionId: null,
+                        profileImage: {
+                          endpoint: 'https://cdn.theorg.com',
+                          ext: 'jpg',
+                          uri: 'e8fe8757-d356-4e6f-b055-c494040c2315',
+                          versions: ['thumb', 'xsmall', 'small', 'medium', 'large'],
+                        },
+                        lastUpdate: '2024-02-11T06:44:12.665',
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          })}</script>
+        </body>
+      </html>
+    `;
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => companyHtml,
+    }) as any;
+
+    const result = await service.fetchCompanyDetails('litify', {
+      mode: 'teams',
+    });
+
+    expect(result.teamPeople).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'Tom Mavis',
+          profileImageUrl:
+            'https://cdn.theorg.com/e8fe8757-d356-4e6f-b055-c494040c2315_medium.jpg',
+        }),
+      ]),
+    );
+    expect(result.people).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'Tom Mavis',
+          profileImageUrl:
+            'https://cdn.theorg.com/e8fe8757-d356-4e6f-b055-c494040c2315_medium.jpg',
+        }),
+      ]),
+    );
+  });
 });

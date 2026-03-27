@@ -44,7 +44,7 @@ export const useJobOrgChartData = (
 
     try {
       const response = await fetch(
-        `${trimmedBaseUrl}/candidate-search/orgchart/from-job`,
+        `${trimmedBaseUrl}/org-chart/from-job`,
         {
           method: 'POST',
           headers: {
@@ -87,4 +87,3 @@ export const useJobOrgChartData = (
     fetchOrgChart,
   };
 };
-

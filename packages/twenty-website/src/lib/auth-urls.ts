@@ -7,8 +7,9 @@ export function getAuthBaseUrl(): string {
   return normalized.replace(/\/$/, '');
 }
 
+/** App sign-up path. The org chart page appends context via `appendOrgChartSignupSearchParams` (twenty-shared): `orgChartCompany`, `orgChartFunction`, `orgChartCountry`. */
 export function getSignUpUrl(): string {
-  return `${getAuthBaseUrl()}/sign-up`;
+  return `${getAuthBaseUrl()}/welcome`;
 }
 
 export function getSignInUrl(): string {

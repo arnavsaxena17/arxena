@@ -1,9 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { OrgChartData } from 'twenty-shared';
 
-import type { TheOrgPerson } from 'src/engine/core-modules/theorg/types/theorg.types';
 import { TheOrgService } from 'src/engine/core-modules/theorg/services/theorg.service';
+import type {
+  TheOrgFetchMode,
+  TheOrgPerson,
+} from 'src/engine/core-modules/theorg/types/theorg.types';
 
+import { normalizePersonForPythonOrgChartBuild } from '../utils/python-org-chart-person.util';
 import { OrgChartService } from './org-chart.service';
 import { PythonOrgChartService } from './python-org-chart.service';
 
@@ -32,6 +36,7 @@ export class OrgChartTheOrgEnrichmentService {
       companyName?: string;
       /** TheOrg slug — defaults to companyId */
       theOrgSlug?: string;
+      theOrgMode?: TheOrgFetchMode;
       country?: string;
       functionRoot?: string;
     } = {},
@@ -67,7 +72,10 @@ export class OrgChartTheOrgEnrichmentService {
     try {
       const theOrgData = await this.theOrgService.fetchCompanyDetails(
         theOrgSlug,
-        { persist: false },
+        {
+          mode: options.theOrgMode,
+          persist: false,
+        },
       );
       const resolvedTheOrgCompanyName =
         theOrgData.companyName || resolvedCompanyName;
@@ -75,6 +83,7 @@ export class OrgChartTheOrgEnrichmentService {
         theOrgData.people,
         resolvedTheOrgCompanyName,
       );
+      this.logger.log(`The org people ${JSON.stringify(theOrgData)}`)
       this.logger.log(
         `Fetched ${theOrgPeople.length} people from TheOrg for slug=${theOrgSlug}`,
       );
@@ -97,15 +106,30 @@ export class OrgChartTheOrgEnrichmentService {
       `Merged people list: ${allPeople.length} total (${existingPeople.length} existing + ${theOrgPeople.length} theorg, deduped)`,
     );
 
+    const chartCountryHint =
+      typeof existingOrgChart.country === 'string' &&
+      existingOrgChart.country.trim() !== ''
+        ? existingOrgChart.country.trim()
+        : options.country?.trim();
+
+    const pythonPeople = allPeople.map((person) =>
+      normalizePersonForPythonOrgChartBuild(person, {
+        companyId,
+        companyName: resolvedCompanyName,
+        defaultCountry: chartCountryHint,
+      }),
+    );
+
     // 5. Rebuild org chart via the Python service.
     let enrichedOrgChart: OrgChartData;
     try {
       enrichedOrgChart =
         await this.pythonOrgChartService.createOrgChartFromStandardizedPeople({
-          people: allPeople,
+          people: pythonPeople,
           jobName: resolvedCompanyName,
           jobId: companyId,
           functionRoot: options.functionRoot,
+          country: chartCountryHint,
         });
     } catch (error) {
       this.logger.warn(
@@ -124,6 +148,7 @@ export class OrgChartTheOrgEnrichmentService {
       job_company_name: resolvedCompanyName,
       theorg_enriched: true,
       theorg_slug: theOrgSlug,
+      theorg_mode: options.theOrgMode ?? 'combined',
       theorg_people_count: theOrgPeople.length,
       existing_people_count: existingPeople.length,
       total_people_count: allPeople.length,
@@ -170,7 +195,7 @@ export class OrgChartTheOrgEnrichmentService {
         if (!name || name === 'xx' || name === 'XX') continue;
 
         people.push({
-          name,
+          full_name: name,
           job_title: String(candidate.job_title ?? ''),
           job_company_name:
             String(
@@ -213,7 +238,7 @@ export class OrgChartTheOrgEnrichmentService {
     return people
       .filter((person) => person.name?.trim())
       .map((person) => ({
-        name: person.name,
+        full_name: person.name,
         job_title: person.role ?? '',
         job_company_name: companyName,
         // std_* fields intentionally left null so Python can classify them.
@@ -227,6 +252,8 @@ export class OrgChartTheOrgEnrichmentService {
         theorg_node_id: person.nodeId,
         theorg_parent_node_id: person.parentNodeId ?? null,
         theorg_slug: person.slug ?? null,
+        linkedin_url: person.linkedInUrl ?? '',
+        profile_picture_url: person.profileImageUrl ?? null,
         profile_url: person.profileUrl ?? null,
         section: person.section ?? null,
         report_count: person.reportCount,
@@ -246,9 +273,8 @@ export class OrgChartTheOrgEnrichmentService {
     const merged: Record<string, unknown>[] = [];
 
     for (const person of [...existingPeople, ...theOrgPeople]) {
-      const normalizedName = String(person.name ?? '')
-        .trim()
-        .toLowerCase();
+      const rawName = person['full_name'] ?? person['name'];
+      const normalizedName = String(rawName ?? '').trim().toLowerCase();
       if (!normalizedName) continue;
       if (seenNames.has(normalizedName)) continue;
       seenNames.add(normalizedName);

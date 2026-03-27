@@ -23,6 +23,7 @@
     "mixpanel-browser": "^2.75.0",
     "next-runtime-env": "^3.2.2",
     "postgres": "^3.4.3",
-    "twenty-orgchart": "workspace:*"
+    "twenty-orgchart": "workspace:*",
+    "twenty-shared": "workspace:*"
   }
 }

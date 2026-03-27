@@ -1,7 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 
 import { ApifyModule } from 'src/engine/core-modules/apify/apify.module';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
+import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
+import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
 import { ContactEnrichmentModule } from 'src/engine/core-modules/contact-enrichment/contact-enrichment.module';
 import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
 import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-execution.module';
@@ -21,6 +23,7 @@ import { ImageProxyService } from './services/image-proxy.service';
 import { OrgChartEsService } from './services/org-chart-es.service';
 import { OrgChartService } from './services/org-chart.service';
 import { OrgChartTheOrgEnrichmentService } from './services/org-chart-theorg-enrichment.service';
+import { OrgChartLinkedInBuildService } from './services/org-chart-linkedin-build.service';
 import { OrgChartS3Service } from './services/orgchart-s3.service';
 import { PdlAutocompleteService } from './services/pdl-autocomplete.service';
 import { PeopleEsService } from './services/people-es.service';
@@ -31,18 +34,21 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
     OrgChartClientIpModule,
     ApifyModule,
     BillingModule,
+    CandidateSourcingModule,
     ContactEnrichmentModule,
     EnvironmentModule,
     GraphQLExecutionModule,
     LinkedInSearchModule,
     TheOrgModule,
     WorkspaceModificationsModule,
+    forwardRef(() => CandidateSearchModule),
   ],
   controllers: [OrgChartController],
   providers: [
     UnipileCompanyService,
     WorkspaceMemberProfileUnipileService,
     OrgChartService,
+    OrgChartLinkedInBuildService,
     OrgChartTheOrgEnrichmentService,
     ArxenaBackendService,
     OrgChartEsService,

@@ -6,8 +6,8 @@ import { PythonOrgChartService } from 'src/engine/core-modules/org-chart/service
 import { OrgChartData } from 'twenty-shared';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import {
-  ClassicPeopleSearchStrategyResult,
-  ParsedJobDescription,
+    ClassicPeopleSearchStrategyResult,
+    ParsedJobDescription,
 } from '../types/candidate-search-request.type';
 import type { PeopleSearchStrategyResult } from '../utils/extract-strategies.util';
 import { extractStrategiesFromGeneratedParams } from '../utils/extract-strategies.util';
@@ -15,8 +15,8 @@ import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.
 import { mapLinkedinSearchQueriesToGeneratedParameters } from '../utils/linkedin-query-generation-mapper.util';
 import { hasMeaningfulOrgChartFunctionRootFilter } from '../utils/orgchart-filter.util';
 import {
-  normalizeCountry,
-  normalizeFunctionRoot,
+    normalizeCountry,
+    normalizeFunctionRoot,
 } from '../utils/orgchart-normalization.util';
 import { createMinimalParsedJobDescription } from '../utils/parsed-job-description.util';
 import { constructSearchParamKey } from '../utils/search-parameter.utils';
@@ -460,6 +460,7 @@ export class OrgChartSearchService {
           apiToken,
           undefined,
           emitProgress,
+          { forceClassicPeopleJson: true },
         );
       strategyResults.push({
         strategy,

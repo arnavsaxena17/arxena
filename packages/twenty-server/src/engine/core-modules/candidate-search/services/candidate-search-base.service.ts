@@ -451,7 +451,13 @@ export class CandidateSearchBaseService {
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     accountId: string,
-    options?: { cursor?: string; limit?: number; start?: number },
+    options?: {
+      cursor?: string;
+      limit?: number;
+      start?: number;
+      /** When true, use Unipile classic JSON people search only (no raw HTML / no env raw override). */
+      forceClassicPeopleJson?: boolean;
+    },
   ): Promise<LinkedInSearchResponse | undefined> {
     const areParametersResolved = this.checkIfParametersResolved(
       resolvedSearchParameters,
@@ -467,7 +473,9 @@ export class CandidateSearchBaseService {
     if (searchType === 'classic' && searchCategory === 'people' && areParametersResolved && !resolvedSearchParameters.classicPeopleSearch) {
       this.logger.log(`Searching for people with flat format resolved parameters for ${searchType} ${searchCategory}`);
       const cleanedParams = this.removeDisplayFields(resolvedSearchParameters);
-      const useRaw = this.shouldUseRawEndpointForClassicPeople(cleanedParams.useRawEndpoint);
+      const useRaw = options?.forceClassicPeopleJson
+        ? false
+        : this.shouldUseRawEndpointForClassicPeople(cleanedParams.useRawEndpoint);
       const nestedParams = {
         keywords: cleanedParams.keywords,
         industry: cleanedParams.industry,
@@ -515,7 +523,9 @@ export class CandidateSearchBaseService {
       this.logger.log(`Generated LinkedIn URL: ${linkedInUrl || 'null'}`);
       const sanitizedParams = this.parameterSanitizer.sanitizeClassicPeopleSearchRequest(cleanedParams);
       this.logger.log(`Sanitized parameters for LinkedIn API: ${JSON.stringify(sanitizedParams, null, 2)}`);
-      const useRaw = this.shouldUseRawEndpointForClassicPeople(resolvedSearchParameters.classicPeopleSearch.useRawEndpoint);
+      const useRaw = options?.forceClassicPeopleJson
+        ? false
+        : this.shouldUseRawEndpointForClassicPeople(resolvedSearchParameters.classicPeopleSearch.useRawEndpoint);
       const searchParamsWithFlag = {
         ...sanitizedParams,
         useRawEndpoint: useRaw,

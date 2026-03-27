@@ -15,14 +15,18 @@ import { companySearchLightTheme } from '@/lib/company-search';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- orgchart-core is used alongside dynamic OrgChartDiagram
 import {
-    OrgChartDiagramHandle,
-    OrgChartFilters,
-    OrgChartSearchControls,
-    OrgChartSignUpModal,
-    useCompanyInfoLookup,
-    useOrgChartFilterOptions,
+  OrgChartDiagramHandle,
+  OrgChartFilters,
+  OrgChartSearchControls,
+  OrgChartSignUpModal,
+  useCompanyInfoLookup,
+  useOrgChartFilterOptions,
 } from 'twenty-orgchart/orgchart-core';
-import { OrgChartNodeData, toSlug } from 'twenty-shared';
+import {
+  appendOrgChartSignupSearchParams,
+  OrgChartNodeData,
+  toSlug,
+} from 'twenty-shared';
 
 const OrgChartDiagram = dynamic(
   () => import('twenty-orgchart').then((mod) => mod.OrgChartDiagram),
@@ -391,6 +395,16 @@ export const OrgChartPageClient = ({
 
   const hasFilters = !!orgData;
 
+  const signUpUrlWithContext = useMemo(
+    () =>
+      appendOrgChartSignupSearchParams(signUpUrl, {
+        companyName,
+        selectedCountry,
+        selectedFunctionRoot,
+      }),
+    [signUpUrl, companyName, selectedCountry, selectedFunctionRoot],
+  );
+
   useEffect(() => {
     trackGA4Event('org_chart_view', {
       company_id: companyId,
@@ -478,7 +492,7 @@ export const OrgChartPageClient = ({
                   This is a preview of the org chart. Get the full org chart for
                   free when you sign up.
                 </span>
-                <StyledPreviewBannerSignupLink href={signUpUrl}>
+                <StyledPreviewBannerSignupLink href={signUpUrlWithContext}>
                   Sign up free
                 </StyledPreviewBannerSignupLink>
               </StyledPreviewPersistentBanner>
@@ -527,7 +541,7 @@ export const OrgChartPageClient = ({
                 <OrgChartSignUpModal
                   node={clickedNode}
                   onClose={handleCloseSignUpModal}
-                  signUpUrl={signUpUrl}
+                  signUpUrl={signUpUrlWithContext}
                   companyName={companyName}
                   selectedCountry={selectedCountry}
                   selectedFunctionRoot={selectedFunctionRoot}

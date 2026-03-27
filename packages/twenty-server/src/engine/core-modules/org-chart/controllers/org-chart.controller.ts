@@ -25,6 +25,7 @@ import { ImageProxyService } from '../services/image-proxy.service';
 import { OrgChartClientIpService } from '../services/org-chart-client-ip.service';
 import { OrgChartEsService } from '../services/org-chart-es.service';
 import { OrgChartTheOrgEnrichmentService } from '../services/org-chart-theorg-enrichment.service';
+import { OrgChartLinkedInBuildService } from '../services/org-chart-linkedin-build.service';
 import { OrgChartService } from '../services/org-chart.service';
 
 @Controller('org-chart')
@@ -33,6 +34,7 @@ export class OrgChartController {
 
   constructor(
     private readonly orgChartService: OrgChartService,
+    private readonly orgChartLinkedInBuildService: OrgChartLinkedInBuildService,
     private readonly orgChartEsService: OrgChartEsService,
     private readonly orgChartTheOrgEnrichmentService: OrgChartTheOrgEnrichmentService,
     private readonly companyLogoService: CompanyLogoService,
@@ -55,6 +57,12 @@ export class OrgChartController {
       if (match) return match[1];
     }
     return undefined;
+  }
+
+  private proxyOrgChartPayload(
+    result: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
+    return this.imageProxyService.proxyImagesInPayload(result);
   }
 
   @Get('company-logo')
@@ -91,13 +99,82 @@ export class OrgChartController {
     @Query('url') url: string,
     @Res() res: Response,
   ) {
-    if (!url?.trim()) {
+    const legacyUrl = url?.trim() ?? '';
+
+    if (!legacyUrl) {
       throw new HttpException(
         'Query parameter "url" is required',
         HttpStatus.BAD_REQUEST,
       );
     }
-    const decodedUrl = decodeURIComponent(url.trim());
+
+    const decodedUrl = decodeURIComponent(legacyUrl);
+
+    if (!decodedUrl) {
+      res.status(404).send();
+      return;
+    }
+
+    const { ok, contentType, body } =
+      await this.imageProxyService.fetchImage(decodedUrl);
+    if (!ok || body.byteLength === 0) {
+      res.status(404).send();
+      return;
+    }
+    res.setHeader('Content-Type', contentType ?? 'image/jpeg');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.send(Buffer.from(body));
+  }
+
+  @Get('image-proxy/:bucket/:identifierA/:identifierB')
+  async getImageProxyByIdentifiers(
+    @Param('bucket') bucket: string,
+    @Param('identifierA') identifierA: string,
+    @Param('identifierB') identifierB: string,
+    @Res() res: Response,
+  ) {
+    const decodedUrl = this.imageProxyService.resolveUrlFromDeterministicPath(
+      bucket,
+      identifierA,
+      identifierB,
+    );
+
+    if (!decodedUrl) {
+      res.status(404).send();
+      return;
+    }
+
+    const { ok, contentType, body } =
+      await this.imageProxyService.fetchImage(decodedUrl);
+    if (!ok || body.byteLength === 0) {
+      res.status(404).send();
+      return;
+    }
+    res.setHeader('Content-Type', contentType ?? 'image/jpeg');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.send(Buffer.from(body));
+  }
+
+  @Get('image-proxy/:bucket/:identifierA/:identifierB/:identifierC')
+  async getImageProxyByThreeIdentifiers(
+    @Param('bucket') bucket: string,
+    @Param('identifierA') identifierA: string,
+    @Param('identifierB') identifierB: string,
+    @Param('identifierC') identifierC: string,
+    @Res() res: Response,
+  ) {
+    const decodedUrl = this.imageProxyService.resolveUrlFromDeterministicPath(
+      bucket,
+      identifierA,
+      identifierB,
+      identifierC,
+    );
+
+    if (!decodedUrl) {
+      res.status(404).send();
+      return;
+    }
+
     const { ok, contentType, body } =
       await this.imageProxyService.fetchImage(decodedUrl);
     if (!ok || body.byteLength === 0) {
@@ -655,6 +732,7 @@ export class OrgChartController {
     @Param('companyId') companyId: string,
     @Query('companyName') companyName: string | undefined,
     @Query('theOrgSlug') theOrgSlug: string | undefined,
+    @Query('theOrgMode') theOrgMode: string | undefined,
     @Query('country') country: string | undefined,
     @Query('functionRoot') functionRoot: string | undefined,
     @Req() req: Request,
@@ -672,11 +750,20 @@ export class OrgChartController {
           {
             companyName,
             theOrgSlug: theOrgSlug ?? normalizedCompanyId,
+            theOrgMode:
+              theOrgMode === 'teams' ||
+              theOrgMode === 'orgchart' ||
+              theOrgMode === 'combined'
+                ? theOrgMode
+                : undefined,
             country,
             functionRoot,
           },
         );
-      return { result, status: 'ok' };
+      return {
+        result: await this.proxyOrgChartPayload(result),
+        status: 'ok',
+      };
     } catch (error) {
       this.logger.error(
         `TheOrg-enriched org chart failed for companyId=${companyId}`,
@@ -781,7 +868,10 @@ export class OrgChartController {
       ) {
         await this.orgChartClientIpService.recordChartServed(clientIp);
       }
-      return { result, status: 'ok' };
+      return {
+        result: await this.proxyOrgChartPayload(result),
+        status: 'ok',
+      };
     } catch (error) {
       this.logger.error(`Get org chart failed for ${companyId}`, error);
       throw new HttpException(
@@ -809,7 +899,10 @@ export class OrgChartController {
         body,
         authToken,
       );
-      return { ...result, status: 'ok' };
+      return {
+        ...(await this.imageProxyService.proxyImagesInPayload(result)),
+        status: 'ok',
+      };
     } catch (error) {
       this.logger.error(
         `Get node people failed for companyId=${companyId}`,
@@ -843,6 +936,112 @@ export class OrgChartController {
       this.logger.error('Org chart query failed', error);
       throw new HttpException(
         error instanceof Error ? error.message : 'Query failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('search')
+  async searchOrgChartFromLinkedIn(
+    @Body()
+    body: {
+      rawQuery: string;
+      cleanedQuery: string;
+      companyName?: string;
+      companyId?: string;
+      jobTitles?: string[];
+      mode:
+        | 'current_node'
+        | 'leadership'
+        | 'entire_company'
+        | 'function_grade'
+        | 'all_people'
+        | 'selected_nodes';
+      maxPages?: number;
+      searchType?: 'classic' | 'sales_navigator' | 'recruiter';
+      requestId?: string;
+      country?: string;
+      functionRoot?: string;
+    },
+    @Req() req: Request,
+  ) {
+    try {
+      const normalizedHeaders = Object.fromEntries(
+        Object.entries(req.headers).flatMap(([key, value]) => {
+          if (Array.isArray(value)) {
+            return [[key, value.join(', ')]];
+          }
+          return typeof value === 'string' ? [[key, value]] : [];
+        }),
+      );
+
+      return await this.orgChartLinkedInBuildService.searchOrgchartFromLinkedIn(
+        body,
+        normalizedHeaders,
+      );
+    } catch (error) {
+      this.logger.error('Org chart LinkedIn search failed', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Failed to search org chart',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('search/cancel')
+  async cancelOrgChartSearch(
+    @Body() body: { requestId?: string },
+    @Req() req: Request,
+  ) {
+    if (!body?.requestId?.trim()) {
+      throw new HttpException(
+        'Body field "requestId" is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const normalizedHeaders = Object.fromEntries(
+      Object.entries(req.headers).flatMap(([key, value]) => {
+        if (Array.isArray(value)) {
+          return [[key, value.join(', ')]];
+        }
+        return typeof value === 'string' ? [[key, value]] : [];
+      }),
+    );
+
+    return this.orgChartLinkedInBuildService.cancelOrgchartSearch(
+      { requestId: body.requestId.trim() },
+      normalizedHeaders,
+    );
+  }
+
+  @Post('from-job')
+  async buildOrgChartFromJobCandidates(
+    @Body() body: { jobId: string; jobName?: string },
+    @Req() req: Request,
+  ) {
+    const authToken = this.getAuthToken(req);
+    if (!authToken) {
+      throw new HttpException('Authentication required', HttpStatus.UNAUTHORIZED);
+    }
+
+    try {
+      return await this.orgChartLinkedInBuildService.buildOrgChartFromJobCandidates(
+        body,
+        authToken,
+      );
+    } catch (error) {
+      this.logger.error('Build org chart from job failed', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to build org chart from job',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

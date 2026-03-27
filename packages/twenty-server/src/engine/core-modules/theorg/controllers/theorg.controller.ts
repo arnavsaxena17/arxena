@@ -28,9 +28,14 @@ export class TheOrgController {
     @Req() req: Request & { workspaceId?: string },
     @Param('slug') slug: string,
     @Query('includePeopleProfiles') includePeopleProfiles?: string,
+    @Query('mode') mode?: string,
   ) {
     try {
       const result = await this.theOrgService.fetchCompanyDetails(slug, {
+        mode:
+          mode === 'teams' || mode === 'orgchart' || mode === 'combined'
+            ? mode
+            : undefined,
         includePeopleProfiles: ['1', 'true', 'yes', 'y'].includes(
           String(includePeopleProfiles || '').trim().toLowerCase(),
         ),

@@ -7,23 +7,23 @@ import { ResumeReadParseUploadService } from '../../candidate-sourcing/services/
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
 import {
-    LinkedInSearchConfig,
-    LinkedInSearchResponse,
-    LinkedInSearchResult
+  LinkedInSearchConfig,
+  LinkedInSearchResponse,
+  LinkedInSearchResult
 } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import {
-    ClassicPeopleSearchStrategyResult,
-    GeneratedSearchParameters,
-    ParsedJobDescription,
-    RecruiterPeopleSearchStrategyResult,
-    ResultValidationResult,
-    SalesNavigatorPeopleSearchStrategyResult
+  ClassicPeopleSearchStrategyResult,
+  GeneratedSearchParameters,
+  ParsedJobDescription,
+  RecruiterPeopleSearchStrategyResult,
+  ResultValidationResult,
+  SalesNavigatorPeopleSearchStrategyResult
 } from '../types/candidate-search-request.type';
 import {
-    FileUtils,
-    LinkedinParameterResolver,
-    ParameterSanitizer
+  FileUtils,
+  LinkedinParameterResolver,
+  ParameterSanitizer
 } from '../utils';
 import { CandidateScoringService } from './candidate-scoring.service';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
@@ -108,6 +108,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     apiToken: string,
     maxPages?: number,
     sendEvent?: (event: string, data: any) => boolean | void,
+    executionOptions?: { forceClassicPeopleJson?: boolean },
   ): Promise<SearchExecutionPreview | null> {
     const pageLimit = 10;
     const maxPagesToFetch =
@@ -157,7 +158,15 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           (envRaw === 'true' || envRaw === '1')
         );
       })();
+      const forceClassicPeopleJson =
+        executionOptions?.forceClassicPeopleJson === true;
+      if (forceClassicPeopleJson) {
+        this.logger.log(
+          'forceClassicPeopleJson: classic people search uses Unipile JSON API only (no raw HTML; env LINKEDIN_CLASSIC_PEOPLE_USE_RAW_ENDPOINT ignored).',
+        );
+      }
       const useRawClassicPeople =
+        !forceClassicPeopleJson &&
         searchType === 'classic' &&
         searchCategory === 'people' &&
         (rawFromParams === true || rawFromEnv);
@@ -198,6 +207,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           pageLimit,
           sendEvent,
           state.currentPage,
+          forceClassicPeopleJson,
         );
 
         if (!pageResult || pageResult.items.length === 0) {
@@ -740,6 +750,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     pageLimit: number,
     sendEvent?: (event: string, data: any) => boolean | void,
     currentPage: number = 1,
+    forceClassicPeopleJson: boolean = false,
   ): Promise<{
     items: LinkedInSearchResult[];
     transformed: TransformedCandidateForTable[];
@@ -765,6 +776,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
       return envRaw !== undefined && envRaw !== '' && (envRaw === 'true' || envRaw === '1');
     })();
     const useRawClassicPeople =
+      !forceClassicPeopleJson &&
       searchType === 'classic' &&
       searchCategory === 'people' &&
       (rawFromParams === true || rawFromEnv);
@@ -780,7 +792,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
       searchType,
       searchCategory,
       accountId,
-      { cursor, limit: pageLimit, start },
+      { cursor, limit: pageLimit, start, forceClassicPeopleJson },
     );
 
     if (!searchResults) {

@@ -4,10 +4,13 @@ import { FileStorageService } from 'src/engine/core-modules/file-storage/file-st
 import type {
   TheOrgCompanyResponse,
   TheOrgFetchCompanyOptions,
+  TheOrgFetchMode,
   TheOrgFetchPersonOptions,
   TheOrgImage,
   TheOrgNormalizedNode,
   TheOrgPerson,
+  TheOrgTeam,
+  TheOrgTeamMember,
   TheOrgStorageLocation,
   TheOrgStorageTarget
 } from 'src/engine/core-modules/theorg/types/theorg.types';
@@ -41,6 +44,14 @@ export class TheOrgService {
 
   private get inlineProfileMaxPeople(): number {
     return Number(process.env.THEORG_INLINE_PROFILE_MAX_PEOPLE ?? 75);
+  }
+
+  private get teamConcurrency(): number {
+    return Number(process.env.THEORG_TEAM_CONCURRENCY ?? 4);
+  }
+
+  private get maxFullTreePositionCount(): number {
+    return Number(process.env.THEORG_MAX_FULL_TREE_POSITION_COUNT ?? 5_000);
   }
 
   private get storagePrefix(): string {
@@ -127,6 +138,10 @@ export class TheOrgService {
 
   private buildPersonProfileUrl(companySlug: string, personSlug: string): string {
     return `${BASE_URL}/org/${companySlug}/org-chart/${personSlug}`;
+  }
+
+  private buildTeamUrl(companySlug: string, teamSlug: string): string {
+    return `${BASE_URL}/org/${companySlug}/teams/${teamSlug}`;
   }
 
   private sanitizeSegment(value: string): string {
@@ -273,10 +288,222 @@ export class TheOrgService {
       if (!person?.id || !person?.name) {
         continue;
       }
-      byId.set(person.id, person);
+      const existing = byId.get(person.id);
+      if (!existing) {
+        byId.set(person.id, person);
+        continue;
+      }
+
+      const existingSources = new Set(
+        existing.sources || (existing.source ? [existing.source] : []),
+      );
+      const incomingSources = new Set(
+        person.sources || (person.source ? [person.source] : []),
+      );
+      const hasOrgChart =
+        existingSources.has('orgChart') || incomingSources.has('orgChart');
+      const primary = hasOrgChart
+        ? (existingSources.has('orgChart') ? existing : person)
+        : existing;
+      const secondary = primary === existing ? person : existing;
+
+      byId.set(person.id, {
+        ...secondary,
+        ...primary,
+        source: primary.source || secondary.source,
+        sources: Array.from(
+          new Set([...(secondary.sources || []), ...(primary.sources || [])]),
+        ).sort() as TheOrgFetchMode[],
+        linkedInUrl: primary.linkedInUrl || secondary.linkedInUrl || null,
+        profileUrl: primary.profileUrl || secondary.profileUrl || null,
+        profileImageUrl:
+          primary.profileImageUrl || secondary.profileImageUrl || null,
+        teamIds: Array.from(
+          new Set([...(existing.teamIds || []), ...(person.teamIds || [])]),
+        ),
+        teamSlugs: Array.from(
+          new Set([...(existing.teamSlugs || []), ...(person.teamSlugs || [])]),
+        ),
+        teamNames: Array.from(
+          new Set([...(existing.teamNames || []), ...(person.teamNames || [])]),
+        ),
+      });
     }
 
     return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  private shouldSkipFullTree(companyStats: Record<string, unknown> | null | undefined): boolean {
+    const positionCount = Number(companyStats?.positionCount);
+    if (!Number.isFinite(positionCount)) {
+      return false;
+    }
+
+    return positionCount > this.maxFullTreePositionCount;
+  }
+
+  private normalizeTeamMember(member: any): TheOrgTeamMember | null {
+    if (!member?.id || !member?.fullName) {
+      return null;
+    }
+
+    return {
+      id: member.id,
+      name: member.fullName,
+      role: member.role || null,
+      slug: member.slug || null,
+      parentPositionId: member.parentPositionId ?? null,
+      profileImageUrl: this.buildImageUrl(
+        member.profileImage || member.profilePicture,
+      ),
+      updatedAt: member.lastUpdate || null,
+    };
+  }
+
+  private parseTeamPage(html: string, sourceLabel: string): Omit<TheOrgTeam, 'url'> {
+    const nextData = this.extractNextData(html, sourceLabel);
+    const pageProps = nextData?.props?.pageProps || {};
+    const initialTeam = pageProps.initialTeam || null;
+
+    if (!initialTeam) {
+      throw new Error(`Could not find initialTeam in ${sourceLabel}`);
+    }
+
+    return {
+      id: initialTeam.id || null,
+      slug: initialTeam.slug || null,
+      name: initialTeam.name || null,
+      description: initialTeam.description || null,
+      content: initialTeam.content || null,
+      memberCount: initialTeam.memberCount ?? 0,
+      publishedJobsCount: Array.isArray(initialTeam.publishedJobs)
+        ? initialTeam.publishedJobs.length
+        : 0,
+      members: Array.isArray(initialTeam.members)
+        ? initialTeam.members
+            .map((member: any) => this.normalizeTeamMember(member))
+            .filter(Boolean)
+        : [],
+    };
+  }
+
+  private async fetchTeamDetailsBySlugs(
+    companySlug: string,
+    teamSlug: string,
+  ): Promise<TheOrgTeam> {
+    const url = this.buildTeamUrl(companySlug, teamSlug);
+    const html = await this.fetchText(url);
+
+    return {
+      ...this.parseTeamPage(html, url),
+      url,
+    };
+  }
+
+  private async enrichTeamsWithMembers(
+    companySlug: string,
+    initialTeams: any[],
+  ): Promise<TheOrgTeam[]> {
+    const teams = Array.isArray(initialTeams)
+      ? initialTeams
+          .filter((team) => team?.slug)
+          .map((team) => ({
+            id: team.id || null,
+            slug: team.slug || null,
+            name: team.name || null,
+            description: team.description || null,
+            memberCount: team.memberCount ?? 0,
+            url: this.buildTeamUrl(companySlug, team.slug),
+            membersPreview: Array.isArray(team.members)
+              ? team.members
+                  .map((member: any) => this.normalizeTeamMember(member))
+                  .filter(Boolean)
+              : [],
+          }))
+      : [];
+    const enriched = new Array<TheOrgTeam>(teams.length);
+    let cursor = 0;
+
+    const worker = async () => {
+      while (cursor < teams.length) {
+        const currentIndex = cursor++;
+        const team = teams[currentIndex];
+
+        try {
+          enriched[currentIndex] = await this.fetchTeamDetailsBySlugs(
+            companySlug,
+            team.slug,
+          );
+        } catch (error) {
+          enriched[currentIndex] = {
+            id: team.id,
+            slug: team.slug,
+            name: team.name,
+            description: team.description,
+            memberCount: team.memberCount,
+            url: team.url,
+            members: team.membersPreview,
+            membersPreviewCount: team.membersPreview.length,
+            fetchError:
+              error instanceof Error ? error.message : 'Failed to fetch team page',
+          };
+        }
+      }
+    };
+
+    await Promise.all(
+      Array.from(
+        { length: Math.min(this.teamConcurrency, Math.max(1, teams.length)) },
+        () => worker(),
+      ),
+    );
+
+    return enriched
+      .filter(Boolean)
+      .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+  }
+
+  private peopleFromTeams(teams: TheOrgTeam[], companySlug: string): TheOrgPerson[] {
+    const flattened = teams.flatMap((team) =>
+      (team.members || []).map((member) => ({
+        id: member.id,
+        name: member.name,
+        role: member.role || null,
+        slug: member.slug || null,
+        nodeId: `team:${team.slug || team.id || 'unknown'}:${member.id}`,
+        parentNodeId: null,
+        section: 'team',
+        reportCount: 0,
+        profileUrl:
+          member.slug && companySlug
+            ? this.buildPersonProfileUrl(companySlug, member.slug)
+            : null,
+        linkedInUrl: null,
+        source: 'team' as const,
+        sources: ['teams'] as TheOrgFetchMode[],
+        teamIds: team.id ? [team.id] : [],
+        teamSlugs: team.slug ? [team.slug] : [],
+        teamNames: team.name ? [team.name] : [],
+        profileImageUrl: member.profileImageUrl || null,
+      })),
+    );
+
+    return this.dedupePeople(flattened).map((person) => ({
+      ...person,
+      teamIds: Array.from(new Set(person.teamIds || [])),
+      teamSlugs: Array.from(new Set(person.teamSlugs || [])),
+      teamNames: Array.from(new Set(person.teamNames || [])),
+    }));
+  }
+
+  private normalizeMode(rawMode?: string | null): TheOrgFetchMode {
+    const mode = String(rawMode || '').trim().toLowerCase();
+
+    if (mode === 'teams' || mode === 'orgchart' || mode === 'combined') {
+      return mode;
+    }
+
+    return 'combined';
   }
 
   private async fetchDirectReports(
@@ -374,6 +601,10 @@ export class TheOrgService {
             node.position!.slug && companySlug
               ? this.buildPersonProfileUrl(companySlug, node.position!.slug)
               : null,
+          linkedInUrl: node.position?.social?.linkedInUrl ?? null,
+          profileImageUrl: this.buildImageUrl(node.position?.profileImage),
+          source: 'orgChart' as const,
+          sources: ['orgchart'] as TheOrgFetchMode[],
         })),
     );
   }
@@ -500,11 +731,17 @@ export class TheOrgService {
 
         try {
           const profile = await this.fetchPersonProfileBySlugs(companySlug, person.slug);
+          const social = profile.social as
+            | { linkedInUrl?: string | null }
+            | null
+            | undefined;
+          const linkedInFromProfile = social?.linkedInUrl ?? null;
           enriched[currentIndex] = {
             ...person,
             profileUrl:
               String(profile.canonicalUrl || '') ||
               this.buildPersonProfileUrl(companySlug, person.slug),
+            linkedInUrl: person.linkedInUrl ?? linkedInFromProfile,
             profile,
           };
         } catch (error) {
@@ -532,6 +769,7 @@ export class TheOrgService {
     slug: string,
     options?: TheOrgFetchCompanyOptions,
   ): Promise<TheOrgCompanyResponse> {
+    const mode = this.normalizeMode(options?.mode);
     const includePeopleProfiles = Boolean(options?.includePeopleProfiles);
     const url = `${BASE_URL}/org/${slug}`;
     const html = await this.fetchText(url);
@@ -541,9 +779,55 @@ export class TheOrgService {
     const apolloState = pageProps.__APOLLO_STATE__ || {};
     const ssrPeople = this.uniquePeopleFromApollo(apolloState);
     const initialNodes = pageProps.initialNodes || [];
-    const fullNodes = await this.crawlFullTree(initialCompany.id, initialNodes);
+    const initialTeams = pageProps.initialTeams || [];
     const resolvedCompanySlug = initialCompany.slug || slug;
-    const basePeople = this.peopleFromNodes(fullNodes, resolvedCompanySlug);
+    const skipFullTree = this.shouldSkipFullTree(initialCompany.stats);
+    const shouldFetchOrgChart = mode === 'orgchart' || mode === 'combined';
+    const shouldFetchTeams = mode === 'teams' || mode === 'combined';
+    const fullNodes = shouldFetchOrgChart
+      ? skipFullTree
+        ? this.uniqueNodes(initialNodes.map((entry) => this.normalizeNode(entry)))
+        : await this.crawlFullTree(initialCompany.id, initialNodes)
+      : [];
+    const orgChartPeople = shouldFetchOrgChart
+      ? this.peopleFromNodes(fullNodes, resolvedCompanySlug)
+      : [];
+    const teams =
+      shouldFetchTeams && resolvedCompanySlug
+        ? await this.enrichTeamsWithMembers(resolvedCompanySlug, initialTeams)
+        : [];
+    const teamPeople =
+      shouldFetchTeams && resolvedCompanySlug
+        ? this.peopleFromTeams(teams, resolvedCompanySlug)
+        : [];
+    const basePeople = this.dedupePeople(
+      mode === 'combined'
+        ? [...orgChartPeople, ...teamPeople]
+        : mode === 'teams'
+          ? teamPeople
+          : orgChartPeople,
+    ).map((person) => {
+      const orgChartMatch = orgChartPeople.find((candidate) => candidate.id === person.id);
+      const teamMatch = teamPeople.find((candidate) => candidate.id === person.id);
+      const sources = new Set<TheOrgFetchMode>([
+        ...((orgChartMatch?.sources || (orgChartMatch ? ['orgchart'] : [])) as TheOrgFetchMode[]),
+        ...((teamMatch?.sources || (teamMatch ? ['teams'] : [])) as TheOrgFetchMode[]),
+      ]);
+
+      return {
+        ...person,
+        profileUrl:
+          person.profileUrl ||
+          (person.slug
+            ? this.buildPersonProfileUrl(resolvedCompanySlug, person.slug)
+            : null),
+        linkedInUrl: person.linkedInUrl ?? null,
+        teamIds: Array.from(new Set(person.teamIds || [])),
+        teamSlugs: Array.from(new Set(person.teamSlugs || [])),
+        teamNames: Array.from(new Set(person.teamNames || [])),
+        sources: [...sources].sort(),
+      };
+    });
     const shouldInlineProfiles =
       includePeopleProfiles &&
       (Boolean(options?.forceInlineProfiles) ||
@@ -563,11 +847,25 @@ export class TheOrgService {
       stats: initialCompany.stats || null,
       ssrPeopleCount: ssrPeople.length,
       fullNodeCount: fullNodes.length,
+      fullTreeCrawled: shouldFetchOrgChart && !skipFullTree,
+      partialResult: shouldFetchOrgChart && skipFullTree,
+      partialResultReason:
+        shouldFetchOrgChart && skipFullTree
+          ? `Skipped full org crawl because positionCount exceeded ${this.maxFullTreePositionCount}.`
+          : null,
+      mode,
       includePeopleProfiles,
       peopleProfilesDeferred: includePeopleProfiles && !shouldInlineProfiles,
       peopleProfileFetchConcurrency: shouldInlineProfiles ? this.profileConcurrency : 0,
       inlineProfileMaxPeople: this.inlineProfileMaxPeople,
+      maxFullTreePositionCount: this.maxFullTreePositionCount,
+      teamCount: teams.length,
+      orgChartPeopleCount: orgChartPeople.length,
+      teamPeopleCount: teamPeople.length,
       nodes: fullNodes,
+      teams,
+      orgChartPeople,
+      teamPeople,
       people,
     };
 

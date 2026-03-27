@@ -151,6 +151,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     PersonService,
     CandidateService,
     ChatService,
+    CandidateDataService,
     ProcessCandidatesService,
     ProcessAiFiltersService,
     DeleteFieldValuesService,

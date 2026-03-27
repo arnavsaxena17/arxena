@@ -1,7 +1,6 @@
 import { SupportDropdown } from '@/support/components/SupportDropdown';
 import { NavigationDrawer } from '@/ui/navigation/navigation-drawer/components/NavigationDrawer';
 
-import { NavigationDrawerSectionForObjectMetadataItems } from '@/object-metadata/components/NavigationDrawerSectionForObjectMetadataItems';
 import { SettingsPath } from '@/types/SettingsPath';
 import { NavigationDrawerItem } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import { NavigationDrawerSection } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerSection';
@@ -11,7 +10,6 @@ import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { getOsControlSymbol } from '@ui/utilities/device/getOsControlSymbol';
 import { IconSearch, IconSettings, useIsMobile } from 'twenty-ui';
-import { generatedMockObjectMetadataItems } from '~/testing/mock-data/generatedMockObjectMetadataItems';
 import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
 
 const StyledMainSection = styled(NavigationDrawerSection)`
@@ -54,13 +52,13 @@ export const SignInAppNavigationDrawerMock = ({
           />
         </StyledMainSection>
       )}
-      <NavigationDrawerSectionForObjectMetadataItems
+      {/* <NavigationDrawerSectionForObjectMetadataItems
         sectionTitle={t`Workspace`}
         isRemote={false}
         objectMetadataItems={generatedMockObjectMetadataItems.filter((item) =>
           WORKSPACE_FAVORITES.includes(item.nameSingular),
         )}
-      />
+      /> */}
     </>
   );
 

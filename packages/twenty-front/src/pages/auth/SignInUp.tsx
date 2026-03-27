@@ -18,7 +18,12 @@ import { useIsCurrentLocationOnAWorkspace } from '@/domain-manager/hooks/useIsCu
 import { useIsCurrentLocationOnDefaultDomain } from '@/domain-manager/hooks/useIsCurrentLocationOnDefaultDomain';
 import { DEFAULT_WORKSPACE_NAME } from '@/ui/navigation/navigation-drawer/constants/DefaultWorkspaceName';
 import { useMemo } from 'react';
-import { isDefined, isOrgChartEnabledEnv } from 'twenty-shared';
+import {
+  formatOrgChartSliceLabel,
+  isDefined,
+  isOrgChartEnabledEnv,
+  ORG_CHART_SIGNUP_SEARCH_PARAMS,
+} from 'twenty-shared';
 import { AnimatedEaseIn } from 'twenty-ui';
 
 import { useWorkspaceFromInviteHash } from '@/auth/sign-in-up/hooks/useWorkspaceFromInviteHash';
@@ -63,9 +68,26 @@ export const SignInUp = () => {
     useWorkspaceFromInviteHash();
 
   const [searchParams] = useSearchParams();
+  const orgChartCompanyParam = searchParams
+    .get(ORG_CHART_SIGNUP_SEARCH_PARAMS.company)
+    ?.trim();
+  const orgChartFunctionParam = searchParams
+    .get(ORG_CHART_SIGNUP_SEARCH_PARAMS.function)
+    ?.trim();
+
   const title = useMemo(() => {
     if (isDefined(workspaceInviteHash)) {
       return `Join ${workspaceFromInviteHash?.displayName ?? ''} team`;
+    }
+    if (orgChartCompanyParam) {
+      const fnLabel =
+        orgChartFunctionParam && orgChartFunctionParam !== 'fullcompany'
+          ? formatOrgChartSliceLabel(orgChartFunctionParam)
+          : null;
+      if (fnLabel) {
+        return t`Get ${orgChartCompanyParam}'s ${fnLabel} org chart for free`;
+      }
+      return t`Get ${orgChartCompanyParam}'s leadership team's org chart for free`;
     }
     const workspaceName = !isDefined(workspacePublicData?.displayName)
       ? DEFAULT_WORKSPACE_NAME
@@ -85,6 +107,8 @@ export const SignInUp = () => {
     workspaceFromInviteHash?.displayName,
     workspaceInviteHash,
     workspacePublicData?.displayName,
+    orgChartCompanyParam,
+    orgChartFunctionParam,
     t,
   ]);
 

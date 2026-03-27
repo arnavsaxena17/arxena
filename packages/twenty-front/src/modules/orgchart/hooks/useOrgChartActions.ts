@@ -9,15 +9,15 @@ import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
 import { Mixpanel } from '~/mixpanel';
 
 import {
-  normalizeCompanyIdForUrl,
-  type OrgChartContextAction,
+    normalizeCompanyIdForUrl,
+    type OrgChartContextAction,
 } from 'twenty-orgchart';
 import type { NodeState, OrgChartNodeData } from 'twenty-shared';
 import type { ContextResultItem } from '../types';
 import {
-  buildBooleanKeywordsForNode,
-  exportContextResultsToCsv,
-  normalizeCandidateItem,
+    buildBooleanKeywordsForNode,
+    exportContextResultsToCsv,
+    normalizeCandidateItem,
 } from '../utils/orgChartUtils';
 
 type OrgchartSearchMode =
@@ -458,7 +458,8 @@ export const useOrgChartActions = ({
         );
       }
 
-      const response = await fetch(`${baseUrl}/candidate-search/orgchart`, {
+      const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
+      const response = await fetch(`${normalizedBaseUrl}/org-chart/search`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -584,7 +585,8 @@ export const useOrgChartActions = ({
     if (requestId) {
       const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
       if (baseUrl && accessToken) {
-        fetch(`${baseUrl}/candidate-search/orgchart/cancel`, {
+        const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
+        fetch(`${normalizedBaseUrl}/org-chart/search/cancel`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -879,6 +881,13 @@ export const useOrgChartActions = ({
     setLatestOrgChart(null);
   }, []);
 
+  const applyOrgChartOverride = useCallback(
+    (chart: Record<string, unknown> | null) => {
+      setLatestOrgChart(chart);
+    },
+    [],
+  );
+
   const downloadContextResultsAsCsv = () => {
     if (!contextResults.length) return;
     exportContextResultsToCsv(contextResults, 'orgchart-candidates.csv');
@@ -991,6 +1000,7 @@ export const useOrgChartActions = ({
     booleanKeywordsString,
     closeContextModal,
     clearLatestOrgChart,
+    applyOrgChartOverride,
     downloadContextResultsAsCsv,
     executeOrgchartSearch,
     cancelOrgchartSearch,

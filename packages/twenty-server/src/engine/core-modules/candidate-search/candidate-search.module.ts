@@ -49,7 +49,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     WorkspaceModificationsModule,
     CandidateSourcingModule,
     GraphQLExecutionModule,
-    OrgChartModule,
+    forwardRef(() => OrgChartModule),
     forwardRef(() => {
       // Lazy require avoids circular import: AssistantModule imports CandidateSearchModule.
       // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -99,6 +99,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     CandidateSearchHandlerService,
     ResultValidationService,
     StreamProcessingService,
+    OrgchartCancelRegistryService,
   ],
 })
 export class CandidateSearchModule {}
