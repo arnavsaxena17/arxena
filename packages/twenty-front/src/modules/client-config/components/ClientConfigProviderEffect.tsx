@@ -138,7 +138,7 @@ export const ClientConfigProviderEffect = () => {
     setIsAnalyticsEnabled(data?.clientConfig.analyticsEnabled);
     setIsDeveloperDefaultSignInPrefilled(data?.clientConfig.signInPrefilled);
     setSignInBackgroundUseOrgChartMock(
-      data?.clientConfig.signInBackgroundUseOrgChartMock ?? false,
+      data?.clientConfig.signInBackgroundUseOrgChartMock ?? true,
     );
     setIsMultiWorkspaceEnabled(data?.clientConfig.isMultiWorkspaceEnabled);
     setIsEmailVerificationRequired(
