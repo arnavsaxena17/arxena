@@ -21,7 +21,7 @@ export const FooterNote = () => (
   <StyledContainer>
     <Trans>By using Arxena, you agree to the</Trans>{' '}
     <a
-      href="https://arxena.com/terms"
+      href="https://arxena.com/legal/terms"
       target="_blank"
       rel="noopener noreferrer"
     >
@@ -29,7 +29,7 @@ export const FooterNote = () => (
     </a>{' '}
     <Trans>and</Trans>{' '}
     <a
-      href="https://arxena.com/privacy"
+      href="https://arxena.com/legal/privacy"
       target="_blank"
       rel="noopener noreferrer"
     >

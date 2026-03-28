@@ -3,6 +3,8 @@
 import styled from '@emotion/styled';
 import Link from 'next/link';
 
+import { COMPANY_INFO } from '@/lib/company-info';
+
 const StyledSection = styled.section`
   max-width: 720px;
   margin: 0 auto;
@@ -59,6 +61,55 @@ const StyledLink = styled(Link)`
   }
 `;
 
+const StyledAddressSection = styled.address`
+  margin: 0 0 20px 0;
+  font-size: 16px;
+  line-height: 1.65;
+  color: #474747;
+  font-family: var(--font-inter);
+  font-style: normal;
+`;
+
+const StyledCompanyName = styled.span`
+  display: block;
+  font-weight: 600;
+  color: #141414;
+  margin-bottom: 16px;
+`;
+
+const StyledOfficeBlock = styled.div`
+  margin-top: 16px;
+  border-left: 3px solid #e5e5e5;
+  padding-left: 16px;
+
+  &:first-of-type {
+    margin-top: 0;
+  }
+`;
+
+const StyledAddressEmailLine = styled.p`
+  font-size: 16px;
+  line-height: 1.7;
+  color: #474747;
+  margin: 16px 0 0 0;
+  font-family: var(--font-inter);
+`;
+
+const StyledOfficeRegion = styled.span`
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #737373;
+  margin-bottom: 6px;
+`;
+
+const StyledOfficeLines = styled.span`
+  display: block;
+  line-height: 1.6;
+`;
+
 export const TermsContent = () => {
   return (
     <StyledSection>
@@ -113,7 +164,7 @@ export const TermsContent = () => {
         If you believe that information about you that is provided through the
         Product or Services is inaccurate, false or if you wish such information
         about you to be removed, please send us a request at{' '}
-        <StyledLink href="mailto:arnav@arxena.com">arnav@arxena.com</StyledLink>
+        <StyledLink href="mailto:info@arxena.com">info@arxena.com</StyledLink>
         .
       </StyledParagraph>
 
@@ -746,20 +797,40 @@ export const TermsContent = () => {
 
       <StyledHeading>Contact Us</StyledHeading>
       <StyledParagraph>
-        If you have questions or concerns regarding this Policy, you should
+        If you have questions or concerns regarding these Terms, you should
         first contact us by email at{' '}
-        <StyledLink href="mailto:arnav@arxena.com">arnav@arxena.com</StyledLink>
+        <StyledLink href={`mailto:${COMPANY_INFO.email}`}>
+          {COMPANY_INFO.email}
+        </StyledLink>
+        .
       </StyledParagraph>
-      <StyledParagraph>
-        Arxena, Inc.
-        <br />
-        USA: 651 N Broad St, Suite 206 Middletown, New Castle, Delaware - 19709
-        <br />
-        India: 1702, Splendor Complex, JV Link Road, Andheri East, Mumbai -
-        400060
-        <br />
-        Email: info@arxena.com
-      </StyledParagraph>
+      <StyledAddressSection>
+        <StyledCompanyName>{COMPANY_INFO.name}</StyledCompanyName>
+        <StyledOfficeBlock>
+          <StyledOfficeRegion>United States</StyledOfficeRegion>
+          <StyledOfficeLines>
+            651 N Broad St, Suite 206
+            <br />
+            Middletown, New Castle, DE 19709
+          </StyledOfficeLines>
+        </StyledOfficeBlock>
+        <StyledOfficeBlock>
+          <StyledOfficeRegion>India</StyledOfficeRegion>
+          <StyledOfficeLines>
+            1702, Splendor Complex
+            <br />
+            JV Link Road, Andheri East
+            <br />
+            Mumbai 400060
+          </StyledOfficeLines>
+        </StyledOfficeBlock>
+        <StyledAddressEmailLine>
+          Email:{' '}
+          <StyledLink href={`mailto:${COMPANY_INFO.email}`}>
+            {COMPANY_INFO.email}
+          </StyledLink>
+        </StyledAddressEmailLine>
+      </StyledAddressSection>
     </StyledSection>
   );
 };

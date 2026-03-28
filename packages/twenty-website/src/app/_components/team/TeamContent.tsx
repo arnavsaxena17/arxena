@@ -28,9 +28,14 @@ const StyledCtaLink = styled.a`
   }
 `;
 
-function getAvatarUrl(name: string, photo?: string): string {
-  if (photo) return photo;
-  const encoded = encodeURIComponent(name.replace(/\s+/g, '+'));
+function getAvatarUrl(
+  name: string,
+  member: { showDP?: boolean; photo?: string },
+): string {
+  if (member.showDP && member.photo) {
+    return member.photo;
+  }
+  const encoded = encodeURIComponent(name.trim());
   return `https://ui-avatars.com/api/?name=${encoded}&size=160&background=e5e5e5&color=474747`;
 }
 
@@ -155,7 +160,7 @@ export const TeamContent = ({ signInUrl, signUpUrl }: TeamContentProps) => {
         {TEAM_MEMBERS.map((member) => (
           <StyledMemberCard key={member.name}>
             <StyledAvatar
-              src={getAvatarUrl(member.name, member.photo)}
+              src={getAvatarUrl(member.name, member)}
               alt={member.name}
             />
             <StyledMemberInfo>

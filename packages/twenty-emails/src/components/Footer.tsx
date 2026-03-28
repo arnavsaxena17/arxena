@@ -43,13 +43,13 @@ export const Footer = () => {
           </ShadowText>
         </Column>
       </Row>
-      <ShadowText>
+      {/* <ShadowText>
         Arxena.com
         <br />
         651 N Broad St, Suite 206
         <br />
         Middletown, New Castle, Delaware - 19709
-      </ShadowText>
+      </ShadowText> */}
     </>
   );
 };

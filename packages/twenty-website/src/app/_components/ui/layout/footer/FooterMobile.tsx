@@ -7,10 +7,10 @@ import { COMPANY_INFO } from '@/lib/company-info';
 import { openSupportChat } from '../../../support/openSupportChat';
 
 import {
-    DiscordIcon,
-    GithubIcon2,
-    LinkedInIcon,
-    XIcon,
+  DiscordIcon,
+  GithubIcon2,
+  LinkedInIcon,
+  XIcon,
 } from '../../icons/SvgIcons';
 
 const StyledFooterMobile = styled.footer`
@@ -104,8 +104,12 @@ export const FooterMobile = ({ phase2Exposed = false }: FooterMobileProps) => {
         <StyledLink href="/companies">Org charts by company</StyledLink>
         {phase2Exposed && (
           <>
-            <StyledLink href="/companies/by-country">Org charts by geography</StyledLink>
-            <StyledLink href="/companies/by-function">Org charts by function</StyledLink>
+            <StyledLink href="/companies/by-country">
+              Org charts by geography
+            </StyledLink>
+            <StyledLink href="/companies/by-function">
+              Org charts by function
+            </StyledLink>
           </>
         )}
         <StyledLink href="/sitemap-index.xml">Sitemap</StyledLink>
@@ -127,6 +131,8 @@ export const FooterMobile = ({ phase2Exposed = false }: FooterMobileProps) => {
       </StyledLinkSection>
       <StyledLinkSection>
         <StyledSectionTitle>Contact</StyledSectionTitle>
+        <StyledLink href="/contact">Contact & locations</StyledLink>
+        <StyledLink href="/contact#schedule">Book a call</StyledLink>
         <StyledLink href={`mailto:${COMPANY_INFO.email}`}>Email</StyledLink>
         <StyledLink
           href={`https://wa.me/${COMPANY_INFO.whatsapp}`}
@@ -135,13 +141,17 @@ export const FooterMobile = ({ phase2Exposed = false }: FooterMobileProps) => {
         >
           WhatsApp
         </StyledLink>
-        <StyledChatButton
-          type="button"
-          onClick={openSupportChat}
-        >
+        <StyledChatButton type="button" onClick={openSupportChat}>
           Chat with us
         </StyledChatButton>
-        <StyledAddress>{COMPANY_INFO.addresses[0]}</StyledAddress>
+        <StyledAddress>
+          {COMPANY_INFO.addresses.map((line) => (
+            <span key={line}>
+              {line}
+              <br />
+            </span>
+          ))}
+        </StyledAddress>
       </StyledLinkSection>
       <StyledBottomRow>
         <StyledCopyright>

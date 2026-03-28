@@ -28,12 +28,13 @@ const StyledMobileNav = styled.nav`
   justify-content: space-between;
   align-items: center;
   padding: 0 12px;
-  position: relative;
+  position: sticky;
+  top: 0;
   background-color: white;
   border-bottom: 1px solid rgba(20, 20, 20, 0.08);
   height: 64px;
   width: 100%;
-  z-index: 10;
+  z-index: 110;
 `;
 
 const StyledMobileLinkList = styled.div`
@@ -170,8 +171,12 @@ export const HeaderMobile = ({
         <StyledMobileLinkList>
           <StyledNavLink href="/story">Story</StyledNavLink>
           <StyledNavLink href="/team">Team</StyledNavLink>
+          <StyledNavLink href="/contact">Contact</StyledNavLink>
           <StyledNavLink href="/pricing">Pricing</StyledNavLink>
-          <StyledNavLink href="/engage" aria-label="Engage — WhatsApp & LinkedIn">
+          <StyledNavLink
+            href="/engage"
+            aria-label="Engage — WhatsApp & LinkedIn"
+          >
             Engage
           </StyledNavLink>
           {showSearch && (

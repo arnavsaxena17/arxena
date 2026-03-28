@@ -17,7 +17,9 @@ const StyledDesktopNav = styled.nav`
   background: #fff;
   border-bottom: 1px solid rgba(20, 20, 20, 0.08);
   flex-shrink: 0;
-  z-index: 10;
+  position: sticky;
+  top: 0;
+  z-index: 50;
 
   @media (max-width: 809px) {
     display: none;
@@ -102,6 +104,7 @@ export const HeaderDesktop = ({
         <Logo />
         <StyledNavLink href="/story">Story</StyledNavLink>
         <StyledNavLink href="/team">Team</StyledNavLink>
+        <StyledNavLink href="/contact">Contact</StyledNavLink>
         <StyledNavLink href="/pricing">Pricing</StyledNavLink>
         <StyledNavLink href="/engage" aria-label="Engage — WhatsApp & LinkedIn">
           Engage

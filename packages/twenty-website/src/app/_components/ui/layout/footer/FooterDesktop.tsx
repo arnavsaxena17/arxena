@@ -7,10 +7,10 @@ import { COMPANY_INFO } from '@/lib/company-info';
 import { openSupportChat } from '../../../support/openSupportChat';
 
 import {
-    DiscordIcon,
-    GithubIcon2,
-    LinkedInIcon,
-    XIcon,
+  DiscordIcon,
+  GithubIcon2,
+  LinkedInIcon,
+  XIcon,
 } from '../../icons/SvgIcons';
 
 const FooterContainer = styled.div`
@@ -62,6 +62,9 @@ const RightSideFooterButton = styled.button`
 `;
 
 const RightSideFooterAddress = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   color: rgb(129, 129, 129);
   font-size: 14px;
   line-height: 1.4;
@@ -84,20 +87,30 @@ type FooterDesktopProps = {
   phase2Exposed?: boolean;
 };
 
-export const FooterDesktop = ({ phase2Exposed = false }: FooterDesktopProps) => {
+export const FooterDesktop = ({
+  phase2Exposed = false,
+}: FooterDesktopProps) => {
   return (
     <FooterContainer>
       <RightSideFooter>
         <RightSideFooterColumn>
           <RightSideFooterColumnTitle>Browse</RightSideFooterColumnTitle>
-          <RightSideFooterLink href="/companies">Org charts by company</RightSideFooterLink>
+          <RightSideFooterLink href="/companies">
+            Org charts by company
+          </RightSideFooterLink>
           {phase2Exposed && (
             <>
-              <RightSideFooterLink href="/companies/by-country">Org charts by geography</RightSideFooterLink>
-              <RightSideFooterLink href="/companies/by-function">Org charts by function</RightSideFooterLink>
+              <RightSideFooterLink href="/companies/by-country">
+                Org charts by geography
+              </RightSideFooterLink>
+              <RightSideFooterLink href="/companies/by-function">
+                Org charts by function
+              </RightSideFooterLink>
             </>
           )}
-          <RightSideFooterLink href="/sitemap-index.xml">Sitemap</RightSideFooterLink>
+          <RightSideFooterLink href="/sitemap-index.xml">
+            Sitemap
+          </RightSideFooterLink>
         </RightSideFooterColumn>
         <RightSideFooterColumn>
           <RightSideFooterColumnTitle>Product</RightSideFooterColumnTitle>
@@ -120,6 +133,12 @@ export const FooterDesktop = ({ phase2Exposed = false }: FooterDesktopProps) => 
         </RightSideFooterColumn>
         <RightSideFooterColumn>
           <RightSideFooterColumnTitle>Contact</RightSideFooterColumnTitle>
+          <RightSideFooterLink href="/contact">
+            Contact & locations
+          </RightSideFooterLink>
+          <RightSideFooterLink href="/contact#schedule">
+            Book a call
+          </RightSideFooterLink>
           <RightSideFooterLink href={`mailto:${COMPANY_INFO.email}`}>
             Email
           </RightSideFooterLink>
@@ -130,15 +149,14 @@ export const FooterDesktop = ({ phase2Exposed = false }: FooterDesktopProps) => 
           >
             WhatsApp
           </RightSideFooterLink>
-          <RightSideFooterButton
-            type="button"
-            onClick={openSupportChat}
-          >
+          <RightSideFooterButton type="button" onClick={openSupportChat}>
             Chat with us
           </RightSideFooterButton>
-          <RightSideFooterAddress>
-            {COMPANY_INFO.addresses[0]}
-          </RightSideFooterAddress>
+          {/* <RightSideFooterAddress>
+            {COMPANY_INFO.addresses.map((line) => (
+              <div key={line}>{line}</div>
+            ))}
+          </RightSideFooterAddress> */}
         </RightSideFooterColumn>
       </RightSideFooter>
       <div
