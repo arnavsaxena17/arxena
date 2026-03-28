@@ -35,6 +35,14 @@ const StyledHeading = styled.h2`
   font-family: var(--font-inter);
 `;
 
+const StyledSubheading = styled.h3`
+  font-size: 16px;
+  font-weight: 600;
+  color: #141414;
+  margin: 20px 0 8px 0;
+  font-family: var(--font-inter);
+`;
+
 const StyledList = styled.ul`
   margin: 0 0 20px 0;
   padding-left: 24px;
@@ -65,159 +73,216 @@ export const PrivacyContent = () => {
     <StyledSection>
       <StyledHeadline>Arxena – Privacy Policy</StyledHeadline>
 
+      <StyledParagraph>Last updated: March 27, 2025</StyledParagraph>
+
       <StyledParagraph>
-        This Privacy Policy describes how your personal information is
-        collected, used, and shared when you visit or make a purchase from{' '}
-        <StyledLink href="https://arxena.com/">https://arxena.com/</StyledLink>{' '}
-        (the &quot;Site&quot;).
+        This Privacy Policy describes how Arxena (&quot;we&quot;, &quot;our&quot;,
+        &quot;us&quot;) collects, uses, and shares information when you use the
+        Arxena website, web application, and Chrome extension (the
+        &quot;Service&quot;).
       </StyledParagraph>
 
-      <StyledHeading>Retention and Use of Google APIs Data</StyledHeading>
       <StyledParagraph>
-        We understand the importance of transparency and respect for user
-        privacy when handling data obtained through Google APIs. Our application
-        may collect user data through Google APIs to enhance functionalities and
-        provide a seamless user experience. However, it&apos;s crucial to note
-        that we do not use this data for developing, improving, or training AI
-        and/or ML models that are personalized.
-      </StyledParagraph>
-      <StyledParagraph>
-        Any data obtained through Google APIs is utilized solely for the
-        intended purposes of the application&apos;s functionalities. We do not
-        retain user data for secondary purposes. Users have the right to know
-        how their data is being utilized and can manage their preferences
-        accordingly through the application settings.
+        This policy applies to{' '}
+        <StyledLink href="https://arxena.com">https://arxena.com</StyledLink>,{' '}
+        <StyledAnchor href="https://app.arxena.com">
+          app.arxena.com
+        </StyledAnchor>
+        , and the Arxena Chrome Extension.
       </StyledParagraph>
 
-      <StyledHeading>
-        Data Protection Mechanisms for Sensitive Data
-      </StyledHeading>
+      <StyledHeading>1. Purpose of the Service</StyledHeading>
       <StyledParagraph>
-        Protecting the privacy and security of our users&apos; sensitive data is
-        of utmost importance to us. While our privacy policy outlines our
-        commitment to safeguarding user information, we recognize the need for
-        specific data protection mechanisms, especially concerning sensitive
-        data.
+        Arxena provides recruiting, sales, and workflow automation tools that
+        allow users to capture profile data, manage contacts, and communicate
+        with candidates or leads across supported platforms such as LinkedIn,
+        Naukri, WhatsApp Web, and the Arxena web application.
       </StyledParagraph>
       <StyledParagraph>
-        Sensitive data, including, but not limited to, personally identifiable
-        information, and financial information is treated with the highest level
-        of care and attention. We employ industry-standard encryption protocols,
-        access controls, and other technical safeguards to prevent unauthorized
-        access, disclosure, or misuse of sensitive data.
-      </StyledParagraph>
-      <StyledParagraph>
-        Furthermore, we conduct regular security audits and compliance checks to
-        ensure that our data protection measures remain robust and effective.
-        Our commitment to maintaining the confidentiality and integrity of
-        sensitive data extends to compliance with relevant data protection
-        regulations.
+        The Chrome extension operates only to provide these user-requested
+        features.
       </StyledParagraph>
 
-      <StyledHeading>Personal Information We Collect</StyledHeading>
+      <StyledHeading>2. Information We Collect</StyledHeading>
       <StyledParagraph>
-        When you visit the Site, we automatically collect certain information
-        about your device, including information about your web browser, IP
-        address, time zone, and some of the cookies that are installed on your
-        device. Additionally, as you browse the Site, we collect information
-        about the individual web pages or products that you view, what websites
-        or search terms referred you to the Site, and information about how you
-        interact with the Site. We refer to this automatically-collected
-        information as &quot;Device Information.&quot;
+        We collect information only when required to provide the functionality
+        requested by the user.
       </StyledParagraph>
       <StyledParagraph>
-        We collect Device Information using the following technologies:
+        The extension may access the following types of information:
       </StyledParagraph>
+
+      <StyledSubheading>Account Information</StyledSubheading>
+      <StyledList>
+        <li>Name</li>
+        <li>Email address</li>
+        <li>Workspace / organization information</li>
+        <li>Login tokens required for authentication</li>
+      </StyledList>
+
+      <StyledSubheading>Platform Data (when the user uses the feature)</StyledSubheading>
+      <StyledList>
+        <li>Profile data from LinkedIn or Naukri pages viewed by the user</li>
+        <li>Resume / CV files downloaded by the user</li>
+        <li>Message content the user chooses to send through the extension</li>
+        <li>Contact details visible on pages the user opens</li>
+        <li>
+          WhatsApp Web message data only when the user enables related features
+        </li>
+      </StyledList>
+
+      <StyledSubheading>Cookies and Authentication Data</StyledSubheading>
       <StyledList>
         <li>
-          &quot;Cookies&quot; are data files that are placed on your device or
-          computer and often include an anonymous unique identifier. For more
-          information about cookies, and how to disable cookies, visit{' '}
-          <StyledAnchor
-            href="http://www.allaboutcookies.org"
-            target="_blank"
-            rel="noreferrer"
-          >
-            http://www.allaboutcookies.org
-          </StyledAnchor>
-          .
+          Session cookies required to connect the user&apos;s account to
+          supported platforms
         </li>
         <li>
-          &quot;Log files&quot; track actions occurring on the Site, and collect
-          data including your IP address, browser type, Internet service
-          provider, referring/exit pages, and date/time stamps.
+          Example: LinkedIn or Naukri session cookies used only to authenticate
+          requests on behalf of the user
+        </li>
+      </StyledList>
+
+      <StyledSubheading>Device &amp; Usage Data</StyledSubheading>
+      <StyledList>
+        <li>Browser type</li>
+        <li>IP address</li>
+        <li>Extension usage logs</li>
+        <li>Error logs</li>
+        <li>Feature usage events</li>
+      </StyledList>
+
+      <StyledParagraph>
+        We do NOT collect data unrelated to the features used by the user.
+      </StyledParagraph>
+
+      <StyledHeading>3. How We Use Information</StyledHeading>
+      <StyledParagraph>We use collected information only to:</StyledParagraph>
+      <StyledList>
+        <li>Provide extension functionality requested by the user</li>
+        <li>Sync data with the Arxena web application</li>
+        <li>Enable integrations with supported platforms</li>
+        <li>Download or upload files requested by the user</li>
+        <li>Send messages requested by the user</li>
+        <li>Maintain user sessions</li>
+        <li>Prevent fraud or abuse</li>
+        <li>Improve reliability and performance</li>
+      </StyledList>
+      <StyledParagraph>We do NOT sell personal data.</StyledParagraph>
+      <StyledParagraph>We do NOT use user data for advertising.</StyledParagraph>
+      <StyledParagraph>
+        We do NOT use user data to train AI models.
+      </StyledParagraph>
+
+      <StyledHeading>4. Data From Third-Party Platforms</StyledHeading>
+      <StyledParagraph>
+        When the user enables features involving third-party sites such as
+        LinkedIn, Naukri, or WhatsApp Web:
+      </StyledParagraph>
+      <StyledList>
+        <li>Data is accessed only from pages the user actively opens</li>
+        <li>
+          Cookies are used only to authenticate the user&apos;s own account
         </li>
         <li>
-          &quot;Web beacons,&quot; &quot;tags,&quot; and &quot;pixels&quot; are
-          electronic files used to record information about how you browse the
-          Site.
+          Data is transferred only to the Arxena service to provide the
+          requested feature
         </li>
       </StyledList>
       <StyledParagraph>
-        Additionally when you make a purchase or attempt to make a purchase
-        through the Site, we collect certain information from you, including
-        your name, billing address, shipping address, payment information
-        (including credit card numbers), email address, phone number, and
-        company search information. We refer to this information as &quot;Order
-        Information.&quot;
-      </StyledParagraph>
-      <StyledParagraph>
-        When we talk about &quot;Personal Information&quot; in this Privacy
-        Policy, we are talking both about Device Information and Order
-        Information.
+        We do not access data from these platforms unless the user installs the
+        extension and uses the feature.
       </StyledParagraph>
 
-      <StyledHeading>How Do We Use Your Personal Information?</StyledHeading>
+      <StyledHeading>5. Data Sharing</StyledHeading>
+      <StyledParagraph>We may share data only with:</StyledParagraph>
+      <StyledList>
+        <li>Arxena backend services</li>
+        <li>Cloud hosting providers</li>
+        <li>Infrastructure providers required to operate the service</li>
+      </StyledList>
+      <StyledParagraph>We do not sell or rent user data.</StyledParagraph>
+      <StyledParagraph>We do not share data for advertising.</StyledParagraph>
+      <StyledParagraph>We do not share data with data brokers.</StyledParagraph>
+
+      <StyledHeading>6. Data Retention</StyledHeading>
       <StyledParagraph>
-        We use the Order Information that we collect generally to fulfill any
-        orders placed through the Site (including processing your payment
-        information, arranging for shipping, and providing you with invoices
-        and/or order confirmations). Additionally, we use this Order Information
-        to: communicate with you; screen our orders for potential risk or fraud;
-        and when in line with the preferences you have shared with us, provide
-        you with information or advertising relating to our products or
-        services.
+        We retain data only as long as necessary to provide the service.
       </StyledParagraph>
       <StyledParagraph>
-        We use the Device Information that we collect to help us screen for
-        potential risk and fraud (in particular, your IP address), and more
-        generally to improve and optimize our Site (for example, by generating
-        analytics about how our customers browse and interact with the Site, and
-        to assess the success of our marketing and advertising campaigns).
+        Users may request deletion of their data at any time by contacting
+        support.
+      </StyledParagraph>
+      <StyledParagraph>
+        Session cookies and temporary data may be stored only for the duration
+        of the session.
       </StyledParagraph>
 
-      <StyledHeading>Your Rights</StyledHeading>
+      <StyledHeading>7. Chrome Extension Permissions</StyledHeading>
       <StyledParagraph>
-        If you are a European resident, you have the right to access personal
-        information we hold about you and to ask that your personal information
-        be corrected, updated, or deleted. If you would like to exercise this
-        right, please contact us through the contact information below.
+        The extension requests permissions only to provide its features,
+        including:
       </StyledParagraph>
+      <StyledList>
+        <li>Access to supported websites to read profile data</li>
+        <li>Cookies permission to authenticate user sessions</li>
+        <li>Storage to store user settings</li>
+        <li>Tabs to open pages requested by the user</li>
+        <li>Downloads to save files requested by the user</li>
+        <li>Notifications to show status updates</li>
+      </StyledList>
       <StyledParagraph>
-        Additionally, if you are a European resident we note that we are
-        processing your information in order to fulfill contracts we might have
-        with you (for example if you make an order through the Site), or
-        otherwise to pursue our legitimate business interests listed above.
-        Additionally, please note that your information will be transferred
-        outside of Europe, including to Canada and the United States.
-      </StyledParagraph>
-
-      <StyledHeading>Changes</StyledHeading>
-      <StyledParagraph>
-        We may update this privacy policy from time to time in order to reflect,
-        for example, changes to our practices or for other operational, legal or
-        regulatory reasons.
+        Permissions are not used for unrelated purposes.
       </StyledParagraph>
 
-      <StyledHeading>Contact Us</StyledHeading>
+      <StyledHeading>8. Security</StyledHeading>
+      <StyledParagraph>We use industry-standard safeguards including:</StyledParagraph>
+      <StyledList>
+        <li>HTTPS encryption</li>
+        <li>Access controls</li>
+        <li>Secure storage</li>
+        <li>Authentication checks</li>
+      </StyledList>
+      <StyledParagraph>We take reasonable steps to protect user data.</StyledParagraph>
+
+      <StyledHeading>9. Google API Data</StyledHeading>
       <StyledParagraph>
-        For more information about our privacy practices, if you have questions,
-        or if you would like to make a complaint, please contact us by e-mail at{' '}
+        If Google APIs are used, data obtained from Google APIs is used only to
+        provide user-requested features.
+      </StyledParagraph>
+      <StyledParagraph>
+        We do not use Google API data to develop, improve, or train generalized
+        AI or ML models.
+      </StyledParagraph>
+
+      <StyledHeading>10. User Rights</StyledHeading>
+      <StyledParagraph>Users may request to:</StyledParagraph>
+      <StyledList>
+        <li>Access their data</li>
+        <li>Correct their data</li>
+        <li>Delete their data</li>
+        <li>Export their data</li>
+      </StyledList>
+      <StyledParagraph>
+        Contact:{' '}
         <StyledLink href={`mailto:${COMPANY_INFO.email}`}>
           {COMPANY_INFO.email}
-        </StyledLink>{' '}
-        or by mail using the details provided below:
+        </StyledLink>
       </StyledParagraph>
+
+      <StyledHeading>11. Changes</StyledHeading>
+      <StyledParagraph>
+        We may update this policy when required by law or when the Service
+        changes.
+      </StyledParagraph>
+      <StyledParagraph>The latest version will always be available at:</StyledParagraph>
+      <StyledParagraph>
+        <StyledLink href="https://arxena.com/legal/privacy">
+          https://www.arxena.com/legal/privacy
+        </StyledLink>
+      </StyledParagraph>
+
+      <StyledHeading>12. Contact</StyledHeading>
       <StyledParagraph>
         {COMPANY_INFO.name}
         <br />
@@ -227,7 +292,13 @@ export const PrivacyContent = () => {
             <br />
           </span>
         ))}
-        Email: {COMPANY_INFO.email}
+        Email:{' '}
+        <StyledLink href={`mailto:${COMPANY_INFO.email}`}>
+          {COMPANY_INFO.email}
+        </StyledLink>
+        <br />
+        Website:{' '}
+        <StyledLink href="https://arxena.com">https://arxena.com</StyledLink>
       </StyledParagraph>
     </StyledSection>
   );

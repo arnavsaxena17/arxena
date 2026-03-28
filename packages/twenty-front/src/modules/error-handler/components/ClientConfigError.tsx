@@ -26,8 +26,8 @@ export const ClientConfigError = ({ error }: ClientConfigErrorProps) => {
   console.log("ClientConfigError component rendered");
   // TODO: Implement a better loading strategy
   const handleReset = () => {
-    console.log("ClientConfigError component handleReset called");
-    window.location.reload();
+    console.log("ClientConfigError component should be handleReset called");
+    // window.location.reload();
   };
 
   return (
