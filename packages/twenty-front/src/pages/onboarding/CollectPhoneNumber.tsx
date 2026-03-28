@@ -1,8 +1,8 @@
 import styled from '@emotion/styled';
+import { isValidPhoneNumber } from 'libphonenumber-js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { H2Title, LightButton, MainButton } from 'twenty-ui';
-import { isValidPhoneNumber } from 'libphonenumber-js';
 
 import { SubTitle } from '@/auth/components/SubTitle';
 import { Title } from '@/auth/components/Title';
@@ -16,10 +16,10 @@ import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
 import { useSetNextOnboardingStatus } from '@/onboarding/hooks/useSetNextOnboardingStatus';
 import { useCountries } from '@/ui/input/components/internal/hooks/useCountries';
+import { WorkspaceMember } from '@/workspace-member/types/WorkspaceMember';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { isDefined } from 'twenty-shared';
 import { OnboardingStatus } from '~/generated/graphql';
-import { WorkspaceMember } from '@/workspace-member/types/WorkspaceMember';
 
 // ─── Styled components ───────────────────────────────────────────────────────
 

@@ -25,12 +25,12 @@ import {
 import { PageInfo } from 'cloudflare/core';
 import { CandidateEngagementArx } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { EngagedCandidateQueueService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/engaged-candidate-queue.service';
+import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import {
   computeStartChatSpreadDelaysMs,
   DEFAULT_START_CHAT_MAX_SPREAD_MINUTES,
   DEFAULT_START_CHAT_SPREAD_MINUTES_PER_MESSAGE,
 } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/start-chat-spread.util';
-import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { HumanLikeLLM } from 'src/engine/core-modules/arx-chat/services/llm-agents/human-or-bot-classification';
 import { ToolCallsProcessing } from 'src/engine/core-modules/arx-chat/services/llm-agents/tool-calls-processing';
