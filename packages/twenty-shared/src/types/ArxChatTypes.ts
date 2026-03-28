@@ -2041,6 +2041,10 @@ export interface Job {
   chatFlowOrder?: chatControlType[]; // Array defining the order for this job
   /** Delay in minutes after last message before processing from queue. Recruiter-configurable per job. */
   engagementProcessingDelayMinutes?: number;
+  /** Target spacing when batching start-chats: total window uses n × this value (minutes), capped by startChatMaxSpreadMinutes. Default 1. */
+  startChatSpreadMinutesPerMessage?: number;
+  /** Max minutes from first to last start-chat in a batch. Default 120. */
+  startChatMaxSpreadMinutes?: number;
   name: string;
   id: string;
   recruiterId: string;

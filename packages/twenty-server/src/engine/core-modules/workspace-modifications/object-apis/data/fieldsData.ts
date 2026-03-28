@@ -1182,6 +1182,30 @@ export function getFieldsData(
         defaultValue: 2,
       },
     },
+    {
+      objectName: 'job',
+      field: {
+        description:
+          'When batching “start chat”, ideal minutes per message for spreading sends (window = n × this, capped below). Default 1.',
+        label: 'Start chat spread (minutes per message)',
+        name: 'startChatSpreadMinutesPerMessage',
+        objectMetadataId: objectsNameIdMap.job,
+        type: 'NUMBER',
+        defaultValue: 1,
+      },
+    },
+    {
+      objectName: 'job',
+      field: {
+        description:
+          'Max minutes from first to last start-chat when batching (e.g. 120 caps large batches).',
+        label: 'Start chat max spread (minutes)',
+        name: 'startChatMaxSpreadMinutes',
+        objectMetadataId: objectsNameIdMap.job,
+        type: 'NUMBER',
+        defaultValue: 120,
+      },
+    },
 
     {
       objectName: 'candidate',

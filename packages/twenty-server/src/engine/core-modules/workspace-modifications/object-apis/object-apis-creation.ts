@@ -22,6 +22,7 @@ import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { WorkspaceQueryService } from '../workspace-modifications.service';
 
 import { render } from '@react-email/render';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { FieldMetadataInterface } from 'src/engine/metadata-modules/field-metadata/interfaces/field-metadata.interface';
 import { WorkspaceSetupCompleteEmail } from 'twenty-emails';
@@ -59,8 +60,10 @@ export class CreateMetaDataStructure {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly environmentService: EnvironmentService,
     private readonly webSocketService?: WebSocketService,
-    
+
+
   ) {}
 
   // Helper method to emit websocket events
@@ -707,28 +710,37 @@ export class CreateMetaDataStructure {
           
           // Send completion event to trigger page reload
           this.emitProgress(userId, 'metadata-structure-complete', 'Metadata structure creation completed successfully');
-          console.log("Sending completion email to user");
-          // Send completion email to user
-          const workspaceName = await this.workspaceQueryService.getWorkspaceNameFromToken(apiToken);
-          
-          const emailTemplate = WorkspaceSetupCompleteEmail({
-            firstName,
-            workspaceName: workspaceName || 'Arxena',
-            locale: 'en',
-          });
+          console.log('Sending completion email to user');
+          const workspaceName =
+            await this.workspaceQueryService.getWorkspaceNameFromToken(apiToken);
 
-          const html = render(emailTemplate);
-          const text = render(emailTemplate, {
-            plainText: true,
-          });
+          if (this.environmentService.get('SKIP_WORKSPACE_SETUP_COMPLETE_EMAIL')) {
+            console.log(
+              'SKIP_WORKSPACE_SETUP_COMPLETE_EMAIL is true; skipping workspace ready email',
+            );
+          } else {
+            const emailTemplate = WorkspaceSetupCompleteEmail({
+              firstName,
+              workspaceName: workspaceName || 'Arxena',
+              locale: 'en',
+            });
 
-          await this.workspaceQueryService.emailService.send({
-            from: `Arxena <${process.env.EMAIL_FROM_ADDRESS || 'no-reply@arxena.com'}>`,
-            to: email,
-            subject: 'Your Arxena Workspace is Ready! 🚀',
-            html,
-            text,
-          });
+            const html = render(emailTemplate);
+            const text = render(emailTemplate, {
+              plainText: true,
+            });
+
+            await this.workspaceQueryService.emailService.send({
+              from: `${this.environmentService.get(
+                'EMAIL_FROM_NAME',
+              )} <${this.environmentService.get('EMAIL_FROM_ADDRESS')}>`,
+              to: email,
+              subject: 'Your Arxena Workspace is Ready! 🚀',
+              html,
+              text,
+            });
+          }
+
         } catch (error) {
           console.log('Error updating candidate view field:', error);
         }

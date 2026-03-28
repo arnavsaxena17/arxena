@@ -15,7 +15,7 @@ import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/
 // import { WorkspaceQueryService } from '../workspace-query.service';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
-import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { CreateMetaDataStructure } from './object-apis/object-apis-creation';
@@ -34,11 +34,9 @@ export class WorkspaceQueryService {
     public readonly apiKeyService: ApiKeyService,
     public readonly accessTokenService: AccessTokenService,
     public readonly workspaceDataSourceService: WorkspaceDataSourceService,
-    public readonly webSocketService: WebSocketService,
-
-    
+    public readonly webSocketService: WebSocketService,    
     public readonly emailService: EmailService,
-    private readonly jwtWrapperService: JwtWrapperService,
+    private readonly environmentService: EnvironmentService,
     private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
@@ -899,7 +897,8 @@ export class WorkspaceQueryService {
     await new CreateMetaDataStructure(
       this,
       this.staticGraphQLService,
-      this.webSocketService
+      this.environmentService,
+      this.webSocketService,
     ).createMetadataStructure(token, origin);
   }
 }

@@ -1,30 +1,35 @@
 import {
-    Controller,
-    Get,
-    HttpException,
-    HttpStatus,
-    Post,
-    Req,
-    UseGuards,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Post,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
-    CandidateEdge,
-    CandidateNode,
-    ChatControlsObjType,
-    graphqlToFetchAllCandidateData,
-    graphQltoUpdateOneCandidate,
-    graphqlToUpdateWhatsappMessageId,
-    Job,
-    MessageNode,
-    PersonNode,
-    whatappUpdateMessageObjType
+  CandidateEdge,
+  CandidateNode,
+  ChatControlsObjType,
+  graphqlToFetchAllCandidateData,
+  graphQltoUpdateOneCandidate,
+  graphqlToUpdateWhatsappMessageId,
+  Job,
+  MessageNode,
+  PersonNode,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { PageInfo } from 'cloudflare/core';
 import { CandidateEngagementArx } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { EngagedCandidateQueueService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/engaged-candidate-queue.service';
+import {
+  computeStartChatSpreadDelaysMs,
+  DEFAULT_START_CHAT_MAX_SPREAD_MINUTES,
+  DEFAULT_START_CHAT_SPREAD_MINUTES_PER_MESSAGE,
+} from 'src/engine/core-modules/arx-chat/services/candidate-engagement/start-chat-spread.util';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { HumanLikeLLM } from 'src/engine/core-modules/arx-chat/services/llm-agents/human-or-bot-classification';
@@ -33,7 +38,7 @@ import { MessagingControls } from 'src/engine/core-modules/arx-chat/services/mes
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import {
-    formatChat
+  formatChat
 } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -215,19 +220,62 @@ export class ArxChatEndpoint {
     const candidateIds = request.body.candidateIds;
     console.log('candidateIds', candidateIds);
     console.log('Number of candidate Ids to start chats queue', candidateIds.length);
-    
+
+    let jobForSpread: Job | null = null;
+    if (candidateIds.length > 0) {
+      try {
+        const firstCandidate = await new FilterCandidates(
+          this.workspaceQueryService,
+          this.staticGraphQLService,
+        ).getCandidateDetailsById(candidateIds[0], apiToken);
+        jobForSpread = firstCandidate?.jobs ?? null;
+      } catch (error) {
+        console.warn(
+          'Could not load first candidate for start-chat spread defaults; using defaults.',
+          error,
+        );
+      }
+    }
+
+    const bodyMinutesPerMessage = request.body.startChatSpreadMinutesPerMessage;
+    const bodyMaxSpread = request.body.startChatMaxSpreadMinutes;
+    const minutesPerMessage =
+      typeof bodyMinutesPerMessage === 'number' &&
+      !Number.isNaN(bodyMinutesPerMessage)
+        ? bodyMinutesPerMessage
+        : jobForSpread?.startChatSpreadMinutesPerMessage ??
+          DEFAULT_START_CHAT_SPREAD_MINUTES_PER_MESSAGE;
+    const maxSpreadMinutes =
+      typeof bodyMaxSpread === 'number' && !Number.isNaN(bodyMaxSpread)
+        ? bodyMaxSpread
+        : jobForSpread?.startChatMaxSpreadMinutes ??
+          DEFAULT_START_CHAT_MAX_SPREAD_MINUTES;
+
+    const spreadDelaysMs = computeStartChatSpreadDelaysMs({
+      candidateCount: candidateIds.length,
+      minutesPerMessage,
+      maxSpreadMinutes,
+    });
+    console.log(
+      `Start-chat spread: count=${candidateIds.length}, minutesPerMessage=${minutesPerMessage}, maxSpreadMinutes=${maxSpreadMinutes}, delays(ms)=`,
+      spreadDelaysMs,
+    );
+
     // Collect candidate data for Google Contacts creation
     const candidateDataForGoogleContacts: any[] = [];
     let candidateJob: Job | null = null;
     
-    for (const candidateId of candidateIds) {
+    for (let i = 0; i < candidateIds.length; i++) {
+      const candidateId = candidateIds[i];
       try {
+        const delayMs = spreadDelaysMs[i] ?? 0;
         // Queue the candidate for engagement processing with all operations moved to worker
         // This includes createChatControl and createInterimChat operations
         await this.updateChat.createInterimChatQueue(
           'startChat', // Simple greeting to start the conversation
           candidateId,
-          apiToken
+          apiToken,
+          { delayMs },
         );
         
         // Collect candidate data for Google Contacts (if not already collected)

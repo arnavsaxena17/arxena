@@ -5,8 +5,8 @@ import { isDefined } from 'twenty-shared';
 import { v4 } from 'uuid';
 
 import {
-  QueueCronJobOptions,
-  QueueJobOptions,
+    QueueCronJobOptions,
+    QueueJobOptions,
 } from 'src/engine/core-modules/message-queue/drivers/interfaces/job-options.interface';
 import { MessageQueueDriver } from 'src/engine/core-modules/message-queue/drivers/interfaces/message-queue-driver.interface';
 import { MessageQueueJob } from 'src/engine/core-modules/message-queue/interfaces/message-queue-job.interface';
@@ -163,6 +163,9 @@ export class BullMQDriver implements MessageQueueDriver, OnModuleDestroy {
       jobId: options?.id ? `${options.id}-${v4()}` : undefined, // We add V4() to id to make sure ids are uniques so we can add a waiting job when a job related with the same option.id is running
       priority: options?.priority,
       attempts: 1 + (options?.retryLimit || 0),
+      ...(options?.delayMs != null && options.delayMs > 0
+        ? { delay: options.delayMs }
+        : {}),
       removeOnComplete: true,
       removeOnFail: 100,
     };

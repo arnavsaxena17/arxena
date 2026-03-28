@@ -1,4 +1,4 @@
-const DEFAULT_CALENDLY_URL = 'https://calendly.com/arnavsaxena';
+const DEFAULT_CALENDLY_URL = 'https://calendly.com/arxena';
 
 /**
  * Public Calendly scheduling URL for inline embeds.

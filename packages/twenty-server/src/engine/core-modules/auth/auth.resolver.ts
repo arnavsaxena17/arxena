@@ -245,11 +245,13 @@ export class AuthResolver {
       },
     });
 
-    await this.emailVerificationService.sendVerificationEmail(
-      user.id,
-      user.email,
-      workspace,
-    );
+    // if (!this.environmentService.get('SKIP_SIGNUP_VERIFICATION_EMAIL')) {
+      await this.emailVerificationService.sendVerificationEmail(
+        user.id,
+        user.email,
+        workspace,
+      );
+    // }
 
     const loginToken = await this.loginTokenService.generateLoginToken(
       user.email,

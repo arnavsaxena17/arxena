@@ -251,6 +251,8 @@ const graphqlToFindManyJobsFull = `query FindManyJobs($filter: JobFilterInput, $
         arxenaSiteId
         chatFlowOrder
         engagementProcessingDelayMinutes
+        startChatSpreadMinutesPerMessage
+        startChatMaxSpreadMinutes
         jobCode
         searchName
         reportsTo
@@ -321,6 +323,8 @@ const graphqlToFindManyJobsOrgChart = `query FindManyJobs($filter: JobFilterInpu
         arxenaSiteId
         chatFlowOrder
         engagementProcessingDelayMinutes
+        startChatSpreadMinutesPerMessage
+        startChatMaxSpreadMinutes
         jobCode
         searchName
         reportsTo
@@ -394,6 +398,8 @@ const graphqlToFindManyJobsWithPromptsFull = `query FindManyJobs($filter: JobFil
         arxenaSiteId
         chatFlowOrder
         engagementProcessingDelayMinutes
+        startChatSpreadMinutesPerMessage
+        startChatMaxSpreadMinutes
         jobCode
         searchName
         reportsTo
@@ -474,6 +480,8 @@ const graphqlToFindManyJobsWithPromptsOrgChart = `query FindManyJobs($filter: Jo
         arxenaSiteId
         chatFlowOrder
         engagementProcessingDelayMinutes
+        startChatSpreadMinutesPerMessage
+        startChatMaxSpreadMinutes
         jobCode
         searchName
         reportsTo
@@ -540,6 +548,8 @@ const graphqlToFindManyJobsWithCandidateValuesFull = `query FindManyJobs($filter
         arxenaSiteId
         chatFlowOrder
         engagementProcessingDelayMinutes
+        startChatSpreadMinutesPerMessage
+        startChatMaxSpreadMinutes
         jobCode
         searchName
         reportsTo
@@ -653,6 +663,8 @@ const graphqlToFindManyJobsWithCandidateValuesOrgChart = `query FindManyJobs($fi
         arxenaSiteId
         chatFlowOrder
         engagementProcessingDelayMinutes
+        startChatSpreadMinutesPerMessage
+        startChatMaxSpreadMinutes
         jobCode
         searchName
         reportsTo
@@ -768,6 +780,8 @@ const graphqlToFindManyJobsWithCandidatesFull = `query FindManyJobs($filter: Job
         arxenaSiteId
         chatFlowOrder
         engagementProcessingDelayMinutes
+        startChatSpreadMinutesPerMessage
+        startChatMaxSpreadMinutes
         jobCode
         searchName
         reportsTo
@@ -881,6 +895,8 @@ const graphqlToFindManyJobsWithCandidatesOrgChart = `query FindManyJobs($filter:
         arxenaSiteId
         chatFlowOrder
         engagementProcessingDelayMinutes
+        startChatSpreadMinutesPerMessage
+        startChatMaxSpreadMinutes
         jobCode
         searchName
         reportsTo
@@ -2793,6 +2809,8 @@ export const graphqlToFetchAllCandidateData = `
             companyDetails
             chatFlowOrder
             engagementProcessingDelayMinutes
+            startChatSpreadMinutesPerMessage
+            startChatMaxSpreadMinutes
             pathPosition
             createdAt
             updatedAt

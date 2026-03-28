@@ -71,6 +71,8 @@ export class EngagedCandidateQueueService {
     chatControlType: string = 'startChat',
     isIncomingMessage: boolean = true, // Default to true for interim chat
     slidingWindowDelayMinutes?: number, // From job.engagementProcessingDelayMinutes; default applied in processor
+    /** BullMQ delay before job runs (e.g. batch start-chat spread). */
+    delayMs?: number,
   ): Promise<void> {
     if (!this.engagedCandidateMessageQueueService) {
       console.warn(`Message queue service not available, skipping queue for candidate ${candidateId}`);
@@ -96,6 +98,7 @@ export class EngagedCandidateQueueService {
         {
           priority: 1,
           id: `engaged-candidate-${candidateId}-${Date.now()}`,
+          ...(delayMs != null && delayMs > 0 ? { delayMs } : {}),
         },
       );
 

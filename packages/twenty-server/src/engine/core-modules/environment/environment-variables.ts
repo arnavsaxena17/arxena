@@ -80,6 +80,16 @@ export class EnvironmentVariables {
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.Other,
     description:
+      'When true, the post-setup email ("Your Arxena Workspace is Ready") is not sent after metadata structure creation.',
+  })
+  @CastToBoolean()
+  @IsOptional()
+  @IsBoolean()
+  SKIP_WORKSPACE_SETUP_COMPLETE_EMAIL = true;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
       'Include Connect LinkedIn step in onboarding. When false, step is skipped.',
   })
   @CastToBoolean()

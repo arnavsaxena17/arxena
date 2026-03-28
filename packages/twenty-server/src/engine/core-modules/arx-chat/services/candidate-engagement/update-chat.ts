@@ -421,6 +421,7 @@ export class UpdateChat {
     interimChat: string,
     candidateId: string,
     apiToken: string,
+    options?: { delayMs?: number },
   ) {
     console.log('📨 INTERIM CHAT QUEUE REQUEST:');
     try {
@@ -439,6 +440,7 @@ export class UpdateChat {
         'startChat', // chatControlType
         true,
         slidingWindowDelayMinutes,
+        options?.delayMs,
       );
 
       console.log('✅ Successfully queued candidate for engagement processing');
@@ -455,6 +457,7 @@ export class UpdateChat {
     chatControlType: string = 'startChat',
     isIncomingMessage: boolean = true,
     slidingWindowDelayMinutes?: number,
+    delayMs?: number,
   ): Promise<void> {
     console.log('🔄 QUEUE CANDIDATE FOR ENGAGEMENT WITH DATA:');
     console.log('Candidate ID:', candidateId);
@@ -479,6 +482,7 @@ export class UpdateChat {
         chatControlType,
         isIncomingMessage,
         slidingWindowDelayMinutes,
+        delayMs,
       );
 
       console.log(`Queued candidate ${candidateId} for engagement processing with interim chat data: ${interimChat} and chat control: ${chatControlType}`);

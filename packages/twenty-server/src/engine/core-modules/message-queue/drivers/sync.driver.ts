@@ -5,6 +5,7 @@ import {
   MessageQueueJob,
 } from 'src/engine/core-modules/message-queue/interfaces/message-queue-job.interface';
 import { MessageQueueDriver } from 'src/engine/core-modules/message-queue/drivers/interfaces/message-queue-driver.interface';
+import { QueueJobOptions } from 'src/engine/core-modules/message-queue/drivers/interfaces/job-options.interface';
 
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 
@@ -20,7 +21,15 @@ export class SyncDriver implements MessageQueueDriver {
     queueName: MessageQueue,
     jobName: string,
     data: T,
+    options?: QueueJobOptions,
   ): Promise<void> {
+    const delayMs = options?.delayMs ?? 0;
+    if (delayMs > 0) {
+      setTimeout(() => {
+        void this.processJob(queueName, { id: '', name: jobName, data });
+      }, delayMs);
+      return;
+    }
     await this.processJob(queueName, { id: '', name: jobName, data });
   }
 

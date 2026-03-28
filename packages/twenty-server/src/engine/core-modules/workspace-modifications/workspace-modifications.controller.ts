@@ -13,6 +13,7 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
@@ -28,6 +29,7 @@ export class WorkspaceModificationsController {
     private readonly webSocketService: WebSocketService,
     private readonly metadataUpdateService: MetadataUpdateService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly environmentService: EnvironmentService,
   ) {
     console.log('GraphQL URL configured as:', process.env.GRAPHQL_URL);
   }
@@ -53,7 +55,8 @@ export class WorkspaceModificationsController {
     const existingObjectsResponse = await new CreateMetaDataStructure(
       this.workspaceQueryService,
       this.staticGraphQLService,
-
+      this.environmentService,
+      this.webSocketService,
     ).fetchObjectsNameIdMap(apiToken, origin);
 
     console.log('existingObjectsResponse:', existingObjectsResponse);
@@ -305,6 +308,7 @@ export class WorkspaceModificationsController {
         const createMetaDataStructure = new CreateMetaDataStructure(
           this.workspaceQueryService,
           this.staticGraphQLService,
+          this.environmentService,
           this.webSocketService,
         );
         await createMetaDataStructure.createDatabaseIndices(token.token);

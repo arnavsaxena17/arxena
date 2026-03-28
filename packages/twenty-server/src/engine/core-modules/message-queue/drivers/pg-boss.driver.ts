@@ -105,16 +105,23 @@ export class PgBossDriver
     data: T,
     options?: QueueJobOptions,
   ): Promise<void> {
+    const { delayMs, ...rest } = options ?? {};
+    const sendOpts: Record<string, unknown> = options
+      ? {
+          ...rest,
+          singletonKey: options?.id,
+          useSingletonQueue: true, // When used with singletonKey, ensures only one job can be queued. See https://logsnag.com/blog/deep-dive-into-background-jobs-with-pg-boss-and-typescript
+        }
+      : {};
+
+    if (delayMs != null && delayMs > 0) {
+      sendOpts.startAfter = new Date(Date.now() + delayMs);
+    }
+
     await this.pgBoss.send(
       `${queueName}.${jobName}`,
       data as object,
-      options
-        ? {
-            ...options,
-            singletonKey: options?.id,
-            useSingletonQueue: true, // When used with singletonKey, ensures only one job can be queued. See https://logsnag.com/blog/deep-dive-into-background-jobs-with-pg-boss-and-typescript
-          }
-        : {},
+      sendOpts,
     );
   }
 }
