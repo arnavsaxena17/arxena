@@ -13,9 +13,16 @@ import { TableRow } from '@/ui/layout/table/components/TableRow';
 import { useMutation, useQuery } from '@apollo/client';
 import styled from '@emotion/styled';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { Button, H2Title, IconTrash, Section, useIsMobile } from 'twenty-ui';
+import {
+  Button,
+  Checkbox,
+  H2Title,
+  IconTrash,
+  Section,
+  useIsMobile,
+} from 'twenty-ui';
 
 type WorkspaceCreditsRow = {
   workspaceId: string;
@@ -125,7 +132,7 @@ const StyledMobileSelect = styled(StyledSelect)`
 `;
 
 const TABLE_GRID =
-  'minmax(0, 0.55fr) minmax(0, 0.85fr) minmax(0, 1.4fr) minmax(0, 1.6fr) 1fr 1fr 1fr 1fr 3fr minmax(88px, auto)';
+  'minmax(36px, auto) minmax(0, 0.55fr) minmax(0, 0.85fr) minmax(0, 1.4fr) minmax(0, 1.6fr) 1fr 1fr 1fr 1fr 3fr minmax(88px, auto)';
 
 const shortWorkspaceId = (id: string) => `${id.slice(0, 8)}…`;
 
@@ -138,6 +145,38 @@ const formatWorkspaceCreatedAt = (iso: string) =>
 
 const totalCredits = (row: WorkspaceCreditsRow) =>
   row.orgChartCredits + row.emailContactCredits + row.phoneContactCredits;
+
+const StyledBulkActionsBar = styled.div`
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing(2)};
+  margin-top: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledCheckboxCell = styled(StyledTableCell)`
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+`;
+
+const StyledMobileCardHeaderRow = styled.div`
+  align-items: flex-start;
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledMobileMetaInHeader = styled(StyledMobileMeta)`
+  flex: 1;
+  min-width: 0;
+`;
+
+const StyledSelectedCount = styled.span`
+  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+`;
 
 export const SettingsAdminWorkspaceCredits = () => {
   const { t } = useLingui();
@@ -161,10 +200,44 @@ export const SettingsAdminWorkspaceCredits = () => {
   );
   const [workspacePendingDelete, setWorkspacePendingDelete] =
     useState<WorkspaceCreditsRow | null>(null);
+  const [bulkDeletePendingRows, setBulkDeletePendingRows] = useState<
+    WorkspaceCreditsRow[] | null
+  >(null);
+  const [selectedWorkspaceIds, setSelectedWorkspaceIds] = useState<string[]>(
+    [],
+  );
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [creditType, setCreditType] = useState<CreditType>('EMAIL_CONTACT');
   const [deltaInput, setDeltaInput] = useState('');
 
-  const rows = data?.adminListWorkspacesWithCredits ?? [];
+  const rows = useMemo(
+    () => data?.adminListWorkspacesWithCredits ?? [],
+    [data?.adminListWorkspacesWithCredits],
+  );
+
+  const deletableRows = useMemo(
+    () => rows.filter((row) => row.workspaceId !== currentWorkspace?.id),
+    [rows, currentWorkspace?.id],
+  );
+
+  const selectedDeletableCount = useMemo(
+    () =>
+      deletableRows.filter((row) =>
+        selectedWorkspaceIds.includes(row.workspaceId),
+      ).length,
+    [deletableRows, selectedWorkspaceIds],
+  );
+
+  const isAllDeletableSelected =
+    deletableRows.length > 0 && selectedDeletableCount === deletableRows.length;
+
+  const isSomeDeletableSelected =
+    selectedDeletableCount > 0 && !isAllDeletableSelected;
+
+  const selectedRowsForBulk = useMemo(
+    () => rows.filter((row) => selectedWorkspaceIds.includes(row.workspaceId)),
+    [rows, selectedWorkspaceIds],
+  );
 
   const handleAdjust = async (workspaceId: string) => {
     const delta = parseInt(deltaInput, 10);
@@ -204,6 +277,82 @@ export const SettingsAdminWorkspaceCredits = () => {
     }
   };
 
+  const setBulkDeleteModalOpen = (open: boolean) => {
+    if (!open) {
+      setBulkDeletePendingRows(null);
+    }
+  };
+
+  const toggleWorkspaceSelected = (workspaceId: string) => {
+    if (workspaceId === currentWorkspace?.id) {
+      return;
+    }
+    setSelectedWorkspaceIds((prev) =>
+      prev.includes(workspaceId)
+        ? prev.filter((id) => id !== workspaceId)
+        : [...prev, workspaceId],
+    );
+  };
+
+  const handleSelectAllDeletable = () => {
+    if (isAllDeletableSelected) {
+      setSelectedWorkspaceIds([]);
+      return;
+    }
+    setSelectedWorkspaceIds(deletableRows.map((row) => row.workspaceId));
+  };
+
+  const handleOpenBulkDelete = () => {
+    if (selectedRowsForBulk.length === 0) {
+      return;
+    }
+    setBulkDeletePendingRows(selectedRowsForBulk);
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    const rowsToDelete = bulkDeletePendingRows;
+    if (!rowsToDelete?.length) {
+      return;
+    }
+    setIsBulkDeleting(true);
+    let failureCount = 0;
+    const errors: string[] = [];
+    for (const row of rowsToDelete) {
+      if (row.workspaceId === currentWorkspace?.id) {
+        continue;
+      }
+      try {
+        await deleteWorkspaceMutation({
+          variables: { workspaceId: row.workspaceId },
+        });
+      } catch (err) {
+        failureCount += 1;
+        errors.push(
+          err instanceof Error ? err.message : t`Failed to delete workspace`,
+        );
+      }
+    }
+    setIsBulkDeleting(false);
+    setSelectedWorkspaceIds([]);
+    await refetch();
+    const deletedCount = rowsToDelete.length - failureCount;
+    if (failureCount === 0) {
+      enqueueSnackBar(
+        deletedCount === 1
+          ? t`Deleted 1 workspace`
+          : t`Deleted ${deletedCount} workspaces`,
+        { variant: SnackBarVariant.Success },
+      );
+      return;
+    }
+    const deleted = deletedCount;
+    const failed = failureCount;
+    const firstError = errors[0] ?? '';
+    enqueueSnackBar(t`Deleted ${deleted}, ${failed} failed: ${firstError}`, {
+      variant: SnackBarVariant.Error,
+    });
+  };
+
   const handleConfirmDeleteWorkspace = async () => {
     if (!workspacePendingDelete) {
       return;
@@ -212,7 +361,9 @@ export const SettingsAdminWorkspaceCredits = () => {
     setDeletingWorkspaceId(workspaceId);
     try {
       await deleteWorkspaceMutation({ variables: { workspaceId } });
-      enqueueSnackBar(t`Workspace deleted`, { variant: SnackBarVariant.Success });
+      enqueueSnackBar(t`Workspace deleted`, {
+        variant: SnackBarVariant.Success,
+      });
       await refetch();
     } catch (err) {
       enqueueSnackBar(
@@ -224,6 +375,11 @@ export const SettingsAdminWorkspaceCredits = () => {
     }
   };
 
+  const pendingDeleteWorkspaceDisplayName =
+    workspacePendingDelete?.workspaceName ?? '—';
+  const bulkDeleteWorkspaceCount = bulkDeletePendingRows?.length ?? 0;
+  const selectedWorkspaceCount = selectedDeletableCount;
+
   return (
     <>
       <ConfirmationModal
@@ -234,8 +390,8 @@ export const SettingsAdminWorkspaceCredits = () => {
           workspacePendingDelete ? (
             <Trans>
               This permanently deletes workspace{' '}
-              <strong>{workspacePendingDelete.workspaceName || '—'}</strong>{' '}
-              and all of its data. This cannot be undone.
+              <strong>{pendingDeleteWorkspaceDisplayName}</strong> and all of
+              its data. This cannot be undone.
             </Trans>
           ) : null
         }
@@ -243,31 +399,72 @@ export const SettingsAdminWorkspaceCredits = () => {
         deleteButtonText={t`Delete workspace`}
         loading={deletingWorkspaceId === workspacePendingDelete?.workspaceId}
       />
+      <ConfirmationModal
+        isOpen={bulkDeletePendingRows !== null}
+        setIsOpen={setBulkDeleteModalOpen}
+        title={t`Delete workspaces`}
+        subtitle={
+          bulkDeletePendingRows && bulkDeletePendingRows.length > 0 ? (
+            <Trans>
+              This permanently deletes{' '}
+              <strong>{bulkDeleteWorkspaceCount}</strong> workspaces and all of
+              their data. This cannot be undone.
+            </Trans>
+          ) : null
+        }
+        onConfirmClick={handleConfirmBulkDelete}
+        deleteButtonText={t`Delete workspaces`}
+        loading={isBulkDeleting}
+      />
       <Section>
         <H2Title
           title={t`Workspace Credits`}
           description={t`View and manually add or remove credits per workspace.`}
         />
+        {!loading && selectedDeletableCount > 0 ? (
+          <StyledBulkActionsBar>
+            <StyledSelectedCount>
+              {t`${selectedWorkspaceCount} selected`}
+            </StyledSelectedCount>
+            <Button
+              accent="danger"
+              variant="secondary"
+              title={t`Delete selected workspaces`}
+              Icon={IconTrash}
+              onClick={handleOpenBulkDelete}
+              disabled={isBulkDeleting}
+            />
+          </StyledBulkActionsBar>
+        ) : null}
         {loading ? (
           <p>{t`Loading...`}</p>
         ) : isMobile ? (
           <StyledMobileCardList>
             {rows.map((row) => (
               <StyledMobileCard key={row.workspaceId}>
-                <StyledMobileMeta>
-                  <StyledShortWorkspaceId title={row.workspaceId}>
-                    {shortWorkspaceId(row.workspaceId)}
-                  </StyledShortWorkspaceId>
-                  <StyledCreatedAt>
-                    {formatWorkspaceCreatedAt(row.workspaceCreatedAt)}
-                  </StyledCreatedAt>
-                  <StyledMobileWorkspaceName>
-                    {row.workspaceName || '—'}
-                  </StyledMobileWorkspaceName>
-                  <StyledCreatorEmail>
-                    {t`Creator email`}: {row.workspaceCreatorEmail || '—'}
-                  </StyledCreatorEmail>
-                </StyledMobileMeta>
+                <StyledMobileCardHeaderRow>
+                  <Checkbox
+                    checked={selectedWorkspaceIds.includes(row.workspaceId)}
+                    onCheckedChange={() =>
+                      toggleWorkspaceSelected(row.workspaceId)
+                    }
+                    disabled={row.workspaceId === currentWorkspace?.id}
+                  />
+                  <StyledMobileMetaInHeader>
+                    <StyledShortWorkspaceId title={row.workspaceId}>
+                      {shortWorkspaceId(row.workspaceId)}
+                    </StyledShortWorkspaceId>
+                    <StyledCreatedAt>
+                      {formatWorkspaceCreatedAt(row.workspaceCreatedAt)}
+                    </StyledCreatedAt>
+                    <StyledMobileWorkspaceName>
+                      {row.workspaceName || '—'}
+                    </StyledMobileWorkspaceName>
+                    <StyledCreatorEmail>
+                      {t`Creator email`}: {row.workspaceCreatorEmail || '—'}
+                    </StyledCreatorEmail>
+                  </StyledMobileMetaInHeader>
+                </StyledMobileCardHeaderRow>
                 <StyledMobileCreditsRow>
                   <StyledMobileCreditItem>
                     {t`Org chart`}: {row.orgChartCredits}
@@ -328,6 +525,14 @@ export const SettingsAdminWorkspaceCredits = () => {
         ) : (
           <StyledTable>
             <TableRow gridAutoColumns={TABLE_GRID}>
+              <TableHeader>
+                <Checkbox
+                  checked={isAllDeletableSelected}
+                  indeterminate={isSomeDeletableSelected}
+                  onCheckedChange={handleSelectAllDeletable}
+                  disabled={deletableRows.length === 0}
+                />
+              </TableHeader>
               <TableHeader>{t`Workspace ID`}</TableHeader>
               <TableHeader>{t`Created`}</TableHeader>
               <TableHeader>{t`Name`}</TableHeader>
@@ -341,6 +546,15 @@ export const SettingsAdminWorkspaceCredits = () => {
             </TableRow>
             {rows.map((row) => (
               <TableRow key={row.workspaceId} gridAutoColumns={TABLE_GRID}>
+                <StyledCheckboxCell>
+                  <Checkbox
+                    checked={selectedWorkspaceIds.includes(row.workspaceId)}
+                    onCheckedChange={() =>
+                      toggleWorkspaceSelected(row.workspaceId)
+                    }
+                    disabled={row.workspaceId === currentWorkspace?.id}
+                  />
+                </StyledCheckboxCell>
                 <StyledTableCell>
                   <StyledShortWorkspaceId title={row.workspaceId}>
                     {shortWorkspaceId(row.workspaceId)}

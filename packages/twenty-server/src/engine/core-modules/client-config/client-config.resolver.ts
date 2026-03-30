@@ -116,6 +116,12 @@ export class ClientConfigResolver {
       skipOptionalOnboardingSteps: this.environmentService.get(
         'SKIP_OPTIONAL_ONBOARDING_STEPS',
       ),
+      useIntentChoiceOnboarding: this.environmentService.get(
+        'USE_INTENT_CHOICE_ONBOARDING',
+      ),
+      dealDiligenceCalendlyEmbedUrl: this.environmentService.get(
+        'DEAL_DILIGENCE_CALENDLY_EMBED_URL',
+      ),
     };
 
     return Promise.resolve(clientConfig);

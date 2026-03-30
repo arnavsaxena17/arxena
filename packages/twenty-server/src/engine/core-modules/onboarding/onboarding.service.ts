@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { WorkspaceActivationStatus } from 'twenty-shared';
 
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
+import { OnboardingIntentPath } from 'src/engine/core-modules/onboarding/enums/onboarding-intent-path.enum';
 import { OnboardingStatus } from 'src/engine/core-modules/onboarding/enums/onboarding-status.enum';
 import { UserVarsService } from 'src/engine/core-modules/user/user-vars/services/user-vars.service';
 import { User } from 'src/engine/core-modules/user/user.entity';
@@ -13,6 +14,8 @@ export enum OnboardingStepKeys {
   ONBOARDING_CONNECT_LINKEDIN_PENDING = 'ONBOARDING_CONNECT_LINKEDIN_PENDING',
   ONBOARDING_INVITE_TEAM_PENDING = 'ONBOARDING_INVITE_TEAM_PENDING',
   ONBOARDING_CREATE_PROFILE_PENDING = 'ONBOARDING_CREATE_PROFILE_PENDING',
+  ONBOARDING_INTENT_CHOICE_PENDING = 'ONBOARDING_INTENT_CHOICE_PENDING',
+  ONBOARDING_INTENT_PATH = 'ONBOARDING_INTENT_PATH',
 }
 
 export type OnboardingKeyValueTypeMap = {
@@ -20,6 +23,8 @@ export type OnboardingKeyValueTypeMap = {
   [OnboardingStepKeys.ONBOARDING_CONNECT_LINKEDIN_PENDING]: boolean;
   [OnboardingStepKeys.ONBOARDING_INVITE_TEAM_PENDING]: boolean;
   [OnboardingStepKeys.ONBOARDING_CREATE_PROFILE_PENDING]: boolean;
+  [OnboardingStepKeys.ONBOARDING_INTENT_CHOICE_PENDING]: boolean;
+  [OnboardingStepKeys.ONBOARDING_INTENT_PATH]: OnboardingIntentPath;
 };
 
 @Injectable()
@@ -59,9 +64,32 @@ export class OnboardingService {
 
     const isInviteTeamPending =
       userVars.get(OnboardingStepKeys.ONBOARDING_INVITE_TEAM_PENDING) === true;
+    const isIntentChoicePending =
+      userVars.get(OnboardingStepKeys.ONBOARDING_INTENT_CHOICE_PENDING) ===
+      true;
+    const onboardingIntentPath = userVars.get(
+      OnboardingStepKeys.ONBOARDING_INTENT_PATH,
+    );
 
     if (isProfileCreationPending) {
       return OnboardingStatus.PROFILE_CREATION;
+    }
+
+    if (this.environmentService.get('USE_INTENT_CHOICE_ONBOARDING')) {
+      if (isIntentChoicePending) {
+        return OnboardingStatus.INTENT_CHOICE;
+      }
+
+      switch (onboardingIntentPath) {
+        case OnboardingIntentPath.COMPETITIVE_RESEARCH:
+          return OnboardingStatus.COMPETITIVE_RESEARCH;
+        case OnboardingIntentPath.DEAL_DILIGENCE:
+          return OnboardingStatus.DEAL_DILIGENCE;
+        case OnboardingIntentPath.EXTENSION_INSTALL:
+          return OnboardingStatus.EXTENSION_INSTALL;
+      }
+
+      return OnboardingStatus.COMPLETED;
     }
 
     if (
@@ -190,6 +218,64 @@ export class OnboardingService {
       workspaceId,
       key: OnboardingStepKeys.ONBOARDING_CREATE_PROFILE_PENDING,
       value: true,
+    });
+  }
+
+  async setOnboardingIntentChoicePending({
+    userId,
+    workspaceId,
+    value,
+  }: {
+    userId: string;
+    workspaceId: string;
+    value: boolean;
+  }) {
+    if (!value) {
+      await this.userVarsService.delete({
+        userId,
+        workspaceId,
+        key: OnboardingStepKeys.ONBOARDING_INTENT_CHOICE_PENDING,
+      });
+
+      return;
+    }
+
+    await this.userVarsService.set({
+      userId,
+      workspaceId,
+      key: OnboardingStepKeys.ONBOARDING_INTENT_CHOICE_PENDING,
+      value: true,
+    });
+  }
+
+  async setOnboardingIntentPath({
+    userId,
+    workspaceId,
+    path,
+  }: {
+    userId: string;
+    workspaceId: string;
+    path: OnboardingIntentPath;
+  }) {
+    await this.userVarsService.set({
+      userId,
+      workspaceId,
+      key: OnboardingStepKeys.ONBOARDING_INTENT_PATH,
+      value: path,
+    });
+  }
+
+  async clearOnboardingIntentPath({
+    userId,
+    workspaceId,
+  }: {
+    userId: string;
+    workspaceId: string;
+  }) {
+    await this.userVarsService.delete({
+      userId,
+      workspaceId,
+      key: OnboardingStepKeys.ONBOARDING_INTENT_PATH,
     });
   }
 }

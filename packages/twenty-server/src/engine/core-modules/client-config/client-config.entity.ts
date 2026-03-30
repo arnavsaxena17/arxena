@@ -169,4 +169,10 @@ export class ClientConfig {
 
   @Field(() => Boolean)
   skipOptionalOnboardingSteps: boolean;
+
+  @Field(() => Boolean)
+  useIntentChoiceOnboarding: boolean;
+
+  @Field(() => String, { nullable: true })
+  dealDiligenceCalendlyEmbedUrl: string | undefined;
 }

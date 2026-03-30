@@ -42,8 +42,9 @@ export const useRefreshObjectMetadataItems = (
           )
         ) {
           set(objectMetadataItemsState, toSetObjectMetadataItems);
-          set(isAppWaitingForFreshObjectMetadataState, false);
         }
+
+        set(isAppWaitingForFreshObjectMetadataState, false);
       },
     [],
   );

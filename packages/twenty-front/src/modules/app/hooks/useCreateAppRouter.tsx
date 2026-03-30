@@ -26,10 +26,14 @@ import { NotFound } from '~/pages/not-found/NotFound';
 import { RecordIndexPage } from '~/pages/object-record/RecordIndexPage';
 import { RecordShowPage } from '~/pages/object-record/RecordShowPage';
 import { ChooseYourPlan } from '~/pages/onboarding/ChooseYourPlan';
+import { CompetitiveResearchOnboarding } from '~/pages/onboarding/CompetitiveResearchOnboarding';
 import { CollectPhoneNumber } from '~/pages/onboarding/CollectPhoneNumber';
 import { ConnectLinkedin } from '~/pages/onboarding/ConnectLinkedin';
 import { CreateProfile } from '~/pages/onboarding/CreateProfile';
 import { CreateWorkspace } from '~/pages/onboarding/CreateWorkspace';
+import { DealDiligenceOnboarding } from '~/pages/onboarding/DealDiligenceOnboarding';
+import { ExtensionInstallOnboarding } from '~/pages/onboarding/ExtensionInstallOnboarding';
+import { IntentChoice } from '~/pages/onboarding/IntentChoice';
 import { InviteTeam } from '~/pages/onboarding/InviteTeam';
 import { PaymentSuccess } from '~/pages/onboarding/PaymentSuccess';
 import { SyncEmails } from '~/pages/onboarding/SyncEmails';
@@ -113,13 +117,17 @@ const OrgChartRoute = () => {
   const tokenPair = useRecoilValue(tokenPairState);
   const hasToken = Boolean(tokenPair?.accessToken?.token);
   const { data: creditsData } = useQuery(WORKSPACE_CREDITS);
-  const credits = (creditsData as {
-    workspaceCredits?: {
-      orgChartCredits: number;
-      emailContactCredits: number;
-      phoneContactCredits: number;
-    };
-  } | undefined)?.workspaceCredits;
+  const credits = (
+    creditsData as
+      | {
+          workspaceCredits?: {
+            orgChartCredits: number;
+            emailContactCredits: number;
+            phoneContactCredits: number;
+          };
+        }
+      | undefined
+  )?.workspaceCredits;
   const orgChartCredits = credits?.orgChartCredits;
   const emailContactCredits = credits?.emailContactCredits;
   const phoneContactCredits = credits?.phoneContactCredits;
@@ -179,14 +187,14 @@ const OrgChartRoute = () => {
         <React.Suspense fallback={null}>
           <ArxOrgChart
             companyId={companyId}
-          companyName={companyFromState?.companyName}
-          website={companyFromState?.website}
-          locationName={companyFromState?.locationName}
-          industry={companyFromState?.industry}
-          profileCount={companyFromState?.profileCount}
-          linkedinUrl={companyFromState?.linkedinUrl}
-          onBack={handleBack}
-        />
+            companyName={companyFromState?.companyName}
+            website={companyFromState?.website}
+            locationName={companyFromState?.locationName}
+            industry={companyFromState?.industry}
+            profileCount={companyFromState?.profileCount}
+            linkedinUrl={companyFromState?.linkedinUrl}
+            onBack={handleBack}
+          />
         </React.Suspense>
       </PageBody>
     </PageContainer>
@@ -235,8 +243,27 @@ export const useCreateAppRouter = (
               element={<CreateWorkspace />}
             />
             <Route path={AppPath.CreateProfile} element={<CreateProfile />} />
-            <Route path={AppPath.CollectPhoneNumber} element={<CollectPhoneNumber />} />
-            <Route path={AppPath.ConnectLinkedin} element={<ConnectLinkedin />} />
+            <Route
+              path={AppPath.CollectPhoneNumber}
+              element={<CollectPhoneNumber />}
+            />
+            <Route path={AppPath.IntentChoice} element={<IntentChoice />} />
+            <Route
+              path={AppPath.CompetitiveResearchOnboarding}
+              element={<CompetitiveResearchOnboarding />}
+            />
+            <Route
+              path={AppPath.DealDiligenceOnboarding}
+              element={<DealDiligenceOnboarding />}
+            />
+            <Route
+              path={AppPath.ExtensionInstallOnboarding}
+              element={<ExtensionInstallOnboarding />}
+            />
+            <Route
+              path={AppPath.ConnectLinkedin}
+              element={<ConnectLinkedin />}
+            />
             <Route path={AppPath.SyncEmails} element={<SyncEmails />} />
             <Route path={AppPath.InviteTeam} element={<InviteTeam />} />
             <Route path={AppPath.Jobs} element={<Jobs />} />
@@ -244,7 +271,9 @@ export const useCreateAppRouter = (
             <Route
               path={`${AppPath.OrgChart}/:companyKey?`}
               element={
-                <React.Suspense fallback={<div>Loading organization chart...</div>}>
+                <React.Suspense
+                  fallback={<div>Loading organization chart...</div>}
+                >
                   <OrgChartRoute />
                 </React.Suspense>
               }

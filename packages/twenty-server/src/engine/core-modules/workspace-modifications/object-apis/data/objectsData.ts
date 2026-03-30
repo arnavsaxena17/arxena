@@ -356,7 +356,6 @@ export function getObjectCreationArr(isOrgChartEnabled?: boolean) {
   const objectsToCreate = allObjects.filter(
       (object) => !objectsToExclude.includes(object.object.nameSingular),
     );
-    console.log("Objects to created:", objectsToCreate)
   return objectsToCreate
 }
 

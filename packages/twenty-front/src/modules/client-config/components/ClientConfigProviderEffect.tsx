@@ -5,6 +5,7 @@ import { canManageFeatureFlagsState } from '@/client-config/states/canManageFeat
 import { captchaState } from '@/client-config/states/captchaState';
 import { chromeExtensionIdState } from '@/client-config/states/chromeExtensionIdState';
 import { clientConfigApiStatusState } from '@/client-config/states/clientConfigApiStatusState';
+import { dealDiligenceCalendlyEmbedUrlState } from '@/client-config/states/dealDiligenceCalendlyEmbedUrlState';
 import { isAnalyticsEnabledState } from '@/client-config/states/isAnalyticsEnabledState';
 import { isAttachmentPreviewEnabledState } from '@/client-config/states/isAttachmentPreviewEnabledState';
 import { isDebugModeState } from '@/client-config/states/isDebugModeState';
@@ -21,6 +22,7 @@ import { signInBackgroundUseOrgChartMockState } from '@/client-config/states/sig
 import { skipOptionalOnboardingStepsState } from '@/client-config/states/skipOptionalOnboardingStepsState';
 import { supportChatState } from '@/client-config/states/supportChatState';
 import { useConnectLinkedinOnboardingState } from '@/client-config/states/useConnectLinkedinOnboardingState';
+import { useIntentChoiceOnboardingState } from '@/client-config/states/useIntentChoiceOnboardingState';
 import { domainConfigurationState } from '@/domain-manager/states/domainConfigurationState';
 import { useEffect } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
@@ -54,6 +56,9 @@ export const ClientConfigProviderEffect = () => {
   const setCaptcha = useSetRecoilState(captchaState);
 
   const setChromeExtensionId = useSetRecoilState(chromeExtensionIdState);
+  const setDealDiligenceCalendlyEmbedUrl = useSetRecoilState(
+    dealDiligenceCalendlyEmbedUrlState,
+  );
 
   const setApiConfig = useSetRecoilState(apiConfigState);
 
@@ -91,6 +96,9 @@ export const ClientConfigProviderEffect = () => {
 
   const setSkipOptionalOnboardingSteps = useSetRecoilState(
     skipOptionalOnboardingStepsState,
+  );
+  const setUseIntentChoiceOnboarding = useSetRecoilState(
+    useIntentChoiceOnboardingState,
   );
 
   const setSignInBackgroundUseOrgChartMock = useSetRecoilState(
@@ -159,6 +167,9 @@ export const ClientConfigProviderEffect = () => {
     });
 
     setChromeExtensionId(data?.clientConfig?.chromeExtensionId);
+    setDealDiligenceCalendlyEmbedUrl(
+      data?.clientConfig?.dealDiligenceCalendlyEmbedUrl,
+    );
     setApiConfig(data?.clientConfig?.api);
     setDomainConfiguration({
       defaultSubdomain: data?.clientConfig?.defaultSubdomain,
@@ -181,6 +192,9 @@ export const ClientConfigProviderEffect = () => {
     setSkipOptionalOnboardingSteps(
       data?.clientConfig?.skipOptionalOnboardingSteps ?? false,
     );
+    setUseIntentChoiceOnboarding(
+      data?.clientConfig?.useIntentChoiceOnboarding ?? false,
+    );
   }, [
     data,
     setIsDebugMode,
@@ -195,6 +209,7 @@ export const ClientConfigProviderEffect = () => {
     setClientConfigApiStatus,
     setCaptcha,
     setChromeExtensionId,
+    setDealDiligenceCalendlyEmbedUrl,
     setApiConfig,
     setIsAnalyticsEnabled,
     error,
@@ -209,6 +224,7 @@ export const ClientConfigProviderEffect = () => {
     setIsAttachmentPreviewEnabled,
     setUseConnectLinkedinOnboarding,
     setSkipOptionalOnboardingSteps,
+    setUseIntentChoiceOnboarding,
   ]);
 
   return <></>;

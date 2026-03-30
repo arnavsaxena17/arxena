@@ -69,6 +69,8 @@ export const GET_CLIENT_CONFIG = gql`
       isGoogleCalendarEnabled
       useConnectLinkedinOnboarding
       skipOptionalOnboardingSteps
+      useIntentChoiceOnboarding
+      dealDiligenceCalendlyEmbedUrl
     }
   }
 `;

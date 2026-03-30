@@ -108,6 +108,35 @@ export class EnvironmentVariables {
   SKIP_OPTIONAL_ONBOARDING_STEPS = true;
 
   @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'When true, after phone collection users see intent choice and a path-specific step before the jobs page.',
+  })
+  @CastToBoolean()
+  @IsOptional()
+  @IsBoolean()
+  USE_INTENT_CHOICE_ONBOARDING = true;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'Base URL for Rapid Email Verifier (MX, disposable, role, typo, alias checks on signup).',
+  })
+  @IsOptional()
+  @IsUrl({ require_tld: true })
+  @IsString()
+  RAPID_EMAIL_VERIFIER_BASE_URL = 'https://rapid-email-verifier.fly.dev';
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'Calendly embed URL for the Deal diligence onboarding path (iframe src).',
+  })
+  @IsOptional()
+  @IsString()
+  DEAL_DILIGENCE_CALENDLY_EMBED_URL?: string;
+
+  @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.TokensDuration,
     description: 'Duration for which the email verification token is valid',
   })

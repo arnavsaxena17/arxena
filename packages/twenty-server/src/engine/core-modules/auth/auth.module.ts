@@ -16,6 +16,7 @@ import { GoogleAPIsService } from 'src/engine/core-modules/auth/services/google-
 import { MicrosoftAPIsService } from 'src/engine/core-modules/auth/services/microsoft-apis.service';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 // import { OAuthService } from 'src/engine/core-modules/auth/services/oauth.service';
+import { RapidEmailVerifierService } from 'src/engine/core-modules/auth/services/rapid-email-verifier.service';
 import { ResetPasswordService } from 'src/engine/core-modules/auth/services/reset-password.service';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
 import { SocialSsoService } from 'src/engine/core-modules/auth/services/social-sso.service';
@@ -104,6 +105,7 @@ import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
     SSOAuthController,
   ],
   providers: [
+    RapidEmailVerifierService,
     SignInUpService,
     AuthService,
     JwtAuthStrategy,
@@ -119,6 +121,7 @@ import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
     TransientTokenService,
     ApiKeyService,
     SocialSsoService,
+    RapidEmailVerifierService,
     // reenable when working on: https://github.com/twentyhq/twenty/issues/9143
     // OAuthService,
   ],

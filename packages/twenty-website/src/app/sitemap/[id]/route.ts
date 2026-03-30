@@ -11,6 +11,16 @@ import {
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600;
 
+async function fetchJsonOrThrow<T>(url: string): Promise<T> {
+  const res = await fetch(url, { next: { revalidate: 3600 } });
+
+  if (!res.ok) {
+    throw new Error(`Sitemap dependency failed: ${url} returned ${res.status}`);
+  }
+
+  return (await res.json()) as T;
+}
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -41,18 +51,15 @@ export async function GET(
     }
   }
 
-  // Fetch batch params (Phase 1: global fullcompany, Phase 2: country/type slices)
   try {
-    const paramsRes = await fetch(
-      `${baseUrl}/api/org-chart/companies/sitemap-batch-params?batchIndex=${batchIndex}`,
-      { next: { revalidate: 3600 } },
-    );
-    const paramsData = (await paramsRes.json()) as {
+    const paramsData = await fetchJsonOrThrow<{
       country?: string;
       type?: string;
       offset?: number;
       limit?: number;
-    };
+    }>(
+      `${baseUrl}/api/org-chart/companies/sitemap-batch-params?batchIndex=${batchIndex}`,
+    );
     const batchParams = paramsData.country != null ? paramsData : null;
 
     if (!batchParams || batchParams.limit == null || batchParams.limit <= 0) {
@@ -65,24 +72,27 @@ export async function GET(
         url.searchParams.set('country', batchParams.country);
       if (batchParams.type) url.searchParams.set('type', batchParams.type);
 
-      const res = await fetch(url.toString(), { next: { revalidate: 3600 } });
-      if (res.ok) {
-        const data = (await res.json()) as {
-          urls?: Array<{ companyId: string; country: string; type: string }>;
-        };
-        const urls = data.urls ?? [];
-        const lastMod = new Date();
-        for (const { companyId, country, type } of urls) {
-          if (!companyId?.trim()) continue;
-          const path = buildOrgChartPath(companyId, country, type);
-          entries.push(
-            sitemapEntryToXml(`${baseUrl}${path}`, lastMod, 'monthly', 0.8),
-          );
-        }
+      const data = await fetchJsonOrThrow<{
+        urls?: Array<{ companyId: string; country: string; type: string }>;
+      }>(url.toString());
+      const urls = data.urls ?? [];
+      const lastMod = new Date();
+      for (const { companyId, country, type } of urls) {
+        if (!companyId?.trim()) continue;
+        const path = buildOrgChartPath(companyId, country, type);
+        entries.push(
+          sitemapEntryToXml(`${baseUrl}${path}`, lastMod, 'monthly', 0.8),
+        );
       }
     }
   } catch {
-    // Fallback: no org chart URLs for this batch
+    return new NextResponse('Sitemap temporarily unavailable', {
+      status: 503,
+      headers: {
+        'Content-Type': 'text/plain; charset=UTF-8',
+        'Cache-Control': 'no-store',
+      },
+    });
   }
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -92,7 +102,7 @@ ${entries.join('\n')}
 
   return new NextResponse(xml, {
     headers: {
-      'Content-Type': 'application/xml',
+      'Content-Type': 'application/xml; charset=UTF-8',
       'Cache-Control': 'public, max-age=3600, s-maxage=3600',
     },
   });

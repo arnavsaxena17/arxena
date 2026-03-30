@@ -1,0 +1,19 @@
+{
+  "results": [
+    {
+      "id": "competitive-research",
+      "success": true,
+      "screenshot": "/Users/arnavsaxena/MEGA/arx/arxena/run_results/onboarding-intent-check-20260329/competitive-research.png"
+    },
+    {
+      "id": "extension-install",
+      "success": true,
+      "screenshot": "/Users/arnavsaxena/MEGA/arx/arxena/run_results/onboarding-intent-check-20260329/extension-install.png"
+    },
+    {
+      "id": "deal-diligence",
+      "success": true,
+      "screenshot": "/Users/arnavsaxena/MEGA/arx/arxena/run_results/onboarding-intent-check-20260329/deal-diligence.png"
+    }
+  ]
+}

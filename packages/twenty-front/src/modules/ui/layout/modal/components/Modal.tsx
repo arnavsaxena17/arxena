@@ -44,6 +44,8 @@ const StyledModalDiv = styled(motion.div)<{
         return theme.modal.size.md;
       case 'large':
         return theme.modal.size.lg;
+      case 'xl':
+        return theme.modal.size.xl;
       default:
         return 'auto';
     }

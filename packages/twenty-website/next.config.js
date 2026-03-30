@@ -22,12 +22,6 @@ const nextConfig = {
         // https://nextjs.org/docs/messages/failed-to-find-server-action
       },
     },
-  async rewrites() {
-    return [
-      { source: '/sitemap-index.xml', destination: '/sitemap-index' },
-      { source: '/sitemap-:id.xml', destination: '/sitemap/:id' },
-    ];
-  },
   async redirects() {
     const arxenaSiteUrl =
       process.env.NODE_ENV === 'production'

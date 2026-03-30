@@ -286,6 +286,8 @@ export type ClientConfig = {
   support: Support;
   useConnectLinkedinOnboarding: Scalars['Boolean'];
   skipOptionalOnboardingSteps: Scalars['Boolean'];
+  useIntentChoiceOnboarding: Scalars['Boolean'];
+  dealDiligenceCalendlyEmbedUrl?: Maybe<Scalars['String']>;
 };
 
 export type ComputeStepOutputSchemaInput = {
@@ -1169,14 +1171,24 @@ export type ObjectIndexMetadatasConnection = {
 /** Onboarding status */
 export enum OnboardingStatus {
   COLLECT_PHONE_NUMBER = 'COLLECT_PHONE_NUMBER',
+  COMPETITIVE_RESEARCH = 'COMPETITIVE_RESEARCH',
   COMPLETED = 'COMPLETED',
   CONNECT_LINKEDIN = 'CONNECT_LINKEDIN',
+  DEAL_DILIGENCE = 'DEAL_DILIGENCE',
+  EXTENSION_INSTALL = 'EXTENSION_INSTALL',
   INSTALL_APP = 'INSTALL_APP',
+  INTENT_CHOICE = 'INTENT_CHOICE',
   INVITE_TEAM = 'INVITE_TEAM',
   PLAN_REQUIRED = 'PLAN_REQUIRED',
   PROFILE_CREATION = 'PROFILE_CREATION',
   SYNC_EMAIL = 'SYNC_EMAIL',
   WORKSPACE_ACTIVATION = 'WORKSPACE_ACTIVATION'
+}
+
+export enum OnboardingIntentPath {
+  COMPETITIVE_RESEARCH = 'COMPETITIVE_RESEARCH',
+  DEAL_DILIGENCE = 'DEAL_DILIGENCE',
+  EXTENSION_INSTALL = 'EXTENSION_INSTALL'
 }
 
 export type OnboardingStepSuccess = {
@@ -2275,7 +2287,7 @@ export type UpdateBillingSubscriptionMutation = { __typename?: 'Mutation', updat
 export type GetClientConfigQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetClientConfigQuery = { __typename?: 'Query', clientConfig: { __typename?: 'ClientConfig', signInPrefilled: boolean, signInBackgroundUseOrgChartMock: boolean, isMultiWorkspaceEnabled: boolean, isEmailVerificationRequired: boolean, defaultSubdomain?: string | null, frontDomain: string, debugMode: boolean, analyticsEnabled: boolean, isAttachmentPreviewEnabled: boolean, chromeExtensionId?: string | null, canManageFeatureFlags: boolean, isMicrosoftMessagingEnabled: boolean, isMicrosoftCalendarEnabled: boolean, isGoogleMessagingEnabled: boolean, isGoogleCalendarEnabled: boolean, useConnectLinkedinOnboarding: boolean, skipOptionalOnboardingSteps: boolean, billing: { __typename?: 'Billing', isBillingEnabled: boolean, billingUrl?: string | null, trialPeriods: Array<{ __typename?: 'BillingTrialPeriodDTO', duration: number, isCreditCardRequired: boolean }> }, authProviders: { __typename?: 'AuthProviders', google: boolean, password: boolean, microsoft: boolean, sso: Array<{ __typename?: 'SSOIdentityProvider', id: string, name: string, type: IdentityProviderType, status: SsoIdentityProviderStatus, issuer: string }> }, support: { __typename?: 'Support', supportDriver: string, supportFrontChatId?: string | null, supportChatwootBaseUrl?: string | null, supportChatwootWebsiteToken?: string | null, supportChatwootInboxIdentifier?: string | null, supportAiEnabled?: boolean | null }, sentry: { __typename?: 'Sentry', dsn?: string | null, environment?: string | null, release?: string | null }, captcha: { __typename?: 'Captcha', provider?: CaptchaDriverType | null, siteKey?: string | null }, api: { __typename?: 'ApiConfig', mutationMaximumAffectedRecords: number }, publicFeatureFlags: Array<{ __typename?: 'PublicFeatureFlag', key: FeatureFlagKey, metadata: { __typename?: 'PublicFeatureFlagMetadata', label: string, description: string, imagePath: string } }> } };
+export type GetClientConfigQuery = { __typename?: 'Query', clientConfig: { __typename?: 'ClientConfig', signInPrefilled: boolean, signInBackgroundUseOrgChartMock: boolean, isMultiWorkspaceEnabled: boolean, isEmailVerificationRequired: boolean, defaultSubdomain?: string | null, frontDomain: string, debugMode: boolean, analyticsEnabled: boolean, isAttachmentPreviewEnabled: boolean, chromeExtensionId?: string | null, canManageFeatureFlags: boolean, isMicrosoftMessagingEnabled: boolean, isMicrosoftCalendarEnabled: boolean, isGoogleMessagingEnabled: boolean, isGoogleCalendarEnabled: boolean, useConnectLinkedinOnboarding: boolean, skipOptionalOnboardingSteps: boolean, useIntentChoiceOnboarding: boolean, dealDiligenceCalendlyEmbedUrl?: string | null, billing: { __typename?: 'Billing', isBillingEnabled: boolean, billingUrl?: string | null, trialPeriods: Array<{ __typename?: 'BillingTrialPeriodDTO', duration: number, isCreditCardRequired: boolean }> }, authProviders: { __typename?: 'AuthProviders', google: boolean, password: boolean, microsoft: boolean, sso: Array<{ __typename?: 'SSOIdentityProvider', id: string, name: string, type: IdentityProviderType, status: SsoIdentityProviderStatus, issuer: string }> }, support: { __typename?: 'Support', supportDriver: string, supportFrontChatId?: string | null, supportChatwootBaseUrl?: string | null, supportChatwootWebsiteToken?: string | null, supportChatwootInboxIdentifier?: string | null, supportAiEnabled?: boolean | null }, sentry: { __typename?: 'Sentry', dsn?: string | null, environment?: string | null, release?: string | null }, captcha: { __typename?: 'Captcha', provider?: CaptchaDriverType | null, siteKey?: string | null }, api: { __typename?: 'ApiConfig', mutationMaximumAffectedRecords: number }, publicFeatureFlags: Array<{ __typename?: 'PublicFeatureFlag', key: FeatureFlagKey, metadata: { __typename?: 'PublicFeatureFlagMetadata', label: string, description: string, imagePath: string } }> } };
 
 export type SkipSyncEmailOnboardingStepMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -3838,6 +3850,8 @@ export const GetClientConfigDocument = gql`
     isGoogleCalendarEnabled
     useConnectLinkedinOnboarding
     skipOptionalOnboardingSteps
+    useIntentChoiceOnboarding
+    dealDiligenceCalendlyEmbedUrl
   }
 }
     `;

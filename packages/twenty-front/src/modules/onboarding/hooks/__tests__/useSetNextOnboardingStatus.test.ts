@@ -6,8 +6,13 @@ import { currentUserState } from '@/auth/states/currentUserState';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { skipOptionalOnboardingStepsState } from '@/client-config/states/skipOptionalOnboardingStepsState';
 import { useConnectLinkedinOnboardingState } from '@/client-config/states/useConnectLinkedinOnboardingState';
+import { useIntentChoiceOnboardingState } from '@/client-config/states/useIntentChoiceOnboardingState';
 import { useSetNextOnboardingStatus } from '@/onboarding/hooks/useSetNextOnboardingStatus';
-import { OnboardingStatus, SubscriptionStatus } from '~/generated/graphql';
+import {
+  FeatureFlagKey,
+  OnboardingStatus,
+  SubscriptionStatus,
+} from '~/generated/graphql';
 import {
     mockCurrentWorkspace,
     mockedUserData,
@@ -19,6 +24,8 @@ const renderHooks = (
   withOneWorkspaceMember = true,
   skipOptionalOnboardingSteps = false,
   useConnectLinkedinOnboarding = false,
+  useIntentChoiceOnboarding = false,
+  collectPhoneNumberInOnboarding = true,
 ) => {
   const { result } = renderHook(
     () => {
@@ -30,6 +37,9 @@ const renderHooks = (
       const setUseConnectLinkedinOnboarding = useSetRecoilState(
         useConnectLinkedinOnboardingState,
       );
+      const setUseIntentChoiceOnboarding = useSetRecoilState(
+        useIntentChoiceOnboardingState,
+      );
       const setNextOnboardingStatus = useSetNextOnboardingStatus();
       return {
         currentUser,
@@ -37,6 +47,7 @@ const renderHooks = (
         setCurrentWorkspace,
         setSkipOptionalOnboardingSteps,
         setUseConnectLinkedinOnboarding,
+        setUseIntentChoiceOnboarding,
         setNextOnboardingStatus,
       };
     },
@@ -52,9 +63,21 @@ const renderHooks = (
         ? { id: v4(), status: SubscriptionStatus.Active }
         : undefined,
       workspaceMembersCount: withOneWorkspaceMember ? 1 : 2,
+      featureFlags: collectPhoneNumberInOnboarding
+        ? [
+            ...mockCurrentWorkspace.featureFlags,
+            {
+              id: v4(),
+              key: FeatureFlagKey.IsCollectPhoneNumberInOnboarding,
+              value: true,
+              workspaceId: mockCurrentWorkspace.id,
+            },
+          ]
+        : [],
     });
     result.current.setSkipOptionalOnboardingSteps(skipOptionalOnboardingSteps);
     result.current.setUseConnectLinkedinOnboarding(useConnectLinkedinOnboarding);
+    result.current.setUseIntentChoiceOnboarding(useIntentChoiceOnboarding);
   });
   act(() => {
     result.current.setNextOnboardingStatus();
@@ -69,7 +92,7 @@ describe('useSetNextOnboardingStatus', () => {
       false,
       true,
     );
-    expect(nextOnboardingStatus).toEqual(OnboardingStatus.SYNC_EMAIL);
+    expect(nextOnboardingStatus).toEqual(OnboardingStatus.COLLECT_PHONE_NUMBER);
   });
 
   it('should set next onboarding status for SyncEmail', () => {
@@ -106,6 +129,18 @@ describe('useSetNextOnboardingStatus', () => {
       true,
       true,
     );
-    expect(nextOnboardingStatus).toEqual(OnboardingStatus.COMPLETED);
+    expect(nextOnboardingStatus).toEqual(OnboardingStatus.COLLECT_PHONE_NUMBER);
+  });
+
+  it('should go to IntentChoice after phone collection when intent onboarding is enabled', () => {
+    const nextOnboardingStatus = renderHooks(
+      OnboardingStatus.COLLECT_PHONE_NUMBER,
+      false,
+      true,
+      false,
+      false,
+      true,
+    );
+    expect(nextOnboardingStatus).toEqual(OnboardingStatus.INTENT_CHOICE);
   });
 });

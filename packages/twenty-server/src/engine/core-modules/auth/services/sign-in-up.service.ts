@@ -22,6 +22,7 @@ import {
   compareHash,
   hashPassword,
 } from 'src/engine/core-modules/auth/auth.util';
+import { RapidEmailVerifierService } from 'src/engine/core-modules/auth/services/rapid-email-verifier.service';
 import {
   AuthProviderWithPasswordType,
   ExistingUserOrPartialUserWithPicture,
@@ -60,6 +61,7 @@ export class SignInUpService {
     private readonly domainManagerService: DomainManagerService,
     private readonly userService: UserService,
     private readonly workspaceCreditsService: WorkspaceCreditsService,
+    private readonly rapidEmailVerifierService: RapidEmailVerifierService,
   ) {}
 
   async computeParamsForNewUser(
@@ -272,7 +274,13 @@ export class SignInUpService {
   }
 
   private async activateOnboardingForUser(user: User, workspace: Workspace) {
-    if (this.environmentService.get('USE_CONNECT_LINKEDIN_ONBOARDING')) {
+    if (this.environmentService.get('USE_INTENT_CHOICE_ONBOARDING')) {
+      await this.onboardingService.setOnboardingIntentChoicePending({
+        userId: user.id,
+        workspaceId: workspace.id,
+        value: true,
+      });
+    } else if (this.environmentService.get('USE_CONNECT_LINKEDIN_ONBOARDING')) {
       await this.onboardingService.setOnboardingConnectLinkedinPending({
         userId: user.id,
         workspaceId: workspace.id,
@@ -308,6 +316,10 @@ export class SignInUpService {
         AuthExceptionCode.INVALID_INPUT,
       );
     }
+
+    await this.rapidEmailVerifierService.assertEmailAllowedForSignup(
+      user.email,
+    );
 
     if (!this.environmentService.get('IS_MULTIWORKSPACE_ENABLED')) {
       const workspacesCount = await this.workspaceRepository.count();

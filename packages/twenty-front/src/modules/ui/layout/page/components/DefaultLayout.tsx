@@ -3,18 +3,20 @@ import { signInBackgroundUseOrgChartMockState } from '@/client-config/states/sig
 import { CommandMenuRouter } from '@/command-menu/components/CommandMenuRouter';
 import { AppErrorBoundary } from '@/error-handler/components/AppErrorBoundary';
 import { KeyboardShortcutMenu } from '@/keyboard-shortcut-menu/components/KeyboardShortcutMenu';
+import { AppNavigationDrawer } from '@/navigation/components/AppNavigationDrawer';
 import { MobileNavigationBar } from '@/navigation/components/MobileNavigationBar';
 import { useIsSettingsPage } from '@/navigation/hooks/useIsSettingsPage';
 import { OBJECT_SETTINGS_WIDTH } from '@/settings/data-model/constants/ObjectSettings';
 import { SignInAppNavigationDrawerMock } from '@/sign-in-background-mock/components/SignInAppNavigationDrawerMock';
 import { SignInBackgroundMockPage } from '@/sign-in-background-mock/components/SignInBackgroundMockPage';
+import { SupportChatBootstrap } from '@/support/components/SupportChatBootstrap';
 import { useShowAuthModal } from '@/ui/layout/hooks/useShowAuthModal';
 import { NAV_DRAWER_WIDTHS } from '@/ui/navigation/navigation-drawer/constants/NavDrawerWidths';
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
 import { Global, css, useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { useScreenSize } from 'twenty-ui';
 
@@ -50,6 +52,10 @@ const StyledPageContainer = styled(motion.div)`
   min-height: 0;
 `;
 
+const StyledAppNavigationDrawer = styled(AppNavigationDrawer)`
+  flex-shrink: 0;
+`;
+
 const StyledAppNavigationDrawerMock = styled(SignInAppNavigationDrawerMock)`
   flex-shrink: 0;
 `;
@@ -63,12 +69,17 @@ const StyledMainContainer = styled.div`
 export const DefaultLayout = () => {
   const isMobile = useIsMobile();
   const isSettingsPage = useIsSettingsPage();
+  const location = useLocation();
   const theme = useTheme();
   const windowsWidth = useScreenSize().width;
   const showAuthModal = useShowAuthModal();
   const signInBackgroundUseOrgChartMock = useRecoilValue(
     signInBackgroundUseOrgChartMockState,
   );
+  const usesIntentWideAuthModal =
+    location.pathname === '/create/intent' ||
+    location.pathname === '/create/competitive-research' ||
+    location.pathname === '/create/deal-diligence';
 
   return (
     <>
@@ -86,7 +97,6 @@ export const DefaultLayout = () => {
             <KeyboardShortcutMenu />
           </>
         )}
-
         <StyledPageContainer
           animate={{
             marginLeft:
@@ -100,6 +110,7 @@ export const DefaultLayout = () => {
           }}
           transition={{ duration: theme.animation.duration.normal }}
         >
+          <SupportChatBootstrap />
           {showAuthModal ? (
             <>
               {!signInBackgroundUseOrgChartMock && (
@@ -108,18 +119,21 @@ export const DefaultLayout = () => {
               <SignInBackgroundMockPage />
               <AnimatePresence mode="wait">
                 <LayoutGroup>
-                  <AuthModal>
+                  <AuthModal size={usesIntentWideAuthModal ? 'xl' : 'medium'}>
                     <Outlet />
                   </AuthModal>
                 </LayoutGroup>
               </AnimatePresence>
             </>
           ) : (
-            <StyledMainContainer>
-              <AppErrorBoundary>
-                <Outlet />
-              </AppErrorBoundary>
-            </StyledMainContainer>
+            <>
+              <StyledAppNavigationDrawer />
+              <StyledMainContainer>
+                <AppErrorBoundary>
+                  <Outlet />
+                </AppErrorBoundary>
+              </StyledMainContainer>
+            </>
           )}
         </StyledPageContainer>
         {isMobile && <MobileNavigationBar />}

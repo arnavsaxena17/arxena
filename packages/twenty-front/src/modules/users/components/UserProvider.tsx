@@ -13,9 +13,19 @@ export const UserProvider = ({ children }: React.PropsWithChildren) => {
   const { isMatchingLocation } = useIsMatchingLocation();
 
   const dateTimeFormat = useRecoilValue(dateTimeFormatState);
+  const isMatchingOnboardingRoute =
+    isMatchingLocation(AppPath.CreateWorkspace) ||
+    isMatchingLocation(AppPath.CreateProfile) ||
+    isMatchingLocation(AppPath.CollectPhoneNumber) ||
+    isMatchingLocation(AppPath.IntentChoice) ||
+    isMatchingLocation(AppPath.CompetitiveResearchOnboarding) ||
+    isMatchingLocation(AppPath.DealDiligenceOnboarding) ||
+    isMatchingLocation(AppPath.ExtensionInstallOnboarding) ||
+    isMatchingLocation(AppPath.ConnectLinkedin) ||
+    isMatchingLocation(AppPath.SyncEmails) ||
+    isMatchingLocation(AppPath.InviteTeam);
 
-  return !isCurrentUserLoaded &&
-    !isMatchingLocation(AppPath.CreateWorkspace) ? (
+  return !isCurrentUserLoaded && !isMatchingOnboardingRoute ? (
     <UserOrMetadataLoader />
   ) : (
     <UserContext.Provider

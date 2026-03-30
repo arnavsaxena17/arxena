@@ -7,12 +7,14 @@ import {
 } from '@/auth/states/currentWorkspaceState';
 import { skipOptionalOnboardingStepsState } from '@/client-config/states/skipOptionalOnboardingStepsState';
 import { useConnectLinkedinOnboardingState } from '@/client-config/states/useConnectLinkedinOnboardingState';
+import { useIntentChoiceOnboardingState } from '@/client-config/states/useIntentChoiceOnboardingState';
 import { isDefined } from 'twenty-shared';
 import { FeatureFlagKey, OnboardingStatus } from '~/generated/graphql';
 
 const getNextOnboardingStatus = (
   currentUser: CurrentUser | null,
   currentWorkspace: CurrentWorkspace | null,
+  useIntentChoiceOnboarding: boolean,
   useConnectLinkedinOnboarding: boolean,
   skipOptionalOnboardingSteps: boolean,
   collectPhoneNumberInOnboarding: boolean,
@@ -26,6 +28,9 @@ const getNextOnboardingStatus = (
     if (collectPhoneNumberInOnboarding) {
       return OnboardingStatus.COLLECT_PHONE_NUMBER;
     }
+    if (useIntentChoiceOnboarding) {
+      return OnboardingStatus.INTENT_CHOICE;
+    }
     if (skipOptionalOnboardingSteps) {
       return OnboardingStatus.COMPLETED;
     }
@@ -35,6 +40,9 @@ const getNextOnboardingStatus = (
   }
 
   if (currentUser?.onboardingStatus === OnboardingStatus.COLLECT_PHONE_NUMBER) {
+    if (useIntentChoiceOnboarding) {
+      return OnboardingStatus.INTENT_CHOICE;
+    }
     if (skipOptionalOnboardingSteps) {
       return OnboardingStatus.COMPLETED;
     }
@@ -59,6 +67,9 @@ const getNextOnboardingStatus = (
 export const useSetNextOnboardingStatus = () => {
   const currentUser = useRecoilValue(currentUserState);
   const currentWorkspace = useRecoilValue(currentWorkspaceState);
+  const useIntentChoiceOnboarding = useRecoilValue(
+    useIntentChoiceOnboardingState,
+  );
   const useConnectLinkedinOnboarding = useRecoilValue(
     useConnectLinkedinOnboardingState,
   );
@@ -78,6 +89,7 @@ export const useSetNextOnboardingStatus = () => {
         const nextOnboardingStatus = getNextOnboardingStatus(
           currentUser,
           currentWorkspace,
+          useIntentChoiceOnboarding,
           useConnectLinkedinOnboarding,
           skipOptionalOnboardingSteps,
           collectPhoneNumberInOnboarding,
@@ -95,6 +107,7 @@ export const useSetNextOnboardingStatus = () => {
     [
       currentWorkspace,
       currentUser,
+      useIntentChoiceOnboarding,
       useConnectLinkedinOnboarding,
       skipOptionalOnboardingSteps,
       collectPhoneNumberInOnboarding,

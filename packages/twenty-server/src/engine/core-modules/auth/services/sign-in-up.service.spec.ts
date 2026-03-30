@@ -10,6 +10,7 @@ import {
   AuthException,
   AuthExceptionCode,
 } from 'src/engine/core-modules/auth/auth.exception';
+import { RapidEmailVerifierService } from 'src/engine/core-modules/auth/services/rapid-email-verifier.service';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
 import {
   AuthProviderWithPasswordType,
@@ -122,6 +123,12 @@ describe('SignInUpService', () => {
           provide: WorkspaceCreditsService,
           useValue: {
             getOrCreate: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: RapidEmailVerifierService,
+          useValue: {
+            assertEmailAllowedForSignup: jest.fn().mockResolvedValue(undefined),
           },
         },
       ],

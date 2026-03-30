@@ -18,6 +18,18 @@ export const useShowAuthModal = () => {
   );
 
   return useMemo(() => {
+    const isMatchingOnboardingAuthRoute =
+      isMatchingLocation(AppPath.CreateWorkspace) ||
+      isMatchingLocation(AppPath.CreateProfile) ||
+      isMatchingLocation(AppPath.CollectPhoneNumber) ||
+      isMatchingLocation(AppPath.IntentChoice) ||
+      isMatchingLocation(AppPath.CompetitiveResearchOnboarding) ||
+      isMatchingLocation(AppPath.DealDiligenceOnboarding) ||
+      isMatchingLocation(AppPath.ExtensionInstallOnboarding) ||
+      isMatchingLocation(AppPath.ConnectLinkedin) ||
+      isMatchingLocation(AppPath.SyncEmails) ||
+      isMatchingLocation(AppPath.InviteTeam);
+
     if (isMatchingLocation(AppPath.Verify)) {
       return false;
     }
@@ -31,10 +43,18 @@ export const useShowAuthModal = () => {
       return isDefaultLayoutAuthModalVisible;
     }
 
+    if (isMatchingOnboardingAuthRoute) {
+      return true;
+    }
+
     if (
       !isLoggedIn ||
       onboardingStatus === OnboardingStatus.PROFILE_CREATION ||
       onboardingStatus === OnboardingStatus.COLLECT_PHONE_NUMBER ||
+      onboardingStatus === OnboardingStatus.INTENT_CHOICE ||
+      onboardingStatus === OnboardingStatus.COMPETITIVE_RESEARCH ||
+      onboardingStatus === OnboardingStatus.DEAL_DILIGENCE ||
+      onboardingStatus === OnboardingStatus.EXTENSION_INSTALL ||
       onboardingStatus === OnboardingStatus.WORKSPACE_ACTIVATION ||
       onboardingStatus === OnboardingStatus.CONNECT_LINKEDIN ||
       onboardingStatus === OnboardingStatus.SYNC_EMAIL ||

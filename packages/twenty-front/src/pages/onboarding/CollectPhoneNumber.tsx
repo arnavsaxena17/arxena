@@ -2,7 +2,7 @@ import styled from '@emotion/styled';
 import { isValidPhoneNumber } from 'libphonenumber-js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { H2Title, LightButton, MainButton } from 'twenty-ui';
+import { ActionLink, H2Title, MainButton } from 'twenty-ui';
 
 import { SubTitle } from '@/auth/components/SubTitle';
 import { Title } from '@/auth/components/Title';
@@ -37,9 +37,9 @@ const StyledButtonContainer = styled.div`
 `;
 
 const StyledSkipContainer = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(3)};
   display: flex;
   justify-content: center;
+  margin-top: ${({ theme }) => theme.spacing(3)};
 `;
 
 /** Wrapper that establishes the relative context for the dropdown */
@@ -282,7 +282,9 @@ export const CollectPhoneNumber = () => {
   );
 
   const getFullPhoneNumber = useCallback(() => {
-    const callingCode = selectedCountry ? `+${selectedCountry.callingCode}` : '+1';
+    const callingCode = selectedCountry
+      ? `+${selectedCountry.callingCode}`
+      : '+1';
     const digits = phoneNumber.replace(/\D/g, '');
     return `${callingCode}${digits}`;
   }, [selectedCountry, phoneNumber]);
@@ -338,7 +340,7 @@ export const CollectPhoneNumber = () => {
         fullName:
           memberName?.firstName && memberName?.lastName
             ? `${memberName.firstName} ${memberName.lastName}`
-            : currentUser?.email?.toLowerCase().trim() ?? '',
+            : (currentUser?.email?.toLowerCase().trim() ?? ''),
         email: currentUser?.email?.toLowerCase().trim() ?? '',
         phone: fullPhone,
         password: 'password',
@@ -375,7 +377,7 @@ export const CollectPhoneNumber = () => {
       fullName:
         memberName?.firstName && memberName?.lastName
           ? `${memberName.firstName} ${memberName.lastName}`
-          : currentUser?.email?.toLowerCase().trim() ?? '',
+          : (currentUser?.email?.toLowerCase().trim() ?? ''),
       email: currentUser?.email?.toLowerCase().trim() ?? '',
       phone: '',
       password: 'password',
@@ -429,7 +431,9 @@ export const CollectPhoneNumber = () => {
                 <StyledFlagWrapper>
                   {selectedCountry && <selectedCountry.Flag />}
                 </StyledFlagWrapper>
-                <StyledCallingCode>+{selectedCountry?.callingCode ?? '1'}</StyledCallingCode>
+                <StyledCallingCode>
+                  +{selectedCountry?.callingCode ?? '1'}
+                </StyledCallingCode>
                 <StyledChevron>▾</StyledChevron>
               </StyledPickerButton>
 
@@ -440,7 +444,9 @@ export const CollectPhoneNumber = () => {
                 value={phoneNumber}
                 onChange={(e) => {
                   setPhoneNumber(e.target.value);
-                  if (error) setError('');
+                  if (error !== '') {
+                    setError('');
+                  }
                 }}
                 autoFocus
               />
@@ -489,7 +495,7 @@ export const CollectPhoneNumber = () => {
           fullWidth
         />
         <StyledSkipContainer>
-          <LightButton title={t`Skip`} onClick={handleSkip} />
+          <ActionLink onClick={handleSkip}>{t`Skip for now`}</ActionLink>
         </StyledSkipContainer>
       </StyledButtonContainer>
     </>

@@ -33,6 +33,10 @@ export const usePageChangeEffectNavigateLocation = () => {
     isMatchingLocation(AppPath.CreateWorkspace) ||
     isMatchingLocation(AppPath.CreateProfile) ||
     isMatchingLocation(AppPath.CollectPhoneNumber) ||
+    isMatchingLocation(AppPath.IntentChoice) ||
+    isMatchingLocation(AppPath.CompetitiveResearchOnboarding) ||
+    isMatchingLocation(AppPath.DealDiligenceOnboarding) ||
+    isMatchingLocation(AppPath.ExtensionInstallOnboarding) ||
     isMatchingLocation(AppPath.ConnectLinkedin) ||
     isMatchingLocation(AppPath.SyncEmails) ||
     isMatchingLocation(AppPath.InviteTeam);
@@ -48,8 +52,8 @@ export const usePageChangeEffectNavigateLocation = () => {
   }
 
   if (!isLoggedIn && !isMatchingOngoingUserCreationRoute) {
-    // Don't redirect to SignInUp from onboarding routes when we're in onboarding - 
-    // auth state may be settling (e.g. tokenPair hydration, isVerifyPending) and 
+    // Don't redirect to SignInUp from onboarding routes when we're in onboarding -
+    // auth state may be settling (e.g. tokenPair hydration, isVerifyPending) and
     // we'd otherwise flap between CreateWorkspace and SignInUp
     const isOnboardingRouteWithMatchingStatus =
       (isMatchingLocation(AppPath.CreateWorkspace) &&
@@ -58,6 +62,14 @@ export const usePageChangeEffectNavigateLocation = () => {
         onboardingStatus === OnboardingStatus.PROFILE_CREATION) ||
       (isMatchingLocation(AppPath.CollectPhoneNumber) &&
         onboardingStatus === OnboardingStatus.COLLECT_PHONE_NUMBER) ||
+      (isMatchingLocation(AppPath.IntentChoice) &&
+        onboardingStatus === OnboardingStatus.INTENT_CHOICE) ||
+      (isMatchingLocation(AppPath.CompetitiveResearchOnboarding) &&
+        onboardingStatus === OnboardingStatus.COMPETITIVE_RESEARCH) ||
+      (isMatchingLocation(AppPath.DealDiligenceOnboarding) &&
+        onboardingStatus === OnboardingStatus.DEAL_DILIGENCE) ||
+      (isMatchingLocation(AppPath.ExtensionInstallOnboarding) &&
+        onboardingStatus === OnboardingStatus.EXTENSION_INSTALL) ||
       (isMatchingLocation(AppPath.ConnectLinkedin) &&
         onboardingStatus === OnboardingStatus.CONNECT_LINKEDIN) ||
       (isMatchingLocation(AppPath.SyncEmails) &&
@@ -97,6 +109,34 @@ export const usePageChangeEffectNavigateLocation = () => {
     !isMatchingLocation(AppPath.CollectPhoneNumber)
   ) {
     return AppPath.CollectPhoneNumber;
+  }
+
+  if (
+    onboardingStatus === OnboardingStatus.INTENT_CHOICE &&
+    !isMatchingLocation(AppPath.IntentChoice)
+  ) {
+    return AppPath.IntentChoice;
+  }
+
+  if (
+    onboardingStatus === OnboardingStatus.COMPETITIVE_RESEARCH &&
+    !isMatchingLocation(AppPath.CompetitiveResearchOnboarding)
+  ) {
+    return AppPath.CompetitiveResearchOnboarding;
+  }
+
+  if (
+    onboardingStatus === OnboardingStatus.DEAL_DILIGENCE &&
+    !isMatchingLocation(AppPath.DealDiligenceOnboarding)
+  ) {
+    return AppPath.DealDiligenceOnboarding;
+  }
+
+  if (
+    onboardingStatus === OnboardingStatus.EXTENSION_INSTALL &&
+    !isMatchingLocation(AppPath.ExtensionInstallOnboarding)
+  ) {
+    return AppPath.ExtensionInstallOnboarding;
   }
 
   if (

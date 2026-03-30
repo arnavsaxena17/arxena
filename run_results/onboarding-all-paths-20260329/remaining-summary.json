@@ -1,0 +1,37 @@
+[
+  {
+    "label": "competitive research booking go to jobs",
+    "result": "passed",
+    "url": "http://smart-raccoon-5nj3iojb.localhost:3001/jobs"
+  },
+  {
+    "label": "competitive research booking skip for now",
+    "result": "passed",
+    "url": "http://witty-seal-ditt77c0.localhost:3001/jobs"
+  },
+  {
+    "label": "deal diligence main screen",
+    "result": "passed",
+    "url": "http://bouncy-panther.localhost:3001/create/deal-diligence"
+  },
+  {
+    "label": "deal diligence booking screen",
+    "result": "passed",
+    "url": "http://graceful-raccoon.localhost:3001/create/deal-diligence"
+  },
+  {
+    "label": "deal diligence booking opens Calendly in new tab",
+    "result": "passed",
+    "url": "https://calendly.com/arxena"
+  },
+  {
+    "label": "deal diligence booking go to jobs",
+    "result": "passed",
+    "url": "http://graceful-seal-d6v2kngv.localhost:3001/jobs"
+  },
+  {
+    "label": "deal diligence booking skip for now",
+    "result": "passed",
+    "url": "http://cool-panther-ucpml9bb.localhost:3001/jobs"
+  }
+]
