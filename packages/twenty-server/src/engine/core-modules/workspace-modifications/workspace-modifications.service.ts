@@ -75,7 +75,7 @@ export class WorkspaceQueryService {
     try {
       const validatedToken =
       await this.accessTokenService.validateToken(apiToken);
-      console.log("This isthe validated name workspace:", validatedToken.workspace)
+      console.log("This isthe validated name workspace:", validatedToken.workspace.displayName)
       return validatedToken.workspace.displayName;
     } catch (error) {
       console.error('Error getting workspace name from token:', error);

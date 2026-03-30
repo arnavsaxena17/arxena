@@ -2165,6 +2165,10 @@ export const emptyInterviewData: InterviewData = {
     companyName: string;
     companyDescription: string;
     linkedinUrl?:string;
+    /** Workspace member profile: stored Unipile account id for LinkedIn (matches findWorkspaceMemberProfiles). */
+    linkedinUnipileAccountId?: string | null;
+    /** Workspace member profile: stored Unipile account id for WhatsApp (matches findWorkspaceMemberProfiles). */
+    whatsappUnipileAccountId?: string | null;
     firstName: string;
     lastName: string;
     name: string;

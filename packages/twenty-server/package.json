@@ -10,6 +10,7 @@
     "start:prod": "node dist/src/main.js",
     "debug": "NODE_OPTIONS=\"--inspect-brk=9229\" node ../../node_modules/@nestjs/cli/bin/nest.js start --watch",
     "command:prod": "node dist/src/command/command.js",
+    "command:update-all-metadata-from-code": "node dist/src/command/command.js workspace:update-all-metadata-from-code",
     "worker:prod": "node dist/src/queue-worker/queue-worker.js",
     "database:init:prod": "npx ts-node ./scripts/setup-db.ts && yarn database:migrate:prod",
     "database:migrate:prod": "npx -y typeorm migration:run -d dist/src/database/typeorm/metadata/metadata.datasource && npx -y typeorm migration:run -d dist/src/database/typeorm/core/core.datasource",

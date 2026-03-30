@@ -32,7 +32,7 @@ const StyledPanel = styled.div`
 
 const StyledEyebrow = styled.div`
   color: ${({ theme }) => theme.color.purple60};
-  font-family: ${({ theme }) => theme.font.family.code};
+  font-family: ${({ theme }) => theme.font.family};
   font-size: ${({ theme }) => theme.font.size.sm};
   font-weight: ${({ theme }) => theme.font.weight.medium};
   letter-spacing: 0.08em;
@@ -112,7 +112,7 @@ const StyledOptionList = styled.div`
   color: ${({ theme }) => theme.font.color.secondary};
   display: flex;
   flex-direction: column;
-  font-family: ${({ theme }) => theme.font.family.code};
+  font-family: ${({ theme }) => theme.font.family};
   font-size: ${({ theme }) => theme.font.size.md};
   gap: ${({ theme }) => theme.spacing(1.5)};
   line-height: 1.6;

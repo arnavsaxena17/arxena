@@ -1,25 +1,25 @@
 import {
-    BadRequestException,
-    Body,
-    Controller,
-    ForbiddenException,
-    Get,
-    Headers,
-    HttpException,
-    HttpStatus,
-    Param,
-    Post,
-    Req,
-    UseGuards,
+  BadRequestException,
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Headers,
+  HttpException,
+  HttpStatus,
+  Param,
+  Post,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
-import { In } from 'typeorm';
 import { CreateMetaDataStructure } from './object-apis/object-apis-creation';
 import { MetadataUpdateService } from './object-apis/services/metadata-update.service';
+import { WorkspaceBulkMetadataUpdateService } from './workspace-bulk-metadata-update.service';
 import { WorkspaceQueryService } from './workspace-modifications.service';
 
 @Controller('workspace-modifications')
@@ -30,6 +30,7 @@ export class WorkspaceModificationsController {
     private readonly metadataUpdateService: MetadataUpdateService,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly environmentService: EnvironmentService,
+    private readonly workspaceBulkMetadataUpdateService: WorkspaceBulkMetadataUpdateService,
   ) {
     console.log('GraphQL URL configured as:', process.env.GRAPHQL_URL);
   }
@@ -240,91 +241,16 @@ export class WorkspaceModificationsController {
   @Post('update-all-workspaces-metadata')
   @UseGuards(JwtAuthGuard)
   async updateAllWorkspacesMetadata(@Req() req: Request) {
-    const { workspace } =
-      await this.workspaceQueryService.accessTokenService.validateTokenByRequest(
-        req,
-      );
-    const workspaceIds = await this.workspaceQueryService.getWorkspaces();
-    const dataSources = await this.workspaceQueryService.dataSourceRepository.find({
-      where: { workspaceId: In(workspaceIds) },
-    });
-    const uniqueWorkspaceIds = Array.from(
-      new Set(dataSources.map((ds) => ds.workspaceId)),
-    );
-    const origin = req.headers.origin;
-    console.log('origin', origin);
-    const results: Array<{
-      workspaceId: string;
-      metadataUpdate: any;
-      indicesCreation: string | null;
-      errors: string[];
-    }> = [];
-    
-    for (const workspaceId of uniqueWorkspaceIds) {
-      const schema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(
-        workspaceId,
-      );
-      const apiKeys = await this.workspaceQueryService.getApiKeys(
-        workspaceId,
-        schema,
-      );
-      if (!apiKeys.length) {
-        console.log(`No API keys found for workspace ${workspaceId}, skipping...`);
-        continue;
-      }
-      const token = await this.workspaceQueryService.apiKeyService.generateApiKeyToken(
-        workspaceId,
-        apiKeys[0].id,
-      );
-      if (!token?.token) {
-        console.log(`Failed to generate token for workspace ${workspaceId}, skipping...`);
-        continue;
-      }
-      
-      const workspaceResult: {
-        workspaceId: string;
-        metadataUpdate: any;
-        indicesCreation: string | null;
-        errors: string[];
-      } = {
-        workspaceId,
-        metadataUpdate: null,
-        indicesCreation: null,
-        errors: []
-      };
-      
-      try {
-        // Update metadata
-        const metadataResult = await this.metadataUpdateService.updateMetadata(token.token, origin || '');
-        workspaceResult.metadataUpdate = metadataResult;
-        console.log(`Updated metadata for workspace ${workspaceId}:`, metadataResult);
-      } catch (error) {
-        console.error(`Error updating metadata for workspace ${workspaceId}:`, error);
-        workspaceResult.errors.push(`Metadata update error: ${error.message}`);
-      }
-      
-      try {
-        // Create database indices
-        const createMetaDataStructure = new CreateMetaDataStructure(
-          this.workspaceQueryService,
-          this.staticGraphQLService,
-          this.environmentService,
-          this.webSocketService,
-        );
-        await createMetaDataStructure.createDatabaseIndices(token.token);
-        workspaceResult.indicesCreation = 'Database indices created successfully';
-        console.log(`Created database indices for workspace ${workspaceId}`);
-      } catch (error) {
-        console.error(`Error creating database indices for workspace ${workspaceId}:`, error);
-        workspaceResult.errors.push(`Indices creation error: ${error.message}`);
-      }
-      
-      results.push(workspaceResult);
+    const user = (req as { user?: { canImpersonate?: boolean } }).user;
+    if (!user?.canImpersonate) {
+      throw new ForbiddenException('Admin access required');
     }
-    
-    return { 
-      message: 'Updated metadata and created indices for all workspaces',
-      results 
-    };
+    const originHeader = req.headers.origin;
+    const origin =
+      typeof originHeader === 'string' ? originHeader : undefined;
+    console.log('origin', origin);
+    return this.workspaceBulkMetadataUpdateService.updateAllWorkspacesMetadata(
+      origin,
+    );
   }
 }

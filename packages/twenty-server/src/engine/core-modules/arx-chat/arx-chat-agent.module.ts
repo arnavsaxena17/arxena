@@ -20,6 +20,7 @@ import { WorkspaceResolverBuilderModule } from 'src/engine/api/graphql/workspace
 import { WorkspaceSchemaBuilderModule } from 'src/engine/api/graphql/workspace-schema-builder/workspace-schema-builder.module';
 import { WorkspaceSchemaFactory } from 'src/engine/api/graphql/workspace-schema.factory';
 import { ArxDeliveryEndpoint } from 'src/engine/core-modules/arx-chat/controllers/arx-delivery.controller';
+import { CandidateEngagementExtensionController } from 'src/engine/core-modules/arx-chat/controllers/candidate-engagement-extension.controller';
 import { LinkedinUnipileController } from 'src/engine/core-modules/arx-chat/controllers/linkedin-unipile.controller';
 import { UnipileWebhookController } from 'src/engine/core-modules/arx-chat/controllers/unipile-webhook.controller';
 import { VideoInterviewProcessController } from 'src/engine/core-modules/arx-chat/controllers/video-interview-process-controller';
@@ -90,6 +91,7 @@ import { CandidateDataProcessorService } from './services/candidate-engagement/c
 import { CandidateEngagementArx } from './services/candidate-engagement/candidate-engagement';
 import { EngagedCandidateProcessor } from './services/candidate-engagement/engaged-candidate-processor.job';
 import { EngagedCandidateQueueService } from './services/candidate-engagement/engaged-candidate-queue.service';
+import { ExtensionUnipileConnectionStatusService } from './services/candidate-engagement/extension-unipile-connection-status.service';
 import { GmailDraftShortlistQueueProcessor } from './services/candidate-engagement/gmail-draft-shortlist-queue.job';
 import { GmailDraftShortlistQueueService } from './services/candidate-engagement/gmail-draft-shortlist-queue.service';
 import { UpdateChat } from './services/candidate-engagement/update-chat';
@@ -141,6 +143,7 @@ const conditionalImports = isWorker
     ExtSockWhatsappController,
     LinkedinUnipileController,
     WhatsappUnipileController,
+    CandidateEngagementExtensionController,
     UnipileWebhookController,
   ],
   providers: [
@@ -196,6 +199,7 @@ const conditionalImports = isWorker
     GmailDraftShortlistQueueProcessor,
     UnipileWebhookService,
     WorkspaceMemberProfileUnipileService,
+    ExtensionUnipileConnectionStatusService,
     UnipileAccountPoolService,
     LinkedinParameterResolver,
   ],

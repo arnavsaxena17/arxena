@@ -60,6 +60,23 @@ const maybeClick = async (locator: ReturnType<Page['getByRole']>) => {
   return false;
 };
 
+const clickSkipOnPhoneStep = async (page: Page) => {
+  const skipCandidates = [
+    page.getByRole('button', { name: 'Skip' }),
+    page.getByRole('link', { name: 'Skip for now' }),
+    page.getByText('Skip for now').last(),
+  ];
+
+  for (const candidate of skipCandidates) {
+    if (await candidate.isVisible().catch(() => false)) {
+      await candidate.click();
+      return;
+    }
+  }
+
+  throw new Error('Could not find a visible skip control on phone step');
+};
+
 const signUpAndReachIntentChoice = async (
   page: Page,
   email: string,
@@ -97,11 +114,11 @@ const signUpAndReachIntentChoice = async (
 
   const phoneHeading = page.getByText('Add your phone number');
   if (await phoneHeading.isVisible().catch(() => false)) {
-    await page.getByRole('button', { name: 'Skip' }).click();
+    await clickSkipOnPhoneStep(page);
   } else {
     await page.waitForTimeout(3_000);
     if (await phoneHeading.isVisible().catch(() => false)) {
-      await page.getByRole('button', { name: 'Skip' }).click();
+      await clickSkipOnPhoneStep(page);
     }
   }
 

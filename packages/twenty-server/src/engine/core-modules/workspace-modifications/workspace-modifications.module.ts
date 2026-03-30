@@ -29,9 +29,11 @@ import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/works
 import { EmailModule } from '../email/email.module';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { UnipileBackfillMemberMappingsCommand } from './commands/unipile-backfill-member-mappings.command';
+import { UpdateAllWorkspacesMetadataCommand } from './commands/update-all-workspaces-metadata.command';
 import { SeedMetadataStructureJob } from './jobs/seed-metadata-structure.job';
 import { MetadataStructureSeedModule } from './metadata-structure-seed/metadata-structure-seed.module';
 import { MetadataUpdateService } from './object-apis/services/metadata-update.service';
+import { WorkspaceBulkMetadataUpdateService } from './workspace-bulk-metadata-update.service';
 import { WorkspaceModificationsController } from './workspace-modifications.controller';
 import { WorkspaceQueryService } from './workspace-modifications.service';
 
@@ -68,9 +70,11 @@ import { WorkspaceQueryService } from './workspace-modifications.service';
     WorkspaceDataSourceService,
     ApiKeyService,
     MetadataUpdateService,
+    WorkspaceBulkMetadataUpdateService,
     WorkspaceSchemaFactory,
     JwtWrapperService,
     UnipileBackfillMemberMappingsCommand,
+    UpdateAllWorkspacesMetadataCommand,
   ],
   controllers: [WorkspaceModificationsController],
 

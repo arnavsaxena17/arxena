@@ -1,3 +1,4 @@
+import { currentUserState } from '@/auth/states/currentUserState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { canManageFeatureFlagsState } from '@/client-config/states/canManageFeatureFlagsState';
 import { SettingsAdminWorkspaceContent } from '@/settings/admin-panel/components/SettingsAdminWorkspaceContent';
@@ -15,14 +16,14 @@ import { useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { getImageAbsoluteURI, isDefined } from 'twenty-shared';
 import {
-  Button,
-  GithubVersionLink,
-  H1Title,
-  H1TitleFontColor,
-  H2Title,
-  IconRefresh,
-  IconSearch,
-  Section,
+    Button,
+    GithubVersionLink,
+    H1Title,
+    H1TitleFontColor,
+    H2Title,
+    IconRefresh,
+    IconSearch,
+    Section,
 } from 'twenty-ui';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import { useUserLookupAdminPanelMutation } from '~/generated/graphql';
@@ -64,6 +65,7 @@ export const SettingsAdminGeneral = () => {
   const [userIdentifier, setUserIdentifier] = useState('');
   const { enqueueSnackBar } = useSnackBar();
   const [tokenPair] = useRecoilState(tokenPairState);
+  const [currentUser] = useRecoilState(currentUserState);
   const [isUpdatingAllWorkspaces, setIsUpdatingAllWorkspaces] = useState(false);
 
   const { activeTabId, setActiveTabId } = useTabList(
@@ -203,17 +205,21 @@ export const SettingsAdminGeneral = () => {
           />
         </StyledContainer>
 
-        <StyledButtonContainer>
-          <Button
-            Icon={IconRefresh}
-            variant="secondary"
-            title="Update All Workspaces Metadata"
-            onClick={handleUpdateAllWorkspaces}
-            disabled={isUpdatingAllWorkspaces}
-          >
-            {isUpdatingAllWorkspaces ? 'Updating...' : 'Update All Workspaces Metadata'}
-          </Button>
-        </StyledButtonContainer>
+        {currentUser?.canImpersonate && (
+          <StyledButtonContainer>
+            <Button
+              Icon={IconRefresh}
+              variant="secondary"
+              title="Update All Workspaces Metadata"
+              onClick={handleUpdateAllWorkspaces}
+              disabled={isUpdatingAllWorkspaces}
+            >
+              {isUpdatingAllWorkspaces
+                ? 'Updating...'
+                : 'Update All Workspaces Metadata'}
+            </Button>
+          </StyledButtonContainer>
+        )}
       </Section>
 
       {isDefined(userLookupResult) && (

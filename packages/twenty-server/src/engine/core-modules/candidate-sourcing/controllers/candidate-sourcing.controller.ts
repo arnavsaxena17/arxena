@@ -1,14 +1,14 @@
 import {
-  Body,
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  Post,
-  Req,
-  UploadedFile,
-  UseGuards,
-  UseInterceptors,
+    Body,
+    Controller,
+    Get,
+    HttpException,
+    HttpStatus,
+    Post,
+    Req,
+    UploadedFile,
+    UseGuards,
+    UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
@@ -17,39 +17,41 @@ import * as path from 'path';
 
 import axios from 'axios';
 import {
-  CandidateEdge,
-  CandidateEnrichmentEdge,
-  createOneCandidateField,
-  CreateOneVideoInterviewTemplate,
-  getGraphqlToFindManyJobs,
-  graphqlMutationToDeleteManyCandidates,
-  graphqlMutationToDeleteManyPeople,
-  graphqlQueryToFindManyPeople,
-  graphqlToAddNewJob,
-  graphqlToCreateOnePrompt,
-  graphqlToFetchAllCandidateData,
-  graphqlToFetchAllCandidateDataWithFieldValues,
-  graphQlTofindManyCandidateEnrichments,
-  graphqlToFindManyJobs,
-  graphQltoUpdateOneCandidate,
-  Job,
-  JobEdge,
-  mutations,
-  PageInfo,
-  PersonEdge,
-  PersonNode,
-  queries,
-  resolveIsOrgChartEnabledFromWorkspace,
-  UpdateOneJob,
-  UserProfile,
+    CandidateEdge,
+    CandidateEnrichmentEdge,
+    createOneCandidateField,
+    CreateOneVideoInterviewTemplate,
+    findWorkspaceMemberProfiles,
+    getGraphqlToFindManyJobs,
+    graphqlMutationToDeleteManyCandidates,
+    graphqlMutationToDeleteManyPeople,
+    graphqlQueryToFindManyPeople,
+    graphqlToAddNewJob,
+    graphqlToCreateOnePrompt,
+    graphqlToFetchAllCandidateData,
+    graphqlToFetchAllCandidateDataWithFieldValues,
+    graphQlTofindManyCandidateEnrichments,
+    graphqlToFindManyJobs,
+    graphQltoUpdateOneCandidate,
+    graphQLToUpdateOneWorkspaceMemberProfile,
+    Job,
+    JobEdge,
+    mutations,
+    PageInfo,
+    PersonEdge,
+    PersonNode,
+    queries,
+    resolveIsOrgChartEnabledFromWorkspace,
+    UpdateOneJob,
+    UserProfile,
 } from 'twenty-shared';
 import { v4 } from 'uuid';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import {
-  JobDescriptionParseRequest,
-  ParsedJobDescription,
+    JobDescriptionParseRequest,
+    ParsedJobDescription,
 } from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
 import { DeleteFieldValuesService } from 'src/engine/core-modules/candidate-sourcing/jobs/delete-field-values.service';
 import { ProcessAiFiltersService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-ai-filters.service';
@@ -1875,6 +1877,106 @@ export class CandidateSourcingController {
       return {
         status: 'Failed',
         error: err.message
+      };
+    }
+  }
+
+  /**
+   * Persists the Chrome extension ID on the current user's workspaceMemberProfile
+   * (candidate engagement / extension flows). Body key: chromeextensionId (also accepts chromeExtensionId, extension_id).
+   */
+  @Post('set-chrome-extension-id')
+  @UseGuards(JwtAuthGuard)
+  async setChromeExtensionId(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
+      const rawBody = request.body ?? {};
+      let chromeExtensionId = '';
+      if (typeof rawBody.chromeextensionId === 'string') {
+        chromeExtensionId = rawBody.chromeextensionId.trim();
+      }
+      if (!chromeExtensionId && typeof rawBody.chromeExtensionId === 'string') {
+        chromeExtensionId = rawBody.chromeExtensionId.trim();
+      }
+      if (!chromeExtensionId && typeof rawBody.extension_id === 'string') {
+        chromeExtensionId = rawBody.extension_id.trim();
+      }
+
+      if (!chromeExtensionId) {
+        return {
+          status: 'Failed',
+          message:
+            'Missing chromeextensionId (or chromeExtensionId / extension_id)',
+        };
+      }
+
+      const origin =
+        request.headers['x-origin-domain'] || request.headers.origin || '';
+
+      const currentUser = await new RecruiterProfileService(
+        this.staticGraphQLService,
+      ).getCurrentUser(apiToken, origin);
+      const workspaceMemberId = currentUser?.workspaceMember?.id;
+      if (!workspaceMemberId) {
+        return {
+          status: 'Failed',
+          message: 'No workspace member on current user',
+        };
+      }
+
+      const profilesResponse = await this.staticGraphQLService.executeGraphQL(
+        findWorkspaceMemberProfiles,
+        { filter: { workspaceMemberId: { eq: workspaceMemberId } } },
+        apiToken,
+      );
+      const profileId =
+        profilesResponse?.data?.data?.workspaceMemberProfiles?.edges?.[0]?.node
+          ?.id;
+
+      if (!profileId) {
+        return {
+          status: 'Failed',
+          message: 'Workspace member profile not found for current user',
+        };
+      }
+
+      const updateResponse = await this.staticGraphQLService.executeGraphQL(
+        graphQLToUpdateOneWorkspaceMemberProfile,
+        {
+          idToUpdate: profileId,
+          input: { chromeExtensionId },
+        },
+        apiToken,
+      );
+
+      const updated =
+        updateResponse?.data?.data?.updateWorkspaceMemberProfile?.id;
+      const gqlErrors = updateResponse?.data?.errors;
+
+      if (!updated || gqlErrors?.length) {
+        console.error(
+          'setChromeExtensionId GraphQL error:',
+          gqlErrors ?? updateResponse?.data,
+        );
+        return {
+          status: 'Failed',
+          message: 'Failed to update workspace member profile',
+          error: gqlErrors ?? updateResponse?.data,
+        };
+      }
+
+      return {
+        status: 'Success',
+        workspaceMemberProfileId: updated,
+        chromeExtensionId,
+      };
+    } catch (err) {
+      console.error('Error in setChromeExtensionId:', err);
+      return {
+        status: 'Failed',
+        error: err instanceof Error ? err.message : String(err),
       };
     }
   }

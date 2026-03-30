@@ -1,11 +1,7 @@
 import { createState } from '@ui/utilities/state/utils/createState';
+import type { WorkspaceMemberProfileUnipileFields } from 'twenty-shared';
 
-export type WorkspaceMemberProfileUnipileFields = {
-  phoneNumber: string | null;
-  linkedinUrl: string | null;
-  whatsappUnipileAccountId: string | null;
-  linkedinUnipileAccountId: string | null;
-};
+export type { WorkspaceMemberProfileUnipileFields };
 
 export const workspaceMemberProfileUnipileFieldsState =
   createState<WorkspaceMemberProfileUnipileFields | null>({

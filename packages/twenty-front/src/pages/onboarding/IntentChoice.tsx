@@ -23,6 +23,7 @@ import {
   Loader,
   Pill,
   ProgressBar,
+  ThemeType,
 } from 'twenty-ui';
 import { OnboardingIntentPath, OnboardingStatus } from '~/generated/graphql';
 import { Mixpanel } from '~/mixpanel';
@@ -30,7 +31,7 @@ import { OnboardingIntentModalLayout } from '~/pages/onboarding/OnboardingIntent
 
 type IntentTone = 'green' | 'purple' | 'orange';
 
-const getAccentColor = (theme: any, tone: IntentTone) => {
+const getAccentColor = (theme: ThemeType, tone: IntentTone) => {
   switch (tone) {
     case 'green':
       return theme.color.green60;
@@ -41,7 +42,7 @@ const getAccentColor = (theme: any, tone: IntentTone) => {
   }
 };
 
-const getAccentBackground = (theme: any, tone: IntentTone) => {
+const getAccentBackground = (theme: ThemeType, tone: IntentTone) => {
   switch (tone) {
     case 'green':
       return theme.color.green10;
@@ -120,7 +121,7 @@ const StyledChoiceCard = styled.button<{
   width: 100%;
 
   &:hover {
-    box-shadow: ${({ theme }) => theme.boxShadow.medium};
+    box-shadow: ${({ theme }) => theme.boxShadow.strong};
     transform: translateY(-2px);
   }
 `;
@@ -177,7 +178,7 @@ const StyledChoiceHint = styled.div<{ tone: IntentTone }>`
   background: ${({ theme }) => theme.background.primary};
   border-radius: ${({ theme }) => theme.border.radius.md};
   color: ${({ theme, tone }) => getAccentColor(theme, tone)};
-  font-family: ${({ theme }) => theme.font.family.code};
+  font-family: ${({ theme }) => theme.font.family};
   font-size: ${({ theme }) => theme.font.size.md};
   font-weight: ${({ theme }) => theme.font.weight.medium};
   line-height: 1.6;

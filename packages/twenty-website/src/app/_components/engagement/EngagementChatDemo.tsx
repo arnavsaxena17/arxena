@@ -107,21 +107,197 @@ const LOOP_DELAY_MS = 4000;
 
 const StyledDualChatContainer = styled.div`
   display: flex;
-  gap: 24px;
+  gap: 32px;
   justify-content: center;
   align-items: flex-start;
   flex-wrap: wrap;
   padding: 24px 0;
 `;
 
-const StyledChatPanel = styled.div<{ variant: 'whatsapp' | 'linkedin' }>`
+const StyledIPhoneOuter = styled.div`
+  width: 100%;
+  max-width: 288px;
+  padding: 6px 7px;
+  border-radius: 52px;
+  background: linear-gradient(
+    165deg,
+    #48484a 0%,
+    #1c1c1e 38%,
+    #2c2c2e 72%,
+    #3a3a3c 100%
+  );
+  box-shadow:
+    0 16px 56px rgba(0, 0, 0, 0.38),
+    0 4px 12px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+`;
+
+const StyledIPhoneInner = styled.div`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 274px;
+  aspect-ratio: 9 / 19.5;
+  border-radius: 42px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.65);
+`;
+
+const StyledIPhoneStatusBar = styled.div`
+  position: relative;
+  flex-shrink: 0;
+  height: 44px;
+  padding: 0 20px;
+  background: #000;
+`;
+
+const StyledIPhoneStatusTime = styled.span`
+  position: absolute;
+  left: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: #fff;
+`;
+
+const StyledDynamicIsland = styled.div`
+  position: absolute;
+  left: 50%;
+  top: 11px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 118px;
+  height: 32px;
+  padding: 0 10px 0 14px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #0e0e0f 0%, #050506 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 2px 8px rgba(0, 0, 0, 0.45);
+`;
+
+const StyledDynamicIslandLens = styled.span`
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 30% 30%,
+    #1a2740 0%,
+    #0a1628 45%,
+    #05080f 100%
+  );
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+`;
+
+const StyledIPhoneStatusTrailing = styled.div`
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #fff;
+`;
+
+const StyledIPhoneSignalBars = styled.span`
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 11px;
+
+  span {
+    display: block;
+    width: 3px;
+    border-radius: 1px;
+    background: #fff;
+  }
+  span:nth-of-type(1) {
+    height: 4px;
+  }
+  span:nth-of-type(2) {
+    height: 6px;
+  }
+  span:nth-of-type(3) {
+    height: 8px;
+  }
+  span:nth-of-type(4) {
+    height: 11px;
+  }
+`;
+
+const StyledIPhoneBattery = styled.span`
+  width: 22px;
+  height: 11px;
+  border-radius: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: -3px;
+    top: 3px;
+    width: 2px;
+    height: 5px;
+    border-radius: 0 1px 1px 0;
+    background: rgba(255, 255, 255, 0.35);
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    bottom: 2px;
+    right: 2px;
+    border-radius: 1px;
+    background: #fff;
+  }
+`;
+
+const StyledIPhoneHomeIndicator = styled.div`
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 28px;
+  padding-bottom: 6px;
+  background: #000;
+
+  &::after {
+    content: '';
+    width: 112px;
+    height: 5px;
+    border-radius: 100px;
+    background: rgba(255, 255, 255, 0.4);
+  }
+`;
+
+const StyledChatPanel = styled.div<{
+  variant: 'whatsapp' | 'linkedin';
+  inPhoneFrame?: boolean;
+}>`
   width: 100%;
   max-width: 320px;
-  min-height: 420px;
-  border-radius: 16px;
+  min-height: ${({ inPhoneFrame }) => (inPhoneFrame ? 0 : '420px')};
+  border-radius: ${({ inPhoneFrame }) => (inPhoneFrame ? 0 : '16px')};
   overflow: hidden;
-  border: 1px solid rgba(20, 20, 20, 0.1);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  border: ${({ inPhoneFrame }) =>
+    inPhoneFrame ? 'none' : '1px solid rgba(20, 20, 20, 0.1)'};
+  box-shadow: ${({ inPhoneFrame }) =>
+    inPhoneFrame ? 'none' : '0 4px 24px rgba(0, 0, 0, 0.08)'};
+  flex: ${({ inPhoneFrame }) => (inPhoneFrame ? '1 1 0' : 'none')};
+  display: flex;
+  flex-direction: column;
   background: ${({ variant }) =>
     variant === 'whatsapp' ? '#e5ddd5' : '#f3f6f8'};
 `;
@@ -139,9 +315,11 @@ const StyledChatHeader = styled.div<{ variant: 'whatsapp' | 'linkedin' }>`
   gap: 8px;
 `;
 
-const StyledChatBody = styled.div`
+const StyledChatBody = styled.div<{ inPhoneFrame?: boolean }>`
   padding: 16px;
-  max-height: 380px;
+  max-height: ${({ inPhoneFrame }) => (inPhoneFrame ? 'none' : '380px')};
+  flex: ${({ inPhoneFrame }) => (inPhoneFrame ? '1 1 0' : 'none')};
+  min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -232,23 +410,53 @@ function ChatMessageBubble({
 function ChatPanel({
   variant,
   messages,
+  inPhoneFrame = false,
 }: {
   variant: 'whatsapp' | 'linkedin';
   messages: ChatMessage[];
+  inPhoneFrame?: boolean;
 }) {
   const label = variant === 'whatsapp' ? 'WhatsApp' : 'LinkedIn';
 
-  return (
-    <StyledChatPanel variant={variant}>
+  const panel = (
+    <StyledChatPanel variant={variant} inPhoneFrame={inPhoneFrame}>
       <StyledChatHeader variant={variant}>
         {label} — Messages from you
       </StyledChatHeader>
-      <StyledChatBody>
+      <StyledChatBody inPhoneFrame={inPhoneFrame}>
         {messages.map((msg, i) => (
           <ChatMessageBubble key={i} message={msg} variant={variant} />
         ))}
       </StyledChatBody>
     </StyledChatPanel>
+  );
+
+  if (!inPhoneFrame) {
+    return panel;
+  }
+
+  return (
+    <StyledIPhoneOuter>
+      <StyledIPhoneInner>
+        <StyledIPhoneStatusBar>
+          <StyledIPhoneStatusTime>9:41</StyledIPhoneStatusTime>
+          <StyledDynamicIsland>
+            <StyledDynamicIslandLens aria-hidden={true} />
+          </StyledDynamicIsland>
+          <StyledIPhoneStatusTrailing aria-hidden>
+            <StyledIPhoneSignalBars>
+              <span />
+              <span />
+              <span />
+              <span />
+            </StyledIPhoneSignalBars>
+            <StyledIPhoneBattery />
+          </StyledIPhoneStatusTrailing>
+        </StyledIPhoneStatusBar>
+        {panel}
+        <StyledIPhoneHomeIndicator />
+      </StyledIPhoneInner>
+    </StyledIPhoneOuter>
   );
 }
 
@@ -294,8 +502,8 @@ export const EngagementChatDemo = () => {
   return (
     <div ref={containerRef}>
       <StyledDualChatContainer>
-        <ChatPanel variant="whatsapp" messages={visibleMessages} />
-        <ChatPanel variant="linkedin" messages={visibleMessages} />
+        <ChatPanel variant="whatsapp" messages={visibleMessages} inPhoneFrame />
+        <ChatPanel variant="linkedin" messages={visibleMessages} inPhoneFrame />
       </StyledDualChatContainer>
     </div>
   );

@@ -542,6 +542,17 @@ export function getFieldsData(
     {
       objectName: 'workspaceMemberProfile',
       field: {
+        description: 'Current Chrome Extension ID',
+        icon: 'IconBrandChrome',
+        label: 'Chrome Extension Id',
+        name: 'chromeExtensionId',
+        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        type: 'TEXT',
+      },
+    },
+    {
+      objectName: 'workspaceMemberProfile',
+      field: {
         description: 'Latest LinkedIn Recruiter li_a cookie captured from the extension',
         icon: 'IconCookie',
         label: 'LinkedIn li_a Token',

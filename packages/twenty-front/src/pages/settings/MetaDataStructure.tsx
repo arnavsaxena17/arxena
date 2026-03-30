@@ -225,7 +225,7 @@ export const MetadataStructureSection = () => {
         variant: SnackBarVariant.Success,
       });
       setIsOrgChartEnabled(false);
-      setTimeout(() => window.location.reload(), 2000);
+      // setTimeout(() => window.location.reload(), 2000);
     } catch (error) {
       enqueueSnackBar(
         error instanceof Error

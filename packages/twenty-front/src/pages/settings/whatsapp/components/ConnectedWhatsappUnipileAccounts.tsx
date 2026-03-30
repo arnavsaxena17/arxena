@@ -304,6 +304,10 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<
     } catch (err) {
       console.error('Failed to load WhatsApp accounts:', err);
 
+      if (onAccountsLoaded) {
+        onAccountsLoaded(false);
+      }
+
       if (err instanceof Error) {
         if (err.message.includes('403') || err.message.includes('Forbidden')) {
           setError(
@@ -348,8 +352,11 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<
   useEffect(() => {
     if (accessToken) {
       loadAccounts();
+    } else {
+      setLoading(false);
+      onAccountsLoaded?.(false);
     }
-  }, [accessToken, loadAccounts]);
+  }, [accessToken, loadAccounts, onAccountsLoaded]);
 
   const handleDisconnect = async (accountId: string) => {
     if (

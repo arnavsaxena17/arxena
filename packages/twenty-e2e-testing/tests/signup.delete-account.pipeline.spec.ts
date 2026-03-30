@@ -1,8 +1,90 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 test.use({
   storageState: { cookies: [], origins: [] },
 });
+
+const PASSWORD = 'Applecar2025';
+const BASE_URL = 'http://app.localhost:3001';
+
+const maybeClick = async (locator: ReturnType<Page['getByRole']>) => {
+  if (await locator.isVisible().catch(() => false)) {
+    await locator.click();
+    return true;
+  }
+
+  return false;
+};
+
+const clickSkipOnPhoneStep = async (page: Page) => {
+  const skipCandidates = [
+    page.getByRole('button', { name: 'Skip' }),
+    page.getByRole('link', { name: 'Skip for now' }),
+    page.getByText('Skip for now').last(),
+  ];
+
+  for (const candidate of skipCandidates) {
+    if (await candidate.isVisible().catch(() => false)) {
+      await candidate.click();
+      return;
+    }
+  }
+
+  throw new Error('Could not find a visible skip control on phone step');
+};
+
+const signUpAndReachIntentChoice = async (
+  page: Page,
+  email: string,
+  workspaceSuffix: string,
+) => {
+  await page.goto(`${BASE_URL}/welcome`);
+  await page.waitForLoadState('domcontentloaded');
+
+  await maybeClick(page.getByRole('button', { name: 'Continue with Email' }));
+
+  await page.getByPlaceholder('Email').fill(email);
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+
+  await expect(page.getByPlaceholder('Password')).toBeVisible({
+    timeout: 30_000,
+  });
+  await page.getByPlaceholder('Password').fill(PASSWORD);
+
+  if (!(await maybeClick(page.getByRole('button', { name: 'Sign up' })))) {
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  }
+
+  await expect(page.getByText('Create your workspace')).toBeVisible({
+    timeout: 120_000,
+  });
+  await page.getByPlaceholder('Apple').fill(`Apple ${workspaceSuffix}`);
+  await page.getByRole('button', { name: 'Continue' }).click();
+
+  await expect(page.getByText('Create profile')).toBeVisible({
+    timeout: 120_000,
+  });
+  await page.locator('input[placeholder="Tim"]').first().fill('Apple');
+  await page.locator('input[placeholder="Cook"]').first().fill(workspaceSuffix);
+  await page.getByRole('button', { name: 'Continue' }).click();
+
+  const phoneHeading = page.getByText('Add your phone number');
+  if (await phoneHeading.isVisible().catch(() => false)) {
+    await clickSkipOnPhoneStep(page);
+  } else {
+    await page.waitForTimeout(3_000);
+    if (await phoneHeading.isVisible().catch(() => false)) {
+      await clickSkipOnPhoneStep(page);
+    }
+  }
+
+  await page.waitForURL(/\/create\/intent(?:[/?#]|$)/, {
+    timeout: 120_000,
+  });
+  await expect(page.getByTestId('onboarding-intent-choice')).toBeVisible({
+    timeout: 120_000,
+  });
+};
 
 test('Create account, onboard, reach jobs, then delete account', async ({
   page,
@@ -10,99 +92,31 @@ test('Create account, onboard, reach jobs, then delete account', async ({
 }) => {
   test.setTimeout(300_000);
 
-  const email = `e2e_${Date.now()}@arxena-e2e.test`;
-  const password = 'Applecar2025';
-  const workspaceName = `E2E ${Date.now()}`;
-  const firstName = 'E2E';
-  const lastName = 'User';
+  const timestamp = Date.now();
+  const email = `e2e_${timestamp}@arxena-e2e.test`;
+  const workspaceSuffix = `delete-account-${timestamp}`;
 
   await context.clearCookies();
 
-  await page.goto('/welcome');
-  await page.waitForLoadState('domcontentloaded');
+  await signUpAndReachIntentChoice(page, email, workspaceSuffix);
 
-  const continueWithEmailButton = page.getByRole('button', {
-    name: 'Continue with Email',
+  await page.getByRole('button', { name: 'Competitive research' }).click();
+  await page.waitForURL(/\/create\/competitive-research(?:[/?#]|$)/, {
+    timeout: 120_000,
   });
-  if (await continueWithEmailButton.isVisible().catch(() => false)) {
-    await continueWithEmailButton.click();
-  }
+  await expect(
+    page.getByTestId('onboarding-path-competitive-research'),
+  ).toBeVisible({
+    timeout: 120_000,
+  });
 
-  await page.getByPlaceholder('Email').fill(email);
-  await page.getByRole('button', { name: 'Continue', exact: true }).click();
-
-  await expect(page.getByPlaceholder('Password')).toBeVisible();
-  await page.getByPlaceholder('Password').fill(password);
-
-  const signUpButton = page.getByRole('button', { name: 'Sign up' });
-  if (await signUpButton.isVisible().catch(() => false)) {
-    await signUpButton.click();
-  } else {
-    await page.getByRole('button', { name: 'Continue', exact: true }).click();
-  }
-
-  for (let i = 0; i < 15; i += 1) {
-    const isOnJobsPage =
-      /\/jobs(?:[/?#]|$)/.test(page.url()) ||
-      (await page.getByText('Your workspace is ready').isVisible().catch(() => false)) ||
-      (await page.getByRole('link', { name: 'All Jobs' }).isVisible().catch(() => false));
-
-    if (isOnJobsPage) {
-      break;
-    }
-
-    if (await page.getByText('Create your workspace').isVisible().catch(() => false)) {
-      const wsInput = page.getByPlaceholder('Apple');
-      await wsInput.click();
-      await wsInput.pressSequentially(workspaceName, { delay: 50 });
-      await page.waitForTimeout(500);
-      await page.getByRole('button', { name: 'Continue' }).click({ timeout: 10_000, noWaitAfter: true }).catch(() => {});
-      await page.waitForTimeout(2_000);
-      continue;
-    }
-
-    if (await page.getByText('Create profile').isVisible().catch(() => false)) {
-      const firstInput = page.locator('input[placeholder="Tim"]').first();
-      await firstInput.click();
-      await firstInput.pressSequentially(firstName, { delay: 50 });
-      const lastInput = page.locator('input[placeholder="Cook"]').first();
-      await lastInput.click();
-      await lastInput.pressSequentially(lastName, { delay: 50 });
-      await page.waitForTimeout(500);
-      await page.getByRole('button', { name: 'Continue' }).click({ timeout: 10_000, noWaitAfter: true }).catch(() => {});
-      await page.waitForTimeout(2_000);
-      continue;
-    }
-
-    if (await page.getByText('Install Arxena App').isVisible().catch(() => false)) {
-      await page.getByRole('link', { name: 'Skip' }).first().click();
-      await page.waitForTimeout(2_000);
-      continue;
-    }
-
-    if (await page.getByText('Connect LinkedIn').isVisible().catch(() => false)) {
-      await page.getByRole('link', { name: 'Skip' }).first().click();
-      await page.waitForTimeout(2_000);
-      continue;
-    }
-
-    if (await page.getByText('Emails and Calendar').isVisible().catch(() => false)) {
-      await page.getByRole('link', { name: 'Continue without sync' }).click();
-      await page.waitForTimeout(2_000);
-      continue;
-    }
-
-    if (await page.getByText('Invite your team').isVisible().catch(() => false)) {
-      await page.getByRole('link', { name: 'Skip' }).first().click();
-      await page.waitForTimeout(2_000);
-      continue;
-    }
-
-    await page.waitForTimeout(1_000);
-  }
+  await page.getByRole('button', { name: 'Go to jobs' }).click();
 
   await page.waitForURL(/\/jobs(?:[/?#]|$)/, { timeout: 120_000 });
   await expect(page).toHaveURL(/\/jobs(?:[/?#]|$)/);
+  await expect(page.getByText('Your workspace is ready')).toBeVisible({
+    timeout: 30_000,
+  });
 
   await page.screenshot({
     path: 'run_results/new-account-jobs-final.png',
@@ -113,7 +127,9 @@ test('Create account, onboard, reach jobs, then delete account', async ({
   await page.waitForURL(/\/settings(?:\/.*)?/, { timeout: 30_000 });
   await page.getByRole('link', { name: 'Profile' }).click();
 
-  await expect(page.getByRole('button', { name: 'Delete account' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Delete account' }),
+  ).toBeVisible();
   await page.getByRole('button', { name: 'Delete account' }).click();
 
   await page.getByTestId('confirmation-modal-input').fill(email);
