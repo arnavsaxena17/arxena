@@ -5,6 +5,7 @@ import { loadEnvConfig } from '@next/env';
 
 import {
   buildOrgChartPath,
+  CANONICAL_SITE_URL,
   formatSitemapId,
   getExposedBatchCount,
   sitemapEntryToXml,
@@ -28,16 +29,47 @@ const publicDir = path.join(packageRoot, 'public');
 
 loadEnvConfig(packageRoot);
 
+function isProductionSitemapBuild(): boolean {
+  if (
+    process.env.VERCEL_ENV === 'preview' ||
+    process.env.VERCEL_ENV === 'development'
+  ) {
+    return false;
+  }
+  if (process.env.VERCEL_ENV === 'production') {
+    return true;
+  }
+  return process.env.NODE_ENV === 'production';
+}
+
+function normalizeSiteUrl(envUrl: string): string {
+  return (envUrl.startsWith('http') ? envUrl : `https://${envUrl}`).replace(
+    /\/$/,
+    '',
+  );
+}
+
 function getRequiredBaseUrl(): string {
+  const explicit = process.env.SITEMAP_SITE_URL?.trim();
+  if (explicit) {
+    return normalizeSiteUrl(explicit);
+  }
+
   const envUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.VERCEL_URL;
   if (!envUrl) {
+    if (isProductionSitemapBuild()) {
+      return CANONICAL_SITE_URL;
+    }
     throw new Error(
       'NEXT_PUBLIC_APP_URL (or VERCEL_URL) is required to generate static sitemaps.',
     );
   }
 
-  const normalized = envUrl.startsWith('http') ? envUrl : `https://${envUrl}`;
-  return normalized.replace(/\/$/, '');
+  const normalized = normalizeSiteUrl(envUrl);
+  if (isProductionSitemapBuild() && /localhost|127\.0\.0\.1/.test(normalized)) {
+    return CANONICAL_SITE_URL;
+  }
+  return normalized;
 }
 
 function getRequiredServerBaseUrl(): string {
@@ -59,9 +91,11 @@ async function fetchJsonOrThrow<T>(url: string): Promise<T> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 120000);
 
-  const response = await fetch(url, { signal: controller.signal }).finally(() => {
-    clearTimeout(timeout);
-  });
+  const response = await fetch(url, { signal: controller.signal }).finally(
+    () => {
+      clearTimeout(timeout);
+    },
+  );
 
   if (!response.ok) {
     throw new Error(`Failed to fetch ${url}: ${response.status}`);
@@ -111,7 +145,11 @@ async function generateChildSitemap(
     `${serverBaseUrl}/org-chart/companies/sitemap-batch-params?batchIndex=${batchIndex}`,
   );
 
-  if (batchParams.country != null && batchParams.limit != null && batchParams.limit > 0) {
+  if (
+    batchParams.country != null &&
+    batchParams.limit != null &&
+    batchParams.limit > 0
+  ) {
     const urlsEndpoint = new URL(
       `${serverBaseUrl}/org-chart/companies/sitemap-urls`,
     );

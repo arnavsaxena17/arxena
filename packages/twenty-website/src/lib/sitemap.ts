@@ -1,5 +1,8 @@
 import { toSlug } from 'twenty-shared';
 
+/** Canonical marketing site origin for sitemap `<loc>` and robots when env points at localhost. */
+export const CANONICAL_SITE_URL = 'https://arxena.com';
+
 /**
  * Gradual rollout batch sizes (URLs per sitemap):
  * Week 1: 500, Week 2: 2500, Week 3: 5000, Week 4: 25000, Week 5: 50000, Week 6+: 50000 each

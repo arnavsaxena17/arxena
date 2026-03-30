@@ -1,13 +1,16 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+
 import { readFile } from 'fs/promises';
 import * as path from 'path';
+
+import { graphqlToFindManyCompanies, OrgChartData } from 'twenty-shared';
+
+import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { CreditTransactionService } from 'src/engine/core-modules/billing/services/credit-transaction.service';
+import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
-import { graphqlToFindManyCompanies } from 'twenty-shared';
-
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
-import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { ContactEnrichmentWaterfallService } from 'src/engine/core-modules/contact-enrichment/services/contact-enrichment-waterfall.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
@@ -34,6 +37,7 @@ export class OrgChartService {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     private readonly workspaceCreditsService: WorkspaceCreditsService,
+    private readonly creditTransactionService: CreditTransactionService,
     private readonly orgChartS3Service: OrgChartS3Service,
     @InjectCacheStorage(CacheStorageNamespace.EngineOrgChart)
     private readonly orgChartCacheStorageService: CacheStorageService,
@@ -57,6 +61,7 @@ export class OrgChartService {
     if (this.pdlAutocomplete.isConfigured()) {
       return this.pdlAutocomplete.getCompanyAutocomplete(inputText);
     }
+
     return this.arxenaBackend.getCompanyAutocomplete(inputText, authToken);
   }
 
@@ -109,34 +114,70 @@ export class OrgChartService {
       options.companyName,
       companyId,
     );
-    const cachedOrgChartPayload =
-      await this.orgChartCacheStorageService.get<{
-        orgChart?: Record<string, unknown>;
-        cachedAt?: string;
-        itemCount?: number;
-      }>(cacheKey);
+    const cachedOrgChartPayload = await this.orgChartCacheStorageService.get<{
+      orgChart?: Record<string, unknown>;
+      cachedAt?: string;
+      itemCount?: number;
+    }>(cacheKey);
 
     if (cachedOrgChartPayload?.orgChart) {
-
       return cachedOrgChartPayload.orgChart;
     }
 
-    // Redis miss: try S3 as a persistent fallback before serving blank template.
-    const s3OrgChart = await this.orgChartS3Service.getOrgChart(companyId);
+    // Redis miss: try S3 only if this workspace member has a credit transaction for this path.
+    const persistKeyForS3 = this.orgChartS3Service.persistedCompanyFolderKey(
+      companyId,
+      options.companyName?.trim() || companyId,
+    );
+    const orgChartS3RelativePath =
+      this.orgChartS3Service.buildRelativeFolderPathFromPersistedKey(
+        persistKeyForS3,
+      );
+    let s3OrgChart: OrgChartData | null = null;
+
+    if (authToken) {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(authToken);
+      const workspaceMemberId =
+        await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
+          authToken,
+        );
+
+      if (workspaceId && workspaceMemberId) {
+        const canReadS3 =
+          await this.creditTransactionService.hasOrgChartS3AccessForMember(
+            workspaceId,
+            workspaceMemberId,
+            orgChartS3RelativePath,
+            persistKeyForS3,
+          );
+
+        if (canReadS3) {
+          s3OrgChart = await this.orgChartS3Service.getOrgChart(companyId);
+        }
+      }
+    }
+
     if (s3OrgChart) {
       this.logger.log(
         `Serving org chart from S3 fallback for companyId=${companyId}`,
       );
+
       return s3OrgChart as Record<string, unknown>;
     }
 
     // No ES document, no Redis cache and no S3 data: serve static blank org chart template so the
     // frontend can show a placeholder structure instead of empty. No credits debited for blank.
-    const blankChart = await this.getBlankOrgChartPlaceholder(companyId, options);
+    const blankChart = await this.getBlankOrgChartPlaceholder(
+      companyId,
+      options,
+    );
+
     if (blankChart) {
       this.logger.log(
         `Serving blank org chart placeholder for companyId=${companyId} from static file`,
       );
+
       return blankChart;
     }
 
@@ -223,11 +264,20 @@ export class OrgChartService {
       normalizedCompanyName,
     );
 
-    return ['company-orgchart', normalizedCompanyId, 'entire_company', 'classic'].join(':');
+    return [
+      'company-orgchart',
+      normalizedCompanyId,
+      'entire_company',
+      'classic',
+    ].join(':');
   }
 
-  private normalizeCompanyId(companyId?: string, fallbackName?: string): string {
+  private normalizeCompanyId(
+    companyId?: string,
+    fallbackName?: string,
+  ): string {
     const normalizedCompanyId = (companyId ?? '').trim().toLowerCase();
+
     if (normalizedCompanyId) {
       return normalizedCompanyId;
     }
@@ -247,9 +297,7 @@ export class OrgChartService {
    * behaviour by reading the static JSON file from arxena-site and
    * returning it directly to the frontend.
    */
-  async getManualOrgChart(
-    companyId: string,
-  ): Promise<Record<string, unknown>> {
+  async getManualOrgChart(companyId: string): Promise<Record<string, unknown>> {
     const normalizedCompanyId = companyId.replace(/-/g, '_').toLowerCase();
 
     if (normalizedCompanyId === 'yuga_labs') {
@@ -347,6 +395,7 @@ export class OrgChartService {
       current_focus?: unknown;
       data_source?: unknown;
     };
+
     this.logger.log(
       `Forwarding org chart query to legacy arxena-site backend with focus=${String(
         params.current_focus ?? '',
@@ -356,7 +405,9 @@ export class OrgChartService {
       `Org chart query payload: ${JSON.stringify(body).slice(0, 4000)}`,
     );
     const result = await this.arxenaBackend.postQuery(body, authToken);
+
     this.logger.log('Received response from legacy arxena-site backend');
+
     return result;
   }
 
@@ -367,6 +418,7 @@ export class OrgChartService {
     authToken?: string,
   ): Promise<{ emailAddresses: string[]; phoneNumbers: string[] }> {
     const trimmedUrl = payload.linkedinUrl.trim();
+
     if (!trimmedUrl) {
       return { emailAddresses: [], phoneNumbers: [] };
     }
@@ -374,17 +426,16 @@ export class OrgChartService {
     const wantEmail = true;
     const wantPhone = true;
 
-    if (
-      process.env.IS_BILLING_ENABLED === 'true' &&
-      authToken?.trim()
-    ) {
+    if (process.env.IS_BILLING_ENABLED === 'true' && authToken?.trim()) {
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(authToken);
-      const hasSufficient = await this.workspaceCreditsService.hasSufficientContactCredits(
-        workspaceId,
-        wantEmail,
-        wantPhone,
-      );
+      const hasSufficient =
+        await this.workspaceCreditsService.hasSufficientContactCredits(
+          workspaceId,
+          wantEmail,
+          wantPhone,
+        );
+
       if (!hasSufficient) {
         throw new HttpException(
           'Insufficient contact credits',
@@ -415,6 +466,7 @@ export class OrgChartService {
         `Contact enrichment failed for ${trimmedUrl}`,
         error as Error,
       );
+
       return { emailAddresses: [], phoneNumbers: [] };
     }
   }
@@ -481,7 +533,10 @@ export class OrgChartService {
         }
       }
     } catch (error) {
-      this.logger.warn(`Error searching local companies for "${trimmedName}":`, error);
+      this.logger.warn(
+        `Error searching local companies for "${trimmedName}":`,
+        error,
+      );
     }
 
     // If not found locally, search LinkedIn
@@ -505,17 +560,20 @@ export class OrgChartService {
 
       // First, resolve the company name to a LinkedIn company ID using the parameter API
       // This ensures we're using LinkedIn's canonical company name and ID
-      const paramsResult = await this.linkedInSearchService.getCompanyParameters(
-        accountId,
-        trimmedName,
-        20,
-      );
+      const paramsResult =
+        await this.linkedInSearchService.getCompanyParameters(
+          accountId,
+          trimmedName,
+          20,
+        );
 
       const parameterItems = paramsResult?.items ?? [];
+
       if (parameterItems.length === 0) {
         this.logger.warn(
           `Could not resolve company name "${trimmedName}" to LinkedIn parameters`,
         );
+
         return {
           found: false,
           message: `Company "${trimmedName}" not found in LinkedIn parameters`,
@@ -529,6 +587,7 @@ export class OrgChartService {
       const exactMatch = parameterItems.find(
         (item) => item.title?.toLowerCase() === trimmedName.toLowerCase(),
       );
+
       if (exactMatch?.id && exactMatch?.title) {
         resolvedCompany = { id: exactMatch.id, title: exactMatch.title };
       }
@@ -538,8 +597,11 @@ export class OrgChartService {
         const startsWithMatch = parameterItems.find(
           (item) =>
             item.title?.toLowerCase().startsWith(trimmedName.toLowerCase()) ||
-            trimmedName.toLowerCase().startsWith(item.title?.toLowerCase() ?? ''),
+            trimmedName
+              .toLowerCase()
+              .startsWith(item.title?.toLowerCase() ?? ''),
         );
+
         if (startsWithMatch?.id && startsWithMatch?.title) {
           resolvedCompany = {
             id: startsWithMatch.id,
@@ -555,6 +617,7 @@ export class OrgChartService {
             item.title?.toLowerCase().includes(trimmedName.toLowerCase()) ||
             trimmedName.toLowerCase().includes(item.title?.toLowerCase() ?? ''),
         );
+
         if (containsMatch?.id && containsMatch?.title) {
           resolvedCompany = {
             id: containsMatch.id,
@@ -564,7 +627,11 @@ export class OrgChartService {
       }
 
       // Use first match if no better match found
-      if (!resolvedCompany && parameterItems[0]?.id && parameterItems[0]?.title) {
+      if (
+        !resolvedCompany &&
+        parameterItems[0]?.id &&
+        parameterItems[0]?.title
+      ) {
         resolvedCompany = {
           id: parameterItems[0].id,
           title: parameterItems[0].title,
@@ -575,6 +642,7 @@ export class OrgChartService {
         this.logger.warn(
           `Could not find a valid company parameter for "${trimmedName}"`,
         );
+
         return {
           found: false,
           message: `Company "${trimmedName}" not found in LinkedIn parameters`,
@@ -602,6 +670,7 @@ export class OrgChartService {
       if (companies.length > 0) {
         // Prefer the company that matches our resolved ID
         const idMatch = companies.find((c) => c.id === resolvedCompany!.id);
+
         if (idMatch?.id) {
           return {
             found: true,
@@ -616,6 +685,7 @@ export class OrgChartService {
         const nameExactMatch = companies.find(
           (c) => c.name?.toLowerCase() === resolvedCompany!.title.toLowerCase(),
         );
+
         if (nameExactMatch?.id) {
           return {
             found: true,
@@ -628,6 +698,7 @@ export class OrgChartService {
 
         // Return first match
         const firstMatch = companies[0];
+
         if (firstMatch?.id) {
           return {
             found: true,
@@ -639,7 +710,10 @@ export class OrgChartService {
         }
       }
     } catch (error) {
-      this.logger.warn(`Error searching LinkedIn for company "${trimmedName}":`, error);
+      this.logger.warn(
+        `Error searching LinkedIn for company "${trimmedName}":`,
+        error,
+      );
     }
 
     return {

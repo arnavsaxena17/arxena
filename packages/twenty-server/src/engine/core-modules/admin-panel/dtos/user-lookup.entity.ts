@@ -1,5 +1,6 @@
 import { Field, ObjectType } from '@nestjs/graphql';
 
+import { AdminPanelWorkspaceMemberRecruiterProfile } from 'src/engine/core-modules/admin-panel/dtos/admin-panel-workspace-member-recruiter-profile.output';
 import { FeatureFlag } from 'src/engine/core-modules/feature-flag/feature-flag.entity';
 
 @ObjectType()
@@ -39,6 +40,9 @@ class WorkspaceInfo {
 
   @Field(() => [FeatureFlag])
   featureFlags: FeatureFlag[];
+
+  @Field(() => AdminPanelWorkspaceMemberRecruiterProfile, { nullable: true })
+  recruiterProfileForLookedUpUser?: AdminPanelWorkspaceMemberRecruiterProfile | null;
 }
 
 @ObjectType()

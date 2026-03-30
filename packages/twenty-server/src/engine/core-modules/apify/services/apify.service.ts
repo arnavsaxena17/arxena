@@ -77,4 +77,50 @@ export class ApifyService {
       return null;
     }
   }
+
+  /**
+   * List all items from a dataset (paginated).
+   */
+  async listDatasetItems(
+    datasetId: string,
+  ): Promise<Record<string, unknown>[] | null> {
+    const client = this.getClient();
+    if (!client) {
+      return null;
+    }
+    const items: Record<string, unknown>[] = [];
+    let offset = 0;
+    const limit = 1000;
+    try {
+      for (;;) {
+        const page = await client.dataset(datasetId).listItems({ offset, limit });
+        const batch = page.items ?? [];
+        for (const row of batch) {
+          items.push(row as Record<string, unknown>);
+        }
+        if (batch.length < limit) {
+          break;
+        }
+        offset += limit;
+      }
+      return items;
+    } catch (error) {
+      this.logger.error(`Apify dataset list failed for ${datasetId}`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Run an actor to completion and return all dataset rows.
+   */
+  async runActorAndListDatasetItems(
+    actorId: string,
+    input: Record<string, unknown>,
+  ): Promise<Record<string, unknown>[] | null> {
+    const runResult = await this.runActor(actorId, input);
+    if (!runResult?.defaultDatasetId) {
+      return null;
+    }
+    return this.listDatasetItems(runResult.defaultDatasetId);
+  }
 }

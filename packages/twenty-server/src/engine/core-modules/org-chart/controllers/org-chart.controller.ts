@@ -1,19 +1,20 @@
 import {
-    Body,
-    Controller,
-    Get,
-    HttpException,
-    HttpStatus,
-    Logger,
-    Param,
-    Post,
-    Query,
-    Req,
-    Res,
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Query,
+  Req,
+  Res,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
 import { ApifyEmployeeCountService } from 'src/engine/core-modules/apify/services/apify-employee-count.service';
+import { ApifyService } from 'src/engine/core-modules/apify/services/apify.service';
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -24,9 +25,10 @@ import { CompanyLogoService } from '../services/company-logo.service';
 import { ImageProxyService } from '../services/image-proxy.service';
 import { OrgChartClientIpService } from '../services/org-chart-client-ip.service';
 import { OrgChartEsService } from '../services/org-chart-es.service';
-import { OrgChartTheOrgEnrichmentService } from '../services/org-chart-theorg-enrichment.service';
 import { OrgChartLinkedInBuildService } from '../services/org-chart-linkedin-build.service';
+import { OrgChartTheOrgEnrichmentService } from '../services/org-chart-theorg-enrichment.service';
 import { OrgChartService } from '../services/org-chart.service';
+import { PythonOrgChartService } from '../services/python-org-chart.service';
 
 @Controller('org-chart')
 export class OrgChartController {
@@ -40,10 +42,12 @@ export class OrgChartController {
     private readonly companyLogoService: CompanyLogoService,
     private readonly imageProxyService: ImageProxyService,
     private readonly apifyEmployeeCountService: ApifyEmployeeCountService,
+    private readonly apifyService: ApifyService,
     private readonly unipileCompanyService: UnipileCompanyService,
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly orgChartClientIpService: OrgChartClientIpService,
+    private readonly pythonOrgChartService: PythonOrgChartService,
   ) {}
 
   private getAuthToken(req: Request): string | undefined {
@@ -615,6 +619,48 @@ export class OrgChartController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  /**
+   * Whether org-chart LinkedIn flows can use Unipile (member account) or Apify (server token),
+   * and whether the Python HTTP org chart agent (arxena-site) is reachable when HTTP mode is used.
+   */
+  @Get('linkedin-data-sources-status')
+  async getLinkedinDataSourcesStatus(@Req() req: Request) {
+    let linkedinUnipileConnected = false;
+    const authToken = this.getAuthToken(req);
+
+    if (authToken) {
+      try {
+        const workspaceId =
+          await this.workspaceQueryService.getWorkspaceIdFromToken(authToken);
+        const workspaceMemberId =
+          await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
+            authToken,
+          );
+        const accountId =
+          await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+            workspaceMemberId ?? null,
+            workspaceId,
+            authToken,
+            'linkedin',
+          );
+        linkedinUnipileConnected = !!accountId;
+      } catch {
+        linkedinUnipileConnected = false;
+      }
+    }
+
+    const apifyActorConfigured = this.apifyService.isConfigured();
+    const pythonOrgChartAgentAvailable =
+      await this.pythonOrgChartService.isOrgChartAgentReachable();
+
+    return {
+      status: 'ok' as const,
+      linkedinUnipileConnected,
+      apifyActorConfigured,
+      pythonOrgChartAgentAvailable,
+    };
   }
 
   @Get('companies/:companyId/top-hired-from')

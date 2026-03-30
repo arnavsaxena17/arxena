@@ -81,7 +81,14 @@ export class WorkspaceCreditsService {
   async debitOrgChartCredits(
     workspaceId: string,
     employeeCount: number,
-    metadata?: { companyName?: string; companyId?: string },
+    metadata?: {
+      companyName?: string;
+      companyId?: string;
+      /** Who triggered the debit (maps to creditTransactions.metadata). */
+      workspaceMemberId?: string;
+      /** e.g. org-charts/{wm}/{company}/ under file storage. */
+      orgChartS3RelativePath?: string;
+    },
   ): Promise<void> {
     const creditsNeeded = this.computeOrgChartCreditsNeeded(employeeCount);
     const hasSufficient = await this.hasSufficientOrgChartCredits(

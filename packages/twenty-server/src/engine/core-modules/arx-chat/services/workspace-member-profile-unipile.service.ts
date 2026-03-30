@@ -1,13 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
+
 import {
-  findWorkspaceMemberProfiles,
-  graphQLToUpdateOneWorkspaceMemberProfile,
+    findWorkspaceMemberProfiles,
+    graphQLToUpdateOneWorkspaceMemberProfile,
 } from 'twenty-shared';
 
+import {
+    extractLinkedinProfileUrlFromUnipileAccount,
+    extractWhatsappPhoneFromUnipileAccount,
+} from 'src/engine/core-modules/arx-chat/utils/unipile-account-member-profile-fields.util';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 type UnipileAccountType = 'linkedin' | 'whatsapp';
+
 type WorkspaceMemberLinkedinCookieTokens = {
   linkedinLiAtToken: string | null;
   linkedinLiAToken: string | null;
@@ -196,7 +202,9 @@ export class WorkspaceMemberProfileUnipileService {
     type: UnipileAccountType,
   ): Promise<string | null> {
     const fieldName =
-      type === 'linkedin' ? 'linkedinUnipileAccountId' : 'whatsappUnipileAccountId';
+      type === 'linkedin'
+        ? 'linkedinUnipileAccountId'
+        : 'whatsappUnipileAccountId';
 
     try {
       if (!workspaceMemberId) {
@@ -209,8 +217,8 @@ export class WorkspaceMemberProfileUnipileService {
         authToken,
       );
 
-      const profile = response?.data?.data?.workspaceMemberProfiles?.edges?.[0]
-        ?.node;
+      const profile =
+        response?.data?.data?.workspaceMemberProfiles?.edges?.[0]?.node;
       const profileAccountId = profile?.[fieldName];
 
       if (profileAccountId && String(profileAccountId).trim()) {
@@ -242,8 +250,9 @@ export class WorkspaceMemberProfileUnipileService {
         authToken,
       );
 
-      const profile = response?.data?.data?.workspaceMemberProfiles?.edges?.[0]
-        ?.node;
+      const profile =
+        response?.data?.data?.workspaceMemberProfiles?.edges?.[0]?.node;
+
       return Boolean(profile?.keepLinkedinConnected);
     } catch {
       return false;
@@ -261,7 +270,9 @@ export class WorkspaceMemberProfileUnipileService {
     accountId: string,
   ): Promise<void> {
     const fieldName =
-      type === 'linkedin' ? 'linkedinUnipileAccountId' : 'whatsappUnipileAccountId';
+      type === 'linkedin'
+        ? 'linkedinUnipileAccountId'
+        : 'whatsappUnipileAccountId';
 
     try {
       const response = await this.staticGraphQLService.executeGraphQL(
@@ -270,13 +281,14 @@ export class WorkspaceMemberProfileUnipileService {
         authToken,
       );
 
-      const profile = response?.data?.data?.workspaceMemberProfiles?.edges?.[0]
-        ?.node;
+      const profile =
+        response?.data?.data?.workspaceMemberProfiles?.edges?.[0]?.node;
 
       if (!profile?.id) {
         this.logger.warn(
           `No workspace member profile found for ${workspaceMemberId}, cannot update ${fieldName}`,
         );
+
         return;
       }
 
@@ -292,6 +304,7 @@ export class WorkspaceMemberProfileUnipileService {
       try {
         const workspaceId =
           await this.workspaceQueryService.getWorkspaceIdFromToken(authToken);
+
         await this.workspaceQueryService.upsertUnipileMemberAccountMapping(
           workspaceMemberId,
           workspaceId,
@@ -318,15 +331,51 @@ export class WorkspaceMemberProfileUnipileService {
   }
 
   /**
-   * Clear Unipile account ID from workspace member profile (e.g. on disconnect).
+   * Persist Unipile account id on the workspace member profile, then sync linkedinUrl / phoneNumber
+   * from the same account payload (GET /api/v1/accounts/:id or list item).
    */
-  async clearWorkspaceMemberUnipileAccountId(
+  async applyUnipileAccountToWorkspaceMemberProfile(
     workspaceMemberId: string,
     authToken: string,
     type: UnipileAccountType,
+    accountId: string,
+    accountPayload: unknown,
   ): Promise<void> {
-    const fieldName =
-      type === 'linkedin' ? 'linkedinUnipileAccountId' : 'whatsappUnipileAccountId';
+    await this.updateWorkspaceMemberUnipileAccountId(
+      workspaceMemberId,
+      authToken,
+      type,
+      accountId,
+    );
+    await this.syncContactFieldsFromUnipileAccountPayload(
+      workspaceMemberId,
+      authToken,
+      type,
+      accountPayload,
+    );
+  }
+
+  /**
+   * Sets linkedinUrl or phoneNumber from Unipile account payload (best-effort).
+   */
+  async syncContactFieldsFromUnipileAccountPayload(
+    workspaceMemberId: string,
+    authToken: string,
+    type: UnipileAccountType,
+    accountPayload: unknown,
+  ): Promise<void> {
+    const linkedinUrl =
+      type === 'linkedin'
+        ? extractLinkedinProfileUrlFromUnipileAccount(accountPayload)
+        : null;
+    const phoneNumber =
+      type === 'whatsapp'
+        ? extractWhatsappPhoneFromUnipileAccount(accountPayload)
+        : null;
+
+    if (!linkedinUrl && !phoneNumber) {
+      return;
+    }
 
     try {
       const response = await this.staticGraphQLService.executeGraphQL(
@@ -335,8 +384,68 @@ export class WorkspaceMemberProfileUnipileService {
         authToken,
       );
 
-      const profile = response?.data?.data?.workspaceMemberProfiles?.edges?.[0]
-        ?.node;
+      const profile =
+        response?.data?.data?.workspaceMemberProfiles?.edges?.[0]?.node;
+
+      if (!profile?.id) {
+        this.logger.warn(
+          `No workspace member profile found for ${workspaceMemberId}, cannot sync contact fields`,
+        );
+
+        return;
+      }
+
+      const input: Record<string, string> = {};
+
+      if (linkedinUrl) {
+        input.linkedinUrl = linkedinUrl;
+      }
+      if (phoneNumber) {
+        input.phoneNumber = phoneNumber;
+      }
+
+      await this.staticGraphQLService.executeGraphQL(
+        graphQLToUpdateOneWorkspaceMemberProfile,
+        {
+          idToUpdate: profile.id,
+          input,
+        },
+        authToken,
+      );
+
+      this.logger.log(
+        `Synced workspace member profile contact fields for ${workspaceMemberId}`,
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Failed to sync contact fields for workspace member ${workspaceMemberId}:`,
+        error,
+      );
+    }
+  }
+
+  /**
+   * Clear Unipile account ID from workspace member profile (e.g. on disconnect).
+   */
+  async clearWorkspaceMemberUnipileAccountId(
+    workspaceMemberId: string,
+    authToken: string,
+    type: UnipileAccountType,
+  ): Promise<void> {
+    const fieldName =
+      type === 'linkedin'
+        ? 'linkedinUnipileAccountId'
+        : 'whatsappUnipileAccountId';
+
+    try {
+      const response = await this.staticGraphQLService.executeGraphQL(
+        findWorkspaceMemberProfiles,
+        { filter: { workspaceMemberId: { eq: workspaceMemberId } }, limit: 1 },
+        authToken,
+      );
+
+      const profile =
+        response?.data?.data?.workspaceMemberProfiles?.edges?.[0]?.node;
 
       if (!profile?.id) {
         return;

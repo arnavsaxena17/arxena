@@ -84,6 +84,17 @@ const StyledHint = styled.p`
   max-width: 720px;
 `;
 
+const StyledErrorMessage = styled.div`
+  background: ${({ theme }) => theme.background.transparent.light};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  color: ${({ theme }) => theme.color.red};
+  padding: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledEmptyTableMessage = styled.span`
+  color: ${({ theme }) => theme.font.color.tertiary};
+`;
+
 const StyledUserAgent = styled.span`
   display: block;
   font-size: ${({ theme }) => theme.font.size.sm};
@@ -99,7 +110,7 @@ export const SettingsAdminOrgChartClientIps = () => {
   const [addBlocked, setAddBlocked] = useState(false);
   const [addCachedOnly, setAddCachedOnly] = useState(false);
 
-  const { data, loading, refetch } = useQuery<GetOrgChartClientIpRulesData>(
+  const { data, loading, error, refetch } = useQuery<GetOrgChartClientIpRulesData>(
     GET_ORG_CHART_CLIENT_IP_RULES,
     {
       fetchPolicy: 'network-only',
@@ -210,6 +221,12 @@ export const SettingsAdminOrgChartClientIps = () => {
         org-chart API route.
       </StyledHint>
 
+      {error && (
+        <StyledErrorMessage>
+          Failed to load IP rules: {error.message}
+        </StyledErrorMessage>
+      )}
+
       <StyledAddRow>
         <TextInput
           placeholder="e.g. 203.0.113.10"
@@ -253,6 +270,17 @@ export const SettingsAdminOrgChartClientIps = () => {
             <TableCell>Loading…</TableCell>
           </TableRow>
         )}
+        {!loading &&
+          !error &&
+          rules.length === 0 && (
+            <TableRow gridAutoColumns="1fr" mobileGridAutoColumns="1fr">
+              <TableCell>
+                <StyledEmptyTableMessage>
+                  No IP rules yet. Add one above to track and manage traffic.
+                </StyledEmptyTableMessage>
+              </TableCell>
+            </TableRow>
+          )}
         {!loading &&
           rules.map((rule) => (
             <TableRow

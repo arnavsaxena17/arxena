@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { AdminPanelWorkspaceMemberRecruiterProfile } from 'src/engine/core-modules/admin-panel/dtos/admin-panel-workspace-member-recruiter-profile.output';
 import { EnvironmentVariable } from 'src/engine/core-modules/admin-panel/dtos/environment-variable.dto';
 import { EnvironmentVariablesGroupData } from 'src/engine/core-modules/admin-panel/dtos/environment-variables-group.dto';
 import { EnvironmentVariablesOutput } from 'src/engine/core-modules/admin-panel/dtos/environment-variables.output';
 import { UserLookup } from 'src/engine/core-modules/admin-panel/dtos/user-lookup.entity';
 import {
-  AuthException,
-  AuthExceptionCode,
+    AuthException,
+    AuthExceptionCode,
 } from 'src/engine/core-modules/auth/auth.exception';
 import { LoginTokenService } from 'src/engine/core-modules/auth/token/services/login-token.service';
 import { DomainManagerService } from 'src/engine/core-modules/domain-manager/services/domain-manager.service';
@@ -16,15 +17,51 @@ import { EnvironmentService } from 'src/engine/core-modules/environment/environm
 import { FeatureFlagKey } from 'src/engine/core-modules/feature-flag/enums/feature-flag-key.enum';
 import { FeatureFlag } from 'src/engine/core-modules/feature-flag/feature-flag.entity';
 import {
-  FeatureFlagException,
-  FeatureFlagExceptionCode,
+    FeatureFlagException,
+    FeatureFlagExceptionCode,
 } from 'src/engine/core-modules/feature-flag/feature-flag.exception';
 import { featureFlagValidator } from 'src/engine/core-modules/feature-flag/validates/feature-flag.validate';
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { userValidator } from 'src/engine/core-modules/user/user.validate';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { workspaceValidator } from 'src/engine/core-modules/workspace/workspace.validate';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
+
+import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
+
+const pickStringFromRow = (
+  row: Record<string, unknown>,
+  key: string,
+): string | null => {
+  const v = row[key];
+
+  if (v === null || v === undefined) {
+    return null;
+  }
+
+  if (typeof v === 'boolean') {
+    return v ? 'true' : 'false';
+  }
+
+  return String(v);
+};
+
+const pickBooleanFromRow = (
+  row: Record<string, unknown>,
+  key: string,
+): boolean | null => {
+  const v = row[key];
+
+  if (v === null || v === undefined) {
+    return null;
+  }
+
+  if (typeof v === 'boolean') {
+    return v;
+  }
+
+  return null;
+};
 
 @Injectable()
 export class AdminPanelService {
@@ -38,6 +75,9 @@ export class AdminPanelService {
     private readonly workspaceRepository: Repository<Workspace>,
     @InjectRepository(FeatureFlag, 'core')
     private readonly featureFlagRepository: Repository<FeatureFlag>,
+    private readonly workspaceDataSourceService: WorkspaceDataSourceService,
+    @InjectDataSource('metadata')
+    private readonly metadataDataSource: DataSource,
   ) {}
 
   async impersonate(userId: string, workspaceId: string) {
@@ -99,6 +139,38 @@ export class AdminPanelService {
 
     const allFeatureFlagKeys = Object.values(FeatureFlagKey);
 
+    const workspaces = await Promise.all(
+      targetUser.workspaces.map(async (userWorkspace) => {
+        const recruiterProfileForLookedUpUser =
+          await this.getRecruiterProfileSnapshotForUserInWorkspace(
+            userWorkspace.workspace.id,
+            targetUser.id,
+          );
+
+        return {
+          id: userWorkspace.workspace.id,
+          name: userWorkspace.workspace.displayName ?? '',
+          totalUsers: userWorkspace.workspace.workspaceUsers.length,
+          logo: userWorkspace.workspace.logo,
+          allowImpersonation: userWorkspace.workspace.allowImpersonation,
+          users: userWorkspace.workspace.workspaceUsers.map((workspaceUser) => ({
+            id: workspaceUser.user.id,
+            email: workspaceUser.user.email,
+            firstName: workspaceUser.user.firstName,
+            lastName: workspaceUser.user.lastName,
+          })),
+          featureFlags: allFeatureFlagKeys.map((key) => ({
+            key,
+            value:
+              userWorkspace.workspace.featureFlags?.find(
+                (flag) => flag.key === key,
+              )?.value ?? false,
+          })) as FeatureFlag[],
+          recruiterProfileForLookedUpUser,
+        };
+      }),
+    );
+
     return {
       user: {
         id: targetUser.id,
@@ -106,27 +178,155 @@ export class AdminPanelService {
         firstName: targetUser.firstName,
         lastName: targetUser.lastName,
       },
-      workspaces: targetUser.workspaces.map((userWorkspace) => ({
-        id: userWorkspace.workspace.id,
-        name: userWorkspace.workspace.displayName ?? '',
-        totalUsers: userWorkspace.workspace.workspaceUsers.length,
-        logo: userWorkspace.workspace.logo,
-        allowImpersonation: userWorkspace.workspace.allowImpersonation,
-        users: userWorkspace.workspace.workspaceUsers.map((workspaceUser) => ({
-          id: workspaceUser.user.id,
-          email: workspaceUser.user.email,
-          firstName: workspaceUser.user.firstName,
-          lastName: workspaceUser.user.lastName,
-        })),
-        featureFlags: allFeatureFlagKeys.map((key) => ({
-          key,
-          value:
-            userWorkspace.workspace.featureFlags?.find(
-              (flag) => flag.key === key,
-            )?.value ?? false,
-        })) as FeatureFlag[],
-      })),
+      workspaces,
     };
+  }
+
+  private async checkIfTableExists(
+    schema: string,
+    tableName: string,
+  ): Promise<boolean> {
+    if (!schema || !tableName) {
+      return false;
+    }
+
+    try {
+      const result = await this.metadataDataSource.query(
+        `SELECT EXISTS (
+          SELECT FROM information_schema.tables
+          WHERE table_schema = $1 AND table_name = $2
+        )`,
+        [schema, tableName],
+      );
+
+      return Boolean(result[0]?.exists);
+    } catch {
+      return false;
+    }
+  }
+
+  private async resolveWorkspaceMemberProfileTableName(
+    schema: string,
+  ): Promise<'_workspaceMemberProfile' | 'workspaceMemberProfile' | null> {
+    if (await this.checkIfTableExists(schema, '_workspaceMemberProfile')) {
+      return '_workspaceMemberProfile';
+    }
+    if (await this.checkIfTableExists(schema, 'workspaceMemberProfile')) {
+      return 'workspaceMemberProfile';
+    }
+
+    return null;
+  }
+
+  private mapProfileRowToOutput(
+    workspaceMemberId: string,
+    row: Record<string, unknown>,
+  ): AdminPanelWorkspaceMemberRecruiterProfile {
+    return {
+      workspaceMemberId,
+      profileId: pickStringFromRow(row, 'id'),
+      phoneNumber: pickStringFromRow(row, 'phoneNumber'),
+      linkedinUrl: pickStringFromRow(row, 'linkedinUrl'),
+      linkedinUnipileAccountId: pickStringFromRow(row, 'linkedinUnipileAccountId'),
+      whatsappUnipileAccountId: pickStringFromRow(row, 'whatsappUnipileAccountId'),
+      keepLinkedinConnected: pickBooleanFromRow(row, 'keepLinkedinConnected'),
+      email: pickStringFromRow(row, 'email'),
+      firstName: pickStringFromRow(row, 'firstName'),
+      lastName: pickStringFromRow(row, 'lastName'),
+      name: pickStringFromRow(row, 'name'),
+      jobTitle: pickStringFromRow(row, 'jobTitle'),
+      companyName: pickStringFromRow(row, 'companyName'),
+      companyDescription: pickStringFromRow(row, 'companyDescription'),
+      typeWorkspaceMember: pickStringFromRow(row, 'typeWorkspaceMember'),
+      chromeExtensionId: pickStringFromRow(row, 'chromeExtensionId'),
+    };
+  }
+
+  private async getRecruiterProfileSnapshotForUserInWorkspace(
+    workspaceId: string,
+    userId: string,
+  ): Promise<AdminPanelWorkspaceMemberRecruiterProfile | null> {
+    const schema = this.workspaceDataSourceService.getSchemaName(workspaceId);
+
+    try {
+      const wmRows = await this.workspaceDataSourceService.executeRawQuery(
+        `SELECT id FROM ${schema}."workspaceMember" WHERE "userId" = $1 LIMIT 1`,
+        [userId],
+        workspaceId,
+      );
+
+      if (!wmRows?.length) {
+        return null;
+      }
+
+      const workspaceMemberId = String(
+        (wmRows[0] as { id: string }).id,
+      );
+      const profileTable =
+        await this.resolveWorkspaceMemberProfileTableName(schema);
+
+      if (!profileTable) {
+        return {
+          workspaceMemberId,
+          profileId: null,
+          phoneNumber: null,
+          linkedinUrl: null,
+          linkedinUnipileAccountId: null,
+          whatsappUnipileAccountId: null,
+          keepLinkedinConnected: null,
+          email: null,
+          firstName: null,
+          lastName: null,
+          name: null,
+          jobTitle: null,
+          companyName: null,
+          companyDescription: null,
+          typeWorkspaceMember: null,
+          chromeExtensionId: null,
+        };
+      }
+
+      const profileRows = await this.workspaceDataSourceService.executeRawQuery(
+        `SELECT * FROM ${schema}."${profileTable}" WHERE "workspaceMemberId" = $1 LIMIT 1`,
+        [workspaceMemberId],
+        workspaceId,
+      );
+
+      if (!profileRows?.length) {
+        return {
+          workspaceMemberId,
+          profileId: null,
+          phoneNumber: null,
+          linkedinUrl: null,
+          linkedinUnipileAccountId: null,
+          whatsappUnipileAccountId: null,
+          keepLinkedinConnected: null,
+          email: null,
+          firstName: null,
+          lastName: null,
+          name: null,
+          jobTitle: null,
+          companyName: null,
+          companyDescription: null,
+          typeWorkspaceMember: null,
+          chromeExtensionId: null,
+        };
+      }
+
+      return this.mapProfileRowToOutput(
+        workspaceMemberId,
+        profileRows[0] as Record<string, unknown>,
+      );
+    } catch (error) {
+      console.error(
+        'getRecruiterProfileSnapshotForUserInWorkspace failed',
+        workspaceId,
+        userId,
+        error,
+      );
+
+      return null;
+    }
   }
 
   async updateWorkspaceFeatureFlags(

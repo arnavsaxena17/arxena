@@ -10,7 +10,6 @@ import { StreamProcessingService } from 'src/engine/core-modules/candidate-searc
 import { CandidateDataService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-data.service';
 import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
 import { LinkedInHtmlParserService } from 'src/engine/core-modules/linkedin-search/services/linkedin-html-parser.service';
-import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { UnipilePoolModule } from '../arx-chat/unipile-pool.module';
 import { CandidateSourcingModule } from '../candidate-sourcing/candidate-sourcing.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
@@ -20,6 +19,7 @@ import { PythonOrgChartService } from '../org-chart/services/python-org-chart.se
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
 import { CandidateSearchPipelineController } from './controllers/candidate-search-pipeline.controller';
 import { CandidateSearchController } from './controllers/candidate-search.controller';
+import { OrgchartApifyBuildProcessor } from './jobs/orgchart-apify-build.processor';
 import { SearchParametersPrompts } from './prompts/search-parameters-prompts';
 import { AssistantThreadService } from './services/assistant-thread.service';
 import { BooltreeHintService } from './services/booltree-hint.service';
@@ -70,7 +70,6 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     ResultValidationService,
     JobDescriptionService,
     LinkedinParameterResolver,
-    LinkedInSearchService,
     // SearchGenerationService,
     ParameterSanitizer,
     FileUtils,
@@ -91,6 +90,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     OrgChartCacheService,
     OrgChartSearchService,
     OrgchartCancelRegistryService,
+    OrgchartApifyBuildProcessor,
     // Executive search enhancement services
     PythonOrgChartService,
   ],

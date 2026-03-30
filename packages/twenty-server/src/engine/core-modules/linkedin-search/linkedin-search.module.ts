@@ -22,6 +22,7 @@ import { User } from 'src/engine/core-modules/user/user.entity';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
+import { ApifyModule } from '../apify/apify.module';
 import { UnipilePoolModule } from '../arx-chat/unipile-pool.module';
 import { AuthModule } from '../auth/auth.module';
 import { EnvironmentModule } from '../environment/environment.module';
@@ -29,7 +30,7 @@ import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
 
 @Module({
-  imports: [EnvironmentModule, WorkspaceModificationsModule, UnipilePoolModule, GraphQLExecutionModule, AuthModule,
+  imports: [EnvironmentModule, ApifyModule, WorkspaceModificationsModule, UnipilePoolModule, GraphQLExecutionModule, AuthModule,
     WorkspaceModificationsModule,
     JwtModule,
     AuthModule,

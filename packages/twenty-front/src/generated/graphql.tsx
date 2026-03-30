@@ -2308,7 +2308,7 @@ export type UserLookupAdminPanelMutationVariables = Exact<{
 }>;
 
 
-export type UserLookupAdminPanelMutation = { __typename?: 'Mutation', userLookupAdminPanel: { __typename?: 'UserLookup', user: { __typename?: 'UserInfo', id: string, email: string, firstName?: string | null, lastName?: string | null }, workspaces: Array<{ __typename?: 'WorkspaceInfo', id: string, name: string, logo?: string | null, totalUsers: number, allowImpersonation: boolean, users: Array<{ __typename?: 'UserInfo', id: string, email: string, firstName?: string | null, lastName?: string | null }>, featureFlags: Array<{ __typename?: 'FeatureFlag', key: FeatureFlagKey, value: boolean }> }> } };
+export type UserLookupAdminPanelMutation = { __typename?: 'Mutation', userLookupAdminPanel: { __typename?: 'UserLookup', user: { __typename?: 'UserInfo', id: string, email: string, firstName?: string | null, lastName?: string | null }, workspaces: Array<{ __typename?: 'WorkspaceInfo', id: string, name: string, logo?: string | null, totalUsers: number, allowImpersonation: boolean, users: Array<{ __typename?: 'UserInfo', id: string, email: string, firstName?: string | null, lastName?: string | null }>, featureFlags: Array<{ __typename?: 'FeatureFlag', key: FeatureFlagKey, value: boolean }>, recruiterProfileForLookedUpUser?: { __typename?: 'AdminPanelWorkspaceMemberRecruiterProfile', workspaceMemberId?: string | null, profileId?: string | null, phoneNumber?: string | null, linkedinUrl?: string | null, linkedinUnipileAccountId?: string | null, whatsappUnipileAccountId?: string | null, keepLinkedinConnected?: boolean | null, email?: string | null, firstName?: string | null, lastName?: string | null, name?: string | null, jobTitle?: string | null, companyName?: string | null, companyDescription?: string | null, typeWorkspaceMember?: string | null, chromeExtensionId?: string | null } | null }> } };
 
 export type GetEnvironmentVariablesGroupedQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3975,6 +3975,24 @@ export const UserLookupAdminPanelDocument = gql`
       featureFlags {
         key
         value
+      }
+      recruiterProfileForLookedUpUser {
+        workspaceMemberId
+        profileId
+        phoneNumber
+        linkedinUrl
+        linkedinUnipileAccountId
+        whatsappUnipileAccountId
+        keepLinkedinConnected
+        email
+        firstName
+        lastName
+        name
+        jobTitle
+        companyName
+        companyDescription
+        typeWorkspaceMember
+        chromeExtensionId
       }
     }
   }

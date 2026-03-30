@@ -12,13 +12,12 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { UnipileClient } from 'unipile-node-sdk';
 import { UnipileWebhookService } from '../services/unipile-webhook.service';
+import { WhatsappUnipileRequestService } from '../services/whatsapp-unipile-request.service';
 import { WorkspaceMemberProfileUnipileService } from '../services/workspace-member-profile-unipile.service';
 import type {
   UnipileAccountStatusWebhook,
@@ -36,8 +35,7 @@ export class WhatsappUnipileController {
 
   constructor(
     private readonly webhookService: UnipileWebhookService,
-    private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly unipileRequestService: WhatsappUnipileRequestService,
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
   ) {
     this.logger.log(`Unipile API URL: ${this.unipileApiUrl}`);
@@ -48,60 +46,6 @@ export class WhatsappUnipileController {
       this.unipileApiUrl || '',
       this.unipileAccessToken || '',
     );
-  }
-
-  private async makeUnipileRequest(
-    endpoint: string,
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
-    body?: any,
-  ): Promise<any> {
-    const url = `${this.unipileApiUrl}${endpoint}`;
-    const headers = {
-      'Accept': 'application/json',
-      'X-API-KEY': this.unipileAccessToken || '',
-      'Content-Type': 'application/json',
-    };
-
-    const config: RequestInit = {
-      method,
-      headers,
-    };
-
-    if (body && (method === 'POST' || method === 'PUT')) {
-      config.body = JSON.stringify(body);
-    }
-
-    try {
-      this.logger.log(`Making Unipile request to: ${url}`);
-      this.logger.log(`Using API key: ${this.unipileAccessToken?.substring(0, 10) || ''}...`);
-      
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        
-        // Use warning level for 404s (expected when accounts don't exist)
-        if (response.status === HttpStatus.NOT_FOUND) {
-          this.logger.warn(`Unipile API 404: ${response.statusText}`, errorData);
-        } else {
-          this.logger.error(`Unipile API error: ${response.status} ${response.statusText}`, errorData);
-        }
-        
-        throw new HttpException(
-          errorData.message || `Unipile API error: ${response.statusText}`,
-          response.status,
-        );
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      
-      this.logger.error('Failed to make Unipile request:', error);
-      throw new HttpException('Failed to communicate with Unipile API', HttpStatus.SERVICE_UNAVAILABLE);
-    }
   }
 
   @Post('accounts/update-member')
@@ -124,12 +68,22 @@ export class WhatsappUnipileController {
         HttpStatus.BAD_REQUEST,
       );
     }
-    await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberUnipileAccountId(
-      workspaceMemberId,
-      authToken,
-      'whatsapp',
-      body.accountId,
-    );
+    try {
+      const account = await this.unipileRequestService.makeUnipileRequest(
+        `/api/v1/accounts/${body.accountId}`,
+      );
+      await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+        workspaceMemberId,
+        authToken,
+        'whatsapp',
+        body.accountId,
+        account,
+      );
+    } catch (err) {
+      this.logger.warn(
+        `Could not sync WhatsApp phone to workspace member profile: ${err instanceof Error ? err.message : err}`,
+      );
+    }
     return { success: true };
   }
 
@@ -165,13 +119,53 @@ export class WhatsappUnipileController {
   async checkAccountStatus(
     @Param('accountId') accountId: string,
     @AuthWorkspace() workspace: Workspace,
+    @Req() request: { workspaceMemberId?: string; headers?: { authorization?: string } },
   ) {
     try {
       this.logger.log(`Checking account status for account ${accountId}`);
-      const response = await this.makeUnipileRequest(`/api/v1/accounts/${accountId}`);
+      const response = (await this.unipileRequestService.makeUnipileRequest(
+        `/api/v1/accounts/${accountId}`,
+      )) as Record<string, unknown> & {
+        id?: string;
+        connection_params?: { status?: string; im?: { status?: string } };
+        status?: string;
+        sources?: { status?: string }[];
+      };
       // this.logger.log(`Account status response: ${JSON.stringify(response)}`);
-      const status = this.mapAccountStatus(response);
-      
+      const status = this.unipileRequestService.mapAccountStatus(response);
+
+      if (status === 'connected') {
+        const workspaceMemberId = request.workspaceMemberId;
+        const authToken =
+          request.headers?.authorization?.replace(/^Bearer\s+/i, '') ?? '';
+
+        if (workspaceMemberId && authToken && response?.id) {
+          const existingId =
+            await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+              workspaceMemberId,
+              workspace.id,
+              authToken,
+              'whatsapp',
+            );
+
+          if (existingId !== response.id) {
+            try {
+              await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+                workspaceMemberId,
+                authToken,
+                'whatsapp',
+                response.id,
+                response,
+              );
+            } catch (syncErr) {
+              this.logger.warn(
+                `Could not sync WhatsApp account to workspace member profile after connect: ${syncErr instanceof Error ? syncErr.message : syncErr}`,
+              );
+            }
+          }
+        }
+      }
+
       return {
         success: true,
         status,
@@ -198,102 +192,7 @@ export class WhatsappUnipileController {
    */
   @Post('accounts')
   async getAllAccounts(@AuthWorkspace() workspace: Workspace) {
-    try {
-      const workspaceKeys = await this.workspaceQueryService.getWorkspaceKeys(workspace.id);
-      const whatsappPhoneNumber = workspaceKeys.whatsapp_web_phone_number;
-
-      if (!whatsappPhoneNumber) {
-        this.logger.warn(`No whatsapp_web_phone_number found for workspace ${workspace.id}, skipping Unipile accounts call`);
-        return {
-          success: true,
-          accounts: [],
-          message: 'whatsapp_web_phone_number not configured for workspace',
-        };
-      }
-
-      const response = await this.makeUnipileRequest('/api/v1/accounts?provider=whatsapp');
-
-      this.logger.log(`Filtering WhatsApp accounts for workspace ${workspace.id} with whatsapp_web_phone_number: ${whatsappPhoneNumber}`);
-      
-      // Transform and filter the response to match our expected format
-      const allAccounts = (response.items || []).map((item: any) => ({
-        id: item.id,
-        username: item.name || item.phone_number || 'Unknown',
-        name: item.name || 'Unknown',
-        phone_number: item.phone_number,
-        type: item.type,
-        status: this.mapAccountStatus(item),
-        created_at: item.created_at,
-        provider: 'WHATSAPP',
-        connection_params: item.connection_params,
-        sources: item.sources || [],
-        groups: item.groups || [],
-      }));
-      
-      // Filter accounts: only return accounts that match the workspace's whatsapp_web_phone_number
-      const accounts = allAccounts.filter((account: any) => {
-        const accountPhoneNumber = account.connection_params?.im?.phone_number || account.phone_number;
-        if (!accountPhoneNumber) {
-          this.logger.warn(`Account ${account.id} has no phone_number in connection_params`);
-          return false;
-        }
-        
-        // Normalize phone numbers for comparison (remove any formatting)
-        const normalizePhone = (phone: string) => phone.replace(/\D/g, '');
-        const normalizedAccountPhone = normalizePhone(accountPhoneNumber);
-        const normalizedWorkspacePhone = normalizePhone(whatsappPhoneNumber);
-        
-        const matches = normalizedAccountPhone === normalizedWorkspacePhone;
-        
-        if (matches) {
-          this.logger.log(`Account ${account.id} (${accountPhoneNumber}) matches whatsapp_web_phone_number: ${whatsappPhoneNumber}`);
-        } else {
-          this.logger.log(`Account ${account.id} (${accountPhoneNumber}) does not match whatsapp_web_phone_number: ${whatsappPhoneNumber}`);
-        }
-        
-        return matches;
-      });
-      
-      this.logger.log(`Filtered ${accounts.length} WhatsApp accounts from ${allAccounts.length} total accounts`);
-      
-      return {
-        success: true,
-        accounts,
-      };
-    } catch (error) {
-      this.logger.error('Failed to get WhatsApp accounts:', error);
-      throw error;
-    }
-  }
-
-  private mapAccountStatus(account: any): 'connected' | 'disconnected' | 'pending' | 'connecting' {
-    const rawStatus =
-      account?.connection_params?.status ??
-      account?.status ??
-      account?.connection_params?.im?.status ??
-      account?.sources?.[0]?.status;
-
-    if (typeof rawStatus === 'string') {
-      const status = rawStatus.toLowerCase();
-
-      if (['active', 'ok', 'connected', 'ready', 'synced'].includes(status)) {
-        return 'connected';
-      }
-
-      if (['credentials', 'failed', 'error', 'disconnected', 'revoked'].includes(status)) {
-        return 'disconnected';
-      }
-
-      if (status === 'checkpoint_required') {
-        return 'pending';
-      }
-
-      if (status === 'connecting' || status === 'pending' || status === 'syncing') {
-        return 'connecting';
-      }
-    }
-    
-    return account?.id ? 'connected' : 'disconnected';
+    return this.unipileRequestService.getAllAccounts(workspace);
   }
 
   @Post('accounts/:accountId')
@@ -303,7 +202,9 @@ export class WhatsappUnipileController {
   ) {
     try {
       this.logger.log(`Getting WhatsApp account ${accountId}`);
-      const response = await this.makeUnipileRequest(`/api/v1/accounts/${accountId}`);
+      const response = await this.unipileRequestService.makeUnipileRequest(
+        `/api/v1/accounts/${accountId}`,
+      );
       return {
         success: true,
         account: response,
@@ -330,7 +231,10 @@ export class WhatsappUnipileController {
     @AuthWorkspace() workspace: Workspace,
   ) {
     try {
-      const response = await this.makeUnipileRequest(`/api/v1/accounts/${accountId}/resync`, 'POST');
+      const response = (await this.unipileRequestService.makeUnipileRequest(
+        `/api/v1/accounts/${accountId}/resync`,
+        'POST',
+      )) as { status?: unknown };
       return {
         success: true,
         status: response.status,
@@ -347,7 +251,10 @@ export class WhatsappUnipileController {
     @AuthWorkspace() workspace: Workspace,
   ) {
     try {
-      await this.makeUnipileRequest(`/api/v1/accounts/${accountId}`, 'DELETE');
+      await this.unipileRequestService.makeUnipileRequest(
+        `/api/v1/accounts/${accountId}`,
+        'DELETE',
+      );
       return {
         success: true,
         message: 'WhatsApp account disconnected successfully',

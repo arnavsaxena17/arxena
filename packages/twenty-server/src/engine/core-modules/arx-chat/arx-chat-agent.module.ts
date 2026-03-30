@@ -87,6 +87,8 @@ import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { LinkedinSalesNavigatorTransformerService } from '../candidate-sourcing/services/data-sources/linkedin-sales-navigator-transformer.service';
 import { FeatureFlagModule } from '../feature-flag/feature-flag.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
+import { WhatsAppMonitoringResolver } from '../whiskeysocket-baileys/whatsapp-monitoring.resolver';
+import { LinkedInUnipileMonitoringResolver } from './linkedin-unipile-monitoring.resolver';
 import { CandidateDataProcessorService } from './services/candidate-engagement/candidate-data-processor.service';
 import { CandidateEngagementArx } from './services/candidate-engagement/candidate-engagement';
 import { EngagedCandidateProcessor } from './services/candidate-engagement/engaged-candidate-processor.job';
@@ -95,7 +97,11 @@ import { ExtensionUnipileConnectionStatusService } from './services/candidate-en
 import { GmailDraftShortlistQueueProcessor } from './services/candidate-engagement/gmail-draft-shortlist-queue.job';
 import { GmailDraftShortlistQueueService } from './services/candidate-engagement/gmail-draft-shortlist-queue.service';
 import { UpdateChat } from './services/candidate-engagement/update-chat';
+import { LinkedInUnipileMonitoringService } from './services/linkedin-unipile-monitoring.service';
+import { LinkedinUnipileRequestService } from './services/linkedin-unipile-request.service';
 import { MessagingControls } from './services/messaging-controls';
+import { WhatsAppMonitoringUnifiedService } from './services/whatsapp-monitoring-unified.service';
+import { WhatsappUnipileRequestService } from './services/whatsapp-unipile-request.service';
 
 const isWorker = process.argv[1]?.includes('queue-worker');
 
@@ -200,6 +206,12 @@ const conditionalImports = isWorker
     UnipileWebhookService,
     WorkspaceMemberProfileUnipileService,
     ExtensionUnipileConnectionStatusService,
+    WhatsappUnipileRequestService,
+    LinkedinUnipileRequestService,
+    WhatsAppMonitoringUnifiedService,
+    WhatsAppMonitoringResolver,
+    LinkedInUnipileMonitoringService,
+    LinkedInUnipileMonitoringResolver,
     UnipileAccountPoolService,
     LinkedinParameterResolver,
   ],

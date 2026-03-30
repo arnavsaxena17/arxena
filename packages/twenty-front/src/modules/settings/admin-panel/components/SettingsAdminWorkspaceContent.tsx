@@ -19,9 +19,9 @@ import { useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
 import {
-  FeatureFlagKey,
-  useImpersonateMutation,
-  useUpdateWorkspaceFeatureFlagMutation,
+    FeatureFlagKey,
+    useImpersonateMutation,
+    useUpdateWorkspaceFeatureFlagMutation,
 } from '~/generated/graphql';
 
 type SettingsAdminWorkspaceContentProps = {
@@ -30,6 +30,10 @@ type SettingsAdminWorkspaceContentProps = {
 
 const StyledTable = styled(Table)`
   margin-top: ${({ theme }) => theme.spacing(3)};
+`;
+
+const StyledRecruiterBlock = styled.div`
+  margin-top: ${({ theme }) => theme.spacing(4)};
 `;
 
 export const SettingsAdminWorkspaceContent = ({
@@ -114,6 +118,19 @@ export const SettingsAdminWorkspaceContent = ({
 
   if (!activeWorkspace) return null;
 
+  const rp = activeWorkspace.recruiterProfileForLookedUpUser;
+  const displayOrDash = (value: string | null | undefined) =>
+    value && value.trim().length > 0 ? value : '—';
+
+  let keepLinkedinDisplay = '—';
+
+  if (rp?.keepLinkedinConnected === true) {
+    keepLinkedinDisplay = 'true';
+  }
+  if (rp?.keepLinkedinConnected === false) {
+    keepLinkedinDisplay = 'false';
+  }
+
   return (
     <>
       <H2Title title={activeWorkspace.name} description={'Workspace Name'} />
@@ -136,6 +153,83 @@ export const SettingsAdminWorkspaceContent = ({
           dataTestId="impersonate-button"
         />
       )}
+
+      <StyledRecruiterBlock>
+        <H2Title
+          title="Recruiter profile (workspace member profile)"
+          description="Same source as RecruiterProfileService / findWorkspaceMemberProfiles for this user in this workspace."
+        />
+        {rp === null || rp === undefined ? (
+          <H2Title title="—" description="No profile row" />
+        ) : (
+          <>
+            <H2Title
+              title={displayOrDash(rp.workspaceMemberId ?? undefined)}
+              description="Workspace member id"
+            />
+            <H2Title
+              title={displayOrDash(rp.profileId ?? undefined)}
+              description="Profile id"
+            />
+            <H2Title
+              title={displayOrDash(rp.phoneNumber ?? undefined)}
+              description="Phone number"
+            />
+            <H2Title
+              title={displayOrDash(rp.linkedinUrl ?? undefined)}
+              description="LinkedIn URL"
+            />
+            <H2Title
+              title={displayOrDash(rp.linkedinUnipileAccountId ?? undefined)}
+              description="LinkedIn Unipile account id"
+            />
+            <H2Title
+              title={displayOrDash(rp.whatsappUnipileAccountId ?? undefined)}
+              description="WhatsApp Unipile account id"
+            />
+            <H2Title
+              title={keepLinkedinDisplay}
+              description="Keep LinkedIn connected"
+            />
+            <H2Title
+              title={displayOrDash(rp.email ?? undefined)}
+              description="Profile email"
+            />
+            <H2Title
+              title={displayOrDash(rp.firstName ?? undefined)}
+              description="First name"
+            />
+            <H2Title
+              title={displayOrDash(rp.lastName ?? undefined)}
+              description="Last name"
+            />
+            <H2Title
+              title={displayOrDash(rp.name ?? undefined)}
+              description="Display name"
+            />
+            <H2Title
+              title={displayOrDash(rp.jobTitle ?? undefined)}
+              description="Job title"
+            />
+            <H2Title
+              title={displayOrDash(rp.companyName ?? undefined)}
+              description="Company name"
+            />
+            <H2Title
+              title={displayOrDash(rp.companyDescription ?? undefined)}
+              description="Company description"
+            />
+            <H2Title
+              title={displayOrDash(rp.typeWorkspaceMember ?? undefined)}
+              description="Workspace member type"
+            />
+            <H2Title
+              title={displayOrDash(rp.chromeExtensionId ?? undefined)}
+              description="Chrome extension id (profile)"
+            />
+          </>
+        )}
+      </StyledRecruiterBlock>
 
       {canManageFeatureFlags && (
         <StyledTable>

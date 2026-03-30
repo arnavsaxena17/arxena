@@ -53,12 +53,13 @@ import { ResumeUploadController } from './controllers/resume-upload.controller';
 import { ResumeUploadQueueProcessor } from './jobs/process-resume-uploads.job';
 import { ProcessResumeUploadsService } from './jobs/process-resume-uploads.service';
 import { DataSourceTransformerFactoryService } from './services/data-source-transformer-factory.service';
+import { ApifyLinkedInCompanyProfileTransformerService } from './services/data-sources/apify-linkedin-company-profile-transformer.service';
 import { ApnaDatabaseTransformerService } from './services/data-sources/apna-database-transformer.service';
 import { HiringNaukriTransformerService } from './services/data-sources/hiring-naukri-transformer.service';
-import { LinkedInRecruiterPeopleTransformerService } from './services/data-sources/linkedin-recruiter-people-transformer.service';
 import { LinkedinPremiumJobsTransformerService } from './services/data-sources/linkedin-premium-jobs-transformer.service';
 import { LinkedinPremiumTransformerService } from './services/data-sources/linkedin-premium-transformer.service';
 import { LinkedinRecruiterJobsTransformerService } from './services/data-sources/linkedin-recruiter-jobs-transformer.service';
+import { LinkedInRecruiterPeopleTransformerService } from './services/data-sources/linkedin-recruiter-people-transformer.service';
 import { LinkedinSalesNavigatorTransformerService } from './services/data-sources/linkedin-sales-navigator-transformer.service';
 import { LinkedInSearchTransformerService } from './services/data-sources/linkedin-search-transformer.service';
 import { NaukriProfileDataTransformerService } from './services/data-sources/naukri-profile-data-transformer.service';
@@ -141,6 +142,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     LinkedinPremiumJobsTransformerService,
     LinkedinSalesNavigatorTransformerService,
     LinkedInSearchTransformerService,
+    ApifyLinkedInCompanyProfileTransformerService,
     LinkedInRecruiterPeopleTransformerService,
     ParsedCVTransformerService,
     ResumeReadParseUploadService,
@@ -161,6 +163,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     ResumeReadParseUploadService,
     FilterDescriptionProcessorService,
     LinkedInSearchTransformerService,
+    ApifyLinkedInCompanyProfileTransformerService,
     LinkedInRecruiterPeopleTransformerService,
     CandidateWorkspaceGraphQLService,
   ],

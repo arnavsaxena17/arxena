@@ -100,6 +100,16 @@ export class EnvironmentVariables {
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.Other,
     description:
+      'When true, the Chrome extension may auto-sync LinkedIn cookies to the workspace member profile and connect/reconnect LinkedIn via Unipile when the user opens the extension with a LinkedIn tab available.',
+  })
+  @CastToBoolean()
+  @IsOptional()
+  @IsBoolean()
+  CONNECT_LINKEDIN_TO_UNIPILE_AUTOMATICALLY = false;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
       'Skip optional onboarding steps (Sync Emails, Invite Team). When true, users go directly from Create Profile to the jobs page.',
   })
   @CastToBoolean()

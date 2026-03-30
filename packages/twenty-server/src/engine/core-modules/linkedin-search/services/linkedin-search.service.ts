@@ -1,4 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ApifyLinkedInCompanyProfileTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/apify-linkedin-company-profile-transformer.service';
+import type { TransformedCandidateForTable } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+import { ApifyService } from '../../apify/services/apify.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { LinkedInSearchParameterType } from '../types/linkedin-search-parameter.type';
 import {
@@ -22,6 +25,26 @@ import { RawSearchRequestBuilder } from '../utils/raw-search-request-builder.uti
 import { LinkedInHtmlParserService } from './linkedin-html-parser.service';
 import { LinkedInSessionTrackerService } from './linkedin-session-tracker.service';
 
+/** Default Apify actor: LinkedIn company profile / employee scraper (console id). Override via APIFY_LINKEDIN_COMPANY_PROFILE_ACTOR_ID. */
+export const LINKEDIN_COMPANY_PROFILE_SCRAPER_ACTOR_ID =
+  process.env.APIFY_LINKEDIN_COMPANY_PROFILE_ACTOR_ID?.trim() ||
+  'Vb6LZkh4EqRlR0Ka9';
+
+export type LinkedInCompanyProfileApifyFetchParams = {
+  linkedinCompanyUrl: string;
+  maxItems: number;
+  profileScraperMode?: string;
+  companyBatchMode?: 'all_at_once' | 'one_by_one';
+  searchQuery?: string;
+  jobTitles?: string[];
+  locations?: string[];
+  defaultCompanyName: string;
+  companyLinkedinUrl?: string;
+};
+
+/** How org-chart / candidate lists are sourced from LinkedIn. */
+export type LinkedInCandidateFetchMode = 'unipile' | 'apify';
+
 @Injectable()
 export class LinkedInSearchService {
   private readonly logger = new Logger(LinkedInSearchService.name);
@@ -35,6 +58,8 @@ export class LinkedInSearchService {
     private readonly requestTracker: LinkedInSessionTrackerService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly htmlParser: LinkedInHtmlParserService,
+    private readonly apifyService: ApifyService,
+    private readonly apifyLinkedInCompanyProfileTransformer: ApifyLinkedInCompanyProfileTransformerService,
   ) {
     this.baseUrl = process.env.UNIPILE_API_URL || '';
     this.apiKey = process.env.UNIPILE_ACCESS_TOKEN || '';
@@ -729,6 +754,58 @@ export class LinkedInSearchService {
     limit?: number
   ): Promise<LinkedInSearchParametersList> {
     return this.getSearchParameters('SAVED_FILTERS', accountId, { keywords, limit });
+  }
+
+  /**
+   * Fetch company employees via Apify LinkedIn company profile scraper actor (not Unipile).
+   * Returns the same TransformedCandidateForTable shape as Unipile LinkedIn people search (org chart path).
+   */
+  async fetchCompanyEmployeesViaApifyActor(
+    params: LinkedInCompanyProfileApifyFetchParams,
+  ): Promise<TransformedCandidateForTable[]> {
+    if (!this.apifyService.isConfigured()) {
+      throw new Error('Apify is not configured (set APIFY_API_TOKEN)');
+    }
+
+    const maxItems = Math.min(Math.max(1, params.maxItems), 10000);
+    const input: Record<string, unknown> = {
+      companies: [params.linkedinCompanyUrl.trim()],
+      maxItems,
+      profileScraperMode: params.profileScraperMode ?? 'Full ($8 per 1k)',
+      companyBatchMode: params.companyBatchMode ?? 'all_at_once',
+    };
+
+    if (params.searchQuery?.trim()) {
+      input.searchQuery = params.searchQuery.trim();
+    }
+    if (params.jobTitles?.length) {
+      input.jobTitles = params.jobTitles.slice(0, 20);
+    }
+    if (params.locations?.length) {
+      input.locations = params.locations.slice(0, 20);
+    }
+
+    this.logger.log(
+      `Apify company profile scraper: actor=${LINKEDIN_COMPANY_PROFILE_SCRAPER_ACTOR_ID}, companies=${JSON.stringify(input.companies)}, maxItems=${maxItems}`,
+    );
+
+    const rows = await this.apifyService.runActorAndListDatasetItems(
+      LINKEDIN_COMPANY_PROFILE_SCRAPER_ACTOR_ID,
+      input,
+    );
+
+    if (!rows?.length) {
+      return [];
+    }
+
+    return this.apifyLinkedInCompanyProfileTransformer.transformApifyRowsToTableFormat(
+      rows,
+      {
+        defaultCompanyName: params.defaultCompanyName,
+        companyLinkedinUrl:
+          params.companyLinkedinUrl ?? params.linkedinCompanyUrl.trim(),
+      },
+    );
   }
 
   private async enforceRequestSpacing(): Promise<void> {

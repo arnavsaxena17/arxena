@@ -657,6 +657,137 @@ export const ArxOrgChart = ({
       ? 'function_grade'
       : 'entire_company';
 
+  const fetchLinkedinDataSourcesStatus = useCallback(async (): Promise<{
+    linkedinUnipileConnected: boolean;
+    apifyActorConfigured: boolean;
+    pythonOrgChartAgentAvailable: boolean;
+  } | null> => {
+    if (!baseUrl?.trim() || !accessToken) {
+      return null;
+    }
+    try {
+      const res = await fetch(
+        `${baseUrl.replace(/\/$/, '')}/org-chart/linkedin-data-sources-status`,
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+      if (!res.ok) {
+        return null;
+      }
+      const json = (await res.json()) as {
+        status?: string;
+        linkedinUnipileConnected?: boolean;
+        apifyActorConfigured?: boolean;
+        pythonOrgChartAgentAvailable?: boolean;
+      };
+      if (json?.status !== 'ok') {
+        return null;
+      }
+      return {
+        linkedinUnipileConnected: !!json.linkedinUnipileConnected,
+        apifyActorConfigured: !!json.apifyActorConfigured,
+        pythonOrgChartAgentAvailable:
+          typeof json.pythonOrgChartAgentAvailable === 'boolean'
+            ? json.pythonOrgChartAgentAvailable
+            : true,
+      };
+    } catch {
+      return null;
+    }
+  }, [baseUrl, accessToken]);
+
+  const ORG_CHART_AGENT_UNAVAILABLE_SNACKBAR =
+    'Org chart agent service is not available. Ensure the Arxena site Python service is running and reachable (ARXENA_SITE_URL / ARXENA_SITE_ORGCHART_URL).';
+
+  const ensureOrgChartSearchPrerequisites = useCallback(async (): Promise<
+    'ok' | 'no_linkedin_source' | 'no_python_agent'
+  > => {
+    const status = await fetchLinkedinDataSourcesStatus();
+    if (!status) {
+      return 'ok';
+    }
+    if (!status.linkedinUnipileConnected && !status.apifyActorConfigured) {
+      return 'no_linkedin_source';
+    }
+    if (!status.pythonOrgChartAgentAvailable) {
+      return 'no_python_agent';
+    }
+    return 'ok';
+  }, [fetchLinkedinDataSourcesStatus]);
+
+  const handleViewAllCandidates = useCallback(async () => {
+    const gate = await ensureOrgChartSearchPrerequisites();
+    if (gate === 'no_linkedin_source') {
+      enqueueSnackBar(
+        'LinkedIn data source is not connected. Connect LinkedIn (Unipile) or configure the Apify actor on the server.',
+        { variant: SnackBarVariant.Error, duration: 8000 },
+      );
+      return;
+    }
+    if (gate === 'no_python_agent') {
+      enqueueSnackBar(ORG_CHART_AGENT_UNAVAILABLE_SNACKBAR, {
+        variant: SnackBarVariant.Error,
+        duration: 10000,
+      });
+      return;
+    }
+    await actions.executeOrgchartSearch({
+      mode: resolvedSearchMode as
+        | 'entire_company'
+        | 'function_grade'
+        | 'current_node'
+        | 'leadership'
+        | 'all_people'
+        | 'selected_nodes',
+      origin: 'view_all_candidates',
+      country: selectedCountry,
+      functionRoot: selectedFunctionRoot,
+    });
+  }, [
+    ensureOrgChartSearchPrerequisites,
+    enqueueSnackBar,
+    actions.executeOrgchartSearch,
+    resolvedSearchMode,
+    selectedCountry,
+    selectedFunctionRoot,
+  ]);
+
+  const handleGetAllOrgChartSearch = useCallback(async () => {
+    const gate = await ensureOrgChartSearchPrerequisites();
+    if (gate === 'no_linkedin_source') {
+      enqueueSnackBar(
+        'LinkedIn data source is not connected. Connect LinkedIn (Unipile) or configure the Apify actor on the server.',
+        { variant: SnackBarVariant.Error, duration: 8000 },
+      );
+      return;
+    }
+    if (gate === 'no_python_agent') {
+      enqueueSnackBar(ORG_CHART_AGENT_UNAVAILABLE_SNACKBAR, {
+        variant: SnackBarVariant.Error,
+        duration: 10000,
+      });
+      return;
+    }
+    await actions.executeOrgchartSearch({
+      mode: resolvedSearchMode as
+        | 'entire_company'
+        | 'function_grade'
+        | 'current_node'
+        | 'leadership'
+        | 'all_people'
+        | 'selected_nodes',
+      origin: 'header',
+      country: selectedCountry,
+      functionRoot: selectedFunctionRoot,
+    });
+  }, [
+    ensureOrgChartSearchPrerequisites,
+    enqueueSnackBar,
+    actions.executeOrgchartSearch,
+    resolvedSearchMode,
+    selectedCountry,
+    selectedFunctionRoot,
+  ]);
+
   const filtersProps = {
     availableCountries: filterOptions.availableCountries,
     countryPercentLabels: filterOptions.countryPercentLabels,
@@ -675,20 +806,12 @@ export const ArxOrgChart = ({
     onSearch: handleSearch,
     onClearSearch: handleClearSearch,
     diagramHandleRef,
-    onGetAll: () =>
-      actions.executeOrgchartSearch({
-        mode: resolvedSearchMode as any,
-        origin: 'header',
-        country: selectedCountry,
-        functionRoot: selectedFunctionRoot,
-      }),
-    onViewAllCandidates: () =>
-      actions.executeOrgchartSearch({
-        mode: resolvedSearchMode as any,
-        origin: 'view_all_candidates',
-        country: selectedCountry,
-        functionRoot: selectedFunctionRoot,
-      }),
+    onGetAll: () => {
+      void handleGetAllOrgChartSearch();
+    },
+    onViewAllCandidates: () => {
+      void handleViewAllCandidates();
+    },
     onGetLeaders: () =>
       actions.executeOrgchartSearch({
         mode: 'leadership',

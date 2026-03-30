@@ -6,14 +6,14 @@ import { MessageQueue } from '../../message-queue/message-queue.constants';
 import { MessageQueueService } from '../../message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import type {
-    CreateWebhookDto,
-    UnipileAccountStatusWebhook,
-    UnipileEmailWebhook,
-    UnipileMessageWebhook,
-    UnipileNewRelationWebhook,
-    UnipileTrackingEmailWebhook,
-    UnipileWebhookAttachment,
-    UnipileWebhookPayload,
+  CreateWebhookDto,
+  UnipileAccountStatusWebhook,
+  UnipileEmailWebhook,
+  UnipileMessageWebhook,
+  UnipileNewRelationWebhook,
+  UnipileTrackingEmailWebhook,
+  UnipileWebhookAttachment,
+  UnipileWebhookPayload,
 } from '../types/unipile-webhook.types';
 import { UnipileAttachmentStorageUtil } from '../utils/unipile-attachment-storage.util';
 import { UnipileAccountPoolService } from './unipile-account-pool.service';
@@ -388,12 +388,23 @@ export class UnipileWebhookService {
       const type = accountType === 'LINKEDIN' ? 'linkedin' : 'whatsapp';
       const authToken = await this.getWorkspaceApiToken(parsed.workspaceId);
       if (authToken) {
-        await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberUnipileAccountId(
-          parsed.workspaceMemberId,
-          authToken,
-          type,
-          accountId,
-        );
+        const accountPayload = await this.fetchUnipileAccountById(accountId);
+        if (accountPayload) {
+          await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+            parsed.workspaceMemberId,
+            authToken,
+            type,
+            accountId,
+            accountPayload,
+          );
+        } else {
+          await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberUnipileAccountId(
+            parsed.workspaceMemberId,
+            authToken,
+            type,
+            accountId,
+          );
+        }
       }
     } else if (parsed.workspaceId) {
       await this.workspaceQueryService.updateWorkspaceKeys(parsed.workspaceId, {
@@ -423,6 +434,33 @@ export class UnipileWebhookService {
       );
       const key = apiKeys?.[0];
       return key?.key ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async fetchUnipileAccountById(
+    accountId: string,
+  ): Promise<Record<string, unknown> | null> {
+    const base = process.env.UNIPILE_API_URL;
+    const token = process.env.UNIPILE_ACCESS_TOKEN;
+    if (!base || !token) {
+      return null;
+    }
+    const url = `${base}/api/v1/accounts/${accountId}`;
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          'X-API-KEY': token,
+        },
+      });
+      if (!response.ok) {
+        return null;
+      }
+      const data = (await response.json()) as Record<string, unknown>;
+      return data;
     } catch {
       return null;
     }

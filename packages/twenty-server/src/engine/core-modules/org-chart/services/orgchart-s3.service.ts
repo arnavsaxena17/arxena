@@ -1,8 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
+
 import { Readable } from 'stream';
 
-import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
 import { OrgChartData } from 'twenty-shared';
+
+import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
 
 const ORG_CHART_S3_FOLDER = 'org-charts';
 
@@ -22,8 +24,30 @@ export class OrgChartS3Service {
     );
   }
 
+  /**
+   * Same raw key passed to saveOrgChart / saveCandidates before folder normalization.
+   * Keeps S3 paths aligned with callers that persist after a full-company LinkedIn search.
+   */
+  persistedCompanyFolderKey(
+    companyId: string | undefined,
+    resolvedCompanyName: string,
+  ): string {
+    return (
+      (typeof companyId === 'string' && companyId.trim()) ||
+      resolvedCompanyName.replace(/\s+/g, '-').toLowerCase()
+    );
+  }
+
+  /**
+   * Folder path under the file-storage root (matches metadata.orgChartS3RelativePath on debits).
+   */
+  buildRelativeFolderPathFromPersistedKey(persistedKey: string): string {
+    return `${ORG_CHART_S3_FOLDER}/${this.normalizeCompanyId(persistedKey)}`;
+  }
+
   async saveOrgChart(companyId: string, orgChart: OrgChartData): Promise<void> {
     const normalizedId = this.normalizeCompanyId(companyId);
+
     try {
       await this.fileStorageService.write({
         file: Buffer.from(JSON.stringify(orgChart)),
@@ -47,6 +71,7 @@ export class OrgChartS3Service {
     candidates: unknown[],
   ): Promise<void> {
     const normalizedId = this.normalizeCompanyId(companyId);
+
     try {
       await this.fileStorageService.write({
         file: Buffer.from(JSON.stringify(candidates)),
@@ -67,6 +92,7 @@ export class OrgChartS3Service {
 
   async getOrgChart(companyId: string): Promise<OrgChartData | null> {
     const normalizedId = this.normalizeCompanyId(companyId);
+
     try {
       const stream = await this.fileStorageService.read({
         folderPath: `${ORG_CHART_S3_FOLDER}/${normalizedId}`,
@@ -74,20 +100,24 @@ export class OrgChartS3Service {
       });
       const content = await this.streamToString(stream);
       const parsed = JSON.parse(content) as OrgChartData;
+
       this.logger.log(
         `Loaded org chart from S3 for companyId=${companyId} (normalizedId=${normalizedId})`,
       );
+
       return parsed;
     } catch (error) {
       this.logger.log(
         `No org chart found in S3 for companyId=${companyId}: ${(error as Error).message}`,
       );
+
       return null;
     }
   }
 
   async getCandidates(companyId: string): Promise<unknown[] | null> {
     const normalizedId = this.normalizeCompanyId(companyId);
+
     try {
       const stream = await this.fileStorageService.read({
         folderPath: `${ORG_CHART_S3_FOLDER}/${normalizedId}`,
@@ -95,24 +125,32 @@ export class OrgChartS3Service {
       });
       const content = await this.streamToString(stream);
       const parsed = JSON.parse(content) as unknown[];
+
       this.logger.log(
         `Loaded ${parsed.length} candidates from S3 for companyId=${companyId}`,
       );
+
       return parsed;
     } catch (error) {
       this.logger.log(
         `No candidates found in S3 for companyId=${companyId}: ${(error as Error).message}`,
       );
+
       return null;
     }
   }
 
   private streamToString(stream: Readable): Promise<string> {
     return new Promise((resolve, reject) => {
-      const chunks: Buffer[] = [];
-      stream.on('data', (chunk: Buffer | string) =>
-        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)),
-      );
+      const chunks: Uint8Array[] = [];
+
+      stream.on('data', (chunk: Buffer | string) => {
+        const buf = Buffer.isBuffer(chunk)
+          ? chunk
+          : Buffer.from(chunk as string);
+
+        chunks.push(new Uint8Array(buf));
+      });
       stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
       stream.on('error', reject);
     });

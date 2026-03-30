@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import {
@@ -23,13 +24,18 @@ export class ExtensionUnipileConnectionStatusService {
   constructor(
     private readonly moduleRef: ModuleRef,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly environmentService: EnvironmentService,
   ) {}
 
   async getConnectionStatusForCurrentUser(
     workspace: Workspace,
     apiToken: string,
     origin: string,
-  ): Promise<{ linkedinConnected: boolean; whatsappConnected: boolean }> {
+  ): Promise<{
+    linkedinConnected: boolean;
+    whatsappConnected: boolean;
+    connectLinkedinToUnipileAutomatically: boolean;
+  }> {
     const recruiterService = new RecruiterProfileService(
       this.staticGraphQLService,
     );
@@ -82,7 +88,7 @@ export class ExtensionUnipileConnectionStatusService {
 
     try {
       const li = await linkedinCtrl.getAllAccounts(workspace);
-      linkedinAccounts = li?.accounts ?? [];
+      linkedinAccounts = (li?.accounts ?? []) as unknown as UnipileLinkedinAccount[];
     } catch (e) {
       this.logger.warn(
         'LinkedIn getAllAccounts failed for extension status',
@@ -92,7 +98,7 @@ export class ExtensionUnipileConnectionStatusService {
 
     try {
       const wa = await waCtrl.getAllAccounts(workspace);
-      whatsappAccounts = wa?.accounts ?? [];
+      whatsappAccounts = (wa?.accounts ?? []) as unknown as UnipileWhatsappAccount[];
     } catch (e) {
       this.logger.warn(
         'WhatsApp getAllAccounts failed for extension status',
@@ -108,6 +114,9 @@ export class ExtensionUnipileConnectionStatusService {
       whatsappConnected: hasMatchingConnectedWhatsappAccount(
         whatsappAccounts,
         profileFields,
+      ),
+      connectLinkedinToUnipileAutomatically: this.environmentService.get(
+        'CONNECT_LINKEDIN_TO_UNIPILE_AUTOMATICALLY',
       ),
     };
   }

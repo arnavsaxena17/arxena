@@ -96,6 +96,15 @@
         ]
       }
     },
+    "test:arx-crx-extension": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "packages/twenty-e2e-testing",
+        "commands": [
+          "yarn playwright test tests/arx-crx-extension.spec.ts --project=chrome --no-deps"
+        ]
+      }
+    },
     "test:ui": {
       "executor": "nx:run-commands",
       "options": {

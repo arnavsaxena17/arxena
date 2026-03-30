@@ -205,6 +205,80 @@ export class PythonOrgChartService {
     return `${baseUrl}/api/orgchart/build`;
   }
 
+  /** True when org chart build uses HTTP to arxena-site (not local Python CLI). */
+  usesHttpOrgChartBuild(): boolean {
+    return !(
+      process.env.USE_PYTHON_CLI_ORGCHART === '1' ||
+      process.env.USE_PYTHON_CLI_ORGCHART === 'true' ||
+      process.env.ARXENA_SITE_ORGCHART_URL === ''
+    );
+  }
+
+  /**
+   * Quick reachability check for the Arxena site / org chart HTTP agent (not used when USE_PYTHON_CLI_ORGCHART is set).
+   */
+  async isOrgChartAgentReachable(): Promise<boolean> {
+    if (!this.usesHttpOrgChartBuild()) {
+      return true;
+    }
+    const buildUrl = this.getOrgChartBuildEndpoint();
+    const siteBase = buildUrl.replace(/\/api\/orgchart\/build\/?$/, '');
+    const controller = new AbortController();
+    const timeoutMs = 5000;
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(siteBase, {
+        method: 'GET',
+        signal: controller.signal,
+        redirect: 'follow',
+      });
+      clearTimeout(timeoutId);
+      void response.status;
+      return true;
+    } catch {
+      clearTimeout(timeoutId);
+      return false;
+    }
+  }
+
+  static readonly ORG_CHART_AGENT_UNAVAILABLE_MESSAGE =
+    'Org chart agent service is not available. Ensure the Arxena site Python service is running and reachable (ARXENA_SITE_URL / ARXENA_SITE_ORGCHART_URL).';
+
+  private isLikelyTransportFailure(err: unknown): boolean {
+    if (!(err instanceof Error)) {
+      return false;
+    }
+    const msg = (err.message ?? '').toLowerCase();
+    const cause = 'cause' in err ? (err as { cause?: unknown }).cause : undefined;
+    const causeCode =
+      cause &&
+      typeof cause === 'object' &&
+      cause !== null &&
+      'code' in cause &&
+      typeof (cause as { code?: string }).code === 'string'
+        ? (cause as { code: string }).code
+        : '';
+    if (
+      causeCode === 'ECONNREFUSED' ||
+      causeCode === 'ENOTFOUND' ||
+      causeCode === 'ETIMEDOUT'
+    ) {
+      return true;
+    }
+    if (err.name === 'TypeError' && msg.includes('fetch failed')) {
+      return true;
+    }
+    if (
+      msg.includes('econnrefused') ||
+      msg.includes('enotfound') ||
+      msg.includes('network') ||
+      msg.includes('socket')
+    ) {
+      return true;
+    }
+    return false;
+  }
+
   private async callOrgChartBuildUrl(payload: {
     people: Record<string, unknown>[];
     job_name: string;
@@ -248,6 +322,9 @@ export class PythonOrgChartService {
           throw new Error(
             `arxena-site orgchart build timed out after ${timeoutMs}ms`,
           );
+        }
+        if (this.isLikelyTransportFailure(err)) {
+          throw new Error(PythonOrgChartService.ORG_CHART_AGENT_UNAVAILABLE_MESSAGE);
         }
         throw err;
       }

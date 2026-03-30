@@ -232,6 +232,10 @@ export const SettingsAdminGeneral = () => {
               description="User Email"
             />
             <H2Title title={userLookupResult.user.id} description="User ID" />
+            <H2Title
+              title="Per workspace"
+              description="Recruiter profile (phone, LinkedIn URL, Unipile account ids, extension id) for this user appears under each workspace tab below."
+            />
           </StyledUserInfo>
 
           <H1Title title="Workspaces" fontColor={H1TitleFontColor.Primary} />

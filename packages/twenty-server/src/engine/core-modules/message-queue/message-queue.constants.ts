@@ -31,4 +31,6 @@ export enum MessageQueue {
   metadataStructureQueue = 'metadata-structure-queue',
   autonomousRecruiterQueue = 'autonomous-recruiter-queue',
   theOrgQueue = 'theorg-queue',
+  /** Async Apify LinkedIn company profile scraper → org chart build */
+  orgchartApifyQueue = 'orgchart-apify-queue',
 }

@@ -100,6 +100,7 @@ import { PermissionsModule } from 'src/engine/metadata-modules/permissions/permi
     BillingService,
     BillingUsageService,
     WorkspaceCreditsService,
+    RazorpayModule,
   ],
 })
 export class BillingModule {}

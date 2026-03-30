@@ -2,17 +2,24 @@ import { useLazyQuery } from '@apollo/client';
 import styled from '@emotion/styled';
 import { useEffect, useState } from 'react';
 import {
-    Button,
-    Card,
-    CardContent,
-    H2Title,
-    IconRefresh,
-    Section,
-    Status
+  Button,
+  Card,
+  CardContent,
+  H2Title,
+  IconRefresh,
+  Section,
+  Status
 } from 'twenty-ui';
+import { GET_LINKEDIN_UNIPILE_HEALTH_STATUS, GET_LINKEDIN_UNIPILE_SESSION_STATS } from '../graphql/queries/getLinkedInUnipileMonitoring';
 import { GET_WHATSAPP_HEALTH_STATUS, GET_WHATSAPP_SESSION_STATS } from '../graphql/queries/getWhatsAppHealthStatus';
 
 const StyledContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(6)};
+`;
+
+const StyledChannelBlock = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(4)};
@@ -145,62 +152,93 @@ const StyledBadge = styled.span<{ variant?: 'secondary' | 'outline' }>`
 const WHATSAPP_MODULE_UNAVAILABLE_MESSAGE =
   'WhatsApp monitoring is not available because the module is not loaded.';
 
+const LINKEDIN_MODULE_UNAVAILABLE_MESSAGE =
+  'LinkedIn Unipile monitoring is not available because the module is not loaded.';
+
 const isWhatsAppModuleUnavailableError = (message: string): boolean =>
   (message.includes('getWhatsAppSessionStats') || message.includes('getWhatsAppHealthStatus')) &&
   message.includes('on type') &&
   message.includes('Query');
 
+const isLinkedInModuleUnavailableError = (message: string): boolean =>
+  (message.includes('getLinkedInUnipileSessionStats') || message.includes('getLinkedInUnipileHealthStatus')) &&
+  message.includes('on type') &&
+  message.includes('Query');
+
 export const SettingsAdminWhatsAppMonitoring = () => {
-  const [healthData, setHealthData] = useState<any>(null);
-  const [statsData, setStatsData] = useState<any>(null);
+  const [whatsappHealthData, setWhatsappHealthData] = useState<any>(null);
+  const [whatsappStatsData, setWhatsappStatsData] = useState<any>(null);
+  const [linkedinHealthData, setLinkedinHealthData] = useState<any>(null);
+  const [linkedinStatsData, setLinkedinStatsData] = useState<any>(null);
+  const [whatsappError, setWhatsappError] = useState<string | null>(null);
+  const [linkedinError, setLinkedinError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const [getWhatsAppHealthStatus] = useLazyQuery(GET_WHATSAPP_HEALTH_STATUS, {
-    onCompleted: (data) => {
-      setHealthData(data);
-    },
-    onError: (error) => {
-      setError(error.message);
-    }
+  const [loadWhatsAppHealthStatus] = useLazyQuery(GET_WHATSAPP_HEALTH_STATUS, {
+    fetchPolicy: 'network-only',
   });
 
-  const [getWhatsAppSessionStats] = useLazyQuery(GET_WHATSAPP_SESSION_STATS, {
-    onCompleted: (data) => {
-      setStatsData(data);
-    },
-    onError: (error) => {
-      setError(error.message);
-    }
+  const [loadWhatsAppSessionStats] = useLazyQuery(GET_WHATSAPP_SESSION_STATS, {
+    fetchPolicy: 'network-only',
   });
 
-  const fetchWhatsAppHealth = async () => {
+  const [loadLinkedInUnipileHealthStatus] = useLazyQuery(GET_LINKEDIN_UNIPILE_HEALTH_STATUS, {
+    fetchPolicy: 'network-only',
+  });
+
+  const [loadLinkedInUnipileSessionStats] = useLazyQuery(GET_LINKEDIN_UNIPILE_SESSION_STATS, {
+    fetchPolicy: 'network-only',
+  });
+
+  const fetchMonitoringData = async () => {
+    setLoading(true);
+    setWhatsappError(null);
+    setLinkedinError(null);
     try {
-      setLoading(true);
-      setError(null);
-
-      // Fetch both queries in parallel
-      await Promise.all([
-        getWhatsAppHealthStatus(),
-        getWhatsAppSessionStats()
+      const [healthResult, statsResult, liHealthResult, liStatsResult] = await Promise.all([
+        loadWhatsAppHealthStatus(),
+        loadWhatsAppSessionStats(),
+        loadLinkedInUnipileHealthStatus(),
+        loadLinkedInUnipileSessionStats(),
       ]);
+
+      setWhatsappError(healthResult.error?.message ?? statsResult.error?.message ?? null);
+      setWhatsappHealthData(
+        healthResult.error || statsResult.error ? null : (healthResult.data ?? null),
+      );
+      setWhatsappStatsData(
+        healthResult.error || statsResult.error ? null : (statsResult.data ?? null),
+      );
+
+      setLinkedinError(liHealthResult.error?.message ?? liStatsResult.error?.message ?? null);
+      setLinkedinHealthData(
+        liHealthResult.error || liStatsResult.error ? null : (liHealthResult.data ?? null),
+      );
+      setLinkedinStatsData(
+        liHealthResult.error || liStatsResult.error ? null : (liStatsResult.data ?? null),
+      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      const msg = err instanceof Error ? err.message : 'Unknown error occurred';
+      setWhatsappError(msg);
+      setLinkedinError(msg);
+      setWhatsappHealthData(null);
+      setWhatsappStatsData(null);
+      setLinkedinHealthData(null);
+      setLinkedinStatsData(null);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchWhatsAppHealth();
+    fetchMonitoringData();
     
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchWhatsAppHealth, 30000);
+    const interval = setInterval(fetchMonitoringData, 30000);
     return () => clearInterval(interval);
   }, []);
 
   const refreshData = () => {
-    fetchWhatsAppHealth();
+    fetchMonitoringData();
   };
 
   const formatLastActivity = (timestamp: string) => {
@@ -216,7 +254,7 @@ export const SettingsAdminWhatsAppMonitoring = () => {
     return `${diffDays}d ago`;
   };
 
-  const getSessionStatusColor = (session: any) => {
+  const getWhatsAppSessionStatusColor = (session: any) => {
     if (session.isActive && session.hasWebSocketConnection && session.whatsappConnectionStatus === 'connected') {
       return 'green';
     } else if (session.hasWebSocketConnection || session.whatsappConnectionStatus === 'connecting') {
@@ -226,7 +264,7 @@ export const SettingsAdminWhatsAppMonitoring = () => {
     }
   };
 
-  const getSessionStatusText = (session: any) => {
+  const getWhatsAppSessionStatusText = (session: any) => {
     if (session.isActive && session.hasWebSocketConnection && session.whatsappConnectionStatus === 'connected') {
       return 'Fully Connected';
     } else if (session.hasWebSocketConnection && session.whatsappConnectionStatus === 'connecting') {
@@ -240,16 +278,43 @@ export const SettingsAdminWhatsAppMonitoring = () => {
     }
   };
 
-  if (loading && !healthData?.getWhatsAppHealthStatus) {
+  const getLinkedInSessionStatusColor = (session: any) => {
+    if (session.isActive && session.hasWebSocketConnection && session.linkedinConnectionStatus === 'connected') {
+      return 'green';
+    } else if (session.hasWebSocketConnection || session.linkedinConnectionStatus === 'connecting') {
+      return 'yellow';
+    } else {
+      return 'red';
+    }
+  };
+
+  const getLinkedInSessionStatusText = (session: any) => {
+    if (session.isActive && session.hasWebSocketConnection && session.linkedinConnectionStatus === 'connected') {
+      return 'Fully Connected';
+    } else if (session.hasWebSocketConnection && session.linkedinConnectionStatus === 'connecting') {
+      return 'Connecting';
+    } else if (session.hasWebSocketConnection) {
+      return 'Session Only';
+    } else if (session.linkedinConnectionStatus === 'connected') {
+      return 'LinkedIn Connected';
+    } else {
+      return 'Disconnected';
+    }
+  };
+
+  if (loading && !whatsappHealthData?.getWhatsAppHealthStatus && !linkedinHealthData?.getLinkedInUnipileHealthStatus) {
     return (
       <StyledLoadingSpinner>
-        <div>Loading WhatsApp monitoring data...</div>
+        <div>Loading Unipile monitoring data...</div>
       </StyledLoadingSpinner>
     );
   }
 
-  if (error) {
-    const moduleUnavailable = isWhatsAppModuleUnavailableError(error);
+  const renderWhatsAppError = () => {
+    if (!whatsappError) {
+      return null;
+    }
+    const moduleUnavailable = isWhatsAppModuleUnavailableError(whatsappError);
     if (moduleUnavailable) {
       return (
         <StyledUnavailableMessage>
@@ -263,159 +328,319 @@ export const SettingsAdminWhatsAppMonitoring = () => {
     }
     return (
       <StyledErrorMessage>
-        Error loading WhatsApp monitoring data: {error}
+        Error loading WhatsApp monitoring data: {whatsappError}
         <Button onClick={refreshData} variant="secondary" size="small">
           <IconRefresh size={16} />
           Retry
         </Button>
       </StyledErrorMessage>
     );
-  }
+  };
+
+  const renderLinkedInError = () => {
+    if (!linkedinError) {
+      return null;
+    }
+    const moduleUnavailable = isLinkedInModuleUnavailableError(linkedinError);
+    if (moduleUnavailable) {
+      return (
+        <StyledUnavailableMessage>
+          {LINKEDIN_MODULE_UNAVAILABLE_MESSAGE}
+          <Button onClick={refreshData} variant="secondary" size="small">
+            <IconRefresh size={16} />
+            Retry
+          </Button>
+        </StyledUnavailableMessage>
+      );
+    }
+    return (
+      <StyledErrorMessage>
+        Error loading LinkedIn Unipile monitoring data: {linkedinError}
+        <Button onClick={refreshData} variant="secondary" size="small">
+          <IconRefresh size={16} />
+          Retry
+        </Button>
+      </StyledErrorMessage>
+    );
+  };
 
   return (
     <StyledContainer>
       <Section>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <H2Title title="WhatsApp Session Monitoring" />
+          <H2Title title="WhatsApp & Unipile monitoring" />
           <Button onClick={refreshData} variant="secondary" size="small">
             <IconRefresh size={16} />
             Refresh
           </Button>
         </div>
 
-        {/* Overall Health Status */}
-        <StyledCardsGrid>
-          <Card>
-            <StyledCardHeader>
-              <StyledCardTitle>System Status</StyledCardTitle>
-            </StyledCardHeader>
-            <CardContent>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Status 
-                  color={healthData?.getWhatsAppHealthStatus?.status === 'healthy' ? 'green' : 'red'} 
-                  text={healthData?.getWhatsAppHealthStatus?.status === 'healthy' ? 'Healthy' : 'Unhealthy'} 
-                  weight="medium" 
-                />
-                <span style={{ fontSize: '14px', color: '#666' }}>
-                  Last updated: {healthData?.getWhatsAppHealthStatus?.timestamp ? new Date(healthData.getWhatsAppHealthStatus.timestamp).toLocaleTimeString() : 'Never'}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+        <StyledChannelBlock>
+          <H2Title title="WhatsApp session monitoring" />
+          {renderWhatsAppError()}
+          {!whatsappError && (
+            <>
+              <StyledCardsGrid>
+                <Card>
+                  <StyledCardHeader>
+                    <StyledCardTitle>System status</StyledCardTitle>
+                  </StyledCardHeader>
+                  <CardContent>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Status 
+                        color={whatsappHealthData?.getWhatsAppHealthStatus?.status === 'healthy' ? 'green' : 'red'} 
+                        text={whatsappHealthData?.getWhatsAppHealthStatus?.status === 'healthy' ? 'Healthy' : 'Unhealthy'} 
+                        weight="medium" 
+                      />
+                      <span style={{ fontSize: '14px', color: '#666' }}>
+                        Last updated: {whatsappHealthData?.getWhatsAppHealthStatus?.timestamp ? new Date(whatsappHealthData.getWhatsAppHealthStatus.timestamp).toLocaleTimeString() : 'Never'}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
 
-          <Card>
-            <StyledCardHeader>
-              <StyledCardTitle>Session Overview</StyledCardTitle>
-            </StyledCardHeader>
-            <CardContent>
-              <StyledMetricsGrid>
-                <StyledMetricItem>
-                  <StyledMetricLabel>Registered Sessions</StyledMetricLabel>
-                  <StyledMetricValue>{statsData?.getWhatsAppSessionStats?.registeredSessions || 0}</StyledMetricValue>
-                </StyledMetricItem>
-                <StyledMetricItem>
-                  <StyledMetricLabel>Active Sessions</StyledMetricLabel>
-                  <StyledMetricValue>{statsData?.getWhatsAppSessionStats?.activeSessions || 0}</StyledMetricValue>
-                </StyledMetricItem>
-                <StyledMetricItem>
-                  <StyledMetricLabel>Inactive Sessions</StyledMetricLabel>
-                  <StyledMetricValue>{statsData?.getWhatsAppSessionStats?.inactiveSessions || 0}</StyledMetricValue>
-                </StyledMetricItem>
-                <StyledMetricItem>
-                  <StyledMetricLabel>Memory Usage</StyledMetricLabel>
-                  <StyledMetricValue>{statsData?.getWhatsAppSessionStats?.totalMemoryUsageMB || 0} MB</StyledMetricValue>
-                </StyledMetricItem>
-                <StyledMetricItem>
-                  <StyledMetricLabel>Efficiency</StyledMetricLabel>
-                  <StyledMetricValue>{Math.round(statsData?.getWhatsAppSessionStats?.memoryEfficiency || 0)}%</StyledMetricValue>
-                </StyledMetricItem>
-              </StyledMetricsGrid>
-            </CardContent>
-          </Card>
-        </StyledCardsGrid>
+                <Card>
+                  <StyledCardHeader>
+                    <StyledCardTitle>Session overview</StyledCardTitle>
+                  </StyledCardHeader>
+                  <CardContent>
+                    <StyledMetricsGrid>
+                      <StyledMetricItem>
+                        <StyledMetricLabel>Registered sessions</StyledMetricLabel>
+                        <StyledMetricValue>{whatsappStatsData?.getWhatsAppSessionStats?.registeredSessions || 0}</StyledMetricValue>
+                      </StyledMetricItem>
+                      <StyledMetricItem>
+                        <StyledMetricLabel>Active sessions</StyledMetricLabel>
+                        <StyledMetricValue>{whatsappStatsData?.getWhatsAppSessionStats?.activeSessions || 0}</StyledMetricValue>
+                      </StyledMetricItem>
+                      <StyledMetricItem>
+                        <StyledMetricLabel>Inactive sessions</StyledMetricLabel>
+                        <StyledMetricValue>{whatsappStatsData?.getWhatsAppSessionStats?.inactiveSessions || 0}</StyledMetricValue>
+                      </StyledMetricItem>
+                      <StyledMetricItem>
+                        <StyledMetricLabel>Memory usage</StyledMetricLabel>
+                        <StyledMetricValue>{whatsappStatsData?.getWhatsAppSessionStats?.totalMemoryUsageMB || 0} MB</StyledMetricValue>
+                      </StyledMetricItem>
+                      <StyledMetricItem>
+                        <StyledMetricLabel>Efficiency</StyledMetricLabel>
+                        <StyledMetricValue>{Math.round(whatsappStatsData?.getWhatsAppSessionStats?.memoryEfficiency || 0)}%</StyledMetricValue>
+                      </StyledMetricItem>
+                    </StyledMetricsGrid>
+                  </CardContent>
+                </Card>
+              </StyledCardsGrid>
 
-        {/* Session Progress */}
-        {statsData?.getWhatsAppSessionStats && (
-          <Card style={{ marginTop: '16px' }}>
-            <StyledCardHeader>
-              <StyledCardTitle>Session Efficiency</StyledCardTitle>
-            </StyledCardHeader>
-            <CardContent>
-              <div style={{ marginBottom: '8px' }}>
-                <span style={{ fontSize: '14px' }}>
-                  {statsData.getWhatsAppSessionStats.activeSessions} of {statsData.getWhatsAppSessionStats.totalSessions} sessions active
-                </span>
-              </div>
-              <StyledProgressBar 
-                value={statsData.getWhatsAppSessionStats.totalSessions > 0 ? (statsData.getWhatsAppSessionStats.activeSessions / statsData.getWhatsAppSessionStats.totalSessions) * 100 : 0} 
-                color={statsData.getWhatsAppSessionStats.memoryEfficiency > 80 ? 'green' : statsData.getWhatsAppSessionStats.memoryEfficiency > 60 ? 'yellow' : 'red'}
-              />
-            </CardContent>
-          </Card>
-        )}
+              {whatsappStatsData?.getWhatsAppSessionStats && (
+                <Card style={{ marginTop: '16px' }}>
+                  <StyledCardHeader>
+                    <StyledCardTitle>Session efficiency</StyledCardTitle>
+                  </StyledCardHeader>
+                  <CardContent>
+                    <div style={{ marginBottom: '8px' }}>
+                      <span style={{ fontSize: '14px' }}>
+                        {whatsappStatsData.getWhatsAppSessionStats.activeSessions} of {whatsappStatsData.getWhatsAppSessionStats.totalSessions} sessions active
+                      </span>
+                    </div>
+                    <StyledProgressBar 
+                      value={whatsappStatsData.getWhatsAppSessionStats.totalSessions > 0 ? (whatsappStatsData.getWhatsAppSessionStats.activeSessions / whatsappStatsData.getWhatsAppSessionStats.totalSessions) * 100 : 0} 
+                      color={whatsappStatsData.getWhatsAppSessionStats.memoryEfficiency > 80 ? 'green' : whatsappStatsData.getWhatsAppSessionStats.memoryEfficiency > 60 ? 'yellow' : 'red'}
+                    />
+                  </CardContent>
+                </Card>
+              )}
 
-        {/* Individual Sessions */}
-        {healthData?.getWhatsAppHealthStatus?.metrics && healthData.getWhatsAppHealthStatus.metrics.length > 0 && (
-          <Card style={{ marginTop: '16px' }}>
-            <StyledCardHeader>
-              <StyledCardTitle>All Sessions</StyledCardTitle>
-            </StyledCardHeader>
-            <CardContent>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {healthData.getWhatsAppHealthStatus.metrics.map((session: any) => (
-                  <StyledSessionCard key={session.recruiterId}>
-                    <CardContent>
-                      <StyledSessionHeader>
-                        <StyledSessionInfo>
-                          <div style={{ fontWeight: '600' }}>
-                            Recruiter: {session.recruiterId}
-                          </div>
-                          <div style={{ fontSize: '14px', color: '#666' }}>
-                            {session.isActive ? `Last activity: ${formatLastActivity(session.lastActivity)}` : 'Not active'}
-                          </div>
-                          <div style={{ fontSize: '12px', color: '#888' }}>
-                            {session.isRegistered ? '✓ Registered' : '✗ Not registered'} • 
-                            {session.hasAuthFiles ? ' ✓ Auth files' : ' ✗ No auth files'} • 
-                            {session.hasWebSocketConnection ? ' ✓ WebSocket' : ' ✗ No WebSocket'} • 
-                            WhatsApp: {session.whatsappConnectionStatus}
-                          </div>
-                        </StyledSessionInfo>
-                        <StyledSessionActions>
-                          <Status 
-                            color={getSessionStatusColor(session)} 
-                            text={getSessionStatusText(session)} 
-                            weight="medium" 
-                          />
-                          {session.isActive && (
-                            <>
-                              <StyledBadge variant="secondary">
-                                {session.connectionCount} connections
-                              </StyledBadge>
-                              <StyledBadge variant="outline">
-                                {session.memoryUsageMB} MB
-                              </StyledBadge>
-                            </>
-                          )}
-                        </StyledSessionActions>
-                      </StyledSessionHeader>
-                    </CardContent>
-                  </StyledSessionCard>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              {whatsappHealthData?.getWhatsAppHealthStatus?.metrics && whatsappHealthData.getWhatsAppHealthStatus.metrics.length > 0 && (
+                <Card style={{ marginTop: '16px' }}>
+                  <StyledCardHeader>
+                    <StyledCardTitle>All sessions</StyledCardTitle>
+                  </StyledCardHeader>
+                  <CardContent>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {whatsappHealthData.getWhatsAppHealthStatus.metrics.map((session: any) => (
+                        <StyledSessionCard key={session.recruiterId}>
+                          <CardContent>
+                            <StyledSessionHeader>
+                              <StyledSessionInfo>
+                                <div style={{ fontWeight: '600' }}>
+                                  Recruiter: {session.recruiterId}
+                                </div>
+                                <div style={{ fontSize: '14px', color: '#666' }}>
+                                  {session.isActive ? `Last activity: ${formatLastActivity(session.lastActivity)}` : 'Not active'}
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#888' }}>
+                                  {session.isRegistered ? '✓ Registered' : '✗ Not registered'} • 
+                                  {session.hasAuthFiles ? ' ✓ Auth files' : ' ✗ No auth files'} • 
+                                  {session.hasWebSocketConnection ? ' ✓ WebSocket' : ' ✗ No WebSocket'} • 
+                                  WhatsApp: {session.whatsappConnectionStatus}
+                                </div>
+                              </StyledSessionInfo>
+                              <StyledSessionActions>
+                                <Status 
+                                  color={getWhatsAppSessionStatusColor(session)} 
+                                  text={getWhatsAppSessionStatusText(session)} 
+                                  weight="medium" 
+                                />
+                                {session.isActive && (
+                                  <>
+                                    <StyledBadge variant="secondary">
+                                      {session.connectionCount} connections
+                                    </StyledBadge>
+                                    <StyledBadge variant="outline">
+                                      {session.memoryUsageMB} MB
+                                    </StyledBadge>
+                                  </>
+                                )}
+                              </StyledSessionActions>
+                            </StyledSessionHeader>
+                          </CardContent>
+                        </StyledSessionCard>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
-        {/* No Sessions Message */}
-        {healthData?.getWhatsAppHealthStatus?.metrics && healthData.getWhatsAppHealthStatus.metrics.length === 0 && (
-          <Card style={{ marginTop: '16px' }}>
-            <CardContent>
-              <div style={{ textAlign: 'center', padding: '32px', color: '#666' }}>
-                No WhatsApp sessions found
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              {whatsappHealthData?.getWhatsAppHealthStatus?.metrics && whatsappHealthData.getWhatsAppHealthStatus.metrics.length === 0 && (
+                <Card style={{ marginTop: '16px' }}>
+                  <CardContent>
+                    <div style={{ textAlign: 'center', padding: '32px', color: '#666' }}>
+                      No WhatsApp sessions found
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )}
+        </StyledChannelBlock>
+
+        <StyledChannelBlock style={{ marginTop: '8px' }}>
+          <H2Title title="LinkedIn Unipile monitoring" />
+          {renderLinkedInError()}
+          {!linkedinError && (
+            <>
+              <StyledCardsGrid>
+                <Card>
+                  <StyledCardHeader>
+                    <StyledCardTitle>System status</StyledCardTitle>
+                  </StyledCardHeader>
+                  <CardContent>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Status 
+                        color={linkedinHealthData?.getLinkedInUnipileHealthStatus?.status === 'healthy' ? 'green' : 'red'} 
+                        text={linkedinHealthData?.getLinkedInUnipileHealthStatus?.status === 'healthy' ? 'Healthy' : 'Unhealthy'} 
+                        weight="medium" 
+                      />
+                      <span style={{ fontSize: '14px', color: '#666' }}>
+                        Last updated: {linkedinHealthData?.getLinkedInUnipileHealthStatus?.timestamp ? new Date(linkedinHealthData.getLinkedInUnipileHealthStatus.timestamp).toLocaleTimeString() : 'Never'}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <StyledCardHeader>
+                    <StyledCardTitle>Session overview</StyledCardTitle>
+                  </StyledCardHeader>
+                  <CardContent>
+                    <StyledMetricsGrid>
+                      <StyledMetricItem>
+                        <StyledMetricLabel>Registered accounts</StyledMetricLabel>
+                        <StyledMetricValue>{linkedinStatsData?.getLinkedInUnipileSessionStats?.registeredSessions || 0}</StyledMetricValue>
+                      </StyledMetricItem>
+                      <StyledMetricItem>
+                        <StyledMetricLabel>Active accounts</StyledMetricLabel>
+                        <StyledMetricValue>{linkedinStatsData?.getLinkedInUnipileSessionStats?.activeSessions || 0}</StyledMetricValue>
+                      </StyledMetricItem>
+                      <StyledMetricItem>
+                        <StyledMetricLabel>Inactive accounts</StyledMetricLabel>
+                        <StyledMetricValue>{linkedinStatsData?.getLinkedInUnipileSessionStats?.inactiveSessions || 0}</StyledMetricValue>
+                      </StyledMetricItem>
+                      <StyledMetricItem>
+                        <StyledMetricLabel>Efficiency</StyledMetricLabel>
+                        <StyledMetricValue>{Math.round(linkedinStatsData?.getLinkedInUnipileSessionStats?.memoryEfficiency || 0)}%</StyledMetricValue>
+                      </StyledMetricItem>
+                    </StyledMetricsGrid>
+                  </CardContent>
+                </Card>
+              </StyledCardsGrid>
+
+              {linkedinStatsData?.getLinkedInUnipileSessionStats && (
+                <Card style={{ marginTop: '16px' }}>
+                  <StyledCardHeader>
+                    <StyledCardTitle>Account efficiency</StyledCardTitle>
+                  </StyledCardHeader>
+                  <CardContent>
+                    <div style={{ marginBottom: '8px' }}>
+                      <span style={{ fontSize: '14px' }}>
+                        {linkedinStatsData.getLinkedInUnipileSessionStats.activeSessions} of {linkedinStatsData.getLinkedInUnipileSessionStats.totalSessions} accounts active
+                      </span>
+                    </div>
+                    <StyledProgressBar 
+                      value={linkedinStatsData.getLinkedInUnipileSessionStats.totalSessions > 0 ? (linkedinStatsData.getLinkedInUnipileSessionStats.activeSessions / linkedinStatsData.getLinkedInUnipileSessionStats.totalSessions) * 100 : 0} 
+                      color={linkedinStatsData.getLinkedInUnipileSessionStats.memoryEfficiency > 80 ? 'green' : linkedinStatsData.getLinkedInUnipileSessionStats.memoryEfficiency > 60 ? 'yellow' : 'red'}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
+              {linkedinHealthData?.getLinkedInUnipileHealthStatus?.metrics && linkedinHealthData.getLinkedInUnipileHealthStatus.metrics.length > 0 && (
+                <Card style={{ marginTop: '16px' }}>
+                  <StyledCardHeader>
+                    <StyledCardTitle>All LinkedIn accounts</StyledCardTitle>
+                  </StyledCardHeader>
+                  <CardContent>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {linkedinHealthData.getLinkedInUnipileHealthStatus.metrics.map((session: any) => (
+                        <StyledSessionCard key={session.recruiterId}>
+                          <CardContent>
+                            <StyledSessionHeader>
+                              <StyledSessionInfo>
+                                <div style={{ fontWeight: '600' }}>
+                                  Account: {session.recruiterId}
+                                </div>
+                                <div style={{ fontSize: '14px', color: '#666' }}>
+                                  {session.isActive ? `Last activity: ${formatLastActivity(session.lastActivity)}` : 'Not active'}
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#888' }}>
+                                  {session.isRegistered ? '✓ Registered' : '✗ Not registered'} • 
+                                  {session.hasAuthFiles ? ' ✓ Auth files' : ' ✗ No auth files'} • 
+                                  {session.hasWebSocketConnection ? ' ✓ Session' : ' ✗ No session'} • 
+                                  LinkedIn: {session.linkedinConnectionStatus}
+                                </div>
+                              </StyledSessionInfo>
+                              <StyledSessionActions>
+                                <Status 
+                                  color={getLinkedInSessionStatusColor(session)} 
+                                  text={getLinkedInSessionStatusText(session)} 
+                                  weight="medium" 
+                                />
+                                {session.isActive && (
+                                  <StyledBadge variant="secondary">
+                                    {session.connectionCount} connections
+                                  </StyledBadge>
+                                )}
+                              </StyledSessionActions>
+                            </StyledSessionHeader>
+                          </CardContent>
+                        </StyledSessionCard>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {linkedinHealthData?.getLinkedInUnipileHealthStatus?.metrics && linkedinHealthData.getLinkedInUnipileHealthStatus.metrics.length === 0 && (
+                <Card style={{ marginTop: '16px' }}>
+                  <CardContent>
+                    <div style={{ textAlign: 'center', padding: '32px', color: '#666' }}>
+                      No LinkedIn Unipile accounts found (configure linkedin_url or linkedin_unipile_account_id for this workspace)
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )}
+        </StyledChannelBlock>
       </Section>
     </StyledContainer>
   );

@@ -1,9 +1,9 @@
 import { MetadataRoute } from 'next';
 import { headers } from 'next/headers';
 
-export const dynamic = 'force-dynamic';
+import { CANONICAL_SITE_URL } from '@/lib/sitemap';
 
-const CANONICAL_DOMAIN = 'https://arxena.com';
+export const dynamic = 'force-dynamic';
 
 export default async function robots(): Promise<MetadataRoute.Robots> {
   const envUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.VERCEL_URL;
@@ -21,12 +21,10 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
   // Use canonical domain for sitemap so robots.txt works across http/https and www/non-www variants
   const isProduction =
     baseUrl.includes('arxena.com') || baseUrl.includes('vercel.app');
-  const sitemapBase = isProduction ? CANONICAL_DOMAIN : baseUrl;
+  const sitemapBase = isProduction ? CANONICAL_SITE_URL : baseUrl;
 
   return {
-    rules: [
-      { userAgent: '*', allow: '/', disallow: '/api/' },
-    ],
+    rules: [{ userAgent: '*', allow: '/', disallow: '/api/' }],
     sitemap: `${sitemapBase}/sitemap-index.xml`,
   };
 }

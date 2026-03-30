@@ -35,7 +35,11 @@ export class CandidateEngagementExtensionController {
     @AuthWorkspace() workspace: Workspace,
     @Req() req: Request,
     @Headers('x-origin-domain') originHeader?: string,
-  ): Promise<{ linkedinConnected: boolean; whatsappConnected: boolean }> {
+  ): Promise<{
+    linkedinConnected: boolean;
+    whatsappConnected: boolean;
+    connectLinkedinToUnipileAutomatically: boolean;
+  }> {
     const authHeader = req.headers.authorization;
     const apiToken =
       typeof authHeader === 'string'
