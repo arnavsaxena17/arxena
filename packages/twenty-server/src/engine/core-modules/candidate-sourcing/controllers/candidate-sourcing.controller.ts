@@ -4,12 +4,11 @@ import {
   Get,
   HttpException,
   HttpStatus,
-  LoggerService,
   Post,
   Req,
   UploadedFile,
   UseGuards,
-  UseInterceptors,
+  UseInterceptors
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
@@ -48,6 +47,7 @@ import {
 } from 'twenty-shared';
 import { v4 } from 'uuid';
 
+import console from 'console';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import {
@@ -74,8 +74,6 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {
   constructor(
-
-    private readonly logger: LoggerService,
     private readonly sheetsService: GoogleSheetsService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly candidateService: CandidateService,
@@ -94,7 +92,7 @@ export class CandidateSourcingController {
   @Post('update-candidate')
   @UseGuards(JwtAuthGuard)
   async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
-    this.logger.log('Updating candidate spreadsheet', 'CandidateSourcingController');
+    console.log('Updating candidate spreadsheet', 'CandidateSourcingController');
     try {
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const { candidate, jobId, jobName } = request.body;
@@ -1770,7 +1768,7 @@ export class CandidateSourcingController {
   async getUserObj(@Req() request: any): Promise<object> {
     try {
 
-      this.logger.log("Going to get user object", 'CandidateSourcingController');
+      console.log("Going to get user object", 'CandidateSourcingController');
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const origin = request.headers['x-origin-domain'] || request.headers.origin;
 
@@ -1781,7 +1779,7 @@ export class CandidateSourcingController {
       if (origin && origin.startsWith('chrome-extension://')) {
         chromeExtensionId = origin.replace('chrome-extension://', '');
       }
-      this.logger.log(`chromeExtensionId in getUserObj: ${chromeExtensionId}`, 'CandidateSourcingController');
+      console.log(`chromeExtensionId in getUserObj: ${chromeExtensionId}`, 'CandidateSourcingController');
       // Get current user data using the same approach as RecruiterProfileService
       const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       // Get all jobs for the user using staticGraphQLService
@@ -1794,7 +1792,7 @@ export class CandidateSourcingController {
 
       // Use the workspace member data from currentUser instead of separate query
       const workspaceMember = currentUser?.workspaceMember;
-      this.logger.log(`workspaceMember in getUserObj: ${workspaceMember}`, 'CandidateSourcingController');
+      console.log(`workspaceMember in getUserObj: ${workspaceMember}`, 'CandidateSourcingController');
 
       // Create a mock recruiter profile from the workspace member data
       const recruiterProfile = workspaceMember ? {
@@ -1810,7 +1808,7 @@ export class CandidateSourcingController {
         lastName: workspaceMember.name?.lastName || '',
         typeWorkspaceMember: 'MEMBER'
       } : null;
-      this.logger.log(`recruiterProfile in getUserObj: ${recruiterProfile}`, 'CandidateSourcingController');
+      console.log(`recruiterProfile in getUserObj: ${recruiterProfile}`, 'CandidateSourcingController');
 
       // Map jobs to the expected format
       const mappedJobs = jobs.map((jobEdge: any) => {
@@ -1868,7 +1866,7 @@ export class CandidateSourcingController {
         }))
       };
 
-      this.logger.log(`Response obj in get_user_obj:: ${JSON.stringify(userObj)}`, 'CandidateSourcingController');
+      console.log(`Response obj in get_user_obj:: ${JSON.stringify(userObj)}`, 'CandidateSourcingController');
 
       return {
         status: 'successful_fid',
