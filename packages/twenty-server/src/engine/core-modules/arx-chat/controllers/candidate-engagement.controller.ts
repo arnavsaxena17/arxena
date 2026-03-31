@@ -1,12 +1,12 @@
 import {
-    Controller,
-    Get,
-    Headers,
-    HttpException,
-    HttpStatus,
-    Logger,
-    Req,
-    UseGuards,
+  Controller,
+  Get,
+  Headers,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -15,16 +15,10 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
 import { ExtensionUnipileConnectionStatusService } from '../services/candidate-engagement/extension-unipile-connection-status.service';
 
-/**
- * Chrome extension + candidate-engagement: Unipile connection flags aligned with
- * twenty-front UnipileContext (workspace member profile + Unipile accounts).
- */
-@Controller('candidate-engagement/extension')
+@Controller('candidate-engagement')
 @UseGuards(JwtAuthGuard)
-export class CandidateEngagementExtensionController {
-  private readonly logger = new Logger(
-    CandidateEngagementExtensionController.name,
-  );
+export class CandidateEngagementController {
+  private readonly logger = new Logger(CandidateEngagementController.name);
 
   constructor(
     private readonly extensionUnipileConnectionStatusService: ExtensionUnipileConnectionStatusService,

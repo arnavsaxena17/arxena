@@ -84,6 +84,10 @@ build_step() {
 	build_step TWENTY_ORGCHART_WORKSPACE yarn workspace twenty-orgchart build
 	cd ~/twenty/packages/twenty-server/
        	mkdir -p src/engine/core-modules/i18n/locales/generated
+	# Standard object/field labels are translated via generateMessageId(sourceEnglish) matching
+	# Lingui message ids from msg`...` in workspace entities. extract picks up those strings;
+	# compile writes locales/generated/*.ts. If extract/compile is skipped or DB labels drift from
+	# canonical English, the API falls back to the raw DB string (see resolveStandardMetadataTranslation).
 	npx lingui extract --clean --verbose
 	ls -la src/engine/core-modules/i18n/locales/
 	npx lingui compile --verbose

@@ -252,7 +252,8 @@ if [ "$DEPLOYMENTS_APPLIED" -eq 1 ]; then
   cd "$REPO_DIR"
   yarn install --frozen-lockfile || yarn install
 
-  # Compile lingui catalogs for server
+  # Compile lingui catalogs for server (requires locales/*.po from extract; production deploy copies
+  # generated TS from the EC2 build when TWENTY_SERVER succeeds—re-compile here refreshes *.ts from .po)
   cd "$REPO_DIR/packages/twenty-server"
   npx lingui compile --verbose || npx nx run twenty-server:lingui:compile
 

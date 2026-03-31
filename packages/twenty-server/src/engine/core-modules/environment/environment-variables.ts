@@ -1326,6 +1326,26 @@ export class EnvironmentVariables {
     group: EnvironmentVariablesGroup.Other,
     sensitive: true,
     description:
+      'CoreSignal API key (https://docs.coresignal.com) for multi-source employee search (org movement, etc.).',
+  })
+  @IsOptional()
+  @IsString()
+  CORESIGNAL_API_KEY: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'CoreSignal employee index for org movement and collect: multi_source (default) or employee_base. See CORESIGNAL_API_KEY.',
+  })
+  @IsString()
+  @IsIn(['multi_source', 'employee_base'])
+  @IsOptional()
+  CORESIGNAL_EMPLOYEE_API?: 'multi_source' | 'employee_base';
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    sensitive: true,
+    description:
       'Nubela API key for company logo lookup (https://nubela.co). Used by org-chart company autocomplete to show company logos.',
   })
   @IsOptional()

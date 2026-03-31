@@ -19,6 +19,8 @@ import { OrgChartClientIpModule } from 'src/engine/core-modules/org-chart/org-ch
 import { OrgChartController } from './controllers/org-chart.controller';
 import { ArxenaBackendService } from './services/arxena-backend.service';
 import { CompanyLogoService } from './services/company-logo.service';
+import { ContactOutPersonOrgMovementService } from './services/contactout-person-org-movement.service';
+import { CoreSignalPersonOrgMovementService } from './services/coresignal-person-org-movement.service';
 import { ImageProxyService } from './services/image-proxy.service';
 import { OrgChartEsService } from './services/org-chart-es.service';
 import { OrgChartLinkedInBuildService } from './services/org-chart-linkedin-build.service';
@@ -26,7 +28,9 @@ import { OrgChartTheOrgEnrichmentService } from './services/org-chart-theorg-enr
 import { OrgChartService } from './services/org-chart.service';
 import { OrgChartS3Service } from './services/orgchart-s3.service';
 import { PdlAutocompleteService } from './services/pdl-autocomplete.service';
+import { PdlPersonOrgMovementService } from './services/pdl-person-org-movement.service';
 import { PeopleEsService } from './services/people-es.service';
+import { PersonOrgMovementService } from './services/person-org-movement.service';
 import { PythonOrgChartService } from './services/python-org-chart.service';
 
 @Module({
@@ -54,6 +58,10 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
     OrgChartEsService,
     PeopleEsService,
     PdlAutocompleteService,
+    PdlPersonOrgMovementService,
+    CoreSignalPersonOrgMovementService,
+    ContactOutPersonOrgMovementService,
+    PersonOrgMovementService,
     CompanyLogoService,
     ImageProxyService,
     PythonOrgChartService,
@@ -64,6 +72,10 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
     OrgChartS3Service,
     OrgChartTheOrgEnrichmentService,
     OrgChartLinkedInBuildService,
+    PdlPersonOrgMovementService,
+    CoreSignalPersonOrgMovementService,
+    ContactOutPersonOrgMovementService,
+    PersonOrgMovementService,
   ],
 })
 export class OrgChartModule {}

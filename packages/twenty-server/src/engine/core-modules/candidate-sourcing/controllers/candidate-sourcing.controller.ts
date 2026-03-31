@@ -1,14 +1,15 @@
 import {
-    Body,
-    Controller,
-    Get,
-    HttpException,
-    HttpStatus,
-    Post,
-    Req,
-    UploadedFile,
-    UseGuards,
-    UseInterceptors,
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  LoggerService,
+  Post,
+  Req,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
@@ -17,41 +18,41 @@ import * as path from 'path';
 
 import axios from 'axios';
 import {
-    CandidateEdge,
-    CandidateEnrichmentEdge,
-    createOneCandidateField,
-    CreateOneVideoInterviewTemplate,
-    findWorkspaceMemberProfiles,
-    getGraphqlToFindManyJobs,
-    graphqlMutationToDeleteManyCandidates,
-    graphqlMutationToDeleteManyPeople,
-    graphqlQueryToFindManyPeople,
-    graphqlToAddNewJob,
-    graphqlToCreateOnePrompt,
-    graphqlToFetchAllCandidateData,
-    graphqlToFetchAllCandidateDataWithFieldValues,
-    graphQlTofindManyCandidateEnrichments,
-    graphqlToFindManyJobs,
-    graphQltoUpdateOneCandidate,
-    graphQLToUpdateOneWorkspaceMemberProfile,
-    Job,
-    JobEdge,
-    mutations,
-    PageInfo,
-    PersonEdge,
-    PersonNode,
-    queries,
-    resolveIsOrgChartEnabledFromWorkspace,
-    UpdateOneJob,
-    UserProfile,
+  CandidateEdge,
+  CandidateEnrichmentEdge,
+  createOneCandidateField,
+  CreateOneVideoInterviewTemplate,
+  findWorkspaceMemberProfiles,
+  getGraphqlToFindManyJobs,
+  graphqlMutationToDeleteManyCandidates,
+  graphqlMutationToDeleteManyPeople,
+  graphqlQueryToFindManyPeople,
+  graphqlToAddNewJob,
+  graphqlToCreateOnePrompt,
+  graphqlToFetchAllCandidateData,
+  graphqlToFetchAllCandidateDataWithFieldValues,
+  graphQlTofindManyCandidateEnrichments,
+  graphqlToFindManyJobs,
+  graphQltoUpdateOneCandidate,
+  graphQLToUpdateOneWorkspaceMemberProfile,
+  Job,
+  JobEdge,
+  mutations,
+  PageInfo,
+  PersonEdge,
+  PersonNode,
+  queries,
+  resolveIsOrgChartEnabledFromWorkspace,
+  UpdateOneJob,
+  UserProfile,
 } from 'twenty-shared';
 import { v4 } from 'uuid';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import {
-    JobDescriptionParseRequest,
-    ParsedJobDescription,
+  JobDescriptionParseRequest,
+  ParsedJobDescription,
 } from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
 import { DeleteFieldValuesService } from 'src/engine/core-modules/candidate-sourcing/jobs/delete-field-values.service';
 import { ProcessAiFiltersService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-ai-filters.service';
@@ -73,6 +74,8 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {
   constructor(
+
+    private readonly logger: LoggerService,
     private readonly sheetsService: GoogleSheetsService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly candidateService: CandidateService,
@@ -91,6 +94,7 @@ export class CandidateSourcingController {
   @Post('update-candidate')
   @UseGuards(JwtAuthGuard)
   async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
+    this.logger.log('Updating candidate spreadsheet', 'CandidateSourcingController');
     try {
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const { candidate, jobId, jobName } = request.body;
@@ -1766,11 +1770,10 @@ export class CandidateSourcingController {
   async getUserObj(@Req() request: any): Promise<object> {
     try {
 
-      console.log("Going to get user object");
+      this.logger.log("Going to get user object", 'CandidateSourcingController');
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const origin = request.headers['x-origin-domain'] || request.headers.origin;
 
-      console.log("Origin::", origin);
 
       let chromeExtensionId = 'najjmciobphkllanmfgffjjjcbejnbci'; // default
       
@@ -1778,8 +1781,7 @@ export class CandidateSourcingController {
       if (origin && origin.startsWith('chrome-extension://')) {
         chromeExtensionId = origin.replace('chrome-extension://', '');
       }
-      console.log('chromeExtensionId in getUserObj:', chromeExtensionId);
-  
+      this.logger.log(`chromeExtensionId in getUserObj: ${chromeExtensionId}`, 'CandidateSourcingController');
       // Get current user data using the same approach as RecruiterProfileService
       const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       // Get all jobs for the user using staticGraphQLService
@@ -1792,7 +1794,7 @@ export class CandidateSourcingController {
 
       // Use the workspace member data from currentUser instead of separate query
       const workspaceMember = currentUser?.workspaceMember;
-      console.log('workspaceMember in getUserObj:', workspaceMember);
+      this.logger.log(`workspaceMember in getUserObj: ${workspaceMember}`, 'CandidateSourcingController');
 
       // Create a mock recruiter profile from the workspace member data
       const recruiterProfile = workspaceMember ? {
@@ -1808,7 +1810,7 @@ export class CandidateSourcingController {
         lastName: workspaceMember.name?.lastName || '',
         typeWorkspaceMember: 'MEMBER'
       } : null;
-      console.log('recruiterProfile in getUserObj:', recruiterProfile);
+      this.logger.log(`recruiterProfile in getUserObj: ${recruiterProfile}`, 'CandidateSourcingController');
 
       // Map jobs to the expected format
       const mappedJobs = jobs.map((jobEdge: any) => {
@@ -1866,7 +1868,7 @@ export class CandidateSourcingController {
         }))
       };
 
-      console.log('Response obj in get_user_obj::', { status: 'successful_fid', user_obj: userObj });
+      this.logger.log(`Response obj in get_user_obj:: ${JSON.stringify(userObj)}`, 'CandidateSourcingController');
 
       return {
         status: 'successful_fid',

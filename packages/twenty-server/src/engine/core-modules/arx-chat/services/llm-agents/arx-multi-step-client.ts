@@ -23,7 +23,7 @@ import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/ar
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
-const modelName = 'gpt-5.1-chat-latest';
+const modelName = 'gpt-5-mini';
 // import { Transformations } from '../candidate-engagement/transformations';
 
 export class OpenAIArxMultiStepClient {
