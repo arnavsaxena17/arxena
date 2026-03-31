@@ -105,7 +105,7 @@ export class EnvironmentVariables {
   @CastToBoolean()
   @IsOptional()
   @IsBoolean()
-  CONNECT_LINKEDIN_TO_UNIPILE_AUTOMATICALLY = false;
+  CONNECT_LINKEDIN_TO_UNIPILE_AUTOMATICALLY = true;
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.Other,
