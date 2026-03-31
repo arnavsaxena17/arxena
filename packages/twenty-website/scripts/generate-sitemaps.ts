@@ -8,6 +8,8 @@ import {
   CANONICAL_SITE_URL,
   formatSitemapId,
   getExposedBatchCount,
+  SITEMAP_CHILD_PREFIX,
+  SITEMAP_INDEX_FILENAME,
   sitemapEntryToXml,
   sitemapIndexEntryToXml,
   STATIC_ROUTES,
@@ -114,7 +116,9 @@ async function removeExistingSitemaps() {
         (entry) =>
           entry.isFile() &&
           (entry.name === 'sitemap-index.xml' ||
-            /^sitemap-\d{3}\.xml$/.test(entry.name)),
+            entry.name === SITEMAP_INDEX_FILENAME ||
+            /^sitemap-\d{3}\.xml$/.test(entry.name) ||
+            new RegExp(`^${SITEMAP_CHILD_PREFIX}\\d{3}\\.xml$`).test(entry.name)),
       )
       .map((entry) => rm(path.join(publicDir, entry.name))),
   );
@@ -184,7 +188,7 @@ async function generateChildSitemap(
 ${entries.join('\n')}
 </urlset>`;
 
-  const fileName = `sitemap-${formatSitemapId(batchIndex)}.xml`;
+  const fileName = formatSitemapId(batchIndex);
   await writeFile(path.join(publicDir, fileName), xml, 'utf8');
 }
 
@@ -198,7 +202,7 @@ async function generateSitemapIndex(
       ? []
       : Array.from({ length: count }, (_, i) =>
           sitemapIndexEntryToXml(
-            `${baseUrl}/sitemap-${formatSitemapId(i)}.xml`,
+            `${baseUrl}/${formatSitemapId(i)}`,
             generatedAt,
           ),
         );
@@ -208,7 +212,7 @@ async function generateSitemapIndex(
 ${sitemapEntries.join('\n')}
 </sitemapindex>`;
 
-  await writeFile(path.join(publicDir, 'sitemap-index.xml'), xml, 'utf8');
+  await writeFile(path.join(publicDir, SITEMAP_INDEX_FILENAME), xml, 'utf8');
 }
 
 async function main() {
@@ -227,7 +231,7 @@ async function main() {
   await generateSitemapIndex(baseUrl, count, generatedAt);
 
   console.log(
-    `Generated ${count} sitemap file(s) plus sitemap-index.xml in ${publicDir}`,
+    `Generated ${count} sitemap file(s) plus ${SITEMAP_INDEX_FILENAME} in ${publicDir}`,
   );
 }
 

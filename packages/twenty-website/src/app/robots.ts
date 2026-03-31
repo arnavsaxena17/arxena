@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 import { headers } from 'next/headers';
 
-import { CANONICAL_SITE_URL } from '@/lib/sitemap';
+import { CANONICAL_SITE_URL, SITEMAP_INDEX_FILENAME } from '@/lib/sitemap';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +25,6 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
 
   return {
     rules: [{ userAgent: '*', allow: '/', disallow: '/api/' }],
-    sitemap: `${sitemapBase}/sitemap-index.xml`,
+    sitemap: `${sitemapBase}/${SITEMAP_INDEX_FILENAME}`,
   };
 }

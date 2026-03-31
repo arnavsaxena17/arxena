@@ -23,17 +23,17 @@ function getMaxExposedCount(count: number): number {
 
 test.describe('Sitemap and companies rollout', () => {
   test('sitemap index has expected count', async ({ request }) => {
-    const res = await request.get(`${websiteBaseUrl}/sitemap-index.xml`);
+    const res = await request.get(`${websiteBaseUrl}/sitemap-main.xml`);
     expect(res.ok()).toBeTruthy();
     const xml = await res.text();
     const sitemapCount = (xml.match(/<sitemap>/g) || []).length;
     expect(sitemapCount).toBe(expectedCount);
   });
 
-  test('sitemap-001 has static routes and org chart URLs', async ({
+  test('sitemap-pages-001 has static routes and org chart URLs', async ({
     request,
   }) => {
-    const res = await request.get(`${websiteBaseUrl}/sitemap-001.xml`);
+    const res = await request.get(`${websiteBaseUrl}/sitemap-pages-001.xml`);
     expect(res.ok()).toBeTruthy();
     const xml = await res.text();
     const urlCount = (xml.match(/<url>/g) || []).length;
@@ -48,7 +48,7 @@ test.describe('Sitemap and companies rollout', () => {
     const outOfRange = expectedCount + 1;
     const id = String(outOfRange).padStart(3, '0');
     const res = await request.get(
-      `${websiteBaseUrl}/sitemap-${id}.xml`,
+      `${websiteBaseUrl}/sitemap-pages-${id}.xml`,
       { failOnStatusCode: false },
     );
     expect(res.status()).toBe(404);
@@ -57,7 +57,7 @@ test.describe('Sitemap and companies rollout', () => {
   test('sitemap-006 exists and has ~50k URLs when count>=6', async ({
     request,
   }) => {
-    const res = await request.get(`${websiteBaseUrl}/sitemap-006.xml`, {
+    const res = await request.get(`${websiteBaseUrl}/sitemap-pages-006.xml`, {
       failOnStatusCode: false,
     });
     if (expectedCount >= 6) {
@@ -71,7 +71,7 @@ test.describe('Sitemap and companies rollout', () => {
   });
 
   test('sitemap-051 exists when count>=51', async ({ request }) => {
-    const res = await request.get(`${websiteBaseUrl}/sitemap-051.xml`, {
+    const res = await request.get(`${websiteBaseUrl}/sitemap-pages-051.xml`, {
       failOnStatusCode: false,
     });
     if (expectedCount >= 51) {
@@ -179,7 +179,9 @@ test.describe('Sitemap and companies rollout', () => {
   }) => {
     if (expectedCount < 1) return;
 
-    const sitemapRes = await request.get(`${websiteBaseUrl}/sitemap-001.xml`);
+    const sitemapRes = await request.get(
+      `${websiteBaseUrl}/sitemap-pages-001.xml`,
+    );
     const xml = await sitemapRes.text();
     const locMatches =
       xml.match(/<loc>[^<]*\/org-chart\/([^/<]+)/g) || [];

@@ -112,7 +112,7 @@ export const FooterMobile = ({ phase2Exposed = false }: FooterMobileProps) => {
             </StyledLink>
           </>
         )}
-        <StyledLink href="/sitemap-index.xml">Sitemap</StyledLink>
+        <StyledLink href="/sitemap-main.xml">Sitemap</StyledLink>
       </StyledLinkSection>
       <StyledLinkSection>
         <StyledSectionTitle>Product</StyledSectionTitle>

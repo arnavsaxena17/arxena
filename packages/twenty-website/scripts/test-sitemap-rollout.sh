@@ -26,8 +26,8 @@ echo "Website: $BASE | Server: $SERVER_BASE"
 echo ""
 
 # 1. Sitemap index
-echo "--- 1. Sitemap index (/sitemap-index.xml) ---"
-INDEX_XML=$(curl -s "$BASE/sitemap-index.xml")
+echo "--- 1. Sitemap index (/sitemap-main.xml) ---"
+INDEX_XML=$(curl -s "$BASE/sitemap-main.xml")
 if [ -z "$INDEX_XML" ]; then
   echo "FAIL: No response from sitemap index"
   exit 1
@@ -41,7 +41,7 @@ echo ""
 
 # 2. Sitemap URLs - first batch
 echo "--- 2. Sitemap 001 (first batch) ---"
-SITEMAP_001=$(curl -s "$BASE/sitemap-001.xml")
+SITEMAP_001=$(curl -s "$BASE/sitemap-pages-001.xml")
 URL_COUNT_001=$(echo "$SITEMAP_001" | grep -c '<url>' || true)
 ORGCHART_COUNT_001=$(echo "$SITEMAP_001" | grep -c '/org-chart/' || true)
 echo "Total URLs: $URL_COUNT_001 (static + org charts: $ORGCHART_COUNT_001)"

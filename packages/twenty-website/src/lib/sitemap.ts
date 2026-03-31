@@ -2,6 +2,8 @@ import { toSlug } from 'twenty-shared';
 
 /** Canonical marketing site origin for sitemap `<loc>` and robots when env points at localhost. */
 export const CANONICAL_SITE_URL = 'https://arxena.com';
+export const SITEMAP_INDEX_FILENAME = 'sitemap-main.xml';
+export const SITEMAP_CHILD_PREFIX = 'sitemap-pages-';
 
 /**
  * Gradual rollout batch sizes (URLs per sitemap):
@@ -161,7 +163,7 @@ export function sitemapEntryToXml(
 
 /** Zero-padded sitemap filename: 0 -> "001", 1 -> "002", etc. */
 export function formatSitemapId(batchIndex: number): string {
-  return String(batchIndex + 1).padStart(3, '0');
+  return `${SITEMAP_CHILD_PREFIX}${String(batchIndex + 1).padStart(3, '0')}.xml`;
 }
 
 export function sitemapIndexEntryToXml(

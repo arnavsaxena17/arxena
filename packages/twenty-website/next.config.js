@@ -36,7 +36,7 @@ const nextConfig = {
       },
       {
         source: '/sitemap.xml',
-        destination: '/sitemap-index.xml',
+        destination: '/sitemap-main.xml',
         permanent: true,
       },
       // Redirect extension and app download to arxena-site (services.arxena.com in prod, localhost:5050 in dev)

@@ -24,12 +24,12 @@ if [ "$URL_COUNT" -eq 0 ]; then
 fi
 echo ""
 
-echo "=== /sitemap-index.xml (index) ==="
-curl -s -w "\nHTTP: %{http_code}\n" "$BASE/sitemap-index.xml" | head -25
+echo "=== /sitemap-main.xml (index) ==="
+curl -s -w "\nHTTP: %{http_code}\n" "$BASE/sitemap-main.xml" | head -25
 echo ""
 
-echo "=== /sitemap-001.xml (first child) ==="
-curl -s -w "\nHTTP: %{http_code}\n" "$BASE/sitemap-001.xml" | head -30
+echo "=== /sitemap-pages-001.xml (first child) ==="
+curl -s -w "\nHTTP: %{http_code}\n" "$BASE/sitemap-pages-001.xml" | head -30
 echo ""
 
 echo "=== /sitemap-002.xml (second child, if count>=2) ==="

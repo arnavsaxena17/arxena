@@ -108,7 +108,7 @@ export const FooterDesktop = ({
               </RightSideFooterLink>
             </>
           )}
-          <RightSideFooterLink href="/sitemap-index.xml">
+          <RightSideFooterLink href="/sitemap-main.xml">
             Sitemap
           </RightSideFooterLink>
         </RightSideFooterColumn>
