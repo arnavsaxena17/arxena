@@ -16,6 +16,7 @@ export enum MultipleRecordsActionKeys {
   CREATE_CHAT_BASED_SHORTLIST = 'create-chat-based-shortlist',
   POPULATE_SHORTLIST = 'populate-shortlist',
   START_CHAT_WITH_CANDIDATES = 'start-chat-with-candidates',
+  UPDATE_MESSAGING_CHANNEL_FOR_CANDIDATES = 'update-messaging-channel-for-candidates',
   CLONE_VINT = 'clone-vint',
   CLONE_PEOPLE = 'clone-people',
   CLONE_VINT_INTERVIEW = 'clone-vint-interview',

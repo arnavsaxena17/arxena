@@ -2,11 +2,11 @@ import axios from 'axios';
 import FormData from 'form-data';
 import * as fs from 'fs';
 import {
-  CandidateNode,
-  ChatControlsObjType,
-  ChatHistoryItem,
-  Job,
-  whatappUpdateMessageObjType
+    CandidateNode,
+    ChatControlsObjType,
+    ChatHistoryItem,
+    Job,
+    whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
@@ -91,8 +91,9 @@ export class WhatsappUnipileMessagingService {
 
   /**
    * Resolve WhatsApp Unipile account id from workspace member profile.
-   * Uses JWT workspaceMemberId when present; otherwise falls back to the job's recruiter
-   * workspace member id (needed for API-key tokens from workers/cron).
+   * Uses the job recruiter's (job creator) linked account first so outbound messages
+   * match job ownership. Falls back to JWT workspaceMemberId only when the job has no
+   * recruiterId (legacy rows / API-key-only flows).
    */
   private async resolveWhatsappUnipileAccountId(
     apiToken: string,
@@ -103,11 +104,11 @@ export class WhatsappUnipileMessagingService {
     }
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    const jobRecruiterId = this.jobRecruiterAsWorkspaceMemberId(candidateJob);
     const workspaceMemberIdFromToken =
       await this.workspaceQueryService.getWorkspaceMemberIdFromToken(apiToken);
     const workspaceMemberId =
-      workspaceMemberIdFromToken ??
-      this.jobRecruiterAsWorkspaceMemberId(candidateJob);
+      jobRecruiterId ?? workspaceMemberIdFromToken;
     return this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
       workspaceMemberId,
       workspaceId,

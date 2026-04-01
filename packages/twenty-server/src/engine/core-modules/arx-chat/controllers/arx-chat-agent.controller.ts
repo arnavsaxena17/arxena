@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   HttpException,
@@ -44,6 +45,17 @@ import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/googl
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+
+const ALLOWED_CANDIDATE_MESSAGING_CHANNELS = new Set([
+  'baileys',
+  'whatsapp-unipile',
+  'whatsapp-web',
+  'whatsapp-official',
+  'linkedin',
+  'linkedin-premium',
+  'linkedin-inmail',
+  'linkedin-sock',
+]);
 
 @Controller('arx-chat')
 export class ArxChatEndpoint {
@@ -468,6 +480,70 @@ export class ArxChatEndpoint {
 
 
     return;
+  }
+
+  @Post('update-messaging-channel-for-candidates')
+  @UseGuards(JwtAuthGuard)
+  async updateMessagingChannelForCandidates(
+    @Req() request: any,
+  ): Promise<{ status: string; updated: number; failed: number }> {
+    const authHeader = request.headers.authorization;
+    const apiToken =
+      typeof authHeader === 'string'
+        ? authHeader.split(' ')[1]?.replace(/[\r\n]+/g, '') ?? ''
+        : '';
+
+    const candidateIdsRaw = request.body?.candidateIds;
+    const messagingChannel = request.body?.messagingChannel as string | undefined;
+
+    if (!Array.isArray(candidateIdsRaw) || candidateIdsRaw.length === 0) {
+      throw new BadRequestException('candidateIds must be a non-empty array');
+    }
+
+    if (
+      typeof messagingChannel !== 'string' ||
+      messagingChannel.trim() === ''
+    ) {
+      throw new BadRequestException('messagingChannel is required');
+    }
+
+    const channel = messagingChannel.trim();
+    if (!ALLOWED_CANDIDATE_MESSAGING_CHANNELS.has(channel)) {
+      throw new BadRequestException(
+        `Invalid messagingChannel: ${channel}. Allowed: ${[
+          ...ALLOWED_CANDIDATE_MESSAGING_CHANNELS,
+        ].join(', ')}`,
+      );
+    }
+
+    let updated = 0;
+    let failed = 0;
+
+    for (const candidateId of candidateIdsRaw) {
+      if (typeof candidateId !== 'string' || candidateId.trim() === '') {
+        failed += 1;
+        continue;
+      }
+      try {
+        await this.staticGraphQLService.executeGraphQL(
+          graphQltoUpdateOneCandidate,
+          {
+            idToUpdate: candidateId.trim(),
+            input: { messagingChannel: channel },
+          },
+          apiToken,
+        );
+        updated += 1;
+      } catch (error) {
+        console.error(
+          `updateMessagingChannelForCandidates failed for ${candidateId}:`,
+          error,
+        );
+        failed += 1;
+      }
+    }
+
+    return { status: 'Success', updated, failed };
   }
 
   @Post('send-chat')

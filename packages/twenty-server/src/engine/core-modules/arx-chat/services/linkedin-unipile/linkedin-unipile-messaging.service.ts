@@ -11,6 +11,7 @@ import {
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -28,9 +29,48 @@ export class LinkedinUnipileMessagingService {
     private readonly staticGraphQLService: StaticGraphQLService,
     baseUrl?: string,
     accessToken?: string,
+    private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
   ) {
     this.baseUrl = baseUrl || process.env.UNIPILE_API_URL || '';
     this.accessToken = accessToken || process.env.UNIPILE_ACCESS_TOKEN || '';
+  }
+
+  /** Job.recruiterId is the workspace member id of the job's recruiter (see RecruiterProfileService). */
+  private jobRecruiterAsWorkspaceMemberId(
+    candidateJob: Job | undefined | null,
+  ): string | null {
+    const id = candidateJob?.recruiterId?.trim();
+    return id || null;
+  }
+
+  /**
+   * LinkedIn Unipile account for outbound sends: job recruiter's linked account first,
+   * then workspace-level linkedin_unipile_account_id (legacy single-account workspaces).
+   */
+  private async resolveLinkedinUnipileAccountId(
+    candidateJob: Job,
+    apiToken: string,
+  ): Promise<string | null> {
+    const workspaceId =
+      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    const jobRecruiterId = this.jobRecruiterAsWorkspaceMemberId(candidateJob);
+    if (this.workspaceMemberProfileUnipileService && jobRecruiterId) {
+      const fromProfile =
+        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+          jobRecruiterId,
+          workspaceId,
+          apiToken,
+          'linkedin',
+        );
+      if (fromProfile?.trim()) {
+        return fromProfile.trim();
+      }
+    }
+    const fromWorkspace = await this.workspaceQueryService.getWorkspaceApiKey(
+      workspaceId,
+      'linkedin_unipile_account_id',
+    );
+    return fromWorkspace?.trim() || null;
   }
 
 
@@ -426,25 +466,20 @@ export class LinkedinUnipileMessagingService {
     console.log('Sending LinkedIn message via Unipile API');
 
     try {
-      const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
-        candidateJob,
-        apiToken,
-      );
-
       if (!candidate) {
         console.log('Candidate node not found, cannot proceed with sending the message');
         return { status: 'failed', message: 'Candidate node not found' };
       }
 
-      // Get LinkedIn account ID from workspace settings
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const linkedinAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
-        workspaceId,
-        'linkedin_unipile_account_id',
+      const linkedinAccountId = await this.resolveLinkedinUnipileAccountId(
+        candidateJob,
+        apiToken,
       );
 
       if (!linkedinAccountId) {
-        console.log('LinkedIn account ID not found in workspace settings');
+        console.log(
+          'LinkedIn account ID not found for job recruiter or workspace settings',
+        );
         return { status: 'failed', message: 'LinkedIn account not configured' };
       }
 
@@ -528,25 +563,20 @@ export class LinkedinUnipileMessagingService {
     console.log('Sending LinkedIn InMail via Unipile API');
 
     try {
-      const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
-        candidateJob,
-        apiToken,
-      );
-
       if (!candidate) {
         console.log('Candidate node not found, cannot proceed with sending the InMail');
         return { status: 'failed', message: 'Candidate node not found' };
       }
 
-      // Get LinkedIn account ID from workspace settings
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const linkedinAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
-        workspaceId,
-        'linkedin_unipile_account_id',
+      const linkedinAccountId = await this.resolveLinkedinUnipileAccountId(
+        candidateJob,
+        apiToken,
       );
 
       if (!linkedinAccountId) {
-        console.log('LinkedIn account ID not found in workspace settings');
+        console.log(
+          'LinkedIn account ID not found for job recruiter or workspace settings',
+        );
         return { status: 'failed', message: 'LinkedIn account not configured' };
       }
 
@@ -646,14 +676,15 @@ export class LinkedinUnipileMessagingService {
     try {
       console.log('Sending LinkedIn attachment message:', attachmentMessage);
 
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      linkedinAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
-        workspaceId,
-        'linkedin_unipile_account_id',
+      linkedinAccountId = await this.resolveLinkedinUnipileAccountId(
+        candidateJob,
+        apiToken,
       );
 
       if (!linkedinAccountId) {
-        console.log('LinkedIn account ID not found in workspace settings');
+        console.log(
+          'LinkedIn account ID not found for job recruiter or workspace settings',
+        );
         return { status: 'failed', message: 'LinkedIn account not configured' };
       }
 
@@ -763,14 +794,15 @@ export class LinkedinUnipileMessagingService {
     try {
       console.log('Sending LinkedIn InMail attachment message:', attachmentMessage);
 
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      linkedinAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
-        workspaceId,
-        'linkedin_unipile_account_id',
+      linkedinAccountId = await this.resolveLinkedinUnipileAccountId(
+        candidateJob,
+        apiToken,
       );
 
       if (!linkedinAccountId) {
-        console.log('LinkedIn account ID not found in workspace settings');
+        console.log(
+          'LinkedIn account ID not found for job recruiter or workspace settings',
+        );
         return { status: 'failed', message: 'LinkedIn account not configured' };
       }
 

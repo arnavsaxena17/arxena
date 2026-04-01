@@ -50,13 +50,35 @@ async function fetchOrgChart(
   const path =
     companyId.toLowerCase() === 'yuga_labs' ? `manual/${companyId}` : companyId;
   const url = `${baseUrl}/api/org-chart/${path}${queryString ? `?${queryString}` : ''}`;
+  const requestHeaders = await headers();
+  const forwardedHeaders: Record<string, string> = {};
+  const passthroughHeaderNames = [
+    'cloudfront-viewer-address',
+    'cf-connecting-ip',
+    'true-client-ip',
+    'x-forwarded-for',
+    'x-real-ip',
+    'referer',
+  ] as const;
+
+  for (const headerName of passthroughHeaderNames) {
+    const value = requestHeaders.get(headerName);
+    if (value) {
+      forwardedHeaders[headerName] = value;
+    }
+  }
+
+  if (options.forwardedUserAgent) {
+    forwardedHeaders['x-forwarded-user-agent'] = options.forwardedUserAgent;
+  }
 
   try {
     const res = await fetch(url, {
       cache: 'no-store',
-      headers: options.forwardedUserAgent
-        ? { 'X-Forwarded-User-Agent': options.forwardedUserAgent }
-        : undefined,
+      headers:
+        Object.keys(forwardedHeaders).length > 0
+          ? forwardedHeaders
+          : undefined,
     });
     const json = (await res.json()) as {
       status?: string;

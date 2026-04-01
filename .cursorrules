@@ -93,6 +93,7 @@
 
 ## Testing
 - Test every feature
+- Keep console logs for all tests at every step for both failed and successful tests
 - React Testing Library
 - Test behavior not implementation
 - Mock external deps

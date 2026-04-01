@@ -1,28 +1,29 @@
 import { useAddToGoogleContactsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useAddToGoogleContactsAction';
+import { useCheckContactAvailabilityAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCheckContactAvailabilityAction';
 import { useDeleteCandidatesAndPeopleAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDeleteCandidatesAndPeopleAction';
 import { useDownloadAsExcelAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDownloadAsExcelAction';
 import { useDownloadCandidateCVsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDownloadCandidateCVsAction';
+import { useFetchContactDetailsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useFetchContactDetailsAction';
 import { useResetMessagesFromWhatsappAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useResetMessagesFromWhatsappAction';
 import { useRestartMessagesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useRestartMessagesAction';
 import { useSendToWhatsappAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useSendToWhatsappAction';
 import { useShareChatAndVideoInterviewBasedShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useShareChatAndVideoInterviewBasedShortlistAction';
 import { useStartChatWithCandidatesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useStartChatWithCandidatesAction';
 import { useSyncChatsWithWhatsappAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useSyncChatsWithWhatsappAction';
+import { useUpdateMessagingChannelForCandidatesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useUpdateMessagingChannelForCandidatesAction';
 import { useUpdateSnapshotProfilesFromJobBoardsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useUpdateSnapshotProfilesFromJobBoardsAction';
-import { useCheckContactAvailabilityAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCheckContactAvailabilityAction';
-import { useFetchContactDetailsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useFetchContactDetailsAction';
 import { MultipleRecordsActionKeys } from '@/action-menu/actions/record-actions/multiple-records/types/MultipleRecordsActionKeys';
 import { ActionHook } from '@/action-menu/actions/types/ActionHook';
 import { ActionViewType } from '@/action-menu/actions/types/ActionViewType';
 import {
-  ActionMenuEntry,
-  ActionMenuEntryScope,
-  ActionMenuEntryType,
+    ActionMenuEntry,
+    ActionMenuEntryScope,
+    ActionMenuEntryType,
 } from '@/action-menu/types/ActionMenuEntry';
 import { msg } from '@lingui/core/macro';
-import { IconDownload, IconMessageCircle, IconRefresh, IconShare, IconTrashOff, IconTrashX, IconPhone, IconMail } from '@tabler/icons-react';
+import { IconDownload, IconMail, IconMessageCircle, IconMessages, IconPhone, IconRefresh, IconShare, IconTrashOff, IconTrashX } from '@tabler/icons-react';
 import {
-  IconList
+    IconList
 } from 'twenty-ui';
 
 export const TABLE_CANDIDATE_ACTIONS_CONFIG: Record<
@@ -182,6 +183,23 @@ export const TABLE_CANDIDATE_ACTIONS_CONFIG: Record<
       ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
     ],
     useAction: useStartChatWithCandidatesAction,
+  },
+
+  updateMessagingChannelForCandidates: {
+    type: ActionMenuEntryType.Standard,
+    scope: ActionMenuEntryScope.RecordSelection,
+    key: MultipleRecordsActionKeys.UPDATE_MESSAGING_CHANNEL_FOR_CANDIDATES,
+    label: msg`Update messaging channel`,
+    shortLabel: msg`Update channel`,
+    position: 6,
+    Icon: IconMessages,
+    accent: 'placeholder',
+    isPinned: false,
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
+    useAction: useUpdateMessagingChannelForCandidatesAction,
   },
 
   downloadCandidateCVs: {

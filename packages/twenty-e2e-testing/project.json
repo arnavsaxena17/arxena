@@ -96,12 +96,58 @@
         ]
       }
     },
+    "build:arx-crx-e2e-matrix": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "packages/twenty-e2e-testing",
+        "commands": [
+          "cd ../../../arx-crx && npm run build:dev:internal && npm run build:prod:internal && npm run build:dev:store && npm run build:prod:store"
+        ]
+      }
+    },
+    "test:arx-crx-extension:with-builds": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "packages/twenty-e2e-testing",
+        "commands": [
+          "cd ../../../arx-crx && npm run build:dev:internal && npm run build:prod:internal && npm run build:dev:store && npm run build:prod:store",
+          "yarn playwright test tests/arx-crx-extension.spec.ts --project=chrome --no-deps"
+        ]
+      }
+    },
     "test:arx-crx-extension": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": "packages/twenty-e2e-testing",
         "commands": [
           "yarn playwright test tests/arx-crx-extension.spec.ts --project=chrome --no-deps"
+        ]
+      }
+    },
+    "test:arx-crx-extension:smoke": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "packages/twenty-e2e-testing",
+        "commands": [
+          "yarn playwright test tests/arx-crx-extension.spec.ts --project=chrome --no-deps --grep @smoke"
+        ]
+      }
+    },
+    "test:arx-crx-extension:internal-local": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "packages/twenty-e2e-testing",
+        "commands": [
+          "sh -c 'E2E_ARX_ENV=\"${E2E_ARX_ENV:-dev}\" E2E_ARX_CRX=\"${E2E_ARX_CRX:-internal}\" FRONTEND_BASE_URL=\"${FRONTEND_BASE_URL:-http://localhost:3001}\" yarn playwright test tests/arx-crx-extension.spec.ts --project=chrome --no-deps'"
+        ]
+      }
+    },
+    "test:arx-crx-extension:store-prod": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "packages/twenty-e2e-testing",
+        "commands": [
+          "sh -c 'E2E_ARX_ENV=\"${E2E_ARX_ENV:-prod}\" E2E_ARX_CRX=\"${E2E_ARX_CRX:-store}\" yarn playwright test tests/arx-crx-extension.spec.ts --project=chrome --no-deps'"
         ]
       }
     },
@@ -129,6 +175,15 @@
         "cwd": "packages/twenty-e2e-testing",
         "commands": [
           "yarn playwright show-report"
+        ]
+      }
+    },
+    "check-linkedin-li-at": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "packages/twenty-e2e-testing",
+        "commands": [
+          "node scripts/check-linkedin-li-at.mjs"
         ]
       }
     }

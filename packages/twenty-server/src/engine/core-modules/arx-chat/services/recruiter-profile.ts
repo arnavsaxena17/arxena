@@ -1,10 +1,10 @@
 import { axiosRequest } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import {
-    findWorkspaceMemberProfiles,
-    graphqlQueryToGetCurrentUser,
-    Job,
-    RecruiterProfileType
+  findWorkspaceMemberProfiles,
+  graphqlQueryToGetCurrentUser,
+  Job,
+  RecruiterProfileType
 } from 'twenty-shared';
 
 
@@ -46,16 +46,13 @@ export class RecruiterProfileService {
   recruiterId: string,
   apiToken: string,
 ) {
-  console.log("Recruiter ID in getRecruiterProfileByRecruiterId:", recruiterId);
   const workspaceMemberProfilesResponse = await this.staticGraphQLService.executeGraphQL(findWorkspaceMemberProfiles, { filter: { workspaceMemberId: { eq: recruiterId } } }, apiToken);
-  console.log('workspaceMemberProfilesResponse in get Recruiter Profile By RecruiterId:', workspaceMemberProfilesResponse.data);
   const recruiterProfile: RecruiterProfileType =
     workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges[0]?.node;
   return recruiterProfile;
 }
 
  async getCurrentUser(apiToken: string, origin: string) {
-  console.log('Getting current user:: for origin:', origin);
   const getCurrentUserQuery = JSON.stringify({
     query: graphqlQueryToGetCurrentUser,
     variables: {},

@@ -27,8 +27,8 @@ export const useGoToHotkeys = ({
     },
     AppHotkeyScope.Goto,
     {
-      enableOnContentEditable: true,
-      enableOnFormTags: true,
+      enableOnContentEditable: false,
+      enableOnFormTags: false,
       preventDefault: true,
     },
     [navigate],
