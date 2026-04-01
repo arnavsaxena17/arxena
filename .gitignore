@@ -55,3 +55,4 @@ dump.rdb
 .crowdin.yml
 sample_jds/
 sample_jds/**
+packages/twenty-e2e-testing/~/.arx-linkedin-crx-profile/
