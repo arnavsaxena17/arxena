@@ -147,16 +147,31 @@ export const useOrgChartFilterOptions = (
     if (!orgData) return {};
 
     const labels: Record<string, string> = {};
-    const orgchartStr = (orgData as Record<string, unknown>).orgchart;
+    const orgchartRaw = (orgData as Record<string, unknown>).orgchart;
 
-    if (typeof orgchartStr !== 'string') return labels;
+    let rawNodes: Array<{
+      std_function_root?: string;
+      len_candidates?: number;
+    }>;
 
-    try {
-      const rawNodes = JSON.parse(orgchartStr) as Array<{
+    if (Array.isArray(orgchartRaw)) {
+      rawNodes = orgchartRaw as Array<{
         std_function_root?: string;
         len_candidates?: number;
       }>;
+    } else if (typeof orgchartRaw === 'string') {
+      try {
+        const parsed = JSON.parse(orgchartRaw) as unknown;
+        if (!Array.isArray(parsed)) return labels;
+        rawNodes = parsed;
+      } catch {
+        return labels;
+      }
+    } else {
+      return labels;
+    }
 
+    try {
       if (!Array.isArray(rawNodes)) return labels;
 
       const counts: Record<string, number> = {};

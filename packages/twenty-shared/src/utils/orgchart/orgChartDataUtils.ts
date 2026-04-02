@@ -45,8 +45,8 @@ export type NodeState = 'preview' | 'active' | 'lock';
  * Shape from Python OrgStructure.create_org_charts_json_from_std_people_array.
  */
 export type OrgChartData = {
-  /** JSON string of node array - primary data for processing. */
-  orgchart?: string;
+  /** Node array, or legacy JSON string of the same (API may return either). */
+  orgchart?: string | RawOrgNode[];
   company_id?: string;
   count_org?: number;
   job_company_id?: string;
@@ -56,14 +56,14 @@ export type OrgChartData = {
   job_id?: string;
   industry?: string;
   country?: string;
-  countries?: string;
+  countries?: string | string[];
   type?: string;
-  functions?: string;
-  analytics?: string;
-  gender_analytics?: string;
-  location_analytics?: string;
-  functions_analytics?: string;
-  country_analytics?: string;
+  functions?: string | string[];
+  analytics?: string | Record<string, JsonValue>;
+  gender_analytics?: string | Record<string, number>;
+  location_analytics?: string | Record<string, number>;
+  functions_analytics?: string | Record<string, JsonValue>;
+  country_analytics?: string | Record<string, number>;
   /** Direct people count fields (used by inferPeopleCountFromOrgChart). */
   people_count?: number;
   peopleCount?: number;
@@ -74,6 +74,23 @@ export type OrgChartData = {
   itemCount?: number;
   [key: string]: JsonValue | undefined;
 };
+
+function getRawOrgNodesFromOrgchartField(
+  orgchart: OrgChartData['orgchart'],
+): RawOrgNode[] | null {
+  if (Array.isArray(orgchart)) {
+    return orgchart as RawOrgNode[];
+  }
+  if (typeof orgchart === 'string') {
+    try {
+      const parsed = JSON.parse(orgchart) as unknown;
+      return Array.isArray(parsed) ? (parsed as RawOrgNode[]) : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
 
 export type OrgChartNodeData = {
   key: number;
@@ -170,17 +187,8 @@ export function extractOrgData(
 export function processOrgChartToNodeData(
   orgData: OrgChartData,
 ): OrgChartNodeData[] {
-  const orgchartStr = orgData.orgchart;
-  if (typeof orgchartStr !== 'string') return [];
-
-  let rawNodes: RawOrgNode[];
-  try {
-    rawNodes = JSON.parse(orgchartStr) as RawOrgNode[];
-  } catch {
-    return [];
-  }
-
-  if (!Array.isArray(rawNodes)) return [];
+  const rawNodes = getRawOrgNodesFromOrgchartField(orgData.orgchart);
+  if (!rawNodes) return [];
 
   const result: OrgChartNodeData[] = [];
   let lastKey = 1;

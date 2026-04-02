@@ -549,17 +549,17 @@ export const ArxOrgChart = ({
           }
         }
         if (typeof console !== 'undefined') {
-          console.log('[orgchart/ArxOrgChart/nodeDataArray]', {
-            headline: out.headline,
-            key: out.key,
-            totalPeople: out.total_people,
-            allCandidatesLength: Array.isArray(
-              (out as Record<string, unknown>).allCandidates,
-            )
-              ? ((out as Record<string, unknown>).allCandidates as unknown[])
-                  .length
-              : null,
-          });
+          // console.log('[orgchart/ArxOrgChart/nodeDataArray]', {
+          //   headline: out.headline,
+          //   key: out.key,
+          //   totalPeople: out.total_people,
+          //   allCandidatesLength: Array.isArray(
+          //     (out as Record<string, unknown>).allCandidates,
+          //   )
+          //     ? ((out as Record<string, unknown>).allCandidates as unknown[])
+          //         .length
+          //     : null,
+          // });
         }
         return out;
       });
@@ -867,7 +867,7 @@ export const ArxOrgChart = ({
       }
       if (json?.status === 'ok' && json.result) {
         applyOrgChartOverride(json.result);
-        enqueueSnackBar('Loaded TheOrg leadership org chart', {
+        enqueueSnackBar('Loaded Leadership Org Chart', {
           variant: SnackBarVariant.Success,
           duration: 4000,
         });
@@ -881,7 +881,7 @@ export const ArxOrgChart = ({
       enqueueSnackBar(
         e instanceof Error
           ? e.message
-          : 'Failed to load TheOrg leadership chart',
+          : 'Failed to load Leadership Org Chart',
         { variant: SnackBarVariant.Error, duration: 6000 },
       );
     } finally {
@@ -1064,8 +1064,8 @@ export const ArxOrgChart = ({
                 }}
               >
                 {isTheOrgEnrichedLoading
-                  ? 'Loading TheOrg…'
-                  : 'TheOrg leadership'}
+                  ? 'Loading Leadership Org Chart'
+                  : 'Leadership Org Chart'}
               </StyledTopRightActionButton>
               <StyledTopRightActionButton
                 type="button"

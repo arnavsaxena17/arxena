@@ -140,6 +140,11 @@ export class ImageProxyService {
     const rewritten: Record<string, unknown> = {};
 
     for (const [key, currentValue] of Object.entries(record)) {
+      if (key === 'orgchart' && Array.isArray(currentValue)) {
+        rewritten[key] = await this.rewriteValue(currentValue);
+        continue;
+      }
+
       if (key === 'orgchart' && typeof currentValue === 'string') {
         rewritten[key] = await this.rewriteOrgChartString(currentValue);
         continue;

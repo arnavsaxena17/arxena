@@ -18,6 +18,7 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 
 import { ArxenaBackendService } from './arxena-backend.service';
 import { OrgChartEsService } from './org-chart-es.service';
+import { normalizeOrgChartPayload } from './org-chart-payload-normalize';
 import { OrgChartS3Service } from './orgchart-s3.service';
 import { PdlAutocompleteService } from './pdl-autocomplete.service';
 import { PeopleEsService } from './people-es.service';
@@ -106,7 +107,7 @@ export class OrgChartService {
       );
 
       if (esResult) {
-        return esResult;
+        return normalizeOrgChartPayload(esResult);
       }
     }
 
@@ -121,7 +122,7 @@ export class OrgChartService {
     }>(cacheKey);
 
     if (cachedOrgChartPayload?.orgChart) {
-      return cachedOrgChartPayload.orgChart;
+      return normalizeOrgChartPayload(cachedOrgChartPayload.orgChart);
     }
 
     // Redis miss: try S3 only if this workspace member has a credit transaction for this path.
@@ -163,7 +164,7 @@ export class OrgChartService {
         `Serving org chart from S3 fallback for companyId=${companyId}`,
       );
 
-      return s3OrgChart as Record<string, unknown>;
+      return normalizeOrgChartPayload(s3OrgChart as Record<string, unknown>);
     }
 
     // No ES document, no Redis cache and no S3 data: serve static blank org chart template so the
@@ -178,19 +179,19 @@ export class OrgChartService {
         `Serving blank org chart placeholder for companyId=${companyId} from static file`,
       );
 
-      return blankChart;
+      return normalizeOrgChartPayload(blankChart);
     }
 
     this.logger.warn(
       `Org chart not found in ES for companyId=${companyId}; blank placeholder file unavailable, returning empty org chart`,
     );
 
-    return {
+    return normalizeOrgChartPayload({
       company_id: companyId,
-      orgchart: JSON.stringify([]),
+      orgchart: [],
       country: options.country ?? 'global',
       type: options.functionRoot ?? 'fullcompany',
-    } as Record<string, unknown>;
+    } as Record<string, unknown>);
   }
 
   /**
@@ -340,7 +341,7 @@ export class OrgChartService {
         const raw = await readFile(filePath, 'utf8');
         const parsed = JSON.parse(raw) as Record<string, unknown>;
 
-        return parsed;
+        return normalizeOrgChartPayload(parsed);
       } catch (error) {
         this.logger.error(
           `Failed to read manual org chart JSON for companyId=${companyId}; falling back to legacy backend`,

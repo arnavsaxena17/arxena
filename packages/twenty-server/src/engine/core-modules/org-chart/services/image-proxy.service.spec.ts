@@ -101,4 +101,26 @@ describe('ImageProxyService', () => {
       },
     ]);
   });
+
+  it('rewrites orgchart when it is already a parsed array', async () => {
+    const payload = {
+      orgchart: [
+        {
+          candidates: [
+            {
+              image: 'https://images.theorg.com/member.jpg',
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = await service.proxyImagesInPayload(payload);
+
+    expect(Array.isArray(result.orgchart)).toBe(true);
+    expect(
+      (result.orgchart as { candidates: { image: string }[] }[])[0]
+        .candidates[0].image,
+    ).toBe('/org-chart/image-proxy/images-1/member/original/jpg');
+  });
 });
