@@ -1,5 +1,5 @@
-Contact: https://github.com/twentyhq/twenty/issues/new
-Contact: security@twenty.com
+Contact: https://github.com/arxenainc
+Contact: security@arxena.com
 Preferred-Languages: en
-Canonical: https://twenty.com/.well-known/security.txt
-Policy: https://github.com/twentyhq/twenty/security/policy
+Canonical: https://arxena.com/.well-known/security.txt
+Policy: https://github.com/arxenainc

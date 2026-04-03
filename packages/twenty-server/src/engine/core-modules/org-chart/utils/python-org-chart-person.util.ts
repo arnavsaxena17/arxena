@@ -28,7 +28,7 @@ export function normalizePersonForPythonOrgChartBuild(
     str(partial.linkedin_url) || str(partial.std_linkedin_url);
   const id =
     str(partial.id) ||
-    str(partial.theorg_node_id) ||
+    str(partial.org_node_id) ||
     `${fullName}|${companyId}`;
 
   const country =
@@ -67,7 +67,7 @@ export function normalizePersonForPythonOrgChartBuild(
   const extras: Record<string, unknown> = {};
   for (const key of Object.keys(partial)) {
     if (
-      key.startsWith('theorg_') ||
+      key.startsWith('org_') ||
       key === 'source' ||
       key === 'category' ||
       key === 'section' ||

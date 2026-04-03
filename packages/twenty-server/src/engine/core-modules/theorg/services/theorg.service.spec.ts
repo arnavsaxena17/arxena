@@ -1,9 +1,13 @@
+import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/services/bright-data-serp.service';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
 import { TheOrgService } from 'src/engine/core-modules/theorg/services/theorg.service';
 
 describe('TheOrgService', () => {
   let service: TheOrgService;
   let fileStorageService: jest.Mocked<FileStorageService>;
+  let brightDataSerpService: jest.Mocked<
+    Pick<BrightDataSerpService, 'isConfigured' | 'requestSerpGoogleJson'>
+  >;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -16,7 +20,15 @@ describe('TheOrgService', () => {
       write: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<FileStorageService>;
 
-    service = new TheOrgService(fileStorageService);
+    brightDataSerpService = {
+      isConfigured: jest.fn().mockReturnValue(false),
+      requestSerpGoogleJson: jest.fn(),
+    };
+
+    service = new TheOrgService(
+      fileStorageService,
+      brightDataSerpService as unknown as BrightDataSerpService,
+    );
   });
 
   afterEach(() => {

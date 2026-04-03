@@ -1,6 +1,6 @@
 
 # Twenty-Website 
-This  used for the marketing website (twenty.com).
+This  used for the marketing website (arxena.com).
 This is not related in anyway to the main app, which you can find in twenty-front and twenty-server. 
 
 

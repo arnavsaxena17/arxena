@@ -11,23 +11,23 @@ export const baseSchema = (
   return {
     openapi: '3.1.1',
     info: {
-      title: 'Twenty Api',
+      title: 'Arxena Api',
       description: `This is a **Twenty REST/API** playground based on the **OpenAPI 3.1 specification**.`,
       termsOfService:
-        'https://github.com/twentyhq/twenty?tab=coc-ov-file#readme',
+        'https://github.com/arxenainc?tab=coc-ov-file#readme',
       contact: {
-        email: 'felix@twenty.com',
+        email: 'felix@arxena.com',
       },
       license: {
         name: 'AGPL-3.0',
-        url: 'https://github.com/twentyhq/twenty?tab=License-1-ov-file#readme',
+        url: 'https://github.com/arxenainc?tab=License-1-ov-file#readme',
       },
       version: API_Version,
     },
     // Testing purposes
     servers: [
       {
-        url: `${serverUrl}/rest/${schemaName !== 'core' ? schemaName : ''}`,
+        url: `${serverUrl}/api/${schemaName !== 'core' ? schemaName : ''}`,
         description: 'Production Development',
       },
     ],
@@ -48,8 +48,8 @@ export const baseSchema = (
       },
     ],
     externalDocs: {
-      description: 'Find out more about **Twenty**',
-      url: 'https://twenty.com',
+      description: 'Find out more about **Arxena**',
+      url: 'https://arxena.com',
     },
     paths: { [`/open-api/${schemaName}`]: computeOpenApiPath(serverUrl) },
   };

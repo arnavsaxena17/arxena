@@ -7,7 +7,9 @@
   "license": "AGPL-3.0",
   "scripts": {
     "build:arx-crx-matrix": "cd ../../../arx-crx && npm run build:dev:internal && npm run build:prod:internal && npm run build:dev:store && npm run build:prod:store",
-    "test:arx-crx-extension:with-builds": "yarn build:arx-crx-matrix && yarn playwright test tests/arx-crx-extension.spec.ts --project=chrome --no-deps"
+    "test:arx-crx-extension:with-builds": "yarn build:arx-crx-matrix && yarn playwright test tests/arx-crx-extension.spec.ts --project=chrome --no-deps",
+    "test:batliboi-orgchart:local": "ARXENA_E2E_ENV=local yarn playwright test tests/batliboi.orgchart.session.spec.ts --project=chrome --no-deps",
+    "test:batliboi-orgchart:prod": "ARXENA_E2E_ENV=prod yarn playwright test tests/batliboi.orgchart.session.spec.ts --project=chrome --no-deps"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",

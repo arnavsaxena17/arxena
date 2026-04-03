@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
+import { BrightDataModule } from 'src/engine/core-modules/bright-data/bright-data.module';
 import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-storage.module';
 import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
 import { TheOrgController } from 'src/engine/core-modules/theorg/controllers/theorg.controller';
@@ -12,6 +13,7 @@ import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/
 @Module({
   imports: [
     AuthModule,
+    BrightDataModule,
     CacheStorageModule,
     MessageQueueModule,
     WorkspaceCacheStorageModule,

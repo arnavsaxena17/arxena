@@ -975,7 +975,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
             'ContextMenuButton',
             $c(
               go.TextBlock,
-              'Delete saved org chart cache for this company (Redis & S3)',
+              'Delete saved org chart cache',
             ),
             {
               click: () => onBackgroundContextAction('delete_company_cache'),

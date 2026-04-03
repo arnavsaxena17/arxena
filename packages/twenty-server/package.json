@@ -19,6 +19,8 @@
     "test-prompts:ts-node": "npx ts-node -r tsconfig-paths/register scripts/test-search-prompts.ts",
     "test:linkedin-query-generation": "npx tsx -r tsconfig-paths/register scripts/test-linkedin-query-generation.ts",
     "test:iterative-linkedin-query-generation": "npx tsx -r tsconfig-paths/register scripts/test-iterative-linkedin-query-generation.ts",
+    "test:sample-local-linkedin-raw-search-plans": "npx tsx -r tsconfig-paths/register scripts/sample-local-linkedin-raw-search-plans.ts",
+    "test:run-voyager-people-search-samples": "npx tsx -r tsconfig-paths/register scripts/run-voyager-people-search-samples.ts",
     "test:candidate-search-flow": "npx tsx -r tsconfig-paths/register scripts/testing/test-candidate-search-flow.ts",
     "test:yuga-orgchart": "npx tsx -r tsconfig-paths/register scripts/test-yuga-orgchart.ts",
     "test:unipile-parameters": "npx tsx -r tsconfig-paths/register scripts/test-unipile-parameters.ts",

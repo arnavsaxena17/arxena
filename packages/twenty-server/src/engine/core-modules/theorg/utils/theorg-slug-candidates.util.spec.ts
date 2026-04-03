@@ -1,6 +1,7 @@
 import {
     firstSegmentSlugCandidate,
     generateTheOrgSlugCandidates,
+    hasStaticTheOrgSlugOverride,
     mergeTheOrgSlugOverrides,
     normalizeTheOrgSlugInput,
     parseLinkedInCompanySlugFromUrl,
@@ -49,6 +50,12 @@ describe('theorg-slug-candidates.util', () => {
       expect(c[1]).toBe('batliboi');
     });
 
+    it('applies manual static override before stripped segments', () => {
+      const c = generateTheOrgSlugCandidates('eureka-forbes-ltd');
+      expect(c[0]).toBe('eureka-forbes-ltd');
+      expect(c[1]).toBe('eureka-forbes-limited');
+    });
+
     it('applies runtime overrides', () => {
       const c = generateTheOrgSlugCandidates('foo-bar', { 'foo-bar': 'baz' });
       expect(c).toEqual(['foo-bar', 'baz', 'foo']);
@@ -86,7 +93,18 @@ describe('theorg-slug-candidates.util', () => {
   describe('mergeTheOrgSlugOverrides', () => {
     it('merges static with extra', () => {
       const m = mergeTheOrgSlugOverrides({ x: 'y' });
+      expect(m['eureka-forbes-ltd']).toBe('eureka-forbes-limited');
       expect(m.x).toBe('y');
+    });
+  });
+
+  describe('hasStaticTheOrgSlugOverride', () => {
+    it('returns true for keys in THEORG_SLUG_STATIC_OVERRIDES', () => {
+      expect(hasStaticTheOrgSlugOverride('eureka-forbes-ltd')).toBe(true);
+    });
+
+    it('returns false for unknown slugs', () => {
+      expect(hasStaticTheOrgSlugOverride('unknown-corp-ltd')).toBe(false);
     });
   });
 });

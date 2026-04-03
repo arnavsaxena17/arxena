@@ -13,7 +13,7 @@ export const rule = ESLintUtils.RuleCreator(() => __filename)({
     messages: {
       test: 'test',
       noStateUseRef:
-        "Don't use useRef for state management. See https://docs.twenty.com/developer/frontend/best-practices#do-not-use-useref-to-store-state for more details.",
+        "Don't use useRef for state management. See https://docs.arxena.com/developer/frontend/best-practices#do-not-use-useref-to-store-state for more details.",
     },
     type: 'suggestion',
     schema: [],

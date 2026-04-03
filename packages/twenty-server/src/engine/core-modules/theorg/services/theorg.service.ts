@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/services/bright-data-serp.service';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
 import type {
   TheOrgCompanyResponse,
@@ -16,10 +17,15 @@ import type {
 } from 'src/engine/core-modules/theorg/types/theorg.types';
 import {
   generateTheOrgSlugCandidates,
+  hasStaticTheOrgSlugOverride,
   normalizeTheOrgSlugInput,
   parseLinkedInCompanySlugFromUrl,
   type TheOrgSlugOverrides,
 } from 'src/engine/core-modules/theorg/utils/theorg-slug-candidates.util';
+import {
+  buildGoogleTheOrgSiteSearchUrl,
+  extractTheOrgCompanySlugFromSerpOrganic,
+} from 'src/engine/core-modules/theorg/utils/theorg-slug-from-serp.util';
 
 const BASE_URL = 'https://theorg.com';
 const GRAPHQL_URL = 'https://prod-graphql-api.theorg.com/graphql';
@@ -30,7 +36,10 @@ const DEFAULT_USER_AGENT =
 export class TheOrgService {
   private readonly logger = new Logger(TheOrgService.name);
 
-  constructor(private readonly fileStorageService: FileStorageService) {}
+  constructor(
+    private readonly fileStorageService: FileStorageService,
+    private readonly brightDataSerpService: BrightDataSerpService,
+  ) {}
 
   private get userAgent(): string {
     return process.env.THEORG_USER_AGENT || DEFAULT_USER_AGENT;
@@ -776,6 +785,10 @@ export class TheOrgService {
    * overrides, stripped corporate suffixes (e.g. `-ltd`), then first-segment heuristic.
    * Retries on HTTP 404, or when `linkedinCompanySlug` is set and the page’s LinkedIn
    * company URL does not match (wrong TheOrg org).
+   * If all candidates fail, `BRIGHT_DATA_API_KEY` is set, and the input is not a key in
+   * `THEORG_SLUG_STATIC_OVERRIDES`, runs a Bright Data Google SERP query for
+   * `{slug} site:theorg.com` (no corporate-suffix stripping) and retries with the first
+   * `/org/{slug}` match from organic results.
    */
   async fetchCompanyDetailsResolvingSlug(
     slug: string,
@@ -827,6 +840,50 @@ export class TheOrgService {
             ? `TheOrg slug candidate "${candidate}" failed LinkedIn slug check; trying next`
             : `TheOrg slug candidate "${candidate}" returned not found; trying next`,
         );
+      }
+    }
+
+    const skipBrightDataSerp =
+      hasStaticTheOrgSlugOverride(slug) || !this.brightDataSerpService.isConfigured();
+
+    if (!skipBrightDataSerp) {
+      const searchUrl = buildGoogleTheOrgSiteSearchUrl(inputSlug);
+      try {
+        const serp = await this.brightDataSerpService.requestSerpGoogleJson(searchUrl);
+
+        const discovered = extractTheOrgCompanySlugFromSerpOrganic(serp.organic);
+        console.log("Discovered slug from Bright Data SERP:", discovered);
+        if (discovered && !candidates.includes(discovered)) {
+          try {
+            const result = await this.fetchCompanyDetails(discovered, {
+              ...fetchOptions,
+              linkedinCompanySlugExpected: linkedinCompanySlug,
+            });
+            return {
+              ...result,
+              slugResolution: {
+                inputSlug,
+                attemptedSlugs: [...candidates, discovered],
+                successfulCandidate: discovered,
+                discoveredViaBrightDataSerp: true,
+              },
+            };
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            failures.push(`brightDataSerp:${discovered}: ${message}`);
+            this.logger.warn(
+              `TheOrg slug from Bright Data SERP "${discovered}" failed: ${message}`,
+            );
+          }
+        } else if (discovered && candidates.includes(discovered)) {
+          this.logger.debug(
+            `Bright Data SERP returned slug "${discovered}" already in candidate list; skipping duplicate fetch`,
+          );
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        failures.push(`brightDataSerp: ${message}`);
+        this.logger.warn(`Bright Data SERP TheOrg discovery failed: ${message}`);
       }
     }
 

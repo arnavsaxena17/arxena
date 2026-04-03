@@ -363,6 +363,7 @@ export const ArxOrgChart = ({
   }, [
     actions.clearLatestOrgChart,
     isJobMode,
+    companyId,
     selectedCountry,
     selectedFunctionRoot,
   ]);
@@ -848,7 +849,7 @@ export const ArxOrgChart = ({
       const qs = params.toString();
       const url = `${normalizedBaseUrl}/org-chart/${encodeURIComponent(
         canonicalCompanyId,
-      )}/theorg-enriched${qs ? `?${qs}` : ''}`;
+      )}/enriched${qs ? `?${qs}` : ''}`;
       const res = await fetch(url, {
         headers: {
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),

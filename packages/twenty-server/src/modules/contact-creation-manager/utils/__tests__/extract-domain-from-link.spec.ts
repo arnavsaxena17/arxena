@@ -2,30 +2,30 @@ import { extractDomainFromLink } from 'src/modules/contact-creation-manager/util
 
 describe('extractDomainFromLink', () => {
   it('should extract domain from link', () => {
-    const link = 'https://www.twenty.com';
+      const link = 'https://www.arxena.com';
     const result = extractDomainFromLink(link);
 
-    expect(result).toBe('twenty.com');
+    expect(result).toBe('arxena.com');
   });
 
   it('should extract domain from link without www', () => {
-    const link = 'https://twenty.com';
+    const link = 'https://arxena.com';
     const result = extractDomainFromLink(link);
 
-    expect(result).toBe('twenty.com');
+    expect(result).toBe('arxena.com');
   });
 
   it('should extract domain from link without protocol', () => {
-    const link = 'twenty.com';
+    const link = 'arxena.com';
     const result = extractDomainFromLink(link);
 
     expect(result).toBe('twenty.com');
   });
 
   it('should extract domain from link with path', () => {
-    const link = 'https://twenty.com/about';
+    const link = 'https://arxena.com/about';
     const result = extractDomainFromLink(link);
 
-    expect(result).toBe('twenty.com');
+    expect(result).toBe('arxena.com');
   });
 });

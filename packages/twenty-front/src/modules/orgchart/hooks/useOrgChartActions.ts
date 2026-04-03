@@ -1143,6 +1143,7 @@ export const useOrgChartActions = ({
 
   const clearLatestOrgChart = useCallback(() => {
     setLatestOrgChart(null);
+    setEnrichedNodes({});
   }, []);
 
   const applyOrgChartOverride = useCallback(

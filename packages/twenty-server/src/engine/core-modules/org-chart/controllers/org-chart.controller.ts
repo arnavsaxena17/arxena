@@ -758,7 +758,7 @@ export class OrgChartController {
   }
 
   /**
-   * GET /org-chart/:companyId/theorg-enriched
+   * GET /org-chart/:companyId/enriched
    *
    * Fetches the existing org chart from ES/S3, appends real-name leadership
    * data from TheOrg, passes all people through the Python org-chart builder,
@@ -773,7 +773,7 @@ export class OrgChartController {
    * NOTE: This route must be declared BEFORE `:companyId/:country` so that
    * "theorg-enriched" is not consumed as the :country parameter.
    */
-  @Get(':companyId/theorg-enriched')
+  @Get(':companyId/enriched')
   async getTheOrgEnrichedOrgChart(
     @Param('companyId') companyId: string,
     @Query('companyName') companyName: string | undefined,

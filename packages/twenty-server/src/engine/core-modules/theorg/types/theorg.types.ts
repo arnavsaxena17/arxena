@@ -118,6 +118,8 @@ export type TheOrgSlugResolution = {
   inputSlug: string;
   attemptedSlugs: string[];
   successfulCandidate: string;
+  /** Set when the winning slug came from a Bright Data Google `site:theorg.com` SERP lookup. */
+  discoveredViaBrightDataSerp?: boolean;
 };
 
 export type TheOrgFetchPersonOptions = {

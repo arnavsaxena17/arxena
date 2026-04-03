@@ -38,7 +38,9 @@ const CORPORATE_SLUG_SUFFIXES = new Set([
  * Example: `{ "linkedin-style-id": "theorg-slug" }` — e.g. when stripping
  * segments is wrong for a particular company.
  */
-export const THEORG_SLUG_STATIC_OVERRIDES: Readonly<Record<string, string>> = {};
+export const THEORG_SLUG_STATIC_OVERRIDES: Readonly<Record<string, string>> = {
+  // 'eureka-forbes-ltd': 'eureka-forbes-limited',
+};
 
 export type TheOrgSlugOverrides = Readonly<Record<string, string>>;
 
@@ -77,6 +79,15 @@ export function normalizeTheOrgSlugInput(raw: string): string {
     .replace(/_/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
+}
+
+/** True when the normalized slug is a key in {@link THEORG_SLUG_STATIC_OVERRIDES} (not env JSON). */
+export function hasStaticTheOrgSlugOverride(rawSlug: string): boolean {
+  const normalized = normalizeTheOrgSlugInput(rawSlug);
+  if (!normalized) {
+    return false;
+  }
+  return Object.prototype.hasOwnProperty.call(THEORG_SLUG_STATIC_OVERRIDES, normalized);
 }
 
 /**
