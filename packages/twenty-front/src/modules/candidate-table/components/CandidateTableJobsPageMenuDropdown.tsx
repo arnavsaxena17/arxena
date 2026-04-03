@@ -1,0 +1,237 @@
+import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
+import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
+import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
+import { DropdownMenuSeparator } from '@/ui/layout/dropdown/components/DropdownMenuSeparator';
+import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
+import { useTheme } from '@emotion/react';
+import styled from '@emotion/styled';
+import { useRecoilState } from 'recoil';
+import {
+  IconApi,
+  IconBrandLinkedin,
+  IconCoins,
+  IconComment,
+  IconDotsVertical,
+  IconDownload,
+  IconGitCommit,
+  IconPlus,
+  LightIconButton,
+  MenuItem,
+} from 'twenty-ui';
+
+const CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID =
+  'candidate-table-jobs-page-menu';
+
+const StyledOrgChartSourceBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => `${theme.spacing(0.5)} 0`};
+  width: 100%;
+`;
+
+const StyledOrgChartSourceLabel = styled.span`
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  letter-spacing: 0.03em;
+  padding: 0 ${({ theme }) => theme.spacing(1)};
+  text-transform: uppercase;
+`;
+
+const StyledSegmentedTrack = styled.div`
+  display: flex;
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background: ${({ theme }) => theme.background.tertiary};
+  padding: ${({ theme }) => theme.spacing(0.5)};
+  gap: ${({ theme }) => theme.spacing(0.5)};
+`;
+
+const StyledSegmentedOption = styled.button<{ isActive: boolean }>`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  border: none;
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  cursor: pointer;
+  min-height: 32px;
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(1)};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  font-family: inherit;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  ${({ theme, isActive }) =>
+    isActive
+      ? `
+    background: ${theme.background.primary};
+    color: ${theme.font.color.primary};
+    box-shadow: ${theme.boxShadow.light};
+  `
+      : `
+    background: transparent;
+    color: ${theme.font.color.secondary};
+    &:hover {
+      background: ${theme.background.transparent.light};
+      color: ${theme.font.color.primary};
+    }
+  `}
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.blue};
+    outline-offset: 1px;
+  }
+`;
+
+type CandidateTableJobsPageMenuDropdownProps = {
+  onAddJob: () => void;
+  onMergeJobs?: () => void;
+  isLinkedinConnected: boolean;
+  isWhatsappLoggedIn: boolean;
+  isMergeMode?: boolean;
+  isExtensionInstalled: boolean;
+  onDownloadClick: () => void;
+  creditsTotal?: number;
+  onCreditsClick?: () => void;
+};
+
+export const CandidateTableJobsPageMenuDropdown = ({
+  onAddJob,
+  onMergeJobs,
+  isLinkedinConnected,
+  isWhatsappLoggedIn,
+  isMergeMode = false,
+  isExtensionInstalled,
+  onDownloadClick,
+  creditsTotal,
+  onCreditsClick,
+}: CandidateTableJobsPageMenuDropdownProps) => {
+  const theme = useTheme();
+  const { closeDropdown } = useDropdown(
+    CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID,
+  );
+  const [orgChartLinkedinCandidateSource, setOrgChartLinkedinCandidateSource] =
+    useRecoilState(orgChartLinkedinCandidateSourceState);
+
+  const iconSm = theme.icon.size.sm;
+
+  return (
+    <Dropdown
+      dropdownId={CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID}
+      dropdownPlacement="bottom-end"
+      clickableComponent={
+        <LightIconButton
+          Icon={IconDotsVertical}
+          accent="tertiary"
+          testId="candidate-table-jobs-menu"
+        />
+      }
+      dropdownMenuWidth={280}
+      dropdownComponents={
+        <DropdownMenuItemsContainer>
+          <MenuItem
+            testId="add-new-job"
+            text="Add New Job"
+            LeftIcon={IconPlus}
+            onClick={() => {
+              onAddJob();
+              closeDropdown();
+            }}
+          />
+          {onMergeJobs !== undefined && !isMergeMode && (
+            <MenuItem
+              testId="merge-jobs"
+              text="Merge jobs"
+              LeftIcon={IconGitCommit}
+              onClick={() => {
+                onMergeJobs();
+                closeDropdown();
+              }}
+            />
+          )}
+          {!isExtensionInstalled && (
+            <MenuItem
+              testId="download-app"
+              text="Download App"
+              LeftIcon={IconDownload}
+              onClick={() => {
+                onDownloadClick();
+                closeDropdown();
+              }}
+            />
+          )}
+          {creditsTotal !== undefined && onCreditsClick !== undefined && (
+            <MenuItem
+              testId="credits-button"
+              text="Credits"
+              LeftIcon={IconCoins}
+              contextualText={String(creditsTotal)}
+              onClick={() => {
+                onCreditsClick();
+                closeDropdown();
+              }}
+            />
+          )}
+          <DropdownMenuSeparator />
+          <StyledOrgChartSourceBlock
+            role="radiogroup"
+            aria-label="Org chart data source"
+          >
+            <StyledOrgChartSourceLabel>
+              Org chart data source
+            </StyledOrgChartSourceLabel>
+            <StyledSegmentedTrack>
+              <StyledSegmentedOption
+                type="button"
+                data-testid="org-chart-source-linkedin"
+                isActive={orgChartLinkedinCandidateSource === 'unipile'}
+                role="radio"
+                aria-checked={orgChartLinkedinCandidateSource === 'unipile'}
+                onClick={() => {
+                  setOrgChartLinkedinCandidateSource('unipile');
+                }}
+              >
+                <IconBrandLinkedin size={iconSm} />
+                LinkedIn
+              </StyledSegmentedOption>
+              <StyledSegmentedOption
+                type="button"
+                data-testid="org-chart-source-apify"
+                isActive={orgChartLinkedinCandidateSource === 'apify'}
+                role="radio"
+                aria-checked={orgChartLinkedinCandidateSource === 'apify'}
+                onClick={() => {
+                  setOrgChartLinkedinCandidateSource('apify');
+                }}
+              >
+                <IconApi size={iconSm} />
+                Apify
+              </StyledSegmentedOption>
+            </StyledSegmentedTrack>
+          </StyledOrgChartSourceBlock>
+          <DropdownMenuSeparator />
+          <MenuItem
+            text="LinkedIn"
+            LeftIcon={IconBrandLinkedin}
+            contextualText={isLinkedinConnected ? 'Connected' : 'Disconnected'}
+            disabled
+          />
+          <MenuItem
+            text="WhatsApp"
+            LeftIcon={IconComment}
+            contextualText={isWhatsappLoggedIn ? 'Connected' : 'Disconnected'}
+            disabled
+          />
+        </DropdownMenuItemsContainer>
+      }
+      dropdownHotkeyScope={{
+        scope: CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID,
+      }}
+    />
+  );
+};

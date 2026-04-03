@@ -681,13 +681,24 @@ export class CandidateSearchBaseService {
    * Get LinkedIn account ID from workspace member profile (with workspace fallback).
    * When UNIPILE_LINKEDIN_ACCOUNT_ID is set (e.g. for testing), returns that value instead.
    */
-  async getLinkedInAccountId(apiToken: string): Promise<string> {
+  async getLinkedInAccountId(
+    apiToken: string,
+    explicitAccountId?: string,
+  ): Promise<string> {
     const envOverride = process.env.UNIPILE_LINKEDIN_ACCOUNT_ID?.trim();
     if (envOverride) {
       this.logger.debug(
         'Using UNIPILE_LINKEDIN_ACCOUNT_ID env override for LinkedIn search',
       );
       return envOverride;
+    }
+
+    const explicit = explicitAccountId?.trim();
+    if (explicit) {
+      this.logger.debug(
+        'Using explicit LinkedIn Unipile account id for this request',
+      );
+      return explicit;
     }
 
     try {

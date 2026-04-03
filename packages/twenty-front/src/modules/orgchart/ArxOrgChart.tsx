@@ -44,6 +44,12 @@ export type ArxOrgChartProps = {
   jobId?: string;
 };
 
+const ORG_CHART_AGENT_UNAVAILABLE_SNACKBAR =
+  'Contact Support. Org chart agent service is not available. Ensure the Python service is running and reachable.';
+
+const leadershipOrgChartPythonFailureMessage = (detail: string) =>
+  `Could not create the Leadership Org Chart because the org chart agent (Python service) failed. ${detail}`;
+
 const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -197,7 +203,7 @@ const StyledTemplateBannerButton = styled.button`
   padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
   border-radius: ${({ theme }) => theme.border.radius.md};
   border: none;
-  background: ${({ theme }) => theme.accent.primary};
+  background: ${({ theme }) => theme.background.invertedPrimary};
   color: ${({ theme }) => theme.font.color.inverted};
   font-size: ${({ theme }) => theme.font.size.sm};
   font-weight: 600;
@@ -235,6 +241,10 @@ const StyledSpinner = styled.div`
 
 const PERSON_ROW_HEIGHT = 48;
 
+/** Default filter when switching companies (matches twenty-orgchart filter options). */
+const DEFAULT_ORG_CHART_COUNTRY = 'global';
+const DEFAULT_ORG_CHART_FUNCTION_ROOT = 'fullcompany';
+
 export const ArxOrgChart = ({
   companyId,
   companyName,
@@ -253,6 +263,7 @@ export const ArxOrgChart = ({
   >();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResultCount, setSearchResultCount] = useState<number | null>(null);
+  const [businessDivisionQuery, setBusinessDivisionQuery] = useState('');
   const [isTheOrgEnrichedLoading, setIsTheOrgEnrichedLoading] = useState(false);
   const [exactEmployeeCount, setExactEmployeeCount] = useState<number | null>(
     null,
@@ -272,6 +283,7 @@ export const ArxOrgChart = ({
 
   const diagramHandleRef = useRef<OrgChartDiagramHandle | null>(null);
   const skipNextRefetchRef = useRef(false);
+  const prevCompanyIdForFiltersRef = useRef<string | null>(null);
 
   const tokenPair = useRecoilValue(tokenPairState);
   const accessToken = tokenPair?.accessToken?.token ?? undefined;
@@ -294,11 +306,15 @@ export const ArxOrgChart = ({
     companyName ??
     unipileCompanyProfile?.name ??
     fallbackCompanyInfo?.companyName;
+  const linkedinUrlToUse = linkedinUrl ?? fallbackCompanyInfo?.linkedinUrl;
   const actions = useOrgChartActions({
     companyId,
     companyName: effectiveCompanyName,
     website,
     employeeCount: effectiveEmployeeCount,
+    linkedinCompanyUrl: linkedinUrlToUse?.trim(),
+    linkedinUnipileAccountId:
+      process.env.REACT_APP_ORGCHART_UNIPILE_ACCOUNT_ID?.trim(),
   });
   const { applyOrgChartOverride } = actions;
 
@@ -390,8 +406,6 @@ export const ArxOrgChart = ({
       lookupByName(lookupKey);
     }
   }, [companyId, companyName, hasInitialCompanyInfo, lookupByName]);
-
-  const linkedinUrlToUse = linkedinUrl ?? fallbackCompanyInfo?.linkedinUrl;
 
   useEffect(() => {
     if (!isLinkedinConnected || !linkedinUrlToUse?.trim() || !baseUrl || !accessToken) {
@@ -492,6 +506,18 @@ export const ArxOrgChart = ({
   ]);
 
   useEffect(() => {
+    const prev = prevCompanyIdForFiltersRef.current;
+    const companyChanged =
+      prev !== null && prev !== companyId;
+    prevCompanyIdForFiltersRef.current = companyId;
+
+    if (companyChanged) {
+      skipNextRefetchRef.current = true;
+      setSelectedCountry(DEFAULT_ORG_CHART_COUNTRY);
+      setSelectedFunctionRoot(DEFAULT_ORG_CHART_FUNCTION_ROOT);
+      return;
+    }
+
     if (!orgData || !companyId) return;
 
     setSelectedCountry((current) => {
@@ -695,41 +721,7 @@ export const ArxOrgChart = ({
     }
   }, [baseUrl, accessToken]);
 
-  const ORG_CHART_AGENT_UNAVAILABLE_SNACKBAR =
-    'Org chart agent service is not available. Ensure the Arxena site Python service is running and reachable (ARXENA_SITE_URL / ARXENA_SITE_ORGCHART_URL).';
-
-  const ensureOrgChartSearchPrerequisites = useCallback(async (): Promise<
-    'ok' | 'no_linkedin_source' | 'no_python_agent'
-  > => {
-    const status = await fetchLinkedinDataSourcesStatus();
-    if (!status) {
-      return 'ok';
-    }
-    if (!status.linkedinUnipileConnected && !status.apifyActorConfigured) {
-      return 'no_linkedin_source';
-    }
-    if (!status.pythonOrgChartAgentAvailable) {
-      return 'no_python_agent';
-    }
-    return 'ok';
-  }, [fetchLinkedinDataSourcesStatus]);
-
   const handleViewAllCandidates = useCallback(async () => {
-    const gate = await ensureOrgChartSearchPrerequisites();
-    if (gate === 'no_linkedin_source') {
-      enqueueSnackBar(
-        'LinkedIn data source is not connected. Connect LinkedIn (Unipile) or configure the Apify actor on the server.',
-        { variant: SnackBarVariant.Error, duration: 8000 },
-      );
-      return;
-    }
-    if (gate === 'no_python_agent') {
-      enqueueSnackBar(ORG_CHART_AGENT_UNAVAILABLE_SNACKBAR, {
-        variant: SnackBarVariant.Error,
-        duration: 10000,
-      });
-      return;
-    }
     await actions.executeOrgchartSearch({
       mode: resolvedSearchMode as
         | 'entire_company'
@@ -743,8 +735,6 @@ export const ArxOrgChart = ({
       functionRoot: selectedFunctionRoot,
     });
   }, [
-    ensureOrgChartSearchPrerequisites,
-    enqueueSnackBar,
     actions.executeOrgchartSearch,
     resolvedSearchMode,
     selectedCountry,
@@ -752,21 +742,6 @@ export const ArxOrgChart = ({
   ]);
 
   const handleGetAllOrgChartSearch = useCallback(async () => {
-    const gate = await ensureOrgChartSearchPrerequisites();
-    if (gate === 'no_linkedin_source') {
-      enqueueSnackBar(
-        'LinkedIn data source is not connected. Connect LinkedIn (Unipile) or configure the Apify actor on the server.',
-        { variant: SnackBarVariant.Error, duration: 8000 },
-      );
-      return;
-    }
-    if (gate === 'no_python_agent') {
-      enqueueSnackBar(ORG_CHART_AGENT_UNAVAILABLE_SNACKBAR, {
-        variant: SnackBarVariant.Error,
-        duration: 10000,
-      });
-      return;
-    }
     await actions.executeOrgchartSearch({
       mode: resolvedSearchMode as
         | 'entire_company'
@@ -780,10 +755,25 @@ export const ArxOrgChart = ({
       functionRoot: selectedFunctionRoot,
     });
   }, [
-    ensureOrgChartSearchPrerequisites,
-    enqueueSnackBar,
     actions.executeOrgchartSearch,
     resolvedSearchMode,
+    selectedCountry,
+    selectedFunctionRoot,
+  ]);
+
+  const handleMapBusinessDivision = useCallback(async () => {
+    const trimmed = businessDivisionQuery.trim();
+    if (!trimmed) return;
+    await actions.executeOrgchartSearch({
+      mode: 'business_division_map',
+      origin: 'header',
+      country: selectedCountry,
+      functionRoot: selectedFunctionRoot,
+      businessDivisionRawQuery: trimmed,
+    });
+  }, [
+    actions.executeOrgchartSearch,
+    businessDivisionQuery,
     selectedCountry,
     selectedFunctionRoot,
   ]);
@@ -797,6 +787,7 @@ export const ArxOrgChart = ({
     functionRootPercentLabels: filterOptions.functionRootPercentLabels,
     selectedFunctionRoot,
     onFunctionRootChange: debouncedSetFunctionRoot,
+    omitMarginLeft: true,
   };
 
   const searchControlsProps = {
@@ -824,6 +815,19 @@ export const ArxOrgChart = ({
       enqueueSnackBar('Missing company or server URL', {
         variant: SnackBarVariant.Error,
       });
+      return;
+    }
+    const agentStatus = await fetchLinkedinDataSourcesStatus();
+    if (
+      agentStatus !== null &&
+      !agentStatus.pythonOrgChartAgentAvailable
+    ) {
+      enqueueSnackBar(
+        leadershipOrgChartPythonFailureMessage(
+          ORG_CHART_AGENT_UNAVAILABLE_SNACKBAR,
+        ),
+        { variant: SnackBarVariant.Error, duration: 12000 },
+      );
       return;
     }
     setIsTheOrgEnrichedLoading(true);
@@ -863,7 +867,7 @@ export const ArxOrgChart = ({
             : Array.isArray(rawMsg)
               ? rawMsg.join(', ')
               : `Request failed (${res.status})`;
-        throw new Error(msg);
+        throw new Error(leadershipOrgChartPythonFailureMessage(msg));
       }
       if (json?.status === 'ok' && json.result) {
         applyOrgChartOverride(json.result);
@@ -875,14 +879,18 @@ export const ArxOrgChart = ({
           diagramHandleRef.current?.zoomToFit();
         }, 150);
       } else {
-        throw new Error('Invalid response from TheOrg-enriched endpoint');
+        throw new Error(
+          leadershipOrgChartPythonFailureMessage(
+            'Invalid response from TheOrg-enriched endpoint',
+          ),
+        );
       }
     } catch (e) {
       enqueueSnackBar(
         e instanceof Error
           ? e.message
-          : 'Failed to load Leadership Org Chart',
-        { variant: SnackBarVariant.Error, duration: 6000 },
+          : leadershipOrgChartPythonFailureMessage('Unknown error'),
+        { variant: SnackBarVariant.Error, duration: 10000 },
       );
     } finally {
       setIsTheOrgEnrichedLoading(false);
@@ -896,6 +904,7 @@ export const ArxOrgChart = ({
     selectedFunctionRoot,
     applyOrgChartOverride,
     enqueueSnackBar,
+    fetchLinkedinDataSourcesStatus,
   ]);
 
   const unipileLocationName = unipileCompanyProfile?.locations?.[0]
@@ -960,6 +969,14 @@ export const ArxOrgChart = ({
     onBack,
     hasFilters: !!orgData,
     filtersProps,
+    businessDivisionQueryProps: {
+      value: businessDivisionQuery,
+      onChange: setBusinessDivisionQuery,
+      onSubmit: () => {
+        void handleMapBusinessDivision();
+      },
+      isSubmitting: actions.isContextLoading,
+    },
   };
 
   return (
@@ -1067,24 +1084,24 @@ export const ArxOrgChart = ({
                   ? 'Loading Leadership Org Chart'
                   : 'Leadership Org Chart'}
               </StyledTopRightActionButton>
-              <StyledTopRightActionButton
+              {/* <StyledTopRightActionButton
                 type="button"
                 onClick={searchControlsProps.onGetLeaders}
               >
                 Leaders
-              </StyledTopRightActionButton>
-              <StyledTopRightActionButton
+              </StyledTopRightActionButton> */}
+              {/* <StyledTopRightActionButton
                 type="button"
                 onClick={() => diagramHandleRef.current?.zoomToFit()}
               >
                 Zoom to fit
-              </StyledTopRightActionButton>
-              <StyledTopRightActionButton
+              </StyledTopRightActionButton> */}
+              {/* <StyledTopRightActionButton
                 type="button"
                 onClick={() => diagramHandleRef.current?.centerContent()}
               >
                 Center
-              </StyledTopRightActionButton>
+              </StyledTopRightActionButton> */}
             </StyledTopRightActionsOverlay>
             <StyledSearchOverlay>
               <OrgChartSearchControls {...searchControlsProps} />

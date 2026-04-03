@@ -26,8 +26,8 @@ import { NotFound } from '~/pages/not-found/NotFound';
 import { RecordIndexPage } from '~/pages/object-record/RecordIndexPage';
 import { RecordShowPage } from '~/pages/object-record/RecordShowPage';
 import { ChooseYourPlan } from '~/pages/onboarding/ChooseYourPlan';
-import { CompetitiveResearchOnboarding } from '~/pages/onboarding/CompetitiveResearchOnboarding';
 import { CollectPhoneNumber } from '~/pages/onboarding/CollectPhoneNumber';
+import { CompetitiveResearchOnboarding } from '~/pages/onboarding/CompetitiveResearchOnboarding';
 import { ConnectLinkedin } from '~/pages/onboarding/ConnectLinkedin';
 import { CreateProfile } from '~/pages/onboarding/CreateProfile';
 import { CreateWorkspace } from '~/pages/onboarding/CreateWorkspace';
@@ -168,7 +168,7 @@ const OrgChartRoute = () => {
   return (
     <PageContainer>
       <CandidateTablePageHeader
-        title="Jobs"
+        title="Org Charts"
         Icon={IconDatabase}
         onAddJob={handleAddJob}
         onOrgCharts={() => navigate(`/${AppPath.OrgChart}`)}

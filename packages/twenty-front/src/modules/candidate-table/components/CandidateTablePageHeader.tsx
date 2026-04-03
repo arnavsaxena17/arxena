@@ -1,25 +1,18 @@
 import styled from '@emotion/styled';
-import {
-  IconBrandLinkedin,
-  IconBrandWhatsapp,
-  IconCoins,
-  IconGitMerge,
-  IconHierarchy2,
-} from '@tabler/icons-react';
+import { IconGitMerge } from '@tabler/icons-react';
 import { ReactNode, useState } from 'react';
 import {
   Button,
   IconAlertCircle,
-  IconDownload,
-  IconMessage,
-  IconPlus,
+  IconComponent,
+  IconHierarchy2,
+  IconMessage
 } from 'twenty-ui';
 
 import { CreditHistoryModal } from '@/billing/components/CreditHistoryModal';
+import { CandidateTableJobsPageMenuDropdown } from '@/candidate-table/components/CandidateTableJobsPageMenuDropdown';
 import { OrgChartCompanySearchWrapper } from '@/orgchart/components/OrgChartCompanySearchWrapper';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
-
-import type { IconComponent } from 'twenty-ui';
 
 const StyledCompanySearchWrapper = styled.div`
   position: absolute;
@@ -79,68 +72,6 @@ export const StyledPageHeader = styled(PageHeader)`
   @media (max-width: 768px) {
     padding: 8px 16px;
   }
-`;
-
-const StyledButtonContainer = styled.div`
-  display: flex;
-  align-items: center;
-  width: 100%;
-  flex: 1;
-  min-width: 0;
-`;
-
-const StyledLeftSpacer = styled.div`
-  flex: 1;
-  min-width: 0;
-`;
-
-// const StyledCenterSearch = styled.div`
-//   flex-shrink: 0;
-//   display: flex;
-//   justify-content: center;
-//   margin: 0 ${({ theme }) => theme.spacing(2)};
-// `;
-
-const StyledRightSection = styled.div`
-  flex: 1;
-  display: flex;
-  left: 0;
-
-  align-items: center;
-  justify-content: flex-end;
-  gap: ${({ theme }) => theme.spacing(2)};
-  min-width: 0;
-`;
-
-
-const StyledConnectionStatus = styled.div<{ isConnected: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  height: 32px;
-  padding: 0 ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme, isConnected }) =>
-    isConnected ? theme.tag.background.green : theme.tag.background.gray};
-  color: ${({ theme, isConnected }) =>
-    isConnected ? theme.tag.text.green : theme.tag.text.gray};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  border: ${({ theme, isConnected }) =>
-    isConnected ? 'none' : `1px dashed ${theme.border.color.strong}`};
-
-  svg {
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
-  }
-`;
-
-const StyledConnectionStatusGroup = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-left: auto;
 `;
 
 const StyledCreditsAlert = styled.div`
@@ -222,7 +153,7 @@ export const CandidateTablePageHeader = ({
   navigateToNextRecord,
   hasClosePageButton,
   onClosePage,
-  onOrgCharts,
+  onOrgCharts: _onOrgCharts,
   onCompanySelect,
   hasToken = false,
   hasInsufficientCredits,
@@ -239,35 +170,38 @@ export const CandidateTablePageHeader = ({
 }: CandidateTablePageHeaderProps) => {
   const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
 
+  const creditsTotal =
+    orgChartCredits !== undefined
+      ? (orgChartCredits ?? 0) +
+        (emailContactCredits ?? 0) +
+        (phoneContactCredits ?? 0)
+      : undefined;
+
   return (
     <>
-    <StyledPageHeader
-      title={title}
-      Icon={Icon}
-      hasPaginationButtons={hasPaginationButtons}
-      hasPreviousRecord={hasPreviousRecord}
-      hasNextRecord={hasNextRecord}
-      navigateToPreviousRecord={navigateToPreviousRecord}
-      navigateToNextRecord={navigateToNextRecord}
-      hasClosePageButton={hasClosePageButton}
-      onClosePage={onClosePage}
-    >
-      {onCompanySelect !== undefined && (
-        <StyledCompanySearchWrapper>
-          <StyledOrgChartSearchRow>
-            <OrgChartCompanySearchWrapper
-              onCompanySelect={onCompanySelect}
-              placeholder="Search company for org charts..."
-              disabled={!hasToken}
-              startIcon={<IconHierarchy2 size={20} />}
-            />
-          </StyledOrgChartSearchRow>
-        </StyledCompanySearchWrapper>
-      )}
-    {/* <StyledButtonContainer> */}
-      {/* <StyledLeftSpacer /> */}
-
-      {/* <StyledRightSection> */}
+      <StyledPageHeader
+        title={title}
+        Icon={Icon}
+        hasPaginationButtons={hasPaginationButtons}
+        hasPreviousRecord={hasPreviousRecord}
+        hasNextRecord={hasNextRecord}
+        navigateToPreviousRecord={navigateToPreviousRecord}
+        navigateToNextRecord={navigateToNextRecord}
+        hasClosePageButton={hasClosePageButton}
+        onClosePage={onClosePage}
+      >
+        {onCompanySelect !== undefined && (
+          <StyledCompanySearchWrapper>
+            <StyledOrgChartSearchRow>
+              <OrgChartCompanySearchWrapper
+                onCompanySelect={onCompanySelect}
+                placeholder="Search company for org charts..."
+                disabled={!hasToken}
+                startIcon={<IconHierarchy2 size={20} />}
+              />
+            </StyledOrgChartSearchRow>
+          </StyledCompanySearchWrapper>
+        )}
         {isMergeMode ? (
           <>
             <Button
@@ -285,28 +219,7 @@ export const CandidateTablePageHeader = ({
               onClick={onMergeModeCancel}
             />
           </>
-        ) : (
-          <>
-            <Button dataTestId="add-new-job" title="Add New Job" Icon={IconPlus} variant="primary" onClick={onAddJob} />
-            {onMergeJobs && (
-              <Button
-                dataTestId="merge-jobs"
-                title="Merge jobs"
-                variant="secondary"
-                onClick={onMergeJobs}
-              />
-            )}
-          </>
-        )}
-        {/* {onOrgCharts !== undefined && (
-          <Button
-            title="Org Charts"
-            Icon={IconSitemap}
-            variant="secondary"
-            onClick={onOrgCharts}
-            disabled={!hasToken}
-          />
-        )} */}
+        ) : null}
         {onChatKitToggle !== undefined && (
           <Button
             title="AI Chat"
@@ -315,46 +228,45 @@ export const CandidateTablePageHeader = ({
             onClick={onChatKitToggle}
           />
         )}
-        {!isExtensionInstalled && (
-          <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={onDownloadClick} />
-        )}
-        {orgChartCredits !== undefined && (
+        {/* {!isExtensionInstalled && (
           <Button
-            dataTestId="credits-button"
-            title={`Credits (${(orgChartCredits ?? 0) + (emailContactCredits ?? 0) + (phoneContactCredits ?? 0)})`}
-            Icon={IconCoins}
+            title="Download App"
+            Icon={IconDownload}
             variant="secondary"
-            onClick={() => setIsCreditModalOpen(true)}
+            onClick={onDownloadClick}
           />
+        )} */}
+        {hasInsufficientCredits && onAddCredits && (
+          <StyledCreditsAlert onClick={onAddCredits}>
+            <IconAlertCircle />
+            Insufficient OpenAI Credits
+          </StyledCreditsAlert>
         )}
-      {hasInsufficientCredits && onAddCredits && (
-        <StyledCreditsAlert onClick={onAddCredits}>
-          <IconAlertCircle />
-          Insufficient OpenAI Credits
-        </StyledCreditsAlert>
+        <CandidateTableJobsPageMenuDropdown
+          onAddJob={onAddJob}
+          onMergeJobs={onMergeJobs}
+          isLinkedinConnected={isLinkedinConnected}
+          isWhatsappLoggedIn={isWhatsappLoggedIn}
+          isMergeMode={isMergeMode}
+          isExtensionInstalled={isExtensionInstalled}
+          onDownloadClick={onDownloadClick}
+          creditsTotal={creditsTotal}
+          onCreditsClick={
+            creditsTotal !== undefined
+              ? () => setIsCreditModalOpen(true)
+              : undefined
+          }
+        />
+      </StyledPageHeader>
+      {orgChartCredits !== undefined && (
+        <CreditHistoryModal
+          isOpen={isCreditModalOpen}
+          onClose={() => setIsCreditModalOpen(false)}
+          orgChartCredits={orgChartCredits}
+          emailContactCredits={emailContactCredits}
+          phoneContactCredits={phoneContactCredits}
+        />
       )}
-      <StyledConnectionStatusGroup>
-        <StyledConnectionStatus isConnected={isLinkedinConnected}>
-          <IconBrandLinkedin size={14} stroke={1.6} />
-          {isLinkedinConnected ? 'Connected' : 'Disconnected'}
-        </StyledConnectionStatus>
-        <StyledConnectionStatus isConnected={isWhatsappLoggedIn}>
-          <IconBrandWhatsapp size={14} stroke={1.6} />
-          {isWhatsappLoggedIn ? 'Connected' : 'Disconnected'}
-        </StyledConnectionStatus>
-      </StyledConnectionStatusGroup>
-      {/* </StyledRightSection> */}
-    {/* </StyledButtonContainer> */}
-  </StyledPageHeader>
-  {orgChartCredits !== undefined && (
-    <CreditHistoryModal
-      isOpen={isCreditModalOpen}
-      onClose={() => setIsCreditModalOpen(false)}
-      orgChartCredits={orgChartCredits}
-      emailContactCredits={emailContactCredits}
-      phoneContactCredits={phoneContactCredits}
-    />
-  )}
     </>
   );
 };

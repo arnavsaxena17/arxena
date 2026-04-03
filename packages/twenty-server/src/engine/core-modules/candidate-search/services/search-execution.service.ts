@@ -108,7 +108,10 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     apiToken: string,
     maxPages?: number,
     sendEvent?: (event: string, data: any) => boolean | void,
-    executionOptions?: { forceClassicPeopleJson?: boolean },
+    executionOptions?: {
+      forceClassicPeopleJson?: boolean;
+      linkedInAccountId?: string;
+    },
   ): Promise<SearchExecutionPreview | null> {
     const pageLimit = 10;
     const maxPagesToFetch =
@@ -135,7 +138,10 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         searchCategory,
       );
       if (!areParamsResolved) {
-        const accountId = await this.getLinkedInAccountId(apiToken);
+        const accountId = await this.getLinkedInAccountId(
+          apiToken,
+          executionOptions?.linkedInAccountId,
+        );
         strategyResolvedParams = await this.resolveSearchParameters(
           strategyResolvedParams,
           searchType,
@@ -208,6 +214,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           sendEvent,
           state.currentPage,
           forceClassicPeopleJson,
+          executionOptions?.linkedInAccountId,
         );
 
         if (!pageResult || pageResult.items.length === 0) {
@@ -751,6 +758,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     sendEvent?: (event: string, data: any) => boolean | void,
     currentPage: number = 1,
     forceClassicPeopleJson: boolean = false,
+    linkedInAccountIdOverride?: string,
   ): Promise<{
     items: LinkedInSearchResult[];
     transformed: TransformedCandidateForTable[];
@@ -763,7 +771,10 @@ export class SearchExecutionService extends CandidateSearchBaseService {
       page: currentPage,
     });
 
-    const accountId = await this.getLinkedInAccountId(apiToken);
+    const accountId = await this.getLinkedInAccountId(
+      apiToken,
+      linkedInAccountIdOverride,
+    );
 
     // For raw classic people search, paginate with start offset (no cursor).
     // Must align with CandidateSearchBaseService.shouldUseRawEndpointForClassicPeople so that

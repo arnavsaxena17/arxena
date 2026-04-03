@@ -3,17 +3,32 @@ import { useState } from 'react';
 
 import type { OrgChartFiltersProps } from 'twenty-orgchart';
 import { OrgChartFilters } from 'twenty-orgchart';
+import type { OrgChartBusinessDivisionQueryProps } from './OrgChartBusinessDivisionQuery';
+import { OrgChartBusinessDivisionQuery } from './OrgChartBusinessDivisionQuery';
 import { OrgChartCompanyDrawer } from './OrgChartCompanyDrawer';
 import type { OrgChartCompanyInfoProps } from './OrgChartCompanyInfo';
 import { OrgChartCompanyInfo } from './OrgChartCompanyInfo';
 
 const StyledHeader = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: ${({ theme }) => theme.spacing(3)};
   padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(4)};
   border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
   flex-shrink: 0;
+`;
+
+const StyledOrgChartToolbar = styled.div`
+  margin-left: auto;
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing(2)};
+  flex-shrink: 0;
+  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  background: ${({ theme }) => theme.background.transparent.light};
 `;
 
 const StyledBackButton = styled.button`
@@ -35,12 +50,14 @@ export type OrgChartHeaderProps = OrgChartCompanyInfoProps & {
   onBack?: () => void;
   hasFilters: boolean;
   filtersProps: OrgChartFiltersProps;
+  businessDivisionQueryProps?: OrgChartBusinessDivisionQueryProps;
 };
 
 export const OrgChartHeader = ({
   onBack,
   hasFilters,
   filtersProps,
+  businessDivisionQueryProps,
   ...companyInfoProps
 }: OrgChartHeaderProps) => {
   const [isCompanyDrawerOpen, setIsCompanyDrawerOpen] = useState(false);
@@ -48,16 +65,23 @@ export const OrgChartHeader = ({
   return (
     <>
       <StyledHeader>
-        {onBack && (
+        {/* {onBack && (
           <StyledBackButton type="button" onClick={onBack}>
             ← Back to jobs
           </StyledBackButton>
-        )}
+        )} */}
         <OrgChartCompanyInfo
           {...companyInfoProps}
           onViewDetails={() => setIsCompanyDrawerOpen(true)}
         />
-        {hasFilters && <OrgChartFilters {...filtersProps} />}
+        {hasFilters && (
+          <StyledOrgChartToolbar>
+            <OrgChartFilters {...filtersProps} omitMarginLeft />
+            {businessDivisionQueryProps && (
+              <OrgChartBusinessDivisionQuery {...businessDivisionQueryProps} />
+            )}
+          </StyledOrgChartToolbar>
+        )}
       </StyledHeader>
       <OrgChartCompanyDrawer
         {...companyInfoProps}

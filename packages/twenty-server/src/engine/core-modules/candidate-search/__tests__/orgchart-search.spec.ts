@@ -2,9 +2,9 @@
  * Unit tests for org chart search job naming and buildOrgChartFromLinkedInCompanyCandidates.
  */
 import {
-  hasMeaningfulOrgChartFunctionRootFilter,
-  normalizeOrgChartFunctionRootFilter,
-} from '../utils/orgchart-filter.util';
+    hasMeaningfulOrgChartFunctionRootFilter,
+    normalizeOrgChartFunctionRootFilter,
+} from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 
 describe('Org chart job naming', () => {
   function buildOrgChartJobName(

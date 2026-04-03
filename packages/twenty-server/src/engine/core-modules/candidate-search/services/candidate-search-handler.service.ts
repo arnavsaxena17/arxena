@@ -1,20 +1,19 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
 import {
-    LinkedInClassicCompaniesSearchRequest,
-    LinkedInClassicJobsSearchRequest,
-    LinkedInSalesNavigatorCompaniesSearchRequest,
+  LinkedInClassicCompaniesSearchRequest,
+  LinkedInClassicJobsSearchRequest,
+  LinkedInSalesNavigatorCompaniesSearchRequest,
 } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
-import { OrgChartData } from 'twenty-shared';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import {
-    ClassicPeopleSearchStrategyResult,
-    GeneratedSearchParameters,
-    ParsedJobDescription,
-    RecruiterPeopleSearchStrategyResult,
-    ResultValidationResult,
-    SalesNavigatorPeopleSearchStrategyResult,
+  ClassicPeopleSearchStrategyResult,
+  GeneratedSearchParameters,
+  ParsedJobDescription,
+  RecruiterPeopleSearchStrategyResult,
+  ResultValidationResult,
+  SalesNavigatorPeopleSearchStrategyResult,
 } from '../types/candidate-search-request.type';
 import { ChatMessageRequest } from '../types/search-plan.types';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
@@ -28,8 +27,6 @@ import { CandidateSearchBaseService } from './candidate-search-base.service';
 import { ClassifyMessageService } from './classify-message.service';
 import { CleanupService } from './cleanup.service';
 import { JobDescriptionService } from './job-description.service';
-import { OrgChartCacheService } from './orgchart-cache.service';
-import { OrgChartSearchService } from './orgchart-search.service';
 import { PythonQueryGenerationService } from './python-query-generation.service';
 import { RequirementAnalyzerService } from './requirement-analyzer.service';
 import { SearchExecutionService } from './search-execution.service';
@@ -38,8 +35,6 @@ import { SearchResponseBuilderService } from './search-response-builder.service'
 import { StrategyExecutionService } from './strategy-execution.service';
 
 import { buildIterativeRequirement } from 'src/engine/core-modules/assistant/utils/assistant-iterative-query.utils';
-import type { TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
-
 export type HandlerMessageStreamSendEvent = (
   event: string,
   data: Record<string, unknown>,
@@ -99,8 +94,6 @@ export class CandidateSearchHandlerService {
     private readonly classifyMessageService: ClassifyMessageService,
     private readonly cleanupService: CleanupService,
     private readonly searchParametersPrompts: SearchParametersPrompts,
-    private readonly orgChartCacheService: OrgChartCacheService,
-    private readonly orgChartSearchService: OrgChartSearchService,
     private readonly searchResponseBuilderService: SearchResponseBuilderService,
     private readonly strategyExecutionService: StrategyExecutionService,
   ) {}
@@ -1064,140 +1057,5 @@ export class CandidateSearchHandlerService {
       );
       throw error;
     }
-  }
-
-  async runOrgchartLinkedInSearch(
-    rawQuery: string,
-    cleanedQuery: string,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    apiToken: string,
-    sendEvent?: (event: string, data: unknown) => void,
-    options?: {
-      mode?: string;
-      companyName?: string;
-      companyId?: string;
-      requestId?: string;
-      jobTitles?: string[];
-      country?: string;
-      functionRoot?: string;
-    },
-  ): Promise<{
-    items: any[];
-    itemCount: number;
-    isCached?: boolean;
-    cacheSource?: 'none' | 'function_grade';
-    orgChart?: OrgChartData;
-    functionGradeCacheMeta?: {
-      strategyCap: number;
-      keywordsHash: string;
-      functionRoot: string;
-      country: string;
-    };
-    strategyResults: Array<{
-      strategy: PeopleSearchStrategyResult;
-      result: unknown;
-    }>;
-  }> {
-    return this.orgChartSearchService.runOrgchartLinkedInSearch(
-      rawQuery,
-      cleanedQuery,
-      searchType,
-      apiToken,
-      sendEvent,
-      options,
-    );
-  }
-
-  async buildOrgChartFromLinkedInCompanyCandidates(
-    candidates: (TransformedCandidateForTable | Record<string, unknown>)[],
-    options: {
-      companyName: string;
-      companyId?: string;
-      mode?: string;
-      function?: string;
-    },
-  ): Promise<OrgChartData> {
-    return this.orgChartSearchService.buildOrgChartFromLinkedInCompanyCandidates(
-      candidates,
-      options,
-    );
-  }
-
-  async getCachedCompanyOrgChart(input: {
-    companyName?: string;
-    companyId?: string;
-    mode: 'entire_company';
-    searchType: 'classic' | 'sales_navigator' | 'recruiter';
-  }) {
-    return this.orgChartCacheService.getCachedCompanyOrgChart(input);
-  }
-
-  async getCachedCompanyCandidateList(input: {
-    companyName?: string;
-    companyId?: string;
-    mode: 'entire_company';
-    searchType: 'classic' | 'sales_navigator' | 'recruiter';
-  }) {
-    return this.orgChartCacheService.getCachedCompanyCandidateList(input);
-  }
-
-  async setCachedCompanyOrgChart(input: {
-    companyName?: string;
-    companyId?: string;
-    mode: 'entire_company';
-    searchType: 'classic' | 'sales_navigator' | 'recruiter';
-    orgChart: OrgChartData;
-    items: any[];
-    itemCount: number;
-    creditsDebited?: boolean;
-  }): Promise<void> {
-    return this.orgChartCacheService.setCachedCompanyOrgChart(input);
-  }
-
-  shouldCacheCompanyOrgChart(input: {
-    orgChart: OrgChartData | undefined;
-    fallbackCandidateCount?: number;
-    companyName?: string;
-    companyId?: string;
-  }): boolean {
-    return this.orgChartCacheService.shouldCacheCompanyOrgChart(input);
-  }
-
-  async setCachedCompanyCandidateList(input: {
-    companyName?: string;
-    companyId?: string;
-    mode: 'entire_company';
-    searchType: 'classic' | 'sales_navigator' | 'recruiter';
-    items: any[];
-    itemCount: number;
-  }): Promise<void> {
-    return this.orgChartCacheService.setCachedCompanyCandidateList(input);
-  }
-
-  async getCachedFunctionGradeSearch(input: {
-    companyName?: string;
-    companyId?: string;
-    functionRoot: string;
-    country: string;
-    searchType: 'classic' | 'sales_navigator' | 'recruiter';
-    strategyCap: number;
-    keywordsHash: string;
-  }) {
-    return this.orgChartCacheService.getCachedFunctionGradeSearch(input);
-  }
-
-  async setCachedFunctionGradeSearch(input: {
-    companyName?: string;
-    companyId?: string;
-    functionRoot: string;
-    country: string;
-    searchType: 'classic' | 'sales_navigator' | 'recruiter';
-    strategyCap: number;
-    keywordsHash: string;
-    items: any[];
-    itemCount: number;
-    orgChart?: OrgChartData;
-  }): Promise<void> {
-    return this.orgChartCacheService.setCachedFunctionGradeSearch(input);
   }
 }

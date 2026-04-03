@@ -23,14 +23,13 @@ import { OrgchartApifyBuildProcessor } from './jobs/orgchart-apify-build.process
 import { SearchParametersPrompts } from './prompts/search-parameters-prompts';
 import { AssistantThreadService } from './services/assistant-thread.service';
 import { BooltreeHintService } from './services/booltree-hint.service';
+import { BusinessDivisionOrgChartParserService } from './services/business-division-org-chart-parser.service';
 import { CandidateSearchHandlerService } from './services/candidate-search-handler.service';
 import { ClassifyMessageService } from './services/classify-message.service';
 import { CleanupService } from './services/cleanup.service';
 import { CompanyExpanderService } from './services/company-expander.service';
 import { JobDescriptionService } from './services/job-description.service';
 import { JobTitleExpanderService } from './services/job-title-expander.service';
-import { OrgChartCacheService } from './services/orgchart-cache.service';
-import { OrgchartCancelRegistryService } from './services/orgchart-cancel-registry.service';
 import { OrgChartSearchService } from './services/orgchart-search.service';
 import { PythonQueryGenerationService } from './services/python-query-generation.service';
 import { QueryConstructorService } from './services/query-constructor.service';
@@ -87,9 +86,8 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     SearchResponseBuilderService,
     StrategyExecutionService,
     SearchResultsCacheService,
-    OrgChartCacheService,
+    BusinessDivisionOrgChartParserService,
     OrgChartSearchService,
-    OrgchartCancelRegistryService,
     OrgchartApifyBuildProcessor,
     // Executive search enhancement services
     PythonOrgChartService,
@@ -97,9 +95,9 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
   exports: [
     CandidateSearchBaseService,
     CandidateSearchHandlerService,
+    OrgChartSearchService,
     ResultValidationService,
     StreamProcessingService,
-    OrgchartCancelRegistryService,
   ],
 })
 export class CandidateSearchModule {}

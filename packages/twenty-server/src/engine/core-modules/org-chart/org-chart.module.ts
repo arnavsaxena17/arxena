@@ -26,6 +26,8 @@ import { OrgChartEsService } from './services/org-chart-es.service';
 import { OrgChartLinkedInBuildService } from './services/org-chart-linkedin-build.service';
 import { OrgChartTheOrgEnrichmentService } from './services/org-chart-theorg-enrichment.service';
 import { OrgChartService } from './services/org-chart.service';
+import { OrgChartCacheService } from './services/orgchart-cache.service';
+import { OrgchartCancelRegistryService } from './services/orgchart-cancel-registry.service';
 import { OrgChartS3Service } from './services/orgchart-s3.service';
 import { PdlAutocompleteService } from './services/pdl-autocomplete.service';
 import { PdlPersonOrgMovementService } from './services/pdl-person-org-movement.service';
@@ -66,10 +68,14 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
     ImageProxyService,
     PythonOrgChartService,
     OrgChartS3Service,
+    OrgChartCacheService,
+    OrgchartCancelRegistryService,
   ],
   exports: [
     OrgChartService,
     OrgChartS3Service,
+    OrgChartCacheService,
+    OrgchartCancelRegistryService,
     OrgChartTheOrgEnrichmentService,
     OrgChartLinkedInBuildService,
     PdlPersonOrgMovementService,

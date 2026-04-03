@@ -2,27 +2,29 @@ import { Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
 import type { TransformedCandidateForTable } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
+import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services/orgchart-cache.service';
+import { OrgchartCancelRegistryService } from 'src/engine/core-modules/org-chart/services/orgchart-cancel-registry.service';
 import { PythonOrgChartService } from 'src/engine/core-modules/org-chart/services/python-org-chart.service';
+import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
+import {
+  normalizeCountry,
+  normalizeFunctionRoot,
+} from 'src/engine/core-modules/org-chart/utils/orgchart-normalization.util';
 import { OrgChartData } from 'twenty-shared';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import {
-    ClassicPeopleSearchStrategyResult,
-    ParsedJobDescription,
+  ClassicPeopleSearchStrategyResult,
+  ParsedJobDescription,
 } from '../types/candidate-search-request.type';
+import { mergeBusinessDivisionFilters } from '../utils/business-division-merge.util';
 import type { PeopleSearchStrategyResult } from '../utils/extract-strategies.util';
 import { extractStrategiesFromGeneratedParams } from '../utils/extract-strategies.util';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
 import { mapLinkedinSearchQueriesToGeneratedParameters } from '../utils/linkedin-query-generation-mapper.util';
-import { hasMeaningfulOrgChartFunctionRootFilter } from '../utils/orgchart-filter.util';
-import {
-    normalizeCountry,
-    normalizeFunctionRoot,
-} from '../utils/orgchart-normalization.util';
 import { createMinimalParsedJobDescription } from '../utils/parsed-job-description.util';
 import { constructSearchParamKey } from '../utils/search-parameter.utils';
+import { BusinessDivisionOrgChartParserService } from './business-division-org-chart-parser.service';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
-import { OrgChartCacheService } from './orgchart-cache.service';
-import { OrgchartCancelRegistryService } from './orgchart-cancel-registry.service';
 import type { PythonQueryInput } from './python-query-generation.service';
 import { PythonQueryGenerationService } from './python-query-generation.service';
 import { RequirementAnalyzerService } from './requirement-analyzer.service';
@@ -81,6 +83,7 @@ export class OrgChartSearchService {
     private readonly orgchartCancelRegistry: OrgchartCancelRegistryService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly orgChartCacheService: OrgChartCacheService,
+    private readonly businessDivisionOrgChartParserService: BusinessDivisionOrgChartParserService,
   ) {}
 
   /**
@@ -102,6 +105,12 @@ export class OrgChartSearchService {
       jobTitles?: string[];
       country?: string;
       functionRoot?: string;
+      /** Canonical LinkedIn company URL for Python org-chart (e.g. https://www.linkedin.com/company/briskpe/) */
+      linkedinCompanyUrl?: string;
+      /** Unipile LinkedIn account id (same as linkedin-search ?account_id); after UNIPILE_LINKEDIN_ACCOUNT_ID env */
+      linkedinUnipileAccountId?: string;
+      /** Natural-language business division query; triggers structured LLM + keyword strategy */
+      businessDivisionRawQuery?: string;
     },
   ): Promise<{
     items: unknown[];
@@ -115,6 +124,9 @@ export class OrgChartSearchService {
       functionRoot: string;
       country: string;
     };
+    /** Merged filters after business-division LLM (for org-chart build) */
+    effectiveCountry?: string;
+    effectiveFunctionRoot?: string;
     strategyResults: Array<{
       strategy: PeopleSearchStrategyResult;
       result: SearchExecutionResult | null;
@@ -130,10 +142,20 @@ export class OrgChartSearchService {
     const primaryCompanyName = options?.companyName?.trim() || '';
     const primaryCompanyId = options?.companyId?.trim() || '';
     const requestId = options?.requestId;
-    const rawCountry = options?.country?.trim() || '';
-    const country =
-      rawCountry.toLowerCase() === 'global' ? '' : rawCountry;
-    const functionRoot = options?.functionRoot?.trim() || '';
+    const rawCountryFromOptions = options?.country?.trim() || '';
+    const rawFunctionFromOptions = options?.functionRoot?.trim() || '';
+    let country =
+      rawCountryFromOptions.toLowerCase() === 'global'
+        ? ''
+        : rawCountryFromOptions;
+    let functionRoot = rawFunctionFromOptions;
+
+    const businessDivisionRaw = options?.businessDivisionRawQuery?.trim();
+    if (businessDivisionRaw && !primaryCompanyName) {
+      throw new Error(
+        'businessDivisionRawQuery requires companyName on the org chart request',
+      );
+    }
 
     let workspaceMemberId: string | undefined;
     try {
@@ -179,6 +201,59 @@ export class OrgChartSearchService {
       message: `Starting org chart search for ${primaryCompanyName || 'company'}...`,
     });
 
+    let businessDivisionEffective:
+      | { effectiveCountry?: string; effectiveFunctionRoot?: string }
+      | undefined;
+    let businessDivisionLinkedinKeywords: string | undefined;
+
+    if (businessDivisionRaw && primaryCompanyName) {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const { openAIclient: openaiClient } =
+        await this.workspaceQueryService.initializeLLMClients(workspaceId);
+
+      emitProgress('status', {
+        message: 'Parsing business division query...',
+      });
+
+      const parsed =
+        await this.businessDivisionOrgChartParserService.parseBusinessDivisionQuery(
+          openaiClient,
+          {
+            companyName: primaryCompanyName,
+            userRawText: businessDivisionRaw,
+            defaultCountry: rawCountryFromOptions,
+            defaultFunctionRoot: rawFunctionFromOptions,
+          },
+          sendEvent,
+        );
+
+      const merged = mergeBusinessDivisionFilters(
+        parsed,
+        rawCountryFromOptions,
+        rawFunctionFromOptions,
+      );
+
+      if (!merged.linkedinKeywords) {
+        throw new Error(
+          'Business division parser did not produce linkedin_keywords',
+        );
+      }
+
+      country =
+        merged.effectiveCountryRaw === '' ||
+        merged.effectiveCountryRaw.toLowerCase() === 'global'
+          ? ''
+          : merged.effectiveCountryRaw;
+      functionRoot = merged.effectiveFunctionRoot;
+
+      businessDivisionEffective = {
+        effectiveCountry: country === '' ? 'global' : country,
+        effectiveFunctionRoot: functionRoot || undefined,
+      };
+      businessDivisionLinkedinKeywords = merged.linkedinKeywords;
+    }
+
     const hasAdditionalFilters =
       !!country || hasMeaningfulOrgChartFunctionRootFilter(functionRoot);
 
@@ -186,7 +261,8 @@ export class OrgChartSearchService {
       searchType === 'classic' &&
       !!primaryCompanyName &&
       (mode === 'entire_company' || mode === 'all_people') &&
-      !hasAdditionalFilters;
+      !hasAdditionalFilters &&
+      !businessDivisionRaw;
 
     if (
       mode === 'function_grade' &&
@@ -210,7 +286,7 @@ export class OrgChartSearchService {
           );
 
         this.logger.log(
-          `OrgchartLinkedInSearch: reusing full-company candidate list cache for function-grade search (company="${primaryCompanyName}", functionRoot="${functionRoot}", country="${rawCountry || 'global'}") with ${filteredItems.length} candidates after filters.`,
+          `OrgchartLinkedInSearch: reusing full-company candidate list cache for function-grade search (company="${primaryCompanyName}", functionRoot="${functionRoot}", country="${rawCountryFromOptions || 'global'}") with ${filteredItems.length} candidates after filters.`,
         );
 
         emitProgress('complete', {
@@ -235,7 +311,47 @@ export class OrgChartSearchService {
     let strategies: PeopleSearchStrategyResult[];
     let parsedJobDescription: ParsedJobDescription;
 
-    if (isAllPeopleInCompanyMode) {
+    if (businessDivisionLinkedinKeywords && primaryCompanyName) {
+      this.logger.log(
+        `OrgchartLinkedInSearch: business division keyword strategy for "${primaryCompanyName}".`,
+      );
+
+      const locationForStrategy =
+        country && country.length > 0 ? [country] : undefined;
+
+      const divisionStrategy = this.createBusinessDivisionStrategy(
+        primaryCompanyName,
+        businessDivisionLinkedinKeywords,
+        requirement,
+        locationForStrategy,
+      );
+
+      try {
+        const accountId =
+          await this.candidateSearchBaseService.getLinkedInAccountId(
+            apiToken,
+            options?.linkedinUnipileAccountId,
+          );
+        const resolvedParams =
+          await this.linkedinParameterResolver.resolveParameterIds(
+            divisionStrategy.parameters,
+            accountId,
+            divisionStrategy.id,
+          );
+        divisionStrategy.parameters = resolvedParams;
+      } catch (error) {
+        this.logger.error(
+          `[Strategy: ${divisionStrategy.id}] Failed to parameterize business division orgchart search`,
+          error as Error,
+        );
+      }
+
+      strategies = [divisionStrategy];
+      parsedJobDescription = createMinimalParsedJobDescription({
+        jobTitle: `Business division at ${primaryCompanyName}`,
+        company: primaryCompanyName,
+      });
+    } else if (isAllPeopleInCompanyMode) {
       this.logger.log(
         `OrgchartLinkedInSearch: using direct company filter strategy for "${primaryCompanyName}" (mode=${mode}) without multi-agent flow.`,
       );
@@ -249,6 +365,7 @@ export class OrgChartSearchService {
         const accountId =
           await this.candidateSearchBaseService.getLinkedInAccountId(
             apiToken,
+            options?.linkedinUnipileAccountId,
           );
         const resolvedParams =
           await this.linkedinParameterResolver.resolveParameterIds(
@@ -460,7 +577,10 @@ export class OrgChartSearchService {
           apiToken,
           undefined,
           emitProgress,
-          { forceClassicPeopleJson: true },
+          {
+            forceClassicPeopleJson: true,
+            linkedInAccountId: options?.linkedinUnipileAccountId,
+          },
         );
       strategyResults.push({
         strategy,
@@ -472,13 +592,22 @@ export class OrgChartSearchService {
       (sr) => sr.result?.transformedCandidates || [],
     );
 
+    const candidatesOut =
+      businessDivisionRaw && primaryCompanyName
+        ? this.filterOrgChartCandidatesByCountryAndFunctionRoot(
+            allCandidates,
+            country,
+            functionRoot,
+          )
+        : allCandidates;
+
     this.logger.log(
-      `OrgchartLinkedInSearch: collected ${allCandidates.length} transformed candidates from ${strategyResults.length} strategy/strategies.`,
+      `OrgchartLinkedInSearch: collected ${candidatesOut.length} transformed candidates from ${strategyResults.length} strategy/strategies.`,
     );
 
     emitProgress('complete', {
-      message: `Completed org chart people search with ${allCandidates.length} candidates.`,
-      itemCount: allCandidates.length,
+      message: `Completed org chart people search with ${candidatesOut.length} candidates.`,
+      itemCount: candidatesOut.length,
       strategyCount: strategyResults.length,
     });
 
@@ -486,7 +615,7 @@ export class OrgChartSearchService {
       isFunctionGradeMode &&
       primaryCompanyName &&
       normalizedFunctionRoot &&
-      allCandidates.length > 0
+      candidatesOut.length > 0
     ) {
       await this.orgChartCacheService.setCachedFunctionGradeSearch({
         companyName: primaryCompanyName,
@@ -496,14 +625,14 @@ export class OrgChartSearchService {
         searchType,
         strategyCap: maxStrategiesToRun,
         keywordsHash,
-        items: allCandidates,
-        itemCount: allCandidates.length,
+        items: candidatesOut,
+        itemCount: candidatesOut.length,
       });
     }
 
     return {
-      items: allCandidates,
-      itemCount: allCandidates.length,
+      items: candidatesOut,
+      itemCount: candidatesOut.length,
       isCached: false,
       cacheSource: 'none',
       functionGradeCacheMeta:
@@ -515,6 +644,13 @@ export class OrgChartSearchService {
               country: normalizedCountry,
             }
           : undefined,
+      ...(businessDivisionEffective
+        ? {
+            effectiveCountry: businessDivisionEffective.effectiveCountry,
+            effectiveFunctionRoot:
+              businessDivisionEffective.effectiveFunctionRoot,
+          }
+        : {}),
       strategyResults,
     };
   }
@@ -526,6 +662,8 @@ export class OrgChartSearchService {
       companyId?: string;
       mode?: string;
       function?: string;
+      /** When set, used as job_company_linkedin_url for the Python service (overrides /company/{companyId}) */
+      companyLinkedinUrl?: string;
     },
   ): Promise<OrgChartData> {
     const { companyName, companyId, mode, function: fn } = options;
@@ -536,10 +674,13 @@ export class OrgChartSearchService {
         ? normalizedCompanyName.replace(/\s+/g, '').toLowerCase()
         : '');
 
+    const trimmedCanonical = options.companyLinkedinUrl?.trim();
     const companyLinkedinUrl =
-      normalizedCompanyId !== ''
-        ? `https://www.linkedin.com/company/${normalizedCompanyId}`
-        : '';
+      trimmedCanonical && trimmedCanonical.length > 0
+        ? trimmedCanonical.replace(/\/+$/, '')
+        : normalizedCompanyId !== ''
+          ? `https://www.linkedin.com/company/${normalizedCompanyId}`
+          : '';
 
     const people: StandardizedOrgChartPerson[] = candidates.map(
       (candidate, index) => {
@@ -732,6 +873,30 @@ export class OrgChartSearchService {
       clarificationAnswers: null,
       parameters: {
         company: [companyName],
+      },
+    };
+  }
+
+  private createBusinessDivisionStrategy(
+    companyName: string,
+    keywords: string,
+    requirement: string,
+    location?: string[],
+  ): ClassicPeopleSearchStrategyResult {
+    const safeId = companyName.replace(/[^a-zA-Z0-9_-]+/g, '-').slice(0, 80);
+
+    return {
+      id: `orgchart-business-division-${safeId}`,
+      label: `Business division at ${companyName}`,
+      description: `Org-chart business division mapping using keyword filter at ${companyName}.`,
+      strategyText: keywords,
+      originalUserQuery: requirement,
+      clarificationQuestions: null,
+      clarificationAnswers: null,
+      parameters: {
+        company: [companyName],
+        keywords,
+        ...(location?.length ? { location } : {}),
       },
     };
   }

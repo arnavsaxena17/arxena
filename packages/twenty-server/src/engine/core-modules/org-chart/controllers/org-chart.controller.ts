@@ -1001,6 +1001,7 @@ export class OrgChartController {
         | 'leadership'
         | 'entire_company'
         | 'function_grade'
+        | 'business_division_map'
         | 'all_people'
         | 'selected_nodes';
       maxPages?: number;
@@ -1008,7 +1009,14 @@ export class OrgChartController {
       requestId?: string;
       country?: string;
       functionRoot?: string;
+      linkedinCompanyUrl?: string;
+      linkedinUnipileAccountId?: string;
+      candidateSource?: 'unipile' | 'apify';
+      apifyMaxItems?: number;
+      profileScraperMode?: string;
+      businessDivisionRawQuery?: string;
     },
+    @Query('account_id') accountIdQuery: string | undefined,
     @Req() req: Request,
   ) {
     try {
@@ -1021,8 +1029,14 @@ export class OrgChartController {
         }),
       );
 
+      const mergedBody = {
+        ...body,
+        linkedinUnipileAccountId:
+          accountIdQuery?.trim() || body.linkedinUnipileAccountId?.trim(),
+      };
+
       return await this.orgChartLinkedInBuildService.searchOrgchartFromLinkedIn(
-        body,
+        mergedBody,
         normalizedHeaders,
       );
     } catch (error) {
@@ -1062,6 +1076,43 @@ export class OrgChartController {
       { requestId: body.requestId.trim() },
       normalizedHeaders,
     );
+  }
+
+  /**
+   * Clears Redis org-chart keys and S3 persisted folder for the company (authenticated user).
+   */
+  @Post('company-cache/clear')
+  async clearCompanyOrgChartCache(
+    @Body() body: { companyId?: string; companyName?: string },
+    @Req() req: Request,
+  ) {
+    const authToken = this.getAuthToken(req);
+    if (!authToken) {
+      throw new HttpException('Authentication required', HttpStatus.UNAUTHORIZED);
+    }
+
+    const companyId = body?.companyId?.trim();
+    const companyName = body?.companyName?.trim();
+    if (!companyId && !companyName) {
+      throw new HttpException(
+        'At least one of companyId or companyName is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      await this.orgChartService.clearCompanyOrgChartCaches({
+        companyId: companyId || undefined,
+        companyName: companyName || undefined,
+      });
+      return { status: 'ok' as const };
+    } catch (error) {
+      this.logger.error('Clear company org chart cache failed', error);
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Failed to clear org chart cache',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Post('from-job')

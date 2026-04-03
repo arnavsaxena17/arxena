@@ -4,6 +4,10 @@ import { CacheStorageService } from 'src/engine/core-modules/cache-storage/servi
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { OrgChartData } from 'twenty-shared';
 import {
+    buildCompanyOrgChartCandidateListLogicalCacheKey,
+    buildCompanyOrgChartLogicalCacheKey,
+} from '../utils/orgchart-cache-keys.util';
+import {
     normalizeCompanyId,
     normalizeCompanyName,
     normalizeCountry,
@@ -47,9 +51,6 @@ export type CachedFunctionGradeSearchPayload = {
   cachedAt: string;
 };
 
-const ORG_CHART_COMPANY_CACHE_KEY_PREFIX = 'company-orgchart';
-const ORG_CHART_COMPANY_CANDIDATE_LIST_CACHE_KEY_PREFIX =
-  'company-orgchart-candidates';
 const ORG_CHART_FUNCTION_GRADE_CACHE_KEY_PREFIX = 'function-grade-orgchart';
 const DEFAULT_ORG_CHART_COMPANY_CACHE_TTL_SECONDS = 60 * 60 * 24 * 90;
 const DEFAULT_ORG_CHART_COMPANY_CANDIDATES_CACHE_TTL_SECONDS =
@@ -74,7 +75,7 @@ export class OrgChartCacheService {
     mode: 'entire_company';
     searchType: 'classic' | 'sales_navigator' | 'recruiter';
   }): Promise<CachedCompanyOrgChartPayload | undefined> {
-    const cacheKey = this.buildCompanyOrgChartCacheKey(
+    const cacheKey = buildCompanyOrgChartLogicalCacheKey(
       input.companyName,
       input.companyId,
       input.mode,
@@ -106,7 +107,7 @@ export class OrgChartCacheService {
     mode: 'entire_company';
     searchType: 'classic' | 'sales_navigator' | 'recruiter';
   }): Promise<CachedCompanyCandidateListPayload | undefined> {
-    const cacheKey = this.buildCompanyOrgChartCandidateListCacheKey(
+    const cacheKey = buildCompanyOrgChartCandidateListLogicalCacheKey(
       input.companyName,
       input.companyId,
       input.mode,
@@ -162,7 +163,7 @@ export class OrgChartCacheService {
       input.companyId,
       normalizedCompanyName,
     );
-    const cacheKey = this.buildCompanyOrgChartCacheKey(
+    const cacheKey = buildCompanyOrgChartLogicalCacheKey(
       normalizedCompanyName,
       normalizedCompanyId,
       input.mode,
@@ -248,7 +249,7 @@ export class OrgChartCacheService {
       input.companyId,
       normalizedCompanyName,
     );
-    const cacheKey = this.buildCompanyOrgChartCandidateListCacheKey(
+    const cacheKey = buildCompanyOrgChartCandidateListLogicalCacheKey(
       normalizedCompanyName,
       normalizedCompanyId,
       input.mode,
@@ -276,6 +277,33 @@ export class OrgChartCacheService {
     await this.orgChartCacheStorageService.set(cacheKey, payload, ttlSeconds);
     this.logger.log(
       `Candidate list cache WRITE: key=${cacheKey}, itemCount=${payload.itemCount}, ttlSeconds=${ttlSeconds}, cachedAt=${payload.cachedAt}`,
+    );
+  }
+
+  /**
+   * Deletes Redis keys for full-company classic org chart + candidate list caches.
+   * Used by live E2E and ops to force a cold fetch from Unipile / Python.
+   */
+  async invalidateEntireCompanyClassicCaches(input: {
+    companyName?: string;
+    companyId?: string;
+  }): Promise<void> {
+    const orgChartKey = buildCompanyOrgChartLogicalCacheKey(
+      input.companyName,
+      input.companyId,
+      'entire_company',
+      'classic',
+    );
+    const candidateListKey = buildCompanyOrgChartCandidateListLogicalCacheKey(
+      input.companyName,
+      input.companyId,
+      'entire_company',
+      'classic',
+    );
+    await this.orgChartCacheStorageService.del(orgChartKey);
+    await this.orgChartCacheStorageService.del(candidateListKey);
+    this.logger.log(
+      `Orgchart cache INVALIDATE: orgChartKey=${orgChartKey}, candidateListKey=${candidateListKey}`,
     );
   }
 
@@ -394,46 +422,6 @@ export class OrgChartCacheService {
       input.searchType,
       `cap_${strategyCap}`,
       normalizedKeywordsHash || 'no_keywords_hash',
-    ].join(':');
-  }
-
-  private buildCompanyOrgChartCacheKey(
-    companyName: string | undefined,
-    companyId: string | undefined,
-    mode: 'entire_company',
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-  ): string {
-    const normalizedCompanyName = normalizeCompanyName(companyName);
-    const normalizedCompanyId = normalizeCompanyId(
-      companyId,
-      normalizedCompanyName,
-    );
-
-    return [
-      ORG_CHART_COMPANY_CACHE_KEY_PREFIX,
-      normalizedCompanyId,
-      mode,
-      searchType,
-    ].join(':');
-  }
-
-  private buildCompanyOrgChartCandidateListCacheKey(
-    companyName: string | undefined,
-    companyId: string | undefined,
-    mode: 'entire_company',
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-  ): string {
-    const normalizedCompanyName = normalizeCompanyName(companyName);
-    const normalizedCompanyId = normalizeCompanyId(
-      companyId,
-      normalizedCompanyName,
-    );
-
-    return [
-      ORG_CHART_COMPANY_CANDIDATE_LIST_CACHE_KEY_PREFIX,
-      normalizedCompanyId,
-      mode,
-      searchType,
     ].join(':');
   }
 

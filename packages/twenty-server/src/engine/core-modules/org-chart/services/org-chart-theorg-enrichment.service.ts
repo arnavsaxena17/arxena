@@ -3,8 +3,8 @@ import type { OrgChartData } from 'twenty-shared';
 
 import { TheOrgService } from 'src/engine/core-modules/theorg/services/theorg.service';
 import type {
-  TheOrgFetchMode,
-  TheOrgPerson,
+    TheOrgFetchMode,
+    TheOrgPerson,
 } from 'src/engine/core-modules/theorg/types/theorg.types';
 
 import { normalizePersonForPythonOrgChartBuild } from '../utils/python-org-chart-person.util';
@@ -132,10 +132,14 @@ export class OrgChartTheOrgEnrichmentService {
           country: chartCountryHint,
         });
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : String(error);
       this.logger.warn(
-        `Python org chart build failed for companyId=${companyId}: ${(error as Error).message}. Returning existing chart.`,
+        `Python org chart build failed for companyId=${companyId}: ${message}`,
       );
-      return existingOrgChart;
+      throw error instanceof Error
+        ? error
+        : new Error(`Python org chart build failed: ${message}`);
     }
 
     // 6. Return the rebuilt chart, preserving the original metadata fields.

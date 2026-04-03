@@ -140,6 +140,23 @@ export class OrgChartS3Service {
     }
   }
 
+  /**
+   * Removes orgchart.json / candidates.json (and folder prefix objects) for a persisted company key.
+   * Same key as {@link saveOrgChart} / {@link persistedCompanyFolderKey}.
+   */
+  async deletePersistedCompanyFolder(persistedKey: string): Promise<void> {
+    const folderPath = this.buildRelativeFolderPathFromPersistedKey(persistedKey);
+    try {
+      await this.fileStorageService.delete({ folderPath });
+      this.logger.log(`Deleted org chart S3 folder: ${folderPath}`);
+    } catch (error) {
+      this.logger.warn(
+        `Failed to delete org chart S3 folder ${folderPath}`,
+        error as Error,
+      );
+    }
+  }
+
   private streamToString(stream: Readable): Promise<string> {
     return new Promise((resolve, reject) => {
       const chunks: Uint8Array[] = [];

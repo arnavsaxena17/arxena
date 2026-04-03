@@ -5,6 +5,8 @@ import { findWorkspaceMemberProfiles } from 'twenty-shared';
 
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 
+import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
+
 import { workspaceMemberProfileUnipileFieldsState } from '../states/workspaceMemberProfileUnipileFieldsState';
 
 const FIND_WORKSPACE_MEMBER_PROFILES_FOR_UNIPILE = gql`
@@ -15,6 +17,9 @@ export const WorkspaceMemberProfileUnipileSyncEffect = () => {
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const setProfileFields = useSetRecoilState(
     workspaceMemberProfileUnipileFieldsState,
+  );
+  const setOrgChartLinkedinCandidateSource = useSetRecoilState(
+    orgChartLinkedinCandidateSourceState,
   );
   const workspaceMemberId = currentWorkspaceMember?.id;
 
@@ -47,7 +52,11 @@ export const WorkspaceMemberProfileUnipileSyncEffect = () => {
       whatsappUnipileAccountId: node.whatsappUnipileAccountId ?? null,
       linkedinUnipileAccountId: node.linkedinUnipileAccountId ?? null,
     });
-  }, [data, setProfileFields]);
+    const linkedinUnipileId = node.linkedinUnipileAccountId?.trim() ?? '';
+    if (linkedinUnipileId !== '') {
+      setOrgChartLinkedinCandidateSource('unipile');
+    }
+  }, [data, setOrgChartLinkedinCandidateSource, setProfileFields]);
 
   return null;
 };

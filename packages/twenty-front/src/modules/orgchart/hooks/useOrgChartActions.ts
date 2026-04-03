@@ -3,36 +3,48 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
 import { Mixpanel } from '~/mixpanel';
 
 import {
-    normalizeCompanyIdForUrl,
-    type OrgChartContextAction,
+  normalizeCompanyIdForUrl,
+  type OrgChartContextAction,
 } from 'twenty-orgchart';
 import type { NodeState, OrgChartNodeData } from 'twenty-shared';
 import type { ContextResultItem } from '../types';
 import {
-    buildBooleanKeywordsForNode,
-    exportContextResultsToCsv,
-    normalizeCandidateItem,
+  buildBooleanKeywordsForNode,
+  exportContextResultsToCsv,
+  normalizeCandidateItem,
 } from '../utils/orgChartUtils';
 
-type OrgchartSearchMode =
+/** Subset of {@link OrgChartContextAction} used for org-chart search API `mode`. */
+type OrgchartSearchMode = Extract<
+  OrgChartContextAction,
   | 'current_node'
   | 'leadership'
   | 'entire_company'
   | 'all_people'
   | 'function_grade'
-  | 'selected_nodes';
+  | 'business_division_map'
+  | 'selected_nodes'
+>;
 
 export type UseOrgChartActionsParams = {
   companyId: string;
   companyName?: string;
   website?: string;
   employeeCount?: number | null;
+  /** Canonical LinkedIn company URL for org-chart search + Python pipeline (e.g. https://www.linkedin.com/company/briskpe/) */
+  linkedinCompanyUrl?: string;
+  /**
+   * Unipile LinkedIn account id for this search (sent as `?account_id=` like linkedin-search).
+   * Prefer workspace-linked account; use for local/testing via env if needed.
+   */
+  linkedinUnipileAccountId?: string;
 };
 
 type OrgChartSearchProgressEvent = {
@@ -54,14 +66,67 @@ type OrgChartSearchProgressEvent = {
 const createOrgChartRequestId = () =>
   `orgchart-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
+const LINKEDIN_UNIPILE_SOURCE_UNAVAILABLE_SNACKBAR =
+  'LinkedIn (Unipile) is not connected. Connect LinkedIn in settings or choose Apify as the org chart data source in the jobs menu.';
+
+const APIFY_SOURCE_UNAVAILABLE_SNACKBAR =
+  'Apify is not configured for org chart. Set APIFY_API_TOKEN on the server or choose LinkedIn (Unipile) in the jobs menu.';
+
+const APIFY_MODE_UNSUPPORTED_SNACKBAR =
+  'Apify org chart data source is only available for full company (or all people) searches. Switch to LinkedIn (Unipile) for business division mapping, function filters, or other advanced modes.';
+
+const ORG_CHART_AGENT_UNAVAILABLE_SNACKBAR =
+  'Contact Support. Org chart agent service is not available. Ensure the Python service is running and reachable.';
+
+const clearCompanyOrgChartCacheRequest = async (input: {
+  baseUrl: string;
+  accessToken: string;
+  companyId: string;
+  companyName?: string;
+}): Promise<void> => {
+  const normalizedBaseUrl = input.baseUrl.replace(/\/$/, '');
+  const res = await fetch(
+    `${normalizedBaseUrl}/org-chart/company-cache/clear`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        authorization: `Bearer ${input.accessToken}`,
+      },
+      body: JSON.stringify({
+        companyId: input.companyId,
+        companyName: input.companyName,
+      }),
+    },
+  );
+  let json: { message?: string; status?: string } = {};
+  try {
+    json = (await res.json()) as { message?: string; status?: string };
+  } catch {
+    // non-JSON error body
+  }
+  if (!res.ok) {
+    const msg =
+      typeof json?.message === 'string' && json.message.trim()
+        ? json.message
+        : `Request failed (${res.status})`;
+    throw new Error(msg);
+  }
+};
+
 export const useOrgChartActions = ({
   companyId,
   companyName,
   website,
   employeeCount,
+  linkedinCompanyUrl,
+  linkedinUnipileAccountId,
 }: UseOrgChartActionsParams) => {
   const tokenPair = useRecoilValue(tokenPairState);
   const accessToken = tokenPair?.accessToken?.token ?? undefined;
+  const orgChartLinkedinCandidateSource = useRecoilValue(
+    orgChartLinkedinCandidateSourceState,
+  );
   const { enqueueSnackBar, updateSnackBarByDedupeKey, closeSnackBarByDedupeKey } =
     useSnackBar();
   const [isContextModalOpen, setIsContextModalOpen] = useState(false);
@@ -284,6 +349,45 @@ export const useOrgChartActions = ({
     }
   }, [activeOrgChartRequestId, isContextLoading]);
 
+  const fetchLinkedinDataSourcesStatus = useCallback(async (): Promise<{
+    linkedinUnipileConnected: boolean;
+    apifyActorConfigured: boolean;
+    pythonOrgChartAgentAvailable: boolean;
+  } | null> => {
+    const serverBaseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+    if (!serverBaseUrl.trim() || !accessToken) {
+      return null;
+    }
+    try {
+      const res = await fetch(
+        `${serverBaseUrl.replace(/\/$/, '')}/org-chart/linkedin-data-sources-status`,
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+      if (!res.ok) {
+        return null;
+      }
+      const json = (await res.json()) as {
+        status?: string;
+        linkedinUnipileConnected?: boolean;
+        apifyActorConfigured?: boolean;
+        pythonOrgChartAgentAvailable?: boolean;
+      };
+      if (json?.status !== 'ok') {
+        return null;
+      }
+      return {
+        linkedinUnipileConnected: !!json.linkedinUnipileConnected,
+        apifyActorConfigured: !!json.apifyActorConfigured,
+        pythonOrgChartAgentAvailable:
+          typeof json.pythonOrgChartAgentAvailable === 'boolean'
+            ? json.pythonOrgChartAgentAvailable
+            : true,
+      };
+    } catch {
+      return null;
+    }
+  }, [accessToken]);
+
   const executeOrgchartSearch = async (params: {
     mode: OrgchartSearchMode;
     origin:
@@ -295,18 +399,78 @@ export const useOrgChartActions = ({
     node?: OrgChartNodeData;
     country?: string;
     functionRoot?: string;
+    /** Required when mode is business_division_map */
+    businessDivisionRawQuery?: string;
   }) => {
     if (!companyId) return;
 
     const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
     if (!baseUrl) return;
 
+    if (!accessToken) {
+      enqueueSnackBar('Sign in to run org chart search.', {
+        variant: SnackBarVariant.Error,
+        duration: 6000,
+      });
+      return;
+    }
+
+    const prereqStatus = await fetchLinkedinDataSourcesStatus();
+    if (prereqStatus !== null) {
+      if (orgChartLinkedinCandidateSource === 'apify') {
+        if (prereqStatus.apifyActorConfigured !== true) {
+          enqueueSnackBar(APIFY_SOURCE_UNAVAILABLE_SNACKBAR, {
+            variant: SnackBarVariant.Error,
+            duration: 8000,
+          });
+          return;
+        }
+      } else if (prereqStatus.linkedinUnipileConnected !== true) {
+        enqueueSnackBar(LINKEDIN_UNIPILE_SOURCE_UNAVAILABLE_SNACKBAR, {
+          variant: SnackBarVariant.Error,
+          duration: 8000,
+        });
+        return;
+      }
+      if (!prereqStatus.pythonOrgChartAgentAvailable) {
+        enqueueSnackBar(ORG_CHART_AGENT_UNAVAILABLE_SNACKBAR, {
+          variant: SnackBarVariant.Error,
+          duration: 10000,
+        });
+        return;
+      }
+    }
+
     const mode = params.mode;
     const node = params.node;
-    console.log("params::", params);
+
+    if (mode === 'business_division_map') {
+      const raw = params.businessDivisionRawQuery?.trim() ?? '';
+      if (!raw) {
+        enqueueSnackBar(
+          'Describe the business division you want to map (e.g. textile machinery team).',
+          { variant: SnackBarVariant.Warning, duration: 6000 },
+        );
+        return;
+      }
+    }
+
+    if (
+      orgChartLinkedinCandidateSource === 'apify' &&
+      mode !== 'entire_company' &&
+      mode !== 'all_people'
+    ) {
+      enqueueSnackBar(APIFY_MODE_UNSUPPORTED_SNACKBAR, {
+        variant: SnackBarVariant.Error,
+        duration: 10000,
+      });
+      return;
+    }
     const isHeaderOrgChartRequest =
       params.origin === 'header' &&
-      (mode === 'entire_company' || mode === 'function_grade');
+      (mode === 'entire_company' ||
+        mode === 'function_grade' ||
+        mode === 'business_division_map');
 
     let title: string;
     switch (mode) {
@@ -324,6 +488,11 @@ export const useOrgChartActions = ({
         title = 'Get all names in this company';
         break;
       case 'function_grade':
+        title = 'Get all names in this function';
+        break;
+      case 'business_division_map':
+        title = 'Map business division';
+        break;
       default:
         title = 'Get all names in this function';
         break;
@@ -370,14 +539,17 @@ export const useOrgChartActions = ({
     }
 
     const resolvedCompanyName = companyName ?? companyId;
+    const divisionRaw = params.businessDivisionRawQuery?.trim() ?? '';
     const baseRequirement =
-      mode === 'leadership'
-        ? `Find leadership roles at ${resolvedCompanyName}.`
-        : mode === 'entire_company' || mode === 'all_people'
-          ? `Find all people currently working at ${resolvedCompanyName}.`
-          : mode === 'function_grade'
-            ? `Find people at ${resolvedCompanyName} in similar functions and seniority.`
-            : `Find people in the same position at ${resolvedCompanyName}.`;
+      mode === 'business_division_map'
+        ? `Map business division at ${resolvedCompanyName}. User request: ${divisionRaw}`
+        : mode === 'leadership'
+          ? `Find leadership roles at ${resolvedCompanyName}.`
+          : mode === 'entire_company' || mode === 'all_people'
+            ? `Find all people currently working at ${resolvedCompanyName}.`
+            : mode === 'function_grade'
+              ? `Find people at ${resolvedCompanyName} in similar functions and seniority.`
+              : `Find people in the same position at ${resolvedCompanyName}.`;
 
     const titlesRequirement =
       jobTitles.length > 0 ? ` Key titles: ${jobTitles.join(', ')}.` : '';
@@ -396,6 +568,8 @@ export const useOrgChartActions = ({
 
     const requirement = `${baseRequirement}${titlesRequirement}${filtersRequirement}`;
 
+    const trimmedLinkedinCompanyUrl = linkedinCompanyUrl?.trim();
+    const useUnipileSource = orgChartLinkedinCandidateSource === 'unipile';
     const body = {
       rawQuery: requirement,
       cleanedQuery: requirement,
@@ -407,40 +581,52 @@ export const useOrgChartActions = ({
       requestId,
       country: params.country,
       functionRoot: params.functionRoot,
+      candidateSource: orgChartLinkedinCandidateSource,
+      ...(trimmedLinkedinCompanyUrl
+        ? { linkedinCompanyUrl: trimmedLinkedinCompanyUrl }
+        : {}),
+      ...(useUnipileSource && linkedinUnipileAccountId?.trim()
+        ? { linkedinUnipileAccountId: linkedinUnipileAccountId.trim() }
+        : {}),
+      ...(divisionRaw ? { businessDivisionRawQuery: divisionRaw } : {}),
     };
 
     try {
-      // Ensure LinkedIn account is connected before org chart (LRU pool)
-      const currentUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}${window.location.search}`;
-      const ensureRes = await fetch(`${baseUrl}/linkedin-unipile/org-chart/ensure-account`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          success_redirect_url: currentUrl,
-          failure_redirect_url: currentUrl,
-        }),
-      });
-      if (!ensureRes.ok) {
-        throw new Error(`Ensure account failed with status ${ensureRes.status}`);
-      }
-      const ensureJson = (await ensureRes.json()) as
-        | { accountId?: string }
-        | { redirectUrl?: string }
-        | { status: 'pool_full'; slotsUsed: number; maxSlots: number };
-      if ('redirectUrl' in ensureJson && ensureJson.redirectUrl) {
-        window.location.href = ensureJson.redirectUrl;
-        return;
-      }
-      if ('status' in ensureJson && ensureJson.status === 'pool_full') {
-        enqueueSnackBar(
-          "Please try again in 5 mins. We're at capacity and should free up shortly.",
-          { variant: SnackBarVariant.Warning },
+      if (useUnipileSource) {
+        const currentUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}${window.location.search}`;
+        const ensureRes = await fetch(
+          `${baseUrl}/linkedin-unipile/org-chart/ensure-account`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+              success_redirect_url: currentUrl,
+              failure_redirect_url: currentUrl,
+            }),
+          },
         );
-        setIsContextLoading(false);
-        return;
+        if (!ensureRes.ok) {
+          throw new Error(`Ensure account failed with status ${ensureRes.status}`);
+        }
+        const ensureJson = (await ensureRes.json()) as
+          | { accountId?: string }
+          | { redirectUrl?: string }
+          | { status: 'pool_full'; slotsUsed: number; maxSlots: number };
+        if ('redirectUrl' in ensureJson && ensureJson.redirectUrl) {
+          window.location.href = ensureJson.redirectUrl;
+          return;
+        }
+        if ('status' in ensureJson && ensureJson.status === 'pool_full') {
+          enqueueSnackBar(
+            "Please try again in 5 mins. We're at capacity and should free up shortly.",
+            { variant: SnackBarVariant.Warning },
+          );
+          setIsContextLoading(false);
+          return;
+        }
       }
 
       if (mode === 'entire_company') {
@@ -459,7 +645,14 @@ export const useOrgChartActions = ({
       }
 
       const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
-      const response = await fetch(`${normalizedBaseUrl}/org-chart/search`, {
+      const searchUrl = new URL(`${normalizedBaseUrl}/org-chart/search`);
+      if (useUnipileSource && linkedinUnipileAccountId?.trim()) {
+        searchUrl.searchParams.set(
+          'account_id',
+          linkedinUnipileAccountId.trim(),
+        );
+      }
+      const response = await fetch(searchUrl.toString(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -521,7 +714,9 @@ export const useOrgChartActions = ({
       }
 
       if (
-        (mode === 'entire_company' || mode === 'function_grade') &&
+        (mode === 'entire_company' ||
+          mode === 'function_grade' ||
+          mode === 'business_division_map') &&
         json.orgChart
       ) {
         setLatestOrgChart(json.orgChart);
@@ -535,7 +730,9 @@ export const useOrgChartActions = ({
           : 'generated and cached';
 
         enqueueSnackBar(
-          `Org chart ${cacheText} for ${resolvedCompanyName} (${rawItems.length} people)`,
+          mode === 'business_division_map'
+            ? `Business division org chart ready for ${resolvedCompanyName} (${rawItems.length} people).`
+            : `Org chart ${cacheText} for ${resolvedCompanyName} (${rawItems.length} people)`,
           {
             variant: SnackBarVariant.Success,
             dedupeKey: `orgchart-entire-company-${companyId}-done`,
@@ -555,14 +752,20 @@ export const useOrgChartActions = ({
         setContextProgressPage(null);
         setContextProgressTotalPages(null);
         setContextProgressTotalCandidates(null);
-        if (mode === 'entire_company' || mode === 'function_grade') {
+        if (
+          mode === 'entire_company' ||
+          mode === 'function_grade' ||
+          mode === 'business_division_map'
+        ) {
           closeSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`);
         }
         enqueueSnackBar(errorMessage, {
           variant: SnackBarVariant.Error,
           dedupeKey:
             companyId &&
-            (mode === 'entire_company' || mode === 'function_grade')
+            (mode === 'entire_company' ||
+              mode === 'function_grade' ||
+              mode === 'business_division_map')
               ? `orgchart-entire-company-${companyId}-error`
               : undefined,
           duration: 6000,
@@ -573,7 +776,11 @@ export const useOrgChartActions = ({
       }
     } finally {
       orgchartAbortControllerRef.current = null;
-      if (mode === 'entire_company' || mode === 'function_grade') {
+      if (
+        mode === 'entire_company' ||
+        mode === 'function_grade' ||
+        mode === 'business_division_map'
+      ) {
         closeSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`);
       }
       setIsContextLoading(false);
@@ -604,6 +811,10 @@ export const useOrgChartActions = ({
     action: OrgChartContextAction,
     node: OrgChartNodeData,
   ) => {
+    if (action === 'delete_company_cache') {
+      return;
+    }
+
     if (
       action === 'add_to_job_and_send_invite' ||
       action === 'add_to_job_and_invite_to_job'
@@ -646,8 +857,10 @@ export const useOrgChartActions = ({
       current_node: 'current_node',
       leadership: 'leadership',
       entire_company: 'entire_company',
+      delete_company_cache: 'entire_company',
       all_people: 'all_people',
       function_grade: 'function_grade',
+      business_division_map: 'business_division_map',
       selected_nodes: 'selected_nodes',
       boolean_keywords: 'current_node',
       similar_companies: 'function_grade',
@@ -666,17 +879,63 @@ export const useOrgChartActions = ({
   const handleBackgroundContextAction = async (
     action: OrgChartContextAction,
   ) => {
+    if (action === 'delete_company_cache') {
+      if (!companyId) {
+        enqueueSnackBar('No company selected.', {
+          variant: SnackBarVariant.Warning,
+          duration: 5000,
+        });
+        return;
+      }
+      const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+      if (!baseUrl.trim()) {
+        enqueueSnackBar('Server URL is not configured.', {
+          variant: SnackBarVariant.Error,
+          duration: 6000,
+        });
+        return;
+      }
+      if (!accessToken) {
+        enqueueSnackBar('Sign in to clear org chart cache.', {
+          variant: SnackBarVariant.Error,
+          duration: 6000,
+        });
+        return;
+      }
+      const label = companyName?.trim() || companyId;
+      try {
+        await clearCompanyOrgChartCacheRequest({
+          baseUrl,
+          accessToken,
+          companyId,
+          companyName: companyName ?? undefined,
+        });
+        enqueueSnackBar(`Cleared org chart cache for ${label}`, {
+          variant: SnackBarVariant.Success,
+          duration: 5000,
+        });
+        setLatestOrgChart(null);
+      } catch (error) {
+        enqueueSnackBar(
+          error instanceof Error ? error.message : 'Failed to clear cache',
+          { variant: SnackBarVariant.Error, duration: 8000 },
+        );
+      }
+      return;
+    }
+
     if (action === 'leadership') {
       await executeOrgchartSearch({
         mode: 'leadership',
         origin: 'background',
       });
-    } else {
-      await executeOrgchartSearch({
-        mode: 'entire_company',
-        origin: 'background',
-      });
+      return;
     }
+
+    await executeOrgchartSearch({
+      mode: 'entire_company',
+      origin: 'background',
+    });
   };
 
   const buildCandidatesFromNode = (n: OrgChartNodeData): ContextResultItem[] => {

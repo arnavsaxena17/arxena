@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { IconSettings } from 'twenty-ui';
 
 import { ConnectedAccount } from '@/accounts/types/ConnectedAccount';
@@ -9,6 +9,7 @@ import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadata
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { generateDepthOneRecordGqlFields } from '@/object-record/graphql/utils/generateDepthOneRecordGqlFields';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
+import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import { SettingsPath } from '@/types/SettingsPath';
 import { SubMenuTopBarContainer } from '@/ui/layout/page/components/SubMenuTopBarContainer';
@@ -23,6 +24,9 @@ export const LinkedinAccounts = () => {
   const [hasConnectedAccounts, setHasConnectedAccounts] = useState(false);
   const [accountsRefreshTrigger, setAccountsRefreshTrigger] = useState(0);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+  const setOrgChartLinkedinCandidateSource = useSetRecoilState(
+    orgChartLinkedinCandidateSourceState,
+  );
   const { updateSpecificApiKey } = useApiKeysRecoil();
 
   const { objectMetadataItem } = useObjectMetadataItem({
@@ -46,13 +50,14 @@ export const LinkedinAccounts = () => {
       if (data.accountId) {
         try {
           await updateSpecificApiKey('linkedin_unipile_account_id', data.accountId);
+          setOrgChartLinkedinCandidateSource('unipile');
           setAccountsRefreshTrigger((n) => n + 1);
         } catch (err) {
           console.error('Failed to save LinkedIn account id to workspace:', err);
         }
       }
     },
-    [updateSpecificApiKey],
+    [setOrgChartLinkedinCandidateSource, updateSpecificApiKey],
   );
 
   const handleSignupCancel = (currentStep: string) => {

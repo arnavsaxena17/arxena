@@ -5,8 +5,8 @@ import { toTitleCase } from 'twenty-shared';
 
 import type { OrgChartDiagramHandle } from './OrgChartDiagram.types';
 
-const StyledFiltersContainer = styled.div`
-  margin-left: auto;
+const StyledFiltersContainer = styled.div<{ $omitMarginLeft?: boolean }>`
+  margin-left: ${({ $omitMarginLeft }) => ($omitMarginLeft ? '0' : 'auto')};
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
@@ -19,10 +19,12 @@ const StyledFilterGroup = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(0.5)};
+  min-width: 0;
 `;
 
 const StyledFilterLabel = styled.span`
   font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: 600;
   color: ${({ theme }) => theme.font.color.tertiary};
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -132,6 +134,8 @@ export type OrgChartFiltersProps = {
   functionRootPercentLabels: Record<string, string>;
   selectedFunctionRoot: string | undefined;
   onFunctionRootChange: (fn: string | undefined) => void;
+  /** When true, do not push filters to the far right (parent handles layout). */
+  omitMarginLeft?: boolean;
 };
 
 export type OrgChartSearchControlsProps = {
@@ -155,13 +159,14 @@ export const OrgChartFilters = ({
   functionRootPercentLabels,
   selectedFunctionRoot,
   onFunctionRootChange,
+  omitMarginLeft,
 }: OrgChartFiltersProps) => {
   const visibleFunctionRoots = availableFunctionRoots.filter(
     (fn) => !fn.toLowerCase().includes('assist'),
   );
 
   return (
-    <StyledFiltersContainer>
+    <StyledFiltersContainer $omitMarginLeft={omitMarginLeft}>
       {availableCountries.length > 0 && (
         <StyledFilterGroup>
           <StyledFilterLabel>Country</StyledFilterLabel>

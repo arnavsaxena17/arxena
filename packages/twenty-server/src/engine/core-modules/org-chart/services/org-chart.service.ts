@@ -14,8 +14,10 @@ import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/typ
 import { ContactEnrichmentWaterfallService } from 'src/engine/core-modules/contact-enrichment/services/contact-enrichment-waterfall.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
+import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services/orgchart-cache.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
+import { applyBlankOrgChartSubsetFilter } from '../utils/blank-org-chart-subset.util';
 import { ArxenaBackendService } from './arxena-backend.service';
 import { OrgChartEsService } from './org-chart-es.service';
 import { normalizeOrgChartPayload } from './org-chart-payload-normalize';
@@ -40,9 +42,31 @@ export class OrgChartService {
     private readonly workspaceCreditsService: WorkspaceCreditsService,
     private readonly creditTransactionService: CreditTransactionService,
     private readonly orgChartS3Service: OrgChartS3Service,
+    private readonly orgChartCacheService: OrgChartCacheService,
     @InjectCacheStorage(CacheStorageNamespace.EngineOrgChart)
     private readonly orgChartCacheStorageService: CacheStorageService,
   ) {}
+
+  /**
+   * Clears Redis keys for full-company classic org chart + candidate list caches,
+   * and deletes the persisted org-charts/{company}/ folder in object storage.
+   */
+  async clearCompanyOrgChartCaches(input: {
+    companyId?: string;
+    companyName?: string;
+  }): Promise<void> {
+    await this.orgChartCacheService.invalidateEntireCompanyClassicCaches(input);
+    const resolvedNameForS3 =
+      (input.companyName ?? '').trim() || (input.companyId ?? '');
+    const persistKey = this.orgChartS3Service.persistedCompanyFolderKey(
+      input.companyId,
+      resolvedNameForS3,
+    );
+    await this.orgChartS3Service.deletePersistedCompanyFolder(persistKey);
+    this.logger.log(
+      `Cleared org chart Redis + S3 cache for persistKey=${persistKey}`,
+    );
+  }
 
   async getCompanyAutocomplete(
     inputText: string,
@@ -237,9 +261,13 @@ export class OrgChartService {
       try {
         const raw = await readFile(staticPath, 'utf8');
         const parsed = JSON.parse(raw) as Record<string, unknown>;
+        const subsetFiltered = applyBlankOrgChartSubsetFilter(parsed, {
+          country: options.country,
+          functionRoot: options.functionRoot,
+        });
 
         return {
-          ...parsed,
+          ...subsetFiltered,
           company_id: companyId,
           job_company_id: companyId,
           job_company_name: options.companyName ?? companyId,

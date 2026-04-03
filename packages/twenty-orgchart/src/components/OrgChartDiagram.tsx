@@ -963,6 +963,16 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
               click: () => onBackgroundContextAction('leadership'),
             },
           ),
+          $c(
+            'ContextMenuButton',
+            $c(
+              go.TextBlock,
+              'Delete saved org chart cache for this company (Redis & S3)',
+            ),
+            {
+              click: () => onBackgroundContextAction('delete_company_cache'),
+            },
+          ),
         );
       }
 
