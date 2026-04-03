@@ -9,11 +9,17 @@ import type {
   TheOrgImage,
   TheOrgNormalizedNode,
   TheOrgPerson,
+  TheOrgStorageLocation,
+  TheOrgStorageTarget,
   TheOrgTeam,
   TheOrgTeamMember,
-  TheOrgStorageLocation,
-  TheOrgStorageTarget
 } from 'src/engine/core-modules/theorg/types/theorg.types';
+import {
+  generateTheOrgSlugCandidates,
+  normalizeTheOrgSlugInput,
+  parseLinkedInCompanySlugFromUrl,
+  type TheOrgSlugOverrides,
+} from 'src/engine/core-modules/theorg/utils/theorg-slug-candidates.util';
 
 const BASE_URL = 'https://theorg.com';
 const GRAPHQL_URL = 'https://prod-graphql-api.theorg.com/graphql';
@@ -765,6 +771,70 @@ export class TheOrgService {
     return enriched;
   }
 
+  /**
+   * Tries fetchCompanyDetails with generateTheOrgSlugCandidates: exact id, static/env
+   * overrides, stripped corporate suffixes (e.g. `-ltd`), then first-segment heuristic.
+   * Retries on HTTP 404, or when `linkedinCompanySlug` is set and the page’s LinkedIn
+   * company URL does not match (wrong TheOrg org).
+   */
+  async fetchCompanyDetailsResolvingSlug(
+    slug: string,
+    options?: TheOrgFetchCompanyOptions & {
+      slugOverrides?: TheOrgSlugOverrides;
+      /** LinkedIn company slug from our data; validated against TheOrg page when present. */
+      linkedinCompanySlug?: string;
+    },
+  ): Promise<TheOrgCompanyResponse> {
+    const { slugOverrides, linkedinCompanySlug, ...fetchOptions } = options ?? {};
+    const candidates = generateTheOrgSlugCandidates(slug, slugOverrides);
+    if (candidates.length === 0) {
+      throw new Error(`TheOrg slug resolution: empty candidates for "${slug}"`);
+    }
+
+    const inputSlug = normalizeTheOrgSlugInput(slug);
+    const failures: string[] = [];
+
+    for (const candidate of candidates) {
+      try {
+        const result = await this.fetchCompanyDetails(candidate, {
+          ...fetchOptions,
+          linkedinCompanySlugExpected: linkedinCompanySlug,
+        });
+        return {
+          ...result,
+          slugResolution: {
+            inputSlug,
+            attemptedSlugs: candidates,
+            successfulCandidate: candidate,
+          },
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const isNotFound =
+          /\b404\b/.test(message) ||
+          message.toLowerCase().includes('not found');
+        const isLinkedInMismatch =
+          message.includes('TheOrg LinkedIn company slug mismatch');
+        if (!isNotFound && !isLinkedInMismatch) {
+          this.logger.warn(
+            `TheOrg slug candidate "${candidate}" failed (non-404): ${message}`,
+          );
+          throw error instanceof Error ? error : new Error(message);
+        }
+        failures.push(`${candidate}: ${message}`);
+        this.logger.debug(
+          isLinkedInMismatch
+            ? `TheOrg slug candidate "${candidate}" failed LinkedIn slug check; trying next`
+            : `TheOrg slug candidate "${candidate}" returned not found; trying next`,
+        );
+      }
+    }
+
+    throw new Error(
+      `TheOrg could not resolve a company page for "${slug}"; tried: ${candidates.join(', ')}. ${failures.join('; ')}`,
+    );
+  }
+
   async fetchCompanyDetails(
     slug: string,
     options?: TheOrgFetchCompanyOptions,
@@ -776,6 +846,23 @@ export class TheOrgService {
     const nextData = this.extractNextData(html, url);
     const pageProps = nextData?.props?.pageProps || {};
     const initialCompany = pageProps.initialCompany || {};
+    const linkedInCompanySlugFromPage = parseLinkedInCompanySlugFromUrl(
+      (initialCompany.social as { linkedInUrl?: string | null } | undefined)
+        ?.linkedInUrl,
+    );
+    const expectedLinkedIn = options?.linkedinCompanySlugExpected?.trim();
+    if (expectedLinkedIn) {
+      const expected = normalizeTheOrgSlugInput(expectedLinkedIn);
+      if (
+        linkedInCompanySlugFromPage &&
+        expected &&
+        linkedInCompanySlugFromPage !== expected
+      ) {
+        throw new Error(
+          `TheOrg LinkedIn company slug mismatch: expected "${expected}" but page has "${linkedInCompanySlugFromPage}"`,
+        );
+      }
+    }
     const apolloState = pageProps.__APOLLO_STATE__ || {};
     const ssrPeople = this.uniquePeopleFromApollo(apolloState);
     const initialNodes = pageProps.initialNodes || [];
@@ -840,6 +927,7 @@ export class TheOrgService {
       inputName: slug,
       companyName: initialCompany.name || slug,
       slug: resolvedCompanySlug,
+      linkedInCompanySlug: linkedInCompanySlugFromPage,
       url,
       tags: Array.isArray(initialCompany.industries)
         ? initialCompany.industries.map((tag: any) => tag.title).filter(Boolean)

@@ -91,12 +91,12 @@ export const OrgChartBusinessDivisionQuery = ({
     }
   };
 
-  const adjustHeight = (el: HTMLTextAreaElement | null) => {
-    if (!el) return;
-    el.style.height = 'auto';
-    const next = Math.min(el.scrollHeight, 160);
-    el.style.height = `${Math.max(next, 36)}px`;
-  };
+  // const adjustHeight = (el: HTMLTextAreaElement | null) => {
+  //   if (!el) return;
+  //   el.style.height = 'auto';
+  //   const next = Math.min(el.scrollHeight, 160);
+  //   el.style.height = `${Math.max(next, 36)}px`;
+  // };
 
   return (
     <StyledWrap>
@@ -107,12 +107,12 @@ export const OrgChartBusinessDivisionQuery = ({
           value={value}
           rows={1}
           aria-label="Business division description"
-          onInput={(event) => {
-            adjustHeight(event.currentTarget);
-          }}
+          // onInput={(event) => {
+          //   // adjustHeight(event.currentTarget);
+          // }}
           onChange={(event) => {
             onChange(event.target.value);
-            adjustHeight(event.target);
+            // adjustHeight(event.target);
           }}
           onKeyDown={handleKeyDown}
         />

@@ -6,7 +6,7 @@ import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { useOpenArxenaSiteWithToken } from '@/auth/hooks/useOpenArxenaSiteWithToken';
 import { AppPath } from '@/types/AppPath';
 import { useQuery } from '@apollo/client';
-import { IconDatabase, IconPlus } from 'twenty-ui';
+import { IconDatabase } from 'twenty-ui';
 import { Mixpanel } from '~/mixpanel';
 
 import { ArxEnrichmentModal } from '@/arx-ai-filtering/arxEnrichmentModal';
@@ -16,7 +16,6 @@ import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
 import { parsedJDInternalState } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
-import { isOrgChartEnabledState } from '@/arx-jd-upload/states/isOrgChartEnabledState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
 import { CandidateTablePageHeader } from '@/candidate-table/components/CandidateTablePageHeader';
@@ -27,7 +26,6 @@ import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadat
 import { RecordIndexContextProvider } from '@/object-record/record-index/contexts/RecordIndexContext';
 import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-store/contexts/RecordFieldValueSelectorContext';
 import { RecordTableContextProvider } from '@/object-record/record-table/contexts/RecordTableContext';
-import { RecordTableEmptyStateDisplay } from '@/object-record/record-table/empty-state/components/RecordTableEmptyStateDisplay';
 import { useOpenObjectRecordsSpreadsheetImportDialog } from '@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog';
 import { OrgChartCompanySearchWrapper } from '@/orgchart/components/OrgChartCompanySearchWrapper';
 import { SpreadsheetImportProvider } from '@/spreadsheet-import/provider/components/SpreadsheetImportProvider';
@@ -272,7 +270,6 @@ export const Jobs = () => {
   const navigate = useNavigate();
 
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
-  const isOrgChartEnabled = useRecoilValue(isOrgChartEnabledState);
   const { isBaileysLoggedIn } = useBaileysConnection();
   const { isLinkedinConnected, isWhatsappUnipileConnected } = useUnipile();
   const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileConnected;
@@ -283,9 +280,7 @@ export const Jobs = () => {
   refetchJobsRef.current = refetchJobs;
 
   const { socket } = useWebSocket();
-  const { data: creditsData } = useQuery(WORKSPACE_CREDITS, {
-    skip: !isOrgChartEnabled,
-  });
+  const { data: creditsData } = useQuery(WORKSPACE_CREDITS);
   const credits = (creditsData as {
     workspaceCredits?: {
       orgChartCredits: number;
@@ -574,6 +569,7 @@ export const Jobs = () => {
               Icon={IconDatabase}
               onAddJob={handleAddJob}
               onOrgCharts={() => navigate(`/${AppPath.OrgChart}`)}
+              onCompanySelect={hasJobs ? handleCompanySelect : undefined}
               hasToken={!!hasToken}
               isExtensionInstalled={isExtensionInstalled}
               onDownloadClick={handleDownloadClick}
@@ -752,7 +748,7 @@ export const Jobs = () => {
                           </>
                         )}
                       </>
-                    ) : isOrgChartEnabled ? (
+                    ) : (
                       <StyledOrgChartEmptyStateWrapper>
                         <AnimatedPlaceholder type="noRecord" />
                         <AnimatedPlaceholderEmptyTextContainer>
@@ -779,15 +775,6 @@ export const Jobs = () => {
                           </StyledEmptyStateOrgChartSearchRow>
                         </StyledEmptyStateOrgChartSearch>
                       </StyledOrgChartEmptyStateWrapper>
-                    ) : (
-                      <RecordTableEmptyStateDisplay
-                        buttonTitle="Add New Job"
-                        subTitle="No jobs found"
-                        title="Your workspace is ready"
-                        ButtonIcon={IconPlus}
-                        animatedPlaceholderType="noRecord"
-                        onClick={handleAddJob}
-                      />
                     )}
                   </StyledContentContainer>
                 </ViewComponentInstanceContext.Provider>

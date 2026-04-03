@@ -1,5 +1,7 @@
 import { toTitleCase } from '../strings/toTitleCase';
 
+import { isValidLinkedInProfileUrl } from './isValidLinkedInProfileUrl';
+
 /**
  * Extracts and processes org chart data for GoJS TreeModel.
  * Matches arxena getOrgChartJsonObj + processCandidate structure.
@@ -150,12 +152,17 @@ function processCandidate(
     (candidate as { profile_picture_url?: string })?.profile_picture_url;
   node[`image_${index}`] =
     imageUrl != null && imageUrl !== '' ? imageUrl : '';
-  const linkedinUrl =
+  const rawLinkedin =
     candidate?.std_linkedin_url ??
     (candidate as { linkedin_url?: string } | undefined)?.linkedin_url ??
     '';
-  node[`linkedin_url_${index}`] =
-    linkedinUrl && linkedinUrl !== '0' ? linkedinUrl : '';
+  const linkedinUrl =
+    typeof rawLinkedin === 'string' &&
+    rawLinkedin !== '0' &&
+    isValidLinkedInProfileUrl(rawLinkedin)
+      ? rawLinkedin.trim()
+      : '';
+  node[`linkedin_url_${index}`] = linkedinUrl;
 }
 
 /**

@@ -3,8 +3,8 @@ import type { OrgChartData } from 'twenty-shared';
 
 import { TheOrgService } from 'src/engine/core-modules/theorg/services/theorg.service';
 import type {
-    TheOrgFetchMode,
-    TheOrgPerson,
+  TheOrgFetchMode,
+  TheOrgPerson,
 } from 'src/engine/core-modules/theorg/types/theorg.types';
 
 import { normalizePersonForPythonOrgChartBuild } from '../utils/python-org-chart-person.util';
@@ -36,12 +36,18 @@ export class OrgChartTheOrgEnrichmentService {
       companyName?: string;
       /** TheOrg slug — defaults to companyId */
       theOrgSlug?: string;
+      /**
+       * LinkedIn company slug from our data (defaults to `companyId`). When set, the
+       * TheOrg company page’s “View on LinkedIn” URL must match this slug.
+       */
+      linkedinCompanySlug?: string;
       theOrgMode?: TheOrgFetchMode;
       country?: string;
       functionRoot?: string;
     } = {},
   ): Promise<Record<string, unknown>> {
     const theOrgSlug = options.theOrgSlug ?? companyId;
+    const linkedinCompanySlug = options.linkedinCompanySlug ?? companyId;
 
     // 1. Load the existing org chart (ES → Redis → S3 → blank template).
     const existingOrgChart = await this.orgChartService.getOrgChart(
@@ -69,14 +75,17 @@ export class OrgChartTheOrgEnrichmentService {
 
     // 3. Fetch leadership data from TheOrg.
     let theOrgPeople: Record<string, unknown>[] = [];
+    let resolvedTheOrgSlug = theOrgSlug;
     try {
-      const theOrgData = await this.theOrgService.fetchCompanyDetails(
+      const theOrgData = await this.theOrgService.fetchCompanyDetailsResolvingSlug(
         theOrgSlug,
         {
           mode: options.theOrgMode,
           persist: false,
+          linkedinCompanySlug,
         },
       );
+      resolvedTheOrgSlug = theOrgData.slug;
       const resolvedTheOrgCompanyName =
         theOrgData.companyName || resolvedCompanyName;
       theOrgPeople = this.transformTheOrgPeople(
@@ -84,18 +93,23 @@ export class OrgChartTheOrgEnrichmentService {
         resolvedTheOrgCompanyName,
       );
       this.logger.log(`The org people ${JSON.stringify(theOrgData)}`)
+      if (theOrgData.slugResolution) {
+        this.logger.log(
+          `TheOrg slug resolved input=${theOrgData.slugResolution.inputSlug} → candidate=${theOrgData.slugResolution.successfulCandidate} (tried ${theOrgData.slugResolution.attemptedSlugs.join(', ')})`,
+        );
+      }
       this.logger.log(
-        `Fetched ${theOrgPeople.length} people from TheOrg for slug=${theOrgSlug}`,
+        `Fetched ${theOrgPeople.length} people from TheOrg for slug=${theOrgData.slug}`,
       );
     } catch (error) {
       this.logger.warn(
-        `Failed to fetch TheOrg data for slug=${theOrgSlug}: ${(error as Error).message}`,
+        `Failed to fetch TheOrg data for inputSlug=${theOrgSlug}: ${(error as Error).message}`,
       );
     }
 
     if (theOrgPeople.length === 0) {
       this.logger.warn(
-        `No TheOrg people found for slug=${theOrgSlug}; returning existing org chart`,
+        `No TheOrg people found for inputSlug=${theOrgSlug}; returning existing org chart`,
       );
       return existingOrgChart;
     }
@@ -151,7 +165,7 @@ export class OrgChartTheOrgEnrichmentService {
         (existingOrgChart.job_company_id as string | undefined) ?? companyId,
       job_company_name: resolvedCompanyName,
       theorg_enriched: true,
-      theorg_slug: theOrgSlug,
+      theorg_slug: resolvedTheOrgSlug,
       theorg_mode: options.theOrgMode ?? 'combined',
       theorg_people_count: theOrgPeople.length,
       existing_people_count: existingPeople.length,

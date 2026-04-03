@@ -77,6 +77,10 @@ export type TransformedCandidateForTable = Omit<
   peopleId: string | null;
   updatedAt: string;
   createdAt: string;
+
+  /** Set by addMetadataToCandidates (LinkedIn search / org-chart pipelines). */
+  campaign?: string;
+  source?: string;
 }
 
 @Injectable()

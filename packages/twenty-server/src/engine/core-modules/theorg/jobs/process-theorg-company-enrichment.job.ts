@@ -7,8 +7,7 @@ import { Processor } from 'src/engine/core-modules/message-queue/decorators/proc
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { TheOrgService } from 'src/engine/core-modules/theorg/services/theorg.service';
 import type {
-  TheOrgAsyncJobProgress,
-  TheOrgCompanyResponse,
+    TheOrgAsyncJobProgress
 } from 'src/engine/core-modules/theorg/types/theorg.types';
 
 export type TheOrgCompanyEnrichmentJobData = {
@@ -46,15 +45,19 @@ export class TheOrgCompanyEnrichmentJob {
     await this.updateProgress(progress);
 
     try {
-      const result = await this.theOrgService.fetchCompanyDetails(jobData.slug, {
-        includePeopleProfiles: true,
-        forceInlineProfiles: true,
-        persist: true,
-        storageTarget: {
-          folderSegments: ['jobs'],
-          filename: `${jobData.jobId}.json`,
+      const result = await this.theOrgService.fetchCompanyDetailsResolvingSlug(
+        jobData.slug,
+        {
+          includePeopleProfiles: true,
+          forceInlineProfiles: true,
+          persist: true,
+          linkedinCompanySlug: jobData.slug,
+          storageTarget: {
+            folderSegments: ['jobs'],
+            filename: `${jobData.jobId}.json`,
+          },
         },
-      });
+      );
 
       progress.status = 'completed';
       progress.completed = 1;
@@ -68,7 +71,7 @@ export class TheOrgCompanyEnrichmentJob {
       await this.updateProgress(progress);
 
       this.logger.log(
-        `Completed TheOrg enrichment job ${jobData.jobId} for ${jobData.slug}`,
+        `Completed TheOrg enrichment job ${jobData.jobId} for input=${jobData.slug} resolvedSlug=${result.slug}`,
       );
     } catch (error) {
       progress.status = 'failed';

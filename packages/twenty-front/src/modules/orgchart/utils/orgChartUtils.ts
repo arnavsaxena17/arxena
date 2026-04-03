@@ -1,4 +1,8 @@
-import { toTitleCase, type OrgChartNodeData } from 'twenty-shared';
+import {
+    isValidLinkedInProfileUrl,
+    toTitleCase,
+    type OrgChartNodeData,
+} from 'twenty-shared';
 
 import type { ContextResultItem } from '../types';
 
@@ -43,11 +47,18 @@ export const normalizeCandidateItem = (
       ? (raw.phones.find((p) => typeof p === 'string') as string | undefined)
       : undefined);
 
-  const linkedinUrl =
+  const rawLinkedin =
     (raw.linkedin_url as string | undefined) ??
     (raw.linkedinUrl as string | undefined) ??
+    (raw.std_linkedin_url as string | undefined) ??
     (raw.profileUrl as string | undefined) ??
     (raw.url as string | undefined);
+
+  const linkedinUrl =
+    typeof rawLinkedin === 'string' &&
+    isValidLinkedInProfileUrl(rawLinkedin.trim())
+      ? rawLinkedin.trim()
+      : undefined;
 
   return {
     id:
@@ -57,8 +68,7 @@ export const normalizeCandidateItem = (
     fullName,
     headline,
     company,
-    linkedinUrl:
-      linkedinUrl && typeof linkedinUrl === 'string' ? linkedinUrl : undefined,
+    linkedinUrl,
     email: email && typeof email === 'string' ? email : undefined,
     phone: phone && typeof phone === 'string' ? phone : undefined,
     raw,

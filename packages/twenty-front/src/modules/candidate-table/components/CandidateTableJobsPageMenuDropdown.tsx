@@ -7,20 +7,25 @@ import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useRecoilState } from 'recoil';
 import {
+  Button,
   IconApi,
   IconBrandLinkedin,
+  IconChevronDown,
   IconCoins,
   IconComment,
-  IconDotsVertical,
   IconDownload,
   IconGitCommit,
   IconPlus,
-  LightIconButton,
   MenuItem,
 } from 'twenty-ui';
 
 const CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID =
   'candidate-table-jobs-page-menu';
+
+const StyledMenuTriggerButton = styled(Button)`
+  flex-direction: row-reverse;
+  gap: ${({ theme }) => theme.spacing(1)};
+`;
 
 const StyledOrgChartSourceBlock = styled.div`
   display: flex;
@@ -125,10 +130,13 @@ export const CandidateTableJobsPageMenuDropdown = ({
       dropdownId={CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID}
       dropdownPlacement="bottom-end"
       clickableComponent={
-        <LightIconButton
-          Icon={IconDotsVertical}
-          accent="tertiary"
-          testId="candidate-table-jobs-menu"
+        <StyledMenuTriggerButton
+          variant="secondary"
+          size="small"
+          title="Menu"
+          Icon={IconChevronDown}
+          dataTestId="candidate-table-jobs-menu"
+          ariaLabel="Open jobs menu"
         />
       }
       dropdownMenuWidth={280}

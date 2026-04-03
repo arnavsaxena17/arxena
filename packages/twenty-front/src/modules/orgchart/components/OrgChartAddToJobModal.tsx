@@ -14,7 +14,7 @@ const DEFAULT_AVATAR =
   'https://st2.depositphotos.com/4111759/12123/v/950/depositphotos_121232442-stock-illustration-male-default-placeholder-avatar-profile.jpg';
 
 import type { OrgChartNodeData } from 'twenty-shared';
-import { getProxiedImageUrl } from 'twenty-shared';
+import { getProxiedImageUrl, isValidLinkedInProfileUrl } from 'twenty-shared';
 import type { ContextResultItem } from '../types';
 import { toLinkedInPremiumCandidate } from '../utils/orgChartUtils';
 
@@ -186,17 +186,20 @@ function buildCandidatesFromNode(
     const imageKey = `image_${i}` as keyof OrgChartNodeData;
     const name = node[nameKey];
     if (typeof name === 'string' && name.trim().length > 0) {
-      const linkedinUrl =
+      const linkedinRaw =
         typeof node[linkedinKey] === 'string'
           ? (node[linkedinKey] as string)
-          : undefined;
+          : '';
+      const linkedinUrl = isValidLinkedInProfileUrl(linkedinRaw)
+        ? linkedinRaw.trim()
+        : undefined;
       const image = node[imageKey];
       rows.push({
         id: `${node.key}-${i}`,
         fullName: name.trim(),
         headline: (typeof node[titleKey] === 'string' ? node[titleKey] : '') as string,
         company: companyName ?? '',
-        linkedinUrl: linkedinUrl && linkedinUrl !== '' ? linkedinUrl : undefined,
+        linkedinUrl,
         raw: typeof image === 'string' ? { image, profile_picture_url: image } : {},
       });
     }

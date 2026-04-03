@@ -13,7 +13,11 @@ import {
   normalizeCompanyIdForUrl,
   type OrgChartContextAction,
 } from 'twenty-orgchart';
-import type { NodeState, OrgChartNodeData } from 'twenty-shared';
+import {
+  isValidLinkedInProfileUrl,
+  type NodeState,
+  type OrgChartNodeData,
+} from 'twenty-shared';
 import type { ContextResultItem } from '../types';
 import {
   buildBooleanKeywordsForNode,
@@ -948,15 +952,16 @@ export const useOrgChartActions = ({
       const name = n[nameKey];
       if (typeof name === 'string' && name.trim().length > 0) {
         const image = n[imageKey];
+        const rawLi =
+          typeof n[linkedinKey] === 'string' ? n[linkedinKey] : '';
         rows.push({
           id: `${i}`,
           fullName: name.trim(),
           headline: (typeof n[titleKey] === 'string' ? n[titleKey] : '') as string,
           company: companyName ?? '',
-          linkedinUrl:
-            typeof n[linkedinKey] === 'string'
-              ? (n[linkedinKey] as string)
-              : undefined,
+          linkedinUrl: isValidLinkedInProfileUrl(rawLi)
+            ? rawLi.trim()
+            : undefined,
           raw:
             typeof image === 'string'
               ? { image, profile_picture_url: image }
@@ -1171,6 +1176,10 @@ export const useOrgChartActions = ({
         const linkedinKey = `linkedin_url_${i}` as keyof OrgChartNodeData;
         const name = node[nameKey];
         if (typeof name === 'string' && name.trim().length > 0) {
+          const rawLi =
+            typeof node[linkedinKey] === 'string'
+              ? node[linkedinKey]
+              : '';
           rows.push({
             id: `${i}`,
             fullName: name.trim(),
@@ -1178,10 +1187,9 @@ export const useOrgChartActions = ({
               ? node[titleKey]
               : '') as string,
             company: companyName ?? '',
-            linkedinUrl:
-              typeof node[linkedinKey] === 'string'
-                ? (node[linkedinKey] as string)
-                : undefined,
+            linkedinUrl: isValidLinkedInProfileUrl(rawLi)
+              ? (rawLi as string).trim()
+              : undefined,
             raw: {},
           });
         }

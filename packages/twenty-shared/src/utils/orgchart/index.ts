@@ -1,4 +1,5 @@
 export { getProxiedImageUrl } from './getProxiedImageUrl';
+export { isValidLinkedInProfileUrl } from './isValidLinkedInProfileUrl';
 export {
     extractOrgData,
     isMaskedName,

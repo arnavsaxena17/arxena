@@ -6,7 +6,7 @@ import { useRecoilValue } from 'recoil';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import { toTitleCase } from 'twenty-shared';
+import { isValidLinkedInProfileUrl, toTitleCase } from 'twenty-shared';
 
 const DEFAULT_AVATAR =
   'https://st2.depositphotos.com/4111759/12123/v/950/depositphotos_121232442-stock-illustration-male-default-placeholder-avatar-profile.jpg';
@@ -285,6 +285,12 @@ const ResultItem = ({
     ? toTitleCase(item.company)
     : '';
 
+  const hasLinkedInProfile = isValidLinkedInProfileUrl(item.linkedinUrl);
+  const canAttemptContactFetch =
+    hasLinkedInProfile ||
+    Boolean(item.email?.trim()) ||
+    Boolean(item.phone?.trim());
+
   return (
     <StyledContextResultItem>
       <Avatar src={avatarUrl} size={36} />
@@ -296,7 +302,7 @@ const ResultItem = ({
         {displayCompany && (
           <StyledContextResultMeta>{displayCompany}</StyledContextResultMeta>
         )}
-        {item.linkedinUrl && (
+        {hasLinkedInProfile && item.linkedinUrl && (
           <StyledContextResultLink
             href={item.linkedinUrl}
             target="_blank"
@@ -322,7 +328,8 @@ const ResultItem = ({
             </StyledContextResultMeta>
           )}
         {onFetchContacts &&
-          (!contactInfo || !contactInfo.fetched) && (
+          (!contactInfo || !contactInfo.fetched) &&
+          canAttemptContactFetch && (
             <StyledContactButton
               type="button"
               onClick={() => onFetchContacts(item)}

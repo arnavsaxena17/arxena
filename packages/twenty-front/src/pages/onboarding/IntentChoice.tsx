@@ -363,14 +363,14 @@ export const IntentChoice = ({ showProgressBar = true }: IntentChoiceProps) => {
   return (
     <OnboardingIntentModalLayout panelWidth="xl">
       <StyledPanel data-testid="onboarding-intent-choice">
-        {showProgressBar ? <StyledProgressBar value={56} /> : null}
+        {/* {showProgressBar ? <StyledProgressBar value={56} /> : null} */}
         <AnimatedEaseIn>
           <Logo secondaryLogo={workspacePublicData?.logo} />
         </AnimatedEaseIn>
         <StyledHeader>
           <Title animate>What brings you here?</Title>
           <StyledSubTitle>
-            We&apos;ll personalise your experience. One click. No wrong answer.
+            We&apos;ll personalise your experience
           </StyledSubTitle>
           <StyledIntroCopy>
             Choose the workflow that best matches what you want from Arxena

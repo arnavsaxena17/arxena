@@ -284,6 +284,82 @@ describe('TheOrgService', () => {
     );
   });
 
+  it('rejects fetch when linkedinCompanySlugExpected mismatches page social.linkedInUrl', async () => {
+    const companyHtml = `
+      <html>
+        <body>
+          <script id="__NEXT_DATA__" type="application/json">${JSON.stringify({
+            props: {
+              pageProps: {
+                initialCompany: {
+                  id: 'company-1',
+                  slug: 'wrong-theorg-slug',
+                  name: 'Wrong Co',
+                  industries: [],
+                  stats: { positionCount: 0 },
+                  social: {
+                    linkedInUrl: 'https://www.linkedin.com/company/some-other-li',
+                  },
+                },
+                initialNodes: [],
+              },
+            },
+          })}</script>
+        </body>
+      </html>
+    `;
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => companyHtml,
+    }) as any;
+
+    await expect(
+      service.fetchCompanyDetails('wrong-theorg-slug', {
+        mode: 'orgchart',
+        linkedinCompanySlugExpected: 'expected-li-slug',
+      }),
+    ).rejects.toThrow('TheOrg LinkedIn company slug mismatch');
+  });
+
+  it('exposes linkedInCompanySlug from initialCompany.social.linkedInUrl', async () => {
+    const companyHtml = `
+      <html>
+        <body>
+          <script id="__NEXT_DATA__" type="application/json">${JSON.stringify({
+            props: {
+              pageProps: {
+                initialCompany: {
+                  id: 'company-1',
+                  slug: 'acme',
+                  name: 'Acme',
+                  industries: [],
+                  stats: { positionCount: 0 },
+                  social: {
+                    linkedInUrl: 'https://www.linkedin.com/company/acme-ltd',
+                  },
+                },
+                initialNodes: [],
+              },
+            },
+          })}</script>
+        </body>
+      </html>
+    `;
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => companyHtml,
+    }) as any;
+
+    const result = await service.fetchCompanyDetails('acme', {
+      mode: 'orgchart',
+      linkedinCompanySlugExpected: 'acme-ltd',
+    });
+
+    expect(result.linkedInCompanySlug).toBe('acme-ltd');
+  });
+
   it('maps team member profile images into teamPeople profileImageUrl', async () => {
     const companyHtml = `
       <html>

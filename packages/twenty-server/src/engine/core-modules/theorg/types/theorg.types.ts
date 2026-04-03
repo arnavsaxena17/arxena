@@ -105,6 +105,19 @@ export type TheOrgFetchCompanyOptions = {
   forceInlineProfiles?: boolean;
   persist?: boolean;
   storageTarget?: TheOrgStorageTarget;
+  /**
+   * When set, the company page must list this LinkedIn company slug in
+   * `initialCompany.social.linkedInUrl` (if that URL is present). Mismatch throws
+   * before org-chart crawl so the resolver can try the next TheOrg slug candidate.
+   */
+  linkedinCompanySlugExpected?: string;
+};
+
+/** Present when fetchCompanyDetailsResolvingSlug was used. */
+export type TheOrgSlugResolution = {
+  inputSlug: string;
+  attemptedSlugs: string[];
+  successfulCandidate: string;
 };
 
 export type TheOrgFetchPersonOptions = {
@@ -116,6 +129,8 @@ export type TheOrgCompanyResponse = {
   inputName: string;
   companyName: string;
   slug: string;
+  /** Vanity slug or id from `initialCompany.social.linkedInUrl`, if present. */
+  linkedInCompanySlug: string | null;
   url: string;
   tags: string[];
   stats: Record<string, unknown> | null;
@@ -139,6 +154,7 @@ export type TheOrgCompanyResponse = {
   teamPeople: TheOrgPerson[];
   people: TheOrgPerson[];
   storage?: TheOrgStorageLocation;
+  slugResolution?: TheOrgSlugResolution;
 };
 
 export type TheOrgAsyncJobStatus = 'queued' | 'running' | 'completed' | 'failed';

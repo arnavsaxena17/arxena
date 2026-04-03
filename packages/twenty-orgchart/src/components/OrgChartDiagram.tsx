@@ -9,7 +9,7 @@ import {
   useRef,
 } from 'react';
 
-import type { OrgChartNodeData } from 'twenty-shared';
+import { isValidLinkedInProfileUrl, type OrgChartNodeData } from 'twenty-shared';
 
 import type {
   OrgChartDiagramHandle,
@@ -408,7 +408,10 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
                 const data = node?.data as OrgChartNodeData | undefined;
                 if (!data) return;
                 const url = data[`linkedin_url_${idx}`];
-                if (url && typeof url === 'string') {
+                if (
+                  typeof url === 'string' &&
+                  isValidLinkedInProfileUrl(url)
+                ) {
                   window.open(
                     url.startsWith('http') ? url : `https://${url}`,
                     '_blank',
@@ -416,6 +419,11 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
                 }
               },
             },
+            new go.Binding('visible', `linkedin_url_${idx}` as const, (url) =>
+              isValidLinkedInProfileUrl(
+                typeof url === 'string' ? url : undefined,
+              ),
+            ),
             $(
               go.Shape,
               'Circle',
