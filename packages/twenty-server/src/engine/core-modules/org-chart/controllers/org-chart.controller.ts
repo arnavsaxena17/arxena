@@ -1,15 +1,15 @@
 import {
-  Body,
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  Logger,
-  Param,
-  Post,
-  Query,
-  Req,
-  Res,
+    Body,
+    Controller,
+    Get,
+    HttpException,
+    HttpStatus,
+    Logger,
+    Param,
+    Post,
+    Query,
+    Req,
+    Res,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
@@ -65,6 +65,23 @@ export class OrgChartController {
       if (match) return match[1];
     }
     return undefined;
+  }
+
+  private parseExpectedEmployeeCountQuery(
+    raw: string | undefined,
+  ): number | undefined {
+    if (raw === undefined || raw === null) {
+      return undefined;
+    }
+    const trimmed = raw.trim();
+    if (trimmed.length === 0) {
+      return undefined;
+    }
+    const n = Number(trimmed);
+    if (!Number.isFinite(n) || n <= 0) {
+      return undefined;
+    }
+    return n;
   }
 
   private proxyOrgChartPayload(
@@ -837,6 +854,7 @@ export class OrgChartController {
     @Param('functionRoot') functionRoot: string,
     @Query('companyName') companyName: string | undefined,
     @Query('website') website: string | undefined,
+    @Query('expectedEmployeeCount') expectedEmployeeCountRaw: string | undefined,
     @Req() req: Request,
   ) {
     return this.getOrgChartInternal(req, companyId, {
@@ -844,6 +862,8 @@ export class OrgChartController {
       website,
       country,
       functionRoot,
+      expectedEmployeeCount:
+        this.parseExpectedEmployeeCountQuery(expectedEmployeeCountRaw),
     });
   }
 
@@ -853,6 +873,7 @@ export class OrgChartController {
     @Param('country') country: string,
     @Query('companyName') companyName: string | undefined,
     @Query('website') website: string | undefined,
+    @Query('expectedEmployeeCount') expectedEmployeeCountRaw: string | undefined,
     @Req() req: Request,
   ) {
     return this.getOrgChartInternal(req, companyId, {
@@ -860,6 +881,8 @@ export class OrgChartController {
       website,
       country,
       functionRoot: undefined,
+      expectedEmployeeCount:
+        this.parseExpectedEmployeeCountQuery(expectedEmployeeCountRaw),
     });
   }
 
@@ -870,6 +893,7 @@ export class OrgChartController {
     @Query('website') website: string | undefined,
     @Query('country') country: string | undefined,
     @Query('functionRoot') functionRoot: string | undefined,
+    @Query('expectedEmployeeCount') expectedEmployeeCountRaw: string | undefined,
     @Req() req: Request,
   ) {
     return this.getOrgChartInternal(req, companyId, {
@@ -877,6 +901,8 @@ export class OrgChartController {
       website,
       country,
       functionRoot,
+      expectedEmployeeCount:
+        this.parseExpectedEmployeeCountQuery(expectedEmployeeCountRaw),
     });
   }
 
@@ -888,6 +914,7 @@ export class OrgChartController {
       website?: string;
       country?: string;
       functionRoot?: string;
+      expectedEmployeeCount?: number;
     },
   ) {
     if (!companyId || companyId.includes('/') || companyId.includes('..')) {

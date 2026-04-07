@@ -355,6 +355,15 @@ export const ArxOrgChart = ({
     unipileCompanyProfile?.employee_count ??
     exactEmployeeCount ??
     fallbackCompanyInfo?.employeeCount;
+  const expectedEmployeeCountForOrgChart = useMemo(() => {
+    if (typeof effectiveEmployeeCount === 'number') {
+      return effectiveEmployeeCount;
+    }
+    if (typeof profileCount === 'number') {
+      return profileCount;
+    }
+    return undefined;
+  }, [effectiveEmployeeCount, profileCount]);
   const effectiveCompanyName =
     companyName ??
     unipileCompanyProfile?.name ??
@@ -383,6 +392,7 @@ export const ArxOrgChart = ({
       website,
       country: selectedCountry,
       functionRoot: selectedFunctionRoot,
+      expectedEmployeeCount: expectedEmployeeCountForOrgChart,
     },
     { baseUrl, accessToken },
   );

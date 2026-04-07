@@ -183,6 +183,89 @@ const COUNTRY_SUBSET_MAX_NODES = 72;
 
 const FUNCTION_MISS_MAX_NODES = 80;
 
+/** Max direct reports of the org root (CEO). */
+const MAX_DIRECT_CHILDREN_OF_ROOT = 6;
+
+/** Among direct children of root, at most this many may be leaves (no subordinates). */
+const MAX_LEAF_DIRECT_CHILDREN_OF_ROOT = 2;
+
+/** Max children for each direct report of the root (depth-1 parent). */
+const MAX_CHILDREN_PER_DEPTH1_PARENT = 6;
+
+/**
+ * Enforces a shallow, readable blank-template shape: at most 6 direct reports of
+ * the root, at most 2 of those may be leaves, and each non-leaf direct report
+ * keeps at most 6 children (grandchildren of root). Deeper nodes are dropped.
+ */
+function applyBlankOrgChartRootShapeConstraints(
+  nodes: OrgChartNode[],
+): OrgChartNode[] {
+  const children = buildChildrenMap(nodes);
+  const root = nodes.find(
+    (n) => n.parent === '' || n.parent === null || n.parent === undefined,
+  );
+
+  if (!root) {
+    return nodes;
+  }
+
+  const rootKey = root.key;
+  const direct = (children.get(rootKey) ?? []).slice().sort((a, b) => a - b);
+
+  const branches: number[] = [];
+  const leaves: number[] = [];
+
+  for (const k of direct) {
+    if ((children.get(k)?.length ?? 0) > 0) {
+      branches.push(k);
+    } else {
+      leaves.push(k);
+    }
+  }
+
+  const pickedRoot: number[] = [];
+
+  for (const k of branches) {
+    if (pickedRoot.length >= MAX_DIRECT_CHILDREN_OF_ROOT) {
+      break;
+    }
+    pickedRoot.push(k);
+  }
+
+  for (const k of leaves) {
+    if (pickedRoot.length >= MAX_DIRECT_CHILDREN_OF_ROOT) {
+      break;
+    }
+    const leafDirectCount = pickedRoot.filter(
+      (pk) => (children.get(pk)?.length ?? 0) === 0,
+    ).length;
+
+    if (leafDirectCount >= MAX_LEAF_DIRECT_CHILDREN_OF_ROOT) {
+      break;
+    }
+    pickedRoot.push(k);
+  }
+
+  const keep = new Set<number>([rootKey]);
+
+  for (const pk of pickedRoot) {
+    keep.add(pk);
+    const subs = children.get(pk);
+
+    if (!subs || subs.length === 0) {
+      continue;
+    }
+
+    const sortedSubs = subs.slice().sort((a, b) => a - b);
+
+    for (const g of sortedSubs.slice(0, MAX_CHILDREN_PER_DEPTH1_PARENT)) {
+      keep.add(g);
+    }
+  }
+
+  return rewireParentsForKeptNodes(nodes, keep);
+}
+
 function breadthFirstLimit(
   nodes: OrgChartNode[],
   maxNodes: number,
@@ -298,7 +381,8 @@ export function applyBlankOrgChartSubsetFilter(
     nextNodes = nodes;
   }
 
-  const orgchartStr = JSON.stringify(nextNodes);
+  const shapedNodes = applyBlankOrgChartRootShapeConstraints(nextNodes);
+  const orgchartStr = JSON.stringify(shapedNodes);
   const out: Record<string, unknown> = {
     ...parsed,
     orgchart: orgchartStr,
@@ -315,6 +399,81 @@ export function applyBlankOrgChartSubsetFilter(
       if (hasFunctionSubset) {
         inner.type = frRaw;
       }
+      out.list_orgcharts = [JSON.stringify(inner)];
+    } catch {
+      // keep list_orgcharts unchanged
+    }
+  }
+
+  return out;
+}
+
+/**
+ * Maps an expected employee / headcount hint (from autocomplete, PDL profile
+ * count, or LinkedIn) to a max node count for the static blank org chart
+ * template. The template JSON is large (~340 nodes); small companies get a
+ * much smaller BFS slice so the placeholder matches perceived scale.
+ */
+export function expectedEmployeeCountToMaxBlankNodes(
+  expectedEmployeeCount: number | undefined,
+): number {
+  if (
+    expectedEmployeeCount === undefined ||
+    !Number.isFinite(expectedEmployeeCount) ||
+    expectedEmployeeCount <= 0
+  ) {
+    return 120;
+  }
+  const n = Math.floor(expectedEmployeeCount);
+  if (n <= 50) {
+    return 18;
+  }
+  if (n <= 200) {
+    return 32;
+  }
+  if (n <= 1000) {
+    return 56;
+  }
+  if (n <= 5000) {
+    return 88;
+  }
+  if (n <= 50000) {
+    return 140;
+  }
+  return 220;
+}
+
+/**
+ * Trims the blank org chart tree to a breadth-first cap derived from expected
+ * headcount, then applies root fan-out / leaf constraints. Runs after subset
+ * (country/function) filtering when both apply.
+ */
+export function applyBlankOrgChartSizeForExpectedHeadcount(
+  parsed: Record<string, unknown>,
+  expectedEmployeeCount: number | undefined,
+): Record<string, unknown> {
+  const maxNodes = expectedEmployeeCountToMaxBlankNodes(expectedEmployeeCount);
+  const orgchartRaw = parsed.orgchart;
+  const nodes = parseOrgChartArray(orgchartRaw);
+
+  if (!nodes || nodes.length === 0) {
+    return parsed;
+  }
+
+  const afterBfs =
+    nodes.length > maxNodes ? breadthFirstLimit(nodes, maxNodes) : nodes;
+  const nextNodes = applyBlankOrgChartRootShapeConstraints(afterBfs);
+  const orgchartStr = JSON.stringify(nextNodes);
+  const out: Record<string, unknown> = {
+    ...parsed,
+    orgchart: orgchartStr,
+  };
+
+  const list = out.list_orgcharts;
+  if (Array.isArray(list) && list.length > 0 && typeof list[0] === 'string') {
+    try {
+      const inner = JSON.parse(list[0]) as Record<string, unknown>;
+      inner.orgchart = orgchartStr;
       out.list_orgcharts = [JSON.stringify(inner)];
     } catch {
       // keep list_orgcharts unchanged

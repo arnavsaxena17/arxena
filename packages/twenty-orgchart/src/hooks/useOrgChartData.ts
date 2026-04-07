@@ -8,6 +8,11 @@ type OrgChartCompanyInput = {
   website?: string;
   country?: string;
   functionRoot?: string;
+  /**
+   * Expected headcount / profile count hint (autocomplete, PDL, LinkedIn).
+   * Sent as `expectedEmployeeCount` so the server can scale the blank template.
+   */
+  expectedEmployeeCount?: number;
 };
 
 export type UseOrgChartDataOptions = {
@@ -29,6 +34,7 @@ export const useOrgChartData = (
   const website = company?.website;
   const country = company?.country;
   const functionRoot = company?.functionRoot;
+  const expectedEmployeeCount = company?.expectedEmployeeCount;
 
   const [data, setData] = useState<Record<string, unknown> | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -67,6 +73,17 @@ export const useOrgChartData = (
         params.set('functionRoot', functionRoot.trim());
       }
 
+      if (
+        typeof expectedEmployeeCount === 'number' &&
+        Number.isFinite(expectedEmployeeCount) &&
+        expectedEmployeeCount > 0
+      ) {
+        params.set(
+          'expectedEmployeeCount',
+          String(Math.floor(expectedEmployeeCount)),
+        );
+      }
+
       const queryString = params.toString();
       const prefix = useOrgChartPrefix ? '/org-chart' : '';
       const endpointPath =
@@ -102,7 +119,17 @@ export const useOrgChartData = (
     } finally {
       setIsLoading(false);
     }
-  }, [companyId, companyName, website, country, functionRoot, baseUrl, accessToken, useOrgChartPrefix]);
+  }, [
+    companyId,
+    companyName,
+    website,
+    country,
+    functionRoot,
+    expectedEmployeeCount,
+    baseUrl,
+    accessToken,
+    useOrgChartPrefix,
+  ]);
 
   const reset = useCallback(() => {
     setData(null);

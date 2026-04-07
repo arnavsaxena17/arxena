@@ -17,7 +17,10 @@ import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/s
 import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services/orgchart-cache.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
-import { applyBlankOrgChartSubsetFilter } from '../utils/blank-org-chart-subset.util';
+import {
+  applyBlankOrgChartSizeForExpectedHeadcount,
+  applyBlankOrgChartSubsetFilter,
+} from '../utils/blank-org-chart-subset.util';
 import { ArxenaBackendService } from './arxena-backend.service';
 import { OrgChartEsService } from './org-chart-es.service';
 import { normalizeOrgChartPayload } from './org-chart-payload-normalize';
@@ -100,6 +103,8 @@ export class OrgChartService {
           country?: string;
           functionRoot?: string;
           serveCachedOnly?: boolean;
+          /** Hint for blank-template scale (autocomplete count, profile count, LinkedIn headcount). */
+          expectedEmployeeCount?: number;
         },
     authTokenOptional?: string,
   ): Promise<Record<string, unknown>> {
@@ -109,6 +114,7 @@ export class OrgChartService {
       country?: string;
       functionRoot?: string;
       serveCachedOnly?: boolean;
+      expectedEmployeeCount?: number;
     } = {};
 
     let authToken: string | undefined;
@@ -195,7 +201,13 @@ export class OrgChartService {
     // frontend can show a placeholder structure instead of empty. No credits debited for blank.
     const blankChart = await this.getBlankOrgChartPlaceholder(
       companyId,
-      options,
+      {
+        companyName: options.companyName,
+        website: options.website,
+        country: options.country,
+        functionRoot: options.functionRoot,
+        expectedEmployeeCount: options.expectedEmployeeCount,
+      },
     );
 
     if (blankChart) {
@@ -230,6 +242,7 @@ export class OrgChartService {
       website?: string;
       country?: string;
       functionRoot?: string;
+      expectedEmployeeCount?: number;
     },
   ): Promise<Record<string, unknown> | null> {
     const cwd = process.cwd();
@@ -265,9 +278,13 @@ export class OrgChartService {
           country: options.country,
           functionRoot: options.functionRoot,
         });
+        const sizedForHeadcount = applyBlankOrgChartSizeForExpectedHeadcount(
+          subsetFiltered,
+          options.expectedEmployeeCount,
+        );
 
         return {
-          ...subsetFiltered,
+          ...sizedForHeadcount,
           company_id: companyId,
           job_company_id: companyId,
           job_company_name: options.companyName ?? companyId,
