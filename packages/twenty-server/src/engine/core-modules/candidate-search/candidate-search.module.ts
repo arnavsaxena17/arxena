@@ -20,6 +20,8 @@ import { WorkspaceModificationsModule } from '../workspace-modifications/workspa
 import { CandidateSearchPipelineController } from './controllers/candidate-search-pipeline.controller';
 import { CandidateSearchController } from './controllers/candidate-search.controller';
 import { OrgchartApifyBuildProcessor } from './jobs/orgchart-apify-build.processor';
+import { OrgchartUnipileBuildProcessor } from './jobs/orgchart-unipile-build.processor';
+import { OrgchartLinkedinXrayBuildProcessor } from './jobs/orgchart-linkedin-xray-build.processor';
 import { SearchParametersPrompts } from './prompts/search-parameters-prompts';
 import { AssistantThreadService } from './services/assistant-thread.service';
 import { BooltreeHintService } from './services/booltree-hint.service';
@@ -89,6 +91,8 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     BusinessDivisionOrgChartParserService,
     OrgChartSearchService,
     OrgchartApifyBuildProcessor,
+    OrgchartUnipileBuildProcessor,
+    OrgchartLinkedinXrayBuildProcessor,
     // Executive search enhancement services
     PythonOrgChartService,
   ],

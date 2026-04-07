@@ -128,7 +128,7 @@ export function assertOrgChartSearchUnipileSuccessResponse(
 
   if (o.queued === true) {
     throw new Error(
-      'org-chart search response: got queued Apify response; use assertOrgChartSearchApifyQueuedResponse',
+      'org-chart search response: got queued async response; use assertOrgChartSearchQueuedResponse',
     );
   }
 
@@ -171,21 +171,21 @@ export function assertOrgChartSearchUnipileSuccessResponse(
 }
 
 /**
- * Response when candidateSource is apify and the job is queued (no items yet).
+ * Response when candidateSource is apify/linkedin_xray/unipile and the job is queued (no items yet).
  */
-export function assertOrgChartSearchApifyQueuedResponse(
+export function assertOrgChartSearchQueuedResponse(
   value: unknown,
 ): asserts value is {
   success: true;
   queued: true;
-  candidateSource: 'apify';
+  candidateSource: 'apify' | 'linkedin_xray' | 'unipile';
   requestId?: string;
   mode: string;
   searchType: string;
   companyName: string;
   companyId?: string;
   jobTitles: string[];
-  linkedinCompanyUrl: string;
+  linkedinCompanyUrl?: string;
   itemCount: number;
   items: unknown[];
   orgChart: undefined;
@@ -195,14 +195,18 @@ export function assertOrgChartSearchApifyQueuedResponse(
   const o = expectPlainObject(value);
 
   if (o.success !== true) {
-    throw new Error('org-chart Apify queued response: expected success === true');
+    throw new Error('org-chart queued response: expected success === true');
   }
   if (o.queued !== true) {
-    throw new Error('org-chart Apify queued response: expected queued === true');
+    throw new Error('org-chart queued response: expected queued === true');
   }
-  if (o.candidateSource !== 'apify') {
+  if (
+    o.candidateSource !== 'apify' &&
+    o.candidateSource !== 'linkedin_xray' &&
+    o.candidateSource !== 'unipile'
+  ) {
     throw new Error(
-      'org-chart Apify queued response: expected candidateSource "apify"',
+      'org-chart queued response: expected candidateSource "apify", "linkedin_xray", or "unipile"',
     );
   }
 
@@ -210,20 +214,22 @@ export function assertOrgChartSearchApifyQueuedResponse(
   requireString(o, 'searchType');
   requireString(o, 'companyName');
   requireStringArray(o, 'jobTitles');
-  requireString(o, 'linkedinCompanyUrl');
+  if ('linkedinCompanyUrl' in o && o.linkedinCompanyUrl !== undefined) {
+    requireString(o, 'linkedinCompanyUrl');
+  }
   requireNumber(o, 'itemCount');
 
   if (!Array.isArray(o.items)) {
-    throw new Error('org-chart Apify queued response: expected items array');
+    throw new Error('org-chart queued response: expected items array');
   }
   if (o.items.length !== 0) {
     throw new Error(
-      'org-chart Apify queued response: expected items to be empty when queued',
+      'org-chart queued response: expected items to be empty when queued',
     );
   }
   if (o.orgChart !== undefined) {
     throw new Error(
-      'org-chart Apify queued response: expected orgChart to be undefined when queued',
+      'org-chart queued response: expected orgChart to be undefined when queued',
     );
   }
 

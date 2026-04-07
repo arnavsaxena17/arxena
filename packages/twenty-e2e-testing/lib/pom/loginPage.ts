@@ -77,23 +77,57 @@ export class LoginPage {
     this.finishButton = page.getByRole('button', { name: 'Finish' });
   }
 
+  private async getFirstVisible(locator: Locator) {
+    const count = await locator.count();
+
+    for (let index = 0; index < count; index += 1) {
+      const candidate = locator.nth(index);
+
+      if (await candidate.isVisible().catch(() => false)) {
+        return candidate;
+      }
+    }
+
+    return null;
+  }
+
   async loginWithGoogle() {
     await this.loginWithGoogleButton.click();
   }
 
   async clickLoginWithEmail() {
-    await this.loginWithEmailButton.click();
+    const visibleButton = await this.getFirstVisible(this.loginWithEmailButton);
+
+    if (!visibleButton) {
+      throw new Error('Could not find a visible Continue with Email button');
+    }
+
+    await visibleButton.click();
   }
 
   async hasVisibleLoginWithEmailButton() {
-    return (
-      (await this.loginWithEmailButton.count()) > 0 &&
-      (await this.loginWithEmailButton.first().isVisible())
-    );
+    return (await this.getFirstVisible(this.loginWithEmailButton)) !== null;
   }
 
   async clickContinueButton() {
-    await this.continueButton.click();
+    const continueButton = await this.getFirstVisible(this.continueButton);
+    const isVisible = continueButton !== null;
+
+    if (isVisible) {
+      try {
+        await continueButton.click({ timeout: 5_000 });
+      } catch {
+        try {
+          await continueButton.click({ force: true, timeout: 5_000 });
+        } catch {
+          await this.emailField.first().press('Enter');
+        }
+      }
+
+      return;
+    }
+
+    await this.emailField.first().press('Enter');
   }
 
   async clickTermsLink() {
@@ -123,24 +157,27 @@ export class LoginPage {
   }
 
   async clickSignInButton() {
-    await this.signInButton.click();
+    const visibleButton = await this.getFirstVisible(this.signInButton);
+
+    if (!visibleButton) {
+      throw new Error('Could not find a visible Sign in button');
+    }
+
+    await visibleButton.click();
   }
 
   async submitPasswordStep() {
-    const canUseSignIn =
-      (await this.signInButton.count()) > 0 &&
-      (await this.signInButton.first().isVisible());
+    const signInButton = await this.getFirstVisible(this.signInButton);
+    const canUseSignIn = signInButton !== null;
 
     if (canUseSignIn) {
-      await this.signInButton.first().click();
+      await signInButton.click();
 
       return;
     }
 
-    const continueButton = this.continueButton.first();
-    const canUseContinue =
-      (await this.continueButton.count()) > 0 &&
-      (await continueButton.isVisible().catch(() => false));
+    const continueButton = await this.getFirstVisible(this.continueButton);
+    const canUseContinue = continueButton !== null;
 
     if (canUseContinue) {
       await continueButton.click();

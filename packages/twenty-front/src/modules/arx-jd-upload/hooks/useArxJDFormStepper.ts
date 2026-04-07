@@ -66,17 +66,6 @@ export const useArxJDFormStepper = (initialStep = 0) => {
       missingFields.push('Short One Line Pitch');
     }
 
-    console.log("Recrutier Details")
-    // Check recruiter fields if they are shown
-    if (recruiterDetails?.showRecruiterFields) {
-      if (!recruiterDetails.missingRecruiterInfo.phoneNumber?.trim()) {
-        missingFields.push("Recruiter's Phone Number");
-      }
-      if (!recruiterDetails.missingRecruiterInfo.jobTitle?.trim()) {
-        missingFields.push("Recruiter's Job Title");
-      }
-    }
-
     if (missingFields.length > 0) {
       return {
         isValid: false,

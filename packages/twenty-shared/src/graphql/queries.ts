@@ -597,6 +597,7 @@ const graphqlToFindManyJobsWithCandidateValuesFull = `query FindManyJobs($filter
               id
               source
               campaign
+              messagingChannel
               whatsappProvider
               candidateFieldValues{
               edges{
@@ -623,6 +624,7 @@ const graphqlToFindManyJobsWithCandidateValuesFull = `query FindManyJobs($filter
                         phoneNumber
                         companyDescription
                         jobTitle
+                        whatsappUnipileAccountId
                     }
                 }
             }
@@ -683,6 +685,15 @@ const graphqlToFindManyJobsWithCandidateValuesOrgChart = `query FindManyJobs($fi
         id
         recruiterId
         createdAt
+        prompt{
+            edges{
+                node{
+                    id
+                    name
+                    prompt
+                }
+            }
+        }
         name
         candidateFields {
             edges{
@@ -703,6 +714,7 @@ const graphqlToFindManyJobsWithCandidateValuesOrgChart = `query FindManyJobs($fi
               id
               source
               campaign
+              messagingChannel
               whatsappProvider
               candidateFieldValues{
               edges{
@@ -729,6 +741,7 @@ const graphqlToFindManyJobsWithCandidateValuesOrgChart = `query FindManyJobs($fi
                         phoneNumber
                         companyDescription
                         jobTitle
+                        whatsappUnipileAccountId
                     }
                 }
             }
@@ -855,6 +868,9 @@ const graphqlToFindManyJobsWithCandidatesFull = `query FindManyJobs($filter: Job
                         phoneNumber
                         companyDescription
                         jobTitle
+                        whatsappUnipileAccountId
+                        linkedinUnipileAccountId
+                        keepLinkedinConnected
                     }
                 }
             }

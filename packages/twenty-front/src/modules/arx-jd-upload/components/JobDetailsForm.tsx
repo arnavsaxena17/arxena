@@ -377,19 +377,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
       return false;
     }
 
-    // Validate that required fields are filled
-    const emptyFields = Object.entries(missingRecruiterInfo)
-      .filter(([_, value]) => !value)
-      .map(([key]) => key);
-
-    if (emptyFields.length > 0) {
-      enqueueSnackBar(`Please fill all the required recruiter fields: ${emptyFields.join(', ')}`, {
-        variant: SnackBarVariant.Error,
-      });
-      return false;
-    }
-
-    // Validate phone number format
+    // Only validate the phone format when the user provides one.
     if (missingRecruiterInfo.phoneNumber) {
       try {
         const phoneNumber = parsePhoneNumber(missingRecruiterInfo.phoneNumber);
@@ -642,8 +630,8 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
             {isDefined(missingRecruiterInfo.phoneNumber) && (
               <StyledFieldGroup>
                 <StyledLabelContainer>
-                  <StyledLabel>Recruiter's Phone Number *</StyledLabel>
-                  <StyledIconContainer data-tooltip="Your contact number for candidate communications (Required)">
+                  <StyledLabel>Recruiter's Phone Number</StyledLabel>
+                  <StyledIconContainer data-tooltip="Your contact number for candidate communications">
                     <IconInfoCircle size={14} />
                   </StyledIconContainer>
                 </StyledLabelContainer>
@@ -665,8 +653,8 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
             {isDefined(missingRecruiterInfo.jobTitle) && (
               <StyledFieldGroup>
                 <StyledLabelContainer>
-                  <StyledLabel>Recruiter's Job Title *</StyledLabel>
-                  <StyledIconContainer data-tooltip="Your role in the organization (Required)">
+                  <StyledLabel>Recruiter's Job Title</StyledLabel>
+                  <StyledIconContainer data-tooltip="Your role in the organization">
                     <IconInfoCircle size={14} />
                   </StyledIconContainer>
                 </StyledLabelContainer>

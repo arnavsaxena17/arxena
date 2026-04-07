@@ -16,14 +16,14 @@ import { MultipleRecordsActionKeys } from '@/action-menu/actions/record-actions/
 import { ActionHook } from '@/action-menu/actions/types/ActionHook';
 import { ActionViewType } from '@/action-menu/actions/types/ActionViewType';
 import {
-    ActionMenuEntry,
-    ActionMenuEntryScope,
-    ActionMenuEntryType,
+  ActionMenuEntry,
+  ActionMenuEntryScope,
+  ActionMenuEntryType,
 } from '@/action-menu/types/ActionMenuEntry';
 import { msg } from '@lingui/core/macro';
 import { IconDownload, IconMail, IconMessageCircle, IconMessages, IconPhone, IconRefresh, IconShare, IconTrashOff, IconTrashX } from '@tabler/icons-react';
 import {
-    IconList
+  IconList
 } from 'twenty-ui';
 
 export const TABLE_CANDIDATE_ACTIONS_CONFIG: Record<
@@ -327,8 +327,8 @@ export const TABLE_CANDIDATE_ACTIONS_CONFIG: Record<
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
     key: MultipleRecordsActionKeys.RESET_MSGS_FROM_WHATSAPP,
-    shortLabel: msg`Delete Messages in Whatsapp`,
-    label: msg`Delete Messages in Whatsapp`,
+    shortLabel: msg`Reset Messages in Whatsapp`,
+    label: msg`Reset Messages in Whatsapp`,
     position: 9,
     Icon: IconTrashX,
     accent: 'placeholder',

@@ -10,7 +10,7 @@ const SCROLL_THRESHOLD = 400;
 const NAV_ITEMS = [
   { label: 'Built for', href: '#built-for' },
   { label: 'How it works', href: '#how-it-works' },
-  { label: 'Why us', href: '#why-us' },
+  { label: 'What makes us different', href: '#why-us' },
   { label: 'Testimonials', href: '#testimonials' },
   { label: 'Pricing', href: '/pricing' },
   { label: 'Contact', href: '#contact' },

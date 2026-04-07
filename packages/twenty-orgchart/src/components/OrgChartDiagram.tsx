@@ -2,25 +2,25 @@ import styled from '@emotion/styled';
 import * as go from 'gojs';
 import { ReactDiagram } from 'gojs-react';
 import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useRef,
+    forwardRef,
+    useCallback,
+    useEffect,
+    useImperativeHandle,
+    useRef,
 } from 'react';
 
 import { isValidLinkedInProfileUrl, type OrgChartNodeData } from 'twenty-shared';
 
 import type {
-  OrgChartDiagramHandle,
-  OrgChartDiagramProps
+    OrgChartDiagramHandle,
+    OrgChartDiagramProps
 } from './OrgChartDiagram.types';
 
 export type {
-  OrgChartContextAction,
-  OrgChartDiagramHandle,
-  OrgChartDiagramIconUrls,
-  OrgChartDiagramProps
+    OrgChartContextAction,
+    OrgChartDiagramHandle,
+    OrgChartDiagramIconUrls,
+    OrgChartDiagramProps
 } from './OrgChartDiagram.types';
 
 const DEFAULT_AVATAR =

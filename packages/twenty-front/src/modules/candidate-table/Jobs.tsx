@@ -1,7 +1,7 @@
 import styled from '@emotion/styled';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 import { useOpenArxenaSiteWithToken } from '@/auth/hooks/useOpenArxenaSiteWithToken';
 import { AppPath } from '@/types/AppPath';
@@ -14,7 +14,7 @@ import { useSelectedRecordForEnrichment } from '@/arx-ai-filtering/hooks/useSele
 import { isArxEnrichModalOpenState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
-import { parsedJDInternalState } from '@/arx-jd-upload/states/arxJDFormStepperState';
+import { useOpenAddJobModal } from '@/arx-jd-upload/hooks/useOpenAddJobModal';
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
@@ -261,9 +261,8 @@ export const Jobs = () => {
   const isVideoInterviewModalOpen = useRecoilValue(isVideoInterviewModalOpenState);
   const [, setIsVideoInterviewModalOpen] = useRecoilState(isVideoInterviewModalOpenState);
   const isArxUploadJDModalOpen = useRecoilValue(isArxUploadJDModalOpenState);
-  const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
   const [, setArxUploadJDModalMode] = useRecoilState(arxUploadJDModalModeState);
-  const setParsedJDInternalState = useSetRecoilState(parsedJDInternalState);
+  const { openAddJobModal } = useOpenAddJobModal();
 
   const { enqueueSnackBar } = useSnackBar();
   const { hasToken } = useOpenArxenaSiteWithToken();
@@ -488,18 +487,6 @@ export const Jobs = () => {
     setIsVideoInterviewModalOpen(true);
   };
 
-  const handleAddJob = () => {
-    console.log('Adding job from Jobs');
-    // Explicitly reset parsedJDInternalState first to clear any stale data
-    setParsedJDInternalState(null);
-    // Explicitly set modal mode to create
-    setArxUploadJDModalMode('create');
-    // Use requestAnimationFrame to ensure the mode is set before opening the modal
-    requestAnimationFrame(() => {
-      setIsArxUploadJDModalOpen(true);
-    });
-  };
-
   const handleImportCandidates = () => {
     if (!updatedMetadataStructureLoaded) {
       alert('System is still loading. Please try again in a moment.');
@@ -567,7 +554,7 @@ export const Jobs = () => {
             <CandidateTablePageHeader
               title="Jobs"
               Icon={IconDatabase}
-              onAddJob={handleAddJob}
+              onAddJob={openAddJobModal}
               onOrgCharts={() => navigate(`/${AppPath.OrgChart}`)}
               onCompanySelect={hasJobs ? handleCompanySelect : undefined}
               hasToken={!!hasToken}
@@ -615,7 +602,7 @@ export const Jobs = () => {
             <CandidateTablePageHeader
               title="Jobs"
               Icon={IconDatabase}
-              onAddJob={handleAddJob}
+              onAddJob={openAddJobModal}
               onOrgCharts={() => navigate(`/${AppPath.OrgChart}`)}
               onCompanySelect={hasJobs ? handleCompanySelect : undefined}
               hasToken={!!hasToken}
@@ -664,7 +651,7 @@ export const Jobs = () => {
                     leftComponent={ <StyledTabListContainer> </StyledTabListContainer> }
                     handleVideoInterviewEdit={handleVideoInterviewEdit}
                     handleEnrichment={handleEnrichment}
-                    handleAddJob={handleAddJob}
+                    handleAddJob={openAddJobModal}
                     handleImportCandidates={handleImportCandidates}
                     showEnrichment={true}
                     showVideoInterviewEdit={true}

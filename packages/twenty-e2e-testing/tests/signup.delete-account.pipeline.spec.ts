@@ -8,7 +8,8 @@ test.use({
   storageState: { cookies: [], origins: [] },
 });
 
-const BASE_URL = 'http://app.localhost:3001';
+const BASE_URL =
+  process.env.ARXENA_E2E_ONBOARDING_BASE_URL || 'http://app.localhost:3001';
 
 test('Create account, onboard, reach jobs, then delete account', async ({
   page,

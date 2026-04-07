@@ -34,13 +34,83 @@ const StyledLogoWrapper = styled.div`
 const StyledTitle = styled.h1`
   font-size: 2.5rem;
   font-weight: 600;
-  margin: 0 0 24px 0;
+  margin: 0 0 16px 0;
   color: #000;
   line-height: 1.2;
+  max-width: 720px;
 
   @media (max-width: 809px) {
     font-size: 1.75rem;
   }
+`;
+
+const StyledTitleLine = styled.span`
+  display: block;
+`;
+
+const StyledHeroLead = styled.p`
+  font-size: 17px;
+  color: #474747;
+  margin: 0 auto 16px;
+  max-width: 640px;
+  line-height: 1.6;
+  text-align: center;
+`;
+
+const StyledHeroStats = styled.p`
+  font-size: 15px;
+  color: #818181;
+  margin: 0 auto 28px;
+  max-width: 640px;
+  line-height: 1.5;
+  text-align: center;
+`;
+
+const StyledClarifySection = styled.div`
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto 40px;
+  padding: 24px 20px;
+  background: #fafafa;
+  border: 1px solid rgba(20, 20, 20, 0.08);
+  border-radius: 12px;
+  text-align: left;
+`;
+
+const StyledClarifyHeading = styled.p`
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #818181;
+  margin: 0 0 16px 0;
+`;
+
+const StyledClarifyRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+`;
+
+const StyledClarifyBlock = styled.div``;
+
+const StyledClarifyLabel = styled.div`
+  font-size: 12px;
+  font-weight: 600;
+  color: #141414;
+  margin-bottom: 6px;
+`;
+
+const StyledClarifyText = styled.p`
+  font-size: 14px;
+  color: #474747;
+  line-height: 1.55;
+  margin: 0;
 `;
 
 const StyledSearchWrapper = styled.div`
@@ -201,14 +271,6 @@ const StyledExampleCardTitle = styled.span`
   text-align: center;
 `;
 
-const StyledSocialProof = styled.p`
-  font-size: 16px;
-  color: #474747;
-  margin: 0;
-  text-align: center;
-  padding: 24px;
-`;
-
 const StyledSectionAnchor = styled.section`
   scroll-margin-top: 60px;
 `;
@@ -271,7 +333,41 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
         <StyledLogoWrapper>
           <Logo variant="hero" />
         </StyledLogoWrapper>
-        <StyledTitle>Org Chart AI — real-time company structures</StyledTitle>
+        <StyledTitle>
+          Org Chart OS: Real-Time Org Charts & Engagement.
+          {/* <StyledTitleLine>
+            Then reach the right person — automatically.
+          </StyledTitleLine> */}
+        </StyledTitle>
+        {/* <StyledHeroLead>
+          Arxena maps the org chart of any company in the world. Search your target company, understand see who reports to whom, build a list
+          of the right contacts, and let AI reach out on your behalf in your
+          methods. You only take calls with people who&apos;ve already responded.
+        </StyledHeroLead> */}
+        <StyledHeroStats>
+          1M+ companies mapped · 800M+ professionals indexed · real-time from
+          LinkedIn and others
+        </StyledHeroStats>
+        {/* <StyledClarifySection>
+          <StyledClarifyHeading>Worth clarifying</StyledClarifyHeading>
+          <StyledClarifyRow>
+            <StyledClarifyBlock>
+              <StyledClarifyLabel>Not this</StyledClarifyLabel>
+              <StyledClarifyText>
+                A tool that helps you draw or document your own company&apos;s
+                org chart.
+              </StyledClarifyText>
+            </StyledClarifyBlock>
+            <StyledClarifyBlock>
+              <StyledClarifyLabel>This</StyledClarifyLabel>
+              <StyledClarifyText>
+                An intelligence platform that fetches the org chart of any
+                company you&apos;re targeting — for sales, recruiting,
+                investing, or competitive research.
+              </StyledClarifyText>
+            </StyledClarifyBlock>
+          </StyledClarifyRow>
+        </StyledClarifySection> */}
         <StyledSearchWrapper>
           <OrgChartSearch
             placeholder="Search any company's org chart"
@@ -302,7 +398,7 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
 
       <StyledExampleSection>
         <StyledExampleTitle>
-          Real-time org charts from LinkedIn (and others)
+          Real-time from LinkedIn and other sources
         </StyledExampleTitle>
         <StyledScrollingStrip>
           <StyledScrollingTrack>
@@ -349,14 +445,11 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
       </StyledSectionAnchor>
       <TrustBadgesSection />
 
-      <StyledSocialProof>
-        1M+ companies mapped, 800M+ professionals indexed — real-time
-        structures, algorithmically clustered
-      </StyledSocialProof>
-
       <StyledEngageCrossSell>
-        Build lists, get contacts, engage on WhatsApp & LinkedIn —{' '}
-        <StyledEngageLink href="/engage">Learn more →</StyledEngageLink>
+        Search → map → list → contact → engage —{' '}
+        <StyledEngageLink href="/engage">
+          How AI outreach works →
+        </StyledEngageLink>
       </StyledEngageCrossSell>
 
       <StyledSectionAnchor id="contact">

@@ -36,15 +36,53 @@ type WorkspaceCreditsRow = {
 
 type CreditType = 'ORG_CHART' | 'EMAIL_CONTACT' | 'PHONE_CONTACT';
 
-const StyledTable = styled(Table)`
+type RowCreditEdit = {
+  creditType: CreditType;
+  delta: string;
+};
+
+const defaultRowCreditEdit = (): RowCreditEdit => ({
+  creditType: 'EMAIL_CONTACT',
+  delta: '',
+});
+
+const StyledTableScroll = styled.div`
   margin-top: ${({ theme }) => theme.spacing(3)};
+  overflow-x: auto;
+  width: 100%;
+`;
+
+const StyledTable = styled(Table)`
+  min-width: 980px;
+  width: 100%;
 `;
 
 const StyledTableCell = styled(TableCell)`
+  align-items: flex-start;
+  height: auto;
+  min-height: ${({ theme }) => theme.spacing(8)};
+  padding-bottom: ${({ theme }) => theme.spacing(2)};
+  padding-top: ${({ theme }) => theme.spacing(2)};
   vertical-align: middle;
 `;
 
+const StyledCheckboxCell = styled(StyledTableCell)`
+  align-items: center;
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+`;
+
 const StyledActionsInner = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(2)};
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+`;
+
+const StyledActionsControlsRow = styled.div`
   align-items: center;
   display: flex;
   flex-wrap: wrap;
@@ -132,7 +170,7 @@ const StyledMobileSelect = styled(StyledSelect)`
 `;
 
 const TABLE_GRID =
-  'minmax(36px, auto) minmax(0, 0.55fr) minmax(0, 0.85fr) minmax(0, 1.4fr) minmax(0, 1.6fr) 1fr 1fr 1fr 1fr 3fr minmax(88px, auto)';
+  'minmax(40px, auto) minmax(96px, 1fr) minmax(104px, 0.9fr) minmax(120px, 1.2fr) minmax(140px, 1.4fr) minmax(72px, 0.55fr) minmax(64px, 0.5fr) minmax(64px, 0.5fr) minmax(72px, 0.55fr) minmax(260px, 1.4fr)';
 
 const shortWorkspaceId = (id: string) => `${id.slice(0, 8)}…`;
 
@@ -152,14 +190,6 @@ const StyledBulkActionsBar = styled.div`
   flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing(2)};
   margin-top: ${({ theme }) => theme.spacing(2)};
-`;
-
-const StyledCheckboxCell = styled(StyledTableCell)`
-  align-items: center;
-  display: flex;
-  justify-content: center;
-  padding-left: 0;
-  padding-right: 0;
 `;
 
 const StyledMobileCardHeaderRow = styled.div`
@@ -195,11 +225,6 @@ export const SettingsAdminWorkspaceCredits = () => {
   const [adjustingWorkspaceId, setAdjustingWorkspaceId] = useState<
     string | null
   >(null);
-  const [deletingWorkspaceId, setDeletingWorkspaceId] = useState<string | null>(
-    null,
-  );
-  const [workspacePendingDelete, setWorkspacePendingDelete] =
-    useState<WorkspaceCreditsRow | null>(null);
   const [bulkDeletePendingRows, setBulkDeletePendingRows] = useState<
     WorkspaceCreditsRow[] | null
   >(null);
@@ -207,8 +232,9 @@ export const SettingsAdminWorkspaceCredits = () => {
     [],
   );
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
-  const [creditType, setCreditType] = useState<CreditType>('EMAIL_CONTACT');
-  const [deltaInput, setDeltaInput] = useState('');
+  const [rowCreditEdits, setRowCreditEdits] = useState<
+    Record<string, RowCreditEdit>
+  >({});
 
   const rows = useMemo(
     () => data?.adminListWorkspacesWithCredits ?? [],
@@ -239,8 +265,40 @@ export const SettingsAdminWorkspaceCredits = () => {
     [rows, selectedWorkspaceIds],
   );
 
+  const getRowCreditEdit = (workspaceId: string): RowCreditEdit => ({
+    ...defaultRowCreditEdit(),
+    ...rowCreditEdits[workspaceId],
+  });
+
+  const setRowCreditTypeForWorkspace = (
+    workspaceId: string,
+    nextCreditType: CreditType,
+  ) => {
+    setRowCreditEdits((prev) => ({
+      ...prev,
+      [workspaceId]: {
+        ...defaultRowCreditEdit(),
+        ...prev[workspaceId],
+        creditType: nextCreditType,
+      },
+    }));
+  };
+
+  const setRowDeltaForWorkspace = (workspaceId: string, delta: string) => {
+    setRowCreditEdits((prev) => ({
+      ...prev,
+      [workspaceId]: {
+        ...defaultRowCreditEdit(),
+        ...prev[workspaceId],
+        delta,
+      },
+    }));
+  };
+
   const handleAdjust = async (workspaceId: string) => {
-    const delta = parseInt(deltaInput, 10);
+    const { creditType: rowCreditType, delta: rowDelta } =
+      getRowCreditEdit(workspaceId);
+    const delta = parseInt(rowDelta, 10);
     if (Number.isNaN(delta) || delta === 0) {
       enqueueSnackBar(t`Enter a non-zero number`, {
         variant: SnackBarVariant.Error,
@@ -253,13 +311,20 @@ export const SettingsAdminWorkspaceCredits = () => {
         variables: {
           input: {
             workspaceId,
-            creditType,
+            creditType: rowCreditType,
             delta,
           },
         },
       });
       enqueueSnackBar(t`Credits updated`, { variant: SnackBarVariant.Success });
-      setDeltaInput('');
+      setRowCreditEdits((prev) => ({
+        ...prev,
+        [workspaceId]: {
+          ...defaultRowCreditEdit(),
+          ...prev[workspaceId],
+          delta: '',
+        },
+      }));
       await refetch();
     } catch (err) {
       enqueueSnackBar(
@@ -268,12 +333,6 @@ export const SettingsAdminWorkspaceCredits = () => {
       );
     } finally {
       setAdjustingWorkspaceId(null);
-    }
-  };
-
-  const setDeleteModalOpen = (open: boolean) => {
-    if (!open) {
-      setWorkspacePendingDelete(null);
     }
   };
 
@@ -353,52 +412,11 @@ export const SettingsAdminWorkspaceCredits = () => {
     });
   };
 
-  const handleConfirmDeleteWorkspace = async () => {
-    if (!workspacePendingDelete) {
-      return;
-    }
-    const workspaceId = workspacePendingDelete.workspaceId;
-    setDeletingWorkspaceId(workspaceId);
-    try {
-      await deleteWorkspaceMutation({ variables: { workspaceId } });
-      enqueueSnackBar(t`Workspace deleted`, {
-        variant: SnackBarVariant.Success,
-      });
-      await refetch();
-    } catch (err) {
-      enqueueSnackBar(
-        err instanceof Error ? err.message : t`Failed to delete workspace`,
-        { variant: SnackBarVariant.Error },
-      );
-    } finally {
-      setDeletingWorkspaceId(null);
-    }
-  };
-
-  const pendingDeleteWorkspaceDisplayName =
-    workspacePendingDelete?.workspaceName ?? '—';
   const bulkDeleteWorkspaceCount = bulkDeletePendingRows?.length ?? 0;
   const selectedWorkspaceCount = selectedDeletableCount;
 
   return (
     <>
-      <ConfirmationModal
-        isOpen={workspacePendingDelete !== null}
-        setIsOpen={setDeleteModalOpen}
-        title={t`Delete workspace`}
-        subtitle={
-          workspacePendingDelete ? (
-            <Trans>
-              This permanently deletes workspace{' '}
-              <strong>{pendingDeleteWorkspaceDisplayName}</strong> and all of
-              its data. This cannot be undone.
-            </Trans>
-          ) : null
-        }
-        onConfirmClick={handleConfirmDeleteWorkspace}
-        deleteButtonText={t`Delete workspace`}
-        loading={deletingWorkspaceId === workspacePendingDelete?.workspaceId}
-      />
       <ConfirmationModal
         isOpen={bulkDeletePendingRows !== null}
         setIsOpen={setBulkDeleteModalOpen}
@@ -440,194 +458,190 @@ export const SettingsAdminWorkspaceCredits = () => {
           <p>{t`Loading...`}</p>
         ) : isMobile ? (
           <StyledMobileCardList>
-            {rows.map((row) => (
-              <StyledMobileCard key={row.workspaceId}>
-                <StyledMobileCardHeaderRow>
-                  <Checkbox
-                    checked={selectedWorkspaceIds.includes(row.workspaceId)}
-                    onCheckedChange={() =>
-                      toggleWorkspaceSelected(row.workspaceId)
-                    }
-                    disabled={row.workspaceId === currentWorkspace?.id}
-                  />
-                  <StyledMobileMetaInHeader>
-                    <StyledShortWorkspaceId title={row.workspaceId}>
-                      {shortWorkspaceId(row.workspaceId)}
-                    </StyledShortWorkspaceId>
-                    <StyledCreatedAt>
-                      {formatWorkspaceCreatedAt(row.workspaceCreatedAt)}
-                    </StyledCreatedAt>
-                    <StyledMobileWorkspaceName>
-                      {row.workspaceName || '—'}
-                    </StyledMobileWorkspaceName>
-                    <StyledCreatorEmail>
-                      {t`Creator email`}: {row.workspaceCreatorEmail || '—'}
-                    </StyledCreatorEmail>
-                  </StyledMobileMetaInHeader>
-                </StyledMobileCardHeaderRow>
-                <StyledMobileCreditsRow>
-                  <StyledMobileCreditItem>
-                    {t`Org chart`}: {row.orgChartCredits}
-                  </StyledMobileCreditItem>
-                  <StyledMobileCreditItem>
-                    {t`Email`}: {row.emailContactCredits}
-                  </StyledMobileCreditItem>
-                  <StyledMobileCreditItem>
-                    {t`Phone`}: {row.phoneContactCredits}
-                  </StyledMobileCreditItem>
-                  <StyledMobileCreditItem>
-                    {t`Total`}: {totalCredits(row)}
-                  </StyledMobileCreditItem>
-                </StyledMobileCreditsRow>
-                <StyledMobileActionsColumn>
-                  <StyledMobileSelect
-                    value={creditType}
-                    onChange={(e) =>
-                      setCreditType(e.target.value as CreditType)
-                    }
-                    aria-label={t`Credit type`}
-                  >
-                    <option value="ORG_CHART">{t`Org chart`}</option>
-                    <option value="EMAIL_CONTACT">{t`Email`}</option>
-                    <option value="PHONE_CONTACT">{t`Phone`}</option>
-                  </StyledMobileSelect>
-                  <TextInput
-                    value={deltaInput}
-                    onChange={(v) => setDeltaInput(v)}
-                    placeholder={t`Amount (+ / -)`}
-                    fullWidth
-                  />
-                  <Button
-                    title={t`Apply`}
-                    fullWidth
-                    onClick={() => handleAdjust(row.workspaceId)}
-                    disabled={
-                      adjustingWorkspaceId === row.workspaceId ||
-                      !deltaInput.trim()
-                    }
-                  />
-                  <Button
-                    accent="danger"
-                    variant="secondary"
-                    title={t`Delete workspace`}
-                    Icon={IconTrash}
-                    fullWidth
-                    onClick={() => setWorkspacePendingDelete(row)}
-                    disabled={
-                      row.workspaceId === currentWorkspace?.id ||
-                      deletingWorkspaceId === row.workspaceId
-                    }
-                  />
-                </StyledMobileActionsColumn>
-              </StyledMobileCard>
-            ))}
-          </StyledMobileCardList>
-        ) : (
-          <StyledTable>
-            <TableRow gridAutoColumns={TABLE_GRID}>
-              <TableHeader>
-                <Checkbox
-                  checked={isAllDeletableSelected}
-                  indeterminate={isSomeDeletableSelected}
-                  onCheckedChange={handleSelectAllDeletable}
-                  disabled={deletableRows.length === 0}
-                />
-              </TableHeader>
-              <TableHeader>{t`Workspace ID`}</TableHeader>
-              <TableHeader>{t`Created`}</TableHeader>
-              <TableHeader>{t`Name`}</TableHeader>
-              <TableHeader>{t`Creator email`}</TableHeader>
-              <TableHeader align="right">{t`Org chart`}</TableHeader>
-              <TableHeader align="right">{t`Email`}</TableHeader>
-              <TableHeader align="right">{t`Phone`}</TableHeader>
-              <TableHeader align="right">{t`Total`}</TableHeader>
-              <TableHeader>{t`Actions`}</TableHeader>
-              <TableHeader>{t`Delete`}</TableHeader>
-            </TableRow>
-            {rows.map((row) => (
-              <TableRow key={row.workspaceId} gridAutoColumns={TABLE_GRID}>
-                <StyledCheckboxCell>
-                  <Checkbox
-                    checked={selectedWorkspaceIds.includes(row.workspaceId)}
-                    onCheckedChange={() =>
-                      toggleWorkspaceSelected(row.workspaceId)
-                    }
-                    disabled={row.workspaceId === currentWorkspace?.id}
-                  />
-                </StyledCheckboxCell>
-                <StyledTableCell>
-                  <StyledShortWorkspaceId title={row.workspaceId}>
-                    {shortWorkspaceId(row.workspaceId)}
-                  </StyledShortWorkspaceId>
-                </StyledTableCell>
-                <StyledTableCell>
-                  <StyledCreatedAt>
-                    {formatWorkspaceCreatedAt(row.workspaceCreatedAt)}
-                  </StyledCreatedAt>
-                </StyledTableCell>
-                <StyledTableCell>{row.workspaceName || '—'}</StyledTableCell>
-                <StyledTableCell>
-                  <StyledCreatorEmail>
-                    {row.workspaceCreatorEmail || '—'}
-                  </StyledCreatorEmail>
-                </StyledTableCell>
-                <StyledTableCell align="right">
-                  {row.orgChartCredits}
-                </StyledTableCell>
-                <StyledTableCell align="right">
-                  {row.emailContactCredits}
-                </StyledTableCell>
-                <StyledTableCell align="right">
-                  {row.phoneContactCredits}
-                </StyledTableCell>
-                <StyledTableCell align="right">
-                  {totalCredits(row)}
-                </StyledTableCell>
-                <StyledTableCell>
-                  <StyledActionsInner>
-                    <StyledSelect
-                      value={creditType}
+            {rows.map((row) => {
+              const rowCreditEdit = getRowCreditEdit(row.workspaceId);
+              return (
+                <StyledMobileCard key={row.workspaceId}>
+                  <StyledMobileCardHeaderRow>
+                    <Checkbox
+                      checked={selectedWorkspaceIds.includes(row.workspaceId)}
+                      onCheckedChange={() =>
+                        toggleWorkspaceSelected(row.workspaceId)
+                      }
+                      disabled={row.workspaceId === currentWorkspace?.id}
+                    />
+                    <StyledMobileMetaInHeader>
+                      <StyledShortWorkspaceId title={row.workspaceId}>
+                        {shortWorkspaceId(row.workspaceId)}
+                      </StyledShortWorkspaceId>
+                      <StyledCreatedAt>
+                        {formatWorkspaceCreatedAt(row.workspaceCreatedAt)}
+                      </StyledCreatedAt>
+                      <StyledMobileWorkspaceName>
+                        {row.workspaceName || '—'}
+                      </StyledMobileWorkspaceName>
+                      <StyledCreatorEmail>
+                        {t`Creator email`}: {row.workspaceCreatorEmail || '—'}
+                      </StyledCreatorEmail>
+                    </StyledMobileMetaInHeader>
+                  </StyledMobileCardHeaderRow>
+                  <StyledMobileCreditsRow>
+                    <StyledMobileCreditItem>
+                      {t`Org chart`}: {row.orgChartCredits}
+                    </StyledMobileCreditItem>
+                    <StyledMobileCreditItem>
+                      {t`Email`}: {row.emailContactCredits}
+                    </StyledMobileCreditItem>
+                    <StyledMobileCreditItem>
+                      {t`Phone`}: {row.phoneContactCredits}
+                    </StyledMobileCreditItem>
+                    <StyledMobileCreditItem>
+                      {t`Total`}: {totalCredits(row)}
+                    </StyledMobileCreditItem>
+                  </StyledMobileCreditsRow>
+                  <StyledMobileActionsColumn>
+                    <StyledMobileSelect
+                      value={rowCreditEdit.creditType}
                       onChange={(e) =>
-                        setCreditType(e.target.value as CreditType)
+                        setRowCreditTypeForWorkspace(
+                          row.workspaceId,
+                          e.target.value as CreditType,
+                        )
                       }
                       aria-label={t`Credit type`}
                     >
                       <option value="ORG_CHART">{t`Org chart`}</option>
                       <option value="EMAIL_CONTACT">{t`Email`}</option>
                       <option value="PHONE_CONTACT">{t`Phone`}</option>
-                    </StyledSelect>
+                    </StyledMobileSelect>
                     <TextInput
-                      value={deltaInput}
-                      onChange={(v) => setDeltaInput(v)}
+                      value={rowCreditEdit.delta}
+                      onChange={(v) =>
+                        setRowDeltaForWorkspace(row.workspaceId, v)
+                      }
                       placeholder={t`Amount (+ / -)`}
-                      width={100}
+                      fullWidth
                     />
                     <Button
                       title={t`Apply`}
+                      fullWidth
                       onClick={() => handleAdjust(row.workspaceId)}
                       disabled={
                         adjustingWorkspaceId === row.workspaceId ||
-                        !deltaInput.trim()
+                        !rowCreditEdit.delta.trim()
                       }
                     />
-                  </StyledActionsInner>
-                </StyledTableCell>
-                <StyledTableCell>
-                  <Button
-                    accent="danger"
-                    variant="secondary"
-                    title={t`Delete workspace`}
-                    Icon={IconTrash}
-                    onClick={() => setWorkspacePendingDelete(row)}
-                    disabled={
-                      row.workspaceId === currentWorkspace?.id ||
-                      deletingWorkspaceId === row.workspaceId
-                    }
+                  </StyledMobileActionsColumn>
+                </StyledMobileCard>
+              );
+            })}
+          </StyledMobileCardList>
+        ) : (
+          <StyledTableScroll>
+            <StyledTable>
+              <TableRow gridAutoColumns={TABLE_GRID}>
+                <TableHeader>
+                  <Checkbox
+                    checked={isAllDeletableSelected}
+                    indeterminate={isSomeDeletableSelected}
+                    onCheckedChange={handleSelectAllDeletable}
+                    disabled={deletableRows.length === 0}
                   />
-                </StyledTableCell>
+                </TableHeader>
+                <TableHeader>{t`Workspace ID`}</TableHeader>
+                <TableHeader>{t`Created`}</TableHeader>
+                <TableHeader>{t`Name`}</TableHeader>
+                <TableHeader>{t`Creator email`}</TableHeader>
+                <TableHeader align="right">{t`Org chart`}</TableHeader>
+                <TableHeader align="right">{t`Email`}</TableHeader>
+                <TableHeader align="right">{t`Phone`}</TableHeader>
+                <TableHeader align="right">{t`Total`}</TableHeader>
+                <TableHeader>{t`Actions`}</TableHeader>
               </TableRow>
-            ))}
-          </StyledTable>
+              {rows.map((row) => {
+                const rowCreditEdit = getRowCreditEdit(row.workspaceId);
+                return (
+                  <TableRow key={row.workspaceId} gridAutoColumns={TABLE_GRID}>
+                    <StyledCheckboxCell>
+                      <Checkbox
+                        checked={selectedWorkspaceIds.includes(row.workspaceId)}
+                        onCheckedChange={() =>
+                          toggleWorkspaceSelected(row.workspaceId)
+                        }
+                        disabled={row.workspaceId === currentWorkspace?.id}
+                      />
+                    </StyledCheckboxCell>
+                    <StyledTableCell>
+                      <StyledShortWorkspaceId title={row.workspaceId}>
+                        {shortWorkspaceId(row.workspaceId)}
+                      </StyledShortWorkspaceId>
+                    </StyledTableCell>
+                    <StyledTableCell>
+                      <StyledCreatedAt>
+                        {formatWorkspaceCreatedAt(row.workspaceCreatedAt)}
+                      </StyledCreatedAt>
+                    </StyledTableCell>
+                    <StyledTableCell>
+                      {row.workspaceName || '—'}
+                    </StyledTableCell>
+                    <StyledTableCell>
+                      <StyledCreatorEmail>
+                        {row.workspaceCreatorEmail || '—'}
+                      </StyledCreatorEmail>
+                    </StyledTableCell>
+                    <StyledTableCell align="right">
+                      {row.orgChartCredits}
+                    </StyledTableCell>
+                    <StyledTableCell align="right">
+                      {row.emailContactCredits}
+                    </StyledTableCell>
+                    <StyledTableCell align="right">
+                      {row.phoneContactCredits}
+                    </StyledTableCell>
+                    <StyledTableCell align="right">
+                      {totalCredits(row)}
+                    </StyledTableCell>
+                    <StyledTableCell>
+                      <StyledActionsInner>
+                        <StyledActionsControlsRow>
+                          <StyledSelect
+                            value={rowCreditEdit.creditType}
+                            onChange={(e) =>
+                              setRowCreditTypeForWorkspace(
+                                row.workspaceId,
+                                e.target.value as CreditType,
+                              )
+                            }
+                            aria-label={t`Credit type`}
+                          >
+                            <option value="ORG_CHART">{t`Org chart`}</option>
+                            <option value="EMAIL_CONTACT">{t`Email`}</option>
+                            <option value="PHONE_CONTACT">{t`Phone`}</option>
+                          </StyledSelect>
+                          <TextInput
+                            value={rowCreditEdit.delta}
+                            onChange={(v) =>
+                              setRowDeltaForWorkspace(row.workspaceId, v)
+                            }
+                            placeholder={t`Amount (+ / -)`}
+                            width={100}
+                          />
+                          <Button
+                            title={t`Apply`}
+                            onClick={() => handleAdjust(row.workspaceId)}
+                            disabled={
+                              adjustingWorkspaceId === row.workspaceId ||
+                              !rowCreditEdit.delta.trim()
+                            }
+                          />
+                        </StyledActionsControlsRow>
+                      </StyledActionsInner>
+                    </StyledTableCell>
+                  </TableRow>
+                );
+              })}
+            </StyledTable>
+          </StyledTableScroll>
         )}
       </Section>
     </>

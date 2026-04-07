@@ -63,10 +63,8 @@ export class RecruiterProfileService {
 
  async  getRecruiterProfileFromCurrentUser(apiToken: string, origin: string) {
   const currentUser = await this.getCurrentUser(apiToken, origin);
-  console.log('currentUser in getRecruiter ProfileFrom CurrentUser:', currentUser);
   const recruiterId = currentUser?.workspaceMember?.id;
 
-  console.log('recruiterId in getRecruiterProfileFromCurrentUser:', recruiterId);
   const recruiterProfile: RecruiterProfileType =
     await this.getRecruiterProfileByRecruiterId(recruiterId, apiToken);
 

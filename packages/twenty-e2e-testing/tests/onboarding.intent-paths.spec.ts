@@ -1,28 +1,17 @@
-import { expect, test, type Page } from '@playwright/test';
-import { execSync } from 'node:child_process';
+import { expect, test } from '@playwright/test';
+
+import {
+  getNextAppleIndex,
+  signUpAndReachIntentChoice,
+} from '../lib/utils/authFlowE2eHelpers';
 
 test.use({
   storageState: { cookies: [], origins: [] },
 });
 
-const PASSWORD = 'Applecar2025';
-const BASE_URL = 'http://app.localhost:3001';
-
-const getNextAppleIndex = () => {
-  const output = execSync(
-    `PGPASSWORD=postgres psql -h localhost -U postgres -d default -t -A -c "select coalesce(max(nullif(substring(email from '^apple([0-9]+)@apple\\\\.com$'), '')::int), 0) from core.\\"user\\" where email ~ '^apple[0-9]+@apple\\\\.com$';"`,
-    {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    },
-  ).trim();
-
-  const maxIndex = Number.parseInt(output, 10);
-
-  return Number.isNaN(maxIndex) ? 1 : maxIndex + 1;
-};
-
 const firstAppleIndex = getNextAppleIndex();
+const onboardingBaseUrl =
+  process.env.ARXENA_E2E_ONBOARDING_BASE_URL || 'http://app.localhost:3001';
 
 const branchConfigs = [
   {
@@ -51,85 +40,6 @@ const branchConfigs = [
   },
 ];
 
-const maybeClick = async (locator: ReturnType<Page['getByRole']>) => {
-  if (await locator.isVisible().catch(() => false)) {
-    await locator.click();
-    return true;
-  }
-
-  return false;
-};
-
-const clickSkipOnPhoneStep = async (page: Page) => {
-  const skipCandidates = [
-    page.getByRole('button', { name: 'Skip' }),
-    page.getByRole('link', { name: 'Skip for now' }),
-    page.getByText('Skip for now').last(),
-  ];
-
-  for (const candidate of skipCandidates) {
-    if (await candidate.isVisible().catch(() => false)) {
-      await candidate.click();
-      return;
-    }
-  }
-
-  throw new Error('Could not find a visible skip control on phone step');
-};
-
-const signUpAndReachIntentChoice = async (
-  page: Page,
-  email: string,
-  workspaceSuffix: string,
-) => {
-  await page.goto(`${BASE_URL}/welcome`);
-  await page.waitForLoadState('domcontentloaded');
-
-  await maybeClick(page.getByRole('button', { name: 'Continue with Email' }));
-
-  await page.getByPlaceholder('Email').fill(email);
-  await page.getByRole('button', { name: 'Continue', exact: true }).click();
-
-  await expect(page.getByPlaceholder('Password')).toBeVisible({
-    timeout: 30_000,
-  });
-  await page.getByPlaceholder('Password').fill(PASSWORD);
-
-  if (!(await maybeClick(page.getByRole('button', { name: 'Sign up' })))) {
-    await page.getByRole('button', { name: 'Continue', exact: true }).click();
-  }
-
-  await expect(page.getByText('Create your workspace')).toBeVisible({
-    timeout: 120_000,
-  });
-  await page.getByPlaceholder('Apple').fill(`Apple ${workspaceSuffix}`);
-  await page.getByRole('button', { name: 'Continue' }).click();
-
-  await expect(page.getByText('Create profile')).toBeVisible({
-    timeout: 120_000,
-  });
-  await page.locator('input[placeholder="Tim"]').first().fill('Apple');
-  await page.locator('input[placeholder="Cook"]').first().fill(workspaceSuffix);
-  await page.getByRole('button', { name: 'Continue' }).click();
-
-  const phoneHeading = page.getByText('Add your phone number');
-  if (await phoneHeading.isVisible().catch(() => false)) {
-    await clickSkipOnPhoneStep(page);
-  } else {
-    await page.waitForTimeout(3_000);
-    if (await phoneHeading.isVisible().catch(() => false)) {
-      await clickSkipOnPhoneStep(page);
-    }
-  }
-
-  await page.waitForURL(/\/create\/intent(?:[/?#]|$)/, {
-    timeout: 120_000,
-  });
-  await expect(page.getByTestId('onboarding-intent-choice')).toBeVisible({
-    timeout: 120_000,
-  });
-};
-
 test.describe('Onboarding intent paths', () => {
   test.setTimeout(300_000);
 
@@ -139,11 +49,11 @@ test.describe('Onboarding intent paths', () => {
   }) => {
     await context.clearCookies();
 
-    await signUpAndReachIntentChoice(
-      page,
-      `apple${firstAppleIndex + 3}@apple.com`,
-      'competitive-research-book-call',
-    );
+    await signUpAndReachIntentChoice(page, {
+      email: `apple${firstAppleIndex + 3}@apple.com`,
+      workspaceSuffix: 'competitive-research-book-call',
+      baseUrl: onboardingBaseUrl,
+    });
 
     await page.getByRole('button', { name: 'Competitive research' }).click();
     await page.waitForURL(/\/create\/competitive-research(?:[/?#]|$)/, {
@@ -155,7 +65,7 @@ test.describe('Onboarding intent paths', () => {
       timeout: 120_000,
     });
 
-    await page.getByRole('button', { name: 'See it live - 20 min call' }).click();
+    await page.getByRole('button', { name: 'Book 20 minutes' }).click();
 
     await expect(
       page.getByText(`Let's map a target company live on the call`),
@@ -192,7 +102,11 @@ test.describe('Onboarding intent paths', () => {
     test(`Welcome -> ${branch.branchId} -> jobs`, async ({ page, context }) => {
       await context.clearCookies();
 
-      await signUpAndReachIntentChoice(page, branch.email, branch.branchId);
+      await signUpAndReachIntentChoice(page, {
+        email: branch.email,
+        workspaceSuffix: branch.branchId,
+        baseUrl: onboardingBaseUrl,
+      });
 
       await page.getByRole('button', { name: branch.intentButton }).click();
       await page.waitForURL(branch.pathUrl, { timeout: 120_000 });

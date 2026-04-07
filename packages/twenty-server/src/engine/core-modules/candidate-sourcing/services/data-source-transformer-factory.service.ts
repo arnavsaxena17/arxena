@@ -8,6 +8,7 @@ import { LinkedinPremiumTransformerService } from './data-sources/linkedin-premi
 import { LinkedinRecruiterJobsTransformerService } from './data-sources/linkedin-recruiter-jobs-transformer.service';
 import { LinkedinSalesNavigatorTransformerService } from './data-sources/linkedin-sales-navigator-transformer.service';
 import { LinkedInSearchTransformerService } from './data-sources/linkedin-search-transformer.service';
+import { LinkedinXrayTransformerService } from './data-sources/linkedin-xray-transformer.service';
 import { NaukriProfileDataTransformerService } from './data-sources/naukri-profile-data-transformer.service';
 import { ParsedCVTransformerService } from './data-sources/parsed-cv-transformer.service';
 import { ResdexNaukriTransformerService } from './data-sources/resdex-naukri-transformer.service';
@@ -29,6 +30,7 @@ export enum DataSourceType {
   DATA_UPLOAD = 'data_upload',
   LINKEDIN_SALES_NAVIGATOR = 'linkedin_sales_navigator',
   LINKEDIN_SEARCH = 'linkedin_search',
+  LINKEDIN_XRAY = 'linkedin_xray',
   PARSED_CV = 'parsed_cv',
 }
 
@@ -49,6 +51,7 @@ export class DataSourceTransformerFactoryService {
     private readonly linkedinPremiumJobsTransformer: LinkedinPremiumJobsTransformerService,
     private readonly linkedinSalesNavigatorTransformer: LinkedinSalesNavigatorTransformerService,
     private readonly linkedinSearchTransformer: LinkedInSearchTransformerService,
+    private readonly linkedinXrayTransformer: LinkedinXrayTransformerService,
     private readonly parsedCVTransformer: ParsedCVTransformerService,
   ) {
     this.initializeTransformers();
@@ -68,6 +71,7 @@ export class DataSourceTransformerFactoryService {
     this.transformers.set(DataSourceType.LINKEDIN_PREMIUM_JOBS, this.linkedinPremiumJobsTransformer);
     this.transformers.set(DataSourceType.LINKEDIN_SALES_NAVIGATOR, this.linkedinSalesNavigatorTransformer);
     this.transformers.set(DataSourceType.LINKEDIN_SEARCH, this.linkedinSearchTransformer);
+    this.transformers.set(DataSourceType.LINKEDIN_XRAY, this.linkedinXrayTransformer);
     this.transformers.set(DataSourceType.PARSED_CV, this.parsedCVTransformer);
     
     // Use existing transformers for related data sources
@@ -183,6 +187,7 @@ export class DataSourceTransformerFactoryService {
       'data_upload': DataSourceType.DATA_UPLOAD,
       'linkedin_sales_navigator': DataSourceType.LINKEDIN_SALES_NAVIGATOR,
       'linkedin_search': DataSourceType.LINKEDIN_SEARCH,
+      'linkedin_xray': DataSourceType.LINKEDIN_XRAY,
       'parsed_cv': DataSourceType.PARSED_CV,
     };
 

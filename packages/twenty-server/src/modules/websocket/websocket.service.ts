@@ -119,7 +119,6 @@ export class WebSocketService {
   }
 
   sendToUser(userId: string, event: string, data: any) {
-    console.log('WebSocketService.sendToUser called with:', { userId, event, data });
     
     if (!this.server) {
       console.error('WebSocket server not initialized for sendToUser');

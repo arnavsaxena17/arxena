@@ -28,6 +28,19 @@ export class WebSocketController {
     };
   }
 
+  @Post('user/:userId/event')
+  sendCustomEventToUser(
+    @Param('userId') userId: string,
+    @Body() request: { event: string; data: any },
+  ) {
+    this.webSocketService.sendToUser(userId, request.event, request.data);
+    return {
+      success: true,
+      message: `Sent event ${request.event} to user: ${userId}`,
+      payload: request.data,
+    };
+  }
+
   @Post('room/:roomId')
   sendToRoom(@Param('roomId') roomId: string, @Body() payload: any) {
     // Send a message to a specific room

@@ -14,7 +14,7 @@ const LETTERS = 'abcdefghijklmnopqrstuvwxyz'.split('');
 export const metadata: Metadata = {
   title: 'Browse Companies by Letter | Arxena',
   description:
-    'Browse organizational charts of companies alphabetically. Explore 1M+ companies from A to Z. Find org structures for recruitment, sales outreach, and talent mapping.',
+    'Browse org charts alphabetically across 1M+ companies. Map target accounts for sales, recruiting, investing, or research — real-time from LinkedIn and other sources.',
   alternates: {
     canonical: '/companies',
   },
@@ -60,8 +60,9 @@ export default function CompaniesIndexPage() {
               maxWidth: 560,
             }}
           >
-            Explore organizational charts of companies alphabetically. Select a
-            letter to browse companies starting with that letter.
+            Explore target companies alphabetically — real-time org structures,
+            not static directories. Select a letter to browse companies starting
+            with that letter.
           </p>
           {phase2Exposed && (
             <div

@@ -6,13 +6,18 @@ import { useRecoilValue } from 'recoil';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import { isValidLinkedInProfileUrl, toTitleCase } from 'twenty-shared';
+import {
+  getProxiedImageUrl,
+  isValidLinkedInProfileUrl,
+  toTitleCase,
+} from 'twenty-shared';
+import { ContextResultItem } from '../types';
 
 const DEFAULT_AVATAR =
   'https://st2.depositphotos.com/4111759/12123/v/950/depositphotos_121232442-stock-illustration-male-default-placeholder-avatar-profile.jpg';
 
-import { getProxiedImageUrl } from 'twenty-shared';
-import type { ContextResultItem } from '../types';
+const INSUFFICIENT_CONTACT_CREDITS_SNACKBAR =
+  'Insufficient contact credits';
 
 const StyledContextModalBackdrop = styled.div`
   position: absolute;
@@ -292,7 +297,7 @@ const ResultItem = ({
     Boolean(item.phone?.trim());
 
   return (
-    <StyledContextResultItem>
+    <StyledContextResultItem data-testid={`orgchart-result-item-${item.id}`}>
       <Avatar src={avatarUrl} size={36} />
       <StyledContextResultContent>
         <StyledContextResultName>{item.fullName}</StyledContextResultName>
@@ -313,7 +318,7 @@ const ResultItem = ({
           </StyledContextResultLink>
         )}
         {contactInfo && (contactInfo.email || contactInfo.phone) && (
-          <StyledContextResultMeta>
+          <StyledContextResultMeta data-testid={`orgchart-contact-details-${item.id}`}>
             {contactInfo.email && <span>Email: {contactInfo.email}</span>}
             {contactInfo.email && contactInfo.phone && ' · '}
             {contactInfo.phone && <span>Phone: {contactInfo.phone}</span>}
@@ -331,6 +336,7 @@ const ResultItem = ({
           (!contactInfo || !contactInfo.fetched) &&
           canAttemptContactFetch && (
             <StyledContactButton
+              data-testid={`orgchart-fetch-contacts-${item.id}`}
               type="button"
               onClick={() => onFetchContacts(item)}
               disabled={isFetchingContacts}
@@ -466,6 +472,36 @@ const useClickedContactLinkImage = () => {
       });
 
       if (!response.ok) {
+        let message = 'Failed to fetch contacts.';
+
+        try {
+          const errorBody = await response.json();
+          if (
+            errorBody !== null &&
+            errorBody !== undefined &&
+            typeof errorBody === 'object' &&
+            'message' in errorBody &&
+            typeof errorBody.message === 'string' &&
+            errorBody.message.trim().length > 0
+          ) {
+            message = errorBody.message.trim();
+          }
+        } catch {
+          const errorText = await response.text().catch(() => '');
+          if (errorText.trim().length > 0) {
+            message = errorText.trim();
+          }
+        }
+
+        enqueueSnackBar(
+          /insufficient contact credits/i.test(message)
+            ? INSUFFICIENT_CONTACT_CREDITS_SNACKBAR
+            : message,
+          {
+            variant: SnackBarVariant.Error,
+            duration: 5000,
+          },
+        );
         return null;
       }
 
@@ -481,7 +517,7 @@ const useClickedContactLinkImage = () => {
       let emails: string[] | undefined;
       let phones: string[] | undefined;
 
-      if ('results' in json && item.linkedinUrl) {
+      if ('results' in json && typeof item.linkedinUrl === 'string') {
         const entry = json.results[item.linkedinUrl];
         emails = entry?.emails;
         phones = entry?.phones;
@@ -683,6 +719,7 @@ export const OrgChartResultModal = ({
   return (
     <StyledContextModalBackdrop onClick={onClose}>
       <StyledContextModal
+        data-testid="orgchart-result-modal"
         onClick={(event) => {
           event.stopPropagation();
         }}
@@ -753,7 +790,11 @@ export const OrgChartResultModal = ({
             </StyledContextSecondaryButton>
           )}
           {onAddToJob && results.length > 0 && (
-            <StyledContextSecondaryButton type="button" onClick={onAddToJob}>
+            <StyledContextSecondaryButton
+              data-testid="orgchart-results-add-to-job"
+              type="button"
+              onClick={onAddToJob}
+            >
               Add to job
             </StyledContextSecondaryButton>
           )}

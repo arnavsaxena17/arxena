@@ -70,67 +70,6 @@ const StyledDataSources = styled.p`
   margin: 0 0 48px 0;
 `;
 
-const StyledCardsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-bottom: 48px;
-
-  @media (max-width: 1024px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (max-width: 640px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const StyledCard = styled.div`
-  background: #fafafa;
-  border: 1px solid rgba(20, 20, 20, 0.08);
-  border-radius: 12px;
-  padding: 32px;
-  display: flex;
-  flex-direction: column;
-`;
-
-const StyledCardTitle = styled.h2`
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0 0 16px 0;
-  color: #141414;
-`;
-
-const StyledPrice = styled.div`
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #141414;
-  margin-bottom: 4px;
-`;
-
-const StyledPriceUnit = styled.span`
-  font-size: 16px;
-  font-weight: 400;
-  color: #818181;
-`;
-
-const StyledFeatureList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 0 0 32px 0;
-  flex: 1;
-`;
-
-const StyledFeatureItem = styled.li`
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  font-size: 15px;
-  color: #474747;
-  margin-bottom: 12px;
-  line-height: 1.5;
-`;
-
 const StyledCtaButton = styled.a`
   display: flex;
   align-items: center;
@@ -149,55 +88,15 @@ const StyledCtaButton = styled.a`
   }
 `;
 
-const StyledFooterLine = styled.p`
-  font-size: 15px;
-  color: #818181;
-  text-align: center;
-  margin: 0 0 48px 0;
-`;
-
 const StyledCtaSection = styled.div`
   text-align: center;
 `;
 
-const ENGAGEMENT_TIERS = [
-  {
-    name: 'Starter',
-    price: 499,
-    features: [
-      '3 active campaigns',
-      '500 outreach / month',
-      'AI filter + enrich',
-    ],
-  },
-  {
-    name: 'Growth',
-    price: 999,
-    features: [
-      '10 active campaigns',
-      '2,000 outreach / month',
-      'AI filter + enrich',
-      'Phone + WhatsApp',
-    ],
-  },
-  {
-    name: 'Scale',
-    price: 2499,
-    features: [
-      '30 active campaigns',
-      '10,000 outreach / month',
-      'AI filter + enrich',
-      'Phone + WhatsApp',
-      'API access',
-    ],
-  },
-];
-
 const WORKFLOW_ITEMS = [
-  'AI filters candidates by fit',
-  'Outreach across LinkedIn, WhatsApp, email',
-  'Phone/email enrichment',
-  '"Interested" detection',
+  'Personalized messages in your voice',
+  'Context from the target org chart',
+  'WhatsApp, LinkedIn, and email',
+  'You only step in when someone replies',
   'Campaign management',
 ];
 
@@ -208,12 +107,11 @@ type EngagementContentProps = {
 export const EngagementContent = ({ signUpUrl }: EngagementContentProps) => {
   return (
     <StyledSection>
-      <StyledHeadline>
-        Automated engagment.
-      </StyledHeadline>
+      <StyledHeadline>AI engages for you</StyledHeadline>
       <StyledHeadlineSub>
-        Our AI is indistinguishable from a human, sending connection requests and outreach from your own WhatsApp and LinkedIn accounts.
-        Use real-time to org charts to build lists, then reach the people to see who is interested in you.
+        Most tools stop at a contact list. Arxena sends personalized messages on
+        WhatsApp, LinkedIn, and email — written in your voice, with context from
+        the org chart. You step in only when someone has already replied.
       </StyledHeadlineSub>
 
       <EngagementChatDemo />
@@ -231,33 +129,9 @@ export const EngagementContent = ({ signUpUrl }: EngagementContentProps) => {
       </StyledWorkflowSection>
 
       <StyledDataSources>
-        Data sources: LinkedIn, Naukri, Indeed, Glassdoor, and more.
+        Built on real-time org data from LinkedIn and other sources — so every
+        message references who people are in the company, not just their title.
       </StyledDataSources>
-
-      {/* <StyledCardsGrid>
-        {ENGAGEMENT_TIERS.map(({ name, price, features }) => (
-          <StyledCard key={name}>
-            <StyledCardTitle>{name}</StyledCardTitle>
-            <StyledPrice>
-              ${price.toLocaleString()}
-              <StyledPriceUnit>/mo</StyledPriceUnit>
-            </StyledPrice>
-            <StyledFeatureList>
-              {features.map((feature) => (
-                <StyledFeatureItem key={feature}>
-                  <StyledCheckIcon size={20} strokeWidth={2.5} />
-                  {feature}
-                </StyledFeatureItem>
-              ))}
-            </StyledFeatureList>
-            <StyledCtaButton href={signUpUrl}>Start engaging</StyledCtaButton>
-          </StyledCard>
-        ))}
-      </StyledCardsGrid> */}
-{/* 
-      <StyledFooterLine>
-        Includes real-time org charts for all campaign targets. No double-paying.
-      </StyledFooterLine> */}
 
       <StyledCtaSection>
         <StyledCtaButton href={signUpUrl}>Start for free</StyledCtaButton>

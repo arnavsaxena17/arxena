@@ -1,7 +1,12 @@
 'use client';
 
 import styled from '@emotion/styled';
-import { IconChartDots, IconMessageCircle } from '@tabler/icons-react';
+import {
+    IconHierarchy2,
+    IconMessageCircle,
+    IconRefresh,
+    IconRoute2,
+} from '@tabler/icons-react';
 import Link from 'next/link';
 
 import { DIFFERENTIATORS } from '@/lib/homepage-content';
@@ -83,7 +88,12 @@ const StyledCardDescription = styled.div`
   line-height: 1.5;
 `;
 
-const DIFFERENTIATOR_ICONS = [IconChartDots, IconMessageCircle];
+const DIFFERENTIATOR_ICONS = [
+  IconRefresh,
+  IconMessageCircle,
+  IconHierarchy2,
+  IconRoute2,
+];
 
 export const DifferentiatorsSection = () => {
   return (

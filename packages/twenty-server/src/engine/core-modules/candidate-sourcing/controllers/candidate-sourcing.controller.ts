@@ -983,10 +983,8 @@ export class CandidateSourcingController {
   @Post('get-all-jobs')
   @UseGuards(JwtAuthGuard)
   async getJobs(@Req() request: any) {
-    console.log('Going to get all jobs');
     const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '')  ; 
     const hasApiToken = !!apiToken;
-    console.log('apiToken got in getJobs:', hasApiToken );
     // const workspaceId =
     //   await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
     let jobs = [];
@@ -1792,7 +1790,6 @@ export class CandidateSourcingController {
 
       // Use the workspace member data from currentUser instead of separate query
       const workspaceMember = currentUser?.workspaceMember;
-      console.log(`workspaceMember in getUserObj: ${workspaceMember}`, 'CandidateSourcingController');
 
       // Create a mock recruiter profile from the workspace member data
       const recruiterProfile = workspaceMember ? {
@@ -1808,7 +1805,6 @@ export class CandidateSourcingController {
         lastName: workspaceMember.name?.lastName || '',
         typeWorkspaceMember: 'MEMBER'
       } : null;
-      console.log(`recruiterProfile in getUserObj: ${recruiterProfile}`, 'CandidateSourcingController');
 
       // Map jobs to the expected format
       const mappedJobs = jobs.map((jobEdge: any) => {
@@ -1866,7 +1862,6 @@ export class CandidateSourcingController {
         }))
       };
 
-      console.log(`Response obj in get_user_obj:: ${JSON.stringify(userObj)}`, 'CandidateSourcingController');
 
       return {
         status: 'successful_fid',
@@ -2264,7 +2259,6 @@ export class CandidateSourcingController {
           // Extract job name from popup_data
           if (profileData.popup_data?.job_name) {
             jobName = profileData.popup_data.job_name;
-            console.log('Extracted job name from profile data:', jobName);
           }
           
           if (!directDownload) {
@@ -2295,7 +2289,6 @@ export class CandidateSourcingController {
           // Extract job info from profile data
           const jsonDataStr = profileData.json_data || '{}';
           const jsonData = JSON.parse(jsonDataStr);
-          console.log('This is the jsonData in updateContactWithCv:', jsonData);
           // If profileData contains more accurate Resdex identity, prefer it
           if (!resdex_key && jsonData.resdex_key) {
             resdex_key = jsonData.resdex_key;
@@ -2417,7 +2410,6 @@ export class CandidateSourcingController {
           const jsonDataStr = profileData.json_data || '{}';
           const jsonData = JSON.parse(jsonDataStr);
           profileUrl = jsonData.profile_url || jsonData.candidate_profile || '';
-          console.log('Using profileData for contact processing, profile_url:', profileUrl);
           
           contactData = {
             profile_url: profileUrl,
@@ -2464,7 +2456,6 @@ export class CandidateSourcingController {
         }
       }
       
-      console.log('Final contactData:', contactData);
       
       // Process the CV upload with error handling
       try {

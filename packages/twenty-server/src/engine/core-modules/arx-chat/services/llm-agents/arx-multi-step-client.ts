@@ -23,7 +23,7 @@ import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/ar
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
-const modelName = 'gpt-5-mini';
+const modelName = 'gpt-4o';
 // import { Transformations } from '../candidate-engagement/transformations';
 
 export class OpenAIArxMultiStepClient {
@@ -142,6 +142,18 @@ export class OpenAIArxMultiStepClient {
       const MAX_ATTEMPTS = 3;
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const openAiKey =
+        (await this.workspaceQueryService.getWorkspaceApiKey(
+          workspaceId,
+          'openaikey',
+        ))?.trim() ?? '';
+      if (!openAiKey) {
+        console.log(
+          'getHumanLikeResponseMessageFromLLM: OpenAI API key is not configured for this workspace; skipping LLM call',
+        );
+
+        return null;
+      }
       const { openAIclient } =
         await this.workspaceQueryService.initializeLLMClients(workspaceId);
 

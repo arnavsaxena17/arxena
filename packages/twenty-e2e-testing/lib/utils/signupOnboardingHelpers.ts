@@ -97,19 +97,58 @@ export const signUpAndReachIntentChoice = async (
       await page.waitForTimeout(debounceMs);
     }
 
-    await page.getByRole('button', { name: 'Continue' }).click();
+    const profileContinueButton = page.getByRole('button', { name: 'Continue' });
+    const profileUrlPattern = /\/create\/profile(?:[/?#]|$)/;
+    await profileContinueButton.click();
 
     const phoneHeading = page.getByText('Add your phone number');
+    const intentUrlPattern = /\/create\/intent(?:[/?#]|$)/;
+    const phoneUrlPattern = /\/create\/phone(?:[/?#]|$)/;
+
+    await expect
+      .poll(
+        async () => {
+          if (intentUrlPattern.test(page.url())) {
+            return 'intent';
+          }
+
+          if (phoneUrlPattern.test(page.url())) {
+            return 'phone';
+          }
+
+          if (await phoneHeading.isVisible().catch(() => false)) {
+            return 'phone';
+          }
+
+          if (
+            profileUrlPattern.test(page.url()) &&
+            (await profileContinueButton.isVisible().catch(() => false))
+          ) {
+            await profileContinueButton.click().catch(() => false);
+          }
+
+          return 'waiting';
+        },
+        {
+          timeout: 120_000,
+          message:
+            'Expected onboarding to reach phone collection or intent choice',
+        },
+      )
+      .not.toBe('waiting');
+
     if (await phoneHeading.isVisible().catch(() => false)) {
       await clickSkipOnPhoneStep(page);
-    } else {
-      await page.waitForTimeout(3_000);
-      if (await phoneHeading.isVisible().catch(() => false)) {
+    } else if (phoneUrlPattern.test(page.url())) {
+      const skipForNowLink = page.getByRole('link', { name: 'Skip for now' });
+      if (await skipForNowLink.isVisible().catch(() => false)) {
+        await skipForNowLink.click();
+      } else {
         await clickSkipOnPhoneStep(page);
       }
     }
 
-    await page.waitForURL(/\/create\/intent(?:[/?#]|$)/, {
+    await page.waitForURL(intentUrlPattern, {
       timeout: 120_000,
     });
     await expect(page.getByTestId('onboarding-intent-choice')).toBeVisible({

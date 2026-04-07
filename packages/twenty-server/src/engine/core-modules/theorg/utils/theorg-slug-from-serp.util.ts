@@ -1,4 +1,5 @@
 import { normalizeTheOrgSlugInput } from 'src/engine/core-modules/theorg/utils/theorg-slug-candidates.util';
+import type { BrightDataSerpOrganicEntry } from 'src/engine/core-modules/bright-data/types/bright-data-serp.types';
 
 /**
  * Google search URL for `"{linkedinStyleSlug} site:theorg.com"` (Bright Data SERP input).
@@ -13,7 +14,7 @@ export function buildGoogleTheOrgSiteSearchUrl(linkedinStyleSlug: string): strin
  * Matches profile URLs under `/org/{slug}/org-chart/...` as well as the org home page.
  */
 export function extractTheOrgCompanySlugFromSerpOrganic(
-  organic: Array<{ link?: string | null }> | undefined | null,
+  organic: BrightDataSerpOrganicEntry[] | undefined | null,
 ): string | null {
   if (!organic?.length) {
     return null;

@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
   title: 'Team | Arxena',
   description:
-    'Meet the team building Arxena — Org Chart AI. Real-time company structures, algorithmic recruitment, from map to engagement.',
+    'Meet the team building Arxena — real-time org charts for any target company, contact enrichment, and AI engagement.',
   alternates: {
     canonical: '/team',
   },

@@ -101,7 +101,7 @@ describeLive('org-chart search live E2E (Unipile + cache + S3)', () => {
     'Content-Type': 'application/json',
   });
 
-  it('clears Redis + S3, cold fetch then Redis orgchart cache hit (second request skips Unipile)', async () => {
+  it('returns queued=true for a cold Unipile org-chart search', async () => {
     await orgChartCache.invalidateEntireCompanyClassicCaches({
       companyName,
       companyId: undefined,
@@ -117,22 +117,8 @@ describeLive('org-chart search live E2E (Unipile + cache + S3)', () => {
     const coldJson = (await cold.json()) as Record<string, unknown>;
     expect(cold.ok).toBe(true);
     expect(coldJson.success).toBe(true);
-    expect(coldJson.isCached).not.toBe(true);
-    expect(coldJson.orgChart).toBeDefined();
-
-    const fromS3 = await orgChartS3.getOrgChart(s3Key);
-    expect(fromS3).not.toBeNull();
-
-    const warm = await fetch(searchUrl(), {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify(searchBody()),
-    });
-    const warmJson = (await warm.json()) as Record<string, unknown>;
-    expect(warm.ok).toBe(true);
-    expect(warmJson.success).toBe(true);
-    expect(warmJson.isCached).toBe(true);
-    expect(warmJson.cacheSource).toBe('orgchart');
+    expect(coldJson.queued).toBe(true);
+    expect(coldJson.candidateSource).toBe('unipile');
   });
 
   it('business_division_map returns success with org chart (Unipile + LLM + Python)', async () => {

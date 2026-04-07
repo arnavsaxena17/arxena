@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
   title: 'Story | Arxena',
   description:
-    'Why we built Org Chart AI — real-time company structures from LinkedIn (and others), algorithmic recruitment, from map to engagement.',
+    "Why we built Arxena — map any target company's org chart in real time, build lists, enrich contacts, and let AI engage in your voice. Sales, recruiting, investing, or research.",
   alternates: {
     canonical: '/story',
   },

@@ -1,8 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
+  Get,
   Logger,
   Post,
+  Query,
   Req,
   Res,
 } from '@nestjs/common';
@@ -15,8 +18,84 @@ import type {
 @Controller('unipile-webhook')
 export class UnipileWebhookController {
   private readonly logger = new Logger(UnipileWebhookController.name);
+  private static readonly capturedWebhookEvents: Array<{
+    receivedAt: string;
+    payload: UnipileWebhookPayload;
+  }> = [];
 
   constructor(private readonly webhookService: UnipileWebhookService) {}
+
+  private ensureTestCaptureEnabled(response: any) {
+    if (process.env.NODE_ENV === 'production') {
+      response.status(404).json({
+        success: false,
+        message: 'Not found',
+      });
+      return false;
+    }
+
+    return true;
+  }
+
+  private captureWebhookPayload(payload: UnipileWebhookPayload) {
+    UnipileWebhookController.capturedWebhookEvents.push({
+      receivedAt: new Date().toISOString(),
+      payload,
+    });
+
+    if (UnipileWebhookController.capturedWebhookEvents.length > 200) {
+      UnipileWebhookController.capturedWebhookEvents.splice(
+        0,
+        UnipileWebhookController.capturedWebhookEvents.length - 200,
+      );
+    }
+  }
+
+  @Get('test-events')
+  async getCapturedWebhookEvents(
+    @Query('event') event: string | undefined,
+    @Query('messageIncludes') messageIncludes: string | undefined,
+    @Res() response: any,
+  ) {
+    if (!this.ensureTestCaptureEnabled(response)) {
+      return;
+    }
+
+    const filteredEvents = UnipileWebhookController.capturedWebhookEvents.filter(
+      (entry) => {
+        const matchesEvent =
+          !event ||
+          ('event' in entry.payload && entry.payload.event === event);
+        const payloadMessage =
+          'message' in entry.payload ? entry.payload.message ?? '' : '';
+        const matchesMessage =
+          !messageIncludes ||
+          String(payloadMessage).includes(messageIncludes);
+
+        return matchesEvent && matchesMessage;
+      },
+    );
+
+    return response.status(200).json({
+      success: true,
+      count: filteredEvents.length,
+      events: filteredEvents,
+    });
+  }
+
+  @Delete('test-events')
+  async clearCapturedWebhookEvents(@Res() response: any) {
+    if (!this.ensureTestCaptureEnabled(response)) {
+      return;
+    }
+
+    UnipileWebhookController.capturedWebhookEvents.length = 0;
+
+    return response.status(200).json({
+      success: true,
+      count: 0,
+    });
+  }
 
   @Post('relations')
   async handleRelationsWebhook(
@@ -69,6 +148,7 @@ export class UnipileWebhookController {
           message: 'Unauthorized webhook request',
         });
       }
+      this.captureWebhookPayload(payload);
       await this.webhookService.processWebhook(payload);
       return response.status(200).json({
         success: true,
@@ -85,4 +165,3 @@ export class UnipileWebhookController {
     }
   }
 }
-

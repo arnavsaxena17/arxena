@@ -249,7 +249,7 @@ export class EngagedCandidateQueueService {
       }
 
       if (candidateProfileDataNodeObj.people?.candidates?.edges.filter(
-        (candidate) => candidate.node.jobs.id == candidateJob.id,
+        (candidate) => candidate?.node?.jobs?.id === candidateJob.id,
       )[0]?.node?.messagingChannel == 'linkedin') {
         phoneNumberFrom = candidateProfileDataNodeObj.people?.linkedinLink?.primaryLinkUrl || '';
       }
@@ -257,7 +257,7 @@ export class EngagedCandidateQueueService {
       let phoneNumberTo: string = recruiterProfile?.phoneNumber || '';
 
       if (candidateProfileDataNodeObj.people?.candidates?.edges.filter(
-        (candidate) => candidate.node.jobs.id == candidateJob.id,
+        (candidate) => candidate?.node?.jobs?.id === candidateJob.id,
       )[0]?.node?.messagingChannel == 'linkedin') {
         phoneNumberTo = recruiterProfile?.linkedinUrl || '';
       }

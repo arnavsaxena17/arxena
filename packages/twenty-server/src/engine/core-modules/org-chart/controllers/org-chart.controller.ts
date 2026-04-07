@@ -17,7 +17,10 @@ import { ApifyEmployeeCountService } from 'src/engine/core-modules/apify/service
 import { ApifyService } from 'src/engine/core-modules/apify/services/apify.service';
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/services/bright-data-serp.service';
+import { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { LinkedinXraySearchEngine } from 'src/modules/linkedin-xray/types/linkedin-xray-search-job.types';
 import { CompanyAutocompleteDto } from '../dto/company-autocomplete.dto';
 import { OrgChartNodePeopleDto } from '../dto/org-chart-node-people.dto';
 import { OrgChartQueryDto } from '../dto/org-chart-query.dto';
@@ -48,6 +51,7 @@ export class OrgChartController {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly orgChartClientIpService: OrgChartClientIpService,
     private readonly pythonOrgChartService: PythonOrgChartService,
+    private readonly brightDataSerpService: BrightDataSerpService,
   ) {}
 
   private getAuthToken(req: Request): string | undefined {
@@ -652,6 +656,7 @@ export class OrgChartController {
     }
 
     const apifyActorConfigured = this.apifyService.isConfigured();
+    const linkedinXrayConfigured = this.brightDataSerpService.isConfigured();
     const pythonOrgChartAgentAvailable =
       await this.pythonOrgChartService.isOrgChartAgentReachable();
 
@@ -659,6 +664,7 @@ export class OrgChartController {
       status: 'ok' as const,
       linkedinUnipileConnected,
       apifyActorConfigured,
+      linkedinXrayConfigured,
       pythonOrgChartAgentAvailable,
     };
   }
@@ -1011,10 +1017,12 @@ export class OrgChartController {
       functionRoot?: string;
       linkedinCompanyUrl?: string;
       linkedinUnipileAccountId?: string;
-      candidateSource?: 'unipile' | 'apify';
+      candidateSource?: OrgChartLinkedinCandidateSource;
       apifyMaxItems?: number;
       profileScraperMode?: string;
       businessDivisionRawQuery?: string;
+      xraySearchEngine?: LinkedinXraySearchEngine;
+      includePaginatedHtml?: boolean;
     },
     @Query('account_id') accountIdQuery: string | undefined,
     @Req() req: Request,

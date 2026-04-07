@@ -49,4 +49,64 @@ describe('normalizeOrgChartPayload', () => {
     expect(out.orgchart).toBe('not valid json{');
     expect(out.country_analytics).toBe('{broken');
   });
+
+  it('normalizes stale org-chart function labels from ES payloads', () => {
+    const input = {
+      functions: JSON.stringify([
+        'sales',
+        'estate real',
+        'marketing events',
+      ]),
+      functions_analytics: JSON.stringify({
+        sales: 10,
+        'estate real': 3,
+        'marketing event': 2,
+      }),
+      orgchart: JSON.stringify([
+        {
+          key: 1,
+          std_function: 'estate real',
+          std_function_root: 'estate real',
+          std_function_category: 'estate real',
+          headline: 'REAL ESTATE LEADERSHIP',
+        },
+        {
+          key: 2,
+          std_function: 'marketing event',
+          std_function_root: 'marketing',
+          std_function_category: 'marketing',
+          headline: 'MARKETING EVENT TEAM',
+        },
+      ]),
+    };
+
+    const out = normalizeOrgChartPayload(input);
+
+    expect(out.functions).toEqual([
+      'sales',
+      'real estate',
+      'event marketing',
+    ]);
+    expect(out.functions_analytics).toEqual({
+      sales: 10,
+      'real estate': 3,
+      'event marketing': 2,
+    });
+    expect(out.orgchart).toEqual([
+      {
+        key: 1,
+        std_function: 'real estate',
+        std_function_root: 'real estate',
+        std_function_category: 'real estate',
+        headline: 'REAL ESTATE LEADERSHIP',
+      },
+      {
+        key: 2,
+        std_function: 'event marketing',
+        std_function_root: 'marketing',
+        std_function_category: 'marketing',
+        headline: 'EVENT MARKETING TEAM',
+      },
+    ]);
+  });
 });

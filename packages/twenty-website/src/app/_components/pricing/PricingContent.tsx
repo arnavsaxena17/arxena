@@ -185,8 +185,8 @@ export const PricingContent = ({ signUpUrl }: PricingContentProps) => {
     <StyledSection>
       <StyledHeadline>Map any company&apos;s org chart</StyledHeadline>
       <StyledHeadlineSub>
-        A fraction of one recruitment fee. Recruiters pay $5K–40K per placement
-        with no mapping — org charts from $799.
+        Credits for live org intelligence on the companies you care about —
+        champions, gatekeepers, and reporting lines — before your first message.
       </StyledHeadlineSub>
 
       <StyledCardsGrid>

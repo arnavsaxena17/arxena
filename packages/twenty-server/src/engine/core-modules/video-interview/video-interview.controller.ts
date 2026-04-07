@@ -535,7 +535,6 @@ export class VideoInterviewController {
         const recruiterId = responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node?.candidate?.jobs?.recruiterId;
 
         const workspaceMemberProfilesResponse = await this.staticGraphQLService.executeGraphQL(findWorkspaceMemberProfiles, { filter: { workspaceMemberId: { eq: recruiterId } } }, apiToken);
-        console.log("This si the workspace member profile:", workspaceMemberProfilesResponse.data.data.workspaceMemberProfiles);
         recruiterProfile = workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges[0]?.node;
         console.log("recruiterProrile:", recruiterProfile);
 

@@ -32,7 +32,9 @@ import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/ser
 import { ChatService } from 'src/engine/core-modules/candidate-sourcing/services/chat.service';
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
+import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-sourcing/services/orgchart-progress-redis.service';
 import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
+import { RedisClientModule } from 'src/engine/core-modules/redis-client/redis-client.module';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
@@ -62,6 +64,7 @@ import { LinkedinRecruiterJobsTransformerService } from './services/data-sources
 import { LinkedInRecruiterPeopleTransformerService } from './services/data-sources/linkedin-recruiter-people-transformer.service';
 import { LinkedinSalesNavigatorTransformerService } from './services/data-sources/linkedin-sales-navigator-transformer.service';
 import { LinkedInSearchTransformerService } from './services/data-sources/linkedin-search-transformer.service';
+import { LinkedinXrayTransformerService } from './services/data-sources/linkedin-xray-transformer.service';
 import { NaukriProfileDataTransformerService } from './services/data-sources/naukri-profile-data-transformer.service';
 import { ParsedCVTransformerService } from './services/data-sources/parsed-cv-transformer.service';
 import { ResdexNaukriTransformerService } from './services/data-sources/resdex-naukri-transformer.service';
@@ -75,6 +78,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
 @Module({
   imports: [
     AuthModule,
+    RedisClientModule,
     WebSocketModule,
     WorkspaceModificationsModule,
     TypeORMModule,
@@ -112,6 +116,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     AiFilteringProcessorService,
     AiFilteringProgressPubSubService,
     UploadProgressPubSubService,
+    OrgChartProgressRedisService,
     CandidateDataService,
     CandidateFieldValueService,
     CandidateWorkspaceGraphQLService,
@@ -142,6 +147,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     LinkedinPremiumJobsTransformerService,
     LinkedinSalesNavigatorTransformerService,
     LinkedInSearchTransformerService,
+    LinkedinXrayTransformerService,
     ApifyLinkedInCompanyProfileTransformerService,
     LinkedInRecruiterPeopleTransformerService,
     ParsedCVTransformerService,
@@ -163,9 +169,11 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     ResumeReadParseUploadService,
     FilterDescriptionProcessorService,
     LinkedInSearchTransformerService,
+    LinkedinXrayTransformerService,
     ApifyLinkedInCompanyProfileTransformerService,
     LinkedInRecruiterPeopleTransformerService,
     CandidateWorkspaceGraphQLService,
+    OrgChartProgressRedisService,
   ],
 })
 export class CandidateSourcingModule {}

@@ -13,6 +13,9 @@ import {
   LINKEDIN_XRAY_EDUCATION_MAP,
 } from 'src/modules/linkedin-xray/constants/linkedin-xray-options';
 import { BuildLinkedinXrayDto } from 'src/modules/linkedin-xray/dtos/build-linkedin-xray.dto';
+import { FetchLinkedinXrayPeopleResultsDto } from 'src/modules/linkedin-xray/dtos/fetch-linkedin-xray-people-results.dto';
+import { LinkedinXrayPeopleResultsJobService } from 'src/modules/linkedin-xray/services/linkedin-xray-people-results-job.service';
+import { LinkedinXrayPaginationMode } from 'src/modules/linkedin-xray/types/linkedin-xray-search-job.types';
 
 type ParsedLlmFields = {
   country?: string;
@@ -27,6 +30,10 @@ type ParsedLlmFields = {
 export class LinkedinXrayService {
   private readonly booleanOperatorSplit = /(\(|\)|\bAND\b|\bOR\b)/gi;
 
+  constructor(
+    private readonly linkedinXrayPeopleResultsJobService: LinkedinXrayPeopleResultsJobService,
+  ) {}
+
   getOptions() {
     return {
       countries: LINKEDIN_XRAY_COUNTRIES,
@@ -35,6 +42,7 @@ export class LinkedinXrayService {
   }
 
   buildLinkedinXray(dto: BuildLinkedinXrayDto) {
+    console.log("Building LinkedIn x-ray with dto:", dto)
     const country = this.normalizeCountry(dto.country);
     const education = this.normalizeEducation(dto.education);
     const excludeKeywords =
@@ -89,6 +97,53 @@ export class LinkedinXrayService {
     };
   }
 
+  async queuePeopleResultsFetch(
+    dto: FetchLinkedinXrayPeopleResultsDto,
+    input: {
+      apiToken: string;
+      origin: string;
+      recruiterId: string;
+    },
+  ) {
+    const parsed = await this.parseRawQuery(dto.rawQuery);
+    const searchEngine = dto.searchEngine ?? 'google';
+    const includePaginatedHtml = dto.includePaginatedHtml === true;
+    const paginationMode: LinkedinXrayPaginationMode = includePaginatedHtml
+      ? 'bright_data'
+      : 'arxena';
+    const searchJobId = crypto.randomUUID();
+    const trimmedRawQuery = this.cleanValue(dto.rawQuery);
+    const defaultJobName = trimmedRawQuery.slice(0, 120) || 'LinkedIn x-ray';
+
+    await this.linkedinXrayPeopleResultsJobService.enqueue({
+      searchJobId,
+      recruiterId: input.recruiterId,
+      apiToken: input.apiToken,
+      origin: input.origin,
+      rawQuery: parsed.rawQuery,
+      jobId: this.cleanValue(dto.jobId) || searchJobId,
+      jobName: this.cleanValue(dto.jobName) || defaultJobName,
+      searchEngine,
+      paginationMode,
+      includePaginatedHtml,
+      query: parsed.query,
+      urls: parsed.urls,
+    });
+
+    return {
+      status: 'queued' as const,
+      searchJobId,
+      recruiterId: input.recruiterId,
+      searchEngine,
+      paginationMode,
+      includePaginatedHtml,
+      rawQuery: parsed.rawQuery,
+      query: parsed.query,
+      urls: parsed.urls,
+      progressStreamEndpoint: '/linkedin-xray-progress/stream',
+    };
+  }
+
   private generateLinkedinXrayResponse(input: {
     country: string;
     education: string;
@@ -97,8 +152,9 @@ export class LinkedinXrayService {
     excludeKeywords: string[] | string;
     currentEmployer: string;
   }) {
+    console.log("Generating LinkedIn x-ray response with input:", input)
     const q = this.buildQString(input);
-    const asOq = this.buildAsOq(input.education, input.currentEmployer);
+    const asOq = this.buildAsOq(input.education);
 
     return {
       network: 'LinkedIn',
@@ -133,8 +189,14 @@ export class LinkedinXrayService {
     jobTitle: string;
     includeKeywords: string;
     excludeKeywords: string[] | string;
+    currentEmployer: string;
   }) {
     const queryParts: string[] = [];
+
+    const currentEmployerClause = this.quoteTerm(input.currentEmployer);
+    if (currentEmployerClause) {
+      queryParts.push(currentEmployerClause);
+    }
 
     const jobTitleClause = this.quoteBooleanInput(input.jobTitle);
     if (jobTitleClause) {
@@ -157,15 +219,11 @@ export class LinkedinXrayService {
     return queryParts.filter(Boolean).join(' ').trim();
   }
 
-  private buildAsOq(education: string, currentEmployer: string) {
+  private buildAsOq(education: string) {
     const optionalTerms: string[] = [];
 
     if (education && education !== 'all') {
       optionalTerms.push(education.split('+').join(' '));
-    }
-
-    if (this.cleanValue(currentEmployer)) {
-      optionalTerms.push(this.quoteTerm(currentEmployer));
     }
 
     return optionalTerms.join(' ').trim();

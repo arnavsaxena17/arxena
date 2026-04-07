@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
   title: 'Pricing | Arxena',
   description:
-    "Map any company's org chart. A fraction of one recruitment fee. From $799. Stop paying recruitment agencies $5K-40K per placement with no mapping.",
+    "Map any target company's org chart — sales, recruiting, or diligence. Simple credit pricing. Add AI engagement when you're ready to reach out at scale.",
   alternates: {
     canonical: '/pricing',
   },

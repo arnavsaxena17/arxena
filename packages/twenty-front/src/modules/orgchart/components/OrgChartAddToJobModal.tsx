@@ -5,7 +5,7 @@ import { useRecoilValue } from 'recoil';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
-import { jobsState } from '@/candidate-table/states/states';
+import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useUploadProgressSseSession } from '@/websocket-context/hooks/useUploadProgressSseSession';
@@ -254,6 +254,7 @@ export const OrgChartAddToJobModal = ({
   const { enqueueSnackBar } = useSnackBar();
   const tokenPair = useRecoilValue(tokenPairState);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+  const currentJobId = useRecoilValue(jobIdAtom);
   const jobs = useRecoilValue(jobsState);
   const { refetchJobs } = useJobRefetch();
   const { beginUploadProgressSseSession, endUploadProgressSseSessionAfterDelay } =
@@ -293,6 +294,23 @@ export const OrgChartAddToJobModal = ({
       setSelectedCandidateIds(new Set(candidates.map((c) => c.id)));
     }
   }, [isOpen, candidates]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    if (
+      currentJobId &&
+      currentJobId !== 'job-id' &&
+      activeJobs.some((job) => job.id === currentJobId)
+    ) {
+      setSelectedJobId(currentJobId);
+      return;
+    }
+
+    setSelectedJobId('');
+  }, [activeJobs, currentJobId, isOpen]);
 
   const selectedJob = useMemo(
     () => activeJobs.find((j) => j.id === selectedJobId),
@@ -420,6 +438,7 @@ export const OrgChartAddToJobModal = ({
           <StyledSection>
             <StyledSectionLabel>Job</StyledSectionLabel>
             <StyledSelect
+              data-testid="orgchart-add-node-existing-job-select"
               value={selectedJobId}
               onChange={(e) => setSelectedJobId(e.target.value)}
               disabled={isJobsLoading}
@@ -462,6 +481,7 @@ export const OrgChartAddToJobModal = ({
                   <StyledCandidateRow key={c.id}>
                     {avatarUrl && <CandidateAvatar src={avatarUrl} size={30} />}
                     <input
+                      data-testid={`orgchart-add-node-candidate-${c.id}`}
                       type="checkbox"
                       checked={selectedCandidateIds.has(c.id)}
                       onChange={() => toggleCandidate(c.id)}
@@ -489,6 +509,7 @@ export const OrgChartAddToJobModal = ({
             Cancel
           </StyledSecondaryButton>
           <StyledPrimaryButton
+            data-testid="orgchart-add-node-submit"
             type="button"
             onClick={handleSubmit}
             disabled={

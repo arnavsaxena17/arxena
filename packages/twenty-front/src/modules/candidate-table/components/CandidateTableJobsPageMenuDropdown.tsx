@@ -16,6 +16,7 @@ import {
   IconDownload,
   IconGitCommit,
   IconPlus,
+  IconSearch,
   MenuItem,
 } from 'twenty-ui';
 
@@ -219,6 +220,21 @@ export const CandidateTableJobsPageMenuDropdown = ({
               >
                 <IconApi size={iconSm} />
                 Apify
+              </StyledSegmentedOption>
+              <StyledSegmentedOption
+                type="button"
+                data-testid="org-chart-source-linkedin-xray"
+                isActive={orgChartLinkedinCandidateSource === 'linkedin_xray'}
+                role="radio"
+                aria-checked={
+                  orgChartLinkedinCandidateSource === 'linkedin_xray'
+                }
+                onClick={() => {
+                  setOrgChartLinkedinCandidateSource('linkedin_xray');
+                }}
+              >
+                <IconSearch size={iconSm} />
+                X-Ray
               </StyledSegmentedOption>
             </StyledSegmentedTrack>
           </StyledOrgChartSourceBlock>

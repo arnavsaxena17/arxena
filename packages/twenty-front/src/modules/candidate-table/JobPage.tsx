@@ -15,8 +15,8 @@ import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIn
 import axios from 'axios';
 
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
+import { useOpenAddJobModal } from '@/arx-jd-upload/hooks/useOpenAddJobModal';
 import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
-import { parsedJDInternalState } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from "@/arx-jd-upload/states/arxUploadJDModalOpenState";
 import { isOrgChartEnabledState } from '@/arx-jd-upload/states/isOrgChartEnabledState';
 import { ChatOptionsDropdownButton } from "@/candidate-table/ChatOptionsDropdownButton";
@@ -172,7 +172,7 @@ export const JobPage: React.FC = () => {
   const isArxUploadJDModalOpen = useRecoilValue(isArxUploadJDModalOpenState);
   const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
   const [arxUploadJDModalMode, setArxUploadJDModalMode] = useRecoilState(arxUploadJDModalModeState);
-  const setParsedJDInternalState = useSetRecoilState(parsedJDInternalState);
+  const { openAddJobModal } = useOpenAddJobModal();
 
   // Check if candidate object exists before initializing the spreadsheet import hook
   const { objectMetadataItems } = useObjectMetadataItems();
@@ -271,19 +271,6 @@ export const JobPage: React.FC = () => {
     }
     setIsVideoInterviewModalOpen(true);
   }, [selectedRecordId, setIsVideoInterviewModalOpen]);
-
-  const handleAddJob = useCallback(() => {
-    debugLog('Adding job from JobPage');
-    // Explicitly reset parsedJDInternalState first to clear any stale data
-    setParsedJDInternalState(null);
-    // Explicitly set modal mode to create
-    setArxUploadJDModalMode('create');
-    debugLog('ArxUploadJDModalMode set to create');
-    // Use requestAnimationFrame to ensure the mode is set before opening the modal
-    requestAnimationFrame(() => {
-      setIsArxUploadJDModalOpen(true);
-    });
-  }, [setArxUploadJDModalMode, setIsArxUploadJDModalOpen, setParsedJDInternalState]);
 
   const handleEngagement = useCallback(() => {
     debugLog('Modifying job from JobPage handleEngagement');
@@ -692,7 +679,7 @@ export const JobPage: React.FC = () => {
             navigateToNextRecord={navigateToNextJob}
             hasClosePageButton={true}
             onClosePage={navigateToJobsList}
-            onAddJob={handleAddJob}
+            onAddJob={openAddJobModal}
             onChatKitToggle={handleChatKitToggle}
             isExtensionInstalled={isExtensionInstalled}
             onDownloadClick={handleDownloadClick}
@@ -710,7 +697,7 @@ export const JobPage: React.FC = () => {
                   handleRefresh={handleRefresh}
                   handleEnrichment={handleEnrichment}
                   handleVideoInterviewEdit={handleVideoInterviewEdit}
-                  handleAddJob={handleAddJob}
+                  handleAddJob={openAddJobModal}
                   handleEngagement={handleEngagement}
                   handleImportCandidates={handleImportCandidates}
                   showImportCandidates={true}

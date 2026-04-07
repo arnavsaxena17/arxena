@@ -9,23 +9,26 @@ import { Header } from './_components/ui/layout/header';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Arxena — Org Chart AI | Real-Time Company Structures',
+  title:
+    'Arxena — See inside any company | Org chart intelligence & AI outreach',
   description:
-    'Org Chart AI: real-time company structures from LinkedIn. Map companies, build lists, fetch contacts, engage on WhatsApp and LinkedIn. Algorithmic recruitment. 1M+ companies, 55M+ professionals. Search any company org chart.',
+    'Arxena maps the org chart of any company in the world — not yours, theirs. Search, see reporting lines, build lists, get contacts, and let AI reach out in your voice on WhatsApp, LinkedIn, and email. 1M+ companies mapped, 800M+ professionals indexed.',
   alternates: {
     canonical: '/',
   },
   openGraph: {
-    title: 'Arxena — Org Chart AI | Real-Time Company Structures',
+    title:
+      'Arxena — See inside any company | Org chart intelligence & AI outreach',
     description:
-      'Org Chart AI: real-time structures from LinkedIn. Map companies, build lists, fetch contacts, engage on WhatsApp and LinkedIn. 1M+ companies.',
+      "Map any target company's org chart in real time. Build lists, enrich contacts, and let AI engage for you — you only talk to warm replies.",
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Arxena — Org Chart AI | Real-Time Company Structures',
+    title:
+      'Arxena — See inside any company | Org chart intelligence & AI outreach',
     description:
-      'Org Chart AI: real-time company structures from LinkedIn. Map, build lists, fetch contacts, engage on WhatsApp and LinkedIn. 1M+ companies.',
+      'Real-time org charts from LinkedIn and other sources. Search → map → list → contact → engage. 1M+ companies, 800M+ professionals.',
   },
 };
 

@@ -1,6 +1,18 @@
 import { test as base, expect } from '@playwright/test';
 import path from 'path';
 import { LoginPage } from '../lib/pom/loginPage';
+import { signInWithExistingCredentials } from '../lib/utils/authFlowE2eHelpers';
+
+const loginEmail =
+  process.env.ARXENA_E2E_EMAIL ||
+  'testing@arxena.com';
+const loginPassword = process.env.ARXENA_E2E_PASSWORD || process.env.DEFAULT_PASSWORD || 'Applecar2025';
+const loginBaseUrl =
+  loginEmail.toLowerCase() === 'testing@arxena.com'
+    ? 'http://testing-arxena.localhost:3001'
+    : (process.env.ARXENA_E2E_BASE_URL ||
+      process.env.FRONTEND_BASE_URL ||
+      'http://localhost:3001');
 
 // fixture
 const test = base.extend<{ loginPage: LoginPage }>({
@@ -11,27 +23,20 @@ const test = base.extend<{ loginPage: LoginPage }>({
 });
 
 test('Login test', async ({ loginPage, page }) => {
+  test.setTimeout(120_000);
+
   await test.step('Navigated to login page', async () => {
-    await page.goto('/');
+    await page.goto(loginBaseUrl, { waitUntil: 'domcontentloaded' });
   });
   await test.step(
-    'Logging in '.concat(page.url(), ' as ', process.env.DEFAULT_LOGIN || 'arnav@arxena.com'),
+    'Logging in '.concat(page.url(), ' as ', loginEmail),
     async () => {
-      await page.waitForLoadState('networkidle');
-      const shouldUseEmailEntryButton =
-        await loginPage.hasVisibleLoginWithEmailButton();
-
-      if (shouldUseEmailEntryButton) {
-        await loginPage.clickLoginWithEmail();
-      }
-
-      await loginPage.expectPasswordStepHidden();
-      await loginPage.typeEmail(process.env.DEFAULT_LOGIN || 'arnav@arxena.com');
-      await loginPage.clickContinueButton();
-      await loginPage.expectPasswordStepVisible();
-      await loginPage.typePassword(process.env.DEFAULT_PASSWORD || 'Applecar2025');
-      await page.waitForLoadState('networkidle');
-      await loginPage.submitPasswordStep();
+      await signInWithExistingCredentials(page, {
+        baseUrl: loginBaseUrl,
+        email: loginEmail,
+        password: loginPassword,
+        targetPath: '/jobs',
+      });
       await page.waitForURL(/\/jobs(?:[/?#]|$)/);
       await expect(page).toHaveURL(/\/jobs(?:[/?#]|$)/);
       await expect(page.getByText(/Welcome to .+/)).not.toBeVisible();

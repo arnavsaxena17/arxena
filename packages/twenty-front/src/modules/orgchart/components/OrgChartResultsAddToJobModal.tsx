@@ -6,7 +6,7 @@ import { useRecoilValue } from 'recoil';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
-import { jobsState } from '@/candidate-table/states/states';
+import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useUploadProgressSseSession } from '@/websocket-context/hooks/useUploadProgressSseSession';
@@ -192,6 +192,7 @@ export const OrgChartResultsAddToJobModal = ({
   const { enqueueSnackBar } = useSnackBar();
   const tokenPair = useRecoilValue(tokenPairState);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+  const currentJobId = useRecoilValue(jobIdAtom);
   const jobs = useRecoilValue(jobsState);
   const { refetchJobs } = useJobRefetch();
   const { beginUploadProgressSseSession, endUploadProgressSseSessionAfterDelay } =
@@ -244,6 +245,25 @@ export const OrgChartResultsAddToJobModal = ({
       setNewJobName(suggestedJobName);
     }
   }, [isOpen, suggestedJobName]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    if (
+      currentJobId &&
+      currentJobId !== 'job-id' &&
+      activeJobs.some((job) => job.id === currentJobId)
+    ) {
+      setJobMode('existing');
+      setSelectedJobId(currentJobId);
+      return;
+    }
+
+    setJobMode('new');
+    setSelectedJobId('');
+  }, [activeJobs, currentJobId, isOpen]);
 
   const selectedJob = useMemo(
     () => activeJobs.find((j) => j.id === selectedJobId),
@@ -427,6 +447,7 @@ export const OrgChartResultsAddToJobModal = ({
             <StyledRadioGroup>
               <StyledRadioLabel>
                 <input
+                  data-testid="orgchart-add-results-job-mode-new"
                   type="radio"
                   name="jobMode"
                   checked={jobMode === 'new'}
@@ -436,6 +457,7 @@ export const OrgChartResultsAddToJobModal = ({
               </StyledRadioLabel>
               <StyledRadioLabel>
                 <input
+                  data-testid="orgchart-add-results-job-mode-existing"
                   type="radio"
                   name="jobMode"
                   checked={jobMode === 'existing'}
@@ -450,6 +472,7 @@ export const OrgChartResultsAddToJobModal = ({
             <StyledSection>
               <StyledSectionLabel>Job name</StyledSectionLabel>
               <StyledInput
+                data-testid="orgchart-add-results-new-job-name"
                 type="text"
                 value={newJobName}
                 onChange={(e) => setNewJobName(e.target.value)}
@@ -460,6 +483,7 @@ export const OrgChartResultsAddToJobModal = ({
             <StyledSection>
               <StyledSectionLabel>Select job</StyledSectionLabel>
               <StyledSelect
+                data-testid="orgchart-add-results-existing-job-select"
                 value={selectedJobId}
                 onChange={(e) => setSelectedJobId(e.target.value)}
                 disabled={isJobsLoading}
@@ -508,6 +532,7 @@ export const OrgChartResultsAddToJobModal = ({
               {results.map((c) => (
                 <StyledRadioLabel key={c.id}>
                   <input
+                    data-testid={`orgchart-add-results-candidate-${c.id}`}
                     type="checkbox"
                     checked={selectedCandidateIds.has(c.id)}
                     onChange={() => toggleCandidate(c.id)}
@@ -534,6 +559,7 @@ export const OrgChartResultsAddToJobModal = ({
             Cancel
           </StyledSecondaryButton>
           <StyledPrimaryButton
+            data-testid="orgchart-add-results-submit"
             type="button"
             onClick={handleSubmit}
             disabled={!canSubmit}

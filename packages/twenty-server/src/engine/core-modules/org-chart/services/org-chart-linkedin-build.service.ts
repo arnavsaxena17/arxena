@@ -5,20 +5,36 @@ import { graphqlToAddNewJob, OrgChartData } from 'twenty-shared';
 import { ApifyService } from 'src/engine/core-modules/apify/services/apify.service';
 import { CreditTransactionService } from 'src/engine/core-modules/billing/services/credit-transaction.service';
 import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
+import { BrightDataLinkedinPeopleSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-linkedin-people-search.service';
+import { BrightDataLinkedinProfileScrapeService } from 'src/engine/core-modules/bright-data/services/bright-data-linkedin-profile-scrape.service';
+import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/services/bright-data-serp.service';
 import { OrgchartApifyBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-apify-build.types';
+import { OrgchartLinkedinXrayBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-linkedin-xray-build.types';
+import { OrgchartUnipileBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-unipile-build.types';
 import { OrgChartSearchService } from 'src/engine/core-modules/candidate-search/services/orgchart-search.service';
+import { ResultValidationService } from 'src/engine/core-modules/candidate-search/services/result-validation.service';
 import { extractApiToken } from 'src/engine/core-modules/candidate-search/utils/auth.utils';
 import { CandidateDataService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-data.service';
 import { TransformedCandidateForTable } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+import { LinkedinXrayTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-xray-transformer.service';
+import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-sourcing/services/orgchart-progress-redis.service';
+import { linkedInPeopleSearchResultMatchesTargetCompany } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-orgchart-company-match.util';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
+import {
+  LinkedInSearchService,
+  parseApifyLinkedinCompanyScraperLogLine,
+} from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
+import type { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services/orgchart-cache.service';
 import { OrgchartCancelRegistryService } from 'src/engine/core-modules/org-chart/services/orgchart-cancel-registry.service';
+import { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
 import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { LinkedinXrayService } from 'src/modules/linkedin-xray/linkedin-xray.service';
+import { LinkedinXraySearchEngine } from 'src/modules/linkedin-xray/types/linkedin-xray-search-job.types';
 
 import { OrgChartS3Service } from './orgchart-s3.service';
 import { PythonOrgChartService } from './python-org-chart.service';
@@ -51,13 +67,15 @@ type SearchOrgchartLinkedInBody = {
   requestId?: string;
   country?: string;
   functionRoot?: string;
-  candidateSource?: 'unipile' | 'apify';
+  candidateSource?: OrgChartLinkedinCandidateSource;
   linkedinCompanyUrl?: string;
   apifyMaxItems?: number;
   profileScraperMode?: string;
   linkedinUnipileAccountId?: string;
   /** NL business division query; requires Unipile (not Apify) */
   businessDivisionRawQuery?: string;
+  xraySearchEngine?: LinkedinXraySearchEngine;
+  includePaginatedHtml?: boolean;
 };
 
 type EntireCompanyFilterState = {
@@ -78,15 +96,476 @@ export class OrgChartLinkedInBuildService {
     private readonly workspaceCreditsService: WorkspaceCreditsService,
     private readonly creditTransactionService: CreditTransactionService,
     private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly orgChartProgressRedisService: OrgChartProgressRedisService,
     private readonly orgchartCancelRegistry: OrgchartCancelRegistryService,
     private readonly orgChartS3Service: OrgChartS3Service,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly candidateDataService: CandidateDataService,
     private readonly linkedInSearchService: LinkedInSearchService,
     private readonly apifyService: ApifyService,
+    private readonly brightDataSerpService: BrightDataSerpService,
+    private readonly brightDataLinkedinPeopleSearchService: BrightDataLinkedinPeopleSearchService,
+    private readonly brightDataLinkedinProfileScrapeService: BrightDataLinkedinProfileScrapeService,
+    private readonly resultValidationService: ResultValidationService,
+    private readonly linkedinXrayService: LinkedinXrayService,
+    private readonly linkedinXrayTransformerService: LinkedinXrayTransformerService,
     @InjectMessageQueue(MessageQueue.orgchartApifyQueue)
     private readonly orgchartApifyQueue: MessageQueueService,
   ) {}
+
+  private isBrightDataLinkedinProfileEnrichEnabled(): boolean {
+    return process.env.BRIGHT_DATA_LINKEDIN_PROFILE_ENRICH_ENABLED !== 'false';
+  }
+
+  private buildLinkedinXrayRequirementText(args: {
+    companyName: string;
+    mode: OrgchartSearchMode;
+    country?: string;
+    functionRoot?: string;
+    jobTitles?: string[];
+  }): string {
+    const parts = [`LinkedIn x-ray people search for ${args.companyName}`];
+
+    if (args.jobTitles?.length) {
+      parts.push(`titles: ${args.jobTitles.join(', ')}`);
+    }
+
+    if (args.functionRoot?.trim()) {
+      parts.push(`function: ${args.functionRoot.trim()}`);
+    }
+
+    if (args.country?.trim()) {
+      parts.push(`country: ${args.country.trim()}`);
+    }
+
+    parts.push(`mode: ${args.mode}`);
+
+    return parts.join(' | ');
+  }
+
+  private inferCandidateSourceFromItems(
+    items: Record<string, unknown>[],
+  ): OrgChartLinkedinCandidateSource | undefined {
+    for (const item of items) {
+      const source = item.source;
+
+      if (source === 'linkedin_xray' || source === 'apify') {
+        return source;
+      }
+    }
+
+    return undefined;
+  }
+
+  private async runLinkedinXrayOrgChartSearch(args: {
+    body: SearchOrgchartLinkedInBody;
+    apiToken: string;
+    mode: OrgchartSearchMode;
+    resolvedCompanyName: string;
+    companyId?: string;
+    requestId?: string;
+    searchType: OrgchartSearchType;
+    canonicalCompanyLinkedinUrl?: string;
+  }): Promise<{
+    items: TransformedCandidateForTable[];
+    itemCount: number;
+    isCached: false;
+    cacheSource: 'none';
+    strategyResults: [];
+  } | null> {
+    const {
+      body,
+      apiToken,
+      mode,
+      resolvedCompanyName,
+      companyId,
+      requestId,
+      searchType,
+      canonicalCompanyLinkedinUrl,
+    } = args;
+
+    console.log("These are args : ", args)
+
+    if (body.candidateSource !== 'linkedin_xray') {
+      return null;
+    }
+
+    if (!this.brightDataSerpService.isConfigured()) {
+      throw new HttpException(
+        'LinkedIn x-ray is not configured (BRIGHT_DATA_API_KEY)',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    console.log("This is body : ", body)
+
+    const jobTitlesJoined =
+      body.jobTitles?.filter((title) => title.trim().length > 0).join(' OR ') ||
+      '';
+    const functionRootForQuery = hasMeaningfulOrgChartFunctionRootFilter(
+      body.functionRoot,
+    )
+      ? body.functionRoot?.trim() ?? ''
+      : '';
+
+    const xrayPayload = this.linkedinXrayService.buildLinkedinXray({
+      currentEmployer: resolvedCompanyName,
+      country: body.country,
+      jobTitle: jobTitlesJoined || functionRootForQuery,
+      includeKeywords:
+        body.businessDivisionRawQuery?.trim() ||
+        functionRootForQuery ||
+        jobTitlesJoined,
+    });
+
+    console.log("This is xray payload : ", xrayPayload)
+
+    await this.emitOrgchartSearchProgressForToken(apiToken, {
+      requestId,
+      mode,
+      searchType,
+      companyName: resolvedCompanyName,
+      event: 'status',
+      data: {
+        message:
+          body.includePaginatedHtml === true
+            ? `Running LinkedIn x-ray search via Bright Data snapshot pagination on ${body.xraySearchEngine === 'both' ? 'Google and Bing' : body.xraySearchEngine ?? 'Google'}...`
+            : `Running LinkedIn x-ray search on ${body.xraySearchEngine === 'both' ? 'Google and Bing' : body.xraySearchEngine ?? 'Google'}...`,
+        candidateSource: 'linkedin_xray',
+        rawQuery: this.buildLinkedinXrayRequirementText({
+          companyName: resolvedCompanyName,
+          mode,
+          country: body.country,
+          functionRoot: body.functionRoot,
+          jobTitles: body.jobTitles,
+        }),
+      },
+    });
+
+    const paginationInfoEmittedByEngine = new Set<string>();
+
+    const results =
+      await this.brightDataLinkedinPeopleSearchService.fetchAllPeopleResults({
+        engines:
+          body.xraySearchEngine === 'both'
+            ? ['google', 'bing']
+            : [body.xraySearchEngine ?? 'google'],
+        urls: {
+          google: xrayPayload.urls.google,
+          bing: xrayPayload.urls.bing,
+        },
+        keywords: {
+          google: [xrayPayload.query.q, xrayPayload.query.asOq]
+            .filter(Boolean)
+            .join(' ')
+            .trim(),
+          bing: [xrayPayload.query.q, xrayPayload.query.asOq]
+            .filter(Boolean)
+            .join(' ')
+            .trim(),
+        },
+        includePaginatedHtml: body.includePaginatedHtml === true,
+        dedupeByLinkedinUrl: true,
+        postProcessPageCandidates: async (input) => {
+          if (
+            !this.isBrightDataLinkedinProfileEnrichEnabled() ||
+            !this.brightDataLinkedinProfileScrapeService.isConfigured()
+          ) {
+            return {
+              candidates: input.newUniqueCandidates,
+              continuePagination: true,
+            };
+          }
+
+          if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
+            return {
+              candidates: [],
+              continuePagination: false,
+            };
+          }
+
+          const enriched: LinkedInPeopleSearchResult[] =
+            await this.brightDataLinkedinProfileScrapeService.enrichLinkedinPeopleSearchResults(
+              input.newUniqueCandidates,
+              {
+                onProgress: async (event) => {
+                  if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
+                    return;
+                  }
+
+                  if (event.kind === 'batchStart') {
+                    await this.emitOrgchartSearchProgressForToken(apiToken, {
+                      requestId,
+                      mode,
+                      searchType,
+                      companyName: resolvedCompanyName,
+                      event: 'status',
+                      data: {
+                        message: `Bright Data: fetching ${event.totalUrls} LinkedIn profile(s) (parallel, concurrency ${process.env.BRIGHT_DATA_LINKEDIN_PROFILE_SCRAPE_CONCURRENCY ?? '8'})…`,
+                        candidateSource: 'linkedin_xray',
+                        workerPhase: 'bright_data_profiles_fetch',
+                        engine: input.engine,
+                        page: input.page,
+                        brightDataTotal: event.totalUrls,
+                      },
+                    });
+                    return;
+                  }
+
+                  if (event.kind === 'profileRequestDone') {
+                    await this.emitOrgchartSearchProgressForToken(apiToken, {
+                      requestId,
+                      mode,
+                      searchType,
+                      companyName: resolvedCompanyName,
+                      event: 'status',
+                      data: {
+                        message: `Bright Data: profile ${event.index + 1}/${event.total} ${event.success ? 'ok' : 'no data'} — ${event.url.slice(0, 72)}…`,
+                        candidateSource: 'linkedin_xray',
+                        workerPhase: 'bright_data_profile_done',
+                        engine: input.engine,
+                        page: input.page,
+                        brightDataIndex: event.index + 1,
+                        brightDataTotal: event.total,
+                        brightDataSuccess: event.success,
+                      },
+                    });
+                    return;
+                  }
+
+                  if (event.kind === 'batchComplete') {
+                    await this.emitOrgchartSearchProgressForToken(apiToken, {
+                      requestId,
+                      mode,
+                      searchType,
+                      companyName: resolvedCompanyName,
+                      event: 'status',
+                      data: {
+                        message: `Bright Data: finished profile scrape — ${event.recordsReturned} record(s) returned.`,
+                        candidateSource: 'linkedin_xray',
+                        workerPhase: 'bright_data_profiles_complete',
+                        engine: input.engine,
+                        page: input.page,
+                        brightDataRecordsReturned: event.recordsReturned,
+                      },
+                    });
+                  }
+                },
+              },
+            );
+
+          if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
+            return {
+              candidates: [],
+              continuePagination: false,
+            };
+          }
+
+          const companyMatched = enriched.filter((c) =>
+            linkedInPeopleSearchResultMatchesTargetCompany(c, resolvedCompanyName),
+          );
+
+          const totalMatchedIncludingThisPage =
+            input.totalUniqueResultsSoFarBeforeThisPage + companyMatched.length;
+
+          await this.emitOrgchartSearchProgressForToken(apiToken, {
+            requestId,
+            mode,
+            searchType,
+            companyName: resolvedCompanyName,
+            event: 'status',
+            data: {
+              message: `Target company: ${companyMatched.length}/${enriched.length} on ${input.engine} page ${input.page} match "${resolvedCompanyName}". Running pagination validation (LLM)…`,
+              candidateSource: 'linkedin_xray',
+              workerPhase: 'company_filter_then_validation',
+              engine: input.engine,
+              page: input.page,
+              matchedForOrgChart: companyMatched.length,
+              evaluatedOnPage: enriched.length,
+            },
+          });
+
+          const requirementText = this.buildLinkedinXrayRequirementText({
+            companyName: resolvedCompanyName,
+            mode,
+            country: body.country,
+            functionRoot: body.functionRoot,
+            jobTitles: body.jobTitles,
+          });
+
+          const validation =
+            await this.resultValidationService.validateLinkedinXraySerpPageForPagination(
+              enriched,
+              requirementText,
+              resolvedCompanyName,
+              totalMatchedIncludingThisPage,
+              apiToken,
+            );
+
+          const continuePagination =
+            this.resultValidationService.shouldContinuePagination(
+              validation,
+              totalMatchedIncludingThisPage,
+              input.page,
+            );
+
+          await this.emitOrgchartSearchProgressForToken(apiToken, {
+            requestId,
+            mode,
+            searchType,
+            companyName: resolvedCompanyName,
+            event: 'status',
+            data: {
+              message: `Pagination validation: ${continuePagination ? 'continue' : 'stop'} — ${validation.reasoning?.slice(0, 200) ?? ''}`,
+              candidateSource: 'linkedin_xray',
+              workerPhase: 'pagination_validation_complete',
+              engine: input.engine,
+              page: input.page,
+              shouldContinuePagination: continuePagination,
+            },
+          });
+
+          return {
+            candidates: companyMatched,
+            continuePagination,
+          };
+        },
+        onStatus: async (update) => {
+          if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
+            return;
+          }
+
+          await this.emitOrgchartSearchProgressForToken(apiToken, {
+            requestId,
+            mode,
+            searchType,
+            companyName: resolvedCompanyName,
+            event: 'status',
+            data: {
+              message: update.message,
+              candidateSource: 'linkedin_xray',
+              engine: update.engine,
+              snapshotId: update.snapshotId,
+              pollingAttempt: update.pollingAttempt,
+              paginationMode:
+                body.includePaginatedHtml === true ? 'bright_data' : 'arxena',
+            },
+          });
+        },
+        onPageFetched: async (update) => {
+          if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
+            return;
+          }
+
+          const strategyId = `orgchart-linkedin-xray-${update.engine}`;
+          const strategyLabel = `LinkedIn x-ray (${update.engine})`;
+          const remainingToFetch =
+            update.totalResultsReported != null
+              ? Math.max(
+                  0,
+                  update.totalResultsReported - update.totalUniqueResults,
+                )
+              : undefined;
+
+          if (
+            !paginationInfoEmittedByEngine.has(update.engine) &&
+            (update.totalPagesAvailable != null ||
+              update.totalResultsReported != null)
+          ) {
+            paginationInfoEmittedByEngine.add(update.engine);
+            await this.emitOrgchartSearchProgressForToken(apiToken, {
+              requestId,
+              mode,
+              searchType,
+              companyName: resolvedCompanyName,
+              event: 'paginationInfo',
+              data: {
+                strategyId,
+                strategyLabel,
+                totalCount: update.totalResultsReported,
+                totalPages: update.totalPagesAvailable,
+                pageLimit: 10,
+                candidateSource: 'linkedin_xray',
+                engine: update.engine,
+                paginationMode:
+                  body.includePaginatedHtml === true ? 'bright_data' : 'arxena',
+              },
+            });
+          }
+
+          await this.emitOrgchartSearchProgressForToken(apiToken, {
+            requestId,
+            mode,
+            searchType,
+            companyName: resolvedCompanyName,
+            event: 'pageResults',
+            data: {
+              message: `Fetched ${update.engine} page ${update.page}.`,
+              page: update.page,
+              totalPages: update.totalPagesAvailable,
+              totalCountFromAPI: update.totalResultsReported,
+              totalCandidates: update.totalUniqueResults,
+              candidatesReceived: update.newUniqueResultsInPage,
+              candidatesCollectedSoFar: update.totalUniqueResults,
+              remainingToFetch,
+              strategyId,
+              strategyLabel,
+              candidateSource: 'linkedin_xray',
+              engine: update.engine,
+              paginationMode:
+                body.includePaginatedHtml === true ? 'bright_data' : 'arxena',
+            },
+          });
+        },
+      });
+
+    console.log("This is results : ", results)
+
+    this.logger.log(
+      `LinkedIn x-ray search complete for company="${resolvedCompanyName}" includePaginatedHtml=${body.includePaginatedHtml === true} itemCount=${results.candidates.length}`,
+    );
+
+    if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
+      return {
+        items: [],
+        itemCount: 0,
+        isCached: false,
+        cacheSource: 'none',
+        strategyResults: [],
+      };
+    }
+
+    const transformedCandidates =
+      this.linkedinXrayTransformerService.transformLinkedinXrayRowsToTableFormat(
+        results.candidates,
+        {
+          companyName: resolvedCompanyName,
+          companyId,
+          companyLinkedinUrl: canonicalCompanyLinkedinUrl,
+        },
+      );
+
+    await this.emitOrgchartSearchProgressForToken(apiToken, {
+      requestId,
+      mode,
+      searchType,
+      companyName: resolvedCompanyName,
+      event: 'status',
+      data: {
+        message: `LinkedIn x-ray fetched ${transformedCandidates.length} candidates. Building org chart...`,
+        itemCount: transformedCandidates.length,
+        candidateSource: 'linkedin_xray',
+      },
+    });
+
+    return {
+      items: transformedCandidates,
+      itemCount: transformedCandidates.length,
+      isCached: false,
+      cacheSource: 'none',
+      strategyResults: [],
+    };
+  }
 
   /** Metadata aligned with org_chart credit debits / S3 folder under org-charts/{normalized}/ */
   private async buildOrgChartCreditMetadata(
@@ -426,6 +905,7 @@ export class OrgChartLinkedInBuildService {
           const baseItems = Array.isArray(cachedOrgChart.items)
             ? (cachedOrgChart.items as Record<string, unknown>[])
             : [];
+          const candidateSource = this.inferCandidateSourceFromItems(baseItems);
           const filteredItems = applyFiltersToItems(baseItems);
           const orgChartForResponse =
             hasCountryFilter || hasFunctionRootFilter
@@ -455,6 +935,9 @@ export class OrgChartLinkedInBuildService {
             isCached: true,
             cacheSource: 'orgchart',
             cachedAt: cachedOrgChart.cachedAt,
+            ...(candidateSource && {
+              candidateSource,
+            }),
           };
         }
         if (process.env.IS_BILLING_ENABLED === 'true' && apiToken) {
@@ -512,6 +995,7 @@ export class OrgChartLinkedInBuildService {
         const baseItems = Array.isArray(cachedOrgChart.items)
           ? (cachedOrgChart.items as Record<string, unknown>[])
           : [];
+        const candidateSource = this.inferCandidateSourceFromItems(baseItems);
         const filteredItems = applyFiltersToItems(baseItems);
         const orgChartForResponse =
           hasCountryFilter || hasFunctionRootFilter
@@ -541,6 +1025,9 @@ export class OrgChartLinkedInBuildService {
           isCached: true,
           cacheSource: 'orgchart',
           cachedAt: cachedOrgChart.cachedAt,
+          ...(candidateSource && {
+            candidateSource,
+          }),
         };
       }
     }
@@ -561,6 +1048,7 @@ export class OrgChartLinkedInBuildService {
         const baseItems = Array.isArray(cachedCandidateList.items)
           ? (cachedCandidateList.items as Record<string, unknown>[])
           : [];
+        const candidateSource = this.inferCandidateSourceFromItems(baseItems);
         const filteredItems = applyFiltersToItems(baseItems);
         const orgChartFromCache =
           await this.orgChartSearchService.buildOrgChartFromLinkedInCompanyCandidates(
@@ -670,6 +1158,9 @@ export class OrgChartLinkedInBuildService {
           isCached: true,
           cacheSource: 'candidate_list',
           cachedAt: cachedCandidateList.cachedAt,
+          ...(candidateSource && {
+            candidateSource,
+          }),
         };
       } catch (error) {
         if (error instanceof HttpException) {
@@ -695,6 +1186,7 @@ export class OrgChartLinkedInBuildService {
         const baseItems = Array.isArray(cachedCandidateList.items)
           ? (cachedCandidateList.items as Record<string, unknown>[])
           : [];
+        const candidateSource = this.inferCandidateSourceFromItems(baseItems);
         const filteredItems = applyFiltersToItems(baseItems);
 
         return {
@@ -710,6 +1202,9 @@ export class OrgChartLinkedInBuildService {
           isCached: true,
           cacheSource: 'candidate_list',
           cachedAt: cachedCandidateList.cachedAt,
+          ...(candidateSource && {
+            candidateSource,
+          }),
         };
       }
     }
@@ -876,7 +1371,21 @@ export class OrgChartLinkedInBuildService {
       shouldWriteCompanyOrgChartCache,
     };
 
-    await this.orgchartApifyQueue.add('OrgchartApifyBuildProcessor', jobData);
+    await this.orgchartApifyQueue.add('OrgchartApifyBuildProcessor', jobData, {
+      retryLimit: 0,
+    });
+
+    await this.emitOrgchartSearchProgressForToken(apiToken, {
+      requestId,
+      mode,
+      searchType,
+      companyName: resolvedCompanyName,
+      event: 'status',
+      data: {
+        message: 'Apify org chart job queued. Waiting for worker pickup…',
+        candidateSource: 'apify',
+      },
+    });
 
     this.logger.log(
       `Queued Apify org chart build for company="${resolvedCompanyName}" linkedinUrl=${linkedinCompanyUrl}`,
@@ -898,6 +1407,313 @@ export class OrgChartLinkedInBuildService {
       orgChart: undefined,
       isCached: false,
       cacheSource: 'none' as const,
+    };
+  }
+
+  private async maybeQueueLinkedinXrayOrgChartBuild(args: {
+    body: SearchOrgchartLinkedInBody;
+    apiToken: string;
+    mode: OrgchartSearchMode;
+    resolvedCompanyName: string;
+    companyId?: string;
+    jobTitles: string[];
+    searchType: OrgchartSearchType;
+    requestId?: string;
+    canonicalCompanyLinkedinUrl?: string;
+    shouldWriteCompanyOrgChartCache: boolean;
+  }): Promise<unknown> {
+    const {
+      body,
+      apiToken,
+      mode,
+      resolvedCompanyName,
+      companyId,
+      jobTitles,
+      searchType,
+      requestId,
+      canonicalCompanyLinkedinUrl,
+      shouldWriteCompanyOrgChartCache,
+    } = args;
+
+    if (body.candidateSource !== 'linkedin_xray') {
+      return null;
+    }
+
+    const terminalResponse = this.buildTerminalOrgchartRequestResponse({
+      requestId,
+      mode,
+      searchType,
+      companyName: resolvedCompanyName,
+      companyId,
+      jobTitles,
+      linkedinCompanyUrl: canonicalCompanyLinkedinUrl,
+      candidateSource: 'linkedin_xray',
+    });
+
+    if (terminalResponse) {
+      this.logger.log(
+        `Skipping LinkedIn x-ray requeue for terminal requestId=${requestId} status=${String(
+          (terminalResponse as { terminalStatus?: string }).terminalStatus,
+        )}`,
+      );
+
+      return terminalResponse;
+    }
+
+    if (!this.brightDataSerpService.isConfigured()) {
+      throw new HttpException(
+        'LinkedIn x-ray is not configured (BRIGHT_DATA_API_KEY)',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    if (requestId) {
+      this.orgchartCancelRegistry.register(requestId);
+    }
+
+    const jobData: OrgchartLinkedinXrayBuildJobData = {
+      apiToken,
+      requestId,
+      rawQuery: body.rawQuery,
+      cleanedQuery: body.cleanedQuery,
+      searchType,
+      mode,
+      companyName: resolvedCompanyName,
+      companyId,
+      jobTitles: body.jobTitles,
+      country: body.country,
+      functionRoot: body.functionRoot,
+      linkedinCompanyUrl: canonicalCompanyLinkedinUrl,
+      businessDivisionRawQuery: body.businessDivisionRawQuery,
+      xraySearchEngine: body.xraySearchEngine,
+      includePaginatedHtml: body.includePaginatedHtml,
+      shouldWriteCompanyOrgChartCache,
+    };
+
+    await this.orgchartApifyQueue.add(
+      'OrgchartLinkedinXrayBuildProcessor',
+      jobData,
+      { retryLimit: 0 },
+    );
+
+    await this.emitOrgchartSearchProgressForToken(apiToken, {
+      requestId,
+      mode,
+      searchType,
+      companyName: resolvedCompanyName,
+      event: 'status',
+      data: {
+        message: 'LinkedIn x-ray org chart job queued. Waiting for worker pickup…',
+        candidateSource: 'linkedin_xray',
+      },
+    });
+
+    this.logger.log(
+      `Queued LinkedIn x-ray org chart build for company="${resolvedCompanyName}" includePaginatedHtml=${body.includePaginatedHtml === true}`,
+    );
+
+    return {
+      success: true,
+      queued: true,
+      candidateSource: 'linkedin_xray' as const,
+      requestId,
+      mode,
+      searchType,
+      companyName: resolvedCompanyName,
+      companyId,
+      jobTitles,
+      linkedinCompanyUrl: canonicalCompanyLinkedinUrl,
+      itemCount: 0,
+      items: [],
+      orgChart: undefined,
+      isCached: false,
+      cacheSource: 'none' as const,
+    };
+  }
+
+  private async maybeQueueUnipileOrgChartBuild(args: {
+    body: SearchOrgchartLinkedInBody;
+    apiToken: string;
+    mode: OrgchartSearchMode;
+    resolvedCompanyName: string;
+    companyId?: string;
+    jobTitles: string[];
+    searchType: OrgchartSearchType;
+    requestId?: string;
+    canonicalCompanyLinkedinUrl?: string;
+    shouldWriteCompanyOrgChartCache: boolean;
+  }): Promise<unknown> {
+    const {
+      body,
+      apiToken,
+      mode,
+      resolvedCompanyName,
+      companyId,
+      jobTitles,
+      searchType,
+      requestId,
+      canonicalCompanyLinkedinUrl,
+      shouldWriteCompanyOrgChartCache,
+    } = args;
+
+    if (
+      body.candidateSource === 'apify' ||
+      body.candidateSource === 'linkedin_xray'
+    ) {
+      return null;
+    }
+
+    const terminalResponse = this.buildTerminalOrgchartRequestResponse({
+      requestId,
+      mode,
+      searchType,
+      companyName: resolvedCompanyName,
+      companyId,
+      jobTitles,
+      linkedinCompanyUrl: canonicalCompanyLinkedinUrl,
+      candidateSource: 'unipile',
+    });
+
+    if (terminalResponse) {
+      this.logger.log(
+        `Skipping Unipile requeue for terminal requestId=${requestId} status=${String(
+          (terminalResponse as { terminalStatus?: string }).terminalStatus,
+        )}`,
+      );
+
+      return terminalResponse;
+    }
+
+    if (requestId) {
+      this.orgchartCancelRegistry.register(requestId);
+    }
+
+    const jobData: OrgchartUnipileBuildJobData = {
+      apiToken,
+      requestId,
+      rawQuery: body.rawQuery,
+      cleanedQuery: body.cleanedQuery,
+      searchType,
+      mode,
+      companyName: resolvedCompanyName,
+      companyId,
+      jobTitles: body.jobTitles,
+      country: body.country,
+      functionRoot: body.functionRoot,
+      linkedinCompanyUrl: canonicalCompanyLinkedinUrl,
+      linkedinUnipileAccountId: body.linkedinUnipileAccountId,
+      businessDivisionRawQuery: body.businessDivisionRawQuery,
+      shouldWriteCompanyOrgChartCache,
+    };
+
+    await this.orgchartApifyQueue.add(
+      'OrgchartUnipileBuildProcessor',
+      jobData,
+      { retryLimit: 0 },
+    );
+
+    await this.emitOrgchartSearchProgressForToken(apiToken, {
+      requestId,
+      mode,
+      searchType,
+      companyName: resolvedCompanyName,
+      event: 'status',
+      data: {
+        message: 'LinkedIn org chart job queued. Waiting for worker pickup…',
+        candidateSource: 'unipile',
+      },
+    });
+
+    this.logger.log(
+      `Queued Unipile org chart build for company="${resolvedCompanyName}" mode=${mode}`,
+    );
+
+    return {
+      success: true,
+      queued: true,
+      candidateSource: 'unipile' as const,
+      requestId,
+      mode,
+      searchType,
+      companyName: resolvedCompanyName,
+      companyId,
+      jobTitles,
+      linkedinCompanyUrl: canonicalCompanyLinkedinUrl,
+      itemCount: 0,
+      items: [],
+      orgChart: undefined,
+      isCached: false,
+      cacheSource: 'none' as const,
+    };
+  }
+
+  private buildTerminalOrgchartRequestResponse(input: {
+    requestId?: string;
+    mode: OrgchartSearchMode;
+    searchType: OrgchartSearchType;
+    companyName: string;
+    companyId?: string;
+    jobTitles: string[];
+    linkedinCompanyUrl?: string;
+    candidateSource: 'unipile' | 'linkedin_xray' | 'apify';
+  }):
+    | {
+        success: true;
+        queued: false;
+        requestId?: string;
+        mode: OrgchartSearchMode;
+        searchType: OrgchartSearchType;
+        companyName: string;
+        companyId?: string;
+        jobTitles: string[];
+        linkedinCompanyUrl?: string;
+        candidateSource: 'unipile' | 'linkedin_xray' | 'apify';
+        itemCount: 0;
+        items: [];
+        orgChart: undefined;
+        isCached: false;
+        cacheSource: 'none';
+        terminalStatus: 'cancelled' | 'completed' | 'failed';
+        orgChartError?: string;
+      }
+    | null {
+    const state = this.orgchartCancelRegistry.getState(input.requestId);
+
+    if (
+      !state ||
+      (state.status !== 'cancelled' &&
+        state.status !== 'completed' &&
+        state.status !== 'failed')
+    ) {
+      return null;
+    }
+
+    return {
+      success: true,
+      queued: false,
+      requestId: input.requestId,
+      mode: input.mode,
+      searchType: input.searchType,
+      companyName: input.companyName,
+      companyId: input.companyId,
+      jobTitles: input.jobTitles,
+      linkedinCompanyUrl: input.linkedinCompanyUrl,
+      candidateSource: input.candidateSource,
+      itemCount: 0,
+      items: [],
+      orgChart: undefined,
+      isCached: false,
+      cacheSource: 'none' as const,
+      terminalStatus: state.status,
+      ...(state.status === 'failed' || state.status === 'cancelled'
+        ? {
+            orgChartError:
+              state.message ||
+              (state.status === 'cancelled'
+                ? 'Org chart search was cancelled.'
+                : 'Org chart search failed.'),
+          }
+        : {}),
     };
   }
 
@@ -1313,8 +2129,81 @@ export class OrgChartLinkedInBuildService {
       return apifyQueued;
     }
 
-    if (requestId) {
-      this.orgchartCancelRegistry.register(requestId);
+    const linkedinXrayQueued =
+      await this.maybeQueueLinkedinXrayOrgChartBuild({
+        body,
+        apiToken,
+        mode,
+        resolvedCompanyName,
+        companyId,
+        jobTitles,
+        searchType,
+        requestId,
+        canonicalCompanyLinkedinUrl,
+        shouldWriteCompanyOrgChartCache,
+      });
+
+    if (linkedinXrayQueued) {
+      return linkedinXrayQueued;
+    }
+
+    const unipileQueued = await this.maybeQueueUnipileOrgChartBuild({
+      body,
+      apiToken,
+      mode,
+      resolvedCompanyName,
+      companyId,
+      jobTitles,
+      searchType,
+      requestId,
+      canonicalCompanyLinkedinUrl,
+      shouldWriteCompanyOrgChartCache,
+    });
+
+    if (unipileQueued) {
+      return unipileQueued;
+    }
+
+    const xrayResult = await this.runLinkedinXrayOrgChartSearch({
+      body,
+      apiToken,
+      mode,
+      resolvedCompanyName,
+      companyId,
+      requestId,
+      searchType,
+      canonicalCompanyLinkedinUrl,
+    });
+
+    if (xrayResult) {
+      const { orgChart, orgChartError } =
+        await this.buildOrgChartAfterLinkedInSearch({
+          apiToken,
+          body,
+          mode,
+          resolvedCompanyName,
+          companyId,
+          searchType,
+          requestId,
+          canonicalCompanyLinkedinUrl,
+          shouldWriteCompanyOrgChartCache,
+          result: xrayResult,
+        });
+
+      return {
+        success: true,
+        mode,
+        searchType,
+        companyName: resolvedCompanyName,
+        jobTitles,
+        itemCount: xrayResult.itemCount,
+        items: xrayResult.items,
+        orgChart,
+        ...(orgChartError ? { orgChartError } : {}),
+        isCached: false,
+        cacheSource: 'none' as const,
+        candidateSource: 'linkedin_xray' as const,
+      };
     }
 
     const result =
@@ -1391,6 +2280,8 @@ export class OrgChartLinkedInBuildService {
       companyId,
     } = jobData;
 
+
+    console.log("Org Chart Build :", jobData)
     const modeForOrgChartBuild: OrgchartSearchMode =
       jobData.mode === 'all_people' ? 'all_people' : 'entire_company';
 
@@ -1414,6 +2305,10 @@ export class OrgChartLinkedInBuildService {
       },
     });
 
+    const apifyStrategyId = 'orgchart-apify-company-scraper';
+    const apifyStrategyLabel = 'Apify company employees';
+    let apifyReportedTotalProfiles: number | undefined;
+
     let items: TransformedCandidateForTable[] = [];
 
     try {
@@ -1425,6 +2320,76 @@ export class OrgChartLinkedInBuildService {
           defaultCompanyName: resolvedCompanyName,
           companyLinkedinUrl: jobData.linkedinCompanyUrl,
           jobTitles: jobData.jobTitles,
+          onProgress: async (message) => {
+            const parsed = parseApifyLinkedinCompanyScraperLogLine(message);
+            console.log("This is parsed", parsed)
+            if (parsed?.kind === 'profiles_total') {
+              apifyReportedTotalProfiles = parsed.total;
+              const approxPages = Math.max(1, Math.ceil(parsed.total / 25));
+              
+              await this.emitOrgchartSearchProgressForToken(apiToken, {
+                requestId,
+                mode: modeForOrgChartBuild,
+                searchType,
+                companyName: resolvedCompanyName,
+                event: 'paginationInfo',
+                data: {
+                  strategyId: apifyStrategyId,
+                  strategyLabel: apifyStrategyLabel,
+                  totalCount: parsed.total,
+                  totalPages: approxPages,
+                  pageLimit: 25,
+                  candidateSource: 'apify',
+                },
+              });
+            }
+            if (parsed?.kind === 'search_page') {
+              const totalPages = apifyReportedTotalProfiles
+                ? Math.max(1, Math.ceil(apifyReportedTotalProfiles / 25))
+                : undefined;
+              const totalCandidatesApprox = apifyReportedTotalProfiles
+                ? Math.min(
+                    apifyReportedTotalProfiles,
+                    parsed.page * 25,
+                  )
+                : parsed.page * 25;
+              await this.emitOrgchartSearchProgressForToken(apiToken, {
+                requestId,
+                mode: modeForOrgChartBuild,
+                searchType,
+                companyName: resolvedCompanyName,
+                event: 'pageResults',
+                data: {
+                  page: parsed.page,
+                  totalPages,
+                  totalCandidates: totalCandidatesApprox,
+                  candidatesReceived: parsed.profilesOnPage,
+                  totalCountFromAPI: apifyReportedTotalProfiles,
+                  remainingToFetch:
+                    apifyReportedTotalProfiles != null
+                      ? Math.max(
+                          0,
+                          apifyReportedTotalProfiles - totalCandidatesApprox,
+                        )
+                      : undefined,
+                  strategyId: apifyStrategyId,
+                  strategyLabel: apifyStrategyLabel,
+                  candidateSource: 'apify',
+                },
+              });
+            }
+            await this.emitOrgchartSearchProgressForToken(apiToken, {
+              requestId,
+              mode: modeForOrgChartBuild,
+              searchType,
+              companyName: resolvedCompanyName,
+              event: 'status',
+              data: {
+                message,
+                candidateSource: 'apify',
+              },
+            });
+          },
         });
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Apify fetch failed';
@@ -1694,6 +2659,361 @@ export class OrgChartLinkedInBuildService {
     });
   }
 
+  async handleLinkedinXrayOrgChartJob(
+    jobData: OrgchartLinkedinXrayBuildJobData,
+  ): Promise<void> {
+    const {
+      apiToken,
+      requestId,
+      searchType,
+      companyName: resolvedCompanyName,
+      companyId,
+      linkedinCompanyUrl,
+    } = jobData;
+
+    const modeForOrgChartBuild = jobData.mode;
+
+    if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
+      this.logger.log(
+        `LinkedIn x-ray org chart job skipped (cancelled) requestId=${requestId}`,
+      );
+
+      return;
+    }
+
+    const body: SearchOrgchartLinkedInBody = {
+      rawQuery: jobData.rawQuery,
+      cleanedQuery: jobData.cleanedQuery,
+      companyName: resolvedCompanyName,
+      companyId,
+      jobTitles: jobData.jobTitles,
+      mode: modeForOrgChartBuild,
+      searchType,
+      requestId,
+      country: jobData.country,
+      functionRoot: jobData.functionRoot,
+      candidateSource: 'linkedin_xray',
+      linkedinCompanyUrl,
+      businessDivisionRawQuery: jobData.businessDivisionRawQuery,
+      xraySearchEngine: jobData.xraySearchEngine,
+      includePaginatedHtml: jobData.includePaginatedHtml,
+    };
+
+    try {
+      const result = await this.runLinkedinXrayOrgChartSearch({
+        body,
+        apiToken,
+        mode: modeForOrgChartBuild,
+        resolvedCompanyName,
+        companyId,
+        requestId,
+        searchType,
+        canonicalCompanyLinkedinUrl: linkedinCompanyUrl,
+      });
+      console.log("REsult:", result)
+
+      if (!result) {
+        if (requestId) {
+          this.orgchartCancelRegistry.setFailed(
+            requestId,
+            'LinkedIn x-ray job did not produce a result.',
+          );
+        }
+        await this.emitOrgchartSearchProgressForToken(apiToken, {
+          requestId,
+          mode: modeForOrgChartBuild,
+          searchType,
+          companyName: resolvedCompanyName,
+          event: 'error',
+          data: {
+            message: 'LinkedIn x-ray job did not produce a result.',
+            candidateSource: 'linkedin_xray',
+          },
+        });
+
+        return;
+      }
+
+      if (result.itemCount === 0) {
+        if (requestId) {
+          this.orgchartCancelRegistry.setFailed(
+            requestId,
+            'LinkedIn x-ray returned no matching employees.',
+          );
+        }
+        await this.emitOrgchartSearchProgressForToken(apiToken, {
+          requestId,
+          mode: modeForOrgChartBuild,
+          searchType,
+          companyName: resolvedCompanyName,
+          event: 'error',
+          data: {
+            message: 'LinkedIn x-ray returned no matching employees.',
+            candidateSource: 'linkedin_xray',
+          },
+        });
+
+        return;
+      }
+
+      const { orgChart, orgChartError } =
+        await this.buildOrgChartAfterLinkedInSearch({
+          apiToken,
+          body,
+          mode: modeForOrgChartBuild,
+          resolvedCompanyName,
+          companyId,
+          searchType,
+          requestId,
+          canonicalCompanyLinkedinUrl: linkedinCompanyUrl,
+          shouldWriteCompanyOrgChartCache:
+            jobData.shouldWriteCompanyOrgChartCache,
+          result,
+        });
+
+      if (orgChartError) {
+        if (requestId) {
+          this.orgchartCancelRegistry.setFailed(requestId, orgChartError);
+        }
+        await this.emitOrgchartSearchProgressForToken(apiToken, {
+          requestId,
+          mode: modeForOrgChartBuild,
+          searchType,
+          companyName: resolvedCompanyName,
+          event: 'error',
+          data: {
+            message: orgChartError,
+            candidateSource: 'linkedin_xray',
+          },
+        });
+
+        return;
+      }
+
+      if (requestId) {
+        this.orgchartCancelRegistry.setCompleted(requestId);
+      }
+
+      await this.emitOrgchartSearchProgressForToken(apiToken, {
+        requestId,
+        mode: modeForOrgChartBuild,
+        searchType,
+        companyName: resolvedCompanyName,
+        event: 'complete',
+        data: {
+          message: `Org chart ready (${result.itemCount} employees via LinkedIn x-ray).`,
+          itemCount: result.itemCount,
+          candidateSource: 'linkedin_xray',
+          orgChart,
+          items: result.items,
+        },
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'LinkedIn x-ray org chart build failed.';
+
+      this.logger.error(
+        `LinkedIn x-ray org chart job failed for company="${resolvedCompanyName}": ${message}`,
+        error as Error,
+      );
+
+      if (requestId) {
+        this.orgchartCancelRegistry.setFailed(requestId, message);
+      }
+
+      await this.emitOrgchartSearchProgressForToken(apiToken, {
+        requestId,
+        mode: modeForOrgChartBuild,
+        searchType,
+        companyName: resolvedCompanyName,
+        event: 'error',
+        data: {
+          message,
+          candidateSource: 'linkedin_xray',
+        },
+      });
+    }
+  }
+
+  async handleUnipileOrgChartJob(
+    jobData: OrgchartUnipileBuildJobData,
+  ): Promise<void> {
+    const {
+      apiToken,
+      requestId,
+      searchType,
+      companyName: resolvedCompanyName,
+      companyId,
+      linkedinCompanyUrl,
+    } = jobData;
+
+    const modeForOrgChartBuild = jobData.mode;
+    console.log("Job Data for Org chart build:", jobData);
+    if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
+      this.logger.log(
+        `Unipile org chart job skipped (cancelled) requestId=${requestId}`,
+      );
+
+      return;
+    }
+
+    const body: SearchOrgchartLinkedInBody = {
+      rawQuery: jobData.rawQuery,
+      cleanedQuery: jobData.cleanedQuery,
+      companyName: resolvedCompanyName,
+      companyId,
+      jobTitles: jobData.jobTitles,
+      mode: modeForOrgChartBuild,
+      searchType,
+      requestId,
+      country: jobData.country,
+      functionRoot: jobData.functionRoot,
+      candidateSource: 'unipile',
+      linkedinCompanyUrl,
+      linkedinUnipileAccountId: jobData.linkedinUnipileAccountId,
+      businessDivisionRawQuery: jobData.businessDivisionRawQuery,
+    };
+
+    try {
+      const result = await this.orgChartSearchService.runOrgchartLinkedInSearch(
+        body.rawQuery,
+        body.cleanedQuery,
+        searchType,
+        apiToken,
+        undefined,
+        {
+          mode: modeForOrgChartBuild,
+          companyName: resolvedCompanyName,
+          companyId,
+          requestId,
+          jobTitles: body.jobTitles,
+          country: body.country,
+          functionRoot: body.functionRoot,
+          linkedinCompanyUrl,
+          linkedinUnipileAccountId: body.linkedinUnipileAccountId?.trim(),
+          businessDivisionRawQuery: body.businessDivisionRawQuery?.trim(),
+        },
+      );
+
+      if (result.itemCount === 0) {
+        if (requestId) {
+          this.orgchartCancelRegistry.setFailed(
+            requestId,
+            'LinkedIn returned no matching employees.',
+          );
+        }
+        await this.emitOrgchartSearchProgressForToken(apiToken, {
+          requestId,
+          mode: modeForOrgChartBuild,
+          searchType,
+          companyName: resolvedCompanyName,
+          event: 'error',
+          data: {
+            message: 'LinkedIn returned no matching employees.',
+            candidateSource: 'unipile',
+          },
+        });
+
+        return;
+      }
+
+      const bodyForBuild: SearchOrgchartLinkedInBody = {
+        ...body,
+        ...(result.effectiveFunctionRoot !== undefined
+          ? { functionRoot: result.effectiveFunctionRoot }
+          : {}),
+        ...(result.effectiveCountry !== undefined
+          ? { country: result.effectiveCountry }
+          : {}),
+      };
+
+      const { orgChart, orgChartError } =
+        await this.buildOrgChartAfterLinkedInSearch({
+          apiToken,
+          body: bodyForBuild,
+          mode: modeForOrgChartBuild,
+          resolvedCompanyName,
+          companyId,
+          searchType,
+          requestId,
+          canonicalCompanyLinkedinUrl: linkedinCompanyUrl,
+          shouldWriteCompanyOrgChartCache:
+            jobData.shouldWriteCompanyOrgChartCache,
+          result,
+        });
+
+      if (orgChartError) {
+        if (requestId) {
+          this.orgchartCancelRegistry.setFailed(requestId, orgChartError);
+        }
+        await this.emitOrgchartSearchProgressForToken(apiToken, {
+          requestId,
+          mode: modeForOrgChartBuild,
+          searchType,
+          companyName: resolvedCompanyName,
+          event: 'error',
+          data: {
+            message: orgChartError,
+            candidateSource: 'unipile',
+          },
+        });
+
+        return;
+      }
+
+      if (requestId) {
+        this.orgchartCancelRegistry.setCompleted(requestId);
+      }
+
+      await this.emitOrgchartSearchProgressForToken(apiToken, {
+        requestId,
+        mode: modeForOrgChartBuild,
+        searchType,
+        companyName: resolvedCompanyName,
+        event: 'complete',
+        data: {
+          message: `Org chart ready (${result.itemCount} employees via LinkedIn).`,
+          itemCount: result.itemCount,
+          candidateSource: 'unipile',
+          orgChart,
+          items: result.items,
+        },
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'LinkedIn org chart build failed.';
+
+      this.logger.error(
+        `Unipile org chart job failed for company="${resolvedCompanyName}": ${message}`,
+        error as Error,
+      );
+
+      if (requestId) {
+        this.orgchartCancelRegistry.setFailed(requestId, message);
+      }
+
+      await this.emitOrgchartSearchProgressForToken(apiToken, {
+        requestId,
+        mode: modeForOrgChartBuild,
+        searchType,
+        companyName: resolvedCompanyName,
+        event: 'error',
+        data: {
+          message,
+          candidateSource: 'unipile',
+        },
+      });
+    }
+  }
+
+  /**
+   * Org chart progress for Unipile, Apify, and LinkedIn x-ray (sync + queue workers).
+   * Uses Redis pub/sub; the HTTP process forwards to Socket.IO (see OrgChartProgressBridgeService).
+   */
   private async emitOrgchartSearchProgressForToken(
     apiToken: string,
     payload: {
@@ -1715,17 +3035,19 @@ export class OrgChartLinkedInBuildService {
       if (!workspaceMemberId) {
         return;
       }
-      this.workspaceQueryService.webSocketService.sendToUser(
+      const progressPayload = {
+        event: payload.event,
+        requestId: payload.requestId,
+        mode: payload.mode,
+        searchType: payload.searchType,
+        companyName: payload.companyName,
+        data: payload.data,
+      };
+
+      console.log("Payload : ", payload)
+      await this.orgChartProgressRedisService.publish(
         workspaceMemberId,
-        'orgchart-search-progress',
-        {
-          event: payload.event,
-          requestId: payload.requestId,
-          mode: payload.mode,
-          searchType: payload.searchType,
-          companyName: payload.companyName,
-          data: payload.data,
-        },
+        progressPayload,
       );
     } catch {
       // Invalid token or missing member id — response body still carries orgChartError.

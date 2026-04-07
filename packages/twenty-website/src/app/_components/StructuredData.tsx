@@ -11,17 +11,17 @@ const SITE_NAVIGATION: {
   {
     name: 'Pricing',
     url: '/pricing',
-    description: 'Simple pricing for org charts',
+    description: 'Credits for mapping any company org chart',
   },
   {
     name: 'Story',
     url: '/story',
-    description: 'Our story and mission',
+    description: 'Why we built Arxena',
   },
   {
     name: 'Engage',
     url: '/engage',
-    description: 'Reach the right people',
+    description: 'AI outreach in your voice',
   },
   {
     name: 'App',
@@ -45,7 +45,7 @@ export async function WebSiteStructuredData() {
     name: 'Arxena',
     url: baseUrl,
     description:
-      'Search and explore organizational charts of any company. 1M+ companies, 55M+ professionals for recruitment and talent mapping.',
+      'Map the org chart of any company you are targeting — sales, recruiting, investing, or research. 1M+ companies mapped, 800M+ professionals indexed. Real-time from LinkedIn and other sources.',
     publisher: {
       '@type': 'Organization',
       name: 'Arxena',

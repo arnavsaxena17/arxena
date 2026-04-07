@@ -55,9 +55,15 @@ type OrgChartSearchProgressEvent = {
   event?: 'status' | 'paginationInfo' | 'pageResults' | 'complete' | 'error';
   requestId?: string;
   mode?: string;
+  companyName?: string;
   data?: {
     message?: string;
     page?: number;
+    engine?: string;
+    candidateSource?: string;
+    itemCount?: number;
+    items?: Record<string, unknown>[];
+    orgChart?: Record<string, unknown>;
     totalPages?: number;
     totalCandidates?: number;
     totalCount?: number;
@@ -71,16 +77,24 @@ const createOrgChartRequestId = () =>
   `orgchart-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 const LINKEDIN_UNIPILE_SOURCE_UNAVAILABLE_SNACKBAR =
-  'LinkedIn (Unipile) is not connected. Connect LinkedIn in settings or choose Apify as the org chart data source in the jobs menu.';
+  'LinkedIn (Unipile) is not connected. Connect LinkedIn in settings or choose Apify or LinkedIn x-ray as the org chart data source in the jobs menu.';
 
 const APIFY_SOURCE_UNAVAILABLE_SNACKBAR =
   'Apify is not configured for org chart. Set APIFY_API_TOKEN on the server or choose LinkedIn (Unipile) in the jobs menu.';
+
+const LINKEDIN_XRAY_SOURCE_UNAVAILABLE_SNACKBAR =
+  'LinkedIn x-ray is not configured for org chart. Set BRIGHT_DATA_API_KEY on the server or choose LinkedIn (Unipile) in the jobs menu.';
 
 const APIFY_MODE_UNSUPPORTED_SNACKBAR =
   'Apify org chart data source is only available for full company (or all people) searches. Switch to LinkedIn (Unipile) for business division mapping, function filters, or other advanced modes.';
 
 const ORG_CHART_AGENT_UNAVAILABLE_SNACKBAR =
   'Contact Support. Org chart agent service is not available. Ensure the Python service is running and reachable.';
+
+const ORG_CHART_PROGRESS_UPDATES_TIMEOUT_MS = 240_000;
+
+const ORG_CHART_PROGRESS_UPDATES_TIMEOUT_SNACKBAR =
+  'Backend progress updates were not received. Please retry. If this keeps happening, check that the org chart worker, Python service, and progress stream are running.';
 
 const clearCompanyOrgChartCacheRequest = async (input: {
   baseUrl: string;
@@ -147,6 +161,7 @@ export const useOrgChartActions = ({
     string | null
   >(null);
   const orgchartAbortControllerRef = useRef<AbortController | null>(null);
+  const progressUpdateTimeoutRef = useRef<number | null>(null);
   const [contextProgressMessage, setContextProgressMessage] = useState<
     string | null
   >(null);
@@ -236,12 +251,53 @@ export const useOrgChartActions = ({
     setAddResultsToJobContext({});
   }, []);
 
+  const clearProgressUpdateTimeout = useCallback(() => {
+    if (progressUpdateTimeoutRef.current !== null) {
+      window.clearTimeout(progressUpdateTimeoutRef.current);
+      progressUpdateTimeoutRef.current = null;
+    }
+  }, []);
+
+  const armProgressUpdateTimeout = useCallback(
+    (requestId: string) => {
+      clearProgressUpdateTimeout();
+
+      progressUpdateTimeoutRef.current = window.setTimeout(() => {
+        setContextError(ORG_CHART_PROGRESS_UPDATES_TIMEOUT_SNACKBAR);
+        setContextProgressMessage(null);
+        setContextProgressPage(null);
+        setContextProgressTotalPages(null);
+        setContextProgressTotalCandidates(null);
+        setIsContextLoading(false);
+
+        if (companyId) {
+          closeSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`);
+        }
+
+        enqueueSnackBar(ORG_CHART_PROGRESS_UPDATES_TIMEOUT_SNACKBAR, {
+          variant: SnackBarVariant.Error,
+          dedupeKey: `orgchart-progress-timeout-${requestId}`,
+          duration: 10000,
+        });
+      }, ORG_CHART_PROGRESS_UPDATES_TIMEOUT_MS);
+    },
+    [clearProgressUpdateTimeout, closeSnackBarByDedupeKey, companyId, enqueueSnackBar],
+  );
+
+  useEffect(() => {
+    return () => {
+      clearProgressUpdateTimeout();
+    };
+  }, [clearProgressUpdateTimeout]);
+
   useWebSocketEvent<OrgChartSearchProgressEvent>(
     'orgchart-search-progress',
     (payload) => {
       if (!payload?.requestId || payload.requestId !== activeOrgChartRequestId) {
         return;
       }
+
+      armProgressUpdateTimeout(payload.requestId);
 
       const eventData = payload.data ?? {};
 
@@ -275,6 +331,7 @@ export const useOrgChartActions = ({
         setContextProgressTotalPages(null);
         setContextProgressTotalCandidates(null);
         setIsContextLoading(false);
+        clearProgressUpdateTimeout();
         return;
       }
 
@@ -336,11 +393,48 @@ export const useOrgChartActions = ({
         if (eventData.message) {
           setContextProgressMessage(eventData.message);
         }
+
+        const completeItems = Array.isArray(eventData.items)
+          ? eventData.items
+          : [];
+
+        if (completeItems.length > 0) {
+          setContextResults(
+            completeItems.map((item: Record<string, unknown>, index: number) =>
+              normalizeCandidateItem(item, index),
+            ),
+          );
+        }
+
+        if (eventData.orgChart && typeof eventData.orgChart === 'object') {
+          setLatestOrgChart(eventData.orgChart as Record<string, unknown>);
+        }
+
+        if (payload.mode === 'entire_company' && companyId) {
+          closeSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`);
+          const displayCompanyName =
+            payload.companyName ?? companyName ?? companyId;
+          enqueueSnackBar(
+            `Org chart ready for ${displayCompanyName} (${typeof eventData.itemCount === 'number' ? eventData.itemCount : completeItems.length} people)`,
+            {
+              variant: SnackBarVariant.Success,
+              dedupeKey: `orgchart-entire-company-${companyId}-done`,
+              duration: 4000,
+            },
+          );
+        }
+
+        setContextError(null);
+        setIsContextLoading(false);
+        clearProgressUpdateTimeout();
       }
     },
     [
       activeOrgChartRequestId,
+      armProgressUpdateTimeout,
+      clearProgressUpdateTimeout,
       companyId,
+      companyName,
       updateSnackBarByDedupeKey,
       closeSnackBarByDedupeKey,
       enqueueSnackBar,
@@ -349,19 +443,22 @@ export const useOrgChartActions = ({
 
   useEffect(() => {
     if (!isContextLoading && activeOrgChartRequestId) {
+      clearProgressUpdateTimeout();
       setActiveOrgChartRequestId(null);
     }
-  }, [activeOrgChartRequestId, isContextLoading]);
+  }, [activeOrgChartRequestId, clearProgressUpdateTimeout, isContextLoading]);
 
   const fetchLinkedinDataSourcesStatus = useCallback(async (): Promise<{
     linkedinUnipileConnected: boolean;
     apifyActorConfigured: boolean;
+    linkedinXrayConfigured: boolean;
     pythonOrgChartAgentAvailable: boolean;
   } | null> => {
     const serverBaseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
     if (!serverBaseUrl.trim() || !accessToken) {
       return null;
     }
+
     try {
       const res = await fetch(
         `${serverBaseUrl.replace(/\/$/, '')}/org-chart/linkedin-data-sources-status`,
@@ -374,6 +471,7 @@ export const useOrgChartActions = ({
         status?: string;
         linkedinUnipileConnected?: boolean;
         apifyActorConfigured?: boolean;
+        linkedinXrayConfigured?: boolean;
         pythonOrgChartAgentAvailable?: boolean;
       };
       if (json?.status !== 'ok') {
@@ -382,6 +480,7 @@ export const useOrgChartActions = ({
       return {
         linkedinUnipileConnected: !!json.linkedinUnipileConnected,
         apifyActorConfigured: !!json.apifyActorConfigured,
+        linkedinXrayConfigured: !!json.linkedinXrayConfigured,
         pythonOrgChartAgentAvailable:
           typeof json.pythonOrgChartAgentAvailable === 'boolean'
             ? json.pythonOrgChartAgentAvailable
@@ -424,6 +523,14 @@ export const useOrgChartActions = ({
       if (orgChartLinkedinCandidateSource === 'apify') {
         if (prereqStatus.apifyActorConfigured !== true) {
           enqueueSnackBar(APIFY_SOURCE_UNAVAILABLE_SNACKBAR, {
+            variant: SnackBarVariant.Error,
+            duration: 8000,
+          });
+          return;
+        }
+      } else if (orgChartLinkedinCandidateSource === 'linkedin_xray') {
+        if (prereqStatus.linkedinXrayConfigured !== true) {
+          enqueueSnackBar(LINKEDIN_XRAY_SOURCE_UNAVAILABLE_SNACKBAR, {
             variant: SnackBarVariant.Error,
             duration: 8000,
           });
@@ -595,6 +702,8 @@ export const useOrgChartActions = ({
       ...(divisionRaw ? { businessDivisionRawQuery: divisionRaw } : {}),
     };
 
+    let isQueuedAsyncSearch = false;
+
     try {
       if (useUnipileSource) {
         const currentUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}${window.location.search}`;
@@ -681,6 +790,21 @@ export const useOrgChartActions = ({
         // eslint-disable-next-line no-console
         console.log("json::", json);
         throw new Error(serverMessage);
+      }
+
+      if (json?.queued === true) {
+        isQueuedAsyncSearch = true;
+        setContextProgressMessage(
+          typeof json.candidateSource === 'string' &&
+            json.candidateSource === 'linkedin_xray'
+            ? 'LinkedIn x-ray search queued. Waiting for results...'
+            : typeof json.candidateSource === 'string' &&
+                json.candidateSource === 'unipile'
+              ? 'LinkedIn search queued. Waiting for results...'
+            : 'Org chart search queued. Waiting for results...',
+        );
+        armProgressUpdateTimeout(requestId);
+        return;
       }
 
       const rawItems = Array.isArray(json.items) ? json.items : [];
@@ -774,12 +898,19 @@ export const useOrgChartActions = ({
               : undefined,
           duration: 6000,
         });
+        clearProgressUpdateTimeout();
       } else {
         setContextError('Search stopped.');
         setContextProgressMessage(null);
+        clearProgressUpdateTimeout();
       }
     } finally {
+      if (isQueuedAsyncSearch) {
+        orgchartAbortControllerRef.current = null;
+        return;
+      }
       orgchartAbortControllerRef.current = null;
+      clearProgressUpdateTimeout();
       if (
         mode === 'entire_company' ||
         mode === 'function_grade' ||

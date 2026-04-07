@@ -3,7 +3,10 @@
 import styled from '@emotion/styled';
 import Link from 'next/link';
 
-import { HOW_IT_WORKS_STEPS } from '@/lib/homepage-content';
+import {
+    HOW_IT_WORKS_SECTION_SUBTITLE,
+    HOW_IT_WORKS_STEPS,
+} from '@/lib/homepage-content';
 
 const StyledSection = styled.section`
   width: 100%;
@@ -15,19 +18,24 @@ const StyledSection = styled.section`
 const StyledTitle = styled.h2`
   font-size: 1.25rem;
   font-weight: 600;
-  margin: 0 0 24px 0;
+  margin: 0 0 8px 0;
   color: #141414;
   text-align: center;
 `;
 
+const StyledSubtitle = styled.p`
+  font-size: 15px;
+  color: #818181;
+  margin: 0 auto 24px;
+  text-align: center;
+  line-height: 1.5;
+  max-width: 560px;
+`;
+
 const StyledStepsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 24px;
-
-  @media (max-width: 809px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
 
   @media (max-width: 480px) {
     grid-template-columns: 1fr;
@@ -37,9 +45,9 @@ const StyledStepsGrid = styled.div`
 const StyledStepCard = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 24px 16px;
+  align-items: flex-start;
+  text-align: left;
+  padding: 24px 20px;
   background: #fafafa;
   border: 1px solid rgba(20, 20, 20, 0.08);
   border-radius: 12px;
@@ -48,9 +56,9 @@ const StyledStepCard = styled.div`
 const StyledStepLink = styled(Link)`
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 24px 16px;
+  align-items: flex-start;
+  text-align: left;
+  padding: 24px 20px;
   background: #fafafa;
   border: 1px solid rgba(20, 20, 20, 0.08);
   border-radius: 12px;
@@ -85,18 +93,21 @@ const StyledStepTitle = styled.div`
   font-weight: 600;
   margin-bottom: 8px;
   color: #141414;
+  width: 100%;
 `;
 
 const StyledStepDescription = styled.div`
-  font-size: 14px;
+  font-size: 13px;
   color: #818181;
-  line-height: 1.5;
+  line-height: 1.55;
+  text-align: left;
 `;
 
 export const HowItWorksSection = () => {
   return (
     <StyledSection>
       <StyledTitle>How it works</StyledTitle>
+      <StyledSubtitle>{HOW_IT_WORKS_SECTION_SUBTITLE}</StyledSubtitle>
       <StyledStepsGrid>
         {HOW_IT_WORKS_STEPS.map((item) => {
           const content = (

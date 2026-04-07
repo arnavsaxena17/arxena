@@ -1,7 +1,7 @@
 export const TESTIMONIALS = [
   {
     quote:
-      "Arxena is a unique tool that I've been waiting for someone to build. In minutes you get a birds-eye view of their team structure and location. This process would take a day to do manually.",
+      "Arxena is a unique tool that I've been waiting for someone to build. In minutes you get a birds-eye view of any company's team structure and location. This process would take a day to do manually — and that's before you've even sent a single message.",
     name: 'Aaron Lintz',
     title: 'Sr. Talent Sourcing Specialist',
     company: 'Thoughtworks',
@@ -9,7 +9,7 @@ export const TESTIMONIALS = [
   },
   {
     quote:
-      'Before Arxena, I had used everything from DiscoverOrg to LucidCharts and nothing worked, locating the right decision makers took hours… now it takes me minutes, Arxena has helped close over 300k in ARR, this is by far the best sales outreach tool I have used.',
+      'Before Arxena, I had used everything from DiscoverOrg to Rocketreach and no one gave me the niche functions I was looking for - EHS and Logistics Teams, locating the right decision makers took hours… now it takes me minutes, Arxena has helped close over 300k in ARR, this is by far the best sales outreach tool I have used.',
     name: 'Craig Rajpal',
     title: 'Enterprise Sales Director',
     company: 'Workato',
@@ -33,70 +33,88 @@ export const TESTIMONIALS = [
   },
 ] as const;
 
+export const USE_CASES_SECTION_SUBTITLE =
+  'The teams that live and die by who they can reach';
+
 export const USE_CASES = [
   {
-    title: 'Founders',
+    title: 'Sales teams',
     description:
-      'Understand competitor roles, their backgrounds for workforce planning and hiring.',
-    href: '/org-chart/microsoft',
+      'Map your target accounts, identify champions and blockers, and let AI open conversations at scale. No more mass-blasting cold emails.',
+    href: '/engage',
   },
   {
     title: 'Recruiters',
     description:
-      'Map companies in real time, build lists, fetch contacts, engage on WhatsApp and LinkedIn.',
+      'Find passive candidates by role, level, and company in real time. Reach them on WhatsApp and LinkedIn — where they actually respond.',
     href: '/org-chart/google',
   },
   {
-    title: 'Sales teams',
+    title: 'Investors & PE/VC',
     description:
-      'Map companies in real time, build lists, fetch contacts, engage on WhatsApp and LinkedIn.',
-    href: '/engage',
-  },
-  {
-    title: 'Investors',
-    description:
-      'Assess team composition and leadership at portfolio companies.',
+      'Assess team depth, leadership quality, and org structure at portfolio companies or acquisition targets — before a single call.',
     href: '/org-chart/netflix',
   },
+  {
+    title: 'Founders',
+    description:
+      "Understand how competitors are structured, who they're hiring, and which executives you should be talking to at your next enterprise prospect.",
+    href: '/org-chart/microsoft',
+  },
 ] as const;
+
+export const HOW_IT_WORKS_SECTION_SUBTITLE =
+  'From company name to booked meeting — in four steps';
 
 export const HOW_IT_WORKS_STEPS = [
   {
     step: 1,
-    title: 'Search',
-    description: "Find any company's org chart.",
+    title: 'Search any company',
+    description:
+      'Type a company name. Arxena fetches their real-time org chart from LinkedIn and other sources — roles, seniority, reporting lines, locations — algorithmically clustered so you can navigate it instantly.',
   },
   {
     step: 2,
-    title: 'View structure',
+    title: 'Map the structure',
     description:
-      'Real-time org structure from LinkedIn and other data; algorithmically clustered.',
+      'See who leads which team, who reports to whom, and which roles are relevant to your goal. Filter by function, seniority, or geography. Understand team composition at a glance.',
   },
   {
     step: 3,
-    title: 'Build lists & contacts',
-    description: 'Navigate the org, build lists, fetch contact details.',
+    title: 'Build your list and get contacts',
+    description:
+      'Select the people you want to reach. Arxena enriches each profile with verified email, LinkedIn, and WhatsApp contact details — ready to act on immediately.',
   },
   {
     step: 4,
-    title: 'Engage',
+    title: 'AI engages for you',
     description:
-      'Reach out via WhatsApp, LinkedIn; you only talk to people who respond.',
+      "Arxena's AI sends personalized messages on WhatsApp, LinkedIn, and email — written in your voice, with context from the org chart. You step in only when someone has already replied. No more cold silence.",
     href: '/engage',
   },
 ] as const;
 
 export const DIFFERENTIATORS = [
   {
-    title: 'Real-time org charts from LinkedIn (and others)',
+    title: 'Any company. Real-time.',
     description:
-      'Real-time company structures from LinkedIn and other data; algorithmically built so you can navigate, build lists, and fetch contacts.',
+      "Not a static database. Arxena fetches live org data from LinkedIn and other sources, so you see who's actually there today — not who was listed six months ago.",
   },
   {
-    title: 'AI that speaks as you',
+    title: 'AI that engages — not just lists',
     description:
-      'Engage in your voice on WhatsApp, LinkedIn, and email. You only talk to people who respond.',
+      'Most tools stop at "here\'s a contact." Arxena goes further: AI reaches out in your voice, with personalized context, across WhatsApp, LinkedIn, and email. You only respond to warm replies.',
     href: '/engage',
+  },
+  {
+    title: 'Org structure, not just names',
+    description:
+      "See reporting lines, team clusters, seniority layers. Understand who has budget authority, who's the gatekeeper, and who's the champion — before your first message.",
+  },
+  {
+    title: 'One workflow, start to finish',
+    description:
+      'Search → map → list → contact → engage. No stitching together six tools. Arxena covers the entire journey from company name to booked meeting.',
   },
 ] as const;
 

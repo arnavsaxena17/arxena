@@ -438,71 +438,144 @@ export class SearchParametersPrompts {
     - reasoning: brief explanation including relevance score and pagination recommendation`;
   }
 
+  private formatPeopleSearchResultLine(
+    result: LinkedInSearchResult,
+    idx: number,
+  ): string {
+    if (result.type !== 'PEOPLE') {
+      return `${idx + 1}. [Non-people result: ${result.type}]`;
+    }
+
+    const peopleResult = result as LinkedInPeopleSearchResult;
+
+    const name =
+      peopleResult.name ||
+      `${peopleResult.first_name || ''} ${peopleResult.last_name || ''}`.trim();
+    const headline = peopleResult.headline || '';
+    const location = peopleResult.location || '';
+    const industry = peopleResult.industry || '';
+
+    const currentPositions =
+      peopleResult.current_positions
+        ?.map(
+          (pos) =>
+            `${pos.role} at ${pos.company}${pos.location ? ` (${pos.location})` : ''}${pos.tenure_at_role ? ` - ${pos.tenure_at_role.years}y ${pos.tenure_at_role.months}m` : ''}`,
+        )
+        .join('; ') || 'No current positions';
+
+    const workExperience =
+      peopleResult.work_experience
+        ?.slice(0, 3)
+        .map(
+          (exp) =>
+            `${exp.role} at ${exp.company}${exp.start ? ` (${exp.start.year}${exp.end ? `-${exp.end.year}` : '-present'})` : ''}${exp.industry ? ` - ${exp.industry}` : ''}`,
+        )
+        .join('; ') || '';
+
+    const education =
+      peopleResult.education
+        ?.map(
+          (edu) =>
+            `${edu.degree || ''}${edu.field_of_study ? ` in ${edu.field_of_study}` : ''} from ${edu.school}${edu.start ? ` (${edu.start.year}${edu.end ? `-${edu.end.year}` : ''})` : ''}`,
+        )
+        .join('; ') || '';
+
+    const skills =
+      peopleResult.skills?.slice(0, 10).map((skill) => skill.name).join(', ') ||
+      '';
+
+    const certifications =
+      peopleResult.certifications
+        ?.map(
+          (cert) =>
+            `${cert.name}${cert.organization ? ` from ${cert.organization}` : ''}${cert.start ? ` (${cert.start.year}${cert.end ? `-${cert.end.year}` : ''})` : ''}`,
+        )
+        .join('; ') || '';
+
+    const projects =
+      peopleResult.projects
+        ?.slice(0, 3)
+        .map(
+          (proj) =>
+            `${proj.name}${proj.description ? `: ${proj.description.substring(0, 100)}` : ''}${proj.skills?.length ? ` [Skills: ${proj.skills.join(', ')}]` : ''}`,
+        )
+        .join('; ') || '';
+
+    let resultText = `${idx + 1}. ${name}`;
+    if (headline) resultText += `\n   Headline: ${headline}`;
+    if (location) resultText += `\n   Location: ${location}`;
+    if (industry) resultText += `\n   Industry: ${industry}`;
+    resultText += `\n   Current Positions: ${currentPositions}`;
+    if (workExperience) resultText += `\n   Work Experience: ${workExperience}`;
+    if (education) resultText += `\n   Education: ${education}`;
+    if (skills) resultText += `\n   Skills: ${skills}`;
+    if (certifications) resultText += `\n   Certifications: ${certifications}`;
+    if (projects) resultText += `\n   Projects: ${projects}`;
+    if (peopleResult.connections_count !== undefined) {
+      resultText += `\n   Connections: ${peopleResult.connections_count}`;
+    }
+    if (peopleResult.keywords_match) {
+      resultText += `\n   Keywords Match: ${peopleResult.keywords_match}`;
+    }
+    if (peopleResult.shared_connections_count !== undefined) {
+      resultText += `\n   Shared Connections: ${peopleResult.shared_connections_count}`;
+    }
+
+    return resultText;
+  }
+
+  getLinkedinXraySerpPaginationValidationSystemPrompt(): string {
+    return `You validate LinkedIn x-ray SERP pages. Each row was enriched from the public LinkedIn profile URL via Bright Data (full profile), so Current Positions reflect the scraped profile—not only Google snippet text.
+
+    TASKS:
+    1. Compare each candidate's current employer (from Current Positions) to REQUIRED COMPANY NAME. Treat subsidiaries and obvious spelling variants as matches when appropriate.
+    2. Assess whether this SERP page is worth continuing: role/title fit, location, and employer alignment with the requirement text.
+    3. Compute relevanceScore 0–1 for how useful this page is for the org-chart search.
+    4. Decide shouldContinuePagination.
+
+    PAGINATION RULES (all apply):
+    - Set shouldContinuePagination false if relevanceScore < 0.4.
+    - If total unique profiles collected so far is greater than 60 AND fewer than 40% of candidates on THIS PAGE have a current employer that matches REQUIRED COMPANY NAME (or an acceptable variant), set shouldContinuePagination false unless the page is still clearly on-target (e.g. almost everyone matches company but titles are off).
+    - If candidates are clearly the wrong company or wrong geography for the org chart, set shouldContinuePagination false even above the relevance threshold.
+
+    OUTPUT: same JSON shape as standard result validation (isRelevant, relevanceScore, falsePositives, qualityAssessment, shouldContinuePagination, reasoning).`;
+  }
+
+  buildLinkedinXraySerpPaginationValidationPrompt(
+    searchResults: LinkedInSearchResult[],
+    requirementText: string,
+    requiredCompanyName: string,
+    totalProfilesCollectedSoFar: number,
+  ): string {
+    const sampleResults = searchResults.slice(0, Math.min(25, searchResults.length));
+    const sampleResultsText = sampleResults
+      .map((result, i) => this.formatPeopleSearchResultLine(result, i + 1))
+      .join('\n\n');
+
+    return `LinkedIn x-ray SERP page validation (Bright Data–enriched profiles).
+
+    REQUIRED COMPANY NAME (org chart target):
+    ${requiredCompanyName}
+
+    RECRUITER / SEARCH REQUIREMENT:
+    ${requirementText}
+
+    TOTAL UNIQUE PROFILES COLLECTED SO FAR (including this page after merge): ${totalProfilesCollectedSoFar}
+
+    THIS PAGE CANDIDATES (${sampleResults.length} of ${searchResults.length} on page):
+    ${sampleResultsText}
+
+    Focus on whether current employers match "${requiredCompanyName}" and whether fetching more SERP pages is likely to help.`;
+  }
+
   buildResultValidationPrompt(
     searchResults: LinkedInSearchResult[],
     userMessage: string,
   ): string {
     const sampleResults = searchResults.slice(0, Math.min(25, searchResults.length));
-    const formatResult = (result: LinkedInSearchResult, idx: number): string => {
-      // Only format people search results (classic, sales navigator, recruiter all return people results)
-      if (result.type !== 'PEOPLE') {
-        return `${idx + 1}. [Non-people result: ${result.type}]`;
-      }
-      
-      // Type guard: result is LinkedInPeopleSearchResult
-      const peopleResult = result as LinkedInPeopleSearchResult;
-      
-      const name = peopleResult.name || `${peopleResult.first_name || ''} ${peopleResult.last_name || ''}`.trim();
-      const headline = peopleResult.headline || '';
-      const location = peopleResult.location || '';
-      const industry = peopleResult.industry || '';
-      
-      // Format all current positions (role, company, location, tenure only; omit description to avoid duplicating "Current: [role] at [company]")
-      const currentPositions = peopleResult.current_positions?.map((pos) =>
-        `${pos.role} at ${pos.company}${pos.location ? ` (${pos.location})` : ''}${pos.tenure_at_role ? ` - ${pos.tenure_at_role.years}y ${pos.tenure_at_role.months}m` : ''}`
-      ).join('; ') || 'No current positions';
-      
-      // Format work experience (recent, limit to 3 most recent)
-      const workExperience = peopleResult.work_experience?.slice(0, 3).map((exp) => 
-        `${exp.role} at ${exp.company}${exp.start ? ` (${exp.start.year}${exp.end ? `-${exp.end.year}` : '-present'})` : ''}${exp.industry ? ` - ${exp.industry}` : ''}`
-      ).join('; ') || '';
-      
-      // Format education (all entries)
-      const education = peopleResult.education?.map((edu) => 
-        `${edu.degree || ''}${edu.field_of_study ? ` in ${edu.field_of_study}` : ''} from ${edu.school}${edu.start ? ` (${edu.start.year}${edu.end ? `-${edu.end.year}` : ''})` : ''}`
-      ).join('; ') || '';
-      
-      // Format skills (top 10)
-      const skills = peopleResult.skills?.slice(0, 10).map((skill) => skill.name).join(', ') || '';
-      
-      // Format certifications (all entries)
-      const certifications = peopleResult.certifications?.map((cert) => 
-        `${cert.name}${cert.organization ? ` from ${cert.organization}` : ''}${cert.start ? ` (${cert.start.year}${cert.end ? `-${cert.end.year}` : ''})` : ''}`
-      ).join('; ') || '';
-      
-      // Format projects (top 3)
-      const projects = peopleResult.projects?.slice(0, 3).map((proj) => 
-        `${proj.name}${proj.description ? `: ${proj.description.substring(0, 100)}` : ''}${proj.skills?.length ? ` [Skills: ${proj.skills.join(', ')}]` : ''}`
-      ).join('; ') || '';
-      
-      let resultText = `${idx + 1}. ${name}`;
-      if (headline) resultText += `\n   Headline: ${headline}`;
-      if (location) resultText += `\n   Location: ${location}`;
-      if (industry) resultText += `\n   Industry: ${industry}`;
-      resultText += `\n   Current Positions: ${currentPositions}`;
-      if (workExperience) resultText += `\n   Work Experience: ${workExperience}`;
-      if (education) resultText += `\n   Education: ${education}`;
-      if (skills) resultText += `\n   Skills: ${skills}`;
-      if (certifications) resultText += `\n   Certifications: ${certifications}`;
-      if (projects) resultText += `\n   Projects: ${projects}`;
-      if (peopleResult.connections_count !== undefined) resultText += `\n   Connections: ${peopleResult.connections_count}`;
-      if (peopleResult.keywords_match) resultText += `\n   Keywords Match: ${peopleResult.keywords_match}`;
-      if (peopleResult.shared_connections_count !== undefined) resultText += `\n   Shared Connections: ${peopleResult.shared_connections_count}`;
-      
-      return resultText;
-    };
-    
-    const sampleResultsText = sampleResults.map((result, idx) => formatResult(result, idx + 1)).join('\n\n');
+    const sampleResultsText = sampleResults
+      .map((result, idx) => this.formatPeopleSearchResultLine(result, idx + 1))
+      .join('\n\n');
 
     return `Validate these LinkedIn search results against the recruiter requirement below.
 If it includes "User steering updates", treat those as extra constraints on top of the base requirement.

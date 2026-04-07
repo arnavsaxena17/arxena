@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
-import { IconBriefcase, IconUsers } from 'twenty-ui';
+import { IconBriefcase, IconPlus, IconUsers, LightIconButton } from 'twenty-ui';
 
+import { useOpenAddJobModal } from '@/arx-jd-upload/hooks/useOpenAddJobModal';
 import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
 import { jobsRefetchTriggerState, jobsState } from '@/candidate-table/states/states';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
@@ -15,7 +16,6 @@ import { getNavigationSubItemLeftAdornment } from '@/ui/navigation/navigation-dr
 import { isNavigationDrawerExpandedState } from '@/ui/navigation/states/isNavigationDrawerExpanded';
 import { navigationDrawerExpandedMemorizedState } from '@/ui/navigation/states/navigationDrawerExpandedMemorizedState';
 import { navigationMemorizedUrlState } from '@/ui/navigation/states/navigationMemorizedUrlState';
-import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { getAppPath } from '~/utils/navigation/getAppPath';
 
@@ -36,10 +36,6 @@ type ApiJob = {
   }
 };
 
-const StyledSubItemLeftAdornment = styled.div`
-  margin-left: ${({ theme }) => theme.spacing(1)};
-`;
-
 export const JobsNavigationDrawerItems = () => {
   const [localJobs, setLocalJobs] = useState<ApiJob[]>([]);
   const [jobs, setJobs] = useRecoilState(jobsState);
@@ -49,6 +45,7 @@ export const JobsNavigationDrawerItems = () => {
   refetchJobsRef.current = refetchJobs;
   const location = useLocation();
   const { t } = useLingui();
+  const { openAddJobModal } = useOpenAddJobModal();
 
   const { objectMetadataItems } = useObjectMetadataItems();
   const jobMetadataItem = useMemo(
@@ -86,6 +83,29 @@ export const JobsNavigationDrawerItems = () => {
     }
   }, [jobs]);
 
+  const activeJobs = useMemo(
+    () => localJobs.filter((job) => job.isActive),
+    [localJobs],
+  );
+
+  const selectedJobIdFromRoute = useMemo(() => {
+    const match = location.pathname.match(/^\/job\/([^/]+)/);
+    return match?.[1] ?? null;
+  }, [location.pathname]);
+
+  const allJobsPath = `/${AppPath.Jobs}`;
+  const isAllJobsRoute =
+    location.pathname === allJobsPath ||
+    location.pathname.startsWith(`${allJobsPath}/`);
+  const isAllJobsActive = isAllJobsRoute && selectedJobIdFromRoute === null;
+
+  const selectedJobIndexInNav = useMemo(() => {
+    if (selectedJobIdFromRoute === null) {
+      return -1;
+    }
+    return activeJobs.findIndex((job) => job.id === selectedJobIdFromRoute);
+  }, [activeJobs, selectedJobIdFromRoute]);
+
   const handleItemClick = () => {
     setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
     setIsNavigationDrawerExpanded(true);
@@ -95,25 +115,44 @@ export const JobsNavigationDrawerItems = () => {
 
   return (
     <NavigationDrawerSection>
-      <NavigationDrawerSectionTitle label={t`Jobs`} />
+      <NavigationDrawerSectionTitle
+        label={t`Jobs`}
+        rightIconAlwaysVisible
+        rightIcon={
+          <LightIconButton
+            Icon={IconPlus}
+            accent="tertiary"
+            size="small"
+            aria-label={t`Add new job`}
+            title={t`Add new job`}
+            testId="navigation-drawer-jobs-add-job"
+            onClick={(event) => {
+              event.stopPropagation();
+              openAddJobModal();
+            }}
+          />
+        }
+      />
       <NavigationDrawerItemGroup>
         <NavigationDrawerItem
           label={t`All Jobs`}
           to={getAppPath(AppPath.Jobs)}
           onClick={handleItemClick}
           Icon={IconBriefcase}
+          active={isAllJobsActive}
         />
-        {localJobs.filter((job) => job.isActive).map((job, index) => (
+        {activeJobs.map((job, index) => (
           <NavigationDrawerItem
             key={job.id}
             label={job.name}
             to={`/job/${job.id}`}
             onClick={handleItemClick}
             Icon={IconUsers}
+            active={job.id === selectedJobIdFromRoute}
             subItemState={getNavigationSubItemLeftAdornment({
-              arrayLength: localJobs.length,
+              arrayLength: activeJobs.length,
               index,
-              selectedIndex: -1,
+              selectedIndex: selectedJobIndexInNav,
             })}
           />
         ))}

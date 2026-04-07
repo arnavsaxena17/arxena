@@ -17,6 +17,135 @@ export class ResultValidationService {
     private readonly streamProcessingService: StreamProcessingService,
   ) {}
 
+  /**
+   * LLM pagination gate for LinkedIn x-ray SERP after Bright Data profile enrichment.
+   */
+  async validateLinkedinXraySerpPageForPagination(
+    searchResults: LinkedInSearchResult[],
+    requirementText: string,
+    requiredCompanyName: string,
+    totalProfilesCollectedSoFar: number,
+    apiToken: string,
+    sendEvent?: (event: string, data: any) => boolean | void,
+  ): Promise<ResultValidationResult> {
+    if (searchResults.length === 0) {
+      return {
+        isRelevant: false,
+        relevanceScore: 0,
+        falsePositives: [],
+        qualityAssessment: 'low',
+        shouldContinuePagination: false,
+        reasoning: 'No enriched results to validate',
+      };
+    }
+
+    console.log("Search results : ", searchResults)
+    console.log("Requirement text : ", requirementText)
+    console.log("Required company name : ", requiredCompanyName)
+    console.log("Total profiles collected so far : ", totalProfilesCollectedSoFar)
+    console.log("Api token : ", apiToken)
+
+    try {
+      const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken),
+      );
+
+      const validationSystemPrompt =
+        this.searchParametersPrompts.getLinkedinXraySerpPaginationValidationSystemPrompt();
+      const validationUserPrompt =
+        this.searchParametersPrompts.buildLinkedinXraySerpPaginationValidationPrompt(
+          searchResults,
+          requirementText,
+          requiredCompanyName,
+          totalProfilesCollectedSoFar,
+        );
+
+      const validationPrompt = [
+        { role: 'system' as const, content: validationSystemPrompt },
+        { role: 'user' as const, content: validationUserPrompt },
+      ];
+
+      this.logger.log(
+        `LinkedIn x-ray SERP pagination validation prompt: ${JSON.stringify(validationPrompt, null, 2)}`,
+      );
+
+      const fullContent = await this.streamProcessingService.executeStreamingLlmCall(
+        () =>
+          this.streamProcessingService.createStreamingCompletion(
+            openaiClient,
+            validationPrompt,
+            zodResponseFormat(resultValidationSchema, 'resultValidation'),
+          ),
+        { sendEvent, maxRetries: 2 },
+      );
+
+      console.log("Full content : ", fullContent)
+      if (!fullContent) {
+        return {
+          isRelevant: true,
+          relevanceScore: 0.7,
+          falsePositives: [],
+          qualityAssessment: 'medium',
+          shouldContinuePagination: true,
+          reasoning: 'Validation empty, defaulting to continue',
+        } as ResultValidationResult;
+      }
+
+      const contentString =
+        typeof fullContent === 'string' ? fullContent : fullContent?.content || '';
+
+      if (!contentString) {
+        return {
+          isRelevant: true,
+          relevanceScore: 0.7,
+          falsePositives: [],
+          qualityAssessment: 'medium',
+          shouldContinuePagination: true,
+          reasoning: 'Validation empty string, defaulting to continue',
+        } as ResultValidationResult;
+      }
+
+      let parsed: unknown;
+
+      try {
+        parsed = JSON.parse(contentString);
+      } catch (parseError) {
+        this.logger.error(
+          `Failed to parse LinkedIn x-ray validation JSON: ${parseError}. Content: ${contentString.substring(0, 200)}`,
+        );
+
+        return {
+          isRelevant: true,
+          relevanceScore: 0.7,
+          falsePositives: [],
+          qualityAssessment: 'medium',
+          shouldContinuePagination: true,
+          reasoning: 'JSON parse error, defaulting to continue',
+        } as ResultValidationResult;
+      }
+
+      const validated = resultValidationSchema.parse(parsed);
+
+      this.logger.log(
+        `LinkedIn x-ray SERP pagination validation: relevance=${validated.relevanceScore} continue=${validated.shouldContinuePagination} ` +
+          `company="${requiredCompanyName}" pageSize=${searchResults.length} totalSoFar=${totalProfilesCollectedSoFar}`,
+      );
+
+      return validated;
+    } catch (error) {
+      this.logger.error(`LinkedIn x-ray SERP pagination validation failed: ${error}`);
+
+      return {
+        isRelevant: true,
+        relevanceScore: 0.7,
+        falsePositives: [],
+        qualityAssessment: 'medium',
+        shouldContinuePagination: true,
+        reasoning: 'Validation error, defaulting to continue',
+      } as ResultValidationResult;
+    }
+  }
+
   async validateResultsAgainstQuery(
     searchResults: LinkedInSearchResult[],
     userMessage: string,

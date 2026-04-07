@@ -3,11 +3,15 @@ import axios from 'axios';
 import { useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 // import { useShowNotification } from '@/notification/hooks/useShowNotification'; 
+import { apiKeysState } from '@/arx-jd-upload/states/apiKeysState';
 import { tableStateAtom } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { isDefined } from 'twenty-shared';
-import { useCheckDataIntegrityOfJob } from './useCheckDataIntegrityOfJob';
+import {
+  type CheckDataIntegrityOfJobOptions,
+  useCheckDataIntegrityOfJob,
+} from './useCheckDataIntegrityOfJob';
 
 type UseStartChatProps = {
   onSuccess?: () => void;
@@ -21,6 +25,7 @@ export const useStartChats = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [tokenPair] = useRecoilState(tokenPairState);
+  const apiKeys = useRecoilValue(apiKeysState);
   const { enqueueSnackBar } = useSnackBar();
   const tableState = useRecoilValue(tableStateAtom);
   const { checkDataIntegrityOfJob } = useCheckDataIntegrityOfJob({
@@ -45,6 +50,12 @@ export const useStartChats = ({
     setError(null);
 
     try {
+      if (!apiKeys?.openaikey?.trim()) {
+        throw new Error(
+          'OpenAI API key is missing. Add it in Settings → API keys before starting chats.',
+        );
+      }
+
       console.log("tableState::", tableState.rawData);
       // Validate phone numbers for selected candidates
       // const candidatesWithoutPhones = tableState.rawData
@@ -89,7 +100,30 @@ export const useStartChats = ({
 
       // Check data integrity if jobIds are provided
       if (isDefined(jobIds) && jobIds.length > 0) {
-        await checkDataIntegrityOfJob(jobIds);
+        const selectedRows = tableState.rawData.filter((candidate) =>
+          candidateIds.includes(candidate.id),
+        );
+        const integrityOptions: CheckDataIntegrityOfJobOptions | undefined =
+          selectedRows.length === candidateIds.length && candidateIds.length > 0
+            ? {
+                messagingChannelsForKeys: selectedRows
+                  .map((c) => c?.messagingChannel?.trim())
+                  .filter(
+                    (ch): ch is string =>
+                      typeof ch === 'string' && ch.length > 0,
+                  ),
+              }
+            : undefined;
+
+        const jobDataOk = await checkDataIntegrityOfJob(
+          jobIds,
+          integrityOptions,
+        );
+        if (!jobDataOk) {
+          throw new Error(
+            'Job validation failed. Fix the issues shown above before starting chats.',
+          );
+        }
       } else {
         throw new Error('No job IDs provided for data integrity check');
       }
@@ -119,11 +153,15 @@ export const useStartChats = ({
       
       const error = new Error(errorMessage);
       setError(error);
-      
-      enqueueSnackBar(errorMessage, {
-        variant: SnackBarVariant.Error,
-        duration: 5000,
-      });
+
+      const isDuplicateJobValidationSnack =
+        errorMessage.startsWith('Job validation failed');
+      if (!isDuplicateJobValidationSnack) {
+        enqueueSnackBar(errorMessage, {
+          variant: SnackBarVariant.Error,
+          duration: 5000,
+        });
+      }
 
       if (isDefined(onError)) {
         onError(error);

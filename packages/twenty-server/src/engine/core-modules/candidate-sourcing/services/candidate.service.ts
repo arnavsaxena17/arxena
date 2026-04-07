@@ -1362,9 +1362,7 @@ export class CandidateService {
         console.log('No candidates to create - candidatesToCreate array is empty');
       }
   
-      console.log("Number of candidates to update:", candidatesToUpdate.length);
       if (candidatesToUpdate.length > 0) {
-        console.log('Updating existing candidates...');
         for (const updateCandidate of candidatesToUpdate) {
           const { candidateId, personId, profile, missingFields } = updateCandidate;
           try {
@@ -1373,31 +1371,24 @@ export class CandidateService {
                 const phoneValue = profile?.phoneNumbers?.[0] || profile?.phoneNumber || profile?.phoneNumbers?.[0] || '';
                 if (phoneValue && phoneValue.trim() !== '') {
                   const phoneData = this.dataProcessingUtils.parsePhoneNumbers(phoneValue);
-                  console.log(`Updating phone number for candidate ${candidateId} with structured data:`, phoneData);
                   await this.handlePhoneNumberUpdateWithStructure(candidateId, phoneData, apiToken);
                 }
               } else if (fieldName === 'email') {
                 const emailValue = profile?.emailAddress?.[0] || profile?.emailAddresses?.[0] || '';
                 if (emailValue && emailValue.trim() !== '') {
                   const emailData = this.dataProcessingUtils.parseEmails(emailValue);
-                  console.log(`Updating email for candidate ${candidateId} with structured data:`, emailData);
                   await this.handleEmailUpdateWithStructure(candidateId, personId, emailData, apiToken);
                 }
               }
               if (fieldName === 'profileUrl') {
                 const profileUrl = profile?.profileUrl;
                 if (profileUrl && profileUrl.includes('naukri')) {
-                  console.log(`Updating profile url for candidate ${candidateId} with value: ${profileUrl}`);
-                  console.log("profileUrl:", profileUrl);
                   const updateData = {"hiringNaukriUrl": {primaryLinkLabel: profileUrl, primaryLinkUrl: profileUrl}, "resdexNaukriUrl": {primaryLinkLabel: profileUrl, primaryLinkUrl: profileUrl}};
                   const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, { idToUpdate: candidateId, input: updateData }, apiToken);
-                  console.log("Profile url update response:", response?.data?.data);
                 } else if (profileUrl && profileUrl.includes('linkedin')) {
-                  console.log(`Updating LinkedIn url for candidate ${candidateId} with value: ${profileUrl}`);
                   const normalizedUrl = normalizeLinkedInUrl(profileUrl);
                   const updateData = {"linkedinUrl": {primaryLinkLabel: normalizedUrl, primaryLinkUrl: normalizedUrl}};
                   const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, { idToUpdate: candidateId, input: updateData }, apiToken);
-                  console.log("LinkedIn url update response:", response?.data?.data);
                 }
               }
             }

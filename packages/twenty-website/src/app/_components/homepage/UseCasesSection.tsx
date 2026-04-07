@@ -2,14 +2,14 @@
 
 import styled from '@emotion/styled';
 import {
-  IconBuildingStore,
-  IconChartBar,
-  IconChartTreemap,
-  IconUsers,
+    IconBriefcase,
+    IconChartTreemap,
+    IconRocket,
+    IconUsers,
 } from '@tabler/icons-react';
 import Link from 'next/link';
 
-import { USE_CASES } from '@/lib/homepage-content';
+import { USE_CASES, USE_CASES_SECTION_SUBTITLE } from '@/lib/homepage-content';
 
 const StyledSection = styled.section`
   width: 100%;
@@ -21,9 +21,18 @@ const StyledSection = styled.section`
 const StyledTitle = styled.h2`
   font-size: 1.25rem;
   font-weight: 600;
-  margin: 0 0 24px 0;
+  margin: 0 0 8px 0;
   color: #141414;
   text-align: center;
+`;
+
+const StyledSubtitle = styled.p`
+  font-size: 15px;
+  color: #818181;
+  margin: 0 auto 24px;
+  text-align: center;
+  line-height: 1.5;
+  max-width: 520px;
 `;
 
 const StyledGrid = styled.div`
@@ -81,17 +90,13 @@ const StyledCardDescription = styled.div`
   line-height: 1.5;
 `;
 
-const USE_CASE_ICONS = [
-  IconUsers,
-  IconBuildingStore,
-  IconChartTreemap,
-  IconChartBar,
-];
+const USE_CASE_ICONS = [IconBriefcase, IconUsers, IconChartTreemap, IconRocket];
 
 export const UseCasesSection = () => {
   return (
     <StyledSection>
       <StyledTitle>Built for</StyledTitle>
+      <StyledSubtitle>{USE_CASES_SECTION_SUBTITLE}</StyledSubtitle>
       <StyledGrid>
         {USE_CASES.map((item, i) => {
           const Icon = USE_CASE_ICONS[i];

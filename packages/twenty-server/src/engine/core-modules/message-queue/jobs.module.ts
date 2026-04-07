@@ -11,6 +11,7 @@ import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { BillingSubscription } from 'src/engine/core-modules/billing/entities/billing-subscription.entity';
 import { UpdateSubscriptionQuantityJob } from 'src/engine/core-modules/billing/jobs/update-subscription-quantity.job';
 import { StripeModule } from 'src/engine/core-modules/billing/stripe/stripe.module';
+import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
 import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
 import { EmailSenderJob } from 'src/engine/core-modules/email/email-sender.job';
 import { EmailModule } from 'src/engine/core-modules/email/email.module';
@@ -30,6 +31,7 @@ import { CalendarEventParticipantManagerModule } from 'src/modules/calendar/cale
 import { CalendarModule } from 'src/modules/calendar/calendar.module';
 import { AutoCompaniesAndContactsCreationJobModule } from 'src/modules/contact-creation-manager/jobs/auto-companies-and-contacts-creation-job.module';
 import { FavoriteModule } from 'src/modules/favorite/favorite.module';
+import { LinkedinXrayModule } from 'src/modules/linkedin-xray/linkedin-xray.module';
 import { MessagingModule } from 'src/modules/messaging/messaging.module';
 import { TimelineJobModule } from 'src/modules/timeline/jobs/timeline-job.module';
 import { TimelineActivityModule } from 'src/modules/timeline/timeline-activity.module';
@@ -48,6 +50,7 @@ import { WorkflowModule } from 'src/modules/workflow/workflow.module';
     TheOrgModule,
     DataSeedDemoWorkspaceModule,
     BillingModule,
+    CandidateSearchModule,
     UserWorkspaceModule,
     WorkspaceModule,
     AuthModule,
@@ -63,6 +66,7 @@ import { WorkflowModule } from 'src/modules/workflow/workflow.module';
     WebhookJobModule,
     WorkflowModule,
     FavoriteModule,
+    LinkedinXrayModule,
     WorkspaceCleanerModule,
   ],
   providers: [

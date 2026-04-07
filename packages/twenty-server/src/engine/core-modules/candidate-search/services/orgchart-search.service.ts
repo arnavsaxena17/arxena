@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-sourcing/services/orgchart-progress-redis.service';
 import { createHash } from 'crypto';
 import type { TransformedCandidateForTable } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
@@ -73,6 +74,7 @@ export class OrgChartSearchService {
   private readonly logger = new Logger(OrgChartSearchService.name);
 
   constructor(
+    private readonly orgChartProgressRedisService: OrgChartProgressRedisService,
     private readonly searchExecutionService: SearchExecutionService,
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly candidateSearchBaseService: CandidateSearchBaseService,
@@ -157,6 +159,7 @@ export class OrgChartSearchService {
       );
     }
 
+    console.log("Running Org Chart Linkedin Search")
     let workspaceMemberId: string | undefined;
     try {
       const authContext =
@@ -183,24 +186,21 @@ export class OrgChartSearchService {
         return;
       }
 
-      this.workspaceQueryService.webSocketService.sendToUser(
-        workspaceMemberId,
-        'orgchart-search-progress',
-        {
-          event,
-          requestId,
-          mode,
-          searchType,
-          companyName: primaryCompanyName,
-          data,
-        },
-      );
+      void this.orgChartProgressRedisService.publish(workspaceMemberId, {
+        event,
+        requestId,
+        mode,
+        searchType,
+        companyName: primaryCompanyName,
+        data,
+      });
     };
+    console.log("Emitting progress status")
 
     emitProgress('status', {
       message: `Starting org chart search for ${primaryCompanyName || 'company'}...`,
     });
-
+    console.log("Emitting progress status complete")
     let businessDivisionEffective:
       | { effectiveCountry?: string; effectiveFunctionRoot?: string }
       | undefined;
@@ -239,6 +239,8 @@ export class OrgChartSearchService {
           'Business division parser did not produce linkedin_keywords',
         );
       }
+
+      console.log("Something")
 
       country =
         merged.effectiveCountryRaw === '' ||

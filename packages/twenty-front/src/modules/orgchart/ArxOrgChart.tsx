@@ -166,6 +166,59 @@ const StyledProgressBanner = styled.div`
   color: ${({ theme }) => theme.font.color.primary};
   font-size: ${({ theme }) => theme.font.size.sm};
   box-shadow: ${({ theme }) => theme.boxShadow.light};
+  max-width: min(720px, calc(100% - ${({ theme }) => theme.spacing(4)}));
+  text-align: center;
+`;
+
+const StyledTheOrgLeadershipLoadingOverlay = styled.div`
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: ${({ theme }) => theme.spacing(2)};
+  background: ${({ theme }) => theme.background.secondary};
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.md};
+  text-align: center;
+  padding: ${({ theme }) => theme.spacing(3)};
+`;
+
+const StyledTheOrgLeadershipInfoBanner = styled.div`
+  position: absolute;
+  top: ${({ theme }) => theme.spacing(2)};
+  left: ${({ theme }) => theme.spacing(2)};
+  z-index: 22;
+  max-width: min(560px, calc(100% - 220px));
+  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  background: ${({ theme }) => theme.background.tertiary};
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  line-height: 1.45;
+  box-shadow: ${({ theme }) => theme.boxShadow.light};
+`;
+
+const StyledTheOrgLeadershipBannerLink = styled.button`
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: ${({ theme }) => theme.color.blue};
+  font-size: inherit;
+  font-family: inherit;
+  line-height: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:hover {
+    opacity: 0.9;
+  }
 `;
 
 const StyledErrorMessage = styled.div`
@@ -657,6 +710,21 @@ export const ArxOrgChart = ({
     !error &&
     nodeDataArray.length > 0;
 
+  const theOrgLeadershipBanner = useMemo(() => {
+    const src = orgSource as Record<string, unknown> | null;
+    if (!src || src.org_enriched !== true) {
+      return null;
+    }
+    const leadershipN =
+      typeof src.org_people_count === 'number' ? src.org_people_count : null;
+    if (leadershipN === null) {
+      return null;
+    }
+    const fullN =
+      typeof effectiveEmployeeCount === 'number' ? effectiveEmployeeCount : null;
+    return { leadershipN, fullN };
+  }, [orgSource, effectiveEmployeeCount]);
+
   const handleSearch = () => {
     const handle = diagramHandleRef.current;
     if (!handle) return;
@@ -818,21 +886,21 @@ export const ArxOrgChart = ({
       });
       return;
     }
-    const agentStatus = await fetchLinkedinDataSourcesStatus();
-    if (
-      agentStatus !== null &&
-      !agentStatus.pythonOrgChartAgentAvailable
-    ) {
-      enqueueSnackBar(
-        leadershipOrgChartPythonFailureMessage(
-          ORG_CHART_AGENT_UNAVAILABLE_SNACKBAR,
-        ),
-        { variant: SnackBarVariant.Error, duration: 12000 },
-      );
-      return;
-    }
     setIsTheOrgEnrichedLoading(true);
     try {
+      const agentStatus = await fetchLinkedinDataSourcesStatus();
+      if (
+        agentStatus !== null &&
+        !agentStatus.pythonOrgChartAgentAvailable
+      ) {
+        enqueueSnackBar(
+          leadershipOrgChartPythonFailureMessage(
+            ORG_CHART_AGENT_UNAVAILABLE_SNACKBAR,
+          ),
+          { variant: SnackBarVariant.Error, duration: 12000 },
+        );
+        return;
+      }
       const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
       const canonicalCompanyId = normalizeCompanyIdForUrl(companyId);
       const params = new URLSearchParams();
@@ -1003,6 +1071,12 @@ export const ArxOrgChart = ({
           </StyledPreviewPersistentBanner>
         )}
         <StyledDiagramBody>
+        {isTheOrgEnrichedLoading && (
+          <StyledTheOrgLeadershipLoadingOverlay>
+            <StyledSpinner />
+            <span>Loading Leadership Org Chart from TheOrg…</span>
+          </StyledTheOrgLeadershipLoadingOverlay>
+        )}
         {isLoading && (
           <StyledLoadingMessage>Loading org chart...</StyledLoadingMessage>
         )}
@@ -1059,6 +1133,42 @@ export const ArxOrgChart = ({
               onDownloadNode={actions.handleDownloadNode}
               onSimilarPeople={actions.handleSimilarPeople}
             />
+            {theOrgLeadershipBanner && (
+              <StyledTheOrgLeadershipInfoBanner>
+                {theOrgLeadershipBanner.fullN !== null ? (
+                  <span>
+                    This Leadership Org Chart from TheOrg shows only{' '}
+                    {theOrgLeadershipBanner.leadershipN.toLocaleString()}{' '}
+                    leadership profile
+                    {theOrgLeadershipBanner.leadershipN === 1 ? '' : 's'}. The
+                    full company org chart has{' '}
+                    {theOrgLeadershipBanner.fullN.toLocaleString()} profiles —
+                    click{' '}
+                    <StyledTheOrgLeadershipBannerLink
+                      type="button"
+                      onClick={searchControlsProps.onGetAll}
+                    >
+                      Full org chart
+                    </StyledTheOrgLeadershipBannerLink>{' '}
+                    above to load it.
+                  </span>
+                ) : (
+                  <span>
+                    This Leadership Org Chart from TheOrg shows only{' '}
+                    {theOrgLeadershipBanner.leadershipN.toLocaleString()}{' '}
+                    leadership profile
+                    {theOrgLeadershipBanner.leadershipN === 1 ? '' : 's'}. Click{' '}
+                    <StyledTheOrgLeadershipBannerLink
+                      type="button"
+                      onClick={searchControlsProps.onGetAll}
+                    >
+                      Full org chart
+                    </StyledTheOrgLeadershipBannerLink>{' '}
+                    above to load the full company org chart.
+                  </span>
+                )}
+              </StyledTheOrgLeadershipInfoBanner>
+            )}
             <StyledTopRightActionsOverlay>
               <StyledTopRightActionButton
                 type="button"

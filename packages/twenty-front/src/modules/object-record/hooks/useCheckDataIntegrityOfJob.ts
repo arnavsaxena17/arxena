@@ -1,6 +1,5 @@
-import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useCallback } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilValue } from 'recoil';
 // import { useShowNotification } from '@/notification/hooks/useShowNotification';
 import { apiKeysState } from '@/arx-jd-upload/states/apiKeysState';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
@@ -14,21 +13,28 @@ type UseCheckDataIntegrityOfJobProps = {
   onError?: (error: Error) => void;
 };
 
+export type CheckDataIntegrityOfJobOptions = {
+  /** When set (including []), WhatsApp API key requirements use these channels only (e.g. selected candidates). When omitted, all job candidates from the query are used. */
+  messagingChannelsForKeys?: string[];
+};
+
 export const useCheckDataIntegrityOfJob = ({
   onSuccess,
   onError,
 }: UseCheckDataIntegrityOfJobProps = {}) => {
-  const [tokenPair] = useRecoilState(tokenPairState);
   const { enqueueSnackBar } = useSnackBar();
   // const { keys: apiKeys } = useApiKeys();
   const apiKeys = useRecoilValue(apiKeysState);
   // Removed console.log to prevent unnecessary re-renders
-  const [executeQuery, { error, data }] = useLazyQuery(gql`
+  const [executeQuery] = useLazyQuery(gql`
     ${graphqlToFindManyJobsWithCandidateValues}
   `);
 
   const checkDataIntegrityOfJob = useCallback(
-    async (recordIds: string[]) => {
+    async (
+      recordIds: string[],
+      options?: CheckDataIntegrityOfJobOptions,
+    ): Promise<boolean> => {
       try {
         const { data } = await executeQuery({
           variables: {
@@ -37,59 +43,105 @@ export const useCheckDataIntegrityOfJob = ({
             orderBy: [{ position: 'AscNullsFirst' }],
           },
         });
-        // Removed debug console.log to prevent unnecessary re-renders
-        if (isDefined(data)) {
-          const chatFlowOrder = data?.jobs?.edges?.[0]?.node?.chatFlowOrder;
-          const hasMeetingScheduling = chatFlowOrder?.includes('startMeetingSchedulingChat');
-          const hasVideoInterview = chatFlowOrder?.includes('startVideoInterviewChat');
+        if (!isDefined(data)) {
+          enqueueSnackBar('Error in validating job data', {
+            variant: SnackBarVariant.Error,
+            duration: 5000,
+          });
+          if (isDefined(onError)) {
+            onError(new Error('No job data returned'));
+          }
+          return false;
+        }
 
-          const consolidatedErrorMessage = [
+        const jobNode = data?.jobs?.edges?.[0]?.node;
+        const recruiterWorkspaceMemberProfile =
+          jobNode?.recruiter?.workspaceMemberProfile?.edges?.[0]?.node;
+
+
+        console.log("This is the recruiter workspace member:", jobNode?.recruiter)
+        console.log("This is the recruiter workspace member profile:", recruiterWorkspaceMemberProfile)
+        const recruiterWhatsappUnipileAccountId =
+          recruiterWorkspaceMemberProfile?.whatsappUnipileAccountId?.trim() ??
+          '';
+        const chatFlowOrder = jobNode?.chatFlowOrder;
+        const hasMeetingScheduling = chatFlowOrder?.includes('startMeetingSchedulingChat');
+        const hasVideoInterview = chatFlowOrder?.includes('startVideoInterviewChat');
+        const candidateEdges = jobNode?.candidates?.edges ?? [];
+        const channelsForWhatsappKeyRules = isDefined(
+          options?.messagingChannelsForKeys,
+        )
+          ? options.messagingChannelsForKeys
+          : null;
+        const needsWhatsappOfficialKeys =
+          channelsForWhatsappKeyRules !== null
+            ? channelsForWhatsappKeyRules.some(
+                (ch) => ch === 'whatsapp-official',
+              )
+            : candidateEdges.some(
+                (edge: { node?: { messagingChannel?: string | null } | null }) =>
+                  edge?.node?.messagingChannel === 'whatsapp-official',
+              );
+        const needsWhatsappUnipileKey =
+          channelsForWhatsappKeyRules !== null
+            ? channelsForWhatsappKeyRules.some(
+                (ch) => ch === 'whatsapp-unipile',
+              )
+            : candidateEdges.some(
+                (edge: { node?: { messagingChannel?: string | null } | null }) =>
+                  edge?.node?.messagingChannel === 'whatsapp-unipile',
+              );
+
+        const consolidatedErrorMessage = [
             // API Keys
             !apiKeys?.openaikey && 'OpenAI API key is missing',
-            !apiKeys?.facebook_whatsapp_phone_number_id &&
+            !apiKeys?.facebook_whatsapp_phone_number_id && needsWhatsappOfficialKeys &&
               'WhatsApp phone number ID is missing',
-            !apiKeys?.facebook_whatsapp_asset_id &&
+            needsWhatsappOfficialKeys &&
+              !apiKeys?.facebook_whatsapp_asset_id &&
               'WhatsApp facebook_whatsapp_asset_id ID is missing',
-            !apiKeys?.facebook_whatsapp_api_token &&
+            needsWhatsappOfficialKeys &&
+              !apiKeys?.facebook_whatsapp_api_token &&
               'WhatsApp API token is missing',
-            !apiKeys?.whatsapp_unipile_account_id &&
-              'WhatsApp Unipile account ID is missing',
+            needsWhatsappUnipileKey &&
+              !recruiterWhatsappUnipileAccountId &&
+              'WhatsApp Unipile account ID is missing on the job recruiter workspace member profile',
 
             // Basic job validation
-            !data?.jobs?.edges?.[0]?.node && 'Job data is missing or malformed',
+            !jobNode && 'Job data is missing or malformed',
 
             // Job details
-            !data?.jobs?.edges?.[0]?.node?.attachments?.edges &&
+            !jobNode?.attachments?.edges &&
               'Attachments data structure is missing',
-            data?.jobs?.edges?.[0]?.node?.attachments?.edges?.length === 0 &&
+            jobNode?.attachments?.edges?.length === 0 &&
               'No JD attachment found',
-            !data?.jobs?.edges?.[0]?.node?.jobCode && 'Job code is missing',
-            !data?.jobs?.edges?.[0]?.node?.jobLocation &&
+            !jobNode?.jobCode && 'Job code is missing',
+            !jobNode?.jobLocation &&
               'Job location is missing',
-            (!data?.jobs?.edges?.[0]?.node?.chatFlowOrder ||
-              !Array.isArray(data?.jobs?.edges?.[0]?.node?.chatFlowOrder) ||
-              data?.jobs?.edges?.[0]?.node?.chatFlowOrder?.length === 0) &&
+            (!jobNode?.chatFlowOrder ||
+              !Array.isArray(jobNode?.chatFlowOrder) ||
+              jobNode?.chatFlowOrder?.length === 0) &&
               'Chat flow order is missing',
-            !data?.jobs?.edges?.[0]?.node?.companyId && 'Company ID is missing',
-            data?.jobs?.edges?.[0]?.node?.isActive === false &&
+            !jobNode?.companyId && 'Company ID is missing',
+            jobNode?.isActive === false &&
               'Job is not active',
 
             // Company details
-            !data?.jobs?.edges?.[0]?.node?.company?.descriptionOneliner &&
+            !jobNode?.company?.descriptionOneliner &&
               'Company description is missing',
 
             // Interview schedule - only validate if meeting scheduling is in chat flow
-            hasMeetingScheduling && !data?.jobs?.edges?.[0]?.node?.interviewSchedule?.edges &&
+            hasMeetingScheduling && !jobNode?.interviewSchedule?.edges &&
               'Interview schedule data structure is missing',
-            hasMeetingScheduling && data?.jobs?.edges?.[0]?.node?.interviewSchedule?.edges?.length === 0 && 
+            hasMeetingScheduling && jobNode?.interviewSchedule?.edges?.length === 0 && 
               'Interview schedule is missing',
-            hasMeetingScheduling && !data?.jobs?.edges?.[0]?.node?.interviewSchedule?.edges?.[0]?.node?.slotsAvailable && 
+            hasMeetingScheduling && !jobNode?.interviewSchedule?.edges?.[0]?.node?.slotsAvailable && 
               'Interview slots are not available',
-            hasMeetingScheduling && !data?.jobs?.edges?.[0]?.node?.interviewSchedule?.edges?.[0]?.node?.meetingType && 
+            hasMeetingScheduling && !jobNode?.interviewSchedule?.edges?.[0]?.node?.meetingType && 
               'Meeting type is not specified',
 
             // Recruiter
-            !data?.jobs?.edges?.[0]?.node?.recruiterId &&
+            !jobNode?.recruiterId &&
               'Recruiter ID is missing',
 
             // Questions
@@ -99,105 +151,92 @@ export const useCheckDataIntegrityOfJob = ({
             //   'No questions attached',
 
             // Video interview template - only validate if video interview is in chat flow
-            hasVideoInterview && !data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges &&
+            hasVideoInterview && !jobNode?.videoInterviewTemplate?.edges &&
               'Video interview template data structure is missing',
-            hasVideoInterview && data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.length === 0 && 
+            hasVideoInterview && jobNode?.videoInterviewTemplate?.edges?.length === 0 && 
               'No video interview template attached',
-            hasVideoInterview && !data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node && 
+            hasVideoInterview && !jobNode?.videoInterviewTemplate?.edges?.[0]?.node && 
               'Video interview template node is missing',
-            hasVideoInterview && !data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node?.videoInterviewModelId &&
+            hasVideoInterview && !jobNode?.videoInterviewTemplate?.edges?.[0]?.node?.videoInterviewModelId &&
               'Video interview model ID is missing',
-            hasVideoInterview && !data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node?.instructions &&
+            hasVideoInterview && !jobNode?.videoInterviewTemplate?.edges?.[0]?.node?.instructions &&
               'Video interview instructions are missing',
 
             // Video interview questions
-            hasVideoInterview && !data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node?.videoInterviewQuestions?.edges &&
+            hasVideoInterview && !jobNode?.videoInterviewTemplate?.edges?.[0]?.node?.videoInterviewQuestions?.edges &&
               'Video interview questions data structure is missing',
-            hasVideoInterview && data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node?.videoInterviewQuestions?.edges?.length === 0 &&
+            hasVideoInterview && jobNode?.videoInterviewTemplate?.edges?.[0]?.node?.videoInterviewQuestions?.edges?.length === 0 &&
               'No video interview questions found',
-            hasVideoInterview && data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node?.videoInterviewQuestions?.edges?.some(
+            hasVideoInterview && jobNode?.videoInterviewTemplate?.edges?.[0]?.node?.videoInterviewQuestions?.edges?.some(
               (edge: { node: { questionValue: any } }) =>
                 !edge?.node?.questionValue,
             ) && 'One or more video interview questions are empty',
-            hasVideoInterview && data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node?.videoInterviewQuestions?.edges?.some(
+            hasVideoInterview && jobNode?.videoInterviewTemplate?.edges?.[0]?.node?.videoInterviewQuestions?.edges?.some(
               (edge: { node: { attachments: { edges: string | any[] } } }) =>
                 !edge?.node?.attachments?.edges ||
                 edge?.node?.attachments?.edges?.length === 0,
             ) && 'Video attachments missing for interview questions',
 
             // Video interview introduction
-            hasVideoInterview && !data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node?.introduction &&
+            hasVideoInterview && !jobNode?.videoInterviewTemplate?.edges?.[0]?.node?.introduction &&
               'Video interview introduction text is missing',
-            hasVideoInterview && (!data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node?.attachments?.edges ||
-              data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node?.attachments?.edges?.length === 0) &&
+            hasVideoInterview && (!jobNode?.videoInterviewTemplate?.edges?.[0]?.node?.attachments?.edges ||
+              jobNode?.videoInterviewTemplate?.edges?.[0]?.node?.attachments?.edges?.length === 0) &&
               'Video interview introduction video is missing',
 
             // Recruiter profile
-            !data?.jobs?.edges?.[0]?.node?.recruiter?.workspaceMemberProfile
+            !jobNode?.recruiter?.workspaceMemberProfile
               ?.edges?.[0]?.node?.name &&
               'Recruiter name is missing in workspace member profiles',
-            !data?.jobs?.edges?.[0]?.node?.recruiter?.workspaceMemberProfile
+            !jobNode?.recruiter?.workspaceMemberProfile
               ?.edges?.[0]?.node?.phoneNumber &&
               'Recruiter phone number is missing in workspace member profiles',
-            !data?.jobs?.edges?.[0]?.node?.recruiter?.workspaceMemberProfile
+            !jobNode?.recruiter?.workspaceMemberProfile
               ?.edges?.[0]?.node?.companyDescription &&
               'Recruiter company description is missing in workspace member profiles',
-            !data?.jobs?.edges?.[0]?.node?.recruiter?.workspaceMemberProfile
+            !jobNode?.recruiter?.workspaceMemberProfile
               ?.edges?.[0]?.node?.jobTitle &&
               'Recruiter job title is missing in workspace member profiles',
 
-            // Prompts
-            !data?.jobs?.edges?.[0]?.node?.prompt?.edges &&
-              'Prompts data structure is missing',
-            data?.jobs?.edges?.[0]?.node?.prompt?.edges?.length === 0 &&
-              'No prompts found',
-            !data?.jobs?.edges?.[0]?.node?.prompt?.edges?.some(
-              (edge: { node: { name: string } }) =>
-                edge?.node?.name === 'PROMPT_FOR_CHAT_CLASSIFICATION',
-            ) && 'Chat classification prompt is missing',
-            !data?.jobs?.edges?.[0]?.node?.prompt?.edges?.some(
-              (edge: { node: { name: string } }) =>
-                edge?.node?.name === 'ONLINE_MEETING_PROMPT',
-            ) && 'Online meeting prompt is missing',
-            !data?.jobs?.edges?.[0]?.node?.prompt?.edges?.some(
-              (edge: { node: { name: string } }) =>
-                edge?.node?.name === 'IN_PERSON_MEETING_SCHEDULING_PROMPT',
-            ) && 'In-person meeting prompt is missing',
-            !data?.jobs?.edges?.[0]?.node?.prompt?.edges?.some(
-              (edge: { node: { name: string } }) =>
-                edge?.node?.name === 'START_CHAT_PROMPT',
-            ) && 'Start chat prompt is missing',
-          ]
+
+
+            // Prompts (named prompts fall back to defaults server-side)
+            // jobNode?.prompt?.edges?.length === 0 &&
+              // 'No prompts found',
+
+
+        ]
             .filter(Boolean)
             .join('\n• ');
 
-          if (consolidatedErrorMessage && consolidatedErrorMessage.trim().length > 0) {
-            console.log(
-              'Job validation failed. Please fix the following issues:\n\n• ',
-              consolidatedErrorMessage,
-            );
-            enqueueSnackBar(
-              `Job validation failed. Please fix the following issues:\n\n• ${consolidatedErrorMessage}`,
-              {
-                variant: SnackBarVariant.Error,
-                duration: 10000,
-              },
-            );
-          } else {
-            console.log('Successfully validated job data');
-            enqueueSnackBar('Successfully validated job data', {
-              variant: SnackBarVariant.Success,
-              duration: 3000,
-            });
-            if (isDefined(onSuccess)) onSuccess();
-          }
+        if (consolidatedErrorMessage && consolidatedErrorMessage.trim().length > 0) {
+          console.log(
+            'Job validation failed. Please fix the following issues:\n\n• ',
+            consolidatedErrorMessage,
+          );
+          enqueueSnackBar(
+            `Job validation failed. Please fix the following issues:\n\n• ${consolidatedErrorMessage}`,
+            {
+              variant: SnackBarVariant.Error,
+              duration: 10000,
+            },
+          );
+          return false;
         }
+        console.log('Successfully validated job data');
+        enqueueSnackBar('Successfully validated job data', {
+          variant: SnackBarVariant.Success,
+          duration: 3000,
+        });
+        if (isDefined(onSuccess)) onSuccess();
+        return true;
       } catch (error) {
         enqueueSnackBar('Error in validating job data', {
           variant: SnackBarVariant.Error,
           duration: 5000,
         });
         if (isDefined(onError)) onError(error as Error);
+        return false;
       }
     },
     [executeQuery, enqueueSnackBar, onSuccess, onError, apiKeys],

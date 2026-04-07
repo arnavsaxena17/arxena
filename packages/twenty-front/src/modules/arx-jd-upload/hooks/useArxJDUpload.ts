@@ -155,26 +155,6 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
       return true; // No update needed, return success
     }
 
-    // Validate mandatory fields first
-    if (!recruiterDetails.missingRecruiterInfo.phoneNumber?.trim() || !recruiterDetails.missingRecruiterInfo.jobTitle?.trim()) {
-      enqueueSnackBar('Phone Number and Job Title are required fields', {
-        variant: SnackBarVariant.Error,
-      });
-      return false;
-    }
-
-    // Validate remaining fields if they exist
-    const emptyFields = Object.entries(recruiterDetails.missingRecruiterInfo)
-      .filter(([key, value]) => key !== 'phoneNumber' && key !== 'jobTitle' && !value)
-      .map(([key]) => key);
-
-    if (emptyFields.length > 0) {
-      enqueueSnackBar(`Please fill all the required recruiter fields: ${emptyFields.join(', ')}`, {
-        variant: SnackBarVariant.Error,
-      });
-      return false;
-    }
-
     try {
       // Get workspaceMemberId from the recruiterDetails
       const workspaceMemberId = recruiterDetails.workspaceMemberId;
@@ -204,7 +184,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
         },
       });
 
-      // If phone number is provided, update the whatsapp_web_phone_number in workspace modifications
+      // Only validate and sync the WhatsApp number when the user actually provided one.
       if (recruiterDetails.missingRecruiterInfo.phoneNumber) {
         try {
           const success = await updateSpecificApiKey(

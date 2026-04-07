@@ -153,8 +153,8 @@ export const TeamContent = ({ signInUrl, signUpUrl }: TeamContentProps) => {
     <StyledSection>
       <StyledHeadline>Meet the team</StyledHeadline>
       <StyledHeadlineSub>
-        The people building Org Chart AI — real-time org charts and
-        recruitment from map to engagement.
+        The people building Arxena — from company search to org intelligence and
+        AI outreach in your voice.
       </StyledHeadlineSub>
       <StyledTeamGrid>
         {TEAM_MEMBERS.map((member) => (

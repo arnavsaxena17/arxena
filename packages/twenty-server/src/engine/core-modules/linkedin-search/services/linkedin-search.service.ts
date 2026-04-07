@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ApifyLinkedInCompanyProfileTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/apify-linkedin-company-profile-transformer.service';
 import type { TransformedCandidateForTable } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
-import { ApifyService } from '../../apify/services/apify.service';
+import {
+  ApifyService,
+  type ApifyRunLogProgressArgs,
+} from '../../apify/services/apify.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { LinkedInSearchParameterType } from '../types/linkedin-search-parameter.type';
 import {
@@ -40,7 +43,54 @@ export type LinkedInCompanyProfileApifyFetchParams = {
   locations?: string[];
   defaultCompanyName: string;
   companyLinkedinUrl?: string;
+  onProgress?: (message: string) => void | Promise<void>;
 };
+
+/** Parsed from Apify linkedin-company-employees actor log lines (org chart progress). */
+export type ApifyLinkedinCompanyScraperLogParseResult =
+  | { kind: 'profiles_total'; total: number }
+  | { kind: 'search_page'; page: number; profilesOnPage: number };
+
+export function parseApifyLinkedinCompanyScraperLogLine(
+  line: string,
+): ApifyLinkedinCompanyScraperLogParseResult | null {
+  const s = line.trim();
+  const totalM = s.match(/Found (\d+) profiles total/i);
+  if (totalM) {
+    return { kind: 'profiles_total', total: Number(totalM[1]) };
+  }
+  const pageM = s.match(
+    /Scraped search page (\d+)\.\s*Found (\d+) profiles on the page\./i,
+  );
+  if (pageM) {
+    return {
+      kind: 'search_page',
+      page: Number(pageM[1]),
+      profilesOnPage: Number(pageM[2]),
+    };
+  }
+  return null;
+}
+
+/** Strips Apify actor log line prefix like `2026-04-06T12:38:57.335Z ` for cleaner UI. */
+export function stripApifyLogLineTimestamp(line: string): string {
+  return line.replace(/^\d{4}-\d{2}-\d{2}T[\d:.-]+Z\s+/, '').trim();
+}
+
+/**
+ * Lines we do not forward to org-chart progress (too noisy or not useful).
+ * Other log lines (scraping query, pages, ACTOR status, success, etc.) are forwarded.
+ */
+export function isApifyLogLineNoiseForOrgChartProgress(line: string): boolean {
+  const s = line.trim();
+  if (/^Scraped profile\s+https?:\/\//i.test(s)) {
+    return true;
+  }
+  if (/System info\s*\{/i.test(s)) {
+    return true;
+  }
+  return false;
+}
 
 /** How org-chart / candidate lists are sourced from LinkedIn. */
 export type LinkedInCandidateFetchMode = 'unipile' | 'apify';
@@ -766,6 +816,7 @@ export class LinkedInSearchService {
     if (!this.apifyService.isConfigured()) {
       throw new Error('Apify is not configured (set APIFY_API_TOKEN)');
     }
+    console.log("params for org chart build", params)
 
     const maxItems = Math.min(Math.max(1, params.maxItems), 10000);
     const input: Record<string, unknown> = {
@@ -788,11 +839,63 @@ export class LinkedInSearchService {
     this.logger.log(
       `Apify company profile scraper: actor=${LINKEDIN_COMPANY_PROFILE_SCRAPER_ACTOR_ID}, companies=${JSON.stringify(input.companies)}, maxItems=${maxItems}`,
     );
-
-    const rows = await this.apifyService.runActorAndListDatasetItems(
-      LINKEDIN_COMPANY_PROFILE_SCRAPER_ACTOR_ID,
-      input,
+    console.log("Apify company profile scraper: actor=${LINKEDIN_COMPANY_PROFILE_SCRAPER_ACTOR_ID}, companies=${JSON.stringify(input.companies)}, maxItems=${maxItems}")
+    await params.onProgress?.(
+      `Apify actor ${LINKEDIN_COMPANY_PROFILE_SCRAPER_ACTOR_ID} configured for company employee scrape.`,
     );
+
+    const apifyResult =
+      await this.apifyService.runActorAndListDatasetItemsDetailed(
+        LINKEDIN_COMPANY_PROFILE_SCRAPER_ACTOR_ID,
+        input,
+        params.onProgress
+          ? {
+              onRunLogProgress: async ({
+                newLines,
+              }: ApifyRunLogProgressArgs) => {
+                for (const line of newLines) {
+                  const raw = line.trim();
+                  if (!raw || isApifyLogLineNoiseForOrgChartProgress(raw)) {
+                    continue;
+                  }
+                  const withoutTs = stripApifyLogLineTimestamp(raw);
+                  const display =
+                    withoutTs.length > 320
+                      ? `${withoutTs.slice(0, 317)}...`
+                      : withoutTs;
+                  await params.onProgress?.(display);
+                }
+              },
+              pollIntervalMs: 2500,
+            }
+          : undefined,
+      );
+
+    if (apifyResult?.run) {
+      await params.onProgress?.(
+        `Apify run ${apifyResult.run.runId} finished with status ${apifyResult.run.status}.`,
+      );
+    }
+
+    if (!params.onProgress) {
+      const logLines = (apifyResult?.logText ?? '')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .slice(-3);
+      console.log("Log Lines : ", logLines)
+      for (const line of logLines) {
+        this.logger.debug(`Apify log tail: ${line.slice(0, 220)}`);
+      }
+    }
+
+    if (!apifyResult) {
+      throw new Error(
+        'Apify company profile scraper did not return a result (run failed, timed out, or APIFY_API_TOKEN missing).',
+      );
+    }
+
+    const rows = apifyResult.items ?? null;
 
     if (!rows?.length) {
       return [];

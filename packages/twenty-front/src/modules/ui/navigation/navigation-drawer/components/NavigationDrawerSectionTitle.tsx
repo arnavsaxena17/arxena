@@ -35,11 +35,13 @@ const StyledLabel = styled.div`
 
 type StyledRightIconProps = {
   isMobile: boolean;
+  alwaysVisible: boolean;
 };
 
 const StyledRightIcon = styled.div<StyledRightIconProps>`
   cursor: pointer;
-  opacity: ${({ isMobile }) => (isMobile ? 1 : 0)};
+  opacity: ${({ isMobile, alwaysVisible }) =>
+    isMobile || alwaysVisible ? 1 : 0};
 
   .section-title-container:hover & {
     opacity: 1;
@@ -50,12 +52,14 @@ type NavigationDrawerSectionTitleProps = {
   onClick?: () => void;
   label: string;
   rightIcon?: React.ReactNode;
+  rightIconAlwaysVisible?: boolean;
 };
 
 export const NavigationDrawerSectionTitle = ({
   onClick,
   label,
   rightIcon,
+  rightIconAlwaysVisible = false,
 }: NavigationDrawerSectionTitleProps) => {
   const isMobile = useIsMobile();
   const isNavigationDrawerExpanded = useRecoilValue(
@@ -79,7 +83,12 @@ export const NavigationDrawerSectionTitle = ({
     <StyledTitle className="section-title-container">
       <StyledLabel onClick={handleTitleClick}>{label}</StyledLabel>
       {rightIcon && (
-        <StyledRightIcon isMobile={isMobile}>{rightIcon}</StyledRightIcon>
+        <StyledRightIcon
+          isMobile={isMobile}
+          alwaysVisible={rightIconAlwaysVisible}
+        >
+          {rightIcon}
+        </StyledRightIcon>
       )}
     </StyledTitle>
   );

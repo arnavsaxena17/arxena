@@ -1,5 +1,5 @@
 import {
-  assertOrgChartSearchApifyQueuedResponse,
+  assertOrgChartSearchQueuedResponse,
   assertOrgChartSearchUnipileSuccessResponse,
 } from './org-chart-search-response.contract';
 
@@ -93,9 +93,9 @@ describe('org-chart search response contract (POST /org-chart/search output shap
     };
     expect(() =>
       assertOrgChartSearchUnipileSuccessResponse(apifyQueued),
-    ).toThrow(/queued Apify/);
+    ).toThrow(/queued async/);
     expect(() =>
-      assertOrgChartSearchApifyQueuedResponse(apifyQueued),
+      assertOrgChartSearchQueuedResponse(apifyQueued),
     ).not.toThrow();
   });
 
@@ -123,9 +123,9 @@ describe('org-chart search response contract (POST /org-chart/search output shap
     ).toThrow(/mode/);
   });
 
-  it('assertOrgChartSearchApifyQueuedResponse rejects non-empty items', () => {
+  it('assertOrgChartSearchQueuedResponse rejects non-empty items', () => {
     expect(() =>
-      assertOrgChartSearchApifyQueuedResponse({
+      assertOrgChartSearchQueuedResponse({
         success: true,
         queued: true,
         candidateSource: 'apify',
@@ -140,5 +140,25 @@ describe('org-chart search response contract (POST /org-chart/search output shap
         cacheSource: 'none',
       }),
     ).toThrow(/empty/);
+  });
+
+  it('accepts queued Unipile response', () => {
+    expect(() =>
+      assertOrgChartSearchQueuedResponse({
+        success: true,
+        queued: true,
+        candidateSource: 'unipile',
+        requestId: 'req-1',
+        mode: 'entire_company',
+        searchType: 'classic',
+        companyName: 'Acme',
+        jobTitles: [],
+        itemCount: 0,
+        items: [],
+        orgChart: undefined,
+        isCached: false,
+        cacheSource: 'none',
+      }),
+    ).not.toThrow();
   });
 });

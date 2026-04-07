@@ -333,25 +333,26 @@ type StoryContentProps = {
 export const StoryContent = ({ signUpUrl }: StoryContentProps) => {
   return (
     <StyledSection>
-      <StyledHeadline>
-        Org Chart AI — real-time company structures
-      </StyledHeadline>
+      <StyledHeadline>See inside any company</StyledHeadline>
       <StyledHeadlineSub>
-        Recruitment, done algorithmically: map any company in real time, build
-        lists, fetch contacts, engage on WhatsApp and LinkedIn.
+        Arxena is an intelligence platform for the org chart of companies you
+        target — not yours, theirs. From search to a booked meeting in one
+        workflow.
       </StyledHeadlineSub>
 
       <StyledParagraph>
-        People discovery is broken. Recruiters charge $5K–40K per placement and
-        don&apos;t map the org. $25 per person in time cost. 9 wrong calls for
-        every right one. The missing piece: the org chart.
+        Teams waste hours stitching together databases, spreadsheets, and
+        outreach tools — and still miss who actually matters inside an account.
+        The org chart is the map: who leads what, who reports to whom, and who
+        is reachable today.
       </StyledParagraph>
 
       <StyledParagraph>
-        We build real-time org structures from LinkedIn and other data —
-        algorithmically. Navigate any company, see who&apos;s who and who
-        reports to whom, build lists, fetch contacts. Then engage humans on
-        WhatsApp and LinkedIn. For hiring, benchmarking, and diligence.
+        We fetch live org data from LinkedIn and other sources so you see
+        structure, seniority, and reporting lines in real time. You build lists,
+        enrich contacts, and let AI reach out in your voice on WhatsApp,
+        LinkedIn, and email — for sales, recruiting, investing, and competitive
+        research.
       </StyledParagraph>
 
       <StyledOrgChartLink href="/org-chart/google">
@@ -373,7 +374,7 @@ export const StoryContent = ({ signUpUrl }: StoryContentProps) => {
 
       <StyledTractionBlock>
         <StyledTractionStat>1M+ companies mapped</StyledTractionStat>
-        <StyledTractionLabel>55M+ professionals indexed</StyledTractionLabel>
+        <StyledTractionLabel>800M+ professionals indexed</StyledTractionLabel>
       </StyledTractionBlock>
 
       <StyledTestimonialsBlock>
