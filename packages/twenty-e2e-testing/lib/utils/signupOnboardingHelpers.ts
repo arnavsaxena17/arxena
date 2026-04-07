@@ -31,8 +31,6 @@ const clickSkipOnPhoneStep = async (page: Page) => {
 };
 
 export type SignUpToIntentChoiceProfile = {
-  /** Value for the workspace name field (e.g. `Apple my-workspace`). */
-  workspaceDisplayName: string;
   firstName: string;
   lastName: string;
 };
@@ -44,8 +42,8 @@ export type SignUpToIntentChoiceOptions = {
 };
 
 /**
- * Email/password signup through workspace + profile + optional phone skip until
- * `/create/intent` and the intent-choice screen is visible.
+ * Email/password signup: after sign-up the app activates the workspace automatically,
+ * then profile + optional phone skip until `/create/intent` and the intent-choice screen.
  */
 export const signUpAndReachIntentChoice = async (
   page: Page,
@@ -80,12 +78,6 @@ export const signUpAndReachIntentChoice = async (
     if (!(await maybeClick(page.getByRole('button', { name: 'Sign up' })))) {
       await page.getByRole('button', { name: 'Continue', exact: true }).click();
     }
-
-    await expect(page.getByText('Create your workspace')).toBeVisible({
-      timeout: 120_000,
-    });
-    await page.getByPlaceholder('Apple').fill(profile.workspaceDisplayName);
-    await page.getByRole('button', { name: 'Continue' }).click();
 
     await expect(page.getByText('Create profile')).toBeVisible({
       timeout: 120_000,

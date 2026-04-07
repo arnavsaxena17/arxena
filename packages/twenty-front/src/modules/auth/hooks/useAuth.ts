@@ -2,11 +2,11 @@ import { AppPath } from '@/types/AppPath';
 import { ApolloError, useApolloClient } from '@apollo/client';
 import { useCallback } from 'react';
 import {
-    snapshot_UNSTABLE,
-    useGotoRecoilSnapshot,
-    useRecoilCallback,
-    useRecoilValue,
-    useSetRecoilState,
+  snapshot_UNSTABLE,
+  useGotoRecoilSnapshot,
+  useRecoilCallback,
+  useRecoilValue,
+  useSetRecoilState,
 } from 'recoil';
 import { iconsState } from 'twenty-ui';
 
@@ -23,12 +23,12 @@ import { ColorScheme } from '@/workspace-member/types/WorkspaceMember';
 import { APP_LOCALES, isDefined } from 'twenty-shared';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import {
-    useCheckUserExistsLazyQuery,
-    useGetAuthTokensFromLoginTokenMutation,
-    useGetCurrentUserLazyQuery,
-    useGetLoginTokenFromCredentialsMutation,
-    useGetLoginTokenFromEmailVerificationTokenMutation,
-    useSignUpMutation,
+  useCheckUserExistsLazyQuery,
+  useGetAuthTokensFromLoginTokenMutation,
+  useGetCurrentUserLazyQuery,
+  useGetLoginTokenFromCredentialsMutation,
+  useGetLoginTokenFromEmailVerificationTokenMutation,
+  useSignUpMutation,
 } from '~/generated/graphql';
 
 import { currentWorkspaceMembersState } from '@/auth/states/currentWorkspaceMembersStates';
@@ -46,8 +46,8 @@ import { tokenPairState } from '../states/tokenPairState';
 
 import { currentUserWorkspaceState } from '@/auth/states/currentUserWorkspaceState';
 import {
-    SignInUpStep,
-    signInUpStepState,
+  SignInUpStep,
+  signInUpStepState,
 } from '@/auth/states/signInUpStepState';
 import { workspacePublicDataState } from '@/auth/states/workspacePublicDataState';
 import { BillingCheckoutSession } from '@/auth/types/billingCheckoutSession.type';
@@ -63,7 +63,12 @@ import { isAppWaitingForFreshObjectMetadataState } from '@/object-metadata/state
 import { workspaceAuthProvidersState } from '@/workspace/states/workspaceAuthProvidersState';
 import { i18n } from '@lingui/core';
 import { useSearchParams } from 'react-router-dom';
+import {
+  useActivateWorkspaceMutation,
+  WorkspaceActivationStatus,
+} from '~/generated/graphql';
 import { Mixpanel } from '~/mixpanel';
+import { getSuggestedWorkspaceDisplayNameFromEmail } from '~/pages/onboarding/utils/getSuggestedWorkspaceDisplayNameFromEmail';
 import { getWorkspaceUrl } from '~/utils/getWorkspaceUrl';
 import { dynamicActivate } from '~/utils/i18n/dynamicActivate';
 
@@ -100,6 +105,14 @@ export const useAuth = () => {
   const [getLoginTokenFromEmailVerificationToken] =
     useGetLoginTokenFromEmailVerificationTokenMutation();
   const [getCurrentUser] = useGetCurrentUserLazyQuery();
+  const [activateWorkspaceMutation] = useActivateWorkspaceMutation();
+
+  const getAccessTokenFromStore = useRecoilCallback(
+    ({ snapshot }) =>
+      () =>
+        snapshot.getLoadable(tokenPairState).getValue()?.accessToken?.token,
+    [],
+  );
 
   const { isOnAWorkspace } = useIsCurrentLocationOnAWorkspace();
 
@@ -230,98 +243,152 @@ export const useAuth = () => {
   );
 
   const loadCurrentUser = useCallback(async () => {
-    const currentUserResult = await getCurrentUser({
-      fetchPolicy: 'network-only',
-    });
+    const runOnce = async () => {
+      const currentUserResult = await getCurrentUser({
+        fetchPolicy: 'network-only',
+      });
 
-    if (isDefined(currentUserResult.error)) {
-      throw new Error(currentUserResult.error.message);
-    }
+      if (isDefined(currentUserResult.error)) {
+        throw new Error(currentUserResult.error.message);
+      }
 
-    const user = currentUserResult.data?.currentUser;
+      const user = currentUserResult.data?.currentUser;
 
-    if (!user) {
-      throw new Error('No current user result');
-    }
+      if (!user) {
+        throw new Error('No current user result');
+      }
 
-    let workspaceMember = null;
+      let workspaceMember = null;
 
-    setCurrentUser(user);
+      setCurrentUser(user);
 
-    if (isDefined(user.workspaceMembers)) {
-      const workspaceMembers = user.workspaceMembers.map((workspaceMember) => ({
-        ...workspaceMember,
-        colorScheme: workspaceMember.colorScheme as ColorScheme,
-        locale: workspaceMember.locale ?? 'en',
-      }));
+      if (isDefined(user.workspaceMembers)) {
+        const workspaceMembers = user.workspaceMembers.map(
+          (workspaceMember) => ({
+            ...workspaceMember,
+            colorScheme: workspaceMember.colorScheme as ColorScheme,
+            locale: workspaceMember.locale ?? 'en',
+          }),
+        );
 
-      setCurrentWorkspaceMembers(workspaceMembers);
-    }
+        setCurrentWorkspaceMembers(workspaceMembers);
+      }
 
-    if (isDefined(user.currentUserWorkspace)) {
-      setCurrentUserWorkspace(user.currentUserWorkspace);
-    }
+      if (isDefined(user.currentUserWorkspace)) {
+        setCurrentUserWorkspace(user.currentUserWorkspace);
+      }
 
-    if (isDefined(user.workspaceMember)) {
-      workspaceMember = {
-        ...user.workspaceMember,
-        colorScheme: user.workspaceMember?.colorScheme as ColorScheme,
-        locale: user.workspaceMember?.locale ?? 'en',
+      if (isDefined(user.workspaceMember)) {
+        workspaceMember = {
+          ...user.workspaceMember,
+          colorScheme: user.workspaceMember?.colorScheme as ColorScheme,
+          locale: user.workspaceMember?.locale ?? 'en',
+        };
+
+        setCurrentWorkspaceMember(workspaceMember);
+
+        // TODO: factorize with UserProviderEffect
+        setDateTimeFormat({
+          timeZone:
+            workspaceMember.timeZone && workspaceMember.timeZone !== 'system'
+              ? workspaceMember.timeZone
+              : detectTimeZone(),
+          dateFormat: isDefined(user.workspaceMember.dateFormat)
+            ? getDateFormatFromWorkspaceDateFormat(
+                user.workspaceMember.dateFormat,
+              )
+            : DateFormat[detectDateFormat()],
+          timeFormat: isDefined(user.workspaceMember.timeFormat)
+            ? getTimeFormatFromWorkspaceTimeFormat(
+                user.workspaceMember.timeFormat,
+              )
+            : TimeFormat[detectTimeFormat()],
+        });
+        dynamicActivate(
+          (workspaceMember.locale as keyof typeof APP_LOCALES) ?? 'en',
+        );
+      }
+
+      const workspace = user.currentWorkspace ?? null;
+
+      setCurrentWorkspace(workspace);
+
+      if (isDefined(workspace) && isOnAWorkspace) {
+        setLastAuthenticateWorkspaceDomain({
+          workspaceId: workspace.id,
+          workspaceUrl: getWorkspaceUrl(workspace.workspaceUrls),
+        });
+      }
+
+      if (isDefined(user.workspaces)) {
+        const validWorkspaces = user.workspaces
+          .filter(
+            ({ workspace }) => workspace !== null && workspace !== undefined,
+          )
+          .map((validWorkspace) => validWorkspace.workspace)
+          .filter(isDefined);
+
+        setWorkspaces(validWorkspaces);
+      }
+      setIsAppWaitingForFreshObjectMetadataState(true);
+
+      return {
+        user,
+        workspaceMember,
+        workspace,
       };
-
-      setCurrentWorkspaceMember(workspaceMember);
-
-      // TODO: factorize with UserProviderEffect
-      setDateTimeFormat({
-        timeZone:
-          workspaceMember.timeZone && workspaceMember.timeZone !== 'system'
-            ? workspaceMember.timeZone
-            : detectTimeZone(),
-        dateFormat: isDefined(user.workspaceMember.dateFormat)
-          ? getDateFormatFromWorkspaceDateFormat(
-              user.workspaceMember.dateFormat,
-            )
-          : DateFormat[detectDateFormat()],
-        timeFormat: isDefined(user.workspaceMember.timeFormat)
-          ? getTimeFormatFromWorkspaceTimeFormat(
-              user.workspaceMember.timeFormat,
-            )
-          : TimeFormat[detectTimeFormat()],
-      });
-      dynamicActivate(
-        (workspaceMember.locale as keyof typeof APP_LOCALES) ?? 'en',
-      );
-    }
-
-    const workspace = user.currentWorkspace ?? null;
-
-    setCurrentWorkspace(workspace);
-
-    if (isDefined(workspace) && isOnAWorkspace) {
-      setLastAuthenticateWorkspaceDomain({
-        workspaceId: workspace.id,
-        workspaceUrl: getWorkspaceUrl(workspace.workspaceUrls),
-      });
-    }
-
-    if (isDefined(user.workspaces)) {
-      const validWorkspaces = user.workspaces
-        .filter(
-          ({ workspace }) => workspace !== null && workspace !== undefined,
-        )
-        .map((validWorkspace) => validWorkspace.workspace)
-        .filter(isDefined);
-
-      setWorkspaces(validWorkspaces);
-    }
-    setIsAppWaitingForFreshObjectMetadataState(true);
-
-    return {
-      user,
-      workspaceMember,
-      workspace,
     };
+
+    let result = await runOnce();
+
+    if (
+      result.workspace?.activationStatus ===
+        WorkspaceActivationStatus.PENDING_CREATION &&
+      result.user.email &&
+      !result.user.supportUserHash
+    ) {
+      const displayName =
+        result.workspace.displayName?.trim() ||
+        getSuggestedWorkspaceDisplayNameFromEmail(result.user.email);
+
+      try {
+        const activateResult = await activateWorkspaceMutation({
+          variables: {
+            input: {
+              displayName,
+            },
+          },
+        });
+
+        if (!isDefined(activateResult.errors)) {
+          Mixpanel.track('onboarding_step', { stepName: 'create_workspace' });
+
+          const accessToken = getAccessTokenFromStore();
+          if (accessToken) {
+            fetch(
+              `${REACT_APP_SERVER_BASE_URL}/workspace-modifications/create-metadata-structure`,
+              {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                },
+              },
+            ).catch(() => {
+              // Fire and forget; job is queued in background
+            });
+          }
+
+          result = await runOnce();
+        }
+      } catch (error) {
+        console.log('Auto workspace activation failed', error);
+      }
+    }
+
+    return result;
   }, [
+    activateWorkspaceMutation,
+    getAccessTokenFromStore,
     getCurrentUser,
     isOnAWorkspace,
     setCurrentUser,

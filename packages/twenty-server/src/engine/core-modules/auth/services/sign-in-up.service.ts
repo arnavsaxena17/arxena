@@ -41,6 +41,7 @@ import { User } from 'src/engine/core-modules/user/user.entity';
 import { WorkspaceInvitationService } from 'src/engine/core-modules/workspace-invitation/services/workspace-invitation.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { getDomainNameByEmail } from 'src/utils/get-domain-name-by-email';
+import { getSuggestedWorkspaceDisplayNameFromEmail } from 'src/utils/get-suggested-workspace-display-name-from-email';
 import { getImageBufferFromUrl } from 'src/utils/image';
 import { isWorkEmail } from 'src/utils/is-work-email';
 
@@ -352,8 +353,10 @@ export class SignInUpService {
       isWorkEmail(user.email) && (await isLogoUrlValid()) ? logoUrl : undefined;
 
     const workspaceToCreate = this.workspaceRepository.create({
-      subdomain: await this.domainManagerService.generateSubdomain(),
-      displayName: '',
+      subdomain: await this.domainManagerService.generateSubdomain({
+        email: user.email,
+      }),
+      displayName: getSuggestedWorkspaceDisplayNameFromEmail(user.email),
       inviteHash: v4(),
       activationStatus: WorkspaceActivationStatus.PENDING_CREATION,
       logo,

@@ -1,3 +1,4 @@
+import { useAuth } from '@/auth/hooks/useAuth';
 import { useEffect, useState } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 
@@ -19,12 +20,17 @@ import { getTimeFormatFromWorkspaceTimeFormat } from '@/localization/utils/getTi
 import { ColorScheme } from '@/workspace-member/types/WorkspaceMember';
 import { APP_LOCALES, isDefined, SOURCE_LOCALE } from 'twenty-shared';
 import { WorkspaceMember } from '~/generated-metadata/graphql';
-import { useGetCurrentUserQuery } from '~/generated/graphql';
+import {
+    useGetCurrentUserQuery,
+    WorkspaceActivationStatus,
+} from '~/generated/graphql';
 import { Mixpanel } from '~/mixpanel';
 import { dynamicActivate } from '~/utils/i18n/dynamicActivate';
 
 export const UserProviderEffect = () => {
   const [isLoading, setIsLoading] = useState(true);
+
+  const { loadCurrentUser } = useAuth();
 
   const [isCurrentUserLoaded, setIsCurrentUserLoaded] = useRecoilState(
     isCurrentUserLoadedState,
@@ -46,6 +52,29 @@ export const UserProviderEffect = () => {
   const { loading: queryLoading, data: queryData } = useGetCurrentUserQuery({
     skip: isCurrentUserLoaded,
   });
+
+  useEffect(() => {
+    if (!queryData?.currentUser?.email) {
+      return;
+    }
+    if (queryData.currentUser.supportUserHash) {
+      return;
+    }
+    const workspace = queryData.currentUser.currentWorkspace;
+    if (
+      workspace?.activationStatus !==
+      WorkspaceActivationStatus.PENDING_CREATION
+    ) {
+      return;
+    }
+    void loadCurrentUser();
+  }, [
+    loadCurrentUser,
+    queryData?.currentUser?.currentWorkspace?.activationStatus,
+    queryData?.currentUser?.currentWorkspace?.id,
+    queryData?.currentUser?.email,
+    queryData?.currentUser?.supportUserHash,
+  ]);
 
   useEffect(() => {
     if (!queryLoading) {

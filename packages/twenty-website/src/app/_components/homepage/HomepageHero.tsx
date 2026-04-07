@@ -334,7 +334,7 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
           <Logo variant="hero" />
         </StyledLogoWrapper>
         <StyledTitle>
-          Org Chart OS: Real-Time Org Charts & Engagement.
+          Org Intelligence Infrastructure
           {/* <StyledTitleLine>
             Then reach the right person — automatically.
           </StyledTitleLine> */}
@@ -345,7 +345,7 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
           methods. You only take calls with people who&apos;ve already responded.
         </StyledHeroLead> */}
         <StyledHeroStats>
-          1M+ companies mapped · 800M+ professionals indexed · real-time from
+          1M+ companies mapped · 800M+ professionals · Real-time from
           LinkedIn and others
         </StyledHeroStats>
         {/* <StyledClarifySection>

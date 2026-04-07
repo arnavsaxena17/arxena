@@ -9,7 +9,7 @@ export const TESTIMONIALS = [
   },
   {
     quote:
-      'Before Arxena, I had used everything from DiscoverOrg to Rocketreach and no one gave me the niche functions I was looking for - EHS and Logistics Teams, locating the right decision makers took hours… now it takes me minutes, Arxena has helped close over 300k in ARR, this is by far the best sales outreach tool I have used.',
+      'Before Arxena, I had used everything from ZoomInfo to Rocketreach and no one gave me the niche functions I was looking for - EHS and Logistics Teams, locating the right decision makers took hours… now it takes me minutes, Arxena has helped close over 300k in ARR, this is by far the best sales outreach tool I have used.',
     name: 'Craig Rajpal',
     title: 'Enterprise Sales Director',
     company: 'Workato',

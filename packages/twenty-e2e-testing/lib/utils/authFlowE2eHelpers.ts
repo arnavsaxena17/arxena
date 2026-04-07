@@ -233,12 +233,6 @@ export const signUpAndReachIntentChoice = async (
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
   }
 
-  await expect(page.getByText('Create your workspace')).toBeVisible({
-    timeout: 120_000,
-  });
-  await page.getByPlaceholder('Apple').fill(`Apple ${input.workspaceSuffix}`);
-  await page.getByRole('button', { name: 'Continue' }).click();
-
   await expect(page.getByText('Create profile')).toBeVisible({
     timeout: 120_000,
   });

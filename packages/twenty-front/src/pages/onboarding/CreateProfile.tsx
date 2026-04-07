@@ -1,10 +1,11 @@
+import { gql, useApolloClient } from '@apollo/client';
 import styled from '@emotion/styled';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCallback, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 import { Key } from 'ts-key-enum';
-import { H2Title, MainButton } from 'twenty-ui';
+import { H2Title, Loader, MainButton } from 'twenty-ui';
 import { z } from 'zod';
 
 import { SubTitle } from '@/auth/components/SubTitle';
@@ -12,8 +13,8 @@ import { Title } from '@/auth/components/Title';
 import { useAuth } from '@/auth/hooks/useAuth';
 import { currentWorkspaceMembersState } from '@/auth/states/currentWorkspaceMembersStates';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
+import { objectMetadataItemsState } from '@/object-metadata/states/objectMetadataItemsState';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
-import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
 import { useSetNextOnboardingStatus } from '@/onboarding/hooks/useSetNextOnboardingStatus';
 import { ProfilePictureUploader } from '@/settings/profile/components/ProfilePictureUploader';
@@ -22,10 +23,12 @@ import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/Snac
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TextInputV2 } from '@/ui/input/components/TextInputV2';
 import { useScopedHotkeys } from '@/ui/utilities/hotkey/hooks/useScopedHotkeys';
-import { WorkspaceMember } from '@/workspace-member/types/WorkspaceMember';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { isDefined } from 'twenty-shared';
-import { OnboardingStatus } from '~/generated/graphql';
+import {
+  OnboardingStatus,
+  WorkspaceActivationStatus,
+} from '~/generated/graphql';
 import { Mixpanel } from '~/mixpanel';
 import { useWebSocketEvent } from '../../modules/websocket-context/useWebSocketEvent';
 import { useWebSocket } from '../../modules/websocket-context/WebSocketContextProvider';
@@ -51,6 +54,12 @@ const StyledComboInputContainer = styled.div`
   }
 `;
 
+const StyledWaitingHint = styled.div`
+  margin-top: ${({ theme }) => theme.spacing(4)};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+`;
+
 const validationSchema = z
   .object({
     firstName: z.string().min(1, { message: 'First name can not be empty' }),
@@ -58,6 +67,35 @@ const validationSchema = z
   })
   .required();
 type Form = z.infer<typeof validationSchema>;
+
+const WORKSPACE_READY_POLL_INTERVAL_MS = 2000;
+const WORKSPACE_READY_MAX_ATTEMPTS = 90;
+const PROFILE_SAVE_MAX_ATTEMPTS = 30;
+
+/** Lets Recoil + Apollo apply the new X-Schema-Version header after loadCurrentUser. */
+const yieldForApolloSchemaHeader = () =>
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, 0);
+  });
+
+/** No nested relations — avoids GraphQL validation errors when x-schema-version lags workspace metadata. */
+const UPDATE_WORKSPACE_MEMBER_PROFILE_MINIMAL = gql`
+  mutation UpdateWorkspaceMemberProfileMinimal(
+    $idToUpdate: ID!
+    $input: WorkspaceMemberUpdateInput!
+  ) {
+    updateWorkspaceMember(id: $idToUpdate, data: $input) {
+      __typename
+      id
+      name {
+        firstName
+        lastName
+        __typename
+      }
+      colorScheme
+    }
+  }
+`;
 
 export const CreateProfile = () => {
   const { connected, socket } = useWebSocket();
@@ -95,9 +133,45 @@ export const CreateProfile = () => {
   const { enqueueSnackBar } = useSnackBar();
 
   const currentWorkspaceMembers = useRecoilValue(currentWorkspaceMembersState);
-  const { updateOneRecord } = useUpdateOneRecord<WorkspaceMember>({
-    objectNameSingular: CoreObjectNameSingular.WorkspaceMember,
-  });
+  const apolloClient = useApolloClient();
+
+  const getObjectMetadataItems = useRecoilCallback(
+    ({ snapshot }) =>
+      () =>
+        snapshot.getLoadable(objectMetadataItemsState).getValue(),
+    [],
+  );
+
+  const [submitPhase, setSubmitPhase] = useState<
+    'idle' | 'workspace' | 'profile'
+  >('idle');
+
+  const waitForWorkspaceMemberReady = useCallback(async (): Promise<
+    string | null
+  > => {
+    for (let attempt = 0; attempt < WORKSPACE_READY_MAX_ATTEMPTS; attempt++) {
+      const { workspaceMember, workspace } = await loadCurrentUser();
+      const id = workspaceMember?.id;
+      const isActive =
+        workspace?.activationStatus === WorkspaceActivationStatus.ACTIVE;
+      const objectMetadataItems = getObjectMetadataItems();
+      const hasWorkspaceMemberMetadata = objectMetadataItems.some(
+        (item) => item.nameSingular === CoreObjectNameSingular.WorkspaceMember,
+      );
+
+      if (isActive && id && hasWorkspaceMemberMetadata) {
+        return id;
+      }
+
+      if (attempt < WORKSPACE_READY_MAX_ATTEMPTS - 1) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, WORKSPACE_READY_POLL_INTERVAL_MS),
+        );
+      }
+    }
+
+    return null;
+  }, [getObjectMetadataItems, loadCurrentUser]);
 
   // Arxena signup is now handled in CollectPhoneNumber (after phone is collected),
   // so it runs once with complete user data (name + phone).
@@ -107,7 +181,6 @@ export const CreateProfile = () => {
     control,
     handleSubmit,
     formState: { isValid, isSubmitting },
-    getValues,
   } = useForm<Form>({
     mode: 'onChange',
     defaultValues: {
@@ -119,36 +192,61 @@ export const CreateProfile = () => {
 
   const onSubmit: SubmitHandler<Form> = useCallback(
     async (data) => {
+      setSubmitPhase('workspace');
       try {
-        let workspaceMemberId = currentWorkspaceMember?.id;
+        const workspaceMemberId = await waitForWorkspaceMemberReady();
 
         if (!workspaceMemberId) {
-          const { workspaceMember } = await loadCurrentUser();
-          workspaceMemberId =
-            workspaceMember?.id ?? currentWorkspaceMembers[0]?.id;
-        }
-
-        if (!workspaceMemberId) {
-          enqueueSnackBar('Unable to load profile. Please refresh and try again.', {
-            variant: SnackBarVariant.Error,
-          });
-          throw new Error('Workspace member not found');
+          enqueueSnackBar(
+            t`Workspace setup is taking longer than expected. Please refresh and try again.`,
+            {
+              variant: SnackBarVariant.Error,
+            },
+          );
+          return;
         }
 
         if (!data.firstName || !data.lastName) {
           throw new Error('First name or last name is missing');
         }
 
-        await updateOneRecord({
-          idToUpdate: workspaceMemberId,
-          updateOneRecordInput: {
-            name: {
-              firstName: data.firstName,
-              lastName: data.lastName,
-            },
-            colorScheme: 'System',
-          },
-        });
+        setSubmitPhase('profile');
+
+        const saveProfileWithRetry = async () => {
+          for (let attempt = 0; attempt < PROFILE_SAVE_MAX_ATTEMPTS; attempt++) {
+            if (attempt > 0) {
+              await loadCurrentUser();
+            }
+            await yieldForApolloSchemaHeader();
+            try {
+              await apolloClient.mutate({
+                mutation: UPDATE_WORKSPACE_MEMBER_PROFILE_MINIMAL,
+                variables: {
+                  idToUpdate: workspaceMemberId,
+                  input: {
+                    name: {
+                      firstName: data.firstName,
+                      lastName: data.lastName,
+                    },
+                    colorScheme: 'System',
+                  },
+                },
+              });
+              return;
+            } catch (error) {
+              console.log('Create profile save attempt failed', error);
+              if (attempt < PROFILE_SAVE_MAX_ATTEMPTS - 1) {
+                await new Promise((resolve) =>
+                  setTimeout(resolve, WORKSPACE_READY_POLL_INTERVAL_MS),
+                );
+              } else {
+                throw error;
+              }
+            }
+          }
+        };
+
+        await saveProfileWithRetry();
 
         const fallbackMember = currentWorkspaceMembers.find(
           (m) => m.id === workspaceMemberId,
@@ -170,18 +268,27 @@ export const CreateProfile = () => {
 
         Mixpanel.track('onboarding_step', { stepName: 'create_profile' });
         setNextOnboardingStatus();
-      } catch {
-        // Error already surfaced or handled
+      } catch (error) {
+        console.log('Create profile submit failed', error);
+        enqueueSnackBar(
+          t`Could not save your profile. Please try again in a moment.`,
+          {
+            variant: SnackBarVariant.Error,
+          },
+        );
+      } finally {
+        setSubmitPhase('idle');
       }
     },
     [
-      currentWorkspaceMember?.id,
-      currentWorkspaceMembers,
+      apolloClient,
       enqueueSnackBar,
       loadCurrentUser,
       setCurrentWorkspaceMember,
       setNextOnboardingStatus,
-      updateOneRecord,
+      t,
+      waitForWorkspaceMemberReady,
+      currentWorkspaceMembers,
     ],
   );
 
@@ -191,10 +298,11 @@ export const CreateProfile = () => {
     Key.Enter,
     () => {
       if (isEditingMode) {
-        onSubmit(getValues());
+        void handleSubmit(onSubmit)();
       }
     },
     PageHotkeyScope.CreateProfile,
+    [handleSubmit, onSubmit, isEditingMode],
   );
 
   if (onboardingStatus !== OnboardingStatus.PROFILE_CREATION) {
@@ -209,6 +317,16 @@ export const CreateProfile = () => {
       <SubTitle>
         <Trans>How you'll be identified on the app.</Trans>
       </SubTitle>
+      {isSubmitting && submitPhase === 'workspace' && (
+        <StyledWaitingHint>
+          <Trans>Finishing workspace setup…</Trans>
+        </StyledWaitingHint>
+      )}
+      {isSubmitting && submitPhase === 'profile' && (
+        <StyledWaitingHint>
+          <Trans>Saving your profile…</Trans>
+        </StyledWaitingHint>
+      )}
       <StyledContentContainer>
         <StyledSectionContainer>
           <H2Title title="Picture" />
@@ -274,6 +392,7 @@ export const CreateProfile = () => {
           title={t`Continue`}
           onClick={handleSubmit(onSubmit)}
           disabled={!isValid || isSubmitting}
+          Icon={() => isSubmitting && <Loader />}
           fullWidth
         />
       </StyledButtonContainer>

@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   Get,
   Headers,
+  HttpCode,
   HttpException,
   HttpStatus,
   Param,
@@ -15,8 +16,15 @@ import {
 import { Request } from 'express';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
+import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
+import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
+import {
+  CreateMetadataStructureJob,
+  type CreateMetadataStructureJobData,
+} from './jobs/create-metadata-structure.job';
 import { CreateMetaDataStructure } from './object-apis/object-apis-creation';
 import { MetadataUpdateService } from './object-apis/services/metadata-update.service';
 import { WorkspaceBulkMetadataUpdateService } from './workspace-bulk-metadata-update.service';
@@ -31,6 +39,8 @@ export class WorkspaceModificationsController {
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly environmentService: EnvironmentService,
     private readonly workspaceBulkMetadataUpdateService: WorkspaceBulkMetadataUpdateService,
+    @InjectMessageQueue(MessageQueue.metadataStructureQueue)
+    private readonly metadataStructureQueue: MessageQueueService,
   ) {
     console.log('GraphQL URL configured as:', process.env.GRAPHQL_URL);
   }
@@ -177,23 +187,32 @@ export class WorkspaceModificationsController {
 
   @Post('create-metadata-structure')
   @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.ACCEPTED)
   async createMetadataStructure(
     @Headers('authorization') authHeader: string,
     @Req() req: Request,
   ) {
     const token = authHeader?.split(' ')[1];
+    if (!token) {
+      throw new BadRequestException('Missing authorization token');
+    }
     const origin = (req.headers.origin as string) || '';
     try {
-      await this.workspaceQueryService.createMetadataStructure(token, origin);
+      await this.metadataStructureQueue.add<CreateMetadataStructureJobData>(
+        CreateMetadataStructureJob.name,
+        { token, origin },
+        // Defer execution so SyncDriver does not run the job inline on the HTTP thread; BullMQ/PgBoss treat this as a short delay before the worker picks up the job.
+        { delayMs: 1 },
+      );
       return {
         success: true,
-        message: 'Metadata structure creation completed',
+        message: 'Metadata structure creation queued',
       };
     } catch (error: unknown) {
       const message =
         error instanceof Error
           ? error.message
-          : 'Metadata structure creation failed';
+          : 'Failed to queue metadata structure creation';
       throw new HttpException(
         { success: false, message },
         HttpStatus.INTERNAL_SERVER_ERROR,

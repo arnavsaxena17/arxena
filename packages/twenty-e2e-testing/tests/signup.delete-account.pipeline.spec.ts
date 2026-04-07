@@ -24,7 +24,6 @@ test('Create account, onboard, reach jobs, then delete account', async ({
   await context.clearCookies();
 
   await signUpAndReachIntentChoice(page, BASE_URL, email, {
-    workspaceDisplayName: `Apple ${workspaceSuffix}`,
     firstName: 'Apple',
     lastName: workspaceSuffix,
   });

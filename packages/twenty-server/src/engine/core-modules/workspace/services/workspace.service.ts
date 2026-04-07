@@ -280,6 +280,27 @@ export class WorkspaceService extends TypeOrmQueryService<Workspace> {
     });
   }
 
+  async completeWorkspaceActivation(data: {
+    workspaceId: string;
+    userId: string;
+    displayName: string;
+  }): Promise<void> {
+    const user = await this.userRepository.findOneBy({ id: data.userId });
+    const workspace = await this.workspaceRepository.findOneBy({
+      id: data.workspaceId,
+    });
+
+    if (!isDefined(user) || !isDefined(workspace)) {
+      throw new Error(
+        `completeWorkspaceActivation: user or workspace not found (userId=${data.userId}, workspaceId=${data.workspaceId})`,
+      );
+    }
+
+    await this.activateWorkspace(user, workspace, {
+      displayName: data.displayName,
+    });
+  }
+
   async deleteMetadataSchemaCacheAndUserWorkspace(workspace: Workspace) {
     await this.userWorkspaceRepository.delete({ workspaceId: workspace.id });
 

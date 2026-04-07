@@ -190,10 +190,10 @@ export class CreateMetaDataStructure {
     console.log("createAndUpdateWorkspaceMember::", origin);
     const currentWorkspaceMemberResponse = await this.staticGraphQLService.executeGraphQL(FindManyWorkspaceMembers, { limit: 60, orderBy: [{ createdAt: 'AscNullsLast' }] }, apiToken);
 
-    console.log(
-      'This is the curent workspace member response first:',
-      JSON.stringify(currentWorkspaceMemberResponse?.data, null, 2),
-    );
+    // console.log(
+    //   'This is the curent workspace member response first:',
+    //   JSON.stringify(currentWorkspaceMemberResponse?.data, null, 2),
+    // );
 
     const currentWorkspaceMemberId =
       currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node
