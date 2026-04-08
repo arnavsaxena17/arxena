@@ -73,20 +73,19 @@ const StyledCheckboxCell = styled(StyledTableCell)`
   padding-right: 0;
 `;
 
-const StyledActionsInner = styled.div`
+const StyledActionsControlsRow = styled.div`
+  align-items: center;
   display: flex;
-  flex-direction: column;
+  flex-wrap: nowrap;
   gap: ${({ theme }) => theme.spacing(2)};
   max-width: 100%;
   min-width: 0;
   width: 100%;
 `;
 
-const StyledActionsControlsRow = styled.div`
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(2)};
+const StyledAmountInputWrap = styled.div`
+  flex: 1 1 auto;
+  min-width: ${({ theme }) => theme.spacing(16)};
 `;
 
 const StyledSelect = styled.select`
@@ -94,9 +93,14 @@ const StyledSelect = styled.select`
   border-radius: ${({ theme }) => theme.border.radius.sm};
   border: 1px solid ${({ theme }) => theme.border.color.medium};
   color: ${({ theme }) => theme.font.color.primary};
+  flex-shrink: 0;
   font-size: ${({ theme }) => theme.font.size.sm};
   min-width: 120px;
   padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledApplyButtonWrap = styled.div`
+  flex-shrink: 0;
 `;
 
 const StyledShortWorkspaceId = styled.span`
@@ -602,9 +606,8 @@ export const SettingsAdminWorkspaceCredits = () => {
                       {totalCredits(row)}
                     </StyledTableCell>
                     <StyledTableCell>
-                      <StyledActionsInner>
-                        <StyledActionsControlsRow>
-                          <StyledSelect
+                      <StyledActionsControlsRow>
+                        <StyledSelect
                             value={rowCreditEdit.creditType}
                             onChange={(e) =>
                               setRowCreditTypeForWorkspace(
@@ -618,22 +621,26 @@ export const SettingsAdminWorkspaceCredits = () => {
                             <option value="EMAIL_CONTACT">{t`Email`}</option>
                             <option value="PHONE_CONTACT">{t`Phone`}</option>
                           </StyledSelect>
-                          <TextInput
-                            value={rowCreditEdit.delta}
-                            onChange={(v) =>
-                              setRowDeltaForWorkspace(row.workspaceId, v)
-                            }
-                            placeholder={t`Amount (+ / -)`}
-                            width={100}
-                          />
-                          <Button
-                            title={t`Apply`}
-                            onClick={() => handleAdjust(row.workspaceId)}
-                            disabled={
-                              adjustingWorkspaceId === row.workspaceId ||
-                              !rowCreditEdit.delta.trim()
-                            }
-                          />
+                          <StyledAmountInputWrap>
+                            <TextInput
+                              value={rowCreditEdit.delta}
+                              onChange={(v) =>
+                                setRowDeltaForWorkspace(row.workspaceId, v)
+                              }
+                              placeholder={t`Amount (+ / -)`}
+                              fullWidth
+                            />
+                          </StyledAmountInputWrap>
+                          <StyledApplyButtonWrap>
+                            <Button
+                              title={t`Apply`}
+                              onClick={() => handleAdjust(row.workspaceId)}
+                              disabled={
+                                adjustingWorkspaceId === row.workspaceId ||
+                                !rowCreditEdit.delta.trim()
+                              }
+                            />
+                          </StyledApplyButtonWrap>
                         </StyledActionsControlsRow>
                       </StyledActionsInner>
                     </StyledTableCell>
