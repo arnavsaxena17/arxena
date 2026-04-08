@@ -20,17 +20,21 @@ export const normalizePhoneDigits = (value: string): string =>
   value.replace(/\D/g, '');
 
 const phonesMatch = (a: string, b: string): boolean => {
+  console.log("Phones Match", a, b);
   const da = normalizePhoneDigits(a);
   const db = normalizePhoneDigits(b);
   if (da === '' || db === '') {
     return false;
   }
-  if (da === db) {
+  if (da === db) {  
+    console.log("Phones Match - Equal", da, db);
     return true;
   }
   if (da.length >= 10 && db.length >= 10) {
+    console.log("Phones Match - Length >= 10", da, db);
     return da.slice(-10) === db.slice(-10);
   }
+  console.log("Phones Match - False", da, db);
   return false;
 };
 
@@ -115,19 +119,25 @@ export const whatsappAccountMatchesWorkspaceMemberProfile = (
   profile: WorkspaceMemberProfileUnipileFields,
   account: UnipileWhatsappAccount,
 ): boolean => {
+  console.log("Whatsapp Account", account);
   if (!isUnipileConnectedStatus(account.status)) {
     return false;
   }
+  console.log("Profile", profile);
   const storedId = profile.whatsappUnipileAccountId?.trim();
   if (storedId != null && storedId !== '' && storedId === account.id) {
     return true;
   }
+  console.log("Stored ID", storedId);
   const profilePhone = profile.phoneNumber?.trim();
   if (profilePhone == null || profilePhone === '') {
     return false;
   }
+  console.log("Profile Phone", profilePhone);
   const accountPhone =
     account.phone_number?.trim() ?? account.username?.trim() ?? '';
+  console.log("Account Phone", accountPhone);
+  console.log("Phones Match", phonesMatch(profilePhone, accountPhone));
   return phonesMatch(profilePhone, accountPhone);
 };
 
@@ -138,14 +148,18 @@ export const linkedinAccountMatchesWorkspaceMemberProfile = (
   if (!isUnipileConnectedStatus(account.status)) {
     return false;
   }
+  console.log("Account", account);
+  console.log("Profile", profile);
   const storedId = profile.linkedinUnipileAccountId?.trim();
   if (storedId != null && storedId !== '' && storedId === account.id) {
     return true;
   }
+  console.log("Stored ID", storedId);
   const profileUrl = profile.linkedinUrl?.trim();
   if (profileUrl == null || profileUrl === '') {
     return false;
   }
+  console.log("Profile URL", profileUrl);
   return linkedinSlugMatchesProfile(profileUrl, account);
 };
 
@@ -153,6 +167,8 @@ export const filterWhatsappAccountsForWorkspaceMemberProfile = (
   accounts: UnipileWhatsappAccount[],
   profile: WorkspaceMemberProfileUnipileFields | null,
 ): UnipileWhatsappAccount[] => {
+  console.log("Whatsapp Accounts", accounts);
+  console.log("Profile", profile);
   if (profile == null || !shouldRestrictWhatsappByProfile(profile)) {
     return accounts;
   }
@@ -165,9 +181,14 @@ export const filterLinkedinAccountsForWorkspaceMemberProfile = (
   accounts: UnipileLinkedinAccount[],
   profile: WorkspaceMemberProfileUnipileFields | null,
 ): UnipileLinkedinAccount[] => {
+  console.log("Accounts", accounts);
+  console.log("Profile", profile);
   if (profile == null || !shouldRestrictLinkedinByProfile(profile)) {
     return accounts;
   }
+  console.log("Filtered accounts", accounts.filter((acc) =>
+    linkedinAccountMatchesWorkspaceMemberProfile(profile, acc),
+  ));
   return accounts.filter((acc) =>
     linkedinAccountMatchesWorkspaceMemberProfile(profile, acc),
   );
