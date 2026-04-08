@@ -13,8 +13,8 @@ import { tokenPairState } from '~/modules/auth/states/tokenPairState';
 import { workspaceMemberProfileUnipileFieldsState } from '~/modules/unipile/states/workspaceMemberProfileUnipileFieldsState';
 import {
   filterWhatsappAccountsForWorkspaceMemberProfile,
-  hasMatchingConnectedWhatsappAccount,
   shouldRestrictWhatsappByProfile,
+  shouldShowWhatsappUnipileConnectQr,
   whatsappAccountMatchesWorkspaceMemberProfile,
 } from '~/modules/unipile/utils/matchUnipileToWorkspaceMemberProfile';
 import { whatsappUnipileAccountsState } from '~/modules/whatsapp-unipile/states/whatsappUnipileAccountsState';
@@ -194,19 +194,16 @@ const RetryButton = styled.button`
 `;
 
 interface ConnectedWhatsappUnipileAccountsProps {
-  onAccountConnected?: () => void;
-  onAccountsLoaded?: (hasConnected: boolean) => void;
+  onAccountsLoaded?: (shouldShowConnectQr: boolean) => void;
 }
 
 export const ConnectedWhatsappUnipileAccounts: React.FC<
   ConnectedWhatsappUnipileAccountsProps
-> = ({ onAccountConnected, onAccountsLoaded }) => {
+> = ({ onAccountsLoaded }) => {
   const getNormalizedStatus = useCallback(
     (status?: string | null) => (status ? status.toLowerCase() : ''),
     [],
   );
-  
-  console.log("ConnectedWhatsappUnipileAccounts got called");
   const [accounts, setAccounts] = useState<UnipileWhatsappAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -230,6 +227,7 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<
         setError(
           'Authentication token not available. Please refresh the page and try again.',
         );
+        onAccountsLoaded?.(true);
         return;
       }
 
@@ -292,29 +290,18 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<
       // Update Recoil state with WhatsApp Unipile accounts
       setWhatsappUnipileAccounts(accountList);
 
-      const hasConnected = hasMatchingConnectedWhatsappAccount(
+      const showConnectQr = shouldShowWhatsappUnipileConnectQr(
         accountList,
         workspaceMemberProfileUnipileFields,
       );
-      console.log("Has Connected", hasConnected);
-      console.log("New Connected Accounts", newConnectedAccounts);
-      console.log("Accounts", accounts);
-      console.log("Workspace Member Profile Unipile Fields", workspaceMemberProfileUnipileFields);
-      console.log("Account List", accountList);
-      console.log("Previous Accounts", previousAccountsRef.current);
-      console.log("New Connected Accounts", newConnectedAccounts);
       if (onAccountsLoaded) {
-        onAccountsLoaded(hasConnected);
-      }
-
-      if (newConnectedAccounts.length > 0 && onAccountConnected) {
-        onAccountConnected();
+        onAccountsLoaded(showConnectQr);
       }
     } catch (err) {
       console.error('Failed to load WhatsApp accounts:', err);
 
       if (onAccountsLoaded) {
-        onAccountsLoaded(false);
+        onAccountsLoaded(true);
       }
 
       if (err instanceof Error) {
@@ -351,7 +338,6 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<
     }
   }, [
     accessToken,
-    onAccountConnected,
     onAccountsLoaded,
     setWhatsappUnipileAccounts,
     getNormalizedStatus,
@@ -363,7 +349,7 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<
       loadAccounts();
     } else {
       setLoading(false);
-      onAccountsLoaded?.(false);
+      onAccountsLoaded?.(true);
     }
   }, [accessToken, loadAccounts, onAccountsLoaded]);
 

@@ -18,8 +18,6 @@ export const WhatsappUnipileAccounts = () => {
     setAccountsLoadSettled(true);
   }, []);
 
-  console.log("shouldShowConnectQr:",shouldShowConnectQr)
-  console.log("accountsLoadSettled:",accountsLoadSettled)
   return (
     <SubMenuTopBarContainer
       Icon={IconSettings}
