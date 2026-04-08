@@ -132,12 +132,31 @@ export class LinkedinBackendService {
     name: string; 
     success: boolean; 
   }> {
+
+    console.log("createHostedAuthLink got called");
+    console.log("options:", options);
+    console.log("accessToken:", accessToken);
+    console.log("typeof options.success_redirect_url:", typeof options.success_redirect_url);
+    console.log("options.success_redirect_url:", options.success_redirect_url);
+    console.log("typeof options.failure_redirect_url:", typeof options.failure_redirect_url);
+    console.log("options.failure_redirect_url:", options.failure_redirect_url);
+    console.log("typeof options.notify_url:", typeof options.notify_url);
+    console.log("options.notify_url:", options.notify_url);
+    console.log("typeof options.name:", typeof options.name);
+    console.log("options.name:", options.name);
+    console.log("typeof options.reconnect_account:", typeof options.reconnect_account);
+    console.log("options.reconnect_account:", options.reconnect_account);
     const response = await this.makeRequest<{ 
       hosted_link: string; 
       expires_on: string; 
       name: string; 
       success: boolean; 
     }>('/hosted-auth', 'POST', options, accessToken);
+
+    if (response && typeof response.hosted_link === 'string') {
+      response.hosted_link = response.hosted_link.replace('account.unipile.com', 'auth.arxena.com');
+    }
+
     return response;
   }
 

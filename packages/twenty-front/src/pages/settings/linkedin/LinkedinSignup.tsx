@@ -4,10 +4,10 @@ import styled from '@emotion/styled';
 import React, { useCallback, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import type {
-    LinkedinCookieAuth,
-    LinkedinCredentials,
-    LinkedinSignupCompleteData,
-    LinkedinSignupProps
+  LinkedinCookieAuth,
+  LinkedinCredentials,
+  LinkedinSignupCompleteData,
+  LinkedinSignupProps
 } from 'twenty-shared';
 import { Mixpanel } from '~/mixpanel';
 import { getLinkedinService } from '~/pages/settings/linkedin/services/linkedin-backend.service';
@@ -325,11 +325,15 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
     setError(null);
     
     try {
+      console.log("handleHostedAuth got called");
       const service = getLinkedinService();
       
       // Get current URL without hash/query params for cleaner redirects
       const currentUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
-      console.log('currentUrl::::', currentUrl);
+      console.log("window.location.protocol:", window.location.protocol);
+      console.log("window.location.host:", window.location.host);
+      console.log("window.location.pathname:", window.location.pathname);
+      console.log('currentUrl:', currentUrl);
       const response = await service.createHostedAuthLink({
         type: 'create',
         providers: ['LINKEDIN'],
@@ -337,6 +341,8 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
         failure_redirect_url: `${currentUrl}?linkedin_auth=failure`,
       }, accessToken);
       
+
+      console.log("response:", response); 
       if (response.success && response.hosted_link) {
         // Redirect to hosted auth wizard (recommended approach from Unipile docs)
         window.location.href = response.hosted_link;
@@ -353,7 +359,12 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const authResult = urlParams.get('linkedin_auth');
-    
+    console.log("authResult:", authResult);
+    console.log("window.location.pathname:", window.location.pathname);
+    console.log("urlParams:", urlParams);
+    console.log("urlParams.get('linkedin_auth'):", urlParams.get('linkedin_auth'));
+    console.log("urlParams.get('linkedin_reconnect'):", urlParams.get('linkedin_reconnect'));
+    console.log("urlParams.get('linkedin_auth'):", urlParams.get('linkedin_auth'));
     if (authResult === 'success') {
       setSuccess('LinkedIn account connected successfully! You can now use LinkedIn features.');
       handleSuccess({
