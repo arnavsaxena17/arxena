@@ -1,6 +1,6 @@
 import {
-    type UnipileLinkedinAccount,
-    type UnipileWhatsappAccount,
+  type UnipileLinkedinAccount,
+  type UnipileWhatsappAccount,
 } from '../types/ArxChatTypes';
 
 export type WorkspaceMemberProfileUnipileFields = {
@@ -96,10 +96,7 @@ export const shouldRestrictWhatsappByProfile = (
   if (profile == null) {
     return false;
   }
-  return (
-    Boolean(profile.phoneNumber?.trim()) ||
-    Boolean(profile.whatsappUnipileAccountId?.trim())
-  );
+  return Boolean(profile.phoneNumber?.trim());
 };
 
 export const shouldRestrictLinkedinByProfile = (
