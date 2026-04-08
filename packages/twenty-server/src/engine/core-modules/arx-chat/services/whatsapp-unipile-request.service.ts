@@ -1,6 +1,5 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
-import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 
 type UnipileAccountItem = Record<string, unknown> & {
@@ -24,9 +23,7 @@ export class WhatsappUnipileRequestService {
   private readonly unipileApiUrl = process.env.UNIPILE_API_URL;
   private readonly unipileAccessToken = process.env.UNIPILE_ACCESS_TOKEN;
 
-  constructor(
-    private readonly workspaceQueryService: WorkspaceQueryService,
-  ) {
+  constructor() {
     this.logger.log(`Unipile API URL: ${this.unipileApiUrl}`);
     this.logger.log(
       `Unipile Access Token configured: ${!!this.unipileAccessToken}`,
@@ -142,77 +139,35 @@ export class WhatsappUnipileRequestService {
     message?: string;
   }> {
     try {
-      const workspaceKeys = await this.workspaceQueryService.getWorkspaceKeys(
-        workspace.id,
-      );
-      const whatsappPhoneNumber = workspaceKeys.whatsapp_web_phone_number;
-
-      if (!whatsappPhoneNumber) {
-        this.logger.warn(
-          `No whatsapp_web_phone_number found for workspace ${workspace.id}, skipping Unipile accounts call`,
-        );
-        return {
-          success: true,
-          accounts: [],
-          message: 'whatsapp_web_phone_number not configured for workspace',
-        };
-      }
-
       const response = (await this.makeUnipileRequest(
         '/api/v1/accounts?provider=whatsapp',
       )) as { items?: UnipileAccountItem[] };
 
       this.logger.log(
-        `Filtering WhatsApp accounts for workspace ${workspace.id} with whatsapp_web_phone_number: ${whatsappPhoneNumber}`,
+        `Listing WhatsApp accounts from Unipile for workspace ${workspace.id} (member-profile matching is applied in the app)`,
       );
 
-      const allAccounts = (response.items || []).map((item) => ({
-        id: item.id,
-        username: item.name || item.phone_number || 'Unknown',
-        name: item.name || 'Unknown',
-        phone_number: item.phone_number,
-        type: item.type,
-        status: this.mapAccountStatus(item),
-        created_at: item.created_at,
-        provider: 'WHATSAPP',
-        connection_params: item.connection_params,
-        sources: item.sources || [],
-        groups: item.groups || [],
-      }));
-
-      const accounts = allAccounts.filter((account) => {
-        const accountPhoneNumber =
-          account.connection_params?.im?.phone_number || account.phone_number;
-        if (!accountPhoneNumber) {
-          this.logger.warn(
-            `Account ${account.id} has no phone_number in connection_params`,
-          );
-          return false;
-        }
-
-        const normalizePhone = (phone: string) => phone.replace(/\D/g, '');
-        const normalizedAccountPhone = normalizePhone(accountPhoneNumber);
-        const normalizedWorkspacePhone = normalizePhone(whatsappPhoneNumber);
-
-        const matches = normalizedAccountPhone === normalizedWorkspacePhone;
-        this.logger.log(
-          `normalised account number ${normalizedAccountPhone} and normalised workspace number ${normalizedWorkspacePhone}`,
-        );
-        if (matches) {
-          this.logger.log(
-            `Account ${account.id} (${accountPhoneNumber}) matches whatsapp_web_phone_number: ${whatsappPhoneNumber}`,
-          );
-        } else {
-          this.logger.log(
-            `Account ${account.id} (${accountPhoneNumber}) does not match whatsapp_web_phone_number: ${whatsappPhoneNumber}`,
-          );
-        }
-
-        return matches;
+      const accounts = (response.items || []).map((item) => {
+        const phoneFromConnection =
+          item.connection_params?.im?.phone_number ?? item.phone_number;
+        const displayPhone = phoneFromConnection ?? item.phone_number;
+        return {
+          id: item.id,
+          username: item.name || displayPhone || 'Unknown',
+          name: item.name || 'Unknown',
+          phone_number: displayPhone,
+          type: item.type,
+          status: this.mapAccountStatus(item),
+          created_at: item.created_at,
+          provider: 'WHATSAPP',
+          connection_params: item.connection_params,
+          sources: item.sources || [],
+          groups: item.groups || [],
+        };
       });
 
       this.logger.log(
-        `Filtered ${accounts.length} WhatsApp accounts from ${allAccounts.length} total accounts`,
+        `Returning ${accounts.length} WhatsApp account(s) from Unipile for workspace ${workspace.id}`,
       );
 
       return {

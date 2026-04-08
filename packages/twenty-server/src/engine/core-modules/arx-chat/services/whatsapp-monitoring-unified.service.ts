@@ -302,9 +302,9 @@ export class WhatsAppMonitoringUnifiedService {
       keys.whatsapp_key ||
       process.env.DEFAULT_WHATSAPP_CLIENT ||
       'whatsapp-unipile';
-    const prefersUnipile =
-      defaultClient.toLowerCase().includes('unipile') ||
-      !!keys.whatsapp_web_phone_number;
+    const prefersUnipile = defaultClient
+      .toLowerCase()
+      .includes('unipile');
 
     if (!prefersUnipile) {
       return null;
