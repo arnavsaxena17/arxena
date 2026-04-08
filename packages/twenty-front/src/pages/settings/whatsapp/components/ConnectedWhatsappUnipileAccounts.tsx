@@ -205,6 +205,12 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<
     (status?: string | null) => (status ? status.toLowerCase() : ''),
     [],
   );
+  console.log("onAccountConnected:",onAccountConnected)
+  console.log("onAccountsLoaded:",onAccountsLoaded)
+  console.log("ConnectedWhatsappUnipileAccounts got called");
+  console.log("onAccountConnected:",onAccountConnected)
+  console.log("onAccountsLoaded:",onAccountsLoaded)
+  console.log("onAccountConnected:",onAccountConnected)
   const [accounts, setAccounts] = useState<UnipileWhatsappAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -294,6 +300,15 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<
         accountList,
         workspaceMemberProfileUnipileFields,
       );
+      console.log("Has Connected", hasConnected);
+      console.log("New Connected Accounts", newConnectedAccounts);
+      console.log("On Accounts Loaded", onAccountsLoaded);
+      console.log("On Account Connected", onAccountConnected);
+      console.log("Accounts", accounts);
+      console.log("Workspace Member Profile Unipile Fields", workspaceMemberProfileUnipileFields);
+      console.log("Account List", accountList);
+      console.log("Previous Accounts", previousAccountsRef.current);
+      console.log("New Connected Accounts", newConnectedAccounts);
       if (onAccountsLoaded) {
         onAccountsLoaded(hasConnected);
       }

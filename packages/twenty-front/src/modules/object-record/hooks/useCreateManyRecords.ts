@@ -4,8 +4,9 @@ import { v4 } from 'uuid';
 import { triggerCreateRecordsOptimisticEffect } from '@/apollo/optimistic-effect/utils/triggerCreateRecordsOptimisticEffect';
 import { triggerDestroyRecordsOptimisticEffect } from '@/apollo/optimistic-effect/utils/triggerDestroyRecordsOptimisticEffect';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
-import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
+import { ObjectMetadataItemNotFoundError } from '@/object-metadata/errors/ObjectMetadataNotFoundError';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
+import { useOptionalObjectMetadataItem } from '@/object-metadata/hooks/useOptionalObjectMetadataItem';
 import { checkObjectMetadataItemHasFieldCreatedBy } from '@/object-metadata/utils/checkObjectMetadataItemHasFieldCreatedBy';
 import { useCreateOneRecordInCache } from '@/object-record/cache/hooks/useCreateOneRecordInCache';
 import { deleteRecordFromCache } from '@/object-record/cache/utils/deleteRecordFromCache';
@@ -20,6 +21,7 @@ import { ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { computeOptimisticRecordFromInput } from '@/object-record/utils/computeOptimisticRecordFromInput';
 import { getCreateManyRecordsMutationResponseField } from '@/object-record/utils/getCreateManyRecordsMutationResponseField';
 import { sanitizeRecordInput } from '@/object-record/utils/sanitizeRecordInput';
+import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
 
@@ -44,15 +46,33 @@ export const useCreateManyRecords = <
 }: useCreateManyRecordsProps) => {
   const apolloClient = useApolloClient();
 
-  const { objectMetadataItem } = useObjectMetadataItem({
-    objectNameSingular,
-  });
+  const { objectMetadataItem, isWorkflowAccessBlocked } =
+    useOptionalObjectMetadataItem({
+      objectNameSingular,
+    });
+
+  const { objectMetadataItems } = useObjectMetadataItems();
+
+  const metadataItemForDependentHooks = useMemo(() => {
+    if (isDefined(objectMetadataItem)) {
+      return objectMetadataItem;
+    }
+    return (
+      objectMetadataItems.find(
+        (item) => item.nameSingular === 'workspaceMember' && item.isActive,
+      ) ??
+      objectMetadataItems.find((item) => item.isActive) ??
+      objectMetadataItems[0]
+    );
+  }, [objectMetadataItem, objectMetadataItems]);
 
   const objectMetadataHasCreatedByField =
+    isDefined(objectMetadataItem) &&
     checkObjectMetadataItemHasFieldCreatedBy(objectMetadataItem);
 
-  const computedRecordGqlFields =
-    recordGqlFields ?? generateDepthOneRecordGqlFields({ objectMetadataItem });
+  const computedRecordGqlFields = isDefined(objectMetadataItem)
+    ? recordGqlFields ?? generateDepthOneRecordGqlFields({ objectMetadataItem })
+    : undefined;
 
   const { createManyRecordsMutation } = useCreateManyRecordsMutation({
     objectNameSingular,
@@ -60,21 +80,37 @@ export const useCreateManyRecords = <
   });
 
   const createOneRecordInCache = useCreateOneRecordInCache<ObjectRecord>({
-    objectMetadataItem,
+    objectMetadataItem: metadataItemForDependentHooks as NonNullable<
+      typeof metadataItemForDependentHooks
+    >,
   });
 
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
 
-  const { objectMetadataItems } = useObjectMetadataItems();
-
   const { refetchAggregateQueries } = useRefetchAggregateQueries({
-    objectMetadataNamePlural: objectMetadataItem.namePlural,
+    objectMetadataNamePlural:
+      objectMetadataItem?.namePlural ??
+      metadataItemForDependentHooks?.namePlural ??
+      'workspaceMembers',
   });
 
   const createManyRecords = async (
     recordsToCreate: Partial<CreatedObjectRecord>[],
     upsert?: boolean,
   ) => {
+    if (isWorkflowAccessBlocked) {
+      throw new Error(
+        'Workflow is not enabled. If you want to use it, please enable it in the lab.',
+      );
+    }
+
+    if (!isDefined(objectMetadataItem)) {
+      throw new ObjectMetadataItemNotFoundError(
+        objectNameSingular,
+        objectMetadataItems,
+      );
+    }
+
     const sanitizedCreateManyRecordsInput: PartialObjectRecordWithId[] = [];
     const recordOptimisticRecordsInput: PartialObjectRecordWithId[] = [];
     recordsToCreate.forEach((recordToCreate) => {

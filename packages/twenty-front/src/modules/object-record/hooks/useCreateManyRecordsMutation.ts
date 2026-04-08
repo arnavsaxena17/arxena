@@ -1,7 +1,7 @@
 import gql from 'graphql-tag';
 import { useRecoilValue } from 'recoil';
 
-import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
+import { useOptionalObjectMetadataItem } from '@/object-metadata/hooks/useOptionalObjectMetadataItem';
 import { objectMetadataItemsState } from '@/object-metadata/states/objectMetadataItemsState';
 import { mapObjectMetadataToGraphQLQuery } from '@/object-metadata/utils/mapObjectMetadataToGraphQLQuery';
 import { EMPTY_MUTATION } from '@/object-record/constants/EmptyMutation';
@@ -17,7 +17,7 @@ export const useCreateManyRecordsMutation = ({
   objectNameSingular: string;
   recordGqlFields?: RecordGqlOperationGqlRecordFields;
 }) => {
-  const { objectMetadataItem } = useObjectMetadataItem({
+  const { objectMetadataItem } = useOptionalObjectMetadataItem({
     objectNameSingular,
   });
 

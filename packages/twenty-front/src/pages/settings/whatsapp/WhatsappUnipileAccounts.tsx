@@ -19,10 +19,13 @@ export const WhatsappUnipileAccounts = () => {
   }, []);
 
   const handleAccountsLoaded = useCallback((hasConnected: boolean) => {
+    console.log("handleAccountsLoaded:",hasConnected)
     setHasConnectedAccounts(hasConnected);
     setAccountsLoadSettled(true);
   }, []);
 
+  console.log("accountsLoadSettled:",accountsLoadSettled)
+  console.log("hasConnectedAccounts:",hasConnectedAccounts)
   return (
     <SubMenuTopBarContainer 
       Icon={IconSettings} 
