@@ -298,8 +298,6 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<
       );
       console.log("Has Connected", hasConnected);
       console.log("New Connected Accounts", newConnectedAccounts);
-      console.log("On Accounts Loaded", onAccountsLoaded);
-      console.log("On Account Connected", onAccountConnected);
       console.log("Accounts", accounts);
       console.log("Workspace Member Profile Unipile Fields", workspaceMemberProfileUnipileFields);
       console.log("Account List", accountList);
