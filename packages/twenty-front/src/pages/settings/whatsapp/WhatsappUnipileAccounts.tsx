@@ -10,26 +10,18 @@ import { ConnectedWhatsappUnipileAccounts } from './components/ConnectedWhatsapp
 import { WhatsappUnipileQrCode } from './components/WhatsappUnipileQrCode';
 
 export const WhatsappUnipileAccounts = () => {
-  const [hasConnectedAccounts, setHasConnectedAccounts] = useState(false);
+  const [shouldShowConnectQr, setShouldShowConnectQr] = useState(false);
   const [accountsLoadSettled, setAccountsLoadSettled] = useState(false);
 
-  const handleAccountConnected = useCallback(() => {
-    console.log('WhatsApp account connected successfully');
-    setHasConnectedAccounts(true);
-  }, []);
-
-  const handleAccountsLoaded = useCallback((hasConnected: boolean) => {
-    console.log("handleAccountsLoaded:",hasConnected)
-    setHasConnectedAccounts(hasConnected);
+  const handleAccountsLoaded = useCallback((showQr: boolean) => {
+    setShouldShowConnectQr(showQr);
     setAccountsLoadSettled(true);
   }, []);
 
-  console.log("accountsLoadSettled:",accountsLoadSettled)
-  console.log("hasConnectedAccounts:",hasConnectedAccounts)
   return (
-    <SubMenuTopBarContainer 
-      Icon={IconSettings} 
-      title="WhatsApp Unipile" 
+    <SubMenuTopBarContainer
+      Icon={IconSettings}
+      title="WhatsApp Unipile"
       links={[
         {
           children: <Trans id="User">User</Trans>,
@@ -43,15 +35,13 @@ export const WhatsappUnipileAccounts = () => {
       ]}
     >
       <SettingsPageContainer>
-        {accountsLoadSettled && !hasConnectedAccounts && (
-          <WhatsappUnipileQrCode onConnected={handleAccountConnected} />
+        {accountsLoadSettled && shouldShowConnectQr && (
+          <WhatsappUnipileQrCode />
         )}
-        <ConnectedWhatsappUnipileAccounts 
-          onAccountConnected={handleAccountConnected}
+        <ConnectedWhatsappUnipileAccounts
           onAccountsLoaded={handleAccountsLoaded}
         />
       </SettingsPageContainer>
     </SubMenuTopBarContainer>
   );
 };
-
