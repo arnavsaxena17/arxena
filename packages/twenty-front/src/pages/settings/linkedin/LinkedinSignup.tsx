@@ -565,7 +565,7 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
               type="text"
               value={cookieForm.user_agent}
               onChange={(e) => setCookieForm(prev => ({ ...prev, user_agent: e.target.value }))}
-              placeholder="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15.0) Gecko/20100101 Firefox/15.0.1"
+              placeholder={typeof window !== "undefined" && window.navigator?.userAgent ? window.navigator.userAgent : ""}         
               required
             />
           </FormGroup>

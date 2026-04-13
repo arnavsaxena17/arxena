@@ -115,7 +115,6 @@ export const useCheckDataIntegrityOfJob = ({
               'Attachments data structure is missing',
             jobNode?.attachments?.edges?.length === 0 &&
               'No JD attachment found',
-            !jobNode?.jobCode && 'Job code is missing',
             !jobNode?.jobLocation &&
               'Job location is missing',
             (!jobNode?.chatFlowOrder ||

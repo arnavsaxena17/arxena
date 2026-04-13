@@ -1,4 +1,5 @@
 import styled from '@emotion/styled';
+import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
@@ -9,6 +10,7 @@ import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
 import { AppPath } from '@/types/AppPath';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 import { useUnipile } from '@/unipile/contexts/UnipileContext';
 import {
   normalizeCompanyIdForUrl,
@@ -23,10 +25,12 @@ import {
   extractOrgData,
   getProxiedImageUrl,
   processOrgChartToNodeData,
+  toTitleCase,
   type OrgChartNodeData,
 } from 'twenty-shared';
 import { OrgChartAddToJobModal } from './components/OrgChartAddToJobModal';
 import { OrgChartHeader } from './components/OrgChartHeader';
+import { OrgChartQueryGeneratorControl } from './components/OrgChartQueryGeneratorControl';
 import { OrgChartResultModal } from './components/OrgChartResultModal';
 import { OrgChartResultsAddToJobModal } from './components/OrgChartResultsAddToJobModal';
 import { useJobOrgChartData } from './hooks/useJobOrgChartData';
@@ -292,6 +296,50 @@ const StyledSpinner = styled.div`
   }
 `;
 
+const StyledOrgChartConfirmSummary = styled.div`
+  width: 100%;
+  max-width: 100%;
+  text-align: left;
+  align-self: stretch;
+`;
+
+const StyledOrgChartConfirmIntro = styled.p`
+  margin: 0 0 ${({ theme }) => theme.spacing(2)};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  line-height: 1.5;
+  color: ${({ theme }) => theme.font.color.secondary};
+`;
+
+const StyledOrgChartConfirmRows = styled.dl`
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(1.5)};
+`;
+
+const StyledOrgChartConfirmRow = styled.div`
+  display: grid;
+  grid-template-columns: minmax(120px, 36%) 1fr;
+  gap: ${({ theme }) => theme.spacing(2)};
+  align-items: start;
+  font-size: ${({ theme }) => theme.font.size.sm};
+`;
+
+const StyledOrgChartConfirmDt = styled.dt`
+  margin: 0;
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: ${({ theme }) => theme.font.size.xs};
+`;
+
+const StyledOrgChartConfirmDd = styled.dd`
+  margin: 0;
+  color: ${({ theme }) => theme.font.color.primary};
+  word-break: break-word;
+`;
+
 const PERSON_ROW_HEIGHT = 48;
 
 /** Default filter when switching companies (matches twenty-orgchart filter options). */
@@ -351,6 +399,7 @@ export const ArxOrgChart = ({
   } = useCompanyInfoLookup({ baseUrl, accessToken });
   const { refetchJobs } = useJobRefetch();
   const { enqueueSnackBar } = useSnackBar();
+  const { t } = useLingui();
   const effectiveEmployeeCount =
     unipileCompanyProfile?.employee_count ??
     exactEmployeeCount ??
@@ -377,6 +426,7 @@ export const ArxOrgChart = ({
     linkedinCompanyUrl: linkedinUrlToUse?.trim(),
     linkedinUnipileAccountId:
       process.env.REACT_APP_ORGCHART_UNIPILE_ACCOUNT_ID?.trim(),
+    businessDivisionRawQuery: businessDivisionQuery.trim() || undefined,
   });
   const { applyOrgChartOverride } = actions;
 
@@ -411,6 +461,19 @@ export const ArxOrgChart = ({
   const fetchOrgChart = isJobMode
     ? jobOrgChartHook.fetchOrgChart
     : classicOrgChartHook.fetchOrgChart;
+
+  const orgChartEsTransportError = classicOrgChartHook.orgChartEsTransportError;
+
+  useEffect(() => {
+    if (isJobMode || !orgChartEsTransportError) {
+      return;
+    }
+    enqueueSnackBar(t`Org chart search timed out — showing fallback data.`, {
+      variant: SnackBarVariant.Warning,
+      dedupeKey: `org-chart-es-transport-${companyId ?? ''}`,
+      duration: 4000,
+    });
+  }, [companyId, enqueueSnackBar, isJobMode, orgChartEsTransportError, t]);
 
   useEffect(() => {
     if (skipNextRefetchRef.current) {
@@ -451,6 +514,88 @@ export const ArxOrgChart = ({
     (orgSource as Record<string, unknown>).is_blank_template === true;
 
   const filterOptions = useOrgChartFilterOptions(orgData);
+
+  const searchConfirmSummary = useMemo(() => {
+    const bd = businessDivisionQuery.trim();
+    const fn = selectedFunctionRoot;
+    const country = selectedCountry;
+
+    const functionLabel =
+      !fn || fn === 'fullcompany'
+        ? t`Full company`
+        : filterOptions.functionRootPercentLabels[fn]
+          ? `${toTitleCase(fn)} (${filterOptions.functionRootPercentLabels[fn]})`
+          : toTitleCase(fn);
+
+    const geographyLabel =
+      !country || country === 'global'
+        ? t`Global`
+        : filterOptions.countryPercentLabels[country]
+          ? `${toTitleCase(country)} (${filterOptions.countryPercentLabels[country]})`
+          : toTitleCase(country);
+
+    return {
+      functionLabel,
+      levelsLabel: t`All levels`,
+      geographyLabel,
+      businessDivisionLabel: bd.length > 0 ? bd : t`Not specified`,
+    };
+  }, [
+    businessDivisionQuery,
+    selectedCountry,
+    selectedFunctionRoot,
+    filterOptions.countryPercentLabels,
+    filterOptions.functionRootPercentLabels,
+    t,
+  ]);
+
+  const candidateSearchConfirmSubtitle = useMemo(
+    () => (
+      <StyledOrgChartConfirmSummary>
+        <StyledOrgChartConfirmIntro>
+          <Trans>
+            The search will use the scope below. Confirm to continue, or cancel
+            to adjust filters first.
+          </Trans>
+        </StyledOrgChartConfirmIntro>
+        <StyledOrgChartConfirmRows>
+          <StyledOrgChartConfirmRow>
+            <StyledOrgChartConfirmDt>
+              <Trans>Function</Trans>
+            </StyledOrgChartConfirmDt>
+            <StyledOrgChartConfirmDd>
+              {searchConfirmSummary.functionLabel}
+            </StyledOrgChartConfirmDd>
+          </StyledOrgChartConfirmRow>
+          <StyledOrgChartConfirmRow>
+            <StyledOrgChartConfirmDt>
+              <Trans>Levels</Trans>
+            </StyledOrgChartConfirmDt>
+            <StyledOrgChartConfirmDd>
+              {searchConfirmSummary.levelsLabel}
+            </StyledOrgChartConfirmDd>
+          </StyledOrgChartConfirmRow>
+          <StyledOrgChartConfirmRow>
+            <StyledOrgChartConfirmDt>
+              <Trans>Geography</Trans>
+            </StyledOrgChartConfirmDt>
+            <StyledOrgChartConfirmDd>
+              {searchConfirmSummary.geographyLabel}
+            </StyledOrgChartConfirmDd>
+          </StyledOrgChartConfirmRow>
+          <StyledOrgChartConfirmRow>
+            <StyledOrgChartConfirmDt>
+              <Trans>Business division</Trans>
+            </StyledOrgChartConfirmDt>
+            <StyledOrgChartConfirmDd>
+              {searchConfirmSummary.businessDivisionLabel}
+            </StyledOrgChartConfirmDd>
+          </StyledOrgChartConfirmRow>
+        </StyledOrgChartConfirmRows>
+      </StyledOrgChartConfirmSummary>
+    ),
+    [searchConfirmSummary],
+  );
 
   const hasInitialCompanyInfo =
     companyName ||
@@ -807,7 +952,6 @@ export const ArxOrgChart = ({
         | 'function_grade'
         | 'current_node'
         | 'leadership'
-        | 'all_people'
         | 'selected_nodes',
       origin: 'view_all_candidates',
       country: selectedCountry,
@@ -827,7 +971,6 @@ export const ArxOrgChart = ({
         | 'function_grade'
         | 'current_node'
         | 'leadership'
-        | 'all_people'
         | 'selected_nodes',
       origin: 'header',
       country: selectedCountry,
@@ -857,6 +1000,18 @@ export const ArxOrgChart = ({
     selectedFunctionRoot,
   ]);
 
+  const [pendingSearchConfirm, setPendingSearchConfirm] = useState<{
+    title: string;
+    run: () => void;
+  } | null>(null);
+
+  const requestCandidateSearchConfirm = useCallback(
+    (title: string, run: () => void) => {
+      setPendingSearchConfirm({ title, run });
+    },
+    [],
+  );
+
   const filtersProps = {
     availableCountries: filterOptions.availableCountries,
     countryPercentLabels: filterOptions.countryPercentLabels,
@@ -877,16 +1032,25 @@ export const ArxOrgChart = ({
     onClearSearch: handleClearSearch,
     diagramHandleRef,
     onGetAll: () => {
-      void handleGetAllOrgChartSearch();
+      requestCandidateSearchConfirm(t`Confirm full org chart search`, () => {
+        void handleGetAllOrgChartSearch();
+      });
     },
     onViewAllCandidates: () => {
-      void handleViewAllCandidates();
+      requestCandidateSearchConfirm(t`Confirm view all candidates`, () => {
+        void handleViewAllCandidates();
+      });
     },
-    onGetLeaders: () =>
-      actions.executeOrgchartSearch({
-        mode: 'leadership',
-        origin: 'header',
-      }),
+    onGetLeaders: () => {
+      requestCandidateSearchConfirm(t`Confirm leadership search`, () => {
+        void actions.executeOrgchartSearch({
+          mode: 'leadership',
+          origin: 'header',
+          country: selectedCountry,
+          functionRoot: selectedFunctionRoot,
+        });
+      });
+    },
   };
 
   const fetchTheOrgEnrichedOrgChart = useCallback(async () => {
@@ -1056,6 +1220,7 @@ export const ArxOrgChart = ({
       },
       isSubmitting: actions.isContextLoading,
     },
+    toolbarTrailing: <OrgChartQueryGeneratorControl />,
   };
 
   return (
@@ -1084,7 +1249,7 @@ export const ArxOrgChart = ({
         {isTheOrgEnrichedLoading && (
           <StyledTheOrgLeadershipLoadingOverlay>
             <StyledSpinner />
-            <span>Loading Leadership Org Chart from TheOrg…</span>
+            <span>Loading Leadership Org Chart from Public Sources</span>
           </StyledTheOrgLeadershipLoadingOverlay>
         )}
         {isLoading && (
@@ -1198,31 +1363,18 @@ export const ArxOrgChart = ({
                 type="button"
                 disabled={isTheOrgEnrichedLoading}
                 onClick={() => {
-                  void fetchTheOrgEnrichedOrgChart();
+                  requestCandidateSearchConfirm(
+                    t`Confirm Leadership Org Chart`,
+                    () => {
+                      void fetchTheOrgEnrichedOrgChart();
+                    },
+                  );
                 }}
               >
                 {isTheOrgEnrichedLoading
                   ? 'Loading Leadership Org Chart'
                   : 'Leadership Org Chart'}
               </StyledTopRightActionButton>
-              {/* <StyledTopRightActionButton
-                type="button"
-                onClick={searchControlsProps.onGetLeaders}
-              >
-                Leaders
-              </StyledTopRightActionButton> */}
-              {/* <StyledTopRightActionButton
-                type="button"
-                onClick={() => diagramHandleRef.current?.zoomToFit()}
-              >
-                Zoom to fit
-              </StyledTopRightActionButton> */}
-              {/* <StyledTopRightActionButton
-                type="button"
-                onClick={() => diagramHandleRef.current?.centerContent()}
-              >
-                Center
-              </StyledTopRightActionButton> */}
             </StyledTopRightActionsOverlay>
             <StyledSearchOverlay>
               <OrgChartSearchControls {...searchControlsProps} />
@@ -1324,6 +1476,22 @@ export const ArxOrgChart = ({
         />
         </StyledDiagramBody>
       </StyledDiagramArea>
+
+      <ConfirmationModal
+        isOpen={pendingSearchConfirm !== null}
+        setIsOpen={(open) => {
+          if (!open) {
+            setPendingSearchConfirm(null);
+          }
+        }}
+        title={pendingSearchConfirm?.title ?? ''}
+        subtitle={candidateSearchConfirmSubtitle}
+        onConfirmClick={() => {
+          pendingSearchConfirm?.run();
+        }}
+        deleteButtonText={t`Confirm`}
+        confirmButtonAccent="blue"
+      />
     </StyledContainer>
   );
 };

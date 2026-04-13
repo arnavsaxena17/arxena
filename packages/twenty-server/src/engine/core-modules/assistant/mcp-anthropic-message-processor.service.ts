@@ -4,7 +4,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { MessageParam, StreamEventSender } from './assistant.types';
 import { McpAssistantToolExecutorService } from './mcp-assistant-tool-executor.service';
 import { CLAUDE_MODEL, MAX_TOKENS } from './mcp-assistant.constants';
-import { McpLinkedinQueryRegenerationService } from './mcp-linkedin-query-regeneration.service';
 import { throwIfAborted } from './utils/mcp-assistant-abort.util';
 import {
     extractLinkedInSearchErrorMessage,
@@ -18,7 +17,6 @@ export class McpAnthropicMessageProcessorService {
 
   constructor(
     private readonly toolExecutor: McpAssistantToolExecutorService,
-    private readonly linkedinQueryRegeneration: McpLinkedinQueryRegenerationService,
   ) {}
 
   async streamAnthropicRound(
@@ -93,7 +91,6 @@ export class McpAnthropicMessageProcessorService {
     }>;
     textParts: string[];
     linkedInSearchError?: string;
-    regenerationMessage?: string;
   }> {
     const textParts: string[] = [];
     const toolResults: Array<{
@@ -127,22 +124,6 @@ export class McpAnthropicMessageProcessorService {
           content: textContent,
         });
         emitTableDataIfJson(sendEvent, textContent, block.name);
-        const regenerationMessage =
-          await this.linkedinQueryRegeneration.maybeRegenerateLinkedinQuerySet(
-            client,
-            apiToken,
-            sendEvent,
-            assistantThreadId,
-            block.name,
-            searchType,
-          );
-        if (regenerationMessage) {
-          return {
-            toolResults,
-            textParts,
-            regenerationMessage,
-          };
-        }
         if (isLinkedInSearchError(block.name, textContent)) {
           const userMessage = extractLinkedInSearchErrorMessage(textContent);
           this.logger.warn(

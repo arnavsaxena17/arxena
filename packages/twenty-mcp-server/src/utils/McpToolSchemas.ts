@@ -242,7 +242,7 @@ export const ASSISTANT_THREAD_ID_OPTIONAL_DESCRIPTOR: readonly McpInputFieldDesc
 
 // ==================== Candidate Search Tools ====================
 
-/** Descriptor for generate_search_parameters tool input. */
+/** Descriptor for generate_search_parameters tool input (free-text requirement only; org-chart uses POST /org-chart/generate-unresolved-search-parameters). */
 export const GENERATE_SEARCH_PARAMETERS_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
   { key: 'parsedJobDescription', type: 'object', description: 'Output from parse_job_description, Default is null.', required: false },
   { key: 'searchType', type: 'string', description: 'One of: classic, sales_navigator, recruiter. Default is classic.', required: true },
@@ -347,19 +347,6 @@ export const SEARCH_LINKEDIN_PARAMETERS_INPUT_DESCRIPTOR: readonly McpInputField
 export const GENERATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
   { key: 'rawRequirement', type: 'string', description: 'Raw natural language search requirement', required: true },
   { key: 'queryIpLocation', type: 'string', description: 'Optional IP location for context', required: false },
-  { key: 'model', type: 'string', description: 'Optional LLM model to use', required: false },
-  { key: 'temperature', type: 'number', description: 'Optional temperature for LLM', required: false },
-  { key: 'verbose', type: 'boolean', description: 'Whether to include verbose output', required: false },
-] as const;
-
-/** Descriptor for generate_iterative_linkedin_query_set tool input. */
-export const GENERATE_ITERATIVE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
-  { key: 'rawRequirement', type: 'string', description: 'Raw natural language search requirement', required: true },
-  { key: 'mode', type: 'string', description: 'Iterative mode: offline or live', required: false },
-  { key: 'searchType', type: 'string', description: 'One of: classic, sales_navigator, recruiter', required: false },
-  { key: 'queryIpLocation', type: 'string', description: 'Optional IP location for context', required: false },
-  { key: 'maxIterations', type: 'number', description: 'Maximum refinement rounds (default 4)', required: false },
-  { key: 'returnAlternatives', type: 'boolean', description: 'Whether to return ranked alternatives', required: false },
   { key: 'model', type: 'string', description: 'Optional LLM model to use', required: false },
   { key: 'temperature', type: 'number', description: 'Optional temperature for LLM', required: false },
   { key: 'verbose', type: 'boolean', description: 'Whether to include verbose output', required: false },

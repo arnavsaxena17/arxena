@@ -135,30 +135,53 @@ const StyledUnreadBadge = styled.div`
 
 type FloatingAIChatProps = {
   className?: string;
+  /** When set with `onExpandedChange`, expand/collapse is controlled by the parent (e.g. header AI button). */
+  isExpanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
 };
 
-export const FloatingAIChat = ({ className }: FloatingAIChatProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+export const FloatingAIChat = ({
+  className,
+  isExpanded: isExpandedProp,
+  onExpandedChange,
+}: FloatingAIChatProps) => {
+  const [internalExpanded, setInternalExpanded] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  
+
+  const isControlled =
+    isExpandedProp !== undefined && onExpandedChange !== undefined;
+  const isExpanded = isControlled ? isExpandedProp : internalExpanded;
+
+  const setExpanded = useCallback(
+    (next: boolean) => {
+      if (isControlled) {
+        onExpandedChange?.(next);
+      } else {
+        setInternalExpanded(next);
+      }
+    },
+    [isControlled, onExpandedChange],
+  );
+
   const parsedJD = useRecoilValue(parsedJDSelector);
   const fetchedCount = useRecoilValue(fetchedCandidatesCountSelector);
 
   const toggleExpanded = useCallback(() => {
-    setIsExpanded(!isExpanded);
-    if (!isExpanded) {
-      setUnreadCount(0); // Clear unread count when expanding
+    const next = !isExpanded;
+    setExpanded(next);
+    if (next) {
+      setUnreadCount(0);
     }
-  }, [isExpanded]);
+  }, [isExpanded, setExpanded]);
 
   const minimizeChat = useCallback(() => {
-    setIsExpanded(false);
-  }, []);
+    setExpanded(false);
+  }, [setExpanded]);
 
   const closeChat = useCallback(() => {
-    setIsExpanded(false);
+    setExpanded(false);
     setUnreadCount(0);
-  }, []);
+  }, [setExpanded]);
 
   // Context information for the chat
   const contextInfo = parsedJD ? 

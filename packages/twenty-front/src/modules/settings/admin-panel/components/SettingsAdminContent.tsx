@@ -5,10 +5,11 @@ import { TabList } from '@/ui/layout/tab/components/TabList';
 import styled from '@emotion/styled';
 import { IconBrandWhatsapp, IconNetwork } from '@tabler/icons-react';
 import {
-  IconCurrencyDollar,
-  IconHeart,
-  IconSettings2,
-  IconVariable
+    IconCurrencyDollar,
+    IconHeart,
+    IconSettings2,
+    IconUsers,
+    IconVariable,
 } from 'twenty-ui';
 
 const StyledTabListContainer = styled.div`
@@ -50,6 +51,11 @@ export const SettingsAdminContent = () => {
       id: SETTINGS_ADMIN_TABS.ORG_CHART_CLIENT_IPS,
       title: 'Org chart IPs',
       Icon: IconNetwork,
+    },
+    {
+      id: SETTINGS_ADMIN_TABS.USERS,
+      title: 'Users',
+      Icon: IconUsers,
     },
   ];
 

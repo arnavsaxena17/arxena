@@ -5,7 +5,6 @@ export type OrgChartContextAction =
   | 'leadership'
   | 'entire_company'
   | 'delete_company_cache'
-  | 'all_people'
   | 'function_grade'
   | 'business_division_map'
   | 'selected_nodes'
@@ -21,6 +20,12 @@ export type OrgChartDiagramIconUrls = {
   similarItems?: string;
 };
 
+/** Extra context for context-menu actions (e.g. all diagram-selected nodes for `selected_nodes`). */
+export type OrgChartNodeContextPayload = {
+  /** Each node contributes its own `std_function` / `std_grade` for backend scope filtering. */
+  selectedNodes?: OrgChartNodeData[];
+};
+
 export type OrgChartDiagramProps = {
   nodeDataArray: OrgChartNodeData[];
   iconUrls?: OrgChartDiagramIconUrls;
@@ -30,6 +35,7 @@ export type OrgChartDiagramProps = {
   onNodeContextAction?: (
     action: OrgChartContextAction,
     node: OrgChartNodeData,
+    payload?: OrgChartNodeContextPayload,
   ) => void;
   onBackgroundContextAction?: (action: OrgChartContextAction) => void;
   onNodeClick?: (node: OrgChartNodeData) => void;

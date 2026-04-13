@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+
+import { DataSource, IsNull, Repository } from 'typeorm';
+
 import { AdminPanelWorkspaceMemberRecruiterProfile } from 'src/engine/core-modules/admin-panel/dtos/admin-panel-workspace-member-recruiter-profile.output';
+import { AdminPanelWorkspaceMemberRow } from 'src/engine/core-modules/admin-panel/dtos/admin-panel-workspace-member-row.output';
 import { EnvironmentVariable } from 'src/engine/core-modules/admin-panel/dtos/environment-variable.dto';
 import { EnvironmentVariablesGroupData } from 'src/engine/core-modules/admin-panel/dtos/environment-variables-group.dto';
 import { EnvironmentVariablesOutput } from 'src/engine/core-modules/admin-panel/dtos/environment-variables.output';
@@ -25,8 +29,6 @@ import { User } from 'src/engine/core-modules/user/user.entity';
 import { userValidator } from 'src/engine/core-modules/user/user.validate';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { workspaceValidator } from 'src/engine/core-modules/workspace/workspace.validate';
-import { DataSource, Repository } from 'typeorm';
-
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 
 const pickStringFromRow = (
@@ -153,12 +155,14 @@ export class AdminPanelService {
           totalUsers: userWorkspace.workspace.workspaceUsers.length,
           logo: userWorkspace.workspace.logo,
           allowImpersonation: userWorkspace.workspace.allowImpersonation,
-          users: userWorkspace.workspace.workspaceUsers.map((workspaceUser) => ({
-            id: workspaceUser.user.id,
-            email: workspaceUser.user.email,
-            firstName: workspaceUser.user.firstName,
-            lastName: workspaceUser.user.lastName,
-          })),
+          users: userWorkspace.workspace.workspaceUsers.map(
+            (workspaceUser) => ({
+              id: workspaceUser.user.id,
+              email: workspaceUser.user.email,
+              firstName: workspaceUser.user.firstName,
+              lastName: workspaceUser.user.lastName,
+            }),
+          ),
           featureFlags: allFeatureFlagKeys.map((key) => ({
             key,
             value:
@@ -180,6 +184,49 @@ export class AdminPanelService {
       },
       workspaces,
     };
+  }
+
+  async listAllWorkspaceMembersForAdminPanel(): Promise<
+    AdminPanelWorkspaceMemberRow[]
+  > {
+    const workspaces = await this.workspaceRepository.find({
+      where: { deletedAt: IsNull() },
+      relations: ['workspaceUsers', 'workspaceUsers.user'],
+      order: { createdAt: 'DESC' },
+    });
+
+    const rows: AdminPanelWorkspaceMemberRow[] = [];
+
+    for (const workspace of workspaces) {
+      const members =
+        workspace.workspaceUsers?.filter(
+          (uw) => !uw.deletedAt && uw.user && !uw.user.deletedAt,
+        ) ?? [];
+
+      for (const uw of members) {
+        const recruiterProfile =
+          await this.getRecruiterProfileSnapshotForUserInWorkspace(
+            workspace.id,
+            uw.userId,
+          );
+
+        rows.push({
+          workspaceId: workspace.id,
+          workspaceName: workspace.displayName ?? '',
+          workspaceSubdomain: workspace.subdomain,
+          workspaceCreatedAt: workspace.createdAt,
+          userId: uw.user.id,
+          userEmail: uw.user.email,
+          userFirstName: uw.user.firstName,
+          userLastName: uw.user.lastName,
+          userCreatedAt: uw.user.createdAt,
+          membershipCreatedAt: uw.createdAt,
+          recruiterProfile,
+        });
+      }
+    }
+
+    return rows;
   }
 
   private async checkIfTableExists(
@@ -227,8 +274,14 @@ export class AdminPanelService {
       profileId: pickStringFromRow(row, 'id'),
       phoneNumber: pickStringFromRow(row, 'phoneNumber'),
       linkedinUrl: pickStringFromRow(row, 'linkedinUrl'),
-      linkedinUnipileAccountId: pickStringFromRow(row, 'linkedinUnipileAccountId'),
-      whatsappUnipileAccountId: pickStringFromRow(row, 'whatsappUnipileAccountId'),
+      linkedinUnipileAccountId: pickStringFromRow(
+        row,
+        'linkedinUnipileAccountId',
+      ),
+      whatsappUnipileAccountId: pickStringFromRow(
+        row,
+        'whatsappUnipileAccountId',
+      ),
       keepLinkedinConnected: pickBooleanFromRow(row, 'keepLinkedinConnected'),
       email: pickStringFromRow(row, 'email'),
       firstName: pickStringFromRow(row, 'firstName'),
@@ -259,9 +312,7 @@ export class AdminPanelService {
         return null;
       }
 
-      const workspaceMemberId = String(
-        (wmRows[0] as { id: string }).id,
-      );
+      const workspaceMemberId = String((wmRows[0] as { id: string }).id);
       const profileTable =
         await this.resolveWorkspaceMemberProfileTableName(schema);
 

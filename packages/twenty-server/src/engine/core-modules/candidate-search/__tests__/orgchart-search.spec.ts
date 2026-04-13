@@ -17,7 +17,7 @@ describe('Org chart job naming', () => {
       ? fn.replace(/\s+/g, '-').toLowerCase()
       : mode === 'leadership'
         ? 'leadership'
-        : mode === 'entire_company' || mode === 'all_people'
+        : mode === 'entire_company'
           ? 'entire'
           : mode ?? 'chart';
     return `orgchart-${normalizedCompanyName}-${jobNameSuffix}`;

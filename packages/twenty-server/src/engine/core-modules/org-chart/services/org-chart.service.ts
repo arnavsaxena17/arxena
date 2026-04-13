@@ -18,8 +18,8 @@ import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import {
-  applyBlankOrgChartSizeForExpectedHeadcount,
-  applyBlankOrgChartSubsetFilter,
+    applyBlankOrgChartSizeForExpectedHeadcount,
+    applyBlankOrgChartSubsetFilter,
 } from '../utils/blank-org-chart-subset.util';
 import { ArxenaBackendService } from './arxena-backend.service';
 import { OrgChartEsService } from './org-chart-es.service';
@@ -27,6 +27,12 @@ import { normalizeOrgChartPayload } from './org-chart-payload-normalize';
 import { OrgChartS3Service } from './orgchart-s3.service';
 import { PdlAutocompleteService } from './pdl-autocomplete.service';
 import { PeopleEsService } from './people-es.service';
+
+export type OrgChartServiceGetOrgChartResult = {
+  data: Record<string, unknown>;
+  /** Set when the primary ES org-chart lookup failed with a transport error (e.g. timeout). */
+  orgChartEsTransportError?: boolean;
+};
 
 @Injectable()
 export class OrgChartService {
@@ -107,7 +113,7 @@ export class OrgChartService {
           expectedEmployeeCount?: number;
         },
     authTokenOptional?: string,
-  ): Promise<Record<string, unknown>> {
+  ): Promise<OrgChartServiceGetOrgChartResult> {
     let options: {
       companyName?: string;
       website?: string;
@@ -130,14 +136,20 @@ export class OrgChartService {
       authToken = authTokenOptional;
     }
 
+    let orgChartEsTransportError = false;
+
     if (!options.serveCachedOnly) {
-      const esResult = await this.orgChartEsService.getOrgChartByCompanyId(
+      const esOutcome = await this.orgChartEsService.getOrgChartByCompanyId(
         companyId,
         options,
       );
 
-      if (esResult) {
-        return normalizeOrgChartPayload(esResult);
+      orgChartEsTransportError = esOutcome.esTransportError === true;
+
+      if (esOutcome.document) {
+        return {
+          data: normalizeOrgChartPayload(esOutcome.document),
+        };
       }
     }
 
@@ -152,7 +164,12 @@ export class OrgChartService {
     }>(cacheKey);
 
     if (cachedOrgChartPayload?.orgChart) {
-      return normalizeOrgChartPayload(cachedOrgChartPayload.orgChart);
+      return {
+        data: normalizeOrgChartPayload(cachedOrgChartPayload.orgChart),
+        ...(orgChartEsTransportError
+          ? { orgChartEsTransportError: true }
+          : {}),
+      };
     }
 
     // Redis miss: try S3 only if this workspace member has a credit transaction for this path.
@@ -194,7 +211,12 @@ export class OrgChartService {
         `Serving org chart from S3 fallback for companyId=${companyId}`,
       );
 
-      return normalizeOrgChartPayload(s3OrgChart as Record<string, unknown>);
+      return {
+        data: normalizeOrgChartPayload(s3OrgChart as Record<string, unknown>),
+        ...(orgChartEsTransportError
+          ? { orgChartEsTransportError: true }
+          : {}),
+      };
     }
 
     // No ES document, no Redis cache and no S3 data: serve static blank org chart template so the
@@ -215,19 +237,29 @@ export class OrgChartService {
         `Serving blank org chart placeholder for companyId=${companyId} from static file`,
       );
 
-      return normalizeOrgChartPayload(blankChart);
+      return {
+        data: normalizeOrgChartPayload(blankChart),
+        ...(orgChartEsTransportError
+          ? { orgChartEsTransportError: true }
+          : {}),
+      };
     }
 
     this.logger.warn(
       `Org chart not found in ES for companyId=${companyId}; blank placeholder file unavailable, returning empty org chart`,
     );
 
-    return normalizeOrgChartPayload({
-      company_id: companyId,
-      orgchart: [],
-      country: options.country ?? 'global',
-      type: options.functionRoot ?? 'fullcompany',
-    } as Record<string, unknown>);
+    return {
+      data: normalizeOrgChartPayload({
+        company_id: companyId,
+        orgchart: [],
+        country: options.country ?? 'global',
+        type: options.functionRoot ?? 'fullcompany',
+      } as Record<string, unknown>),
+      ...(orgChartEsTransportError
+        ? { orgChartEsTransportError: true }
+        : {}),
+    };
   }
 
   /**
@@ -396,7 +428,7 @@ export class OrgChartService {
     }
 
     // Fallback for non-Yuga companies or if the static file cannot be read.
-    return this.getOrgChart(companyId);
+    return (await this.getOrgChart(companyId)).data;
   }
 
   async getNodePeople(

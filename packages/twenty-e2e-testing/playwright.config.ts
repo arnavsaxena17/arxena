@@ -92,6 +92,14 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
       },
     },
+    {
+      name: 'integration-api',
+      testMatch: /tests\/integration\/.*\.spec\.ts/,
+      timeout: 600_000,
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
 
     //{
     //  name: 'webkit',

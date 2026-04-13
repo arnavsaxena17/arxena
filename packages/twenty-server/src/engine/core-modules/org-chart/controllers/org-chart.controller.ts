@@ -1,15 +1,15 @@
 import {
-    Body,
-    Controller,
-    Get,
-    HttpException,
-    HttpStatus,
-    Logger,
-    Param,
-    Post,
-    Query,
-    Req,
-    Res,
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Query,
+  Req,
+  Res,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
@@ -18,6 +18,14 @@ import { ApifyService } from 'src/engine/core-modules/apify/services/apify.servi
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/services/bright-data-serp.service';
+import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
+import type {
+  ClassicPeopleSearchStrategyResult,
+  GeneratedSearchParameters,
+  RecruiterPeopleSearchStrategyResult,
+  SalesNavigatorPeopleSearchStrategyResult,
+} from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
+import { constructSearchParamKey } from 'src/engine/core-modules/candidate-search/utils/search-parameter.utils';
 import { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { LinkedinXraySearchEngine } from 'src/modules/linkedin-xray/types/linkedin-xray-search-job.types';
@@ -52,6 +60,7 @@ export class OrgChartController {
     private readonly orgChartClientIpService: OrgChartClientIpService,
     private readonly pythonOrgChartService: PythonOrgChartService,
     private readonly brightDataSerpService: BrightDataSerpService,
+    private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
   ) {}
 
   private getAuthToken(req: Request): string | undefined {
@@ -936,20 +945,22 @@ export class OrgChartController {
     const serveCachedOnly = ipDecision?.serveCachedOnly === true;
     try {
       const authToken = this.getAuthToken(req);
-      const result = await this.orgChartService.getOrgChart(
-        normalizedCompanyId,
-        { ...options, serveCachedOnly },
-        authToken,
-      );
+      const { data: orgChartPayload, orgChartEsTransportError } =
+        await this.orgChartService.getOrgChart(
+          normalizedCompanyId,
+          { ...options, serveCachedOnly },
+          authToken,
+        );
       if (
         clientIp &&
-        this.orgChartClientIpService.shouldCountAsChartServed(result)
+        this.orgChartClientIpService.shouldCountAsChartServed(orgChartPayload)
       ) {
         await this.orgChartClientIpService.recordChartServed(clientIp);
       }
       return {
-        result: await this.proxyOrgChartPayload(result),
+        result: await this.proxyOrgChartPayload(orgChartPayload),
         status: 'ok',
+        ...(orgChartEsTransportError ? { orgChartEsTransportError: true } : {}),
       };
     } catch (error) {
       this.logger.error(`Get org chart failed for ${companyId}`, error);
@@ -1020,6 +1031,107 @@ export class OrgChartController {
     }
   }
 
+  /**
+   * Org-chart structured context (company, mode, filters) → unresolved LinkedIn search parameters.
+   * Candidate-search pipeline endpoints accept free text only; use this from org-chart flows.
+   */
+  @Post('generate-unresolved-search-parameters')
+  async generateUnresolvedOrgChartSearchParameters(
+    @Body()
+    body: {
+      prompt: string;
+      rawQuery?: string;
+      cleanedQuery?: string;
+      searchType: 'classic' | 'sales_navigator' | 'recruiter';
+      searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
+      orgChartContext: {
+        mode?: string;
+        companyName?: string;
+        jobTitles?: string[];
+        country?: string;
+        functionRoot?: string;
+        businessDivisionRawQuery?: string;
+        businessDivisionLinkedinKeywords?: string;
+      };
+      queryGenerator?: 'python' | 'multi_agent';
+      candidateSource?: OrgChartLinkedinCandidateSource;
+    },
+    @Req() req: Request,
+  ): Promise<{
+    searchParameters: GeneratedSearchParameters | Record<string, unknown>;
+    searchStrategies?:
+      | Array<
+          | ClassicPeopleSearchStrategyResult
+          | SalesNavigatorPeopleSearchStrategyResult
+          | RecruiterPeopleSearchStrategyResult
+        >
+      | undefined;
+  }> {
+    const apiToken = this.getAuthToken(req);
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+    if (body.prompt == null || typeof body.prompt !== 'string') {
+      throw new HttpException('prompt is required and must be a string', HttpStatus.BAD_REQUEST);
+    }
+    if (
+      body.orgChartContext === undefined ||
+      body.orgChartContext === null ||
+      typeof body.orgChartContext !== 'object'
+    ) {
+      throw new HttpException('orgChartContext is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const rawQuery = body.rawQuery ?? body.prompt;
+    const cleanedQuery = body.cleanedQuery ?? body.prompt;
+    const orgChartGenerateOptions = {
+      orgChartContext: body.orgChartContext,
+      queryGenerator: body.queryGenerator,
+      ...(body.candidateSource !== undefined
+        ? { candidateSource: body.candidateSource }
+        : {}),
+    };
+
+    const unresolvedSearchParams =
+      await this.candidateSearchHandlerService.generateUnresolvedSearchParams(
+        rawQuery,
+        cleanedQuery,
+        body.searchType,
+        body.searchCategory,
+        apiToken,
+        body.prompt,
+        undefined,
+        undefined,
+        undefined,
+        false,
+        undefined,
+        orgChartGenerateOptions,
+      );
+
+    const searchParamKey = constructSearchParamKey(
+      body.searchType,
+      body.searchCategory,
+    );
+    const primaryParams =
+      unresolvedSearchParams[searchParamKey] ?? unresolvedSearchParams;
+    const strategiesKey = `${searchParamKey}Strategies`;
+    const strategies =
+      body.searchCategory === 'people'
+        ? (unresolvedSearchParams[strategiesKey] as
+            | Array<
+                | ClassicPeopleSearchStrategyResult
+                | SalesNavigatorPeopleSearchStrategyResult
+                | RecruiterPeopleSearchStrategyResult
+              >
+            | undefined) ?? []
+        : undefined;
+
+    return {
+      searchParameters: primaryParams,
+      searchStrategies: strategies,
+    };
+  }
+
   @Post('search')
   async searchOrgChartFromLinkedIn(
     @Body()
@@ -1035,19 +1147,22 @@ export class OrgChartController {
         | 'entire_company'
         | 'function_grade'
         | 'business_division_map'
-        | 'all_people'
         | 'selected_nodes';
       maxPages?: number;
       searchType?: 'classic' | 'sales_navigator' | 'recruiter';
       requestId?: string;
       country?: string;
       functionRoot?: string;
+      stdFunction?: string;
+      stdGrade?: string;
       linkedinCompanyUrl?: string;
       linkedinUnipileAccountId?: string;
       candidateSource?: OrgChartLinkedinCandidateSource;
       apifyMaxItems?: number;
       profileScraperMode?: string;
       businessDivisionRawQuery?: string;
+      validateAndScoreLinkedInResults?: boolean;
+      queryGenerator?: 'python' | 'multi_agent';
       xraySearchEngine?: LinkedinXraySearchEngine;
       includePaginatedHtml?: boolean;
     },

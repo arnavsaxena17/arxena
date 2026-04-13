@@ -1,6 +1,10 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
-import { graphqlToAddNewJob, OrgChartData } from 'twenty-shared';
+import {
+  graphqlToAddNewJob,
+  OrgChartData,
+  type OrgchartSearchMode,
+} from 'twenty-shared';
 
 import { ApifyService } from 'src/engine/core-modules/apify/services/apify.service';
 import { CreditTransactionService } from 'src/engine/core-modules/billing/services/credit-transaction.service';
@@ -32,6 +36,7 @@ import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services
 import { OrgchartCancelRegistryService } from 'src/engine/core-modules/org-chart/services/orgchart-cancel-registry.service';
 import { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
 import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
+import { filterOrgChartCandidatesByNodeStdLabels } from 'src/engine/core-modules/org-chart/utils/orgchart-node-scope-filter.util';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { LinkedinXrayService } from 'src/modules/linkedin-xray/linkedin-xray.service';
 import { LinkedinXraySearchEngine } from 'src/modules/linkedin-xray/types/linkedin-xray-search-job.types';
@@ -43,15 +48,6 @@ import { PythonOrgChartService } from './python-org-chart.service';
 type OrgChartBuildCandidateRow =
   | TransformedCandidateForTable
   | Record<string, unknown>;
-
-type OrgchartSearchMode =
-  | 'current_node'
-  | 'leadership'
-  | 'entire_company'
-  | 'function_grade'
-  | 'business_division_map'
-  | 'all_people'
-  | 'selected_nodes';
 
 type OrgchartSearchType = 'classic' | 'sales_navigator' | 'recruiter';
 
@@ -67,6 +63,12 @@ type SearchOrgchartLinkedInBody = {
   requestId?: string;
   country?: string;
   functionRoot?: string;
+  /** Standardized org-chart function label for current_node / selected_nodes (replaces function_root for Python + post-filter). */
+  stdFunction?: string;
+  /** Standardized org-chart grade label for current_node / selected_nodes. */
+  stdGrade?: string;
+  /** `selected_nodes`: one entry per selected diagram node (std_function + std_grade per node). */
+  selectedNodeStdScopes?: Array<{ stdFunction?: string; stdGrade?: string }>;
   candidateSource?: OrgChartLinkedinCandidateSource;
   linkedinCompanyUrl?: string;
   apifyMaxItems?: number;
@@ -74,6 +76,9 @@ type SearchOrgchartLinkedInBody = {
   linkedinUnipileAccountId?: string;
   /** NL business division query; requires Unipile (not Apify) */
   businessDivisionRawQuery?: string;
+  /** When true, LLM validation/scoring on LinkedIn hit lists. Default false. */
+  validateAndScoreLinkedInResults?: boolean;
+  queryGenerator?: 'python' | 'multi_agent';
   xraySearchEngine?: LinkedinXraySearchEngine;
   includePaginatedHtml?: boolean;
 };
@@ -558,9 +563,19 @@ export class OrgChartLinkedInBuildService {
       },
     });
 
+    const scopedItems = filterOrgChartCandidatesByNodeStdLabels(
+      transformedCandidates,
+      mode,
+      {
+        stdFunction: body.stdFunction,
+        stdGrade: body.stdGrade,
+        selectedNodeStdScopes: body.selectedNodeStdScopes,
+      },
+    ) as TransformedCandidateForTable[];
+
     return {
-      items: transformedCandidates,
-      itemCount: transformedCandidates.length,
+      items: scopedItems,
+      itemCount: scopedItems.length,
       isCached: false,
       cacheSource: 'none',
       strategyResults: [],
@@ -711,7 +726,6 @@ export class OrgChartLinkedInBuildService {
       case 'leadership':
         return `Find all leadership positions at ${resolvedCompanyName}.`;
       case 'entire_company':
-      case 'all_people':
         return `Find all people currently working at ${resolvedCompanyName}.`;
       case 'function_grade': {
         const titlesText =
@@ -1319,10 +1333,7 @@ export class OrgChartLinkedInBuildService {
       shouldWriteCompanyOrgChartCache,
     } = args;
 
-    if (
-      body.candidateSource !== 'apify' ||
-      (mode !== 'entire_company' && mode !== 'all_people')
-    ) {
+    if (body.candidateSource !== 'apify' || mode !== 'entire_company') {
       return null;
     }
 
@@ -1359,7 +1370,7 @@ export class OrgChartLinkedInBuildService {
       rawQuery: body.rawQuery,
       cleanedQuery: body.cleanedQuery,
       searchType,
-      mode: mode === 'all_people' ? 'all_people' : 'entire_company',
+      mode: 'entire_company',
       companyName: resolvedCompanyName,
       companyId,
       jobTitles: body.jobTitles,
@@ -1483,6 +1494,9 @@ export class OrgChartLinkedInBuildService {
       jobTitles: body.jobTitles,
       country: body.country,
       functionRoot: body.functionRoot,
+      stdFunction: body.stdFunction,
+      stdGrade: body.stdGrade,
+      selectedNodeStdScopes: body.selectedNodeStdScopes,
       linkedinCompanyUrl: canonicalCompanyLinkedinUrl,
       businessDivisionRawQuery: body.businessDivisionRawQuery,
       xraySearchEngine: body.xraySearchEngine,
@@ -1600,6 +1614,9 @@ export class OrgChartLinkedInBuildService {
       jobTitles: body.jobTitles,
       country: body.country,
       functionRoot: body.functionRoot,
+      stdFunction: body.stdFunction,
+      stdGrade: body.stdGrade,
+      selectedNodeStdScopes: body.selectedNodeStdScopes,
       linkedinCompanyUrl: canonicalCompanyLinkedinUrl,
       linkedinUnipileAccountId: body.linkedinUnipileAccountId,
       businessDivisionRawQuery: body.businessDivisionRawQuery,
@@ -1612,6 +1629,7 @@ export class OrgChartLinkedInBuildService {
       { retryLimit: 0 },
     );
 
+    console.log(`jobData:: ${JSON.stringify(jobData)}`);
     await this.emitOrgchartSearchProgressForToken(apiToken, {
       requestId,
       mode,
@@ -1625,7 +1643,7 @@ export class OrgChartLinkedInBuildService {
     });
 
     this.logger.log(
-      `Queued Unipile org chart build for company="${resolvedCompanyName}" mode=${mode}`,
+      `Queued Unipile org chart build for company="${resolvedCompanyName}" mode=${mode} linkedinCompanyUrl=${canonicalCompanyLinkedinUrl}, linkedinUnipileAccountId=${body.linkedinUnipileAccountId}`,
     );
 
     return {
@@ -2039,7 +2057,7 @@ export class OrgChartLinkedInBuildService {
       throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
     }
 
-    this.logger.log('body::', body);
+    this.logger.log(`body:: ${JSON.stringify(body)}`);
     const canonicalCompanyLinkedinUrl =
       body.linkedinCompanyUrl?.trim().replace(/\/+$/, '') || undefined;
     const {
@@ -2051,13 +2069,9 @@ export class OrgChartLinkedInBuildService {
       requestId,
     } = body;
 
-    if (
-      body.candidateSource === 'apify' &&
-      mode !== 'entire_company' &&
-      mode !== 'all_people'
-    ) {
+    if (body.candidateSource === 'apify' && mode !== 'entire_company') {
       throw new HttpException(
-        'candidateSource "apify" is only supported for entire_company or all_people modes. Business division mapping and other filtered modes require LinkedIn (Unipile).',
+        'candidateSource "apify" is only supported for entire_company mode. Business division mapping and other filtered modes require LinkedIn (Unipile).',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -2136,12 +2150,12 @@ export class OrgChartLinkedInBuildService {
         mode,
         resolvedCompanyName,
         companyId,
-        jobTitles,
-        searchType,
-        requestId,
-        canonicalCompanyLinkedinUrl,
-        shouldWriteCompanyOrgChartCache,
-      });
+      jobTitles,
+      searchType,
+      requestId,
+      canonicalCompanyLinkedinUrl,
+      shouldWriteCompanyOrgChartCache,
+    });
 
     if (linkedinXrayQueued) {
       return linkedinXrayQueued;
@@ -2221,9 +2235,15 @@ export class OrgChartLinkedInBuildService {
           jobTitles: body.jobTitles,
           country: body.country,
           functionRoot: body.functionRoot,
+          stdFunction: body.stdFunction,
+          stdGrade: body.stdGrade,
+          selectedNodeStdScopes: body.selectedNodeStdScopes,
           linkedinCompanyUrl: canonicalCompanyLinkedinUrl,
           linkedinUnipileAccountId: body.linkedinUnipileAccountId?.trim(),
           businessDivisionRawQuery: body.businessDivisionRawQuery?.trim(),
+          validateAndScoreLinkedInResults:
+            body.validateAndScoreLinkedInResults === true,
+          queryGenerator: body.queryGenerator,
         },
       );
 
@@ -2280,16 +2300,11 @@ export class OrgChartLinkedInBuildService {
       companyId,
     } = jobData;
 
-
     console.log("Org Chart Build :", jobData)
-    const modeForOrgChartBuild: OrgchartSearchMode =
-      jobData.mode === 'all_people' ? 'all_people' : 'entire_company';
+    const modeForOrgChartBuild: OrgchartSearchMode = jobData.mode;
 
     if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
-      this.logger.log(
-        `Apify org chart job skipped (cancelled) requestId=${requestId}`,
-      );
-
+      this.logger.log( `Apify org chart job skipped (cancelled) requestId=${requestId}`, );
       return;
     }
 
@@ -2692,6 +2707,9 @@ export class OrgChartLinkedInBuildService {
       requestId,
       country: jobData.country,
       functionRoot: jobData.functionRoot,
+      stdFunction: jobData.stdFunction,
+      stdGrade: jobData.stdGrade,
+      selectedNodeStdScopes: jobData.selectedNodeStdScopes,
       candidateSource: 'linkedin_xray',
       linkedinCompanyUrl,
       businessDivisionRawQuery: jobData.businessDivisionRawQuery,
@@ -2849,7 +2867,7 @@ export class OrgChartLinkedInBuildService {
       linkedinCompanyUrl,
     } = jobData;
 
-    const modeForOrgChartBuild = jobData.mode;
+    const modeForOrgChartBuild: OrgchartSearchMode = jobData.mode;
     console.log("Job Data for Org chart build:", jobData);
     if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
       this.logger.log(
@@ -2870,6 +2888,9 @@ export class OrgChartLinkedInBuildService {
       requestId,
       country: jobData.country,
       functionRoot: jobData.functionRoot,
+      stdFunction: jobData.stdFunction,
+      stdGrade: jobData.stdGrade,
+      selectedNodeStdScopes: jobData.selectedNodeStdScopes,
       candidateSource: 'unipile',
       linkedinCompanyUrl,
       linkedinUnipileAccountId: jobData.linkedinUnipileAccountId,
@@ -2891,6 +2912,9 @@ export class OrgChartLinkedInBuildService {
           jobTitles: body.jobTitles,
           country: body.country,
           functionRoot: body.functionRoot,
+          stdFunction: body.stdFunction,
+          stdGrade: body.stdGrade,
+          selectedNodeStdScopes: body.selectedNodeStdScopes,
           linkedinCompanyUrl,
           linkedinUnipileAccountId: body.linkedinUnipileAccountId?.trim(),
           businessDivisionRawQuery: body.businessDivisionRawQuery?.trim(),

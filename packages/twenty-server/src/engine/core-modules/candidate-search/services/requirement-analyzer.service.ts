@@ -27,7 +27,6 @@ export class RequirementAnalyzerService {
     sendEvent?: (event: string, data: unknown) => boolean | void,
   ): Promise<ParsedRequirement> {
     const userPrompt = getRequirementAnalyzerUserPrompt(rawQuery, cleanedQuery);
-
     const result = await this.streamProcessingService.executeStreamingLlmCall(
       () =>
         this.streamProcessingService.createStreamingCompletion(
@@ -40,24 +39,19 @@ export class RequirementAnalyzerService {
         ),
       { sendEvent, maxRetries: 2 },
     );
-
     const content = typeof result === 'string' ? result : result.content;
-
     if (typeof result !== 'string' && result.usage && onTokenUsage) {
       onTokenUsage(result.usage);
     }
-
     if (!content) {
       this.logger.warn('Requirement analyzer returned empty content.');
       throw new Error('Requirement analyzer returned empty content');
     }
-
     const parsed = JSON.parse(content);
     this.logger.log(`
       Raw query: ${rawQuery}
       Cleaned query: ${cleanedQuery}
       Requirement analyzer parsed: ${JSON.stringify(parsed, null, 2)}`);
-
     return parsedRequirementSchema.parse(parsed);
   }
 }

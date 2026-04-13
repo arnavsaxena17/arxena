@@ -1,7 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
-import { IterativeLinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/iterative-linkedin-query-generation.service';
-import { AssistantThreadService } from './assistant-thread.service';
 import { StreamEventSender } from './assistant.types';
 import { STREAMING_TOOL_NAMES } from './mcp-assistant.constants';
 import { McpToolCallCacheService } from './mcp-tool-call-cache.service';
@@ -14,8 +12,6 @@ export class McpInProcessToolRunnerService {
 
   constructor(
     private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
-    private readonly iterativeLinkedinQueryGenerationService: IterativeLinkedinQueryGenerationService,
-    private readonly assistantThreadService: AssistantThreadService,
     private readonly toolCallCache: McpToolCallCacheService,
   ) {}
 
@@ -56,132 +52,6 @@ export class McpInProcessToolRunnerService {
       );
       sendEvent?.('status', { message: `Using cached result for ${name}...` });
       return cachedResult;
-    }
-
-    if (name === 'generate_iterative_linkedin_query_set') {
-      const assistantThreadId =
-        typeof args.assistantThreadId === 'string' ? args.assistantThreadId : null;
-      sendEvent?.('status', {
-        message: 'Generating iterative LinkedIn query set in process...',
-      });
-      this.logger.log('Generating iterative LinkedIn query set in process...');
-      if (assistantThreadId) {
-        await this.assistantThreadService.appendIterativeProgressLog(
-          apiToken,
-          assistantThreadId,
-          {
-            message: 'Started iterative LinkedIn query generation.',
-            stage: 'initial_generation_started',
-          },
-        );
-      }
-
-      const rawRequirement = args.rawRequirement as string | undefined;
-      if (typeof rawRequirement !== 'string' || !rawRequirement.trim()) {
-        return JSON.stringify({
-          error:
-            'generate_iterative_linkedin_query_set requires a non-empty rawRequirement',
-        });
-      }
-
-      try {
-        throwIfAborted(abortSignal);
-        const result =
-          await this.iterativeLinkedinQueryGenerationService.generateIterativeSearchQuerySet(
-            rawRequirement,
-            {
-              mode:
-                (args.mode as 'offline' | 'live' | undefined) ?? 'offline',
-              searchType:
-                (args.searchType as
-                  | 'classic'
-                  | 'sales_navigator'
-                  | 'recruiter'
-                  | undefined) ?? 'classic',
-              queryIpLocation:
-                typeof args.queryIpLocation === 'string'
-                  ? args.queryIpLocation
-                  : undefined,
-              maxIterations:
-                typeof args.maxIterations === 'number'
-                  ? args.maxIterations
-                  : 1,
-              returnAlternatives:
-                typeof args.returnAlternatives === 'boolean'
-                  ? args.returnAlternatives
-                  : false,
-              verbose:
-                typeof args.verbose === 'boolean' ? args.verbose : undefined,
-              model: typeof args.model === 'string' ? args.model : undefined,
-              temperature:
-                typeof args.temperature === 'number'
-                  ? args.temperature
-                  : undefined,
-              apiToken,
-              onProgress: (message) =>
-                sendEvent?.('status', { message }),
-            },
-          );
-        throwIfAborted(abortSignal);
-        const textResult = JSON.stringify(result);
-        this.toolCallCache.cacheToolResult(cacheKey, textResult);
-        if (assistantThreadId) {
-          const trimmedRequirement = rawRequirement.trim();
-          const thread = await this.assistantThreadService.getThread(
-            apiToken,
-            assistantThreadId,
-          );
-          const prevParams =
-            thread?.assistantParameters &&
-            typeof thread.assistantParameters === 'object'
-              ? (thread.assistantParameters as Record<string, unknown>)
-              : {};
-          const prevIterative =
-            prevParams.iterativeQueryState &&
-            typeof prevParams.iterativeQueryState === 'object'
-              ? (prevParams.iterativeQueryState as Record<string, unknown>)
-              : {};
-          await this.assistantThreadService.mergeAssistantParameters(
-            apiToken,
-            assistantThreadId,
-            {
-              iterativeQueryState: {
-                ...prevIterative,
-                baseRequirement: trimmedRequirement,
-                effectiveRequirement: trimmedRequirement,
-                lastResult: result,
-                updatedAt: new Date().toISOString(),
-              },
-            },
-          );
-          await this.assistantThreadService.appendIterativeProgressLog(
-            apiToken,
-            assistantThreadId,
-            {
-              message: `Completed iterative LinkedIn query generation with ${result.final_query_set.search_query_set.length} queries.`,
-              stage: 'initial_generation_completed',
-            },
-          );
-        }
-        return textResult;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        this.logger.error(
-          `Tool ${name} failed (in-process): ${message}`,
-          err instanceof Error ? err.stack : undefined,
-        );
-        if (assistantThreadId) {
-          await this.assistantThreadService.appendIterativeProgressLog(
-            apiToken,
-            assistantThreadId,
-            {
-              message: `Iterative LinkedIn query generation failed: ${message}`,
-              stage: 'initial_generation_failed',
-            },
-          );
-        }
-        return JSON.stringify({ error: message });
-      }
     }
 
     const isGenerateSearchParams =

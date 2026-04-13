@@ -64,7 +64,7 @@ import { Mixpanel } from '~/mixpanel';
 import { WORKSPACE_CREDITS } from '~/modules/billing/graphql/workspaceCredits';
 import { useBaileysConnection } from '../baileys/contexts/BaileysContext';
 import { useUnipile } from '../unipile/contexts/UnipileContext';
-import { ChatKitWidget } from './components/ChatKitWidget';
+// import { ChatKitWidget } from './components/ChatKitWidget';
 import { JobStatisticsModal } from './components/JobStatisticsModal';
 import { useChromeExtensionDetection } from './hooks/useChromeExtensionDetection';
 import { useJobPagination } from './hooks/useJobPagination';
@@ -236,7 +236,8 @@ export const JobPage: React.FC = () => {
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [isBulkMessageModalOpen, setIsBulkMessageModalOpen] = useRecoilState(isBulkMessageModalOpenState);
-  const [isChatKitOpen, setIsChatKitOpen] = useState(false);
+  const [isFloatingAIChatExpanded, setIsFloatingAIChatExpanded] =
+    useState(false);
   
   // Use the job status toggle hook
   const { isJobActive, toggleJobStatus } = useJobStatusToggle({ 
@@ -317,8 +318,8 @@ export const JobPage: React.FC = () => {
     setIsDownloadModalOpen(true);
   }, [setIsDownloadModalOpen]);
 
-  const handleChatKitToggle = useCallback(() => {
-    setIsChatKitOpen(prev => !prev);
+  const handleFloatingAIChatToggle = useCallback(() => {
+    setIsFloatingAIChatExpanded((prev) => !prev);
   }, []);
 
   const handleValidateJobData = useCallback(() => {
@@ -680,7 +681,7 @@ export const JobPage: React.FC = () => {
             hasClosePageButton={true}
             onClosePage={navigateToJobsList}
             onAddJob={openAddJobModal}
-            onChatKitToggle={handleChatKitToggle}
+            onFloatingAIChatToggle={handleFloatingAIChatToggle}
             isExtensionInstalled={isExtensionInstalled}
             onDownloadClick={handleDownloadClick}
             isLinkedinConnected={isLinkedinConnected}
@@ -805,7 +806,10 @@ export const JobPage: React.FC = () => {
                 
                 {/* Floating AI Chat - New UI */}
                 {isNewSearchUIEnabled && (
-                  <FloatingAIChat />
+                  <FloatingAIChat
+                    isExpanded={isFloatingAIChatExpanded}
+                    onExpandedChange={setIsFloatingAIChatExpanded}
+                  />
                 )}
               </ActionMenuComponentInstanceContext.Provider>
             </ContextStoreComponentInstanceContext.Provider>
@@ -855,18 +859,10 @@ export const JobPage: React.FC = () => {
               <BulkMessageModal />
             )}
             
-            {/* Legacy Candidate Search Modal - Only when new UI is disabled and not org chart only */}
-            {!isOrgChartEnabled && !isNewSearchUIEnabled && (
+            { !isNewSearchUIEnabled && (
               <CandidateSearchModal />
             )}
 
-            {/* ChatKit Widget - Only render when open to prevent initialization loops */}
-            {isChatKitOpen && (
-              <ChatKitWidget 
-                isOpen={isChatKitOpen} 
-                onClose={() => setIsChatKitOpen(false)}
-              />
-            )}
           </StyledPageBody>
         </RecordFieldValueSelectorContextProvider>
       </StyledPageContainer>

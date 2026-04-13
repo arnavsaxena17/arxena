@@ -4,6 +4,8 @@ import { useRecoilValue } from 'recoil';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
+import { orgChartLinkedInSearchTypeState } from '@/orgchart/states/orgChartLinkedInSearchTypeState';
+import { orgChartQueryGeneratorPreferenceState } from '@/orgchart/states/orgChartQueryGeneratorPreferenceState';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
@@ -12,11 +14,13 @@ import { Mixpanel } from '~/mixpanel';
 import {
   normalizeCompanyIdForUrl,
   type OrgChartContextAction,
+  type OrgChartNodeContextPayload,
 } from 'twenty-orgchart';
 import {
   isValidLinkedInProfileUrl,
   type NodeState,
   type OrgChartNodeData,
+  type OrgchartSearchMode as OrgchartSearchModeValue,
 } from 'twenty-shared';
 import type { ContextResultItem } from '../types';
 import {
@@ -28,13 +32,7 @@ import {
 /** Subset of {@link OrgChartContextAction} used for org-chart search API `mode`. */
 type OrgchartSearchMode = Extract<
   OrgChartContextAction,
-  | 'current_node'
-  | 'leadership'
-  | 'entire_company'
-  | 'all_people'
-  | 'function_grade'
-  | 'business_division_map'
-  | 'selected_nodes'
+  OrgchartSearchModeValue
 >;
 
 export type UseOrgChartActionsParams = {
@@ -49,6 +47,12 @@ export type UseOrgChartActionsParams = {
    * Prefer workspace-linked account; use for local/testing via env if needed.
    */
   linkedinUnipileAccountId?: string;
+  /**
+   * Current business-division text from the org chart toolbar. Merged into every
+   * `executeOrgchartSearch` call unless the call passes `businessDivisionRawQuery` explicitly
+   * (per-call wins). Enables context-menu and background actions to use the same intent as header.
+   */
+  businessDivisionRawQuery?: string;
 };
 
 type OrgChartSearchProgressEvent = {
@@ -76,6 +80,35 @@ type OrgChartSearchProgressEvent = {
 const createOrgChartRequestId = () =>
   `orgchart-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
+const collectJobTitlesFromOrgChartNode = (n: OrgChartNodeData): string[] => {
+  const titles: string[] = [];
+  for (let i = 0; i < 8; i += 1) {
+    const key = `title_${i}` as keyof OrgChartNodeData;
+    const value = n[key];
+    if (typeof value === 'string' && value.trim().length > 0) {
+      titles.push(value.trim());
+    }
+  }
+  return titles;
+};
+
+const uniqueConcatJobTitleListsPreservingOrder = (
+  lists: string[][],
+): string[] => {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const list of lists) {
+    for (const t of list) {
+      const k = t.toLowerCase();
+      if (!seen.has(k)) {
+        seen.add(k);
+        out.push(t);
+      }
+    }
+  }
+  return out;
+};
+
 const LINKEDIN_UNIPILE_SOURCE_UNAVAILABLE_SNACKBAR =
   'LinkedIn (Unipile) is not connected. Connect LinkedIn in settings or choose Apify or LinkedIn x-ray as the org chart data source in the jobs menu.';
 
@@ -86,7 +119,7 @@ const LINKEDIN_XRAY_SOURCE_UNAVAILABLE_SNACKBAR =
   'LinkedIn x-ray is not configured for org chart. Set BRIGHT_DATA_API_KEY on the server or choose LinkedIn (Unipile) in the jobs menu.';
 
 const APIFY_MODE_UNSUPPORTED_SNACKBAR =
-  'Apify org chart data source is only available for full company (or all people) searches. Switch to LinkedIn (Unipile) for business division mapping, function filters, or other advanced modes.';
+  'Apify org chart data source is only available for full company searches. Switch to LinkedIn (Unipile) for business division mapping, function filters, or other advanced modes.';
 
 const ORG_CHART_AGENT_UNAVAILABLE_SNACKBAR =
   'Contact Support. Org chart agent service is not available. Ensure the Python service is running and reachable.';
@@ -139,11 +172,18 @@ export const useOrgChartActions = ({
   employeeCount,
   linkedinCompanyUrl,
   linkedinUnipileAccountId,
+  businessDivisionRawQuery: businessDivisionRawQueryFromToolbar,
 }: UseOrgChartActionsParams) => {
   const tokenPair = useRecoilValue(tokenPairState);
   const accessToken = tokenPair?.accessToken?.token ?? undefined;
   const orgChartLinkedinCandidateSource = useRecoilValue(
     orgChartLinkedinCandidateSourceState,
+  );
+  const orgChartQueryGeneratorPreference = useRecoilValue(
+    orgChartQueryGeneratorPreferenceState,
+  );
+  const orgChartLinkedInSearchType = useRecoilValue(
+    orgChartLinkedInSearchTypeState,
   );
   const { enqueueSnackBar, updateSnackBarByDedupeKey, closeSnackBarByDedupeKey } =
     useSnackBar();
@@ -500,9 +540,10 @@ export const useOrgChartActions = ({
       | 'doubleClick'
       | 'view_all_candidates';
     node?: OrgChartNodeData;
+    /** For `selected_nodes`: each node’s std labels + titles feed the search body. */
+    selectedNodes?: OrgChartNodeData[];
     country?: string;
     functionRoot?: string;
-    /** Required when mode is business_division_map */
     businessDivisionRawQuery?: string;
   }) => {
     if (!companyId) return;
@@ -555,22 +596,20 @@ export const useOrgChartActions = ({
     const mode = params.mode;
     const node = params.node;
 
-    if (mode === 'business_division_map') {
-      const raw = params.businessDivisionRawQuery?.trim() ?? '';
-      if (!raw) {
-        enqueueSnackBar(
-          'Describe the business division you want to map (e.g. textile machinery team).',
-          { variant: SnackBarVariant.Warning, duration: 6000 },
-        );
-        return;
-      }
+    const divisionRaw =
+      params.businessDivisionRawQuery?.trim() ||
+      businessDivisionRawQueryFromToolbar?.trim() ||
+      '';
+
+    if (mode === 'business_division_map' && !divisionRaw) {
+      enqueueSnackBar(
+        'Describe the business division you want to map (e.g. textile machinery team).',
+        { variant: SnackBarVariant.Warning, duration: 6000 },
+      );
+      return;
     }
 
-    if (
-      orgChartLinkedinCandidateSource === 'apify' &&
-      mode !== 'entire_company' &&
-      mode !== 'all_people'
-    ) {
+    if (orgChartLinkedinCandidateSource === 'apify' && mode !== 'entire_company') {
       enqueueSnackBar(APIFY_MODE_UNSUPPORTED_SNACKBAR, {
         variant: SnackBarVariant.Error,
         duration: 10000,
@@ -595,7 +634,6 @@ export const useOrgChartActions = ({
         title = 'Get all leadership in this company';
         break;
       case 'entire_company':
-      case 'all_people':
         title = 'Get all names in this company';
         break;
       case 'function_grade':
@@ -638,29 +676,67 @@ export const useOrgChartActions = ({
     setActiveOrgChartRequestId(requestId);
     orgchartAbortControllerRef.current = new AbortController();
 
-    const jobTitles: string[] = [];
-    if (node) {
-      for (let i = 0; i < 8; i += 1) {
-        const key = `title_${i}` as keyof OrgChartNodeData;
-        const value = node[key];
-        if (typeof value === 'string' && value.trim().length > 0) {
-          jobTitles.push(value.trim());
-        }
-      }
+    let jobTitles: string[] = [];
+    if (
+      mode === 'selected_nodes' &&
+      params.selectedNodes &&
+      params.selectedNodes.length > 0
+    ) {
+      jobTitles = uniqueConcatJobTitleListsPreservingOrder(
+        params.selectedNodes.map(collectJobTitlesFromOrgChartNode),
+      );
+    } else if (node) {
+      jobTitles = collectJobTitlesFromOrgChartNode(node);
     }
 
+    const selectedNodeStdScopes =
+      mode === 'selected_nodes' &&
+      params.selectedNodes &&
+      params.selectedNodes.length > 0
+        ? params.selectedNodes.map((n) => {
+            const r = n as Record<string, unknown>;
+            return {
+              stdFunction:
+                typeof r.std_function === 'string' && r.std_function.trim()
+                  ? r.std_function.trim()
+                  : undefined,
+              stdGrade:
+                typeof r.std_grade === 'string' && r.std_grade.trim()
+                  ? r.std_grade.trim()
+                  : undefined,
+            };
+          })
+        : undefined;
+
+    const nodeRecord = node as Record<string, unknown> | undefined;
+    const stdFunctionForCurrentNode =
+      mode === 'current_node' &&
+      nodeRecord &&
+      typeof nodeRecord.std_function === 'string' &&
+      nodeRecord.std_function.trim()
+        ? nodeRecord.std_function.trim()
+        : undefined;
+    const stdGradeForCurrentNode =
+      mode === 'current_node' &&
+      nodeRecord &&
+      typeof nodeRecord.std_grade === 'string' &&
+      nodeRecord.std_grade.trim()
+        ? nodeRecord.std_grade.trim()
+        : undefined;
+
     const resolvedCompanyName = companyName ?? companyId;
-    const divisionRaw = params.businessDivisionRawQuery?.trim() ?? '';
     const baseRequirement =
       mode === 'business_division_map'
         ? `Map business division at ${resolvedCompanyName}. User request: ${divisionRaw}`
         : mode === 'leadership'
           ? `Find leadership roles at ${resolvedCompanyName}.`
-          : mode === 'entire_company' || mode === 'all_people'
+          : mode === 'entire_company'
             ? `Find all people currently working at ${resolvedCompanyName}.`
             : mode === 'function_grade'
               ? `Find people at ${resolvedCompanyName} in similar functions and seniority.`
-              : `Find people in the same position at ${resolvedCompanyName}.`;
+              : mode === 'selected_nodes'
+                ? `Find people for the selected positions at ${resolvedCompanyName}.`
+                : `Find people in the same position at ${resolvedCompanyName}.`;
 
     const titlesRequirement =
       jobTitles.length > 0 ? ` Key titles: ${jobTitles.join(', ')}.` : '';
@@ -677,7 +753,12 @@ export const useOrgChartActions = ({
         ? ` Focus on people ${filterParts.join(' and ')}.`
         : '';
 
-    const requirement = `${baseRequirement}${titlesRequirement}${filtersRequirement}`;
+    const businessDivisionRequirementSuffix =
+      divisionRaw && mode !== 'business_division_map'
+        ? ` User business division focus: ${divisionRaw}.`
+        : '';
+
+    const requirement = `${baseRequirement}${titlesRequirement}${filtersRequirement}${businessDivisionRequirementSuffix}`;
 
     const trimmedLinkedinCompanyUrl = linkedinCompanyUrl?.trim();
     const useUnipileSource = orgChartLinkedinCandidateSource === 'unipile';
@@ -688,10 +769,12 @@ export const useOrgChartActions = ({
       companyId,
       jobTitles,
       mode,
-      searchType: 'classic' as const,
+      searchType: orgChartLinkedInSearchType,
       requestId,
       country: params.country,
-      functionRoot: params.functionRoot,
+      ...(mode !== 'current_node' && mode !== 'selected_nodes'
+        ? { functionRoot: params.functionRoot }
+        : {}),
       candidateSource: orgChartLinkedinCandidateSource,
       ...(trimmedLinkedinCompanyUrl
         ? { linkedinCompanyUrl: trimmedLinkedinCompanyUrl }
@@ -700,6 +783,14 @@ export const useOrgChartActions = ({
         ? { linkedinUnipileAccountId: linkedinUnipileAccountId.trim() }
         : {}),
       ...(divisionRaw ? { businessDivisionRawQuery: divisionRaw } : {}),
+      queryGenerator: orgChartQueryGeneratorPreference,
+      ...(stdFunctionForCurrentNode
+        ? { stdFunction: stdFunctionForCurrentNode }
+        : {}),
+      ...(stdGradeForCurrentNode ? { stdGrade: stdGradeForCurrentNode } : {}),
+      ...(mode === 'selected_nodes' && selectedNodeStdScopes
+        ? { selectedNodeStdScopes }
+        : {}),
     };
 
     let isQueuedAsyncSearch = false;
@@ -945,6 +1036,7 @@ export const useOrgChartActions = ({
   const handleNodeContextAction = async (
     action: OrgChartContextAction,
     node: OrgChartNodeData,
+    payload?: OrgChartNodeContextPayload,
   ) => {
     if (action === 'delete_company_cache') {
       return;
@@ -993,7 +1085,6 @@ export const useOrgChartActions = ({
       leadership: 'leadership',
       entire_company: 'entire_company',
       delete_company_cache: 'entire_company',
-      all_people: 'all_people',
       function_grade: 'function_grade',
       business_division_map: 'business_division_map',
       selected_nodes: 'selected_nodes',
@@ -1008,6 +1099,8 @@ export const useOrgChartActions = ({
       mode: mappedMode,
       origin: 'node',
       node,
+      selectedNodes:
+        mappedMode === 'selected_nodes' ? payload?.selectedNodes : undefined,
     });
   };
 

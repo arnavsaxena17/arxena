@@ -8,13 +8,11 @@ import { useMutation } from '@apollo/client';
 import styled from '@emotion/styled';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
+import { ARXENA_CHROME_WEBSTORE_URL } from 'twenty-shared';
 import { ActionLink, Loader, MainButton } from 'twenty-ui';
 import { OnboardingStatus } from '~/generated/graphql';
 import { Mixpanel } from '~/mixpanel';
 import { OnboardingIntentModalLayout } from '~/pages/onboarding/OnboardingIntentModalLayout';
-
-const ARXENA_EXTENSION_URL =
-  'https://chromewebstore.google.com/detail/arxena/dhoknlmmllpjeginebedikkanghoonoo';
 
 const StyledActionColumn = styled.div`
   display: flex;
@@ -71,7 +69,7 @@ export const ExtensionInstallOnboarding = () => {
       stepName: 'extension_install_open_store',
     });
 
-    window.open(ARXENA_EXTENSION_URL, '_blank', 'noopener,noreferrer');
+    window.open(ARXENA_CHROME_WEBSTORE_URL, '_blank', 'noopener,noreferrer');
   };
 
   if (

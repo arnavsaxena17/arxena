@@ -116,6 +116,9 @@ export const FooterDesktop = ({
           <RightSideFooterColumnTitle>Product</RightSideFooterColumnTitle>
           <RightSideFooterLink href="/pricing">Pricing</RightSideFooterLink>
           <RightSideFooterLink href="/engage">Engage</RightSideFooterLink>
+          <RightSideFooterLink href="/chrome-extension">
+            Chrome extension
+          </RightSideFooterLink>
         </RightSideFooterColumn>
         <RightSideFooterColumn>
           <RightSideFooterColumnTitle>Company</RightSideFooterColumnTitle>

@@ -140,7 +140,7 @@ export const getSuggestedJobNameFromContext = (
   const label =
     contextModalMode === 'leadership'
       ? 'Leadership'
-      : contextModalMode === 'entire_company' || contextModalMode === 'all_people'
+      : contextModalMode === 'entire_company'
         ? 'All employees'
         : contextModalMode === 'function_grade'
           ? 'This function'

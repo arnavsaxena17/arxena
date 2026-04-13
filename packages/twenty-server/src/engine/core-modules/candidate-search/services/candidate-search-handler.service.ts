@@ -1,10 +1,20 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import {
+  forwardRef,
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
 import {
   LinkedInClassicCompaniesSearchRequest,
   LinkedInClassicJobsSearchRequest,
   LinkedInSalesNavigatorCompaniesSearchRequest,
 } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
+import { OrgChartLinkedInBuildService } from 'src/engine/core-modules/org-chart/services/org-chart-linkedin-build.service';
+import { type OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
+import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import {
@@ -18,8 +28,10 @@ import {
 import { ChatMessageRequest } from '../types/search-plan.types';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
 import { mapLinkedinSearchQueriesToGeneratedParameters } from '../utils/linkedin-query-generation-mapper.util';
+import { mergeFilters } from '../utils/org-chart-filters-merge.util';
 import { createMinimalParsedJobDescription } from '../utils/parsed-job-description.util';
 import { constructSearchParamKey } from '../utils/search-parameter.utils';
+import { buildTitleTaxonomyResolvedIntent } from '../utils/title-taxonomy-resolved-intent.util';
 import { TokenUsage } from '../utils/token-tracking.util';
 import type { AssistantThreadContext } from './assistant-thread.service';
 import { AssistantThreadService } from './assistant-thread.service';
@@ -27,14 +39,20 @@ import { CandidateSearchBaseService } from './candidate-search-base.service';
 import { ClassifyMessageService } from './classify-message.service';
 import { CleanupService } from './cleanup.service';
 import { JobDescriptionService } from './job-description.service';
-import { PythonQueryGenerationService } from './python-query-generation.service';
+import { OrgchartLinkedInQueryRouterService } from './orgchart-linkedin-query-router.service';
+import {
+  PythonQueryGenerationService,
+  type PythonQueryInput,
+} from './python-query-generation.service';
 import { RequirementAnalyzerService } from './requirement-analyzer.service';
 import { SearchExecutionService } from './search-execution.service';
+import { SearchIntentRouterService } from './search-intent-router.service';
 import { SearchParameterGenerationService } from './search-parameter-generation.service';
 import { SearchResponseBuilderService } from './search-response-builder.service';
 import { StrategyExecutionService } from './strategy-execution.service';
 
 import { buildIterativeRequirement } from 'src/engine/core-modules/assistant/utils/assistant-iterative-query.utils';
+import { OrgChartIntentService } from 'src/engine/core-modules/candidate-search/services/org-chart-intent.service';
 export type HandlerMessageStreamSendEvent = (
   event: string,
   data: Record<string, unknown>,
@@ -89,6 +107,7 @@ export class CandidateSearchHandlerService {
     private readonly jobDescriptionService: JobDescriptionService,
     private readonly searchParameterGenerationService: SearchParameterGenerationService,
     private readonly requirementAnalyzerService: RequirementAnalyzerService,
+    private readonly searchIntentRouterService: SearchIntentRouterService,
     private readonly linkedinQueryGenerationService: LinkedinQueryGenerationService,
     private readonly pythonQueryGenerationService: PythonQueryGenerationService,
     private readonly classifyMessageService: ClassifyMessageService,
@@ -96,6 +115,10 @@ export class CandidateSearchHandlerService {
     private readonly searchParametersPrompts: SearchParametersPrompts,
     private readonly searchResponseBuilderService: SearchResponseBuilderService,
     private readonly strategyExecutionService: StrategyExecutionService,
+    private readonly orgchartLinkedInQueryRouterService: OrgchartLinkedInQueryRouterService,
+    private readonly orgChartIntentService: OrgChartIntentService,
+    @Inject(forwardRef(() => OrgChartLinkedInBuildService))
+    private readonly orgChartLinkedInBuildService: OrgChartLinkedInBuildService,
   ) {}
 
   private throwIfAborted(signal?: AbortSignal): void {
@@ -197,6 +220,16 @@ export class CandidateSearchHandlerService {
     includeJd: boolean = true,
     isClarificationResponse: boolean = false,
     abortSignal?: AbortSignal,
+    messageStreamOptions?: Pick<
+      ChatMessageRequest,
+      | 'linkedinQueryGenerator'
+      | 'candidateSource'
+      | 'linkedinCompanyUrl'
+      | 'orgchartCompanyName'
+      | 'orgchartCompanyId'
+      | 'xraySearchEngine'
+      | 'apifyMaxItems'
+    >,
   ) {
     const { tokenAccumulator, accumulateTokens } =
       this.createTokenAccumulator();
@@ -228,37 +261,97 @@ export class CandidateSearchHandlerService {
         );
       }
 
-      preUnresolved =
-        await this.generateUnresolvedSearchParametersFromLinkedinQueryGeneration(
-          cleanedQuery || rawQuery,
+      const gen =
+        messageStreamOptions?.linkedinQueryGenerator === 'multi_agent'
+          ? 'multi_agent'
+          : 'python';
+
+      this.logger.log(
+        `Message stream unresolved generator: ${gen}, candidateSource=${messageStreamOptions?.candidateSource ?? 'unipile'}`,
+      );
+
+      if (gen === 'python') {
+        sendEvent?.('message', {
+          type: 'linkedin_query_generation_path',
+          path: 'python',
+        });
+        preUnresolved = await this.generateUnresolvedSearchParams(
+          rawQuery,
+          cleanedQuery,
           searchType,
+          searchCategory,
+          apiToken,
+          userMessage,
+          parsedJD,
+          context.jobId,
           sendEvent,
+          includeJd,
+          accumulateTokens,
+          { queryGenerator: 'python' },
         );
+      } else {
+        sendEvent?.('message', {
+          type: 'linkedin_query_generation_path',
+          path: 'multi_agent',
+        });
+        preUnresolved =
+          await this.generateUnresolvedSearchParametersFromLinkedinQueryGeneration(
+            cleanedQuery || rawQuery,
+            searchType,
+            sendEvent,
+          );
+      }
       this.throwIfAborted(abortSignal);
       this.logger.log(
         `Pre-unresolved search parameters:: ${JSON.stringify(preUnresolved, null, 2)}`,
       );
       if (!preUnresolved || Object.keys(preUnresolved).length === 0) {
         throw new HttpException(
-          'Multi-agent flow did not produce search parameters',
+          'LinkedIn query generation did not produce search parameters',
           HttpStatus.INTERNAL_SERVER_ERROR,
         );
       }
 
-      const searchResult = await this.generateAndExecuteSearchParameters(
-        rawQuery,
-        cleanedQuery,
-        parsedJD,
-        searchType,
-        searchCategory,
-        context,
-        apiToken,
-        userMessage,
-        sendEvent,
-        includeJd,
-        accumulateTokens,
-        preUnresolved,
-      );
+      const source: OrgChartLinkedinCandidateSource =
+        messageStreamOptions?.candidateSource ?? 'unipile';
+
+      let searchResult: {
+        unresolvedSearchParams: GeneratedSearchParameters;
+        resolvedParams: GeneratedSearchParameters;
+        strategyResults: Array<{
+          strategy: PeopleSearchStrategyResult;
+          result: SearchExecutionResult | null;
+        }>;
+      };
+
+      if (source === 'apify' || source === 'linkedin_xray') {
+        searchResult = await this.runAlternateCandidateSourceMessageStreamSearch({
+          preUnresolved,
+          rawQuery,
+          cleanedQuery,
+          searchType,
+          candidateSource: source,
+          apiToken,
+          messageStreamOptions,
+          sendEvent,
+          context,
+        });
+      } else {
+        searchResult = await this.generateAndExecuteSearchParameters(
+          rawQuery,
+          cleanedQuery,
+          parsedJD,
+          searchType,
+          searchCategory,
+          context,
+          apiToken,
+          userMessage,
+          sendEvent,
+          includeJd,
+          accumulateTokens,
+          preUnresolved,
+        );
+      }
       this.throwIfAborted(abortSignal);
 
       return this.searchResponseBuilderService.buildAndSendResponse(
@@ -272,6 +365,158 @@ export class CandidateSearchHandlerService {
     } catch (error) {
       return this.handleSearchError(error, sendEvent);
     }
+  }
+
+  /**
+   * Apify / LinkedIn x-ray: reuse org-chart LinkedIn build (entire_company) after
+   * unresolved params are produced so the chat stream can surface the same items shape.
+   */
+  private async runAlternateCandidateSourceMessageStreamSearch(args: {
+    preUnresolved: GeneratedSearchParameters;
+    rawQuery: string;
+    cleanedQuery: string;
+    searchType: 'classic' | 'sales_navigator' | 'recruiter';
+    candidateSource: Extract<
+      OrgChartLinkedinCandidateSource,
+      'apify' | 'linkedin_xray'
+    >;
+    apiToken: string;
+    messageStreamOptions?: Pick<
+      ChatMessageRequest,
+      | 'linkedinQueryGenerator'
+      | 'linkedinCompanyUrl'
+      | 'orgchartCompanyName'
+      | 'orgchartCompanyId'
+      | 'xraySearchEngine'
+      | 'apifyMaxItems'
+    >;
+    sendEvent?: (event: string, data: any) => void;
+    context: {
+      accountId: string;
+      searchParamKey: string;
+      searchFilter: AssistantThreadContext;
+      jobId?: string;
+    };
+  }): Promise<{
+    unresolvedSearchParams: GeneratedSearchParameters;
+    resolvedParams: GeneratedSearchParameters;
+    strategyResults: Array<{
+      strategy: PeopleSearchStrategyResult;
+      result: SearchExecutionResult | null;
+    }>;
+  }> {
+    const linkedinUrl = args.messageStreamOptions?.linkedinCompanyUrl?.trim();
+    if (!linkedinUrl) {
+      throw new HttpException(
+        'linkedinCompanyUrl is required on the chat request when candidateSource is apify or linkedin_xray',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const companyName =
+      args.messageStreamOptions?.orgchartCompanyName?.trim() ||
+      args.messageStreamOptions?.orgchartCompanyId?.trim() ||
+      'Company';
+
+    const requestId = `cstream-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+    const effectiveSearchType: 'classic' | 'sales_navigator' | 'recruiter' =
+      args.candidateSource === 'apify' ? 'classic' : args.searchType;
+
+    const orgChartBody = {
+      rawQuery: args.cleanedQuery || args.rawQuery,
+      cleanedQuery: args.cleanedQuery || args.rawQuery,
+      companyName,
+      companyId: args.messageStreamOptions?.orgchartCompanyId,
+      jobTitles: [] as string[],
+      mode: 'entire_company' as const,
+      searchType: effectiveSearchType,
+      requestId,
+      linkedinCompanyUrl: linkedinUrl,
+      candidateSource: args.candidateSource,
+      queryGenerator:
+        args.messageStreamOptions?.linkedinQueryGenerator === 'python'
+          ? ('python' as const)
+          : ('multi_agent' as const),
+      apifyMaxItems: args.messageStreamOptions?.apifyMaxItems,
+      xraySearchEngine: args.messageStreamOptions?.xraySearchEngine,
+    };
+
+    args.sendEvent?.('status', {
+      message: `Fetching candidates via ${args.candidateSource} (org-chart pipeline)...`,
+    });
+
+    const json = (await this.orgChartLinkedInBuildService.searchOrgchartFromLinkedIn(
+      orgChartBody,
+      {
+        Authorization: `Bearer ${args.apiToken}`,
+        'Content-Type': 'application/json',
+      },
+    )) as Record<string, unknown>;
+
+    const queued = json.queued === true;
+    if (queued) {
+      args.sendEvent?.('message', {
+        type: 'alternate_candidate_source_queued',
+        candidateSource: args.candidateSource,
+        requestId: json.requestId,
+        data: json,
+      });
+    }
+
+    const items = Array.isArray(json.items)
+      ? (json.items as Record<string, unknown>[])
+      : [];
+
+    const extracted = this.strategyExecutionService.extractStrategiesFromGeneratedParams(
+      args.preUnresolved,
+      args.searchType,
+      'people',
+    );
+    const primaryStrategy: PeopleSearchStrategyResult =
+      extracted[0] ??
+      ({
+        id: 'candidate-stream-alt',
+        label: `${args.candidateSource} search`,
+        parameters: {},
+      } as ClassicPeopleSearchStrategyResult);
+
+    const itemCount =
+      typeof json.itemCount === 'number' ? json.itemCount : items.length;
+
+    const resultPayload: SearchExecutionResult = queued
+      ? {
+          itemCount: 0,
+          transformedCandidates: [],
+        }
+      : {
+          itemCount,
+          transformedCandidates: items as unknown[],
+          searchResults: {
+            items,
+            paging: undefined,
+          },
+        };
+
+    await this.updateAssistantThreadWithParameters(
+      args.context.searchFilter,
+      args.context.searchParamKey,
+      args.preUnresolved,
+      {},
+      args.apiToken,
+      args.sendEvent,
+    );
+
+    return {
+      unresolvedSearchParams: args.preUnresolved,
+      resolvedParams: {},
+      strategyResults: [
+        {
+          strategy: primaryStrategy,
+          result: resultPayload,
+        },
+      ],
+    };
   }
 
   private createTokenAccumulator(): {
@@ -579,6 +824,7 @@ export class CandidateSearchHandlerService {
         sendEvent,
         includeJd,
         onTokenUsage,
+        undefined,
       ));
     if (!preUnresolved) {
       sendEvent?.('status', { message: 'Connecting to AI model...' });
@@ -798,6 +1044,15 @@ export class CandidateSearchHandlerService {
           body.includeJd !== false,
           true,
           abortSignal,
+          {
+            linkedinQueryGenerator: body.linkedinQueryGenerator,
+            candidateSource: body.candidateSource,
+            linkedinCompanyUrl: body.linkedinCompanyUrl,
+            orgchartCompanyName: body.orgchartCompanyName,
+            orgchartCompanyId: body.orgchartCompanyId,
+            xraySearchEngine: body.xraySearchEngine,
+            apifyMaxItems: body.apifyMaxItems,
+          },
         );
         if (response?.chatMessage) assistantMessage = response.chatMessage;
         break;
@@ -830,6 +1085,15 @@ export class CandidateSearchHandlerService {
           body.includeJd !== false,
           false,
           abortSignal,
+          {
+            linkedinQueryGenerator: body.linkedinQueryGenerator,
+            candidateSource: body.candidateSource,
+            linkedinCompanyUrl: body.linkedinCompanyUrl,
+            orgchartCompanyName: body.orgchartCompanyName,
+            orgchartCompanyId: body.orgchartCompanyId,
+            xraySearchEngine: body.xraySearchEngine,
+            apifyMaxItems: body.apifyMaxItems,
+          },
         );
         if (response?.chatMessage) assistantMessage = response.chatMessage;
         break;
@@ -930,6 +1194,20 @@ export class CandidateSearchHandlerService {
     sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
     onTokenUsage?: (usage: TokenUsage) => void,
+    orgChartGenerateOptions?: {
+      orgChartContext?: {
+        mode?: string;
+        companyName?: string;
+        jobTitles?: string[];
+        country?: string;
+        functionRoot?: string;
+        businessDivisionRawQuery?: string;
+        businessDivisionLinkedinKeywords?: string;
+      };
+      queryGenerator?: 'python' | 'multi_agent';
+      /** When org chart data comes from Apify or x-ray, only classic people facets apply. */
+      candidateSource?: OrgChartLinkedinCandidateSource;
+    },
   ): Promise<GeneratedSearchParameters> {
     try {
       const { openAIclient: openaiClient } =
@@ -966,7 +1244,205 @@ export class CandidateSearchHandlerService {
         return generatedParameters;
       }
 
-      // Handle people search: use multi-agent flow
+      // Handle people search: org-chart context (Python / multi-agent router) or multi-agent requirement flow
+      if (searchCategory === 'people' && orgChartGenerateOptions?.orgChartContext) {
+        sendEvent?.('status', {
+          message: 'Generating people search parameters (org-chart router)...',
+        });
+        const ctx = orgChartGenerateOptions.orgChartContext;
+        const rawCandidateSource = orgChartGenerateOptions.candidateSource;
+        const candidateSource: OrgChartLinkedinCandidateSource =
+          rawCandidateSource === 'apify' || rawCandidateSource === 'linkedin_xray'
+            ? rawCandidateSource
+            : 'unipile';
+        const effectiveSearchType: 'classic' | 'sales_navigator' | 'recruiter' =
+          candidateSource === 'apify' || candidateSource === 'linkedin_xray'
+            ? 'classic'
+            : searchType;
+        if (effectiveSearchType !== searchType) {
+          this.logger.log(
+            `Org-chart unresolved params: candidateSource=${candidateSource} uses classic-shaped filters; coercing searchType from ${searchType} to ${effectiveSearchType}.`,
+          );
+        }
+        const primaryCompanyName = ctx.companyName?.trim() ?? '';
+        let country = ctx.country?.trim() ?? '';
+        if (country.toLowerCase() === 'global') {
+          country = '';
+        }
+        let functionRoot = ctx.functionRoot?.trim() ?? '';
+        let businessDivisionLinkedinKeywords =
+          ctx.businessDivisionLinkedinKeywords?.trim();
+        const businessDivisionRaw = ctx.businessDivisionRawQuery?.trim();
+        let titleTaxonomyResolvedIntent: Record<string, unknown> | undefined;
+        if (businessDivisionRaw && primaryCompanyName) {
+          if (!businessDivisionLinkedinKeywords) {
+            const workspaceId =
+              await this.workspaceQueryService.getWorkspaceIdFromToken(
+                apiToken,
+              );
+            const { openAIclient: openaiClient } =
+              await this.workspaceQueryService.initializeLLMClients(workspaceId);
+            const parsed =
+              await this.orgChartIntentService.resolveBusinessDivision(
+                openaiClient,
+                {
+                  companyName: primaryCompanyName,
+                  userRawText: businessDivisionRaw,
+                  defaultCountry: ctx.country ?? '',
+                  defaultFunctionRoot: ctx.functionRoot ?? '',
+                },
+                sendEvent,
+              );
+            const merged = mergeFilters(
+              parsed,
+              ctx.country ?? '',
+              ctx.functionRoot ?? '',
+            );
+            if (!merged.businessDivisionKeywords) {
+              throw new Error(
+                'Business division intent did not produce business_division_keywords',
+              );
+            }
+            businessDivisionLinkedinKeywords = merged.businessDivisionKeywords;
+            country =
+              merged.effectiveCountryRaw === '' ||
+              merged.effectiveCountryRaw.toLowerCase() === 'global'
+                ? ''
+                : merged.effectiveCountryRaw;
+            functionRoot = merged.effectiveFunctionRoot;
+            titleTaxonomyResolvedIntent = buildTitleTaxonomyResolvedIntent({
+                companyName: primaryCompanyName,
+                parsed,
+                effectiveFunctionRoot: merged.effectiveFunctionRoot,
+              });
+          }
+          if (businessDivisionLinkedinKeywords) {
+            businessDivisionLinkedinKeywords =
+              await this.orgchartLinkedInQueryRouterService.enrichBusinessDivisionLinkedinKeywords(
+                {
+                  queryGenerator: orgChartGenerateOptions?.queryGenerator,
+                  businessDivisionRaw,
+                  primaryCompanyName,
+                  baseBusinessDivisionKeywords: businessDivisionLinkedinKeywords,
+                  requirementForMultiAgent: cleanedQuery || rawQuery,
+                  titleTaxonomyResolvedIntent,
+                  sendEvent,
+                },
+              );
+          }
+        }
+        const hasAdditionalFilters =
+          !!country || hasMeaningfulOrgChartFunctionRootFilter(functionRoot);
+        const isAllPeopleInCompanyMode =
+          effectiveSearchType === 'classic' &&
+          !!primaryCompanyName &&
+          ctx.mode === 'entire_company' &&
+          !hasAdditionalFilters &&
+          !businessDivisionRaw;
+
+        return this.orgchartLinkedInQueryRouterService.buildGeneratedSearchParametersForOrgchart(
+          {
+            rawQuery,
+            cleanedQuery,
+            requirement: cleanedQuery || rawQuery,
+            searchType: effectiveSearchType,
+            mode: ctx.mode,
+            primaryCompanyName,
+            jobTitles: ctx.jobTitles,
+            country,
+            functionRoot,
+            businessDivisionLinkedinKeywords,
+            isAllPeopleInCompanyMode,
+            apiToken,
+            queryGenerator: orgChartGenerateOptions.queryGenerator,
+            sendEvent,
+          },
+        );
+      }
+
+      if (
+        searchCategory === 'people' &&
+        orgChartGenerateOptions?.queryGenerator === 'python'
+      ) {
+        sendEvent?.('status', {
+          message: 'Routing search intent...',
+        });
+        const route = await this.searchIntentRouterService.routeIntent(
+          rawQuery,
+          cleanedQuery,
+          openaiClient,
+          onTokenUsage,
+          sendEvent,
+        );
+
+        const employerName = route.primary_employer_name?.trim();
+        if (route.intent === 'employer_scoped' && employerName) {
+          this.logger.log(
+            `Search intent: employer_scoped → org-chart pipeline for "${employerName}"`,
+          );
+          sendEvent?.('status', {
+            message:
+              'Employer-scoped query — building search via org-chart pipeline...',
+          });
+          return this.generateUnresolvedSearchParams(
+            rawQuery,
+            cleanedQuery,
+            searchType,
+            searchCategory,
+            apiToken,
+            userMessage,
+            parsedJobDescription,
+            jobId,
+            sendEvent,
+            includeJd,
+            onTokenUsage,
+            {
+              ...orgChartGenerateOptions,
+              orgChartContext: {
+                mode: 'entire_company',
+                companyName: employerName,
+                businessDivisionRawQuery: cleanedQuery || rawQuery,
+                country: '',
+                functionRoot: '',
+                jobTitles: [],
+              },
+              queryGenerator: orgChartGenerateOptions?.queryGenerator ?? 'python',
+              candidateSource: orgChartGenerateOptions?.candidateSource,
+            },
+          );
+        }
+
+        if (route.intent === 'employer_scoped' && !employerName) {
+          this.logger.warn(
+            'Search intent router returned employer_scoped without primary_employer_name; falling back to open-market Python path.',
+          );
+        }
+
+        sendEvent?.('status', {
+          message:
+            'Generating people search parameters (Python query generator)...',
+        });
+        const parsed = await this.requirementAnalyzerService.analyzeRequirement(
+          rawQuery,
+          cleanedQuery,
+          openaiClient,
+          onTokenUsage,
+          sendEvent,
+        );
+        const pythonInput: PythonQueryInput = {
+          company_names: [],
+        };
+        const role = parsed.primary_role_name?.trim();
+        if (role) {
+          pythonInput.raw_job_titles = [role];
+        }
+        return this.pythonQueryGenerationService.generateSearchParameters(
+          pythonInput,
+          searchType,
+          cleanedQuery || rawQuery,
+        );
+      }
+
       if (searchCategory === 'people') {
         sendEvent?.('status', {
           message: 'Generating people search parameters...',

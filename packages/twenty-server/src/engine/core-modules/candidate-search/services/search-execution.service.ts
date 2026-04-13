@@ -356,6 +356,10 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     apiToken: string,
     userMessage: string | undefined,
     sendEvent?: (event: string, data: any) => boolean | void,
+    executionOptions?: {
+      forceClassicPeopleJson?: boolean;
+      linkedInAccountId?: string;
+    },
   ): Promise<SearchExecutionPreview | null> {
     const pageLimit = 10;
     let stateForPartialCatch: {
@@ -381,9 +385,30 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         return null;
       }
 
-      const strategyResolvedParams: GeneratedSearchParameters = {
+      let strategyResolvedParams: GeneratedSearchParameters = {
         [parameterKey]: strategy.parameters,
       } as GeneratedSearchParameters;
+
+      const areParamsResolved = this.checkIfParametersResolved(
+        strategyResolvedParams,
+        searchType,
+        searchCategory,
+      );
+      if (!areParamsResolved) {
+        const accountId = await this.getLinkedInAccountId(
+          apiToken,
+          executionOptions?.linkedInAccountId,
+        );
+        strategyResolvedParams = await this.resolveSearchParameters(
+          strategyResolvedParams,
+          searchType,
+          searchCategory,
+          accountId,
+        );
+      }
+
+      const forceClassicPeopleJson =
+        executionOptions?.forceClassicPeopleJson === true;
 
       // Detect raw classic people search so we can ignore paging.total_count metadata.
       // The raw HTML endpoint only returns the count for the current page, so treating it
@@ -401,6 +426,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         );
       })();
       const useRawClassicPeople =
+        !forceClassicPeopleJson &&
         searchType === 'classic' &&
         searchCategory === 'people' &&
         (rawFromParams === true || rawFromEnv);
@@ -464,6 +490,8 @@ export class SearchExecutionService extends CandidateSearchBaseService {
             pageLimit,
             sendEvent,
             state.currentPage,
+            forceClassicPeopleJson,
+            executionOptions?.linkedInAccountId,
           );
         } catch (fetchErr) {
           const errorMessage =

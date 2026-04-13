@@ -8,8 +8,7 @@
  *
  * Requires:
  * - arxena-site running (for Python query generator)
- * - twenty-server with USE_PYTHON_QUERY_GENERATOR_FOR_ORGCHART=true
- * - ARXENA_SITE_URL or ARXENA_SITE_ORGCHART_URL for Python API
+ * - ARXENA_SITE_URL or ARXENA_SITE_ORGCHART_URL for Python API (default org-chart query generator)
  */
 import { expect, test } from '@playwright/test';
 

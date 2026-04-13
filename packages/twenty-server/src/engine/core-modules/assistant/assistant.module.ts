@@ -3,7 +3,6 @@ import { forwardRef, Module } from '@nestjs/common';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
 import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-execution.module';
-import { LinkedinQueryGenerationModule } from 'src/engine/core-modules/linkedin-query-generation/linkedin-query-generation.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 
@@ -16,7 +15,6 @@ import { McpAnthropicMessageProcessorService } from './mcp-anthropic-message-pro
 import { McpAssistantToolExecutorService } from './mcp-assistant-tool-executor.service';
 import { McpAssistantService } from './mcp-assistant.service';
 import { McpInProcessToolRunnerService } from './mcp-in-process-tool-runner.service';
-import { McpLinkedinQueryRegenerationService } from './mcp-linkedin-query-regeneration.service';
 import { McpToolCallCacheService } from './mcp-tool-call-cache.service';
 import { AutonomousRecruitmentAgentRulesService } from './recruitment-agent-rules.service';
 
@@ -26,14 +24,12 @@ import { AutonomousRecruitmentAgentRulesService } from './recruitment-agent-rule
     WorkspaceCacheStorageModule,
     WorkspaceModificationsModule,
     forwardRef(() => CandidateSearchModule),
-    LinkedinQueryGenerationModule,
     GraphQLExecutionModule,
   ],
   controllers: [AssistantController],
   providers: [
     McpToolCallCacheService,
     McpInProcessToolRunnerService,
-    McpLinkedinQueryRegenerationService,
     McpAssistantToolExecutorService,
     McpAnthropicMessageProcessorService,
     McpAssistantService,

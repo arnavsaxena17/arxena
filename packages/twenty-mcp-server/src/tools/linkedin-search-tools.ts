@@ -1,29 +1,28 @@
 import {
-  CHECK_CONTACT_AVAILABILITY_FROM_APOLLO_INPUT_DESCRIPTOR,
-  CHECK_CONTACT_AVAILABILITY_FROM_ARXENA_INPUT_DESCRIPTOR,
-  CHECK_CONTACT_AVAILABILITY_FROM_CONTACTOUT_INPUT_DESCRIPTOR,
-  CHECK_CONTACT_AVAILABILITY_FROM_LUSHA_INPUT_DESCRIPTOR,
-  CHECK_CONTACT_AVAILABILITY_FROM_PDL_INPUT_DESCRIPTOR,
-  CHECK_CONTACT_AVAILABILITY_INPUT_DESCRIPTOR,
-  FETCH_CONTACTS_FROM_APOLLO_INPUT_DESCRIPTOR,
-  FETCH_CONTACTS_FROM_ARXENA_INPUT_DESCRIPTOR,
-  FETCH_CONTACTS_FROM_CONTACTOUT_INPUT_DESCRIPTOR,
-  FETCH_CONTACTS_FROM_LUSHA_INPUT_DESCRIPTOR,
-  FETCH_CONTACTS_FROM_PDL_INPUT_DESCRIPTOR,
-  FETCH_CONTACTS_INPUT_DESCRIPTOR,
-  GENERATE_LINKEDIN_QUERY_AGENT1_INPUT_DESCRIPTOR,
-  GENERATE_LINKEDIN_QUERY_AGENT2_INPUT_DESCRIPTOR,
-  GENERATE_LINKEDIN_QUERY_AGENT3_INPUT_DESCRIPTOR,
-  GENERATE_LINKEDIN_QUERY_AGENT4_INPUT_DESCRIPTOR,
-  GENERATE_LINKEDIN_QUERY_BATCH_INPUT_DESCRIPTOR,
-  GENERATE_ITERATIVE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR,
-  GENERATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR,
-  GET_CONTACT_ENRICHMENT_JOB_INPUT_DESCRIPTOR,
-  SEARCH_LINKEDIN_COMPANIES_INPUT_DESCRIPTOR,
-  SEARCH_LINKEDIN_JOBS_INPUT_DESCRIPTOR,
-  SEARCH_LINKEDIN_PARAMETERS_INPUT_DESCRIPTOR,
-  SEARCH_LINKEDIN_PEOPLE_INPUT_DESCRIPTOR,
-  VALIDATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR
+    CHECK_CONTACT_AVAILABILITY_FROM_APOLLO_INPUT_DESCRIPTOR,
+    CHECK_CONTACT_AVAILABILITY_FROM_ARXENA_INPUT_DESCRIPTOR,
+    CHECK_CONTACT_AVAILABILITY_FROM_CONTACTOUT_INPUT_DESCRIPTOR,
+    CHECK_CONTACT_AVAILABILITY_FROM_LUSHA_INPUT_DESCRIPTOR,
+    CHECK_CONTACT_AVAILABILITY_FROM_PDL_INPUT_DESCRIPTOR,
+    CHECK_CONTACT_AVAILABILITY_INPUT_DESCRIPTOR,
+    FETCH_CONTACTS_FROM_APOLLO_INPUT_DESCRIPTOR,
+    FETCH_CONTACTS_FROM_ARXENA_INPUT_DESCRIPTOR,
+    FETCH_CONTACTS_FROM_CONTACTOUT_INPUT_DESCRIPTOR,
+    FETCH_CONTACTS_FROM_LUSHA_INPUT_DESCRIPTOR,
+    FETCH_CONTACTS_FROM_PDL_INPUT_DESCRIPTOR,
+    FETCH_CONTACTS_INPUT_DESCRIPTOR,
+    GENERATE_LINKEDIN_QUERY_AGENT1_INPUT_DESCRIPTOR,
+    GENERATE_LINKEDIN_QUERY_AGENT2_INPUT_DESCRIPTOR,
+    GENERATE_LINKEDIN_QUERY_AGENT3_INPUT_DESCRIPTOR,
+    GENERATE_LINKEDIN_QUERY_AGENT4_INPUT_DESCRIPTOR,
+    GENERATE_LINKEDIN_QUERY_BATCH_INPUT_DESCRIPTOR,
+    GENERATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR,
+    GET_CONTACT_ENRICHMENT_JOB_INPUT_DESCRIPTOR,
+    SEARCH_LINKEDIN_COMPANIES_INPUT_DESCRIPTOR,
+    SEARCH_LINKEDIN_JOBS_INPUT_DESCRIPTOR,
+    SEARCH_LINKEDIN_PARAMETERS_INPUT_DESCRIPTOR,
+    SEARCH_LINKEDIN_PEOPLE_INPUT_DESCRIPTOR,
+    VALIDATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR
 } from '../utils/McpToolSchemas';
 
 import { callRestAPI, callRestAPIGet } from '../api/rest-client';
@@ -364,58 +363,6 @@ export const linkedinSearchTools: McpTool[] = [
         {
           rawRequirement,
           queryIpLocation,
-          model,
-          temperature,
-          verbose,
-        },
-      );
-    },
-  },
-
-  {
-    definition: {
-      name: 'generate_iterative_linkedin_query_set',
-      description:
-        'Generate and refine LinkedIn query sets iteratively. Supports offline verification by default and optional live preview validation when LinkedIn search context is available.',
-      inputSchema: descriptorToInputSchema(
-        GENERATE_ITERATIVE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR,
-      ),
-    },
-    handler: async (args, config) => {
-      const {
-        rawRequirement,
-        mode,
-        searchType,
-        queryIpLocation,
-        maxIterations,
-        returnAlternatives,
-        model,
-        temperature,
-        verbose,
-      } = args as {
-        rawRequirement: string;
-        mode?: 'offline' | 'live';
-        searchType?: 'classic' | 'sales_navigator' | 'recruiter';
-        queryIpLocation?: string;
-        maxIterations?: number;
-        returnAlternatives?: boolean;
-        model?: string;
-        temperature?: number;
-        verbose?: boolean;
-      };
-
-      return callRestAPI(
-        config.baseUrl,
-        config.apiToken,
-        'linkedin-query-generation',
-        'generate/iterative',
-        {
-          rawRequirement,
-          mode,
-          searchType,
-          queryIpLocation,
-          maxIterations,
-          returnAlternatives,
           model,
           temperature,
           verbose,

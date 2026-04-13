@@ -10,6 +10,7 @@ import styled from '@emotion/styled';
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { ARXENA_CHROME_WEBSTORE_URL } from 'twenty-shared';
 import {
   ActionLink,
   IconBolt,
@@ -22,8 +23,6 @@ import { OnboardingStatus } from '~/generated/graphql';
 import { Mixpanel } from '~/mixpanel';
 import { OnboardingIntentModalLayout } from '~/pages/onboarding/OnboardingIntentModalLayout';
 
-const ARXENA_EXTENSION_URL =
-  'https://chromewebstore.google.com/detail/arxena/dhoknlmmllpjeginebedikkanghoonoo';
 const DEFAULT_CALENDLY_URL = 'https://calendly.com/arxena';
 
 const StyledPanel = styled.div`
@@ -253,7 +252,7 @@ export const CompetitiveResearchOnboarding = () => {
         : currentUser,
     );
 
-    window.open(ARXENA_EXTENSION_URL, '_blank', 'noopener,noreferrer');
+    window.open(ARXENA_CHROME_WEBSTORE_URL, '_blank', 'noopener,noreferrer');
     navigate(AppPath.ExtensionInstallOnboarding, { replace: true });
   };
 

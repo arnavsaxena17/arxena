@@ -5,4 +5,5 @@ export const SETTINGS_ADMIN_TABS = {
   WHATSAPP_MONITORING: 'whatsapp-monitoring',
   WORKSPACE_CREDITS: 'workspace-credits',
   ORG_CHART_CLIENT_IPS: 'org-chart-client-ips',
+  USERS: 'users',
 };

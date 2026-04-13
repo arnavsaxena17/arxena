@@ -3,8 +3,8 @@ import type { OrgChartData } from 'twenty-shared';
 
 import { TheOrgService } from 'src/engine/core-modules/theorg/services/theorg.service';
 import type {
-  TheOrgFetchMode,
-  TheOrgPerson,
+    TheOrgFetchMode,
+    TheOrgPerson,
 } from 'src/engine/core-modules/theorg/types/theorg.types';
 
 import { normalizePersonForPythonOrgChartBuild } from '../utils/python-org-chart-person.util';
@@ -50,7 +50,7 @@ export class OrgChartTheOrgEnrichmentService {
     const linkedinCompanySlug = options.linkedinCompanySlug ?? companyId;
 
     // 1. Load the existing org chart (ES → Redis → S3 → blank template).
-    const existingOrgChart = await this.orgChartService.getOrgChart(
+    const { data: existingOrgChart } = await this.orgChartService.getOrgChart(
       companyId,
       {
         companyName: options.companyName,

@@ -71,7 +71,7 @@ export const MainNavigationDrawerItems = () => {
             onClick={openRecordsSearchPage}
             keyboard={['/']}
           />
-          {!isOrgChartEnabled && (
+          {/* {!isOrgChartEnabled && ( */}
             <NavigationDrawerItem
               label={t`Assistant`}
               to={getAppPath(AppPath.Assistant)}
@@ -82,7 +82,7 @@ export const MainNavigationDrawerItems = () => {
               }}
               Icon={IconMessage2}
             />
-          )}
+          {/* )} */}
           <NavigationDrawerItem
             label={t`Settings`}
             to={getSettingsPath(SettingsPath.ProfilePage)}

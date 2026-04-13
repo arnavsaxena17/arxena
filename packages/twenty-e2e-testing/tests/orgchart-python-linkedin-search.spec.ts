@@ -1,6 +1,6 @@
 /**
  * Optional E2E test for org chart search using Python query generation.
- * Requires USE_PYTHON_QUERY_GENERATOR_FOR_ORGCHART=true and arxena-site running.
+ * Requires arxena-site running (Python query generator is the default org-chart mode).
  * Skips if ARXENA_SITE_URL is not reachable or Python path not enabled.
  */
 import { expect, test } from '@playwright/test';

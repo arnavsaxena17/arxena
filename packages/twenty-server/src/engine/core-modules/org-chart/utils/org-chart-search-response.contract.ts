@@ -9,7 +9,7 @@ const ORGCHART_SEARCH_MODES = new Set([
   'leadership',
   'entire_company',
   'function_grade',
-  'all_people',
+  'business_division_map',
   'selected_nodes',
 ]);
 

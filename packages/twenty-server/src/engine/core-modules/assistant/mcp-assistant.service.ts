@@ -20,7 +20,6 @@ import {
   MAX_TOOL_ROUNDS,
   OPENAI_MCP_MODEL,
 } from './mcp-assistant.constants';
-import { McpLinkedinQueryRegenerationService } from './mcp-linkedin-query-regeneration.service';
 import { throwIfAborted } from './utils/mcp-assistant-abort.util';
 import { sanitizeArgsForLog } from './utils/mcp-assistant-args.util';
 import {
@@ -53,7 +52,6 @@ export class McpAssistantService {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly toolExecutor: McpAssistantToolExecutorService,
-    private readonly linkedinQueryRegeneration: McpLinkedinQueryRegenerationService,
     private readonly anthropicMessageProcessor: McpAnthropicMessageProcessorService,
   ) {
     this.provider = getMcpModelProviderFromEnv();
@@ -653,12 +651,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
               sendEvent,
               abortSignal,
             );
-          const {
-            toolResults,
-            textParts,
-            linkedInSearchError,
-            regenerationMessage,
-          } =
+          const { toolResults, textParts, linkedInSearchError } =
             await this.anthropicMessageProcessor.processAnthropicAssistantContent(
               assistantContent,
               client,
@@ -680,12 +673,6 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
 
           messages.push({ role: 'assistant', content: assistantContent });
           messages.push({ role: 'user', content: toolResults });
-          if (regenerationMessage) {
-            messages.push({
-              role: 'user',
-              content: regenerationMessage,
-            });
-          }
         }
 
         const fullText = finalText.join('\n').trim() || 'No response generated.';
@@ -804,21 +791,6 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
               content: textContent,
             });
             emitTableDataIfJson(sendEvent, textContent, tc.name);
-            const regenerationMessage =
-              await this.linkedinQueryRegeneration.maybeRegenerateLinkedinQuerySet(
-                client,
-                apiToken,
-                sendEvent,
-                assistantThreadId,
-                tc.name,
-                threadSearchType,
-              );
-            if (regenerationMessage) {
-              openaiMessages.push({
-                role: 'user',
-                content: regenerationMessage,
-              });
-            }
             if (isLinkedInSearchError(tc.name, textContent)) {
               const linkedInSearchError = extractLinkedInSearchErrorMessage(
                 textContent,

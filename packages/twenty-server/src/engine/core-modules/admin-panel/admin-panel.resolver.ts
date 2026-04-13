@@ -5,12 +5,13 @@ import { GraphQLError } from 'graphql';
 
 import { AdminPanelHealthService } from 'src/engine/core-modules/admin-panel/admin-panel-health.service';
 import { AdminPanelService } from 'src/engine/core-modules/admin-panel/admin-panel.service';
+import { AdminPanelWorkspaceMemberRow } from 'src/engine/core-modules/admin-panel/dtos/admin-panel-workspace-member-row.output';
 import { EnvironmentVariablesOutput } from 'src/engine/core-modules/admin-panel/dtos/environment-variables.output';
 import { ImpersonateInput } from 'src/engine/core-modules/admin-panel/dtos/impersonate.input';
 import { ImpersonateOutput } from 'src/engine/core-modules/admin-panel/dtos/impersonate.output';
 import { SystemHealth } from 'src/engine/core-modules/admin-panel/dtos/system-health.dto';
-import { UpsertOrgChartClientIpRuleInput } from 'src/engine/core-modules/admin-panel/dtos/upsert-org-chart-client-ip-rule.input';
 import { UpdateWorkspaceFeatureFlagInput } from 'src/engine/core-modules/admin-panel/dtos/update-workspace-feature-flag.input';
+import { UpsertOrgChartClientIpRuleInput } from 'src/engine/core-modules/admin-panel/dtos/upsert-org-chart-client-ip-rule.input';
 import { UserLookup } from 'src/engine/core-modules/admin-panel/dtos/user-lookup.entity';
 import { UserLookupInput } from 'src/engine/core-modules/admin-panel/dtos/user-lookup.input';
 import { AuthGraphqlApiExceptionFilter } from 'src/engine/core-modules/auth/filters/auth-graphql-api-exception.filter';
@@ -109,6 +110,14 @@ export class AdminPanelResolver {
     @Args('id') id: string,
   ): Promise<boolean> {
     return this.orgChartClientIpService.resetCounters(id);
+  }
+
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
+  @Query(() => [AdminPanelWorkspaceMemberRow])
+  async adminPanelAllWorkspaceMembers(): Promise<
+    AdminPanelWorkspaceMemberRow[]
+  > {
+    return this.adminService.listAllWorkspaceMembersForAdminPanel();
   }
 
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)

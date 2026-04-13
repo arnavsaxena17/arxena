@@ -1,8 +1,9 @@
 import { SettingsAdminEnvVariables } from '@/settings/admin-panel/components/SettingsAdminEnvVariables';
 import { SettingsAdminGeneral } from '@/settings/admin-panel/components/SettingsAdminGeneral';
 import { SettingsAdminHealthStatus } from '@/settings/admin-panel/components/SettingsAdminHealthStatus';
-import { SettingsAdminWhatsAppMonitoring } from '@/settings/admin-panel/components/SettingsAdminWhatsAppMonitoring';
 import { SettingsAdminOrgChartClientIps } from '@/settings/admin-panel/components/SettingsAdminOrgChartClientIps';
+import { SettingsAdminUsers } from '@/settings/admin-panel/components/SettingsAdminUsers';
+import { SettingsAdminWhatsAppMonitoring } from '@/settings/admin-panel/components/SettingsAdminWhatsAppMonitoring';
 import { SettingsAdminWorkspaceCredits } from '@/settings/admin-panel/components/SettingsAdminWorkspaceCredits';
 import { SETTINGS_ADMIN_TABS } from '@/settings/admin-panel/constants/SettingsAdminTabs';
 import { SETTINGS_ADMIN_TABS_ID } from '@/settings/admin-panel/constants/SettingsAdminTabsId';
@@ -24,6 +25,8 @@ export const SettingsAdminTabContent = () => {
       return <SettingsAdminWorkspaceCredits />;
     case SETTINGS_ADMIN_TABS.ORG_CHART_CLIENT_IPS:
       return <SettingsAdminOrgChartClientIps />;
+    case SETTINGS_ADMIN_TABS.USERS:
+      return <SettingsAdminUsers />;
     default:
       return null;
   }

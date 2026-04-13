@@ -76,6 +76,7 @@ export const STATIC_ROUTES = [
   '/',
   '/pricing',
   '/engage',
+  '/chrome-extension',
   '/story',
   '/team',
   '/legal/terms',

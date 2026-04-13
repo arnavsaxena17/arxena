@@ -1,6 +1,14 @@
 import { useLingui } from '@lingui/react/macro';
 import { useRecoilValue } from 'recoil';
-import { H2Title, IconWorld, Section, UndecoratedLink } from 'twenty-ui';
+import { ARXENA_CHROME_WEBSTORE_URL } from 'twenty-shared';
+import {
+  Button,
+  H2Title,
+  IconExternalLink,
+  IconWorld,
+  Section,
+  UndecoratedLink,
+} from 'twenty-ui';
 
 import { isMultiWorkspaceEnabledState } from '@/client-config/states/isMultiWorkspaceEnabledState';
 import { SettingsCard } from '@/settings/components/SettingsCard';
@@ -38,6 +46,24 @@ export const SettingsWorkspace = () => {
         <Section>
           <H2Title title={t`Name`} description={t`Name of your workspace`} />
           <NameField />
+        </Section>
+        <Section>
+          <H2Title
+            title={t`Chrome extension`}
+            description={t`Install the Arxena Chrome extension from the Web Store to capture profiles and sync with your workspace while you browse.`}
+          />
+          <Button
+            title={t`Install Chrome extension`}
+            Icon={IconExternalLink}
+            accent="blue"
+            onClick={() =>
+              window.open(
+                ARXENA_CHROME_WEBSTORE_URL,
+                '_blank',
+                'noopener,noreferrer',
+              )
+            }
+          />
         </Section>
         {isMultiWorkspaceEnabled && (
           <>

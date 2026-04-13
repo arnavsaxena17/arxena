@@ -186,6 +186,33 @@
           "node scripts/check-linkedin-li-at.mjs"
         ]
       }
+    },
+    "test:integration-rest": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "packages/twenty-e2e-testing",
+        "commands": [
+          "yarn playwright test tests/integration --project=integration-api"
+        ]
+      }
+    },
+    "test:integration-rest-matrix": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "packages/twenty-e2e-testing",
+        "commands": [
+          "sh -c 'E2E_INTEGRATION_MATRIX=${E2E_INTEGRATION_MATRIX:-1} yarn playwright test tests/integration --project=integration-api'"
+        ]
+      }
+    },
+    "test:integration-pipeline": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "packages/twenty-e2e-testing",
+        "commands": [
+          "sh -c 'E2E_INTEGRATION_PIPELINE_MATRIX=${E2E_INTEGRATION_PIPELINE_MATRIX:-1} yarn playwright test tests/integration/pipeline.rest.integration.e2e.spec.ts --project=integration-api'"
+        ]
+      }
     }
   }
 }

@@ -52,7 +52,7 @@ describe('threadMessagesToHistory', () => {
         content: 'Generated query set.',
         toolCalls: [
           {
-            name: 'generate_iterative_linkedin_query_set',
+            name: 'generate_linkedin_query_set',
             args: { rawRequirement: 'Pulmonologist in Mumbai' },
           },
         ],
@@ -75,7 +75,7 @@ describe('threadMessagesToHistory', () => {
         {
           type: 'tool_use',
           id: 'tc-0-0',
-          name: 'generate_iterative_linkedin_query_set',
+          name: 'generate_linkedin_query_set',
           input: { rawRequirement: 'Pulmonologist in Mumbai' },
         },
       ],

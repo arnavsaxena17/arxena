@@ -5,13 +5,20 @@ import styled from '@emotion/styled';
 import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { isOrgChartEnabledEnv } from 'twenty-shared';
+import {
+  Button,
+  IconPlus,
+  IconRefresh,
+  IconRocket,
+} from 'twenty-ui';
 import { useWebSocketEvent } from '../../modules/websocket-context/useWebSocketEvent';
 import { useWebSocket } from '../../modules/websocket-context/WebSocketContextProvider';
 
 const StyledButtonContainer = styled.div`
   display: flex;
-  gap: 12px;
-  margin-top: 16px;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing(2)};
+  margin-top: ${({ theme }) => theme.spacing(2)};
 `;
 
 type NestErrorBody = {
@@ -35,48 +42,6 @@ const messageFromFailedResponse = async (
   }
   return fallback;
 };
-
-const StyledButton = styled.button<{
-  variant?: 'primary' | 'secondary';
-  submitted?: boolean;
-}>`
-  background-color: ${({ variant, submitted, theme }) =>
-    submitted
-      ? theme.border.color.medium
-      : variant === 'secondary'
-        ? theme.background.tertiary
-        : theme.color.blue};
-  color: ${({ variant, submitted, theme }) =>
-    submitted
-      ? theme.font.color.secondary
-      : variant === 'secondary'
-        ? theme.font.color.primary
-        : theme.font.color.inverted};
-  padding: 8px 16px;
-  border-radius: 4px;
-  border: 1px solid
-    ${({ variant, submitted, theme }) =>
-      submitted
-        ? theme.border.color.medium
-        : variant === 'secondary'
-          ? theme.border.color.medium
-          : theme.color.blue};
-  cursor: ${({ submitted }) => (submitted ? 'not-allowed' : 'pointer')};
-
-  &:hover {
-    background-color: ${({ variant, submitted, theme }) =>
-      submitted
-        ? theme.border.color.medium
-        : variant === 'secondary'
-          ? theme.background.quaternary
-          : theme.color.blue60};
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-`;
 
 export const MetadataStructureSection = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -328,32 +293,36 @@ export const MetadataStructureSection = () => {
 
   return (
     <StyledButtonContainer>
-      <StyledButton
+      <Button
+        title={
+          isSubmitting
+            ? 'Creating...'
+            : hasBeenClicked
+              ? 'Creating Structure..'
+              : 'Create Metadata Structure'
+        }
+        Icon={IconPlus}
+        accent="blue"
+        disabled={isSubmitting || hasBeenClicked}
         onClick={handleCreateStructure}
-        disabled={isSubmitting}
-        submitted={hasBeenClicked && !isSubmitting}
-      >
-        {isSubmitting
-          ? 'Creating...'
-          : hasBeenClicked
-            ? 'Creating Structure..'
-            : 'Create Metadata Structure'}
-      </StyledButton>
-      <StyledButton
-        onClick={handleUpdateStructure}
-        disabled={isUpdating}
+      />
+      <Button
+        title={isUpdating ? 'Updating...' : 'Update Metadata Structure'}
+        Icon={IconRefresh}
         variant="secondary"
-      >
-        {isUpdating ? 'Updating...' : 'Update Metadata Structure'}
-      </StyledButton>
+        disabled={isUpdating}
+        onClick={handleUpdateStructure}
+      />
       {isOrgChartEnabled === true && (
-        <StyledButton
-          onClick={handleUpgradeToEngagementWorkflows}
-          disabled={isUpgrading}
+        <Button
+          title={
+            isUpgrading ? 'Upgrading...' : 'Upgrade to Engagement Workflows'
+          }
+          Icon={IconRocket}
           variant="secondary"
-        >
-          {isUpgrading ? 'Upgrading...' : 'Upgrade to Engagement Workflows'}
-        </StyledButton>
+          disabled={isUpgrading}
+          onClick={handleUpgradeToEngagementWorkflows}
+        />
       )}
     </StyledButtonContainer>
   );

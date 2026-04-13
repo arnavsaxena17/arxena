@@ -16,7 +16,6 @@ export const LINKEDIN_SEARCH_ERROR_TOOLS = new Set([
   'search_linkedin_with_query',
   'search_linkedin_people',
   'generate_linkedin_query_set',
-  'generate_iterative_linkedin_query_set',
   'search_candidates',
 ]);
 
@@ -25,7 +24,6 @@ export const STREAMING_TOOL_NAMES = [
   'search_linkedin_people',
   'generate_search_parameters',
   'generate_unresolved_search_parameters',
-  'generate_iterative_linkedin_query_set',
 ] as const;
 
 /**
@@ -40,11 +38,4 @@ export const INTERNAL_TOOL_NAMES = new Set<string>([
   'generate_linkedin_query_agent2',
   'generate_linkedin_query_agent3',
   'generate_linkedin_query_agent4',
-]);
-
-export const REGENERATION_CHECKPOINT_TOOLS = new Set([
-  'generate_linkedin_query_set',
-  'generate_iterative_linkedin_query_set',
-  'search_linkedin_parameters',
-  'search_linkedin_people',
 ]);

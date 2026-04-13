@@ -179,6 +179,9 @@ export const HeaderMobile = ({
           >
             Engage
           </StyledNavLink>
+          <StyledNavLink href="/chrome-extension">
+            Chrome extension
+          </StyledNavLink>
           {showSearch && (
             <StyledSearchWrapper>
               <OrgChartSearch

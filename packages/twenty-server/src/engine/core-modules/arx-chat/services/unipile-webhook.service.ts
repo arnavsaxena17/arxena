@@ -690,7 +690,7 @@ export class UnipileWebhookService {
   private async onMessageDeleted(payload: UnipileMessageWebhook): Promise<void> {
     const { message_id, message, sender, timestamp, account_type, chat_id, account_id, attachments } = payload;
     
-    this.logger.log(`Message deleted: ${message_id}`);
+    this.logger.log(`Message deleted: ${message_id}, message: ${message}, sender: ${sender.attendee_name}, timestamp: ${timestamp}, account_type: ${account_type}, chat_id: ${chat_id}, account_id: ${account_id}, attachments: ${attachments}`);
     
     try {
       // Save deleted message details to deleted-messages.json

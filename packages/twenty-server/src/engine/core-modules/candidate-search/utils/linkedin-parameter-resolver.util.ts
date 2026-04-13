@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
 import { linkedinIndustryOptions } from '../schemas/linkedin-classic-people-search.schema';
+import { normalizeLlmNullishString } from '../schemas/org-chart.schema';
 
 type ParameterCacheKey = string;
 type ParameterCacheValue = {
@@ -363,6 +364,9 @@ export class LinkedinParameterResolver implements OnModuleDestroy {
     const display: Array<{ id: string; title: string }> = [];
 
     for (const item of items) {
+      if (normalizeLlmNullishString(item) === null) {
+        continue;
+      }
       const resolved = await this.resolveParameterItem(
         item,
         config,

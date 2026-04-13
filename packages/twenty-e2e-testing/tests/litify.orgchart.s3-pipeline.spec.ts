@@ -15,7 +15,6 @@
  *   - TWENTY_SERVER_URL (or falls back to http://localhost:3000)
  *   - ARXENA_SITE_URL (Python orgchart API, falls back to http://localhost:5050)
  *   - E2E_API_TOKEN – Bearer token for twenty-server API
- *   - USE_PYTHON_QUERY_GENERATOR_FOR_ORGCHART=true on the server
  */
 import { expect, test } from '@playwright/test';
 

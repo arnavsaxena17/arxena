@@ -1,6 +1,6 @@
 export { CompanySearchAutocomplete } from './components/CompanySearchAutocomplete';
 export { OrgChartDiagram } from './components/OrgChartDiagram';
-export type { OrgChartContextAction, OrgChartDiagramHandle, OrgChartDiagramIconUrls, OrgChartDiagramProps } from './components/OrgChartDiagram';
+export type { OrgChartContextAction, OrgChartDiagramHandle, OrgChartDiagramIconUrls, OrgChartDiagramProps, OrgChartNodeContextPayload } from './components/OrgChartDiagram';
 export { OrgChartFilters, OrgChartSearchControls } from './components/OrgChartFilters';
 export type { OrgChartFiltersProps, OrgChartSearchControlsProps } from './components/OrgChartFilters';
 export { OrgChartSignUpModal } from './components/OrgChartSignUpModal';

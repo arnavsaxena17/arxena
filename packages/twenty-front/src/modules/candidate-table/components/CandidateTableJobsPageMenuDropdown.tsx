@@ -1,4 +1,5 @@
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
+import { orgChartLinkedInSearchTypeState } from '@/orgchart/states/orgChartLinkedInSearchTypeState';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import { DropdownMenuSeparator } from '@/ui/layout/dropdown/components/DropdownMenuSeparator';
@@ -6,19 +7,36 @@ import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useRecoilState } from 'recoil';
+import { LinkedInSearchType } from 'twenty-shared';
 import {
-  Button,
-  IconApi,
-  IconBrandLinkedin,
-  IconChevronDown,
-  IconCoins,
-  IconComment,
-  IconDownload,
-  IconGitCommit,
-  IconPlus,
-  IconSearch,
-  MenuItem,
+    Button,
+    IconApi,
+    IconBrandLinkedin,
+    IconChevronDown,
+    IconCoins,
+    IconComment,
+    IconDownload,
+    IconGitCommit,
+    IconPlus,
+    IconSearch,
+    MenuItem,
 } from 'twenty-ui';
+
+const ORG_CHART_LINKEDIN_SEARCH_TYPE_OPTIONS: {
+  value: LinkedInSearchType;
+  label: string;
+}[] = [
+  { value: 'classic', label: 'Classic' },
+  { value: 'sales_navigator', label: 'Sales Nav' },
+  { value: 'recruiter', label: 'Recruiter' },
+];
+
+const ORG_CHART_LINKEDIN_SEARCH_TYPE_TITLE: Record<LinkedInSearchType, string> =
+  {
+    classic: 'LinkedIn Classic',
+    sales_navigator: 'Sales Navigator',
+    recruiter: 'LinkedIn Recruiter',
+  };
 
 const CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID =
   'candidate-table-jobs-page-menu';
@@ -123,6 +141,8 @@ export const CandidateTableJobsPageMenuDropdown = ({
   );
   const [orgChartLinkedinCandidateSource, setOrgChartLinkedinCandidateSource] =
     useRecoilState(orgChartLinkedinCandidateSourceState);
+  const [orgChartLinkedInSearchType, setOrgChartLinkedInSearchType] =
+    useRecoilState(orgChartLinkedInSearchTypeState);
 
   const iconSm = theme.icon.size.sm;
 
@@ -140,7 +160,7 @@ export const CandidateTableJobsPageMenuDropdown = ({
           ariaLabel="Open jobs menu"
         />
       }
-      dropdownMenuWidth={280}
+      dropdownMenuWidth={300}
       dropdownComponents={
         <DropdownMenuItemsContainer>
           <MenuItem
@@ -237,6 +257,34 @@ export const CandidateTableJobsPageMenuDropdown = ({
                 X-Ray
               </StyledSegmentedOption>
             </StyledSegmentedTrack>
+            {orgChartLinkedinCandidateSource === 'unipile' && (
+              <>
+                <StyledOrgChartSourceLabel>
+                  LinkedIn search type
+                </StyledOrgChartSourceLabel>
+                <StyledSegmentedTrack
+                  role="radiogroup"
+                  aria-label="LinkedIn search type"
+                >
+                  {ORG_CHART_LINKEDIN_SEARCH_TYPE_OPTIONS.map((opt) => (
+                    <StyledSegmentedOption
+                      key={opt.value}
+                      type="button"
+                      data-testid={`org-chart-search-type-${opt.value}`}
+                      isActive={orgChartLinkedInSearchType === opt.value}
+                      role="radio"
+                      aria-checked={orgChartLinkedInSearchType === opt.value}
+                      title={ORG_CHART_LINKEDIN_SEARCH_TYPE_TITLE[opt.value]}
+                      onClick={() => {
+                        setOrgChartLinkedInSearchType(opt.value);
+                      }}
+                    >
+                      {opt.label}
+                    </StyledSegmentedOption>
+                  ))}
+                </StyledSegmentedTrack>
+              </>
+            )}
           </StyledOrgChartSourceBlock>
           <DropdownMenuSeparator />
           <MenuItem

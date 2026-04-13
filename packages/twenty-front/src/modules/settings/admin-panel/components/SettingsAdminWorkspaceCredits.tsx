@@ -16,12 +16,12 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import {
-  Button,
-  Checkbox,
-  H2Title,
-  IconTrash,
-  Section,
-  useIsMobile,
+    Button,
+    Checkbox,
+    H2Title,
+    IconTrash,
+    Section,
+    useIsMobile,
 } from 'twenty-ui';
 
 type WorkspaceCreditsRow = {
@@ -608,41 +608,40 @@ export const SettingsAdminWorkspaceCredits = () => {
                     <StyledTableCell>
                       <StyledActionsControlsRow>
                         <StyledSelect
-                            value={rowCreditEdit.creditType}
-                            onChange={(e) =>
-                              setRowCreditTypeForWorkspace(
-                                row.workspaceId,
-                                e.target.value as CreditType,
-                              )
+                          value={rowCreditEdit.creditType}
+                          onChange={(e) =>
+                            setRowCreditTypeForWorkspace(
+                              row.workspaceId,
+                              e.target.value as CreditType,
+                            )
+                          }
+                          aria-label={t`Credit type`}
+                        >
+                          <option value="ORG_CHART">{t`Org chart`}</option>
+                          <option value="EMAIL_CONTACT">{t`Email`}</option>
+                          <option value="PHONE_CONTACT">{t`Phone`}</option>
+                        </StyledSelect>
+                        <StyledAmountInputWrap>
+                          <TextInput
+                            value={rowCreditEdit.delta}
+                            onChange={(v) =>
+                              setRowDeltaForWorkspace(row.workspaceId, v)
                             }
-                            aria-label={t`Credit type`}
-                          >
-                            <option value="ORG_CHART">{t`Org chart`}</option>
-                            <option value="EMAIL_CONTACT">{t`Email`}</option>
-                            <option value="PHONE_CONTACT">{t`Phone`}</option>
-                          </StyledSelect>
-                          <StyledAmountInputWrap>
-                            <TextInput
-                              value={rowCreditEdit.delta}
-                              onChange={(v) =>
-                                setRowDeltaForWorkspace(row.workspaceId, v)
-                              }
-                              placeholder={t`Amount (+ / -)`}
-                              fullWidth
-                            />
-                          </StyledAmountInputWrap>
-                          <StyledApplyButtonWrap>
-                            <Button
-                              title={t`Apply`}
-                              onClick={() => handleAdjust(row.workspaceId)}
-                              disabled={
-                                adjustingWorkspaceId === row.workspaceId ||
-                                !rowCreditEdit.delta.trim()
-                              }
-                            />
-                          </StyledApplyButtonWrap>
-                        </StyledActionsControlsRow>
-                      </StyledActionsInner>
+                            placeholder={t`Amount (+ / -)`}
+                            fullWidth
+                          />
+                        </StyledAmountInputWrap>
+                        <StyledApplyButtonWrap>
+                          <Button
+                            title={t`Apply`}
+                            onClick={() => handleAdjust(row.workspaceId)}
+                            disabled={
+                              adjustingWorkspaceId === row.workspaceId ||
+                              !rowCreditEdit.delta.trim()
+                            }
+                          />
+                        </StyledApplyButtonWrap>
+                      </StyledActionsControlsRow>
                     </StyledTableCell>
                   </TableRow>
                 );

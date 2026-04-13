@@ -32,23 +32,6 @@ import {
 } from '../types/candidate-search-request.type';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
 
-type OrgchartSearchMode =
-  | 'current_node'
-  | 'leadership'
-  | 'entire_company'
-  | 'function_grade'
-  | 'all_people'
-  | 'selected_nodes';
-
-type OrgchartSearchType = 'classic' | 'sales_navigator' | 'recruiter';
-
-type SearchExecutionPreview = {
-  itemCount: number;
-  searchResults: CandidateSearchResponse['searchResults'];
-  transformedCandidates?: CandidateSearchResponse['transformedCandidates'];
-  searchMetadata?: CandidateSearchResponse['searchMetadata'];
-};
-
 @Controller('candidate-search')
 export class CandidateSearchController {
   private readonly logger = new Logger(CandidateSearchController.name);

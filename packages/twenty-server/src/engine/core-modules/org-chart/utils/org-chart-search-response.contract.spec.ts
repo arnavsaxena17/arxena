@@ -39,6 +39,16 @@ describe('org-chart search response contract (POST /org-chart/search output shap
     ).not.toThrow();
   });
 
+  it('accepts business_division_map mode (Unipile success)', () => {
+    const businessDivision = {
+      ...minimalUnipileSuccess,
+      mode: 'business_division_map' as const,
+    };
+    expect(() =>
+      assertOrgChartSearchUnipileSuccessResponse(businessDivision),
+    ).not.toThrow();
+  });
+
   it('accepts a cached S3-style payload (same shape, different cacheSource)', () => {
     const s3Like = {
       ...minimalUnipileSuccess,

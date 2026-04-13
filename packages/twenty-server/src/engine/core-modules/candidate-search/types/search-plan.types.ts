@@ -1,4 +1,6 @@
 import { ParsedJobDescription } from '@/engine/core-modules/candidate-search/types/candidate-search-request.type';
+import type { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
+import type { LinkedinXraySearchEngine } from 'src/modules/linkedin-xray/types/linkedin-xray-search-job.types';
 
 // Search Variation Types
 export type SearchVariationType = 'broad' | 'narrow' | 'targeted';
@@ -182,5 +184,21 @@ export interface ChatMessageRequest {
   searchCategory?: 'people' | 'companies' | 'posts' | 'jobs';
   sampleResults?: any[];
   dataDistribution?: Record<string, { min: number; max: number; avg: number; count: number }>;
+  /**
+   * Unresolved LinkedIn query generation for people search (message/stream).
+   * Defaults to multi-agent orchestrator when omitted.
+   */
+  linkedinQueryGenerator?: 'python' | 'multi_agent';
+  /**
+   * When apify or linkedin_xray, candidate fetch is delegated to the org-chart
+   * LinkedIn build pipeline (entire_company) after unresolved params are built.
+   */
+  candidateSource?: OrgChartLinkedinCandidateSource;
+  /** Required for candidateSource apify / linkedin_xray (same as org-chart/search). */
+  linkedinCompanyUrl?: string;
+  orgchartCompanyName?: string;
+  orgchartCompanyId?: string;
+  xraySearchEngine?: LinkedinXraySearchEngine;
+  apifyMaxItems?: number;
 }
 

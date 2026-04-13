@@ -12,6 +12,9 @@ import { McpAssistantService } from 'src/engine/core-modules/assistant/mcp-assis
 import { ParsedRequirement } from 'src/engine/core-modules/candidate-search/schemas/parsed-requirement.schema';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
 import { RequirementAnalyzerService } from 'src/engine/core-modules/candidate-search/services/requirement-analyzer.service';
+import { OrgChartLinkedInBuildService } from 'src/engine/core-modules/org-chart/services/org-chart-linkedin-build.service';
+import { OrgChartTheOrgEnrichmentService } from 'src/engine/core-modules/org-chart/services/org-chart-theorg-enrichment.service';
+import type { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
 import { TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { LinkedInSearchResult as LinkedInSearchResultFromLinkedIn } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
@@ -38,7 +41,9 @@ import {
 } from '../types/candidate-search-request.type';
 import { LinkedInSearchResult } from '../types/linkedin-search-result.type';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
+import { createMinimalParsedJobDescription } from '../utils/parsed-job-description.util';
 import { mapQueryConstructorToUnresolved } from '../utils/query-constructor-mapper.util';
+import { constructSearchParamKey } from '../utils/search-parameter.utils';
 
 type PeopleSearchStrategyResult =
   | ClassicPeopleSearchStrategyResult
@@ -87,7 +92,20 @@ export class CandidateSearchPipelineController {
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly cleanupService: CleanupService,
     private readonly mcpAssistantService: McpAssistantService,
+    private readonly orgChartLinkedInBuildService: OrgChartLinkedInBuildService,
+    private readonly orgChartTheOrgEnrichmentService: OrgChartTheOrgEnrichmentService,
   ) {}
+
+  private normalizeRequestHeaders(req: Request): Record<string, string> {
+    return Object.fromEntries(
+      Object.entries(req.headers).flatMap(([key, value]) => {
+        if (Array.isArray(value)) {
+          return [[key, value.join(', ')]];
+        }
+        return typeof value === 'string' ? [[key, value]] : [];
+      }),
+    );
+  }
 
   /**
    * Check if request is aborted
@@ -245,6 +263,7 @@ export class CandidateSearchPipelineController {
       searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
       model?: string;
       assistantThreadId?: string;
+      queryGenerator?: 'python' | 'multi_agent';
     },
     @Req() req: Request,
   ): Promise<SearchParametersResult> {
@@ -273,6 +292,11 @@ export class CandidateSearchPipelineController {
       const cleanedQuery = body.cleanedQuery ?? body.prompt;
       this.logger.log(`Generating search parameters for raw Query: "${rawQuery}..."`);
       this.logger.log(`Generating search parameters for cleaned Query: "${cleanedQuery}..."`);
+      const orgChartGenerateOptions =
+        body.queryGenerator !== undefined
+          ? { queryGenerator: body.queryGenerator }
+          : undefined;
+
       const unresolvedSearchParams: GeneratedSearchParameters =
         await this.candidateSearchHandlerService.generateUnresolvedSearchParams(
           rawQuery,
@@ -286,6 +310,7 @@ export class CandidateSearchPipelineController {
           undefined, // sendEvent
           false, // includeJd
           undefined, // onTokenUsage
+          orgChartGenerateOptions,
         );
 
       const searchParamKey = `${body?.searchType?.replace(/_([a-z])/g, (_, l) =>
@@ -313,6 +338,169 @@ export class CandidateSearchPipelineController {
     }
   }
 
+  /**
+   * Unified entry: raw requirement search (multi-agent unresolved + optional execute) or org-chart (LinkedIn vs TheOrg).
+   */
+  @Post('run-with-query')
+  async runWithQuery(
+    @Body()
+    body: {
+      pipeline: 'requirement' | 'org_chart';
+      prompt: string;
+      rawQuery?: string;
+      cleanedQuery?: string;
+      searchType?: 'classic' | 'sales_navigator' | 'recruiter';
+      orgChartDataSource?: 'linkedin_search' | 'theorg_enrich';
+      companyName?: string;
+      companyId?: string;
+      jobTitles?: string[];
+      mode?:
+        | 'current_node'
+        | 'leadership'
+        | 'entire_company'
+        | 'function_grade'
+        | 'business_division_map'
+        | 'selected_nodes';
+      requestId?: string;
+      country?: string;
+      functionRoot?: string;
+      linkedinCompanyUrl?: string;
+      linkedinUnipileAccountId?: string;
+      candidateSource?: OrgChartLinkedinCandidateSource;
+      businessDivisionRawQuery?: string;
+      validateAndScoreLinkedInResults?: boolean;
+      queryGenerator?: 'python' | 'multi_agent';
+      theOrgSlug?: string;
+      linkedinCompanySlug?: string;
+      executeRequirementSearch?: boolean;
+    },
+    @Req() req: Request,
+  ): Promise<Record<string, unknown>> {
+    const apiToken = req.headers.authorization?.replace('Bearer ', '');
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+    const searchType = body.searchType ?? 'classic';
+
+    if (body.pipeline === 'org_chart') {
+      const source = body.orgChartDataSource ?? 'linkedin_search';
+      if (source === 'theorg_enrich') {
+        const companyId = body.companyId?.trim();
+        if (!companyId) {
+          throw new HttpException(
+            'companyId is required for org_chart with orgChartDataSource theorg_enrich',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        const orgChart =
+          await this.orgChartTheOrgEnrichmentService.getEnrichedOrgChart(
+            companyId,
+            {
+              companyName: body.companyName,
+              theOrgSlug: body.theOrgSlug,
+              linkedinCompanySlug: body.linkedinCompanySlug ?? companyId,
+              country: body.country,
+              functionRoot: body.functionRoot,
+            },
+          );
+        return {
+          success: true,
+          pipeline: 'org_chart',
+          orgChartDataSource: 'theorg_enrich',
+          orgChart,
+        };
+      }
+
+      const rawQuery = body.rawQuery ?? body.prompt;
+      const cleanedQuery = body.cleanedQuery ?? body.prompt;
+      return (await this.orgChartLinkedInBuildService.searchOrgchartFromLinkedIn(
+        {
+          rawQuery,
+          cleanedQuery,
+          companyName: body.companyName,
+          companyId: body.companyId,
+          jobTitles: body.jobTitles,
+          mode: body.mode ?? 'entire_company',
+          searchType,
+          requestId: body.requestId,
+          country: body.country,
+          functionRoot: body.functionRoot,
+          linkedinCompanyUrl: body.linkedinCompanyUrl,
+          linkedinUnipileAccountId: body.linkedinUnipileAccountId,
+          ...(body.candidateSource !== undefined
+            ? { candidateSource: body.candidateSource }
+            : {}),
+          businessDivisionRawQuery: body.businessDivisionRawQuery,
+          validateAndScoreLinkedInResults: body.validateAndScoreLinkedInResults,
+          queryGenerator: body.queryGenerator,
+        },
+        this.normalizeRequestHeaders(req),
+      )) as Record<string, unknown>;
+    }
+
+    const rawQuery = body.rawQuery ?? body.prompt;
+    const cleanedQuery = body.cleanedQuery ?? body.prompt;
+    const unresolvedSearchParams =
+      await this.candidateSearchHandlerService.generateUnresolvedSearchParams(
+        rawQuery,
+        cleanedQuery,
+        searchType,
+        'people',
+        apiToken,
+        body.prompt,
+        undefined,
+        undefined,
+        undefined,
+        false,
+        undefined,
+        body.queryGenerator !== undefined
+          ? { queryGenerator: body.queryGenerator }
+          : undefined,
+      );
+
+    const searchParamKey = constructSearchParamKey(searchType, 'people');
+    const strategiesKey = `${searchParamKey}Strategies`;
+    const strategies =
+      (unresolvedSearchParams[strategiesKey] as PeopleSearchStrategyResult[] | undefined) ??
+      [];
+
+    if (body.executeRequirementSearch !== true || strategies.length === 0) {
+      return {
+        pipeline: 'requirement',
+        searchParameters:
+          unresolvedSearchParams[searchParamKey] ?? unresolvedSearchParams,
+        searchStrategies: strategies,
+        executed: false,
+      };
+    }
+
+    const first = strategies[0];
+    const parsedJobDescription = createMinimalParsedJobDescription({
+      jobTitle: body.prompt.slice(0, 200),
+      company: '',
+    });
+    const searchPreview =
+      await this.searchExecutionService.executeMultiPageSearchWithoutValidation(
+        parsedJobDescription,
+        first,
+        searchType,
+        'people',
+        searchParamKey,
+        apiToken,
+        undefined,
+        undefined,
+        undefined,
+      );
+
+    return {
+      pipeline: 'requirement',
+      searchParameters:
+        unresolvedSearchParams[searchParamKey] ?? unresolvedSearchParams,
+      searchStrategies: strategies,
+      executed: true,
+      searchPreview,
+    };
+  }
 
   /**
    * Test endpoint for executing search

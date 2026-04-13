@@ -1,35 +1,41 @@
-import { mergeBusinessDivisionFilters } from './business-division-merge.util';
+import { mergeFilters } from './org-chart-filters-merge.util';
 
-describe('mergeBusinessDivisionFilters', () => {
+describe('mergeFilters', () => {
   it('prefers parsed country and function over UI defaults', () => {
     // eslint-disable-next-line no-console
-    console.log('mergeBusinessDivisionFilters: test prefers parsed over defaults');
-    const merged = mergeBusinessDivisionFilters(
+    console.log('mergeFilters: test prefers parsed over defaults');
+    const merged = mergeFilters(
       {
-        linkedin_keywords: 'textile',
+        business_division_keywords: 'textile',
         country: 'India',
+        business_division: null,
+        role_description: null,
+        std_grade_levels: null,
         function_root: 'engineering',
-        rationale: undefined,
+        rationale: null,
       },
       'global',
       'sales',
     );
-    expect(merged.linkedinKeywords).toBe('textile');
+    expect(merged.businessDivisionKeywords).toBe('textile');
     expect(merged.effectiveCountryRaw).toBe('India');
     expect(merged.effectiveFunctionRoot).toBe('engineering');
     // eslint-disable-next-line no-console
-    console.log('mergeBusinessDivisionFilters: merged', merged);
+    console.log('mergeFilters: merged', merged);
   });
 
   it('falls back to UI defaults when parsed fields are null', () => {
     // eslint-disable-next-line no-console
-    console.log('mergeBusinessDivisionFilters: test falls back to UI defaults');
-    const merged = mergeBusinessDivisionFilters(
+    console.log('mergeFilters: test falls back to UI defaults');
+    const merged = mergeFilters(
       {
-        linkedin_keywords: 'PU OR polyurethane',
+        business_division_keywords: 'PU OR polyurethane',
         country: null,
+        business_division: null,
+        role_description: null,
+        std_grade_levels: null,
         function_root: null,
-        rationale: undefined,
+        rationale: null,
       },
       'Germany',
       'Full Company',
@@ -37,6 +43,6 @@ describe('mergeBusinessDivisionFilters', () => {
     expect(merged.effectiveCountryRaw).toBe('Germany');
     expect(merged.effectiveFunctionRoot).toBe('');
     // eslint-disable-next-line no-console
-    console.log('mergeBusinessDivisionFilters: merged', merged);
+    console.log('mergeFilters: merged', merged);
   });
 });

@@ -6,6 +6,31 @@ import { EnvironmentService } from 'src/engine/core-modules/environment/environm
 
 type OrgChartDocument = Record<string, unknown>;
 
+export type OrgChartEsGetByCompanyIdOutcome = {
+  document: OrgChartDocument | null;
+  /** True when the ES client failed with a transport-layer error (e.g. connect timeout), not when no document matched. */
+  esTransportError?: boolean;
+};
+
+function isElasticsearchTransportLayerError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const err = error as { name?: string; message?: string };
+  const name = err.name ?? '';
+  const msg = (err.message ?? '').toLowerCase();
+  if (name === 'ConnectionError' || name === 'TimeoutError') {
+    return true;
+  }
+  if (msg.includes('timeout')) {
+    return true;
+  }
+  if (msg.includes('econnreset') || msg.includes('econnrefused')) {
+    return true;
+  }
+  return false;
+}
+
 @Injectable()
 export class OrgChartEsService {
   private readonly logger = new Logger(OrgChartEsService.name);
@@ -47,16 +72,16 @@ export class OrgChartEsService {
       country?: string;
       functionRoot?: string;
     },
-  ): Promise<OrgChartDocument | null> {
+  ): Promise<OrgChartEsGetByCompanyIdOutcome> {
     if (!this.client) {
-      return null;
+      return { document: null };
     }
 
     const normalizedCompanyId = this.normalizeCompanyId(companyId);
 
     if (!normalizedCompanyId) {
       this.logger.warn('Empty companyId provided to getOrgChartByCompanyId');
-      return null;
+      return { document: null };
     }
 
     const {
@@ -152,7 +177,7 @@ export class OrgChartEsService {
         this.logger.warn(
           `No org chart document found in ES for companyId=${companyId}`,
         );
-        return null;
+        return { document: null };
       }
 
       this.logger.log(
@@ -161,13 +186,14 @@ export class OrgChartEsService {
         )}`,
       );
 
-      return firstHit._source;
+      return { document: firstHit._source };
     } catch (error) {
       this.logger.error(
         `Elasticsearch org chart query failed for companyId=${companyId}`,
         error as Error,
       );
-      return null;
+      const esTransportError = isElasticsearchTransportLayerError(error);
+      return { document: null, ...(esTransportError ? { esTransportError: true } : {}) };
     }
   }
 

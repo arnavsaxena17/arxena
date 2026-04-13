@@ -6,14 +6,21 @@
   "private": true,
   "license": "AGPL-3.0",
   "scripts": {
+    "test:integration:rest": "yarn playwright test tests/integration --project=integration-api",
+    "test:integration:rest:matrix": "E2E_INTEGRATION_MATRIX=1 yarn playwright test tests/integration --project=integration-api",
+    "test:integration:pipeline": "E2E_INTEGRATION_PIPELINE_MATRIX=1 yarn playwright test tests/integration/pipeline.rest.integration.e2e.spec.ts --project=integration-api",
     "build:arx-crx-matrix": "cd ../../../arx-crx && npm run build:dev:internal && npm run build:prod:internal && npm run build:dev:store && npm run build:prod:store",
     "test:arx-crx-extension:with-builds": "yarn build:arx-crx-matrix && yarn playwright test tests/arx-crx-extension.spec.ts --project=chrome --no-deps",
     "test:batliboi-orgchart:local": "ARXENA_E2E_ENV=local yarn playwright test tests/batliboi.orgchart.session.spec.ts --project=chrome --no-deps",
     "test:batliboi-orgchart:prod": "ARXENA_E2E_ENV=prod yarn playwright test tests/batliboi.orgchart.session.spec.ts --project=chrome --no-deps"
   },
+  "dependencies": {
+    "twenty-shared": "workspace:*"
+  },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
     "chalk": "^5.6.2",
+    "ioredis": "^5.4.1",
     "playwright-extra": "^4.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2"
   }

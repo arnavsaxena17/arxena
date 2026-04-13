@@ -125,6 +125,14 @@ const StyledSearchNavGroup = styled.div`
   justify-content: flex-start;
 `;
 
+const StyledSearchViewActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(0.5)};
+  margin-left: ${({ theme }) => theme.spacing(2)};
+  white-space: nowrap;
+`;
+
 export type OrgChartFiltersProps = {
   availableCountries: string[];
   countryPercentLabels: Record<string, string>;
@@ -259,6 +267,20 @@ export const OrgChartSearchControls = ({
         >
           Clear
         </StyledSearchButton>
+        <StyledSearchViewActions>
+          <StyledSearchButton
+            type="button"
+            onClick={() => diagramHandleRef.current?.centerContent()}
+          >
+            Center
+          </StyledSearchButton>
+          <StyledSearchButton
+            type="button"
+            onClick={() => diagramHandleRef.current?.zoomToFit()}
+          >
+            Zoom to fit
+          </StyledSearchButton>
+        </StyledSearchViewActions>
         <StyledSearchMeta>
           {typeof searchResultCount === 'number' && searchResultCount > 0
             ? `${searchResultCount} result${searchResultCount === 1 ? '' : 's'}`

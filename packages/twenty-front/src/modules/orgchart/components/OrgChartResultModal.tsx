@@ -1,11 +1,22 @@
+import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { IconBrandLinkedin, IconMail, IconPhone } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
+import {
+  Button,
+  Card,
+  IconBrandLinkedin,
+  IconButton,
+  IconMail,
+  IconPhone,
+  IconX,
+  Loader,
+} from 'twenty-ui';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { Modal } from '@/ui/layout/modal/components/Modal';
 import {
   getProxiedImageUrl,
   isValidLinkedInProfileUrl,
@@ -16,162 +27,175 @@ import { ContextResultItem } from '../types';
 const DEFAULT_AVATAR =
   'https://st2.depositphotos.com/4111759/12123/v/950/depositphotos_121232442-stock-illustration-male-default-placeholder-avatar-profile.jpg';
 
-const INSUFFICIENT_CONTACT_CREDITS_SNACKBAR =
-  'Insufficient contact credits';
+const INSUFFICIENT_CONTACT_CREDITS_SNACKBAR = 'Insufficient contact credits';
 
-const StyledContextModalBackdrop = styled.div`
-  position: absolute;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 40;
+const StyledOrgChartResultModal = styled(Modal)`
+  max-height: 90dvh;
+  width: min(720px, 100vw - ${({ theme }) => theme.spacing(8)});
 `;
 
-const StyledContextModal = styled.div`
-  width: 720px;
-  max-width: 100%;
-  max-height: 80vh;
-  background: ${({ theme }) => theme.background.primary};
-  border-radius: ${({ theme }) => theme.border.radius.xl};
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.35);
+const StyledHeaderContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+`;
+
+const StyledTitle = styled.div`
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.lg};
+  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+`;
+
+const StyledModalBodyScroll = styled.div`
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-`;
-
-const StyledContextModalHeader = styled.div`
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: ${({ theme }) => theme.spacing(2)};
+  max-height: min(560px, calc(90dvh - 200px));
+  overflow-y: auto;
+  width: 100%;
 `;
 
-const StyledContextModalTitle = styled.h3`
-  margin: 0;
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: 600;
-  color: ${({ theme }) => theme.font.color.primary};
-`;
-
-const StyledContextModalBody = styled.div`
-  padding: ${({ theme }) => theme.spacing(2.5)} ${({ theme }) => theme.spacing(3)};
-  overflow: auto;
-`;
-
-const StyledContextModalFooter = styled.div`
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
-  border-top: 1px solid ${({ theme }) => theme.border.color.light};
+const StyledProfileList = styled.div`
   display: flex;
-  justify-content: flex-end;
-  gap: ${({ theme }) => theme.spacing(1.5)};
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(2)};
+  width: 100%;
 `;
 
-const StyledContextPrimaryButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: none;
-  background: ${({ theme }) => theme.color.blue};
-  color: ${({ theme }) => theme.font.color.inverted};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  cursor: pointer;
-
-  &:hover {
-    background: ${({ theme }) => theme.color.blue80};
-  }
-`;
-
-const StyledContextSecondaryButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: transparent;
+const StyledProfileCard = styled(Card)`
+  align-items: flex-start;
+  background-color: ${({ theme }) => theme.background.primary};
+  box-sizing: border-box;
   color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  cursor: pointer;
-
-  &:hover {
-    background: ${({ theme }) => theme.background.transparent.light};
-  }
-`;
-
-const StyledContextResultItem = styled.div`
-  padding: ${({ theme }) => theme.spacing(1.5)} 0;
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  gap: ${({ theme }) => theme.spacing(3)};
+  padding: ${({ theme }) => theme.spacing(3)};
+  width: 100%;
+`;
+
+const StyledBooleanCard = styled(Card)`
+  background-color: ${({ theme }) => theme.background.secondary};
+  box-sizing: border-box;
+  color: ${({ theme }) => theme.font.color.primary};
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(1.5)};
+  padding: ${({ theme }) => theme.spacing(3)};
+  width: 100%;
+`;
+
+const StyledBooleanLabel = styled.div`
+  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+`;
+
+const StyledBooleanValue = styled.div`
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  line-height: ${({ theme }) => theme.text.lineHeight.md};
+  word-break: break-word;
+`;
+
+const StyledOrgChartModalFooter = styled(Modal.Footer)`
+  flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing(2)};
+  height: auto;
+  justify-content: flex-end;
+  min-height: 60px;
 `;
 
 const StyledAvatarWrapper = styled.div<{ $size: number }>`
-  width: ${({ $size }) => $size}px;
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border-radius: 50%;
+  flex-shrink: 0;
   height: ${({ $size }) => $size}px;
   min-width: ${({ $size }) => $size}px;
-  border-radius: 50%;
   overflow: hidden;
-  flex-shrink: 0;
+  width: ${({ $size }) => $size}px;
 `;
 
 const StyledAvatarImage = styled.img`
-  width: 100%;
   height: 100%;
   object-fit: cover;
+  width: 100%;
 `;
 
-const StyledContextResultContent = styled.div`
+const StyledProfileTextColumn = styled.div`
   display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(0.25)};
+  gap: ${({ theme }) => theme.spacing(1)};
   min-width: 0;
 `;
 
-const StyledContextResultName = styled.div`
-  font-weight: 500;
+const StyledProfileName = styled.div`
   color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.md};
+  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  line-height: ${({ theme }) => theme.text.lineHeight.md};
 `;
 
-const StyledContextResultMeta = styled.div`
+const StyledProfileSubline = styled.div`
+  color: ${({ theme }) => theme.font.color.secondary};
   font-size: ${({ theme }) => theme.font.size.sm};
+  line-height: ${({ theme }) => theme.text.lineHeight.md};
+`;
+
+const StyledProfileMeta = styled.div`
   color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  line-height: ${({ theme }) => theme.text.lineHeight.md};
 `;
 
-const StyledContextResultLink = styled.a`
-  display: inline-flex;
+const StyledProfileActions = styled.div`
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(0.5)};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing(2)};
+  margin-top: ${({ theme }) => theme.spacing(0.5)};
+`;
+
+const StyledProfileExternalLink = styled.a`
+  align-items: center;
   color: ${({ theme }) => theme.color.blue};
+  display: inline-flex;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  gap: ${({ theme }) => theme.spacing(1)};
   text-decoration: none;
 
   &:hover {
+    color: ${({ theme }) => theme.color.blue80};
     text-decoration: underline;
   }
 `;
 
 const StyledContactButton = styled.button`
-  display: inline-flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(0.5)};
-  margin-top: ${({ theme }) => theme.spacing(0.5)};
-  padding: 0;
-  border: none;
   background: none;
+  border: none;
   color: ${({ theme }) => theme.color.blue};
-  font-size: ${({ theme }) => theme.font.size.sm};
   cursor: pointer;
+  display: inline-flex;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(0.5)} 0;
   text-align: left;
 
   &:hover {
+    color: ${({ theme }) => theme.color.blue80};
     text-decoration: underline;
   }
 
   &:disabled {
-    opacity: 0.7;
     cursor: not-allowed;
+    opacity: 0.7;
   }
 `;
 
@@ -198,36 +222,27 @@ const StyledStopRow = styled.div`
   margin-top: ${({ theme }) => theme.spacing(2)};
 `;
 
-const StyledSpinner = styled.div`
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 2px solid ${({ theme }) => theme.border.color.light};
-  border-top-color: ${({ theme }) => theme.color.blue};
-  animation: orgchart-spin 0.8s linear infinite;
-
-  @keyframes orgchart-spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-`;
-
 const StyledLoadingDetails = styled.div`
-  font-size: ${({ theme }) => theme.font.size.sm};
   color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${({ theme }) => theme.font.size.sm};
 `;
 
 const StyledErrorMessage = styled.div`
-  display: flex;
   align-items: center;
+  color: ${({ theme }) => theme.color.red};
+  display: flex;
+  font-size: ${({ theme }) => theme.font.size.md};
   justify-content: center;
   min-height: 120px;
-  color: ${({ theme }) => theme.color.red};
-  font-size: ${({ theme }) => theme.font.size.md};
+`;
+
+const StyledEmptyState = styled.div`
+  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  line-height: ${({ theme }) => theme.text.lineHeight.md};
+  padding: ${({ theme }) => theme.spacing(6)} ${({ theme }) => theme.spacing(2)};
+  text-align: center;
+  width: 100%;
 `;
 
 type ContactInfo = {
@@ -256,7 +271,7 @@ const getAvatarUrl = (item: ContextResultItem): string | undefined => {
   return typeof img === 'string' && img.trim().length > 0 ? img : undefined;
 };
 
-const Avatar = ({ src, size = 36 }: { src: string; size?: number }) => {
+const Avatar = ({ src, size = 48 }: { src: string; size?: number }) => {
   const [effectiveSrc, setEffectiveSrc] = useState(src);
 
   useEffect(() => {
@@ -280,15 +295,18 @@ const ResultItem = ({
   isFetchingContacts,
   onFetchContacts,
 }: ResultItemProps) => {
+  const theme = useTheme();
+  const iconSm = theme.icon.size.sm;
   const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
   const rawAvatarUrl = getAvatarUrl(item) ?? DEFAULT_AVATAR;
   const avatarUrl = getProxiedImageUrl(rawAvatarUrl, baseUrl) || rawAvatarUrl;
   const displayHeadline = item.headline
     ? toTitleCase(item.headline, { skipIfMasked: true })
     : '';
-  const displayCompany = item.company
-    ? toTitleCase(item.company)
-    : '';
+  const displayCompany = item.company ? toTitleCase(item.company) : '';
+  const roleCompanyLine = [displayHeadline, displayCompany]
+    .filter((part) => part.length > 0)
+    .join(' · ');
 
   const hasLinkedInProfile = isValidLinkedInProfileUrl(item.linkedinUrl);
   const canAttemptContactFetch =
@@ -296,58 +314,69 @@ const ResultItem = ({
     Boolean(item.email?.trim()) ||
     Boolean(item.phone?.trim());
 
+  const showFetchContacts =
+    Boolean(onFetchContacts) &&
+    (!contactInfo || contactInfo.fetched !== true) &&
+    canAttemptContactFetch;
+
   return (
-    <StyledContextResultItem data-testid={`orgchart-result-item-${item.id}`}>
-      <Avatar src={avatarUrl} size={36} />
-      <StyledContextResultContent>
-        <StyledContextResultName>{item.fullName}</StyledContextResultName>
-        {displayHeadline && (
-          <StyledContextResultMeta>{displayHeadline}</StyledContextResultMeta>
-        )}
-        {displayCompany && (
-          <StyledContextResultMeta>{displayCompany}</StyledContextResultMeta>
-        )}
-        {hasLinkedInProfile && item.linkedinUrl && (
-          <StyledContextResultLink
-            href={item.linkedinUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            <IconBrandLinkedin size={14} stroke={1.6} />
-            View on LinkedIn
-          </StyledContextResultLink>
+    <StyledProfileCard
+      fullWidth
+      rounded
+      data-testid={`orgchart-result-item-${item.id}`}
+    >
+      <Avatar src={avatarUrl} size={48} />
+      <StyledProfileTextColumn>
+        <StyledProfileName>{item.fullName}</StyledProfileName>
+        {roleCompanyLine.length > 0 && (
+          <StyledProfileSubline>{roleCompanyLine}</StyledProfileSubline>
         )}
         {contactInfo && (contactInfo.email || contactInfo.phone) && (
-          <StyledContextResultMeta data-testid={`orgchart-contact-details-${item.id}`}>
+          <StyledProfileMeta
+            data-testid={`orgchart-contact-details-${item.id}`}
+          >
             {contactInfo.email && <span>Email: {contactInfo.email}</span>}
             {contactInfo.email && contactInfo.phone && ' · '}
             {contactInfo.phone && <span>Phone: {contactInfo.phone}</span>}
-          </StyledContextResultMeta>
+          </StyledProfileMeta>
         )}
         {contactInfo &&
-          contactInfo.fetched &&
+          contactInfo.fetched === true &&
           !contactInfo.email &&
           !contactInfo.phone && (
-            <StyledContextResultMeta>
+            <StyledProfileMeta>
               No contacts have been fetched for this person yet.
-            </StyledContextResultMeta>
+            </StyledProfileMeta>
           )}
-        {onFetchContacts &&
-          (!contactInfo || !contactInfo.fetched) &&
-          canAttemptContactFetch && (
-            <StyledContactButton
-              data-testid={`orgchart-fetch-contacts-${item.id}`}
-              type="button"
-              onClick={() => onFetchContacts(item)}
-              disabled={isFetchingContacts}
-            >
-              <IconPhone size={14} stroke={1.6} />
-              <IconMail size={14} stroke={1.6} />
-              {isFetchingContacts ? 'Fetching contacts…' : 'Fetch contacts'}
-            </StyledContactButton>
-          )}
-      </StyledContextResultContent>
-    </StyledContextResultItem>
+        {(Boolean(hasLinkedInProfile && item.linkedinUrl) ||
+          showFetchContacts) && (
+          <StyledProfileActions>
+            {hasLinkedInProfile && item.linkedinUrl && (
+              <StyledProfileExternalLink
+                href={item.linkedinUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <IconBrandLinkedin size={iconSm} stroke={1.5} />
+                View on LinkedIn
+              </StyledProfileExternalLink>
+            )}
+            {showFetchContacts && onFetchContacts && (
+              <StyledContactButton
+                data-testid={`orgchart-fetch-contacts-${item.id}`}
+                type="button"
+                onClick={() => onFetchContacts(item)}
+                disabled={isFetchingContacts}
+              >
+                <IconPhone size={iconSm} stroke={1.5} />
+                <IconMail size={iconSm} stroke={1.5} />
+                {isFetchingContacts ? 'Fetching contacts…' : 'Fetch contacts'}
+              </StyledContactButton>
+            )}
+          </StyledProfileActions>
+        )}
+      </StyledProfileTextColumn>
+    </StyledProfileCard>
   );
 };
 
@@ -553,9 +582,11 @@ const useClickedContactLinkImage = () => {
 
     try {
       // Enforce saved-candidate rule when possible
-      let savedStatus:
-        | { saved: boolean; candidateIds?: string[]; jobIds?: string[] }
-        | null = null;
+      let savedStatus: {
+        saved: boolean;
+        candidateIds?: string[];
+        jobIds?: string[];
+      } | null = null;
 
       if (item.linkedinUrl) {
         savedStatus = await checkCandidateSavedStatus(item);
@@ -717,27 +748,35 @@ export const OrgChartResultModal = ({
   const elapsedLabel = `${minutes}:${seconds}`;
 
   return (
-    <StyledContextModalBackdrop onClick={onClose}>
-      <StyledContextModal
-        data-testid="orgchart-result-modal"
-        onClick={(event) => {
-          event.stopPropagation();
-        }}
-      >
-        <StyledContextModalHeader>
-          <StyledContextModalTitle>{title}</StyledContextModalTitle>
-        </StyledContextModalHeader>
-        <StyledContextModalBody>
+    <StyledOrgChartResultModal
+      isClosable
+      onClose={onClose}
+      size="large"
+      padding="none"
+      className="orgchart-result-modal"
+    >
+      <Modal.Header>
+        <StyledHeaderContainer data-testid="orgchart-result-modal">
+          <StyledTitle>{title}</StyledTitle>
+          <IconButton Icon={IconX} onClick={onClose} variant="tertiary" />
+        </StyledHeaderContainer>
+      </Modal.Header>
+      <Modal.Content>
+        <StyledModalBodyScroll>
           {error && <StyledErrorMessage>{error}</StyledErrorMessage>}
           {isLoading && !error && (
             <StyledLoadingMessage>
               <StyledLoadingRow>
-                <StyledSpinner />
+                <Loader />
                 <span>Fetching people...</span>
               </StyledLoadingRow>
-              <StyledLoadingDetails>Elapsed: {elapsedLabel}</StyledLoadingDetails>
+              <StyledLoadingDetails>
+                Elapsed: {elapsedLabel}
+              </StyledLoadingDetails>
               {loadingProgressMessage && (
-                <StyledLoadingDetails>{loadingProgressMessage}</StyledLoadingDetails>
+                <StyledLoadingDetails>
+                  {loadingProgressMessage}
+                </StyledLoadingDetails>
               )}
               {(loadingPage || loadingTotalPages || loadingTotalCandidates) && (
                 <StyledLoadingDetails>
@@ -746,72 +785,59 @@ export const OrgChartResultModal = ({
               )}
               {onStop && (
                 <StyledStopRow>
-                  <StyledContextSecondaryButton
-                    type="button"
-                    onClick={onStop}
-                  >
-                    Stop
-                  </StyledContextSecondaryButton>
+                  <Button variant="secondary" title="Stop" onClick={onStop} />
                 </StyledStopRow>
               )}
             </StyledLoadingMessage>
           )}
           {!isLoading && !error && booleanKeywordsString && (
-            <StyledContextResultItem>
-              <StyledContextResultName>Boolean string</StyledContextResultName>
-              <StyledContextResultMeta>
-                {booleanKeywordsString}
-              </StyledContextResultMeta>
-            </StyledContextResultItem>
+            <StyledBooleanCard fullWidth rounded>
+              <StyledBooleanLabel>Boolean string</StyledBooleanLabel>
+              <StyledBooleanValue>{booleanKeywordsString}</StyledBooleanValue>
+            </StyledBooleanCard>
           )}
           {!booleanKeywordsString &&
             results.length > 0 &&
-            (!isLoading || error) &&
-            results.map((item) => (
-              <ResultItem
-                key={item.id}
-                item={item}
-                contactInfo={contactsById[item.id]}
-                isFetchingContacts={!!loadingById[item.id]}
-                onFetchContacts={clickedContactLinkImage}
-              />
-            ))}
+            (!isLoading || error) && (
+              <StyledProfileList>
+                {results.map((item) => (
+                  <ResultItem
+                    key={item.id}
+                    item={item}
+                    contactInfo={contactsById[item.id]}
+                    isFetchingContacts={!!loadingById[item.id]}
+                    onFetchContacts={clickedContactLinkImage}
+                  />
+                ))}
+              </StyledProfileList>
+            )}
           {!isLoading &&
             !error &&
             !booleanKeywordsString &&
             results.length === 0 && (
-              <StyledContextResultMeta>{emptyMessage}</StyledContextResultMeta>
+              <StyledEmptyState>{emptyMessage}</StyledEmptyState>
             )}
-        </StyledContextModalBody>
-        <StyledContextModalFooter>
-          {onDownloadCsv && (results.length > 0 || onGetSimilarPeople) && (
-            <StyledContextSecondaryButton type="button" onClick={onDownloadCsv}>
-              Download to CSV
-            </StyledContextSecondaryButton>
-          )}
-          {onAddToJob && results.length > 0 && (
-            <StyledContextSecondaryButton
-              data-testid="orgchart-results-add-to-job"
-              type="button"
-              onClick={onAddToJob}
-            >
-              Add to job
-            </StyledContextSecondaryButton>
-          )}
-          {/* {onGetSimilarPeople && (
-            <StyledContextSecondaryButton
-              type="button"
-              onClick={onGetSimilarPeople}
-            >
-              Get similar people in similar companies
-            </StyledContextSecondaryButton>
-          )} */}
-          {extraFooterButtons}
-          <StyledContextPrimaryButton type="button" onClick={onClose}>
-            Close
-          </StyledContextPrimaryButton>
-        </StyledContextModalFooter>
-      </StyledContextModal>
-    </StyledContextModalBackdrop>
+        </StyledModalBodyScroll>
+      </Modal.Content>
+      <StyledOrgChartModalFooter>
+        {onDownloadCsv && (results.length > 0 || onGetSimilarPeople) && (
+          <Button
+            variant="secondary"
+            title="Download to CSV"
+            onClick={onDownloadCsv}
+          />
+        )}
+        {onAddToJob && results.length > 0 && (
+          <Button
+            variant="secondary"
+            title="Add to job"
+            onClick={onAddToJob}
+            dataTestId="orgchart-results-add-to-job"
+          />
+        )}
+        {extraFooterButtons}
+        <Button variant="primary" title="Close" onClick={onClose} />
+      </StyledOrgChartModalFooter>
+    </StyledOrgChartResultModal>
   );
 };

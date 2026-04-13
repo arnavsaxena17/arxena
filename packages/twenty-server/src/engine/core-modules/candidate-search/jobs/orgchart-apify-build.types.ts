@@ -4,7 +4,7 @@ export type OrgchartApifyBuildJobData = {
   rawQuery: string;
   cleanedQuery: string;
   searchType: 'classic' | 'sales_navigator' | 'recruiter';
-  mode: 'entire_company' | 'all_people';
+  mode: 'entire_company';
   companyName: string;
   companyId?: string;
   jobTitles?: string[];

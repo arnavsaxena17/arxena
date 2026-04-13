@@ -6,46 +6,20 @@ import { TextInput } from '@/ui/input/components/TextInput';
 import styled from '@emotion/styled';
 import { useCallback, useState } from 'react';
 import { useRecoilValue } from 'recoil';
+import { Button, IconPencil } from 'twenty-ui';
 
 const StyledInputContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  margin-top: 16px;
+  gap: ${({ theme }) => theme.spacing(3)};
+  margin-top: ${({ theme }) => theme.spacing(2)};
 `;
 
 const StyledButtonContainer = styled.div`
   display: flex;
-  gap: 12px;
+  gap: ${({ theme }) => theme.spacing(2)};
   justify-content: flex-end;
-  margin-top: 24px;
-`;
-
-const StyledButton = styled.button<{ variant?: 'primary' | 'secondary' }>`
-  background-color: ${({ variant, theme }) =>
-    variant === 'secondary' ? theme.background.tertiary : theme.color.blue};
-  color: ${({ variant, theme }) =>
-    variant === 'secondary'
-      ? theme.font.color.primary
-      : theme.font.color.inverted};
-  padding: 8px 16px;
-  border-radius: 4px;
-  border: 1px solid
-    ${({ variant, theme }) =>
-      variant === 'secondary' ? theme.border.color.medium : theme.color.blue};
-  cursor: pointer;
-
-  &:hover {
-    background-color: ${({ variant, theme }) =>
-      variant === 'secondary'
-        ? theme.background.quaternary
-        : theme.color.blue60};
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+  margin-top: ${({ theme }) => theme.spacing(3)};
 `;
 
 
@@ -164,21 +138,26 @@ export const ApiKeysForm = () => {
       <StyledButtonContainer>
         {isEditing ? (
           <>
-            <StyledButton
+            <Button
+              title="Cancel"
               variant="secondary"
               onClick={handleCancel}
               disabled={isSubmitting}
-            >
-              Cancel
-            </StyledButton>
-            <StyledButton onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : 'Save Changes'}
-            </StyledButton>
+            />
+            <Button
+              title={isSubmitting ? 'Saving...' : 'Save Changes'}
+              accent="blue"
+              disabled={isSubmitting}
+              onClick={handleSubmit}
+            />
           </>
         ) : (
-          <StyledButton onClick={() => setIsEditing(true)}>
-            Edit API Keys
-          </StyledButton>
+          <Button
+            title="Edit API Keys"
+            Icon={IconPencil}
+            accent="blue"
+            onClick={() => setIsEditing(true)}
+          />
         )}
       </StyledButtonContainer>
     </StyledInputContainer>

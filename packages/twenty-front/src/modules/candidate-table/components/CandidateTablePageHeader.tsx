@@ -130,7 +130,8 @@ export type CandidateTablePageHeaderProps = {
   orgChartCredits?: number;
   emailContactCredits?: number;
   phoneContactCredits?: number;
-  onChatKitToggle?: () => void;
+  /** Opens/toggles the job page Floating AI chat (FloatingAIChat). */
+  onFloatingAIChatToggle?: () => void;
   onMergeJobs?: () => void;
   isMergeMode?: boolean;
   onMergeModeCancel?: () => void;
@@ -161,7 +162,7 @@ export const CandidateTablePageHeader = ({
   orgChartCredits,
   emailContactCredits,
   phoneContactCredits,
-  onChatKitToggle,
+  onFloatingAIChatToggle,
   onMergeJobs,
   isMergeMode,
   onMergeModeCancel,
@@ -220,12 +221,12 @@ export const CandidateTablePageHeader = ({
             />
           </>
         ) : null}
-        {onChatKitToggle !== undefined && (
+        {onFloatingAIChatToggle !== undefined && (
           <Button
             title="AI Chat"
             Icon={IconMessage}
             variant="secondary"
-            onClick={onChatKitToggle}
+            onClick={onFloatingAIChatToggle}
           />
         )}
         {/* {!isExtensionInstalled && (

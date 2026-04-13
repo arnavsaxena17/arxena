@@ -10,13 +10,15 @@ export type OrgchartUnipileBuildJobData = {
     | 'entire_company'
     | 'function_grade'
     | 'business_division_map'
-    | 'all_people'
     | 'selected_nodes';
   companyName: string;
   companyId?: string;
   jobTitles?: string[];
   country?: string;
   functionRoot?: string;
+  stdFunction?: string;
+  stdGrade?: string;
+  selectedNodeStdScopes?: Array<{ stdFunction?: string; stdGrade?: string }>;
   linkedinCompanyUrl?: string;
   linkedinUnipileAccountId?: string;
   businessDivisionRawQuery?: string;

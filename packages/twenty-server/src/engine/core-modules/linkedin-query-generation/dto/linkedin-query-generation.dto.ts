@@ -8,12 +8,10 @@ import {
 } from 'class-validator';
 
 import {
-    FactoredQuery,
-    IterativeGenerationMode,
     MasterLists,
     ParsedRequirement,
     PrimaryQuery,
-    SearchQuerySet,
+    SearchQuerySet
 } from 'src/engine/core-modules/linkedin-query-generation/types/linkedin-query-generation.types';
 
 export class RunAgent1Dto {
@@ -128,41 +126,4 @@ export class GenerateQuerySetBatchDto {
 export class ValidateQuerySetDto {
   @IsObject()
   querySet: SearchQuerySet;
-}
-
-export class GenerateIterativeQuerySetDto {
-  @IsString()
-  rawRequirement: string;
-
-  @IsOptional()
-  @IsString()
-  queryIpLocation?: string;
-
-  @IsOptional()
-  @IsString()
-  mode?: IterativeGenerationMode;
-
-  @IsOptional()
-  @IsString()
-  searchType?: 'classic' | 'sales_navigator' | 'recruiter';
-
-  @IsOptional()
-  @IsNumber()
-  maxIterations?: number;
-
-  @IsOptional()
-  @IsBoolean()
-  returnAlternatives?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  verbose?: boolean;
-
-  @IsOptional()
-  @IsString()
-  model?: string;
-
-  @IsOptional()
-  @IsNumber()
-  temperature?: number;
 }

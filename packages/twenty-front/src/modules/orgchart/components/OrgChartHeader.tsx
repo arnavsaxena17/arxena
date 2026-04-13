@@ -1,8 +1,10 @@
 import styled from '@emotion/styled';
 import { useState } from 'react';
 
+import type { ReactNode } from 'react';
 import type { OrgChartFiltersProps } from 'twenty-orgchart';
 import { OrgChartFilters } from 'twenty-orgchart';
+
 import type { OrgChartBusinessDivisionQueryProps } from './OrgChartBusinessDivisionQuery';
 import { OrgChartBusinessDivisionQuery } from './OrgChartBusinessDivisionQuery';
 import { OrgChartCompanyDrawer } from './OrgChartCompanyDrawer';
@@ -51,6 +53,8 @@ export type OrgChartHeaderProps = OrgChartCompanyInfoProps & {
   hasFilters: boolean;
   filtersProps: OrgChartFiltersProps;
   businessDivisionQueryProps?: OrgChartBusinessDivisionQueryProps;
+  /** Extra controls in the filter toolbar (e.g. LinkedIn query generator preference). */
+  toolbarTrailing?: ReactNode;
 };
 
 export const OrgChartHeader = ({
@@ -58,6 +62,7 @@ export const OrgChartHeader = ({
   hasFilters,
   filtersProps,
   businessDivisionQueryProps,
+  toolbarTrailing,
   ...companyInfoProps
 }: OrgChartHeaderProps) => {
   const [isCompanyDrawerOpen, setIsCompanyDrawerOpen] = useState(false);
@@ -80,6 +85,7 @@ export const OrgChartHeader = ({
             {businessDivisionQueryProps && (
               <OrgChartBusinessDivisionQuery {...businessDivisionQueryProps} />
             )}
+            {toolbarTrailing}
           </StyledOrgChartToolbar>
         )}
       </StyledHeader>

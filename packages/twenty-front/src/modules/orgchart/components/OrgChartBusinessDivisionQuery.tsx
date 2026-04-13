@@ -123,7 +123,7 @@ export const OrgChartBusinessDivisionQuery = ({
             if (value.trim()) onSubmit();
           }}
         >
-          Map division
+          Create Map 
         </StyledSubmit>
       </StyledRow>
     </StyledWrap>

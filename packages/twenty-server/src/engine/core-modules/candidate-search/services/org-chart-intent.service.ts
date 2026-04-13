@@ -2,25 +2,26 @@ import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 
+import { OrgChartParsed, OrgChartParsedSchema } from 'src/engine/core-modules/candidate-search/schemas/org-chart.schema';
 import {
-    BUSINESS_DIVISION_ORG_CHART_SYSTEM_PROMPT,
-    getBusinessDivisionOrgChartUserPrompt,
+  ORG_CHART_INTENT_SYSTEM_PROMPT,
+  OrgChartIntentUserPrompt
 } from '../prompts/business-division-org-chart.prompt';
-import {
-    businessDivisionOrgChartParsedSchema,
-    type BusinessDivisionOrgChartParsed,
-} from '../schemas/business-division-org-chart.schema';
 import { StreamProcessingService } from './stream-processing.service';
 
+/**
+ * Nest LLM for org-chart business-division intent: business_division_keywords,
+ * optional filters, and fields consumed by title-taxonomy `resolved_intent`.
+ */
 @Injectable()
-export class BusinessDivisionOrgChartParserService {
-  private readonly logger = new Logger(BusinessDivisionOrgChartParserService.name);
+export class OrgChartIntentService {
+  private readonly logger = new Logger(OrgChartIntentService.name);
 
   constructor(
     private readonly streamProcessingService: StreamProcessingService,
   ) {}
 
-  async parseBusinessDivisionQuery(
+  async resolveBusinessDivision(
     openaiClient: OpenAI,
     input: {
       companyName: string;
@@ -29,8 +30,8 @@ export class BusinessDivisionOrgChartParserService {
       defaultFunctionRoot: string;
     },
     sendEvent?: (event: string, data: unknown) => boolean | void,
-  ): Promise<BusinessDivisionOrgChartParsed> {
-    const userPrompt = getBusinessDivisionOrgChartUserPrompt(input);
+  ): Promise<OrgChartParsed> {
+    const userPrompt = OrgChartIntentUserPrompt(input);
 
     const result = await this.streamProcessingService.executeStreamingLlmCall(
       () =>
@@ -39,13 +40,13 @@ export class BusinessDivisionOrgChartParserService {
           [
             {
               role: 'system' as const,
-              content: BUSINESS_DIVISION_ORG_CHART_SYSTEM_PROMPT,
+              content: ORG_CHART_INTENT_SYSTEM_PROMPT,
             },
             { role: 'user' as const, content: userPrompt },
           ],
           zodResponseFormat(
-            businessDivisionOrgChartParsedSchema,
-            'businessDivisionOrgChart',
+            OrgChartParsedSchema,
+            'orgChartIntent',
           ),
         ),
       { sendEvent, maxRetries: 2 },
@@ -54,15 +55,13 @@ export class BusinessDivisionOrgChartParserService {
     const content = typeof result === 'string' ? result : result.content;
 
     if (!content) {
-      this.logger.warn('Business division parser returned empty content.');
-      throw new Error('Business division parser returned empty content');
+      this.logger.warn('Org-chart intent LLM returned empty content.');
+      throw new Error('Org-chart intent LLM returned empty content');
     }
 
     const parsed = JSON.parse(content);
-    this.logger.log(
-      `Business division parsed: ${JSON.stringify(parsed, null, 2)}`,
-    );
+    this.logger.log(`Org-chart intent: ${JSON.stringify(parsed, null, 2)}`);
 
-    return businessDivisionOrgChartParsedSchema.parse(parsed);
+    return OrgChartParsedSchema.parse(parsed);
   }
 }

@@ -20,7 +20,8 @@ export type {
     OrgChartContextAction,
     OrgChartDiagramHandle,
     OrgChartDiagramIconUrls,
-    OrgChartDiagramProps
+    OrgChartDiagramProps,
+    OrgChartNodeContextPayload
 } from './OrgChartDiagram.types';
 
 const DEFAULT_AVATAR =
@@ -761,7 +762,21 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
               click: (_, obj) => {
                 const part = (obj.part ?? null) as go.Node | null;
                 const data = part?.data as OrgChartNodeData | undefined;
-                if (data) onNodeContextAction('selected_nodes', data);
+                if (!data || !onNodeContextAction) return;
+                const dg = obj.diagram;
+                const selectedNodes: OrgChartNodeData[] = [];
+                if (dg) {
+                  dg.selection.each((p: go.Part) => {
+                    if (p instanceof go.Node && p.data) {
+                      selectedNodes.push(p.data as OrgChartNodeData);
+                    }
+                  });
+                }
+                const effectiveSelected =
+                  selectedNodes.length > 0 ? selectedNodes : [data];
+                onNodeContextAction('selected_nodes', data, {
+                  selectedNodes: effectiveSelected,
+                });
               },
             },
           ),

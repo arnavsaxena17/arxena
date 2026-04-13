@@ -39,16 +39,20 @@ export const useOrgChartData = (
   const [data, setData] = useState<Record<string, unknown> | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [orgChartEsTransportError, setOrgChartEsTransportError] =
+    useState(false);
 
   const fetchOrgChart = useCallback(async () => {
     if (!companyId) {
       setData(null);
       setError(null);
+      setOrgChartEsTransportError(false);
       return;
     }
 
     setIsLoading(true);
     setError(null);
+    setOrgChartEsTransportError(false);
 
     try {
       const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
@@ -105,17 +109,21 @@ export const useOrgChartData = (
       const json = (await response.json()) as {
         status?: string;
         result?: Record<string, unknown>;
+        orgChartEsTransportError?: boolean;
       };
 
       if (json?.status === 'ok' && json.result) {
         setData(json.result);
+        setOrgChartEsTransportError(json.orgChartEsTransportError === true);
       } else {
         setError('Failed to load org chart');
         setData(null);
+        setOrgChartEsTransportError(false);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch org chart');
       setData(null);
+      setOrgChartEsTransportError(false);
     } finally {
       setIsLoading(false);
     }
@@ -135,12 +143,14 @@ export const useOrgChartData = (
     setData(null);
     setError(null);
     setIsLoading(false);
+    setOrgChartEsTransportError(false);
   }, []);
 
   return {
     data,
     isLoading,
     error,
+    orgChartEsTransportError,
     fetchOrgChart,
     reset,
   };
