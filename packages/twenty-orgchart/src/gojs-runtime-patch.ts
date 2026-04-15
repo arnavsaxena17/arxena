@@ -54,4 +54,4 @@ if (typeof document !== 'undefined') {
   d['Ph'] = blank;
 }
 
-export {};
+export { };
