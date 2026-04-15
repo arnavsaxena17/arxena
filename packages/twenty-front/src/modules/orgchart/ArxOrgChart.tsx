@@ -10,7 +10,10 @@ import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
 import { AppPath } from '@/types/AppPath';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
+import {
+  ConfirmationModal,
+  StyledCenteredButton,
+} from '@/ui/layout/modal/components/ConfirmationModal';
 import { useUnipile } from '@/unipile/contexts/UnipileContext';
 import {
   normalizeCompanyIdForUrl,
@@ -418,6 +421,8 @@ export const ArxOrgChart = ({
     unipileCompanyProfile?.name ??
     fallbackCompanyInfo?.companyName;
   const linkedinUrlToUse = linkedinUrl ?? fallbackCompanyInfo?.linkedinUrl;
+  const [pendingPreviewNodePeopleChoice, setPendingPreviewNodePeopleChoice] =
+    useState<OrgChartNodeData | null>(null);
   const actions = useOrgChartActions({
     companyId,
     companyName: effectiveCompanyName,
@@ -427,6 +432,8 @@ export const ArxOrgChart = ({
     linkedinUnipileAccountId:
       process.env.REACT_APP_ORGCHART_UNIPILE_ACCOUNT_ID?.trim(),
     businessDivisionRawQuery: businessDivisionQuery.trim() || undefined,
+    onPreviewNodePeopleRequest: (node) =>
+      setPendingPreviewNodePeopleChoice(node),
   });
   const { applyOrgChartOverride } = actions;
 
@@ -556,6 +563,55 @@ export const ArxOrgChart = ({
           <Trans>
             The search will use the scope below. Confirm to continue, or cancel
             to adjust filters first.
+          </Trans>
+        </StyledOrgChartConfirmIntro>
+        <StyledOrgChartConfirmRows>
+          <StyledOrgChartConfirmRow>
+            <StyledOrgChartConfirmDt>
+              <Trans>Function</Trans>
+            </StyledOrgChartConfirmDt>
+            <StyledOrgChartConfirmDd>
+              {searchConfirmSummary.functionLabel}
+            </StyledOrgChartConfirmDd>
+          </StyledOrgChartConfirmRow>
+          <StyledOrgChartConfirmRow>
+            <StyledOrgChartConfirmDt>
+              <Trans>Levels</Trans>
+            </StyledOrgChartConfirmDt>
+            <StyledOrgChartConfirmDd>
+              {searchConfirmSummary.levelsLabel}
+            </StyledOrgChartConfirmDd>
+          </StyledOrgChartConfirmRow>
+          <StyledOrgChartConfirmRow>
+            <StyledOrgChartConfirmDt>
+              <Trans>Geography</Trans>
+            </StyledOrgChartConfirmDt>
+            <StyledOrgChartConfirmDd>
+              {searchConfirmSummary.geographyLabel}
+            </StyledOrgChartConfirmDd>
+          </StyledOrgChartConfirmRow>
+          <StyledOrgChartConfirmRow>
+            <StyledOrgChartConfirmDt>
+              <Trans>Business division</Trans>
+            </StyledOrgChartConfirmDt>
+            <StyledOrgChartConfirmDd>
+              {searchConfirmSummary.businessDivisionLabel}
+            </StyledOrgChartConfirmDd>
+          </StyledOrgChartConfirmRow>
+        </StyledOrgChartConfirmRows>
+      </StyledOrgChartConfirmSummary>
+    ),
+    [searchConfirmSummary],
+  );
+
+  const previewNodeChoiceSubtitle = useMemo(
+    () => (
+      <StyledOrgChartConfirmSummary>
+        <StyledOrgChartConfirmIntro>
+          <Trans>
+            Preview positions do not load people until you generate a real org
+            chart. Choose an action using the scope below, or cancel to adjust
+            filters first.
           </Trans>
         </StyledOrgChartConfirmIntro>
         <StyledOrgChartConfirmRows>
@@ -1491,6 +1547,46 @@ export const ArxOrgChart = ({
         }}
         deleteButtonText={t`Confirm`}
         confirmButtonAccent="blue"
+      />
+
+      <ConfirmationModal
+        isOpen={pendingPreviewNodePeopleChoice !== null}
+        setIsOpen={(open) => {
+          if (!open) {
+            setPendingPreviewNodePeopleChoice(null);
+          }
+        }}
+        title={t`Preview org chart`}
+        subtitle={previewNodeChoiceSubtitle}
+        onConfirmClick={() => {
+          void handleGetAllOrgChartSearch();
+        }}
+        deleteButtonText={t`View full org chart`}
+        confirmButtonAccent="blue"
+        AdditionalButtons={
+          <>
+            <StyledCenteredButton
+              variant="secondary"
+              accent="blue"
+              title={t`View all candidates in this function`}
+              fullWidth
+              onClick={() => {
+                setPendingPreviewNodePeopleChoice(null);
+                void handleViewAllCandidates();
+              }}
+            />
+            <StyledCenteredButton
+              variant="secondary"
+              accent="blue"
+              title={t`Leadership org chart`}
+              fullWidth
+              onClick={() => {
+                setPendingPreviewNodePeopleChoice(null);
+                void fetchTheOrgEnrichedOrgChart();
+              }}
+            />
+          </>
+        }
       />
     </StyledContainer>
   );

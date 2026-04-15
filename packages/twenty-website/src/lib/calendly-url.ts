@@ -1,3 +1,5 @@
+import { buildCalendlyUrlWithPrefill } from 'twenty-shared';
+
 const DEFAULT_CALENDLY_URL = 'https://calendly.com/arxena';
 
 /**
@@ -6,5 +8,13 @@ const DEFAULT_CALENDLY_URL = 'https://calendly.com/arxena';
  */
 export function getCalendlyUrl(): string {
   const url = process.env.NEXT_PUBLIC_CALENDLY_URL?.trim();
-  return url && url.length > 0 ? url : DEFAULT_CALENDLY_URL;
+  const base = url && url.length > 0 ? url : DEFAULT_CALENDLY_URL;
+
+  return buildCalendlyUrlWithPrefill(base, {
+    utm: {
+      source: 'arxena_website',
+      medium: 'contact',
+      campaign: 'contact_page',
+    },
+  });
 }

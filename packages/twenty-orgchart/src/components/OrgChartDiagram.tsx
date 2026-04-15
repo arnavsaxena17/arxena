@@ -1,4 +1,5 @@
 import styled from '@emotion/styled';
+import '../gojs-runtime-patch';
 import * as go from 'gojs';
 import { ReactDiagram } from 'gojs-react';
 import {

@@ -15,6 +15,10 @@ STEP_END=$(date +%s)
 echo "Git pull completed in $((STEP_END - STEP_START)) seconds"
 echo ""
 
+# Re-apply GoJS patches (fast — only touches node_modules/gojs, no full install needed)
+echo ">>> Re-applying GoJS patches..."
+node scripts/patch-gojs.cjs
+
 # Build server
 echo ">>> Building server..."
 STEP_START=$(date +%s)

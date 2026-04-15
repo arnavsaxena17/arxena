@@ -10,6 +10,8 @@ export type CompanyAutocompleteItem = {
     website?: string;
     industry?: string;
     location_name?: string;
+    linkedin_url?: string;
+    employee_count?: number;
   };
   count: number;
 };

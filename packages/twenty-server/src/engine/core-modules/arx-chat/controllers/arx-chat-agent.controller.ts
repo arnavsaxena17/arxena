@@ -546,6 +546,60 @@ export class ArxChatEndpoint {
     return { status: 'Success', updated, failed };
   }
 
+  @Post('move-candidates-to-job')
+  @UseGuards(JwtAuthGuard)
+  async moveCandidatesToJob(
+    @Req() request: any,
+  ): Promise<{ status: string; updated: number; failed: number }> {
+    const authHeader = request.headers.authorization;
+    const apiToken =
+      typeof authHeader === 'string'
+        ? authHeader.split(' ')[1]?.replace(/[\r\n]+/g, '') ?? ''
+        : '';
+
+    const candidateIdsRaw = request.body?.candidateIds;
+    const jobIdRaw = request.body?.jobId as string | undefined;
+
+    if (!Array.isArray(candidateIdsRaw) || candidateIdsRaw.length === 0) {
+      throw new BadRequestException('candidateIds must be a non-empty array');
+    }
+
+    if (typeof jobIdRaw !== 'string' || jobIdRaw.trim() === '') {
+      throw new BadRequestException('jobId is required');
+    }
+
+    const targetJobId = jobIdRaw.trim();
+
+    let updated = 0;
+    let failed = 0;
+
+    for (const candidateId of candidateIdsRaw) {
+      if (typeof candidateId !== 'string' || candidateId.trim() === '') {
+        failed += 1;
+        continue;
+      }
+      try {
+        await this.staticGraphQLService.executeGraphQL(
+          graphQltoUpdateOneCandidate,
+          {
+            idToUpdate: candidateId.trim(),
+            input: { jobsId: targetJobId },
+          },
+          apiToken,
+        );
+        updated += 1;
+      } catch (error) {
+        console.error(
+          `moveCandidatesToJob failed for ${candidateId}:`,
+          error,
+        );
+        failed += 1;
+      }
+    }
+
+    return { status: 'Success', updated, failed };
+  }
+
   @Post('send-chat')
   @UseGuards(JwtAuthGuard)
   async sendChat(@Req() request: any): Promise<object> {

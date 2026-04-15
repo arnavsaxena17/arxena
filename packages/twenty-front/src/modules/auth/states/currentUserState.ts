@@ -5,6 +5,8 @@ import { User } from '~/generated/graphql';
 export type CurrentUser = Pick<
   User,
   | 'id'
+  | 'firstName'
+  | 'lastName'
   | 'email'
   | 'supportUserHash'
   | 'analyticsTinybirdJwts'

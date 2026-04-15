@@ -13,16 +13,16 @@ import { Mixpanel } from '~/mixpanel';
 
 import {
   normalizeCompanyIdForUrl,
-  type OrgChartContextAction,
-  type OrgChartNodeContextPayload,
+  OrgChartContextAction,
+  OrgChartNodeContextPayload,
 } from 'twenty-orgchart';
 import {
   isValidLinkedInProfileUrl,
-  type NodeState,
-  type OrgChartNodeData,
-  type OrgchartSearchMode as OrgchartSearchModeValue,
+  NodeState,
+  OrgChartNodeData,
+  OrgchartSearchMode as OrgchartSearchModeValue,
 } from 'twenty-shared';
-import type { ContextResultItem } from '../types';
+import { ContextResultItem } from '../types';
 import {
   buildBooleanKeywordsForNode,
   exportContextResultsToCsv,
@@ -40,6 +40,11 @@ export type UseOrgChartActionsParams = {
   companyName?: string;
   website?: string;
   employeeCount?: number | null;
+  /**
+   * Preview template nodes cannot load per-position people until a full chart exists.
+   * When set, double-click / “Get people in this position” on a preview node invokes this instead of fetching.
+   */
+  onPreviewNodePeopleRequest?: (node: OrgChartNodeData) => void;
   /** Canonical LinkedIn company URL for org-chart search + Python pipeline (e.g. https://www.linkedin.com/company/briskpe/) */
   linkedinCompanyUrl?: string;
   /**
@@ -170,6 +175,7 @@ export const useOrgChartActions = ({
   companyName,
   website,
   employeeCount,
+  onPreviewNodePeopleRequest,
   linkedinCompanyUrl,
   linkedinUnipileAccountId,
   businessDivisionRawQuery: businessDivisionRawQueryFromToolbar,
@@ -185,8 +191,11 @@ export const useOrgChartActions = ({
   const orgChartLinkedInSearchType = useRecoilValue(
     orgChartLinkedInSearchTypeState,
   );
-  const { enqueueSnackBar, updateSnackBarByDedupeKey, closeSnackBarByDedupeKey } =
-    useSnackBar();
+  const {
+    enqueueSnackBar,
+    updateSnackBarByDedupeKey,
+    closeSnackBarByDedupeKey,
+  } = useSnackBar();
   const [isContextModalOpen, setIsContextModalOpen] = useState(false);
   const [contextModalTitle, setContextModalTitle] = useState('');
   const [contextModalMode, setContextModalMode] =
@@ -229,9 +238,10 @@ export const useOrgChartActions = ({
     Record<number, { people: ContextResultItem[]; nodeState: NodeState }>
   >({});
 
-  const [latestOrgChart, setLatestOrgChart] = useState<
-    Record<string, unknown> | null
-  >(null);
+  const [latestOrgChart, setLatestOrgChart] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
 
   const [selectedNodeFunction, setSelectedNodeFunction] = useState<
     string | undefined
@@ -321,7 +331,12 @@ export const useOrgChartActions = ({
         });
       }, ORG_CHART_PROGRESS_UPDATES_TIMEOUT_MS);
     },
-    [clearProgressUpdateTimeout, closeSnackBarByDedupeKey, companyId, enqueueSnackBar],
+    [
+      clearProgressUpdateTimeout,
+      closeSnackBarByDedupeKey,
+      companyId,
+      enqueueSnackBar,
+    ],
   );
 
   useEffect(() => {
@@ -333,7 +348,10 @@ export const useOrgChartActions = ({
   useWebSocketEvent<OrgChartSearchProgressEvent>(
     'orgchart-search-progress',
     (payload) => {
-      if (!payload?.requestId || payload.requestId !== activeOrgChartRequestId) {
+      if (
+        !payload?.requestId ||
+        payload.requestId !== activeOrgChartRequestId
+      ) {
         return;
       }
 
@@ -343,10 +361,9 @@ export const useOrgChartActions = ({
 
       const updateSnackBarIfEntireCompany = (message: string) => {
         if (payload.mode === 'entire_company' && companyId) {
-          updateSnackBarByDedupeKey(
-            `orgchart-entire-company-${companyId}`,
-            { message },
-          );
+          updateSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`, {
+            message,
+          });
         }
       };
 
@@ -385,9 +402,13 @@ export const useOrgChartActions = ({
 
       if (payload.event === 'paginationInfo') {
         const totalPages =
-          typeof eventData.totalPages === 'number' ? eventData.totalPages : null;
+          typeof eventData.totalPages === 'number'
+            ? eventData.totalPages
+            : null;
         const totalCount =
-          typeof eventData.totalCount === 'number' ? eventData.totalCount : null;
+          typeof eventData.totalCount === 'number'
+            ? eventData.totalCount
+            : null;
 
         setContextProgressTotalPages(totalPages);
         setContextProgressTotalCandidates(totalCount);
@@ -404,7 +425,9 @@ export const useOrgChartActions = ({
       if (payload.event === 'pageResults') {
         const page = typeof eventData.page === 'number' ? eventData.page : null;
         const totalPages =
-          typeof eventData.totalPages === 'number' ? eventData.totalPages : null;
+          typeof eventData.totalPages === 'number'
+            ? eventData.totalPages
+            : null;
         const totalCandidates =
           typeof eventData.totalCandidates === 'number'
             ? eventData.totalCandidates
@@ -609,7 +632,10 @@ export const useOrgChartActions = ({
       return;
     }
 
-    if (orgChartLinkedinCandidateSource === 'apify' && mode !== 'entire_company') {
+    if (
+      orgChartLinkedinCandidateSource === 'apify' &&
+      mode !== 'entire_company'
+    ) {
       enqueueSnackBar(APIFY_MODE_UNSUPPORTED_SNACKBAR, {
         variant: SnackBarVariant.Error,
         duration: 10000,
@@ -813,7 +839,9 @@ export const useOrgChartActions = ({
           },
         );
         if (!ensureRes.ok) {
-          throw new Error(`Ensure account failed with status ${ensureRes.status}`);
+          throw new Error(
+            `Ensure account failed with status ${ensureRes.status}`,
+          );
         }
         const ensureJson = (await ensureRes.json()) as
           | { accountId?: string }
@@ -871,7 +899,11 @@ export const useOrgChartActions = ({
       if (!response.ok) {
         // If there is a string message for an error, prefer it; otherwise try serializing the json
         let serverMessage: string;
-        if (json && typeof json === "object" && typeof json.message === "string") {
+        if (
+          json &&
+          typeof json === 'object' &&
+          typeof json.message === 'string'
+        ) {
           serverMessage = json.message;
         } else if (typeof json === 'string') {
           serverMessage = json;
@@ -879,7 +911,7 @@ export const useOrgChartActions = ({
           serverMessage = `Request failed with status ${response.status}`;
         }
         // eslint-disable-next-line no-console
-        console.log("json::", json);
+        console.log('json::', json);
         throw new Error(serverMessage);
       }
 
@@ -892,15 +924,16 @@ export const useOrgChartActions = ({
             : typeof json.candidateSource === 'string' &&
                 json.candidateSource === 'unipile'
               ? 'LinkedIn search queued. Waiting for results...'
-            : 'Org chart search queued. Waiting for results...',
+              : 'Org chart search queued. Waiting for results...',
         );
         armProgressUpdateTimeout(requestId);
         return;
       }
 
       const rawItems = Array.isArray(json.items) ? json.items : [];
-      const normalized = rawItems.map((item: Record<string, unknown>, index: number) =>
-        normalizeCandidateItem(item, index),
+      const normalized = rawItems.map(
+        (item: Record<string, unknown>, index: number) =>
+          normalizeCandidateItem(item, index),
       );
 
       const orgChartErrorFromResponse =
@@ -1033,12 +1066,234 @@ export const useOrgChartActions = ({
     setContextProgressMessage('Stopping search...');
   }, [activeOrgChartRequestId, accessToken]);
 
+  const buildCandidatesFromNode = useCallback(
+    (n: OrgChartNodeData): ContextResultItem[] => {
+      const rows: ContextResultItem[] = [];
+      for (let i = 0; i < 16; i += 1) {
+        const nameKey = `name_${i}` as keyof OrgChartNodeData;
+        const titleKey = `title_${i}` as keyof OrgChartNodeData;
+        const linkedinKey = `linkedin_url_${i}` as keyof OrgChartNodeData;
+        const imageKey = `image_${i}` as keyof OrgChartNodeData;
+        const name = n[nameKey];
+        if (typeof name === 'string' && name.trim().length > 0) {
+          const image = n[imageKey];
+          const rawLi =
+            typeof n[linkedinKey] === 'string' ? n[linkedinKey] : '';
+          rows.push({
+            id: `${i}`,
+            fullName: name.trim(),
+            headline: (typeof n[titleKey] === 'string'
+              ? n[titleKey]
+              : '') as string,
+            company: companyName ?? '',
+            linkedinUrl: isValidLinkedInProfileUrl(rawLi)
+              ? rawLi.trim()
+              : undefined,
+            raw:
+              typeof image === 'string'
+                ? { image, profile_picture_url: image }
+                : {},
+          });
+        }
+      }
+      return rows;
+    },
+    [companyName],
+  );
+
+  const loadNodePeopleDetails = useCallback(
+    async (node: OrgChartNodeData) => {
+      if (node.nodeState === 'preview') {
+        if (typeof onPreviewNodePeopleRequest === 'function') {
+          onPreviewNodePeopleRequest(node);
+        } else {
+          enqueueSnackBar(
+            'This position is part of a preview org chart. Generate the full org chart to load people here.',
+            { variant: SnackBarVariant.Warning, duration: 6000 },
+          );
+        }
+        return;
+      }
+
+      setSelectedNodeForDetails(node);
+      setSelectedNodeFunction(
+        (node as Record<string, unknown>).std_function as string | undefined,
+      );
+      setSelectedNodeGrade(
+        (node as Record<string, unknown>).std_grade as string | undefined,
+      );
+      setNodeDetailError(null);
+
+      const nodeKey = typeof node.key === 'number' ? node.key : undefined;
+      const nodeRecord = node as Record<string, unknown>;
+      const allCandidates = nodeRecord.allCandidates;
+      const totalPeople =
+        typeof node.total_people === 'number'
+          ? node.total_people
+          : typeof node.total_people === 'string'
+            ? parseInt(String(node.total_people), 10)
+            : 0;
+      const hasPartialList =
+        Array.isArray(allCandidates) &&
+        allCandidates.length > 0 &&
+        totalPeople > allCandidates.length;
+      const isActive = node.nodeState === 'active';
+
+      // eslint-disable-next-line no-console
+      console.log('[orgchart/loadNodePeopleDetails]', {
+        headline: node.headline,
+        key: node.key,
+        nodeState: node.nodeState,
+        totalPeople,
+        allCandidatesLength: Array.isArray(allCandidates)
+          ? allCandidates.length
+          : null,
+        hasPartialList,
+      });
+
+      if (
+        Array.isArray(allCandidates) &&
+        allCandidates.length > 0 &&
+        !hasPartialList
+      ) {
+        const results = allCandidates.map((candidate, index) =>
+          normalizeCandidateItem(
+            {
+              ...(candidate as Record<string, unknown>),
+              company:
+                ((candidate as Record<string, unknown>).job_company_name as
+                  | string
+                  | undefined) ??
+                companyName ??
+                '',
+              linkedin_url:
+                ((candidate as Record<string, unknown>).std_linkedin_url as
+                  | string
+                  | undefined) ??
+                ((candidate as Record<string, unknown>).linkedin_url as
+                  | string
+                  | undefined),
+            },
+            index,
+          ),
+        );
+        setNodeDetailResults(results);
+        if (nodeKey !== undefined) {
+          setEnrichedNodes((prev) => ({
+            ...prev,
+            [nodeKey]: { people: results, nodeState: 'active' },
+          }));
+        }
+        setIsNodeDetailLoading(false);
+        return;
+      }
+
+      if (isActive && !hasPartialList) {
+        const cached =
+          nodeKey !== undefined ? enrichedNodes[nodeKey]?.people : undefined;
+        const results =
+          cached && cached.length > 0 ? cached : buildCandidatesFromNode(node);
+        setNodeDetailResults(results);
+        setIsNodeDetailLoading(false);
+        return;
+      }
+
+      setIsNodeDetailLoading(true);
+      setNodeDetailResults([]);
+
+      const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+      if (!baseUrl || !companyId) {
+        setIsNodeDetailLoading(false);
+        return;
+      }
+
+      try {
+        const body = {
+          companyName: companyName ?? undefined,
+          website: website ?? undefined,
+          stdFunction: (node as Record<string, unknown>).std_function as
+            | string
+            | undefined,
+          stdGrade: (node as Record<string, unknown>).std_grade as
+            | string
+            | undefined,
+          country: node.country ?? undefined,
+          limit: hasPartialList ? Math.min(Math.max(totalPeople, 50), 500) : 50,
+        };
+
+        const canonicalCompanyId = normalizeCompanyIdForUrl(companyId);
+        const response = await fetch(
+          `${baseUrl}/org-chart/${encodeURIComponent(canonicalCompanyId)}/node-people`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`);
+        }
+
+        const json = (await response.json()) as {
+          status?: string;
+          items?: Array<Record<string, unknown>>;
+          itemCount?: number;
+        };
+
+        const rawItems = Array.isArray(json.items) ? json.items : [];
+        const normalized = rawItems.map((item, index) =>
+          normalizeCandidateItem(item, index),
+        );
+        setNodeDetailResults(normalized);
+
+        if (nodeKey !== undefined) {
+          setEnrichedNodes((prev) => ({
+            ...prev,
+            [nodeKey]: {
+              people: normalized,
+              nodeState: 'active',
+            },
+          }));
+        }
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error(err);
+        setNodeDetailError(
+          err instanceof Error
+            ? err.message
+            : 'Failed to fetch people for node',
+        );
+      } finally {
+        setIsNodeDetailLoading(false);
+      }
+    },
+    [
+      buildCandidatesFromNode,
+      companyId,
+      companyName,
+      enrichedNodes,
+      onPreviewNodePeopleRequest,
+      enqueueSnackBar,
+      website,
+    ],
+  );
+
+  const handleNodeDoubleClick = (node: OrgChartNodeData) => {
+    void loadNodePeopleDetails(node);
+  };
+
   const handleNodeContextAction = async (
     action: OrgChartContextAction,
     node: OrgChartNodeData,
     payload?: OrgChartNodeContextPayload,
   ) => {
     if (action === 'delete_company_cache') {
+      return;
+    }
+
+    if (action === 'current_node') {
+      await loadNodePeopleDetails(node);
       return;
     }
 
@@ -1166,191 +1421,6 @@ export const useOrgChartActions = ({
     });
   };
 
-  const buildCandidatesFromNode = (n: OrgChartNodeData): ContextResultItem[] => {
-    const rows: ContextResultItem[] = [];
-    for (let i = 0; i < 16; i += 1) {
-      const nameKey = `name_${i}` as keyof OrgChartNodeData;
-      const titleKey = `title_${i}` as keyof OrgChartNodeData;
-      const linkedinKey = `linkedin_url_${i}` as keyof OrgChartNodeData;
-      const imageKey = `image_${i}` as keyof OrgChartNodeData;
-      const name = n[nameKey];
-      if (typeof name === 'string' && name.trim().length > 0) {
-        const image = n[imageKey];
-        const rawLi =
-          typeof n[linkedinKey] === 'string' ? n[linkedinKey] : '';
-        rows.push({
-          id: `${i}`,
-          fullName: name.trim(),
-          headline: (typeof n[titleKey] === 'string' ? n[titleKey] : '') as string,
-          company: companyName ?? '',
-          linkedinUrl: isValidLinkedInProfileUrl(rawLi)
-            ? rawLi.trim()
-            : undefined,
-          raw:
-            typeof image === 'string'
-              ? { image, profile_picture_url: image }
-              : {},
-        });
-      }
-    }
-    return rows;
-  };
-
-  const handleNodeDoubleClick = async (node: OrgChartNodeData) => {
-    setSelectedNodeForDetails(node);
-    setSelectedNodeFunction(
-      (node as Record<string, unknown>).std_function as string | undefined,
-    );
-    setSelectedNodeGrade(
-      (node as Record<string, unknown>).std_grade as string | undefined,
-    );
-    setNodeDetailError(null);
-
-    const nodeKey = typeof node.key === 'number' ? node.key : undefined;
-    const nodeRecord = node as Record<string, unknown>;
-    const allCandidates = nodeRecord.allCandidates;
-    const totalPeople =
-      typeof node.total_people === 'number'
-        ? node.total_people
-        : typeof node.total_people === 'string'
-          ? parseInt(String(node.total_people), 10)
-          : 0;
-    const hasPartialList =
-      Array.isArray(allCandidates) &&
-      allCandidates.length > 0 &&
-      totalPeople > allCandidates.length;
-    const isActive = node.nodeState === 'active';
-
-    // eslint-disable-next-line no-console
-    console.log('[orgchart/handleNodeDoubleClick]', {
-      headline: node.headline,
-      key: node.key,
-      nodeState: node.nodeState,
-      totalPeople,
-      allCandidatesLength: Array.isArray(allCandidates)
-        ? allCandidates.length
-        : null,
-      hasPartialList,
-    });
-
-    if (
-      Array.isArray(allCandidates) &&
-      allCandidates.length > 0 &&
-      !hasPartialList
-    ) {
-      const results = allCandidates.map((candidate, index) =>
-        normalizeCandidateItem(
-          {
-            ...(candidate as Record<string, unknown>),
-            company:
-              ((candidate as Record<string, unknown>).job_company_name as
-                | string
-                | undefined) ??
-              companyName ??
-              '',
-            linkedin_url:
-              ((candidate as Record<string, unknown>).std_linkedin_url as
-                | string
-                | undefined) ??
-              ((candidate as Record<string, unknown>).linkedin_url as
-                | string
-                | undefined),
-          },
-          index,
-        ),
-      );
-      setNodeDetailResults(results);
-      if (nodeKey !== undefined) {
-        setEnrichedNodes((prev) => ({
-          ...prev,
-          [nodeKey]: { people: results, nodeState: 'active' },
-        }));
-      }
-      setIsNodeDetailLoading(false);
-      return;
-    }
-
-    if (isActive && !hasPartialList) {
-      const cached =
-        nodeKey !== undefined ? enrichedNodes[nodeKey]?.people : undefined;
-      const results =
-        cached && cached.length > 0
-          ? cached
-          : buildCandidatesFromNode(node);
-      setNodeDetailResults(results);
-      setIsNodeDetailLoading(false);
-      return;
-    }
-
-    setIsNodeDetailLoading(true);
-    setNodeDetailResults([]);
-
-    const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
-    if (!baseUrl || !companyId) {
-      setIsNodeDetailLoading(false);
-      return;
-    }
-
-    try {
-      const body = {
-        companyName: companyName ?? undefined,
-        website: website ?? undefined,
-        stdFunction:
-          (node as Record<string, unknown>).std_function as string | undefined,
-        stdGrade:
-          (node as Record<string, unknown>).std_grade as string | undefined,
-        country: node.country ?? undefined,
-        limit: hasPartialList
-          ? Math.min(Math.max(totalPeople, 50), 500)
-          : 50,
-      };
-
-      const canonicalCompanyId = normalizeCompanyIdForUrl(companyId);
-      const response = await fetch(
-        `${baseUrl}/org-chart/${encodeURIComponent(canonicalCompanyId)}/node-people`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
-      }
-
-      const json = (await response.json()) as {
-        status?: string;
-        items?: Array<Record<string, unknown>>;
-        itemCount?: number;
-      };
-
-      const rawItems = Array.isArray(json.items) ? json.items : [];
-      const normalized = rawItems.map((item, index) =>
-        normalizeCandidateItem(item, index),
-      );
-      setNodeDetailResults(normalized);
-
-      if (nodeKey !== undefined) {
-        setEnrichedNodes((prev) => ({
-          ...prev,
-          [nodeKey]: {
-            people: normalized,
-            nodeState: 'active',
-          },
-        }));
-      }
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error(err);
-      setNodeDetailError(
-        err instanceof Error ? err.message : 'Failed to fetch people for node',
-      );
-    } finally {
-      setIsNodeDetailLoading(false);
-    }
-  };
-
   const closeContextModal = () => {
     setIsContextModalOpen(false);
     setContextResults([]);
@@ -1402,9 +1472,7 @@ export const useOrgChartActions = ({
         const name = node[nameKey];
         if (typeof name === 'string' && name.trim().length > 0) {
           const rawLi =
-            typeof node[linkedinKey] === 'string'
-              ? node[linkedinKey]
-              : '';
+            typeof node[linkedinKey] === 'string' ? node[linkedinKey] : '';
           rows.push({
             id: `${i}`,
             fullName: name.trim(),
@@ -1507,6 +1575,7 @@ export const useOrgChartActions = ({
     handleNodeContextAction,
     handleBackgroundContextAction,
     handleNodeDoubleClick,
+    loadNodePeopleDetails,
     handleDownloadNode,
     handleSimilarPeople,
 

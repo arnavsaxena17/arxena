@@ -7,10 +7,14 @@ import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
 import { AppPath } from '@/types/AppPath';
 import { useMutation } from '@apollo/client';
 import styled from '@emotion/styled';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { ARXENA_CHROME_WEBSTORE_URL } from 'twenty-shared';
+import {
+  ARXENA_CHROME_WEBSTORE_URL,
+  buildCalendlyUrlWithPrefill,
+  formatCalendlyInviteeName,
+} from 'twenty-shared';
 import {
   ActionLink,
   IconBolt,
@@ -205,16 +209,42 @@ const StyledPill = styled(Pill)`
 export const CompetitiveResearchOnboarding = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const currentUser = useRecoilValue(currentUserState);
   const setCurrentUser = useSetRecoilState(currentUserState);
   const onboardingStatus = useOnboardingStatus();
   const [isCalendlyVisible, setIsCalendlyVisible] = useState(false);
   const dealDiligenceCalendlyEmbedUrl = useRecoilValue(
     dealDiligenceCalendlyEmbedUrlState,
   )?.trim();
-  const calendlyEmbedUrl =
+  const calendlyBaseUrl =
     dealDiligenceCalendlyEmbedUrl && dealDiligenceCalendlyEmbedUrl.length > 0
       ? dealDiligenceCalendlyEmbedUrl
       : DEFAULT_CALENDLY_URL;
+
+  const calendlyEmbedUrl = useMemo(
+    () =>
+      buildCalendlyUrlWithPrefill(calendlyBaseUrl, {
+        name: formatCalendlyInviteeName({
+          firstName: currentUser?.firstName,
+          lastName: currentUser?.lastName,
+        }),
+        email: currentUser?.email ?? undefined,
+        customAnswers: {
+          a1: 'Arxena app — Competitive research onboarding',
+        },
+        utm: {
+          source: 'arxena_app',
+          medium: 'onboarding',
+          campaign: 'competitive_research',
+        },
+      }),
+    [
+      calendlyBaseUrl,
+      currentUser?.email,
+      currentUser?.firstName,
+      currentUser?.lastName,
+    ],
+  );
   const [completeIntentPath, { loading: isCompletingIntentPath }] = useMutation(
     COMPLETE_ONBOARDING_INTENT_PATH_STEP,
   );

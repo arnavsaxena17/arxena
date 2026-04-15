@@ -7,9 +7,13 @@ import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
 import { AppPath } from '@/types/AppPath';
 import { useMutation } from '@apollo/client';
 import styled from '@emotion/styled';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
+import {
+  buildCalendlyUrlWithPrefill,
+  formatCalendlyInviteeName,
+} from 'twenty-shared';
 import {
   ActionLink,
   IconPhone,
@@ -229,16 +233,42 @@ const StyledPill = styled(Pill)`
 export const DealDiligenceOnboarding = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const currentUser = useRecoilValue(currentUserState);
   const setCurrentUser = useSetRecoilState(currentUserState);
   const onboardingStatus = useOnboardingStatus();
   const [isCalendlyVisible, setIsCalendlyVisible] = useState(false);
   const dealDiligenceCalendlyEmbedUrl = useRecoilValue(
     dealDiligenceCalendlyEmbedUrlState,
   )?.trim();
-  const calendlyEmbedUrl =
+  const calendlyBaseUrl =
     dealDiligenceCalendlyEmbedUrl && dealDiligenceCalendlyEmbedUrl.length > 0
       ? dealDiligenceCalendlyEmbedUrl
       : DEFAULT_CALENDLY_URL;
+
+  const calendlyEmbedUrl = useMemo(
+    () =>
+      buildCalendlyUrlWithPrefill(calendlyBaseUrl, {
+        name: formatCalendlyInviteeName({
+          firstName: currentUser?.firstName,
+          lastName: currentUser?.lastName,
+        }),
+        email: currentUser?.email ?? undefined,
+        customAnswers: {
+          a1: 'Arxena app — Deal diligence onboarding',
+        },
+        utm: {
+          source: 'arxena_app',
+          medium: 'onboarding',
+          campaign: 'deal_diligence',
+        },
+      }),
+    [
+      calendlyBaseUrl,
+      currentUser?.email,
+      currentUser?.firstName,
+      currentUser?.lastName,
+    ],
+  );
   const [completeIntentPath, { loading }] = useMutation(
     COMPLETE_ONBOARDING_INTENT_PATH_STEP,
   );

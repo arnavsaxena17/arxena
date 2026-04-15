@@ -4,6 +4,7 @@ import { useDeleteCandidatesAndPeopleAction } from '@/action-menu/actions/record
 import { useDownloadAsExcelAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDownloadAsExcelAction';
 import { useDownloadCandidateCVsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDownloadCandidateCVsAction';
 import { useFetchContactDetailsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useFetchContactDetailsAction';
+import { useMoveCandidatesToAnotherJobAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useMoveCandidatesToAnotherJobAction';
 import { useResetMessagesFromWhatsappAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useResetMessagesFromWhatsappAction';
 import { useRestartMessagesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useRestartMessagesAction';
 import { useSendToWhatsappAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useSendToWhatsappAction';
@@ -21,7 +22,7 @@ import {
   ActionMenuEntryType,
 } from '@/action-menu/types/ActionMenuEntry';
 import { msg } from '@lingui/core/macro';
-import { IconDownload, IconMail, IconMessageCircle, IconMessages, IconPhone, IconRefresh, IconShare, IconTrashOff, IconTrashX } from '@tabler/icons-react';
+import { IconBriefcase, IconDownload, IconMail, IconMessageCircle, IconMessages, IconPhone, IconRefresh, IconShare, IconTrashOff, IconTrashX } from '@tabler/icons-react';
 import {
   IconList
 } from 'twenty-ui';
@@ -200,6 +201,23 @@ export const TABLE_CANDIDATE_ACTIONS_CONFIG: Record<
       ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
     ],
     useAction: useUpdateMessagingChannelForCandidatesAction,
+  },
+
+  moveCandidatesToAnotherJob: {
+    type: ActionMenuEntryType.Standard,
+    scope: ActionMenuEntryScope.RecordSelection,
+    key: MultipleRecordsActionKeys.MOVE_CANDIDATES_TO_ANOTHER_JOB,
+    label: msg`Move candidates to another job`,
+    shortLabel: msg`Move to job`,
+    position: 6.5,
+    Icon: IconBriefcase,
+    accent: 'placeholder',
+    isPinned: false,
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
+    useAction: useMoveCandidatesToAnotherJobAction,
   },
 
   downloadCandidateCVs: {

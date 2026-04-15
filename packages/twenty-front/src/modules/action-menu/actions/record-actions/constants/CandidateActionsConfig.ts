@@ -2,12 +2,12 @@ import { MultipleRecordsActionKeys } from '@/action-menu/actions/record-actions/
 import { ActionHook } from '@/action-menu/actions/types/ActionHook';
 import { ActionViewType } from '@/action-menu/actions/types/ActionViewType';
 import {
-    ActionMenuEntry,
-    ActionMenuEntryScope,
-    ActionMenuEntryType,
+  ActionMenuEntry,
+  ActionMenuEntryScope,
+  ActionMenuEntryType,
 } from '@/action-menu/types/ActionMenuEntry';
 import { msg } from '@lingui/core/macro';
-import { IconMessageCircle, IconMessages, IconShare } from '@tabler/icons-react';
+import { IconBriefcase, IconMessageCircle, IconMessages, IconShare } from '@tabler/icons-react';
 import { IconCopy, IconList, IconRefresh, IconVideo } from 'twenty-ui';
 
 import { useCloneMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCloneMultipleRecordsAction';
@@ -18,6 +18,7 @@ import { useRefreshChatCountsAction } from '@/action-menu/actions/record-actions
 import { useRefreshChatStatusesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useRefreshChatStatusesAction';
 
 import { useDownloadShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDownloadShortlistAction';
+import { useMoveCandidatesToAnotherJobAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useMoveCandidatesToAnotherJobAction';
 import { useSendToWhatsappAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useSendToWhatsappAction';
 import { useShareChatAndVideoInterviewBasedShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useShareChatAndVideoInterviewBasedShortlistAction';
 import { useShareChatBasedShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useShareChatBasedShortlistAction';
@@ -111,6 +112,22 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
       ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
     ],
     useAction: useUpdateMessagingChannelForCandidatesAction,
+  },
+  moveCandidatesToAnotherJob: {
+    type: ActionMenuEntryType.Standard,
+    scope: ActionMenuEntryScope.RecordSelection,
+    key: MultipleRecordsActionKeys.MOVE_CANDIDATES_TO_ANOTHER_JOB,
+    label: msg`Move candidates to another job`,
+    shortLabel: msg`Move to job`,
+    position: 3.55,
+    Icon: IconBriefcase,
+    accent: 'placeholder',
+    isPinned: false,
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
+    useAction: useMoveCandidatesToAnotherJobAction,
   },
   refreshChatStatus: {
     type: ActionMenuEntryType.Standard,

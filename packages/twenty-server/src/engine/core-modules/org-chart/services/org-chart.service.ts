@@ -18,9 +18,10 @@ import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import {
-    applyBlankOrgChartSizeForExpectedHeadcount,
-    applyBlankOrgChartSubsetFilter,
+  applyBlankOrgChartSizeForExpectedHeadcount,
+  applyBlankOrgChartSubsetFilter,
 } from '../utils/blank-org-chart-subset.util';
+import { mergeManualCompanyAutocompleteResults } from '../utils/manual-company-autocomplete.util';
 import { ArxenaBackendService } from './arxena-backend.service';
 import { OrgChartEsService } from './org-chart-es.service';
 import { normalizeOrgChartPayload } from './org-chart-payload-normalize';
@@ -92,11 +93,11 @@ export class OrgChartService {
       count: number;
     }[]
   > {
-    if (this.pdlAutocomplete.isConfigured()) {
-      return this.pdlAutocomplete.getCompanyAutocomplete(inputText);
-    }
+    const baseResults = this.pdlAutocomplete.isConfigured()
+      ? await this.pdlAutocomplete.getCompanyAutocomplete(inputText)
+      : await this.arxenaBackend.getCompanyAutocomplete(inputText, authToken);
 
-    return this.arxenaBackend.getCompanyAutocomplete(inputText, authToken);
+    return mergeManualCompanyAutocompleteResults(inputText, baseResults);
   }
 
   async getOrgChart(
