@@ -51,7 +51,6 @@ const createService = () =>
     {} as never,
     {} as never,
     {} as never,
-    {} as never,
     {
       buildAndSendResponse: jest.fn().mockReturnValue({
         success: true,
