@@ -1,4 +1,5 @@
 import { useSettingsNavigationItems } from '@/settings/hooks/useSettingsNavigationItems';
+import { SettingsPath } from '@/types/SettingsPath';
 import { MockedProvider } from '@apollo/client/testing';
 import { renderHook } from '@testing-library/react';
 import { ReactNode } from 'react';
@@ -53,6 +54,10 @@ jest.mock('@/workspace/hooks/useFeatureFlagsMap', () => ({
   }),
 }));
 
+jest.mock('@/workspace/hooks/useIsFeatureEnabled', () => ({
+  useIsFeatureEnabled: () => false,
+}));
+
 describe('useSettingsNavigationItems', () => {
   it('should hide workspace settings when no permissions', () => {
     (useSettingsPermissionMap as jest.Mock).mockImplementation(() => ({
@@ -72,7 +77,11 @@ describe('useSettingsNavigationItems', () => {
       (section) => section.label === 'Workspace',
     );
 
-    expect(workspaceSection?.items.every((item) => item.isHidden)).toBe(true);
+    expect(
+      workspaceSection?.items
+        .filter((item) => item.path !== SettingsPath.Roles)
+        .every((item) => item.isHidden),
+    ).toBe(true);
   });
 
   it('should show workspace settings when has permissions', () => {

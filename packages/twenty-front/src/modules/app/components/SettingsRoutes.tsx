@@ -1,11 +1,26 @@
+import { CoreObjectNamePlural } from '@/object-metadata/types/CoreObjectNamePlural';
 import { lazy, Suspense } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { SettingsProtectedRouteWrapper } from '@/settings/components/SettingsProtectedRouteWrapper';
 import { SettingsSkeletonLoader } from '@/settings/components/SettingsSkeletonLoader';
 import { SettingsPath } from '@/types/SettingsPath';
+import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { SettingsFeatures } from 'twenty-shared';
 import { FeatureFlagKey } from '~/generated-metadata/graphql';
+import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
+
+const SettingsWorkflowsRedirect = () => {
+  const enabled = useIsFeatureEnabled(FeatureFlagKey.IsWorkflowEnabled);
+
+  if (!enabled) {
+    return <Navigate to={getSettingsPath(SettingsPath.Developers)} replace />;
+  }
+
+  return (
+    <Navigate to={`/objects/${CoreObjectNamePlural.Workflow}`} replace />
+  );
+};
 
 const SettingsAccountsCalendars = lazy(() =>
   import('~/pages/settings/accounts/SettingsAccountsCalendars').then(
@@ -364,6 +379,10 @@ export const SettingsRoutes = ({
       <Route
         path={SettingsPath.DevelopersNewWebhookDetail}
         element={<SettingsDevelopersWebhooksDetail />}
+      />
+      <Route
+        path={SettingsPath.Workflows}
+        element={<SettingsWorkflowsRedirect />}
       />
       {isFunctionSettingsEnabled && (
         <>

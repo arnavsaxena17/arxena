@@ -16,6 +16,7 @@ export enum SettingsPath {
   ServerlessFunctions = 'functions',
   NewServerlessFunction = 'functions/new',
   ServerlessFunctionDetail = 'functions/:serverlessFunctionId',
+  Workflows = 'workflows',
   WorkspaceMembersPage = 'workspace-members',
   Workspace = 'workspace',
   Domain = 'domain',
