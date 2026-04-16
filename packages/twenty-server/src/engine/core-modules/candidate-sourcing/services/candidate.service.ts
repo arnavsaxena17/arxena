@@ -1,4 +1,7 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 
 import {
   ArxenaCandidateNode,
@@ -40,6 +43,7 @@ import { v4 } from 'uuid';
 import axios from 'axios';
 
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -86,6 +90,7 @@ export class CandidateService {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly jwtWrapperService: JwtWrapperService,
+    private readonly fileStorageService: FileStorageService,
     private readonly dataProcessingUtils: DataProcessingUtils,
     private readonly candidateWorkspaceGraphQLService: CandidateWorkspaceGraphQLService,
     @Inject(forwardRef(() => ProcessCandidatesService))
@@ -2100,22 +2105,52 @@ export class CandidateService {
       
       // Process CV download/upload logic
       let localFilePath = '';
+      let workspaceId = '';
+
+      try {
+        workspaceId = await this.getWorkspaceIdFromToken(apiToken);
+      } catch (workspaceError) {
+        console.warn(
+          'Could not resolve workspace ID for resume archival:',
+          workspaceError.message,
+        );
+      }
       
       if (url && !url.includes('undefined')) {
         console.log('Attempting to download CV from URL:', url);
-        // In a real implementation, you would download the CV from the URL
-        // For now, we'll simulate this process
-        localFilePath = await this.downloadAndSaveCV(url, cookies, userAgent, extension, fileName, origin);
+        localFilePath = await this.downloadAndSaveCV(
+          url,
+          cookies,
+          userAgent,
+          extension,
+          fileName,
+          origin,
+          workspaceId,
+        );
       }
       
       if (!localFilePath && htmlCV) {
         console.log('Converting HTML CV to PDF');
-        localFilePath = await this.convertHtmlCvToPdf(htmlCV, fileName);
+        localFilePath = await this.convertHtmlCvToPdf(
+          htmlCV,
+          fileName,
+          workspaceId,
+        );
       }
       
       if (localFilePath) {
-        console.log('Uploading CV to Twenty:', localFilePath);
-        await this.uploadCVToTwentyWithFallback(localFilePath, uniqueStringKey, contactData, origin, apiToken);
+        try {
+          console.log('Uploading CV to Twenty:', localFilePath);
+          await this.uploadCVToTwentyWithFallback(
+            localFilePath,
+            uniqueStringKey,
+            contactData,
+            origin,
+            apiToken,
+          );
+        } finally {
+          await this.cleanupTemporaryFile(localFilePath);
+        }
       }
       
     } catch (error) {
@@ -2444,7 +2479,52 @@ export class CandidateService {
     return this.dataProcessingUtils.cleanPhoneNumber(phoneNumber);
   }
 
-  private async downloadAndSaveCV(url: string, cookies: string, userAgent: string, extension: string, fileName: string, origin: string): Promise<string> {
+  private getResumeTempDir(subfolder: string): string {
+    return path.join(os.tmpdir(), 'twenty-server', subfolder);
+  }
+
+  private async cleanupTemporaryFile(filePath: string): Promise<void> {
+    if (!filePath) {
+      return;
+    }
+
+    try {
+      await fs.promises.unlink(filePath);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        console.warn(`Failed to clean up temporary file ${filePath}:`, error);
+      }
+    }
+  }
+
+  private async archiveResumeFile(params: {
+    workspaceId?: string;
+    folderName: string;
+    fileName: string;
+    mimeType?: string;
+    file: Buffer;
+  }): Promise<void> {
+    if (!params.workspaceId) {
+      return;
+    }
+
+    await this.fileStorageService.write({
+      file: params.file,
+      name: params.fileName,
+      mimeType: params.mimeType,
+      folder: `workspace-${params.workspaceId}/candidate_cv_archives/${params.folderName}`,
+    });
+  }
+
+  private async downloadAndSaveCV(
+    url: string,
+    cookies: string,
+    userAgent: string,
+    extension: string,
+    fileName: string,
+    origin: string,
+    workspaceId?: string,
+  ): Promise<string> {
     try {
       console.log('Downloading CV from URL:', url);
       
@@ -2453,15 +2533,8 @@ export class CandidateService {
         return '';
       }
       
-      const axios = require('axios');
-      const fs = require('fs');
-      const path = require('path');
-      
-      // Create output directory
-      const outputDir = './all_resumes';
-      if (!fs.existsSync(outputDir)) {
-        fs.mkdirSync(outputDir, { recursive: true });
-      }
+      const outputDir = this.getResumeTempDir('all_resumes');
+      await fs.promises.mkdir(outputDir, { recursive: true });
       
       // Prepare headers
       const headers: any = {
@@ -2548,9 +2621,18 @@ export class CandidateService {
       }
       
       const filePath = path.join(outputDir, fileName);
-      
-      // Save the file
-      fs.writeFileSync(filePath, response.data);
+
+      const responseBuffer = Buffer.from(response.data);
+
+      await this.archiveResumeFile({
+        workspaceId,
+        folderName: 'all_resumes',
+        fileName,
+        mimeType: response.headers['content-type'],
+        file: responseBuffer,
+      });
+
+      await fs.promises.writeFile(filePath, responseBuffer);
       
       console.log('Successfully downloaded CV to:', filePath);
       return filePath;
@@ -2561,7 +2643,11 @@ export class CandidateService {
     }
   }
 
-  private async convertHtmlCvToPdf(htmlCV: string, fileName: string): Promise<string> {
+  private async convertHtmlCvToPdf(
+    htmlCV: string,
+    fileName: string,
+    workspaceId?: string,
+  ): Promise<string> {
     try {
       console.log('Converting HTML CV to PDF:', fileName);
       
@@ -2570,14 +2656,9 @@ export class CandidateService {
         return '';
       }
       
-      // Create output directory
-      const fs = require('fs');
-      const path = require('path');
-      const outputDir = './all_resumes_pdfs';
-      
-      if (!fs.existsSync(outputDir)) {
-        fs.mkdirSync(outputDir, { recursive: true });
-      }
+      const outputDir = this.getResumeTempDir('all_resumes_pdfs');
+
+      await fs.promises.mkdir(outputDir, { recursive: true });
       
       // Parse HTML CV if it's JSON
       let htmlContent = htmlCV;
@@ -2642,6 +2723,16 @@ export class CandidateService {
       });
       
       await browser.close();
+
+      const pdfBuffer = await fs.promises.readFile(outputFile);
+
+      await this.archiveResumeFile({
+        workspaceId,
+        folderName: 'all_resumes_pdfs',
+        fileName: `${fileName}.pdf`,
+        mimeType: 'application/pdf',
+        file: pdfBuffer,
+      });
       
       console.log('Successfully converted HTML CV to PDF:', outputFile);
       return outputFile;

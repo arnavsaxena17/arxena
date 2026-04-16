@@ -20,7 +20,7 @@ import { useSettingsPermissionMap } from '@/settings/roles/hooks/useSettingsPerm
 import { NavigationDrawerItemIndentationLevel } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import { useFeatureFlagsMap } from '@/workspace/hooks/useFeatureFlagsMap';
 import { t } from '@lingui/core/macro';
-import { IconBrandFacebook, IconBrandLinkedin, IconBrandWhatsapp, IconCode, IconHierarchy2, IconServer } from '@tabler/icons-react';
+import { IconBrandFacebook, IconBrandLinkedin, IconBrandWhatsapp, IconCode, IconFlask, IconFunction, IconHierarchy2, IconLock, IconServer } from '@tabler/icons-react';
 import { useRecoilValue } from 'recoil';
 
 export type SettingsNavigationSection = {
@@ -149,14 +149,14 @@ export const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
           isHidden:
             !isBillingEnabled || !permissionMap[SettingsFeatures.WORKSPACE],
         },
-        // {
-        //   label: t`Roles`,
-        //   path: SettingsPath.Roles,
-        //   Icon: IconLock,
-        //   isHidden: false
-        //     // !featureFlags[FeatureFlagKey.IsPermissionsEnabled]
-        //     // !permissionMap[SettingsFeatures.ROLES],
-        // },
+        {
+          label: t`Roles`,
+          path: SettingsPath.Roles,
+          Icon: IconLock,
+          isHidden: false
+            // !featureFlags[FeatureFlagKey.IsPermissionsEnabled]
+            // !permissionMap[SettingsFeatures.ROLES],
+        },
         {
           label: t`Data model`,
           path: SettingsPath.Objects,
@@ -189,13 +189,13 @@ export const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
           isAdvanced: true,
           isHidden: false,
         },
-    //     {
-    //       label: t`Functions`,
-    //       path: SettingsPath.ServerlessFunctions,
-    //       Icon: IconFunction,
-    //       isHidden: false,
-    //       isAdvanced: true,
-    //     },
+        {
+          label: t`Functions`,
+          path: SettingsPath.ServerlessFunctions,
+          Icon: IconFunction,
+          isHidden: false,
+          isAdvanced: true,
+        },
       ],
     },
     {
@@ -207,14 +207,14 @@ export const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
             Icon: IconServer,
             isHidden: !isAdminEnabled,
           },
-          // {
-          //   label: t`Lab`,
-          //   path: SettingsPath.Lab,
-          //   Icon: IconFlask,
-          //   isHidden:
-          //     !labPublicFeatureFlags.length ||
-          //     !permissionMap[SettingsFeatures.WORKSPACE],
-          // },
+          {
+            label: t`Lab`,
+            path: SettingsPath.Lab,
+            Icon: IconFlask,
+            isHidden:
+              !labPublicFeatureFlags.length ||
+              !permissionMap[SettingsFeatures.WORKSPACE],
+          },
           // {
           //   label: t`Releases`,
           //   path: SettingsPath.Releases,

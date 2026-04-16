@@ -59,10 +59,15 @@ export const NavigationDrawerSectionForObjectMetadataItems = ({
   ].sort;
 
 
+  // const sortedObjectMetadataItemsForNavigationItems = [
+  //   ...sortedStandardObjectMetadataItems,
+  //   ...sortedCustomObjectMetadataItems,
+  // ].sort((a, b) => a.nameSingular.localeCompare(b.nameSingular));
+  
   const sortedObjectMetadataItemsForNavigationItems = [
     ...sortedStandardObjectMetadataItems,
     ...sortedCustomObjectMetadataItems,
-  ].sort((a, b) => a.nameSingular.localeCompare(b.nameSingular));
+  ]
 
   return (
     objectMetadataItems.length > 0 && (

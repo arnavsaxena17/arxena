@@ -29,13 +29,19 @@ export const fileStorageModuleFactory = async (
       };
     }
     case StorageDriverType.S3: {
-      const bucketName = environmentService.get('STORAGE_S3_NAME');
+      const bucketName =
+        environmentService.get('STORAGE_S3_NAME') ??
+        process.env.S3_BUCKET_NAME;
       const endpoint = environmentService.get('STORAGE_S3_ENDPOINT');
-      const region = environmentService.get('STORAGE_S3_REGION');
-      const accessKeyId = environmentService.get('STORAGE_S3_ACCESS_KEY_ID');
-      const secretAccessKey = environmentService.get(
-        'STORAGE_S3_SECRET_ACCESS_KEY',
-      );
+      const region =
+        environmentService.get('STORAGE_S3_REGION') ??
+        process.env.AWS_REGION;
+      const accessKeyId =
+        environmentService.get('STORAGE_S3_ACCESS_KEY_ID') ??
+        process.env.AWS_ACCESS_KEY_ID;
+      const secretAccessKey =
+        environmentService.get('STORAGE_S3_SECRET_ACCESS_KEY') ??
+        process.env.AWS_SECRET_ACCESS_KEY;
 
       return {
         type: StorageDriverType.S3,

@@ -6,7 +6,10 @@ import { IconSearch, IconSettings } from 'twenty-ui';
 import { isOrgChartEnabledState } from '@/arx-jd-upload/states/isOrgChartEnabledState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useCommandMenu } from '@/command-menu/hooks/useCommandMenu';
+import { WorkspaceFavorites } from '@/favorites/components/WorkspaceFavorites';
 import { JobsNavigationDrawerItems } from '@/navigation/components/JobsNavigationDrawerItems';
+import { NavigationDrawerOpenedSection } from '@/object-metadata/components/NavigationDrawerOpenedSection';
+import { RemoteNavigationDrawerSection } from '@/object-metadata/components/RemoteNavigationDrawerSection';
 import { AppPath } from '@/types/AppPath';
 import { SettingsPath } from '@/types/SettingsPath';
 import { NavigationDrawerItem } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
@@ -162,9 +165,9 @@ export const MainNavigationDrawerItems = () => {
           <JobsNavigationDrawerItems />
           {/* {!isOrgChartEnabled && ( */}
             {/* <> */}
-              {/* <NavigationDrawerOpenedSection /> */}
-              {/* <WorkspaceFavorites /> */}
-              {/* <RemoteNavigationDrawerSection /> */}
+              <NavigationDrawerOpenedSection />
+              <WorkspaceFavorites />
+              <RemoteNavigationDrawerSection />
             {/* </>
           )} */}
         </StyledInnerContainer>

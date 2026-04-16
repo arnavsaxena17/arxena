@@ -247,6 +247,8 @@ export class ResumeReadParseUploadService {
         errorCount: errorCount + 1,
         errors: [...errors, error.message],
       };
+    } finally {
+      await this.cleanupTempFiles(filePaths);
     }
   }
 

@@ -24,8 +24,12 @@
  * replaces Diagram.RP / Diagram.IO with empty arrow functions so the
  * watermark canvas is never created.
  *
- * Files patched: release/go.mjs  (ESM, used by Vite/webpack)
- *                release/go.js   (CJS fallback)
+ * Files patched: release/go.mjs
+ *                release/go.js
+ *                release/go-module.js
+ *                release/go-debug.mjs
+ *                release/go-debug.js
+ *                release/go-debug-module.js
  */
 
 const fs = require('fs');
@@ -34,7 +38,7 @@ const path = require('path');
 const KILL_SWITCH = 'Transform.prototype.Ci=Transform.prototype.Mu';
 const NOOP_EXPR   = '(0)'; // safe no-op expression
 
-// go-debug.mjs uses different internal names (Vite dev mode picks this file):
+// Debug bundles use different internal names:
 //   RP→Yk, IO→KO, Ph→Aa (static), Ph()→Aa() (DiagramHelper method),
 //   jw→Zw, Ci→De, Mu→Lu
 const DEBUG_NAMES = {
@@ -49,7 +53,10 @@ const DEBUG_NAMES = {
 const files = [
   path.join(__dirname, '../node_modules/gojs/release/go.mjs'),
   path.join(__dirname, '../node_modules/gojs/release/go.js'),
+  path.join(__dirname, '../node_modules/gojs/release/go-module.js'),
   path.join(__dirname, '../node_modules/gojs/release/go-debug.mjs'),
+  path.join(__dirname, '../node_modules/gojs/release/go-debug.js'),
+  path.join(__dirname, '../node_modules/gojs/release/go-debug-module.js'),
 ];
 
 let totalPatched = 0;
@@ -90,8 +97,11 @@ for (const filePath of files) {
     src = src.split(PH_ORIG).join(PH_PATCHED);
   }
 
-  // ── 4. go-debug.mjs uses different internal names — patch those too ────
-  const isDebug = filePath.endsWith('go-debug.mjs');
+  // ── 4. Debug bundles use different internal names — patch those too ─────
+  const isDebug =
+    filePath.endsWith('go-debug.mjs') ||
+    filePath.endsWith('go-debug.js') ||
+    filePath.endsWith('go-debug-module.js');
   if (isDebug) {
     // Yk = RP, KO = IO, Aa() = Ph() method, De/Lu = Ci/Mu
     const ykStart = src.indexOf('static Yk=()=>{');

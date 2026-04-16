@@ -1332,6 +1332,19 @@ export class BaileysWhatsappService {
         apiToken,
       );
 
+      if (file.filePath) {
+        try {
+          await fs.promises.unlink(file.filePath);
+        } catch (cleanupError) {
+          if ((cleanupError as NodeJS.ErrnoException).code !== 'ENOENT') {
+            console.log(
+              'Error cleaning up temporary uploaded attachment:',
+              cleanupError,
+            );
+          }
+        }
+      }
+
       return file;
     } catch (error) {
       throw new Error(`Error handling file upload: ${error}`);

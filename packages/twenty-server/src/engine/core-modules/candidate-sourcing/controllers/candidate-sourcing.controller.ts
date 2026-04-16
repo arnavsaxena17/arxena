@@ -67,6 +67,7 @@ import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-s
 import { createJobIdErrorResponse, validateAndExtractJobId } from 'src/engine/core-modules/candidate-sourcing/utils/job-id.utils';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
 import { prompts } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
@@ -87,6 +88,7 @@ export class CandidateSourcingController {
     private readonly deleteFieldValuesService: DeleteFieldValuesService,
     private readonly jdParserService: JDParserService,
     private readonly candidateWorkspaceGraphQLService: CandidateWorkspaceGraphQLService,
+    private readonly fileStorageService: FileStorageService,
   ) {}
 
   @Post('update-candidate')
@@ -2333,34 +2335,24 @@ export class CandidateSourcingController {
         };
       }
       
-      // Create directory path for CV upload with better error handling
-      const dirPath = path.join(process.cwd(), 'client_uploads', 'client_cv_uploads', workspaceId, jobName);
-      try {
-        if (!fs.existsSync(dirPath)) {
-          fs.mkdirSync(dirPath, { recursive: true });
-          console.log('Created directory:', dirPath);
-        }
-      } catch (dirError) {
-        console.error('Error creating directory:', dirError);
-        return {
-          status: 'error',
-          message: 'Failed to create upload directory',
-          error: dirError.message
-        };
-      }
-      
       const fileName = file.originalname || request.body.file_name || `cv_${uniqueStringKey}.pdf`;
-      const filePath = path.join(dirPath, fileName);
+      const filePath = `workspace-${workspaceId}/client_uploads/client_cv_uploads/${jobName}/${fileName}`;
       
       try {
         // Ensure the file buffer is valid
         if (!file.buffer || file.buffer.length === 0) {
           throw new Error('File buffer is empty or invalid');
         }
-        
-        // Write file using proper buffer handling
-        fs.writeFileSync(filePath, file.buffer as Uint8Array);
-        console.log(`Saved CV file to: ${filePath}`);
+
+        await this.fileStorageService.write({
+          file: file.buffer as Uint8Array,
+          name: fileName,
+          mimeType: file.mimetype,
+          folder: `workspace-${workspaceId}/client_uploads/client_cv_uploads/${jobName}`,
+        });
+        console.log(
+          `Saved CV file to storage: workspace-${workspaceId}/client_uploads/client_cv_uploads/${jobName}/${fileName}`,
+        );
       } catch (fileError) {
         console.error('Error saving file:', fileError);
         return {

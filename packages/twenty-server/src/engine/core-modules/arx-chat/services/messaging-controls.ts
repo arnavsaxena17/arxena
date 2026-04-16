@@ -750,6 +750,16 @@ export class MessagingControls {
       chatControl,
       apiToken,
     );
+
+    if (localFilePath) {
+      try {
+        await fs.promises.unlink(localFilePath);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+          console.log('Error cleaning up temporary attachment file:', error);
+        }
+      }
+    }
   }
 
   async sendAttachmentExtSockWhatsapp(

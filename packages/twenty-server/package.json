@@ -21,6 +21,7 @@
     "test:sample-local-linkedin-raw-search-plans": "npx tsx -r tsconfig-paths/register scripts/sample-local-linkedin-raw-search-plans.ts",
     "test:run-voyager-people-search-samples": "npx tsx -r tsconfig-paths/register scripts/run-voyager-people-search-samples.ts",
     "test:candidate-search-flow": "npx tsx -r tsconfig-paths/register scripts/testing/test-candidate-search-flow.ts",
+    "storage:sync-to-s3": "npx tsx -r tsconfig-paths/register scripts/sync-storage-to-s3.ts",
     "test:yuga-orgchart": "npx tsx -r tsconfig-paths/register scripts/test-yuga-orgchart.ts",
     "test:unipile-parameters": "npx tsx -r tsconfig-paths/register scripts/test-unipile-parameters.ts",
     "voice-call:initiate": "npx tsx -r tsconfig-paths/register scripts/voice-call-initiate.ts",

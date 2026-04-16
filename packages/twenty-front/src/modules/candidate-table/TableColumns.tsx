@@ -106,6 +106,33 @@ export const isAiFilterField = (fieldName: string, aiFilters: Enrichment[]) => {
   );
 };
 
+/** True when value is safe to show in a grid cell (not object/array/JSON blob). Allows string, boolean, number, Date, nullish. */
+const isScalarTableCellValue = (value: unknown): boolean => {
+  if (value === null || value === undefined) return true;
+  if (typeof value === 'boolean' || typeof value === 'number') return true;
+  if (value instanceof Date) return true;
+  if (Array.isArray(value)) return false;
+  if (typeof value === 'object') return false;
+  if (typeof value === 'string') {
+    const t = value.trim();
+    if (t.length === 0) return true;
+    if (t.startsWith('{') || t.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(t) as unknown;
+        if (typeof parsed === 'object' && parsed !== null) return false;
+      } catch {
+        // not JSON — treat as plain string
+      }
+    }
+    return true;
+  }
+  return false;
+};
+
+/** Hide column if any row has array, object, or JSON-encoded object/array string. */
+const columnHasOnlyScalarValues = (columnName: string, processedData: CandidateDataItem[]): boolean =>
+  processedData.every((item) => isScalarTableCellValue(item[columnName]));
+
 // Function to check if a column has all empty or 'N/A' values
 const hasAllEmptyValues = (columnName: string, processedData: CandidateDataItem[]): boolean => {
   if (!processedData.length) return true;
@@ -645,6 +672,7 @@ export const TableColumns = ({
   const aiFilterFields = Array.from(allKeys).filter(key =>
     !excludedFields.includes(key) && 
     !hasAllEmptyValues(key, processedData) &&
+    columnHasOnlyScalarValues(key, processedData) &&
     isAiFilterField(key, enrichments)
   );
 
@@ -665,7 +693,7 @@ export const TableColumns = ({
 
   const commonColumns = ['jobTitle','jobCompanyName','locationName','remarks','candConversationStatus','status','email', 'phone', 'lastMessage', 'messagingChannel'];
   commonColumns.forEach(column => {
-    if (allKeys.has(column) && !excludedFields.includes(column) && !hasAllEmptyValues(column, processedData)) {
+    if (allKeys.has(column) && !excludedFields.includes(column) && !hasAllEmptyValues(column, processedData) && columnHasOnlyScalarValues(column, processedData)) {
       const isStatusField = column === 'status' || column === 'candConversationStatus';
       const isMessagingChannelField = column === 'messagingChannel';
       
@@ -690,7 +718,7 @@ export const TableColumns = ({
   // Add relevance columns after status and before other columns
   const relevanceColumns = ['relevanceScore', 'relevanceLabel', 'matchReasons', 'mismatchReasons'];
   relevanceColumns.forEach(column => {
-    if (allKeys.has(column) && !excludedFields.includes(column) && !hasAllEmptyValues(column, processedData)) {
+    if (allKeys.has(column) && !excludedFields.includes(column) && !hasAllEmptyValues(column, processedData) && columnHasOnlyScalarValues(column, processedData)) {
       const isRelevanceScoreField = column === 'relevanceScore';
       const isRelevanceLabelField = column === 'relevanceLabel';
       const isArrayField = column === 'matchReasons' || column === 'mismatchReasons';
@@ -715,6 +743,7 @@ export const TableColumns = ({
   Array.from(allKeys)
     .filter(key => !excludedFields.includes(key))
     .filter(key => !hasAllEmptyValues(key, processedData))
+    .filter(key => columnHasOnlyScalarValues(key, processedData))
     .filter(key => !isAiFilterField(key, enrichments)) // Exclude enrichment fields as they're already processed
     // .sort()
     .forEach(key => {

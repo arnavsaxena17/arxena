@@ -21,6 +21,7 @@ import { ProcessAiFiltersService } from '../candidate-sourcing/jobs/process-ai-f
 import { CandidateWorkspaceGraphQLService } from '../candidate-sourcing/services/candidate-workspace-graphql.service';
 import { JDParserService } from '../candidate-sourcing/services/jd-parser.service';
 import { UploadProgressPubSubService } from '../candidate-sourcing/services/upload-progress-pubsub.service';
+import { FileStorageService } from '../file-storage/file-storage.service';
 
 @Controller('fetch-google-apps-data')
 export class GoogleSheetsDataController {
@@ -43,6 +44,7 @@ export class GoogleSheetsDataController {
     private readonly deleteFieldValuesService: DeleteFieldValuesService,
     private readonly jdParserService: JDParserService,
     private readonly candidateWorkspaceGraphQLService: CandidateWorkspaceGraphQLService,
+    private readonly fileStorageService: FileStorageService,
   ) {
   }
 
@@ -77,6 +79,7 @@ export class GoogleSheetsDataController {
       this.deleteFieldValuesService,
       this.jdParserService,
       this.candidateWorkspaceGraphQLService,
+      this.fileStorageService,
     );
     const result = await candidateSourcingController.processAiFilters({
       body: aiFiltersPayload,
