@@ -212,3 +212,85 @@ export const hasMatchingConnectedLinkedinAccount = (
     linkedinAccountMatchesWorkspaceMemberProfile(profile, acc),
   );
 };
+
+/**
+ * True for any status other than disconnected (e.g. connected, pending, connecting).
+ * Used to avoid creating duplicate Unipile connections while an account is still active or reconnecting.
+ */
+export const shouldBlockNewUnipileConnectionForStatus = (
+  status?: string | null,
+): boolean => {
+  const n = normalizeUnipileStatus(status);
+  if (n === '' || n === 'disconnected') {
+    return false;
+  }
+  return true;
+};
+
+export const linkedinAccountIdentityMatchesWorkspaceMemberProfile = (
+  profile: WorkspaceMemberProfileUnipileFields,
+  account: UnipileLinkedinAccount,
+): boolean => {
+  const storedId = profile.linkedinUnipileAccountId?.trim();
+  if (storedId != null && storedId !== '' && storedId === account.id) {
+    return true;
+  }
+  const profileUrl = profile.linkedinUrl?.trim();
+  if (profileUrl == null || profileUrl === '') {
+    return false;
+  }
+  return linkedinSlugMatchesProfile(profileUrl, account);
+};
+
+export const whatsappAccountIdentityMatchesWorkspaceMemberProfile = (
+  profile: WorkspaceMemberProfileUnipileFields,
+  account: UnipileWhatsappAccount,
+): boolean => {
+  const storedId = profile.whatsappUnipileAccountId?.trim();
+  if (storedId != null && storedId !== '' && storedId === account.id) {
+    return true;
+  }
+  const profilePhone = profile.phoneNumber?.trim();
+  if (profilePhone == null || profilePhone === '') {
+    return false;
+  }
+  const accountPhone =
+    account.phone_number?.trim() ?? account.username?.trim() ?? '';
+  return phonesMatch(profilePhone, accountPhone);
+};
+
+export const findLinkedinUnipileAccountBlockingNewConnectionForProfile = (
+  accounts: UnipileLinkedinAccount[],
+  profile: WorkspaceMemberProfileUnipileFields | null,
+): UnipileLinkedinAccount | undefined => {
+  if (profile == null || !shouldRestrictLinkedinByProfile(profile)) {
+    return undefined;
+  }
+  for (const acc of accounts) {
+    if (!linkedinAccountIdentityMatchesWorkspaceMemberProfile(profile, acc)) {
+      continue;
+    }
+    if (shouldBlockNewUnipileConnectionForStatus(acc.status)) {
+      return acc;
+    }
+  }
+  return undefined;
+};
+
+export const findWhatsappUnipileAccountBlockingNewConnectionForProfile = (
+  accounts: UnipileWhatsappAccount[],
+  profile: WorkspaceMemberProfileUnipileFields | null,
+): UnipileWhatsappAccount | undefined => {
+  if (profile == null || !shouldRestrictWhatsappByProfile(profile)) {
+    return undefined;
+  }
+  for (const acc of accounts) {
+    if (!whatsappAccountIdentityMatchesWorkspaceMemberProfile(profile, acc)) {
+      continue;
+    }
+    if (shouldBlockNewUnipileConnectionForStatus(acc.status)) {
+      return acc;
+    }
+  }
+  return undefined;
+};

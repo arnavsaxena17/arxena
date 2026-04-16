@@ -2,7 +2,18 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
+import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import {
+  findLinkedinUnipileAccountBlockingNewConnectionForProfile,
+  findWhatsappUnipileAccountBlockingNewConnectionForProfile,
+  shouldBlockNewUnipileConnectionForStatus,
+  type UnipileLinkedinAccount,
+  type UnipileWhatsappAccount,
+} from 'twenty-shared';
+
+import { LinkedinUnipileRequestService } from './linkedin-unipile-request.service';
+import { WhatsappUnipileRequestService } from './whatsapp-unipile-request.service';
 import { WorkspaceMemberProfileUnipileService } from './workspace-member-profile-unipile.service';
 
 export type UnipileAccountType = 'LINKEDIN' | 'WHATSAPP';
@@ -43,6 +54,8 @@ export class UnipileAccountPoolService {
     private readonly metadataDataSource: DataSource,
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
+    private readonly whatsappUnipileRequestService: WhatsappUnipileRequestService,
   ) {}
 
   /**
@@ -60,8 +73,15 @@ export class UnipileAccountPoolService {
     },
   ): Promise<EnsureAccountResult> {
     const type = accountType === 'LINKEDIN' ? 'linkedin' : 'whatsapp';
+    const workspace = { id: workspaceId } as Workspace;
 
-    const accountId =
+    const profileFields =
+      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields(
+        workspaceMemberId,
+        authToken,
+      );
+
+    const storedAccountId =
       await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
         workspaceMemberId,
         workspaceId,
@@ -69,9 +89,75 @@ export class UnipileAccountPoolService {
         type,
       );
 
-    if (accountId && String(accountId).trim()) {
-      await this.touchLastActive(workspaceMemberId, accountType);
-      return { accountId: String(accountId).trim() };
+    if (storedAccountId && String(storedAccountId).trim()) {
+      const trimmed = String(storedAccountId).trim();
+      if (accountType === 'LINKEDIN') {
+        const raw =
+          await this.linkedinUnipileRequestService.fetchAccountByIdIfExists(
+            trimmed,
+          );
+        if (raw) {
+          const status =
+            this.linkedinUnipileRequestService.mapAccountStatus(raw);
+          if (shouldBlockNewUnipileConnectionForStatus(status)) {
+            await this.touchLastActive(workspaceMemberId, accountType);
+            return { accountId: trimmed };
+          }
+        }
+      } else {
+        const raw =
+          await this.whatsappUnipileRequestService.fetchAccountByIdIfExists(
+            trimmed,
+          );
+        if (raw) {
+          const status =
+            this.whatsappUnipileRequestService.mapAccountStatus(raw);
+          if (shouldBlockNewUnipileConnectionForStatus(status)) {
+            await this.touchLastActive(workspaceMemberId, accountType);
+            return { accountId: trimmed };
+          }
+        }
+      }
+    }
+
+    if (accountType === 'LINKEDIN') {
+      const { accounts } =
+        await this.linkedinUnipileRequestService.getAllAccounts(workspace);
+      const blocking =
+        findLinkedinUnipileAccountBlockingNewConnectionForProfile(
+          accounts as UnipileLinkedinAccount[],
+          profileFields,
+        );
+      if (blocking?.id) {
+        await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+          workspaceMemberId,
+          authToken,
+          'linkedin',
+          blocking.id,
+          blocking,
+        );
+        await this.touchLastActive(workspaceMemberId, accountType);
+        return { accountId: blocking.id };
+      }
+    } else {
+      const { accounts } =
+        await this.whatsappUnipileRequestService.getAllAccounts(workspace);
+      const blocking =
+        findWhatsappUnipileAccountBlockingNewConnectionForProfile(
+          accounts as UnipileWhatsappAccount[],
+          profileFields,
+        );
+      if (blocking?.id) {
+        await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+          workspaceMemberId,
+          authToken,
+          'whatsapp',
+          blocking.id,
+          blocking,
+        );
+        await this.touchLastActive(workspaceMemberId, accountType);
+        return { accountId: blocking.id };
+      }
     }
 
     const keepConnected =

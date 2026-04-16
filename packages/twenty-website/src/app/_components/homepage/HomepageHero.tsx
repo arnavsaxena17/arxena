@@ -334,7 +334,7 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
           <Logo variant="hero" />
         </StyledLogoWrapper>
         <StyledTitle>
-          Org Intelligence Infrastructure
+          Real Time Org Intelligence OS
           {/* <StyledTitleLine>
             Then reach the right person — automatically.
           </StyledTitleLine> */}

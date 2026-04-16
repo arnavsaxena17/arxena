@@ -93,6 +93,43 @@ export class WhatsappUnipileRequestService {
     }
   }
 
+  /** Fetch a single account by id; returns null on 404 (e.g. account disconnected) without logging ERROR. */
+  async fetchAccountByIdIfExists(
+    accountId: string,
+  ): Promise<UnipileAccountItem | null> {
+    const url = `${this.unipileApiUrl}/api/v1/accounts/${accountId}`;
+    const headers = {
+      Accept: 'application/json',
+      'X-API-KEY': this.unipileAccessToken || '',
+    };
+    try {
+      const response = await fetch(url, { method: 'GET', headers });
+      const data = (await response.json().catch(() => ({}))) as Record<
+        string,
+        unknown
+      >;
+      if (response.status === 404) {
+        this.logger.warn(
+          `Workspace linked WhatsApp account ${accountId} not found in Unipile (404); it may have been disconnected`,
+        );
+        return null;
+      }
+      if (!response.ok) {
+        this.logger.error(
+          `Unipile API error: ${response.status} ${response.statusText}`,
+          data,
+        );
+        return null;
+      }
+      return data as UnipileAccountItem;
+    } catch (err) {
+      this.logger.warn(
+        `Could not fetch WhatsApp account ${accountId}: ${err instanceof Error ? err.message : err}`,
+      );
+      return null;
+    }
+  }
+
   mapAccountStatus(
     account: UnipileAccountItem,
   ): 'connected' | 'disconnected' | 'pending' | 'connecting' {

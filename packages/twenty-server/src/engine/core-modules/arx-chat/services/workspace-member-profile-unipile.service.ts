@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
     findWorkspaceMemberProfiles,
     graphQLToUpdateOneWorkspaceMemberProfile,
+    type WorkspaceMemberProfileUnipileFields,
 } from 'twenty-shared';
 
 import {
@@ -195,6 +196,45 @@ export class WorkspaceMemberProfileUnipileService {
    * Workspace-wide whatsapp_unipile_account_id / linkedin_unipile_account_id keys are deprecated
    * (multiple members may each have their own Unipile account).
    */
+  async getWorkspaceMemberProfileUnipileFields(
+    workspaceMemberId: string,
+    authToken: string,
+  ): Promise<WorkspaceMemberProfileUnipileFields | null> {
+    try {
+      const response = await this.staticGraphQLService.executeGraphQL(
+        findWorkspaceMemberProfiles,
+        { filter: { workspaceMemberId: { eq: workspaceMemberId } }, limit: 1 },
+        authToken,
+      );
+
+      const profile =
+        response?.data?.data?.workspaceMemberProfiles?.edges?.[0]?.node;
+
+      if (!profile) {
+        return null;
+      }
+
+      return {
+        phoneNumber: profile.phoneNumber?.trim()
+          ? profile.phoneNumber
+          : null,
+        linkedinUrl: profile.linkedinUrl?.trim() ? profile.linkedinUrl : null,
+        whatsappUnipileAccountId: profile.whatsappUnipileAccountId?.trim()
+          ? profile.whatsappUnipileAccountId
+          : null,
+        linkedinUnipileAccountId: profile.linkedinUnipileAccountId?.trim()
+          ? profile.linkedinUnipileAccountId
+          : null,
+      };
+    } catch (error) {
+      this.logger.warn(
+        `Failed to load Unipile profile fields for workspace member ${workspaceMemberId}:`,
+        error,
+      );
+      return null;
+    }
+  }
+
   async getWorkspaceMemberUnipileAccountId(
     workspaceMemberId: string | null,
     _workspaceId: string,
