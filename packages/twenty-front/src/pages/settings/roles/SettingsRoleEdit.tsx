@@ -3,11 +3,11 @@ import { t } from '@lingui/core/macro';
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  H3Title,
-  IconLockOpen,
-  IconSettings,
-  IconUser,
-  IconUserPlus,
+    H3Title,
+    IconLockOpen,
+    IconSettings,
+    IconUser,
+    IconUserPlus,
 } from 'twenty-ui';
 
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
@@ -50,7 +50,11 @@ export const SETTINGS_ROLE_DETAIL_TABS = {
 export const SettingsRoleEdit = () => {
   const { roleId = '' } = useParams();
   const navigateSettings = useNavigateSettings();
-  const { data: rolesData, loading: rolesLoading } = useGetRolesQuery({
+  const {
+    data: rolesData,
+    loading: rolesLoading,
+    refetch,
+  } = useGetRolesQuery({
     fetchPolicy: 'network-only',
   });
 
@@ -96,7 +100,13 @@ export const SettingsRoleEdit = () => {
       case SETTINGS_ROLE_DETAIL_TABS.TABS_IDS.PERMISSIONS:
         return <RolePermissions role={role} />;
       case SETTINGS_ROLE_DETAIL_TABS.TABS_IDS.SETTINGS:
-        return <RoleSettings role={role} />;
+        return (
+          <RoleSettings
+            key={`${role.id}-${role.label}-${role.description}-${role.canUpdateAllSettings}-${role.canReadAllObjectRecords}-${role.canUpdateAllObjectRecords}-${role.canSoftDeleteAllObjectRecords}-${role.canDestroyAllObjectRecords}`}
+            role={role}
+            onRoleUpdated={() => void refetch()}
+          />
+        );
       default:
         return null;
     }

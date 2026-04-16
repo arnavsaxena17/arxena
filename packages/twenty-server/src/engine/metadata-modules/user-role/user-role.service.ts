@@ -5,8 +5,8 @@ import { In, Repository } from 'typeorm';
 
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import {
-  PermissionsException,
-  PermissionsExceptionCode,
+    PermissionsException,
+    PermissionsExceptionCode,
 } from 'src/engine/metadata-modules/permissions/permissions.exception';
 import { RoleDTO } from 'src/engine/metadata-modules/role/dtos/role.dto';
 import { RoleEntity } from 'src/engine/metadata-modules/role/role.entity';
@@ -144,6 +144,20 @@ export class UserRoleService {
     }
 
     return rolesMap;
+  }
+
+  public async getUserWorkspaceIdsAssignedToRole(
+    roleId: string,
+    workspaceId: string,
+  ): Promise<string[]> {
+    const rows = await this.userWorkspaceRoleRepository.find({
+      where: {
+        roleId,
+        workspaceId,
+      },
+    });
+
+    return rows.map((row) => row.userWorkspaceId);
   }
 
   public async getWorkspaceMembersAssignedToRole(

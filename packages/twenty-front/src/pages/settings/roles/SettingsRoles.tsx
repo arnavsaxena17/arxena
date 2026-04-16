@@ -1,16 +1,16 @@
 import styled from '@emotion/styled';
 import { Trans, useLingui } from '@lingui/react/macro';
 import {
-  AppTooltip,
-  Avatar,
-  Button,
-  H2Title,
-  IconChevronRight,
-  IconLock,
-  IconPlus,
-  IconUser,
-  Section,
-  TooltipDelay,
+    AppTooltip,
+    Avatar,
+    Button,
+    H2Title,
+    IconChevronRight,
+    IconLock,
+    IconPlus,
+    IconUser,
+    Section,
+    TooltipDelay,
 } from 'twenty-ui';
 
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
@@ -21,9 +21,10 @@ import { TableCell } from '@/ui/layout/table/components/TableCell';
 import { TableHeader } from '@/ui/layout/table/components/TableHeader';
 import { TableRow } from '@/ui/layout/table/components/TableRow';
 import { useTheme } from '@emotion/react';
-import React from 'react';
+import React, { useState } from 'react';
 import { useGetRolesQuery } from '~/generated/graphql';
 import { useNavigateSettings } from '~/hooks/useNavigateSettings';
+import { SettingsCreateRoleModal } from '~/pages/settings/roles/components/SettingsCreateRoleModal';
 import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
 
 const StyledTable = styled(Table)`
@@ -90,6 +91,7 @@ const StyledAssignedText = styled.div`
 
 export const SettingsRoles = () => {
   const { t } = useLingui();
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const theme = useTheme();
   const navigateSettings = useNavigateSettings();
@@ -193,11 +195,15 @@ export const SettingsRoles = () => {
               title={t`Create Role`}
               variant="secondary"
               size="small"
-              soon
+              onClick={() => setIsCreateModalOpen(true)}
             />
           </StyledBottomSection>
         </Section>
       </SettingsPageContainer>
+      <SettingsCreateRoleModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+      />
     </SubMenuTopBarContainer>
   );
 };

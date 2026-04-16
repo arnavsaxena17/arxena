@@ -1,11 +1,11 @@
 import { UseFilters, UseGuards } from '@nestjs/common';
 import {
-  Args,
-  Mutation,
-  Parent,
-  Query,
-  ResolveField,
-  Resolver,
+    Args,
+    Mutation,
+    Parent,
+    Query,
+    ResolveField,
+    Resolver,
 } from '@nestjs/graphql';
 
 import { isDefined, SettingsFeatures } from 'twenty-shared';
@@ -16,7 +16,10 @@ import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { SettingsPermissionsGuard } from 'src/engine/guards/settings-permissions.guard';
 import { PermissionsGraphqlApiExceptionFilter } from 'src/engine/metadata-modules/permissions/utils/permissions-graphql-api-exception.filter';
+import { CreateRoleInput } from 'src/engine/metadata-modules/role/dtos/create-role.input';
 import { RoleDTO } from 'src/engine/metadata-modules/role/dtos/role.dto';
+import { UpdateRoleInput } from 'src/engine/metadata-modules/role/dtos/update-role.input';
+import { RoleEntity } from 'src/engine/metadata-modules/role/role.entity';
 import { RoleService } from 'src/engine/metadata-modules/role/role.service';
 import { UserRoleService } from 'src/engine/metadata-modules/user-role/user-role.service';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
@@ -31,25 +34,65 @@ export class RoleResolver {
     private readonly userWorkspaceService: UserWorkspaceService,
   ) {}
 
-  @Query(() => [RoleDTO])
-  async getRoles(@AuthWorkspace() workspace: Workspace): Promise<RoleDTO[]> {
-    const roles = await this.roleService.getWorkspaceRoles(workspace.id);
-
-    return roles.map((role) => ({
+  private mapRoleEntityToDto(role: RoleEntity): RoleDTO {
+    return {
       id: role.id,
       label: role.label,
       description: role.description,
-      workspaceId: role.workspaceId,
-      createdAt: role.createdAt,
-      updatedAt: role.updatedAt,
       isEditable: role.isEditable,
-      userWorkspaceRoles: role.userWorkspaceRoles,
+      userWorkspaceRoles: role.userWorkspaceRoles ?? [],
       canUpdateAllSettings: role.canUpdateAllSettings,
       canReadAllObjectRecords: role.canReadAllObjectRecords,
       canUpdateAllObjectRecords: role.canUpdateAllObjectRecords,
       canSoftDeleteAllObjectRecords: role.canSoftDeleteAllObjectRecords,
       canDestroyAllObjectRecords: role.canDestroyAllObjectRecords,
-    }));
+    } as RoleDTO;
+  }
+
+  @Query(() => [RoleDTO])
+  async getRoles(@AuthWorkspace() workspace: Workspace): Promise<RoleDTO[]> {
+    const roles = await this.roleService.getWorkspaceRoles(workspace.id);
+
+    return roles.map((role) => this.mapRoleEntityToDto(role));
+  }
+
+  @Mutation(() => RoleDTO)
+  async createOneRole(
+    @AuthWorkspace() workspace: Workspace,
+    @Args('createRoleInput') createRoleInput: CreateRoleInput,
+  ): Promise<RoleDTO> {
+    const role = await this.roleService.createRole({
+      workspaceId: workspace.id,
+      input: createRoleInput,
+    });
+
+    return this.mapRoleEntityToDto(role);
+  }
+
+  @Mutation(() => RoleDTO)
+  async updateOneRole(
+    @AuthWorkspace() workspace: Workspace,
+    @Args('updateRoleInput') updateRoleInput: UpdateRoleInput,
+  ): Promise<RoleDTO> {
+    const role = await this.roleService.updateRole({
+      workspaceId: workspace.id,
+      input: updateRoleInput,
+    });
+
+    return this.mapRoleEntityToDto(role);
+  }
+
+  @Mutation(() => String)
+  async deleteOneRole(
+    @AuthWorkspace() workspace: Workspace,
+    @Args('roleId', { type: () => String }) roleId: string,
+  ): Promise<string> {
+    const deleted = await this.roleService.deleteRole({
+      roleId,
+      workspaceId: workspace.id,
+    });
+
+    return deleted.id;
   }
 
   @Mutation(() => WorkspaceMember)
