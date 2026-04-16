@@ -56,3 +56,11 @@ dump.rdb
 sample_jds/
 sample_jds/**
 packages/twenty-e2e-testing/~/.arx-linkedin-crx-profile/
+packages/twenty-front/assets/
+packages/twenty-front/icons/
+packages/twenty-front/images/
+packages/twenty-front/logos/
+packages/twenty-website/public/sitemap-*.xml
+packages/twenty-server/all_resumes_pdfs/
+packages/twenty-server/working_naukri_candidates/
+tools/chatwoot-source
