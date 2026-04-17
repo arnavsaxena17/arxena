@@ -11,9 +11,7 @@ import {
   UseInterceptors
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import * as fs from 'fs';
 import * as multer from 'multer';
-import * as path from 'path';
 
 import axios from 'axios';
 import {
@@ -65,9 +63,9 @@ import { JDParserService } from 'src/engine/core-modules/candidate-sourcing/serv
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
 import { createJobIdErrorResponse, validateAndExtractJobId } from 'src/engine/core-modules/candidate-sourcing/utils/job-id.utils';
+import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
 import { prompts } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
@@ -661,7 +659,7 @@ export class CandidateSourcingController {
           status: 'fail',
           message: 'CSV/Excel upload not yet implemented in NestJS'
         };
-      } else if (data.popup_data?.job_data_source === 'spreadsheet_import_twenty') {
+      } else if (data.popup_data?.job_data_source === 'spreadsheet_import') {
         // Handle spreadsheet import
         candidates = data.candidates || [];
         dataSource = data.popup_data.job_data_source;

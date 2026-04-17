@@ -7,10 +7,10 @@ import { COMPANY_INFO } from '@/lib/company-info';
 import { openSupportChat } from '../../../support/openSupportChat';
 
 import {
-  DiscordIcon,
-  GithubIcon2,
-  LinkedInIcon,
-  XIcon,
+    DiscordIcon,
+    GithubIcon2,
+    LinkedInIcon,
+    XIcon,
 } from '../../icons/SvgIcons';
 
 const FooterContainer = styled.div`
@@ -114,10 +114,23 @@ export const FooterDesktop = ({
         </RightSideFooterColumn>
         <RightSideFooterColumn>
           <RightSideFooterColumnTitle>Product</RightSideFooterColumnTitle>
+          <RightSideFooterLink href="/products">Products</RightSideFooterLink>
+          <RightSideFooterLink href="/solutions">Solutions</RightSideFooterLink>
           <RightSideFooterLink href="/pricing">Pricing</RightSideFooterLink>
           <RightSideFooterLink href="/engage">Engage</RightSideFooterLink>
           <RightSideFooterLink href="/chrome-extension">
             Chrome extension
+          </RightSideFooterLink>
+        </RightSideFooterColumn>
+        <RightSideFooterColumn>
+          <RightSideFooterColumnTitle>Resources</RightSideFooterColumnTitle>
+          <RightSideFooterLink href="/resources">Overview</RightSideFooterLink>
+          <RightSideFooterLink href="/resources/blog">Blog</RightSideFooterLink>
+          <RightSideFooterLink href="/resources/org-intelligence-reports">
+            Org intelligence reports
+          </RightSideFooterLink>
+          <RightSideFooterLink href="/resources/calculators">
+            Calculators
           </RightSideFooterLink>
         </RightSideFooterColumn>
         <RightSideFooterColumn>

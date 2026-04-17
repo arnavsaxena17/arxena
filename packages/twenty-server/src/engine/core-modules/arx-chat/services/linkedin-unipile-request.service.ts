@@ -171,6 +171,45 @@ export class LinkedinUnipileRequestService {
     return account?.id ? 'connected' : 'disconnected';
   }
 
+  /**
+   * Normalizes a raw LinkedIn account payload from Unipile (list item or GET by id).
+   */
+  mapLinkedinApiItemToAccountRow(item: LinkedinUnipileAccountItem) {
+    return {
+      id: item.id,
+      username: item.name || 'Unknown',
+      name: item.name || 'Unknown',
+      type: item.type,
+      status: this.mapAccountStatus(item),
+      created_at: item.created_at,
+      provider: 'LINKEDIN' as const,
+      connection_params: item.connection_params,
+      sources: item.sources || [],
+      groups: item.groups || [],
+    };
+  }
+
+  /**
+   * All LinkedIn accounts from Unipile (`GET /api/v1/accounts?provider=linkedin`).
+   * Does not filter by workspace keys — workspace metadata can be stale vs member profile;
+   * use this for member-level duplicate checks and match profile hints against these rows.
+   */
+  async listAllLinkedinAccountsFromUnipileApi() {
+    const response = (await this.makeUnipileRequest(
+      '/api/v1/accounts?provider=linkedin',
+    )) as { items?: LinkedinUnipileAccountItem[] };
+
+    const accounts = (response.items || []).map((item) =>
+      this.mapLinkedinApiItemToAccountRow(item),
+    );
+
+    this.logger.log(
+      `Unipile LinkedIn API: ${accounts.length} account(s) (full list, no workspace filter)`,
+    );
+
+    return { success: true as const, accounts };
+  }
+
   async getAllAccounts(workspace: Workspace): Promise<{
     success: boolean;
     accounts: LinkedinUnipileAccountItem[];
@@ -203,18 +242,9 @@ export class LinkedinUnipileRequestService {
         `Filtering LinkedIn accounts for workspace ${workspace.id} with linkedin_url: ${linkedinUrl ?? 'none'}, linkedin_unipile_account_id: ${linkedinUnipileAccountId ?? 'none'}`,
       );
 
-      const allAccounts = (response.items || []).map((item) => ({
-        id: item.id,
-        username: item.name || 'Unknown',
-        name: item.name || 'Unknown',
-        type: item.type,
-        status: this.mapAccountStatus(item),
-        created_at: item.created_at,
-        provider: 'LINKEDIN',
-        connection_params: item.connection_params,
-        sources: item.sources || [],
-        groups: item.groups || [],
-      }));
+      const allAccounts = (response.items || []).map((item) =>
+        this.mapLinkedinApiItemToAccountRow(item),
+      );
 
       const accounts = allAccounts.filter((account) => {
         if (linkedinUnipileAccountId && account.id === linkedinUnipileAccountId) {
@@ -261,18 +291,7 @@ export class LinkedinUnipileRequestService {
           linkedinUnipileAccountId,
         );
         if (single) {
-          const mapped = {
-            id: single.id,
-            username: single.name || 'Unknown',
-            name: single.name || 'Unknown',
-            type: single.type,
-            status: this.mapAccountStatus(single),
-            created_at: single.created_at,
-            provider: 'LINKEDIN',
-            connection_params: single.connection_params,
-            sources: single.sources || [],
-            groups: single.groups || [],
-          };
+          const mapped = this.mapLinkedinApiItemToAccountRow(single);
           accounts.push(mapped);
           this.logger.log(
             `Included workspace linked account ${linkedinUnipileAccountId} from single-account fetch`,

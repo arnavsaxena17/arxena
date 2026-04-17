@@ -14,7 +14,7 @@ const LETTERS = 'abcdefghijklmnopqrstuvwxyz'.split('');
 export const metadata: Metadata = {
   title: 'Browse Companies by Letter | Arxena',
   description:
-    'Browse org charts alphabetically across 1M+ companies. Map target accounts for sales, recruiting, investing, or research — real-time from LinkedIn and other sources.',
+    'Browse org charts alphabetically across 1M+ companies. Map target accounts for sales, recruiting, investing, or research — real-time Org Charts & Engagement.',
   alternates: {
     canonical: '/companies',
   },

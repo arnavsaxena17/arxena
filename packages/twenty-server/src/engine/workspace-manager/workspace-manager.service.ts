@@ -5,8 +5,8 @@ import { Repository } from 'typeorm';
 
 import { DEV_SEED_USER_WORKSPACE_IDS } from 'src/database/typeorm-seeds/core/user-workspaces';
 import {
-    SEED_ACME_WORKSPACE_ID,
-    SEED_APPLE_WORKSPACE_ID,
+  SEED_ACME_WORKSPACE_ID,
+  SEED_APPLE_WORKSPACE_ID,
 } from 'src/database/typeorm-seeds/core/workspaces';
 import { FeatureFlagKey } from 'src/engine/core-modules/feature-flag/enums/feature-flag-key.enum';
 import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
@@ -262,7 +262,7 @@ export class WorkspaceManagerService {
 
     await this.userRoleService.assignRoleToUserWorkspace({
       workspaceId,
-      userWorkspaceId: userWorkspace[0].id,
+      userWorkspaceId: userWorkspace.id,
       roleId: adminRole.id,
     });
   }

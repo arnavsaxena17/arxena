@@ -7,10 +7,10 @@ import { COMPANY_INFO } from '@/lib/company-info';
 import { openSupportChat } from '../../../support/openSupportChat';
 
 import {
-  DiscordIcon,
-  GithubIcon2,
-  LinkedInIcon,
-  XIcon,
+    DiscordIcon,
+    GithubIcon2,
+    LinkedInIcon,
+    XIcon,
 } from '../../icons/SvgIcons';
 
 const StyledFooterMobile = styled.footer`
@@ -116,9 +116,20 @@ export const FooterMobile = ({ phase2Exposed = false }: FooterMobileProps) => {
       </StyledLinkSection>
       <StyledLinkSection>
         <StyledSectionTitle>Product</StyledSectionTitle>
+        <StyledLink href="/products">Products</StyledLink>
+        <StyledLink href="/solutions">Solutions</StyledLink>
         <StyledLink href="/pricing">Pricing</StyledLink>
         <StyledLink href="/engage">Engage</StyledLink>
         <StyledLink href="/chrome-extension">Chrome extension</StyledLink>
+      </StyledLinkSection>
+      <StyledLinkSection>
+        <StyledSectionTitle>Resources</StyledSectionTitle>
+        <StyledLink href="/resources">Overview</StyledLink>
+        <StyledLink href="/resources/blog">Blog</StyledLink>
+        <StyledLink href="/resources/org-intelligence-reports">
+          Org intelligence reports
+        </StyledLink>
+        <StyledLink href="/resources/calculators">Calculators</StyledLink>
       </StyledLinkSection>
       <StyledLinkSection>
         <StyledSectionTitle>Company</StyledSectionTitle>

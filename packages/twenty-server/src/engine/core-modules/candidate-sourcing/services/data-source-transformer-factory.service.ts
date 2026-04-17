@@ -26,7 +26,7 @@ export enum DataSourceType {
   LINKEDIN_RECRUITER_JOBS = 'linkedin_recruiter_jobs',
   LINKEDIN_RECRUITER_LITE = 'linkedin_recruiter_lite',
   PROFILE_DATA_NAUKRI = 'profile_data_naukri',
-  SPREADSHEET_IMPORT_TWENTY = 'spreadsheet_import_twenty',
+  SPREADSHEET_IMPORT = 'spreadsheet_import',
   DATA_UPLOAD = 'data_upload',
   LINKEDIN_SALES_NAVIGATOR = 'linkedin_sales_navigator',
   LINKEDIN_SEARCH = 'linkedin_search',
@@ -62,7 +62,7 @@ export class DataSourceTransformerFactoryService {
     this.transformers.set(DataSourceType.RESDEX_NAUKRI, this.resdexNaukriTransformer);
     this.transformers.set(DataSourceType.HIRING_NAUKRI, this.hiringNaukriTransformer);
     this.transformers.set(DataSourceType.LINKEDIN_PREMIUM, this.linkedinPremiumTransformer);
-    this.transformers.set(DataSourceType.SPREADSHEET_IMPORT_TWENTY, this.spreadsheetImportTwentyTransformer);
+    this.transformers.set(DataSourceType.SPREADSHEET_IMPORT, this.spreadsheetImportTwentyTransformer);
     this.transformers.set(DataSourceType.RMS_NAUKRI, this.rmsNaukriTransformer);
     this.transformers.set(DataSourceType.APNA_DATABASE, this.apnaDatabaseTransformer);
     this.transformers.set(DataSourceType.PROFILE_DATA_NAUKRI, this.naukriProfileDataTransformer);
@@ -183,7 +183,7 @@ export class DataSourceTransformerFactoryService {
       'linkedin_recruiter_jobs': DataSourceType.LINKEDIN_RECRUITER_JOBS,
       'linkedin_recruiter_lite': DataSourceType.LINKEDIN_RECRUITER_LITE,
       'profile_data_naukri': DataSourceType.PROFILE_DATA_NAUKRI,
-      'spreadsheet_import_twenty': DataSourceType.SPREADSHEET_IMPORT_TWENTY,
+      'spreadsheet_import': DataSourceType.SPREADSHEET_IMPORT,
       'data_upload': DataSourceType.DATA_UPLOAD,
       'linkedin_sales_navigator': DataSourceType.LINKEDIN_SALES_NAVIGATOR,
       'linkedin_search': DataSourceType.LINKEDIN_SEARCH,

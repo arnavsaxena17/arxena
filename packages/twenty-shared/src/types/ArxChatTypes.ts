@@ -2390,6 +2390,8 @@ export interface UnipileWhatsappAccount {
 
 export interface WhatsappQrCodeResponse {
   success?: boolean;
+  /** Server skipped creating a new QR because this member's number already has an active Unipile session. */
+  alreadyConnected?: boolean;
   qrCodeString: string;
   code: string;
   account_id?: string;

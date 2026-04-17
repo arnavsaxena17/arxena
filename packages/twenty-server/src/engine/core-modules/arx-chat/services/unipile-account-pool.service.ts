@@ -2,14 +2,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import {
-  findLinkedinUnipileAccountBlockingNewConnectionForProfile,
-  findWhatsappUnipileAccountBlockingNewConnectionForProfile,
-  shouldBlockNewUnipileConnectionForStatus,
-  type UnipileLinkedinAccount,
-  type UnipileWhatsappAccount,
+    findLinkedinUnipileAccountBlockingNewConnectionForProfile,
+    findWhatsappUnipileAccountBlockingNewConnectionForProfile,
+    shouldBlockNewUnipileConnectionForStatus,
+    type UnipileLinkedinAccount,
+    type UnipileWhatsappAccount,
 } from 'twenty-shared';
 
 import { LinkedinUnipileRequestService } from './linkedin-unipile-request.service';
@@ -75,6 +75,7 @@ export class UnipileAccountPoolService {
     const type = accountType === 'LINKEDIN' ? 'linkedin' : 'whatsapp';
     const workspace = { id: workspaceId } as Workspace;
 
+    /** Hints for identity matching; connection state always comes from Unipile API responses below. */
     const profileFields =
       await this.workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields(
         workspaceMemberId,
@@ -122,7 +123,7 @@ export class UnipileAccountPoolService {
 
     if (accountType === 'LINKEDIN') {
       const { accounts } =
-        await this.linkedinUnipileRequestService.getAllAccounts(workspace);
+        await this.linkedinUnipileRequestService.listAllLinkedinAccountsFromUnipileApi();
       const blocking =
         findLinkedinUnipileAccountBlockingNewConnectionForProfile(
           accounts as UnipileLinkedinAccount[],
@@ -144,7 +145,7 @@ export class UnipileAccountPoolService {
         await this.whatsappUnipileRequestService.getAllAccounts(workspace);
       const blocking =
         findWhatsappUnipileAccountBlockingNewConnectionForProfile(
-          accounts as UnipileWhatsappAccount[],
+          accounts as unknown as UnipileWhatsappAccount[],
           profileFields,
         );
       if (blocking?.id) {

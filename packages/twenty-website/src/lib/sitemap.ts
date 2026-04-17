@@ -1,5 +1,7 @@
 import { toSlug } from 'twenty-shared';
 
+import { PRODUCT_SLUGS, SOLUTION_SLUGS } from '@/lib/marketing-site-pages';
+
 /** Canonical marketing site origin for sitemap `<loc>` and robots when env points at localhost. */
 export const CANONICAL_SITE_URL = 'https://arxena.com';
 export const SITEMAP_INDEX_FILENAME = 'sitemap-main.xml';
@@ -79,6 +81,14 @@ export const STATIC_ROUTES = [
   '/chrome-extension',
   '/story',
   '/team',
+  '/products',
+  ...PRODUCT_SLUGS.map((slug) => `/products/${slug}`),
+  '/solutions',
+  ...SOLUTION_SLUGS.map((slug) => `/solutions/${slug}`),
+  '/resources',
+  '/resources/blog',
+  '/resources/org-intelligence-reports',
+  '/resources/calculators',
   '/legal/terms',
   '/legal/privacy',
 ];

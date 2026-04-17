@@ -202,7 +202,7 @@ test.describe('Job candidate upload regression', () => {
       const expectedNewRows = computeExpectedNewRows(
         before,
         rows,
-        'spreadsheet_import_twenty',
+        'spreadsheet_import',
       );
 
       await importSpreadsheetViaStepper(page, {

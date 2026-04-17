@@ -1,26 +1,30 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpException,
-  HttpStatus,
-  Logger,
-  Param,
-  Post,
-  Req,
-  Res,
-  UseGuards,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpException,
+    HttpStatus,
+    Logger,
+    Param,
+    Post,
+    Req,
+    Res,
+    UseGuards,
 } from '@nestjs/common';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+import {
+    findWhatsappUnipileAccountBlockingNewConnectionForProfile,
+    type UnipileWhatsappAccount,
+} from 'twenty-shared';
 import { UnipileClient } from 'unipile-node-sdk';
 import { UnipileWebhookService } from '../services/unipile-webhook.service';
 import { WhatsappUnipileRequestService } from '../services/whatsapp-unipile-request.service';
 import { WorkspaceMemberProfileUnipileService } from '../services/workspace-member-profile-unipile.service';
 import type {
-  UnipileAccountStatusWebhook,
+    UnipileAccountStatusWebhook,
 } from '../types/unipile-webhook.types';
 
 @Controller('whatsapp-unipile')
@@ -92,10 +96,62 @@ export class WhatsappUnipileController {
    * Uses Unipile SDK's connectWhatsapp() method
    */
   @Post('qr-code')
-  async requestQrCode(@AuthWorkspace() workspace: Workspace) {
+  async requestQrCode(
+    @AuthWorkspace() workspace: Workspace,
+    @Req() request: {
+      workspaceMemberId?: string;
+      headers?: { authorization?: string };
+    },
+  ) {
     try {
       this.logger.log(`Requesting WhatsApp QR code for workspace: ${workspace.id}`);
-      
+
+      const workspaceMemberId = request.workspaceMemberId;
+      const authToken =
+        request.headers?.authorization?.replace(/^Bearer\s+/i, '') ?? '';
+
+      if (workspaceMemberId && authToken) {
+        const profile =
+          await this.workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields(
+            workspaceMemberId,
+            authToken,
+          );
+        // Unipile accounts API is source of truth; profile fields are only used to pick the matching row.
+        const { accounts } =
+          await this.unipileRequestService.getAllAccounts(workspace);
+        const blocking =
+          findWhatsappUnipileAccountBlockingNewConnectionForProfile(
+            accounts as unknown as UnipileWhatsappAccount[],
+            profile,
+          );
+        if (blocking?.id) {
+          try {
+            const accountPayload =
+              await this.unipileRequestService.makeUnipileRequest(
+                `/api/v1/accounts/${blocking.id}`,
+              );
+            await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+              workspaceMemberId,
+              authToken,
+              'whatsapp',
+              blocking.id,
+              accountPayload,
+            );
+          } catch (syncErr) {
+            this.logger.warn(
+              `Could not sync existing WhatsApp Unipile account to profile: ${syncErr instanceof Error ? syncErr.message : syncErr}`,
+            );
+          }
+          return {
+            success: true,
+            alreadyConnected: true,
+            qrCodeString: '',
+            code: '',
+            account_id: blocking.id,
+          };
+        }
+      }
+
       // Use Unipile SDK's connectWhatsapp() method
       const response = await this.unipileClient.account.connectWhatsapp();
       const { qrCodeString, code } = response;

@@ -1,29 +1,34 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  HttpException,
-  HttpStatus,
-  Logger,
-  Param,
-  Post,
-  Req,
-  Res,
-  UseGuards
+    Body,
+    Controller,
+    Delete,
+    HttpException,
+    HttpStatus,
+    Logger,
+    Param,
+    Post,
+    Req,
+    Res,
+    UseGuards
 } from '@nestjs/common';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+import {
+    findLinkedinUnipileAccountBlockingNewConnectionForProfile,
+    type UnipileLinkedinAccount,
+} from 'twenty-shared';
+
 import { LinkedinUnipileRequestService } from '../services/linkedin-unipile-request.service';
 import { LinkedinUnipileMessagingService } from '../services/linkedin-unipile/linkedin-unipile-messaging.service';
 import { UnipileAccountPoolService } from '../services/unipile-account-pool.service';
 import { UnipileWebhookService } from '../services/unipile-webhook.service';
 import { WorkspaceMemberProfileUnipileService } from '../services/workspace-member-profile-unipile.service';
 import type {
-  CreateWebhookDto,
-  UnipileAccountStatusWebhook,
+    CreateWebhookDto,
+    UnipileAccountStatusWebhook,
 } from '../types/unipile-webhook.types';
 
 // DTOs for LinkedIn Unipile integration
@@ -134,6 +139,41 @@ export class LinkedinUnipileController {
   }
 
   /**
+   * Avoid creating a duplicate LinkedIn Unipile account when the same member identity
+   * (stored id or profile URL hints) already has an active or in-progress connection in Unipile.
+   * Uses the Unipile accounts API list as source of truth, not workspace keys (which can be stale).
+   */
+  private async assertNoBlockingLinkedinConnectionForMember(
+    workspaceMemberId: string | undefined,
+    authToken: string,
+  ): Promise<void> {
+    if (!workspaceMemberId || !authToken) {
+      return;
+    }
+    const profile =
+      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields(
+        workspaceMemberId,
+        authToken,
+      );
+    const { accounts } =
+      await this.linkedinUnipileRequestService.listAllLinkedinAccountsFromUnipileApi();
+    const blocking = findLinkedinUnipileAccountBlockingNewConnectionForProfile(
+      accounts as UnipileLinkedinAccount[],
+      profile,
+    );
+    if (blocking?.id) {
+      throw new HttpException(
+        {
+          message:
+            'This LinkedIn profile is already connected to Unipile. Disconnect the existing account or wait for it to finish connecting before adding another.',
+          existing_account_id: blocking.id,
+        },
+        HttpStatus.CONFLICT,
+      );
+    }
+  }
+
+  /**
    * After a successful LinkedIn Unipile connection (non-checkpoint), persist account id,
    * linkedinUrl, and related fields on the current workspace member profile when JWT + member id are present.
    */
@@ -188,7 +228,14 @@ export class LinkedinUnipileController {
   ) {
     try {
       this.logger.log(`Connecting LinkedIn account for workspace: ${workspace.id}`);
-      
+
+      const authToken =
+        request.headers?.authorization?.replace(/^Bearer\s+/i, '') ?? '';
+      await this.assertNoBlockingLinkedinConnectionForMember(
+        request.workspaceMemberId,
+        authToken,
+      );
+
       const result = (await this.linkedinUnipileRequestService.makeUnipileRequest(
         '/api/v1/accounts',
         'POST',
@@ -255,7 +302,14 @@ export class LinkedinUnipileController {
   ) {
     try {
       this.logger.log(`Connecting LinkedIn account with cookie for workspace: ${workspace.id}`);
-      
+
+      const authTokenCookie =
+        request.headers?.authorization?.replace(/^Bearer\s+/i, '') ?? '';
+      await this.assertNoBlockingLinkedinConnectionForMember(
+        request.workspaceMemberId,
+        authTokenCookie,
+      );
+
       const result = (await this.linkedinUnipileRequestService.makeUnipileRequest(
         '/api/v1/accounts',
         'POST',

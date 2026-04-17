@@ -6,8 +6,10 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { OrgChartSearch } from '@/app/_components/orgchart/OrgChartSearch';
+import { HeaderMobileNavDropdown } from '@/app/_components/ui/layout/header/HeaderNavDropdown';
 import { Logo } from '@/app/_components/ui/layout/Logo';
 import { trackGA4Event } from '@/lib/analytics';
+import { PRODUCT_PAGES, SOLUTION_PAGES } from '@/lib/marketing-site-pages';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 
 import { LogoContainer, NavOpen } from './styled';
@@ -170,6 +172,19 @@ export const HeaderMobile = ({
       >
         <StyledMobileLinkList>
           <StyledNavLink href="/story">Story</StyledNavLink>
+          <HeaderMobileNavDropdown
+            basePath="/solutions"
+            label="Solutions"
+            items={SOLUTION_PAGES}
+            onItemNavigate={() => setMenuOpen(false)}
+          />
+          <HeaderMobileNavDropdown
+            basePath="/products"
+            label="Products"
+            items={PRODUCT_PAGES}
+            onItemNavigate={() => setMenuOpen(false)}
+          />
+          <StyledNavLink href="/resources">Resources</StyledNavLink>
           <StyledNavLink href="/team">Team</StyledNavLink>
           <StyledNavLink href="/contact">Contact</StyledNavLink>
           <StyledNavLink href="/pricing">Pricing</StyledNavLink>
@@ -185,7 +200,7 @@ export const HeaderMobile = ({
           {showSearch && (
             <StyledSearchWrapper>
               <OrgChartSearch
-                placeholder="Search any company's org chart"
+                placeholder="Search any company"
                 startIcon={<IconHierarchy2 size={20} />}
               />
             </StyledSearchWrapper>

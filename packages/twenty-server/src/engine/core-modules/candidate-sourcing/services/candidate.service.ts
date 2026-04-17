@@ -1170,7 +1170,7 @@ export class CandidateService {
         // Spreadsheet import: ensure we always have a linked Person.
         // These imports can legitimately arrive without an existing Person (no match by uniqueStringKey),
         // but the UI expects Candidate.peopleId to exist to persist edits (e.g. remarks).
-        if (!personId && profile?.creationSource === 'spreadsheet_import_twenty') {
+        if (!personId && profile?.creationSource === 'spreadsheet_import') {
           console.log(`No personId for spreadsheet import key ${key}. Creating person before candidate.`);
           try {
             const personNode = mapArxCandidateToPersonNode(profile);
@@ -1203,7 +1203,7 @@ export class CandidateService {
         // If a spreadsheet-import candidate already exists but is not linked to a person, link it now.
         if (
           existingCandidate &&
-          profile?.creationSource === 'spreadsheet_import_twenty' &&
+          profile?.creationSource === 'spreadsheet_import' &&
           personId &&
           !existingCandidate?.peopleId
         ) {

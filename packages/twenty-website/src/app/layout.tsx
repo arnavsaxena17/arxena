@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://arxena.com'),
   title: 'Arxena.com',
   description:
-    'See inside any company, then reach the right person automatically. Real-time org charts from LinkedIn and other sources — map, list, enrich, and AI outreach in your voice. 1M+ companies, 800M+ professionals.',
+    'Before the call. Before the brief. Before outreach. Real-time Org Intelligence - Org Charts & Engagement.',
   icons: {
     icon: [
       { url: '/favicon.ico/favicon-96x96.png', sizes: '96x96', type: 'image/png' },

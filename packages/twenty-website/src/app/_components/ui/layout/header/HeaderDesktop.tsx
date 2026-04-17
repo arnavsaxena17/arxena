@@ -5,8 +5,10 @@ import { IconHierarchy2 } from '@tabler/icons-react';
 import Link from 'next/link';
 
 import { OrgChartSearch } from '@/app/_components/orgchart/OrgChartSearch';
+import { HeaderNavDropdown } from '@/app/_components/ui/layout/header/HeaderNavDropdown';
 import { Logo } from '@/app/_components/ui/layout/Logo';
 import { trackGA4Event } from '@/lib/analytics';
+import { PRODUCT_PAGES, SOLUTION_PAGES } from '@/lib/marketing-site-pages';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 
 const StyledDesktopNav = styled.nav`
@@ -20,6 +22,7 @@ const StyledDesktopNav = styled.nav`
   position: sticky;
   top: 0;
   z-index: 50;
+  overflow: visible;
 
   @media (max-width: 809px) {
     display: none;
@@ -30,6 +33,8 @@ const StyledNav = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+  overflow: visible;
 `;
 
 const StyledNavLink = styled(Link)`
@@ -103,6 +108,17 @@ export const HeaderDesktop = ({
       <StyledNav>
         <Logo />
         <StyledNavLink href="/story">Story</StyledNavLink>
+        <HeaderNavDropdown
+          href="/solutions"
+          label="Solutions"
+          items={SOLUTION_PAGES}
+        />
+        <HeaderNavDropdown
+          href="/products"
+          label="Products"
+          items={PRODUCT_PAGES}
+        />
+        <StyledNavLink href="/resources">Resources</StyledNavLink>
         <StyledNavLink href="/team">Team</StyledNavLink>
         <StyledNavLink href="/contact">Contact</StyledNavLink>
         <StyledNavLink href="/pricing">Pricing</StyledNavLink>
@@ -114,7 +130,7 @@ export const HeaderDesktop = ({
       {showSearch && (
         <StyledSearchWrapper>
           <OrgChartSearch
-            placeholder="Search any company's org chart"
+            placeholder="Search any company"
             startIcon={<IconHierarchy2 size={20} />}
           />
         </StyledSearchWrapper>

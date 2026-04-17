@@ -2,8 +2,8 @@ import { useRecoilCallback, useRecoilValue } from 'recoil';
 
 import { CurrentUser, currentUserState } from '@/auth/states/currentUserState';
 import {
-  CurrentWorkspace,
-  currentWorkspaceState,
+    CurrentWorkspace,
+    currentWorkspaceState,
 } from '@/auth/states/currentWorkspaceState';
 import { skipOptionalOnboardingStepsState } from '@/client-config/states/skipOptionalOnboardingStepsState';
 import { useConnectLinkedinOnboardingState } from '@/client-config/states/useConnectLinkedinOnboardingState';
@@ -19,6 +19,9 @@ const getNextOnboardingStatus = (
   skipOptionalOnboardingSteps: boolean,
   collectPhoneNumberInOnboarding: boolean,
 ) => {
+  const isInvitedTeamMember =
+    (currentWorkspace?.workspaceMembersCount ?? 0) > 1;
+
   if (currentUser?.onboardingStatus === OnboardingStatus.WORKSPACE_ACTIVATION) {
     return OnboardingStatus.PROFILE_CREATION;
   }
@@ -28,7 +31,7 @@ const getNextOnboardingStatus = (
     if (collectPhoneNumberInOnboarding) {
       return OnboardingStatus.COLLECT_PHONE_NUMBER;
     }
-    if (useIntentChoiceOnboarding) {
+    if (useIntentChoiceOnboarding && !isInvitedTeamMember) {
       return OnboardingStatus.INTENT_CHOICE;
     }
     if (skipOptionalOnboardingSteps) {
@@ -40,7 +43,7 @@ const getNextOnboardingStatus = (
   }
 
   if (currentUser?.onboardingStatus === OnboardingStatus.COLLECT_PHONE_NUMBER) {
-    if (useIntentChoiceOnboarding) {
+    if (useIntentChoiceOnboarding && !isInvitedTeamMember) {
       return OnboardingStatus.INTENT_CHOICE;
     }
     if (skipOptionalOnboardingSteps) {

@@ -286,7 +286,16 @@ export const WhatsappUnipileQrCode: React.FC<WhatsappUnipileQrCodeProps> = ({
       
       const service = getWhatsappUnipileService();
       const response = await service.requestQrCode(accessToken);
-      
+
+      if (response.alreadyConnected && response.account_id) {
+        setStatus('connected');
+        setQrCode(null);
+        if (onConnected) {
+          onConnected(response.account_id);
+        }
+        return;
+      }
+
       if (response.code) {
         console.log('response qr code', response);
         setQrCode(response.code);

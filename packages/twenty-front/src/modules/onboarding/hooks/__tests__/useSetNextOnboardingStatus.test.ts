@@ -9,9 +9,9 @@ import { useConnectLinkedinOnboardingState } from '@/client-config/states/useCon
 import { useIntentChoiceOnboardingState } from '@/client-config/states/useIntentChoiceOnboardingState';
 import { useSetNextOnboardingStatus } from '@/onboarding/hooks/useSetNextOnboardingStatus';
 import {
-  FeatureFlagKey,
-  OnboardingStatus,
-  SubscriptionStatus,
+    FeatureFlagKey,
+    OnboardingStatus,
+    SubscriptionStatus,
 } from '~/generated/graphql';
 import {
     mockCurrentWorkspace,
@@ -142,5 +142,17 @@ describe('useSetNextOnboardingStatus', () => {
       true,
     );
     expect(nextOnboardingStatus).toEqual(OnboardingStatus.INTENT_CHOICE);
+  });
+
+  it('should skip intent after phone when joining a workspace that already has members (invitee)', () => {
+    const nextOnboardingStatus = renderHooks(
+      OnboardingStatus.COLLECT_PHONE_NUMBER,
+      false,
+      false,
+      false,
+      false,
+      true,
+    );
+    expect(nextOnboardingStatus).toEqual(OnboardingStatus.SYNC_EMAIL);
   });
 });

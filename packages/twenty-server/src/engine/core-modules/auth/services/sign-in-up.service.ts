@@ -260,6 +260,9 @@ export class SignInUpService {
           )
         : params.userData.existingUser;
 
+    const userCountBeforeJoin =
+      (await this.userWorkspaceService.getUserCount(params.workspace.id)) ?? 0;
+
     const updatedUser = await this.userWorkspaceService.addUserToWorkspace(
       currentUser,
       params.workspace,
@@ -268,14 +271,26 @@ export class SignInUpService {
     const user = Object.assign(currentUser, updatedUser);
 
     if (params.userData.type === 'newUserWithPicture') {
-      await this.activateOnboardingForUser(user, params.workspace);
+      await this.activateOnboardingForUser(user, params.workspace, {
+        // Invited members join a workspace that already has at least one user (inviter).
+        skipIntentChoice: userCountBeforeJoin >= 1,
+      });
     }
 
     return user;
   }
 
-  private async activateOnboardingForUser(user: User, workspace: Workspace) {
-    if (this.environmentService.get('USE_INTENT_CHOICE_ONBOARDING')) {
+  private async activateOnboardingForUser(
+    user: User,
+    workspace: Workspace,
+    options?: { skipIntentChoice?: boolean },
+  ) {
+    const skipIntentChoice = options?.skipIntentChoice === true;
+
+    if (
+      !skipIntentChoice &&
+      this.environmentService.get('USE_INTENT_CHOICE_ONBOARDING')
+    ) {
       await this.onboardingService.setOnboardingIntentChoicePending({
         userId: user.id,
         workspaceId: workspace.id,

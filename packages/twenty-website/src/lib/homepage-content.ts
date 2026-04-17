@@ -34,87 +34,87 @@ export const TESTIMONIALS = [
 ] as const;
 
 export const USE_CASES_SECTION_SUBTITLE =
-  'The teams that live and die by who they can reach';
+  'People Discovery when it matters most';
 
 export const USE_CASES = [
   {
-    title: 'Sales teams',
-    description:
-      'Map your target accounts, identify champions and blockers, and let AI open conversations at scale. No more mass-blasting cold emails.',
-    href: '/engage',
-  },
-  {
-    title: 'Recruiters',
-    description:
-      'Find passive candidates by role, level, and company in real time. Reach them on WhatsApp and LinkedIn — where they actually respond.',
-    href: '/org-chart/google',
-  },
-  {
     title: 'Investors & PE/VC',
     description:
-      'Assess team depth, leadership quality, and org structure at portfolio companies or acquisition targets — before a single call.',
-    href: '/org-chart/netflix',
+      'Know the bench before the management call. IC memos, CIMs, and LP updates backed by real structure—not what the company told you.',
+    href: '/solutions/pe-vc',
   },
   {
-    title: 'Founders',
+    title: 'Executive search',
     description:
-      "Understand how competitors are structured, who they're hiring, and which executives you should be talking to at your next enterprise prospect.",
-    href: '/org-chart/microsoft',
+      'Walk into the mandate conversation with names. Before the client has briefed anyone else.',
+    href: '/solutions/executive-search',
+  },
+  {
+    title: 'Sales & ABM',
+    description:
+      'Know the committee before the first message. Never bet the quarter on a single champion.',
+    href: '/solutions/sales-abm',
+  },
+  {
+    title: 'Corporate strategy',
+    description:
+      'See how peers structure functions and invest headcount before you decide how you will.',
+    href: '/solutions/corporate-strategy',
   },
 ] as const;
 
 export const HOW_IT_WORKS_SECTION_SUBTITLE =
-  'From company name to booked meeting — in four steps';
+  'From org map to conversation—in one place';
 
 export const HOW_IT_WORKS_STEPS = [
   {
     step: 1,
-    title: 'Search any company',
+    title: 'Map the org',
     description:
-      'Type a company name. Arxena fetches their real-time org chart from LinkedIn and other sources — roles, seniority, reporting lines, locations — algorithmically clustered so you can navigate it instantly.',
+      'Search any company. Arxena pulls a real-time view from LinkedIn and other sources—roles, reporting lines, function clusters—navigable in seconds.',
   },
   {
     step: 2,
-    title: 'Map the structure',
+    title: 'Plan your move',
     description:
-      'See who leads which team, who reports to whom, and which roles are relevant to your goal. Filter by function, seniority, or geography. Understand team composition at a glance.',
+      'Assess the bench before the call. Find candidates before the brief lands. Map the committee before outreach. The org becomes the plan.',
   },
   {
     step: 3,
-    title: 'Build your list and get contacts',
+    title: 'Reach with context',
     description:
-      'Select the people you want to reach. Arxena enriches each profile with verified email, LinkedIn, and WhatsApp contact details — ready to act on immediately.',
+      'Arxena enriches contacts and drafts outreach in your voice—with context from the org in every message, not a generic sequence.',
   },
   {
     step: 4,
-    title: 'AI engages for you',
+    title: 'Measure what works',
     description:
-      "Arxena's AI sends personalized messages on WhatsApp, LinkedIn, and email — written in your voice, with context from the org chart. You step in only when someone has already replied. No more cold silence.",
+      'Every touch tracked across LinkedIn, WhatsApp, and email. See what converts by persona and sequence—each cycle sharper than the last.',
     href: '/engage',
   },
 ] as const;
 
 export const DIFFERENTIATORS = [
   {
-    title: 'Any company. Real-time.',
+    title: 'Built for the moment before you act',
     description:
-      "Not a static database. Arxena fetches live org data from LinkedIn and other sources, so you see who's actually there today — not who was listed six months ago.",
+      'The call is tomorrow. The brief just came in. You are about to send the first email. That is when Arxena fits—not after the sequence has already stalled.',
   },
   {
-    title: 'AI that engages — not just lists',
+    title: 'Every touch tracked',
     description:
-      'Most tools stop at "here\'s a contact." Arxena goes further: AI reaches out in your voice, with personalized context, across WhatsApp, LinkedIn, and email. You only respond to warm replies.',
+      'LinkedIn, WhatsApp, email—all in one place. See response rates by persona, function, and sequence. Know what is working.',
     href: '/engage',
   },
   {
-    title: 'Org structure, not just names',
+    title: 'Structure, not just names',
     description:
-      "See reporting lines, team clusters, seniority layers. Understand who has budget authority, who's the gatekeeper, and who's the champion — before your first message.",
+      'Reporting lines, budget owners, gatekeepers. See the org before you approach it—not just a list of contacts to blast.',
   },
   {
-    title: 'One workflow, start to finish',
+    title: 'Map → plan → reach → measure',
     description:
-      'Search → map → list → contact → engage. No stitching together six tools. Arxena covers the entire journey from company name to booked meeting.',
+      'One workflow. No exports. No handoffs to spreadsheets.',
   },
 ] as const;
 

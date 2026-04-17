@@ -10,7 +10,7 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
   }
 
   getDataSourceIdentifier(): string {
-    return 'spreadsheet_import_twenty';
+    return 'spreadsheet_import';
   }
 
   transformToUserProfile(
@@ -151,7 +151,7 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
       // Use the DataProcessingUtils to generate uniqueStringKey properly
       userProfile.uniqueStringKey = this.dataProcessingUtils.generateUniqueStringKey(
         candidateData,
-        'spreadsheet_import_twenty'
+        'spreadsheet_import'
       );
     }
   }

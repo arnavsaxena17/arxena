@@ -1,6 +1,6 @@
 import {
-  type UnipileLinkedinAccount,
-  type UnipileWhatsappAccount,
+    type UnipileLinkedinAccount,
+    type UnipileWhatsappAccount,
 } from '../types/ArxChatTypes';
 
 export type WorkspaceMemberProfileUnipileFields = {
@@ -259,6 +259,9 @@ export const whatsappAccountIdentityMatchesWorkspaceMemberProfile = (
   return phonesMatch(profilePhone, accountPhone);
 };
 
+/**
+ * @param accounts Rows from Unipile accounts API (not CRM profile). Profile is used only to pick the matching identity.
+ */
 export const findLinkedinUnipileAccountBlockingNewConnectionForProfile = (
   accounts: UnipileLinkedinAccount[],
   profile: WorkspaceMemberProfileUnipileFields | null,
@@ -277,6 +280,9 @@ export const findLinkedinUnipileAccountBlockingNewConnectionForProfile = (
   return undefined;
 };
 
+/**
+ * @param accounts Rows from Unipile accounts API (not CRM profile). Profile is used only to pick the matching identity.
+ */
 export const findWhatsappUnipileAccountBlockingNewConnectionForProfile = (
   accounts: UnipileWhatsappAccount[],
   profile: WorkspaceMemberProfileUnipileFields | null,

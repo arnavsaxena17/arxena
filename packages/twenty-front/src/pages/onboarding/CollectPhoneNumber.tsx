@@ -1,6 +1,14 @@
 import styled from '@emotion/styled';
+import {
+    FloatingPortal,
+    autoUpdate,
+    flip,
+    offset,
+    shift,
+    useFloating,
+} from '@floating-ui/react';
 import { isValidPhoneNumber } from 'libphonenumber-js';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { ActionLink, H2Title, MainButton } from 'twenty-ui';
 
@@ -16,6 +24,7 @@ import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
 import { useSetNextOnboardingStatus } from '@/onboarding/hooks/useSetNextOnboardingStatus';
 import { useCountries } from '@/ui/input/components/internal/hooks/useCountries';
+import { useListenClickOutside } from '@/ui/utilities/pointer-event/hooks/useListenClickOutside';
 import { WorkspaceMember } from '@/workspace-member/types/WorkspaceMember';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { isDefined } from 'twenty-shared';
@@ -42,10 +51,8 @@ const StyledSkipContainer = styled.div`
   margin-top: ${({ theme }) => theme.spacing(3)};
 `;
 
-/** Wrapper that establishes the relative context for the dropdown */
 const StyledPhoneRow = styled.div`
   display: flex;
-  position: relative;
 `;
 
 const StyledPhoneInputContainer = styled.div`
@@ -109,19 +116,15 @@ const StyledChevron = styled.span`
   line-height: 1;
 `;
 
-/** Absolutely-positioned dropdown — rendered inside the modal DOM, no portal */
+/** Portaled dropdown; position comes from Floating UI (escapes modal overflow clip) */
 const StyledDropdown = styled.div`
   background: ${({ theme }) => theme.background.primary};
   border: 1px solid ${({ theme }) => theme.border.color.medium};
   border-radius: ${({ theme }) => theme.border.radius.sm};
   box-shadow: ${({ theme }) => theme.boxShadow.strong};
-  left: 0;
   max-height: 240px;
   overflow-y: auto;
-  position: absolute;
-  top: calc(100% + 4px);
   width: 240px;
-  z-index: 1000;
 `;
 
 const StyledSearchInput = styled.input`
@@ -253,20 +256,22 @@ export const CollectPhoneNumber = () => {
   const [error, setError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const pickerRef = useRef<HTMLDivElement>(null);
+  const { refs, floatingStyles } = useFloating({
+    placement: 'bottom-start',
+    strategy: 'fixed',
+    middleware: [offset(4), shift(), flip()],
+    whileElementsMounted: autoUpdate,
+  });
 
-  // Close picker on outside click
-  useEffect(() => {
-    if (!isPickerOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (!pickerRef.current?.contains(e.target as Node)) {
-        setIsPickerOpen(false);
-        setSearch('');
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isPickerOpen]);
+  useListenClickOutside({
+    refs: [refs.domReference, refs.floating],
+    callback: () => {
+      setIsPickerOpen(false);
+      setSearch('');
+    },
+    listenerId: 'collect-phone-country-picker',
+    enabled: isPickerOpen,
+  });
 
   const filteredCountries = useMemo(
     () =>
@@ -419,8 +424,7 @@ export const CollectPhoneNumber = () => {
             title={t`Phone Number`}
             description={t`Your phone number with country code`}
           />
-          {/* position:relative here so the dropdown is scoped inside the modal */}
-          <StyledPhoneRow ref={pickerRef}>
+          <StyledPhoneRow ref={refs.setReference}>
             <StyledPhoneInputContainer>
               {/* Country picker trigger */}
               <StyledPickerButton
@@ -452,34 +456,41 @@ export const CollectPhoneNumber = () => {
               />
             </StyledPhoneInputContainer>
 
-            {/* Inline dropdown — no FloatingPortal, stays inside modal DOM */}
             {isPickerOpen && (
-              <StyledDropdown>
-                <StyledSearchInput
-                  placeholder={t`Search country...`}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  autoFocus
-                  onClick={(e) => e.stopPropagation()}
-                />
-                {filteredCountries.map((country) => (
-                  <StyledOption
-                    key={country.countryCode}
-                    type="button"
-                    isSelected={country.countryCode === countryCode}
-                    onClick={() => {
-                      setCountryCode(country.countryCode);
-                      setIsPickerOpen(false);
-                      setSearch('');
-                    }}
-                  >
-                    <StyledFlagWrapper>
-                      <country.Flag />
-                    </StyledFlagWrapper>
-                    {country.countryName} (+{country.callingCode})
-                  </StyledOption>
-                ))}
-              </StyledDropdown>
+              <FloatingPortal>
+                <StyledDropdown
+                  ref={refs.setFloating}
+                  style={{
+                    ...floatingStyles,
+                    zIndex: 10001,
+                  }}
+                >
+                  <StyledSearchInput
+                    placeholder={t`Search country...`}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    autoFocus
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  {filteredCountries.map((country) => (
+                    <StyledOption
+                      key={country.countryCode}
+                      type="button"
+                      isSelected={country.countryCode === countryCode}
+                      onClick={() => {
+                        setCountryCode(country.countryCode);
+                        setIsPickerOpen(false);
+                        setSearch('');
+                      }}
+                    >
+                      <StyledFlagWrapper>
+                        <country.Flag />
+                      </StyledFlagWrapper>
+                      {country.countryName} (+{country.callingCode})
+                    </StyledOption>
+                  ))}
+                </StyledDropdown>
+              </FloatingPortal>
             )}
           </StyledPhoneRow>
 

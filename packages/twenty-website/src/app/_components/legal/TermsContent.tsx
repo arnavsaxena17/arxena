@@ -817,11 +817,11 @@ export const TermsContent = () => {
         <StyledOfficeBlock>
           <StyledOfficeRegion>India</StyledOfficeRegion>
           <StyledOfficeLines>
-            1702, Splendor Complex
+            WeWork NESCO, Building 4, North Wing
             <br />
-            JV Link Road, Andheri East
+            Nesco IT Park, Goregaon East
             <br />
-            Mumbai 400060
+            Mumbai - 400063
           </StyledOfficeLines>
         </StyledOfficeBlock>
         <StyledAddressEmailLine>

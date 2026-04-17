@@ -15,15 +15,14 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { isDefined } from 'twenty-shared';
 import {
-  ActionLink,
-  AnimatedEaseIn,
-  IconPhone,
-  IconSearch,
-  IconUsers,
-  Loader,
-  Pill,
-  ProgressBar,
-  ThemeType,
+    ActionLink,
+    AnimatedEaseIn,
+    IconPhone,
+    IconSearch,
+    IconUsers,
+    Loader,
+    Pill,
+    ThemeType,
 } from 'twenty-ui';
 import { OnboardingIntentPath, OnboardingStatus } from '~/generated/graphql';
 import { Mixpanel } from '~/mixpanel';
@@ -57,42 +56,46 @@ const StyledPanel = styled.div`
   width: 100%;
 `;
 
-const StyledProgressBar = styled(ProgressBar)`
-  > div {
-    background-color: ${({ theme }) => theme.color.blue};
-  }
-
-  border-radius: ${({ theme }) => theme.border.radius.pill};
-  margin-bottom: ${({ theme }) => theme.spacing(5)};
-  opacity: 0.9;
-`;
-
 const StyledHeader = styled.div`
+  align-items: center;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${({ theme }) => theme.spacing(1)};
+  text-align: center;
+  width: 100%;
+`;
+
+const StyledLogoRow = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-bottom: ${({ theme }) => theme.spacing(2)};
 `;
 
 const StyledSubTitle = styled(SubTitle)`
-  font-size: ${({ theme }) => theme.font.size.xl};
-  line-height: 1.45;
-  max-width: 700px;
-  text-align: left;
+  font-size: ${({ theme }) => theme.font.size.md};
+  line-height: 1.4;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 40ch;
+  text-align: center;
 `;
 
 const StyledIntroCopy = styled.div`
   color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.md};
-  line-height: 1.7;
-  margin-top: ${({ theme }) => theme.spacing(2)};
-  max-width: 720px;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  line-height: 1.45;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: ${({ theme }) => theme.spacing(0.5)};
+  max-width: 44ch;
+  text-align: center;
 `;
 
 const StyledChoices = styled.div`
   display: grid;
-  gap: ${({ theme }) => theme.spacing(4)};
+  gap: ${({ theme }) => theme.spacing(3)};
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin-top: ${({ theme }) => theme.spacing(6)};
+  margin-top: ${({ theme }) => theme.spacing(2)};
   width: 100%;
 
   @media (max-width: 1080px) {
@@ -105,15 +108,15 @@ const StyledChoiceCard = styled.button<{
 }>`
   background: ${({ theme, tone }) => getAccentBackground(theme, tone)};
   border: 2px solid ${({ theme, tone }) => getAccentColor(theme, tone)};
-  border-radius: ${({ theme }) => theme.border.radius.xl};
+  border-radius: ${({ theme }) => theme.border.radius.md};
   box-shadow: ${({ theme }) => theme.boxShadow.light};
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(4)};
-  min-height: 280px;
-  padding: ${({ theme }) => theme.spacing(5)};
-  text-align: left;
+  gap: ${({ theme }) => theme.spacing(2)};
+  min-height: 0;
+  padding: ${({ theme }) => theme.spacing(3)};
+  text-align: center;
   transition:
     transform ${({ theme }) => theme.animation.duration.normal}ms ease,
     box-shadow ${({ theme }) => theme.animation.duration.normal}ms ease,
@@ -129,49 +132,49 @@ const StyledChoiceCard = styled.button<{
 const StyledChoiceHeader = styled.div`
   align-items: flex-start;
   display: flex;
-  gap: ${({ theme }) => theme.spacing(3)};
-  justify-content: space-between;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(1)};
+  width: 100%;
 `;
 
 const StyledChoiceHeading = styled.div`
+  align-items: center;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1.5)};
+  gap: ${({ theme }) => theme.spacing(1)};
   min-width: 0;
+  width: 100%;
 `;
 
 const StyledChoiceTitleRow = styled.div`
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${({ theme }) => theme.spacing(1.5)};
+  justify-content: center;
 `;
 
 const StyledChoiceTitle = styled.div`
   color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.xl};
+  font-size: ${({ theme }) => theme.font.size.lg};
   font-weight: ${({ theme }) => theme.font.weight.semiBold};
   line-height: 1.25;
 `;
 
-const StyledChoiceMeta = styled.div`
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.md};
-  line-height: 1.55;
-`;
-
 const StyledChoiceIcon = styled.div<{ tone: IntentTone }>`
   align-items: center;
+  align-self: center;
   color: ${({ theme, tone }) => getAccentColor(theme, tone)};
   display: flex;
   justify-content: center;
+  margin-bottom: ${({ theme }) => theme.spacing(0.5)};
   min-width: 28px;
 `;
 
-const StyledChoiceDescription = styled.div`
+const StyledChoiceBody = styled.div`
   color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.md};
-  line-height: 1.65;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  line-height: 1.5;
 `;
 
 const StyledChoiceHint = styled.div<{ tone: IntentTone }>`
@@ -179,11 +182,11 @@ const StyledChoiceHint = styled.div<{ tone: IntentTone }>`
   border-radius: ${({ theme }) => theme.border.radius.md};
   color: ${({ theme, tone }) => getAccentColor(theme, tone)};
   font-family: ${({ theme }) => theme.font.family};
-  font-size: ${({ theme }) => theme.font.size.md};
+  font-size: ${({ theme }) => theme.font.size.sm};
   font-weight: ${({ theme }) => theme.font.weight.medium};
-  line-height: 1.6;
+  line-height: 1.45;
   margin-top: auto;
-  padding: ${({ theme }) => theme.spacing(3)};
+  padding: ${({ theme }) => theme.spacing(2)};
 `;
 
 const StyledLoaderArea = styled.div`
@@ -197,7 +200,7 @@ const StyledLoaderArea = styled.div`
 const StyledSkipRow = styled.div`
   display: flex;
   justify-content: center;
-  margin-top: ${({ theme }) => theme.spacing(4)};
+  margin-top: ${({ theme }) => theme.spacing(3)};
 `;
 
 const StyledPill = styled(Pill)<{
@@ -229,37 +232,30 @@ const intentCards = {
   [OnboardingIntentPath.EXTENSION_INSTALL]: {
     title: 'Building my team',
     persona: 'Founder / Recruiter',
-    description:
-      'Finding candidates at specific companies to hire, with extension-powered sourcing and fast org chart delivery.',
-    hint: '→ Self-serve · install extension · org chart in 2 hrs · credits',
+    body: 'Source candidates with the extension, fast org charts, credits to start.',
+    hint: 'Self-serve · extension · ~2 hr delivery',
     Icon: IconUsers,
     tone: 'green',
   },
   [OnboardingIntentPath.COMPETITIVE_RESEARCH]: {
     title: 'Competitive research',
     persona: 'Operator',
-    description:
-      'Understanding how competitor teams are structured, with the choice to self-serve or book a guided walkthrough.',
-    hint: '→ Your choice: self-serve OR book a 20-min live walkthrough',
+    body: 'Map competitor teams—DIY or a short guided walkthrough.',
+    hint: 'Self-serve or 20-min live walkthrough',
     Icon: IconSearch,
     tone: 'purple',
   },
   [OnboardingIntentPath.DEAL_DILIGENCE]: {
     title: 'Investment / deal diligence',
     persona: 'PE / VC',
-    description:
-      'Mapping management teams for a fund or acquisition, and booking a live session to review a target company.',
-    hint: '→ Book a call — we’ll map a target company live on the session',
+    body: 'Map leadership for deals; optional live session on a target.',
+    hint: 'Book a call · live company map',
     Icon: IconPhone,
     tone: 'orange',
   },
 } as const;
 
-type IntentChoiceProps = {
-  showProgressBar?: boolean;
-};
-
-export const IntentChoice = ({ showProgressBar = true }: IntentChoiceProps) => {
+export const IntentChoice = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { loadCurrentUser } = useAuth();
@@ -361,21 +357,20 @@ export const IntentChoice = ({ showProgressBar = true }: IntentChoiceProps) => {
   }
 
   return (
-    <OnboardingIntentModalLayout panelWidth="xl">
+    <OnboardingIntentModalLayout panelWidth="lg">
       <StyledPanel data-testid="onboarding-intent-choice">
-        {/* {showProgressBar ? <StyledProgressBar value={56} /> : null} */}
-        <AnimatedEaseIn>
-          <Logo secondaryLogo={workspacePublicData?.logo} />
-        </AnimatedEaseIn>
+        <StyledLogoRow>
+          <AnimatedEaseIn>
+            <Logo secondaryLogo={workspacePublicData?.logo} />
+          </AnimatedEaseIn>
+        </StyledLogoRow>
         <StyledHeader>
-          <Title animate>What brings you here?</Title>
-          <StyledSubTitle>
-            We&apos;ll personalise your experience
-          </StyledSubTitle>
+          <Title animate denseSpacing noMarginTop>
+            What brings you here?
+          </Title>
+          <StyledSubTitle>We&apos;ll personalise your experience</StyledSubTitle>
           <StyledIntroCopy>
-            Choose the workflow that best matches what you want from Arxena
-            right now. We&apos;ll tailor the next step, whether that means
-            self-serve setup, a guided walkthrough, or a live diligence session.
+            Choose a path—we&apos;ll match the next step to it.
           </StyledIntroCopy>
         </StyledHeader>
         <StyledChoices>
@@ -395,25 +390,17 @@ export const IntentChoice = ({ showProgressBar = true }: IntentChoiceProps) => {
                 tone={card.tone}
               >
                 <StyledChoiceHeader>
+                  <StyledChoiceIcon tone={card.tone}>
+                    <CardIcon size={20} stroke={1.8} />
+                  </StyledChoiceIcon>
                   <StyledChoiceHeading>
                     <StyledChoiceTitleRow>
                       <StyledChoiceTitle>{card.title}</StyledChoiceTitle>
                       <StyledPill label={card.persona} tone={card.tone} />
                     </StyledChoiceTitleRow>
-                    <StyledChoiceMeta>{card.description}</StyledChoiceMeta>
                   </StyledChoiceHeading>
-                  <StyledChoiceIcon tone={card.tone}>
-                    <CardIcon size={22} stroke={1.8} />
-                  </StyledChoiceIcon>
                 </StyledChoiceHeader>
-                <StyledChoiceDescription>
-                  {path === OnboardingIntentPath.EXTENSION_INSTALL &&
-                    'Self-serve candidate sourcing with the extension, rapid org chart delivery, and credits to get started.'}
-                  {path === OnboardingIntentPath.COMPETITIVE_RESEARCH &&
-                    'Compare competitor team structure with either a self-serve path or a guided 20-minute walkthrough.'}
-                  {path === OnboardingIntentPath.DEAL_DILIGENCE &&
-                    'Review a target company with us live so your fund or acquisition team can move faster with context.'}
-                </StyledChoiceDescription>
+                <StyledChoiceBody>{card.body}</StyledChoiceBody>
                 <StyledChoiceHint tone={card.tone}>
                   {card.hint}
                 </StyledChoiceHint>

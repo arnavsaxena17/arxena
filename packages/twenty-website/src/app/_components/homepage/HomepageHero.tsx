@@ -7,7 +7,6 @@ import { useCallback, useState } from 'react';
 
 import { ContactUsSection } from '@/app/_components/homepage/ContactUsSection';
 import { DifferentiatorsSection } from '@/app/_components/homepage/DifferentiatorsSection';
-import { HomepageStickyNav } from '@/app/_components/homepage/HomepageStickyNav';
 import { HowItWorksSection } from '@/app/_components/homepage/HowItWorksSection';
 import { TestimonialsSection } from '@/app/_components/homepage/TestimonialsSection';
 import { TrustBadgesSection } from '@/app/_components/homepage/TrustBadgesSection';
@@ -42,10 +41,6 @@ const StyledTitle = styled.h1`
   @media (max-width: 809px) {
     font-size: 1.75rem;
   }
-`;
-
-const StyledTitleLine = styled.span`
-  display: block;
 `;
 
 const StyledHeroLead = styled.p`
@@ -328,25 +323,17 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
 
   return (
     <>
-      <HomepageStickyNav />
       <StyledHero>
         <StyledLogoWrapper>
           <Logo variant="hero" />
         </StyledLogoWrapper>
-        <StyledTitle>
-          Real Time Org Intelligence OS
-          {/* <StyledTitleLine>
-            Then reach the right person — automatically.
-          </StyledTitleLine> */}
-        </StyledTitle>
-        {/* <StyledHeroLead>
-          Arxena maps the org chart of any company in the world. Search your target company, understand see who reports to whom, build a list
-          of the right contacts, and let AI reach out on your behalf in your
-          methods. You only take calls with people who&apos;ve already responded.
-        </StyledHeroLead> */}
+        <StyledTitle>Real-time Org Intelligence.</StyledTitle>
+        <StyledHeroLead>
+        Before the call. Before the brief. Before outreach.
+        </StyledHeroLead>
         <StyledHeroStats>
-          1M+ companies mapped · 800M+ professionals · Real-time from
-          LinkedIn and others
+          1M+ companies · 800M+ professionals · Real-time from LinkedIn and
+          others
         </StyledHeroStats>
         {/* <StyledClarifySection>
           <StyledClarifyHeading>Worth clarifying</StyledClarifyHeading>
@@ -370,7 +357,7 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
         </StyledClarifySection> */}
         <StyledSearchWrapper>
           <OrgChartSearch
-            placeholder="Search any company's org chart"
+            placeholder="Search any company"
             startIcon={<IconHierarchy2 size={20} />}
           />
         </StyledSearchWrapper>
@@ -398,7 +385,7 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
 
       <StyledExampleSection>
         <StyledExampleTitle>
-          Real-time from LinkedIn and other sources
+          Real-time Org Charts & Engagement
         </StyledExampleTitle>
         <StyledScrollingStrip>
           <StyledScrollingTrack>
@@ -446,9 +433,9 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
       <TrustBadgesSection />
 
       <StyledEngageCrossSell>
-        Search → map → list → contact → engage —{' '}
+        Map → plan → reach → measure —{' '}
         <StyledEngageLink href="/engage">
-          How AI outreach works →
+          How AI outreach and tracking works →
         </StyledEngageLink>
       </StyledEngageCrossSell>
 

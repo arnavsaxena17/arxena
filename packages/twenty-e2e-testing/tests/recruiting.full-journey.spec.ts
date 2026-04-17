@@ -5,6 +5,7 @@ import {
   signInWithExistingCredentials,
   signUpAndReachIntentChoice,
 } from '../lib/utils/authFlowE2eHelpers';
+import { runCandidateEngagementScenario } from '../lib/utils/candidateEngagementE2eHelpers';
 import {
   assertCandidateQueueWorkerAvailable,
   buildExistingLookup,
@@ -25,7 +26,6 @@ import {
   waitForCandidateJobQueuedInRedis,
   waitForJobPageReady,
 } from '../lib/utils/candidateSourcingE2eHelpers';
-import { runCandidateEngagementScenario } from '../lib/utils/candidateEngagementE2eHelpers';
 import { completeJobCreationFromJobsUpload } from '../lib/utils/jobCreationE2eHelpers';
 import {
   defaultOrgChartDatasourceRuns,
@@ -535,7 +535,7 @@ test('recruiting journey covers onboarding, assistant JD, uploads, AI filtering,
           const expectedNewRows = computeExpectedNewRows(
             before,
             rows,
-            'spreadsheet_import_twenty',
+            'spreadsheet_import',
           );
           logJourneyStep('computed expected spreadsheet additions', {
             label,

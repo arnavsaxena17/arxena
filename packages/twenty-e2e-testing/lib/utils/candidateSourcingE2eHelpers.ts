@@ -61,7 +61,7 @@ export type AiFilteringSseSnapshot = {
 
 export type CandidateUploadDataSource =
   | 'hiring_naukri'
-  | 'spreadsheet_import_twenty';
+  | 'spreadsheet_import';
 
 const graphqlPeopleByIdsQuery = `
   query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
@@ -1345,7 +1345,7 @@ export const validateSpreadsheetContacts = async (
     const candidate = findMatchingCandidate(
       lookup,
       row,
-      'spreadsheet_import_twenty',
+      'spreadsheet_import',
     );
     if (!candidate) {
       input.issues.push(

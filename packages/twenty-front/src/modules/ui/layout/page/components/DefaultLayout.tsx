@@ -16,6 +16,7 @@ import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
 import { Global, css, useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
+import { AppPath } from '@/types/AppPath';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { useScreenSize } from 'twenty-ui';
@@ -77,9 +78,13 @@ export const DefaultLayout = () => {
     signInBackgroundUseOrgChartMockState,
   );
   const usesIntentWideAuthModal =
-    location.pathname === '/create/intent' ||
-    location.pathname === '/create/competitive-research' ||
-    location.pathname === '/create/deal-diligence';
+    location.pathname === AppPath.IntentChoice ||
+    location.pathname === AppPath.CompetitiveResearchOnboarding ||
+    location.pathname === AppPath.DealDiligenceOnboarding;
+
+  const useTopAlignedAuthModalContent =
+    usesIntentWideAuthModal ||
+    location.pathname === AppPath.ExtensionInstallOnboarding;
 
   return (
     <>
@@ -119,7 +124,12 @@ export const DefaultLayout = () => {
               <SignInBackgroundMockPage />
               <AnimatePresence mode="wait">
                 <LayoutGroup>
-                  <AuthModal size={usesIntentWideAuthModal ? 'xl' : 'medium'}>
+                  <AuthModal
+                    contentVerticalAlign={
+                      useTopAlignedAuthModalContent ? 'start' : 'center'
+                    }
+                    size={usesIntentWideAuthModal ? 'large' : 'medium'}
+                  >
                     <Outlet />
                   </AuthModal>
                 </LayoutGroup>
