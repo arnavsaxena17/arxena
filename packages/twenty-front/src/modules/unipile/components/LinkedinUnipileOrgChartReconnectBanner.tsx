@@ -5,7 +5,6 @@ import { useRecoilValue } from 'recoil';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
-import { Button } from 'twenty-ui';
 
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
@@ -85,7 +84,7 @@ export const LinkedinUnipileOrgChartReconnectBanner = () => {
           retry sync so the extension can refresh your session.
         </Trans>
       </span>
-      <StyledActions>
+      {/* <StyledActions>
         <Button
           title={t`Open LinkedIn in a new tab`}
           variant="secondary"
@@ -101,7 +100,7 @@ export const LinkedinUnipileOrgChartReconnectBanner = () => {
         >
           <Trans>Retry sync</Trans>
         </Button>
-      </StyledActions>
+      </StyledActions> */}
     </StyledBanner>
   );
 };

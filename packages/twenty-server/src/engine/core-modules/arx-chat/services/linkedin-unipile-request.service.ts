@@ -175,9 +175,13 @@ export class LinkedinUnipileRequestService {
    * Normalizes a raw LinkedIn account payload from Unipile (list item or GET by id).
    */
   mapLinkedinApiItemToAccountRow(item: LinkedinUnipileAccountItem) {
+    const publicIdentifier =
+      item.connection_params?.im?.publicIdentifier?.trim() ?? '';
+    const displayUsername =
+      publicIdentifier !== '' ? publicIdentifier : item.name || 'Unknown';
     return {
       id: item.id,
-      username: item.name || 'Unknown',
+      username: displayUsername,
       name: item.name || 'Unknown',
       type: item.type,
       status: this.mapAccountStatus(item),
@@ -310,6 +314,43 @@ export class LinkedinUnipileRequestService {
     } catch (error) {
       this.logger.error('Failed to get LinkedIn accounts:', error);
       throw error;
+    }
+  }
+
+  /**
+   * DELETE a Unipile LinkedIn account (e.g. superseded after reconnecting the same member identity).
+   * Swallows errors so profile updates are not rolled back if Unipile already removed the row.
+   */
+  async disconnectAccountBestEffort(
+    accountId: string,
+    context: string,
+  ): Promise<void> {
+    const trimmed = accountId.trim();
+    if (!trimmed) {
+      return;
+    }
+    const url = `${this.unipileApiUrl}/api/v1/accounts/${trimmed}`;
+    const headers = {
+      Accept: 'application/json',
+      'X-API-KEY': this.unipileAccessToken || '',
+    };
+    try {
+      const response = await fetch(url, { method: 'DELETE', headers });
+      if (response.ok || response.status === 404) {
+        this.logger.log(
+          `Unipile LinkedIn account ${trimmed} disconnected (${context}); status=${response.status}`,
+        );
+        return;
+      }
+      const data = await response.json().catch(() => ({}));
+      this.logger.warn(
+        `Best-effort LinkedIn Unipile disconnect failed (${context}): ${response.status}`,
+        data,
+      );
+    } catch (err) {
+      this.logger.warn(
+        `Best-effort LinkedIn Unipile disconnect error (${context}): ${err instanceof Error ? err.message : err}`,
+      );
     }
   }
 }

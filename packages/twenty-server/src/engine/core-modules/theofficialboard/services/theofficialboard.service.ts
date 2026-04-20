@@ -404,7 +404,7 @@ export class TheOfficialBoardService {
 
     branchRows.forEach((row, rowIndex) => {
       const columns = Array.from(row.children).filter((child) =>
-        child.classList.contains('board-column'),
+        child.classList.contains('board-branch-column'),
       );
 
       if (!columns.length) {
@@ -483,17 +483,19 @@ export class TheOfficialBoardService {
       .filter((child) => child.tagName.toLowerCase() === 'li')
       .map((item) => {
         const anchor = item.querySelector(':scope > a, :scope > span > a');
-        const childList = Array.from(item.children).find(
+        const slug = this.extractCompanySlugFromHref(anchor?.getAttribute('href'));
+        const childLists = Array.from(item.children).filter(
           (child) => child.tagName.toLowerCase() === 'ul',
         );
-        const slug = this.extractCompanySlugFromHref(anchor?.getAttribute('href'));
 
         return {
           name: anchor?.textContent?.trim() || 'Unknown subsidiary',
           slug,
           level,
           parentSlug,
-          children: this.parseSubsidiaryTree(childList ?? null, level + 1, slug),
+          children: childLists.flatMap((childList) =>
+            this.parseSubsidiaryTree(childList, level + 1, slug),
+          ),
         };
       });
   }

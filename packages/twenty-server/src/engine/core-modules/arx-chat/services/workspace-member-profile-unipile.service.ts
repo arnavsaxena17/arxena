@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import {
+    extractLinkedinSlugFromUrl,
     findWorkspaceMemberProfiles,
     graphQLToUpdateOneWorkspaceMemberProfile,
     type WorkspaceMemberProfileUnipileFields,
@@ -398,6 +399,70 @@ export class WorkspaceMemberProfileUnipileService {
   /**
    * Sets linkedinUrl or phoneNumber from Unipile account payload (best-effort).
    */
+  /**
+   * Persists linkedin.com/in/... from the browser extension (Voyager /me or profile tab URL)
+   * so Unipile duplicate checks use the member slug, not generic /feed/ page_url.
+   */
+  async updateWorkspaceMemberLinkedinUrlFromExtensionIfValid(
+    workspaceMemberId: string,
+    authToken: string,
+    rawUrl: string | undefined,
+  ): Promise<void> {
+    const trimmed = typeof rawUrl === 'string' ? rawUrl.trim() : '';
+    if (!trimmed) {
+      return;
+    }
+    const slug = extractLinkedinSlugFromUrl(trimmed);
+    if (!slug) {
+      this.logger.warn(
+        `Extension linkedin_profile_url ignored (could not parse slug): ${trimmed.slice(0, 120)}`,
+      );
+      return;
+    }
+    const normalized = `https://www.linkedin.com/in/${slug}`;
+
+    try {
+      const response = await this.staticGraphQLService.executeGraphQL(
+        findWorkspaceMemberProfiles,
+        { filter: { workspaceMemberId: { eq: workspaceMemberId } }, limit: 1 },
+        authToken,
+      );
+
+      const profile =
+        response?.data?.data?.workspaceMemberProfiles?.edges?.[0]?.node;
+
+      if (!profile?.id) {
+        this.logger.warn(
+          `No workspace member profile for ${workspaceMemberId}, cannot set linkedinUrl from extension`,
+        );
+        return;
+      }
+
+      const existing = profile.linkedinUrl?.trim();
+      if (existing === normalized) {
+        return;
+      }
+
+      await this.staticGraphQLService.executeGraphQL(
+        graphQLToUpdateOneWorkspaceMemberProfile,
+        {
+          idToUpdate: profile.id,
+          input: { linkedinUrl: normalized },
+        },
+        authToken,
+      );
+
+      this.logger.log(
+        `Updated linkedinUrl from extension for workspace member ${workspaceMemberId}`,
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Failed to persist extension linkedinUrl for ${workspaceMemberId}:`,
+        error,
+      );
+    }
+  }
+
   async syncContactFieldsFromUnipileAccountPayload(
     workspaceMemberId: string,
     authToken: string,

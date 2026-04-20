@@ -55,6 +55,7 @@ export class WhatsappUnipileController {
   @Post('accounts/update-member')
   async updateMemberWhatsappAccount(
     @Body() body: { accountId: string },
+    @AuthWorkspace() workspace: Workspace,
     @Req() request: { workspaceMemberId?: string; headers?: { authorization?: string } },
   ) {
     const workspaceMemberId = request.workspaceMemberId;
@@ -72,17 +73,36 @@ export class WhatsappUnipileController {
         HttpStatus.BAD_REQUEST,
       );
     }
+    let previousWhatsappUnipileId: string | null = null;
+    try {
+      previousWhatsappUnipileId =
+        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+          workspaceMemberId,
+          workspace.id,
+          authToken,
+          'whatsapp',
+        );
+    } catch {
+      previousWhatsappUnipileId = null;
+    }
+    const newId = body.accountId.trim();
     try {
       const account = await this.unipileRequestService.makeUnipileRequest(
-        `/api/v1/accounts/${body.accountId}`,
+        `/api/v1/accounts/${newId}`,
       );
       await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
         workspaceMemberId,
         authToken,
         'whatsapp',
-        body.accountId,
+        newId,
         account,
       );
+      if (previousWhatsappUnipileId && previousWhatsappUnipileId !== newId) {
+        await this.unipileRequestService.disconnectAccountBestEffort(
+          previousWhatsappUnipileId,
+          'superseded WhatsApp Unipile account after manual member update',
+        );
+      }
     } catch (err) {
       this.logger.warn(
         `Could not sync WhatsApp phone to workspace member profile: ${err instanceof Error ? err.message : err}`,
@@ -177,7 +197,7 @@ export class WhatsappUnipileController {
     @AuthWorkspace() workspace: Workspace,
     @Req() request: { workspaceMemberId?: string; headers?: { authorization?: string } },
   ) {
-    try {
+   try {
       this.logger.log(`Checking account status for account ${accountId}`);
       const response = (await this.unipileRequestService.makeUnipileRequest(
         `/api/v1/accounts/${accountId}`,
@@ -213,6 +233,12 @@ export class WhatsappUnipileController {
                 response.id,
                 response,
               );
+              if (existingId && existingId !== response.id) {
+                await this.unipileRequestService.disconnectAccountBestEffort(
+                  existingId,
+                  'superseded WhatsApp Unipile account after new QR connect (same member)',
+                );
+              }
             } catch (syncErr) {
               this.logger.warn(
                 `Could not sync WhatsApp account to workspace member profile after connect: ${syncErr instanceof Error ? syncErr.message : syncErr}`,

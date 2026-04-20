@@ -17,7 +17,9 @@ import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import {
-  findLinkedinUnipileAccountBlockingNewConnectionForProfile,
+  findLinkedinUnipileAccountSameIdentityForProfile,
+  isUnipileConnectedStatus,
+  shouldBlockNewUnipileConnectionForStatus,
   type UnipileLinkedinAccount,
 } from 'twenty-shared';
 
@@ -47,6 +49,8 @@ interface LinkedinExtensionCookieSyncDto {
   li_a?: string;
   user_agent?: string;
   page_url?: string;
+  /** Canonical profile URL from the extension (Voyager /me or /in/... tab), not feed/messaging. */
+  linkedin_profile_url?: string;
 }
 
 interface LinkedinCheckpointDto {
@@ -139,16 +143,23 @@ export class LinkedinUnipileController {
   }
 
   /**
-   * Avoid creating a duplicate LinkedIn Unipile account when the same member identity
-   * (stored id or profile URL hints) already has an active or in-progress connection in Unipile.
-   * Uses the Unipile accounts API list as source of truth, not workspace keys (which can be stale).
+   * Before POST /accounts for LinkedIn: uses Unipile's full accounts list + workspace member profile
+   * (URL slug, stored Unipile id) to detect the same identity. If already connected, skip a new connection.
+   * If a non-disconnected in-flight session exists, return 409.
    */
-  private async assertNoBlockingLinkedinConnectionForMember(
+  private async resolveLinkedinConnectPreflight(
     workspaceMemberId: string | undefined,
     authToken: string,
-  ): Promise<void> {
+  ): Promise<
+    | { proceed: true }
+    | {
+        proceed: false;
+        alreadyConnected: true;
+        account: UnipileLinkedinAccount;
+      }
+  > {
     if (!workspaceMemberId || !authToken) {
-      return;
+      return { proceed: true };
     }
     const profile =
       await this.workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields(
@@ -157,20 +168,40 @@ export class LinkedinUnipileController {
       );
     const { accounts } =
       await this.linkedinUnipileRequestService.listAllLinkedinAccountsFromUnipileApi();
-    const blocking = findLinkedinUnipileAccountBlockingNewConnectionForProfile(
+    const match = findLinkedinUnipileAccountSameIdentityForProfile(
       accounts as UnipileLinkedinAccount[],
       profile,
     );
-    if (blocking?.id) {
+    if (!match) {
+      return { proceed: true };
+    }
+    if (isUnipileConnectedStatus(match.status)) {
+      try {
+        await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+          workspaceMemberId,
+          authToken,
+          'linkedin',
+          match.id,
+          match,
+        );
+      } catch (err) {
+        this.logger.warn(
+          `Could not sync existing LinkedIn Unipile account to workspace member profile: ${err instanceof Error ? err.message : err}`,
+        );
+      }
+      return { proceed: false, alreadyConnected: true, account: match };
+    }
+    if (shouldBlockNewUnipileConnectionForStatus(match.status)) {
       throw new HttpException(
         {
           message:
-            'This LinkedIn profile is already connected to Unipile. Disconnect the existing account or wait for it to finish connecting before adding another.',
-          existing_account_id: blocking.id,
+            'A LinkedIn connection is already in progress for this profile. Wait for it to finish or disconnect it before retrying.',
+          existing_account_id: match.id,
         },
         HttpStatus.CONFLICT,
       );
     }
+    return { proceed: true };
   }
 
   /**
@@ -180,6 +211,7 @@ export class LinkedinUnipileController {
   private async syncWorkspaceMemberProfileAfterLinkedinConnectionIfEligible(
     accountId: string | null | undefined,
     request: { workspaceMemberId?: string; headers?: { authorization?: string } },
+    workspaceId: string,
   ): Promise<void> {
     const trimmed = typeof accountId === 'string' ? accountId.trim() : '';
 
@@ -192,6 +224,19 @@ export class LinkedinUnipileController {
 
     if (!workspaceMemberId || !authToken) {
       return;
+    }
+
+    let previousId: string | null = null;
+    try {
+      previousId =
+        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+          workspaceMemberId,
+          workspaceId,
+          authToken,
+          'linkedin',
+        );
+    } catch {
+      previousId = null;
     }
 
     try {
@@ -213,6 +258,12 @@ export class LinkedinUnipileController {
           trimmed,
         );
       }
+      if (previousId && previousId !== trimmed) {
+        await this.linkedinUnipileRequestService.disconnectAccountBestEffort(
+          previousId,
+          'superseded LinkedIn Unipile account after new connection',
+        );
+      }
     } catch (err) {
       this.logger.warn(
         `Could not sync LinkedIn Unipile account to workspace member profile: ${err instanceof Error ? err.message : err}`,
@@ -231,10 +282,25 @@ export class LinkedinUnipileController {
 
       const authToken =
         request.headers?.authorization?.replace(/^Bearer\s+/i, '') ?? '';
-      await this.assertNoBlockingLinkedinConnectionForMember(
+      const preflight = await this.resolveLinkedinConnectPreflight(
         request.workspaceMemberId,
         authToken,
       );
+      if (!preflight.proceed) {
+        const acc = preflight.account;
+        return {
+          success: true,
+          alreadyConnected: true,
+          message:
+            'This LinkedIn profile is already connected to Unipile; not starting a new connection.',
+          data: {
+            account_id: acc.id,
+            provider: 'LINKEDIN' as const,
+            status: acc.status ?? 'connected',
+            profile: acc.profile_data,
+          },
+        };
+      }
 
       const result = (await this.linkedinUnipileRequestService.makeUnipileRequest(
         '/api/v1/accounts',
@@ -274,6 +340,7 @@ export class LinkedinUnipileController {
       await this.syncWorkspaceMemberProfileAfterLinkedinConnectionIfEligible(
         connectedAccountId,
         request,
+        workspace.id,
       );
 
       return {
@@ -305,10 +372,25 @@ export class LinkedinUnipileController {
 
       const authTokenCookie =
         request.headers?.authorization?.replace(/^Bearer\s+/i, '') ?? '';
-      await this.assertNoBlockingLinkedinConnectionForMember(
+      const preflightCookie = await this.resolveLinkedinConnectPreflight(
         request.workspaceMemberId,
         authTokenCookie,
       );
+      if (!preflightCookie.proceed) {
+        const acc = preflightCookie.account;
+        return {
+          success: true,
+          alreadyConnected: true,
+          message:
+            'This LinkedIn profile is already connected to Unipile; not starting a new connection.',
+          data: {
+            account_id: acc.id,
+            provider: 'LINKEDIN' as const,
+            status: acc.status ?? 'connected',
+            profile: acc.profile_data,
+          },
+        };
+      }
 
       const result = (await this.linkedinUnipileRequestService.makeUnipileRequest(
         '/api/v1/accounts',
@@ -346,6 +428,7 @@ export class LinkedinUnipileController {
       await this.syncWorkspaceMemberProfileAfterLinkedinConnectionIfEligible(
         connectedAccountIdCookie,
         request,
+        workspace.id,
       );
 
       return {
@@ -389,6 +472,12 @@ export class LinkedinUnipileController {
         HttpStatus.UNAUTHORIZED,
       );
     }
+
+    await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberLinkedinUrlFromExtensionIfValid(
+      workspaceMemberId,
+      authToken,
+      body.linkedin_profile_url,
+    );
 
     const normalizeToken = (value?: string) => {
       if (typeof value !== 'string') {
@@ -463,6 +552,7 @@ export class LinkedinUnipileController {
 
     if (shouldAttemptReconnect) {
       reconnectAttempted = true;
+      const linkedinAccountIdBeforeReconnect = accountId ?? null;
 
       try {
         const reconnectAccountIdForUnipile =
@@ -507,6 +597,15 @@ export class LinkedinUnipileController {
             );
           }
           accountId = nextAccountId;
+          if (
+            linkedinAccountIdBeforeReconnect &&
+            linkedinAccountIdBeforeReconnect !== nextAccountId
+          ) {
+            await this.linkedinUnipileRequestService.disconnectAccountBestEffort(
+              linkedinAccountIdBeforeReconnect,
+              'superseded LinkedIn Unipile account after extension reconnect',
+            );
+          }
         }
 
         if (isCheckpoint) {
@@ -546,6 +645,7 @@ export class LinkedinUnipileController {
       },
       context: {
         pageUrl: body.page_url ?? null,
+        linkedinProfileUrlFromExtension: body.linkedin_profile_url ?? null,
       },
     };
   }
@@ -553,6 +653,7 @@ export class LinkedinUnipileController {
   @Post('accounts/update-member')
   async updateMemberLinkedinAccount(
     @Body() body: { accountId: string },
+    @AuthWorkspace() workspace: Workspace,
     @Req() request: { workspaceMemberId?: string; headers?: { authorization?: string } },
   ) {
     const workspaceMemberId = request.workspaceMemberId;
@@ -570,15 +671,28 @@ export class LinkedinUnipileController {
         HttpStatus.BAD_REQUEST,
       );
     }
+    let previousLinkedinUnipileId: string | null = null;
     try {
-      const account = await this.linkedinUnipileRequestService.fetchAccountByIdIfExists(body.accountId);
+      previousLinkedinUnipileId =
+        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+          workspaceMemberId,
+          workspace.id,
+          authToken,
+          'linkedin',
+        );
+    } catch {
+      previousLinkedinUnipileId = null;
+    }
+    const newId = body.accountId.trim();
+    try {
+      const account = await this.linkedinUnipileRequestService.fetchAccountByIdIfExists(newId);
 
       if (account) {
         await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
           workspaceMemberId,
           authToken,
           'linkedin',
-          body.accountId,
+          newId,
           account,
         );
       } else {
@@ -586,7 +700,13 @@ export class LinkedinUnipileController {
           workspaceMemberId,
           authToken,
           'linkedin',
-          body.accountId,
+          newId,
+        );
+      }
+      if (previousLinkedinUnipileId && previousLinkedinUnipileId !== newId) {
+        await this.linkedinUnipileRequestService.disconnectAccountBestEffort(
+          previousLinkedinUnipileId,
+          'superseded LinkedIn Unipile account after manual member update',
         );
       }
     } catch (err) {
@@ -720,6 +840,7 @@ export class LinkedinUnipileController {
       await this.syncWorkspaceMemberProfileAfterLinkedinConnectionIfEligible(
         solvedAccountId,
         request,
+        workspace.id,
       );
 
       return {

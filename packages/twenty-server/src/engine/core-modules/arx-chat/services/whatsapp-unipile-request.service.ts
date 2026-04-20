@@ -221,4 +221,40 @@ export class WhatsappUnipileRequestService {
       throw error;
     }
   }
+
+  /**
+   * DELETE a Unipile WhatsApp account when a new connection supersedes the same phone identity.
+   */
+  async disconnectAccountBestEffort(
+    accountId: string,
+    context: string,
+  ): Promise<void> {
+    const trimmed = accountId.trim();
+    if (!trimmed) {
+      return;
+    }
+    const url = `${this.unipileApiUrl}/api/v1/accounts/${trimmed}`;
+    const headers = {
+      Accept: 'application/json',
+      'X-API-KEY': this.unipileAccessToken || '',
+    };
+    try {
+      const response = await fetch(url, { method: 'DELETE', headers });
+      if (response.ok || response.status === 404) {
+        this.logger.log(
+          `Unipile WhatsApp account ${trimmed} disconnected (${context}); status=${response.status}`,
+        );
+        return;
+      }
+      const data = await response.json().catch(() => ({}));
+      this.logger.warn(
+        `Best-effort WhatsApp Unipile disconnect failed (${context}): ${response.status}`,
+        data,
+      );
+    } catch (err) {
+      this.logger.warn(
+        `Best-effort WhatsApp Unipile disconnect error (${context}): ${err instanceof Error ? err.message : err}`,
+      );
+    }
+  }
 }
