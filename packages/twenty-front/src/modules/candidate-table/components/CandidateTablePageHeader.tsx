@@ -195,7 +195,14 @@ export const CandidateTablePageHeader = ({
 
   return (
     <>
-      <LinkedinUnipileOrgChartReconnectBanner />
+      <LinkedinUnipileOrgChartReconnectBanner
+        key={
+          isLinkedinConnected
+            ? 'linkedin-unipile-connected'
+            : 'linkedin-unipile-disconnected'
+        }
+        isExtensionInstalled={isExtensionInstalled}
+      />
       <StyledPageHeader
         title={title}
         Icon={Icon}

@@ -591,7 +591,7 @@ const isValidUUID = (str: string): boolean => {
         console.log('Using current job from state:', job);
       }
 
-      const data_source = 'spreadsheet_import_twenty';
+      const data_source = 'spreadsheet_import';
       popup_data['job_id'] = job?.arxenaSiteId;
       popup_data['job_name'] = job?.name;
       popup_data['twenty_job_id'] = job?.id;
