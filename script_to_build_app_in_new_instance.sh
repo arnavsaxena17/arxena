@@ -73,7 +73,9 @@ build_step() {
         #[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
         #nvm install
         #nvm use
-        yarn
+	yarn
+	node scripts/patch-gojs.cjs
+	rm -rf node_modules/.vite/packages/twenty-front/deps
 
 	echo "Git pulled, going to nest build"
 	cd ~/twenty/
@@ -107,7 +109,7 @@ build_step() {
 
 	yarn cache clean
 	npx nx reset
-	build_step TWENTY_FRONT env VITE_BUILD_SOURCEMAP=false NODE_OPTIONS="--max-old-space-size=4096" yarn build
+	build_step TWENTY_FRONT env VITE_BUILD_SOURCEMAP=false NODE_OPTIONS="--max-old-space-size=8192" yarn build
 
 	echo "Building twenty-website package"
 	cd ~/twenty/packages/twenty-website/
