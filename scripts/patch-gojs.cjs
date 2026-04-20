@@ -74,7 +74,7 @@ for (const filePath of files) {
   const rpStart = src.indexOf('static RP=()=>{');
   const ioStart = src.indexOf('static IO=');
   if (rpStart > 0 && ioStart > rpStart) {
-    src = src.slice(0, rpStart) + 'static RP=()=>{}' + src.slice(ioStart);
+    src = src.slice(0, rpStart) + 'static RP=()=>{};' + src.slice(ioStart);
   }
 
   // ── 2. Neutralize Diagram.IO ─────────────────────────────────────────
@@ -82,7 +82,7 @@ for (const filePath of files) {
   const diagHelperStart = src.indexOf('class DiagramHelper{', ioFnStart);
   if (ioFnStart > 0 && diagHelperStart > ioFnStart) {
     // Keep the final '}' that closes the enclosing Diagram class
-    src = src.slice(0, ioFnStart) + 'static IO=()=>{}' + src.slice(diagHelperStart - 1);
+    src = src.slice(0, ioFnStart) + 'static IO=()=>{};' + src.slice(diagHelperStart - 1);
   }
 
   // ── 3. Patch DiagramHelper.Ph() to always return false ───────────────
@@ -112,7 +112,7 @@ for (const filePath of files) {
     const koStart = src.indexOf('static KO=()=>{');
     const dhStart = src.indexOf('class DiagramHelper{', koStart);
     if (koStart > 0 && dhStart > koStart)
-      src = src.slice(0, koStart) + 'static KO=()=>{}' + src.slice(dhStart - 1);
+      src = src.slice(0, koStart) + 'static KO=()=>{};' + src.slice(dhStart - 1);
 
     if (src.includes(DEBUG_NAMES.PH_ORIG))
       src = src.split(DEBUG_NAMES.PH_ORIG).join(DEBUG_NAMES.PH_PATCHED);
