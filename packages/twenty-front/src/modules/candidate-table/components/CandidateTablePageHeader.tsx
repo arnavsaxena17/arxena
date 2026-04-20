@@ -1,6 +1,8 @@
 import styled from '@emotion/styled';
+import { useLingui } from '@lingui/react/macro';
 import { IconGitMerge } from '@tabler/icons-react';
 import { ReactNode, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 import {
   Button,
   IconAlertCircle,
@@ -12,7 +14,9 @@ import {
 import { CreditHistoryModal } from '@/billing/components/CreditHistoryModal';
 import { CandidateTableJobsPageMenuDropdown } from '@/candidate-table/components/CandidateTableJobsPageMenuDropdown';
 import { OrgChartCompanySearchWrapper } from '@/orgchart/components/OrgChartCompanySearchWrapper';
+import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
+import { LinkedinUnipileOrgChartReconnectBanner } from '@/unipile/components/LinkedinUnipileOrgChartReconnectBanner';
 
 const StyledCompanySearchWrapper = styled.div`
   position: absolute;
@@ -170,6 +174,10 @@ export const CandidateTablePageHeader = ({
   onMergeSelected,
 }: CandidateTablePageHeaderProps) => {
   const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
+  const { t } = useLingui();
+  const orgChartLinkedinSource = useRecoilValue(
+    orgChartLinkedinCandidateSourceState,
+  );
 
   const creditsTotal =
     orgChartCredits !== undefined
@@ -178,8 +186,16 @@ export const CandidateTablePageHeader = ({
         (phoneContactCredits ?? 0)
       : undefined;
 
+  const companySearchDisabledByUnipile =
+    orgChartLinkedinSource === 'unipile' && !isLinkedinConnected;
+  const companySearchDisabled = !hasToken;
+  const companySearchTitle = companySearchDisabledByUnipile
+    ? t`Connect LinkedIn (Unipile) before searching companies for org charts`
+    : undefined;
+
   return (
     <>
+      <LinkedinUnipileOrgChartReconnectBanner />
       <StyledPageHeader
         title={title}
         Icon={Icon}
@@ -192,12 +208,12 @@ export const CandidateTablePageHeader = ({
         onClosePage={onClosePage}
       >
         {onCompanySelect !== undefined && (
-          <StyledCompanySearchWrapper>
+          <StyledCompanySearchWrapper title={companySearchTitle}>
             <StyledOrgChartSearchRow>
               <OrgChartCompanySearchWrapper
                 onCompanySelect={onCompanySelect}
                 placeholder="Search company for org charts..."
-                disabled={!hasToken}
+                disabled={companySearchDisabled}
                 startIcon={<IconHierarchy2 size={20} />}
               />
             </StyledOrgChartSearchRow>

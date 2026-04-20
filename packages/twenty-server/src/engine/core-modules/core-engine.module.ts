@@ -69,6 +69,7 @@ import { GoogleDriveModule } from './google-drive/google-drive.module';
 // import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
 import { SearchModelsModule } from './search-models/search-models.module';
 import { TheOrgModule } from './theorg/theorg.module';
+import { TheOfficialBoardModule } from './theofficialboard/theofficialboard.module';
 import { WhiskeySocketsBaileysWhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.module';
 // import { RecruitmentAgentModule } from "src/engine/core-modules/recruitment-agent/recruitment-agent.module";
 
@@ -104,6 +105,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     ExtensionBridgeModule,
     SearchModelsModule,
     TheOrgModule,
+    TheOfficialBoardModule,
     LinkedinQueryGenerationModule,
     // BaileysModule,
     // ...conditionalImports,
@@ -198,6 +200,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     AssistantModule,
     SearchModelsModule,
     TheOrgModule,
+    TheOfficialBoardModule,
     LinkedinQueryGenerationModule,
     // GoogleSheetsModule,
     GoogleDriveModule,

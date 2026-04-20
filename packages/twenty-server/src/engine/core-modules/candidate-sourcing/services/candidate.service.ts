@@ -2632,7 +2632,10 @@ export class CandidateService {
         file: responseBuffer,
       });
 
-      await fs.promises.writeFile(filePath, responseBuffer);
+      await fs.promises.writeFile(
+        filePath,
+        new Uint8Array(responseBuffer.buffer, responseBuffer.byteOffset, responseBuffer.byteLength),
+      );
       
       console.log('Successfully downloaded CV to:', filePath);
       return filePath;

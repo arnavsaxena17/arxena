@@ -13,12 +13,13 @@ import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChart
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import { SettingsPath } from '@/types/SettingsPath';
 import { SubMenuTopBarContainer } from '@/ui/layout/page/components/SubMenuTopBarContainer';
+import { LinkedinCookieSyncConsentSetting } from '@/unipile/components/LinkedinCookieSyncConsentSetting';
 import { Trans } from '@lingui/react';
 import type { LinkedinSignupCompleteData } from 'twenty-shared';
 import { Mixpanel } from '~/mixpanel';
 import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
-import { LinkedinSignup } from './LinkedinSignup';
 import { ConnectedLinkedinAccounts } from './components/ConnectedLinkedinAccounts';
+import { LinkedinSignup } from './LinkedinSignup';
 
 export const LinkedinAccounts = () => {
   const [hasConnectedAccounts, setHasConnectedAccounts] = useState(false);
@@ -102,6 +103,7 @@ export const LinkedinAccounts = () => {
             onSignupCancel={handleSignupCancel}
           />
         {/* )} */}
+        <LinkedinCookieSyncConsentSetting />
         <ConnectedLinkedinAccounts
           refreshTrigger={accountsRefreshTrigger}
           onAccountConnected={handleAccountConnected}

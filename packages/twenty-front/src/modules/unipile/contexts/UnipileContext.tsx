@@ -1,27 +1,31 @@
 import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
 } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { UnipileLinkedinAccount, UnipileWhatsappAccount } from 'twenty-shared';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import {
-  isLinkedinUnipileConnectedSelector,
-  linkedinUnipileAccountsState,
+    isLinkedinUnipileConnectedSelector,
+    linkedinUnipileAccountsState,
 } from '@/linkedin-unipile/states/linkedinUnipileAccountsState';
 import {
-  isWhatsappUnipileConnectedSelector,
-  whatsappUnipileAccountsState,
+    isWhatsappUnipileConnectedSelector,
+    whatsappUnipileAccountsState,
 } from '@/whatsapp-unipile/states/whatsappUnipileAccountsState';
 // /Users/arnavsaxena/MEGA/arx/arxena/packages/twenty-front/src/pages/settings/linkedin/services/linkedin-backend.service.ts
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
+
 import { getLinkedinService } from '../../../pages/settings/linkedin/services/linkedin-backend.service';
 import { getWhatsappUnipileService } from '../../../pages/settings/whatsapp/services/whatsapp-unipile-backend.service';
+import { LinkedinUnipileVisibilityRecoveryEffect } from '../components/LinkedinUnipileVisibilityRecoveryEffect';
+import { tryExtensionLinkedinUnipileRecovery } from '../utils/linkedinUnipileExtensionBridge';
 // import { getWhatsappUnipileService } from '../../../packages/twenty-front/src/pages/settings/whatsapp/services/whatsapp-unipile-backend.service';
 
 type UnipileContextValue = {
@@ -92,6 +96,7 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
   );
   const isRefreshingRef = useRef(false);
   const pendingRefreshRef = useRef(false);
+  const extensionRecoveryRanForTokenRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
@@ -199,6 +204,30 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
   ]);
 
   useEffect(() => {
+    if (!accessToken?.trim()) {
+      extensionRecoveryRanForTokenRef.current = null;
+      return;
+    }
+    if (extensionRecoveryRanForTokenRef.current === accessToken) {
+      return;
+    }
+    extensionRecoveryRanForTokenRef.current = accessToken;
+    const baseUrl = REACT_APP_SERVER_BASE_URL?.replace(/\/$/, '') ?? '';
+    if (!baseUrl) {
+      return;
+    }
+    void (async () => {
+      const result = await tryExtensionLinkedinUnipileRecovery({
+        accessToken,
+        serverBaseUrl: baseUrl,
+      });
+      if (result.ok) {
+        await refreshAccounts();
+      }
+    })();
+  }, [accessToken, refreshAccounts]);
+
+  useEffect(() => {
     linkedinAccountsRef.current = linkedinUnipileAccounts;
   }, [linkedinUnipileAccounts]);
 
@@ -231,6 +260,7 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <UnipileContext.Provider value={contextValue}>
+      <LinkedinUnipileVisibilityRecoveryEffect />
       {children}
     </UnipileContext.Provider>
   );

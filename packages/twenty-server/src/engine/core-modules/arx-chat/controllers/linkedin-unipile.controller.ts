@@ -1,15 +1,15 @@
 import {
-    Body,
-    Controller,
-    Delete,
-    HttpException,
-    HttpStatus,
-    Logger,
-    Param,
-    Post,
-    Req,
-    Res,
-    UseGuards
+  Body,
+  Controller,
+  Delete,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Req,
+  Res,
+  UseGuards
 } from '@nestjs/common';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -17,8 +17,8 @@ import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import {
-    findLinkedinUnipileAccountBlockingNewConnectionForProfile,
-    type UnipileLinkedinAccount,
+  findLinkedinUnipileAccountBlockingNewConnectionForProfile,
+  type UnipileLinkedinAccount,
 } from 'twenty-shared';
 
 import { LinkedinUnipileRequestService } from '../services/linkedin-unipile-request.service';
@@ -27,8 +27,8 @@ import { UnipileAccountPoolService } from '../services/unipile-account-pool.serv
 import { UnipileWebhookService } from '../services/unipile-webhook.service';
 import { WorkspaceMemberProfileUnipileService } from '../services/workspace-member-profile-unipile.service';
 import type {
-    CreateWebhookDto,
-    UnipileAccountStatusWebhook,
+  CreateWebhookDto,
+  UnipileAccountStatusWebhook,
 } from '../types/unipile-webhook.types';
 
 // DTOs for LinkedIn Unipile integration
@@ -465,6 +465,8 @@ export class LinkedinUnipileController {
       reconnectAttempted = true;
 
       try {
+        const reconnectAccountIdForUnipile =
+          accountId && accountStatus === 'disconnected' ? accountId : undefined;
         const result = (await this.linkedinUnipileRequestService.makeUnipileRequest(
           '/api/v1/accounts',
           'POST',
@@ -472,6 +474,9 @@ export class LinkedinUnipileController {
             provider: 'LINKEDIN',
             access_token: reconnectSourceToken,
             ...(userAgent && { user_agent: userAgent }),
+            ...(reconnectAccountIdForUnipile && {
+              reconnect_account: reconnectAccountIdForUnipile,
+            }),
           },
           { returnStatus: true },
         )) as LinkedinUnipileStatusHttpResult;

@@ -8,25 +8,26 @@ import { orgChartLinkedInSearchTypeState } from '@/orgchart/states/orgChartLinke
 import { orgChartQueryGeneratorPreferenceState } from '@/orgchart/states/orgChartQueryGeneratorPreferenceState';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { tryExtensionLinkedinUnipileRecovery } from '@/unipile/utils/linkedinUnipileExtensionBridge';
 import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
 import { Mixpanel } from '~/mixpanel';
 
 import {
-  normalizeCompanyIdForUrl,
-  OrgChartContextAction,
-  OrgChartNodeContextPayload,
+    normalizeCompanyIdForUrl,
+    OrgChartContextAction,
+    OrgChartNodeContextPayload,
 } from 'twenty-orgchart';
 import {
-  isValidLinkedInProfileUrl,
-  NodeState,
-  OrgChartNodeData,
-  OrgchartSearchMode as OrgchartSearchModeValue,
+    isValidLinkedInProfileUrl,
+    NodeState,
+    OrgChartNodeData,
+    OrgchartSearchMode as OrgchartSearchModeValue,
 } from 'twenty-shared';
 import { ContextResultItem } from '../types';
 import {
-  buildBooleanKeywordsForNode,
-  exportContextResultsToCsv,
-  normalizeCandidateItem,
+    buildBooleanKeywordsForNode,
+    exportContextResultsToCsv,
+    normalizeCandidateItem,
 } from '../utils/orgChartUtils';
 
 /** Subset of {@link OrgChartContextAction} used for org-chart search API `mode`. */
@@ -115,7 +116,7 @@ const uniqueConcatJobTitleListsPreservingOrder = (
 };
 
 const LINKEDIN_UNIPILE_SOURCE_UNAVAILABLE_SNACKBAR =
-  'LinkedIn (Unipile) is not connected. Connect LinkedIn in settings or choose Apify or LinkedIn x-ray as the org chart data source in the jobs menu.';
+  'LinkedIn (Unipile) is not connected. Open linkedin.com in this browser so the Arx extension can sync your session, then try again. You can also switch the org chart data source to Apify or LinkedIn x-ray in the jobs menu.';
 
 const APIFY_SOURCE_UNAVAILABLE_SNACKBAR =
   'Apify is not configured for org chart. Set APIFY_API_TOKEN on the server or choose LinkedIn (Unipile) in the jobs menu.';
@@ -582,7 +583,18 @@ export const useOrgChartActions = ({
       return;
     }
 
-    const prereqStatus = await fetchLinkedinDataSourcesStatus();
+    let prereqStatus = await fetchLinkedinDataSourcesStatus();
+    if (
+      prereqStatus !== null &&
+      orgChartLinkedinCandidateSource === 'unipile' &&
+      prereqStatus.linkedinUnipileConnected !== true
+    ) {
+      await tryExtensionLinkedinUnipileRecovery({
+        accessToken,
+        serverBaseUrl: baseUrl,
+      });
+      prereqStatus = await fetchLinkedinDataSourcesStatus();
+    }
     if (prereqStatus !== null) {
       if (orgChartLinkedinCandidateSource === 'apify') {
         if (prereqStatus.apifyActorConfigured !== true) {

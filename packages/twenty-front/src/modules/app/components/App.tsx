@@ -1,5 +1,6 @@
 import { AppRouter } from '@/app/components/AppRouter';
 import { CaptchaProvider } from '@/captcha/components/CaptchaProvider';
+import { ChromeExtensionAuthBridgeEffect } from '@/chrome-extension/components/ChromeExtensionAuthBridgeEffect';
 import { ApolloDevLogEffect } from '@/debug/components/ApolloDevLogEffect';
 import { RecoilDebugObserverEffect } from '@/debug/components/RecoilDebugObserver';
 import { AppErrorBoundary } from '@/error-handler/components/AppErrorBoundary';
@@ -34,6 +35,7 @@ export const App = () => {
                     <HelmetProvider>
                       {/* <BaileysProvider> */}
                         <UnipileProvider>
+                          <ChromeExtensionAuthBridgeEffect />
                           <WebSocketProvider>
                             <UploadProgressProvider>
                               <NotificationProvider>
