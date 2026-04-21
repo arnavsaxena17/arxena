@@ -80,7 +80,7 @@ export class OrgChartRecordWorkspaceService {
         searchType: searchTypeGql,
         s3RelativePath: params.orgChartS3RelativePath,
         itemCount: params.itemCount,
-        createdById: workspaceMemberId,
+        recruiterId: workspaceMemberId,
       };
 
       const trimmedCompanyId = params.companyId?.trim();

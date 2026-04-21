@@ -15,7 +15,11 @@ import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/servi
 import { OrgchartApifyBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-apify-build.types';
 import { OrgchartLinkedinXrayBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-linkedin-xray-build.types';
 import { OrgchartUnipileBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-unipile-build.types';
-import { ApolloIoRestService } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
+import {
+  ApolloIoRestService,
+  type ApolloPeopleSearchParams,
+  isApolloOrganizationId,
+} from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { ApolloPeopleSearchTransformerService } from 'src/engine/core-modules/candidate-search/services/apollo-people-search-transformer.service';
 import { OrgChartSearchService } from 'src/engine/core-modules/candidate-search/services/orgchart-search.service';
 import { ResultValidationService } from 'src/engine/core-modules/candidate-search/services/result-validation.service';
@@ -594,7 +598,12 @@ export class OrgChartLinkedInBuildService {
 
   /**
    * Apollo.io people search for org chart (organization_ids + person_titles / keywords).
-   * Requires companyId = Apollo organization_id (from Apollo company autocomplete).
+   *
+   * Resolves the Apollo organization_id from companyId when the caller did not pick
+   * the company via Apollo autocomplete (e.g. passed a LinkedIn slug / company name),
+   * then builds mode-specific query params per the Apollo People API Search contract.
+   *
+   * @see https://docs.apollo.io/reference/people-api-search
    */
   private async runApolloOrgChartPeopleSearch(args: {
     body: SearchOrgchartLinkedInBody;
@@ -624,14 +633,6 @@ export class OrgChartLinkedInBuildService {
       );
     }
 
-    const orgId = args.companyId?.trim();
-    if (!orgId) {
-      throw new HttpException(
-        'Apollo org chart requires a company from Apollo search (companyId = Apollo organization_id).',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
     if (args.mode === 'business_division_map') {
       throw new HttpException(
         'Apollo org chart does not support business_division_map',
@@ -639,20 +640,46 @@ export class OrgChartLinkedInBuildService {
       );
     }
 
-    const titles = args.jobTitles.filter((t) => t.trim().length > 0);
-    const qKeywordParts: string[] = [];
-    if (args.body.functionRoot?.trim()) {
-      qKeywordParts.push(args.body.functionRoot.trim());
-    }
-    if (args.body.businessDivisionRawQuery?.trim()) {
-      qKeywordParts.push(args.body.businessDivisionRawQuery.trim());
-    }
-    const q_keywords =
-      qKeywordParts.length > 0 ? qKeywordParts.join(' ') : undefined;
+    const linkedinCompanyUrl =
+      args.canonicalCompanyLinkedinUrl?.trim() ||
+      args.body.linkedinCompanyUrl?.trim() ||
+      undefined;
 
-    const person_locations = args.body.country?.trim()
-      ? [args.body.country.trim()]
-      : undefined;
+    await this.emitOrgchartSearchProgressForToken(args.apiToken, {
+      requestId: args.requestId,
+      mode: args.mode,
+      searchType: args.searchType,
+      companyName: args.resolvedCompanyName,
+      event: 'status',
+      data: {
+        message: 'Resolving company on Apollo…',
+        candidateSource: 'apollo',
+      },
+    });
+
+    const { organizationId: resolvedOrgId, linkedinUrl: resolvedLinkedinUrl } =
+      await this.apolloIoRestService.resolveOrganizationIdForOrgChart({
+        candidateId: args.companyId,
+        companyName: args.resolvedCompanyName,
+        linkedinCompanyUrl,
+      });
+
+    if (!resolvedOrgId) {
+      this.logger.warn(
+        `Apollo org chart: unable to resolve organization_id for company="${args.resolvedCompanyName}" (candidateId=${args.companyId ?? 'none'}, linkedin=${linkedinCompanyUrl ?? 'none'})`,
+      );
+      throw new HttpException(
+        `Apollo org chart: could not find Apollo organization for "${args.resolvedCompanyName}"`,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const apolloParams = this.buildApolloPeopleSearchParams({
+      body: args.body,
+      mode: args.mode,
+      organizationId: resolvedOrgId,
+      jobTitles: args.jobTitles,
+    });
 
     await this.emitOrgchartSearchProgressForToken(args.apiToken, {
       requestId: args.requestId,
@@ -669,10 +696,7 @@ export class OrgChartLinkedInBuildService {
     const merged: TransformedCandidateForTable[] = [];
     for (let page = 1; page <= 10; page++) {
       const raw = await this.apolloIoRestService.peopleSearch({
-        organization_ids: [orgId],
-        person_titles: titles.length > 0 ? titles : undefined,
-        q_keywords,
-        person_locations,
+        ...apolloParams,
         page,
         per_page: 100,
       });
@@ -681,8 +705,9 @@ export class OrgChartLinkedInBuildService {
           raw as Record<string, unknown>,
           {
             companyName: args.resolvedCompanyName,
-            companyId: orgId,
-            companyLinkedinUrl: args.canonicalCompanyLinkedinUrl,
+            companyId: resolvedOrgId,
+            companyLinkedinUrl:
+              resolvedLinkedinUrl ?? args.canonicalCompanyLinkedinUrl,
           },
         );
       merged.push(...rows);
@@ -713,6 +738,89 @@ export class OrgChartLinkedInBuildService {
       isCached: false,
       cacheSource: 'none',
       strategyResults: [],
+    };
+  }
+
+  /**
+   * Resolve front-end org-chart body → Apollo People API Search params.
+   * Mirrors the unresolved → resolved parameter pattern used for Unipile/Apify,
+   * stripping internal sentinels (`fullcompany`, `global`) before mapping to Apollo fields.
+   */
+  private buildApolloPeopleSearchParams(args: {
+    body: SearchOrgchartLinkedInBody;
+    mode: OrgchartSearchMode;
+    organizationId: string;
+    jobTitles: string[];
+  }): ApolloPeopleSearchParams {
+    const { body, mode, organizationId, jobTitles } = args;
+
+    const trimmedCountry =
+      typeof body.country === 'string' ? body.country.trim() : '';
+    const hasCountryFilter =
+      trimmedCountry.length > 0 && trimmedCountry.toLowerCase() !== 'global';
+
+    const trimmedFunctionRoot =
+      typeof body.functionRoot === 'string' ? body.functionRoot.trim() : '';
+    const hasFunctionRootFilter =
+      hasMeaningfulOrgChartFunctionRootFilter(trimmedFunctionRoot);
+
+    const titles = jobTitles
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+
+    const qKeywordParts: string[] = [];
+    if (hasFunctionRootFilter) {
+      qKeywordParts.push(trimmedFunctionRoot);
+    }
+    if (body.businessDivisionRawQuery?.trim()) {
+      qKeywordParts.push(body.businessDivisionRawQuery.trim());
+    }
+    if (body.stdFunction?.trim() && mode !== 'entire_company') {
+      qKeywordParts.push(body.stdFunction.trim());
+    }
+    const q_keywords =
+      qKeywordParts.length > 0 ? qKeywordParts.join(' ') : undefined;
+
+    const person_locations = hasCountryFilter ? [trimmedCountry] : undefined;
+
+    const person_titles: string[] | undefined =
+      mode === 'entire_company' || mode === 'leadership'
+        ? undefined
+        : titles.length > 0
+          ? titles
+          : undefined;
+
+    const person_seniorities: string[] | undefined =
+      mode === 'leadership'
+        ? [
+            'owner',
+            'founder',
+            'c_suite',
+            'partner',
+            'vp',
+            'head',
+            'director',
+          ]
+        : undefined;
+
+    // Safety: only pass organization_ids when it is a valid Apollo ObjectId.
+    const organization_ids = isApolloOrganizationId(organizationId)
+      ? [organizationId]
+      : undefined;
+
+    this.logger.log(
+      `Apollo search params (mode=${mode}, organization_id=${organizationId}): ` +
+        `titles=${person_titles?.length ?? 0}, seniorities=${person_seniorities?.length ?? 0}, ` +
+        `location=${person_locations?.[0] ?? 'any'}, keywords="${q_keywords ?? ''}"`,
+    );
+
+    return {
+      organization_ids,
+      person_titles,
+      person_seniorities,
+      person_locations,
+      q_keywords,
+      include_similar_titles: person_titles ? true : undefined,
     };
   }
 

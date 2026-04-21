@@ -12,11 +12,9 @@ import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/sta
 @Injectable()
 export class CreatedByFromAuthContextService {
   private readonly logger = new Logger(CreatedByFromAuthContextService.name);
-
   constructor(
     private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
   ) {}
-
   public async buildCreatedBy(
     authContext: AuthContext,
   ): Promise<ActorMetadata> {
@@ -35,7 +33,6 @@ export class CreatedByFromAuthContextService {
 
     if (isDefined(user)) {
       this.logger.warn("User doesn't have a workspace member id in the token");
-
       const workspaceMemberRepository =
         await this.twentyORMGlobalManager.getRepositoryForWorkspace<WorkspaceMemberWorkspaceEntity>(
           workspace.id,

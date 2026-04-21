@@ -507,7 +507,6 @@ export class CreateMetaDataStructure {
             continue;
           }
 
-          // Check if all required columns exist
           let allColumnsExist = true;
           for (const column of indexDef.requiredColumns) {
             const columnExists = await checkColumnExists(indexDef.table, column);
@@ -522,12 +521,9 @@ export class CreateMetaDataStructure {
             continue;
           }
 
-          // Create the index
           await this.workspaceQueryService.executeRawQuery(indexDef.query, [], workspaceId);
-          console.log('Index created successfully:', indexDef.query);
         } catch (error) {
           console.error('Error creating index:', indexDef.query, error);
-          // Continue with other indices even if one fails
         }
       }
 

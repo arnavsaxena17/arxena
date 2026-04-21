@@ -109,8 +109,7 @@ export const LinkedinUnipileOrgChartReconnectBanner = ({
       <span>
         {!isExtensionInstalled ? (
           <Trans>
-            LinkedIn (Unipile) is not connected. Install the Arx Chrome extension
-            so it can sync your LinkedIn session with Unipile.
+            LinkedIn (Unipile) is not connected. Install the Arx Chrome extension so it can sync your LinkedIn session with Unipile.
           </Trans>
         ) : (
           <Trans>

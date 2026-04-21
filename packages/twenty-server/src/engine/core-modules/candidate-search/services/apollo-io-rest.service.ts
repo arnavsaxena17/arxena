@@ -13,8 +13,26 @@ export type ApolloPeopleSearchParams = {
   person_locations?: string[];
   organization_locations?: string[];
   organization_ids?: string[];
+  q_organization_domains_list?: string[];
+  person_seniorities?: string[];
   page?: number;
   per_page?: number;
+};
+
+/** Apollo organization_id values are 24-char hex MongoDB-like ObjectIds (e.g. `5e66b6381e05b4008c8331b8`). */
+export const APOLLO_ORGANIZATION_ID_REGEX = /^[a-f0-9]{24}$/i;
+
+export const isApolloOrganizationId = (value: string | undefined): boolean =>
+  typeof value === 'string' && APOLLO_ORGANIZATION_ID_REGEX.test(value.trim());
+
+/** Extract the linkedin slug (e.g. "litify") from a linkedin company URL. */
+const extractLinkedinCompanySlug = (
+  linkedinUrl?: string,
+): string | undefined => {
+  if (!linkedinUrl?.trim()) return undefined;
+  const match = linkedinUrl.match(/linkedin\.com\/company\/([^/?#]+)/i);
+  if (!match?.[1]) return undefined;
+  return decodeURIComponent(match[1].replace(/\/$/, '')).toLowerCase();
 };
 
 /** Apollo Organization Search (POST /mixed_companies/search) — consumes credits. */
@@ -101,6 +119,12 @@ export class ApolloIoRestService {
       input.organization_locations,
     );
     appendApolloParams(params, 'organization_ids', input.organization_ids);
+    appendApolloParams(
+      params,
+      'q_organization_domains_list',
+      input.q_organization_domains_list,
+    );
+    appendApolloParams(params, 'person_seniorities', input.person_seniorities);
     const page = input.page ?? 1;
     const perPage = input.per_page ?? 25;
     params.set('page', String(page));
@@ -157,6 +181,103 @@ export class ApolloIoRestService {
       },
     );
     return data;
+  }
+
+  /**
+   * Resolve a candidate Apollo organization_id for the given company. If `candidate`
+   * is already a 24-char ObjectId, return it. Otherwise search Apollo organizations by
+   * company name and pick the match whose linkedin URL slug or primary domain matches
+   * `linkedinCompanyUrl` / `domain`. Falls back to the top result when no strong match.
+   */
+  async resolveOrganizationIdForOrgChart(args: {
+    candidateId?: string;
+    companyName?: string;
+    linkedinCompanyUrl?: string;
+    domain?: string;
+  }): Promise<{
+    organizationId?: string;
+    organizationName?: string;
+    linkedinUrl?: string;
+    primaryDomain?: string;
+  }> {
+    const candidate = args.candidateId?.trim();
+    if (candidate && isApolloOrganizationId(candidate)) {
+      return { organizationId: candidate };
+    }
+
+    const name = args.companyName?.trim();
+    const domain = args.domain?.trim().toLowerCase();
+    const targetSlug = extractLinkedinCompanySlug(args.linkedinCompanyUrl);
+
+    const searchName = name || candidate;
+    if (!searchName) {
+      return {};
+    }
+
+    const raw = await this.organizationsSearch({
+      q_organization_name: searchName,
+      q_organization_domains_list: domain ? [domain] : undefined,
+      page: 1,
+      per_page: 10,
+    });
+    const organizations = (raw as { organizations?: unknown }).organizations;
+    const list = Array.isArray(organizations)
+      ? organizations.filter(
+          (o): o is Record<string, unknown> =>
+            o !== null && typeof o === 'object',
+        )
+      : [];
+
+    if (list.length === 0) {
+      return {};
+    }
+
+    const byLinkedinSlug = targetSlug
+      ? list.find((org) => {
+          const url =
+            typeof org.linkedin_url === 'string' ? org.linkedin_url : '';
+          const slug = extractLinkedinCompanySlug(url);
+          return slug && slug === targetSlug;
+        })
+      : undefined;
+
+    const byDomain = domain
+      ? list.find((org) => {
+          const primary =
+            typeof org.primary_domain === 'string'
+              ? org.primary_domain.toLowerCase()
+              : undefined;
+          return primary && primary === domain;
+        })
+      : undefined;
+
+    const byName = name
+      ? list.find((org) => {
+          const orgName =
+            typeof org.name === 'string' ? org.name.trim().toLowerCase() : '';
+          return orgName && orgName === name.toLowerCase();
+        })
+      : undefined;
+
+    const chosen = byLinkedinSlug ?? byDomain ?? byName ?? list[0];
+    const organizationId = String(chosen.organization_id ?? chosen.id ?? '');
+    if (!organizationId) {
+      return {};
+    }
+    const organizationName =
+      typeof chosen.name === 'string' ? chosen.name : undefined;
+    const linkedinUrl =
+      typeof chosen.linkedin_url === 'string' ? chosen.linkedin_url : undefined;
+    const primaryDomain =
+      typeof chosen.primary_domain === 'string'
+        ? chosen.primary_domain
+        : undefined;
+
+    this.logger.log(
+      `Apollo org resolved: name="${searchName}" → id=${organizationId} (linkedin=${linkedinUrl ?? 'n/a'}, domain=${primaryDomain ?? 'n/a'})`,
+    );
+
+    return { organizationId, organizationName, linkedinUrl, primaryDomain };
   }
 
   /**
