@@ -516,6 +516,11 @@ export class TheOfficialBoardService {
     const dom = new JSDOM(html);
     const document = dom.window.document;
     const bodyText = document.body.textContent?.replace(/\s+/g, ' ').trim() || '';
+
+    if (this.isNotFoundPage(document, bodyText)) {
+      throw new Error(`The Official Board company page not found for "${slug}"`);
+    }
+
     const companyName = this.extractCompanyName(document);
     const { executivesCount, subsidiariesCount } = this.extractCounts(bodyText);
     const { candidates, divisions } = this.parseCandidatesAndDivisions(
@@ -540,6 +545,14 @@ export class TheOfficialBoardService {
       candidates,
       subsidiaries,
     };
+  }
+
+  private isNotFoundPage(document: Document, bodyText: string): boolean {
+    const h1 = document.querySelector('h1')?.textContent?.trim() ?? '';
+    const title = document.title?.trim() ?? '';
+    const text = [title, h1, bodyText.slice(0, 1_000)].join(' ');
+
+    return /oops!?\s+the page you.?re looking for can.?t be found/i.test(text);
   }
 
   async fetchCompanyDetails(

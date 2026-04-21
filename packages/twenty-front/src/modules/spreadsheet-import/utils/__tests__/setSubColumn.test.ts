@@ -1,7 +1,7 @@
 import {
-  Column,
   ColumnType,
-} from '@/spreadsheet-import/steps/components/MatchColumnsStep/MatchColumnsStep';
+  type Column,
+} from '@/spreadsheet-import/types/columnTypes';
 import { setSubColumn } from '@/spreadsheet-import/utils/setSubColumn';
 
 describe('setSubColumn', () => {

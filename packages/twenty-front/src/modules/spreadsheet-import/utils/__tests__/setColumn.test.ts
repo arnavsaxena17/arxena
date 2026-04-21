@@ -1,7 +1,7 @@
 import {
-  Column,
   ColumnType,
-} from '@/spreadsheet-import/steps/components/MatchColumnsStep/MatchColumnsStep';
+  type Column,
+} from '@/spreadsheet-import/types/columnTypes';
 import { Field } from '@/spreadsheet-import/types';
 import { setColumn } from '@/spreadsheet-import/utils/setColumn';
 import { FieldMetadataType } from 'twenty-shared';

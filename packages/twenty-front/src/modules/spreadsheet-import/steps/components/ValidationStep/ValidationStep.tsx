@@ -4,8 +4,8 @@ import { StepNavigationButton } from '@/spreadsheet-import/components/StepNaviga
 import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpreadsheetImportInternal';
 import {
   ColumnType,
-  Columns,
-} from '@/spreadsheet-import/steps/components/MatchColumnsStep/MatchColumnsStep';
+  type Columns,
+} from '@/spreadsheet-import/types/columnTypes';
 import { SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/SpreadsheetImportStep';
 import { SpreadsheetImportStepType } from '@/spreadsheet-import/steps/types/SpreadsheetImportStepType';
 import {

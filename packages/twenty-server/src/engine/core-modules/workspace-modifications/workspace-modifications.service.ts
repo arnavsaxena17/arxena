@@ -68,6 +68,44 @@ export class WorkspaceQueryService {
       return null;
     }
   }
+
+  async getWorkspaceMemberProfileIdForMember(
+    workspaceId: string,
+    workspaceMemberId: string,
+  ): Promise<string | null> {
+    if (!workspaceId || !workspaceMemberId) {
+      return null;
+    }
+    try {
+      const schema = this.getDataSourceSchema(workspaceId);
+      const profileTable =
+        await this.resolveWorkspaceMemberProfileTableName(schema);
+
+      if (!profileTable) {
+        return null;
+      }
+
+      const rows = await this.workspaceDataSourceService.executeRawQuery(
+        `SELECT "id" FROM "${schema}"."${profileTable}" WHERE "workspaceMemberId" = $1 LIMIT 1`,
+        [workspaceMemberId],
+        workspaceId,
+      );
+
+      const id = rows?.[0]?.id;
+
+      return typeof id === 'string' ? id : null;
+    } catch (error) {
+      console.error(
+        'getWorkspaceMemberProfileIdForMember: query failed',
+        workspaceId,
+        workspaceMemberId,
+        error,
+      );
+
+      return null;
+    }
+  }
+
   async getWorkspaceNameFromToken(apiToken: string) {
     if (!apiToken) {
       throw new Error('API token is required');

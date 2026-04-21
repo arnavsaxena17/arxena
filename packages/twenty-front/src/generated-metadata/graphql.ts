@@ -32,6 +32,19 @@ export type ActivateWorkspaceInput = {
   displayName?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type AdminAdjustWorkspaceCreditsInput = {
+  creditType: AdminCreditType;
+  delta: Scalars['Int']['input'];
+  workspaceId: Scalars['String']['input'];
+};
+
+/** Credit type for admin adjust workspace credits */
+export enum AdminCreditType {
+  EMAIL_CONTACT = 'EMAIL_CONTACT',
+  ORG_CHART = 'ORG_CHART',
+  PHONE_CONTACT = 'PHONE_CONTACT'
+}
+
 export type AdminPanelHealthServiceData = {
   __typename?: 'AdminPanelHealthServiceData';
   details?: Maybe<Scalars['String']['output']>;
@@ -57,6 +70,52 @@ export type AdminPanelWorkerQueueHealth = {
   name: Scalars['String']['output'];
   status: AdminPanelHealthServiceStatus;
   workers: Scalars['Float']['output'];
+};
+
+export type AdminPanelWorkspaceMemberRecruiterProfile = {
+  __typename?: 'AdminPanelWorkspaceMemberRecruiterProfile';
+  chromeExtensionId?: Maybe<Scalars['String']['output']>;
+  companyDescription?: Maybe<Scalars['String']['output']>;
+  companyName?: Maybe<Scalars['String']['output']>;
+  email?: Maybe<Scalars['String']['output']>;
+  firstName?: Maybe<Scalars['String']['output']>;
+  jobTitle?: Maybe<Scalars['String']['output']>;
+  keepLinkedinConnected?: Maybe<Scalars['Boolean']['output']>;
+  lastName?: Maybe<Scalars['String']['output']>;
+  linkedinUnipileAccountId?: Maybe<Scalars['String']['output']>;
+  linkedinUrl?: Maybe<Scalars['String']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  phoneNumber?: Maybe<Scalars['String']['output']>;
+  profileId?: Maybe<Scalars['String']['output']>;
+  typeWorkspaceMember?: Maybe<Scalars['String']['output']>;
+  whatsappUnipileAccountId?: Maybe<Scalars['String']['output']>;
+  workspaceMemberId?: Maybe<Scalars['String']['output']>;
+};
+
+export type AdminPanelWorkspaceMemberRow = {
+  __typename?: 'AdminPanelWorkspaceMemberRow';
+  membershipCreatedAt: Scalars['DateTime']['output'];
+  recruiterProfile?: Maybe<AdminPanelWorkspaceMemberRecruiterProfile>;
+  userCreatedAt: Scalars['DateTime']['output'];
+  userEmail: Scalars['String']['output'];
+  userFirstName?: Maybe<Scalars['String']['output']>;
+  userId: Scalars['String']['output'];
+  userLastName?: Maybe<Scalars['String']['output']>;
+  workspaceCreatedAt: Scalars['DateTime']['output'];
+  workspaceId: Scalars['String']['output'];
+  workspaceName: Scalars['String']['output'];
+  workspaceSubdomain: Scalars['String']['output'];
+};
+
+export type AdminWorkspaceCreditsRowOutput = {
+  __typename?: 'AdminWorkspaceCreditsRowOutput';
+  emailContactCredits: Scalars['Float']['output'];
+  orgChartCredits: Scalars['Float']['output'];
+  phoneContactCredits: Scalars['Float']['output'];
+  workspaceCreatedAt: Scalars['DateTime']['output'];
+  workspaceCreatorEmail?: Maybe<Scalars['String']['output']>;
+  workspaceId: Scalars['String']['output'];
+  workspaceName: Scalars['String']['output'];
 };
 
 export type Analytics = {
@@ -146,6 +205,8 @@ export type Billing = {
   __typename?: 'Billing';
   billingUrl?: Maybe<Scalars['String']['output']>;
   isBillingEnabled: Scalars['Boolean']['output'];
+  /** Billing provider: razorpay or stripe (controls Settings Billing UI) */
+  provider?: Maybe<Scalars['String']['output']>;
   trialPeriods: Array<BillingTrialPeriodDto>;
 };
 
@@ -216,8 +277,21 @@ export type BillingProductPricesOutput = {
   totalNumberOfPrices: Scalars['Int']['output'];
 };
 
+export enum BillingProviderEnum {
+  razorpay = 'razorpay',
+  stripe = 'stripe'
+}
+
+export type BillingProviderOutput = {
+  __typename?: 'BillingProviderOutput';
+  provider: BillingProviderEnum;
+};
+
 export type BillingSessionOutput = {
   __typename?: 'BillingSessionOutput';
+  razorpayCallbackUrl?: Maybe<Scalars['String']['output']>;
+  razorpayKeyId?: Maybe<Scalars['String']['output']>;
+  razorpaySubscriptionId?: Maybe<Scalars['String']['output']>;
   url?: Maybe<Scalars['String']['output']>;
 };
 
@@ -276,6 +350,7 @@ export type ClientConfig = {
   canManageFeatureFlags: Scalars['Boolean']['output'];
   captcha: Captcha;
   chromeExtensionId?: Maybe<Scalars['String']['output']>;
+  dealDiligenceCalendlyEmbedUrl?: Maybe<Scalars['String']['output']>;
   debugMode: Scalars['Boolean']['output'];
   defaultSubdomain?: Maybe<Scalars['String']['output']>;
   frontDomain: Scalars['String']['output'];
@@ -290,7 +365,10 @@ export type ClientConfig = {
   sentry: Sentry;
   signInBackgroundUseOrgChartMock: Scalars['Boolean']['output'];
   signInPrefilled: Scalars['Boolean']['output'];
+  skipOptionalOnboardingSteps: Scalars['Boolean']['output'];
   support: Support;
+  useConnectLinkedinOnboarding: Scalars['Boolean']['output'];
+  useIntentChoiceOnboarding: Scalars['Boolean']['output'];
 };
 
 export type ComputeStepOutputSchemaInput = {
@@ -362,6 +440,10 @@ export type CreateOneRelationMetadataInput = {
   relationMetadata: CreateRelationInput;
 };
 
+export type CreateRazorpayOrderInput = {
+  creditPackKey: Scalars['String']['input'];
+};
+
 export type CreateRelationInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   fromDescription?: InputMaybe<Scalars['String']['input']>;
@@ -385,6 +467,11 @@ export type CreateRemoteServerInput = {
   userMappingOptions?: InputMaybe<UserMappingOptions>;
 };
 
+export type CreateRoleInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  label: Scalars['String']['input'];
+};
+
 export type CreateServerlessFunctionInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
@@ -396,6 +483,31 @@ export type CreateWorkflowVersionStepInput = {
   stepType: Scalars['String']['input'];
   /** Workflow version ID */
   workflowVersionId: Scalars['String']['input'];
+};
+
+export type CreditPackOutput = {
+  __typename?: 'CreditPackOutput';
+  amountSubunits: Scalars['Float']['output'];
+  credits: Scalars['Float']['output'];
+  currency: Scalars['String']['output'];
+  key: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+};
+
+export type CreditTransactionOutput = {
+  __typename?: 'CreditTransactionOutput';
+  amount: Scalars['Float']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  creditType: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  metadata?: Maybe<Scalars['JSON']['output']>;
+  type: Scalars['String']['output'];
+};
+
+export type CreditTransactionsOutput = {
+  __typename?: 'CreditTransactionsOutput';
+  items: Array<CreditTransactionOutput>;
+  nextCursor?: Maybe<Scalars['String']['output']>;
 };
 
 export type CursorPaging = {
@@ -484,6 +596,16 @@ export type EmailPasswordResetLink = {
   success: Scalars['Boolean']['output'];
 };
 
+export type EngagementPlanOutput = {
+  __typename?: 'EngagementPlanOutput';
+  amount: Scalars['Float']['output'];
+  currency: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  interval: Scalars['Float']['output'];
+  name: Scalars['String']['output'];
+  period: Scalars['String']['output'];
+};
+
 export type EnvironmentVariable = {
   __typename?: 'EnvironmentVariable';
   description: Scalars['String']['output'];
@@ -548,6 +670,7 @@ export enum FeatureFlagKey {
   IsAirtableIntegrationEnabled = 'IsAirtableIntegrationEnabled',
   IsAnalyticsV2Enabled = 'IsAnalyticsV2Enabled',
   IsBillingPlansEnabled = 'IsBillingPlansEnabled',
+  IsCollectPhoneNumberInOnboarding = 'IsCollectPhoneNumberInOnboarding',
   IsCommandMenuV2Enabled = 'IsCommandMenuV2Enabled',
   IsCopilotEnabled = 'IsCopilotEnabled',
   IsCustomDomainEnabled = 'IsCustomDomainEnabled',
@@ -809,6 +932,45 @@ export type LinkMetadata = {
   url: Scalars['String']['output'];
 };
 
+export type LinkedInUnipileHealthStatus = {
+  __typename?: 'LinkedInUnipileHealthStatus';
+  metrics: Array<LinkedInUnipileSessionMetric>;
+  sessions: LinkedInUnipileSessionInfo;
+  status: Scalars['String']['output'];
+  timestamp: Scalars['String']['output'];
+};
+
+export type LinkedInUnipileSessionInfo = {
+  __typename?: 'LinkedInUnipileSessionInfo';
+  active: Scalars['Float']['output'];
+  inactive: Scalars['Float']['output'];
+  total: Scalars['Float']['output'];
+};
+
+export type LinkedInUnipileSessionMetric = {
+  __typename?: 'LinkedInUnipileSessionMetric';
+  connectionCount: Scalars['Float']['output'];
+  hasAuthFiles: Scalars['Boolean']['output'];
+  hasWebSocketConnection: Scalars['Boolean']['output'];
+  isActive: Scalars['Boolean']['output'];
+  isRegistered: Scalars['Boolean']['output'];
+  lastActivity: Scalars['String']['output'];
+  linkedinConnectionStatus: Scalars['String']['output'];
+  memoryUsageMB: Scalars['Float']['output'];
+  recruiterId: Scalars['String']['output'];
+};
+
+export type LinkedInUnipileSessionStats = {
+  __typename?: 'LinkedInUnipileSessionStats';
+  activeSessions: Scalars['Float']['output'];
+  averageMemoryPerSessionMB: Scalars['Float']['output'];
+  inactiveSessions: Scalars['Float']['output'];
+  memoryEfficiency: Scalars['Float']['output'];
+  registeredSessions: Scalars['Float']['output'];
+  totalMemoryUsageMB: Scalars['Float']['output'];
+  totalSessions: Scalars['Float']['output'];
+};
+
 export type LinksMetadata = {
   __typename?: 'LinksMetadata';
   primaryLinkLabel: Scalars['String']['output'];
@@ -831,9 +993,12 @@ export type Mutation = {
   __typename?: 'Mutation';
   activateWorkflowVersion: Scalars['Boolean']['output'];
   activateWorkspace: Workspace;
+  adminAdjustWorkspaceCredits: Scalars['Boolean']['output'];
+  adminDeleteWorkspace: Scalars['Boolean']['output'];
   authorizeApp: AuthorizeApp;
   checkCustomDomainValidRecords?: Maybe<CustomDomainValidRecords>;
   checkoutSession: BillingSessionOutput;
+  completeOnboardingIntentPathStep: OnboardingStepSuccess;
   computeStepOutputSchema: Scalars['JSON']['output'];
   createDraftFromWorkflowVersion: WorkflowVersion;
   createOIDCIdentityProvider: SetupSsoOutput;
@@ -842,7 +1007,9 @@ export type Mutation = {
   createOneObject: Object;
   createOneRelationMetadata: RelationMetadata;
   createOneRemoteServer: RemoteServer;
+  createOneRole: Role;
   createOneServerlessFunction: ServerlessFunction;
+  createRazorpayOrderForCredits: RazorpayOrderOutput;
   createSAMLIdentityProvider: SetupSsoOutput;
   createWorkflowVersionStep: WorkflowAction;
   deactivateWorkflowVersion: Scalars['Boolean']['output'];
@@ -851,7 +1018,9 @@ export type Mutation = {
   deleteOneObject: Object;
   deleteOneRelation: RelationMetadata;
   deleteOneRemoteServer: RemoteServer;
+  deleteOneRole: Scalars['String']['output'];
   deleteOneServerlessFunction: ServerlessFunction;
+  deleteOrgChartClientIpRule: Scalars['Boolean']['output'];
   deleteSSOIdentityProvider: DeleteSsoOutput;
   deleteUser: User;
   deleteWorkflowVersionStep: WorkflowAction;
@@ -870,12 +1039,18 @@ export type Mutation = {
   impersonate: ImpersonateOutput;
   publishServerlessFunction: ServerlessFunction;
   renewToken: AuthTokens;
+  requestInvoiceForCredits: RequestInvoiceForCreditsOutput;
   resendEmailVerificationToken: ResendEmailVerificationTokenOutput;
   resendWorkspaceInvitation: SendInvitationsOutput;
+  resetOrgChartClientIpRuleCounters: Scalars['Boolean']['output'];
   runWorkflowVersion: WorkflowRun;
   sendInvitations: SendInvitationsOutput;
+  setOnboardingIntentChoicePending: OnboardingStepSuccess;
   signUp: SignUpOutput;
+  skipConnectLinkedinOnboardingStep: OnboardingStepSuccess;
+  skipInstallAppOnboardingStep: OnboardingStepSuccess;
   skipSyncEmailOnboardingStep: OnboardingStepSuccess;
+  submitOnboardingIntentPath: OnboardingStepSuccess;
   syncRemoteTable: RemoteTable;
   syncRemoteTableSchemaChanges: RemoteTable;
   track: Analytics;
@@ -885,6 +1060,7 @@ export type Mutation = {
   updateOneField: Field;
   updateOneObject: Object;
   updateOneRemoteServer: RemoteServer;
+  updateOneRole: Role;
   updateOneServerlessFunction: ServerlessFunction;
   updatePasswordViaResetToken: InvalidatePassword;
   updateWorkflowVersionStep: WorkflowAction;
@@ -895,6 +1071,7 @@ export type Mutation = {
   uploadImage: Scalars['String']['output'];
   uploadProfilePicture: Scalars['String']['output'];
   uploadWorkspaceLogo: Scalars['String']['output'];
+  upsertOrgChartClientIpRule: OrgChartClientIpRule;
   userLookupAdminPanel: UserLookup;
 };
 
@@ -909,6 +1086,16 @@ export type MutationActivateWorkspaceArgs = {
 };
 
 
+export type MutationAdminAdjustWorkspaceCreditsArgs = {
+  input: AdminAdjustWorkspaceCreditsInput;
+};
+
+
+export type MutationAdminDeleteWorkspaceArgs = {
+  workspaceId: Scalars['String']['input'];
+};
+
+
 export type MutationAuthorizeAppArgs = {
   clientId: Scalars['String']['input'];
   codeChallenge?: InputMaybe<Scalars['String']['input']>;
@@ -918,8 +1105,11 @@ export type MutationAuthorizeAppArgs = {
 
 export type MutationCheckoutSessionArgs = {
   plan?: BillingPlanKey;
+  quantity?: InputMaybe<Scalars['Int']['input']>;
+  razorpayPlanId?: InputMaybe<Scalars['String']['input']>;
   recurringInterval: SubscriptionInterval;
   requirePaymentMethod?: Scalars['Boolean']['input'];
+  successReturnUrl?: InputMaybe<Scalars['String']['input']>;
   successUrlPath?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -964,8 +1154,18 @@ export type MutationCreateOneRemoteServerArgs = {
 };
 
 
+export type MutationCreateOneRoleArgs = {
+  createRoleInput: CreateRoleInput;
+};
+
+
 export type MutationCreateOneServerlessFunctionArgs = {
   input: CreateServerlessFunctionInput;
+};
+
+
+export type MutationCreateRazorpayOrderForCreditsArgs = {
+  input: CreateRazorpayOrderInput;
 };
 
 
@@ -1004,8 +1204,18 @@ export type MutationDeleteOneRemoteServerArgs = {
 };
 
 
+export type MutationDeleteOneRoleArgs = {
+  roleId: Scalars['String']['input'];
+};
+
+
 export type MutationDeleteOneServerlessFunctionArgs = {
   input: ServerlessFunctionIdInput;
+};
+
+
+export type MutationDeleteOrgChartClientIpRuleArgs = {
+  id: Scalars['String']['input'];
 };
 
 
@@ -1084,6 +1294,11 @@ export type MutationRenewTokenArgs = {
 };
 
 
+export type MutationRequestInvoiceForCreditsArgs = {
+  input: RequestInvoiceForCreditsInput;
+};
+
+
 export type MutationResendEmailVerificationTokenArgs = {
   email: Scalars['String']['input'];
 };
@@ -1091,6 +1306,11 @@ export type MutationResendEmailVerificationTokenArgs = {
 
 export type MutationResendWorkspaceInvitationArgs = {
   appTokenId: Scalars['String']['input'];
+};
+
+
+export type MutationResetOrgChartClientIpRuleCountersArgs = {
+  id: Scalars['String']['input'];
 };
 
 
@@ -1112,6 +1332,11 @@ export type MutationSignUpArgs = {
   workspaceId?: InputMaybe<Scalars['String']['input']>;
   workspaceInviteHash?: InputMaybe<Scalars['String']['input']>;
   workspacePersonalInviteToken?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type MutationSubmitOnboardingIntentPathArgs = {
+  path: OnboardingIntentPath;
 };
 
 
@@ -1153,6 +1378,11 @@ export type MutationUpdateOneObjectArgs = {
 
 export type MutationUpdateOneRemoteServerArgs = {
   input: UpdateRemoteServerInput;
+};
+
+
+export type MutationUpdateOneRoleArgs = {
+  updateRoleInput: UpdateRoleInput;
 };
 
 
@@ -1209,6 +1439,11 @@ export type MutationUploadProfilePictureArgs = {
 
 export type MutationUploadWorkspaceLogoArgs = {
   file: Scalars['Upload']['input'];
+};
+
+
+export type MutationUpsertOrgChartClientIpRuleArgs = {
+  input: UpsertOrgChartClientIpRuleInput;
 };
 
 
@@ -1296,11 +1531,22 @@ export type ObjectIndexMetadatasConnection = {
   pageInfo: PageInfo;
 };
 
+export enum OnboardingIntentPath {
+  COMPETITIVE_RESEARCH = 'COMPETITIVE_RESEARCH',
+  DEAL_DILIGENCE = 'DEAL_DILIGENCE',
+  EXTENSION_INSTALL = 'EXTENSION_INSTALL'
+}
+
 /** Onboarding status */
 export enum OnboardingStatus {
+  COLLECT_PHONE_NUMBER = 'COLLECT_PHONE_NUMBER',
+  COMPETITIVE_RESEARCH = 'COMPETITIVE_RESEARCH',
   COMPLETED = 'COMPLETED',
   CONNECT_LINKEDIN = 'CONNECT_LINKEDIN',
+  DEAL_DILIGENCE = 'DEAL_DILIGENCE',
+  EXTENSION_INSTALL = 'EXTENSION_INSTALL',
   INSTALL_APP = 'INSTALL_APP',
+  INTENT_CHOICE = 'INTENT_CHOICE',
   INVITE_TEAM = 'INVITE_TEAM',
   PLAN_REQUIRED = 'PLAN_REQUIRED',
   PROFILE_CREATION = 'PROFILE_CREATION',
@@ -1312,6 +1558,19 @@ export type OnboardingStepSuccess = {
   __typename?: 'OnboardingStepSuccess';
   /** Boolean that confirms query was dispatched */
   success: Scalars['Boolean']['output'];
+};
+
+export type OrgChartClientIpRule = {
+  __typename?: 'OrgChartClientIpRule';
+  chartsServed: Scalars['Float']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['UUID']['output'];
+  ipAddress: Scalars['String']['output'];
+  isBlocked: Scalars['Boolean']['output'];
+  lastUserAgent?: Maybe<Scalars['String']['output']>;
+  serveCachedOnly: Scalars['Boolean']['output'];
+  totalRequests: Scalars['Float']['output'];
+  updatedAt: Scalars['DateTime']['output'];
 };
 
 export type PageInfo = {
@@ -1370,12 +1629,18 @@ export type PublishServerlessFunctionInput = {
 
 export type Query = {
   __typename?: 'Query';
+  adminListWorkspacesWithCredits: Array<AdminWorkspaceCreditsRowOutput>;
+  adminPanelAllWorkspaceMembers: Array<AdminPanelWorkspaceMemberRow>;
   billingPortalSession: BillingSessionOutput;
+  billingProvider: BillingProviderOutput;
   checkUserExists: UserExistsOutput;
   checkWorkspaceInviteHashIsValid: WorkspaceInviteHashValid;
   clientConfig: ClientConfig;
+  creditPacks: Array<CreditPackOutput>;
+  creditTransactions: CreditTransactionsOutput;
   currentUser: User;
   currentWorkspace: Workspace;
+  engagementPlans: Array<EngagementPlanOutput>;
   field: Field;
   fields: FieldConnection;
   findAvailableWorkspacesByEmail: Array<AvailableWorkspaceOutput>;
@@ -1389,6 +1654,8 @@ export type Query = {
   getAvailablePackages: Scalars['JSON']['output'];
   getEnvironmentVariablesGrouped: EnvironmentVariablesOutput;
   getIndicatorHealthStatus: AdminPanelHealthServiceData;
+  getLinkedInUnipileHealthStatus: LinkedInUnipileHealthStatus;
+  getLinkedInUnipileSessionStats: LinkedInUnipileSessionStats;
   getPostgresCredentials?: Maybe<PostgresCredentials>;
   getProductPrices: BillingProductPricesOutput;
   getPublicWorkspaceDataByDomain: PublicWorkspaceDataOutput;
@@ -1400,13 +1667,18 @@ export type Query = {
   getTimelineCalendarEventsFromPersonId: TimelineCalendarEventsWithTotal;
   getTimelineThreadsFromCompanyId: TimelineThreadsWithTotal;
   getTimelineThreadsFromPersonId: TimelineThreadsWithTotal;
+  getWhatsAppHealthStatus: WhatsAppHealthStatus;
+  getWhatsAppSessionStats: WhatsAppSessionStats;
+  getWhatsAppSessions: WhatsAppSessions;
   index: Index;
   indexMetadatas: IndexConnection;
   object: Object;
   objects: ObjectConnection;
+  orgChartClientIpRules: Array<OrgChartClientIpRule>;
   plans: Array<BillingPlanOutput>;
   relationMetadata: RelationMetadataConnection;
   validatePasswordResetToken: ValidatePasswordResetToken;
+  workspaceCredits: WorkspaceCreditsOutput;
 };
 
 
@@ -1423,6 +1695,12 @@ export type QueryCheckUserExistsArgs = {
 
 export type QueryCheckWorkspaceInviteHashIsValidArgs = {
   inviteHash: Scalars['String']['input'];
+};
+
+
+export type QueryCreditTransactionsArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -1546,6 +1824,14 @@ export type QueryValidatePasswordResetTokenArgs = {
   passwordResetToken: Scalars['String']['input'];
 };
 
+export type RazorpayOrderOutput = {
+  __typename?: 'RazorpayOrderOutput';
+  amount: Scalars['Float']['output'];
+  currency: Scalars['String']['output'];
+  keyId: Scalars['String']['output'];
+  orderId: Scalars['String']['output'];
+};
+
 export type Relation = {
   __typename?: 'Relation';
   sourceFieldMetadata: Field;
@@ -1659,6 +1945,19 @@ export enum RemoteTableStatus {
   NOT_SYNCED = 'NOT_SYNCED',
   SYNCED = 'SYNCED'
 }
+
+export type RequestInvoiceForCreditsInput = {
+  billingAddress: Scalars['String']['input'];
+  billingEmail: Scalars['String']['input'];
+  companyName: Scalars['String']['input'];
+  creditPackKey: Scalars['String']['input'];
+  vatNumber?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type RequestInvoiceForCreditsOutput = {
+  __typename?: 'RequestInvoiceForCreditsOutput';
+  success: Scalars['Boolean']['output'];
+};
 
 export type ResendEmailVerificationTokenOutput = {
   __typename?: 'ResendEmailVerificationTokenOutput';
@@ -1832,12 +2131,12 @@ export enum SubscriptionStatus {
 
 export type Support = {
   __typename?: 'Support';
+  supportAiEnabled?: Maybe<Scalars['Boolean']['output']>;
+  supportChatwootBaseUrl?: Maybe<Scalars['String']['output']>;
+  supportChatwootInboxIdentifier?: Maybe<Scalars['String']['output']>;
+  supportChatwootWebsiteToken?: Maybe<Scalars['String']['output']>;
   supportDriver: Scalars['String']['output'];
   supportFrontChatId?: Maybe<Scalars['String']['output']>;
-  supportChatwootBaseUrl?: Maybe<Scalars['String']['output']>;
-  supportChatwootWebsiteToken?: Maybe<Scalars['String']['output']>;
-  supportChatwootInboxIdentifier?: Maybe<Scalars['String']['output']>;
-  supportAiEnabled?: Maybe<Scalars['Boolean']['output']>;
 };
 
 export type SystemHealth = {
@@ -1989,6 +2288,17 @@ export type UpdateRemoteServerInput = {
   userMappingOptions?: InputMaybe<UserMappingOptionsUpdateInput>;
 };
 
+export type UpdateRoleInput = {
+  canDestroyAllObjectRecords?: InputMaybe<Scalars['Boolean']['input']>;
+  canReadAllObjectRecords?: InputMaybe<Scalars['Boolean']['input']>;
+  canSoftDeleteAllObjectRecords?: InputMaybe<Scalars['Boolean']['input']>;
+  canUpdateAllObjectRecords?: InputMaybe<Scalars['Boolean']['input']>;
+  canUpdateAllSettings?: InputMaybe<Scalars['Boolean']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['String']['input'];
+  label?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type UpdateServerlessFunctionInput = {
   code: Scalars['JSON']['input'];
   description?: InputMaybe<Scalars['String']['input']>;
@@ -2016,6 +2326,12 @@ export type UpdateWorkspaceInput = {
   isPublicInviteLinkEnabled?: InputMaybe<Scalars['Boolean']['input']>;
   logo?: InputMaybe<Scalars['String']['input']>;
   subdomain?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpsertOrgChartClientIpRuleInput = {
+  ipAddress: Scalars['String']['input'];
+  isBlocked: Scalars['Boolean']['input'];
+  serveCachedOnly: Scalars['Boolean']['input'];
 };
 
 export type User = {
@@ -2115,6 +2431,64 @@ export type ValidatePasswordResetToken = {
   id: Scalars['String']['output'];
 };
 
+export type WhatsAppHealthStatus = {
+  __typename?: 'WhatsAppHealthStatus';
+  metrics: Array<WhatsAppSessionMetric>;
+  sessions: WhatsAppSessionInfo;
+  status: Scalars['String']['output'];
+  timestamp: Scalars['String']['output'];
+};
+
+export type WhatsAppSessionDetail = {
+  __typename?: 'WhatsAppSessionDetail';
+  connectionCount: Scalars['Float']['output'];
+  hasAuthFiles: Scalars['Boolean']['output'];
+  hasWebSocketConnection: Scalars['Boolean']['output'];
+  isActive: Scalars['Boolean']['output'];
+  isRegistered: Scalars['Boolean']['output'];
+  lastActivity: Scalars['String']['output'];
+  memoryUsageMB: Scalars['Float']['output'];
+  recruiterId: Scalars['String']['output'];
+  uptime: Scalars['Float']['output'];
+  whatsappConnectionStatus: Scalars['String']['output'];
+};
+
+export type WhatsAppSessionInfo = {
+  __typename?: 'WhatsAppSessionInfo';
+  active: Scalars['Float']['output'];
+  inactive: Scalars['Float']['output'];
+  total: Scalars['Float']['output'];
+};
+
+export type WhatsAppSessionMetric = {
+  __typename?: 'WhatsAppSessionMetric';
+  connectionCount: Scalars['Float']['output'];
+  hasAuthFiles: Scalars['Boolean']['output'];
+  hasWebSocketConnection: Scalars['Boolean']['output'];
+  isActive: Scalars['Boolean']['output'];
+  isRegistered: Scalars['Boolean']['output'];
+  lastActivity: Scalars['String']['output'];
+  memoryUsageMB: Scalars['Float']['output'];
+  recruiterId: Scalars['String']['output'];
+  whatsappConnectionStatus: Scalars['String']['output'];
+};
+
+export type WhatsAppSessionStats = {
+  __typename?: 'WhatsAppSessionStats';
+  activeSessions: Scalars['Float']['output'];
+  averageMemoryPerSessionMB: Scalars['Float']['output'];
+  inactiveSessions: Scalars['Float']['output'];
+  memoryEfficiency: Scalars['Float']['output'];
+  registeredSessions: Scalars['Float']['output'];
+  totalMemoryUsageMB: Scalars['Float']['output'];
+  totalSessions: Scalars['Float']['output'];
+};
+
+export type WhatsAppSessions = {
+  __typename?: 'WhatsAppSessions';
+  sessions: Array<WhatsAppSessionDetail>;
+};
+
 export type WorkerQueueMetrics = {
   __typename?: 'WorkerQueueMetrics';
   active: Scalars['Float']['output'];
@@ -2181,6 +2555,13 @@ export enum WorkspaceActivationStatus {
   SUSPENDED = 'SUSPENDED'
 }
 
+export type WorkspaceCreditsOutput = {
+  __typename?: 'WorkspaceCreditsOutput';
+  emailContactCredits: Scalars['Float']['output'];
+  orgChartCredits: Scalars['Float']['output'];
+  phoneContactCredits: Scalars['Float']['output'];
+};
+
 export type WorkspaceEdge = {
   __typename?: 'WorkspaceEdge';
   /** Cursor for this node. */
@@ -2196,6 +2577,7 @@ export type WorkspaceInfo = {
   id: Scalars['String']['output'];
   logo?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
+  recruiterProfileForLookedUpUser?: Maybe<AdminPanelWorkspaceMemberRecruiterProfile>;
   totalUsers: Scalars['Float']['output'];
   users: Array<UserInfo>;
 };
@@ -2385,11 +2767,6 @@ export type DeleteOneRelationMetadataItemMutationVariables = Exact<{
 
 export type DeleteOneRelationMetadataItemMutation = { __typename?: 'Mutation', deleteOneRelation: { __typename?: 'RelationMetadata', id: any } };
 
-export type ObjectMetadataItemsQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type ObjectMetadataItemsQuery = { __typename?: 'Query', objects: { __typename?: 'ObjectConnection', edges: Array<{ __typename?: 'ObjectEdge', node: { __typename?: 'Object', id: any, dataSourceId: string, nameSingular: string, namePlural: string, labelSingular: string, labelPlural: string, description?: string | null, icon?: string | null, isCustom: boolean, isRemote: boolean, isActive: boolean, isSystem: boolean, createdAt: any, updatedAt: any, labelIdentifierFieldMetadataId?: string | null, imageIdentifierFieldMetadataId?: string | null, shortcut?: string | null, isLabelSyncedWithName: boolean, duplicateCriteria?: Array<Array<string>> | null, indexMetadatas: { __typename?: 'ObjectIndexMetadatasConnection', edges: Array<{ __typename?: 'IndexEdge', node: { __typename?: 'Index', id: any, createdAt: any, updatedAt: any, name: string, indexWhereClause?: string | null, indexType: IndexType, isUnique: boolean, indexFieldMetadatas: { __typename?: 'IndexIndexFieldMetadatasConnection', edges: Array<{ __typename?: 'IndexFieldEdge', node: { __typename?: 'IndexField', id: any, createdAt: any, updatedAt: any, order: number, fieldMetadataId: any } }> } } }> }, fieldsList: Array<{ __typename?: 'Field', id: any, type: FieldMetadataType, name: string, label: string, description?: string | null, icon?: string | null, isCustom?: boolean | null, isActive?: boolean | null, isSystem?: boolean | null, isNullable?: boolean | null, isUnique?: boolean | null, createdAt: any, updatedAt: any, defaultValue?: any | null, options?: any | null, settings?: any | null, isLabelSyncedWithName?: boolean | null, relationDefinition?: { __typename?: 'RelationDefinition', relationId: any, direction: RelationDefinitionType, sourceObjectMetadata: { __typename?: 'Object', id: any, nameSingular: string, namePlural: string }, sourceFieldMetadata: { __typename?: 'Field', id: any, name: string }, targetObjectMetadata: { __typename?: 'Object', id: any, nameSingular: string, namePlural: string }, targetFieldMetadata: { __typename?: 'Field', id: any, name: string } } | null }> } }>, pageInfo: { __typename?: 'PageInfo', hasNextPage?: boolean | null, hasPreviousPage?: boolean | null, startCursor?: any | null, endCursor?: any | null } } };
-
 export type ServerlessFunctionFieldsFragment = { __typename?: 'ServerlessFunction', id: any, name: string, description?: string | null, runtime: string, timeoutSeconds: number, syncStatus: ServerlessFunctionSyncStatus, latestVersion?: string | null, latestVersionInputSchema?: any | null, publishedVersions: Array<string>, createdAt: any, updatedAt: any };
 
 export type CreateOneServerlessFunctionItemMutationVariables = Exact<{
@@ -2473,7 +2850,6 @@ export const UpdateOneObjectMetadataItemDocument = {"kind":"Document","definitio
 export const DeleteOneObjectMetadataItemDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteOneObjectMetadataItem"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"idToDelete"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteOneObject"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"idToDelete"}}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"dataSourceId"}},{"kind":"Field","name":{"kind":"Name","value":"nameSingular"}},{"kind":"Field","name":{"kind":"Name","value":"namePlural"}},{"kind":"Field","name":{"kind":"Name","value":"labelSingular"}},{"kind":"Field","name":{"kind":"Name","value":"labelPlural"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"isCustom"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"labelIdentifierFieldMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"imageIdentifierFieldMetadataId"}}]}}]}}]} as unknown as DocumentNode<DeleteOneObjectMetadataItemMutation, DeleteOneObjectMetadataItemMutationVariables>;
 export const DeleteOneFieldMetadataItemDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteOneFieldMetadataItem"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"idToDelete"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteOneField"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"idToDelete"}}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"isCustom"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"isNullable"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"settings"}}]}}]}}]} as unknown as DocumentNode<DeleteOneFieldMetadataItemMutation, DeleteOneFieldMetadataItemMutationVariables>;
 export const DeleteOneRelationMetadataItemDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteOneRelationMetadataItem"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"idToDelete"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteOneRelation"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"idToDelete"}}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}}]}}]} as unknown as DocumentNode<DeleteOneRelationMetadataItemMutation, DeleteOneRelationMetadataItemMutationVariables>;
-export const ObjectMetadataItemsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"ObjectMetadataItems"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"objects"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"paging"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"first"},"value":{"kind":"IntValue","value":"1000"}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"edges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"node"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"dataSourceId"}},{"kind":"Field","name":{"kind":"Name","value":"nameSingular"}},{"kind":"Field","name":{"kind":"Name","value":"namePlural"}},{"kind":"Field","name":{"kind":"Name","value":"labelSingular"}},{"kind":"Field","name":{"kind":"Name","value":"labelPlural"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"isCustom"}},{"kind":"Field","name":{"kind":"Name","value":"isRemote"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"isSystem"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"labelIdentifierFieldMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"imageIdentifierFieldMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"shortcut"}},{"kind":"Field","name":{"kind":"Name","value":"isLabelSyncedWithName"}},{"kind":"Field","name":{"kind":"Name","value":"duplicateCriteria"}},{"kind":"Field","name":{"kind":"Name","value":"indexMetadatas"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"paging"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"first"},"value":{"kind":"IntValue","value":"100"}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"edges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"node"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"indexWhereClause"}},{"kind":"Field","name":{"kind":"Name","value":"indexType"}},{"kind":"Field","name":{"kind":"Name","value":"isUnique"}},{"kind":"Field","name":{"kind":"Name","value":"indexFieldMetadatas"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"paging"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"first"},"value":{"kind":"IntValue","value":"100"}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"edges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"node"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"order"}},{"kind":"Field","name":{"kind":"Name","value":"fieldMetadataId"}}]}}]}}]}}]}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"fieldsList"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"isCustom"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"isSystem"}},{"kind":"Field","name":{"kind":"Name","value":"isNullable"}},{"kind":"Field","name":{"kind":"Name","value":"isUnique"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"defaultValue"}},{"kind":"Field","name":{"kind":"Name","value":"options"}},{"kind":"Field","name":{"kind":"Name","value":"settings"}},{"kind":"Field","name":{"kind":"Name","value":"isLabelSyncedWithName"}},{"kind":"Field","name":{"kind":"Name","value":"relationDefinition"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"relationId"}},{"kind":"Field","name":{"kind":"Name","value":"direction"}},{"kind":"Field","name":{"kind":"Name","value":"sourceObjectMetadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"nameSingular"}},{"kind":"Field","name":{"kind":"Name","value":"namePlural"}}]}},{"kind":"Field","name":{"kind":"Name","value":"sourceFieldMetadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"targetObjectMetadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"nameSingular"}},{"kind":"Field","name":{"kind":"Name","value":"namePlural"}}]}},{"kind":"Field","name":{"kind":"Name","value":"targetFieldMetadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}},{"kind":"Field","name":{"kind":"Name","value":"hasPreviousPage"}},{"kind":"Field","name":{"kind":"Name","value":"startCursor"}},{"kind":"Field","name":{"kind":"Name","value":"endCursor"}}]}}]}}]}}]} as unknown as DocumentNode<ObjectMetadataItemsQuery, ObjectMetadataItemsQueryVariables>;
 export const CreateOneServerlessFunctionItemDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateOneServerlessFunctionItem"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"CreateServerlessFunctionInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createOneServerlessFunction"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"ServerlessFunctionFields"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"ServerlessFunctionFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ServerlessFunction"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"runtime"}},{"kind":"Field","name":{"kind":"Name","value":"timeoutSeconds"}},{"kind":"Field","name":{"kind":"Name","value":"syncStatus"}},{"kind":"Field","name":{"kind":"Name","value":"latestVersion"}},{"kind":"Field","name":{"kind":"Name","value":"latestVersionInputSchema"}},{"kind":"Field","name":{"kind":"Name","value":"publishedVersions"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]} as unknown as DocumentNode<CreateOneServerlessFunctionItemMutation, CreateOneServerlessFunctionItemMutationVariables>;
 export const DeleteOneServerlessFunctionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteOneServerlessFunction"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ServerlessFunctionIdInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteOneServerlessFunction"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"ServerlessFunctionFields"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"ServerlessFunctionFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ServerlessFunction"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"runtime"}},{"kind":"Field","name":{"kind":"Name","value":"timeoutSeconds"}},{"kind":"Field","name":{"kind":"Name","value":"syncStatus"}},{"kind":"Field","name":{"kind":"Name","value":"latestVersion"}},{"kind":"Field","name":{"kind":"Name","value":"latestVersionInputSchema"}},{"kind":"Field","name":{"kind":"Name","value":"publishedVersions"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]} as unknown as DocumentNode<DeleteOneServerlessFunctionMutation, DeleteOneServerlessFunctionMutationVariables>;
 export const ExecuteOneServerlessFunctionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ExecuteOneServerlessFunction"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ExecuteServerlessFunctionInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"executeOneServerlessFunction"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"data"}},{"kind":"Field","name":{"kind":"Name","value":"duration"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"error"}}]}}]}}]} as unknown as DocumentNode<ExecuteOneServerlessFunctionMutation, ExecuteOneServerlessFunctionMutationVariables>;

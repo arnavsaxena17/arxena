@@ -1,7 +1,8 @@
 import { IconComponent, ThemeColor } from 'twenty-ui';
 import { ReadonlyDeep } from 'type-fest';
 
-import { Columns } from '@/spreadsheet-import/steps/components/MatchColumnsStep/MatchColumnsStep';
+import type { Columns } from '@/spreadsheet-import/types/columnTypes';
+import type { ImportedRow } from '@/spreadsheet-import/types/importedRow';
 import { ImportedStructuredRowMetadata } from '@/spreadsheet-import/steps/components/ValidationStep/types';
 import { SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/SpreadsheetImportStep';
 import { FieldMetadataType } from 'twenty-shared';
@@ -65,7 +66,7 @@ export type SpreadsheetImportDialogOptions<FieldNames extends string> = {
   enableUploadProgressSseWhileOpen?: boolean;
 };
 
-export type ImportedRow = Array<string | undefined>;
+export type { ImportedRow } from './importedRow';
 
 export type ImportedStructuredRow<T extends string> = {
   [key in T]: string | boolean | undefined;

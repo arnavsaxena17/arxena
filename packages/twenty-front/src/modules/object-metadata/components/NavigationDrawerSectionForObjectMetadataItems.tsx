@@ -27,7 +27,11 @@ export const NavigationDrawerSectionForObjectMetadataItems = ({
     useNavigationSection('Objects' + (isRemote ? 'Remote' : 'Workspace'));
   const isNavigationSectionOpen = useRecoilValue(isNavigationSectionOpenState);
 
-  const sortedStandardObjectMetadataItems = [...objectMetadataItems]
+  const objectMetadataItemsForWorkspaceNav = objectMetadataItems.filter(
+    (item) => item.nameSingular !== 'orgChart',
+  );
+
+  const sortedStandardObjectMetadataItems = [...objectMetadataItemsForWorkspaceNav]
     .filter((item) => ORDERED_STANDARD_OBJECTS.includes(item.nameSingular))
     .sort((objectMetadataItemA, objectMetadataItemB) => {
       const indexA = ORDERED_STANDARD_OBJECTS.indexOf(
@@ -44,7 +48,7 @@ export const NavigationDrawerSectionForObjectMetadataItems = ({
       return indexA - indexB;
     });
 
-  const sortedCustomObjectMetadataItems = [...objectMetadataItems]
+  const sortedCustomObjectMetadataItems = [...objectMetadataItemsForWorkspaceNav]
     .filter((item) => !ORDERED_STANDARD_OBJECTS.includes(item.nameSingular))
     .sort((objectMetadataItemA, objectMetadataItemB) => {
       return new Date(objectMetadataItemA.createdAt) <
@@ -70,7 +74,7 @@ export const NavigationDrawerSectionForObjectMetadataItems = ({
   ]
 
   return (
-    objectMetadataItems.length > 0 && (
+    objectMetadataItemsForWorkspaceNav.length > 0 && (
       <NavigationDrawerSection>
         <NavigationDrawerAnimatedCollapseWrapper>
           <NavigationDrawerSectionTitle

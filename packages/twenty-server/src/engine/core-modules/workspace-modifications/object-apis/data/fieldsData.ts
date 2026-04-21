@@ -1,6 +1,8 @@
 import { FieldInput } from 'twenty-shared';
 
-import { getObjectsToExclude } from './objectsData';
+import {
+  getObjectsToExclude,
+} from './objectsData';
 
 type FieldWithObject = {
   objectName: string;
@@ -2146,6 +2148,162 @@ export function getFieldsData(
         objectMetadataId: objectsNameIdMap.assistantThread,
         type: 'BOOLEAN',
         defaultValue: false,
+      },
+    },
+    {
+      objectName: 'orgChart',
+      field: {
+        description: 'Display title for this org chart run',
+        icon: 'IconHierarchy2',
+        label: 'Name',
+        name: 'name',
+        objectMetadataId: objectsNameIdMap.orgChart,
+        type: 'TEXT',
+      },
+    },
+    {
+      objectName: 'orgChart',
+      field: {
+        description: 'How the chart was scoped when built',
+        icon: 'IconHierarchy2',
+        label: 'Chart kind',
+        name: 'chartKind',
+        objectMetadataId: objectsNameIdMap.orgChart,
+        type: 'SELECT',
+        options: [
+          {
+            color: 'blue',
+            label: 'Full company',
+            position: 0,
+            value: 'FULL',
+          },
+          {
+            color: 'purple',
+            label: 'Leadership',
+            position: 1,
+            value: 'LEADERSHIP',
+          },
+          {
+            color: 'turquoise',
+            label: 'Function / grade',
+            position: 2,
+            value: 'FUNCTION_GRADE',
+          },
+          {
+            color: 'orange',
+            label: 'Candidates only',
+            position: 3,
+            value: 'CANDIDATES_ONLY',
+          },
+        ],
+      },
+    },
+    {
+      objectName: 'orgChart',
+      field: {
+        description: 'LinkedIn search surface used for the build',
+        icon: 'IconHierarchy2',
+        label: 'Search type',
+        name: 'searchType',
+        objectMetadataId: objectsNameIdMap.orgChart,
+        type: 'SELECT',
+        options: [
+          {
+            color: 'blue',
+            label: 'Classic',
+            position: 0,
+            value: 'CLASSIC',
+          },
+          {
+            color: 'sky',
+            label: 'Sales Navigator',
+            position: 1,
+            value: 'SALES_NAVIGATOR',
+          },
+          {
+            color: 'green',
+            label: 'Recruiter',
+            position: 2,
+            value: 'RECRUITER',
+          },
+        ],
+      },
+    },
+    {
+      objectName: 'orgChart',
+      field: {
+        description: 'External company id (e.g. PDL) used in routes',
+        icon: 'IconHierarchy2',
+        label: 'External company id',
+        name: 'externalCompanyId',
+        objectMetadataId: objectsNameIdMap.orgChart,
+        type: 'TEXT',
+      },
+    },
+    {
+      objectName: 'orgChart',
+      field: {
+        description: 'LinkedIn company URL or slug when available',
+        icon: 'IconHierarchy2',
+        label: 'LinkedIn company URL',
+        name: 'linkedinCompanyUrl',
+        objectMetadataId: objectsNameIdMap.orgChart,
+        type: 'TEXT',
+      },
+    },
+    {
+      objectName: 'orgChart',
+      field: {
+        description: 'Folder path under storage root (org-charts/...)',
+        icon: 'IconHierarchy2',
+        label: 'S3 relative path',
+        name: 's3RelativePath',
+        objectMetadataId: objectsNameIdMap.orgChart,
+        type: 'TEXT',
+      },
+    },
+    {
+      objectName: 'orgChart',
+      field: {
+        description: 'People/candidate count when persisted',
+        icon: 'IconHierarchy2',
+        label: 'Item count',
+        name: 'itemCount',
+        objectMetadataId: objectsNameIdMap.orgChart,
+        type: 'NUMBER',
+      },
+    },
+    {
+      objectName: 'orgChart',
+      field: {
+        description: 'Function slice for scoped builds',
+        icon: 'IconHierarchy2',
+        label: 'Function root',
+        name: 'functionRoot',
+        objectMetadataId: objectsNameIdMap.orgChart,
+        type: 'TEXT',
+      },
+    },
+    {
+      objectName: 'orgChart',
+      field: {
+        description: 'Country filter when used',
+        icon: 'IconHierarchy2',
+        label: 'Country',
+        name: 'country',
+        objectMetadataId: objectsNameIdMap.orgChart,
+        type: 'TEXT',
+      },
+    },
+    {
+      objectName: 'orgChart',
+      field: {
+        description: 'Keywords hash for function-grade cache keys',
+        icon: 'IconHierarchy2',
+        label: 'Keywords hash',
+        name: 'keywordsHash',
+        objectMetadataId: objectsNameIdMap.orgChart,
+        type: 'TEXT',
       },
     },
     // // Assistant Message fields

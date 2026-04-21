@@ -1,9 +1,9 @@
 import {
   ColumnType,
-  MatchedOptions,
-  MatchedSelectColumn,
-  MatchedSelectOptionsColumn,
-} from '@/spreadsheet-import/steps/components/MatchColumnsStep/MatchColumnsStep';
+  type MatchedSelectColumn,
+  type MatchedSelectOptionsColumn,
+  type MatchedOptions,
+} from '@/spreadsheet-import/types/columnTypes';
 
 export const setSubColumn = <T>(
   oldColumn: MatchedSelectColumn<T> | MatchedSelectOptionsColumn<T>,

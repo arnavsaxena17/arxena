@@ -7,6 +7,7 @@ import { isOrgChartEnabledState } from '@/arx-jd-upload/states/isOrgChartEnabled
 import { useCommandMenu } from '@/command-menu/hooks/useCommandMenu';
 import { WorkspaceFavorites } from '@/favorites/components/WorkspaceFavorites';
 import { JobsNavigationDrawerItems } from '@/navigation/components/JobsNavigationDrawerItems';
+import { OrgChartsNavigationDrawerItems } from '@/navigation/components/OrgChartsNavigationDrawerItems';
 import { NavigationDrawerOpenedSection } from '@/object-metadata/components/NavigationDrawerOpenedSection';
 import { RemoteNavigationDrawerSection } from '@/object-metadata/components/RemoteNavigationDrawerSection';
 import { AppPath } from '@/types/AppPath';
@@ -152,6 +153,7 @@ export const MainNavigationDrawerItems = () => {
       >
         <StyledInnerContainer>
           <JobsNavigationDrawerItems />
+          {isOrgChartEnabled && <OrgChartsNavigationDrawerItems />}
           {/* {!isOrgChartEnabled && ( */}
             {/* <> */}
               <NavigationDrawerOpenedSection />

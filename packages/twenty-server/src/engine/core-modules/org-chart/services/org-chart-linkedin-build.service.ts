@@ -1,9 +1,9 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
 import {
-  graphqlToAddNewJob,
-  OrgChartData,
-  type OrgchartSearchMode,
+    graphqlToAddNewJob,
+    OrgChartData,
+    type OrgchartSearchMode,
 } from 'twenty-shared';
 
 import { ApifyService } from 'src/engine/core-modules/apify/services/apify.service';
@@ -25,8 +25,8 @@ import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-
 import { linkedInPeopleSearchResultMatchesTargetCompany } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-orgchart-company-match.util';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import {
-  LinkedInSearchService,
-  parseApifyLinkedinCompanyScraperLogLine,
+    LinkedInSearchService,
+    parseApifyLinkedinCompanyScraperLogLine,
 } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import type { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
@@ -41,6 +41,7 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import { LinkedinXrayService } from 'src/modules/linkedin-xray/linkedin-xray.service';
 import { LinkedinXraySearchEngine } from 'src/modules/linkedin-xray/types/linkedin-xray-search-job.types';
 
+import { OrgChartRecordWorkspaceService } from './org-chart-record-workspace.service';
 import { OrgChartS3Service } from './orgchart-s3.service';
 import { PythonOrgChartService } from './python-org-chart.service';
 
@@ -104,6 +105,7 @@ export class OrgChartLinkedInBuildService {
     private readonly orgChartProgressRedisService: OrgChartProgressRedisService,
     private readonly orgchartCancelRegistry: OrgchartCancelRegistryService,
     private readonly orgChartS3Service: OrgChartS3Service,
+    private readonly orgChartRecordWorkspaceService: OrgChartRecordWorkspaceService,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly candidateDataService: CandidateDataService,
     private readonly linkedInSearchService: LinkedInSearchService,
@@ -1907,6 +1909,33 @@ export class OrgChartLinkedInBuildService {
           this.orgChartS3Service.saveCandidates(s3CompanyId, result.items),
         ]);
 
+        const creditMetaForRow = await this.buildOrgChartCreditMetadata(
+          apiToken,
+          companyId,
+          resolvedCompanyName,
+        );
+
+        const functionGradeMeta = (
+          result as {
+            functionGradeCacheMeta?: { keywordsHash?: string };
+          }
+        ).functionGradeCacheMeta;
+
+        await this.orgChartRecordWorkspaceService.tryPersistOrgChartRecord({
+          apiToken,
+          mode,
+          searchType,
+          resolvedCompanyName,
+          companyId,
+          linkedinCompanyUrl:
+            canonicalCompanyLinkedinUrl ?? body.linkedinCompanyUrl,
+          itemCount: result.itemCount,
+          orgChartS3RelativePath: creditMetaForRow.orgChartS3RelativePath,
+          functionRoot: body.functionRoot,
+          country: body.country,
+          keywordsHash: functionGradeMeta?.keywordsHash,
+        });
+
         if (process.env.IS_BILLING_ENABLED !== 'true' && apiToken) {
           const workspaceIdForGrant =
             await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
@@ -2615,6 +2644,25 @@ export class OrgChartLinkedInBuildService {
         this.orgChartS3Service.saveOrgChart(s3CompanyId, orgChart),
         this.orgChartS3Service.saveCandidates(s3CompanyId, result.items),
       ]);
+
+      const creditMetaForRowApify = await this.buildOrgChartCreditMetadata(
+        apiToken,
+        companyId,
+        resolvedCompanyName,
+      );
+
+      await this.orgChartRecordWorkspaceService.tryPersistOrgChartRecord({
+        apiToken,
+        mode: modeForOrgChartBuild,
+        searchType,
+        resolvedCompanyName,
+        companyId,
+        linkedinCompanyUrl: jobData.linkedinCompanyUrl,
+        itemCount: result.itemCount,
+        orgChartS3RelativePath: creditMetaForRowApify.orgChartS3RelativePath,
+        functionRoot: jobData.functionRoot,
+        country: jobData.country,
+      });
 
       if (process.env.IS_BILLING_ENABLED !== 'true' && apiToken) {
         const workspaceIdForGrant =

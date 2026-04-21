@@ -11,11 +11,11 @@ import { SelectInput } from '@/ui/input/components/SelectInput';
 import { useSetHotkeyScope } from '@/ui/utilities/hotkey/hooks/useSetHotkeyScope';
 import { useEffect, useState } from 'react';
 import { IconChevronDown, Tag, TagColor } from 'twenty-ui';
-import {
+import type {
   MatchedOptions,
   MatchedSelectColumn,
   MatchedSelectOptionsColumn,
-} from '../MatchColumnsStep';
+} from '@/spreadsheet-import/types/columnTypes';
 
 const StyledContainer = styled.div`
   align-items: center;

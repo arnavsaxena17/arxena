@@ -1,5 +1,6 @@
 import { isOrgChartEnabledEnv } from 'twenty-shared';
 
+
 const allObjects = [
     {
         "object": {
@@ -320,6 +321,16 @@ const allObjects = [
     //         "namePlural": "interviewMeetings"
     //     }
     // },
+    {
+        object: {
+            description: 'Saved org chart build (metadata pointer to S3/cache)',
+            icon: 'IconHierarchy2',
+            labelPlural: 'Org Charts',
+            labelSingular: 'Org Chart',
+            nameSingular: 'orgChart',
+            namePlural: 'orgCharts',
+        },
+    },
 ];
 
 const OBJECTS_TO_EXCLUDE = [
@@ -350,15 +361,26 @@ export function getObjectsToExclude(isOrgChartEnabled?: boolean): string[] {
   return OBJECTS_TO_EXCLUDE;
 }
 
-export function getObjectCreationArr(isOrgChartEnabled?: boolean) {
-  const objectsToExclude = getObjectsToExclude(isOrgChartEnabled);
-  console.log("Is org cahrt enabled:", isOrgChartEnabled)
-  const objectsToCreate = allObjects.filter(
-      (object) => !objectsToExclude.includes(object.object.nameSingular),
-    );
-  return objectsToCreate
+export function isOrgChartMetadataEnabled(isOrgChartEnabled?: boolean): boolean {
+  return isOrgChartEnabled ?? isOrgChartEnabledEnv;
 }
 
-export const objectCreationArr = allObjects.filter(
-  (object) => !getObjectsToExclude().includes(object.object.nameSingular),
-);
+export function getObjectCreationArr(isOrgChartEnabled?: boolean) {
+  const objectsToExclude = getObjectsToExclude(isOrgChartEnabled);
+  console.log('Is org cahrt enabled:', isOrgChartEnabled);
+  return allObjects.filter((object) => {
+    const name = object.object.nameSingular;
+    if (objectsToExclude.includes(name)) {
+      return false;
+    }
+    return true;
+  });
+}
+
+export const objectCreationArr = allObjects.filter((object) => {
+  const name = object.object.nameSingular;
+  if (getObjectsToExclude().includes(name)) {
+    return false;
+  }
+  return true;
+});

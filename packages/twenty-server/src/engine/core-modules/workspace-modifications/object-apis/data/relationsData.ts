@@ -1,6 +1,8 @@
 import { RelationInput } from "twenty-shared";
 
-import { getObjectsToExclude } from "./objectsData";
+import {
+  getObjectsToExclude
+} from './objectsData';
 
 type RelationWithObjects = {
   fromObjectName: string;
@@ -25,6 +27,23 @@ export function getRelationsData(
         fromObjectMetadataId: objectsNameIdMap.company,
         relationType: 'ONE_TO_MANY',
         toObjectMetadataId: objectsNameIdMap.job,
+        toDescription: '',
+        toIcon: 'IconBuilding',
+        toLabel: 'Company',
+        toName: 'company',
+      },
+    },
+    {
+      fromObjectName: 'company',
+      toObjectName: 'orgChart',
+      relationMetadata: {
+        fromDescription: null,
+        fromIcon: 'IconHierarchy2',
+        fromLabel: 'Org Charts',
+        fromName: 'orgCharts',
+        fromObjectMetadataId: objectsNameIdMap.company,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.orgChart,
         toDescription: '',
         toIcon: 'IconBuilding',
         toLabel: 'Company',
@@ -110,6 +129,23 @@ export function getRelationsData(
         fromObjectMetadataId: objectsNameIdMap.workspaceMember,
         relationType: 'ONE_TO_MANY',
         toObjectMetadataId: objectsNameIdMap.job,
+        toDescription: '',
+        toIcon: 'IconUser',
+        toLabel: 'Recruiter',
+        toName: 'recruiter',
+      },
+    },
+    {
+      fromObjectName: 'workspaceMember',
+      toObjectName: 'orgChart',
+      relationMetadata: {
+        fromDescription: null,
+        fromIcon: 'IconHierarchy2',
+        fromLabel: 'Created org charts',
+        fromName: 'createdOrgCharts',
+        fromObjectMetadataId: objectsNameIdMap.workspaceMember,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.orgChart,
         toDescription: '',
         toIcon: 'IconUser',
         toLabel: 'Recruiter',
@@ -217,6 +253,23 @@ export function getRelationsData(
         toIcon: 'IconUser',
         toLabel: 'Member Name',
         toName: 'workspaceMember',
+      },
+    },
+    {
+      fromObjectName: 'workspaceMemberProfile',
+      toObjectName: 'orgChart',
+      relationMetadata: {
+        fromDescription: null,
+        fromIcon: 'IconHierarchy2',
+        fromLabel: 'Org charts from profile',
+        fromName: 'profileOrgCharts',
+        fromObjectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.orgChart,
+        toDescription: '',
+        toIcon: 'IconMoodCheck',
+        toLabel: 'Created by profile',
+        toName: 'createdByProfile',
       },
     },
     {

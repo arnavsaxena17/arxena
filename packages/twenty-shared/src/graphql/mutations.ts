@@ -587,6 +587,14 @@ export const graphqlToAddNewJob = `mutation CreateOneJob($input: JobCreateInput!
 }
 `;
 
+export const graphqlToCreateOneOrgChart = `mutation CreateOneOrgChart($input: OrgChartCreateInput!) {
+  createOrgChart(data: $input) {
+    __typename
+    id
+  }
+}
+`;
+
 export const createCvsentMutation = `mutation CreateOneCvSent($input: CvSentCreateInput!) {
   createCvSent(data: $input) {
     __typename

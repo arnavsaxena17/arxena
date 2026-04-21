@@ -47,6 +47,7 @@ import GoogleSheet from '@/google-sheet/GoogleSheet';
 import { HotPage } from '@/hot/hotCandidates';
 import Interview from '@/interviews/components/Interviews';
 import indexAppPath from '@/navigation/utils/indexAppPath';
+import { OrgChartWorkspaceReadyEmptyState } from '@/orgchart/components/OrgChartWorkspaceReadyEmptyState';
 // import OrgChart from '@/orgchart/OrgChart';
 import { useBaileysConnection } from '@/baileys/contexts/BaileysContext';
 import { SearchModels } from '@/search-models/SearchModels';
@@ -138,6 +139,7 @@ const OrgChartRoute = () => {
   const companyFromState = location.state?.company;
 
   const companyId = companyFromState?.companyId ?? companyKey ?? '';
+  const hasSelectedCompany = Boolean(companyId.trim());
 
   const handleBack = () => {
     navigate(`/${AppPath.Jobs}`);
@@ -184,18 +186,26 @@ const OrgChartRoute = () => {
         phoneContactCredits={phoneContactCredits}
       />
       <PageBody>
-        <React.Suspense fallback={null}>
-          <ArxOrgChart
-            companyId={companyId}
-            companyName={companyFromState?.companyName}
-            website={companyFromState?.website}
-            locationName={companyFromState?.locationName}
-            industry={companyFromState?.industry}
-            profileCount={companyFromState?.profileCount}
-            linkedinUrl={companyFromState?.linkedinUrl}
-            onBack={handleBack}
+        {hasSelectedCompany ? (
+          <React.Suspense fallback={null}>
+            <ArxOrgChart
+              companyId={companyId}
+              companyName={companyFromState?.companyName}
+              website={companyFromState?.website}
+              locationName={companyFromState?.locationName}
+              industry={companyFromState?.industry}
+              profileCount={companyFromState?.profileCount}
+              linkedinUrl={companyFromState?.linkedinUrl}
+              onBack={handleBack}
+            />
+          </React.Suspense>
+        ) : (
+          <OrgChartWorkspaceReadyEmptyState
+            onCompanySelect={handleCompanySelect}
+            hasToken={hasToken}
+            orgChartCredits={orgChartCredits}
           />
-        </React.Suspense>
+        )}
       </PageBody>
     </PageContainer>
   );

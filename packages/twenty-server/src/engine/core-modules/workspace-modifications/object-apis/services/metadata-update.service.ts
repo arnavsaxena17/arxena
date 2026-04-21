@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { axiosRequestForMetadata } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { resolveIsOrgChartEnabledFromWorkspace } from 'twenty-shared';
 import { WorkspaceQueryService } from '../../workspace-modifications.service';
 import { getFieldsData } from '../data/fieldsData';
 import { getObjectCreationArr } from '../data/objectsData';
@@ -258,6 +257,86 @@ export class MetadataUpdateService {
       newRelations,
       objectIds, // Return object IDs for further processing if needed
     };
+  }
+
+  /**
+   * Loads object list + per-object field graphs. Call again after creating new objects so
+   * `objectsNameIdMap` includes freshly created metadata ids (e.g. orgChart) before fields/relations.
+   */
+  async loadDetailedMetadata(token: string): Promise<{
+    detailedMetadata: {
+      data: {
+        objects: {
+          edges: Array<{
+            node: {
+              id: string;
+              dataSourceId: string;
+              nameSingular: string;
+              namePlural: string;
+              fields?: {
+                edges: Array<{
+                  node: {
+                    id: string;
+                    type: string;
+                    name: string;
+                    [key: string]: unknown;
+                  };
+                }>;
+              };
+              [key: string]: unknown;
+            };
+          }>;
+        };
+      };
+    };
+    objectsNameIdMap: Record<string, string>;
+  }> {
+    const currentMetadata = await this.fetchCurrentMetadata(token);
+    const objectsNameIdMap: Record<string, string> = {};
+    const objectIds: string[] = [];
+    currentMetadata.data.objects.edges.forEach(
+      (edge: { node: { id: string; nameSingular: string } }) => {
+        objectsNameIdMap[edge.node.nameSingular] = edge.node.id;
+        objectIds.push(edge.node.id);
+      },
+    );
+
+    const detailedMetadata = {
+      data: {
+        objects: {
+          edges: [] as Array<{
+            node: {
+              id: string;
+              dataSourceId: string;
+              nameSingular: string;
+              namePlural: string;
+              fields?: {
+                edges: Array<{
+                  node: {
+                    id: string;
+                    type: string;
+                    name: string;
+                    [key: string]: unknown;
+                  };
+                }>;
+              };
+              [key: string]: unknown;
+            };
+          }>,
+        },
+      },
+    };
+
+    for (const objectId of objectIds) {
+      const objectMetadata = await this.fetchObjectMetadata(token, objectId);
+      if (objectMetadata.data.objects.edges.length > 0) {
+        detailedMetadata.data.objects.edges.push(
+          ...(objectMetadata.data.objects.edges as typeof detailedMetadata.data.objects.edges),
+        );
+      }
+    }
+
+    return { detailedMetadata, objectsNameIdMap };
   }
 
   async fetchObjectMetadata(token: string, objectId: string) {
@@ -525,80 +604,82 @@ export class MetadataUpdateService {
         await this.workspaceQueryService.getWorkspaceIdFromToken(token);
       const workspaceKeys =
         await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
-      const isOrgChartEnabled = resolveIsOrgChartEnabledFromWorkspace(
-        workspaceKeys?.is_org_chart_enabled,
-      );
+      const isOrgChartEnabled =
+        (workspaceKeys?.is_org_chart_enabled ??
+          process.env.IS_ORG_CHART_ENABLED ??
+          'true') === 'true';
 
-      // Fetch the metadata once
-      const currentMetadata = await this.fetchCurrentMetadata(token);
-      console.log("Current metadata is this::", currentMetadata);
-      // Get the object name to ID mapping and objectIds from current metadata
-      const objectsNameIdMap: Record<string, string> = {};
-      const objectIds: string[] = [];
-      console.log("Current metadata is this::", currentMetadata);
-      currentMetadata.data.objects.edges.forEach(edge => {
-        console.log(`Mapping object ${edge.node.nameSingular} to ID ${edge.node.id}`);
-        objectsNameIdMap[edge.node.nameSingular] = edge.node.id;
-        objectIds.push(edge.node.id);
-      });
-
-      // Debug logging for objectsNameIdMap
+      let { detailedMetadata, objectsNameIdMap } =
+        await this.loadDetailedMetadata(token);
       console.log('objectsNameIdMap:', objectsNameIdMap);
 
-      // Fetch detailed metadata for each object
-      const detailedMetadata = {
-        data: {
-          objects: {
-            edges: [] as Array<{
-              node: {
-                id: string;
-                dataSourceId: string;
-                nameSingular: string;
-                namePlural: string;
-                fields?: {
-                  edges: Array<{
-                    node: {
-                      id: string;
-                      type: string;
-                      name: string;
-                      [key: string]: any;
-                    };
-                  }>;
-                };
-                [key: string]: any;
-              };
-            }>
-          }
-        }
-      };
-
-      for (const objectId of objectIds) {
-        const objectMetadata = await this.fetchObjectMetadata(token, objectId);
-        if (objectMetadata.data.objects.edges.length > 0) {
-          detailedMetadata.data.objects.edges.push(...(objectMetadata.data.objects.edges as any[]));
-        }
-      }
-
-      // Single comparison with detailed metadata
-      const { newObjects, newFields, newRelations } = this.compareMetadata(
+      let { newObjects, newFields, newRelations } = this.compareMetadata(
         detailedMetadata,
         objectsNameIdMap,
         isOrgChartEnabled,
       );
-      console.log('newObjects', newObjects.map((object: any) => object.object.nameSingular));
-      console.log('newFields', newFields.map((field: any) => field.field.name));
-      console.log('newRelations', newRelations.map((relation: any) => relation.relationMetadata.fromName));
-      
-      // Create new objects
+      console.log(
+        'newObjects',
+        newObjects.map((object: { object: { nameSingular: string } }) =>
+          object.object.nameSingular,
+        ),
+      );
+      console.log(
+        'newFields',
+        newFields.map((field: { field: { name: string } }) => field.field.name),
+      );
+      console.log(
+        'newRelations',
+        newRelations.map(
+          (relation: { relationMetadata: { fromName: string } }) =>
+            relation.relationMetadata.fromName,
+        ),
+      );
+
       if (newObjects.length > 0) {
         await createObjectMetadataItems(token, newObjects, origin);
+        const reloaded = await this.loadDetailedMetadata(token);
+        detailedMetadata = reloaded.detailedMetadata;
+        objectsNameIdMap = reloaded.objectsNameIdMap;
+        console.log(
+          'objectsNameIdMap after new objects:',
+          objectsNameIdMap,
+        );
+        const afterCreate = this.compareMetadata(
+          detailedMetadata,
+          objectsNameIdMap,
+          isOrgChartEnabled,
+        );
+        newFields = afterCreate.newFields;
+        newRelations = afterCreate.newRelations;
+        console.log(
+          'newFields after object create',
+          newFields.map((field: { field: { name: string } }) => field.field.name),
+        );
+        console.log(
+          'newRelations after object create',
+          newRelations.map(
+            (relation: { relationMetadata: { fromName: string } }) =>
+              relation.relationMetadata.fromName,
+          ),
+        );
       }
 
+      // Create new fields
+      // Create new fields
+      // Create new fields
+      // Create new fields
+      // Create new fields
+      // Create new fields
+      // Create new fields
+      // Create new fields
+      // Create new fields
       // Create new fields
       if (newFields.length > 0) {
         await createFields(newFields, token, origin, 3);
       }
 
+      // Create new relations
       // Create new relations
       if (newRelations.length > 0) {
         await createRelations(newRelations, token, origin);

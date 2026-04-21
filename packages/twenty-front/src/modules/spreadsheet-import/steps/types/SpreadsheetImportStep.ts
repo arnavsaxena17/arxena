@@ -1,6 +1,6 @@
-import { Columns } from '@/spreadsheet-import/steps/components/MatchColumnsStep/MatchColumnsStep';
+import type { Columns } from '@/spreadsheet-import/types/columnTypes';
 import { SpreadsheetImportStepType } from '@/spreadsheet-import/steps/types/SpreadsheetImportStepType';
-import { ImportedRow } from '@/spreadsheet-import/types';
+import type { ImportedRow } from '@/spreadsheet-import/types/importedRow';
 import { DeduplicationStats } from '@/spreadsheet-import/utils/mergeWorkbooks';
 import { WorkBook } from 'xlsx-ugnis';
 

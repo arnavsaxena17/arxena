@@ -7,7 +7,7 @@ import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpre
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { FieldMetadataType } from 'twenty-shared';
 import { FeatureFlagKey } from '~/generated-metadata/graphql';
-import { Columns, ColumnType } from '../MatchColumnsStep';
+import { ColumnType, type Columns } from '@/spreadsheet-import/types/columnTypes';
 
 const StyledContainer = styled.div`
   display: flex;

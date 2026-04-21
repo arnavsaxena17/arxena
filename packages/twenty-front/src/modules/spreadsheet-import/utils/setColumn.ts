@@ -1,9 +1,9 @@
+import type { MatchColumnsStepProps } from '@/spreadsheet-import/steps/types/matchColumnsStepProps';
 import {
-  Column,
   ColumnType,
-  MatchColumnsStepProps,
-  MatchedOptions,
-} from '@/spreadsheet-import/steps/components/MatchColumnsStep/MatchColumnsStep';
+  type Column,
+  type MatchedOptions,
+} from '@/spreadsheet-import/types/columnTypes';
 import { Field } from '@/spreadsheet-import/types';
 
 import { z } from 'zod';

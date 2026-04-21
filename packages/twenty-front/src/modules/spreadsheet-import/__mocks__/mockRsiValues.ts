@@ -1,5 +1,5 @@
 import { defaultSpreadsheetImportProps } from '@/spreadsheet-import/provider/components/SpreadsheetImport';
-import { Columns } from '@/spreadsheet-import/steps/components/MatchColumnsStep/MatchColumnsStep';
+import { ColumnType, type Columns } from '@/spreadsheet-import/types/columnTypes';
 import {
   Fields,
   SpreadsheetImportDialogOptions,
@@ -98,25 +98,25 @@ export const importedColums: Columns<string> = [
   {
     header: 'Name',
     index: 0,
-    type: 2,
+    type: ColumnType.matched,
     value: 'name',
   },
   {
     header: 'Surname',
     index: 1,
-    type: 2,
+    type: ColumnType.matched,
     value: 'surname',
   },
   {
     header: 'Age',
     index: 2,
-    type: 2,
+    type: ColumnType.matched,
     value: 'age',
   },
   {
     header: 'Team',
     index: 3,
-    type: 2,
+    type: ColumnType.matched,
     value: 'team',
   },
 ];

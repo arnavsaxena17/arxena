@@ -25,9 +25,13 @@ import { Modal } from '@/ui/layout/modal/components/Modal';
 
 import { UnmatchColumn } from '@/spreadsheet-import/steps/components/MatchColumnsStep/components/UnmatchColumn';
 import { initialComputedColumnsSelector } from '@/spreadsheet-import/steps/components/MatchColumnsStep/components/states/initialComputedColumnsState';
-import { SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/SpreadsheetImportStep';
+import type { MatchColumnsStepProps } from '@/spreadsheet-import/steps/types/matchColumnsStepProps';
 import { SpreadsheetImportStepType } from '@/spreadsheet-import/steps/types/SpreadsheetImportStepType';
-import { DeduplicationStats } from '@/spreadsheet-import/utils/mergeWorkbooks';
+import {
+  ColumnType,
+  type Column,
+  type Columns,
+} from '@/spreadsheet-import/types/columnTypes';
 import { ScrollWrapper } from '@/ui/utilities/scroll/components/ScrollWrapper';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { ColumnGrid } from './components/ColumnGrid';
@@ -58,80 +62,6 @@ const StyledColumn = styled.span`
   font-size: ${({ theme }) => theme.font.size.sm};
   font-weight: ${({ theme }) => theme.font.weight.regular};
 `;
-
-export type MatchColumnsStepProps = {
-  data: ImportedRow[];
-  headerValues: ImportedRow;
-  onBack?: () => void;
-  setCurrentStepState: (currentStepState: SpreadsheetImportStep) => void;
-  setPreviousStepState: (currentStepState: SpreadsheetImportStep) => void;
-  currentStepState: SpreadsheetImportStep;
-  nextStep: () => void;
-  onError: (message: string) => void;
-  deduplicationStats?: DeduplicationStats;
-};
-
-export enum ColumnType {
-  empty,
-  ignored,
-  matched,
-  matchedCheckbox,
-  matchedSelect,
-  matchedSelectOptions,
-}
-
-export type MatchedOptions<T> = {
-  entry: string;
-  value?: T;
-};
-
-type EmptyColumn = { type: ColumnType.empty; index: number; header: string };
-
-type IgnoredColumn = {
-  type: ColumnType.ignored;
-  index: number;
-  header: string;
-};
-
-type MatchedColumn<T> = {
-  type: ColumnType.matched;
-  index: number;
-  header: string;
-  value: T;
-};
-
-type MatchedSwitchColumn<T> = {
-  type: ColumnType.matchedCheckbox;
-  index: number;
-  header: string;
-  value: T;
-};
-
-export type MatchedSelectColumn<T> = {
-  type: ColumnType.matchedSelect;
-  index: number;
-  header: string;
-  value: T;
-  matchedOptions: Partial<MatchedOptions<T>>[];
-};
-
-export type MatchedSelectOptionsColumn<T> = {
-  type: ColumnType.matchedSelectOptions;
-  index: number;
-  header: string;
-  value: T;
-  matchedOptions: MatchedOptions<T>[];
-};
-
-export type Column<T extends string> =
-  | EmptyColumn
-  | IgnoredColumn
-  | MatchedColumn<T>
-  | MatchedSwitchColumn<T>
-  | MatchedSelectColumn<T>
-  | MatchedSelectOptionsColumn<T>;
-
-export type Columns<T extends string> = Column<T>[];
 
 export const MatchColumnsStep = <T extends string>({
   data,

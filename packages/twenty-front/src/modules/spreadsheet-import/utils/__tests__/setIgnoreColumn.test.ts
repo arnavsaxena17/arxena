@@ -1,7 +1,7 @@
 import {
-  Column,
   ColumnType,
-} from '@/spreadsheet-import/steps/components/MatchColumnsStep/MatchColumnsStep';
+  type Column,
+} from '@/spreadsheet-import/types/columnTypes';
 import { setIgnoreColumn } from '@/spreadsheet-import/utils/setIgnoreColumn';
 
 describe('setIgnoreColumn', () => {

@@ -1,7 +1,7 @@
 import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpreadsheetImportInternal';
 import { SubMatchingSelect } from '@/spreadsheet-import/steps/components/MatchColumnsStep/components/SubMatchingSelect';
 import { UnmatchColumnBanner } from '@/spreadsheet-import/steps/components/MatchColumnsStep/components/UnmatchColumnBanner';
-import { Column } from '@/spreadsheet-import/steps/components/MatchColumnsStep/MatchColumnsStep';
+import type { Column } from '@/spreadsheet-import/types/columnTypes';
 import { Fields } from '@/spreadsheet-import/types';
 import styled from '@emotion/styled';
 import { useState } from 'react';

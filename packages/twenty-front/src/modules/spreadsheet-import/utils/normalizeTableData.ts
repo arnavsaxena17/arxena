@@ -1,7 +1,7 @@
 import {
-  Columns,
   ColumnType,
-} from '@/spreadsheet-import/steps/components/MatchColumnsStep/MatchColumnsStep';
+  type Columns,
+} from '@/spreadsheet-import/types/columnTypes';
 import {
   Fields,
   ImportedRow,

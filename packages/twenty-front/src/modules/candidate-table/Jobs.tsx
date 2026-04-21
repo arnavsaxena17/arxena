@@ -13,8 +13,8 @@ import { ArxEnrichmentModal } from '@/arx-ai-filtering/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from '@/arx-ai-filtering/hooks/useSelectedRecordForEnrichment';
 import { isArxEnrichModalOpenState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
-import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
 import { useOpenAddJobModal } from '@/arx-jd-upload/hooks/useOpenAddJobModal';
+import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
@@ -27,7 +27,7 @@ import { RecordIndexContextProvider } from '@/object-record/record-index/context
 import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-store/contexts/RecordFieldValueSelectorContext';
 import { RecordTableContextProvider } from '@/object-record/record-table/contexts/RecordTableContext';
 import { useOpenObjectRecordsSpreadsheetImportDialog } from '@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog';
-import { OrgChartCompanySearchWrapper } from '@/orgchart/components/OrgChartCompanySearchWrapper';
+import { OrgChartWorkspaceReadyEmptyState } from '@/orgchart/components/OrgChartWorkspaceReadyEmptyState';
 import { SpreadsheetImportProvider } from '@/spreadsheet-import/provider/components/SpreadsheetImportProvider';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -39,7 +39,6 @@ import { TopBar } from '@/ui/layout/top-bar/components/TopBar';
 import { InterviewCreationModal } from '@/video-interview/interview-creation/InterviewCreationModal';
 import { isVideoInterviewModalOpenState } from '@/video-interview/interview-creation/states/videoInterviewModalState';
 import { ViewComponentInstanceContext } from '@/views/states/contexts/ViewComponentInstanceContext';
-import { IconHierarchy2 } from '@tabler/icons-react';
 import { AnimatedPlaceholder, AnimatedPlaceholderEmptyContainer, AnimatedPlaceholderEmptySubTitle, AnimatedPlaceholderEmptyTextContainer, AnimatedPlaceholderEmptyTitle } from 'twenty-ui';
 import { WORKSPACE_CREDITS } from '~/modules/billing/graphql/workspaceCredits';
 import { useBaileysConnection } from '../baileys/contexts/BaileysContext';
@@ -184,39 +183,6 @@ const StyledRightSection = styled.div`
   display: flex;
   font-weight: ${({ theme }) => theme.font.weight.regular};
   gap: ${({ theme }) => theme.betweenSiblingsGap};
-`;
-
-const StyledEmptyStateOrgChartSearch = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  max-width: 420px;
-`;
-
-const StyledEmptyStateOrgChartSearchRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-`;
-
-const StyledEmptyStateOrgChartCreditsBadge = styled.span`
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.tertiary};
-  white-space: nowrap;
-`;
-
-const StyledOrgChartEmptyStateWrapper = styled.div`
-  width: 100%;
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  padding-top: ${({ theme }) => theme.spacing(8)};
-  gap: ${({ theme }) => theme.spacing(6)};
-  text-align: center;
 `;
 
 export const Jobs = () => {
@@ -736,32 +702,11 @@ export const Jobs = () => {
                         )}
                       </>
                     ) : (
-                      <StyledOrgChartEmptyStateWrapper>
-                        <AnimatedPlaceholder type="noRecord" />
-                        <AnimatedPlaceholderEmptyTextContainer>
-                          <AnimatedPlaceholderEmptyTitle>
-                            Your workspace is ready
-                          </AnimatedPlaceholderEmptyTitle>
-                          <AnimatedPlaceholderEmptySubTitle>
-                            Search for a company to explore org charts
-                          </AnimatedPlaceholderEmptySubTitle>
-                        </AnimatedPlaceholderEmptyTextContainer>
-                        <StyledEmptyStateOrgChartSearch>
-                          <StyledEmptyStateOrgChartSearchRow>
-                            <OrgChartCompanySearchWrapper
-                              onCompanySelect={handleCompanySelect}
-                              placeholder="Search company for org charts..."
-                              disabled={!hasToken}
-                              startIcon={<IconHierarchy2 size={20} />}
-                            />
-                            {orgChartCredits !== undefined && (
-                              <StyledEmptyStateOrgChartCreditsBadge>
-                                {orgChartCredits} credits
-                              </StyledEmptyStateOrgChartCreditsBadge>
-                            )}
-                          </StyledEmptyStateOrgChartSearchRow>
-                        </StyledEmptyStateOrgChartSearch>
-                      </StyledOrgChartEmptyStateWrapper>
+                      <OrgChartWorkspaceReadyEmptyState
+                        onCompanySelect={handleCompanySelect}
+                        hasToken={hasToken}
+                        orgChartCredits={orgChartCredits}
+                      />
                     )}
                   </StyledContentContainer>
                 </ViewComponentInstanceContext.Provider>

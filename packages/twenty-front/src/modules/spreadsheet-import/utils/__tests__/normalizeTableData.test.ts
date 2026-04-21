@@ -1,7 +1,7 @@
 import {
-  Column,
   ColumnType,
-} from '@/spreadsheet-import/steps/components/MatchColumnsStep/MatchColumnsStep';
+  type Column,
+} from '@/spreadsheet-import/types/columnTypes';
 import { Field } from '@/spreadsheet-import/types';
 import { normalizeTableData } from '@/spreadsheet-import/utils/normalizeTableData';
 import { FieldMetadataType } from 'twenty-shared';
@@ -149,7 +149,7 @@ describe('normalizeTableData', () => {
       {
         index: 0,
         header: 'Unrecognized',
-        type: 'Unknown' as unknown as ColumnType.matched,
+        type: 'Unknown' as unknown as (typeof ColumnType)[keyof typeof ColumnType],
         value: '',
       },
     ];

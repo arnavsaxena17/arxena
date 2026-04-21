@@ -1,8 +1,8 @@
 import { Module, forwardRef } from '@nestjs/common';
 
 import { ApifyModule } from 'src/engine/core-modules/apify/apify.module';
-import { BrightDataModule } from 'src/engine/core-modules/bright-data/bright-data.module';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
+import { BrightDataModule } from 'src/engine/core-modules/bright-data/bright-data.module';
 import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
 import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
 import { ContactEnrichmentModule } from 'src/engine/core-modules/contact-enrichment/contact-enrichment.module';
@@ -26,6 +26,7 @@ import { CoreSignalPersonOrgMovementService } from './services/coresignal-person
 import { ImageProxyService } from './services/image-proxy.service';
 import { OrgChartEsService } from './services/org-chart-es.service';
 import { OrgChartLinkedInBuildService } from './services/org-chart-linkedin-build.service';
+import { OrgChartRecordWorkspaceService } from './services/org-chart-record-workspace.service';
 import { OrgChartTheOrgEnrichmentService } from './services/org-chart-theorg-enrichment.service';
 import { OrgChartService } from './services/org-chart.service';
 import { OrgChartCacheService } from './services/orgchart-cache.service';
@@ -59,6 +60,7 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
     WorkspaceMemberProfileUnipileService,
     OrgChartService,
     OrgChartLinkedInBuildService,
+    OrgChartRecordWorkspaceService,
     OrgChartTheOrgEnrichmentService,
     ArxenaBackendService,
     OrgChartEsService,
