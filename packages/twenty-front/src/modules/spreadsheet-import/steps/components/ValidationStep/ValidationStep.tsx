@@ -2,16 +2,16 @@ import { Heading } from '@/spreadsheet-import/components/Heading';
 import { SpreadsheetImportTable } from '@/spreadsheet-import/components/SpreadsheetImportTable';
 import { StepNavigationButton } from '@/spreadsheet-import/components/StepNavigationButton';
 import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpreadsheetImportInternal';
-import {
-  ColumnType,
-  type Columns,
-} from '@/spreadsheet-import/types/columnTypes';
 import { SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/SpreadsheetImportStep';
 import { SpreadsheetImportStepType } from '@/spreadsheet-import/steps/types/SpreadsheetImportStepType';
 import {
   ImportValidationResult,
   ImportedStructuredRow,
 } from '@/spreadsheet-import/types';
+import {
+  ColumnType,
+  type Columns,
+} from '@/spreadsheet-import/types/columnTypes';
 import { addErrorsAndRunHooks } from '@/spreadsheet-import/utils/dataMutations';
 import { DeduplicationStats } from '@/spreadsheet-import/utils/mergeWorkbooks';
 import { isPhoneNumberField, isValidPhoneNumber } from '@/spreadsheet-import/utils/normalizeTableData';
