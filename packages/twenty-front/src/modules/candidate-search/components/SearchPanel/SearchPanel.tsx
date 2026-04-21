@@ -3,6 +3,13 @@ import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import type { AssistantThread } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SearchParametersForm } from '@/candidate-search/components/search-components/SearchParametersForm';
+import {
+  getCandidateSearchApolloCompaniesUrl,
+  getCandidateSearchApolloJobPostingsUrl,
+  getCandidateSearchApolloPeopleUrl,
+  getCandidateSearchFromFileUrl,
+} from '@/candidate-search/constants/candidateSearchApiPaths';
+import { candidateSearchDataSourceState } from '@/candidate-search/states/candidateSearchDataSourceState';
 import { activeAssistantThreadIdState } from '@/candidate-search/states/searchConfigState';
 import {
   addRecentSearch,
@@ -19,11 +26,12 @@ import { addSearchResults, persistSearchMetadataToStorage, searchMetadataState, 
 import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { LinkedInSearchCategory, LinkedInSearchType } from 'twenty-shared';
-import { IconSearch, IconX } from 'twenty-ui';
+import { IconApi, IconBrandLinkedin, IconSearch, IconX } from 'twenty-ui';
 
 const StyledSearchPanel = styled.div<{ isOpen: boolean; width: number }>`
   position: fixed;
@@ -64,6 +72,65 @@ const StyledPanelContent = styled.div`
   flex: 1;
   overflow-y: auto;
   padding: ${({ theme }) => theme.spacing(3)};
+`;
+
+const StyledDataSourceSection = styled.div`
+  margin-bottom: ${({ theme }) => theme.spacing(3)};
+`;
+
+const StyledDataSourceLabel = styled.div`
+  font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledDataSourceTrack = styled.div`
+  display: flex;
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background: ${({ theme }) => theme.background.tertiary};
+  padding: ${({ theme }) => theme.spacing(0.5)};
+  gap: ${({ theme }) => theme.spacing(0.5)};
+`;
+
+const StyledDataSourceOption = styled.button<{ isActive: boolean }>`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  border: none;
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  cursor: pointer;
+  min-height: 32px;
+  padding: ${({ theme }) => theme.spacing(1)};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  font-family: inherit;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+
+  ${({ theme, isActive }) =>
+    isActive
+      ? `
+    background: ${theme.background.primary};
+    color: ${theme.font.color.primary};
+    box-shadow: ${theme.boxShadow.light};
+  `
+      : `
+    background: transparent;
+    color: ${theme.font.color.secondary};
+    &:hover {
+      background: ${theme.background.transparent.light};
+      color: ${theme.font.color.primary};
+    }
+  `}
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.blue};
+    outline-offset: 1px;
+  }
 `;
 
 const StyledCloseButton = styled.button`
@@ -300,14 +367,51 @@ type SearchPanelProps = {
   width?: number;
 };
 
+function parseApolloKeywords(keywords: string | undefined): {
+  personTitles: string[];
+  qKeywords: string | undefined;
+} {
+  const kw = (keywords ?? '').trim();
+  if (!kw) {
+    return { personTitles: [], qKeywords: undefined };
+  }
+  if (kw.includes(',')) {
+    const titles = kw
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return { personTitles: titles, qKeywords: kw };
+  }
+  return { personTitles: [kw], qKeywords: kw };
+}
+
+function extractApolloOrganizationList(
+  organizationsPayload: Record<string, unknown> | undefined,
+): Record<string, unknown>[] {
+  if (!organizationsPayload) {
+    return [];
+  }
+  const inner = organizationsPayload.organizations;
+  if (Array.isArray(inner)) {
+    return inner.filter(
+      (o): o is Record<string, unknown> =>
+        o !== null && typeof o === 'object',
+    );
+  }
+  return [];
+}
+
 export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
+  const theme = useTheme();
   const [isOpen, setIsOpen] = useRecoilState(isSearchPanelOpenState);
   const [searchConfig, setSearchConfig] = useRecoilState(persistentSearchConfigState);
   const [searchParameters, setSearchParameters] = useRecoilState(persistentSearchParametersState);
   const [recentSearches, setRecentSearches] = useRecoilState(recentSearchesState);
   const [searchResults, setSearchResults] = useRecoilState(searchResultsState);
   const [searchMetadata, setSearchMetadata] = useRecoilState(searchMetadataState);
-  
+  const [candidateSearchDataSource, setCandidateSearchDataSource] =
+    useRecoilState(candidateSearchDataSourceState);
+
   const parsedJD = useRecoilValue(parsedJDSelector);
   const activeAssistantThreadId = useRecoilValue(activeAssistantThreadIdState);
   const { updateAssistantThreadRecord } = useArxJDUpload('job');
@@ -453,12 +557,320 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
     }
 
     try {
-      // Call the existing search endpoint
-      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/search-from-file`, {
+      const authToken = tokenPair?.accessToken?.token;
+
+      if (candidateSearchDataSource === 'apollo') {
+        if (!authToken) {
+          enqueueSnackBar('Sign in to run Apollo search.', {
+            variant: SnackBarVariant.Error,
+          });
+          return;
+        }
+
+        if (searchCategory === 'posts') {
+          enqueueSnackBar('Apollo does not support post search in this panel.', {
+            variant: SnackBarVariant.Warning,
+          });
+          return;
+        }
+
+        if (searchCategory === 'people') {
+          const { personTitles, qKeywords } = parseApolloKeywords(
+            searchParameters.keywords,
+          );
+          const apolloRes = await fetch(getCandidateSearchApolloPeopleUrl(), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${authToken}`,
+            },
+            body: JSON.stringify({
+              keywords: qKeywords,
+              personTitles: personTitles.length > 0 ? personTitles : undefined,
+              page: 1,
+              perPage: 25,
+            }),
+          });
+
+          if (!apolloRes.ok) {
+            throw new Error(`Apollo search failed: ${apolloRes.statusText}`);
+          }
+
+          const searchResponse = await apolloRes.json();
+
+          if (searchResponse.transformedCandidates) {
+            const transformedCandidates = searchResponse.transformedCandidates;
+            const totalCount =
+              searchResponse.searchResults?.paging?.total_count ||
+              transformedCandidates.length;
+
+            addSearchResults(setSearchResults, jobId)(transformedCandidates);
+
+            const newMetadata = {
+              totalCount,
+              currentPage: 1,
+              totalPages: Math.ceil(totalCount / 10),
+              cursor: searchResponse.searchResults?.cursor,
+              searchType: searchResponse.searchMetadata?.searchType,
+              searchCategory: searchResponse.searchMetadata?.searchCategory,
+              searchParameters:
+                searchResponse.resolvedSearchParameters || searchParameters,
+            };
+            setSearchMetadata(newMetadata);
+            persistSearchMetadataToStorage(newMetadata, jobId, {
+              accessToken: authToken,
+              results: searchResults,
+            });
+
+            addRecentSearch(setRecentSearches)({
+              name: `${searchParameters.keywords || 'Search'} - ${searchCategory}`,
+              searchType,
+              searchCategory,
+              parameters: searchParameters,
+              resultCount: transformedCandidates.length,
+            });
+
+            enqueueSnackBar(`Found ${transformedCandidates.length} candidates`, {
+              variant: SnackBarVariant.Success,
+            });
+          } else if (searchResponse.searchResults?.items) {
+            const { items, cursor, paging } = searchResponse.searchResults;
+            const totalCount = paging?.total_count || 0;
+
+            addSearchResults(setSearchResults, jobId)(items);
+
+            const newMetadata = {
+              totalCount,
+              currentPage: 1,
+              totalPages: Math.ceil(totalCount / 10),
+              cursor,
+              searchType: searchResponse.searchMetadata?.searchType,
+              searchCategory: searchResponse.searchMetadata?.searchCategory,
+              searchParameters:
+                searchResponse.resolvedSearchParameters || searchParameters,
+            };
+            setSearchMetadata(newMetadata);
+            persistSearchMetadataToStorage(newMetadata, jobId, {
+              accessToken: authToken,
+              results: searchResults,
+            });
+
+            addRecentSearch(setRecentSearches)({
+              name: `${searchParameters.keywords || 'Search'} - ${searchCategory}`,
+              searchType,
+              searchCategory,
+              parameters: searchParameters,
+              resultCount: items.length,
+            });
+
+            enqueueSnackBar(`Found ${items.length} candidates`, {
+              variant: SnackBarVariant.Success,
+            });
+          } else {
+            enqueueSnackBar('No search results found', {
+              variant: SnackBarVariant.Warning,
+            });
+          }
+          return;
+        }
+
+        if (searchCategory === 'companies') {
+          const orgName =
+            (searchParameters.keywords ?? '').trim() ||
+            (parsedJD.companyName ?? '').trim();
+          if (!orgName) {
+            enqueueSnackBar('Enter keywords or ensure the job has a company name.', {
+              variant: SnackBarVariant.Warning,
+            });
+            return;
+          }
+
+          const apolloRes = await fetch(getCandidateSearchApolloCompaniesUrl(), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${authToken}`,
+            },
+            body: JSON.stringify({
+              organizationName: orgName,
+              page: 1,
+              perPage: 25,
+            }),
+          });
+
+          if (!apolloRes.ok) {
+            throw new Error(`Apollo company search failed: ${apolloRes.statusText}`);
+          }
+
+          const data = (await apolloRes.json()) as {
+            organizations?: Record<string, unknown>;
+          };
+          const orgList = extractApolloOrganizationList(data.organizations);
+          const items = orgList.map((org, index) => {
+            const id = String(org.organization_id ?? org.id ?? `apollo_org_${index}`);
+            const name = String(org.name ?? '');
+            return {
+              id,
+              name,
+              type: 'COMPANY',
+              object: 'SearchResult',
+              profile_url:
+                typeof org.linkedin_url === 'string' ? org.linkedin_url : '',
+              location: [
+                typeof org.city === 'string' ? org.city : '',
+                typeof org.country === 'string' ? org.country : '',
+              ]
+                .filter(Boolean)
+                .join(', ') || null,
+              industry: typeof org.industry === 'string' ? org.industry : '',
+              headline: name,
+              source: 'apollo',
+            };
+          });
+
+          addSearchResults(setSearchResults, jobId)(items);
+          const newMetadata = {
+            totalCount: items.length,
+            currentPage: 1,
+            totalPages: 1,
+            searchType: 'apollo',
+            searchCategory,
+            searchParameters,
+          };
+          setSearchMetadata(newMetadata);
+          persistSearchMetadataToStorage(newMetadata, jobId, {
+            accessToken: authToken,
+            results: searchResults,
+          });
+          addRecentSearch(setRecentSearches)({
+            name: `${orgName} - companies`,
+            searchType,
+            searchCategory,
+            parameters: searchParameters,
+            resultCount: items.length,
+          });
+          enqueueSnackBar(`Found ${items.length} companies`, {
+            variant: SnackBarVariant.Success,
+          });
+          return;
+        }
+
+        if (searchCategory === 'jobs') {
+          const companyQuery =
+            (parsedJD.companyName ?? '').trim() ||
+            (searchParameters.keywords ?? '').trim();
+          if (!companyQuery) {
+            enqueueSnackBar('Set a company name on the job or enter keywords.', {
+              variant: SnackBarVariant.Warning,
+            });
+            return;
+          }
+
+          const resolveRes = await fetch(getCandidateSearchApolloCompaniesUrl(), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${authToken}`,
+            },
+            body: JSON.stringify({
+              organizationName: companyQuery,
+              page: 1,
+              perPage: 5,
+            }),
+          });
+
+          if (!resolveRes.ok) {
+            throw new Error(`Apollo company lookup failed: ${resolveRes.statusText}`);
+          }
+
+          const resolveData = (await resolveRes.json()) as {
+            organizations?: Record<string, unknown>;
+          };
+          const orgList = extractApolloOrganizationList(resolveData.organizations);
+          const firstOrg = orgList[0];
+          const orgId = firstOrg
+            ? String(firstOrg.organization_id ?? firstOrg.id ?? '')
+            : '';
+
+          if (!orgId) {
+            enqueueSnackBar('No Apollo organization matched for job postings.', {
+              variant: SnackBarVariant.Warning,
+            });
+            return;
+          }
+
+          const jobsRes = await fetch(
+            getCandidateSearchApolloJobPostingsUrl(orgId, 1, 25),
+            {
+              headers: { Authorization: `Bearer ${authToken}` },
+            },
+          );
+
+          if (!jobsRes.ok) {
+            throw new Error(`Apollo job postings failed: ${jobsRes.statusText}`);
+          }
+
+          const jobsData = (await jobsRes.json()) as {
+            jobPostings?: Record<string, unknown>;
+          };
+          const jp = jobsData.jobPostings as
+            | { organization_job_postings?: Record<string, unknown>[] }
+            | undefined;
+          const postings = Array.isArray(jp?.organization_job_postings)
+            ? jp.organization_job_postings
+            : [];
+
+          const items = postings.map((p, index) => {
+            const id = String(p.id ?? `apollo_job_${index}`);
+            const title = String(p.title ?? '');
+            const url = typeof p.url === 'string' ? p.url : '';
+            return {
+              id,
+              name: title,
+              title,
+              url,
+              object: 'SearchResult',
+              type: 'JOB',
+              source: 'apollo',
+            };
+          });
+
+          addSearchResults(setSearchResults, jobId)(items);
+          const newMetadata = {
+            totalCount: items.length,
+            currentPage: 1,
+            totalPages: 1,
+            searchType: 'apollo',
+            searchCategory,
+            searchParameters,
+          };
+          setSearchMetadata(newMetadata);
+          persistSearchMetadataToStorage(newMetadata, jobId, {
+            accessToken: authToken,
+            results: searchResults,
+          });
+          addRecentSearch(setRecentSearches)({
+            name: `${companyQuery} - jobs`,
+            searchType,
+            searchCategory,
+            parameters: searchParameters,
+            resultCount: items.length,
+          });
+          enqueueSnackBar(`Found ${items.length} job postings`, {
+            variant: SnackBarVariant.Success,
+          });
+          return;
+        }
+
+        return;
+      }
+
+      // Call the existing LinkedIn search endpoint
+      const response = await fetch(getCandidateSearchFromFileUrl(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${tokenPair?.accessToken?.token}`,
+          'Authorization': `Bearer ${authToken}`,
         },
         body: JSON.stringify({
           filePath: parsedJD.filePath || 'standalone_search',
@@ -566,7 +978,18 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
         variant: SnackBarVariant.Error,
       });
     }
-  }, [parsedJD, setSearchResults, setSearchMetadata, setRecentSearches, enqueueSnackBar]);
+  }, [
+    parsedJD,
+    candidateSearchDataSource,
+    tokenPair?.accessToken?.token,
+    jobId,
+    searchResults,
+    setSearchResults,
+    setSearchMetadata,
+    setRecentSearches,
+    enqueueSnackBar,
+    isJobLoading,
+  ]);
 
   const handleRecentSearchClick = useCallback((recentSearch: any) => {
     // Update persistent state
@@ -696,6 +1119,39 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
       </StyledPanelHeader>
 
       <StyledPanelContent>
+        <StyledDataSourceSection
+          role="radiogroup"
+          aria-label="Candidate search data source"
+        >
+          <StyledDataSourceLabel>Data source</StyledDataSourceLabel>
+          <StyledDataSourceTrack>
+            <StyledDataSourceOption
+              type="button"
+              isActive={candidateSearchDataSource === 'apollo'}
+              role="radio"
+              aria-checked={candidateSearchDataSource === 'apollo'}
+              onClick={() => {
+                setCandidateSearchDataSource('apollo');
+              }}
+            >
+              <IconApi size={theme.icon.size.sm} />
+              Apollo
+            </StyledDataSourceOption>
+            <StyledDataSourceOption
+              type="button"
+              isActive={candidateSearchDataSource === 'linkedin'}
+              role="radio"
+              aria-checked={candidateSearchDataSource === 'linkedin'}
+              onClick={() => {
+                setCandidateSearchDataSource('linkedin');
+              }}
+            >
+              <IconBrandLinkedin size={theme.icon.size.sm} />
+              LinkedIn
+            </StyledDataSourceOption>
+          </StyledDataSourceTrack>
+        </StyledDataSourceSection>
+
         {/* Search Strategy */}
         {isJobLoading ? (
           <StyledStrategySection>

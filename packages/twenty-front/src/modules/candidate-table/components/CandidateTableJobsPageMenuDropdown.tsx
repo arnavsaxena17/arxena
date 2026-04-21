@@ -71,6 +71,10 @@ const StyledSegmentedTrack = styled.div`
   gap: ${({ theme }) => theme.spacing(0.5)};
 `;
 
+const StyledSegmentedTrackApolloRow = styled(StyledSegmentedTrack)`
+  margin-top: ${({ theme }) => theme.spacing(1)};
+`;
+
 const StyledSegmentedOption = styled.button<{ isActive: boolean }>`
   flex: 1;
   display: flex;
@@ -257,6 +261,21 @@ export const CandidateTableJobsPageMenuDropdown = ({
                 X-Ray
               </StyledSegmentedOption>
             </StyledSegmentedTrack>
+            <StyledSegmentedTrackApolloRow>
+              <StyledSegmentedOption
+                type="button"
+                data-testid="org-chart-source-apollo"
+                isActive={orgChartLinkedinCandidateSource === 'apollo'}
+                role="radio"
+                aria-checked={orgChartLinkedinCandidateSource === 'apollo'}
+                onClick={() => {
+                  setOrgChartLinkedinCandidateSource('apollo');
+                }}
+              >
+                <IconApi size={iconSm} />
+                Apollo
+              </StyledSegmentedOption>
+            </StyledSegmentedTrackApolloRow>
             {orgChartLinkedinCandidateSource === 'unipile' && (
               <>
                 <StyledOrgChartSourceLabel>

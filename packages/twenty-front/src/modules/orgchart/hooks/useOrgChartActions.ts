@@ -516,6 +516,7 @@ export const useOrgChartActions = ({
     linkedinUnipileConnected: boolean;
     apifyActorConfigured: boolean;
     linkedinXrayConfigured: boolean;
+    apolloApiConfigured: boolean;
     pythonOrgChartAgentAvailable: boolean;
   } | null> => {
     const serverBaseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
@@ -536,6 +537,7 @@ export const useOrgChartActions = ({
         linkedinUnipileConnected?: boolean;
         apifyActorConfigured?: boolean;
         linkedinXrayConfigured?: boolean;
+        apolloApiConfigured?: boolean;
         pythonOrgChartAgentAvailable?: boolean;
       };
       if (json?.status !== 'ok') {
@@ -545,6 +547,7 @@ export const useOrgChartActions = ({
         linkedinUnipileConnected: !!json.linkedinUnipileConnected,
         apifyActorConfigured: !!json.apifyActorConfigured,
         linkedinXrayConfigured: !!json.linkedinXrayConfigured,
+        apolloApiConfigured: !!json.apolloApiConfigured,
         pythonOrgChartAgentAvailable:
           typeof json.pythonOrgChartAgentAvailable === 'boolean'
             ? json.pythonOrgChartAgentAvailable
@@ -612,6 +615,17 @@ export const useOrgChartActions = ({
           });
           return;
         }
+      } else if (orgChartLinkedinCandidateSource === 'apollo') {
+        if (prereqStatus.apolloApiConfigured !== true) {
+          enqueueSnackBar(
+            'Apollo org chart requires APOLLO_API_KEY on the server.',
+            {
+              variant: SnackBarVariant.Error,
+              duration: 8000,
+            },
+          );
+          return;
+        }
       } else if (prereqStatus.linkedinUnipileConnected !== true) {
         enqueueSnackBar(LINKEDIN_UNIPILE_SOURCE_UNAVAILABLE_SNACKBAR, {
           variant: SnackBarVariant.Error,
@@ -652,6 +666,20 @@ export const useOrgChartActions = ({
         variant: SnackBarVariant.Error,
         duration: 10000,
       });
+      return;
+    }
+
+    if (
+      orgChartLinkedinCandidateSource === 'apollo' &&
+      mode === 'business_division_map'
+    ) {
+      enqueueSnackBar(
+        'Apollo org chart does not support business division mapping.',
+        {
+          variant: SnackBarVariant.Error,
+          duration: 10000,
+        },
+      );
       return;
     }
     const isHeaderOrgChartRequest =
@@ -936,7 +964,10 @@ export const useOrgChartActions = ({
             : typeof json.candidateSource === 'string' &&
                 json.candidateSource === 'unipile'
               ? 'LinkedIn search queued. Waiting for results...'
-              : 'Org chart search queued. Waiting for results...',
+              : typeof json.candidateSource === 'string' &&
+                  json.candidateSource === 'apollo'
+                ? 'Apollo org chart search queued. Waiting for results...'
+                : 'Org chart search queued. Waiting for results...',
         );
         armProgressUpdateTimeout(requestId);
         return;

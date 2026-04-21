@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useRecoilValue } from 'recoil';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
 import { Mixpanel } from '~/mixpanel';
 
 import { CompanySearchAutocomplete } from '~/lib/company-search';
@@ -28,8 +29,15 @@ export const OrgChartCompanySearchWrapper = ({
   startIcon,
 }: OrgChartCompanySearchWrapperProps) => {
   const tokenPair = useRecoilValue(tokenPairState);
+  const orgChartCandidateSource = useRecoilValue(
+    orgChartLinkedinCandidateSourceState,
+  );
   const accessToken = tokenPair?.accessToken?.token ?? undefined;
   const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+  const autocompletePath =
+    orgChartCandidateSource === 'apollo'
+      ? '/org-chart/companies/autocomplete-apollo'
+      : '/org-chart/companies/autocomplete';
 
   const handleCompanySelect = useCallback(
     (company: {
@@ -52,11 +60,13 @@ export const OrgChartCompanySearchWrapper = ({
 
   return (
     <CompanySearchAutocomplete
+      key={autocompletePath}
       onCompanySelect={handleCompanySelect}
       placeholder={placeholder}
       disabled={disabled}
       baseUrl={baseUrl}
       accessToken={accessToken}
+      autocompletePath={autocompletePath}
       startIcon={startIcon}
     />
   );

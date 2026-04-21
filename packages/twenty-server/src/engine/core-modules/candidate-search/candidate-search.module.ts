@@ -8,6 +8,7 @@ import { SearchExecutionService } from 'src/engine/core-modules/candidate-search
 import { SearchParameterGenerationService } from 'src/engine/core-modules/candidate-search/services/search-parameter-generation.service';
 import { StreamProcessingService } from 'src/engine/core-modules/candidate-search/services/stream-processing.service';
 import { CandidateDataService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-data.service';
+import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
 import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
 import { LinkedInHtmlParserService } from 'src/engine/core-modules/linkedin-search/services/linkedin-html-parser.service';
 import { UnipilePoolModule } from '../arx-chat/unipile-pool.module';
@@ -17,12 +18,15 @@ import { LinkedInSearchModule } from '../linkedin-search/linkedin-search.module'
 import { OrgChartModule } from '../org-chart/org-chart.module';
 import { PythonOrgChartService } from '../org-chart/services/python-org-chart.service';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
+import { ApolloSearchController } from './controllers/apollo-search.controller';
 import { CandidateSearchPipelineController } from './controllers/candidate-search-pipeline.controller';
 import { CandidateSearchController } from './controllers/candidate-search.controller';
 import { OrgchartApifyBuildProcessor } from './jobs/orgchart-apify-build.processor';
 import { OrgchartLinkedinXrayBuildProcessor } from './jobs/orgchart-linkedin-xray-build.processor';
 import { OrgchartUnipileBuildProcessor } from './jobs/orgchart-unipile-build.processor';
 import { SearchParametersPrompts } from './prompts/search-parameters-prompts';
+import { ApolloIoRestService } from './services/apollo-io-rest.service';
+import { ApolloPeopleSearchTransformerService } from './services/apollo-people-search-transformer.service';
 import { AssistantThreadService } from './services/assistant-thread.service';
 import { BooltreeHintService } from './services/booltree-hint.service';
 import { CandidateSearchHandlerService } from './services/candidate-search-handler.service';
@@ -48,6 +52,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
 @Module({
   imports: [
     BillingModule,
+    EnvironmentModule,
     LinkedInSearchModule,
     UnipilePoolModule,
     WorkspaceModificationsModule,
@@ -60,7 +65,12 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
       return require('../assistant/assistant.module').AssistantModule;
     }),
   ],
-  controllers: [CandidateSearchController, CandidateSearchChatController, CandidateSearchPipelineController],
+  controllers: [
+    CandidateSearchController,
+    CandidateSearchChatController,
+    CandidateSearchPipelineController,
+    ApolloSearchController,
+  ],
   providers: [
     CandidateSearchBaseService,
     CandidateSearchHandlerService,
@@ -92,6 +102,8 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     SearchResponseBuilderService,
     StrategyExecutionService,
     SearchResultsCacheService,
+    ApolloIoRestService,
+    ApolloPeopleSearchTransformerService,
     OrgChartIntentService,
     TitleTaxonomyRemoteService,
     OrgchartLinkedInQueryRouterService,
@@ -108,6 +120,8 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     OrgChartSearchService,
     ResultValidationService,
     StreamProcessingService,
+    ApolloIoRestService,
+    ApolloPeopleSearchTransformerService,
   ],
 })
 export class CandidateSearchModule {}

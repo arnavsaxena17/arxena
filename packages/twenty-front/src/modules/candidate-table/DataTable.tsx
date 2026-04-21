@@ -1,5 +1,6 @@
 import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { getCandidateSearchFromFileUrl } from '@/candidate-search/constants/candidateSearchApiPaths';
 import { fetchSearchResultsCache, persistSearchMetadataToStorage, persistSearchResultsToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { afterChange, afterSelectionEnd, getPermanentId, isUUID, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
 import { CANDIDATE_CONVERSATION_STATUS_LABELS, isAiFilterField } from '@/candidate-table/TableColumns';
@@ -758,7 +759,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         
         // Make API call to load more search results
         const response = await axios.post(
-          `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/search-from-file`,
+          getCandidateSearchFromFileUrl(),
           requestBody,
           { 
             headers: { 

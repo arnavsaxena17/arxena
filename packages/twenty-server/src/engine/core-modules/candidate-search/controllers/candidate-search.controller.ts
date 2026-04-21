@@ -1,24 +1,19 @@
 import {
-    Body,
-    Controller,
-    Get,
-    Headers,
-    HttpException,
-    HttpStatus,
-    Logger,
-    Param,
-    Post,
-    Put,
-    Query,
-    Req,
+  Body,
+  Controller,
+  Get,
+  Headers,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
 } from '@nestjs/common';
-import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
-import { CandidateDataService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-data.service';
-import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
-import { OrgchartCancelRegistryService } from 'src/engine/core-modules/org-chart/services/orgchart-cancel-registry.service';
-import { OrgChartS3Service } from 'src/engine/core-modules/org-chart/services/orgchart-s3.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import type { ParsedRequirement } from '../schemas/parsed-requirement.schema';
 import { CandidateSearchHandlerService } from '../services/candidate-search-handler.service';
@@ -27,8 +22,7 @@ import { JobTitleExpanderService } from '../services/job-title-expander.service'
 import { SearchExecutionService } from '../services/search-execution.service';
 import { SearchResultsCacheService } from '../services/search-results-cache.service';
 import {
-    CandidateSearchResponse,
-    ParsedJobDescription,
+  ParsedJobDescription
 } from '../types/candidate-search-request.type';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
 
@@ -41,16 +35,11 @@ export class CandidateSearchController {
     private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly workspaceCreditsService: WorkspaceCreditsService,
     private readonly linkedInRequestTracker: LinkedInSessionTrackerService,
     private readonly searchResultsCacheService: SearchResultsCacheService,
     private readonly searchExecutionService: SearchExecutionService,
     private readonly companyExpanderService: CompanyExpanderService,
     private readonly jobTitleExpanderService: JobTitleExpanderService,
-    private readonly candidateDataService: CandidateDataService,
-    private readonly orgchartCancelRegistry: OrgchartCancelRegistryService,
-    private readonly orgChartS3Service: OrgChartS3Service,
-    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
   /**

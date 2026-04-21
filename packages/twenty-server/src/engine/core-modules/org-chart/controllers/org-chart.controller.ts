@@ -18,6 +18,7 @@ import { ApifyService } from 'src/engine/core-modules/apify/services/apify.servi
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/services/bright-data-serp.service';
+import { ApolloIoRestService } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
 import type {
   ClassicPeopleSearchStrategyResult,
@@ -61,6 +62,7 @@ export class OrgChartController {
     private readonly pythonOrgChartService: PythonOrgChartService,
     private readonly brightDataSerpService: BrightDataSerpService,
     private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
+    private readonly apolloIoRestService: ApolloIoRestService,
   ) {}
 
   private getAuthToken(req: Request): string | undefined {
@@ -683,6 +685,7 @@ export class OrgChartController {
 
     const apifyActorConfigured = this.apifyService.isConfigured();
     const linkedinXrayConfigured = this.brightDataSerpService.isConfigured();
+    const apolloApiConfigured = this.apolloIoRestService.isConfigured();
     const pythonOrgChartAgentAvailable =
       await this.pythonOrgChartService.isOrgChartAgentReachable();
 
@@ -691,6 +694,7 @@ export class OrgChartController {
       linkedinUnipileConnected,
       apifyActorConfigured,
       linkedinXrayConfigured,
+      apolloApiConfigured,
       pythonOrgChartAgentAvailable,
     };
   }
@@ -754,6 +758,101 @@ export class OrgChartController {
       return { result: results, status: 'ok' };
     } catch (error) {
       this.logger.error('Company autocomplete failed', error);
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Autocomplete failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Apollo.io organization search for org-chart company picker (meta.id = organization_id).
+   * Consumes Apollo credits per their pricing.
+   */
+  @Post('companies/autocomplete-apollo')
+  async companyAutocompleteApollo(
+    @Body() dto: CompanyAutocompleteDto,
+    @Req() req: Request,
+  ) {
+    const authToken = this.getAuthToken(req);
+    if (!authToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+    if (!this.apolloIoRestService.isConfigured()) {
+      return { result: [], status: 'ok' as const };
+    }
+    const q = dto.input_text?.trim() ?? '';
+    if (!q) {
+      return { result: [], status: 'ok' as const };
+    }
+    try {
+      const raw = await this.apolloIoRestService.organizationsSearch({
+        q_organization_name: q,
+        page: 1,
+        per_page: 15,
+      });
+      const organizations = raw.organizations;
+      const list = Array.isArray(organizations)
+        ? organizations.filter(
+            (o): o is Record<string, unknown> =>
+              o !== null && typeof o === 'object',
+          )
+        : [];
+
+      const result = list.map((org) => {
+        const id = String(org.organization_id ?? org.id ?? '');
+        const name = String(org.name ?? '');
+        const linkedinUrl =
+          typeof org.linkedin_url === 'string' ? org.linkedin_url : undefined;
+        let linkedin_slug: string | undefined;
+        if (linkedinUrl) {
+          const m = linkedinUrl.match(/linkedin\.com\/company\/([^/?#]+)/i);
+          linkedin_slug = m?.[1]
+            ? decodeURIComponent(m[1].replace(/\/$/, ''))
+            : undefined;
+        }
+        const primaryDomain =
+          typeof org.primary_domain === 'string' ? org.primary_domain : undefined;
+        const website =
+          typeof org.website_url === 'string'
+            ? org.website_url
+            : primaryDomain
+              ? `https://${primaryDomain}`
+              : undefined;
+        const city = typeof org.city === 'string' ? org.city : '';
+        const state = typeof org.state === 'string' ? org.state : '';
+        const country = typeof org.country === 'string' ? org.country : '';
+        const locParts = [city, state, country].filter((p) => p && p.trim());
+        const location_name =
+          locParts.length > 0 ? locParts.join(', ') : undefined;
+        const industry =
+          typeof org.industry === 'string' ? org.industry : undefined;
+        const employeeCount =
+          typeof org.estimated_num_employees === 'number'
+            ? org.estimated_num_employees
+            : typeof org.organization_headcount === 'number'
+              ? org.organization_headcount
+              : undefined;
+
+        return {
+          name,
+          meta: {
+            id,
+            website,
+            industry,
+            location_name,
+            linkedin_url: linkedinUrl,
+            linkedin_slug,
+            display_name: name,
+            employee_count: employeeCount,
+          },
+          count: employeeCount ?? 0,
+        };
+      });
+
+      return { result, status: 'ok' as const };
+    } catch (error) {
+      this.logger.error('Apollo company autocomplete failed', error);
       throw new HttpException(
         error instanceof Error ? error.message : 'Autocomplete failed',
         HttpStatus.INTERNAL_SERVER_ERROR,

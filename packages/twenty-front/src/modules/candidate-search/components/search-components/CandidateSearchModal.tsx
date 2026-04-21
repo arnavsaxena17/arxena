@@ -11,6 +11,7 @@ import { ModalContainer } from '@/candidate-search/components/ai-chat-assistant/
 import { ModalHeader } from '@/candidate-search/components/ai-chat-assistant/ModalHeader';
 import { CandidateSearchResultsTable } from '@/candidate-search/components/search-components/search-table/CandidateSearchResultsTable';
 import { SearchParametersForm } from '@/candidate-search/components/search-components/SearchParametersForm';
+import { getCandidateSearchFromFileUrl } from '@/candidate-search/constants/candidateSearchApiPaths';
 import { isCandidateSearchModalOpenState } from '@/candidate-search/states/candidateSearchModalState';
 import { activeAssistantThreadIdState } from '@/candidate-search/states/searchConfigState';
 import {
@@ -348,15 +349,14 @@ export const CandidateSearchModal = () => {
     requestBody: any,
     cursor?: string
   ) => {
-    const endpoint = '/candidate-search/search-from-file';
     const limit = 10;
-    
+
     const queryParams = new URLSearchParams({
       limit: limit.toString(),
       ...(cursor && { cursor }),
     });
-    
-    const url = `${process.env.REACT_APP_SERVER_BASE_URL}${endpoint}?${queryParams}`;
+
+    const url = `${getCandidateSearchFromFileUrl()}?${queryParams}`;
     
     const response = await fetch(url, {
       method: 'POST',

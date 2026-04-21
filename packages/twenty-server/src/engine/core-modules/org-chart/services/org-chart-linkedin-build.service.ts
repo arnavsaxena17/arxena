@@ -1,9 +1,9 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
 import {
-    graphqlToAddNewJob,
-    OrgChartData,
-    type OrgchartSearchMode,
+  graphqlToAddNewJob,
+  OrgChartData,
+  type OrgchartSearchMode,
 } from 'twenty-shared';
 
 import { ApifyService } from 'src/engine/core-modules/apify/services/apify.service';
@@ -15,6 +15,8 @@ import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/servi
 import { OrgchartApifyBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-apify-build.types';
 import { OrgchartLinkedinXrayBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-linkedin-xray-build.types';
 import { OrgchartUnipileBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-unipile-build.types';
+import { ApolloIoRestService } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
+import { ApolloPeopleSearchTransformerService } from 'src/engine/core-modules/candidate-search/services/apollo-people-search-transformer.service';
 import { OrgChartSearchService } from 'src/engine/core-modules/candidate-search/services/orgchart-search.service';
 import { ResultValidationService } from 'src/engine/core-modules/candidate-search/services/result-validation.service';
 import { extractApiToken } from 'src/engine/core-modules/candidate-search/utils/auth.utils';
@@ -25,8 +27,8 @@ import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-
 import { linkedInPeopleSearchResultMatchesTargetCompany } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-orgchart-company-match.util';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import {
-    LinkedInSearchService,
-    parseApifyLinkedinCompanyScraperLogLine,
+  LinkedInSearchService,
+  parseApifyLinkedinCompanyScraperLogLine,
 } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import type { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
@@ -116,6 +118,8 @@ export class OrgChartLinkedInBuildService {
     private readonly resultValidationService: ResultValidationService,
     private readonly linkedinXrayService: LinkedinXrayService,
     private readonly linkedinXrayTransformerService: LinkedinXrayTransformerService,
+    private readonly apolloIoRestService: ApolloIoRestService,
+    private readonly apolloPeopleSearchTransformer: ApolloPeopleSearchTransformerService,
     @InjectMessageQueue(MessageQueue.orgchartApifyQueue)
     private readonly orgchartApifyQueue: MessageQueueService,
   ) {}
@@ -156,7 +160,11 @@ export class OrgChartLinkedInBuildService {
     for (const item of items) {
       const source = item.source;
 
-      if (source === 'linkedin_xray' || source === 'apify') {
+      if (
+        source === 'linkedin_xray' ||
+        source === 'apify' ||
+        source === 'apollo'
+      ) {
         return source;
       }
     }
@@ -572,6 +580,130 @@ export class OrgChartLinkedInBuildService {
         stdFunction: body.stdFunction,
         stdGrade: body.stdGrade,
         selectedNodeStdScopes: body.selectedNodeStdScopes,
+      },
+    ) as TransformedCandidateForTable[];
+
+    return {
+      items: scopedItems,
+      itemCount: scopedItems.length,
+      isCached: false,
+      cacheSource: 'none',
+      strategyResults: [],
+    };
+  }
+
+  /**
+   * Apollo.io people search for org chart (organization_ids + person_titles / keywords).
+   * Requires companyId = Apollo organization_id (from Apollo company autocomplete).
+   */
+  private async runApolloOrgChartPeopleSearch(args: {
+    body: SearchOrgchartLinkedInBody;
+    apiToken: string;
+    mode: OrgchartSearchMode;
+    resolvedCompanyName: string;
+    companyId?: string;
+    requestId?: string;
+    searchType: OrgchartSearchType;
+    jobTitles: string[];
+    canonicalCompanyLinkedinUrl?: string;
+  }): Promise<{
+    items: TransformedCandidateForTable[];
+    itemCount: number;
+    isCached: false;
+    cacheSource: 'none';
+    strategyResults: [];
+  } | null> {
+    if (args.body.candidateSource !== 'apollo') {
+      return null;
+    }
+
+    if (!this.apolloIoRestService.isConfigured()) {
+      throw new HttpException(
+        'Apollo API is not configured (APOLLO_API_KEY)',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    const orgId = args.companyId?.trim();
+    if (!orgId) {
+      throw new HttpException(
+        'Apollo org chart requires a company from Apollo search (companyId = Apollo organization_id).',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (args.mode === 'business_division_map') {
+      throw new HttpException(
+        'Apollo org chart does not support business_division_map',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const titles = args.jobTitles.filter((t) => t.trim().length > 0);
+    const qKeywordParts: string[] = [];
+    if (args.body.functionRoot?.trim()) {
+      qKeywordParts.push(args.body.functionRoot.trim());
+    }
+    if (args.body.businessDivisionRawQuery?.trim()) {
+      qKeywordParts.push(args.body.businessDivisionRawQuery.trim());
+    }
+    const q_keywords =
+      qKeywordParts.length > 0 ? qKeywordParts.join(' ') : undefined;
+
+    const person_locations = args.body.country?.trim()
+      ? [args.body.country.trim()]
+      : undefined;
+
+    await this.emitOrgchartSearchProgressForToken(args.apiToken, {
+      requestId: args.requestId,
+      mode: args.mode,
+      searchType: args.searchType,
+      companyName: args.resolvedCompanyName,
+      event: 'status',
+      data: {
+        message: 'Fetching people from Apollo…',
+        candidateSource: 'apollo',
+      },
+    });
+
+    const merged: TransformedCandidateForTable[] = [];
+    for (let page = 1; page <= 10; page++) {
+      const raw = await this.apolloIoRestService.peopleSearch({
+        organization_ids: [orgId],
+        person_titles: titles.length > 0 ? titles : undefined,
+        q_keywords,
+        person_locations,
+        page,
+        per_page: 100,
+      });
+      const rows =
+        this.apolloPeopleSearchTransformer.transformApolloPeopleToTableRows(
+          raw as Record<string, unknown>,
+          {
+            companyName: args.resolvedCompanyName,
+            companyId: orgId,
+            companyLinkedinUrl: args.canonicalCompanyLinkedinUrl,
+          },
+        );
+      merged.push(...rows);
+      const pag = raw.pagination as
+        | { page?: number; total_pages?: number }
+        | undefined;
+      if (!pag?.total_pages || page >= (pag.total_pages ?? 0)) {
+        break;
+      }
+      if (rows.length === 0) {
+        break;
+      }
+    }
+
+    const scopedItems = filterOrgChartCandidatesByNodeStdLabels(
+      merged,
+      args.mode,
+      {
+        stdFunction: args.body.stdFunction,
+        stdGrade: args.body.stdGrade,
+        selectedNodeStdScopes: args.body.selectedNodeStdScopes,
       },
     ) as TransformedCandidateForTable[];
 
@@ -1574,7 +1706,8 @@ export class OrgChartLinkedInBuildService {
 
     if (
       body.candidateSource === 'apify' ||
-      body.candidateSource === 'linkedin_xray'
+      body.candidateSource === 'linkedin_xray' ||
+      body.candidateSource === 'apollo'
     ) {
       return null;
     }
@@ -2188,6 +2321,49 @@ export class OrgChartLinkedInBuildService {
 
     if (linkedinXrayQueued) {
       return linkedinXrayQueued;
+    }
+
+    const apolloPeopleResult = await this.runApolloOrgChartPeopleSearch({
+      body,
+      apiToken,
+      mode,
+      resolvedCompanyName,
+      companyId,
+      requestId,
+      searchType,
+      jobTitles,
+      canonicalCompanyLinkedinUrl,
+    });
+
+    if (apolloPeopleResult) {
+      const { orgChart, orgChartError } =
+        await this.buildOrgChartAfterLinkedInSearch({
+          apiToken,
+          body,
+          mode,
+          resolvedCompanyName,
+          companyId,
+          searchType,
+          requestId,
+          canonicalCompanyLinkedinUrl,
+          shouldWriteCompanyOrgChartCache,
+          result: apolloPeopleResult,
+        });
+
+      return {
+        success: true,
+        mode,
+        searchType,
+        companyName: resolvedCompanyName,
+        jobTitles,
+        itemCount: apolloPeopleResult.itemCount,
+        items: apolloPeopleResult.items,
+        orgChart,
+        ...(orgChartError ? { orgChartError } : {}),
+        isCached: false,
+        cacheSource: 'none' as const,
+        candidateSource: 'apollo' as const,
+      };
     }
 
     const unipileQueued = await this.maybeQueueUnipileOrgChartBuild({
