@@ -3,17 +3,17 @@ import { Field, ObjectType, registerEnumType } from '@nestjs/graphql';
 import { IDField } from '@ptc-org/nestjs-query-graphql';
 import { PermissionsOnAllObjectRecords, SettingsFeatures } from 'twenty-shared';
 import {
-  Column,
-  CreateDateColumn,
-  DeleteDateColumn,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  Relation,
-  Unique,
-  UpdateDateColumn,
+    Column,
+    CreateDateColumn,
+    DeleteDateColumn,
+    Entity,
+    JoinColumn,
+    ManyToOne,
+    OneToMany,
+    PrimaryGeneratedColumn,
+    Relation,
+    Unique,
+    UpdateDateColumn,
 } from 'typeorm';
 
 import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';

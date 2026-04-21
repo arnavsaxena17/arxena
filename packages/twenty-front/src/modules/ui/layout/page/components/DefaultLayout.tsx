@@ -10,13 +10,13 @@ import { OBJECT_SETTINGS_WIDTH } from '@/settings/data-model/constants/ObjectSet
 import { SignInAppNavigationDrawerMock } from '@/sign-in-background-mock/components/SignInAppNavigationDrawerMock';
 import { SignInBackgroundMockPage } from '@/sign-in-background-mock/components/SignInBackgroundMockPage';
 import { SupportChatBootstrap } from '@/support/components/SupportChatBootstrap';
+import { AppPath } from '@/types/AppPath';
 import { useShowAuthModal } from '@/ui/layout/hooks/useShowAuthModal';
 import { NAV_DRAWER_WIDTHS } from '@/ui/navigation/navigation-drawer/constants/NavDrawerWidths';
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
 import { Global, css, useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
-import { AppPath } from '@/types/AppPath';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { useScreenSize } from 'twenty-ui';

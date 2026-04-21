@@ -15,6 +15,7 @@ import {
 import { AvailableWorkspaceOutput } from 'src/engine/core-modules/auth/dto/available-workspaces.output';
 import { DomainManagerService } from 'src/engine/core-modules/domain-manager/services/domain-manager.service';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
+import { WorkspaceMemberProfileProvisioningService } from 'src/engine/core-modules/user-workspace/workspace-member-profile-provisioning.service';
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { userValidator } from 'src/engine/core-modules/user/user.validate';
 import { WorkspaceInvitationService } from 'src/engine/core-modules/workspace-invitation/services/workspace-invitation.service';
@@ -25,7 +26,6 @@ import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.
 import { WorkspaceEventEmitter } from 'src/engine/workspace-event-emitter/workspace-event-emitter';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import { assert } from 'src/utils/assert';
-import { WorkspaceMemberProfileProvisioningService } from 'src/engine/core-modules/user-workspace/workspace-member-profile-provisioning.service';
 
 export class UserWorkspaceService extends TypeOrmQueryService<UserWorkspace> {
   constructor(

@@ -5,11 +5,11 @@ import { DataSource } from 'typeorm';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import {
-    findLinkedinUnipileAccountBlockingNewConnectionForProfile,
-    findWhatsappUnipileAccountBlockingNewConnectionForProfile,
-    shouldBlockNewUnipileConnectionForStatus,
-    type UnipileLinkedinAccount,
-    type UnipileWhatsappAccount,
+  findLinkedinUnipileAccountBlockingNewConnectionForProfile,
+  findWhatsappUnipileAccountBlockingNewConnectionForProfile,
+  shouldBlockNewUnipileConnectionForStatus,
+  type UnipileLinkedinAccount,
+  type UnipileWhatsappAccount,
 } from 'twenty-shared';
 
 import { LinkedinUnipileRequestService } from './linkedin-unipile-request.service';
