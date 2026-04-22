@@ -179,7 +179,7 @@ const StyledProgressBanner = styled.div`
   text-align: center;
 `;
 
-const StyledTheOrgLeadershipLoadingOverlay = styled.div`
+const StyledLeadershipLoadingOverlay = styled.div`
   position: absolute;
   inset: 0;
   z-index: 30;
@@ -195,7 +195,7 @@ const StyledTheOrgLeadershipLoadingOverlay = styled.div`
   padding: ${({ theme }) => theme.spacing(3)};
 `;
 
-const StyledTheOrgLeadershipInfoBanner = styled.div`
+const StyledLeadershipInfoBanner = styled.div`
   position: absolute;
   top: ${({ theme }) => theme.spacing(2)};
   left: ${({ theme }) => theme.spacing(2)};
@@ -211,7 +211,7 @@ const StyledTheOrgLeadershipInfoBanner = styled.div`
   box-shadow: ${({ theme }) => theme.boxShadow.light};
 `;
 
-const StyledTheOrgLeadershipBannerLink = styled.button`
+const StyledLeadershipBannerLink = styled.button`
   display: inline;
   margin: 0;
   padding: 0;
@@ -1347,10 +1347,10 @@ export const ArxOrgChart = ({
         )}
         <StyledDiagramBody>
         {isTheOrgEnrichedLoading && (
-          <StyledTheOrgLeadershipLoadingOverlay>
+          <StyledLeadershipLoadingOverlay>
             <StyledSpinner />
             <span>Loading Leadership Org Chart from Public Sources</span>
-          </StyledTheOrgLeadershipLoadingOverlay>
+          </StyledLeadershipLoadingOverlay>
         )}
         {isLoading && (
           <StyledLoadingMessage>Loading org chart...</StyledLoadingMessage>
@@ -1409,7 +1409,7 @@ export const ArxOrgChart = ({
               onSimilarPeople={actions.handleSimilarPeople}
             />
             {theOrgLeadershipBanner && (
-              <StyledTheOrgLeadershipInfoBanner>
+              <StyledLeadershipInfoBanner>
                 {theOrgLeadershipBanner.fullN !== null ? (
                   <span>
                     This Leadership Org Chart shows only{' '}
@@ -1419,12 +1419,12 @@ export const ArxOrgChart = ({
                     full company org chart has{' '}
                     {theOrgLeadershipBanner.fullN.toLocaleString()} profiles —
                     click{' '}
-                    <StyledTheOrgLeadershipBannerLink
+                    <StyledLeadershipBannerLink
                       type="button"
                       onClick={searchControlsProps.onGetAll}
                     >
                       Full org chart
-                    </StyledTheOrgLeadershipBannerLink>{' '}
+                    </StyledLeadershipBannerLink>{' '}
                     above to load it.
                   </span>
                 ) : (
@@ -1433,16 +1433,16 @@ export const ArxOrgChart = ({
                     {theOrgLeadershipBanner.leadershipN.toLocaleString()}{' '}
                     leadership profile
                     {theOrgLeadershipBanner.leadershipN === 1 ? '' : 's'}. Click{' '}
-                    <StyledTheOrgLeadershipBannerLink
+                    <StyledLeadershipBannerLink
                       type="button"
                       onClick={searchControlsProps.onGetAll}
                     >
                       Full org chart
-                    </StyledTheOrgLeadershipBannerLink>{' '}
+                    </StyledLeadershipBannerLink>{' '}
                     above to load the full company org chart.
                   </span>
                 )}
-              </StyledTheOrgLeadershipInfoBanner>
+              </StyledLeadershipInfoBanner>
             )}
             <StyledTopRightActionsOverlay>
               <StyledTopRightActionButton

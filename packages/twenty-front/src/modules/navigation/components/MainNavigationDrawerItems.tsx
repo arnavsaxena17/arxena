@@ -153,7 +153,7 @@ export const MainNavigationDrawerItems = () => {
       >
         <StyledInnerContainer>
           <JobsNavigationDrawerItems />
-          {isOrgChartEnabled && <OrgChartsNavigationDrawerItems />}
+          <OrgChartsNavigationDrawerItems/>
           {/* {!isOrgChartEnabled && ( */}
             {/* <> */}
               <NavigationDrawerOpenedSection />
