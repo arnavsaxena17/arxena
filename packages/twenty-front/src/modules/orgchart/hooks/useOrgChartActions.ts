@@ -13,21 +13,22 @@ import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
 import { Mixpanel } from '~/mixpanel';
 
 import {
-    normalizeCompanyIdForUrl,
-    OrgChartContextAction,
-    OrgChartNodeContextPayload,
+  normalizeCompanyIdForUrl,
+  OrgChartContextAction,
+  OrgChartNodeContextPayload,
 } from 'twenty-orgchart';
 import {
-    isValidLinkedInProfileUrl,
-    NodeState,
-    OrgChartNodeData,
-    OrgchartSearchMode as OrgchartSearchModeValue,
+  isValidLinkedInProfileUrl,
+  NodeState,
+  OrgChartNodeData,
+  OrgchartSearchMode as OrgchartSearchModeValue,
 } from 'twenty-shared';
 import { ContextResultItem } from '../types';
 import {
-    buildBooleanKeywordsForNode,
-    exportContextResultsToCsv,
-    normalizeCandidateItem,
+  buildBooleanKeywordsForNode,
+  exportContextResultsToCsv,
+  extractCompanyDomainFromWebsite,
+  normalizeCandidateItem,
 } from '../utils/orgChartUtils';
 
 /** Subset of {@link OrgChartContextAction} used for org-chart search API `mode`. */
@@ -828,6 +829,7 @@ export const useOrgChartActions = ({
 
     const trimmedLinkedinCompanyUrl = linkedinCompanyUrl?.trim();
     const useUnipileSource = orgChartLinkedinCandidateSource === 'unipile';
+    const companyDomain = extractCompanyDomainFromWebsite(website);
     const body = {
       rawQuery: requirement,
       cleanedQuery: requirement,
@@ -845,6 +847,7 @@ export const useOrgChartActions = ({
       ...(trimmedLinkedinCompanyUrl
         ? { linkedinCompanyUrl: trimmedLinkedinCompanyUrl }
         : {}),
+      ...(companyDomain ? { companyDomain } : {}),
       ...(useUnipileSource && linkedinUnipileAccountId?.trim()
         ? { linkedinUnipileAccountId: linkedinUnipileAccountId.trim() }
         : {}),

@@ -8,8 +8,17 @@ import type {
 } from 'src/engine/core-modules/theorg/types/theorg.types';
 
 import { normalizePersonForPythonOrgChartBuild } from '../utils/python-org-chart-person.util';
+import { OrgChartRecordWorkspaceService } from './org-chart-record-workspace.service';
 import { OrgChartService } from './org-chart.service';
+import { OrgChartS3Service } from './orgchart-s3.service';
 import { PythonOrgChartService } from './python-org-chart.service';
+
+/**
+ * S3 sub-folder under `org-charts/<companyId>/` where TheOrg-enriched charts
+ * are persisted. Keeping it distinct from the default full-company folder
+ * avoids overwriting the original LinkedIn/Apollo-built chart.
+ */
+const THEORG_ENRICHED_S3_VARIANT = 'theorg-enriched';
 
 /**
  * Enriches an existing org chart stored in ES/S3 by fetching the company's
@@ -26,6 +35,8 @@ export class OrgChartTheOrgEnrichmentService {
     private readonly orgChartService: OrgChartService,
     private readonly theOrgService: TheOrgService,
     private readonly pythonOrgChartService: PythonOrgChartService,
+    private readonly orgChartS3Service: OrgChartS3Service,
+    private readonly orgChartRecordWorkspaceService: OrgChartRecordWorkspaceService,
   ) {}
 
   // ─── Public API ────────────────────────────────────────────────────────────
@@ -44,6 +55,17 @@ export class OrgChartTheOrgEnrichmentService {
       theOrgMode?: TheOrgFetchMode;
       country?: string;
       functionRoot?: string;
+      /**
+       * When present, the enriched chart is persisted to S3 under a distinct
+       * sub-folder (`org-charts/<companyId>/theorg-enriched/`) and a matching
+       * `orgChart` CRM record is created so the result is visible in the UI.
+       *
+       * Left optional so internal callers that don't need persistence can
+       * skip providing a token.
+       */
+      apiToken?: string;
+      /** Optional linkedin company URL forwarded to the CRM record. */
+      linkedinCompanyUrl?: string;
     } = {},
   ): Promise<Record<string, unknown>> {
     const theOrgSlug = options.theOrgSlug ?? companyId;
@@ -156,8 +178,8 @@ export class OrgChartTheOrgEnrichmentService {
         : new Error(`Python org chart build failed: ${message}`);
     }
 
-    // 6. Return the rebuilt chart, preserving the original metadata fields.
-    return {
+    // 6. Assemble the rebuilt chart payload, preserving the original metadata fields.
+    const enrichedPayload: Record<string, unknown> = {
       ...existingOrgChart,
       ...(enrichedOrgChart as Record<string, unknown>),
       company_id: companyId,
@@ -171,6 +193,106 @@ export class OrgChartTheOrgEnrichmentService {
       existing_people_count: existingPeople.length,
       total_people_count: allPeople.length,
     };
+
+    // 7. Best-effort: persist the enriched chart to a distinct S3 folder +
+    //    register a matching CRM row so the UI can pick it up. Failures here
+    //    must never break the enriched response.
+    await this.persistEnrichedChart({
+      companyId,
+      resolvedCompanyName,
+      enrichedPayload,
+      enrichedPeople: allPeople,
+      apiToken: options.apiToken,
+      linkedinCompanyUrl: options.linkedinCompanyUrl,
+      functionRoot: options.functionRoot,
+      country: chartCountryHint,
+    });
+
+    return enrichedPayload;
+  }
+
+  /**
+   * Writes the enriched chart + candidate list to
+   * `org-charts/<companyId>/theorg-enriched/` and creates an `orgChart` CRM
+   * record with `chartKind=LEADERSHIP` (the TheOrg dataset is leadership-
+   * centric), scoped by the caller's apiToken. Swallows all errors.
+   */
+  private async persistEnrichedChart(args: {
+    companyId: string;
+    resolvedCompanyName: string;
+    enrichedPayload: Record<string, unknown>;
+    enrichedPeople: Record<string, unknown>[];
+    apiToken?: string;
+    linkedinCompanyUrl?: string;
+    functionRoot?: string;
+    country?: string;
+  }): Promise<void> {
+    const {
+      companyId,
+      resolvedCompanyName,
+      enrichedPayload,
+      enrichedPeople,
+      apiToken,
+      linkedinCompanyUrl,
+      functionRoot,
+      country,
+    } = args;
+
+    try {
+      const persistKey = this.orgChartS3Service.persistedCompanyFolderKey(
+        companyId,
+        resolvedCompanyName,
+      );
+      const s3RelativePath =
+        this.orgChartS3Service.buildRelativeFolderPathFromPersistedKey(
+          persistKey,
+          THEORG_ENRICHED_S3_VARIANT,
+        );
+
+      await Promise.all([
+        this.orgChartS3Service.saveOrgChart(
+          persistKey,
+          enrichedPayload as OrgChartData,
+          THEORG_ENRICHED_S3_VARIANT,
+        ),
+        this.orgChartS3Service.saveCandidates(
+          persistKey,
+          enrichedPeople,
+          THEORG_ENRICHED_S3_VARIANT,
+        ),
+      ]);
+
+      this.logger.log(
+        `Persisted TheOrg-enriched org chart to S3 at ${s3RelativePath} for companyId=${companyId}`,
+      );
+
+      if (!apiToken) {
+        this.logger.log(
+          `Skipping TheOrg-enriched CRM row for companyId=${companyId}: no apiToken supplied`,
+        );
+        return;
+      }
+
+      await this.orgChartRecordWorkspaceService.tryPersistOrgChartRecord({
+        apiToken,
+        mode: 'leadership',
+        searchType: 'classic',
+        resolvedCompanyName,
+        companyId,
+        linkedinCompanyUrl,
+        itemCount: enrichedPeople.length,
+        orgChartS3RelativePath: s3RelativePath,
+        functionRoot,
+        country,
+        chartKindOverride: 'LEADERSHIP',
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to persist TheOrg-enriched org chart for companyId=${companyId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 
   // ─── Private helpers ────────────────────────────────────────────────────────

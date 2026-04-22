@@ -1,5 +1,5 @@
-import { ReactNode } from 'react';
 import styled from '@emotion/styled';
+import { ReactNode } from 'react';
 import { MOBILE_VIEWPORT } from 'twenty-ui';
 
 import { RightDrawer } from '@/ui/layout/right-drawer/components/RightDrawer';
@@ -36,6 +36,7 @@ type LeftContainerProps = {
 const StyledLeftContainer = styled.div<LeftContainerProps>`
   display: flex;
   flex-direction: column;
+  min-width: 0;
   position: relative;
   width: 100%;
 `;

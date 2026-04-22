@@ -1,6 +1,6 @@
 import { createState } from '@ui/utilities/state/utils/createState';
 
-/** Backend `candidateSource`: LinkedIn via Unipile (default), Apify, LinkedIn x-ray, or Apollo.io. */
+/** Backend `candidateSource`: Apollo.io (default), LinkedIn via Unipile, Apify, or LinkedIn x-ray. */
 export type OrgChartLinkedinCandidateSource =
   | 'unipile'
   | 'apify'
@@ -10,5 +10,5 @@ export type OrgChartLinkedinCandidateSource =
 export const orgChartLinkedinCandidateSourceState =
   createState<OrgChartLinkedinCandidateSource>({
     key: 'orgChartLinkedinCandidateSourceState',
-    defaultValue: 'unipile',
+    defaultValue: 'apollo',
   });

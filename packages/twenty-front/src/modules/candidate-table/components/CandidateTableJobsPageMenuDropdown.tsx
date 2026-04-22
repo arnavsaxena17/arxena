@@ -71,24 +71,22 @@ const StyledSegmentedTrack = styled.div`
   gap: ${({ theme }) => theme.spacing(0.5)};
 `;
 
-const StyledSegmentedTrackApolloRow = styled(StyledSegmentedTrack)`
-  margin-top: ${({ theme }) => theme.spacing(1)};
-`;
-
 const StyledSegmentedOption = styled.button<{ isActive: boolean }>`
   flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${({ theme }) => theme.spacing(0.5)};
   border: none;
   border-radius: ${({ theme }) => theme.border.radius.sm};
   cursor: pointer;
   min-height: 32px;
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(0.5)};
   font-size: ${({ theme }) => theme.font.size.sm};
   font-weight: ${({ theme }) => theme.font.weight.medium};
   font-family: inherit;
+  white-space: nowrap;
   transition:
     background 0.15s ease,
     color 0.15s ease,
@@ -253,6 +251,7 @@ export const CandidateTableJobsPageMenuDropdown = ({
                 aria-checked={
                   orgChartLinkedinCandidateSource === 'linkedin_xray'
                 }
+                title="LinkedIn X-Ray"
                 onClick={() => {
                   setOrgChartLinkedinCandidateSource('linkedin_xray');
                 }}
@@ -260,14 +259,13 @@ export const CandidateTableJobsPageMenuDropdown = ({
                 <IconSearch size={iconSm} />
                 X-Ray
               </StyledSegmentedOption>
-            </StyledSegmentedTrack>
-            <StyledSegmentedTrackApolloRow>
               <StyledSegmentedOption
                 type="button"
                 data-testid="org-chart-source-apollo"
                 isActive={orgChartLinkedinCandidateSource === 'apollo'}
                 role="radio"
                 aria-checked={orgChartLinkedinCandidateSource === 'apollo'}
+                title="Apollo"
                 onClick={() => {
                   setOrgChartLinkedinCandidateSource('apollo');
                 }}
@@ -275,7 +273,7 @@ export const CandidateTableJobsPageMenuDropdown = ({
                 <IconApi size={iconSm} />
                 Apollo
               </StyledSegmentedOption>
-            </StyledSegmentedTrackApolloRow>
+            </StyledSegmentedTrack>
             {orgChartLinkedinCandidateSource === 'unipile' && (
               <>
                 <StyledOrgChartSourceLabel>

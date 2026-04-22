@@ -42,8 +42,13 @@ export class OrgChartRecordWorkspaceService {
     params: PersistOrgChartWorkspaceRecordParams,
   ): Promise<void> {
     const { apiToken } = params;
-
+    this.logger.log(
+      `Attempting to persist orgChart CRM row for company="${params.resolvedCompanyName}" mode=${params.mode} searchType=${params.searchType} path=${params.orgChartS3RelativePath}`,
+    );
     if (!apiToken) {
+      this.logger.warn(
+        `Skipping orgChart CRM persist for company="${params.resolvedCompanyName}": no apiToken`,
+      );
       return;
     }
 
@@ -117,13 +122,42 @@ export class OrgChartRecordWorkspaceService {
         input.createdByProfileId = createdByProfileId;
       }
 
-      await this.staticGraphQLService.executeGraphQL(
+      const response = await this.staticGraphQLService.executeGraphQL(
         graphqlToCreateOneOrgChart,
         { input },
         apiToken,
       );
+
+      const gqlResult = this.extractGraphQLResult(response);
+      const gqlErrors = gqlResult?.errors;
+
+      if (Array.isArray(gqlErrors) && gqlErrors.length > 0) {
+        const summary = gqlErrors
+          .map((err, idx) => {
+            const message =
+              err && typeof err === 'object' && 'message' in err
+                ? String((err as { message?: unknown }).message ?? 'unknown')
+                : String(err);
+            const path =
+              err && typeof err === 'object' && 'path' in err
+                ? JSON.stringify((err as { path?: unknown }).path)
+                : undefined;
+            return `#${idx + 1} ${message}${path ? ` (path=${path})` : ''}`;
+          })
+          .join(' | ');
+
+        this.logger.warn(
+          `OrgChart CRM row NOT persisted for company="${params.resolvedCompanyName}" chartKind=${chartKind} path=${params.orgChartS3RelativePath}: ${summary}`,
+        );
+        return;
+      }
+
+      const createdId = this.extractCreatedOrgChartId(gqlResult);
+
       this.logger.log(
-        `Persisted orgChart row for company="${params.resolvedCompanyName}" path=${params.orgChartS3RelativePath}`,
+        `Persisted orgChart row for company="${params.resolvedCompanyName}" chartKind=${chartKind} path=${params.orgChartS3RelativePath}${
+          createdId ? ` id=${createdId}` : ''
+        }`,
       );
     } catch (error) {
       this.logger.warn(
@@ -132,6 +166,40 @@ export class OrgChartRecordWorkspaceService {
         }`,
       );
     }
+  }
+
+  /**
+   * `StaticGraphQLService.executeGraphQL` wraps the raw `graphql()` result as
+   * `{ data: <rawResult>, metrics: {...} }` and, in particular, never throws
+   * when the GraphQL response itself contains `errors`. We unwrap it here so
+   * the caller can detect (and log) actual mutation failures.
+   */
+  private extractGraphQLResult(
+    response: unknown,
+  ): { data?: unknown; errors?: unknown[] } | undefined {
+    if (!response || typeof response !== 'object') {
+      return undefined;
+    }
+    const maybe = (response as { data?: unknown }).data;
+    if (!maybe || typeof maybe !== 'object') {
+      return undefined;
+    }
+    return maybe as { data?: unknown; errors?: unknown[] };
+  }
+
+  private extractCreatedOrgChartId(
+    gqlResult: { data?: unknown } | undefined,
+  ): string | undefined {
+    const data = gqlResult?.data;
+    if (!data || typeof data !== 'object') {
+      return undefined;
+    }
+    const created = (data as { createOrgChart?: unknown }).createOrgChart;
+    if (!created || typeof created !== 'object') {
+      return undefined;
+    }
+    const id = (created as { id?: unknown }).id;
+    return typeof id === 'string' ? id : undefined;
   }
 
   private mapModeToChartKind(

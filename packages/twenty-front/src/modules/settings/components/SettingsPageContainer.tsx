@@ -9,9 +9,20 @@ const StyledSettingsPageContainer = styled.div<{
   width?: number;
   fullWidth?: boolean;
 }>`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(8)};
+  display: ${({ fullWidth }) => (fullWidth ? 'grid' : 'flex')};
+  ${({ fullWidth, theme }) =>
+    fullWidth
+      ? `
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: min-content;
+    row-gap: ${theme.spacing(8)};
+    max-width: 100%;
+    min-width: 0;
+  `
+      : `
+    flex-direction: column;
+    gap: ${theme.spacing(8)};
+  `}
   overflow: auto;
   padding: ${({ theme }) => theme.spacing(6, 8, 8)};
   width: ${({ width, fullWidth }) => {

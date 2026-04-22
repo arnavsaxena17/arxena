@@ -8,20 +8,59 @@ import { FileStorageService } from 'src/engine/core-modules/file-storage/file-st
 
 const ORG_CHART_S3_FOLDER = 'org-charts';
 
+/**
+ * Optional sub-folder appended under `org-charts/<companyId>/` so that
+ * variants for the same company (full-company, leadership, theorg-enriched,
+ * …) don't overwrite each other.
+ *
+ * When omitted the S3 path keeps its legacy shape (`org-charts/<companyId>/`)
+ * — this is what the full-company LinkedIn/Apollo builders have always used
+ * and what the credit-transaction bookkeeping still keys off, so leaving the
+ * default unchanged preserves backward compatibility.
+ */
+export type OrgChartS3Variant = string | undefined;
+
 @Injectable()
 export class OrgChartS3Service {
   private readonly logger = new Logger(OrgChartS3Service.name);
 
   constructor(private readonly fileStorageService: FileStorageService) {}
 
-  private normalizeCompanyId(companyId: string): string {
+  private normalizeSegment(segment: string, fallback = 'unknown'): string {
     return (
-      companyId
+      segment
         .trim()
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_+|_+$/g, '') || 'unknown'
+        .replace(/^_+|_+$/g, '') || fallback
     );
+  }
+
+  private normalizeCompanyId(companyId: string): string {
+    return this.normalizeSegment(companyId);
+  }
+
+  private normalizeVariant(variant: OrgChartS3Variant): string | undefined {
+    if (typeof variant !== 'string') {
+      return undefined;
+    }
+    const trimmed = variant.trim();
+    if (!trimmed) {
+      return undefined;
+    }
+    return this.normalizeSegment(trimmed, 'variant');
+  }
+
+  private buildFolderPath(
+    companyId: string,
+    variant: OrgChartS3Variant,
+  ): string {
+    const normalizedId = this.normalizeCompanyId(companyId);
+    const normalizedVariant = this.normalizeVariant(variant);
+
+    return normalizedVariant
+      ? `${ORG_CHART_S3_FOLDER}/${normalizedId}/${normalizedVariant}`
+      : `${ORG_CHART_S3_FOLDER}/${normalizedId}`;
   }
 
   /**
@@ -40,27 +79,35 @@ export class OrgChartS3Service {
 
   /**
    * Folder path under the file-storage root (matches metadata.orgChartS3RelativePath on debits).
+   *
+   * When {@link variant} is provided, a sub-folder is appended so different
+   * chart kinds for the same company live in distinct locations.
    */
-  buildRelativeFolderPathFromPersistedKey(persistedKey: string): string {
-    return `${ORG_CHART_S3_FOLDER}/${this.normalizeCompanyId(persistedKey)}`;
+  buildRelativeFolderPathFromPersistedKey(
+    persistedKey: string,
+    variant?: OrgChartS3Variant,
+  ): string {
+    return this.buildFolderPath(persistedKey, variant);
   }
 
-  async saveOrgChart(companyId: string, orgChart: OrgChartData): Promise<void> {
-    const normalizedId = this.normalizeCompanyId(companyId);
+  async saveOrgChart(
+    companyId: string,
+    orgChart: OrgChartData,
+    variant?: OrgChartS3Variant,
+  ): Promise<void> {
+    const folder = this.buildFolderPath(companyId, variant);
 
     try {
       await this.fileStorageService.write({
         file: Buffer.from(JSON.stringify(orgChart)),
         name: 'orgchart.json',
-        folder: `${ORG_CHART_S3_FOLDER}/${normalizedId}`,
+        folder,
         mimeType: 'application/json',
       });
-      this.logger.log(
-        `Saved org chart to S3: ${ORG_CHART_S3_FOLDER}/${normalizedId}/orgchart.json`,
-      );
+      this.logger.log(`Saved org chart to S3: ${folder}/orgchart.json`);
     } catch (error) {
       this.logger.error(
-        `Failed to save org chart to S3 for companyId=${companyId}`,
+        `Failed to save org chart to S3 for companyId=${companyId} variant=${variant ?? 'default'}`,
         error,
       );
     }
@@ -69,71 +116,78 @@ export class OrgChartS3Service {
   async saveCandidates(
     companyId: string,
     candidates: unknown[],
+    variant?: OrgChartS3Variant,
   ): Promise<void> {
-    const normalizedId = this.normalizeCompanyId(companyId);
+    const folder = this.buildFolderPath(companyId, variant);
 
     try {
       await this.fileStorageService.write({
         file: Buffer.from(JSON.stringify(candidates)),
         name: 'candidates.json',
-        folder: `${ORG_CHART_S3_FOLDER}/${normalizedId}`,
+        folder,
         mimeType: 'application/json',
       });
       this.logger.log(
-        `Saved ${candidates.length} candidates to S3: ${ORG_CHART_S3_FOLDER}/${normalizedId}/candidates.json`,
+        `Saved ${candidates.length} candidates to S3: ${folder}/candidates.json`,
       );
     } catch (error) {
       this.logger.error(
-        `Failed to save candidates to S3 for companyId=${companyId}`,
+        `Failed to save candidates to S3 for companyId=${companyId} variant=${variant ?? 'default'}`,
         error,
       );
     }
   }
 
-  async getOrgChart(companyId: string): Promise<OrgChartData | null> {
-    const normalizedId = this.normalizeCompanyId(companyId);
+  async getOrgChart(
+    companyId: string,
+    variant?: OrgChartS3Variant,
+  ): Promise<OrgChartData | null> {
+    const folder = this.buildFolderPath(companyId, variant);
 
     try {
       const stream = await this.fileStorageService.read({
-        folderPath: `${ORG_CHART_S3_FOLDER}/${normalizedId}`,
+        folderPath: folder,
         filename: 'orgchart.json',
       });
       const content = await this.streamToString(stream);
       const parsed = JSON.parse(content) as OrgChartData;
 
       this.logger.log(
-        `Loaded org chart from S3 for companyId=${companyId} (normalizedId=${normalizedId})`,
+        `Loaded org chart from S3 for companyId=${companyId} variant=${variant ?? 'default'} (folder=${folder})`,
       );
 
       return parsed;
     } catch (error) {
       this.logger.log(
-        `No org chart found in S3 for companyId=${companyId}: ${(error as Error).message}`,
+        `No org chart found in S3 for companyId=${companyId} variant=${variant ?? 'default'}: ${(error as Error).message}`,
       );
 
       return null;
     }
   }
 
-  async getCandidates(companyId: string): Promise<unknown[] | null> {
-    const normalizedId = this.normalizeCompanyId(companyId);
+  async getCandidates(
+    companyId: string,
+    variant?: OrgChartS3Variant,
+  ): Promise<unknown[] | null> {
+    const folder = this.buildFolderPath(companyId, variant);
 
     try {
       const stream = await this.fileStorageService.read({
-        folderPath: `${ORG_CHART_S3_FOLDER}/${normalizedId}`,
+        folderPath: folder,
         filename: 'candidates.json',
       });
       const content = await this.streamToString(stream);
       const parsed = JSON.parse(content) as unknown[];
 
       this.logger.log(
-        `Loaded ${parsed.length} candidates from S3 for companyId=${companyId}`,
+        `Loaded ${parsed.length} candidates from S3 for companyId=${companyId} variant=${variant ?? 'default'}`,
       );
 
       return parsed;
     } catch (error) {
       this.logger.log(
-        `No candidates found in S3 for companyId=${companyId}: ${(error as Error).message}`,
+        `No candidates found in S3 for companyId=${companyId} variant=${variant ?? 'default'}: ${(error as Error).message}`,
       );
 
       return null;
@@ -143,9 +197,19 @@ export class OrgChartS3Service {
   /**
    * Removes orgchart.json / candidates.json (and folder prefix objects) for a persisted company key.
    * Same key as {@link saveOrgChart} / {@link persistedCompanyFolderKey}.
+   *
+   * When {@link variant} is provided, only that sub-folder is deleted. When
+   * omitted, only the legacy default folder is removed (variant sub-folders
+   * are left untouched on purpose).
    */
-  async deletePersistedCompanyFolder(persistedKey: string): Promise<void> {
-    const folderPath = this.buildRelativeFolderPathFromPersistedKey(persistedKey);
+  async deletePersistedCompanyFolder(
+    persistedKey: string,
+    variant?: OrgChartS3Variant,
+  ): Promise<void> {
+    const folderPath = this.buildRelativeFolderPathFromPersistedKey(
+      persistedKey,
+      variant,
+    );
     try {
       await this.fileStorageService.delete({ folderPath });
       this.logger.log(`Deleted org chart S3 folder: ${folderPath}`);

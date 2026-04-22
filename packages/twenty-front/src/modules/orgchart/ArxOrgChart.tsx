@@ -7,6 +7,8 @@ import { useDebouncedCallback } from 'use-debounce';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
+import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
+import { orgChartLinkedInSearchTypeState } from '@/orgchart/states/orgChartLinkedInSearchTypeState';
 import { AppPath } from '@/types/AppPath';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -391,6 +393,13 @@ export const ArxOrgChart = ({
 
   const tokenPair = useRecoilValue(tokenPairState);
   const accessToken = tokenPair?.accessToken?.token ?? undefined;
+
+  const orgChartLinkedinCandidateSource = useRecoilValue(
+    orgChartLinkedinCandidateSourceState,
+  );
+  const orgChartLinkedInSearchType = useRecoilValue(
+    orgChartLinkedInSearchTypeState,
+  );
   const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
   const showNodeCapabilitiesHoverHint =
     process.env.REACT_APP_EXPERIMENTAL_ORGCHART_NODE_HOVER_HINTS === 'true';
@@ -541,11 +550,28 @@ export const ArxOrgChart = ({
           ? `${toTitleCase(country)} (${filterOptions.countryPercentLabels[country]})`
           : toTitleCase(country);
 
+    const linkedinSearchTypeLabel =
+      orgChartLinkedInSearchType === 'sales_navigator'
+        ? t`Sales Navigator`
+        : orgChartLinkedInSearchType === 'recruiter'
+          ? t`LinkedIn Recruiter`
+          : t`LinkedIn Classic`;
+
+    const dataSourceLabel =
+      orgChartLinkedinCandidateSource === 'unipile'
+        ? t`LinkedIn · ${linkedinSearchTypeLabel}`
+        : orgChartLinkedinCandidateSource === 'apify'
+          ? t`Apify`
+          : orgChartLinkedinCandidateSource === 'linkedin_xray'
+            ? t`LinkedIn X-Ray`
+            : t`Apollo`;
+
     return {
       functionLabel,
       levelsLabel: t`All levels`,
       geographyLabel,
       businessDivisionLabel: bd.length > 0 ? bd : t`Not specified`,
+      dataSourceLabel,
     };
   }, [
     businessDivisionQuery,
@@ -553,6 +579,8 @@ export const ArxOrgChart = ({
     selectedFunctionRoot,
     filterOptions.countryPercentLabels,
     filterOptions.functionRootPercentLabels,
+    orgChartLinkedinCandidateSource,
+    orgChartLinkedInSearchType,
     t,
   ]);
 
@@ -596,6 +624,14 @@ export const ArxOrgChart = ({
             </StyledOrgChartConfirmDt>
             <StyledOrgChartConfirmDd>
               {searchConfirmSummary.businessDivisionLabel}
+            </StyledOrgChartConfirmDd>
+          </StyledOrgChartConfirmRow>
+          <StyledOrgChartConfirmRow>
+            <StyledOrgChartConfirmDt>
+              <Trans>Data source</Trans>
+            </StyledOrgChartConfirmDt>
+            <StyledOrgChartConfirmDd>
+              {searchConfirmSummary.dataSourceLabel}
             </StyledOrgChartConfirmDd>
           </StyledOrgChartConfirmRow>
         </StyledOrgChartConfirmRows>
@@ -645,6 +681,14 @@ export const ArxOrgChart = ({
             </StyledOrgChartConfirmDt>
             <StyledOrgChartConfirmDd>
               {searchConfirmSummary.businessDivisionLabel}
+            </StyledOrgChartConfirmDd>
+          </StyledOrgChartConfirmRow>
+          <StyledOrgChartConfirmRow>
+            <StyledOrgChartConfirmDt>
+              <Trans>Data source</Trans>
+            </StyledOrgChartConfirmDt>
+            <StyledOrgChartConfirmDd>
+              {searchConfirmSummary.dataSourceLabel}
             </StyledOrgChartConfirmDd>
           </StyledOrgChartConfirmRow>
         </StyledOrgChartConfirmRows>
@@ -1368,7 +1412,7 @@ export const ArxOrgChart = ({
               <StyledTheOrgLeadershipInfoBanner>
                 {theOrgLeadershipBanner.fullN !== null ? (
                   <span>
-                    This Leadership Org Chart from TheOrg shows only{' '}
+                    This Leadership Org Chart shows only{' '}
                     {theOrgLeadershipBanner.leadershipN.toLocaleString()}{' '}
                     leadership profile
                     {theOrgLeadershipBanner.leadershipN === 1 ? '' : 's'}. The
@@ -1385,7 +1429,7 @@ export const ArxOrgChart = ({
                   </span>
                 ) : (
                   <span>
-                    This Leadership Org Chart from TheOrg shows only{' '}
+                    This Leadership Org Chart shows only{' '}
                     {theOrgLeadershipBanner.leadershipN.toLocaleString()}{' '}
                     leadership profile
                     {theOrgLeadershipBanner.leadershipN === 1 ? '' : 's'}. Click{' '}

@@ -29,6 +29,7 @@ import { TransformedCandidateForTable } from 'src/engine/core-modules/candidate-
 import { LinkedinXrayTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-xray-transformer.service';
 import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-sourcing/services/orgchart-progress-redis.service';
 import { linkedInPeopleSearchResultMatchesTargetCompany } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-orgchart-company-match.util';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import {
   LinkedInSearchService,
@@ -78,6 +79,11 @@ type SearchOrgchartLinkedInBody = {
   selectedNodeStdScopes?: Array<{ stdFunction?: string; stdGrade?: string }>;
   candidateSource?: OrgChartLinkedinCandidateSource;
   linkedinCompanyUrl?: string;
+  /** Primary email/web domain for the target company (e.g. "litify.com"). When
+   *  ORGCHART_APOLLO_SKIP_RESOLUTION is enabled, this is passed directly as
+   *  q_organization_domains_list[] on Apollo People Search so the flow skips
+   *  the /mixed_companies/search resolution hop. */
+  companyDomain?: string;
   apifyMaxItems?: number;
   profileScraperMode?: string;
   linkedinUnipileAccountId?: string;
@@ -124,6 +130,7 @@ export class OrgChartLinkedInBuildService {
     private readonly linkedinXrayTransformerService: LinkedinXrayTransformerService,
     private readonly apolloIoRestService: ApolloIoRestService,
     private readonly apolloPeopleSearchTransformer: ApolloPeopleSearchTransformerService,
+    private readonly environmentService: EnvironmentService,
     @InjectMessageQueue(MessageQueue.orgchartApifyQueue)
     private readonly orgchartApifyQueue: MessageQueueService,
   ) {}
@@ -645,39 +652,69 @@ export class OrgChartLinkedInBuildService {
       args.body.linkedinCompanyUrl?.trim() ||
       undefined;
 
-    await this.emitOrgchartSearchProgressForToken(args.apiToken, {
-      requestId: args.requestId,
-      mode: args.mode,
-      searchType: args.searchType,
-      companyName: args.resolvedCompanyName,
-      event: 'status',
-      data: {
-        message: 'Resolving company on Apollo…',
-        candidateSource: 'apollo',
-      },
-    });
+    const skipApolloOrgResolution = this.environmentService.get(
+      'ORGCHART_APOLLO_SKIP_RESOLUTION',
+    );
+    const companyDomain = args.body.companyDomain?.trim().toLowerCase();
 
-    const { organizationId: resolvedOrgId, linkedinUrl: resolvedLinkedinUrl } =
-      await this.apolloIoRestService.resolveOrganizationIdForOrgChart({
-        candidateId: args.companyId,
+    let resolvedOrgId: string | undefined;
+    let resolvedLinkedinUrl: string | undefined;
+    let resolvedOrgDomain: string | undefined;
+
+    if (skipApolloOrgResolution) {
+      if (!companyDomain) {
+        this.logger.warn(
+          `Apollo org chart: ORGCHART_APOLLO_SKIP_RESOLUTION is enabled but no companyDomain was provided (company="${args.resolvedCompanyName}")`,
+        );
+        throw new HttpException(
+          `Apollo org chart: companyDomain is required when ORGCHART_APOLLO_SKIP_RESOLUTION is enabled`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      this.logger.log(
+        `Apollo org chart: skipping /mixed_companies/search resolution (company="${args.resolvedCompanyName}", domain="${companyDomain}")`,
+      );
+      resolvedOrgDomain = companyDomain;
+    } else {
+      await this.emitOrgchartSearchProgressForToken(args.apiToken, {
+        requestId: args.requestId,
+        mode: args.mode,
+        searchType: args.searchType,
         companyName: args.resolvedCompanyName,
-        linkedinCompanyUrl,
+        event: 'status',
+        data: {
+          message: 'Resolving company on Apollo…',
+          candidateSource: 'apollo',
+        },
       });
 
-    if (!resolvedOrgId) {
-      this.logger.warn(
-        `Apollo org chart: unable to resolve organization_id for company="${args.resolvedCompanyName}" (candidateId=${args.companyId ?? 'none'}, linkedin=${linkedinCompanyUrl ?? 'none'})`,
-      );
-      throw new HttpException(
-        `Apollo org chart: could not find Apollo organization for "${args.resolvedCompanyName}"`,
-        HttpStatus.NOT_FOUND,
-      );
+      const resolved =
+        await this.apolloIoRestService.resolveOrganizationIdForOrgChart({
+          candidateId: args.companyId,
+          companyName: args.resolvedCompanyName,
+          linkedinCompanyUrl,
+          domain: companyDomain,
+        });
+      resolvedOrgId = resolved.organizationId;
+      resolvedLinkedinUrl = resolved.linkedinUrl;
+      resolvedOrgDomain = resolved.primaryDomain?.toLowerCase();
+
+      if (!resolvedOrgId) {
+        this.logger.warn(
+          `Apollo org chart: unable to resolve organization_id for company="${args.resolvedCompanyName}" (candidateId=${args.companyId ?? 'none'}, linkedin=${linkedinCompanyUrl ?? 'none'})`,
+        );
+        throw new HttpException(
+          `Apollo org chart: could not find Apollo organization for "${args.resolvedCompanyName}"`,
+          HttpStatus.NOT_FOUND,
+        );
+      }
     }
 
     const apolloParams = this.buildApolloPeopleSearchParams({
       body: args.body,
       mode: args.mode,
       organizationId: resolvedOrgId,
+      organizationDomain: resolvedOrgDomain,
       jobTitles: args.jobTitles,
     });
 
@@ -749,10 +786,11 @@ export class OrgChartLinkedInBuildService {
   private buildApolloPeopleSearchParams(args: {
     body: SearchOrgchartLinkedInBody;
     mode: OrgchartSearchMode;
-    organizationId: string;
+    organizationId?: string;
+    organizationDomain?: string;
     jobTitles: string[];
   }): ApolloPeopleSearchParams {
-    const { body, mode, organizationId, jobTitles } = args;
+    const { body, mode, organizationId, organizationDomain, jobTitles } = args;
 
     const trimmedCountry =
       typeof body.country === 'string' ? body.country.trim() : '';
@@ -804,18 +842,33 @@ export class OrgChartLinkedInBuildService {
         : undefined;
 
     // Safety: only pass organization_ids when it is a valid Apollo ObjectId.
-    const organization_ids = isApolloOrganizationId(organizationId)
-      ? [organizationId]
-      : undefined;
+    const organization_ids =
+      organizationId && isApolloOrganizationId(organizationId)
+        ? [organizationId]
+        : undefined;
+
+    // When no Apollo ObjectId is known (skip-resolution path), fall back to
+    // q_organization_domains_list[] which Apollo People Search also accepts.
+    const normalizedDomain = organizationDomain?.trim().toLowerCase();
+    const q_organization_domains_list =
+      !organization_ids && normalizedDomain ? [normalizedDomain] : undefined;
+
+    if (!organization_ids && !q_organization_domains_list) {
+      throw new HttpException(
+        'Apollo org chart: cannot build People Search without either an Apollo organization_id or a company domain',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
     this.logger.log(
-      `Apollo search params (mode=${mode}, organization_id=${organizationId}): ` +
+      `Apollo search params (mode=${mode}, organization_id=${organizationId ?? 'none'}, domain=${normalizedDomain ?? 'none'}): ` +
         `titles=${person_titles?.length ?? 0}, seniorities=${person_seniorities?.length ?? 0}, ` +
         `location=${person_locations?.[0] ?? 'any'}, keywords="${q_keywords ?? ''}"`,
     );
 
     return {
       organization_ids,
+      q_organization_domains_list,
       person_titles,
       person_seniorities,
       person_locations,

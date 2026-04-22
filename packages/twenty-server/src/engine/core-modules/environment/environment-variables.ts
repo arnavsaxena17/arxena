@@ -2,17 +2,17 @@ import { LogLevel, Logger } from '@nestjs/common';
 
 import { plainToClass } from 'class-transformer';
 import {
-  IsBoolean,
-  IsDefined,
-  IsEnum,
-  IsIn,
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsUUID,
-  IsUrl,
-  ValidateIf,
-  validateSync,
+    IsBoolean,
+    IsDefined,
+    IsEnum,
+    IsIn,
+    IsNumber,
+    IsOptional,
+    IsString,
+    IsUUID,
+    IsUrl,
+    ValidateIf,
+    validateSync,
 } from 'class-validator';
 
 import { EmailDriver } from 'src/engine/core-modules/email/interfaces/email.interface';
@@ -1414,6 +1414,16 @@ export class EnvironmentVariables {
   @IsString()
   @IsUrl({ require_tld: false, require_protocol: true })
   APOLLO_WEBHOOK_URL?: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'When true, the Apollo org-chart flow skips the /mixed_companies/search organization resolution step and uses the caller-supplied companyDomain directly as q_organization_domains_list[] on Apollo People Search.',
+  })
+  @CastToBoolean()
+  @IsOptional()
+  @IsBoolean()
+  ORGCHART_APOLLO_SKIP_RESOLUTION = false;
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.Other,

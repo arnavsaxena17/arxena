@@ -6,6 +6,30 @@ import {
 
 import type { ContextResultItem } from '../types';
 
+/**
+ * Extract a bare domain (e.g. "litify.com") from a website URL/string.
+ *
+ * Mirrors {@link OrgChartCompanyInfo}'s display helper so the value rendered in
+ * the company header and the value sent to the server (`companyDomain` on
+ * `/org-chart/search`) always match.
+ *
+ * Returns undefined when the input cannot be parsed into a hostname.
+ */
+export const extractCompanyDomainFromWebsite = (
+  site?: string | null,
+): string | undefined => {
+  if (!site?.trim()) return undefined;
+  try {
+    const withProtocol = site.startsWith('http') ? site : `https://${site}`;
+    const { hostname } = new URL(withProtocol);
+    const bare = hostname.replace(/^www\./u, '').trim().toLowerCase();
+    return bare.length > 0 ? bare : undefined;
+  } catch {
+    const trimmed = site.trim().toLowerCase();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }
+};
+
 export const normalizeCandidateItem = (
   raw: Record<string, unknown>,
   index: number,

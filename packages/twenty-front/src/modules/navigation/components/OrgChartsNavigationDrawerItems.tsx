@@ -54,7 +54,7 @@ const OrgChartsNavigationDrawerItemsContent = ({
   const { records } = useFindManyRecords<OrgChartNavRecord>({
     objectNameSingular: 'orgChart',
     filter: {
-      createdById: {
+      recruiterId: {
         eq: workspaceMemberId,
       },
     },

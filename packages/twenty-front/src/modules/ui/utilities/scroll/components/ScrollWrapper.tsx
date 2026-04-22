@@ -4,8 +4,8 @@ import { useOverlayScrollbars } from 'overlayscrollbars-react';
 import { useEffect, useRef } from 'react';
 
 import {
-  ContextProviderName,
-  getContextByProviderName,
+    ContextProviderName,
+    getContextByProviderName,
 } from '@/ui/utilities/scroll/contexts/ScrollWrapperContexts';
 
 import { ScrollWrapperComponentInstanceContext } from '@/ui/utilities/scroll/states/contexts/ScrollWrapperComponentInstanceContext';
@@ -32,6 +32,7 @@ const StyledScrollWrapper = styled.div<{
         return 'fit-content';
     }
   }};
+  min-width: 0;
   width: 100%;
 
   .os-scrollbar-handle {
@@ -71,6 +72,8 @@ const StyledScrollWrapper = styled.div<{
 
 const StyledInnerContainer = styled.div`
   height: 100%;
+  min-width: 0;
+  width: 100%;
 `;
 
 export type ScrollWrapperProps = {

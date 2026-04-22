@@ -12,12 +12,25 @@ import {
     IconVariable,
 } from 'twenty-ui';
 
+const StyledAdminContentWrapper = styled.div`
+  display: grid;
+  gap: ${({ theme }) => theme.spacing(8)};
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+`;
+
 const StyledTabListContainer = styled.div`
   align-items: center;
   border-bottom: ${({ theme }) => `1px solid ${theme.border.color.light}`};
   box-sizing: border-box;
   display: flex;
   gap: ${({ theme }) => theme.spacing(2)};
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
 `;
 
 export const SettingsAdminContent = () => {
@@ -60,7 +73,7 @@ export const SettingsAdminContent = () => {
   ];
 
   return (
-    <>
+    <StyledAdminContentWrapper>
       <StyledTabListContainer>
         <TabList
           tabs={tabs}
@@ -69,6 +82,6 @@ export const SettingsAdminContent = () => {
         />
       </StyledTabListContainer>
       <SettingsAdminTabContent />
-    </>
+    </StyledAdminContentWrapper>
   );
 };

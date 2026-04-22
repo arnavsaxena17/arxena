@@ -42,7 +42,7 @@ export const SettingsNavigationDrawerItems = () => {
     });
   };
 
-  console.log('currentPathName:', currentPathName);
+console.log('currentPathName:', currentPathName);
 console.log("settingsNavigationItems::", settingsNavigationItems)
 console.log("settingsNavigationItems::", settingsNavigationItems)
   return (

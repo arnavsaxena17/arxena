@@ -919,6 +919,7 @@ export class OrgChartController {
     }
 
     const normalizedCompanyId = this.normalizeCompanyId(companyId);
+    const apiToken = this.getAuthToken(req);
 
     try {
       const result =
@@ -935,6 +936,7 @@ export class OrgChartController {
                 : undefined,
             country,
             functionRoot,
+            apiToken,
           },
         );
       return {
