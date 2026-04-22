@@ -1,11 +1,11 @@
 import { FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
 import {
-  FieldActorForInputValue,
-  FieldAddressValue,
-  FieldEmailsValue,
-  FieldLinksValue,
-  FieldPhonesValue,
-  FieldRichTextV2Value,
+    FieldActorForInputValue,
+    FieldAddressValue,
+    FieldEmailsValue,
+    FieldLinksValue,
+    FieldPhonesValue,
+    FieldRichTextV2Value,
 } from '@/object-record/record-field/types/FieldMetadata';
 import { COMPOSITE_FIELD_IMPORT_LABELS } from '@/object-record/spreadsheet-import/constants/CompositeFieldImportLabels';
 import { ImportedStructuredRow } from '@/spreadsheet-import/types';
@@ -15,6 +15,10 @@ import { z } from 'zod';
 import { FieldMetadataType } from '~/generated-metadata/graphql';
 import { castToString } from '~/utils/castToString';
 import { convertCurrencyAmountToCurrencyMicros } from '~/utils/convertCurrencyToCurrencyMicros';
+import {
+    isLinkedInUrl,
+    normalizeLinkedInUrl,
+} from '~/utils/linkedinUrlUtils';
 
 type BuildRecordFromImportedStructuredRowArgs = {
   importedStructuredRow: ImportedStructuredRow<any>;
@@ -128,11 +132,15 @@ export const buildRecordFromImportedStructuredRow = ({
             importedStructuredRow[`${primaryLinkUrlLabel} (${field.name})`],
           )
         ) {
+          const rawPrimaryLinkUrl = castToString(
+            importedStructuredRow[`${primaryLinkUrlLabel} (${field.name})`],
+          );
+          const primaryLinkUrl = isLinkedInUrl(rawPrimaryLinkUrl ?? '')
+            ? normalizeLinkedInUrl(rawPrimaryLinkUrl ?? '')
+            : rawPrimaryLinkUrl;
           recordToBuild[field.name] = {
             primaryLinkLabel: '',
-            primaryLinkUrl: castToString(
-              importedStructuredRow[`${primaryLinkUrlLabel} (${field.name})`],
-            ),
+            primaryLinkUrl,
             secondaryLinks: [],
           } satisfies FieldLinksValue;
         }

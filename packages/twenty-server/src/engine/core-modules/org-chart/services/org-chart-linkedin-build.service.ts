@@ -730,12 +730,21 @@ export class OrgChartLinkedInBuildService {
       },
     });
 
+    // Apollo People Search allows per_page ≤ 100 and page ≤ 500.
+    // We cap total records we pull per org-chart search at APOLLO_MAX_RECORDS
+    // (5 pages × 100 per page = 500) to protect Apollo credit usage and
+    // downstream org-chart build latency. If Apollo reports more entries we
+    // still stop at this ceiling.
+    const APOLLO_PER_PAGE = 100;
+    const APOLLO_MAX_RECORDS = 500;
+    const APOLLO_MAX_PAGES = Math.ceil(APOLLO_MAX_RECORDS / APOLLO_PER_PAGE);
+
     const merged: TransformedCandidateForTable[] = [];
-    for (let page = 1; page <= 10; page++) {
+    for (let page = 1; page <= APOLLO_MAX_PAGES; page++) {
       const raw = await this.apolloIoRestService.peopleSearch({
         ...apolloParams,
         page,
-        per_page: 100,
+        per_page: APOLLO_PER_PAGE,
       });
       const rows =
         this.apolloPeopleSearchTransformer.transformApolloPeopleToTableRows(
@@ -748,13 +757,43 @@ export class OrgChartLinkedInBuildService {
           },
         );
       merged.push(...rows);
+
       const pag = raw.pagination as
-        | { page?: number; total_pages?: number }
+        | {
+            page?: number;
+            per_page?: number;
+            total_entries?: number;
+            total_pages?: number;
+          }
         | undefined;
-      if (!pag?.total_pages || page >= (pag.total_pages ?? 0)) {
+      this.logger.log(
+        `Apollo peopleSearch page=${page} returnedRows=${rows.length} totalSoFar=${merged.length} ` +
+          `pagination=${pag ? JSON.stringify(pag) : 'none'} (cap=${APOLLO_MAX_RECORDS})`,
+      );
+
+      if (merged.length >= APOLLO_MAX_RECORDS) {
+        if (merged.length > APOLLO_MAX_RECORDS) {
+          merged.length = APOLLO_MAX_RECORDS;
+        }
+        this.logger.log(
+          `Apollo peopleSearch reached record cap=${APOLLO_MAX_RECORDS} at page=${page}; stopping pagination`,
+        );
         break;
       }
+
       if (rows.length === 0) {
+        break;
+      }
+
+      const totalPages =
+        typeof pag?.total_pages === 'number' ? pag.total_pages : undefined;
+      if (totalPages !== undefined && page >= totalPages) {
+        break;
+      }
+
+      // Some Apollo responses omit pagination metadata; fall back to stopping
+      // as soon as we receive a short page (less than the requested per_page).
+      if (totalPages === undefined && rows.length < APOLLO_PER_PAGE) {
         break;
       }
     }

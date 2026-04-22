@@ -57,7 +57,39 @@ const StyledDefaultContainer = styled.div`
   text-overflow: ellipsis;
 `;
 
+const StyledErrorsCell = styled.div`
+  align-items: center;
+  color: ${({ theme }) => theme.color.red};
+  display: flex;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  gap: ${({ theme }) => theme.spacing(1)};
+  min-height: 100%;
+  min-width: 100%;
+  overflow: hidden;
+  padding: ${({ theme }) => theme.spacing(1)} 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const StyledErrorsCellOk = styled(StyledErrorsCell)`
+  color: ${({ theme }) => theme.color.green};
+`;
+
+const StyledErrorsCellWarning = styled(StyledErrorsCell)`
+  color: ${({ theme }) => theme.color.yellow};
+`;
+
+const StyledErrorBadge = styled.span`
+  background-color: ${({ theme }) => theme.color.red};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  color: ${({ theme }) => theme.font.color.inverted};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  padding: 0 ${({ theme }) => theme.spacing(1)};
+`;
+
 const SELECT_COLUMN_KEY = 'select-row';
+const ERRORS_COLUMN_KEY = '__errors-column';
 
 export const generateColumns = <T extends string>(
   fields: Fields<T>,
@@ -91,6 +123,99 @@ export const generateColumns = <T extends string>(
           />
         </StyledCheckboxContainer>
       );
+    },
+  },
+  {
+    key: ERRORS_COLUMN_KEY,
+    name: 'Errors',
+    width: 280,
+    minWidth: 200,
+    resizable: true,
+    sortable: false,
+    frozen: true,
+    editable: false,
+    headerRenderer: () => (
+      <StyledHeaderContainer>
+        <StyledHeaderLabel>Errors</StyledHeaderLabel>
+      </StyledHeaderContainer>
+    ),
+    formatter: ({ row }: { row: any }) => {
+      const errorEntries = row.__errors
+        ? Object.entries(row.__errors as Record<string, { message: string; level: string }>)
+        : [];
+
+      const errorOnly = errorEntries.filter(
+        ([, info]) => info?.level === 'error',
+      );
+      const warningOnly = errorEntries.filter(
+        ([, info]) => info?.level === 'warning',
+      );
+
+      if (errorEntries.length === 0) {
+        return <StyledErrorsCellOk>OK</StyledErrorsCellOk>;
+      }
+
+      const formatEntry = ([fieldKey, info]: [
+        string,
+        { message: string; level: string },
+      ]) => {
+        const fieldLabel =
+          fields.find((field) => field.key === fieldKey)?.label ?? fieldKey;
+        return `${fieldLabel}: ${info.message}`;
+      };
+
+      const summaryText = [...errorOnly, ...warningOnly]
+        .map(formatEntry)
+        .join(' | ');
+
+      const tooltipId = `row-errors-${row.__index}`;
+
+      if (errorOnly.length > 0) {
+        return (
+          <>
+            <StyledErrorsCell id={tooltipId}>
+              <StyledErrorBadge>{errorOnly.length}</StyledErrorBadge>
+              <span>{summaryText}</span>
+            </StyledErrorsCell>
+            {createPortal(
+              <AppTooltip
+                anchorSelect={`#${tooltipId}`}
+                place="top"
+                content={summaryText}
+              />,
+              document.body,
+            )}
+          </>
+        );
+      }
+
+      return (
+        <>
+          <StyledErrorsCellWarning id={tooltipId}>
+            <span>{summaryText}</span>
+          </StyledErrorsCellWarning>
+          {createPortal(
+            <AppTooltip
+              anchorSelect={`#${tooltipId}`}
+              place="top"
+              content={summaryText}
+            />,
+            document.body,
+          )}
+        </>
+      );
+    },
+    cellClass: (row: ImportedStructuredRowMetadata) => {
+      const errorValues = row.__errors
+        ? Object.values(row.__errors as Record<string, { level: string }>)
+        : [];
+      if (errorValues.some((info) => info?.level === 'error')) {
+        return 'rdg-cell-error';
+      }
+      if (errorValues.some((info) => info?.level === 'warning')) {
+        return 'rdg-cell-warning';
+      }
+      return '';
     },
   },
   ...fields.map(

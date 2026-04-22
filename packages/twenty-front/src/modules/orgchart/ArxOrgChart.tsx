@@ -230,6 +230,20 @@ const StyledLeadershipBannerLink = styled.button`
   }
 `;
 
+const StyledLeadershipBannerPaidNote = styled.div`
+  margin-top: ${({ theme }) => theme.spacing(1)};
+  padding-top: ${({ theme }) => theme.spacing(1)};
+  border-top: 1px dashed ${({ theme }) => theme.border.color.medium};
+  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  line-height: 1.45;
+`;
+
+const StyledLeadershipBannerPaidHighlight = styled.span`
+  color: ${({ theme }) => theme.font.color.primary};
+  font-weight: 600;
+`;
+
 const StyledErrorMessage = styled.div`
   display: flex;
   align-items: center;
@@ -980,6 +994,71 @@ export const ArxOrgChart = ({
     return { leadershipN, fullN };
   }, [orgSource, effectiveEmployeeCount]);
 
+  /**
+   * Count of people rendered in the current org chart nodes. Used as the
+   * "fetched" count for the Apollo preview banner — mirrors what the user
+   * actually sees on the diagram (sum of named candidates across nodes).
+   */
+  const fetchedPeopleInNodeArray = useMemo(() => {
+    let count = 0;
+    for (const node of nodeDataArray) {
+      const total = (node as Record<string, unknown>).total_people;
+      if (typeof total === 'number' && total >= 0) {
+        count += total;
+        continue;
+      }
+      for (let i = 0; i < 8; i += 1) {
+        const name = (node as Record<string, unknown>)[`name_${i}`];
+        if (typeof name === 'string' && name.trim().length > 0) {
+          count += 1;
+        }
+      }
+    }
+    return count;
+  }, [nodeDataArray]);
+
+  /**
+   * Preview/paid-customers banner for Apollo-sourced org charts.
+   *
+   * Mirrors {@link theOrgLeadershipBanner} so the same messaging (small preview,
+   * count of people fetched, full details for paid customers) also appears when
+   * the org chart is loaded from Apollo. Kept mutually exclusive with the
+   * leadership banner to avoid stacking two absolute-positioned cards.
+   */
+  const apolloOrgChartBanner = useMemo(() => {
+    if (theOrgLeadershipBanner !== null) {
+      return null;
+    }
+    if (orgChartLinkedinCandidateSource !== 'apollo') {
+      return null;
+    }
+    if (
+      isLoading ||
+      !!error ||
+      isBlankTemplate ||
+      nodeDataArray.length === 0 ||
+      hasPreviewOrgChartNodes
+    ) {
+      return null;
+    }
+    if (fetchedPeopleInNodeArray <= 0) {
+      return null;
+    }
+    const fullN =
+      typeof effectiveEmployeeCount === 'number' ? effectiveEmployeeCount : null;
+    return { fetchedN: fetchedPeopleInNodeArray, fullN };
+  }, [
+    theOrgLeadershipBanner,
+    orgChartLinkedinCandidateSource,
+    isLoading,
+    error,
+    isBlankTemplate,
+    nodeDataArray.length,
+    hasPreviewOrgChartNodes,
+    fetchedPeopleInNodeArray,
+    effectiveEmployeeCount,
+  ]);
+
   const handleSearch = () => {
     const handle = diagramHandleRef.current;
     if (!handle) return;
@@ -1442,6 +1521,64 @@ export const ArxOrgChart = ({
                     above to load the full company org chart.
                   </span>
                 )}
+                <StyledLeadershipBannerPaidNote>
+                  <StyledLeadershipBannerPaidHighlight>
+                    Small preview only:
+                  </StyledLeadershipBannerPaidHighlight>{' '}
+                  {theOrgLeadershipBanner.leadershipN.toLocaleString()}{' '}
+                  {theOrgLeadershipBanner.leadershipN === 1
+                    ? 'person'
+                    : 'people'}{' '}
+                  fetched from public sources. Full profile details (contact
+                  info, reporting lines, tenure &amp; more) are available for{' '}
+                  <StyledLeadershipBannerPaidHighlight>
+                    paid customers
+                  </StyledLeadershipBannerPaidHighlight>
+                  .
+                </StyledLeadershipBannerPaidNote>
+              </StyledLeadershipInfoBanner>
+            )}
+            {apolloOrgChartBanner && (
+              <StyledLeadershipInfoBanner>
+                <span>
+                  Org chart loaded from{' '}
+                  <StyledLeadershipBannerPaidHighlight>
+                    Apollo
+                  </StyledLeadershipBannerPaidHighlight>{' '}
+                  with{' '}
+                  {apolloOrgChartBanner.fetchedN.toLocaleString()}{' '}
+                  {apolloOrgChartBanner.fetchedN === 1 ? 'person' : 'people'}{' '}
+                  fetched
+                  {apolloOrgChartBanner.fullN !== null
+                    ? ` out of ${apolloOrgChartBanner.fullN.toLocaleString()} total employees`
+                    : ''}
+                  .{apolloOrgChartBanner.fullN !== null ? (
+                    <>
+                      {' '}
+                      Click{' '}
+                      <StyledLeadershipBannerLink
+                        type="button"
+                        onClick={searchControlsProps.onGetAll}
+                      >
+                        Full org chart
+                      </StyledLeadershipBannerLink>{' '}
+                      above to expand the preview.
+                    </>
+                  ) : null}
+                </span>
+                <StyledLeadershipBannerPaidNote>
+                  <StyledLeadershipBannerPaidHighlight>
+                    Small preview only:
+                  </StyledLeadershipBannerPaidHighlight>{' '}
+                  {apolloOrgChartBanner.fetchedN.toLocaleString()}{' '}
+                  {apolloOrgChartBanner.fetchedN === 1 ? 'person' : 'people'}{' '}
+                  fetched from Apollo. Full profile details (verified emails,
+                  phone numbers, reporting lines &amp; more) are available for{' '}
+                  <StyledLeadershipBannerPaidHighlight>
+                    paid customers
+                  </StyledLeadershipBannerPaidHighlight>
+                  .
+                </StyledLeadershipBannerPaidNote>
               </StyledLeadershipInfoBanner>
             )}
             <StyledTopRightActionsOverlay>

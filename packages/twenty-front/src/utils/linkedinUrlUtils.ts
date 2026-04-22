@@ -11,8 +11,8 @@
  */
 export const normalizeLinkedInUrl = (url: string): string => {
   if (!url) return '';
-  // Convert www.linkedin.com to linkedin.com for consistency
-  return url.replace('www.linkedin.com', 'linkedin.com');
+  // Collapse any number of leading www. subdomains on linkedin.com to a bare linkedin.com
+  return url.replace(/(?:www\.)+linkedin\.com/gi, 'linkedin.com');
 };
 
 /**
@@ -22,8 +22,9 @@ export const normalizeLinkedInUrl = (url: string): string => {
  */
 export const reconstructLinkedInUrlForDisplay = (url: string): string => {
   if (!url) return '';
-  // Convert linkedin.com to www.linkedin.com for display
-  return url.replace('linkedin.com', 'www.linkedin.com');
+  // Idempotent: collapse any www.www... chain first, then prepend exactly one www.
+  return url.replace(/(?:www\.)+linkedin\.com/gi, 'www.linkedin.com')
+    .replace(/(?<!www\.)linkedin\.com/gi, 'www.linkedin.com');
 };
 
 /**

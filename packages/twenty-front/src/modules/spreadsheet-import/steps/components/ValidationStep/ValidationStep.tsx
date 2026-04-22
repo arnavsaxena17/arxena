@@ -397,7 +397,8 @@ const isValidUUID = (str: string): boolean => {
                   importColumn.value === column.key) ||
                 (importColumn.type === ColumnType.matchedCheckbox &&
                   importColumn.value === column.key) ||
-                column.key === 'select-row',
+                column.key === 'select-row' ||
+                column.key === '__errors-column',
             ).length > 0;
 
           // Special check for Default Job Name column

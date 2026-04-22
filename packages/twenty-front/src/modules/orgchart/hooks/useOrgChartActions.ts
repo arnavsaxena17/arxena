@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { useOrgChartsRefetch } from '@/orgchart/hooks/useOrgChartsRefetch';
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
 import { orgChartLinkedInSearchTypeState } from '@/orgchart/states/orgChartLinkedInSearchTypeState';
 import { orgChartQueryGeneratorPreferenceState } from '@/orgchart/states/orgChartQueryGeneratorPreferenceState';
@@ -198,6 +199,9 @@ export const useOrgChartActions = ({
     updateSnackBarByDedupeKey,
     closeSnackBarByDedupeKey,
   } = useSnackBar();
+  const { triggerOrgChartsRefetch } = useOrgChartsRefetch();
+  const triggerOrgChartsRefetchRef = useRef(triggerOrgChartsRefetch);
+  triggerOrgChartsRefetchRef.current = triggerOrgChartsRefetch;
   const [isContextModalOpen, setIsContextModalOpen] = useState(false);
   const [contextModalTitle, setContextModalTitle] = useState('');
   const [contextModalMode, setContextModalMode] =
@@ -474,6 +478,11 @@ export const useOrgChartActions = ({
         if (eventData.orgChart && typeof eventData.orgChart === 'object') {
           setLatestOrgChart(eventData.orgChart as Record<string, unknown>);
         }
+
+        // Refresh the left nav "Org Charts" section so any newly-persisted
+        // orgChart CRM row appears immediately (mirrors the jobs refetch
+        // pattern in JobsNavigationDrawerItems).
+        triggerOrgChartsRefetchRef.current();
 
         if (payload.mode === 'entire_company' && companyId) {
           closeSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`);

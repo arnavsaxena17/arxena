@@ -6,9 +6,9 @@ import { Heading } from '@/spreadsheet-import/components/Heading';
 import { StepNavigationButton } from '@/spreadsheet-import/components/StepNavigationButton';
 import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpreadsheetImportInternal';
 import {
-    Field,
-    ImportedRow,
-    ImportedStructuredRow,
+  Field,
+  ImportedRow,
+  ImportedStructuredRow,
 } from '@/spreadsheet-import/types';
 import { findUnmatchedRequiredFields } from '@/spreadsheet-import/utils/findUnmatchedRequiredFields';
 import { normalizeTableData } from '@/spreadsheet-import/utils/normalizeTableData';
@@ -23,8 +23,8 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 
 import { Modal } from '@/ui/layout/modal/components/Modal';
 
-import { UnmatchColumn } from '@/spreadsheet-import/steps/components/MatchColumnsStep/components/UnmatchColumn';
 import { initialComputedColumnsSelector } from '@/spreadsheet-import/steps/components/MatchColumnsStep/components/states/initialComputedColumnsState';
+import { UnmatchColumn } from '@/spreadsheet-import/steps/components/MatchColumnsStep/components/UnmatchColumn';
 import type { MatchColumnsStepProps } from '@/spreadsheet-import/steps/types/matchColumnsStepProps';
 import { SpreadsheetImportStepType } from '@/spreadsheet-import/steps/types/SpreadsheetImportStepType';
 import {
@@ -77,8 +77,9 @@ export const MatchColumnsStep = <T extends string>({
   const { enqueueDialog } = useDialogManager();
   const { enqueueSnackBar } = useSnackBar();
   const dataExample = data.slice(0, 2);
-  const { fields, autoMapHeaders, autoMapDistance } =
+  const { fields, autoMapHeaders, autoMapDistance, enableUploadProgressSseWhileOpen } =
     useSpreadsheetImportInternal<T>();
+  const isCandidateImport = enableUploadProgressSseWhileOpen === true;
   const [isLoading, setIsLoading] = useState(false);
   const [columns, setColumns] = useRecoilState(
     initialComputedColumnsSelector(headerValues),
@@ -213,10 +214,15 @@ console.log('current job id in match columns step::', currentJobId);
         }
         
         const data = await matchColumnsStepHook(values, rawData, filteredColumns);
+        const files =
+          currentStepState.type === SpreadsheetImportStepType.matchColumns
+            ? [currentStepState.file]
+            : [];
         setCurrentStepState({
           type: SpreadsheetImportStepType.validateData,
           data,
           importedColumns: filteredColumns,
+          files,
           deduplicationStats,
         });
         setPreviousStepState(currentStepState);
@@ -271,7 +277,9 @@ console.log('current job id in match columns step::', currentJobId);
       unmatchedRequiredFields,
     );
 
-    // Use simplified validation with the matching utility
+    // Use simplified validation with the matching utility.
+    // Required-field enforcement only applies to candidate imports; other
+    // objects (e.g. companies) can be uploaded without a `name` match here.
     const result = matchSpreadsheetData(
       headerValues.filter(h => h !== undefined) as string[],
       fields,
@@ -283,31 +291,35 @@ console.log('current job id in match columns step::', currentJobId);
           'Job Name': 'jobTitle',
           'jobName': 'jobTitle'
         } : {},
-        requiredFields: ['name'],
+        requiredFields: isCandidateImport ? ['name'] : [],
         validateData: true
       }
     );
+    console.log("result:", result)
 
-    // Check for missing required fields
-    const hasRequiredFields = result.summary.requiredFieldsMatched;
     const hasValidMatches = result.validation.isValid;
 
-    if (!hasRequiredFields) {
-      // Only show the actual required fields that are missing, not all unmatched columns
-      const requiredFields = ['name',];
-      const matchedFieldKeys = result.matches
-        .filter((match: any) => match.match && match.isValid)
-        .map((match: any) => match.match.fieldKey);
-      
-      const missingRequiredFields = requiredFields.filter(field => !matchedFieldKeys.includes(field));
-      
-      enqueueSnackBar(
-        `Missing required fields: ${missingRequiredFields.join(', ')}`,
-        {
-          variant: SnackBarVariant.Error,
-        },
-      );
-      return;
+    if (isCandidateImport) {
+      const hasRequiredFields = result.summary.requiredFieldsMatched;
+
+      if (!hasRequiredFields) {
+        const requiredFields = ['name'];
+        const matchedFieldKeys = result.matches
+          .filter((match: any) => match.match && match.isValid)
+          .map((match: any) => match.match.fieldKey);
+
+        const missingRequiredFields = requiredFields.filter(
+          (field) => !matchedFieldKeys.includes(field),
+        );
+
+        enqueueSnackBar(
+          `Missing required fields: ${missingRequiredFields.join(', ')}`,
+          {
+            variant: SnackBarVariant.Error,
+          },
+        );
+        return;
+      }
     }
 
     if (!hasValidMatches) {
@@ -364,6 +376,7 @@ console.log('current job id in match columns step::', currentJobId);
     currentJob,
     headerValues,
     autoMapDistance,
+    isCandidateImport,
   ]);
 
   useEffect(() => {
