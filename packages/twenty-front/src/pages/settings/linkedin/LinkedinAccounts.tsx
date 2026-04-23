@@ -51,7 +51,8 @@ export const LinkedinAccounts = () => {
       if (data.accountId) {
         try {
           await updateSpecificApiKey('linkedin_unipile_account_id', data.accountId);
-          setOrgChartLinkedinCandidateSource('unipile');
+          console.log('Not setting linkedin org chart data source to unipile after signup complete')
+          // setOrgChartLinkedinCandidateSource('unipile');
           setAccountsRefreshTrigger((n) => n + 1);
         } catch (err) {
           console.error('Failed to save LinkedIn account id to workspace:', err);

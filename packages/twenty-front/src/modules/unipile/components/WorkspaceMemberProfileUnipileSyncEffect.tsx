@@ -53,9 +53,10 @@ export const WorkspaceMemberProfileUnipileSyncEffect = () => {
       linkedinUnipileAccountId: node.linkedinUnipileAccountId ?? null,
     });
     const linkedinUnipileId = node.linkedinUnipileAccountId?.trim() ?? '';
-    if (linkedinUnipileId !== '') {
-      setOrgChartLinkedinCandidateSource('unipile');
-    }
+    console.log('Not setting org chart source to unipile')
+    // if (linkedinUnipileId !== '') {
+    //   setOrgChartLinkedinCandidateSource('unipile');
+    // }
   }, [data, setOrgChartLinkedinCandidateSource, setProfileFields]);
 
   return null;
