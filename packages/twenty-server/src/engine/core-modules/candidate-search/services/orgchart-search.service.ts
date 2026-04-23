@@ -3,14 +3,28 @@ import { createHash } from 'crypto';
 import { OrgChartIntentService } from 'src/engine/core-modules/candidate-search/services/org-chart-intent.service';
 import type { TransformedCandidateForTable } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-sourcing/services/orgchart-progress-redis.service';
+import { OrgChartProfileDataSourceMapperService } from 'src/engine/core-modules/org-chart/services/org-chart-profile-data-source-mapper.service';
 import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services/orgchart-cache.service';
 import { OrgchartCancelRegistryService } from 'src/engine/core-modules/org-chart/services/orgchart-cancel-registry.service';
 import { PythonOrgChartService } from 'src/engine/core-modules/org-chart/services/python-org-chart.service';
+import type { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
+import {
+    applyApolloOnlyNodeLockState,
+    assignApolloPublicSlugToAllPersonSlots,
+    backfillUnmappedLinkedInSlotsWithApolloSlug,
+    mergeContactAvailabilityOntoOrgChartData,
+    mergeContactAvailabilityOntoOrgChartDataByPersonId,
+    mergeProfileSourceSlugsOntoOrgChartData,
+    normalizeOrgChartLinkedinUrlKey,
+    ORGCHART_DATA_SOURCE_SLUG_APOLLO,
+    readProviderContactHintsFromSearchRow,
+    type OrgChartNodeContactAvailability,
+} from 'src/engine/core-modules/org-chart/utils/merge-orgchart-profile-source-slugs.util';
 import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import { filterOrgChartCandidatesByNodeStdLabels } from 'src/engine/core-modules/org-chart/utils/orgchart-node-scope-filter.util';
 import {
-  normalizeCountry,
-  normalizeFunctionRoot,
+    normalizeCountry,
+    normalizeFunctionRoot,
 } from 'src/engine/core-modules/org-chart/utils/orgchart-normalization.util';
 import { OrgChartData } from 'twenty-shared';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
@@ -21,8 +35,8 @@ import { constructSearchParamKey } from '../utils/search-parameter.utils';
 import { buildTitleTaxonomyResolvedIntent } from '../utils/title-taxonomy-resolved-intent.util';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
 import {
-  OrgchartLinkedInQueryRouterService,
-  type OrgchartQueryGeneratorPreference,
+    OrgchartLinkedInQueryRouterService,
+    type OrgchartQueryGeneratorPreference,
 } from './orgchart-linkedin-query-router.service';
 import { SearchExecutionService } from './search-execution.service';
 
@@ -79,6 +93,7 @@ export class OrgChartSearchService {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly orgChartCacheService: OrgChartCacheService,
     private readonly orgChartIntentService: OrgChartIntentService,
+    private readonly orgChartProfileDataSourceMapperService: OrgChartProfileDataSourceMapperService,
   ) {}
 
   /**
@@ -584,6 +599,11 @@ export class OrgChartSearchService {
       function?: string;
       /** When set, used as job_company_linkedin_url for the Python service (overrides /company/{companyId}) */
       companyLinkedinUrl?: string;
+      /**
+       * When a candidate row has no `source`, map profile provenance using this
+       * chart-level channel (server-only; clients receive opaque `ds_*` slugs on nodes).
+       */
+      profileSourceFallback?: OrgChartLinkedinCandidateSource;
     },
   ): Promise<OrgChartData> {
     const { companyName, companyId, mode, function: fn } = options;
@@ -601,6 +621,12 @@ export class OrgChartSearchService {
         : normalizedCompanyId !== ''
           ? `https://www.linkedin.com/company/${normalizedCompanyId}`
           : '';
+
+    const urlToSlug = new Map<string, string>();
+    const urlToContact = new Map<string, OrgChartNodeContactAvailability>();
+    /** When `linkedin_url` is empty, merge hints onto nodes by `candidates[i].id`. */
+    const personIdToContact = new Map<string, OrgChartNodeContactAvailability>();
+    const { profileSourceFallback } = options;
 
     const people: StandardizedOrgChartPerson[] = candidates.map(
       (candidate, index) => {
@@ -684,11 +710,22 @@ export class OrgChartSearchService {
             (raw as { locationLocality: string }).locationLocality) ||
           '';
 
+        const rawPeopleId =
+          typeof (raw as { peopleId?: unknown }).peopleId === 'string'
+            ? (raw as { peopleId: string }).peopleId.trim()
+            : '';
+        const rawTempId =
+          typeof (raw as { tempId?: unknown }).tempId === 'string'
+            ? (raw as { tempId: string }).tempId.trim()
+            : '';
+        const rawRowId =
+          typeof (raw as { id?: unknown }).id === 'string'
+            ? (raw as { id: string }).id.trim()
+            : '';
         const idValue =
-          (typeof (raw as { peopleId?: unknown }).peopleId === 'string' &&
-            (raw as { peopleId: string }).peopleId) ||
-          (typeof (raw as { id?: unknown }).id === 'string' &&
-            (raw as { id: string }).id) ||
+          (rawPeopleId.length > 0 ? rawPeopleId : '') ||
+          (rawTempId.length > 0 ? rawTempId : '') ||
+          (rawRowId.length > 0 ? rawRowId : '') ||
           (linkedinUrl !== '' ? linkedinUrl : '') ||
           `${fullName || 'candidate'}-${jobCompanyName || 'company'}-${index}`;
 
@@ -707,6 +744,41 @@ export class OrgChartSearchService {
             'string' &&
             (raw as { displayPicture: string }).displayPicture) ||
           '';
+
+        const publicSlug = this.orgChartProfileDataSourceMapperService.toPublicSlugFromRow(
+          raw,
+          profileSourceFallback,
+        );
+        if (publicSlug && linkedinUrl.trim().length > 0) {
+          urlToSlug.set(
+            normalizeOrgChartLinkedinUrlKey(linkedinUrl),
+            publicSlug,
+          );
+        }
+
+        const contactSlot = readProviderContactHintsFromSearchRow(
+          raw,
+          ORGCHART_DATA_SOURCE_SLUG_APOLLO,
+        );
+        if (
+          linkedinUrl.trim().length > 0 &&
+          (contactSlot.hasEmail !== undefined ||
+            contactSlot.hasDirectPhone !== undefined ||
+            contactSlot.hasOrgPhone !== undefined)
+        ) {
+          urlToContact.set(
+            normalizeOrgChartLinkedinUrlKey(linkedinUrl),
+            contactSlot,
+          );
+        }
+        if (
+          idValue.trim().length > 0 &&
+          (contactSlot.hasEmail !== undefined ||
+            contactSlot.hasDirectPhone !== undefined ||
+            contactSlot.hasOrgPhone !== undefined)
+        ) {
+          personIdToContact.set(idValue.trim(), contactSlot);
+        }
 
         return {
           full_name: fullName,
@@ -755,7 +827,7 @@ export class OrgChartSearchService {
       normalizedCompanyName.toLowerCase().trim() === 'yuga labs';
 
     try {
-      return await this.pythonOrgChartService.createOrgChartFromStandardizedPeople(
+      const built = await this.pythonOrgChartService.createOrgChartFromStandardizedPeople(
         {
           people,
           jobName,
@@ -763,6 +835,33 @@ export class OrgChartSearchService {
           functionRoot: fn,
         },
       );
+      const apolloPublicSlug =
+        this.orgChartProfileDataSourceMapperService.toPublicSlugFromRow({
+          source: 'apollo',
+        });
+      const isApolloChart =
+        options.profileSourceFallback === 'm7kq' ||
+        options.profileSourceFallback === 'apollo';
+      const withDataSourceSlugs =
+        isApolloChart && apolloPublicSlug !== undefined
+          ? assignApolloPublicSlugToAllPersonSlots(built, apolloPublicSlug)
+          : apolloPublicSlug !== undefined
+            ? backfillUnmappedLinkedInSlotsWithApolloSlug(
+                mergeProfileSourceSlugsOntoOrgChartData(built, urlToSlug),
+                apolloPublicSlug,
+              )
+            : mergeProfileSourceSlugsOntoOrgChartData(built, urlToSlug);
+      const withUrlContact = mergeContactAvailabilityOntoOrgChartData(
+        withDataSourceSlugs,
+        urlToContact,
+      );
+      const merged = mergeContactAvailabilityOntoOrgChartDataByPersonId(
+        withUrlContact,
+        personIdToContact,
+      );
+      return apolloPublicSlug
+        ? applyApolloOnlyNodeLockState(merged, apolloPublicSlug)
+        : merged;
     } catch (error) {
       if (!isYugaLabsCompany) {
         throw error;
@@ -775,7 +874,36 @@ export class OrgChartSearchService {
       this.logger.warn(
         `Yuga Labs org chart build failed; using static yuga_labs_all_org_chart_assist.json. ${error instanceof Error ? error.message : String(error)}`,
       );
-      return staticChart;
+      const apolloPublicSlug =
+        this.orgChartProfileDataSourceMapperService.toPublicSlugFromRow({
+          source: 'apollo',
+        });
+      const isApolloChart =
+        options.profileSourceFallback === 'm7kq' ||
+        options.profileSourceFallback === 'apollo';
+      const withDataSourceSlugs =
+        isApolloChart && apolloPublicSlug !== undefined
+          ? assignApolloPublicSlugToAllPersonSlots(staticChart, apolloPublicSlug)
+          : apolloPublicSlug !== undefined
+            ? backfillUnmappedLinkedInSlotsWithApolloSlug(
+                mergeProfileSourceSlugsOntoOrgChartData(
+                  staticChart,
+                  urlToSlug,
+                ),
+                apolloPublicSlug,
+              )
+            : mergeProfileSourceSlugsOntoOrgChartData(staticChart, urlToSlug);
+      const withUrlContact = mergeContactAvailabilityOntoOrgChartData(
+        withDataSourceSlugs,
+        urlToContact,
+      );
+      const merged = mergeContactAvailabilityOntoOrgChartDataByPersonId(
+        withUrlContact,
+        personIdToContact,
+      );
+      return apolloPublicSlug
+        ? applyApolloOnlyNodeLockState(merged, apolloPublicSlug)
+        : merged;
     }
   }
 

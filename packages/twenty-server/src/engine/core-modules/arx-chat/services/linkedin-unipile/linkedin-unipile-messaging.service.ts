@@ -1,11 +1,11 @@
 import axios from 'axios';
 import FormData from 'form-data';
 import {
-    CandidateNode,
-    ChatControlsObjType,
-    ChatHistoryItem,
-    Job,
-    whatappUpdateMessageObjType
+  CandidateNode,
+  ChatControlsObjType,
+  ChatHistoryItem,
+  Job,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
@@ -338,6 +338,42 @@ export class LinkedinUnipileMessagingService {
     } catch (error) {
       console.error('Error sending LinkedIn invitation:', error);
       throw error;
+    }
+  }
+
+  /**
+   * LinkedIn connection invite for org-chart outreach (job-scoped Unipile account).
+   */
+  async sendLinkedinInviteForJob(
+    apiToken: string,
+    candidateJob: Job,
+    linkedinProfileIdentifier: string,
+    rawMessage: string,
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const accountId = await this.resolveLinkedinUnipileAccountId(
+        candidateJob,
+        apiToken,
+      );
+      if (!accountId?.trim()) {
+        return { success: false, error: 'LinkedIn Unipile account not configured' };
+      }
+      const maxLength = 300;
+      const message =
+        rawMessage.length > maxLength ? rawMessage.slice(0, maxLength) : rawMessage;
+      await this.sendInvitation(
+        accountId.trim(),
+        linkedinProfileIdentifier.trim(),
+        message,
+      );
+      return { success: true };
+    } catch (error) {
+      console.error('sendLinkedinInviteForJob error:', error);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : 'LinkedIn invitation failed',
+      };
     }
   }
 

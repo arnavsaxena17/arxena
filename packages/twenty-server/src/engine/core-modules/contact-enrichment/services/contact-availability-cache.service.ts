@@ -1,9 +1,13 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 
-import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
+import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 
-import type { ContactAvailability, ContactResult } from '../types/contact-enrichment.types';
+import type {
+    ContactAvailability,
+    ContactEnrichmentOptions,
+    ContactResult,
+} from '../types/contact-enrichment.types';
 
 type CachedAvailability = {
   emailAvailable: boolean;
@@ -16,6 +20,8 @@ type CachedContactResult = {
   emails: string[];
   phones: string[];
   source: string;
+  linkedinUrl?: string;
+  fullName?: string;
   cachedAt: number;
 };
 
@@ -53,6 +59,28 @@ export class ContactAvailabilityCacheService {
    */
   private getContactResultKey(linkedinUrl: string): string {
     return `result:${this.normalizeLinkedInUrl(linkedinUrl)}`;
+  }
+
+  /**
+   * Contact-result cache key when fetch may use LinkedIn, Apollo id+domain, or both.
+   */
+  getContactResultCacheKey(
+    linkedinUrl: string,
+    options?: ContactEnrichmentOptions,
+  ): string {
+    const apolloId = options?.apolloPersonId?.trim();
+    const apolloDom = options?.companyDomain?.trim().toLowerCase();
+    const li = linkedinUrl?.trim();
+    if (!li && apolloId && apolloDom) {
+      return `result:apollo-only:${apolloId}:${apolloDom}`;
+    }
+    if (li && apolloId && apolloDom) {
+      return `result:${this.normalizeLinkedInUrl(li)}:apollo:${apolloId}:${apolloDom}`;
+    }
+    if (li) {
+      return this.getContactResultKey(li);
+    }
+    return 'result:empty';
   }
 
   /**
@@ -111,7 +139,7 @@ export class ContactAvailabilityCacheService {
   }
 
   /**
-   * Get cached contact result for a LinkedIn URL.
+   * Get cached contact result (LinkedIn-only key; see {@link getContactResultForFetch}).
    */
   async getContactResult(linkedinUrl: string): Promise<ContactResult | null> {
     try {
@@ -126,6 +154,8 @@ export class ContactAvailabilityCacheService {
             emails: cached.emails,
             phones: cached.phones,
             source: cached.source,
+            ...(cached.linkedinUrl ? { linkedinUrl: cached.linkedinUrl } : {}),
+            ...(cached.fullName ? { fullName: cached.fullName } : {}),
           };
         }
       }
@@ -134,6 +164,40 @@ export class ContactAvailabilityCacheService {
     } catch (error) {
       this.logger.error(
         `Failed to get cached contact result for ${linkedinUrl}`,
+        error as Error,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Get cached contact result for a fetch that may include Apollo id + domain in options.
+   */
+  async getContactResultForFetch(
+    linkedinUrl: string,
+    options?: ContactEnrichmentOptions,
+  ): Promise<ContactResult | null> {
+    try {
+      const key = this.getContactResultCacheKey(linkedinUrl, options);
+      const cached = await this.cacheStorage.get<CachedContactResult>(key);
+
+      if (cached) {
+        const age = Date.now() - cached.cachedAt;
+        if (age < this.contactResultTtl) {
+          return {
+            emails: cached.emails,
+            phones: cached.phones,
+            source: cached.source,
+            ...(cached.linkedinUrl ? { linkedinUrl: cached.linkedinUrl } : {}),
+            ...(cached.fullName ? { fullName: cached.fullName } : {}),
+          };
+        }
+      }
+
+      return null;
+    } catch (error) {
+      this.logger.error(
+        `Failed to get cached contact result for fetch key`,
         error as Error,
       );
       return null;
@@ -158,6 +222,30 @@ export class ContactAvailabilityCacheService {
     } catch (error) {
       this.logger.error(
         `Failed to cache contact result for ${linkedinUrl}`,
+        error as Error,
+      );
+    }
+  }
+
+  /**
+   * Cache contact result for a fetch that may include Apollo id + domain in options.
+   */
+  async setContactResultForFetch(
+    linkedinUrl: string,
+    result: ContactResult,
+    options?: ContactEnrichmentOptions,
+  ): Promise<void> {
+    try {
+      const key = this.getContactResultCacheKey(linkedinUrl, options);
+      const cached: CachedContactResult = {
+        ...result,
+        cachedAt: Date.now(),
+      };
+
+      await this.cacheStorage.set(key, cached, this.contactResultTtl);
+    } catch (error) {
+      this.logger.error(
+        `Failed to cache contact result for fetch key`,
         error as Error,
       );
     }

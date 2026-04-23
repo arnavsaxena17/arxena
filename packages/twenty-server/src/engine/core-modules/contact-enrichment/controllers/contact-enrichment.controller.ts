@@ -123,41 +123,78 @@ export class ContactEnrichmentController {
       linkedinUrls?: string[];
       wantEmail?: boolean;
       wantPhone?: boolean;
+      /** @deprecated Use `m7kqPersonId` in clients; same field for people/match. */
+      apolloPersonId?: string;
+      /** Opaque org-chart person id (same as legacy `apolloPersonId`). */
+      m7kqPersonId?: string;
+      companyDomain?: string;
     },
   ): Promise<
     | ContactResult
     | { jobId: string; status: string; total: number }
     | { results: Record<string, ContactResult> }
   > {
-    const urls: string[] = [];
+    const apolloId = body.apolloPersonId?.trim() ?? body.m7kqPersonId?.trim();
+    const apolloDomain = body.companyDomain?.trim();
+    const hasApollo = Boolean(apolloId && apolloDomain);
 
-    // Get URLs from body
+    const urls: string[] = [];
     if (body.linkedinUrl) {
       urls.push(body.linkedinUrl);
     } else if (body.linkedinUrls && Array.isArray(body.linkedinUrls)) {
       urls.push(...body.linkedinUrls);
     }
 
-    if (urls.length === 0) {
-      throw new Error('linkedinUrl or linkedinUrls must be provided');
+    if (hasApollo && urls.length > 1) {
+      throw new HttpException(
+        'apolloPersonId/companyDomain cannot be used with multiple linkedinUrls',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (urls.length === 0 && !hasApollo) {
+      throw new Error(
+        'Provide linkedinUrl(s), or apolloPersonId and companyDomain',
+      );
     }
 
     const options: ContactEnrichmentOptions = {
       wantEmail: body.wantEmail,
       wantPhone: body.wantPhone,
+      ...(hasApollo
+        ? { apolloPersonId: apolloId, companyDomain: apolloDomain }
+        : {}),
     };
 
     const wantEmail = options.wantEmail !== false;
     const wantPhone = options.wantPhone !== false;
     const workspaceId = req.workspaceId;
 
+    // If we already have cached results for this exact fetch key, return them
+    // without requiring credits (credits are intended to protect provider calls).
+    if (urls.length === 0 && hasApollo) {
+      const cached = await this.waterfallService.getCachedFetchContactsResult(
+        '',
+        options,
+      );
+      if (cached) return cached;
+    }
+    if (urls.length === 1) {
+      const cached = await this.waterfallService.getCachedFetchContactsResult(
+        urls[0],
+        options,
+      );
+      if (cached) return cached;
+    }
+
+    const creditCount = urls.length > 0 ? urls.length : 1;
     if (
       process.env.IS_BILLING_ENABLED === 'true' &&
       workspaceId &&
       (wantEmail || wantPhone)
     ) {
-      const totalEmailCredits = wantEmail ? urls.length : 0;
-      const totalPhoneCredits = wantPhone ? urls.length : 0;
+      const totalEmailCredits = wantEmail ? creditCount : 0;
+      const totalPhoneCredits = wantPhone ? creditCount : 0;
       const hasSufficient =
         await this.workspaceCreditsService.hasSufficientContactCreditsForCount(
           workspaceId,
@@ -172,7 +209,26 @@ export class ContactEnrichmentController {
       }
     }
 
-    // Check if we should process async
+    // Apollo id+domain only: waterfall (Apollo provider) without a LinkedIn URL
+    if (hasApollo && urls.length === 0) {
+      if (
+        process.env.IS_BILLING_ENABLED === 'true' &&
+        workspaceId &&
+        (wantEmail || wantPhone)
+      ) {
+        await this.workspaceCreditsService.debitContactCredits(
+          workspaceId,
+          wantEmail ? 1 : 0,
+          wantPhone ? 1 : 0,
+          {
+            linkedinUrl: `apollo:${apolloId}`,
+            source: 'contact_enrichment_apollo_match',
+          },
+        );
+      }
+      return this.waterfallService.fetchContacts('', options);
+    }
+
     if (this.jobService.shouldProcessAsync(urls.length)) {
       const jobId = await this.jobService.queueBulkJob(
         urls,
@@ -188,7 +244,6 @@ export class ContactEnrichmentController {
       };
     }
 
-    // Process synchronously - debit per URL
     const results: Record<string, ContactResult> = {};
     for (const url of urls) {
       try {
@@ -216,7 +271,6 @@ export class ContactEnrichmentController {
       }
     }
 
-    // Return single result if single URL, otherwise return results object
     if (urls.length === 1) {
       return results[urls[0]];
     }

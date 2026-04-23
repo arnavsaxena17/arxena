@@ -8,11 +8,21 @@ export type ContactResult = {
   emails: string[];
   phones: string[];
   source: string;
+  /** From Apollo `people/match` when a public LinkedIn URL is available */
+  linkedinUrl?: string;
+  /** From provider payloads (e.g. Apollo `person.name` or first/last). */
+  fullName?: string;
 };
 
 export type ContactEnrichmentOptions = {
   wantEmail?: boolean;
   wantPhone?: boolean;
+  /**
+   * When set with `companyDomain`, the Apollo step of the waterfall can call
+   * `people/match` with `id` + `domain` (and optional profile `linkedinUrl`).
+   */
+  apolloPersonId?: string;
+  companyDomain?: string;
 };
 
 export type ContactEnrichmentJobStatus = 'queued' | 'running' | 'completed' | 'failed';

@@ -81,6 +81,14 @@ export type TransformedCandidateForTable = Omit<
   /** Set by addMetadataToCandidates (LinkedIn search / org-chart pipelines). */
   campaign?: string;
   source?: string;
+
+  /**
+   * Opaque contact hints from the active provider (public slug, e.g. m7kqHasEmail).
+   * @see orgChartProviderContactHintRowKeys in merge-orgchart-profile-source-slugs.util
+   */
+  m7kqHasEmail?: boolean;
+  m7kqHasDirectPhone?: boolean;
+  m7kqHasOrgPhone?: boolean;
 }
 
 @Injectable()
@@ -353,6 +361,10 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
       const peopleResult = result as LinkedInPeopleSearchResult;
       const timestamp = new Date().toISOString();
       const peopleId = `people_${peopleResult.id}_${Date.now()}_${index}`;
+      const stableSourcePersonId =
+        peopleResult.id !== undefined && peopleResult.id !== null
+          ? String(peopleResult.id)
+          : '';
       
       // Create base UserProfile using the standard transformation
       const context: TransformationContext = {
@@ -448,7 +460,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         jobTitle: resolvedJobTitle,
         company: resolvedCompany,
         location: peopleResult.location || userProfile.locationName || 'Not specified',
-        peopleId: null,
+        peopleId: stableSourcePersonId.length > 0 ? stableSourcePersonId : null,
         updatedAt: timestamp,
         createdAt: timestamp,
       };

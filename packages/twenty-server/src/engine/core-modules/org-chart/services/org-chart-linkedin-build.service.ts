@@ -139,6 +139,12 @@ export class OrgChartLinkedInBuildService {
     return process.env.BRIGHT_DATA_LINKEDIN_PROFILE_ENRICH_ENABLED !== 'false';
   }
 
+  private isM7kqDirectoryCandidateSource(
+    s: OrgChartLinkedinCandidateSource | undefined,
+  ): boolean {
+    return s === 'm7kq' || s === 'apollo';
+  }
+
   private buildLinkedinXrayRequirementText(args: {
     companyName: string;
     mode: OrgchartSearchMode;
@@ -171,12 +177,11 @@ export class OrgChartLinkedInBuildService {
     for (const item of items) {
       const source = item.source;
 
-      if (
-        source === 'linkedin_xray' ||
-        source === 'apify' ||
-        source === 'apollo'
-      ) {
+      if (source === 'linkedin_xray' || source === 'apify') {
         return source;
+      }
+      if (source === 'apollo' || source === 'm7kq') {
+        return 'm7kq';
       }
     }
 
@@ -629,7 +634,7 @@ export class OrgChartLinkedInBuildService {
     cacheSource: 'none';
     strategyResults: [];
   } | null> {
-    if (args.body.candidateSource !== 'apollo') {
+    if (!this.isM7kqDirectoryCandidateSource(args.body.candidateSource)) {
       return null;
     }
 
@@ -684,7 +689,7 @@ export class OrgChartLinkedInBuildService {
         event: 'status',
         data: {
           message: 'Resolving company on Apollo…',
-          candidateSource: 'apollo',
+          candidateSource: 'm7kq',
         },
       });
 
@@ -725,8 +730,8 @@ export class OrgChartLinkedInBuildService {
       companyName: args.resolvedCompanyName,
       event: 'status',
       data: {
-        message: 'Fetching people from Apollo…',
-        candidateSource: 'apollo',
+        message: 'Fetching people ...',
+        candidateSource: 'm7kq',
       },
     });
 
@@ -1203,6 +1208,7 @@ export class OrgChartLinkedInBuildService {
     requestId?: string;
     filterState: EntireCompanyFilterState;
     shouldWriteCompanyOrgChartCache: boolean;
+    profileSourceFallback?: OrgChartLinkedinCandidateSource;
   }): Promise<unknown> {
     const {
       apiToken,
@@ -1215,6 +1221,7 @@ export class OrgChartLinkedInBuildService {
       requestId,
       filterState,
       shouldWriteCompanyOrgChartCache,
+      profileSourceFallback,
     } = args;
 
     const {
@@ -1267,6 +1274,7 @@ export class OrgChartLinkedInBuildService {
                       ? normalizedFunctionRootRaw
                       : undefined,
                     companyLinkedinUrl: canonicalCompanyLinkedinUrl,
+                    profileSourceFallback,
                   },
                 )
               : cachedOrgChart.orgChart;
@@ -1357,6 +1365,7 @@ export class OrgChartLinkedInBuildService {
                     ? normalizedFunctionRootRaw
                     : undefined,
                   companyLinkedinUrl: canonicalCompanyLinkedinUrl,
+                  profileSourceFallback,
                 },
               )
             : cachedOrgChart.orgChart;
@@ -1409,6 +1418,7 @@ export class OrgChartLinkedInBuildService {
                 ? normalizedFunctionRootRaw
                 : undefined,
               companyLinkedinUrl: canonicalCompanyLinkedinUrl,
+              profileSourceFallback,
             },
           );
         const shouldCacheBuiltOrgChartFromCandidateList =
@@ -1907,6 +1917,7 @@ export class OrgChartLinkedInBuildService {
     if (
       body.candidateSource === 'apify' ||
       body.candidateSource === 'linkedin_xray' ||
+      body.candidateSource === 'm7kq' ||
       body.candidateSource === 'apollo'
     ) {
       return null;
@@ -2122,6 +2133,7 @@ export class OrgChartLinkedInBuildService {
               mode,
               function: body.functionRoot,
               companyLinkedinUrl: canonicalCompanyLinkedinUrl,
+              profileSourceFallback: body.candidateSource,
             },
           );
       } catch (error) {
@@ -2325,6 +2337,7 @@ export class OrgChartLinkedInBuildService {
                 mode,
                 function: body.functionRoot,
                 companyLinkedinUrl: canonicalCompanyLinkedinUrl,
+                profileSourceFallback: body.candidateSource,
               },
             );
         }
@@ -2381,6 +2394,7 @@ export class OrgChartLinkedInBuildService {
                 mode,
                 function: body.functionRoot,
                 companyLinkedinUrl: canonicalCompanyLinkedinUrl,
+                profileSourceFallback: body.candidateSource,
               },
             );
         }
@@ -2482,6 +2496,7 @@ export class OrgChartLinkedInBuildService {
         requestId,
         filterState,
         shouldWriteCompanyOrgChartCache,
+        profileSourceFallback: body.candidateSource,
       });
 
       if (cacheHit) {
@@ -2562,7 +2577,7 @@ export class OrgChartLinkedInBuildService {
         ...(orgChartError ? { orgChartError } : {}),
         isCached: false,
         cacheSource: 'none' as const,
-        candidateSource: 'apollo' as const,
+        candidateSource: 'm7kq' as const,
       };
     }
 
@@ -2886,6 +2901,7 @@ export class OrgChartLinkedInBuildService {
             companyLinkedinUrl:
               jobData.linkedinCompanyUrl?.trim().replace(/\/+$/, '') ||
               undefined,
+            profileSourceFallback: 'apify',
           },
         );
     } catch (error) {

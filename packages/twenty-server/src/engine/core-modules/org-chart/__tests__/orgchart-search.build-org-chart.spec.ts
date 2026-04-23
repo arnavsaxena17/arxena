@@ -6,16 +6,17 @@ jest.mock('openai', () => ({
 }));
 
 import { Test } from '@nestjs/testing';
-import { OrgChartIntentService } from 'src/engine/core-modules/candidate-search/services/org-chart-intent.service';
 import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
+import { OrgChartIntentService } from 'src/engine/core-modules/candidate-search/services/org-chart-intent.service';
 import { OrgchartLinkedInQueryRouterService } from 'src/engine/core-modules/candidate-search/services/orgchart-linkedin-query-router.service';
 import { OrgChartSearchService } from 'src/engine/core-modules/candidate-search/services/orgchart-search.service';
 import { PythonQueryGenerationService } from 'src/engine/core-modules/candidate-search/services/python-query-generation.service';
 import { RequirementAnalyzerService } from 'src/engine/core-modules/candidate-search/services/requirement-analyzer.service';
 import { SearchExecutionService } from 'src/engine/core-modules/candidate-search/services/search-execution.service';
 import { LinkedinParameterResolver } from 'src/engine/core-modules/candidate-search/utils';
-import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
 import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-sourcing/services/orgchart-progress-redis.service';
+import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
+import { OrgChartProfileDataSourceMapperService } from 'src/engine/core-modules/org-chart/services/org-chart-profile-data-source-mapper.service';
 import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services/orgchart-cache.service';
 import { OrgchartCancelRegistryService } from 'src/engine/core-modules/org-chart/services/orgchart-cancel-registry.service';
 import { PythonOrgChartService } from 'src/engine/core-modules/org-chart/services/python-org-chart.service';
@@ -48,6 +49,7 @@ describe('OrgChartSearchService.buildOrgChartFromLinkedInCompanyCandidates', () 
         { provide: WorkspaceQueryService, useValue: {} },
         { provide: OrgChartCacheService, useValue: {} },
         { provide: OrgChartIntentService, useValue: {} },
+        OrgChartProfileDataSourceMapperService,
       ],
     }).compile();
 

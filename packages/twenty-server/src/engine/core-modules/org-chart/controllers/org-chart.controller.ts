@@ -1,15 +1,15 @@
 import {
-  Body,
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  Logger,
-  Param,
-  Post,
-  Query,
-  Req,
-  Res,
+    Body,
+    Controller,
+    Get,
+    HttpException,
+    HttpStatus,
+    Logger,
+    Param,
+    Post,
+    Query,
+    Req,
+    Res,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
@@ -21,12 +21,13 @@ import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/servi
 import { ApolloIoRestService } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
 import type {
-  ClassicPeopleSearchStrategyResult,
-  GeneratedSearchParameters,
-  RecruiterPeopleSearchStrategyResult,
-  SalesNavigatorPeopleSearchStrategyResult,
+    ClassicPeopleSearchStrategyResult,
+    GeneratedSearchParameters,
+    RecruiterPeopleSearchStrategyResult,
+    SalesNavigatorPeopleSearchStrategyResult,
 } from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
 import { constructSearchParamKey } from 'src/engine/core-modules/candidate-search/utils/search-parameter.utils';
+import { OrgChartService } from 'src/engine/core-modules/org-chart/services/org-chart.service';
 import { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { LinkedinXraySearchEngine } from 'src/modules/linkedin-xray/types/linkedin-xray-search-job.types';
@@ -39,7 +40,6 @@ import { OrgChartClientIpService } from '../services/org-chart-client-ip.service
 import { OrgChartEsService } from '../services/org-chart-es.service';
 import { OrgChartLinkedInBuildService } from '../services/org-chart-linkedin-build.service';
 import { OrgChartTheOrgEnrichmentService } from '../services/org-chart-theorg-enrichment.service';
-import { OrgChartService } from '../services/org-chart.service';
 import { PythonOrgChartService } from '../services/python-org-chart.service';
 
 @Controller('org-chart')
@@ -685,7 +685,7 @@ export class OrgChartController {
 
     const apifyActorConfigured = this.apifyService.isConfigured();
     const linkedinXrayConfigured = this.brightDataSerpService.isConfigured();
-    const apolloApiConfigured = this.apolloIoRestService.isConfigured();
+    const m7kqDirectoryApiReady = this.apolloIoRestService.isConfigured();
     const pythonOrgChartAgentAvailable =
       await this.pythonOrgChartService.isOrgChartAgentReachable();
 
@@ -694,7 +694,7 @@ export class OrgChartController {
       linkedinUnipileConnected,
       apifyActorConfigured,
       linkedinXrayConfigured,
-      apolloApiConfigured,
+      m7kqDirectoryApiReady,
       pythonOrgChartAgentAvailable,
     };
   }
@@ -1361,6 +1361,67 @@ export class OrgChartController {
       this.logger.error('Clear company org chart cache failed', error);
       throw new HttpException(
         error instanceof Error ? error.message : 'Failed to clear org chart cache',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Persists contact enrichment (emails/phones/linkedinUrl/fullName) back into the
+   * stored org chart (Redis + S3) so reloads don't re-consume credits.
+   */
+  @Post(':companyId/enrichment/apply')
+  async applyOrgChartEnrichment(
+    @Param('companyId') companyId: string,
+    @Body()
+    body: {
+      companyName?: string;
+      m7kqPersonId?: string;
+      companyDomain?: string;
+      linkedinUrl?: string;
+      emails?: string[];
+      phones?: string[];
+      fullName?: string;
+      source?: string;
+    },
+    @Req() req: Request,
+  ) {
+    const authToken = this.getAuthToken(req);
+    if (!authToken) {
+      throw new HttpException('Authentication required', HttpStatus.UNAUTHORIZED);
+    }
+    if (!companyId || companyId.includes('/') || companyId.includes('..')) {
+      throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
+    }
+
+    const normalizedCompanyId = this.normalizeCompanyId(companyId);
+
+    try {
+      const result = await this.orgChartService.applyEnrichmentToStoredOrgChart(
+        normalizedCompanyId,
+        {
+          companyName: body.companyName,
+          m7kqPersonId: body.m7kqPersonId,
+          companyDomain: body.companyDomain,
+          linkedinUrl: body.linkedinUrl,
+          emails: body.emails,
+          phones: body.phones,
+          fullName: body.fullName,
+          source: body.source,
+        },
+        authToken,
+      );
+      return { status: 'ok' as const, ...result };
+    } catch (error) {
+      this.logger.error(
+        `Apply org chart enrichment failed for companyId=${companyId}`,
+        error,
+      );
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Failed to persist enrichment',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

@@ -18,8 +18,8 @@ import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import {
-  applyBlankOrgChartSizeForExpectedHeadcount,
-  applyBlankOrgChartSubsetFilter,
+    applyBlankOrgChartSizeForExpectedHeadcount,
+    applyBlankOrgChartSubsetFilter,
 } from '../utils/blank-org-chart-subset.util';
 import { mergeManualCompanyAutocompleteResults } from '../utils/manual-company-autocomplete.util';
 import { ArxenaBackendService } from './arxena-backend.service';
@@ -76,6 +76,233 @@ export class OrgChartService {
     this.logger.log(
       `Cleared org chart Redis + S3 cache for persistKey=${persistKey}`,
     );
+  }
+
+  private parseOrgChartNodes(value: unknown): Array<Record<string, unknown>> {
+    if (Array.isArray(value)) {
+      return value.filter((n) => n && typeof n === 'object') as Array<
+        Record<string, unknown>
+      >;
+    }
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value) as unknown;
+        if (Array.isArray(parsed)) {
+          return parsed.filter((n) => n && typeof n === 'object') as Array<
+            Record<string, unknown>
+          >;
+        }
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  }
+
+  private isMaskedFullName(raw: unknown): boolean {
+    const s = typeof raw === 'string' ? raw.trim() : '';
+    if (!s) return true;
+    const normalized = s.replace(/\s+/g, '').toLowerCase();
+    if (!normalized) return true;
+    if (normalized === 'unknownlinkedinmember') return true;
+    return /^x+$/u.test(normalized) || /^[xy]+$/u.test(normalized);
+  }
+
+  private normalizeLinkedinUrl(raw: unknown): string | undefined {
+    const s = typeof raw === 'string' ? raw.trim() : '';
+    if (!s) return undefined;
+    return s;
+  }
+
+  private applyEnrichmentToCandidateRow(
+    row: Record<string, unknown>,
+    input: {
+      emails?: string[];
+      phones?: string[];
+      linkedinUrl?: string;
+      fullName?: string;
+      source?: string;
+    },
+  ): Record<string, unknown> {
+    const next: Record<string, unknown> = { ...row };
+    const email =
+      Array.isArray(input.emails) && input.emails.length > 0
+        ? String(input.emails[0])
+        : undefined;
+    const phone =
+      Array.isArray(input.phones) && input.phones.length > 0
+        ? String(input.phones[0])
+        : undefined;
+    const linkedinUrl = this.normalizeLinkedinUrl(input.linkedinUrl);
+    const fullName = typeof input.fullName === 'string' ? input.fullName.trim() : '';
+
+    if (email) {
+      next.email = email;
+    }
+    if (phone) {
+      next.phone = phone;
+    }
+    if (Array.isArray(input.emails)) {
+      next.m7kq_enrichment_emails = input.emails;
+    }
+    if (Array.isArray(input.phones)) {
+      next.m7kq_enrichment_phones = input.phones;
+    }
+    if (linkedinUrl) {
+      next.std_linkedin_url = linkedinUrl;
+      next.linkedin_url = linkedinUrl;
+    }
+    if (fullName && (this.isMaskedFullName(next.full_name) || this.isMaskedFullName(next.fullName))) {
+      next.full_name = fullName;
+      next.fullName = fullName;
+    }
+    if (input.source) {
+      next.contact_enrichment_source = input.source;
+    }
+
+    return next;
+  }
+
+  async applyEnrichmentToStoredOrgChart(
+    companyId: string,
+    input: {
+      companyName?: string;
+      m7kqPersonId?: string;
+      companyDomain?: string;
+      linkedinUrl?: string;
+      emails?: string[];
+      phones?: string[];
+      fullName?: string;
+      source?: string;
+    },
+    authToken: string,
+  ): Promise<{ updated: boolean; persistedTo: Array<'redis' | 's3'> }> {
+    if (!authToken?.trim()) {
+      throw new HttpException('Authentication required', HttpStatus.UNAUTHORIZED);
+    }
+    const hasM7kqKey =
+      typeof input.m7kqPersonId === 'string' &&
+      input.m7kqPersonId.trim().length > 0 &&
+      typeof input.companyDomain === 'string' &&
+      input.companyDomain.trim().length > 0;
+    const hasLinkedinUrl =
+      typeof input.linkedinUrl === 'string' && input.linkedinUrl.trim().length > 0;
+    if (!hasM7kqKey && !hasLinkedinUrl) {
+      throw new HttpException(
+        'm7kqPersonId+companyDomain or linkedinUrl is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const cacheKey = this.buildCompanyOrgChartCacheKey(undefined, companyId);
+    const cachedOrgChartPayload = await this.orgChartCacheStorageService.get<{
+      orgChart?: Record<string, unknown>;
+      cachedAt?: string;
+      itemCount?: number;
+    }>(cacheKey);
+
+    let orgChart: Record<string, unknown> | null =
+      cachedOrgChartPayload?.orgChart ?? null;
+    let source: 'redis' | 's3' | null = orgChart ? 'redis' : null;
+
+    if (!orgChart) {
+      orgChart = (await this.orgChartS3Service.getOrgChart(companyId)) as
+        | Record<string, unknown>
+        | null;
+      source = orgChart ? 's3' : null;
+    }
+
+    if (!orgChart) {
+      throw new HttpException('No cached org chart found', HttpStatus.NOT_FOUND);
+    }
+
+    const rawNodes = this.parseOrgChartNodes((orgChart as { orgchart?: unknown }).orgchart);
+    if (rawNodes.length === 0) {
+      throw new HttpException('Org chart payload has no nodes', HttpStatus.BAD_REQUEST);
+    }
+
+    const m7kqPersonId = input.m7kqPersonId?.trim();
+    const linkedinUrl = this.normalizeLinkedinUrl(input.linkedinUrl);
+    let updated = false;
+
+    const updatedNodes = rawNodes.map((node) => {
+      const candidatesRaw = (node as { candidates?: unknown }).candidates;
+      const candidates = Array.isArray(candidatesRaw)
+        ? (candidatesRaw as unknown[])
+        : candidatesRaw && typeof candidatesRaw === 'object'
+          ? [candidatesRaw]
+          : [];
+
+      if (candidates.length === 0) {
+        return node;
+      }
+
+      const nextCandidates = candidates.map((c) => {
+        if (!c || typeof c !== 'object') return c;
+        const row = c as Record<string, unknown>;
+        const rowId = typeof row.id === 'string' ? row.id.trim() : '';
+        const rowLi =
+          typeof row.std_linkedin_url === 'string'
+            ? row.std_linkedin_url.trim()
+            : typeof row.linkedin_url === 'string'
+              ? row.linkedin_url.trim()
+              : '';
+
+        const matches =
+          (m7kqPersonId && rowId && rowId === m7kqPersonId) ||
+          (linkedinUrl && rowLi && rowLi === linkedinUrl);
+
+        if (!matches) {
+          return c;
+        }
+        updated = true;
+        return this.applyEnrichmentToCandidateRow(row, {
+          emails: input.emails,
+          phones: input.phones,
+          linkedinUrl: input.linkedinUrl,
+          fullName: input.fullName,
+          source: input.source,
+        });
+      });
+
+      return {
+        ...node,
+        candidates: Array.isArray(candidatesRaw) ? nextCandidates : nextCandidates[0] ?? candidatesRaw,
+      };
+    });
+
+    if (!updated) {
+      return { updated: false, persistedTo: [] };
+    }
+
+    const updatedOrgChart: Record<string, unknown> = {
+      ...orgChart,
+      orgchart: updatedNodes,
+    };
+
+    const persistedTo: Array<'redis' | 's3'> = [];
+
+    // Write-through to Redis cache (same key read by /org-chart/:companyId).
+    await this.orgChartCacheStorageService.set(
+      cacheKey,
+      {
+        ...(cachedOrgChartPayload ?? {}),
+        orgChart: updatedOrgChart,
+        cachedAt: new Date().toISOString(),
+      },
+      60 * 60 * 24 * 90,
+    );
+    persistedTo.push('redis');
+
+    // Also write to S3 (best-effort).
+    await this.orgChartS3Service.saveOrgChart(companyId, updatedOrgChart as OrgChartData);
+    persistedTo.push('s3');
+
+    this.logger.log(
+      `Applied enrichment to cached org chart for companyId=${companyId} (source=${source ?? 'none'})`,
+    );
+
+    return { updated: true, persistedTo };
   }
 
   async getCompanyAutocomplete(
@@ -139,20 +366,9 @@ export class OrgChartService {
 
     let orgChartEsTransportError = false;
 
-    if (!options.serveCachedOnly) {
-      const esOutcome = await this.orgChartEsService.getOrgChartByCompanyId(
-        companyId,
-        options,
-      );
-
-      orgChartEsTransportError = esOutcome.esTransportError === true;
-
-      if (esOutcome.document) {
-        return {
-          data: normalizeOrgChartPayload(esOutcome.document),
-        };
-      }
-    }
+    const hasAuthToken =
+      typeof authToken === 'string' && authToken.trim() !== '';
+    const authTokenString = hasAuthToken ? (authToken as string) : undefined;
 
     const cacheKey = this.buildCompanyOrgChartCacheKey(
       options.companyName,
@@ -164,7 +380,8 @@ export class OrgChartService {
       itemCount?: number;
     }>(cacheKey);
 
-    if (cachedOrgChartPayload?.orgChart) {
+    // Authenticated users should prefer Redis/S3 over ES preview templates.
+    if (hasAuthToken && cachedOrgChartPayload?.orgChart) {
       return {
         data: normalizeOrgChartPayload(cachedOrgChartPayload.orgChart),
         ...(orgChartEsTransportError
@@ -184,12 +401,14 @@ export class OrgChartService {
       );
     let s3OrgChart: OrgChartData | null = null;
 
-    if (authToken) {
+    if (authTokenString) {
       const workspaceId =
-        await this.workspaceQueryService.getWorkspaceIdFromToken(authToken);
+        await this.workspaceQueryService.getWorkspaceIdFromToken(
+          authTokenString,
+        );
       const workspaceMemberId =
         await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
-          authToken,
+          authTokenString,
         );
 
       if (workspaceId && workspaceMemberId) {
@@ -205,6 +424,47 @@ export class OrgChartService {
           s3OrgChart = await this.orgChartS3Service.getOrgChart(companyId);
         }
       }
+    }
+
+    if (hasAuthToken && s3OrgChart) {
+      this.logger.log(
+        `Serving org chart from S3 fallback for companyId=${companyId}`,
+      );
+
+      return {
+        data: normalizeOrgChartPayload(s3OrgChart as Record<string, unknown>),
+        ...(orgChartEsTransportError
+          ? { orgChartEsTransportError: true }
+          : {}),
+      };
+    }
+
+    // Unauthenticated (or no cached chart for authed) path: allow ES as the primary source
+    // unless we are explicitly told to serve cached only.
+    if (!options.serveCachedOnly) {
+      const esOutcome = await this.orgChartEsService.getOrgChartByCompanyId(
+        companyId,
+        options,
+      );
+
+      orgChartEsTransportError = esOutcome.esTransportError === true;
+
+      if (esOutcome.document) {
+        return {
+          data: normalizeOrgChartPayload(esOutcome.document),
+        };
+      }
+    }
+
+    // For authenticated users, allow a Redis hit even if ES misses (and for safety, keep this
+    // check for unauth as well in case a chart is cached by other flows).
+    if (cachedOrgChartPayload?.orgChart) {
+      return {
+        data: normalizeOrgChartPayload(cachedOrgChartPayload.orgChart),
+        ...(orgChartEsTransportError
+          ? { orgChartEsTransportError: true }
+          : {}),
+      };
     }
 
     if (s3OrgChart) {

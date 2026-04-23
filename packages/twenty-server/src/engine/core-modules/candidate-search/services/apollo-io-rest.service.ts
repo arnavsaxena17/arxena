@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, isAxiosError } from 'axios';
 
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 
@@ -96,6 +96,30 @@ export class ApolloIoRestService {
     return key;
   }
 
+  private logApolloRequestError(context: string, error: unknown): void {
+    if (!isAxiosError(error)) {
+      this.logger.error(`Apollo ${context} failed (non-axios)`, error);
+      return;
+    }
+    const status = error.response?.status;
+    const data = error.response?.data;
+    let dataStr: string;
+    if (data === undefined || data === null) {
+      dataStr = 'n/a';
+    } else if (typeof data === 'string') {
+      dataStr = data.slice(0, 4000);
+    } else {
+      try {
+        dataStr = JSON.stringify(data);
+      } catch {
+        dataStr = '[unserializable response data]';
+      }
+    }
+    this.logger.error(
+      `Apollo ${context} failed: status=${status ?? 'n/a'} body=${dataStr}`,
+    );
+  }
+
   /**
    * People API Search POST /mixed_people/api_search
    * @see https://docs.apollo.io/reference/people-api-search.md
@@ -133,14 +157,19 @@ export class ApolloIoRestService {
     const url = `/mixed_people/api_search?${params.toString()}`;
     this.logger.log(`Apollo peopleSearch ${url.slice(0, 200)}...`);
 
-    const { data } = await this.client.post<Record<string, unknown>>(
-      url,
-      {},
-      {
-        headers: { 'x-api-key': apiKey },
-      },
-    );
-    return data;
+    try {
+      const { data } = await this.client.post<Record<string, unknown>>(
+        url,
+        {},
+        {
+          headers: { 'x-api-key': apiKey },
+        },
+      );
+      return data;
+    } catch (error) {
+      this.logApolloRequestError('peopleSearch', error);
+      throw error;
+    }
   }
 
   /**
@@ -173,14 +202,19 @@ export class ApolloIoRestService {
     const url = `/mixed_companies/search?${params.toString()}`;
     this.logger.log(`Apollo organizationsSearch ${url.slice(0, 200)}...`);
 
-    const { data } = await this.client.post<Record<string, unknown>>(
-      url,
-      {},
-      {
-        headers: { 'x-api-key': apiKey },
-      },
-    );
-    return data;
+    try {
+      const { data } = await this.client.post<Record<string, unknown>>(
+        url,
+        {},
+        {
+          headers: { 'x-api-key': apiKey },
+        },
+      );
+      return data;
+    } catch (error) {
+      this.logApolloRequestError('organizationsSearch', error);
+      throw error;
+    }
   }
 
   /**
@@ -281,6 +315,59 @@ export class ApolloIoRestService {
   }
 
   /**
+   * POST /api/v1/people/match — enrich by Apollo person id + company domain.
+   * @see https://docs.apollo.io/reference/people-api-search.md
+   */
+  async peopleMatch(input: {
+    id: string;
+    domain: string;
+    /** Optional profile URL; sent as `linkedin_url` when disambiguation helps. */
+    linkedinUrl?: string;
+    revealPersonalEmails?: boolean;
+    revealPhoneNumber?: boolean;
+  }): Promise<Record<string, unknown>> {
+    const apiKey = this.assertConfigured();
+    const id = input.id?.trim();
+    const domain = input.domain?.trim();
+    if (!id || !domain) {
+      throw new HttpException(
+        'Apollo people/match requires id and domain',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    const params = new URLSearchParams();
+    params.set('id', id);
+    params.set('domain', domain);
+    const li = input.linkedinUrl?.trim();
+    if (li) {
+      params.set('linkedin_url', li);
+    }
+    if (input.revealPersonalEmails === true) {
+      params.set('reveal_personal_emails', 'true');
+    }
+    if (input.revealPhoneNumber === true) {
+      params.set('reveal_phone_number', 'true');
+    }
+    const url = `/people/match?${params.toString()}`;
+    this.logger.log(
+      `Apollo peopleMatch id=${id.slice(0, 8)}... domain=${domain}${li ? ' +linkedin' : ''}`,
+    );
+    try {
+      const { data } = await this.client.post<Record<string, unknown>>(
+        url,
+        {},
+        {
+          headers: { 'x-api-key': apiKey },
+        },
+      );
+      return data;
+    } catch (error) {
+      this.logApolloRequestError('peopleMatch', error);
+      throw error;
+    }
+  }
+
+  /**
    * Job postings GET /organizations/{organization_id}/job_postings (consumes credits)
    * @see https://docs.apollo.io/reference/organization-jobs-postings.md
    */
@@ -304,9 +391,14 @@ export class ApolloIoRestService {
     const url = `/organizations/${encodeURIComponent(id)}/job_postings?${params.toString()}`;
     this.logger.log(`Apollo organizationJobPostings org=${id}`);
 
-    const { data } = await this.client.get<Record<string, unknown>>(url, {
-      headers: { 'x-api-key': apiKey },
-    });
-    return data;
+    try {
+      const { data } = await this.client.get<Record<string, unknown>>(url, {
+        headers: { 'x-api-key': apiKey },
+      });
+      return data;
+    } catch (error) {
+      this.logApolloRequestError('organizationJobPostings', error);
+      throw error;
+    }
   }
 }

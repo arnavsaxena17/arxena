@@ -1,5 +1,6 @@
 import { Module, OnModuleInit } from '@nestjs/common';
 
+import { ApolloIoRestService } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-storage.module';
@@ -31,6 +32,7 @@ import { RateLimiterService } from './services/rate-limiter.service';
   ],
   controllers: [ContactEnrichmentController],
   providers: [
+    ApolloIoRestService,
     // Providers
     ArxenaProvider,
     PdlProvider,

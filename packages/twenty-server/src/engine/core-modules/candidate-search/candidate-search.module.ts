@@ -16,6 +16,7 @@ import { CandidateSourcingModule } from '../candidate-sourcing/candidate-sourcin
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { LinkedInSearchModule } from '../linkedin-search/linkedin-search.module';
 import { OrgChartModule } from '../org-chart/org-chart.module';
+import { OrgChartProfileDataSourceMapperService } from '../org-chart/services/org-chart-profile-data-source-mapper.service';
 import { PythonOrgChartService } from '../org-chart/services/python-org-chart.service';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
 import { ApolloSearchController } from './controllers/apollo-search.controller';
@@ -113,6 +114,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     OrgchartLinkedinXrayBuildProcessor,
     // Executive search enhancement services
     PythonOrgChartService,
+    OrgChartProfileDataSourceMapperService,
   ],
   exports: [
     CandidateSearchBaseService,

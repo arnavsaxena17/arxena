@@ -1,16 +1,55 @@
 import { Injectable } from '@nestjs/common';
 
 import {
-    LinkedInSearchTransformerService,
-    TransformedCandidateForTable,
+  LinkedInSearchTransformerService,
+  TransformedCandidateForTable,
 } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import type {
-    LinkedInCurrentPosition,
-    LinkedInPeopleSearchResult,
+  LinkedInCurrentPosition,
+  LinkedInPeopleSearchResult,
 } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
+import {
+  ORGCHART_DATA_SOURCE_SLUG_APOLLO,
+  orgChartProviderContactHintRowKeys,
+} from 'src/engine/core-modules/org-chart/utils/merge-orgchart-profile-source-slugs.util';
 
 const APOLLO_TABLE_JOB_ID = 'apollo_search_job';
 const APOLLO_TABLE_JOB_NAME = 'Apollo Search Results';
+
+/**
+ * Read Apollo mixed_people / api_search person flags for table + org chart plumbing.
+ * Emits opaque API keys (e.g. m7kqHasEmail) — no provider name in field names.
+ */
+export function parseApolloContactHintsFromPerson(
+  raw: Record<string, unknown>,
+): Record<string, boolean | undefined> {
+  const k = orgChartProviderContactHintRowKeys(ORGCHART_DATA_SOURCE_SLUG_APOLLO);
+  const he = raw.has_email;
+  const vEmail = typeof he === 'boolean' ? he : undefined;
+
+  const hdp = raw.has_direct_phone;
+  let vDirectPhone: boolean | undefined;
+  if (typeof hdp === 'boolean') {
+    vDirectPhone = hdp;
+  } else if (typeof hdp === 'string') {
+    const t = hdp.trim().toLowerCase();
+    if (t === 'yes' || t === 'true') vDirectPhone = true;
+    else if (t === 'no' || t === 'false') vDirectPhone = false;
+  }
+
+  const org =
+    raw.organization && typeof raw.organization === 'object'
+      ? (raw.organization as Record<string, unknown>)
+      : undefined;
+  const hp = org ? org.has_phone : undefined;
+  const vOrgPhone = typeof hp === 'boolean' ? hp : undefined;
+
+  return {
+    [k.hasEmail]: vEmail,
+    [k.hasDirectPhone]: vDirectPhone,
+    [k.hasOrgPhone]: vOrgPhone,
+  };
+}
 
 /** Extract LinkedIn public slug from profile URL for `public_identifier`. */
 export function linkedinUrlToPublicIdentifier(
@@ -204,20 +243,27 @@ export class ApolloPeopleSearchTransformerService {
     const normalizedCompanyId = options?.companyId?.trim();
     const normalizedLinkedin = options?.companyLinkedinUrl?.trim();
 
-    return withMeta.map((row) => ({
-      ...row,
-      source: 'apollo',
-      campaign: 'apollo_people',
-      ...(normalizedCompany
-        ? {
-            company: normalizedCompany,
-            jobCompanyName: normalizedCompany,
-          }
-        : {}),
-      ...(normalizedCompanyId ? { jobCompanyId: normalizedCompanyId } : {}),
-      ...(normalizedLinkedin
-        ? { jobCompanyLinkedinUrl: normalizedLinkedin }
-        : {}),
-    }));
+    return withMeta.map((row, index) => {
+      const rawRow = rawPeople[index];
+      const contactHints = rawRow
+        ? parseApolloContactHintsFromPerson(rawRow)
+        : {};
+      return {
+        ...row,
+        ...contactHints,
+        source: 'apollo',
+        campaign: 'apollo_people',
+        ...(normalizedCompany
+          ? {
+              company: normalizedCompany,
+              jobCompanyName: normalizedCompany,
+            }
+          : {}),
+        ...(normalizedCompanyId ? { jobCompanyId: normalizedCompanyId } : {}),
+        ...(normalizedLinkedin
+          ? { jobCompanyLinkedinUrl: normalizedLinkedin }
+          : {}),
+      };
+    });
   }
 }

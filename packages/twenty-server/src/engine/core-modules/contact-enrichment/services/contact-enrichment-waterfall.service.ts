@@ -2,10 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import type { ContactEnrichmentProvider } from '../interfaces/contact-enrichment-provider.interface';
 import type {
-  ContactAvailability,
-  ContactEnrichmentOptions,
-  ContactEnrichmentProviderName,
-  ContactResult,
+    ContactAvailability,
+    ContactEnrichmentOptions,
+    ContactEnrichmentProviderName,
+    ContactResult,
 } from '../types/contact-enrichment.types';
 import { ContactAvailabilityCacheService } from './contact-availability-cache.service';
 import { RateLimiterService } from './rate-limiter.service';
@@ -98,25 +98,50 @@ export class ContactEnrichmentWaterfallService {
   }
 
   /**
-   * Fetch contacts for a LinkedIn URL using waterfall.
+   * Fetch contacts using the provider waterfall. Pass optional `apolloPersonId` +
+   * `companyDomain` in `options` so the Apollo step can call `people/match` with
+   * id+domain and optionally the profile `linkedinUrl`.
    */
+  async getCachedFetchContactsResult(
+    linkedinUrl: string,
+    options?: ContactEnrichmentOptions,
+  ): Promise<ContactResult | null> {
+    const cached = await this.cacheService.getContactResultForFetch(
+      linkedinUrl,
+      options,
+    );
+
+    if (!cached) {
+      return null;
+    }
+
+    return {
+      emails: options?.wantEmail !== false ? cached.emails : [],
+      phones: options?.wantPhone !== false ? cached.phones : [],
+      source: cached.source,
+      ...(cached.linkedinUrl ? { linkedinUrl: cached.linkedinUrl } : {}),
+    };
+  }
+
   async fetchContacts(
     linkedinUrl: string,
     options?: ContactEnrichmentOptions,
   ): Promise<ContactResult> {
-    // Check cache first
-    const cached = await this.cacheService.getContactResult(linkedinUrl);
-    if (cached) {
-      // Filter cached result based on options
-      return {
-        emails: options?.wantEmail !== false ? cached.emails : [],
-        phones: options?.wantPhone !== false ? cached.phones : [],
-        source: cached.source,
-      };
-    }
+    const apolloId = options?.apolloPersonId?.trim();
+    const apolloDomain = options?.companyDomain?.trim();
+    const hasLinkedin = Boolean(linkedinUrl?.trim());
+    const hasApolloKey = Boolean(apolloId && apolloDomain);
+    // Apollo-only: no other provider can use id+domain; avoid noisy failures.
+    const providerChain =
+      !hasLinkedin && hasApolloKey
+        ? this.providers.filter((p) => p.getName() === 'apollo')
+        : this.providers;
 
-    // Try providers in order until one returns contacts
-    for (const provider of this.providers) {
+    // Check cache first (key includes Apollo fields when present)
+    const cached = await this.getCachedFetchContactsResult(linkedinUrl, options);
+    if (cached) return cached;
+
+    for (const provider of providerChain) {
       try {
         await this.rateLimiter.waitForRateLimit(
           provider.getName() as ContactEnrichmentProviderName,
@@ -124,27 +149,32 @@ export class ContactEnrichmentWaterfallService {
 
         const result = await provider.fetchContacts(linkedinUrl, options);
 
-        // If we got at least one email or phone, cache and return
         if (result.emails.length > 0 || result.phones.length > 0) {
-          await this.cacheService.setContactResult(linkedinUrl, result);
+          await this.cacheService.setContactResultForFetch(
+            linkedinUrl,
+            result,
+            options,
+          );
           return result;
         }
       } catch (error) {
         this.logger.warn(
-          `Provider ${provider.getName()} fetch failed for ${linkedinUrl}`,
+          `Provider ${provider.getName()} fetch failed for ${linkedinUrl || `apollo:${apolloId ?? ''}`}`,
           error as Error,
         );
-        // Continue to next provider
       }
     }
 
-    // No provider returned contacts
     const emptyResult: ContactResult = {
       emails: [],
       phones: [],
       source: 'none',
     };
-    await this.cacheService.setContactResult(linkedinUrl, emptyResult);
+    await this.cacheService.setContactResultForFetch(
+      linkedinUrl,
+      emptyResult,
+      options,
+    );
     return emptyResult;
   }
 }

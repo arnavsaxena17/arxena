@@ -20,12 +20,12 @@ import { WorkspaceResolverBuilderModule } from 'src/engine/api/graphql/workspace
 import { WorkspaceSchemaBuilderModule } from 'src/engine/api/graphql/workspace-schema-builder/workspace-schema-builder.module';
 import { WorkspaceSchemaFactory } from 'src/engine/api/graphql/workspace-schema.factory';
 import { ArxDeliveryEndpoint } from 'src/engine/core-modules/arx-chat/controllers/arx-delivery.controller';
+import { CandidateEngagementController } from 'src/engine/core-modules/arx-chat/controllers/candidate-engagement.controller';
 import { LinkedinUnipileController } from 'src/engine/core-modules/arx-chat/controllers/linkedin-unipile.controller';
 import { UnipileWebhookController } from 'src/engine/core-modules/arx-chat/controllers/unipile-webhook.controller';
 import { VideoInterviewProcessController } from 'src/engine/core-modules/arx-chat/controllers/video-interview-process-controller';
 import { VoiceCallController } from 'src/engine/core-modules/arx-chat/controllers/voice-call.controller';
 import { WhatsappUnipileController } from 'src/engine/core-modules/arx-chat/controllers/whatsapp-unipile.controller';
-import { CandidateEngagementController } from 'src/engine/core-modules/arx-chat/controllers/candidate-engagement.controller';
 import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
 import { ExtSockWhatsappController } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.controller';
 import { WhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.job';
@@ -72,6 +72,8 @@ import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
 import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
+import { OrgChartOutreachController } from 'src/engine/core-modules/org-chart-outreach/org-chart-outreach.controller';
+import { OrgChartOutreachService } from 'src/engine/core-modules/org-chart-outreach/org-chart-outreach.service';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module'; // Add this import
@@ -151,6 +153,7 @@ const conditionalImports = isWorker
     WhatsappUnipileController,
     CandidateEngagementController,
     UnipileWebhookController,
+    OrgChartOutreachController,
   ],
   providers: [
     PersonService,
@@ -214,6 +217,7 @@ const conditionalImports = isWorker
     LinkedInUnipileMonitoringResolver,
     UnipileAccountPoolService,
     LinkedinParameterResolver,
+    OrgChartOutreachService,
   ],
   exports: [ExtSockWhatsappService, CandidateEngagementArx],
 })

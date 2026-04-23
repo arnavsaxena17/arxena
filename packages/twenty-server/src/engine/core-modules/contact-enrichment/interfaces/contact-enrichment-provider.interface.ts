@@ -1,7 +1,7 @@
 import type {
-  ContactAvailability,
-  ContactEnrichmentOptions,
-  ContactResult,
+    ContactAvailability,
+    ContactEnrichmentOptions,
+    ContactResult,
 } from '../types/contact-enrichment.types';
 
 export interface ContactEnrichmentProvider {
@@ -14,7 +14,8 @@ export interface ContactEnrichmentProvider {
   ): Promise<ContactAvailability>;
 
   /**
-   * Fetch contact information (emails and/or phones) for a LinkedIn profile URL.
+   * Fetch contact information. Pass `apolloPersonId` + `companyDomain` in `options` for
+   * Apollo `people/match` (and optional `linkedinUrl` to disambiguate the profile).
    */
   fetchContacts(
     linkedinUrl: string,

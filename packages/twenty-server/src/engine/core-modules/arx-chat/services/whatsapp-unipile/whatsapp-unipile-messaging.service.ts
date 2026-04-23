@@ -118,6 +118,45 @@ export class WhatsappUnipileMessagingService {
   }
 
   /**
+   * Send a plain text WhatsApp message to a phone number for a job context
+   * (org-chart outreach) without loading a full CandidateNode or chat history.
+   */
+  async sendTextToPhoneForJob(
+    apiToken: string,
+    candidateJob: Job,
+    phone: string,
+    message: string,
+  ): Promise<{ status: 'success' | 'failed'; message?: string }> {
+    try {
+      const whatsappAccountId = await this.resolveWhatsappUnipileAccountId(
+        apiToken,
+        candidateJob,
+      );
+      if (!whatsappAccountId) {
+        return {
+          status: 'failed',
+          message: 'WhatsApp Unipile account not configured',
+        };
+      }
+      const trimmed = phone.trim();
+      if (!trimmed) {
+        return { status: 'failed', message: 'Phone number required' };
+      }
+      const normalizedPhoneNumber = trimmed.replace(/[^\d+]/g, '');
+      const attendeeId = `${normalizedPhoneNumber}@s.whatsapp.net`;
+      await this.sendMessage(whatsappAccountId, [attendeeId], message);
+      return { status: 'success' };
+    } catch (error) {
+      console.error('sendTextToPhoneForJob failed:', error);
+      return {
+        status: 'failed',
+        message:
+          error instanceof Error ? error.message : 'Error sending WhatsApp message',
+      };
+    }
+  }
+
+  /**
    * Send a WhatsApp message via Unipile
    */
   async sendMessage(
