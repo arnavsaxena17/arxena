@@ -124,6 +124,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     StreamProcessingService,
     ApolloIoRestService,
     ApolloPeopleSearchTransformerService,
+    PythonQueryGenerationService,
   ],
 })
 export class CandidateSearchModule {}
