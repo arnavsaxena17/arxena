@@ -366,7 +366,7 @@ const buildOrgChartNodeContextMenu = (
     ),
     $(
       'ContextMenuButton',
-      orgChartContextItemText($, 'WhatsApp message'),
+      orgChartContextItemText($, 'Send WhatsApp message'),
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
@@ -383,7 +383,7 @@ const buildOrgChartNodeContextMenu = (
     ),
     $(
       'ContextMenuButton',
-      orgChartContextItemText($, 'WhatsApp message (locked)'),
+      orgChartContextItemText($, 'Send WhatsApp message (locked)'),
       { click: lockedContactClick('phone') },
       new go.Binding('visible', '', (d: OrgChartNodeData | null) => !!d && d.nodeState === 'lock'),
     ),

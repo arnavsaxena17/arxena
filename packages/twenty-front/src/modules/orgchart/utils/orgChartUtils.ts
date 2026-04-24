@@ -254,6 +254,8 @@ export const pollCandidateIdOnJob = async (
     const url = `${root}/candidate-sourcing/candidates/by-linkedin-urls?linkedinUrls=${encoded}&jobId=${encodeURIComponent(jobId)}`;
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${accessToken}` },
+      // Avoid 304 + cached bodies that omit or mismatch `results` while polling after upload.
+      cache: 'no-store',
     });
     const json = (await response.json()) as {
       results?: Record<

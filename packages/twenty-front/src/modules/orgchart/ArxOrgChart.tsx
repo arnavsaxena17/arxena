@@ -439,10 +439,11 @@ export const ArxOrgChart = ({
   );
   const setContactsByKey = useSetRecoilState(orgChartContactsByKeyState);
 
-  const { company: fallbackCompanyInfo, lookupByName } = useCompanyInfoLookup({
-    baseUrl,
-    accessToken,
-  });
+  const {
+    company: fallbackCompanyInfo,
+    isLoading: isCompanyInfoLookupLoading,
+    lookupByName,
+  } = useCompanyInfoLookup({ baseUrl, accessToken });
   const { refetchJobs } = useJobRefetch();
   const { enqueueSnackBar } = useSnackBar();
   const { t } = useLingui();
@@ -554,13 +555,36 @@ export const ArxOrgChart = ({
     });
   }, [companyId, enqueueSnackBar, isJobMode, orgChartEsTransportError, t]);
 
+  const hasInitialCompanyInfo =
+    companyName ||
+    website ||
+    locationName ||
+    industry ||
+    typeof profileCount === 'number' ||
+    linkedinUrl;
+
   useEffect(() => {
     if (skipNextRefetchRef.current) {
       skipNextRefetchRef.current = false;
       return;
     }
+    if (
+      !isJobMode &&
+      !hasInitialCompanyInfo &&
+      isCompanyInfoLookupLoading === true
+    ) {
+      // When loading an org chart from a URL slug (e.g. /org-chart/litify),
+      // we first lookup the company name/website/headcount. Avoid fetching the
+      // org chart twice by waiting for that lookup to finish (success or failure).
+      return;
+    }
     fetchOrgChart();
-  }, [fetchOrgChart]);
+  }, [
+    fetchOrgChart,
+    hasInitialCompanyInfo,
+    isCompanyInfoLookupLoading,
+    isJobMode,
+  ]);
 
   useEffect(() => {
     if (isJobMode) return;
@@ -855,14 +879,6 @@ export const ArxOrgChart = ({
     ),
     [searchConfirmSummary],
   );
-
-  const hasInitialCompanyInfo =
-    companyName ||
-    website ||
-    locationName ||
-    industry ||
-    typeof profileCount === 'number' ||
-    linkedinUrl;
 
   useEffect(() => {
     if (hasInitialCompanyInfo) {

@@ -6,27 +6,34 @@ export {
     processOrgChartToNodeData,
     type JsonValue,
     type NodeState,
-    type OrgChartData, type OrgChartNodeData, type RawOrgNode
+    type OrgChartData,
+    type OrgChartNodeData,
+    type RawOrgNode
 } from './orgChartDataUtils';
 export {
     isOutreachEmailContextVisible,
     isOutreachGoogleContactContextVisible,
     isOutreachLinkedInContextVisible,
-    isOutreachWhatsappContextVisible, orgChartFirstSlotWithEmail,
+    isOutreachWhatsappContextVisible,
+    orgChartFirstSlotWithEmail,
     orgChartFirstSlotWithLinkedin,
     orgChartFirstSlotWithPhone,
     orgChartFirstSlotWithPhoneAndEmail,
     orgChartNodeHasGoogleContactFields,
     orgChartNodeHasOutreachEmail,
     orgChartNodeHasOutreachLinkedin,
-    orgChartNodeHasOutreachPhone
+    orgChartNodeHasOutreachPhone,
+    orgChartSlotHasEmailForOutreach,
+    orgChartSlotHasPhoneForOutreach
 } from './orgChartOutreachVisibility';
 export {
     ORG_CHART_SEARCH_MODES,
     type OrgchartSearchMode
 } from './orgchartSearchMode';
 export {
-    ORG_CHART_SIGNUP_SEARCH_PARAMS, appendOrgChartSignupSearchParams,
-    formatOrgChartSliceLabel, type OrgChartSignupUrlParams
+    ORG_CHART_SIGNUP_SEARCH_PARAMS,
+    appendOrgChartSignupSearchParams,
+    formatOrgChartSliceLabel,
+    type OrgChartSignupUrlParams
 } from './orgChartSignupFromWebsite';
 

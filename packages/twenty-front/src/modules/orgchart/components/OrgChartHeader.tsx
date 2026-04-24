@@ -85,7 +85,9 @@ export const OrgChartHeader = ({
             {businessDivisionQueryProps && (
               <OrgChartBusinessDivisionQuery {...businessDivisionQueryProps} />
             )}
-            {toolbarTrailing}
+
+            {/* Remove the tool bar trailing which has the linkedin query generator preference. */}
+            {/* {toolbarTrailing} */}
           </StyledOrgChartToolbar>
         )}
       </StyledHeader>

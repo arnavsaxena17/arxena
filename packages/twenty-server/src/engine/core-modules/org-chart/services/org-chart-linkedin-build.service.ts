@@ -22,6 +22,7 @@ import {
 } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { ApolloPeopleSearchTransformerService } from 'src/engine/core-modules/candidate-search/services/apollo-people-search-transformer.service';
 import { OrgChartSearchService } from 'src/engine/core-modules/candidate-search/services/orgchart-search.service';
+import { PythonQueryGenerationService } from 'src/engine/core-modules/candidate-search/services/python-query-generation.service';
 import { ResultValidationService } from 'src/engine/core-modules/candidate-search/services/result-validation.service';
 import { extractApiToken } from 'src/engine/core-modules/candidate-search/utils/auth.utils';
 import { CandidateDataService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-data.service';
@@ -131,6 +132,7 @@ export class OrgChartLinkedInBuildService {
     private readonly apolloIoRestService: ApolloIoRestService,
     private readonly apolloPeopleSearchTransformer: ApolloPeopleSearchTransformerService,
     private readonly environmentService: EnvironmentService,
+    private readonly pythonQueryGenerationService: PythonQueryGenerationService,
     @InjectMessageQueue(MessageQueue.orgchartApifyQueue)
     private readonly orgchartApifyQueue: MessageQueueService,
   ) {}
@@ -715,12 +717,26 @@ export class OrgChartLinkedInBuildService {
       }
     }
 
+    const trimmedFunctionRoot =
+      typeof args.body.functionRoot === 'string' ? args.body.functionRoot.trim() : '';
+    const shouldGenerateFunctionRootTitlesForApollo =
+      args.mode === 'entire_company' &&
+      hasMeaningfulOrgChartFunctionRootFilter(trimmedFunctionRoot) &&
+      (!args.jobTitles || args.jobTitles.length === 0);
+    const functionRootDerivedTitles = shouldGenerateFunctionRootTitlesForApollo
+      ? await this.pythonQueryGenerationService.generateApolloPersonTitleTermsForFunctionRoot(
+          trimmedFunctionRoot,
+        )
+      : [];
+
     const apolloParams = this.buildApolloPeopleSearchParams({
       body: args.body,
       mode: args.mode,
       organizationId: resolvedOrgId,
       organizationDomain: resolvedOrgDomain,
-      jobTitles: args.jobTitles,
+      jobTitles:
+        (args.jobTitles?.length ? args.jobTitles : functionRootDerivedTitles) ??
+        [],
     });
 
     await this.emitOrgchartSearchProgressForToken(args.apiToken, {
@@ -866,10 +882,14 @@ export class OrgChartLinkedInBuildService {
     const person_locations = hasCountryFilter ? [trimmedCountry] : undefined;
 
     const person_titles: string[] | undefined =
-      mode === 'entire_company' || mode === 'leadership'
+      mode === 'leadership'
         ? undefined
         : titles.length > 0
-          ? titles
+          ? mode === 'entire_company'
+            ? hasFunctionRootFilter
+              ? titles
+              : undefined
+            : titles
           : undefined;
 
     const person_seniorities: string[] | undefined =

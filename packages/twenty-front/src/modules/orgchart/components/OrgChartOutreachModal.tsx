@@ -1,7 +1,7 @@
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRecoilValue } from 'recoil';
-import { IconButton, IconX } from 'twenty-ui';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { Button, IconButton, IconX } from 'twenty-ui';
 
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
@@ -137,39 +137,6 @@ const StyledInput = styled.input`
   min-height: 36px;
 `;
 
-const StyledPrimaryButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: none;
-  background: ${({ theme }) => theme.color.blue};
-  color: ${({ theme }) => theme.font.color.inverted};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  cursor: pointer;
-
-  &:hover:enabled {
-    background: ${({ theme }) => theme.color.blue80};
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
-
-const StyledSecondaryButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: transparent;
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  cursor: pointer;
-
-  &:hover {
-    background: ${({ theme }) => theme.background.transparent.light};
-  }
-`;
-
 export type OrgChartOutreachModalProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -191,6 +158,7 @@ export const OrgChartOutreachModal = ({
   const tokenPair = useRecoilValue(tokenPairState);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const currentJobId = useRecoilValue(jobIdAtom);
+  const setJobId = useSetRecoilState(jobIdAtom);
   const jobs = useRecoilValue(jobsState);
   const { refetchJobs } = useJobRefetch();
   const {
@@ -267,6 +235,16 @@ export const OrgChartOutreachModal = ({
       }
     },
     [templates],
+  );
+
+  const onJobChange = useCallback(
+    (jobId: string) => {
+      setSelectedJobId(jobId);
+      if (jobId.trim()) {
+        setJobId(jobId);
+      }
+    },
+    [setJobId],
   );
 
   const handleSubmit = useCallback(async () => {
@@ -452,10 +430,15 @@ export const OrgChartOutreachModal = ({
         throw new Error(errMsg);
       }
 
-      enqueueSnackBar('Outreach sent.', {
-        variant: SnackBarVariant.Success,
-        duration: 4000,
-      });
+      enqueueSnackBar(
+        channel === 'google_contact'
+          ? 'Contact added to Google.'
+          : 'Outreach sent.',
+        {
+          variant: SnackBarVariant.Success,
+          duration: 4000,
+        },
+      );
       refetchJobs();
       onClose();
     } catch (err) {
@@ -520,82 +503,108 @@ export const OrgChartOutreachModal = ({
               )}
             </StyledCandidateHeaderCard>
 
-            <StyledTaskBlock>
-              <StyledTaskHeading>Step 1</StyledTaskHeading>
-              <StyledSectionLabel>Choose a job</StyledSectionLabel>
-              <StyledSelect
-                data-testid="orgchart-outreach-job-select"
-                value={selectedJobId}
-                onChange={(e) => setSelectedJobId(e.target.value)}
-                disabled={isJobsLoading}
-              >
-                <option value="">Select a job</option>
-                {activeJobs.map((job) => (
-                  <option key={job.id} value={job.id}>
-                    {job.name}
-                  </option>
-                ))}
-              </StyledSelect>
-            </StyledTaskBlock>
-
-            <StyledTaskBlock>
-              <StyledTaskHeading>Step 2</StyledTaskHeading>
-              <StyledSectionLabel>Pick a template</StyledSectionLabel>
-              <StyledSelect
-                data-testid="orgchart-outreach-template-select"
-                value={templateId}
-                onChange={(e) => onTemplateChange(e.target.value)}
-              >
-                {templates.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.label}
-                  </option>
-                ))}
-              </StyledSelect>
-            </StyledTaskBlock>
-
-            {channel === 'email' ? (
+            {channel === 'google_contact' ? (
               <StyledTaskBlock>
-                <StyledTaskHeading>Step 3</StyledTaskHeading>
-                <StyledSectionLabel>Subject</StyledSectionLabel>
-                <StyledInput
-                  data-testid="orgchart-outreach-subject"
-                  value={emailSubject}
-                  onChange={(e) => setEmailSubject(e.target.value)}
-                />
+                <StyledSectionLabel>Choose a job</StyledSectionLabel>
+                <StyledSelect
+                  data-testid="orgchart-outreach-job-select"
+                  value={selectedJobId}
+                  onChange={(e) => onJobChange(e.target.value)}
+                  disabled={isJobsLoading}
+                >
+                  <option value="">Select a job</option>
+                  {activeJobs.map((job) => (
+                    <option key={job.id} value={job.id}>
+                      {job.name}
+                    </option>
+                  ))}
+                </StyledSelect>
               </StyledTaskBlock>
-            ) : null}
+            ) : (
+              <>
+                <StyledTaskBlock>
+                  <StyledTaskHeading>Step 1</StyledTaskHeading>
+                  <StyledSectionLabel>Choose a job</StyledSectionLabel>
+                  <StyledSelect
+                    data-testid="orgchart-outreach-job-select"
+                    value={selectedJobId}
+                    onChange={(e) => onJobChange(e.target.value)}
+                    disabled={isJobsLoading}
+                  >
+                    <option value="">Select a job</option>
+                    {activeJobs.map((job) => (
+                      <option key={job.id} value={job.id}>
+                        {job.name}
+                      </option>
+                    ))}
+                  </StyledSelect>
+                </StyledTaskBlock>
 
-            <StyledTaskBlock>
-              <StyledTaskHeading>
-                {channel === 'email' ? 'Step 4' : 'Step 3'}
-              </StyledTaskHeading>
-              <StyledSectionLabel>Customize the message</StyledSectionLabel>
-              <StyledTextarea
-                data-testid="orgchart-outreach-message"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-              />
-            </StyledTaskBlock>
+                <StyledTaskBlock>
+                  <StyledTaskHeading>Step 2</StyledTaskHeading>
+                  <StyledSectionLabel>Pick a template</StyledSectionLabel>
+                  <StyledSelect
+                    data-testid="orgchart-outreach-template-select"
+                    value={templateId}
+                    onChange={(e) => onTemplateChange(e.target.value)}
+                  >
+                    {templates.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </StyledSelect>
+                </StyledTaskBlock>
+
+                {channel === 'email' ? (
+                  <StyledTaskBlock>
+                    <StyledTaskHeading>Step 3</StyledTaskHeading>
+                    <StyledSectionLabel>Subject</StyledSectionLabel>
+                    <StyledInput
+                      data-testid="orgchart-outreach-subject"
+                      value={emailSubject}
+                      onChange={(e) => setEmailSubject(e.target.value)}
+                    />
+                  </StyledTaskBlock>
+                ) : null}
+
+                <StyledTaskBlock>
+                  <StyledTaskHeading>
+                    {channel === 'email' ? 'Step 4' : 'Step 3'}
+                  </StyledTaskHeading>
+                  <StyledSectionLabel>Customize the message</StyledSectionLabel>
+                  <StyledTextarea
+                    data-testid="orgchart-outreach-message"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                  />
+                </StyledTaskBlock>
+              </>
+            )}
           </StyledBody>
         </OnboardingIntentModalLayout>
       </OrgChartModalTightContent>
       <StyledOutreachModalFooter>
-        <StyledSecondaryButton type="button" onClick={onClose}>
-          Cancel
-        </StyledSecondaryButton>
-        <StyledPrimaryButton
-          type="button"
-          data-testid="orgchart-outreach-send"
+        <Button variant="secondary" title="Cancel" onClick={onClose} />
+        <Button
+          variant="primary"
+          title={
+            isSubmitting
+              ? channel === 'google_contact'
+                ? 'Adding…'
+                : 'Sending…'
+              : channel === 'google_contact'
+                ? 'Add to Google Contacts'
+                : 'Add to job & send'
+          }
           onClick={() => void handleSubmit()}
           disabled={
             isSubmitting ||
             !selectedJobId ||
             (channel !== 'google_contact' && !message.trim())
           }
-        >
-          {isSubmitting ? 'Sending…' : 'Add to job & send'}
-        </StyledPrimaryButton>
+          dataTestId="orgchart-outreach-send"
+        />
       </StyledOutreachModalFooter>
     </StyledOrgChartOutreachModal>
   );

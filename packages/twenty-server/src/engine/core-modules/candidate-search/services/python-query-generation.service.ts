@@ -27,6 +27,76 @@ export class PythonQueryGenerationService {
     return url.replace(/\/api\/orgchart\/build\/?$/, '').replace(/\/+$/, '');
   }
 
+  /**
+   * Generate Apollo `person_titles[]` terms for an org-chart function-root filter.
+   *
+   * We reuse the Python LinkedIn query-set generator (it already knows how to turn
+   * a function_root label into a title-like string), then split the returned
+   * `job_title` into individual terms (e.g. "people sales" -> ["people","sales"]).
+   */
+  async generateApolloPersonTitleTermsForFunctionRoot(
+    functionRoot: string,
+    options?: { topNTerms?: number },
+  ): Promise<string[]> {
+    const trimmed = functionRoot.trim();
+    if (!trimmed) return [];
+
+    const baseUrl = this.getBaseUrl();
+    const url = `${baseUrl}/api/query-generator/linkedin/query-set`;
+
+    this.logger.log(
+      `Calling Python query-set generator for Apollo person_titles at ${url}`,
+    );
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        functions: [],
+        grades: [],
+        function_root: [{ name: trimmed, exclude: false }],
+        company_names: [],
+        raw_job_titles: [],
+        ...(typeof options?.topNTerms === 'number' && options.topNTerms > 0
+          ? { top_n_terms: options.topNTerms }
+          : { top_n_terms: 8 }),
+      }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(
+        `Python query-set generator returned ${response.status}: ${text}`,
+      );
+    }
+
+    const result = (await response.json()) as {
+      search_query_set?: Array<{
+        job_title?: string | null;
+        keywords?: string | null;
+      }>;
+    };
+
+    const rows = Array.isArray(result.search_query_set)
+      ? result.search_query_set
+      : [];
+    const rawTitle =
+      (typeof rows[0]?.job_title === 'string' ? rows[0]?.job_title : '') || '';
+
+    const splitTerms = (s: string) =>
+      s
+        .split(/[\s/|,]+/g)
+        .map((t) => t.trim().toLowerCase())
+        .filter((t) => t.length > 1);
+
+    const fromPython = splitTerms(rawTitle);
+    if (fromPython.length > 0) {
+      return Array.from(new Set(fromPython));
+    }
+
+    return Array.from(new Set(splitTerms(trimmed)));
+  }
+
   async generateLinkedInQuery(
     input: PythonQueryInput,
   ): Promise<{ job_title: string | null; keywords: string | null; company: string[] | null }> {

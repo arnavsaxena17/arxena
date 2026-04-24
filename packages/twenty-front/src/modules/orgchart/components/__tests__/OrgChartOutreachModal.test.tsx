@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { RecoilRoot, type MutableSnapshot } from 'recoil';
+import { RecoilRoot, useRecoilValue, type MutableSnapshot } from 'recoil';
 
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
@@ -9,6 +9,11 @@ import { BaseThemeProvider } from '@/ui/theme/components/BaseThemeProvider';
 
 import type { ContextResultItem } from '../../types';
 import { OrgChartOutreachModal } from '../OrgChartOutreachModal';
+
+const JobIdProbe = () => {
+  const jobId = useRecoilValue(jobIdAtom);
+  return <div data-testid="job-id-probe">{jobId}</div>;
+};
 
 const mockRefetchJobs = jest.fn().mockResolvedValue(undefined);
 const mockEnqueueSnackBar = jest.fn();
@@ -129,5 +134,52 @@ describe('OrgChartOutreachModal', () => {
       </RecoilRoot>,
     );
     expect(screen.getByTestId('orgchart-outreach-subject')).toBeInTheDocument();
+  });
+
+  it('persists selected job as active job', async () => {
+    console.log('OrgChartOutreachModal: job selection persists to recoil');
+    const initWithTwoJobs = ({ set }: MutableSnapshot) => {
+      initializeState({ set } as MutableSnapshot);
+      set(jobsState, [
+        {
+          id: 'job-a',
+          name: 'Open role',
+          isActive: true,
+          createdAt: '2024-01-01T00:00:00Z',
+        },
+        {
+          id: 'job-b',
+          name: 'Another role',
+          isActive: true,
+          createdAt: '2024-01-02T00:00:00Z',
+        },
+      ]);
+      set(jobIdAtom, 'job-a');
+    };
+
+    render(
+      <RecoilRoot initializeState={initWithTwoJobs}>
+        <BaseThemeProvider>
+          <JobIdProbe />
+          <OrgChartOutreachModal
+            isOpen
+            onClose={jest.fn()}
+            channel="linkedin_invite"
+            contextItem={contextItem}
+            node={null}
+            companyName="Acme"
+          />
+        </BaseThemeProvider>
+      </RecoilRoot>,
+    );
+
+    expect(screen.getByTestId('job-id-probe').textContent).toBe('job-a');
+
+    const jobSelect = screen.getByTestId('orgchart-outreach-job-select');
+    fireEvent.change(jobSelect, { target: { value: 'job-b' } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('job-id-probe').textContent).toBe('job-b');
+    });
   });
 });

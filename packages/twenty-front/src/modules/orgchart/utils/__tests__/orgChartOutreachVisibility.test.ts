@@ -1,18 +1,18 @@
 import type { OrgChartNodeData } from 'twenty-shared';
 
 import {
-  isOutreachEmailContextVisible,
-  isOutreachGoogleContactContextVisible,
-  isOutreachLinkedInContextVisible,
-  isOutreachWhatsappContextVisible,
-  orgChartFirstSlotWithEmail,
-  orgChartFirstSlotWithLinkedin,
-  orgChartFirstSlotWithPhone,
-  orgChartFirstSlotWithPhoneAndEmail,
-  orgChartNodeHasGoogleContactFields,
-  orgChartNodeHasOutreachEmail,
-  orgChartNodeHasOutreachLinkedin,
-  orgChartNodeHasOutreachPhone,
+    isOutreachEmailContextVisible,
+    isOutreachGoogleContactContextVisible,
+    isOutreachLinkedInContextVisible,
+    isOutreachWhatsappContextVisible,
+    orgChartFirstSlotWithEmail,
+    orgChartFirstSlotWithLinkedin,
+    orgChartFirstSlotWithPhone,
+    orgChartFirstSlotWithPhoneAndEmail,
+    orgChartNodeHasGoogleContactFields,
+    orgChartNodeHasOutreachEmail,
+    orgChartNodeHasOutreachLinkedin,
+    orgChartNodeHasOutreachPhone,
 } from 'twenty-shared';
 
 const activeBase = {
@@ -107,5 +107,27 @@ describe('orgChartOutreachVisibility (from twenty-shared)', () => {
       phone_0: '1',
     } as OrgChartNodeData;
     expect(isOutreachGoogleContactContextVisible(active)).toBe(false);
+  });
+
+  it('m7kq has_email and phone directory flags make outreach menu visible without strings', () => {
+    const m7kq = {
+      key: 9,
+      headline: 'H',
+      nodeState: 'active' as const,
+      has_email_0: true,
+      has_direct_phone_0: true,
+    } as OrgChartNodeData;
+    expect(orgChartNodeHasOutreachEmail(m7kq)).toBe(true);
+    expect(orgChartNodeHasOutreachPhone(m7kq)).toBe(true);
+    expect(orgChartNodeHasGoogleContactFields(m7kq)).toBe(true);
+  });
+
+  it('explicit has_* false for phone means no WhatsApp / phone outreach', () => {
+    const noPhone = {
+      ...activeBase,
+      has_direct_phone_0: false,
+      has_org_phone_0: false,
+    } as OrgChartNodeData;
+    expect(orgChartNodeHasOutreachPhone(noPhone)).toBe(false);
   });
 });

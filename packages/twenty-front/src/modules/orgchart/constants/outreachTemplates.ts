@@ -52,7 +52,7 @@ export const outreachModalTitle = (channel: OutreachChannelKey): string => {
     case 'linkedin_invite':
       return 'LinkedIn connection request';
     case 'whatsapp':
-      return 'WhatsApp message';
+      return 'Send WhatsApp message';
     case 'google_contact':
       return 'Add to Google Contacts';
     case 'email':
