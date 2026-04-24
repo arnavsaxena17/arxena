@@ -39,5 +39,18 @@ export function normalizeCountry(country?: string): string {
   if (!normalized) {
     return 'global';
   }
-  return normalized.replace(/\s+/g, '_').replace(/[^a-z0-9_]+/g, '');
+
+  const canonical = normalized.replace(/\s+/g, '_').replace(/[^a-z0-9_]+/g, '');
+  const compactAlpha = normalized.replace(/[^a-z]+/g, '');
+
+  // Common country shorthands frequently produced by data providers.
+  if (
+    compactAlpha === 'us' ||
+    compactAlpha === 'usa' ||
+    compactAlpha.startsWith('unitedstates')
+  ) {
+    return 'united_states';
+  }
+
+  return canonical;
 }

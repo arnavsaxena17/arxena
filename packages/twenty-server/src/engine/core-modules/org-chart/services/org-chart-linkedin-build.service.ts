@@ -45,6 +45,7 @@ import { OrgchartCancelRegistryService } from 'src/engine/core-modules/org-chart
 import { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
 import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import { filterOrgChartCandidatesByNodeStdLabels } from 'src/engine/core-modules/org-chart/utils/orgchart-node-scope-filter.util';
+import { normalizeCountry } from 'src/engine/core-modules/org-chart/utils/orgchart-normalization.util';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { LinkedinXrayService } from 'src/modules/linkedin-xray/linkedin-xray.service';
 import { LinkedinXraySearchEngine } from 'src/modules/linkedin-xray/types/linkedin-xray-search-job.types';
@@ -1158,7 +1159,7 @@ export class OrgChartLinkedInBuildService {
       const raw = item;
 
       if (hasCountryFilter) {
-        const filterCountry = normalizedCountryRaw.toLowerCase();
+        const filterCountry = normalizeCountry(normalizedCountryRaw);
         const possibleCountryValues = [
           raw.locationCountry,
           raw.location_country,
@@ -1167,10 +1168,9 @@ export class OrgChartLinkedInBuildService {
           (v): v is string => typeof v === 'string' && v.trim().length > 0,
         );
 
-        const normalizedCountry =
-          possibleCountryValues[0]?.trim().toLowerCase() ?? '';
+        const normalizedCountry = normalizeCountry(possibleCountryValues[0]);
 
-        if (!normalizedCountry.includes(filterCountry)) {
+        if (normalizedCountry !== filterCountry) {
           return false;
         }
       }

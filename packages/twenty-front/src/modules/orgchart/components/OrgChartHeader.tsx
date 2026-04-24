@@ -55,6 +55,7 @@ export type OrgChartHeaderProps = OrgChartCompanyInfoProps & {
   businessDivisionQueryProps?: OrgChartBusinessDivisionQueryProps;
   /** Extra controls in the filter toolbar (e.g. LinkedIn query generator preference). */
   toolbarTrailing?: ReactNode;
+  onClearCompanyCache?: () => void;
 };
 
 export const OrgChartHeader = ({
@@ -63,6 +64,7 @@ export const OrgChartHeader = ({
   filtersProps,
   businessDivisionQueryProps,
   toolbarTrailing,
+  onClearCompanyCache,
   ...companyInfoProps
 }: OrgChartHeaderProps) => {
   const [isCompanyDrawerOpen, setIsCompanyDrawerOpen] = useState(false);
@@ -95,6 +97,7 @@ export const OrgChartHeader = ({
         {...companyInfoProps}
         isOpen={isCompanyDrawerOpen}
         onClose={() => setIsCompanyDrawerOpen(false)}
+        onClearCompanyCache={onClearCompanyCache}
       />
     </>
   );

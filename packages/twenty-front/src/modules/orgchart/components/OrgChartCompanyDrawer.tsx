@@ -199,9 +199,33 @@ const StyledMetaValue = styled.span`
   text-align: right;
 `;
 
+const StyledActionsRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledDangerButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(1.5)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  background: ${({ theme }) => theme.background.primary};
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  cursor: pointer;
+
+  &:hover {
+    background: ${({ theme }) => theme.background.transparent.light};
+  }
+`;
+
 export type OrgChartCompanyDrawerProps = OrgChartCompanyInfoProps & {
   isOpen: boolean;
   onClose: () => void;
+  onClearCompanyCache?: () => void;
 };
 
 export const OrgChartCompanyDrawer = ({
@@ -219,6 +243,7 @@ export const OrgChartCompanyDrawer = ({
   hideProfileCountWhenUnipile,
   isOpen,
   onClose,
+  onClearCompanyCache,
 }: OrgChartCompanyDrawerProps) => {
   if (!isOpen) return null;
 
@@ -351,6 +376,20 @@ export const OrgChartCompanyDrawer = ({
               >
                 {description.trim()}
               </StyledSectionContent>
+            </StyledSection>
+          )}
+
+          {onClearCompanyCache && (
+            <StyledSection>
+              <StyledSectionTitle>Cache</StyledSectionTitle>
+              <StyledActionsRow>
+                <StyledDangerButton
+                  type="button"
+                  onClick={onClearCompanyCache}
+                >
+                  Clear cached org chart
+                </StyledDangerButton>
+              </StyledActionsRow>
             </StyledSection>
           )}
         </StyledDrawerBody>
