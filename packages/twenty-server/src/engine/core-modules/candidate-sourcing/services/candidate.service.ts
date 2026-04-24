@@ -4,26 +4,26 @@ import * as os from 'os';
 import * as path from 'path';
 
 import {
-  ArxenaCandidateNode,
-  ArxenaPersonNode,
-  CandidateFieldEdge,
-  CandidatesEdge,
-  CreateManyCandidateFieldValues,
-  CreateManyCandidates,
-  createOneCandidateField,
-  getGraphqlToFindManyJobsWithCandidateValues,
-  graphqlQueryToCreateOneCandidateFieldValue,
-  graphqlQueryToFindManyCandidateFields,
-  graphqlToFetchAllCandidateData,
-  graphqlToFindManyCandidateFieldValues,
-  graphQltoUpdateOneCandidate,
-  Job,
-  mutationToUpdateOnePerson,
-  PageInfo,
-  PersonNode,
-  resolveIsOrgChartEnabledFromWorkspace,
-  updateOneCandidateFieldValue,
-  UserProfile
+    ArxenaCandidateNode,
+    ArxenaPersonNode,
+    CandidateFieldEdge,
+    CandidatesEdge,
+    CreateManyCandidateFieldValues,
+    CreateManyCandidates,
+    createOneCandidateField,
+    getGraphqlToFindManyJobsWithCandidateValues,
+    graphqlQueryToCreateOneCandidateFieldValue,
+    graphqlQueryToFindManyCandidateFields,
+    graphqlToFetchAllCandidateData,
+    graphqlToFindManyCandidateFieldValues,
+    graphQltoUpdateOneCandidate,
+    Job,
+    mutationToUpdateOnePerson,
+    PageInfo,
+    PersonNode,
+    resolveIsOrgChartEnabledFromWorkspace,
+    updateOneCandidateFieldValue,
+    UserProfile
 } from 'twenty-shared';
 import { NameProcessor } from '../../workspace-modifications/object-apis/data/nameProcessor';
 
@@ -31,12 +31,12 @@ import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/
 import { generateCompleteMappings, mapArxCandidateToPersonNode, processArxCandidate } from 'src/engine/core-modules/candidate-sourcing/utils/data-transformation-utility';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
 import {
-  CandidateUploadLookup,
-  deduplicateProfilesForUpload,
-  extractUploadUrlBucket,
-  findExistingCandidateForUpload,
-  getUploadProfileDedupMapKey,
-  normalizeUrlForDedup,
+    CandidateUploadLookup,
+    deduplicateProfilesForUpload,
+    extractUploadUrlBucket,
+    findExistingCandidateForUpload,
+    getUploadProfileDedupMapKey,
+    normalizeUrlForDedup,
 } from 'src/engine/core-modules/candidate-sourcing/utils/upload-profile-dedup.utils';
 import { v4 } from 'uuid';
 
@@ -3141,7 +3141,16 @@ export class CandidateService {
   async findCandidatesByProfileUrl(profileUrl: string, apiToken: string): Promise<any[]> {
     try {
       console.log('Finding candidates by profile URL:', profileUrl);
-      
+
+      // Stored LinkedIn URLs are normalized (https://linkedin.com/in/...); callers often pass
+      // http://www.linkedin.com/... or linkedin.com/in/... — normalize so ilike matches DB rows.
+      const linkedinLookupUrl =
+        profileUrl.includes('linkedin.com') &&
+        !profileUrl.toLowerCase().includes('resdex') &&
+        !profileUrl.toLowerCase().includes('hiring')
+          ? (normalizeLinkedInUrl(profileUrl).trim() || profileUrl.trim())
+          : profileUrl.trim();
+
       // Try different URL field queries based on profile URL type
       let graphqlQuery;
       
@@ -3167,7 +3176,7 @@ export class CandidateService {
         graphqlQuery = {
           filter: {
             linkedinUrl: { 
-              primaryLinkUrl: { ilike: `%${profileUrl}%` }
+              primaryLinkUrl: { ilike: `%${linkedinLookupUrl}%` }
             }
           },
           orderBy: [{ position: "AscNullsFirst" }]
@@ -3179,7 +3188,7 @@ export class CandidateService {
             or: [
               { resdexNaukriUrl: { primaryLinkUrl: { ilike: `%${profileUrl}%` } } },
               { hiringNaukriUrl: { primaryLinkUrl: { ilike: `%${profileUrl}%` } } },
-              { linkedinUrl: { primaryLinkUrl: { ilike: `%${profileUrl}%` } } }
+              { linkedinUrl: { primaryLinkUrl: { ilike: `%${linkedinLookupUrl}%` } } }
             ]
           },
           orderBy: [{ position: "AscNullsFirst" }]

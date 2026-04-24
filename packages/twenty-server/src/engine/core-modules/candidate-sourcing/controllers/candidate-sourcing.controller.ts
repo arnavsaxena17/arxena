@@ -1,47 +1,47 @@
 import {
-  Body,
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  Post,
-  Req,
-  UploadedFile,
-  UseGuards,
-  UseInterceptors
+    Body,
+    Controller,
+    Get,
+    HttpException,
+    HttpStatus,
+    Post,
+    Req,
+    UploadedFile,
+    UseGuards,
+    UseInterceptors
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from 'multer';
 
 import axios from 'axios';
 import {
-  CandidateEdge,
-  CandidateEnrichmentEdge,
-  createOneCandidateField,
-  CreateOneVideoInterviewTemplate,
-  findWorkspaceMemberProfiles,
-  getGraphqlToFindManyJobs,
-  graphqlMutationToDeleteManyCandidates,
-  graphqlMutationToDeleteManyPeople,
-  graphqlQueryToFindManyPeople,
-  graphqlToAddNewJob,
-  graphqlToCreateOnePrompt,
-  graphqlToFetchAllCandidateData,
-  graphqlToFetchAllCandidateDataWithFieldValues,
-  graphQlTofindManyCandidateEnrichments,
-  graphqlToFindManyJobs,
-  graphQltoUpdateOneCandidate,
-  graphQLToUpdateOneWorkspaceMemberProfile,
-  Job,
-  JobEdge,
-  mutations,
-  PageInfo,
-  PersonEdge,
-  PersonNode,
-  queries,
-  resolveIsOrgChartEnabledFromWorkspace,
-  UpdateOneJob,
-  UserProfile,
+    CandidateEdge,
+    CandidateEnrichmentEdge,
+    createOneCandidateField,
+    CreateOneVideoInterviewTemplate,
+    findWorkspaceMemberProfiles,
+    getGraphqlToFindManyJobs,
+    graphqlMutationToDeleteManyCandidates,
+    graphqlMutationToDeleteManyPeople,
+    graphqlQueryToFindManyPeople,
+    graphqlToAddNewJob,
+    graphqlToCreateOnePrompt,
+    graphqlToFetchAllCandidateData,
+    graphqlToFetchAllCandidateDataWithFieldValues,
+    graphQlTofindManyCandidateEnrichments,
+    graphqlToFindManyJobs,
+    graphQltoUpdateOneCandidate,
+    graphQLToUpdateOneWorkspaceMemberProfile,
+    Job,
+    JobEdge,
+    mutations,
+    PageInfo,
+    PersonEdge,
+    PersonNode,
+    queries,
+    resolveIsOrgChartEnabledFromWorkspace,
+    UpdateOneJob,
+    UserProfile,
 } from 'twenty-shared';
 import { v4 } from 'uuid';
 
@@ -49,8 +49,8 @@ import console from 'console';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import {
-  JobDescriptionParseRequest,
-  ParsedJobDescription,
+    JobDescriptionParseRequest,
+    ParsedJobDescription,
 } from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
 import { DeleteFieldValuesService } from 'src/engine/core-modules/candidate-sourcing/jobs/delete-field-values.service';
 import { ProcessAiFiltersService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-ai-filters.service';
@@ -69,6 +69,31 @@ import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-gra
 import { prompts } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+
+/**
+ * `graphqlToFetchAllCandidateData` returns nested `jobs { id }`, not top-level `jobsId`.
+ * Some code paths still expose `jobsId` / `jobId` on the node — support both.
+ */
+const getCandidateJobIdForByLinkedInUrls = (
+  candidate: Record<string, unknown>,
+): string | undefined => {
+  const jobsId = candidate['jobsId'];
+  if (typeof jobsId === 'string' && jobsId.trim()) {
+    return jobsId.trim();
+  }
+  const jobId = candidate['jobId'];
+  if (typeof jobId === 'string' && jobId.trim()) {
+    return jobId.trim();
+  }
+  const jobs = candidate['jobs'];
+  if (jobs && typeof jobs === 'object' && jobs !== null && 'id' in jobs) {
+    const id = (jobs as { id?: unknown }).id;
+    if (typeof id === 'string' && id.trim()) {
+      return id.trim();
+    }
+  }
+  return undefined;
+};
 
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {
@@ -2710,13 +2735,14 @@ export class CandidateSourcingController {
             const candidateIds = candidates.map((c: any) => c.id);
             // Extract job IDs from candidates if available
             const jobIds = candidates
-              .map((c: any) => c.jobsId || c.jobId)
+              .map((c: any) => getCandidateJobIdForByLinkedInUrls(c as Record<string, unknown>))
               .filter((id: any) => id);
 
             // Filter by jobId if provided
             if (jobId) {
               const filteredCandidates = candidates.filter(
-                (c: any) => c.jobsId === jobId || c.jobId === jobId,
+                (c: any) =>
+                  getCandidateJobIdForByLinkedInUrls(c as Record<string, unknown>) === jobId,
               );
               results[linkedinUrl] = {
                 saved: filteredCandidates.length > 0,
@@ -2727,7 +2753,9 @@ export class CandidateSourcingController {
                 jobIds:
                   filteredCandidates.length > 0
                     ? filteredCandidates
-                        .map((c: any) => c.jobsId || c.jobId)
+                        .map((c: any) =>
+                          getCandidateJobIdForByLinkedInUrls(c as Record<string, unknown>),
+                        )
                         .filter((id: any) => id)
                     : undefined,
               };
