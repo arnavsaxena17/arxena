@@ -66,6 +66,33 @@ const leadershipOrgChartPythonFailureMessage = (detail: string) =>
 const DEFAULT_ORG_CHART_COUNTRY = 'global';
 const DEFAULT_ORG_CHART_FUNCTION_ROOT = 'fullcompany';
 
+const MULTI_SOURCE_SLUGS = ['unipile', 'apollo', 'theorg', 'officialboard'] as const;
+type MultiSourceSlug = (typeof MULTI_SOURCE_SLUGS)[number];
+
+const normalizeMultiSourceSlug = (raw: string): MultiSourceSlug | null => {
+  const input = raw.trim();
+  const lowered = input.toLowerCase();
+
+  // Accept already-normalized slugs.
+  if ((MULTI_SOURCE_SLUGS as readonly string[]).includes(lowered)) {
+    return lowered as MultiSourceSlug;
+  }
+
+  // Defensive mapping in case UI ever passes display labels.
+  const mapped =
+    lowered === 'linkedin (unipile)' || lowered === 'linkedin unipile'
+      ? 'unipile'
+      : lowered === 'apollo'
+        ? 'apollo'
+        : lowered === 'theorg leadership' || lowered === 'the org leadership' || lowered === 'theorg'
+          ? 'theorg'
+          : lowered === 'officialboard' || lowered === 'official board'
+            ? 'officialboard'
+            : null;
+
+  return mapped as MultiSourceSlug | null;
+};
+
 export const ArxOrgChartContainer = ({
   companyId,
   companyName,
@@ -84,6 +111,9 @@ export const ArxOrgChartContainer = ({
   const [searchResultCount, setSearchResultCount] = useState<number | null>(null);
   const [businessDivisionQuery, setBusinessDivisionQuery] = useState('');
   const [isEnrichedLeadershipLoading, setIsEnrichedLeadershipLoading] = useState(false);
+  const [multiSourceSelectedSources, setMultiSourceSelectedSources] = useState<
+    string[]
+  >(['apollo','theorg']);
   const [exactEmployeeCount, setExactEmployeeCount] = useState<number | null>(null);
   const [unipileCompanyProfile, setUnipileCompanyProfile] = useState<{
     employee_count?: number;
@@ -118,7 +148,31 @@ export const ArxOrgChartContainer = ({
 
   const { refetchJobs } = useJobRefetch();
   const { enqueueSnackBar } = useSnackBar();
+
+  const toggleMultiSource = useCallback((source: string) => {
+    const slug = normalizeMultiSourceSlug(source);
+    if (!slug) return;
+    setMultiSourceSelectedSources((prev) => {
+      const list = Array.isArray(prev) ? prev : [];
+      const normalized = list
+        .map((s) => normalizeMultiSourceSlug(s))
+        .filter((s): s is MultiSourceSlug => !!s);
+      const unique = Array.from(new Set(normalized));
+      return unique.includes(slug) ? unique.filter((s) => s !== slug) : [...unique, slug];
+    });
+  }, []);
   const { t } = useLingui();
+
+  const multiSourceSelectedSlugs = useMemo(() => {
+    const normalized = (Array.isArray(multiSourceSelectedSources)
+      ? multiSourceSelectedSources
+      : []
+    )
+      .map((s) => normalizeMultiSourceSlug(s))
+      .filter((s): s is MultiSourceSlug => !!s);
+
+    return Array.from(new Set(normalized));
+  }, [multiSourceSelectedSources]);
 
   const effectiveEmployeeCount =
     unipileCompanyProfile?.employee_count ?? exactEmployeeCount ?? undefined;
@@ -133,11 +187,26 @@ export const ArxOrgChartContainer = ({
   const [pendingPreviewNodePeopleChoice, setPendingPreviewNodePeopleChoice] =
     useState<OrgChartNodeData | null>(null);
 
+  const {
+    company: fallbackCompanyInfo,
+    isLoading: isCompanyInfoLookupLoading,
+    lookupByName,
+  } = useCompanyInfoLookup({ baseUrl, accessToken });
+
+  const effectiveIndustry =
+    industry ??
+    fallbackCompanyInfo?.industry ??
+    (Array.isArray(unipileCompanyProfile?.industry) &&
+    typeof unipileCompanyProfile?.industry?.[0] === 'string'
+      ? unipileCompanyProfile.industry[0]
+      : undefined);
+
   const actions = useOrgChartActions({
     companyId,
     companyName: effectiveCompanyName,
     website: effectiveCompanyWebsite,
     employeeCount: effectiveEmployeeCount ?? undefined,
+    industry: effectiveIndustry,
     linkedinCompanyUrl: linkedinUrlToUse?.trim(),
     linkedinUnipileAccountId: process.env.REACT_APP_ORGCHART_UNIPILE_ACCOUNT_ID?.trim(),
     businessDivisionRawQuery: businessDivisionQuery.trim() || undefined,
@@ -145,9 +214,6 @@ export const ArxOrgChartContainer = ({
   });
 
   const { applyOrgChartOverride } = actions;
-
-  const { company: fallbackCompanyInfo, isLoading: isCompanyInfoLookupLoading, lookupByName } =
-    useCompanyInfoLookup({ baseUrl, accessToken });
 
   const jobOrgChartHook = useJobOrgChartData(
     { jobId, jobName: companyName ?? effectiveCompanyName },
@@ -405,11 +471,12 @@ export const ArxOrgChartContainer = ({
   const [pendingSearchConfirm, setPendingSearchConfirm] = useState<{
     title: string;
     run: () => void;
+    kind?: 'default' | 'multi_source';
   } | null>(null);
 
   const requestCandidateSearchConfirm = useCallback(
-    (title: string, run: () => void) => {
-      setPendingSearchConfirm({ title, run });
+    (title: string, run: () => void, kind: 'default' | 'multi_source' = 'default') => {
+      setPendingSearchConfirm({ title, run, kind });
     },
     [],
   );
@@ -431,6 +498,23 @@ export const ArxOrgChartContainer = ({
       functionRoot: selectedFunctionRoot,
     });
   }, [actions.executeOrgchartSearch, resolvedSearchMode, selectedCountry, selectedFunctionRoot]);
+
+  const handleGetAllOrgChartSearchMultiSource = useCallback(async () => {
+    await actions.executeOrgchartSearch({
+      mode: resolvedSearchMode as any,
+      origin: 'header',
+      country: selectedCountry,
+      functionRoot: selectedFunctionRoot,
+      multiSource: true,
+      sources: multiSourceSelectedSlugs,
+    } as any);
+  }, [
+    actions.executeOrgchartSearch,
+    resolvedSearchMode,
+    selectedCountry,
+    selectedFunctionRoot,
+    multiSourceSelectedSlugs,
+  ]);
 
   const handleMapBusinessDivision = useCallback(async () => {
     const trimmed = businessDivisionQuery.trim();
@@ -600,6 +684,17 @@ export const ArxOrgChartContainer = ({
         void handleGetAllOrgChartSearch();
       });
     },
+    onGetAllMultiSource: () => {
+      requestCandidateSearchConfirm(
+        t`Confirm multi-source full org chart search`,
+        () => {
+          void handleGetAllOrgChartSearchMultiSource();
+        },
+        'multi_source',
+      );
+    },
+    multiSourceSelectedSources: multiSourceSelectedSlugs,
+    onToggleMultiSource: toggleMultiSource,
     onViewAllCandidates: () => {
       requestCandidateSearchConfirm(t`Confirm view all candidates`, () => {
         void handleViewAllCandidates();
@@ -722,10 +817,22 @@ export const ArxOrgChartContainer = ({
               {searchConfirmSummary.dataSourceLabel}
             </StyledOrgChartConfirmDd>
           </StyledOrgChartConfirmRow>
+          {pendingSearchConfirm?.kind === 'multi_source' ? (
+            <StyledOrgChartConfirmRow>
+              <StyledOrgChartConfirmDt>
+                <Trans>Org chart sources</Trans>
+              </StyledOrgChartConfirmDt>
+              <StyledOrgChartConfirmDd>
+                {multiSourceSelectedSlugs.length > 0
+                  ? multiSourceSelectedSlugs.map((source) => toTitleCase(source)).join(', ')
+                  : t`None selected`}
+              </StyledOrgChartConfirmDd>
+            </StyledOrgChartConfirmRow>
+          ) : null}
         </StyledOrgChartConfirmRows>
       </StyledOrgChartConfirmSummary>
     ),
-    [searchConfirmSummary],
+    [multiSourceSelectedSlugs, pendingSearchConfirm?.kind, searchConfirmSummary, t],
   );
 
   const previewNodeChoiceSubtitle = useMemo(

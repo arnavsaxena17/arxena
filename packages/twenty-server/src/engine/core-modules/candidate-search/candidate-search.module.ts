@@ -24,6 +24,7 @@ import { CandidateSearchPipelineController } from './controllers/candidate-searc
 import { CandidateSearchController } from './controllers/candidate-search.controller';
 import { OrgchartApifyBuildProcessor } from './jobs/orgchart-apify-build.processor';
 import { OrgchartLinkedinXrayBuildProcessor } from './jobs/orgchart-linkedin-xray-build.processor';
+import { OrgchartMultiSourceBuildProcessor } from './jobs/orgchart-multisource-build.processor';
 import { OrgchartUnipileBuildProcessor } from './jobs/orgchart-unipile-build.processor';
 import { SearchParametersPrompts } from './prompts/search-parameters-prompts';
 import { ApolloIoRestService } from './services/apollo-io-rest.service';
@@ -112,6 +113,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     OrgchartApifyBuildProcessor,
     OrgchartUnipileBuildProcessor,
     OrgchartLinkedinXrayBuildProcessor,
+    OrgchartMultiSourceBuildProcessor,
     // Executive search enhancement services
     PythonOrgChartService,
     OrgChartProfileDataSourceMapperService,

@@ -599,6 +599,10 @@ export class OrgChartSearchService {
       function?: string;
       /** When set, used as job_company_linkedin_url for the Python service (overrides /company/{companyId}) */
       companyLinkedinUrl?: string;
+      /** Raw industry label forwarded to Python list_data.industry */
+      industry?: string;
+      /** Macro category override forwarded to Python list_data.industry_category */
+      industryCategory?: string;
       /**
        * When a candidate row has no `source`, map profile provenance using this
        * chart-level channel (server-only; clients receive opaque `ds_*` slugs on nodes).
@@ -833,6 +837,8 @@ export class OrgChartSearchService {
           jobName,
           jobId: normalizedCompanyId || undefined,
           functionRoot: fn,
+          industry: options.industry,
+          industryCategory: options.industryCategory,
         },
       );
       const apolloPublicSlug =

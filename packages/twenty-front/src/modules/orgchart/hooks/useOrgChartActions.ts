@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useDebouncedCallback } from 'use-debounce';
 
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
@@ -57,6 +58,10 @@ export type UseOrgChartActionsParams = {
   companyName?: string;
   website?: string;
   employeeCount?: number | null;
+  /** Raw industry label (e.g. "Computer Software") to help Python remap functions. */
+  industry?: string;
+  /** Optional macro industry category override for Python (e.g. "computer software"). */
+  industryCategory?: string;
   /**
    * Preview template nodes cannot load per-position people until a full chart exists.
    * When set, double-click / “Get people in this position” on a preview node invokes this instead of fetching.
@@ -255,6 +260,8 @@ export const useOrgChartActions = ({
   companyName,
   website,
   employeeCount,
+  industry,
+  industryCategory,
   onPreviewNodePeopleRequest,
   linkedinCompanyUrl,
   linkedinUnipileAccountId,
@@ -328,6 +335,12 @@ export const useOrgChartActions = ({
     string,
     unknown
   > | null>(null);
+  const debouncedSetLatestOrgChart = useDebouncedCallback(
+    (next: Record<string, unknown>) => {
+      setLatestOrgChart(next);
+    },
+    800,
+  );
 
   const [selectedNodeFunction, setSelectedNodeFunction] = useState<
     string | undefined
@@ -511,6 +524,43 @@ export const useOrgChartActions = ({
             : 'Received page update...';
         setContextProgressMessage(pageMsg);
         updateSnackBarIfEntireCompany(pageMsg);
+        return;
+      }
+
+      if (payload.event === ('partialOrgChart' as any)) {
+        if (eventData.message) {
+          setContextProgressMessage(eventData.message);
+          updateSnackBarIfEntireCompany(eventData.message);
+        }
+        const partial = eventData as unknown as {
+          message?: string;
+          orgChart?: Record<string, unknown>;
+          candidateSource?: string;
+          dedupedCountSoFar?: number;
+          itemCountSoFar?: number;
+        };
+        if (partial.orgChart && typeof partial.orgChart === 'object') {
+          const nextOrgChart: Record<string, unknown> = {
+            ...(partial.orgChart as Record<string, unknown>),
+          };
+          const candidateSourceFromEvent =
+            typeof partial.candidateSource === 'string'
+              ? partial.candidateSource
+              : undefined;
+          const itemCountFromEvent =
+            typeof partial.dedupedCountSoFar === 'number'
+              ? partial.dedupedCountSoFar
+              : typeof partial.itemCountSoFar === 'number'
+                ? partial.itemCountSoFar
+                : undefined;
+          if (candidateSourceFromEvent !== undefined) {
+            nextOrgChart.candidateSource = candidateSourceFromEvent;
+          }
+          if (itemCountFromEvent !== undefined) {
+            nextOrgChart.itemCount = itemCountFromEvent;
+          }
+          debouncedSetLatestOrgChart(nextOrgChart);
+        }
         return;
       }
 
@@ -922,6 +972,8 @@ export const useOrgChartActions = ({
     country?: string;
     functionRoot?: string;
     businessDivisionRawQuery?: string;
+    multiSource?: boolean;
+    sources?: string[];
   }) => {
     if (!companyId) return;
 
@@ -1181,6 +1233,14 @@ export const useOrgChartActions = ({
     const trimmedLinkedinCompanyUrl = linkedinCompanyUrl?.trim();
     const useUnipileSource = orgChartLinkedinCandidateSource === 'unipile';
     const companyDomain = extractCompanyDomainFromWebsite(website);
+    const trimmedIndustry =
+      typeof industry === 'string' && industry.trim().length > 0
+        ? industry.trim()
+        : undefined;
+    const trimmedIndustryCategory =
+      typeof industryCategory === 'string' && industryCategory.trim().length > 0
+        ? industryCategory.trim()
+        : undefined;
     const body = {
       rawQuery: requirement,
       cleanedQuery: requirement,
@@ -1195,6 +1255,16 @@ export const useOrgChartActions = ({
         ? { functionRoot: params.functionRoot }
         : {}),
       candidateSource: orgChartLinkedinCandidateSource,
+      ...(trimmedIndustry ? { industry: trimmedIndustry } : {}),
+      ...(trimmedIndustryCategory
+        ? { industryCategory: trimmedIndustryCategory }
+        : {}),
+      ...(params.multiSource
+        ? {
+            multiSource: true,
+            sources: Array.isArray(params.sources) ? params.sources : [],
+          }
+        : {}),
       ...(trimmedLinkedinCompanyUrl
         ? { linkedinCompanyUrl: trimmedLinkedinCompanyUrl }
         : {}),
@@ -1315,6 +1385,9 @@ export const useOrgChartActions = ({
           typeof json.candidateSource === 'string' &&
             json.candidateSource === 'linkedin_xray'
             ? 'LinkedIn x-ray search queued. Waiting for results...'
+            : typeof json.candidateSource === 'string' &&
+                json.candidateSource === 'multi'
+              ? 'Multi-source org chart queued. Waiting for results...'
             : typeof json.candidateSource === 'string' &&
                 json.candidateSource === 'unipile'
               ? 'LinkedIn search queued. Waiting for results...'

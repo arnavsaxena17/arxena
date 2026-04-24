@@ -285,6 +285,8 @@ export class PythonOrgChartService {
     job_id: string;
     function_root?: string | null;
     country?: string;
+    industry?: string;
+    industry_category?: string;
   }): Promise<OrgChartData> {
     const baseUrl = this.getOrgChartBuildEndpoint();
     const url = baseUrl;
@@ -350,6 +352,10 @@ export class PythonOrgChartService {
     functionRoot?: string;
     /** Geography hint for orgchart_api (e.g. "united states"); matches LinkedIn search path. */
     country?: string;
+    /** Raw industry string (e.g. "Computer Software") forwarded to Python list_data.industry */
+    industry?: string;
+    /** Macro category override forwarded to Python list_data.industry_category */
+    industryCategory?: string;
   }): Promise<OrgChartData> {
     const payload = {
       people: input.people,
@@ -359,6 +365,8 @@ export class PythonOrgChartService {
       // subset is desired (e.g. "human resources").
       function_root: input.functionRoot ?? null,
       country: input.country?.trim() ?? '',
+      industry: input.industry?.trim() ?? '',
+      industry_category: input.industryCategory?.trim() ?? '',
     };
 
     const useCli =

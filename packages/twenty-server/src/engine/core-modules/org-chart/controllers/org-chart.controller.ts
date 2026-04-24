@@ -1,15 +1,15 @@
 import {
-    Body,
-    Controller,
-    Get,
-    HttpException,
-    HttpStatus,
-    Logger,
-    Param,
-    Post,
-    Query,
-    Req,
-    Res,
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Query,
+  Req,
+  Res,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
@@ -21,10 +21,10 @@ import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/servi
 import { ApolloIoRestService } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
 import type {
-    ClassicPeopleSearchStrategyResult,
-    GeneratedSearchParameters,
-    RecruiterPeopleSearchStrategyResult,
-    SalesNavigatorPeopleSearchStrategyResult,
+  ClassicPeopleSearchStrategyResult,
+  GeneratedSearchParameters,
+  RecruiterPeopleSearchStrategyResult,
+  SalesNavigatorPeopleSearchStrategyResult,
 } from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
 import { constructSearchParamKey } from 'src/engine/core-modules/candidate-search/utils/search-parameter.utils';
 import { OrgChartService } from 'src/engine/core-modules/org-chart/services/org-chart.service';
@@ -1259,6 +1259,12 @@ export class OrgChartController {
       linkedinCompanyUrl?: string;
       linkedinUnipileAccountId?: string;
       candidateSource?: OrgChartLinkedinCandidateSource;
+      /** Raw industry label (e.g. "Computer Software") forwarded to Python list_data.industry */
+      industry?: string;
+      /** Macro category override forwarded to Python list_data.industry_category */
+      industryCategory?: string;
+      multiSource?: boolean;
+      sources?: string[];
       apifyMaxItems?: number;
       profileScraperMode?: string;
       businessDivisionRawQuery?: string;

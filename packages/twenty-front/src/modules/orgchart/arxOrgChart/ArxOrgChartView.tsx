@@ -11,10 +11,15 @@ import { OrgChartHeader } from '../components/OrgChartHeader';
 import { OrgChartOutreachModal } from '../components/OrgChartOutreachModal';
 import { OrgChartResultModal } from '../components/OrgChartResultModal';
 
+import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
+import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
+import { DropdownMenuSeparator } from '@/ui/layout/dropdown/components/DropdownMenuSeparator';
+import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
 import {
   ConfirmationModal,
   StyledCenteredButton,
 } from '@/ui/layout/modal/components/ConfirmationModal';
+import { IconChevronDown, MenuItem } from 'twenty-ui';
 import type { OrgChartHeaderProps } from '../components/OrgChartHeader';
 
 import {
@@ -161,6 +166,17 @@ export const ArxOrgChartView = ({
   addToJobModalProps,
   outreachModalProps,
 }: ArxOrgChartViewProps) => {
+  const multiSourceDropdownId = 'orgchart-multisource-dropdown';
+  const { closeDropdown: closeMultiSourceDropdown } = useDropdown(
+    multiSourceDropdownId,
+  );
+
+  const selectedMultiSources: string[] = Array.isArray(
+    searchControlsProps?.multiSourceSelectedSources,
+  )
+    ? searchControlsProps.multiSourceSelectedSources
+    : [];
+
   return (
     <StyledContainer>
       <OrgChartHeader {...headerProps} />
@@ -175,11 +191,13 @@ export const ArxOrgChartView = ({
             </span>
             {!accessToken && (
               <StyledPreviewBannerSignupButton
+                title="Sign up free"
+                variant="primary"
+                accent="blue"
+                size="small"
                 type="button"
                 onClick={onNavigateToSignup}
-              >
-                Sign up free
-              </StyledPreviewBannerSignupButton>
+              />
             )}
           </StyledPreviewPersistentBanner>
         )}
@@ -213,13 +231,17 @@ export const ArxOrgChartView = ({
                       see all employees.
                     </span>
                     <StyledTemplateBannerButton
+                      title={
+                        typeof effectiveEmployeeCount === 'number'
+                          ? `Generate full org chart (${effectiveEmployeeCount.toLocaleString()} employees)`
+                          : 'Generate full org chart'
+                      }
+                      variant="primary"
+                      accent="blue"
+                      size="medium"
                       type="button"
                       onClick={searchControlsProps.onGetAll}
-                    >
-                      {typeof effectiveEmployeeCount === 'number'
-                        ? `Generate full org chart (${effectiveEmployeeCount.toLocaleString()} employees)`
-                        : 'Generate full org chart'}
-                    </StyledTemplateBannerButton>
+                    />
                   </StyledTemplateBanner>
                 ))}
               <OrgChartDiagram
@@ -240,11 +262,13 @@ export const ArxOrgChartView = ({
                       {leadershipLayerPreviewBanner.fullN.toLocaleString()}{' '}
                       profiles — click{' '}
                       <StyledLeadershipBannerLink
+                        title="Full org chart"
+                        variant="tertiary"
+                        accent="blue"
+                        size="small"
                         type="button"
                         onClick={searchControlsProps.onGetAll}
-                      >
-                        Full org chart
-                      </StyledLeadershipBannerLink>{' '}
+                      />{' '}
                       above to load it.
                     </span>
                   ) : (
@@ -255,11 +279,13 @@ export const ArxOrgChartView = ({
                       {leadershipLayerPreviewBanner.leadershipN === 1 ? '' : 's'}
                       . Click{' '}
                       <StyledLeadershipBannerLink
+                        title="Full org chart"
+                        variant="tertiary"
+                        accent="blue"
+                        size="small"
                         type="button"
                         onClick={searchControlsProps.onGetAll}
-                      >
-                        Full org chart
-                      </StyledLeadershipBannerLink>{' '}
+                      />{' '}
                       above to load the full company org chart.
                     </span>
                   )}
@@ -296,11 +322,13 @@ export const ArxOrgChartView = ({
                         {' '}
                         Click{' '}
                         <StyledLeadershipBannerLink
+                          title="Full org chart"
+                          variant="tertiary"
+                          accent="blue"
+                          size="small"
                           type="button"
                           onClick={searchControlsProps.onGetAll}
-                        >
-                          Full org chart
-                        </StyledLeadershipBannerLink>{' '}
+                        />{' '}
                         above to expand the preview.
                       </>
                     ) : null}
@@ -322,28 +350,111 @@ export const ArxOrgChartView = ({
               )}
               <StyledTopRightActionsOverlay>
                 <StyledTopRightActionButton
+                  title={
+                    typeof effectiveEmployeeCount === 'number'
+                      ? `Full org chart (${effectiveEmployeeCount.toLocaleString()})`
+                      : 'All'
+                  }
+                  variant="secondary"
+                  accent="default"
+                  size="small"
                   type="button"
                   onClick={searchControlsProps.onGetAll}
-                >
-                  {typeof effectiveEmployeeCount === 'number'
-                    ? `Full org chart (${effectiveEmployeeCount.toLocaleString()})`
-                    : 'All'}
-                </StyledTopRightActionButton>
+                />
+                <Dropdown
+                  dropdownId={multiSourceDropdownId}
+                  dropdownPlacement="bottom-end"
+                  clickableComponent={
+                    <StyledTopRightActionButton
+                      title={`Multi-source${
+                        selectedMultiSources.length > 0
+                          ? ` (${selectedMultiSources.length})`
+                          : ''
+                      }`}
+                      variant="secondary"
+                      accent="default"
+                      size="small"
+                      type="button"
+                      Icon={IconChevronDown}
+                      justify="center"
+                    />
+                  }
+                  dropdownMenuWidth={280}
+                  dropdownComponents={
+                    <DropdownMenuItemsContainer>
+                      <MenuItem
+                        text="Generate multi-source full org chart"
+                        onClick={() => {
+                          closeMultiSourceDropdown();
+                          searchControlsProps.onGetAllMultiSource?.();
+                        }}
+                      />
+                      <DropdownMenuSeparator />
+                      <MenuItem
+                        text="LinkedIn (Unipile)"
+                        contextualText={
+                          selectedMultiSources.includes('unipile') ? 'On' : 'Off'
+                        }
+                        onClick={() => {
+                          searchControlsProps.onToggleMultiSource?.('unipile');
+                        }}
+                      />
+                      <MenuItem
+                        text="Public Directory"
+                        contextualText={
+                          selectedMultiSources.includes('apollo') ? 'On' : 'Off'
+                        }
+                        onClick={() => {
+                          searchControlsProps.onToggleMultiSource?.('apollo');
+                        }}
+                      />
+                      <MenuItem
+                        text="Leadership only"
+                        contextualText={
+                          selectedMultiSources.includes('theorg') ? 'On' : 'Off'
+                        }
+                        onClick={() => {
+                          searchControlsProps.onToggleMultiSource?.('theorg');
+                        }}
+                      />
+                      <MenuItem
+                        text="Business Divisions"
+                        contextualText={
+                          selectedMultiSources.includes('officialboard')
+                            ? 'On'
+                            : 'Off'
+                        }
+                        onClick={() => {
+                          searchControlsProps.onToggleMultiSource?.(
+                            'officialboard',
+                          );
+                        }}
+                      />
+                    </DropdownMenuItemsContainer>
+                  }
+                  dropdownHotkeyScope={{ scope: multiSourceDropdownId }}
+                />
                 <StyledTopRightActionButton
+                  title="View all candidates"
+                  variant="secondary"
+                  accent="default"
+                  size="small"
                   type="button"
                   onClick={searchControlsProps.onViewAllCandidates}
-                >
-                  View all candidates
-                </StyledTopRightActionButton>
+                />
                 <StyledTopRightActionButton
+                  title={
+                    isEnrichedLeadershipLoading
+                      ? 'Loading Leadership Org Chart'
+                      : 'Leadership Org Chart'
+                  }
+                  variant="secondary"
+                  accent="default"
+                  size="small"
                   type="button"
                   disabled={isEnrichedLeadershipLoading}
                   onClick={onTopRightLeadershipOrgChart}
-                >
-                  {isEnrichedLeadershipLoading
-                    ? 'Loading Leadership Org Chart'
-                    : 'Leadership Org Chart'}
-                </StyledTopRightActionButton>
+                />
               </StyledTopRightActionsOverlay>
               <StyledSearchOverlay>
                 <OrgChartSearchControls {...searchControlsProps} />

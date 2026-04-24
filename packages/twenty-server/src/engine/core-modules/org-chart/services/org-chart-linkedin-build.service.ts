@@ -14,6 +14,7 @@ import { BrightDataLinkedinProfileScrapeService } from 'src/engine/core-modules/
 import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/services/bright-data-serp.service';
 import { OrgchartApifyBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-apify-build.types';
 import { OrgchartLinkedinXrayBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-linkedin-xray-build.types';
+import type { OrgchartMultiSourceBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-multisource-build.types';
 import { OrgchartUnipileBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-unipile-build.types';
 import {
   ApolloIoRestService,
@@ -43,14 +44,20 @@ import { MessageQueueService } from 'src/engine/core-modules/message-queue/servi
 import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services/orgchart-cache.service';
 import { OrgchartCancelRegistryService } from 'src/engine/core-modules/org-chart/services/orgchart-cancel-registry.service';
 import { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
+import { dedupeAndMergeOrgChartCandidates } from 'src/engine/core-modules/org-chart/utils/orgchart-candidate-dedupe.util';
 import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import { filterOrgChartCandidatesByNodeStdLabels } from 'src/engine/core-modules/org-chart/utils/orgchart-node-scope-filter.util';
 import { normalizeCountry } from 'src/engine/core-modules/org-chart/utils/orgchart-normalization.util';
+import { TheOfficialBoardService } from 'src/engine/core-modules/theofficialboard/services/theofficialboard.service';
+import type { TheOfficialBoardCandidate } from 'src/engine/core-modules/theofficialboard/types/theofficialboard.types';
+import { TheOrgService } from 'src/engine/core-modules/theorg/services/theorg.service';
+import type { TheOrgPerson } from 'src/engine/core-modules/theorg/types/theorg.types';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { LinkedinXrayService } from 'src/modules/linkedin-xray/linkedin-xray.service';
 import { LinkedinXraySearchEngine } from 'src/modules/linkedin-xray/types/linkedin-xray-search-job.types';
 
 import { OrgChartRecordWorkspaceService } from './org-chart-record-workspace.service';
+import { OrgChartIncrementalBuildCacheService } from './orgchart-incremental-build-cache.service';
 import { OrgChartS3Service } from './orgchart-s3.service';
 import { PythonOrgChartService } from './python-org-chart.service';
 
@@ -80,6 +87,8 @@ type SearchOrgchartLinkedInBody = {
   /** `selected_nodes`: one entry per selected diagram node (std_function + std_grade per node). */
   selectedNodeStdScopes?: Array<{ stdFunction?: string; stdGrade?: string }>;
   candidateSource?: OrgChartLinkedinCandidateSource;
+  multiSource?: boolean;
+  sources?: string[];
   linkedinCompanyUrl?: string;
   /** Primary email/web domain for the target company (e.g. "litify.com"). When
    *  ORGCHART_APOLLO_SKIP_RESOLUTION is enabled, this is passed directly as
@@ -96,6 +105,10 @@ type SearchOrgchartLinkedInBody = {
   queryGenerator?: 'python' | 'multi_agent';
   xraySearchEngine?: LinkedinXraySearchEngine;
   includePaginatedHtml?: boolean;
+  /** Raw industry label (e.g. "Computer Software") forwarded to Python list_data.industry */
+  industry?: string;
+  /** Macro category override forwarded to Python list_data.industry_category */
+  industryCategory?: string;
 };
 
 type EntireCompanyFilterState = {
@@ -121,6 +134,7 @@ export class OrgChartLinkedInBuildService {
     private readonly orgChartS3Service: OrgChartS3Service,
     private readonly orgChartRecordWorkspaceService: OrgChartRecordWorkspaceService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly orgChartIncrementalBuildCache: OrgChartIncrementalBuildCacheService,
     private readonly candidateDataService: CandidateDataService,
     private readonly linkedInSearchService: LinkedInSearchService,
     private readonly apifyService: ApifyService,
@@ -134,6 +148,8 @@ export class OrgChartLinkedInBuildService {
     private readonly apolloPeopleSearchTransformer: ApolloPeopleSearchTransformerService,
     private readonly environmentService: EnvironmentService,
     private readonly pythonQueryGenerationService: PythonQueryGenerationService,
+    private readonly theOrgService: TheOrgService,
+    private readonly theOfficialBoardService: TheOfficialBoardService,
     @InjectMessageQueue(MessageQueue.orgchartApifyQueue)
     private readonly orgchartApifyQueue: MessageQueueService,
   ) {}
@@ -146,6 +162,186 @@ export class OrgChartLinkedInBuildService {
     s: OrgChartLinkedinCandidateSource | undefined,
   ): boolean {
     return s === 'm7kq' || s === 'apollo';
+  }
+
+  private normalizeMultiSources(input: unknown): string[] {
+    if (!Array.isArray(input)) return [];
+    const cleaned = input
+      .filter((s): s is string => typeof s === 'string')
+      .map((s) => s.trim().toLowerCase())
+      .filter((s) => s.length > 0);
+    return Array.from(new Set(cleaned));
+  }
+
+  private theOrgPeopleToCandidates(
+    people: TheOrgPerson[],
+    companyName: string,
+    companyLinkedinUrl?: string,
+  ): Array<Record<string, unknown>> {
+    return (people ?? [])
+      .filter((p) => p && typeof p === 'object')
+      .map((p) => {
+        const fullName = typeof p.name === 'string' ? p.name : '';
+        const [first, ...rest] = fullName.trim().split(/\s+/);
+        const last = rest.join(' ');
+        const title = typeof p.role === 'string' ? p.role : '';
+        const linkedinUrl = p.linkedInUrl?.trim() || '';
+        return {
+          id: `theorg_${String(p.id)}`,
+          name: fullName || 'Unknown',
+          first_name: first || '',
+          last_name: last || '',
+          headline: title,
+          title,
+          public_profile_url: linkedinUrl || null,
+          profile_url: linkedinUrl || null,
+          profile_picture_url: p.profileImageUrl ?? null,
+          current_positions: [
+            {
+              company: companyName || '—',
+              company_id: null,
+              description: null,
+              role: title,
+              location: null,
+              industry: [],
+              tenure_at_role: { years: 0, months: 0 },
+              tenure_at_company: { years: 0, months: 0 },
+              start: { year: new Date().getFullYear(), month: 1 },
+              skills: null,
+            },
+          ],
+          company: companyName,
+          job_company_linkedin_url: companyLinkedinUrl ?? '',
+          source: 'theorg',
+          sources: ['theorg'],
+        };
+      });
+  }
+
+  private officialBoardCandidatesToCandidates(
+    candidates: TheOfficialBoardCandidate[],
+    companyName: string,
+  ): Array<Record<string, unknown>> {
+    return (candidates ?? [])
+      .filter(
+        (c) =>
+          c &&
+          typeof c === 'object' &&
+          c.isMasked !== true &&
+          typeof c.name === 'string' &&
+          c.name.trim().length > 0,
+      )
+      .map((c) => {
+        const fullName = c.name?.trim() ?? '';
+        const [first, ...rest] = fullName.trim().split(/\s+/);
+        const last = rest.join(' ');
+        const title = (c.displayTitle ?? c.title ?? '')?.trim?.() ?? '';
+        return {
+          id: `officialboard_${c.id}`,
+          name: fullName || 'Unknown',
+          first_name: first || '',
+          last_name: last || '',
+          headline: title,
+          title,
+          public_profile_url: null,
+          profile_url: null,
+          current_positions: [
+            {
+              company: companyName || '—',
+              company_id: null,
+              description: null,
+              role: title,
+              location: null,
+              industry: [],
+              tenure_at_role: { years: 0, months: 0 },
+              tenure_at_company: { years: 0, months: 0 },
+              start: { year: new Date().getFullYear(), month: 1 },
+              skills: null,
+            },
+          ],
+          company: companyName,
+          source: 'officialboard',
+          sources: ['officialboard'],
+        };
+      });
+  }
+
+  private async emitMergedPartialOrgChart(args: {
+    apiToken: string;
+    requestId?: string;
+    mode: OrgchartSearchMode;
+    searchType: OrgchartSearchType;
+    resolvedCompanyName: string;
+    companyId?: string;
+    candidates: Array<Record<string, unknown>>;
+    candidateSourceLabel: string;
+    message: string;
+  }): Promise<void> {
+    const requestId = args.requestId?.trim();
+    if (!requestId) return;
+
+    const s3PersistKey = this.orgChartS3Service.persistedCompanyFolderKey(
+      args.companyId,
+      args.resolvedCompanyName,
+    );
+    const inProgressVariant = `in-progress_${requestId}`;
+
+    const deduped = dedupeAndMergeOrgChartCandidates(args.candidates);
+
+    await this.orgChartIncrementalBuildCache.set(requestId, {
+      companyName: args.resolvedCompanyName,
+      companyId: args.companyId,
+      candidateSources: [args.candidateSourceLabel],
+      startedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      items: deduped,
+      dedupedItemCount: deduped.length,
+    });
+
+    await this.emitOrgchartSearchProgressForToken(args.apiToken, {
+      requestId,
+      mode: args.mode,
+      searchType: args.searchType,
+      companyName: args.resolvedCompanyName,
+      event: 'status',
+      data: { message: args.message, candidateSource: args.candidateSourceLabel },
+    });
+
+    try {
+      const orgChart =
+        await this.orgChartSearchService.buildOrgChartFromLinkedInCompanyCandidates(
+          deduped as OrgChartBuildCandidateRow[],
+          {
+            companyName: args.resolvedCompanyName,
+            companyId: args.companyId,
+            mode: args.mode,
+            function: undefined,
+            companyLinkedinUrl: undefined,
+            profileSourceFallback: 'm7kq',
+          },
+        );
+
+      await Promise.all([
+        this.orgChartS3Service.saveCandidates(s3PersistKey, deduped, inProgressVariant),
+        this.orgChartS3Service.saveOrgChart(s3PersistKey, orgChart, inProgressVariant),
+      ]);
+
+      await this.emitOrgchartSearchProgressForToken(args.apiToken, {
+        requestId,
+        mode: args.mode,
+        searchType: args.searchType,
+        companyName: args.resolvedCompanyName,
+        event: 'partialOrgChart',
+        data: {
+          orgChart,
+          itemCountSoFar: deduped.length,
+          dedupedCountSoFar: deduped.length,
+          candidateSource: args.candidateSourceLabel,
+        },
+      });
+    } catch {
+      // Best-effort.
+    }
   }
 
   private buildLinkedinXrayRequirementText(args: {
@@ -762,6 +958,103 @@ export class OrgChartLinkedInBuildService {
     const APOLLO_MAX_PAGES = Math.ceil(APOLLO_MAX_RECORDS / APOLLO_PER_PAGE);
 
     const merged: TransformedCandidateForTable[] = [];
+    const requestIdForCache = args.requestId?.trim() ?? undefined;
+    const s3PersistKey =
+      args.companyId && args.resolvedCompanyName
+        ? this.orgChartS3Service.persistedCompanyFolderKey(
+            args.companyId,
+            args.resolvedCompanyName,
+          )
+        : undefined;
+    const inProgressVariant = requestIdForCache
+      ? `in-progress_${requestIdForCache}`
+      : undefined;
+    const partialEmitThrottleMs = 2500;
+    let lastPartialEmitAt = 0;
+    const startedAtIso = new Date().toISOString();
+
+    const emitPartialSnapshot = async (argsForEmit: {
+      raw: Record<string, unknown>;
+      page: number;
+      force?: boolean;
+    }) => {
+      if (!requestIdForCache) return;
+      const now = Date.now();
+      if (!argsForEmit.force && now - lastPartialEmitAt < partialEmitThrottleMs) {
+        return;
+      }
+      lastPartialEmitAt = now;
+
+      const deduped = dedupeAndMergeOrgChartCandidates(
+        merged as unknown as Array<Record<string, unknown>>,
+      );
+
+      await this.orgChartIncrementalBuildCache.set(requestIdForCache, {
+        companyName: args.resolvedCompanyName,
+        companyId: args.companyId,
+        candidateSources: ['apollo'],
+        startedAt: startedAtIso,
+        updatedAt: new Date().toISOString(),
+        items: deduped,
+        dedupedItemCount: deduped.length,
+      });
+
+      if (s3PersistKey && inProgressVariant && argsForEmit.page % 2 === 0) {
+        await this.orgChartS3Service.saveCandidates(
+          s3PersistKey,
+          deduped,
+          inProgressVariant,
+        );
+      }
+
+      try {
+        const partialOrgChart =
+          await this.orgChartSearchService.buildOrgChartFromLinkedInCompanyCandidates(
+            deduped as OrgChartBuildCandidateRow[],
+            {
+              companyName: args.resolvedCompanyName,
+              companyId: args.companyId,
+              mode: args.mode,
+              function: args.body.functionRoot,
+              companyLinkedinUrl: args.canonicalCompanyLinkedinUrl,
+              industry: args.body.industry,
+              industryCategory: args.body.industryCategory,
+              profileSourceFallback: args.body.candidateSource,
+            },
+          );
+
+        if (s3PersistKey && inProgressVariant && argsForEmit.page % 2 === 0) {
+          await this.orgChartS3Service.saveOrgChart(
+            s3PersistKey,
+            partialOrgChart,
+            inProgressVariant,
+          );
+        }
+
+        const totalPages =
+          typeof (argsForEmit.raw.pagination as any)?.total_pages === 'number'
+            ? (argsForEmit.raw.pagination as any).total_pages
+            : undefined;
+
+        await this.emitOrgchartSearchProgressForToken(args.apiToken, {
+          requestId: args.requestId,
+          mode: args.mode,
+          searchType: args.searchType,
+          companyName: args.resolvedCompanyName,
+          event: 'partialOrgChart',
+          data: {
+            orgChart: partialOrgChart,
+            itemCountSoFar: merged.length,
+            dedupedCountSoFar: deduped.length,
+            page: argsForEmit.page,
+            totalPages,
+            candidateSource: 'm7kq',
+          },
+        });
+      } catch {
+        // Best-effort only; final build still happens at completion.
+      }
+    };
     for (let page = 1; page <= APOLLO_MAX_PAGES; page++) {
       const raw = await this.apolloIoRestService.peopleSearch({
         ...apolloParams,
@@ -779,6 +1072,8 @@ export class OrgChartLinkedInBuildService {
           },
         );
       merged.push(...rows);
+      // Incremental: emit a partial snapshot (throttled).
+      await emitPartialSnapshot({ raw: raw as Record<string, unknown>, page });
 
       const pag = raw.pagination as
         | {
@@ -800,22 +1095,42 @@ export class OrgChartLinkedInBuildService {
         this.logger.log(
           `Apollo peopleSearch reached record cap=${APOLLO_MAX_RECORDS} at page=${page}; stopping pagination`,
         );
+        await emitPartialSnapshot({
+          raw: raw as Record<string, unknown>,
+          page,
+          force: true,
+        });
         break;
       }
 
       if (rows.length === 0) {
+        await emitPartialSnapshot({
+          raw: raw as Record<string, unknown>,
+          page,
+          force: true,
+        });
         break;
       }
 
       const totalPages =
         typeof pag?.total_pages === 'number' ? pag.total_pages : undefined;
       if (totalPages !== undefined && page >= totalPages) {
+        await emitPartialSnapshot({
+          raw: raw as Record<string, unknown>,
+          page,
+          force: true,
+        });
         break;
       }
 
       // Some Apollo responses omit pagination metadata; fall back to stopping
       // as soon as we receive a short page (less than the requested per_page).
       if (totalPages === undefined && rows.length < APOLLO_PER_PAGE) {
+        await emitPartialSnapshot({
+          raw: raw as Record<string, unknown>,
+          page,
+          force: true,
+        });
         break;
       }
     }
@@ -1229,6 +1544,8 @@ export class OrgChartLinkedInBuildService {
     filterState: EntireCompanyFilterState;
     shouldWriteCompanyOrgChartCache: boolean;
     profileSourceFallback?: OrgChartLinkedinCandidateSource;
+    industry?: string;
+    industryCategory?: string;
   }): Promise<unknown> {
     const {
       apiToken,
@@ -1242,6 +1559,8 @@ export class OrgChartLinkedInBuildService {
       filterState,
       shouldWriteCompanyOrgChartCache,
       profileSourceFallback,
+      industry,
+      industryCategory,
     } = args;
 
     const {
@@ -1294,6 +1613,8 @@ export class OrgChartLinkedInBuildService {
                       ? normalizedFunctionRootRaw
                       : undefined,
                     companyLinkedinUrl: canonicalCompanyLinkedinUrl,
+                    industry,
+                    industryCategory,
                     profileSourceFallback,
                   },
                 )
@@ -1385,6 +1706,8 @@ export class OrgChartLinkedInBuildService {
                     ? normalizedFunctionRootRaw
                     : undefined,
                   companyLinkedinUrl: canonicalCompanyLinkedinUrl,
+                  industry,
+                  industryCategory,
                   profileSourceFallback,
                 },
               )
@@ -1438,6 +1761,8 @@ export class OrgChartLinkedInBuildService {
                 ? normalizedFunctionRootRaw
                 : undefined,
               companyLinkedinUrl: canonicalCompanyLinkedinUrl,
+              industry,
+              industryCategory,
               profileSourceFallback,
             },
           );
@@ -1971,6 +2296,8 @@ export class OrgChartLinkedInBuildService {
     const jobData: OrgchartUnipileBuildJobData = {
       apiToken,
       requestId,
+      multiSource: body.multiSource === true,
+      sources: Array.isArray(body.sources) ? body.sources : undefined,
       rawQuery: body.rawQuery,
       cleanedQuery: body.cleanedQuery,
       searchType,
@@ -1986,6 +2313,8 @@ export class OrgChartLinkedInBuildService {
       linkedinCompanyUrl: canonicalCompanyLinkedinUrl,
       linkedinUnipileAccountId: body.linkedinUnipileAccountId,
       businessDivisionRawQuery: body.businessDivisionRawQuery,
+      industry: body.industry,
+      industryCategory: body.industryCategory,
       shouldWriteCompanyOrgChartCache,
     };
 
@@ -2153,6 +2482,8 @@ export class OrgChartLinkedInBuildService {
               mode,
               function: body.functionRoot,
               companyLinkedinUrl: canonicalCompanyLinkedinUrl,
+              industry: body.industry,
+              industryCategory: body.industryCategory,
               profileSourceFallback: body.candidateSource,
             },
           );
@@ -2357,6 +2688,8 @@ export class OrgChartLinkedInBuildService {
                 mode,
                 function: body.functionRoot,
                 companyLinkedinUrl: canonicalCompanyLinkedinUrl,
+                industry: body.industry,
+                industryCategory: body.industryCategory,
                 profileSourceFallback: body.candidateSource,
               },
             );
@@ -2414,6 +2747,8 @@ export class OrgChartLinkedInBuildService {
                 mode,
                 function: body.functionRoot,
                 companyLinkedinUrl: canonicalCompanyLinkedinUrl,
+                industry: body.industry,
+                industryCategory: body.industryCategory,
                 profileSourceFallback: body.candidateSource,
               },
             );
@@ -2456,6 +2791,10 @@ export class OrgChartLinkedInBuildService {
     this.logger.log(`body:: ${JSON.stringify(body)}`);
     const canonicalCompanyLinkedinUrl =
       body.linkedinCompanyUrl?.trim().replace(/\/+$/, '') || undefined;
+    const requestedSources = this.normalizeMultiSources(body.sources);
+    const isMultiSourceRequested =
+      body.multiSource === true && requestedSources.length > 0;
+    // Multi-source orchestration runs later, after we derive mode/searchType/companyName.
     const {
       companyName,
       companyId,
@@ -2474,6 +2813,61 @@ export class OrgChartLinkedInBuildService {
 
     const resolvedCompanyName =
       companyName || (companyId ? String(companyId) : '');
+
+    if (isMultiSourceRequested) {
+      if (requestId) {
+        this.orgchartCancelRegistry.register(requestId);
+      }
+
+      const jobData: OrgchartMultiSourceBuildJobData = {
+        apiToken,
+        requestId,
+        body: body as unknown as Record<string, unknown>,
+        canonicalCompanyLinkedinUrl,
+        requestedSources,
+        resolvedCompanyName,
+        companyId,
+        jobTitles,
+        mode,
+        searchType,
+      };
+
+      await this.orgchartApifyQueue.add(
+        'OrgchartMultiSourceBuildProcessor',
+        jobData,
+        { retryLimit: 0 },
+      );
+
+      await this.emitOrgchartSearchProgressForToken(apiToken, {
+        requestId,
+        mode,
+        searchType,
+        companyName: resolvedCompanyName,
+        event: 'status',
+        data: {
+          message: 'Multi-source org chart job queued. Waiting for worker pickup…',
+          candidateSource: 'multi',
+        },
+      });
+
+      return {
+        success: true,
+        queued: true,
+        candidateSource: 'multi' as const,
+        requestId,
+        mode,
+        searchType,
+        companyName: resolvedCompanyName,
+        companyId,
+        jobTitles,
+        linkedinCompanyUrl: canonicalCompanyLinkedinUrl ?? body.linkedinCompanyUrl,
+        itemCount: 0,
+        items: [],
+        orgChart: undefined,
+        isCached: false,
+        cacheSource: 'none' as const,
+      };
+    }
 
     if (
       mode === 'business_division_map' &&
@@ -2517,6 +2911,8 @@ export class OrgChartLinkedInBuildService {
         filterState,
         shouldWriteCompanyOrgChartCache,
         profileSourceFallback: body.candidateSource,
+        industry: body.industry,
+        industryCategory: body.industryCategory,
       });
 
       if (cacheHit) {
@@ -3329,6 +3725,9 @@ export class OrgChartLinkedInBuildService {
 
     const modeForOrgChartBuild: OrgchartSearchMode = jobData.mode;
     console.log("Job Data for Org chart build:", jobData);
+    const requestedSources = this.normalizeMultiSources(jobData.sources);
+    const isMultiSourceRequested =
+      jobData.multiSource === true && requestedSources.length > 0;
     if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
       this.logger.log(
         `Unipile org chart job skipped (cancelled) requestId=${requestId}`,
@@ -3355,6 +3754,8 @@ export class OrgChartLinkedInBuildService {
       linkedinCompanyUrl,
       linkedinUnipileAccountId: jobData.linkedinUnipileAccountId,
       businessDivisionRawQuery: jobData.businessDivisionRawQuery,
+      industry: jobData.industry,
+      industryCategory: jobData.industryCategory,
     };
 
     try {
@@ -3413,6 +3814,53 @@ export class OrgChartLinkedInBuildService {
           : {}),
       };
 
+      let mergedResult = result;
+      if (isMultiSourceRequested && requestedSources.includes('apollo')) {
+        await this.emitOrgchartSearchProgressForToken(apiToken, {
+          requestId,
+          mode: modeForOrgChartBuild,
+          searchType,
+          companyName: resolvedCompanyName,
+          event: 'status',
+          data: {
+            message: 'Fetching additional employees from Apollo…',
+            candidateSource: 'm7kq',
+          },
+        });
+
+        const apolloBody: SearchOrgchartLinkedInBody = {
+          ...bodyForBuild,
+          candidateSource: 'apollo',
+        };
+        const apolloPeopleResult = await this.runApolloOrgChartPeopleSearch({
+          body: apolloBody,
+          apiToken,
+          mode: modeForOrgChartBuild,
+          resolvedCompanyName,
+          companyId,
+          requestId,
+          searchType,
+          jobTitles: jobData.jobTitles ?? [],
+          canonicalCompanyLinkedinUrl: linkedinCompanyUrl,
+        });
+
+        if (apolloPeopleResult) {
+          const combined = dedupeAndMergeOrgChartCandidates([
+            ...(Array.isArray(result.items)
+              ? (result.items as Array<Record<string, unknown>>)
+              : []),
+            ...(Array.isArray(apolloPeopleResult.items)
+              ? (apolloPeopleResult.items as Array<Record<string, unknown>>)
+              : []),
+          ]);
+          mergedResult = {
+            ...result,
+            items: combined as unknown as typeof result.items,
+            itemCount: combined.length,
+          };
+        }
+      }
+
       const { orgChart, orgChartError } =
         await this.buildOrgChartAfterLinkedInSearch({
           apiToken,
@@ -3425,7 +3873,7 @@ export class OrgChartLinkedInBuildService {
           canonicalCompanyLinkedinUrl: linkedinCompanyUrl,
           shouldWriteCompanyOrgChartCache:
             jobData.shouldWriteCompanyOrgChartCache,
-          result,
+          result: mergedResult,
         });
 
       if (orgChartError) {
@@ -3458,11 +3906,13 @@ export class OrgChartLinkedInBuildService {
         companyName: resolvedCompanyName,
         event: 'complete',
         data: {
-          message: `Org chart ready (${result.itemCount} employees via LinkedIn).`,
-          itemCount: result.itemCount,
-          candidateSource: 'unipile',
+          message: isMultiSourceRequested
+            ? `Org chart ready (${mergedResult.itemCount} employees via multi-source).`
+            : `Org chart ready (${result.itemCount} employees via LinkedIn).`,
+          itemCount: isMultiSourceRequested ? mergedResult.itemCount : result.itemCount,
+          candidateSource: isMultiSourceRequested ? 'multi' : 'unipile',
           orgChart,
-          items: result.items,
+          items: isMultiSourceRequested ? mergedResult.items : result.items,
         },
       });
     } catch (error) {
@@ -3492,6 +3942,287 @@ export class OrgChartLinkedInBuildService {
         },
       });
     }
+  }
+
+  async handleMultiSourceOrgChartJob(
+    jobData: OrgchartMultiSourceBuildJobData,
+  ): Promise<void> {
+    const {
+      apiToken,
+      requestId,
+      mode,
+      searchType,
+      resolvedCompanyName,
+      companyId,
+      jobTitles,
+    } = jobData;
+
+    const modeForOrgChartBuild: OrgchartSearchMode = mode;
+
+    if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
+      this.logger.log(
+        `Multi-source org chart job skipped (cancelled) requestId=${requestId}`,
+      );
+      return;
+    }
+
+    const rawBody = jobData.body as SearchOrgchartLinkedInBody;
+    const canonicalCompanyLinkedinUrl =
+      jobData.canonicalCompanyLinkedinUrl ||
+      rawBody.linkedinCompanyUrl?.trim().replace(/\/+$/, '') ||
+      undefined;
+
+    const requestedSources = Array.isArray(jobData.requestedSources)
+      ? jobData.requestedSources
+      : this.normalizeMultiSources((rawBody as any).sources);
+
+    const aggregated: Array<Record<string, unknown>> = [];
+
+    const addCandidates = async (
+      sourceLabel: string,
+      next: Array<Record<string, unknown>>,
+      message: string,
+    ) => {
+      aggregated.push(...next);
+      await this.emitMergedPartialOrgChart({
+        apiToken,
+        requestId,
+        mode: modeForOrgChartBuild,
+        searchType,
+        resolvedCompanyName,
+        companyId,
+        candidates: aggregated,
+        candidateSourceLabel: sourceLabel,
+        message,
+      });
+    };
+
+    if (requestedSources.includes('apollo')) {
+      const apolloResult = await this.runApolloOrgChartPeopleSearch({
+        body: { ...rawBody, candidateSource: 'apollo' },
+        apiToken,
+        mode: modeForOrgChartBuild,
+        resolvedCompanyName,
+        companyId,
+        requestId,
+        searchType,
+        jobTitles,
+        canonicalCompanyLinkedinUrl,
+      });
+      if (apolloResult) {
+        await addCandidates(
+          'apollo',
+          apolloResult.items as unknown as Array<Record<string, unknown>>,
+          `Apollo fetched ${apolloResult.itemCount} people; merging…`,
+        );
+      }
+    }
+
+    if (requestedSources.includes('theorg')) {
+      try {
+        const slug =
+          (rawBody.companyId ?? rawBody.companyName ?? '').trim() ||
+          resolvedCompanyName;
+        const theOrgData =
+          await this.theOrgService.fetchCompanyDetailsResolvingSlug(slug, {
+            mode: 'combined',
+            persist: false,
+            linkedinCompanySlug: rawBody.companyId ?? undefined,
+          } as any);
+        const theOrgCandidates = this.theOrgPeopleToCandidates(
+          theOrgData.people ?? [],
+          theOrgData.companyName ?? resolvedCompanyName,
+          canonicalCompanyLinkedinUrl ?? rawBody.linkedinCompanyUrl,
+        );
+        await addCandidates(
+          'theorg',
+          theOrgCandidates,
+          `TheOrg fetched ${theOrgCandidates.length} people; merging…`,
+        );
+      } catch {
+        await this.emitOrgchartSearchProgressForToken(apiToken, {
+          requestId,
+          mode: modeForOrgChartBuild,
+          searchType,
+          companyName: resolvedCompanyName,
+          event: 'status',
+          data: {
+            message: 'TheOrg fetch failed (skipping).',
+            candidateSource: 'theorg',
+          },
+        });
+      }
+    }
+
+    if (requestedSources.includes('officialboard')) {
+      try {
+        const slug =
+          (rawBody.companyId ?? rawBody.companyName ?? '').trim() ||
+          resolvedCompanyName;
+        const official =
+          await this.theOfficialBoardService.fetchCompanyDetailsResolvingSlug(
+            slug,
+            { persist: false },
+          );
+        const officialCandidates = this.officialBoardCandidatesToCandidates(
+          official.candidates ?? [],
+          official.companyName ?? resolvedCompanyName,
+        );
+        await addCandidates(
+          'officialboard',
+          officialCandidates,
+          `OfficialBoard fetched ${officialCandidates.length} people; merging…`,
+        );
+      } catch {
+        await this.emitOrgchartSearchProgressForToken(apiToken, {
+          requestId,
+          mode: modeForOrgChartBuild,
+          searchType,
+          companyName: resolvedCompanyName,
+          event: 'status',
+          data: {
+            message: 'OfficialBoard fetch failed (skipping).',
+            candidateSource: 'officialboard',
+          },
+        });
+      }
+    }
+
+    if (requestedSources.includes('unipile')) {
+      const li = await this.orgChartSearchService.runOrgchartLinkedInSearch(
+        rawBody.rawQuery,
+        rawBody.cleanedQuery,
+        searchType,
+        apiToken,
+        undefined,
+        {
+          mode: modeForOrgChartBuild,
+          companyName: resolvedCompanyName,
+          companyId,
+          requestId,
+          jobTitles: rawBody.jobTitles,
+          country: rawBody.country,
+          functionRoot: rawBody.functionRoot,
+          stdFunction: rawBody.stdFunction,
+          stdGrade: rawBody.stdGrade,
+          selectedNodeStdScopes: rawBody.selectedNodeStdScopes,
+          linkedinCompanyUrl: canonicalCompanyLinkedinUrl ?? rawBody.linkedinCompanyUrl,
+          linkedinUnipileAccountId: rawBody.linkedinUnipileAccountId,
+          businessDivisionRawQuery: rawBody.businessDivisionRawQuery,
+        },
+      );
+      await addCandidates(
+        'unipile',
+        (li.items ?? []) as Array<Record<string, unknown>>,
+        `LinkedIn fetched ${li.itemCount} people; merging…`,
+      );
+    }
+
+    if (requestedSources.includes('apify')) {
+      const linkedinCompanyUrl =
+        rawBody.linkedinCompanyUrl?.trim() || canonicalCompanyLinkedinUrl || '';
+      if (!linkedinCompanyUrl) {
+        await this.emitOrgchartSearchProgressForToken(apiToken, {
+          requestId,
+          mode: modeForOrgChartBuild,
+          searchType,
+          companyName: resolvedCompanyName,
+          event: 'status',
+          data: {
+            message: 'Apify skipped: missing linkedinCompanyUrl',
+            candidateSource: 'apify',
+          },
+        });
+      } else {
+        const apifyItems =
+          await this.linkedInSearchService.fetchCompanyEmployeesViaApifyActor({
+            linkedinCompanyUrl,
+            maxItems:
+              typeof (rawBody as any).apifyMaxItems === 'number' &&
+              (rawBody as any).apifyMaxItems > 0
+                ? Math.min((rawBody as any).apifyMaxItems, 10000)
+                : 2500,
+            profileScraperMode: (rawBody as any).profileScraperMode,
+            defaultCompanyName: resolvedCompanyName,
+            companyLinkedinUrl: linkedinCompanyUrl,
+            jobTitles: rawBody.jobTitles,
+            onProgress: async (message) => {
+              await this.emitOrgchartSearchProgressForToken(apiToken, {
+                requestId,
+                mode: modeForOrgChartBuild,
+                searchType,
+                companyName: resolvedCompanyName,
+                event: 'status',
+                data: { message, candidateSource: 'apify' },
+              });
+            },
+          });
+        await addCandidates(
+          'apify',
+          apifyItems as unknown as Array<Record<string, unknown>>,
+          `Apify fetched ${apifyItems.length} people; merging…`,
+        );
+      }
+    }
+
+    const mergedDeduped = dedupeAndMergeOrgChartCandidates(aggregated);
+    const mergedResult = {
+      items: mergedDeduped,
+      itemCount: mergedDeduped.length,
+      isCached: false,
+      cacheSource: 'none' as const,
+      strategyResults: [],
+    };
+
+    const { orgChart, orgChartError } = await this.buildOrgChartAfterLinkedInSearch({
+      apiToken,
+      body: {
+        ...(rawBody as any),
+        candidateSource: requestedSources.includes('unipile') ? 'unipile' : 'm7kq',
+      },
+      mode: modeForOrgChartBuild,
+      resolvedCompanyName,
+      companyId,
+      searchType,
+      requestId,
+      canonicalCompanyLinkedinUrl,
+      shouldWriteCompanyOrgChartCache: true,
+      result: mergedResult as any,
+    });
+
+    if (orgChartError) {
+      if (requestId) {
+        this.orgchartCancelRegistry.setFailed(requestId, orgChartError);
+      }
+      await this.emitOrgchartSearchProgressForToken(apiToken, {
+        requestId,
+        mode: modeForOrgChartBuild,
+        searchType,
+        companyName: resolvedCompanyName,
+        event: 'error',
+        data: { message: orgChartError, candidateSource: 'multi' },
+      });
+      return;
+    }
+
+    if (requestId) {
+      this.orgchartCancelRegistry.setCompleted(requestId);
+    }
+
+    await this.emitOrgchartSearchProgressForToken(apiToken, {
+      requestId,
+      mode: modeForOrgChartBuild,
+      searchType,
+      companyName: resolvedCompanyName,
+      event: 'complete',
+      data: {
+        message: `Org chart ready (${mergedResult.itemCount} people via multi-source).`,
+        itemCount: mergedResult.itemCount,
+        candidateSource: 'multi',
+        orgChart,
+        items: mergedResult.items,
+      },
+    });
   }
 
   /**

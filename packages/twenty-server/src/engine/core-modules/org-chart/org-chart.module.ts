@@ -9,6 +9,7 @@ import { ContactEnrichmentModule } from 'src/engine/core-modules/contact-enrichm
 import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
 import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-execution.module';
 import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
+import { TheOfficialBoardModule } from 'src/engine/core-modules/theofficialboard/theofficialboard.module';
 import { TheOrgModule } from 'src/engine/core-modules/theorg/theorg.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 import { LinkedinXrayModule } from 'src/modules/linkedin-xray/linkedin-xray.module';
@@ -31,6 +32,7 @@ import { OrgChartTheOrgEnrichmentService } from './services/org-chart-theorg-enr
 import { OrgChartService } from './services/org-chart.service';
 import { OrgChartCacheService } from './services/orgchart-cache.service';
 import { OrgchartCancelRegistryService } from './services/orgchart-cancel-registry.service';
+import { OrgChartIncrementalBuildCacheService } from './services/orgchart-incremental-build-cache.service';
 import { OrgChartS3Service } from './services/orgchart-s3.service';
 import { PdlAutocompleteService } from './services/pdl-autocomplete.service';
 import { PdlPersonOrgMovementService } from './services/pdl-person-org-movement.service';
@@ -51,6 +53,7 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
     LinkedInSearchModule,
     LinkedinXrayModule,
     TheOrgModule,
+    TheOfficialBoardModule,
     WorkspaceModificationsModule,
     forwardRef(() => CandidateSearchModule),
   ],
@@ -76,12 +79,14 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
     OrgChartS3Service,
     OrgChartCacheService,
     OrgchartCancelRegistryService,
+    OrgChartIncrementalBuildCacheService,
   ],
   exports: [
     OrgChartService,
     OrgChartS3Service,
     OrgChartCacheService,
     OrgchartCancelRegistryService,
+    OrgChartIncrementalBuildCacheService,
     OrgChartTheOrgEnrichmentService,
     OrgChartLinkedInBuildService,
     PdlPersonOrgMovementService,

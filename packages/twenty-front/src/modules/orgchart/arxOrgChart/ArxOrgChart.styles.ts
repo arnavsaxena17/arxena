@@ -1,4 +1,5 @@
 import styled from '@emotion/styled';
+import { Button } from 'twenty-ui';
 
 export const StyledContainer = styled.div`
   display: flex;
@@ -40,25 +41,8 @@ export const StyledPreviewPersistentBanner = styled.div`
   text-align: center;
 `;
 
-export const StyledPreviewBannerSignupButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(0.75)}
-    ${({ theme }) => theme.spacing(1.5)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: none;
-  background: ${({ theme }) => theme.accent.primary};
-  color: ${({ theme }) => theme.font.color.inverted};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-
-  &:hover {
-    opacity: 0.92;
-  }
-
-  &:active {
-    opacity: 0.85;
-  }
+export const StyledPreviewBannerSignupButton = styled(Button)`
+  justify-content: center;
 `;
 
 export const StyledSearchOverlay = styled.div`
@@ -77,24 +61,8 @@ export const StyledTopRightActionsOverlay = styled.div`
   z-index: 20;
 `;
 
-export const StyledTopRightActionButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(1)}
-    ${({ theme }) => theme.spacing(1.5)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  cursor: pointer;
-
-  &:hover:enabled {
-    background: ${({ theme }) => theme.background.transparent.light};
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: default;
-  }
+export const StyledTopRightActionButton = styled(Button)`
+  justify-content: center;
 `;
 
 export const StyledLoadingMessage = styled.div`
@@ -157,23 +125,15 @@ export const StyledLeadershipInfoBanner = styled.div`
   z-index: 22;
 `;
 
-export const StyledLeadershipBannerLink = styled.button`
-  display: inline;
-  margin: 0;
+export const StyledLeadershipBannerLink = styled(Button)`
+  align-items: baseline;
+  display: inline-flex;
+  height: auto;
   padding: 0;
-  border: none;
-  background: none;
-  color: ${({ theme }) => theme.color.blue};
-  font-size: inherit;
-  font-family: inherit;
-  line-height: inherit;
-  cursor: pointer;
+  gap: 0;
+  justify-content: flex-start;
   text-decoration: underline;
   text-underline-offset: 2px;
-
-  &:hover {
-    opacity: 0.9;
-  }
 `;
 
 export const StyledLeadershipBannerPaidNote = styled.div`
@@ -221,26 +181,8 @@ export const StyledTemplateBanner = styled.div`
   z-index: 25;
 `;
 
-export const StyledTemplateBannerButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  border: none;
-  background: ${({ theme }) => theme.background.invertedPrimary};
-  color: ${({ theme }) => theme.font.color.inverted};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: opacity 0.15s ease;
-
-  &:hover {
-    opacity: 0.9;
-  }
-
-  &:active {
-    opacity: 0.8;
-  }
+export const StyledTemplateBannerButton = styled(Button)`
+  justify-content: center;
 `;
 
 export const StyledSpinner = styled.div`
