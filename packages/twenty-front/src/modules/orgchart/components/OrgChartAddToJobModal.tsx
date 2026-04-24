@@ -16,7 +16,7 @@ const DEFAULT_AVATAR =
 import type { OrgChartNodeData } from 'twenty-shared';
 import { getProxiedImageUrl, isValidLinkedInProfileUrl } from 'twenty-shared';
 import type { ContextResultItem } from '../types';
-import { toLinkedInPremiumCandidate } from '../utils/orgChartUtils';
+import { uploadOrgChartCandidatesToJob } from '../utils/orgChartUtils';
 
 const StyledBackdrop = styled.div`
   position: absolute;
@@ -348,47 +348,30 @@ export const OrgChartAddToJobModal = ({
     setIsSubmitting(true);
     beginUploadProgressSseSession();
     try {
-      const candidatesPayload = selected.map(toLinkedInPremiumCandidate);
+      const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
       const nodeStdFunction = node
         ? (node as Record<string, unknown>).std_function as string | undefined
         : undefined;
       const nodeStdGrade = node
         ? (node as Record<string, unknown>).std_grade as string | undefined
         : undefined;
-      const body: Record<string, unknown> = {
-        candidates: candidatesPayload,
-        data_source: 'linkedin_premium',
-        job_id: selectedJob.id,
-        job_name: selectedJob.name,
+      const upload = await uploadOrgChartCandidatesToJob({
+        baseUrl,
+        accessToken: tokenPair?.accessToken?.token ?? '',
+        items: selected,
+        jobId: selectedJob.id,
+        jobName: selectedJob.name,
         recruiterId: currentWorkspaceMember?.id,
-        job: {
-          id: selectedJob.id,
-          name: selectedJob.name,
-          recruiterId: currentWorkspaceMember?.id,
-        },
-        queue_start_chat_after: queueStartChatAfter,
-      };
-      if (nodeStdFunction ?? nodeStdGrade) {
-        body.org_chart_selected_nodes = {
-          ...(nodeStdFunction && { std_function: nodeStdFunction }),
-          ...(nodeStdGrade && { std_grade: nodeStdGrade }),
-        };
-      }
-
-      const response = await fetch(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/upload-profiles`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-          },
-          body: JSON.stringify(body),
-        },
-      );
-
-      const result = await response.json();
-      if (result.status === 'ok' || result.status === 'success') {
+        queueStartChatAfter,
+        orgChartSelectedNodes:
+          nodeStdFunction ?? nodeStdGrade
+            ? {
+                ...(nodeStdFunction && { std_function: nodeStdFunction }),
+                ...(nodeStdGrade && { std_grade: nodeStdGrade }),
+              }
+            : undefined,
+      });
+      if (upload.ok) {
         enqueueSnackBar(
           `Adding ${selected.length} candidate(s) to job. You will see progress in the notification.`,
           { variant: SnackBarVariant.Success, duration: 4000 },
@@ -396,7 +379,7 @@ export const OrgChartAddToJobModal = ({
         onSuccess?.();
         onClose();
       } else {
-        throw new Error(result.message || result.error || 'Upload failed');
+        throw new Error(upload.message);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to add candidates to job';

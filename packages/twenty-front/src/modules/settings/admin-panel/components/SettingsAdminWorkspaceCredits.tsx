@@ -16,12 +16,12 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import {
-    Button,
-    Checkbox,
-    H2Title,
-    IconTrash,
-    Section,
-    useIsMobile,
+  Button,
+  Checkbox,
+  H2Title,
+  IconTrash,
+  Section,
+  useIsMobile,
 } from 'twenty-ui';
 
 type WorkspaceCreditsRow = {
@@ -174,7 +174,7 @@ const StyledMobileSelect = styled(StyledSelect)`
 `;
 
 const TABLE_GRID =
-  'minmax(40px, auto) minmax(96px, 1fr) minmax(104px, 0.9fr) minmax(120px, 1.2fr) minmax(140px, 1.4fr) minmax(72px, 0.55fr) minmax(64px, 0.5fr) minmax(64px, 0.5fr) minmax(72px, 0.55fr) minmax(260px, 1.4fr)';
+  'minmax(40px, auto) minmax(96px, 1fr) minmax(104px, 0.9fr) minmax(120px, 1.2fr) minmax(140px, 1.4fr) minmax(72px, 0.55fr) minmax(64px, 0.5fr) minmax(64px, 0.5fr) minmax(260px, 1.4fr)';
 
 const shortWorkspaceId = (id: string) => `${id.slice(0, 8)}…`;
 
@@ -184,9 +184,6 @@ const formatWorkspaceCreatedAt = (iso: string) =>
     month: 'short',
     day: 'numeric',
   });
-
-const totalCredits = (row: WorkspaceCreditsRow) =>
-  row.orgChartCredits + row.emailContactCredits + row.phoneContactCredits;
 
 const StyledBulkActionsBar = styled.div`
   align-items: center;
@@ -499,9 +496,6 @@ export const SettingsAdminWorkspaceCredits = () => {
                     <StyledMobileCreditItem>
                       {t`Phone`}: {row.phoneContactCredits}
                     </StyledMobileCreditItem>
-                    <StyledMobileCreditItem>
-                      {t`Total`}: {totalCredits(row)}
-                    </StyledMobileCreditItem>
                   </StyledMobileCreditsRow>
                   <StyledMobileActionsColumn>
                     <StyledMobileSelect
@@ -559,7 +553,6 @@ export const SettingsAdminWorkspaceCredits = () => {
                 <TableHeader align="right">{t`Org chart`}</TableHeader>
                 <TableHeader align="right">{t`Email`}</TableHeader>
                 <TableHeader align="right">{t`Phone`}</TableHeader>
-                <TableHeader align="right">{t`Total`}</TableHeader>
                 <TableHeader>{t`Actions`}</TableHeader>
               </TableRow>
               {rows.map((row) => {
@@ -601,9 +594,6 @@ export const SettingsAdminWorkspaceCredits = () => {
                     </StyledTableCell>
                     <StyledTableCell align="right">
                       {row.phoneContactCredits}
-                    </StyledTableCell>
-                    <StyledTableCell align="right">
-                      {totalCredits(row)}
                     </StyledTableCell>
                     <StyledTableCell>
                       <StyledActionsControlsRow>

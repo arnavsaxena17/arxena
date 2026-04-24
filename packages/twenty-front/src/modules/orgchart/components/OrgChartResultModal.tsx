@@ -1,12 +1,14 @@
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
+import { useLingui } from '@lingui/react/macro';
 import { useEffect, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import {
   Button,
   Card,
   IconBrandLinkedin,
   IconButton,
+  IconChevronLeft,
   IconMail,
   IconPhone,
   IconX,
@@ -22,12 +24,22 @@ import {
   isValidLinkedInProfileUrl,
   toTitleCase,
 } from 'twenty-shared';
+import { OnboardingIntentModalLayout } from '~/pages/onboarding/OnboardingIntentModalLayout';
+import { orgChartContactsByKeyState } from '../states/orgChartContactsByKeyState';
+
 import { ContextResultItem } from '../types';
+import { extractCompanyDomainFromWebsite } from '../utils/orgChartUtils';
+import {
+  OrgChartModalTightContent,
+  OrgChartModalTightHeader,
+} from './OrgChartModalTightContent';
+import { OrgChartResultsAddToJobPanel } from './OrgChartResultsAddToJobPanel';
 
 const DEFAULT_AVATAR =
   'https://st2.depositphotos.com/4111759/12123/v/950/depositphotos_121232442-stock-illustration-male-default-placeholder-avatar-profile.jpg';
 
-const INSUFFICIENT_CONTACT_CREDITS_SNACKBAR = 'Insufficient contact credits';
+const INSUFFICIENT_CONTACT_CREDITS_SNACKBAR =
+  'You’re out of contact credits. Add credits to continue.';
 
 const StyledOrgChartResultModal = styled(Modal)`
   max-height: 90dvh;
@@ -45,6 +57,14 @@ const StyledTitle = styled.div`
   color: ${({ theme }) => theme.font.color.primary};
   font-size: ${({ theme }) => theme.font.size.lg};
   font-weight: ${({ theme }) => theme.font.weight.semiBold};
+`;
+
+const StyledAddToJobHeaderRow = styled.div`
+  align-items: center;
+  display: flex;
+  flex: 1;
+  gap: ${({ theme }) => theme.spacing(1)};
+  min-width: 0;
 `;
 
 const StyledModalBodyScroll = styled.div`
@@ -248,6 +268,8 @@ const StyledEmptyState = styled.div`
 type ContactInfo = {
   email?: string;
   phone?: string;
+  linkedinUrl?: string;
+  fullName?: string;
   /**
    * Indicates that a contact fetch was attempted for this person,
    * even if no email/phone data was ultimately found.
@@ -255,11 +277,65 @@ type ContactInfo = {
   fetched?: boolean;
 };
 
+const getContactCacheKey = (
+  item: ContextResultItem,
+  companyWebsite?: string,
+): string => {
+  const raw = item.raw as Record<string, unknown> | undefined;
+  const rawPersonId = raw?.id;
+  const domain = extractCompanyDomainFromWebsite(companyWebsite);
+  const hasM7kqId =
+    typeof domain === 'string' &&
+    domain.trim().length > 0 &&
+    typeof rawPersonId === 'string' &&
+    rawPersonId.trim().length > 0;
+  if (hasM7kqId) {
+    return `m7kq:${domain!.trim().toLowerCase()}:${rawPersonId.trim()}`;
+  }
+  const li =
+    typeof item.linkedinUrl === 'string' ? item.linkedinUrl.trim() : '';
+  if (li.length > 0) {
+    return `li:${li}`;
+  }
+  return `id:${item.id}`;
+};
+
+const getItemDerivedContactInfo = (
+  item: ContextResultItem,
+): ContactInfo | undefined => {
+  const email = typeof item.email === 'string' ? item.email.trim() : '';
+  const phone = typeof item.phone === 'string' ? item.phone.trim() : '';
+  const raw = item.raw as Record<string, unknown> | undefined;
+  const rawEmails = raw?.m7kq_enrichment_emails;
+  const rawPhones = raw?.m7kq_enrichment_phones;
+  const hasRawEmail =
+    Array.isArray(rawEmails) &&
+    rawEmails.some((e) => typeof e === 'string' && e);
+  const hasRawPhone =
+    Array.isArray(rawPhones) &&
+    rawPhones.some((p) => typeof p === 'string' && p);
+  const fetched = Boolean(email || phone || hasRawEmail || hasRawPhone);
+  if (!fetched) {
+    return undefined;
+  }
+  return {
+    fetched: true,
+    email: email || undefined,
+    phone: phone || undefined,
+    linkedinUrl: item.linkedinUrl,
+    fullName: item.fullName,
+  };
+};
+
 type ResultItemProps = {
   item: ContextResultItem;
   contactInfo?: ContactInfo;
   isFetchingContacts?: boolean;
-  onFetchContacts?: (item: ContextResultItem) => void;
+  onFetchContacts?: (
+    item: ContextResultItem,
+    opts: { wantEmail: boolean; wantPhone: boolean },
+  ) => void;
+  companyWebsite?: string;
 };
 
 const getAvatarUrl = (item: ContextResultItem): string | undefined => {
@@ -294,6 +370,7 @@ const ResultItem = ({
   contactInfo,
   isFetchingContacts,
   onFetchContacts,
+  companyWebsite,
 }: ResultItemProps) => {
   const theme = useTheme();
   const iconSm = theme.icon.size.sm;
@@ -309,15 +386,36 @@ const ResultItem = ({
     .join(' · ');
 
   const hasLinkedInProfile = isValidLinkedInProfileUrl(item.linkedinUrl);
+  const m7kqDomain = extractCompanyDomainFromWebsite(companyWebsite);
+  const rawPersonId = (item.raw as { id?: unknown } | undefined)?.id;
+  const canM7kqContactFetch = Boolean(
+    m7kqDomain &&
+      typeof rawPersonId === 'string' &&
+      rawPersonId.trim().length > 0,
+  );
   const canAttemptContactFetch =
     hasLinkedInProfile ||
     Boolean(item.email?.trim()) ||
-    Boolean(item.phone?.trim());
+    Boolean(item.phone?.trim()) ||
+    canM7kqContactFetch;
+
+  const derivedContactInfo = getItemDerivedContactInfo(item);
+  const effectiveContactInfo = contactInfo ?? derivedContactInfo;
+  const isAlreadyFetched = effectiveContactInfo?.fetched === true;
+
+  const missingEmail = !effectiveContactInfo?.email?.trim();
+  const missingPhone = !effectiveContactInfo?.phone?.trim();
+  const shouldFetchAnything = missingEmail || missingPhone;
 
   const showFetchContacts =
-    Boolean(onFetchContacts) &&
-    (!contactInfo || contactInfo.fetched !== true) &&
-    canAttemptContactFetch;
+    Boolean(onFetchContacts) && shouldFetchAnything && canAttemptContactFetch;
+
+  const fetchLabel =
+    missingEmail && missingPhone
+      ? 'Fetch contacts'
+      : missingEmail
+        ? 'Fetch email'
+        : 'Fetch phone';
 
   return (
     <StyledProfileCard
@@ -331,19 +429,26 @@ const ResultItem = ({
         {roleCompanyLine.length > 0 && (
           <StyledProfileSubline>{roleCompanyLine}</StyledProfileSubline>
         )}
-        {contactInfo && (contactInfo.email || contactInfo.phone) && (
-          <StyledProfileMeta
-            data-testid={`orgchart-contact-details-${item.id}`}
-          >
-            {contactInfo.email && <span>Email: {contactInfo.email}</span>}
-            {contactInfo.email && contactInfo.phone && ' · '}
-            {contactInfo.phone && <span>Phone: {contactInfo.phone}</span>}
-          </StyledProfileMeta>
-        )}
-        {contactInfo &&
-          contactInfo.fetched === true &&
-          !contactInfo.email &&
-          !contactInfo.phone && (
+        {effectiveContactInfo &&
+          (effectiveContactInfo.email || effectiveContactInfo.phone) && (
+            <StyledProfileMeta
+              data-testid={`orgchart-contact-details-${item.id}`}
+            >
+              {effectiveContactInfo.email && (
+                <span>Email: {effectiveContactInfo.email}</span>
+              )}
+              {effectiveContactInfo.email &&
+                effectiveContactInfo.phone &&
+                ' · '}
+              {effectiveContactInfo.phone && (
+                <span>Phone: {effectiveContactInfo.phone}</span>
+              )}
+            </StyledProfileMeta>
+          )}
+        {effectiveContactInfo &&
+          effectiveContactInfo.fetched === true &&
+          !effectiveContactInfo.email &&
+          !effectiveContactInfo.phone && (
             <StyledProfileMeta>
               No contacts have been fetched for this person yet.
             </StyledProfileMeta>
@@ -365,12 +470,17 @@ const ResultItem = ({
               <StyledContactButton
                 data-testid={`orgchart-fetch-contacts-${item.id}`}
                 type="button"
-                onClick={() => onFetchContacts(item)}
+                onClick={() =>
+                  onFetchContacts(item, {
+                    wantEmail: missingEmail,
+                    wantPhone: missingPhone,
+                  })
+                }
                 disabled={isFetchingContacts}
               >
                 <IconPhone size={iconSm} stroke={1.5} />
                 <IconMail size={iconSm} stroke={1.5} />
-                {isFetchingContacts ? 'Fetching contacts…' : 'Fetch contacts'}
+                {isFetchingContacts ? 'Fetching contacts…' : fetchLabel}
               </StyledContactButton>
             )}
           </StyledProfileActions>
@@ -380,59 +490,22 @@ const ResultItem = ({
   );
 };
 
-const useClickedContactLinkImage = () => {
+const useClickedContactLinkImage = (
+  companyWebsite?: string,
+  companyId?: string,
+) => {
   const tokenPair = useRecoilValue(tokenPairState);
   const { enqueueSnackBar } = useSnackBar();
   const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
 
-  const [contactsById, setContactsById] = useState<Record<string, ContactInfo>>(
-    () => {
-      if (typeof window === 'undefined') {
-        return {};
-      }
-
-      try {
-        const stored = window.localStorage.getItem('orgchartContacts');
-        if (!stored) {
-          return {};
-        }
-
-        const parsed = JSON.parse(stored) as Record<string, ContactInfo>;
-        return parsed && typeof parsed === 'object' ? parsed : {};
-      } catch {
-        return {};
-      }
-    },
+  const [contactsById, setContactsById] = useRecoilState(
+    orgChartContactsByKeyState,
   );
 
   const [loadingById, setLoadingById] = useState<Record<string, boolean>>({});
 
-  const persistContacts = (id: string, info: ContactInfo) => {
-    setContactsById((prev) => ({
-      ...prev,
-      [id]: info,
-    }));
-
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    try {
-      const stored = window.localStorage.getItem('orgchartContacts');
-      const existing = stored
-        ? (JSON.parse(stored) as Record<string, ContactInfo>)
-        : {};
-
-      window.localStorage.setItem(
-        'orgchartContacts',
-        JSON.stringify({
-          ...existing,
-          [id]: info,
-        }),
-      );
-    } catch {
-      // Ignore storage errors
-    }
+  const persistContacts = (key: string, info: ContactInfo) => {
+    setContactsById((prev) => ({ ...prev, [key]: info }));
   };
 
   const checkCandidateSavedStatus = async (
@@ -480,23 +553,39 @@ const useClickedContactLinkImage = () => {
 
   const fetchContactsFromServer = async (
     item: ContextResultItem,
+    opts: { wantEmail: boolean; wantPhone: boolean },
   ): Promise<ContactInfo | null> => {
-    if (!baseUrl || !item.linkedinUrl || !tokenPair?.accessToken?.token) {
+    if (!baseUrl || !tokenPair?.accessToken?.token) {
+      return null;
+    }
+    const domain = extractCompanyDomainFromWebsite(companyWebsite);
+    const rawId = (item.raw as { id?: unknown } | undefined)?.id;
+    const canM7kqFetch =
+      Boolean(domain) && typeof rawId === 'string' && rawId.trim().length > 0;
+    if (!item.linkedinUrl && !canM7kqFetch) {
       return null;
     }
 
     try {
+      const body: Record<string, unknown> = {
+        wantEmail: opts.wantEmail,
+        wantPhone: opts.wantPhone,
+      };
+      if (canM7kqFetch) {
+        body.m7kqPersonId = String(rawId).trim();
+        body.companyDomain = domain;
+      } else if (item.linkedinUrl) {
+        body.linkedinUrl = item.linkedinUrl;
+      } else {
+        return null;
+      }
       const response = await fetch(`${baseUrl}/contact-enrichment/fetch`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${tokenPair.accessToken.token}`,
         },
-        body: JSON.stringify({
-          linkedinUrl: item.linkedinUrl,
-          wantEmail: true,
-          wantPhone: true,
-        }),
+        body: JSON.stringify(body),
         credentials: 'include',
       });
 
@@ -539,20 +628,38 @@ const useClickedContactLinkImage = () => {
             emails?: string[];
             phones?: string[];
             source?: string;
+            linkedinUrl?: string;
+            fullName?: string;
           }
         | { jobId: string; status: string; total: number }
         | { results: Record<string, { emails?: string[]; phones?: string[] }> };
 
       let emails: string[] | undefined;
       let phones: string[] | undefined;
+      let linkedinUrlFromResponse: string | undefined;
+      let fullNameFromResponse: string | undefined;
 
-      if ('results' in json && typeof item.linkedinUrl === 'string') {
+      if (
+        'results' in json &&
+        typeof item.linkedinUrl === 'string' &&
+        item.linkedinUrl
+      ) {
         const entry = json.results[item.linkedinUrl];
         emails = entry?.emails;
         phones = entry?.phones;
       } else if ('emails' in json || 'phones' in json) {
         emails = json.emails;
         phones = json.phones;
+        linkedinUrlFromResponse =
+          typeof (json as { linkedinUrl?: unknown }).linkedinUrl === 'string'
+            ? ((json as { linkedinUrl: string }).linkedinUrl ?? '').trim() ||
+              undefined
+            : undefined;
+        fullNameFromResponse =
+          typeof (json as { fullName?: unknown }).fullName === 'string'
+            ? ((json as { fullName: string }).fullName ?? '').trim() ||
+              undefined
+            : undefined;
       } else {
         // Async job response is not expected for single-URL requests here
         return { fetched: true };
@@ -564,21 +671,87 @@ const useClickedContactLinkImage = () => {
         Array.isArray(phones) && phones.length > 0 ? phones[0] : undefined;
 
       if (!email && !phone) {
-        return { fetched: true };
+        return {
+          fetched: true,
+          ...(linkedinUrlFromResponse
+            ? { linkedinUrl: linkedinUrlFromResponse }
+            : {}),
+          ...(fullNameFromResponse ? { fullName: fullNameFromResponse } : {}),
+        };
       }
 
-      return { email, phone, fetched: true };
+      return {
+        email,
+        phone,
+        fetched: true,
+        ...(linkedinUrlFromResponse
+          ? { linkedinUrl: linkedinUrlFromResponse }
+          : {}),
+        ...(fullNameFromResponse ? { fullName: fullNameFromResponse } : {}),
+      };
     } catch {
       return null;
     }
   };
 
-  const manageContactsFetching = async (item: ContextResultItem) => {
-    if (contactsById[item.id]) {
+  const persistToOrgChart = async (args: {
+    item: ContextResultItem;
+    info: ContactInfo;
+  }) => {
+    if (!companyId || !baseUrl || !tokenPair?.accessToken?.token) {
+      return;
+    }
+    const domain = extractCompanyDomainFromWebsite(companyWebsite);
+    const rawId = (args.item.raw as { id?: unknown } | undefined)?.id;
+    const hasM7kq =
+      Boolean(domain) && typeof rawId === 'string' && rawId.trim().length > 0;
+    const normalizedBase = baseUrl.replace(/\/$/, '');
+    const url = `${normalizedBase}/org-chart/${encodeURIComponent(
+      companyId,
+    )}/enrichment/apply`;
+    const payload: Record<string, unknown> = {
+      ...(hasM7kq
+        ? { m7kqPersonId: String(rawId).trim(), companyDomain: domain }
+        : args.info.linkedinUrl || args.item.linkedinUrl
+          ? { linkedinUrl: args.info.linkedinUrl ?? args.item.linkedinUrl }
+          : {}),
+      emails: args.info.email ? [args.info.email] : undefined,
+      phones: args.info.phone ? [args.info.phone] : undefined,
+      linkedinUrl: args.info.linkedinUrl,
+      fullName: args.info.fullName,
+    };
+    if (Object.keys(payload).length === 0) return;
+    try {
+      await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${tokenPair.accessToken.token}`,
+        },
+        body: JSON.stringify(payload),
+        credentials: 'include',
+      });
+    } catch {
+      // best-effort
+    }
+  };
+
+  const manageContactsFetching = async (
+    item: ContextResultItem,
+    opts: { wantEmail: boolean; wantPhone: boolean },
+  ) => {
+    const cacheKey = getContactCacheKey(item, companyWebsite);
+    const derived = getItemDerivedContactInfo(item);
+
+    const existing = contactsById[cacheKey];
+    if (existing?.fetched && !opts.wantEmail && !opts.wantPhone) return;
+
+    if (derived) {
+      persistContacts(cacheKey, derived);
       return;
     }
 
-    setLoadingById((prev) => ({ ...prev, [item.id]: true }));
+    setLoadingById((prev) => ({ ...prev, [cacheKey]: true }));
 
     try {
       // Enforce saved-candidate rule when possible
@@ -609,17 +782,32 @@ const useClickedContactLinkImage = () => {
       if (item.phone) {
         localInfo.phone = item.phone;
       }
+      if (item.linkedinUrl) {
+        localInfo.linkedinUrl = item.linkedinUrl;
+      }
+      if (item.fullName) {
+        localInfo.fullName = item.fullName;
+      }
 
       let finalInfo: ContactInfo | null = null;
 
       if (localInfo.email || localInfo.phone) {
         finalInfo = localInfo;
       } else {
-        finalInfo = await fetchContactsFromServer(item);
+        finalInfo = await fetchContactsFromServer(item, opts);
       }
 
       if (finalInfo) {
-        persistContacts(item.id, finalInfo);
+        const merged: ContactInfo = {
+          ...(existing ?? {}),
+          ...finalInfo,
+          fetched: true,
+          // Preserve existing linkedin/fullname if server did not return them.
+          linkedinUrl: finalInfo.linkedinUrl ?? existing?.linkedinUrl,
+          fullName: finalInfo.fullName ?? existing?.fullName,
+        };
+        persistContacts(cacheKey, merged);
+        void persistToOrgChart({ item, info: merged });
         // Also update backend candidate/person when we can
         if (
           item.linkedinUrl &&
@@ -663,14 +851,17 @@ const useClickedContactLinkImage = () => {
       }
     } finally {
       setLoadingById((prev) => {
-        const { [item.id]: _omit, ...rest } = prev;
+        const { [cacheKey]: _omit, ...rest } = prev;
         return rest;
       });
     }
   };
 
-  const clickedContactLinkImage = (item: ContextResultItem) => {
-    void manageContactsFetching(item);
+  const clickedContactLinkImage = (
+    item: ContextResultItem,
+    opts: { wantEmail: boolean; wantPhone: boolean },
+  ) => {
+    void manageContactsFetching(item, opts);
   };
 
   return { contactsById, loadingById, clickedContactLinkImage };
@@ -690,10 +881,24 @@ export type OrgChartResultModalProps = {
   emptyMessage?: string;
   onClose: () => void;
   onDownloadCsv?: () => void;
-  onAddToJob?: () => void;
   extraFooterButtons?: React.ReactNode;
   onGetSimilarPeople?: () => void;
   onStop?: () => void;
+  /** Company site URL — used with `item.raw.id` for m7kq contact match when present. */
+  companyWebsite?: string;
+  /** Company id — used to persist enrichment into stored org chart (Redis/S3). */
+  companyId?: string;
+  /**
+   * When set (and there are non-loading results), "Add to job" opens a subview
+   * inside this modal with a back button instead of a second dialog.
+   */
+  addToJobInlineContext?: {
+    companyName?: string;
+    contextModalMode?: string | null;
+    selectedNodeFunction?: string;
+    selectedNodeGrade?: string;
+    queueStartChatAfter?: boolean;
+  } | null;
 };
 
 export const OrgChartResultModal = ({
@@ -710,14 +915,46 @@ export const OrgChartResultModal = ({
   emptyMessage = 'No candidates returned for this request yet.',
   onClose,
   onDownloadCsv,
-  onAddToJob,
   extraFooterButtons,
   onGetSimilarPeople,
   onStop,
+  companyWebsite,
+  companyId,
+  addToJobInlineContext,
 }: OrgChartResultModalProps) => {
+  const { t } = useLingui();
   const { contactsById, loadingById, clickedContactLinkImage } =
-    useClickedContactLinkImage();
+    useClickedContactLinkImage(companyWebsite, companyId);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [isAddToJobView, setIsAddToJobView] = useState(false);
+
+  const addToJobContextKey = addToJobInlineContext
+    ? [
+        addToJobInlineContext.companyName ?? '',
+        addToJobInlineContext.contextModalMode ?? '',
+        addToJobInlineContext.selectedNodeFunction ?? '',
+        addToJobInlineContext.selectedNodeGrade ?? '',
+        String(addToJobInlineContext.queueStartChatAfter ?? true),
+      ].join('|')
+    : '';
+
+  const resultIdsKey = results.map((r) => r.id).join(',');
+
+  useEffect(() => {
+    setIsAddToJobView(false);
+  }, [
+    title,
+    isLoading,
+    error,
+    resultIdsKey,
+    booleanKeywordsString,
+    addToJobContextKey,
+  ]);
+
+  const handleMainClose = () => {
+    setIsAddToJobView(false);
+    onClose();
+  };
 
   useEffect(() => {
     if (!isLoading || !loadingStartedAt) {
@@ -747,97 +984,146 @@ export const OrgChartResultModal = ({
   const seconds = (elapsedSeconds % 60).toString().padStart(2, '0');
   const elapsedLabel = `${minutes}:${seconds}`;
 
+  const canInlineAddToJob =
+    Boolean(addToJobInlineContext) &&
+    results.length > 0 &&
+    !isLoading &&
+    !error;
+
   return (
     <StyledOrgChartResultModal
       isClosable
-      onClose={onClose}
+      onClose={handleMainClose}
       size="large"
       padding="none"
       className="orgchart-result-modal"
     >
-      <Modal.Header>
+      <OrgChartModalTightHeader>
         <StyledHeaderContainer data-testid="orgchart-result-modal">
-          <StyledTitle>{title}</StyledTitle>
-          <IconButton Icon={IconX} onClick={onClose} variant="tertiary" />
+          {isAddToJobView && canInlineAddToJob ? (
+            <StyledAddToJobHeaderRow>
+              <IconButton
+                Icon={IconChevronLeft}
+                onClick={() => setIsAddToJobView(false)}
+                variant="tertiary"
+                ariaLabel={t`Back`}
+              />
+              <StyledTitle>{t`Add to job`}</StyledTitle>
+            </StyledAddToJobHeaderRow>
+          ) : (
+            <StyledTitle>{title}</StyledTitle>
+          )}
+          <IconButton
+            Icon={IconX}
+            onClick={handleMainClose}
+            variant="tertiary"
+          />
         </StyledHeaderContainer>
-      </Modal.Header>
-      <Modal.Content>
-        <StyledModalBodyScroll>
-          {error && <StyledErrorMessage>{error}</StyledErrorMessage>}
-          {isLoading && !error && (
-            <StyledLoadingMessage>
-              <StyledLoadingRow>
-                <Loader />
-                <span>Fetching people...</span>
-              </StyledLoadingRow>
-              <StyledLoadingDetails>
-                Elapsed: {elapsedLabel}
-              </StyledLoadingDetails>
-              {loadingProgressMessage && (
+      </OrgChartModalTightHeader>
+      <OrgChartModalTightContent>
+        {isAddToJobView && canInlineAddToJob && addToJobInlineContext ? (
+          <OnboardingIntentModalLayout>
+            <OrgChartResultsAddToJobPanel
+              results={results}
+              companyName={addToJobInlineContext.companyName}
+              contextModalMode={addToJobInlineContext.contextModalMode}
+              selectedNodeFunction={addToJobInlineContext.selectedNodeFunction}
+              selectedNodeGrade={addToJobInlineContext.selectedNodeGrade}
+              queueStartChatAfter={
+                addToJobInlineContext.queueStartChatAfter ?? true
+              }
+              onCancel={() => setIsAddToJobView(false)}
+              onComplete={handleMainClose}
+            />
+          </OnboardingIntentModalLayout>
+        ) : (
+          <StyledModalBodyScroll>
+            {error && <StyledErrorMessage>{error}</StyledErrorMessage>}
+            {isLoading && !error && (
+              <StyledLoadingMessage>
+                <StyledLoadingRow>
+                  <Loader />
+                  <span>Fetching people...</span>
+                </StyledLoadingRow>
                 <StyledLoadingDetails>
-                  {loadingProgressMessage}
+                  Elapsed: {elapsedLabel}
                 </StyledLoadingDetails>
-              )}
-              {(loadingPage || loadingTotalPages || loadingTotalCandidates) && (
-                <StyledLoadingDetails>
-                  {`Page ${loadingPage ?? '-'}${loadingTotalPages ? `/${loadingTotalPages}` : ''} - ${loadingTotalCandidates ?? 0} people`}
-                </StyledLoadingDetails>
-              )}
-              {onStop && (
-                <StyledStopRow>
-                  <Button variant="secondary" title="Stop" onClick={onStop} />
-                </StyledStopRow>
-              )}
-            </StyledLoadingMessage>
-          )}
-          {!isLoading && !error && booleanKeywordsString && (
-            <StyledBooleanCard fullWidth rounded>
-              <StyledBooleanLabel>Boolean string</StyledBooleanLabel>
-              <StyledBooleanValue>{booleanKeywordsString}</StyledBooleanValue>
-            </StyledBooleanCard>
-          )}
-          {!booleanKeywordsString &&
-            results.length > 0 &&
-            (!isLoading || error) && (
-              <StyledProfileList>
-                {results.map((item) => (
-                  <ResultItem
-                    key={item.id}
-                    item={item}
-                    contactInfo={contactsById[item.id]}
-                    isFetchingContacts={!!loadingById[item.id]}
-                    onFetchContacts={clickedContactLinkImage}
-                  />
-                ))}
-              </StyledProfileList>
+                {loadingProgressMessage && (
+                  <StyledLoadingDetails>
+                    {loadingProgressMessage}
+                  </StyledLoadingDetails>
+                )}
+                {(loadingPage ||
+                  loadingTotalPages ||
+                  loadingTotalCandidates) && (
+                  <StyledLoadingDetails>
+                    {`Page ${loadingPage ?? '-'}${loadingTotalPages ? `/${loadingTotalPages}` : ''} - ${loadingTotalCandidates ?? 0} people`}
+                  </StyledLoadingDetails>
+                )}
+                {onStop && (
+                  <StyledStopRow>
+                    <Button variant="secondary" title="Stop" onClick={onStop} />
+                  </StyledStopRow>
+                )}
+              </StyledLoadingMessage>
             )}
-          {!isLoading &&
-            !error &&
-            !booleanKeywordsString &&
-            results.length === 0 && (
-              <StyledEmptyState>{emptyMessage}</StyledEmptyState>
+            {!isLoading && !error && booleanKeywordsString && (
+              <StyledBooleanCard fullWidth rounded>
+                <StyledBooleanLabel>Boolean string</StyledBooleanLabel>
+                <StyledBooleanValue>{booleanKeywordsString}</StyledBooleanValue>
+              </StyledBooleanCard>
             )}
-        </StyledModalBodyScroll>
-      </Modal.Content>
-      <StyledOrgChartModalFooter>
-        {onDownloadCsv && (results.length > 0 || onGetSimilarPeople) && (
-          <Button
-            variant="secondary"
-            title="Download to CSV"
-            onClick={onDownloadCsv}
-          />
+            {!booleanKeywordsString &&
+              results.length > 0 &&
+              (!isLoading || error) && (
+                <StyledProfileList>
+                  {results.map((item) =>
+                    (() => {
+                      const cacheKey = getContactCacheKey(item, companyWebsite);
+                      return (
+                        <ResultItem
+                          key={item.id}
+                          item={item}
+                          contactInfo={contactsById[cacheKey]}
+                          isFetchingContacts={!!loadingById[cacheKey]}
+                          onFetchContacts={clickedContactLinkImage}
+                          companyWebsite={companyWebsite}
+                        />
+                      );
+                    })(),
+                  )}
+                </StyledProfileList>
+              )}
+            {!isLoading &&
+              !error &&
+              !booleanKeywordsString &&
+              results.length === 0 && (
+                <StyledEmptyState>{emptyMessage}</StyledEmptyState>
+              )}
+          </StyledModalBodyScroll>
         )}
-        {onAddToJob && results.length > 0 && (
-          <Button
-            variant="secondary"
-            title="Add to job"
-            onClick={onAddToJob}
-            dataTestId="orgchart-results-add-to-job"
-          />
-        )}
-        {extraFooterButtons}
-        <Button variant="primary" title="Close" onClick={onClose} />
-      </StyledOrgChartModalFooter>
+      </OrgChartModalTightContent>
+      {!isAddToJobView && (
+        <StyledOrgChartModalFooter>
+          {onDownloadCsv && (results.length > 0 || onGetSimilarPeople) && (
+            <Button
+              variant="secondary"
+              title="Download to CSV"
+              onClick={onDownloadCsv}
+            />
+          )}
+          {canInlineAddToJob && (
+            <Button
+              variant="secondary"
+              title={t`Add to job`}
+              onClick={() => setIsAddToJobView(true)}
+              dataTestId="orgchart-results-add-to-job"
+            />
+          )}
+          {extraFooterButtons}
+          <Button variant="primary" title="Close" onClick={handleMainClose} />
+        </StyledOrgChartModalFooter>
+      )}
     </StyledOrgChartResultModal>
   );
 };

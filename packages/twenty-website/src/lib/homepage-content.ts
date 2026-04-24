@@ -71,7 +71,7 @@ export const HOW_IT_WORKS_STEPS = [
     step: 1,
     title: 'Map the org',
     description:
-      'Search any company. Arxena pulls a real-time view from LinkedIn and other sources—roles, reporting lines, function clusters—navigable in seconds.',
+      'Search any company. Arxena pulls a real-time view from LinkedIn and other sources—roles, function clusters—navigable in seconds.',
   },
   {
     step: 2,

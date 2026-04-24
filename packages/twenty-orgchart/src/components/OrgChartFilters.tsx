@@ -1,8 +1,14 @@
+import { useEffect, useMemo, useRef } from 'react';
+
 import styled from '@emotion/styled';
 import { IconSearch } from '@tabler/icons-react';
 
 import { toTitleCase } from 'twenty-shared';
 
+import {
+    sortOrgChartCountryKeys,
+    sortOrgChartFunctionRootKeys,
+} from '../utils/orgChartFilterDropdownSort';
 import type { OrgChartDiagramHandle } from './OrgChartDiagram.types';
 
 const StyledFiltersContainer = styled.div<{ $omitMarginLeft?: boolean }>`
@@ -169,13 +175,45 @@ export const OrgChartFilters = ({
   onFunctionRootChange,
   omitMarginLeft,
 }: OrgChartFiltersProps) => {
-  const visibleFunctionRoots = availableFunctionRoots.filter(
-    (fn) => !fn.toLowerCase().includes('assist'),
-  );
+  /**
+   * Filtered org JSON often omits the active country from `countries` (e.g. only
+   * `global`). A native <select> with a value that is not in <option> shows the
+   * first option, so the UI looked like "Global" while a country slice was
+   * loaded. Always include the current selection in the list.
+   */
+  const countryOptionsForSelect = useMemo(() => {
+    if (!selectedCountry) return availableCountries;
+    if (availableCountries.includes(selectedCountry)) {
+      return availableCountries;
+    }
+    return sortOrgChartCountryKeys(
+      [...availableCountries, selectedCountry],
+      countryPercentLabels,
+    );
+  }, [availableCountries, countryPercentLabels, selectedCountry]);
+
+  const visibleFunctionRoots = useMemo(() => {
+    const base = availableFunctionRoots.filter(
+      (fn) => !fn.toLowerCase().includes('assist'),
+    );
+    if (!selectedFunctionRoot) return base;
+    if (base.includes(selectedFunctionRoot)) return base;
+    if (selectedFunctionRoot.toLowerCase().includes('assist')) {
+      return base;
+    }
+    return sortOrgChartFunctionRootKeys(
+      [...base, selectedFunctionRoot],
+      functionRootPercentLabels,
+    );
+  }, [
+    availableFunctionRoots,
+    functionRootPercentLabels,
+    selectedFunctionRoot,
+  ]);
 
   return (
     <StyledFiltersContainer $omitMarginLeft={omitMarginLeft}>
-      {availableCountries.length > 0 && (
+      {countryOptionsForSelect.length > 0 && (
         <StyledFilterGroup>
           <StyledFilterLabel>Country</StyledFilterLabel>
           <StyledSelect
@@ -186,7 +224,7 @@ export const OrgChartFilters = ({
               )
             }
           >
-            {availableCountries.map((country) => (
+            {countryOptionsForSelect.map((country) => (
               <option key={country} value={country}>
                 {countryPercentLabels[country]
                   ? `${toTitleCase(country)} (${countryPercentLabels[country]})`
@@ -229,11 +267,32 @@ export const OrgChartSearchControls = ({
   onClearSearch,
   diagramHandleRef,
 }: OrgChartSearchControlsProps) => {
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const isOrgChartSearchShortcut =
+        (event.metaKey || event.ctrlKey) &&
+        event.shiftKey &&
+        event.key.toLowerCase() === 'f';
+      if (!isOrgChartSearchShortcut) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const input = searchInputRef.current;
+      if (!input) return;
+      input.focus();
+      input.select();
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, []);
+
   return (
     <StyledSearchContainer>
       <StyledSearchInputWrapper>
         <StyledSearchIcon />
         <StyledSearchInput
+          ref={searchInputRef}
           placeholder="Search org chart"
           value={searchTerm}
           onChange={(event) => onSearchTermChange(event.target.value)}

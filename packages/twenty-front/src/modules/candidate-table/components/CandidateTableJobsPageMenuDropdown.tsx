@@ -1,3 +1,4 @@
+import { ORG_CHART_CANDIDATE_SOURCE_M7KQ } from '@/orgchart/constants/orgChartM7kqSource';
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
 import { orgChartLinkedInSearchTypeState } from '@/orgchart/states/orgChartLinkedInSearchTypeState';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
@@ -9,17 +10,17 @@ import styled from '@emotion/styled';
 import { useRecoilState } from 'recoil';
 import { LinkedInSearchType } from 'twenty-shared';
 import {
-    Button,
-    IconApi,
-    IconBrandLinkedin,
-    IconChevronDown,
-    IconCoins,
-    IconComment,
-    IconDownload,
-    IconGitCommit,
-    IconPlus,
-    IconSearch,
-    MenuItem,
+  Button,
+  IconApi,
+  IconBrandLinkedin,
+  IconChevronDown,
+  IconCoins,
+  IconComment,
+  IconDownload,
+  IconGitCommit,
+  IconPlus,
+  IconSearch,
+  MenuItem,
 } from 'twenty-ui';
 
 const ORG_CHART_LINKEDIN_SEARCH_TYPE_OPTIONS: {
@@ -61,6 +62,37 @@ const StyledOrgChartSourceLabel = styled.span`
   letter-spacing: 0.03em;
   padding: 0 ${({ theme }) => theme.spacing(1)};
   text-transform: uppercase;
+`;
+
+const StyledOrgChartExtensionRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding: 0 ${({ theme }) => theme.spacing(1)};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  line-height: 1.3;
+`;
+
+const StyledOrgChartExtensionLabel = styled.span`
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+`;
+
+const StyledOrgChartExtensionStatus = styled.span<{
+  status: 'checking' | 'installed' | 'not_installed';
+}>`
+  flex-shrink: 0;
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${({ theme, status }) => {
+    if (status === 'installed') {
+      return theme.color.green;
+    }
+    if (status === 'checking') {
+      return theme.font.color.tertiary;
+    }
+    return theme.font.color.secondary;
+  }};
 `;
 
 const StyledSegmentedTrack = styled.div`
@@ -121,6 +153,7 @@ type CandidateTableJobsPageMenuDropdownProps = {
   isWhatsappLoggedIn: boolean;
   isMergeMode?: boolean;
   isExtensionInstalled: boolean;
+  isExtensionChecking?: boolean;
   onDownloadClick: () => void;
   creditsTotal?: number;
   onCreditsClick?: () => void;
@@ -133,6 +166,7 @@ export const CandidateTableJobsPageMenuDropdown = ({
   isWhatsappLoggedIn,
   isMergeMode = false,
   isExtensionInstalled,
+  isExtensionChecking = false,
   onDownloadClick,
   creditsTotal,
   onCreditsClick,
@@ -147,6 +181,16 @@ export const CandidateTableJobsPageMenuDropdown = ({
     useRecoilState(orgChartLinkedInSearchTypeState);
 
   const iconSm = theme.icon.size.sm;
+
+  const chromeExtensionStatus = (() => {
+    if (isExtensionChecking) {
+      return { key: 'checking' as const, text: 'Checking…' };
+    }
+    if (isExtensionInstalled) {
+      return { key: 'installed' as const, text: 'Installed' };
+    }
+    return { key: 'not_installed' as const, text: 'Not installed' };
+  })();
 
   return (
     <Dropdown
@@ -216,6 +260,17 @@ export const CandidateTableJobsPageMenuDropdown = ({
             <StyledOrgChartSourceLabel>
               Org chart data source
             </StyledOrgChartSourceLabel>
+            <StyledOrgChartExtensionRow>
+              <StyledOrgChartExtensionLabel>
+                Chrome extension
+              </StyledOrgChartExtensionLabel>
+              <StyledOrgChartExtensionStatus
+                status={chromeExtensionStatus.key}
+                data-testid="org-chart-chrome-extension-status"
+              >
+                {chromeExtensionStatus.text}
+              </StyledOrgChartExtensionStatus>
+            </StyledOrgChartExtensionRow>
             <StyledSegmentedTrack>
               <StyledSegmentedOption
                 type="button"
@@ -261,17 +316,21 @@ export const CandidateTableJobsPageMenuDropdown = ({
               </StyledSegmentedOption>
               <StyledSegmentedOption
                 type="button"
-                data-testid="org-chart-source-apollo"
-                isActive={orgChartLinkedinCandidateSource === 'apollo'}
+                data-testid="org-chart-source-m7kq"
+                isActive={
+                  orgChartLinkedinCandidateSource === ORG_CHART_CANDIDATE_SOURCE_M7KQ
+                }
                 role="radio"
-                aria-checked={orgChartLinkedinCandidateSource === 'apollo'}
-                title="Apollo"
+                aria-checked={
+                  orgChartLinkedinCandidateSource === ORG_CHART_CANDIDATE_SOURCE_M7KQ
+                }
+                title="Company directory (public data)"
                 onClick={() => {
-                  setOrgChartLinkedinCandidateSource('apollo');
+                  setOrgChartLinkedinCandidateSource(ORG_CHART_CANDIDATE_SOURCE_M7KQ);
                 }}
               >
                 <IconApi size={iconSm} />
-                Apollo
+                Directory
               </StyledSegmentedOption>
             </StyledSegmentedTrack>
             {orgChartLinkedinCandidateSource === 'unipile' && (

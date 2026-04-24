@@ -15,7 +15,7 @@ const StyledTabContentWrapper = styled.div`
   display: grid;
   gap: ${({ theme }) => theme.spacing(8)};
   grid-template-columns: minmax(0, 1fr);
-  max-width: 100%;
+  max-width: 90%;
   min-width: 0;
   width: 100%;
 `;

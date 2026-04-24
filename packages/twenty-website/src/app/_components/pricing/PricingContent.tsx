@@ -186,7 +186,7 @@ export const PricingContent = ({ signUpUrl }: PricingContentProps) => {
       <StyledHeadline>Map any company&apos;s org chart</StyledHeadline>
       <StyledHeadlineSub>
         Credits for live org intelligence on the companies you care about —
-        champions, gatekeepers, and reporting lines — before your first message.
+        champions, gatekeepers — before your first message.
       </StyledHeadlineSub>
 
       <StyledCardsGrid>

@@ -7,9 +7,17 @@
 - packages/twenty-front: Main Frontend (React)
 - packages/twenty-server: Main Backend (NestJS)
 - packages/twenty-website: Marketing website (NextJS)
-- packages/twenty-orgchart: Org Charts shared by twenty-front and twenty-website (NextJS)
+- packages/twenty-orgchart: Org Charts package (monorepo module shared across apps)
 - packages/twenty-ui: UI library (React)
-- packages/twenty-shared: Shared utils, constants, types
+- packages/twenty-shared: Shared utils/constants/types + shared GraphQL operations (queries/mutations/fragments)
+
+### Key domains (frontend + backend)
+- Candidate sourcing: `packages/twenty-front/src/modules/candidate-*`, `packages/twenty-server/src/engine/core-modules/candidate-sourcing`
+- Candidate search: `packages/twenty-front/src/modules/candidate-table` / org chart entrypoints, `packages/twenty-server/src/engine/core-modules/candidate-search`
+- Candidate engagement / outreach: org chart outreach UI + server orchestration modules
+- Arx Chat: `packages/twenty-server/src/engine/core-modules/arx-chat`
+- Org charts: `packages/twenty-front/src/modules/orgchart`, `packages/twenty-orgchart`, `packages/twenty-server/src/engine/core-modules/org-chart`
+- Workspace modifications: UI + server modules that adjust workspace-level behavior/configuration
 
 ### Development Stack
 - Package Manager: yarn
@@ -90,6 +98,7 @@
 - Consistent naming (getX, updateX)
 - Use fragments
 - Use generated types
+- Put shared queries/mutations/fragments in `packages/twenty-shared` (avoid duplicating operations across apps)
 
 ## Testing
 - Test every feature

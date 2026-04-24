@@ -2,13 +2,20 @@ import styled from '@emotion/styled';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { useDebouncedCallback } from 'use-debounce';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
+import { ORG_CHART_CANDIDATE_SOURCE_M7KQ } from '@/orgchart/constants/orgChartM7kqSource';
+import {
+  OrgChartContactInfo,
+  orgChartContactsByKeyState,
+} from '@/orgchart/states/orgChartContactsByKeyState';
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
 import { orgChartLinkedInSearchTypeState } from '@/orgchart/states/orgChartLinkedInSearchTypeState';
+import { orgChartSelectedCompanyInfoState } from '@/orgchart/states/orgChartSelectedCompanyInfoState';
+import { isOrgChartM7kqCandidateSource } from '@/orgchart/utils/isOrgChartM7kqCandidateSource';
 import { AppPath } from '@/types/AppPath';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -20,26 +27,27 @@ import { useUnipile } from '@/unipile/contexts/UnipileContext';
 import {
   normalizeCompanyIdForUrl,
   OrgChartDiagram,
+  OrgChartDiagramHandle,
   OrgChartSearchControls,
   useCompanyInfoLookup,
   useOrgChartData,
   useOrgChartFilterOptions,
-  type OrgChartDiagramHandle,
 } from 'twenty-orgchart';
 import {
   extractOrgData,
   getProxiedImageUrl,
+  OrgChartNodeData,
   processOrgChartToNodeData,
   toTitleCase,
-  type OrgChartNodeData,
 } from 'twenty-shared';
 import { OrgChartAddToJobModal } from './components/OrgChartAddToJobModal';
 import { OrgChartHeader } from './components/OrgChartHeader';
+import { OrgChartOutreachModal } from './components/OrgChartOutreachModal';
 import { OrgChartQueryGeneratorControl } from './components/OrgChartQueryGeneratorControl';
 import { OrgChartResultModal } from './components/OrgChartResultModal';
-import { OrgChartResultsAddToJobModal } from './components/OrgChartResultsAddToJobModal';
 import { useJobOrgChartData } from './hooks/useJobOrgChartData';
 import { useOrgChartActions } from './hooks/useOrgChartActions';
+import { extractCompanyDomainFromWebsite } from './utils/orgChartUtils';
 
 export type ArxOrgChartProps = {
   companyId: string;
@@ -90,7 +98,8 @@ const StyledPreviewPersistentBanner = styled.div`
   justify-content: center;
   flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(1.5)}
+    ${({ theme }) => theme.spacing(2)};
   border-bottom: 1px solid ${({ theme }) => theme.border.color.medium};
   background: ${({ theme }) => theme.background.tertiary};
   color: ${({ theme }) => theme.font.color.primary};
@@ -99,7 +108,8 @@ const StyledPreviewPersistentBanner = styled.div`
 `;
 
 const StyledPreviewBannerSignupButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(0.75)} ${({ theme }) => theme.spacing(1.5)};
+  padding: ${({ theme }) => theme.spacing(0.75)}
+    ${({ theme }) => theme.spacing(1.5)};
   border-radius: ${({ theme }) => theme.border.radius.sm};
   border: none;
   background: ${({ theme }) => theme.accent.primary};
@@ -126,16 +136,17 @@ const StyledSearchOverlay = styled.div`
 `;
 
 const StyledTopRightActionsOverlay = styled.div`
-  position: absolute;
-  top: ${({ theme }) => theme.spacing(2)};
-  right: ${({ theme }) => theme.spacing(2)};
-  z-index: 20;
   display: flex;
   gap: ${({ theme }) => theme.spacing(1)};
+  position: absolute;
+  right: ${({ theme }) => theme.spacing(2)};
+  top: ${({ theme }) => theme.spacing(2)};
+  z-index: 20;
 `;
 
 const StyledTopRightActionButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(1.5)};
+  padding: ${({ theme }) => theme.spacing(1)}
+    ${({ theme }) => theme.spacing(1.5)};
   border-radius: ${({ theme }) => theme.border.radius.sm};
   border: 1px solid ${({ theme }) => theme.border.color.medium};
   background: ${({ theme }) => theme.background.primary};
@@ -154,29 +165,30 @@ const StyledTopRightActionButton = styled.button`
 `;
 
 const StyledLoadingMessage = styled.div`
-  display: flex;
   align-items: center;
-  justify-content: center;
-  height: 100%;
-  min-height: 300px;
   color: ${({ theme }) => theme.font.color.tertiary};
+  display: flex;
   font-size: ${({ theme }) => theme.font.size.md};
+  height: 100%;
+  justify-content: center;
+  min-height: 300px;
 `;
 
 const StyledProgressBanner = styled.div`
-  position: absolute;
-  top: ${({ theme }) => theme.spacing(2)};
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 25;
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.md};
   background: ${({ theme }) => theme.background.tertiary};
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  box-shadow: ${({ theme }) => theme.boxShadow.light};
   color: ${({ theme }) => theme.font.color.primary};
   font-size: ${({ theme }) => theme.font.size.sm};
-  box-shadow: ${({ theme }) => theme.boxShadow.light};
+  left: 50%;
   max-width: min(720px, calc(100% - ${({ theme }) => theme.spacing(4)}));
+  padding: ${({ theme }) => theme.spacing(1.5)}
+    ${({ theme }) => theme.spacing(2)};
+  position: absolute;
   text-align: center;
+  top: ${({ theme }) => theme.spacing(2)};
+  transform: translateX(-50%);
+  z-index: 25;
 `;
 
 const StyledLeadershipLoadingOverlay = styled.div`
@@ -196,19 +208,20 @@ const StyledLeadershipLoadingOverlay = styled.div`
 `;
 
 const StyledLeadershipInfoBanner = styled.div`
-  position: absolute;
-  top: ${({ theme }) => theme.spacing(2)};
-  left: ${({ theme }) => theme.spacing(2)};
-  z-index: 22;
-  max-width: min(560px, calc(100% - 220px));
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
   background: ${({ theme }) => theme.background.tertiary};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  box-shadow: ${({ theme }) => theme.boxShadow.light};
   color: ${({ theme }) => theme.font.color.primary};
   font-size: ${({ theme }) => theme.font.size.sm};
+  left: ${({ theme }) => theme.spacing(2)};
   line-height: 1.45;
-  box-shadow: ${({ theme }) => theme.boxShadow.light};
+  max-width: min(560px, calc(100% - 220px));
+  padding: ${({ theme }) => theme.spacing(1.5)}
+    ${({ theme }) => theme.spacing(2)};
+  position: absolute;
+  top: ${({ theme }) => theme.spacing(2)};
+  z-index: 22;
 `;
 
 const StyledLeadershipBannerLink = styled.button`
@@ -231,12 +244,12 @@ const StyledLeadershipBannerLink = styled.button`
 `;
 
 const StyledLeadershipBannerPaidNote = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(1)};
-  padding-top: ${({ theme }) => theme.spacing(1)};
   border-top: 1px dashed ${({ theme }) => theme.border.color.medium};
   color: ${({ theme }) => theme.font.color.secondary};
   font-size: ${({ theme }) => theme.font.size.xs};
   line-height: 1.45;
+  margin-top: ${({ theme }) => theme.spacing(1)};
+  padding-top: ${({ theme }) => theme.spacing(1)};
 `;
 
 const StyledLeadershipBannerPaidHighlight = styled.span`
@@ -245,34 +258,34 @@ const StyledLeadershipBannerPaidHighlight = styled.span`
 `;
 
 const StyledErrorMessage = styled.div`
-  display: flex;
   align-items: center;
-  justify-content: center;
-  height: 100%;
-  min-height: 300px;
   color: ${({ theme }) => theme.color.red};
+  display: flex;
   font-size: ${({ theme }) => theme.font.size.md};
+  height: 100%;
+  justify-content: center;
+  min-height: 300px;
 `;
 
 const StyledTemplateBanner = styled.div`
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 25;
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(3)} ${({ theme }) => theme.spacing(4)};
-  border-radius: ${({ theme }) => theme.border.radius.xl};
   background: ${({ theme }) => theme.background.primary};
   border: 1px solid ${({ theme }) => theme.border.color.medium};
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  border-radius: ${({ theme }) => theme.border.radius.xl};
   box-shadow: ${({ theme }) => theme.boxShadow.strong};
+  color: ${({ theme }) => theme.font.color.secondary};
+  display: flex;
+  flex-direction: column;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  gap: ${({ theme }) => theme.spacing(2)};
+  left: 50%;
   max-width: 420px;
+  padding: ${({ theme }) => theme.spacing(3)} ${({ theme }) => theme.spacing(4)};
+  position: absolute;
   text-align: center;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 25;
 `;
 
 const StyledTemplateBannerButton = styled.button`
@@ -330,18 +343,18 @@ const StyledOrgChartConfirmIntro = styled.p`
 `;
 
 const StyledOrgChartConfirmRows = styled.dl`
-  margin: 0;
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(1.5)};
+  margin: 0;
 `;
 
 const StyledOrgChartConfirmRow = styled.div`
-  display: grid;
-  grid-template-columns: minmax(120px, 36%) 1fr;
-  gap: ${({ theme }) => theme.spacing(2)};
   align-items: start;
+  display: grid;
   font-size: ${({ theme }) => theme.font.size.sm};
+  gap: ${({ theme }) => theme.spacing(2)};
+  grid-template-columns: minmax(120px, 36%) 1fr;
 `;
 
 const StyledOrgChartConfirmDt = styled.dt`
@@ -382,9 +395,12 @@ export const ArxOrgChart = ({
     string | undefined
   >();
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchResultCount, setSearchResultCount] = useState<number | null>(null);
+  const [searchResultCount, setSearchResultCount] = useState<number | null>(
+    null,
+  );
   const [businessDivisionQuery, setBusinessDivisionQuery] = useState('');
-  const [isTheOrgEnrichedLoading, setIsTheOrgEnrichedLoading] = useState(false);
+  const [isEnrichedLeadershipLoading, setIsEnrichedLeadershipLoading] =
+    useState(false);
   const [exactEmployeeCount, setExactEmployeeCount] = useState<number | null>(
     null,
   );
@@ -418,11 +434,15 @@ export const ArxOrgChart = ({
   const showNodeCapabilitiesHoverHint =
     process.env.REACT_APP_EXPERIMENTAL_ORGCHART_NODE_HOVER_HINTS === 'true';
   const { isLinkedinConnected } = useUnipile();
+  const setSelectedCompanyInfo = useSetRecoilState(
+    orgChartSelectedCompanyInfoState,
+  );
+  const setContactsByKey = useSetRecoilState(orgChartContactsByKeyState);
 
-  const {
-    company: fallbackCompanyInfo,
-    lookupByName,
-  } = useCompanyInfoLookup({ baseUrl, accessToken });
+  const { company: fallbackCompanyInfo, lookupByName } = useCompanyInfoLookup({
+    baseUrl,
+    accessToken,
+  });
   const { refetchJobs } = useJobRefetch();
   const { enqueueSnackBar } = useSnackBar();
   const { t } = useLingui();
@@ -443,13 +463,15 @@ export const ArxOrgChart = ({
     companyName ??
     unipileCompanyProfile?.name ??
     fallbackCompanyInfo?.companyName;
+  const effectiveCompanyWebsite =
+    website ?? unipileCompanyProfile?.website ?? fallbackCompanyInfo?.website;
   const linkedinUrlToUse = linkedinUrl ?? fallbackCompanyInfo?.linkedinUrl;
   const [pendingPreviewNodePeopleChoice, setPendingPreviewNodePeopleChoice] =
     useState<OrgChartNodeData | null>(null);
   const actions = useOrgChartActions({
     companyId,
     companyName: effectiveCompanyName,
-    website,
+    website: effectiveCompanyWebsite,
     employeeCount: effectiveEmployeeCount,
     linkedinCompanyUrl: linkedinUrlToUse?.trim(),
     linkedinUnipileAccountId:
@@ -460,6 +482,35 @@ export const ArxOrgChart = ({
   });
   const { applyOrgChartOverride } = actions;
 
+  const orgChartContextAddToJobContext = useMemo(
+    () => ({
+      companyName: effectiveCompanyName ?? undefined,
+      contextModalMode: actions.contextModalMode ?? undefined,
+      selectedNodeFunction: actions.selectedNodeFunction,
+      selectedNodeGrade: actions.selectedNodeGrade,
+    }),
+    [
+      effectiveCompanyName,
+      actions.contextModalMode,
+      actions.selectedNodeFunction,
+      actions.selectedNodeGrade,
+    ],
+  );
+
+  const orgChartNodeDetailAddToJobContext = useMemo(
+    () => ({
+      companyName: effectiveCompanyName ?? undefined,
+      contextModalMode: 'current_node' as const,
+      selectedNodeFunction: actions.selectedNodeFunction,
+      selectedNodeGrade: actions.selectedNodeGrade,
+    }),
+    [
+      effectiveCompanyName,
+      actions.selectedNodeFunction,
+      actions.selectedNodeGrade,
+    ],
+  );
+
   const jobOrgChartHook = useJobOrgChartData(
     { jobId, jobName: companyName ?? effectiveCompanyName },
     { baseUrl, accessToken },
@@ -469,7 +520,7 @@ export const ArxOrgChart = ({
     {
       companyId,
       companyName: effectiveCompanyName ?? companyName,
-      website,
+      website: effectiveCompanyWebsite,
       country: selectedCountry,
       functionRoot: selectedFunctionRoot,
       expectedEmployeeCount: expectedEmployeeCountForOrgChart,
@@ -479,15 +530,13 @@ export const ArxOrgChart = ({
 
   const isJobMode = !!jobId;
 
-  const data = (isJobMode ? jobOrgChartHook.data : classicOrgChartHook.data) as
-    | Record<string, unknown>
-    | null;
+  const data = (
+    isJobMode ? jobOrgChartHook.data : classicOrgChartHook.data
+  ) as Record<string, unknown> | null;
   const isLoading = isJobMode
     ? jobOrgChartHook.isLoading
     : classicOrgChartHook.isLoading;
-  const error = isJobMode
-    ? jobOrgChartHook.error
-    : classicOrgChartHook.error;
+  const error = isJobMode ? jobOrgChartHook.error : classicOrgChartHook.error;
   const fetchOrgChart = isJobMode
     ? jobOrgChartHook.fetchOrgChart
     : classicOrgChartHook.fetchOrgChart;
@@ -530,17 +579,110 @@ export const ArxOrgChart = ({
 
   const orgSource = isJobMode
     ? (actions.latestOrgChart ??
-        ((data?.orgChart as Record<string, unknown> | null) ?? null))
-    : actions.latestOrgChart ?? ((data as Record<string, unknown> | null) ?? null);
+      (data?.orgChart as Record<string, unknown> | null) ??
+      null)
+    : (actions.latestOrgChart ??
+      (data as Record<string, unknown> | null) ??
+      null);
 
-  const orgData = useMemo(
-    () => extractOrgData(orgSource),
-    [orgSource],
-  );
+  const orgData = useMemo(() => extractOrgData(orgSource), [orgSource]);
+
+  // Hydrate session contact cache from the loaded org chart payload (Redis/S3/ES).
+  useEffect(() => {
+    if (!orgData) return;
+    const raw = orgData.orgchart;
+    let nodes: unknown[] = [];
+    if (Array.isArray(raw)) {
+      nodes = raw;
+    } else if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw) as unknown;
+        nodes = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        nodes = [];
+      }
+    }
+    if (nodes.length === 0) return;
+
+    const websiteToUse =
+      (orgData as Record<string, unknown>).job_company_website ??
+      (orgData as Record<string, unknown>).company_website ??
+      effectiveCompanyWebsite ??
+      website;
+    const domain =
+      typeof websiteToUse === 'string'
+        ? extractCompanyDomainFromWebsite(websiteToUse)
+        : undefined;
+
+    const next: Record<string, OrgChartContactInfo> = {};
+
+    for (const n of nodes) {
+      if (!n || typeof n !== 'object') continue;
+      const candidatesRaw = (n as Record<string, unknown>).candidates;
+      const candidates = Array.isArray(candidatesRaw)
+        ? candidatesRaw
+        : candidatesRaw && typeof candidatesRaw === 'object'
+          ? [candidatesRaw]
+          : [];
+      for (const c of candidates) {
+        if (!c || typeof c !== 'object') continue;
+        const row = c as Record<string, unknown>;
+        const rawId = typeof row.id === 'string' ? row.id.trim() : '';
+        const li =
+          typeof row.std_linkedin_url === 'string'
+            ? row.std_linkedin_url.trim()
+            : typeof row.linkedin_url === 'string'
+              ? row.linkedin_url.trim()
+              : '';
+        const email =
+          typeof row.email === 'string' && row.email.trim()
+            ? row.email.trim()
+            : Array.isArray(row.emails) && typeof row.emails[0] === 'string'
+              ? (row.emails[0] as string).trim()
+              : '';
+        const phone =
+          typeof row.phone === 'string' && row.phone.trim()
+            ? row.phone.trim()
+            : Array.isArray(row.phones) && typeof row.phones[0] === 'string'
+              ? (row.phones[0] as string).trim()
+              : '';
+        const fullName =
+          typeof row.full_name === 'string' && row.full_name.trim()
+            ? row.full_name.trim()
+            : typeof row.fullName === 'string' && row.fullName.trim()
+              ? row.fullName.trim()
+              : '';
+
+        const hasAny = Boolean(email || phone || li || fullName);
+        if (!hasAny) continue;
+
+        const key =
+          domain && rawId
+            ? `m7kq:${domain.trim().toLowerCase()}:${rawId}`
+            : li
+              ? `li:${li}`
+              : rawId
+                ? `id:${rawId}`
+                : null;
+        if (!key) continue;
+
+        next[key] = {
+          fetched: true,
+          ...(email ? { email } : {}),
+          ...(phone ? { phone } : {}),
+          ...(li ? { linkedinUrl: li } : {}),
+          ...(fullName ? { fullName } : {}),
+        };
+      }
+    }
+
+    if (Object.keys(next).length === 0) return;
+    setContactsByKey((prev) => ({ ...prev, ...next }));
+  }, [orgData, effectiveCompanyWebsite, website, setContactsByKey]);
 
   const isBlankTemplate =
     typeof (orgSource as Record<string, unknown> | null)?.is_blank_template ===
-    'boolean' &&
+      'boolean' &&
     (orgSource as Record<string, unknown>).is_blank_template === true;
 
   const filterOptions = useOrgChartFilterOptions(orgData);
@@ -578,7 +720,10 @@ export const ArxOrgChart = ({
           ? t`Apify`
           : orgChartLinkedinCandidateSource === 'linkedin_xray'
             ? t`LinkedIn X-Ray`
-            : t`Apollo`;
+            : orgChartLinkedinCandidateSource ===
+                ORG_CHART_CANDIDATE_SOURCE_M7KQ
+              ? t`Directory`
+              : t`Unknown data source`;
 
     return {
       functionLabel,
@@ -731,7 +876,25 @@ export const ArxOrgChart = ({
   }, [companyId, companyName, hasInitialCompanyInfo, lookupByName]);
 
   useEffect(() => {
-    if (!isLinkedinConnected || !linkedinUrlToUse?.trim() || !baseUrl || !accessToken) {
+    if (!fallbackCompanyInfo) return;
+    setSelectedCompanyInfo({
+      companyId: fallbackCompanyInfo.companyId,
+      companyName: fallbackCompanyInfo.companyName,
+      website: fallbackCompanyInfo.website,
+      locationName: fallbackCompanyInfo.locationName,
+      industry: fallbackCompanyInfo.industry,
+      profileCount: fallbackCompanyInfo.profileCount,
+      linkedinUrl: fallbackCompanyInfo.linkedinUrl,
+    });
+  }, [fallbackCompanyInfo, setSelectedCompanyInfo]);
+
+  useEffect(() => {
+    if (
+      !isLinkedinConnected ||
+      !linkedinUrlToUse?.trim() ||
+      !baseUrl ||
+      !accessToken
+    ) {
       if (!isLinkedinConnected) {
         setUnipileCompanyProfile(null);
       }
@@ -761,7 +924,11 @@ export const ArxOrgChart = ({
             website?: string;
             name?: string;
             profile_url?: string;
-            locations?: Array<{ city?: string; country?: string; area?: string }>;
+            locations?: Array<{
+              city?: string;
+              country?: string;
+              area?: string;
+            }>;
             industry?: string[];
           } | null;
         };
@@ -778,12 +945,7 @@ export const ArxOrgChart = ({
     return () => {
       cancelled = true;
     };
-  }, [
-    baseUrl,
-    accessToken,
-    isLinkedinConnected,
-    linkedinUrlToUse,
-  ]);
+  }, [baseUrl, accessToken, isLinkedinConnected, linkedinUrlToUse]);
 
   useEffect(() => {
     if (isLinkedinConnected) return;
@@ -820,18 +982,11 @@ export const ArxOrgChart = ({
     return () => {
       cancelled = true;
     };
-  }, [
-    baseUrl,
-    accessToken,
-    companyId,
-    linkedinUrlToUse,
-    isLinkedinConnected,
-  ]);
+  }, [baseUrl, accessToken, companyId, linkedinUrlToUse, isLinkedinConnected]);
 
   useEffect(() => {
     const prev = prevCompanyIdForFiltersRef.current;
-    const companyChanged =
-      prev !== null && prev !== companyId;
+    const companyChanged = prev !== null && prev !== companyId;
     prevCompanyIdForFiltersRef.current = companyId;
 
     if (companyChanged) {
@@ -878,7 +1033,7 @@ export const ArxOrgChart = ({
       (value) => typeof value === 'string' && value.trim() !== '',
     );
 
-    return found && typeof found === 'string' ? found : fallback ?? '';
+    return found && typeof found === 'string' ? found : (fallback ?? '');
   };
 
   const nodeDataArray = useMemo(() => {
@@ -936,6 +1091,8 @@ export const ArxOrgChart = ({
         merged[`name_${i}`] = p.fullName;
         merged[`title_${i}`] = p.headline;
         merged[`linkedin_url_${i}`] = p.linkedinUrl ?? '';
+        merged[`email_${i}`] = p.email ?? '';
+        merged[`phone_${i}`] = p.phone ?? '';
         const existingImage = merged[`image_${i}`];
         const mergedImage =
           typeof existingImage === 'string' ? existingImage : undefined;
@@ -943,7 +1100,8 @@ export const ArxOrgChart = ({
           (p.raw as Record<string, unknown>) ?? undefined,
           mergedImage,
         );
-        merged[`image_${i}`] = rewriteImage(enrichedImage || '') || enrichedImage;
+        merged[`image_${i}`] =
+          rewriteImage(enrichedImage || '') || enrichedImage;
       });
       merged.height_0 = displayedCount >= 1 ? PERSON_ROW_HEIGHT : 0;
       merged.height_1 = displayedCount >= 2 ? PERSON_ROW_HEIGHT : 0;
@@ -974,12 +1132,9 @@ export const ArxOrgChart = ({
   );
 
   const showPreviewPersistentBanner =
-    hasPreviewOrgChartNodes &&
-    !isLoading &&
-    !error &&
-    nodeDataArray.length > 0;
+    hasPreviewOrgChartNodes && !isLoading && !error && nodeDataArray.length > 0;
 
-  const theOrgLeadershipBanner = useMemo(() => {
+  const leadershipLayerPreviewBanner = useMemo(() => {
     const src = orgSource as Record<string, unknown> | null;
     if (!src || src.org_enriched !== true) {
       return null;
@@ -990,13 +1145,15 @@ export const ArxOrgChart = ({
       return null;
     }
     const fullN =
-      typeof effectiveEmployeeCount === 'number' ? effectiveEmployeeCount : null;
+      typeof effectiveEmployeeCount === 'number'
+        ? effectiveEmployeeCount
+        : null;
     return { leadershipN, fullN };
   }, [orgSource, effectiveEmployeeCount]);
 
   /**
    * Count of people rendered in the current org chart nodes. Used as the
-   * "fetched" count for the Apollo preview banner — mirrors what the user
+   * "fetched" count for the directory (m7kq) preview banner — mirrors what the user
    * actually sees on the diagram (sum of named candidates across nodes).
    */
   const fetchedPeopleInNodeArray = useMemo(() => {
@@ -1018,46 +1175,93 @@ export const ArxOrgChart = ({
   }, [nodeDataArray]);
 
   /**
-   * Preview/paid-customers banner for Apollo-sourced org charts.
+   * Preview/paid-customers banner when the org chart uses the directory (m7kq) source.
    *
-   * Mirrors {@link theOrgLeadershipBanner} so the same messaging (small preview,
+   * Mirrors {@link leadershipLayerPreviewBanner} so the same messaging (small preview,
    * count of people fetched, full details for paid customers) also appears when
-   * the org chart is loaded from Apollo. Kept mutually exclusive with the
+   * the org chart is loaded from that source. Kept mutually exclusive with the
    * leadership banner to avoid stacking two absolute-positioned cards.
    */
-  const apolloOrgChartBanner = useMemo(() => {
-    if (theOrgLeadershipBanner !== null) {
+  const m7kqPreviewOrgChartBanner = useMemo(() => {
+    if (leadershipLayerPreviewBanner !== null) {
       return null;
     }
-    if (orgChartLinkedinCandidateSource !== 'apollo') {
+    if (isLoading || !!error || isBlankTemplate || nodeDataArray.length === 0) {
       return null;
     }
-    if (
-      isLoading ||
-      !!error ||
-      isBlankTemplate ||
-      nodeDataArray.length === 0 ||
-      hasPreviewOrgChartNodes
-    ) {
+    // Only trust the candidateSource stamped onto the orgChart response by
+    // useOrgChartActions when an actual fetch completes. Do NOT fall back to
+    // the recoil-selected source — it defaults to the m7kq channel value, which would
+    // otherwise make the banner appear for ES-cached preview templates that
+    // haven't been fetched from the directory source yet.
+    const src = orgSource as Record<string, unknown> | null;
+    const candidateSourceFromChart =
+      typeof src?.candidateSource === 'string'
+        ? (src.candidateSource as string)
+        : null;
+    if (!isOrgChartM7kqCandidateSource(candidateSourceFromChart)) {
       return null;
     }
-    if (fetchedPeopleInNodeArray <= 0) {
+    // Guard against showing the banner for all-preview charts (e.g. a cached
+    // template that happens to have a stale candidateSource stamp but no real
+    // people). Require at least one fully-populated (non-preview) node.
+    const hasRealLoadedNode = nodeDataArray.some(
+      (n) => n.nodeState !== 'preview',
+    );
+    if (!hasRealLoadedNode) {
+      return null;
+    }
+    const itemCountFromChart =
+      typeof src?.itemCount === 'number' ? (src.itemCount as number) : null;
+    const fetchedN =
+      itemCountFromChart !== null && itemCountFromChart > 0
+        ? itemCountFromChart
+        : fetchedPeopleInNodeArray;
+    if (fetchedN <= 0) {
       return null;
     }
     const fullN =
-      typeof effectiveEmployeeCount === 'number' ? effectiveEmployeeCount : null;
-    return { fetchedN: fetchedPeopleInNodeArray, fullN };
+      typeof effectiveEmployeeCount === 'number'
+        ? effectiveEmployeeCount
+        : null;
+    return { fetchedN, fullN };
   }, [
-    theOrgLeadershipBanner,
-    orgChartLinkedinCandidateSource,
+    leadershipLayerPreviewBanner,
+    orgSource,
     isLoading,
     error,
     isBlankTemplate,
-    nodeDataArray.length,
-    hasPreviewOrgChartNodes,
+    nodeDataArray,
     fetchedPeopleInNodeArray,
     effectiveEmployeeCount,
   ]);
+
+  const isM7kqOrgChartSource = useMemo(() => {
+    const src = orgSource as Record<string, unknown> | null;
+    const candidateSourceFromChart =
+      typeof src?.candidateSource === 'string'
+        ? (src.candidateSource as string)
+        : null;
+    return (
+      isOrgChartM7kqCandidateSource(candidateSourceFromChart) ||
+      (candidateSourceFromChart === null &&
+        orgChartLinkedinCandidateSource === ORG_CHART_CANDIDATE_SOURCE_M7KQ)
+    );
+  }, [orgSource, orgChartLinkedinCandidateSource]);
+
+  const handleM7kqLockedContactClick = useCallback(
+    (
+      _node: OrgChartNodeData,
+      _personSlotIndex: number,
+      _channel: 'email' | 'phone' | 'linkedin',
+    ) => {
+      enqueueSnackBar(
+        t`Contact details and full profiles require a paid plan. Upgrade to unlock emails, phone numbers, and enriched LinkedIn data.`,
+        { variant: SnackBarVariant.Info, duration: 6000 },
+      );
+    },
+    [enqueueSnackBar, t],
+  );
 
   const handleSearch = () => {
     const handle = diagramHandleRef.current;
@@ -1232,20 +1436,17 @@ export const ArxOrgChart = ({
     },
   };
 
-  const fetchTheOrgEnrichedOrgChart = useCallback(async () => {
+  const fetchEnrichedLeadershipOrgChart = useCallback(async () => {
     if (!companyId?.trim() || !baseUrl?.trim()) {
       enqueueSnackBar('Missing company or server URL', {
         variant: SnackBarVariant.Error,
       });
       return;
     }
-    setIsTheOrgEnrichedLoading(true);
+    setIsEnrichedLeadershipLoading(true);
     try {
       const agentStatus = await fetchLinkedinDataSourcesStatus();
-      if (
-        agentStatus !== null &&
-        !agentStatus.pythonOrgChartAgentAvailable
-      ) {
+      if (agentStatus !== null && !agentStatus.pythonOrgChartAgentAvailable) {
         enqueueSnackBar(
           leadershipOrgChartPythonFailureMessage(
             ORG_CHART_AGENT_UNAVAILABLE_SNACKBAR,
@@ -1303,7 +1504,7 @@ export const ArxOrgChart = ({
       } else {
         throw new Error(
           leadershipOrgChartPythonFailureMessage(
-            'Invalid response from TheOrg-enriched endpoint',
+            'Invalid response from leadership org chart endpoint',
           ),
         );
       }
@@ -1315,7 +1516,7 @@ export const ArxOrgChart = ({
         { variant: SnackBarVariant.Error, duration: 10000 },
       );
     } finally {
-      setIsTheOrgEnrichedLoading(false);
+      setIsEnrichedLeadershipLoading(false);
     }
   }, [
     companyId,
@@ -1358,14 +1559,9 @@ export const ArxOrgChart = ({
 
   const headerProps = {
     companyName: effectiveCompanyName,
-    website:
-      website ??
-      unipileCompanyProfile?.website ??
-      fallbackCompanyInfo?.website,
+    website: effectiveCompanyWebsite,
     locationName:
-      locationName ??
-      unipileLocationName ??
-      fallbackCompanyInfo?.locationName,
+      locationName ?? unipileLocationName ?? fallbackCompanyInfo?.locationName,
     industry:
       industry ??
       (Array.isArray(unipileCompanyProfile?.industry)
@@ -1425,292 +1621,281 @@ export const ArxOrgChart = ({
           </StyledPreviewPersistentBanner>
         )}
         <StyledDiagramBody>
-        {isTheOrgEnrichedLoading && (
-          <StyledLeadershipLoadingOverlay>
-            <StyledSpinner />
-            <span>Loading Leadership Org Chart from Public Sources</span>
-          </StyledLeadershipLoadingOverlay>
-        )}
-        {isLoading && (
-          <StyledLoadingMessage>Loading org chart...</StyledLoadingMessage>
-        )}
-        {actions.isContextLoading &&
-          !actions.isContextModalOpen &&
-          actions.contextProgressMessage && (
-            <StyledProgressBanner>
-              {actions.contextProgressMessage}
-            </StyledProgressBanner>
+          {isEnrichedLeadershipLoading && (
+            <StyledLeadershipLoadingOverlay>
+              <StyledSpinner />
+              <span>Loading Leadership Org Chart from Public Sources</span>
+            </StyledLeadershipLoadingOverlay>
           )}
-        {error && <StyledErrorMessage>{error}</StyledErrorMessage>}
+          {isLoading && (
+            <StyledLoadingMessage>Loading org chart...</StyledLoadingMessage>
+          )}
+          {actions.isContextLoading &&
+            !actions.isContextModalOpen &&
+            actions.contextProgressMessage && (
+              <StyledProgressBanner>
+                {actions.contextProgressMessage}
+              </StyledProgressBanner>
+            )}
+          {error && <StyledErrorMessage>{error}</StyledErrorMessage>}
 
-        {!isLoading && !error && nodeDataArray.length > 0 && (
-          <>
-            {isBlankTemplate && (
-              actions.isContextLoading ? (
-                <StyledTemplateBanner>
-                  <StyledSpinner />
-                  <span>{actions.contextProgressMessage || 'Processing...'}</span>
-                </StyledTemplateBanner>
-              ) : (
-                <StyledTemplateBanner>
-                  <span>
-                    This is a preview template. Generate the full org chart to see
-                    all employees.
-                  </span>
-                  <StyledTemplateBannerButton
-                    type="button"
-                    onClick={searchControlsProps.onGetAll}
-                  >
-                    {typeof effectiveEmployeeCount === 'number'
-                      ? `Generate full org chart (${effectiveEmployeeCount.toLocaleString()} employees)`
-                      : 'Generate full org chart'}
-                  </StyledTemplateBannerButton>
-                </StyledTemplateBanner>
-              )
-            )}
-            <OrgChartDiagram
-              ref={diagramHandleRef}
-              nodeDataArray={nodeDataArray}
-              showNodeCapabilitiesHoverHint={showNodeCapabilitiesHoverHint}
-              nodeCapabilitiesHoverCompanyName={
-                effectiveCompanyName ?? undefined
-              }
-              iconUrls={{
-                lock: '/img/lock.png',
-                linkedin: '/img/linkedin-icon-png-circle-2.png',
-                download: '/img/download-icon.png',
-                similarItems: '/img/similar-items.png',
-              }}
-              onNodeContextAction={actions.handleNodeContextAction}
-              onBackgroundContextAction={actions.handleBackgroundContextAction}
-              onNodeDoubleClick={actions.handleNodeDoubleClick}
-              onDownloadNode={actions.handleDownloadNode}
-              onSimilarPeople={actions.handleSimilarPeople}
-            />
-            {theOrgLeadershipBanner && (
-              <StyledLeadershipInfoBanner>
-                {theOrgLeadershipBanner.fullN !== null ? (
-                  <span>
-                    This Leadership Org Chart shows only{' '}
-                    {theOrgLeadershipBanner.leadershipN.toLocaleString()}{' '}
-                    leadership profile
-                    {theOrgLeadershipBanner.leadershipN === 1 ? '' : 's'}. The
-                    full company org chart has{' '}
-                    {theOrgLeadershipBanner.fullN.toLocaleString()} profiles —
-                    click{' '}
-                    <StyledLeadershipBannerLink
-                      type="button"
-                      onClick={searchControlsProps.onGetAll}
-                    >
-                      Full org chart
-                    </StyledLeadershipBannerLink>{' '}
-                    above to load it.
-                  </span>
+          {!isLoading && !error && nodeDataArray.length > 0 && (
+            <>
+              {isBlankTemplate &&
+                (actions.isContextLoading ? (
+                  <StyledTemplateBanner>
+                    <StyledSpinner />
+                    <span>
+                      {actions.contextProgressMessage || 'Processing...'}
+                    </span>
+                  </StyledTemplateBanner>
                 ) : (
-                  <span>
-                    This Leadership Org Chart shows only{' '}
-                    {theOrgLeadershipBanner.leadershipN.toLocaleString()}{' '}
-                    leadership profile
-                    {theOrgLeadershipBanner.leadershipN === 1 ? '' : 's'}. Click{' '}
-                    <StyledLeadershipBannerLink
+                  <StyledTemplateBanner>
+                    <span>
+                      This is a preview template. Generate the full org chart to
+                      see all employees.
+                    </span>
+                    <StyledTemplateBannerButton
                       type="button"
                       onClick={searchControlsProps.onGetAll}
                     >
-                      Full org chart
-                    </StyledLeadershipBannerLink>{' '}
-                    above to load the full company org chart.
-                  </span>
-                )}
-                <StyledLeadershipBannerPaidNote>
-                  <StyledLeadershipBannerPaidHighlight>
-                    Small preview only:
-                  </StyledLeadershipBannerPaidHighlight>{' '}
-                  {theOrgLeadershipBanner.leadershipN.toLocaleString()}{' '}
-                  {theOrgLeadershipBanner.leadershipN === 1
-                    ? 'person'
-                    : 'people'}{' '}
-                  fetched from public sources. Full profile details (contact
-                  info, reporting lines, tenure &amp; more) are available for{' '}
-                  <StyledLeadershipBannerPaidHighlight>
-                    paid customers
-                  </StyledLeadershipBannerPaidHighlight>
-                  .
-                </StyledLeadershipBannerPaidNote>
-              </StyledLeadershipInfoBanner>
-            )}
-            {apolloOrgChartBanner && (
-              <StyledLeadershipInfoBanner>
-                <span>
-                  Org chart loaded from{' '}
-                  <StyledLeadershipBannerPaidHighlight>
-                    Apollo
-                  </StyledLeadershipBannerPaidHighlight>{' '}
-                  with{' '}
-                  {apolloOrgChartBanner.fetchedN.toLocaleString()}{' '}
-                  {apolloOrgChartBanner.fetchedN === 1 ? 'person' : 'people'}{' '}
-                  fetched
-                  {apolloOrgChartBanner.fullN !== null
-                    ? ` out of ${apolloOrgChartBanner.fullN.toLocaleString()} total employees`
-                    : ''}
-                  .{apolloOrgChartBanner.fullN !== null ? (
-                    <>
-                      {' '}
-                      Click{' '}
+                      {typeof effectiveEmployeeCount === 'number'
+                        ? `Generate full org chart (${effectiveEmployeeCount.toLocaleString()} employees)`
+                        : 'Generate full org chart'}
+                    </StyledTemplateBannerButton>
+                  </StyledTemplateBanner>
+                ))}
+              <OrgChartDiagram
+                ref={diagramHandleRef}
+                nodeDataArray={nodeDataArray}
+                showNodeCapabilitiesHoverHint={showNodeCapabilitiesHoverHint}
+                m7kqContactMode={isM7kqOrgChartSource}
+                onLockedContactChannelClick={handleM7kqLockedContactClick}
+                nodeCapabilitiesHoverCompanyName={
+                  effectiveCompanyName ?? undefined
+                }
+                iconUrls={{
+                  lock: '/img/lock.png',
+                  linkedin: '/img/linkedin-icon-png-circle-2.png',
+                  download: '/img/download-icon.png',
+                  similarItems: '/img/similar-items.png',
+                }}
+                onNodeContextAction={actions.handleNodeContextAction}
+                onBackgroundContextAction={
+                  actions.handleBackgroundContextAction
+                }
+                onNodeDoubleClick={actions.handleNodeDoubleClick}
+                onDownloadNode={actions.handleDownloadNode}
+                onSimilarPeople={actions.handleSimilarPeople}
+              />
+              {leadershipLayerPreviewBanner && (
+                <StyledLeadershipInfoBanner>
+                  {leadershipLayerPreviewBanner.fullN !== null ? (
+                    <span>
+                      This Leadership Org Chart shows only{' '}
+                      {leadershipLayerPreviewBanner.leadershipN.toLocaleString()}{' '}
+                      leadership profile
+                      {leadershipLayerPreviewBanner.leadershipN === 1
+                        ? ''
+                        : 's'}
+                      . The full company org chart has{' '}
+                      {leadershipLayerPreviewBanner.fullN.toLocaleString()}{' '}
+                      profiles — click{' '}
                       <StyledLeadershipBannerLink
                         type="button"
                         onClick={searchControlsProps.onGetAll}
                       >
                         Full org chart
                       </StyledLeadershipBannerLink>{' '}
-                      above to expand the preview.
-                    </>
-                  ) : null}
-                </span>
-                <StyledLeadershipBannerPaidNote>
-                  <StyledLeadershipBannerPaidHighlight>
-                    Small preview only:
-                  </StyledLeadershipBannerPaidHighlight>{' '}
-                  {apolloOrgChartBanner.fetchedN.toLocaleString()}{' '}
-                  {apolloOrgChartBanner.fetchedN === 1 ? 'person' : 'people'}{' '}
-                  fetched from Apollo. Full profile details (verified emails,
-                  phone numbers, reporting lines &amp; more) are available for{' '}
-                  <StyledLeadershipBannerPaidHighlight>
-                    paid customers
-                  </StyledLeadershipBannerPaidHighlight>
-                  .
-                </StyledLeadershipBannerPaidNote>
-              </StyledLeadershipInfoBanner>
-            )}
-            <StyledTopRightActionsOverlay>
-              <StyledTopRightActionButton
-                type="button"
-                onClick={searchControlsProps.onGetAll}
-              >
-                {typeof effectiveEmployeeCount === 'number'
-                  ? `Full org chart (${effectiveEmployeeCount.toLocaleString()})`
-                  : 'All'}
-              </StyledTopRightActionButton>
-              <StyledTopRightActionButton
-                type="button"
-                onClick={searchControlsProps.onViewAllCandidates}
-              >
-                View all candidates
-              </StyledTopRightActionButton>
-              <StyledTopRightActionButton
-                type="button"
-                disabled={isTheOrgEnrichedLoading}
-                onClick={() => {
-                  requestCandidateSearchConfirm(
-                    t`Confirm Leadership Org Chart`,
-                    () => {
-                      void fetchTheOrgEnrichedOrgChart();
-                    },
-                  );
-                }}
-              >
-                {isTheOrgEnrichedLoading
-                  ? 'Loading Leadership Org Chart'
-                  : 'Leadership Org Chart'}
-              </StyledTopRightActionButton>
-            </StyledTopRightActionsOverlay>
-            <StyledSearchOverlay>
-              <OrgChartSearchControls {...searchControlsProps} />
-            </StyledSearchOverlay>
-          </>
-        )}
-
-        {!isLoading && !error && data && nodeDataArray.length === 0 && (
-          <StyledLoadingMessage>
-            No org chart data available.
-          </StyledLoadingMessage>
-        )}
-
-        {actions.isContextModalOpen && (
-          <OrgChartResultModal
-            title={actions.contextModalTitle}
-            isLoading={actions.isContextLoading}
-            loadingStartedAt={actions.contextLoadingStartedAt}
-            loadingProgressMessage={actions.contextProgressMessage}
-            loadingPage={actions.contextProgressPage}
-            loadingTotalPages={actions.contextProgressTotalPages}
-            loadingTotalCandidates={actions.contextProgressTotalCandidates}
-            error={actions.contextError}
-            results={actions.contextResults}
-            booleanKeywordsString={actions.booleanKeywordsString}
-            onClose={actions.closeContextModal}
-            onDownloadCsv={
-              actions.contextResults.length > 0
-                ? actions.downloadContextResultsAsCsv
-                : undefined
-            }
-            onAddToJob={
-              actions.contextResults.length > 0
-                ? () =>
-                    actions.openAddResultsToJobModal(actions.contextResults, {
-                      companyName: effectiveCompanyName ?? undefined,
-                      contextModalMode: actions.contextModalMode ?? undefined,
-                      selectedNodeFunction: actions.selectedNodeFunction,
-                      selectedNodeGrade: actions.selectedNodeGrade,
-                    })
-                : undefined
-            }
-            onStop={actions.cancelOrgchartSearch}
-          />
-        )}
-
-        {actions.selectedNodeForDetails && (
-          <OrgChartResultModal
-            title={actions.selectedNodeForDetails.headline}
-            isLoading={actions.isNodeDetailLoading}
-            error={actions.nodeDetailError}
-            results={actions.nodeDetailResults}
-            emptyMessage="No people are attached to this node yet."
-            onClose={actions.closeNodeDetailModal}
-            onDownloadCsv={actions.downloadNodeDetailsAsCsv}
-            onAddToJob={
-              actions.nodeDetailResults.length > 0
-                ? () =>
-                    actions.openAddResultsToJobModal(
-                      actions.nodeDetailResults,
-                      {
-                        companyName: effectiveCompanyName ?? undefined,
-                        contextModalMode: 'current_node',
-                        selectedNodeFunction: actions.selectedNodeFunction,
-                        selectedNodeGrade: actions.selectedNodeGrade,
+                      above to load it.
+                    </span>
+                  ) : (
+                    <span>
+                      This Leadership Org Chart shows only{' '}
+                      {leadershipLayerPreviewBanner.leadershipN.toLocaleString()}{' '}
+                      leadership profile
+                      {leadershipLayerPreviewBanner.leadershipN === 1
+                        ? ''
+                        : 's'}
+                      . Click{' '}
+                      <StyledLeadershipBannerLink
+                        type="button"
+                        onClick={searchControlsProps.onGetAll}
+                      >
+                        Full org chart
+                      </StyledLeadershipBannerLink>{' '}
+                      above to load the full company org chart.
+                    </span>
+                  )}
+                  <StyledLeadershipBannerPaidNote>
+                    <StyledLeadershipBannerPaidHighlight>
+                      Small preview only:
+                    </StyledLeadershipBannerPaidHighlight>{' '}
+                    {leadershipLayerPreviewBanner.leadershipN.toLocaleString()}{' '}
+                    {leadershipLayerPreviewBanner.leadershipN === 1
+                      ? 'person'
+                      : 'people'}{' '}
+                    fetched from public sources. Full profile details (contact
+                    info, tenure &amp; more) are available for{' '}
+                    <StyledLeadershipBannerPaidHighlight>
+                      paid customers
+                    </StyledLeadershipBannerPaidHighlight>
+                    .
+                  </StyledLeadershipBannerPaidNote>
+                </StyledLeadershipInfoBanner>
+              )}
+              {m7kqPreviewOrgChartBanner && (
+                <StyledLeadershipInfoBanner>
+                  <span>
+                    Org chart loaded with{' '}
+                    {m7kqPreviewOrgChartBanner.fetchedN.toLocaleString()}{' '}
+                    {m7kqPreviewOrgChartBanner.fetchedN === 1
+                      ? 'person'
+                      : 'people'}{' '}
+                    fetched
+                    {m7kqPreviewOrgChartBanner.fullN !== null
+                      ? ` out of ${m7kqPreviewOrgChartBanner.fullN.toLocaleString()} total employees`
+                      : ''}
+                    .
+                    {m7kqPreviewOrgChartBanner.fullN !== null ? (
+                      <>
+                        {' '}
+                        Click{' '}
+                        <StyledLeadershipBannerLink
+                          type="button"
+                          onClick={searchControlsProps.onGetAll}
+                        >
+                          Full org chart
+                        </StyledLeadershipBannerLink>{' '}
+                        above to expand the preview.
+                      </>
+                    ) : null}
+                  </span>
+                  <StyledLeadershipBannerPaidNote>
+                    <StyledLeadershipBannerPaidHighlight>
+                      Small preview only:
+                    </StyledLeadershipBannerPaidHighlight>{' '}
+                    {m7kqPreviewOrgChartBanner.fetchedN.toLocaleString()}{' '}
+                    {m7kqPreviewOrgChartBanner.fetchedN === 1
+                      ? 'person'
+                      : 'people'}{' '}
+                    fetched. Full profile details (verified emails, phone
+                    numbers &amp; more) are available for{' '}
+                    <StyledLeadershipBannerPaidHighlight>
+                      paid customers
+                    </StyledLeadershipBannerPaidHighlight>
+                    .
+                  </StyledLeadershipBannerPaidNote>
+                </StyledLeadershipInfoBanner>
+              )}
+              <StyledTopRightActionsOverlay>
+                <StyledTopRightActionButton
+                  type="button"
+                  onClick={searchControlsProps.onGetAll}
+                >
+                  {typeof effectiveEmployeeCount === 'number'
+                    ? `Full org chart (${effectiveEmployeeCount.toLocaleString()})`
+                    : 'All'}
+                </StyledTopRightActionButton>
+                <StyledTopRightActionButton
+                  type="button"
+                  onClick={searchControlsProps.onViewAllCandidates}
+                >
+                  View all candidates
+                </StyledTopRightActionButton>
+                <StyledTopRightActionButton
+                  type="button"
+                  disabled={isEnrichedLeadershipLoading}
+                  onClick={() => {
+                    requestCandidateSearchConfirm(
+                      t`Confirm Leadership Org Chart`,
+                      () => {
+                        void fetchEnrichedLeadershipOrgChart();
                       },
-                    )
-                : undefined
-            }
-            onGetSimilarPeople={() =>
-              actions.executeOrgchartSearch({
-                mode: 'function_grade',
-                origin: 'doubleClick',
-                node: actions.selectedNodeForDetails!,
-              })
-            }
+                    );
+                  }}
+                >
+                  {isEnrichedLeadershipLoading
+                    ? 'Loading Leadership Org Chart'
+                    : 'Leadership Org Chart'}
+                </StyledTopRightActionButton>
+              </StyledTopRightActionsOverlay>
+              <StyledSearchOverlay>
+                <OrgChartSearchControls {...searchControlsProps} />
+              </StyledSearchOverlay>
+            </>
+          )}
+
+          {!isLoading && !error && data && nodeDataArray.length === 0 && (
+            <StyledLoadingMessage>
+              No org chart data available.
+            </StyledLoadingMessage>
+          )}
+
+          {actions.isContextModalOpen && (
+            <OrgChartResultModal
+              title={actions.contextModalTitle}
+              isLoading={actions.isContextLoading}
+              loadingStartedAt={actions.contextLoadingStartedAt}
+              loadingProgressMessage={actions.contextProgressMessage}
+              loadingPage={actions.contextProgressPage}
+              loadingTotalPages={actions.contextProgressTotalPages}
+              loadingTotalCandidates={actions.contextProgressTotalCandidates}
+              error={actions.contextError}
+              results={actions.contextResults}
+              booleanKeywordsString={actions.booleanKeywordsString}
+              companyWebsite={headerProps.website}
+              companyId={companyId}
+              onClose={actions.closeContextModal}
+              onDownloadCsv={
+                actions.contextResults.length > 0
+                  ? actions.downloadContextResultsAsCsv
+                  : undefined
+              }
+              addToJobInlineContext={orgChartContextAddToJobContext}
+              onStop={actions.cancelOrgchartSearch}
+            />
+          )}
+
+          {actions.selectedNodeForDetails && (
+            <OrgChartResultModal
+              title={actions.selectedNodeForDetails.headline}
+              isLoading={actions.isNodeDetailLoading}
+              error={actions.nodeDetailError}
+              results={actions.nodeDetailResults}
+              emptyMessage="No people are attached to this node yet."
+              companyWebsite={headerProps.website}
+              companyId={companyId}
+              onClose={actions.closeNodeDetailModal}
+              onDownloadCsv={actions.downloadNodeDetailsAsCsv}
+              addToJobInlineContext={orgChartNodeDetailAddToJobContext}
+              onGetSimilarPeople={() =>
+                actions.executeOrgchartSearch({
+                  mode: 'function_grade',
+                  origin: 'doubleClick',
+                  node: actions.selectedNodeForDetails!,
+                })
+              }
+            />
+          )}
+
+          <OrgChartAddToJobModal
+            isOpen={actions.isAddToJobModalOpen}
+            onClose={actions.closeAddToJobModal}
+            node={actions.addToJobNode}
+            companyName={effectiveCompanyName ?? undefined}
+            queueStartChatAfter={actions.addToJobQueueStartChat}
+            onSuccess={actions.closeAddToJobModal}
           />
-        )}
 
-        <OrgChartAddToJobModal
-          isOpen={actions.isAddToJobModalOpen}
-          onClose={actions.closeAddToJobModal}
-          node={actions.addToJobNode}
-          companyName={effectiveCompanyName ?? undefined}
-          queueStartChatAfter={actions.addToJobQueueStartChat}
-          onSuccess={actions.closeAddToJobModal}
-        />
-
-        <OrgChartResultsAddToJobModal
-          isOpen={actions.isAddResultsToJobModalOpen}
-          onClose={actions.closeAddResultsToJobModal}
-          results={actions.addResultsToJobResults}
-          companyName={actions.addResultsToJobContext.companyName}
-          contextModalMode={actions.addResultsToJobContext.contextModalMode}
-          selectedNodeFunction={actions.addResultsToJobContext.selectedNodeFunction}
-          selectedNodeGrade={actions.addResultsToJobContext.selectedNodeGrade}
-          queueStartChatAfter={true}
-          onSuccess={actions.closeAddResultsToJobModal}
-        />
+          <OrgChartOutreachModal
+            isOpen={actions.isOutreachModalOpen}
+            onClose={actions.closeOutreachModal}
+            channel={actions.outreachChannel}
+            contextItem={actions.outreachContextItem}
+            node={actions.outreachNode}
+            companyName={effectiveCompanyName ?? undefined}
+          />
         </StyledDiagramBody>
       </StyledDiagramArea>
 
@@ -1763,7 +1948,7 @@ export const ArxOrgChart = ({
               fullWidth
               onClick={() => {
                 setPendingPreviewNodePeopleChoice(null);
-                void fetchTheOrgEnrichedOrgChart();
+                void fetchEnrichedLeadershipOrgChart();
               }}
             />
           </>

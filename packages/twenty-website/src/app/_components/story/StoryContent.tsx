@@ -349,7 +349,7 @@ export const StoryContent = ({ signUpUrl }: StoryContentProps) => {
 
       <StyledParagraph>
         We fetch live org data from LinkedIn and other sources so you see
-        structure, seniority, and reporting lines in real time. You build lists,
+        structure, seniority in real time. You build lists,
         enrich contacts, and let AI reach out in your voice on WhatsApp,
         LinkedIn, and email — for sales, recruiting, investing, and competitive
         research.

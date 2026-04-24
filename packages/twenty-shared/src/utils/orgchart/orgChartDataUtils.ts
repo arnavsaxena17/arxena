@@ -24,10 +24,14 @@ type Candidate = {
   location_name?: string | null;
   profile_picture_url?: string | null;
   linkedin_url?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  emails?: string[] | null;
+  phones?: string[] | null;
   [key: string]: JsonValue | undefined;
 };
 
-type RawOrgNode = {
+export type RawOrgNode = {
   key?: number;
   parent?: number;
   headline?: string;
@@ -163,6 +167,22 @@ function processCandidate(
       ? rawLinkedin.trim()
       : '';
   node[`linkedin_url_${index}`] = linkedinUrl;
+
+  const emailFromCandidate =
+    typeof candidate.email === 'string' && candidate.email.trim()
+      ? candidate.email.trim()
+      : Array.isArray(candidate.emails) && candidate.emails.length > 0
+        ? String(candidate.emails[0] ?? '').trim()
+        : '';
+  node[`email_${index}`] = emailFromCandidate;
+
+  const phoneFromCandidate =
+    typeof candidate.phone === 'string' && candidate.phone.trim()
+      ? candidate.phone.trim()
+      : Array.isArray(candidate.phones) && candidate.phones.length > 0
+        ? String(candidate.phones[0] ?? '').trim()
+        : '';
+  node[`phone_${index}`] = phoneFromCandidate;
 }
 
 /**
@@ -268,18 +288,6 @@ export function processOrgChartToNodeData(
       (candidate) => isMaskedName(candidate.full_name ?? null) === false,
     );
 
-    let nodeState: NodeState = 'preview';
-    const rawNodeState = (raw as { nodeState?: unknown }).nodeState;
-    if (
-      rawNodeState === 'active' ||
-      rawNodeState === 'preview' ||
-      rawNodeState === 'lock'
-    ) {
-      nodeState = rawNodeState;
-    } else if (hasRealNamedCandidate) {
-      nodeState = 'active';
-    }
-
     const node: OrgChartNodeData = {
       key: typeof raw.key === 'number' ? raw.key : lastKey++,
       parent: typeof raw.parent === 'number' ? raw.parent : undefined,
@@ -288,7 +296,7 @@ export function processOrgChartToNodeData(
       }),
       country: raw.country as string | undefined,
       category: 'detailed',
-      nodeState,
+      nodeState: 'preview',
     };
 
     if (typeof raw.std_function === 'string') {
@@ -299,8 +307,60 @@ export function processOrgChartToNodeData(
       node.std_grade = raw.std_grade;
     }
 
+    const rawNodeFields = raw as Record<string, unknown>;
     for (let i = 0; i < orderedCandidates.length && i < 4; i++) {
       processCandidate(orderedCandidates[i], node, i);
+      const ds = rawNodeFields[`ds_${i}`];
+      if (typeof ds === 'string' && ds.length > 0) {
+        (node as Record<string, string>)[`ds_${i}`] = ds;
+      }
+      const he = rawNodeFields[`has_email_${i}`];
+      if (typeof he === 'boolean') {
+        (node as Record<string, boolean>)[`has_email_${i}`] = he;
+      }
+      const hd = rawNodeFields[`has_direct_phone_${i}`];
+      if (typeof hd === 'boolean') {
+        (node as Record<string, boolean>)[`has_direct_phone_${i}`] = hd;
+      }
+      const ho = rawNodeFields[`has_org_phone_${i}`];
+      if (typeof ho === 'boolean') {
+        (node as Record<string, boolean>)[`has_org_phone_${i}`] = ho;
+      }
+    }
+
+    // Derive node state client-side from persisted fields so ES vs Redis/S3
+    // payload differences don't change UI.
+    const anyMasked = Array.from({ length: 4 }).some((_, i) => {
+      const name = (node as Record<string, unknown>)[`name_${i}`];
+      return typeof name === 'string' && isMaskedName(name);
+    });
+    const anyEnriched = Array.from({ length: 4 }).some((_, i) => {
+      const li = (node as Record<string, unknown>)[`linkedin_url_${i}`];
+      const email = (node as Record<string, unknown>)[`email_${i}`];
+      const phone = (node as Record<string, unknown>)[`phone_${i}`];
+      const hasLi =
+        typeof li === 'string' && isValidLinkedInProfileUrl(li.trim());
+      const hasEmail = typeof email === 'string' && email.trim().length > 0;
+      const hasPhone = typeof phone === 'string' && phone.trim().length > 0;
+      return hasLi || hasEmail || hasPhone;
+    });
+    const anyDirectorySource = Array.from({ length: 4 }).some((_, i) => {
+      const ds = (node as Record<string, unknown>)[`ds_${i}`];
+      if (typeof ds !== 'string') return false;
+      const s = ds.toLowerCase();
+      return s.includes('apollo') || s.includes('m7kq');
+    });
+
+    if (anyMasked && !anyEnriched) {
+      node.nodeState = 'preview';
+    } else if (anyEnriched) {
+      node.nodeState = 'active';
+    } else if (anyDirectorySource) {
+      node.nodeState = 'lock';
+    } else if (hasRealNamedCandidate) {
+      node.nodeState = 'active';
+    } else {
+      node.nodeState = 'preview';
     }
     const rawLen = raw.len_candidates;
     const totalFromRaw =

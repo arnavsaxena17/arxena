@@ -1,28 +1,492 @@
 import styled from '@emotion/styled';
-import '../gojs-runtime-patch';
 import * as go from 'gojs';
 import { ReactDiagram } from 'gojs-react';
 import {
-    forwardRef,
-    useCallback,
-    useEffect,
-    useImperativeHandle,
-    useRef,
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
 } from 'react';
+import '../gojs-runtime-patch';
 
-import { isValidLinkedInProfileUrl, type OrgChartNodeData } from 'twenty-shared';
+import {
+  isValidLinkedInProfileUrl,
+  orgChartFirstSlotWithEmail,
+  orgChartFirstSlotWithLinkedin,
+  orgChartFirstSlotWithPhone,
+  orgChartFirstSlotWithPhoneAndEmail,
+  orgChartNodeHasGoogleContactFields,
+  orgChartNodeHasOutreachEmail,
+  orgChartNodeHasOutreachLinkedin,
+  orgChartNodeHasOutreachPhone,
+  type OrgChartNodeData,
+} from 'twenty-shared';
 
 import type {
-    OrgChartDiagramHandle,
-    OrgChartDiagramProps
+  OrgChartDiagramHandle,
+  OrgChartDiagramProps
 } from './OrgChartDiagram.types';
 
+const orgChartNodeHasM7kqMatchIds = (
+  data: OrgChartNodeData | undefined,
+): boolean => {
+  if (!data) return false;
+  const r = data as Record<string, unknown>;
+  const list = r.allCandidates ?? r.candidates;
+  if (!Array.isArray(list)) return false;
+  return list.some((c) => {
+    if (!c || typeof c !== 'object') return false;
+    const id = (c as { id?: unknown }).id;
+    return typeof id === 'string' && id.trim().length > 0;
+  });
+};
+
+/** GoJS context menus are canvas-drawn; these tokens match the rest of the app (slate borders, clear type). */
+const ORG_CHART_CTX_MENU = {
+  fill: '#ffffff',
+  stroke: '#e2e8f0',
+  label: '#64748b',
+  text: '#0f172a',
+  sep: '#e2e8f0',
+  fontItem: '13px system-ui, -apple-system, "Segoe UI", sans-serif',
+  fontLabel: '600 10px system-ui, -apple-system, "Segoe UI", sans-serif',
+  corner: 8,
+} as const;
+
+type OrgChartGraphObjectMake = typeof go.GraphObject.make;
+
+const orgChartContextNodeData = (
+  obj: go.GraphObject,
+): OrgChartNodeData | undefined => {
+  const part = (obj.part ?? null) as go.Node | null;
+  return part?.data as OrgChartNodeData | undefined;
+};
+
+const orgChartContextItemText = (
+  $: OrgChartGraphObjectMake,
+  text: string,
+): go.TextBlock =>
+  $(
+    go.TextBlock,
+    {
+      text,
+      stroke: ORG_CHART_CTX_MENU.text,
+      font: ORG_CHART_CTX_MENU.fontItem,
+    },
+  );
+
+const orgChartContextSectionLabel = (
+  $: OrgChartGraphObjectMake,
+  title: string,
+): go.TextBlock =>
+  $(
+    go.TextBlock,
+    {
+      text: title.toUpperCase(),
+      stroke: ORG_CHART_CTX_MENU.label,
+      font: ORG_CHART_CTX_MENU.fontLabel,
+      margin: new go.Margin(6, 12, 4, 12),
+    },
+  );
+
+const orgChartContextColumnSeparator = (
+  $: OrgChartGraphObjectMake,
+): go.Shape =>
+  $(
+    go.Shape,
+    'Rectangle',
+    {
+      width: 1,
+      stretch: go.GraphObject.Vertical,
+      minSize: new go.Size(1, 48),
+      fill: ORG_CHART_CTX_MENU.sep,
+      stroke: null,
+      margin: new go.Margin(6, 0, 6, 0),
+    },
+  );
+
+/** One menu column. Use Panel, not the built-in "ContextMenu" Adornment, which cannot nest inside Horizontal panels. */
+const orgChartContextMenuColumn = (
+  $: OrgChartGraphObjectMake,
+  ...children: go.GraphObject[]
+): go.Panel =>
+  $(
+    go.Panel,
+    'Vertical',
+    {
+      defaultAlignment: go.Spot.Left,
+      background: 'rgba(0,0,0,0)',
+    },
+    ...children,
+  );
+
+/** Rounded, shadowed shell with one or more {@link orgChartContextMenuColumn} panels (two-level / staged layout). */
+const orgChartContextMenuShell = (
+  $: OrgChartGraphObjectMake,
+  ...columns: go.GraphObject[]
+): go.Adornment =>
+  $(
+    go.Adornment,
+    'Spot',
+    {
+      isShadowed: true,
+      shadowBlur: 16,
+      shadowColor: 'rgba(15, 23, 42, 0.12)',
+      shadowOffset: new go.Point(0, 4),
+    },
+    $(
+      go.Panel,
+      'Auto',
+      $(
+        go.Shape,
+        'RoundedRectangle',
+        {
+          fill: ORG_CHART_CTX_MENU.fill,
+          stroke: ORG_CHART_CTX_MENU.stroke,
+          strokeWidth: 1,
+          parameter1: ORG_CHART_CTX_MENU.corner,
+        },
+      ),
+      $(
+        go.Panel,
+        'Horizontal',
+        {
+          alignment: go.Spot.TopLeft,
+          // Top-align columns so shorter ones don't vertically center.
+          defaultAlignment: go.Spot.Top,
+          padding: 4,
+        },
+        ...columns,
+      ),
+    ),
+  );
+
+const buildOrgChartNodeContextMenu = (
+  $: OrgChartGraphObjectMake,
+  onNodeContextAction: NonNullable<
+    OrgChartDiagramProps['onNodeContextAction']
+  >,
+  m7kqContactMode: boolean,
+  onLockedContactChannelClick?: OrgChartDiagramProps['onLockedContactChannelClick'],
+): go.Adornment => {
+  const lockedContactClick =
+    (channel: 'email' | 'phone' | 'linkedin') =>
+    (_e: go.InputEvent, obj: go.GraphObject) => {
+      if (!onLockedContactChannelClick) return;
+      const data = orgChartContextNodeData(obj);
+      if (!data) return;
+      onLockedContactChannelClick(data, 0, channel);
+    };
+
+  const colPosition = orgChartContextMenuColumn(
+    $,
+    orgChartContextSectionLabel($, 'Position'),
+    $(
+      'ContextMenuButton',
+      orgChartContextItemText($, 'Get people in this position'),
+      {
+        click: (_: go.InputEvent, obj: go.GraphObject) => {
+          const data = orgChartContextNodeData(obj);
+          if (data) onNodeContextAction('current_node', data);
+        },
+      },
+    ),
+    ...(m7kqContactMode
+      ? [
+          $(
+            'ContextMenuButton',
+            orgChartContextItemText($, 'Fetch email + phone'),
+            {
+              click: (_e: go.InputEvent, obj: go.GraphObject) => {
+                const data = orgChartContextNodeData(obj);
+                if (data && orgChartNodeHasM7kqMatchIds(data)) {
+                  onNodeContextAction('m7kq_fetch_complete', data);
+                }
+              },
+            },
+          ),
+          $(
+            'ContextMenuButton',
+            orgChartContextItemText($, 'Fetch phone'),
+            {
+              click: (_e: go.InputEvent, obj: go.GraphObject) => {
+                const data = orgChartContextNodeData(obj);
+                if (data && orgChartNodeHasM7kqMatchIds(data)) {
+                  onNodeContextAction('m7kq_fetch_phone', data);
+                }
+              },
+            },
+          ),
+          $(
+            'ContextMenuButton',
+            orgChartContextItemText($, 'Fetch email'),
+            {
+              click: (_e: go.InputEvent, obj: go.GraphObject) => {
+                const data = orgChartContextNodeData(obj);
+                if (data && orgChartNodeHasM7kqMatchIds(data)) {
+                  onNodeContextAction('m7kq_fetch_email', data);
+                }
+              },
+            },
+          ),
+        ]
+      : []),
+    $(
+      'ContextMenuButton',
+      orgChartContextItemText($, 'Get all selected positions'),
+      {
+        click: (_: go.InputEvent, obj: go.GraphObject) => {
+          const data = orgChartContextNodeData(obj);
+          if (!data) return;
+          const dg = obj.diagram;
+          const selectedNodes: OrgChartNodeData[] = [];
+          if (dg) {
+            dg.selection.each((p: go.Part) => {
+              if (p instanceof go.Node && p.data) {
+                selectedNodes.push(p.data as OrgChartNodeData);
+              }
+            });
+          }
+          const effectiveSelected =
+            selectedNodes.length > 0 ? selectedNodes : [data];
+          onNodeContextAction('selected_nodes', data, {
+            selectedNodes: effectiveSelected,
+          });
+        },
+      },
+    ),
+  );
+
+  const colLists = orgChartContextMenuColumn(
+    $,
+    orgChartContextSectionLabel($, 'Lists & search'),
+    $(
+      'ContextMenuButton',
+      orgChartContextItemText($, 'Get boolean keywords string'),
+      {
+        click: (_: go.InputEvent, obj: go.GraphObject) => {
+          const data = orgChartContextNodeData(obj);
+          if (data) onNodeContextAction('boolean_keywords', data);
+        },
+      },
+    ),
+    $(
+      'ContextMenuButton',
+      orgChartContextItemText($, 'Get all leadership in this company'),
+      {
+        click: (_: go.InputEvent, obj: go.GraphObject) => {
+          const data = orgChartContextNodeData(obj);
+          if (data) onNodeContextAction('leadership', data);
+        },
+      },
+    ),
+    $(
+      'ContextMenuButton',
+      orgChartContextItemText($, 'Get all names in this company'),
+      {
+        click: (_: go.InputEvent, obj: go.GraphObject) => {
+          const data = orgChartContextNodeData(obj);
+          if (data) onNodeContextAction('entire_company', data);
+        },
+      },
+    ),
+    $(
+      'ContextMenuButton',
+      orgChartContextItemText($, 'Get all names in this function'),
+      {
+        click: (_: go.InputEvent, obj: go.GraphObject) => {
+          const data = orgChartContextNodeData(obj);
+          if (data) onNodeContextAction('function_grade', data);
+        },
+      },
+    ),
+    $(
+      'ContextMenuButton',
+      orgChartContextItemText($, 'Get similar names in similar companies'),
+      {
+        click: (_: go.InputEvent, obj: go.GraphObject) => {
+          const data = orgChartContextNodeData(obj);
+          if (data) onNodeContextAction('similar_companies', data);
+        },
+      },
+    ),
+  );
+
+  const colJob = orgChartContextMenuColumn(
+    $,
+    orgChartContextSectionLabel($, 'Add to job'),
+    $(
+      'ContextMenuButton',
+      orgChartContextItemText($, 'Add to job and send invite'),
+      {
+        click: (_: go.InputEvent, obj: go.GraphObject) => {
+          const data = orgChartContextNodeData(obj);
+          if (data) onNodeContextAction('add_to_job_and_send_invite', data);
+        },
+      },
+    ),
+    $(
+      'ContextMenuButton',
+      orgChartContextItemText($, 'Add to job and invite to job'),
+      {
+        click: (_: go.InputEvent, obj: go.GraphObject) => {
+          const data = orgChartContextNodeData(obj);
+          if (data) onNodeContextAction('add_to_job_and_invite_to_job', data);
+        },
+      },
+    ),
+  );
+
+  const colOutreach = orgChartContextMenuColumn(
+    $,
+    orgChartContextSectionLabel($, 'Outreach'),
+    $(
+      'ContextMenuButton',
+      orgChartContextItemText($, 'LinkedIn: connection request'),
+      {
+        click: (_: go.InputEvent, obj: go.GraphObject) => {
+          const data = orgChartContextNodeData(obj);
+          if (data) {
+            onNodeContextAction('outreach_linkedin_invite', data, {
+              personSlot: orgChartFirstSlotWithLinkedin(data),
+            });
+          }
+        },
+      },
+      new go.Binding('visible', '', (d: OrgChartNodeData | null) =>
+        !!d && d.nodeState === 'active' && orgChartNodeHasOutreachLinkedin(d),
+      ),
+    ),
+    $(
+      'ContextMenuButton',
+      orgChartContextItemText($, 'LinkedIn: connection request (locked)'),
+      { click: lockedContactClick('linkedin') },
+      new go.Binding('visible', '', (d: OrgChartNodeData | null) => !!d && d.nodeState === 'lock'),
+    ),
+    $(
+      'ContextMenuButton',
+      orgChartContextItemText($, 'WhatsApp message'),
+      {
+        click: (_: go.InputEvent, obj: go.GraphObject) => {
+          const data = orgChartContextNodeData(obj);
+          if (data) {
+            onNodeContextAction('outreach_whatsapp', data, {
+              personSlot: orgChartFirstSlotWithPhone(data),
+            });
+          }
+        },
+      },
+      new go.Binding('visible', '', (d: OrgChartNodeData | null) =>
+        !!d && d.nodeState === 'active' && orgChartNodeHasOutreachPhone(d),
+      ),
+    ),
+    $(
+      'ContextMenuButton',
+      orgChartContextItemText($, 'WhatsApp message (locked)'),
+      { click: lockedContactClick('phone') },
+      new go.Binding('visible', '', (d: OrgChartNodeData | null) => !!d && d.nodeState === 'lock'),
+    ),
+    $(
+      'ContextMenuButton',
+      orgChartContextItemText($, 'Add to Google Contacts'),
+      {
+        click: (_: go.InputEvent, obj: go.GraphObject) => {
+          const data = orgChartContextNodeData(obj);
+          if (data) {
+            onNodeContextAction('outreach_google_contact', data, {
+              personSlot: orgChartFirstSlotWithPhoneAndEmail(data),
+            });
+          }
+        },
+      },
+      new go.Binding('visible', '', (d: OrgChartNodeData | null) =>
+        !!d && d.nodeState === 'active' && orgChartNodeHasGoogleContactFields(d),
+      ),
+    ),
+    $(
+      'ContextMenuButton',
+      orgChartContextItemText($, 'Add to Google Contacts (locked)'),
+      { click: lockedContactClick('email') },
+      new go.Binding('visible', '', (d: OrgChartNodeData | null) => !!d && d.nodeState === 'lock'),
+    ),
+    $(
+      'ContextMenuButton',
+      orgChartContextItemText($, 'Send email'),
+      {
+        click: (_: go.InputEvent, obj: go.GraphObject) => {
+          const data = orgChartContextNodeData(obj);
+          if (data) {
+            onNodeContextAction('outreach_email', data, {
+              personSlot: orgChartFirstSlotWithEmail(data),
+            });
+          }
+        },
+      },
+      new go.Binding('visible', '', (d: OrgChartNodeData | null) =>
+        !!d && d.nodeState === 'active' && orgChartNodeHasOutreachEmail(d),
+      ),
+    ),
+    $(
+      'ContextMenuButton',
+      orgChartContextItemText($, 'Send email (locked)'),
+      { click: lockedContactClick('email') },
+      new go.Binding('visible', '', (d: OrgChartNodeData | null) => !!d && d.nodeState === 'lock'),
+    ),
+  );
+
+  return orgChartContextMenuShell(
+    $,
+    colPosition,
+    orgChartContextColumnSeparator($),
+    colLists,
+    orgChartContextColumnSeparator($),
+    colJob,
+    orgChartContextColumnSeparator($),
+    colOutreach,
+  );
+};
+
+const buildOrgChartBackgroundContextMenu = (
+  $: OrgChartGraphObjectMake,
+  onBackgroundContextAction: NonNullable<
+    OrgChartDiagramProps['onBackgroundContextAction']
+  >,
+): go.Adornment =>
+  orgChartContextMenuShell(
+    $,
+    orgChartContextMenuColumn(
+      $,
+      orgChartContextSectionLabel($, 'Company'),
+      $(
+        'ContextMenuButton',
+        orgChartContextItemText($, 'Get all names in this company'),
+        { click: () => onBackgroundContextAction('entire_company') },
+      ),
+      $(
+        'ContextMenuButton',
+        orgChartContextItemText($, 'Get all leadership in this company'),
+        { click: () => onBackgroundContextAction('leadership') },
+      ),
+    ),
+    orgChartContextColumnSeparator($),
+    orgChartContextMenuColumn(
+      $,
+      orgChartContextSectionLabel($, 'Org chart data'),
+      $(
+        'ContextMenuButton',
+        orgChartContextItemText($, 'Delete saved org chart cache'),
+        { click: () => onBackgroundContextAction('delete_company_cache') },
+      ),
+    ),
+  );
+
 export type {
-    OrgChartContextAction,
-    OrgChartDiagramHandle,
-    OrgChartDiagramIconUrls,
-    OrgChartDiagramProps,
-    OrgChartNodeContextPayload
+  OrgChartContextAction,
+  OrgChartDiagramHandle,
+  OrgChartDiagramIconUrls,
+  OrgChartDiagramProps,
+  OrgChartNodeContextPayload
 } from './OrgChartDiagram.types';
 
 const DEFAULT_AVATAR =
@@ -39,6 +503,16 @@ const DEFAULT_LOCK_ICON = '/img/lock.png';
 const DEFAULT_LINKEDIN_ICON = '/img/linkedin-icon-png-circle-2.png';
 const DEFAULT_DOWNLOAD_ICON = '/img/download-icon.png';
 const DEFAULT_SIMILAR_ITEMS_ICON = '/img/similar-items.png';
+
+/** Lucide-style outline icons for m7kq contact hints (self-contained, no /img). */
+const DEFAULT_M7KQ_EMAIL_ICON_SVG = encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1e293b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',
+);
+const DEFAULT_M7KQ_PHONE_ICON_SVG = encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1e293b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.86.3 1.7.6 2.5a2 2 0 0 1-.45 2.11L8.09 9.9a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.8.3 1.64.5 2.5.6A2 2 0 0 1 22 16.92z"/></svg>',
+);
+const DEFAULT_M7KQ_EMAIL_ICON = `data:image/svg+xml;charset=utf-8,${DEFAULT_M7KQ_EMAIL_ICON_SVG}`;
+const DEFAULT_M7KQ_PHONE_ICON = `data:image/svg+xml;charset=utf-8,${DEFAULT_M7KQ_PHONE_ICON_SVG}`;
 
 const NODE_CAPABILITY_ITEMS = [
   'Fetch names & contact details',
@@ -241,6 +715,8 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       onSimilarPeople,
       showNodeCapabilitiesHoverHint = false,
       nodeCapabilitiesHoverCompanyName,
+      m7kqContactMode = false,
+      onLockedContactChannelClick,
     },
     ref,
   ) => {
@@ -248,6 +724,8 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
     const LINKEDIN_ICON_URL = iconUrls?.linkedin ?? DEFAULT_LINKEDIN_ICON;
     const DOWNLOAD_ICON_URL = iconUrls?.download ?? DEFAULT_DOWNLOAD_ICON;
     const SIMILAR_ITEMS_ICON_URL = iconUrls?.similarItems ?? DEFAULT_SIMILAR_ITEMS_ICON;
+    const M7KQ_EMAIL_ICON_URL = iconUrls?.email ?? DEFAULT_M7KQ_EMAIL_ICON;
+    const M7KQ_PHONE_ICON_URL = iconUrls?.phone ?? DEFAULT_M7KQ_PHONE_ICON;
     const diagramRef = useRef<ReactDiagram>(null);
     const overviewDivRef = useRef<HTMLDivElement | null>(null);
     const overviewRef = useRef<go.Overview | null>(null);
@@ -289,18 +767,18 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       const getLabelFromNodeState = (s: unknown): string => {
         if (s === 'active') return 'Active';
         if (s === 'preview') return 'Preview';
-        if (s === 'lock') return 'Lock';
+        if (s === 'lock') return 'Locked';
         return '';
       };
 
       const showLabelContainer = (s: unknown): number => {
         const label = getLabelFromNodeState(s);
-        return ['Preview', 'Active', 'Lock'].includes(label) ? 20 : 0;
+        return ['Preview', 'Active', 'Locked'].includes(label) ? 20 : 0;
       };
 
       const showLabelContainerTable = (s: unknown): number => {
         const label = getLabelFromNodeState(s);
-        return ['Preview', 'Active', 'Lock'].includes(label) ? 40 : 20;
+        return ['Preview', 'Active', 'Locked'].includes(label) ? 40 : 20;
       };
 
       const textLabel = (s: unknown): string => getLabelFromNodeState(s);
@@ -314,6 +792,44 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       const findIconSource = (nodeState: unknown): string =>
         nodeState === 'active' ? LINKEDIN_ICON_URL : LOCK_ICON_URL;
 
+      const lockedNodeToolTip = $(
+        'ToolTip',
+        {
+          isShadowed: true,
+          shadowOffset: new go.Point(0, 3),
+          'Border.fill': '#ffffff',
+          'Border.stroke': '#e2e8f0',
+          'Border.strokeWidth': 1,
+        },
+        $(
+          go.TextBlock,
+          {
+            margin: new go.Margin(10, 12, 10, 12),
+            font: '11pt system-ui, Segoe UI, sans-serif',
+            stroke: '#334155',
+            wrap: go.TextBlock.WrapFit,
+            maxSize: new go.Size(280, NaN),
+            textAlign: 'left',
+          },
+          {
+            text: 'Locked — limited preview. Upgrade to a paid plan to access full profiles, verified emails, and phone numbers.',
+          },
+        ),
+      );
+
+      const makeM7kqChannelToolTip = (content: go.GraphObject) =>
+        $(
+          'ToolTip',
+          {
+            isShadowed: true,
+            shadowOffset: new go.Point(0, 3),
+            'Border.fill': '#ffffff',
+            'Border.stroke': '#cbd5e1',
+            'Border.strokeWidth': 1,
+          },
+          content,
+        );
+
       // Fixed height per candidate row: name (1 line) + title (2 lines max) + padding. Avoids empty gaps.
 
       const CANDIDATE_ROW_HEIGHT = 52;
@@ -322,8 +838,477 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
 
 
 
-      const createCandidateRow = (idx: number, rowIndex: number) =>
-        $(
+      // In M7KQ contact mode the node content table is 238px wide.
+      // Keep candidate rows within bounds so long titles don't push the contact icons outside.
+      const nameColWidth = m7kqContactMode ? 120 : 150;
+
+      const getOrgChartNodeDataFromObject = (
+        start: go.GraphObject | null,
+      ): OrgChartNodeData | undefined => {
+        let o: go.GraphObject | null = start;
+        for (let i = 0; i < 12 && o !== null; i += 1) {
+          if (o instanceof go.Node) {
+            return o.data as OrgChartNodeData;
+          }
+          o = o.part;
+        }
+        return undefined;
+      };
+
+      const m7kqChannelClick = (slotIdx: number, channel: 'email' | 'phone' | 'linkedin') => {
+        return (_e: go.InputEvent, obj: go.GraphObject) => {
+          if (!onLockedContactChannelClick) return;
+          const data = getOrgChartNodeDataFromObject(obj);
+          if (data) {
+            onLockedContactChannelClick(data, slotIdx, channel);
+          }
+        };
+      };
+
+      const createCandidateRow = (idx: number, rowIndex: number) => {
+        const slotEmail = (d: Record<string, unknown> | undefined): string => {
+          if (!d) return '';
+          const v = d[`email_${idx}`];
+          return typeof v === 'string' ? v.trim() : '';
+        };
+        const slotPhone = (d: Record<string, unknown> | undefined): string => {
+          if (!d) return '';
+          const v = d[`phone_${idx}`];
+          return typeof v === 'string' ? v.trim() : '';
+        };
+        const slotLinkedInUrl = (d: Record<string, unknown> | undefined): string => {
+          if (!d) return '';
+          const v = d[`linkedin_url_${idx}`];
+          return typeof v === 'string' ? v.trim() : '';
+        };
+        const nodeStateOf = (d: Record<string, unknown> | undefined): string =>
+          typeof d?.nodeState === 'string' ? d.nodeState : '';
+
+        const m7kqEmailToolTipText = (d: Record<string, unknown> | undefined): string => {
+          if (!d) return 'Email: not indicated';
+          const ev = slotEmail(d);
+          if (ev) return ev;
+          const ns = nodeStateOf(d);
+          const h = d[`has_email_${idx}`];
+          if (ns === 'active') {
+            if (h === true) return 'Email available — click the icon to fetch';
+            if (h === false) return 'No email in directory';
+            return 'Email: not indicated';
+          }
+          if (h === true) return 'Email: on file (unlock with a paid plan)';
+          if (h === false) return 'No email';
+          return 'Email: not indicated';
+        };
+
+        const m7kqPhoneToolTipText = (d: Record<string, unknown> | undefined): string => {
+          if (!d) return 'Phone: not indicated';
+          const pv = slotPhone(d);
+          if (pv) return pv;
+          const ns = nodeStateOf(d);
+          const dir =
+            d[`has_direct_phone_${idx}`] === true ||
+            d[`has_org_phone_${idx}`] === true;
+          const none =
+            d[`has_direct_phone_${idx}`] === false &&
+            d[`has_org_phone_${idx}`] === false;
+          if (ns === 'active') {
+            if (dir) return 'Phone may be available — click the icon to fetch';
+            if (none) return 'No phone in directory';
+            return 'Phone: not indicated';
+          }
+          if (dir) return 'Phone: on file (unlock with a paid plan)';
+          if (none) return 'No phone';
+          return 'Phone: not indicated';
+        };
+
+        const m7kqLinkedInToolTipText = (d: Record<string, unknown> | undefined): string => {
+          if (!d) return 'LinkedIn: not indicated';
+          const url = slotLinkedInUrl(d);
+          if (isValidLinkedInProfileUrl(url)) return 'Click to go to LinkedIn profile';
+          const ns = nodeStateOf(d);
+          if (ns === 'active') {
+            return 'LinkedIn profile not loaded — click the icon to fetch';
+          }
+          return 'LinkedIn: profile in directory (unlock full access on a paid plan)';
+        };
+
+        const m7kqEmailStatusDot = (
+          d: Record<string, unknown> | undefined,
+        ): { text: string; stroke: string } => {
+          if (!d) return { text: '·', stroke: '#e2e8f0' };
+          const ev = slotEmail(d);
+          if (ev) return { text: '●', stroke: '#22c55e' };
+          const h = d[`has_email_${idx}`];
+          if (h === true) return { text: '●', stroke: '#f97316' };
+          if (h === false) return { text: '◦', stroke: '#cbd5e1' };
+          return { text: '·', stroke: '#e2e8f0' };
+        };
+
+        const m7kqPhoneStatusDot = (
+          d: Record<string, unknown> | undefined,
+        ): { text: string; stroke: string } => {
+          if (!d) return { text: '·', stroke: '#e2e8f0' };
+          const pv = slotPhone(d);
+          if (pv) return { text: '●', stroke: '#22c55e' };
+          if (
+            d[`has_direct_phone_${idx}`] === true ||
+            d[`has_org_phone_${idx}`] === true
+          ) {
+            return { text: '●', stroke: '#cbd5e1' };
+          }
+          if (
+            d[`has_direct_phone_${idx}`] === false &&
+            d[`has_org_phone_${idx}`] === false
+          ) {
+            return { text: '◦', stroke: '#cbd5e1' };
+          }
+          return { text: '·', stroke: '#e2e8f0' };
+        };
+
+        const m7kqLinkedInStatusDot = (
+          d: Record<string, unknown> | undefined,
+        ): { text: string; stroke: string } => {
+          if (!d) return { text: '·', stroke: '#e2e8f0' };
+          const url = slotLinkedInUrl(d);
+          if (isValidLinkedInProfileUrl(url)) return { text: '●', stroke: '#22c55e' };
+          return { text: '◦', stroke: '#cbd5e1' };
+        };
+
+        const m7kqLinkedInClick = (_e: go.InputEvent, obj: go.GraphObject) => {
+          const data = getOrgChartNodeDataFromObject(obj);
+          if (!data) return;
+          const r = data as Record<string, unknown>;
+          const urlRaw = r[`linkedin_url_${idx}`];
+          const url = typeof urlRaw === 'string' ? urlRaw.trim() : '';
+          if (isValidLinkedInProfileUrl(url)) {
+            window.open(url.startsWith('http') ? url : `https://${url}`, '_blank');
+            return;
+          }
+          m7kqChannelClick(idx, 'linkedin')(_e, obj);
+        };
+
+        const m7kqContactStrip = $(
+          go.Panel,
+          'Vertical',
+          {
+            row: 0,
+            column: 2,
+            rowSpan: 2,
+            alignment: go.Spot.Right,
+            margin: new go.Margin(2, 0, 2, 0),
+          },
+          new go.Binding('visible', `height_${idx}` as const, (h) => findSize(h) > 0),
+          $(
+            go.Panel,
+            'Horizontal',
+            { defaultAlignment: go.Spot.Center },
+            $(
+              go.Panel,
+              'Vertical',
+              {
+                margin: new go.Margin(0, 2, 0, 0),
+                cursor: 'pointer',
+                click: m7kqChannelClick(idx, 'email'),
+                toolTip: makeM7kqChannelToolTip(
+                  $(
+                    go.TextBlock,
+                    {
+                      margin: new go.Margin(8, 10, 8, 10),
+                      font: '11pt system-ui, Segoe UI, sans-serif',
+                      stroke: '#0f172a',
+                      wrap: go.TextBlock.WrapFit,
+                      maxSize: new go.Size(300, NaN),
+                      textAlign: 'left',
+                    },
+                    new go.Binding(
+                      'text',
+                      `email_${idx}` as const,
+                      (_: unknown, obj: go.GraphObject) =>
+                        m7kqEmailToolTipText(
+                          getOrgChartDataFromToolTipObject(obj) as
+                            | Record<string, unknown>
+                            | undefined,
+                        ),
+                    ),
+                    new go.Binding(
+                      'text',
+                      `has_email_${idx}` as const,
+                      (_: unknown, obj: go.GraphObject) =>
+                        m7kqEmailToolTipText(
+                          getOrgChartDataFromToolTipObject(obj) as
+                            | Record<string, unknown>
+                            | undefined,
+                        ),
+                    ),
+                    new go.Binding(
+                      'text',
+                      'nodeState',
+                      (_: unknown, obj: go.GraphObject) =>
+                        m7kqEmailToolTipText(
+                          getOrgChartDataFromToolTipObject(obj) as
+                            | Record<string, unknown>
+                            | undefined,
+                        ),
+                    ),
+                  ),
+                ),
+              },
+              new go.Binding('visible', 'nodeState', (s: unknown) => s !== 'preview'),
+              $(
+                go.Picture,
+                {
+                  source: M7KQ_EMAIL_ICON_URL,
+                  desiredSize: new go.Size(16, 16),
+                  imageStretch: go.GraphObject.Uniform,
+                },
+              ),
+              $(
+                go.TextBlock,
+                {
+                  font: '6pt system-ui,Segoe UI,sans-serif',
+                  margin: new go.Margin(0, 0, 0, 0),
+                  textAlign: 'center',
+                },
+                new go.Binding('text', `email_${idx}` as const, (_: unknown, obj: go.GraphObject) =>
+                  m7kqEmailStatusDot(obj.part?.data as Record<string, unknown> | undefined).text,
+                ),
+                new go.Binding('text', `has_email_${idx}` as const, (_: unknown, obj: go.GraphObject) =>
+                  m7kqEmailStatusDot(obj.part?.data as Record<string, unknown> | undefined).text,
+                ),
+                new go.Binding('stroke', `email_${idx}` as const, (_: unknown, obj: go.GraphObject) =>
+                  m7kqEmailStatusDot(obj.part?.data as Record<string, unknown> | undefined).stroke,
+                ),
+                new go.Binding('stroke', `has_email_${idx}` as const, (_: unknown, obj: go.GraphObject) =>
+                  m7kqEmailStatusDot(obj.part?.data as Record<string, unknown> | undefined).stroke,
+                ),
+              ),
+            ),
+            $(
+              go.Panel,
+              'Vertical',
+              {
+                margin: new go.Margin(0, 2, 0, 0),
+                cursor: 'pointer',
+                click: m7kqChannelClick(idx, 'phone'),
+                toolTip: makeM7kqChannelToolTip(
+                  $(
+                    go.TextBlock,
+                    {
+                      margin: new go.Margin(8, 10, 8, 10),
+                      font: '11pt system-ui, Segoe UI, sans-serif',
+                      stroke: '#0f172a',
+                      wrap: go.TextBlock.WrapFit,
+                      maxSize: new go.Size(300, NaN),
+                      textAlign: 'left',
+                    },
+                    new go.Binding(
+                      'text',
+                      `phone_${idx}` as const,
+                      (_: unknown, obj: go.GraphObject) =>
+                        m7kqPhoneToolTipText(
+                          getOrgChartDataFromToolTipObject(obj) as
+                            | Record<string, unknown>
+                            | undefined,
+                        ),
+                    ),
+                    new go.Binding(
+                      'text',
+                      `has_direct_phone_${idx}` as const,
+                      (_: unknown, obj: go.GraphObject) =>
+                        m7kqPhoneToolTipText(
+                          getOrgChartDataFromToolTipObject(obj) as
+                            | Record<string, unknown>
+                            | undefined,
+                        ),
+                    ),
+                    new go.Binding(
+                      'text',
+                      `has_org_phone_${idx}` as const,
+                      (_: unknown, obj: go.GraphObject) =>
+                        m7kqPhoneToolTipText(
+                          getOrgChartDataFromToolTipObject(obj) as
+                            | Record<string, unknown>
+                            | undefined,
+                        ),
+                    ),
+                    new go.Binding(
+                      'text',
+                      'nodeState',
+                      (_: unknown, obj: go.GraphObject) =>
+                        m7kqPhoneToolTipText(
+                          getOrgChartDataFromToolTipObject(obj) as
+                            | Record<string, unknown>
+                            | undefined,
+                        ),
+                    ),
+                  ),
+                ),
+              },
+              new go.Binding('visible', 'nodeState', (s: unknown) => s !== 'preview'),
+              $(
+                go.Picture,
+                {
+                  source: M7KQ_PHONE_ICON_URL,
+                  desiredSize: new go.Size(16, 16),
+                  imageStretch: go.GraphObject.Uniform,
+                },
+              ),
+              $(
+                go.TextBlock,
+                {
+                  font: '6pt system-ui,Segoe UI,sans-serif',
+                  textAlign: 'center',
+                },
+                new go.Binding(
+                  'text',
+                  `phone_${idx}` as const,
+                  (_: unknown, obj: go.GraphObject) =>
+                    m7kqPhoneStatusDot(obj.part?.data as Record<string, unknown> | undefined).text,
+                ),
+                new go.Binding(
+                  'text',
+                  `has_direct_phone_${idx}` as const,
+                  (_: unknown, obj: go.GraphObject) =>
+                    m7kqPhoneStatusDot(obj.part?.data as Record<string, unknown> | undefined).text,
+                ),
+                new go.Binding(
+                  'text',
+                  `has_org_phone_${idx}` as const,
+                  (_: unknown, obj: go.GraphObject) =>
+                    m7kqPhoneStatusDot(obj.part?.data as Record<string, unknown> | undefined).text,
+                ),
+                new go.Binding(
+                  'stroke',
+                  `phone_${idx}` as const,
+                  (_: unknown, obj: go.GraphObject) =>
+                    m7kqPhoneStatusDot(obj.part?.data as Record<string, unknown> | undefined).stroke,
+                ),
+                new go.Binding(
+                  'stroke',
+                  `has_direct_phone_${idx}` as const,
+                  (_: unknown, obj: go.GraphObject) =>
+                    m7kqPhoneStatusDot(obj.part?.data as Record<string, unknown> | undefined).stroke,
+                ),
+                new go.Binding(
+                  'stroke',
+                  `has_org_phone_${idx}` as const,
+                  (_: unknown, obj: go.GraphObject) =>
+                    m7kqPhoneStatusDot(obj.part?.data as Record<string, unknown> | undefined).stroke,
+                ),
+              ),
+            ),
+            $(
+              go.Panel,
+              'Vertical',
+              {
+                margin: new go.Margin(0, 0, 0, 0),
+                cursor: 'pointer',
+                click: m7kqLinkedInClick,
+                toolTip: makeM7kqChannelToolTip(
+                  $(
+                    go.TextBlock,
+                    {
+                      margin: new go.Margin(8, 10, 8, 10),
+                      font: '11pt system-ui, Segoe UI, sans-serif',
+                      stroke: '#0f172a',
+                      wrap: go.TextBlock.WrapFit,
+                      maxSize: new go.Size(300, NaN),
+                      textAlign: 'left',
+                    },
+                    new go.Binding(
+                      'text',
+                      `linkedin_url_${idx}` as const,
+                      (_: unknown, obj: go.GraphObject) =>
+                        m7kqLinkedInToolTipText(
+                          getOrgChartDataFromToolTipObject(obj) as
+                            | Record<string, unknown>
+                            | undefined,
+                        ),
+                    ),
+                    new go.Binding(
+                      'text',
+                      'nodeState',
+                      (_: unknown, obj: go.GraphObject) =>
+                        m7kqLinkedInToolTipText(
+                          getOrgChartDataFromToolTipObject(obj) as
+                            | Record<string, unknown>
+                            | undefined,
+                        ),
+                    ),
+                  ),
+                ),
+              },
+              $(
+                go.Picture,
+                {
+                  source: LINKEDIN_ICON_URL,
+                  desiredSize: new go.Size(14, 14),
+                  imageStretch: go.GraphObject.UniformToFill,
+                  opacity: 0.88,
+                },
+              ),
+              $(
+                go.TextBlock,
+                {
+                  font: '6pt system-ui,Segoe UI,sans-serif',
+                  textAlign: 'center',
+                },
+                new go.Binding(
+                  'text',
+                  `linkedin_url_${idx}` as const,
+                  (_: unknown, obj: go.GraphObject) =>
+                    m7kqLinkedInStatusDot(obj.part?.data as Record<string, unknown> | undefined).text,
+                ),
+                new go.Binding(
+                  'stroke',
+                  `linkedin_url_${idx}` as const,
+                  (_: unknown, obj: go.GraphObject) =>
+                    m7kqLinkedInStatusDot(obj.part?.data as Record<string, unknown> | undefined).stroke,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        const classicLinkedInCell = $(
+          go.Panel,
+          'Spot',
+          {
+            row: 1,
+            column: 2,
+            isClipping: true,
+            alignment: go.Spot.Center,
+            margin: new go.Margin(0, 4, 0, 0),
+            cursor: 'pointer',
+            width: 10,
+            click: (_e: go.InputEvent, obj: go.GraphObject) => {
+              const node = obj.part as go.Node | undefined;
+              const data = node?.data as OrgChartNodeData | undefined;
+              if (!data) return;
+              const url = data[`linkedin_url_${idx}`];
+              if (typeof url === 'string' && isValidLinkedInProfileUrl(url)) {
+                window.open(
+                  url.startsWith('http') ? url : `https://${url}`,
+                  '_blank',
+                );
+              }
+            },
+          },
+          new go.Binding('visible', `linkedin_url_${idx}` as const, (url) =>
+            isValidLinkedInProfileUrl(typeof url === 'string' ? url : undefined),
+          ),
+          $(go.Shape, 'Circle', { width: 10, height: 10, strokeWidth: 0, fill: 'white' }),
+          $(
+            go.Picture,
+            {
+              desiredSize: new go.Size(12, 12),
+              imageStretch: go.GraphObject.UniformToFill,
+            },
+            new go.Binding('source', 'nodeState', findIconSource),
+          ),
+        );
+
+        return $(
           go.Panel,
           'Table',
           {
@@ -333,9 +1318,9 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
             defaultAlignment: go.Spot.Left,
           },
           new go.Binding('height', `height_${idx}` as const, findSize),
-          $(go.RowColumnDefinition, { column: 0, width: 50 }),
+          $(go.RowColumnDefinition, { column: 0, width: m7kqContactMode ? 44 : 50 }),
           $(go.RowColumnDefinition, { column: 1 }),
-          $(go.RowColumnDefinition, { column: 2, width: 18 }),
+          $(go.RowColumnDefinition, { column: 2, width: m7kqContactMode ? 64 : 18 }),
           $(
             go.Panel,
             'Spot',
@@ -345,7 +1330,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
               rowSpan: 2,
               isClipping: true,
               scale: 1,
-              margin: new go.Margin(6, 8, 6, 10),
+              margin: new go.Margin(6, 6, 6, 8),
             },
             $(go.Shape, 'Circle', { width: 30, strokeWidth: 0 }),
             $(
@@ -355,9 +1340,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
                 imageStretch: go.GraphObject.UniformToFill,
                 errorFunction: () => defaultAvatarUrl,
               },
-              new go.Binding('source', `image_${idx}` as const, (src) =>
-                src || defaultAvatarUrl,
-              ),
+              new go.Binding('source', `image_${idx}` as const, (src) => src || defaultAvatarUrl),
             ),
           ),
           $(
@@ -372,7 +1355,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
               overflow: go.TextBlock.OverflowEllipsis,
               editable: false,
               minSize: new go.Size(5, 16),
-              width: 150,
+              width: nameColWidth,
             },
             new go.Binding('text', `name_${idx}` as const, (n) => n || ''),
           ),
@@ -390,57 +1373,13 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
               stroke: 'rgb(150,150,150)',
               minSize: new go.Size(10, 14),
               margin: new go.Margin(0, 0, 0, 0),
-              width: 150,
+              width: nameColWidth,
             },
             new go.Binding('text', `title_${idx}` as const, (t) => t || ''),
           ),
-          $(
-            go.Panel,
-            'Spot',
-            {
-              row: 1,
-              column: 2,
-              isClipping: true,
-              alignment: go.Spot.Center,
-              margin: new go.Margin(0, 4, 0, 0),
-              cursor: 'pointer',
-              width: 10,
-              click: (_e: go.InputEvent, obj: go.GraphObject) => {
-                const node = obj.part as go.Node | undefined;
-                const data = node?.data as OrgChartNodeData | undefined;
-                if (!data) return;
-                const url = data[`linkedin_url_${idx}`];
-                if (
-                  typeof url === 'string' &&
-                  isValidLinkedInProfileUrl(url)
-                ) {
-                  window.open(
-                    url.startsWith('http') ? url : `https://${url}`,
-                    '_blank',
-                  );
-                }
-              },
-            },
-            new go.Binding('visible', `linkedin_url_${idx}` as const, (url) =>
-              isValidLinkedInProfileUrl(
-                typeof url === 'string' ? url : undefined,
-              ),
-            ),
-            $(
-              go.Shape,
-              'Circle',
-              { width: 10, height: 10, strokeWidth: 0, fill: 'white' },
-            ),
-            $(
-              go.Picture,
-              {
-                desiredSize: new go.Size(12, 12),
-                imageStretch: go.GraphObject.UniformToFill,
-              },
-              new go.Binding('source', 'nodeState', findIconSource),
-            ),
-          ),
+          m7kqContactMode ? m7kqContactStrip : classicLinkedInCell,
         );
+      };
 
       const capabilitiesIntroBinding = new go.Binding(
         'text',
@@ -563,16 +1502,19 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
             }
           },
         },
-        ...(showNodeCapabilitiesHoverHint && nodeHoverToolTip !== undefined
-          ? [
-              new go.Binding(
-                'toolTip',
-                'nodeState',
-                (state: unknown) =>
-                  state === 'preview' ? nodeHoverToolTip : null,
-              ),
-            ]
-          : []),
+        new go.Binding('toolTip', 'nodeState', (state: unknown) => {
+          if (state === 'lock') {
+            return lockedNodeToolTip;
+          }
+          if (
+            state === 'preview' &&
+            showNodeCapabilitiesHoverHint &&
+            nodeHoverToolTip !== undefined
+          ) {
+            return nodeHoverToolTip;
+          }
+          return null;
+        }),
         $(
           go.Panel,
           'Auto',
@@ -585,7 +1527,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
               strokeWidth: 1,
               stroke: 'rgb(150,150,150)',
               cursor: 'pointer',
-              width: 230,
+              width: m7kqContactMode ? 248 : 230,
               portId: '',
               fromLinkable: true,
               toLinkable: true,
@@ -601,12 +1543,12 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
           $(
             go.Panel,
             'Table',
-            { width: 220 },
+            { width: m7kqContactMode ? 238 : 220 },
             new go.Binding(
               'padding',
               'nodeState',
               (s: string) =>
-                s === 'preview'
+                s === 'preview' || s === 'lock'
                   ? new go.Margin(0, 0, 14, 0)
                   : new go.Margin(0, 0, 8, 0),
             ),
@@ -743,121 +1685,11 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
 
       if (onNodeContextAction) {
         const $c = go.GraphObject.make;
-        node.contextMenu = $c(
-          'ContextMenu',
-          $c(
-            'ContextMenuButton',
-            $c(go.TextBlock, 'Get people in this position'),
-            {
-              click: (_, obj) => {
-                const part = (obj.part ?? null) as go.Node | null;
-                const data = part?.data as OrgChartNodeData | undefined;
-                if (data) onNodeContextAction('current_node', data);
-              },
-            },
-          ),
-          $c(
-            'ContextMenuButton',
-            $c(go.TextBlock, 'Get all selected positions'),
-            {
-              click: (_, obj) => {
-                const part = (obj.part ?? null) as go.Node | null;
-                const data = part?.data as OrgChartNodeData | undefined;
-                if (!data || !onNodeContextAction) return;
-                const dg = obj.diagram;
-                const selectedNodes: OrgChartNodeData[] = [];
-                if (dg) {
-                  dg.selection.each((p: go.Part) => {
-                    if (p instanceof go.Node && p.data) {
-                      selectedNodes.push(p.data as OrgChartNodeData);
-                    }
-                  });
-                }
-                const effectiveSelected =
-                  selectedNodes.length > 0 ? selectedNodes : [data];
-                onNodeContextAction('selected_nodes', data, {
-                  selectedNodes: effectiveSelected,
-                });
-              },
-            },
-          ),
-          $c(
-            'ContextMenuButton',
-            $c(go.TextBlock, 'Get boolean keywords string'),
-            {
-              click: (_, obj) => {
-                const part = (obj.part ?? null) as go.Node | null;
-                const data = part?.data as OrgChartNodeData | undefined;
-                if (data) onNodeContextAction('boolean_keywords', data);
-              },
-            },
-          ),
-          $c(
-            'ContextMenuButton',
-            $c(go.TextBlock, 'Get all leadership in this company'),
-            {
-              click: (_, obj) => {
-                const part = (obj.part ?? null) as go.Node | null;
-                const data = part?.data as OrgChartNodeData | undefined;
-                if (data) onNodeContextAction('leadership', data);
-              },
-            },
-          ),
-          $c(
-            'ContextMenuButton',
-            $c(go.TextBlock, 'Get all names in this company'),
-            {
-              click: (_, obj) => {
-                const part = (obj.part ?? null) as go.Node | null;
-                const data = part?.data as OrgChartNodeData | undefined;
-                if (data) onNodeContextAction('entire_company', data);
-              },
-            },
-          ),
-          $c(
-            'ContextMenuButton',
-            $c(go.TextBlock, 'Get all names in this function'),
-            {
-              click: (_, obj) => {
-                const part = (obj.part ?? null) as go.Node | null;
-                const data = part?.data as OrgChartNodeData | undefined;
-                if (data) onNodeContextAction('function_grade', data);
-              },
-            },
-          ),
-          $c(
-            'ContextMenuButton',
-            $c(go.TextBlock, 'Get similar names in similar companies'),
-            {
-              click: (_, obj) => {
-                const part = (obj.part ?? null) as go.Node | null;
-                const data = part?.data as OrgChartNodeData | undefined;
-                if (data) onNodeContextAction('similar_companies', data);
-              },
-            },
-          ),
-          $c(
-            'ContextMenuButton',
-            $c(go.TextBlock, 'Add to job and send invite'),
-            {
-              click: (_, obj) => {
-                const part = (obj.part ?? null) as go.Node | null;
-                const data = part?.data as OrgChartNodeData | undefined;
-                if (data) onNodeContextAction('add_to_job_and_send_invite', data);
-              },
-            },
-          ),
-          $c(
-            'ContextMenuButton',
-            $c(go.TextBlock, 'Add to job and invite to job'),
-            {
-              click: (_, obj) => {
-                const part = (obj.part ?? null) as go.Node | null;
-                const data = part?.data as OrgChartNodeData | undefined;
-                if (data) onNodeContextAction('add_to_job_and_invite_to_job', data);
-              },
-            },
-          ),
+        node.contextMenu = buildOrgChartNodeContextMenu(
+          $c,
+          onNodeContextAction,
+          m7kqContactMode,
+          onLockedContactChannelClick,
         );
       }
 
@@ -868,6 +1700,8 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       LINKEDIN_ICON_URL,
       DOWNLOAD_ICON_URL,
       SIMILAR_ITEMS_ICON_URL,
+      M7KQ_EMAIL_ICON_URL,
+      M7KQ_PHONE_ICON_URL,
       onNodeContextAction,
       onNodeClick,
       onNodeDoubleClick,
@@ -875,6 +1709,8 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       onSimilarPeople,
       showNodeCapabilitiesHoverHint,
       capabilitiesHoverCompanyLabel,
+      m7kqContactMode,
+      onLockedContactChannelClick,
     ]);
 
     const initDiagram = useCallback((): go.Diagram => {
@@ -883,7 +1719,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       const diagram = $(
         go.Diagram,
         {
-          ...(showNodeCapabilitiesHoverHint
+          ...(showNodeCapabilitiesHoverHint || m7kqContactMode
             ? {
                 'toolManager.hoverDelay': 0,
                 'toolManager.toolTipDuration':
@@ -971,37 +1807,14 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
 
       if (onBackgroundContextAction) {
         const $c = go.GraphObject.make;
-        diagram.contextMenu = $c(
-          'ContextMenu',
-          $c(
-            'ContextMenuButton',
-            $c(go.TextBlock, 'Get all names in this company'),
-            {
-              click: () => onBackgroundContextAction('entire_company'),
-            },
-          ),
-          $c(
-            'ContextMenuButton',
-            $c(go.TextBlock, 'Get all leadership in this company'),
-            {
-              click: () => onBackgroundContextAction('leadership'),
-            },
-          ),
-          $c(
-            'ContextMenuButton',
-            $c(
-              go.TextBlock,
-              'Delete saved org chart cache',
-            ),
-            {
-              click: () => onBackgroundContextAction('delete_company_cache'),
-            },
-          ),
+        diagram.contextMenu = buildOrgChartBackgroundContextMenu(
+          $c,
+          onBackgroundContextAction,
         );
       }
 
       return diagram;
-    }, [createNodeTemplate, onBackgroundContextAction, showNodeCapabilitiesHoverHint]);
+    }, [createNodeTemplate, onBackgroundContextAction, showNodeCapabilitiesHoverHint, m7kqContactMode]);
 
     const getDiagram = useCallback((): go.Diagram | null => {
       const diagramHost = diagramRef.current as unknown as {

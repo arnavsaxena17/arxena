@@ -238,7 +238,8 @@ export const Jobs = () => {
   const { isBaileysLoggedIn } = useBaileysConnection();
   const { isLinkedinConnected, isWhatsappUnipileConnected } = useUnipile();
   const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileConnected;
-  const { isExtensionInstalled } = useChromeExtensionDetection();
+  const { isExtensionInstalled, isChecking: isExtensionChecking } =
+    useChromeExtensionDetection();
   const { resetJobStates } = useJobStateReset();
   const { refetchJobs } = useJobRefetch();
   const refetchJobsRef = useRef(refetchJobs);
@@ -525,6 +526,7 @@ export const Jobs = () => {
               onCompanySelect={hasJobs ? handleCompanySelect : undefined}
               hasToken={!!hasToken}
               isExtensionInstalled={isExtensionInstalled}
+              isExtensionChecking={isExtensionChecking}
               onDownloadClick={handleDownloadClick}
               hasInsufficientCredits={hasInsufficientCredits}
               onAddCredits={handleAddCredits}
@@ -573,6 +575,7 @@ export const Jobs = () => {
               onCompanySelect={hasJobs ? handleCompanySelect : undefined}
               hasToken={!!hasToken}
               isExtensionInstalled={isExtensionInstalled}
+              isExtensionChecking={isExtensionChecking}
               onDownloadClick={handleDownloadClick}
               hasInsufficientCredits={hasInsufficientCredits}
               onAddCredits={handleAddCredits}

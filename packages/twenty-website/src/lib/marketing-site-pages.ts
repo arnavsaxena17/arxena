@@ -15,7 +15,7 @@ export const PRODUCT_PAGES: MarketingDetailPage[] = [
     title: 'Org Chart Explorer',
     headline: 'Open any company. Know who matters before you act.',
     metaDescription:
-      'Start every people-discovery workflow with a live org map—leadership, reporting lines, and structure you can navigate in seconds.',
+      'Start every people-discovery workflow with a live org map—leadership, and structure you can navigate in seconds.',
     lead: 'Search a company, land on the live hierarchy, drill down. Know who owns what before the call, the brief, or the first message.',
     bullets: [
       'Jump to any role or leader in seconds instead of piecing LinkedIn together by hand.',
@@ -53,7 +53,7 @@ export const PRODUCT_PAGES: MarketingDetailPage[] = [
       'See leadership and function changes quarter by quarter instead of relying on news or secondhand intel.',
       'Surface succession risk, interim roles, and hiring velocity as buying signals, search triggers, or diligence inputs.',
       'Back up BD and recruiting narratives with structural history, not guesswork.',
-      'Set alerts when key roles or reporting lines change at companies you are tracking.',
+      'Set alerts when key roles change at companies you are tracking.',
     ],
     segmentsNote:
       'Core for executive search BD, account-based sales, corporate strategy, and investor pre-call preparation.',
@@ -121,7 +121,7 @@ export const SOLUTION_PAGES: MarketingDetailPage[] = [
     bullets: [
       'Pre-brief longlist: Surface strong fits 1–2 levels below the role before competing firms are briefed.',
       'Retained positioning: Reference structural gaps—thin bench, interim role, succession risk—with data behind the story.',
-      'Placement protection: Alerts when reporting lines change around a placed candidate.',
+      'Placement protection: Alerts when roles change around a placed candidate.',
       'Succession signals: Spot overstretched leaders before the client has articulated the need.',
     ],
     bulletsTitle: 'In practice',

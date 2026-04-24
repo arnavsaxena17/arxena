@@ -1,88 +1,37 @@
 import { useMemo } from 'react';
 
+import {
+    sortOrgChartCountryKeys,
+    sortOrgChartFunctionRootKeys,
+} from '../utils/orgChartFilterDropdownSort';
+
 export const useOrgChartFilterOptions = (
   orgData: Record<string, unknown> | null,
 ) => {
-  const availableCountries = useMemo(() => {
-    if (!orgData) return [];
+  const { availableCountries, countryPercentLabels } = useMemo(() => {
+    if (!orgData) {
+      return { availableCountries: [] as string[], countryPercentLabels: {} };
+    }
 
     const rawCountries = (orgData as Record<string, unknown>).countries;
+    let cleaned: string[] = [];
 
     if (typeof rawCountries === 'string') {
       try {
         const parsed = JSON.parse(rawCountries) as unknown;
         if (Array.isArray(parsed)) {
-          const cleaned = parsed
+          cleaned = parsed
             .filter((c): c is string => typeof c === 'string')
             .filter((c) => c !== '0');
-          const withGlobal = [...cleaned, 'global'];
-          return Array.from(new Set(withGlobal)).sort((a, b) => {
-            if (a === 'global') return -1;
-            if (b === 'global') return 1;
-            return a.localeCompare(b);
-          });
         }
       } catch {
-        return [];
+        return { availableCountries: [], countryPercentLabels: {} };
       }
-    }
-
-    if (Array.isArray(rawCountries)) {
-      const cleaned = rawCountries
+    } else if (Array.isArray(rawCountries)) {
+      cleaned = rawCountries
         .filter((c): c is string => typeof c === 'string')
         .filter((c) => c !== '0');
-      const withGlobal = [...cleaned, 'global'];
-      return Array.from(new Set(withGlobal)).sort((a, b) => {
-        if (a === 'global') return -1;
-        if (b === 'global') return 1;
-        return a.localeCompare(b);
-      });
     }
-
-    return [];
-  }, [orgData]);
-
-  const availableFunctionRoots = useMemo(() => {
-    if (!orgData) return [];
-
-    const rawFunctions = (orgData as Record<string, unknown>).functions;
-    const isValidFunctionRoot = (fn: unknown): fn is string =>
-      typeof fn === 'string' &&
-      fn.trim().length > 0 &&
-      !fn.toLowerCase().includes('assist');
-
-    if (typeof rawFunctions === 'string') {
-      try {
-        const parsed = JSON.parse(rawFunctions) as unknown;
-        if (Array.isArray(parsed)) {
-          const cleaned = parsed.filter(isValidFunctionRoot);
-          const withFullCompany = [...cleaned, 'fullcompany'];
-          return Array.from(new Set(withFullCompany)).sort((a, b) => {
-            if (a === 'fullcompany') return -1;
-            if (b === 'fullcompany') return 1;
-            return a.localeCompare(b);
-          });
-        }
-      } catch {
-        return [];
-      }
-    }
-
-    if (Array.isArray(rawFunctions)) {
-      const cleaned = rawFunctions.filter(isValidFunctionRoot);
-      const withFullCompany = [...cleaned, 'fullcompany'];
-      return Array.from(new Set(withFullCompany)).sort((a, b) => {
-        if (a === 'fullcompany') return -1;
-        if (b === 'fullcompany') return 1;
-        return a.localeCompare(b);
-      });
-    }
-
-    return [];
-  }, [orgData]);
-
-  const countryPercentLabels = useMemo(() => {
-    if (!orgData) return {};
 
     const labels: Record<string, string> = {};
     const analyticsRaw = (orgData as Record<string, unknown>).country_analytics;
@@ -124,27 +73,64 @@ export const useOrgChartFilterOptions = (
       }, {});
     }
 
-    if (!analytics) return labels;
+    if (analytics) {
+      const globalTotal =
+        typeof analytics.global === 'number' && analytics.global > 0
+          ? analytics.global
+          : null;
+      const total = globalTotal ?? null;
 
-    const globalTotal =
-      typeof analytics.global === 'number' && analytics.global > 0
-        ? analytics.global
-        : null;
-    const total = globalTotal ?? null;
+      if (total) {
+        Object.entries(analytics).forEach(([country, count]) => {
+          if (typeof count !== 'number' || count <= 0) return;
+          const percent = (count / total) * 100;
+          labels[country] = `${percent.toFixed(1)}%`;
+        });
+      }
+    }
 
-    if (!total) return labels;
+    const withGlobal = [...cleaned, 'global'];
+    const availableCountries = sortOrgChartCountryKeys(withGlobal, labels);
 
-    Object.entries(analytics).forEach(([country, count]) => {
-      if (typeof count !== 'number' || count <= 0) return;
-      const percent = (count / total) * 100;
-      labels[country] = `${percent.toFixed(1)}%`;
-    });
-
-    return labels;
+    return { availableCountries, countryPercentLabels: labels };
   }, [orgData]);
 
-  const functionRootPercentLabels = useMemo(() => {
-    if (!orgData) return {};
+  const { availableFunctionRoots, functionRootPercentLabels } = useMemo(() => {
+    if (!orgData) {
+      return {
+        availableFunctionRoots: [] as string[],
+        functionRootPercentLabels: {},
+      };
+    }
+
+    const rawFunctions = (orgData as Record<string, unknown>).functions;
+    const isValidFunctionRoot = (fn: unknown): fn is string =>
+      typeof fn === 'string' &&
+      fn.trim().length > 0 &&
+      !fn.toLowerCase().includes('assist');
+
+    let cleaned: string[] = [];
+
+    if (typeof rawFunctions === 'string') {
+      try {
+        const parsed = JSON.parse(rawFunctions) as unknown;
+        if (Array.isArray(parsed)) {
+          cleaned = parsed.filter(isValidFunctionRoot);
+        } else {
+          return {
+            availableFunctionRoots: [],
+            functionRootPercentLabels: {},
+          };
+        }
+      } catch {
+        return {
+          availableFunctionRoots: [],
+          functionRootPercentLabels: {},
+        };
+      }
+    } else if (Array.isArray(rawFunctions)) {
+      cleaned = rawFunctions.filter(isValidFunctionRoot);
+    }
 
     const labels: Record<string, string> = {};
     const orgchartRaw = (orgData as Record<string, unknown>).orgchart;
@@ -162,18 +148,39 @@ export const useOrgChartFilterOptions = (
     } else if (typeof orgchartRaw === 'string') {
       try {
         const parsed = JSON.parse(orgchartRaw) as unknown;
-        if (!Array.isArray(parsed)) return labels;
+        if (!Array.isArray(parsed)) {
+          const withFullCompany = sortOrgChartFunctionRootKeys(
+            [...cleaned, 'fullcompany'],
+            labels,
+          );
+          return {
+            availableFunctionRoots: withFullCompany,
+            functionRootPercentLabels: labels,
+          };
+        }
         rawNodes = parsed;
       } catch {
-        return labels;
+        const withFullCompany = sortOrgChartFunctionRootKeys(
+          [...cleaned, 'fullcompany'],
+          labels,
+        );
+        return {
+          availableFunctionRoots: withFullCompany,
+          functionRootPercentLabels: labels,
+        };
       }
     } else {
-      return labels;
+      const withFullCompany = sortOrgChartFunctionRootKeys(
+        [...cleaned, 'fullcompany'],
+        labels,
+      );
+      return {
+        availableFunctionRoots: withFullCompany,
+        functionRootPercentLabels: labels,
+      };
     }
 
     try {
-      if (!Array.isArray(rawNodes)) return labels;
-
       const counts: Record<string, number> = {};
 
       rawNodes.forEach((node) => {
@@ -192,7 +199,16 @@ export const useOrgChartFilterOptions = (
         (sum, value) => sum + value,
         0,
       );
-      if (!total) return labels;
+      if (!total) {
+        const withFullCompany = sortOrgChartFunctionRootKeys(
+          [...cleaned, 'fullcompany'],
+          labels,
+        );
+        return {
+          availableFunctionRoots: withFullCompany,
+          functionRootPercentLabels: labels,
+        };
+      }
 
       counts.fullcompany = total;
 
@@ -202,9 +218,24 @@ export const useOrgChartFilterOptions = (
         labels[root] = `${percent.toFixed(1)}%`;
       });
 
-      return labels;
+      const withFullCompany = sortOrgChartFunctionRootKeys(
+        [...cleaned, 'fullcompany'],
+        labels,
+      );
+
+      return {
+        availableFunctionRoots: withFullCompany,
+        functionRootPercentLabels: labels,
+      };
     } catch {
-      return labels;
+      const withFullCompany = sortOrgChartFunctionRootKeys(
+        [...cleaned, 'fullcompany'],
+        labels,
+      );
+      return {
+        availableFunctionRoots: withFullCompany,
+        functionRootPercentLabels: labels,
+      };
     }
   }, [orgData]);
 

@@ -1,9 +1,10 @@
 import { useCallback } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { Mixpanel } from '~/mixpanel';
 
+import { orgChartSelectedCompanyInfoState } from '@/orgchart/states/orgChartSelectedCompanyInfoState';
 import { CompanySearchAutocomplete } from '~/lib/company-search';
 
 type OrgChartCompanySearchWrapperProps = {
@@ -30,8 +31,11 @@ export const OrgChartCompanySearchWrapper = ({
   const tokenPair = useRecoilValue(tokenPairState);
   const accessToken = tokenPair?.accessToken?.token ?? undefined;
   const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+  const setSelectedCompanyInfo = useSetRecoilState(
+    orgChartSelectedCompanyInfoState,
+  );
   const autocompletePath = '/org-chart/companies/autocomplete';
-  // const autocompletePathApollo = '/org-chart/companies/autocomplete-apollo';
+  // const autocompletePathM7kq = '/org-chart/companies/autocomplete-m7kq';
   const handleCompanySelect = useCallback(
     (company: {
       companyId: string;
@@ -46,9 +50,10 @@ export const OrgChartCompanySearchWrapper = ({
         companyId: company.companyId,
         companyName: company.companyName,
       });
+      setSelectedCompanyInfo(company);
       onCompanySelect(company);
     },
-    [onCompanySelect],
+    [onCompanySelect, setSelectedCompanyInfo],
   );
 
   return (

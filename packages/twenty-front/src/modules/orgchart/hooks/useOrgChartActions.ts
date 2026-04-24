@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { ORG_CHART_CANDIDATE_SOURCE_M7KQ } from '@/orgchart/constants/orgChartM7kqSource';
+import { OutreachChannelKey } from '@/orgchart/constants/outreachTemplates';
 import { useOrgChartsRefetch } from '@/orgchart/hooks/useOrgChartsRefetch';
+import { orgChartContactsByKeyState } from '@/orgchart/states/orgChartContactsByKeyState';
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
 import { orgChartLinkedInSearchTypeState } from '@/orgchart/states/orgChartLinkedInSearchTypeState';
 import { orgChartQueryGeneratorPreferenceState } from '@/orgchart/states/orgChartQueryGeneratorPreferenceState';
+import { isOrgChartM7kqCandidateSource } from '@/orgchart/utils/isOrgChartM7kqCandidateSource';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { tryExtensionLinkedinUnipileRecovery } from '@/unipile/utils/linkedinUnipileExtensionBridge';
@@ -27,10 +31,20 @@ import {
 import { ContextResultItem } from '../types';
 import {
   buildBooleanKeywordsForNode,
+  contextResultItemFromNodePersonSlot,
   exportContextResultsToCsv,
   extractCompanyDomainFromWebsite,
   normalizeCandidateItem,
 } from '../utils/orgChartUtils';
+
+const OUTREACH_ACTION_TO_CHANNEL: Partial<
+  Record<OrgChartContextAction, OutreachChannelKey>
+> = {
+  outreach_linkedin_invite: 'linkedin_invite',
+  outreach_whatsapp: 'whatsapp',
+  outreach_google_contact: 'google_contact',
+  outreach_email: 'email',
+};
 
 /** Subset of {@link OrgChartContextAction} used for org-chart search API `mode`. */
 type OrgchartSearchMode = Extract<
@@ -137,6 +151,69 @@ const ORG_CHART_PROGRESS_UPDATES_TIMEOUT_MS = 240_000;
 const ORG_CHART_PROGRESS_UPDATES_TIMEOUT_SNACKBAR =
   'Backend progress updates were not received. Please retry. If this keeps happening, check that the org chart worker, Python service, and progress stream are running.';
 
+type ContactEnrichmentFetchPayload = {
+  emails?: string[];
+  phones?: string[];
+  source?: string;
+  linkedinUrl?: string;
+  fullName?: string;
+  jobId?: string;
+};
+
+const mergeM7kqEnrichmentIntoPeople = (
+  people: ContextResultItem[],
+  personId: string,
+  payload: ContactEnrichmentFetchPayload,
+  wantEmail: boolean,
+  wantPhone: boolean,
+): ContextResultItem[] => {
+  const nextEmail =
+    wantEmail && Array.isArray(payload.emails) && payload.emails.length > 0
+      ? payload.emails[0]
+      : undefined;
+  const nextPhone =
+    wantPhone && Array.isArray(payload.phones) && payload.phones.length > 0
+      ? payload.phones[0]
+      : undefined;
+
+  return people.map((p) => {
+    if (p.id !== personId) {
+      return p;
+    }
+    const payloadLinkedinUrl =
+      typeof payload.linkedinUrl === 'string' && payload.linkedinUrl.trim()
+        ? payload.linkedinUrl.trim()
+        : undefined;
+    const payloadFullName =
+      typeof payload.fullName === 'string' && payload.fullName.trim()
+        ? payload.fullName.trim()
+        : undefined;
+    return {
+      ...p,
+      fullName:
+        payloadFullName &&
+        (p.fullName.trim().length === 0 ||
+          /^(x+|xy+|unknownlinkedinmember)$/iu.test(
+            p.fullName.replace(/\s+/g, ''),
+          ))
+          ? payloadFullName
+          : p.fullName,
+      linkedinUrl: payloadLinkedinUrl ?? p.linkedinUrl,
+      email: nextEmail ?? p.email,
+      phone: nextPhone ?? p.phone,
+      raw: {
+        ...p.raw,
+        ...(Array.isArray(payload.emails)
+          ? { m7kq_enrichment_emails: payload.emails }
+          : {}),
+        ...(Array.isArray(payload.phones)
+          ? { m7kq_enrichment_phones: payload.phones }
+          : {}),
+      },
+    };
+  });
+};
+
 const clearCompanyOrgChartCacheRequest = async (input: {
   baseUrl: string;
   accessToken: string;
@@ -185,6 +262,7 @@ export const useOrgChartActions = ({
 }: UseOrgChartActionsParams) => {
   const tokenPair = useRecoilValue(tokenPairState);
   const accessToken = tokenPair?.accessToken?.token ?? undefined;
+  const setContactsByKey = useSetRecoilState(orgChartContactsByKeyState);
   const orgChartLinkedinCandidateSource = useRecoilValue(
     orgChartLinkedinCandidateSourceState,
   );
@@ -199,6 +277,8 @@ export const useOrgChartActions = ({
     updateSnackBarByDedupeKey,
     closeSnackBarByDedupeKey,
   } = useSnackBar();
+  const INSUFFICIENT_CONTACT_CREDITS_SNACKBAR =
+    'You’re out of contact credits. Add credits to continue.';
   const { triggerOrgChartsRefetch } = useOrgChartsRefetch();
   const triggerOrgChartsRefetchRef = useRef(triggerOrgChartsRefetch);
   triggerOrgChartsRefetchRef.current = triggerOrgChartsRefetch;
@@ -262,49 +342,25 @@ export const useOrgChartActions = ({
   );
   const [addToJobQueueStartChat, setAddToJobQueueStartChat] = useState(true);
 
-  const [isAddResultsToJobModalOpen, setIsAddResultsToJobModalOpen] =
-    useState(false);
-  const [addResultsToJobResults, setAddResultsToJobResults] = useState<
-    ContextResultItem[]
-  >([]);
-  const [addResultsToJobContext, setAddResultsToJobContext] = useState<{
-    companyName?: string;
-    contextModalMode?: string | null;
-    selectedNodeFunction?: string;
-    selectedNodeGrade?: string;
-  }>({});
-
   const closeAddToJobModal = useCallback(() => {
     setIsAddToJobModalOpen(false);
     setAddToJobNode(null);
   }, []);
 
-  const openAddResultsToJobModal = useCallback(
-    (
-      results: ContextResultItem[],
-      context: {
-        companyName?: string;
-        contextModalMode?: string | null;
-        selectedNodeFunction?: string;
-        selectedNodeGrade?: string;
-      },
-    ) => {
-      setAddResultsToJobResults(results);
-      setAddResultsToJobContext({
-        ...context,
-        selectedNodeFunction:
-          context.selectedNodeFunction ?? selectedNodeFunction,
-        selectedNodeGrade: context.selectedNodeGrade ?? selectedNodeGrade,
-      });
-      setIsAddResultsToJobModalOpen(true);
-    },
-    [selectedNodeFunction, selectedNodeGrade],
+  const [isOutreachModalOpen, setIsOutreachModalOpen] = useState(false);
+  const [outreachChannel, setOutreachChannel] =
+    useState<OutreachChannelKey | null>(null);
+  const [outreachContextItem, setOutreachContextItem] =
+    useState<ContextResultItem | null>(null);
+  const [outreachNode, setOutreachNode] = useState<OrgChartNodeData | null>(
+    null,
   );
 
-  const closeAddResultsToJobModal = useCallback(() => {
-    setIsAddResultsToJobModalOpen(false);
-    setAddResultsToJobResults([]);
-    setAddResultsToJobContext({});
+  const closeOutreachModal = useCallback(() => {
+    setIsOutreachModalOpen(false);
+    setOutreachChannel(null);
+    setOutreachContextItem(null);
+    setOutreachNode(null);
   }, []);
 
   const clearProgressUpdateTimeout = useCallback(() => {
@@ -476,7 +532,32 @@ export const useOrgChartActions = ({
         }
 
         if (eventData.orgChart && typeof eventData.orgChart === 'object') {
-          setLatestOrgChart(eventData.orgChart as Record<string, unknown>);
+          // Merge the top-level response hints (candidateSource, itemCount)
+          // into the orgChart object so consumers that read only latestOrgChart
+          // (e.g. the m7kq/directory preview banner in ArxOrgChart) can reliably tell
+          // which data source produced the chart and how many people were
+          // actually fetched — regardless of how the Python build distributes
+          // them across nodes.
+          const candidateSourceFromEvent =
+            typeof eventData.candidateSource === 'string'
+              ? eventData.candidateSource
+              : undefined;
+          const itemCountFromEvent =
+            typeof eventData.itemCount === 'number'
+              ? eventData.itemCount
+              : completeItems.length > 0
+                ? completeItems.length
+                : undefined;
+          const nextOrgChart: Record<string, unknown> = {
+            ...(eventData.orgChart as Record<string, unknown>),
+          };
+          if (candidateSourceFromEvent !== undefined) {
+            nextOrgChart.candidateSource = candidateSourceFromEvent;
+          }
+          if (itemCountFromEvent !== undefined) {
+            nextOrgChart.itemCount = itemCountFromEvent;
+          }
+          setLatestOrgChart(nextOrgChart);
         }
 
         // Refresh the left nav "Org Charts" section so any newly-persisted
@@ -526,7 +607,7 @@ export const useOrgChartActions = ({
     linkedinUnipileConnected: boolean;
     apifyActorConfigured: boolean;
     linkedinXrayConfigured: boolean;
-    apolloApiConfigured: boolean;
+    m7kqDirectoryApiReady: boolean;
     pythonOrgChartAgentAvailable: boolean;
   } | null> => {
     const serverBaseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
@@ -547,7 +628,7 @@ export const useOrgChartActions = ({
         linkedinUnipileConnected?: boolean;
         apifyActorConfigured?: boolean;
         linkedinXrayConfigured?: boolean;
-        apolloApiConfigured?: boolean;
+        m7kqDirectoryApiReady?: boolean;
         pythonOrgChartAgentAvailable?: boolean;
       };
       if (json?.status !== 'ok') {
@@ -557,7 +638,7 @@ export const useOrgChartActions = ({
         linkedinUnipileConnected: !!json.linkedinUnipileConnected,
         apifyActorConfigured: !!json.apifyActorConfigured,
         linkedinXrayConfigured: !!json.linkedinXrayConfigured,
-        apolloApiConfigured: !!json.apolloApiConfigured,
+        m7kqDirectoryApiReady: !!json.m7kqDirectoryApiReady,
         pythonOrgChartAgentAvailable:
           typeof json.pythonOrgChartAgentAvailable === 'boolean'
             ? json.pythonOrgChartAgentAvailable
@@ -567,6 +648,265 @@ export const useOrgChartActions = ({
       return null;
     }
   }, [accessToken]);
+
+  const runM7kqNodeProfileFetchFromContext = useCallback(
+    async (
+      node: OrgChartNodeData,
+      action: 'm7kq_fetch_complete' | 'm7kq_fetch_phone' | 'm7kq_fetch_email',
+    ) => {
+      const baseUrl = process.env.REACT_APP_SERVER_BASE_URL?.replace(/\/$/, '');
+      if (!baseUrl || !accessToken) {
+        enqueueSnackBar('Sign in to enrich contact details.', {
+          variant: SnackBarVariant.Error,
+          duration: 6000,
+        });
+        return;
+      }
+      const nodeRecord = node as Record<string, unknown>;
+      const nodeWebsite =
+        (nodeRecord.companyWebsite as string | undefined) ??
+        (nodeRecord.job_company_website as string | undefined) ??
+        (nodeRecord.company_website as string | undefined) ??
+        (nodeRecord.website as string | undefined);
+      const effectiveWebsite = nodeWebsite ?? website;
+      const domain = extractCompanyDomainFromWebsite(effectiveWebsite);
+      const nodeKey = typeof node.key === 'number' ? node.key : undefined;
+      if (nodeKey === undefined) {
+        return;
+      }
+      const list = nodeRecord.allCandidates ?? nodeRecord.candidates;
+      if (!Array.isArray(list) || list.length === 0) {
+        enqueueSnackBar('No person ids on this node for contact match.', {
+          variant: SnackBarVariant.Warning,
+          duration: 5000,
+        });
+        return;
+      }
+      let wantEmail = true;
+      let wantPhone = true;
+      if (action === 'm7kq_fetch_phone') {
+        wantEmail = false;
+        wantPhone = true;
+      } else if (action === 'm7kq_fetch_email') {
+        wantEmail = true;
+        wantPhone = false;
+      }
+      const coName = companyName ?? '';
+      const initialPeople: ContextResultItem[] = list.map((c, index) => {
+        if (!c || typeof c !== 'object') {
+          return normalizeCandidateItem({}, index);
+        }
+        const row = c as Record<string, unknown>;
+        return normalizeCandidateItem(
+          {
+            ...row,
+            company:
+              (row.company as string | undefined) ??
+              (row.currentCompany as string | undefined) ??
+              coName,
+          },
+          index,
+        );
+      });
+      const missingLinkedinUrls: string[] = [];
+      const missingDomainApolloIds: string[] = [];
+      let updatedCount = 0;
+      for (const c of list) {
+        if (!c || typeof c !== 'object') continue;
+        const row = c as Record<string, unknown>;
+        const id = row.id;
+        if (typeof id !== 'string' || !id.trim()) continue;
+        const personId = id.trim();
+        const linkedinUrl =
+          typeof row.std_linkedin_url === 'string'
+            ? row.std_linkedin_url.trim()
+            : typeof row.linkedin_url === 'string'
+              ? row.linkedin_url.trim()
+              : '';
+        const canUseLinkedinUrl =
+          linkedinUrl.length > 0 && isValidLinkedInProfileUrl(linkedinUrl);
+        const canUseApolloIdAndDomain =
+          typeof domain === 'string' && domain.trim().length > 0;
+
+        if (!canUseApolloIdAndDomain && !canUseLinkedinUrl) {
+          missingLinkedinUrls.push(personId);
+          missingDomainApolloIds.push(personId);
+          continue;
+        }
+        const res = await fetch(`${baseUrl}/contact-enrichment/fetch`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            ...(canUseApolloIdAndDomain
+              ? { m7kqPersonId: personId, companyDomain: domain }
+              : { linkedinUrl }),
+            wantEmail,
+            wantPhone,
+          }),
+          credentials: 'include',
+        });
+        if (!res.ok) {
+          let msg = 'Contact match request failed.';
+          try {
+            const j = (await res.json()) as { message?: string };
+            if (typeof j.message === 'string' && j.message.trim()) {
+              msg = j.message.trim();
+            }
+          } catch {
+            // ignore non-JSON error body
+          }
+          if (res.status === 403 || /insufficient contact credits/i.test(msg)) {
+            msg = INSUFFICIENT_CONTACT_CREDITS_SNACKBAR;
+          }
+          enqueueSnackBar(msg, {
+            variant: SnackBarVariant.Error,
+            duration: 8000,
+          });
+          return;
+        }
+        const payload = (await res.json()) as ContactEnrichmentFetchPayload;
+        if (typeof payload.jobId === 'string' && payload.jobId.trim() !== '') {
+          enqueueSnackBar(
+            'Contact match was queued; refresh people on this position after the job completes.',
+            { variant: SnackBarVariant.Info, duration: 8000 },
+          );
+          return;
+        }
+        // Persist to session cache (Recoil) for modals/UX
+        setContactsByKey((prev) => {
+          const key =
+            typeof domain === 'string' && domain.trim().length > 0
+              ? `m7kq:${domain.trim().toLowerCase()}:${personId}`
+              : canUseLinkedinUrl
+                ? `li:${linkedinUrl}`
+                : `id:${personId}`;
+          const existing = prev[key] ?? {};
+          const email =
+            wantEmail && Array.isArray(payload.emails) && payload.emails[0]
+              ? payload.emails[0]
+              : existing.email;
+          const phone =
+            wantPhone && Array.isArray(payload.phones) && payload.phones[0]
+              ? payload.phones[0]
+              : existing.phone;
+          const liFromPayload =
+            typeof payload.linkedinUrl === 'string' && payload.linkedinUrl.trim()
+              ? payload.linkedinUrl.trim()
+              : existing.linkedinUrl;
+          const fullNameFromPayload =
+            typeof payload.fullName === 'string' && payload.fullName.trim()
+              ? payload.fullName.trim()
+              : existing.fullName;
+          return {
+            ...prev,
+            [key]: {
+              ...existing,
+              fetched: true,
+              ...(email ? { email } : {}),
+              ...(phone ? { phone } : {}),
+              ...(liFromPayload ? { linkedinUrl: liFromPayload } : {}),
+              ...(fullNameFromPayload ? { fullName: fullNameFromPayload } : {}),
+            },
+          };
+        });
+
+        // Persist into stored org chart (Redis/S3) so reloads keep enrichment.
+        try {
+          const canonicalCompanyId = normalizeCompanyIdForUrl(companyId);
+          await fetch(
+            `${baseUrl}/org-chart/${encodeURIComponent(
+              canonicalCompanyId,
+            )}/enrichment/apply`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${accessToken}`,
+              },
+              body: JSON.stringify({
+                companyName,
+                ...(typeof domain === 'string' && domain.trim().length > 0
+                  ? { m7kqPersonId: personId, companyDomain: domain }
+                  : { linkedinUrl }),
+                emails: payload.emails,
+                phones: payload.phones,
+                linkedinUrl: payload.linkedinUrl,
+                fullName: payload.fullName,
+                source: payload.source,
+              }),
+            },
+          );
+        } catch {
+          // best-effort; UI should still update
+        }
+
+        setEnrichedNodes((prev) => {
+          const start =
+            prev[nodeKey]?.people?.length && prev[nodeKey]!.people.length > 0
+              ? prev[nodeKey]!.people
+              : initialPeople;
+          const merged = mergeM7kqEnrichmentIntoPeople(
+            start,
+            personId,
+            payload,
+            wantEmail,
+            wantPhone,
+          );
+          return {
+            ...prev,
+            [nodeKey]: { people: merged, nodeState: 'active' },
+          };
+        });
+        const detailForSameNode =
+          selectedNodeForDetails !== null &&
+          typeof selectedNodeForDetails.key === 'number' &&
+          selectedNodeForDetails.key === nodeKey;
+        if (detailForSameNode) {
+          setNodeDetailResults((rows) =>
+            mergeM7kqEnrichmentIntoPeople(
+              rows.length > 0 ? rows : initialPeople,
+              personId,
+              payload,
+              wantEmail,
+              wantPhone,
+            ),
+          );
+        }
+        updatedCount += 1;
+      }
+      if (updatedCount === 0 && missingLinkedinUrls.length > 0) {
+        enqueueSnackBar(
+          domain
+            ? 'Could not enrich contacts: missing LinkedIn URLs on this node.'
+            : 'Could not enrich contacts: missing LinkedIn URLs, and no company website/domain to match by id.',
+          { variant: SnackBarVariant.Warning, duration: 7000 },
+        );
+        return;
+      }
+      if (updatedCount > 0) {
+        enqueueSnackBar('Contact match updated for this org chart position.', {
+          variant: SnackBarVariant.Success,
+          duration: 5000,
+        });
+      } else {
+        enqueueSnackBar('No contact rows were updated.', {
+          variant: SnackBarVariant.Warning,
+          duration: 5000,
+        });
+      }
+    },
+    [
+      accessToken,
+      companyName,
+      enqueueSnackBar,
+      website,
+      selectedNodeForDetails,
+      setContactsByKey,
+    ],
+  );
 
   const executeOrgchartSearch = async (params: {
     mode: OrgchartSearchMode;
@@ -625,10 +965,12 @@ export const useOrgChartActions = ({
           });
           return;
         }
-      } else if (orgChartLinkedinCandidateSource === 'apollo') {
-        if (prereqStatus.apolloApiConfigured !== true) {
+      } else if (
+        orgChartLinkedinCandidateSource === ORG_CHART_CANDIDATE_SOURCE_M7KQ
+      ) {
+        if (prereqStatus.m7kqDirectoryApiReady !== true) {
           enqueueSnackBar(
-            'Apollo org chart requires APOLLO_API_KEY on the server.',
+            'This org chart source requires the data service to be configured on the server.',
             {
               variant: SnackBarVariant.Error,
               duration: 8000,
@@ -680,11 +1022,11 @@ export const useOrgChartActions = ({
     }
 
     if (
-      orgChartLinkedinCandidateSource === 'apollo' &&
+      orgChartLinkedinCandidateSource === ORG_CHART_CANDIDATE_SOURCE_M7KQ &&
       mode === 'business_division_map'
     ) {
       enqueueSnackBar(
-        'Apollo org chart does not support business division mapping.',
+        'This org chart data source does not support business division mapping.',
         {
           variant: SnackBarVariant.Error,
           duration: 10000,
@@ -977,8 +1319,8 @@ export const useOrgChartActions = ({
                 json.candidateSource === 'unipile'
               ? 'LinkedIn search queued. Waiting for results...'
               : typeof json.candidateSource === 'string' &&
-                  json.candidateSource === 'apollo'
-                ? 'Apollo org chart search queued. Waiting for results...'
+                  isOrgChartM7kqCandidateSource(json.candidateSource)
+                ? 'Directory org chart search queued. Waiting for results...'
                 : 'Org chart search queued. Waiting for results...',
         );
         armProgressUpdateTimeout(requestId);
@@ -1026,7 +1368,29 @@ export const useOrgChartActions = ({
           mode === 'business_division_map') &&
         json.orgChart
       ) {
-        setLatestOrgChart(json.orgChart);
+        // Merge response-level metadata (candidateSource, itemCount) into
+        // the stored orgChart object — see companion comment in the
+        // 'complete' event handler above.
+        const candidateSourceFromResponse =
+          typeof json.candidateSource === 'string'
+            ? json.candidateSource
+            : undefined;
+        const itemCountFromResponse =
+          typeof json.itemCount === 'number'
+            ? json.itemCount
+            : rawItems.length > 0
+              ? rawItems.length
+              : undefined;
+        const nextOrgChart: Record<string, unknown> = {
+          ...(json.orgChart as Record<string, unknown>),
+        };
+        if (candidateSourceFromResponse !== undefined) {
+          nextOrgChart.candidateSource = candidateSourceFromResponse;
+        }
+        if (itemCountFromResponse !== undefined) {
+          nextOrgChart.itemCount = itemCountFromResponse;
+        }
+        setLatestOrgChart(nextOrgChart);
         if (isHeaderOrgChartRequest) {
           setIsContextModalOpen(false);
         }
@@ -1132,8 +1496,9 @@ export const useOrgChartActions = ({
         const name = n[nameKey];
         if (typeof name === 'string' && name.trim().length > 0) {
           const image = n[imageKey];
+          const rawLinkedinVal = n[linkedinKey];
           const rawLi =
-            typeof n[linkedinKey] === 'string' ? n[linkedinKey] : '';
+            typeof rawLinkedinVal === 'string' ? rawLinkedinVal : '';
           rows.push({
             id: `${i}`,
             fullName: name.trim(),
@@ -1167,6 +1532,14 @@ export const useOrgChartActions = ({
             { variant: SnackBarVariant.Warning, duration: 6000 },
           );
         }
+        return;
+      }
+
+      if (node.nodeState === 'lock') {
+        enqueueSnackBar(
+          'Upgrade to a paid Arxena plan to view linkedin profiles, verified emails, and phone numbers.',
+          { variant: SnackBarVariant.Info, duration: 6000 },
+        );
         return;
       }
 
@@ -1353,6 +1726,44 @@ export const useOrgChartActions = ({
     }
 
     if (
+      action === 'm7kq_fetch_complete' ||
+      action === 'm7kq_fetch_phone' ||
+      action === 'm7kq_fetch_email'
+    ) {
+      await runM7kqNodeProfileFetchFromContext(node, action);
+      return;
+    }
+
+    if (
+      action === 'outreach_linkedin_invite' ||
+      action === 'outreach_whatsapp' ||
+      action === 'outreach_google_contact' ||
+      action === 'outreach_email'
+    ) {
+      const slot = payload?.personSlot ?? 0;
+      const item = contextResultItemFromNodePersonSlot(node, slot, companyName);
+      if (!item) {
+        enqueueSnackBar('Could not read this person from the node.', {
+          variant: SnackBarVariant.Error,
+          duration: 5000,
+        });
+        return;
+      }
+      const ch = OUTREACH_ACTION_TO_CHANNEL[action];
+      if (!ch) {
+        return;
+      }
+      setOutreachChannel(ch);
+      setOutreachContextItem({
+        ...item,
+        company: (item.company || companyName) ?? '',
+      });
+      setOutreachNode(node);
+      setIsOutreachModalOpen(true);
+      return;
+    }
+
+    if (
       action === 'add_to_job_and_send_invite' ||
       action === 'add_to_job_and_invite_to_job'
     ) {
@@ -1402,6 +1813,13 @@ export const useOrgChartActions = ({
       similar_companies: 'function_grade',
       add_to_job_and_send_invite: 'current_node',
       add_to_job_and_invite_to_job: 'current_node',
+      m7kq_fetch_complete: 'current_node',
+      m7kq_fetch_phone: 'current_node',
+      m7kq_fetch_email: 'current_node',
+      outreach_linkedin_invite: 'current_node',
+      outreach_whatsapp: 'current_node',
+      outreach_google_contact: 'current_node',
+      outreach_email: 'current_node',
     };
 
     const mappedMode = modeMap[action];
@@ -1526,8 +1944,9 @@ export const useOrgChartActions = ({
         const linkedinKey = `linkedin_url_${i}` as keyof OrgChartNodeData;
         const name = node[nameKey];
         if (typeof name === 'string' && name.trim().length > 0) {
+          const rawLinkedinVal = node[linkedinKey];
           const rawLi =
-            typeof node[linkedinKey] === 'string' ? node[linkedinKey] : '';
+            typeof rawLinkedinVal === 'string' ? rawLinkedinVal : '';
           rows.push({
             id: `${i}`,
             fullName: name.trim(),
@@ -1536,7 +1955,7 @@ export const useOrgChartActions = ({
               : '') as string,
             company: companyName ?? '',
             linkedinUrl: isValidLinkedInProfileUrl(rawLi)
-              ? (rawLi as string).trim()
+              ? rawLi.trim()
               : undefined,
             raw: {},
           });
@@ -1641,13 +2060,13 @@ export const useOrgChartActions = ({
     addToJobQueueStartChat,
     closeAddToJobModal,
 
-    isAddResultsToJobModalOpen,
-    addResultsToJobResults,
-    addResultsToJobContext,
-    openAddResultsToJobModal,
-    closeAddResultsToJobModal,
-
     selectedNodeFunction,
     selectedNodeGrade,
+
+    isOutreachModalOpen,
+    outreachChannel,
+    outreachContextItem,
+    outreachNode,
+    closeOutreachModal,
   };
 };

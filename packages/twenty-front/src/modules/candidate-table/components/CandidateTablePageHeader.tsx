@@ -108,6 +108,7 @@ export type CandidateTablePageHeaderProps = {
   Icon: IconComponent;
   onAddJob: () => void;
   isExtensionInstalled: boolean;
+  isExtensionChecking?: boolean;
   onDownloadClick: () => void;
   isLinkedinConnected: boolean;
   isWhatsappLoggedIn: boolean;
@@ -148,6 +149,7 @@ export const CandidateTablePageHeader = ({
   Icon,
   onAddJob,
   isExtensionInstalled,
+  isExtensionChecking = false,
   onDownloadClick,
   isLinkedinConnected,
   isWhatsappLoggedIn,
@@ -273,6 +275,7 @@ export const CandidateTablePageHeader = ({
           isWhatsappLoggedIn={isWhatsappLoggedIn}
           isMergeMode={isMergeMode}
           isExtensionInstalled={isExtensionInstalled}
+          isExtensionChecking={isExtensionChecking}
           onDownloadClick={onDownloadClick}
           creditsTotal={creditsTotal}
           onCreditsClick={

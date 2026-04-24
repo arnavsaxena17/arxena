@@ -137,6 +137,184 @@ export const buildBooleanKeywordsForNode = (
   return parts.join(' AND ');
 };
 
+export type UploadOrgChartProfilesParams = {
+  baseUrl: string;
+  accessToken: string;
+  items: ContextResultItem[];
+  jobId: string;
+  jobName: string;
+  recruiterId?: string;
+  queueStartChatAfter: boolean;
+  orgChartSelectedNodes?: { std_function?: string; std_grade?: string };
+};
+
+export type UploadOrgChartProfilesResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
+/**
+ * POST /candidate-sourcing/upload-profiles — shared by Add-to-job modals and org-chart outreach.
+ */
+export const uploadOrgChartCandidatesToJob = async (
+  params: UploadOrgChartProfilesParams,
+): Promise<UploadOrgChartProfilesResult> => {
+  const {
+    baseUrl,
+    accessToken,
+    items,
+    jobId,
+    jobName,
+    recruiterId,
+    queueStartChatAfter,
+    orgChartSelectedNodes,
+  } = params;
+  if (items.length === 0) {
+    return { ok: false, message: 'No candidates to upload' };
+  }
+  const candidatesPayload = items.map(toLinkedInPremiumCandidate);
+  const body: Record<string, unknown> = {
+    candidates: candidatesPayload,
+    data_source: 'linkedin_premium',
+    job_id: jobId,
+    job_name: jobName,
+    recruiterId,
+    job: {
+      id: jobId,
+      name: jobName,
+      recruiterId,
+    },
+    queue_start_chat_after: queueStartChatAfter,
+  };
+  if (orgChartSelectedNodes?.std_function ?? orgChartSelectedNodes?.std_grade) {
+    body.org_chart_selected_nodes = {
+      ...(orgChartSelectedNodes.std_function && {
+        std_function: orgChartSelectedNodes.std_function,
+      }),
+      ...(orgChartSelectedNodes.std_grade && {
+        std_grade: orgChartSelectedNodes.std_grade,
+      }),
+    };
+  }
+  const response = await fetch(
+    `${baseUrl.replace(/\/$/, '')}/candidate-sourcing/upload-profiles`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(body),
+    },
+  );
+  const result = (await response.json()) as {
+    status?: string;
+    message?: string;
+    error?: string;
+  };
+  if (result.status === 'ok' || result.status === 'success') {
+    return { ok: true };
+  }
+  return {
+    ok: false,
+    message: result.message || result.error || 'Upload failed',
+  };
+};
+
+const sleep = (ms: number) =>
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
+export type PollCandidateOnJobParams = {
+  baseUrl: string;
+  accessToken: string;
+  linkedinUrl: string;
+  jobId: string;
+  maxAttempts?: number;
+  delayMs?: number;
+};
+
+/**
+ * Poll GET /candidate-sourcing/candidates/by-linkedin-urls until candidate exists on job.
+ */
+export const pollCandidateIdOnJob = async (
+  params: PollCandidateOnJobParams,
+): Promise<string | null> => {
+  const {
+    baseUrl,
+    accessToken,
+    linkedinUrl,
+    jobId,
+    maxAttempts = 30,
+    delayMs = 1000,
+  } = params;
+  const root = baseUrl.replace(/\/$/, '');
+  const encoded = encodeURIComponent(linkedinUrl);
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const url = `${root}/candidate-sourcing/candidates/by-linkedin-urls?linkedinUrls=${encoded}&jobId=${encodeURIComponent(jobId)}`;
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const json = (await response.json()) as {
+      results?: Record<
+        string,
+        { saved?: boolean; candidateIds?: string[] }
+      >;
+    };
+    const row = json.results?.[linkedinUrl];
+    if (row?.saved && row.candidateIds?.[0]) {
+      return row.candidateIds[0];
+    }
+    await sleep(delayMs);
+  }
+  return null;
+};
+
+export const contextResultItemFromNodePersonSlot = (
+  node: OrgChartNodeData,
+  personSlot: number,
+  companyName?: string,
+): ContextResultItem | null => {
+  const i = Math.min(Math.max(personSlot, 0), 3);
+  const nameKey = `name_${i}` as keyof OrgChartNodeData;
+  const name = node[nameKey];
+  if (typeof name !== 'string' || !name.trim()) {
+    return null;
+  }
+  const titleKey = `title_${i}` as keyof OrgChartNodeData;
+  const linkedinKey = `linkedin_url_${i}` as keyof OrgChartNodeData;
+  const emailKey = `email_${i}` as keyof OrgChartNodeData;
+  const phoneKey = `phone_${i}` as keyof OrgChartNodeData;
+  const imageKey = `image_${i}` as keyof OrgChartNodeData;
+  const rawLi =
+    typeof node[linkedinKey] === 'string' ? node[linkedinKey] : '';
+  const linkedinUrl = isValidLinkedInProfileUrl(rawLi)
+    ? (rawLi as string).trim()
+    : undefined;
+  const emailRaw = node[emailKey];
+  const phoneRaw = node[phoneKey];
+  const image = node[imageKey];
+  return {
+    id: `${node.key}-${i}`,
+    fullName: name.trim(),
+    headline: (typeof node[titleKey] === 'string' ? node[titleKey] : '') as string,
+    company: companyName ?? '',
+    linkedinUrl,
+    email:
+      typeof emailRaw === 'string' && emailRaw.trim()
+        ? emailRaw.trim()
+        : undefined,
+    phone:
+      typeof phoneRaw === 'string' && phoneRaw.trim()
+        ? phoneRaw.trim()
+        : undefined,
+    raw:
+      typeof image === 'string'
+        ? { image, profile_picture_url: image }
+        : {},
+  };
+};
+
 export const toLinkedInPremiumCandidate = (
   item: ContextResultItem,
 ): Record<string, unknown> => {

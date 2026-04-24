@@ -162,7 +162,8 @@ export const JobPage: React.FC = () => {
   const { isBaileysLoggedIn } = useBaileysConnection();
   const { isLinkedinConnected, isWhatsappUnipileConnected } = useUnipile();
   const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileConnected;
-  const { isExtensionInstalled } = useChromeExtensionDetection();
+  const { isExtensionInstalled, isChecking: isExtensionChecking } =
+    useChromeExtensionDetection();
   const { candidateFields, fetchCandidateFields } = useFetchCandidateFields();
   const { initializeEnrichments } = useInitializeEnrichments();
 
@@ -683,6 +684,7 @@ export const JobPage: React.FC = () => {
             onAddJob={openAddJobModal}
             onFloatingAIChatToggle={handleFloatingAIChatToggle}
             isExtensionInstalled={isExtensionInstalled}
+            isExtensionChecking={isExtensionChecking}
             onDownloadClick={handleDownloadClick}
             isLinkedinConnected={isLinkedinConnected}
             isWhatsappLoggedIn={isWhatsappLoggedIn}
