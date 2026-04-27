@@ -22,7 +22,7 @@ export type PricingIntent =
   | 'INVESTING';
 
   const ORG_CHART_CREDIT_RULES =
-  '1 credit = 1 org chart (<100 employees). Larger org charts consume more (e.g. 300 employees = 3 credits). Reveal credits (email + phone) are sold separately.';
+  '1 credit = 1 org chart (<100 employees).\nLarger org charts consume more (e.g. 300 employees = 3 credits).\nReveal credits (email + phone) are sold separately.';
  
 
   const BASE_PACK_FEATURES = [

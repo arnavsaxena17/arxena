@@ -290,12 +290,12 @@ export const PricingContent = ({ signUpUrl }: PricingContentProps) => {
 
       <StyledRoiSection>
         <StyledRoiTitle>
-          Understand the org before your first message.
+          Understand the lay of the org before your first message.
         </StyledRoiTitle>
-        <StyledRoiText>
+        {/* <StyledRoiText>
           Most tools sell contacts without context. Arxena sells verified org
           structure first — then you reveal/export only the contacts you need.
-        </StyledRoiText>
+        </StyledRoiText> */}
         <p style={{ margin: '16px 0 0 0', fontSize: 14, color: '#818181' }}>
           {creditPackPricingFootnote}
         </p>
