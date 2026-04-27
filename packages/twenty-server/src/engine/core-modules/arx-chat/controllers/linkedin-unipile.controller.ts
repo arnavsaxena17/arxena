@@ -19,6 +19,7 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import {
   findLinkedinUnipileAccountSameIdentityForProfile,
   isUnipileConnectedStatus,
+  normalizeUnipileStatus,
   shouldBlockNewUnipileConnectionForStatus,
   type UnipileLinkedinAccount,
 } from 'twenty-shared';
@@ -479,6 +480,47 @@ export class LinkedinUnipileController {
       body.linkedin_profile_url,
     );
 
+    // Preflight by LinkedIn identity (slug / stored unipile id) BEFORE POST /accounts.
+    // This avoids creating duplicate Unipile accounts when the member's stored accountId is missing/stale.
+    try {
+      const preflight = await this.resolveLinkedinConnectPreflight(
+        workspaceMemberId,
+        authToken,
+      );
+      if (!preflight.proceed) {
+        const acc = preflight.account;
+        return {
+          success: true,
+          cookies: {
+            hasLiAt: false,
+            hasLiA: false,
+          },
+          linkedin: {
+            accountId: acc.id,
+            status: acc.status ?? 'connected',
+            connected:
+              isUnipileConnectedStatus(acc.status) ||
+              normalizeUnipileStatus(acc.status) === 'pending',
+          },
+          reconnect: {
+            attempted: false,
+            succeeded: false,
+            message:
+              'This LinkedIn profile is already connected to Unipile; not starting a new connection.',
+          },
+          context: {
+            pageUrl: body.page_url ?? null,
+            linkedinProfileUrlFromExtension: body.linkedin_profile_url ?? null,
+          },
+        };
+      }
+    } catch (err) {
+      // Preserve existing behavior (continue best-effort) unless the preflight explicitly blocks with an HTTP error.
+      if (err instanceof HttpException) {
+        throw err;
+      }
+    }
+
     const normalizeToken = (value?: string) => {
       if (typeof value !== 'string') {
         return undefined;
@@ -538,6 +580,51 @@ export class LinkedinUnipileController {
           accountStatus === 'connected' || accountStatus === 'pending';
       } else {
         accountStatus = 'disconnected';
+      }
+    }
+
+    // If the stored accountId is missing/disconnected, re-check Unipile by LinkedIn identity (slug).
+    // This ensures we do not create multiple Unipile connections for the same LinkedIn profile.
+    if (!accountId || accountStatus === 'disconnected') {
+      try {
+        const profile =
+          await this.workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields(
+            workspaceMemberId,
+            authToken,
+          );
+        const { accounts } =
+          await this.linkedinUnipileRequestService.listAllLinkedinAccountsFromUnipileApi();
+        const match = findLinkedinUnipileAccountSameIdentityForProfile(
+          accounts as UnipileLinkedinAccount[],
+          profile,
+        );
+        if (match) {
+          if (isUnipileConnectedStatus(match.status)) {
+            await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+              workspaceMemberId,
+              authToken,
+              'linkedin',
+              match.id,
+              match,
+            );
+            accountId = match.id;
+            accountStatus = 'connected';
+            isConnected = true;
+          } else if (shouldBlockNewUnipileConnectionForStatus(match.status)) {
+            throw new HttpException(
+              {
+                message:
+                  'A LinkedIn connection is already in progress for this profile. Wait for it to finish or disconnect it before retrying.',
+                existing_account_id: match.id,
+              },
+              HttpStatus.CONFLICT,
+            );
+          }
+        }
+      } catch (err) {
+        if (err instanceof HttpException) {
+          throw err;
+        }
       }
     }
 
