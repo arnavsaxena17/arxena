@@ -1,10 +1,10 @@
 import styled from '@emotion/styled';
 import { IconHierarchy2 } from '@tabler/icons-react';
 import {
-    AnimatedPlaceholder,
-    AnimatedPlaceholderEmptySubTitle,
-    AnimatedPlaceholderEmptyTextContainer,
-    AnimatedPlaceholderEmptyTitle,
+  AnimatedPlaceholder,
+  AnimatedPlaceholderEmptySubTitle,
+  AnimatedPlaceholderEmptyTextContainer,
+  AnimatedPlaceholderEmptyTitle,
 } from 'twenty-ui';
 
 import { OrgChartCompanySearchWrapper } from '@/orgchart/components/OrgChartCompanySearchWrapper';
@@ -24,6 +24,7 @@ const StyledEmptyStateOrgChartSearchRow = styled.div`
 `;
 
 const StyledEmptyStateOrgChartCreditsBadge = styled.span`
+margin-top:100px;
   font-size: ${({ theme }) => theme.font.size.sm};
   font-weight: ${({ theme }) => theme.font.weight.medium};
   color: ${({ theme }) => theme.font.color.tertiary};
@@ -72,19 +73,19 @@ export const OrgChartWorkspaceReadyEmptyState = ({
       </AnimatedPlaceholderEmptySubTitle>
     </AnimatedPlaceholderEmptyTextContainer>
     <StyledEmptyStateOrgChartSearch>
-      <StyledEmptyStateOrgChartSearchRow>
+      {/* <StyledEmptyStateOrgChartSearchRow> */}
         <OrgChartCompanySearchWrapper
           onCompanySelect={onCompanySelect}
           placeholder="Search company for org charts..."
           disabled={!hasToken}
           startIcon={<IconHierarchy2 size={20} />}
         />
-        {orgChartCredits !== undefined && (
+        {/* {orgChartCredits !== undefined && (
           <StyledEmptyStateOrgChartCreditsBadge>
             {orgChartCredits} credits
           </StyledEmptyStateOrgChartCreditsBadge>
-        )}
-      </StyledEmptyStateOrgChartSearchRow>
+        )} */}
+      {/* </StyledEmptyStateOrgChartSearchRow> */}
     </StyledEmptyStateOrgChartSearch>
   </StyledOrgChartEmptyStateWrapper>
 );

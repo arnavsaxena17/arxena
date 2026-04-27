@@ -20,13 +20,23 @@ const StyledBanner = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
-  background: ${({ theme }) => theme.background.secondary};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
+  flex-wrap: nowrap;
+  gap: ${({ theme }) => theme.spacing(1)};
+  min-height: 32px;
+  padding: 0;
+  background: transparent;
   font-size: ${({ theme }) => theme.font.size.sm};
   color: ${({ theme }) => theme.font.color.secondary};
+`;
+
+const StyledText = styled.div`
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-left: ${({ theme }) => theme.spacing(1)};
 `;
 
 const StyledActions = styled.div`
@@ -34,6 +44,11 @@ const StyledActions = styled.div`
   align-items: center;
   gap: ${({ theme }) => theme.spacing(1)};
   flex-shrink: 0;
+  flex-wrap: nowrap;
+
+  & > * {
+    flex: 0 0 auto;
+  }
 `;
 
 const StyledInlineLink = styled.a`
@@ -57,7 +72,6 @@ export const InformationBannerLinkedinUnipileAutoConnect = () => {
 
   const { isLinkedinConnected, refreshAccounts } = useUnipile();
   const { isExtensionInstalled, isChecking } = useChromeExtensionDetection();
-
   const [autoConnectEnabled, setAutoConnectEnabled] = useState<boolean | null>(
     null,
   );
@@ -83,6 +97,32 @@ export const InformationBannerLinkedinUnipileAutoConnect = () => {
     }
     return true;
   }, [autoConnectEnabled, canEvaluate, isLinkedinConnected]);
+
+  useEffect(() => {
+    // Useful for debugging "banner not showing" reports.
+    // eslint-disable-next-line no-console
+    console.log('[LinkedinUnipileAutoConnectBanner]', {
+      canEvaluate,
+      hasAccessToken: Boolean(accessToken.trim()),
+      baseUrl,
+      isLinkedinConnected,
+      autoConnectEnabled,
+      isExtensionInstalled,
+      isChecking,
+      phase,
+      shouldShowBanner,
+    });
+  }, [
+    accessToken,
+    autoConnectEnabled,
+    baseUrl,
+    canEvaluate,
+    isChecking,
+    isExtensionInstalled,
+    isLinkedinConnected,
+    phase,
+    shouldShowBanner,
+  ]);
 
   const openChromeWebStore = useCallback(() => {
     window.open(ARXENA_CHROME_WEBSTORE_URL, '_blank', 'noopener,noreferrer');
@@ -199,12 +239,6 @@ export const InformationBannerLinkedinUnipileAutoConnect = () => {
   }
 
   const bannerText = (() => {
-    if (phase === 'attempting') {
-      return t`Attempting to connect LinkedIn (Unipile)…`;
-    }
-    if (isChecking) {
-      return t`Checking extension status…`;
-    }
     if (!isExtensionInstalled) {
       return t`LinkedIn (Unipile) is not connected. Install/enable the Arx Chrome extension, then reload this Arxena tab so it can sync your LinkedIn session.`;
     }
@@ -216,24 +250,21 @@ export const InformationBannerLinkedinUnipileAutoConnect = () => {
 
   return (
     <StyledBanner data-testid="information-banner-linkedin-unipile-autoconnect">
-      <span>
+      <StyledText>
         {bannerText}{' '}
         {isExtensionInstalled ? (
-          <StyledInlineLink
-            href="https://www.linkedin.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <StyledInlineLink href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer" >
             linkedin.com
           </StyledInlineLink>
         ) : null}
-      </span>
+      </StyledText>
       <StyledActions>
         {!isExtensionInstalled ? (
           <>
             <Button
               dataTestId="linkedin-unipile-install-extension"
               title={t`Install extension`}
+              size="small"
               variant="primary"
               accent="blue"
               onClick={openChromeWebStore}
@@ -242,6 +273,7 @@ export const InformationBannerLinkedinUnipileAutoConnect = () => {
             <Button
               dataTestId="linkedin-unipile-reload-tab"
               title={t`Reload tab`}
+              size="small"
               variant="secondary"
               onClick={reloadArxenaTab}
               disabled={isChecking || phase === 'attempting'}
@@ -252,6 +284,7 @@ export const InformationBannerLinkedinUnipileAutoConnect = () => {
             <Button
               dataTestId="linkedin-unipile-retry-sync-global"
               title={t`Retry sync`}
+              size="small"
               variant="primary"
               accent="blue"
               onClick={runRecoveryAttempt}
@@ -260,6 +293,7 @@ export const InformationBannerLinkedinUnipileAutoConnect = () => {
             <Button
               dataTestId="linkedin-unipile-open-linkedin-global"
               title={t`Open LinkedIn`}
+              size="small"
               variant="secondary"
               onClick={openLinkedin}
               disabled={isChecking || phase === 'attempting'}

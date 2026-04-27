@@ -297,9 +297,9 @@ export async function fetchUnipileConnectionStatus(
     };
     return {
       linkedinConnected: Boolean(json.linkedinConnected),
-      connectLinkedinToUnipileAutomatically: Boolean(
-        json.connectLinkedinToUnipileAutomatically,
-      ),
+      // Default to enabled when backend omits the field (older server versions).
+      connectLinkedinToUnipileAutomatically:
+        json.connectLinkedinToUnipileAutomatically ?? true,
     };
   } catch {
     return null;

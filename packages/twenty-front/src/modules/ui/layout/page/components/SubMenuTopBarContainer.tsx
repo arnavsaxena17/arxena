@@ -1,4 +1,3 @@
-import { InformationBannerWrapper } from '@/information-banner/components/InformationBannerWrapper';
 import {
   Breadcrumb,
   BreadcrumbProps,
@@ -47,7 +46,6 @@ export const SubMenuTopBarContainer = ({
         {actionButton}
       </PageHeader>
       <PageBody>
-        <InformationBannerWrapper />
         {(title || reserveTitleSpace) && (
           <StyledTitle reserveTitleSpace={reserveTitleSpace}>
             {title}

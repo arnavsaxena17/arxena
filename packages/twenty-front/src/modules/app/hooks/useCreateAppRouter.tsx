@@ -221,19 +221,10 @@ export const useCreateAppRouter = (
         {/* Special routes with MinimalProviders */}
         <Route element={<MinimalProviders />}>
           <Route element={<BlankLayout />}>
-            <Route
-              path={`${AppPath.VideoInterview}/:interviewId`}
-              element={<VideoInterviewWrapper />}
-            />
-            <Route
-              path="/test-param/:interviewId"
-              element={<TestParamRoute />}
-            />
+            <Route path={`${AppPath.VideoInterview}/:interviewId`} element={<VideoInterviewWrapper />} />
+            <Route path="/test-param/:interviewId" element={<TestParamRoute />} />
 
-            <Route
-              path={`${AppPath.GoogleSheet}/*`}
-              element={<GoogleSheet />}
-            />
+            <Route path={`${AppPath.GoogleSheet}/*`} element={<GoogleSheet />} />
             <Route path={`${AppPath.Hot}/*`} element={<HotPage />} />
           </Route>
         </Route>
@@ -248,10 +239,7 @@ export const useCreateAppRouter = (
             <Route path={AppPath.SignInUp} element={<SignInUp />} />
             <Route path={AppPath.Invite} element={<SignInUp />} />
             <Route path={AppPath.ResetPassword} element={<PasswordReset />} />
-            <Route
-              path={AppPath.CreateWorkspace}
-              element={<CreateWorkspace />}
-            />
+            <Route path={AppPath.CreateWorkspace} element={<CreateWorkspace />} />
             <Route path={AppPath.CreateProfile} element={<CreateProfile />} />
             <Route
               path={AppPath.CollectPhoneNumber}

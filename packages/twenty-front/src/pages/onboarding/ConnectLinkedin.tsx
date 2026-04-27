@@ -11,16 +11,16 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import type {
-    LinkedinCookieAuth,
-    LinkedinCredentials,
-    LinkedinSignupCompleteData,
+  LinkedinCookieAuth,
+  LinkedinCredentials,
+  LinkedinSignupCompleteData,
 } from 'twenty-shared';
 import {
-    ActionLink,
-    H2Title,
-    LightButton,
-    Loader,
-    MainButton,
+  ActionLink,
+  H2Title,
+  LightButton,
+  Loader,
+  MainButton,
 } from 'twenty-ui';
 import { OnboardingStatus } from '~/generated/graphql';
 import { Mixpanel } from '~/mixpanel';
@@ -187,10 +187,12 @@ export const ConnectLinkedin = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const authResult = params.get('linkedin_auth');
+    
     if (authResult === 'success') {
       setSuccess(t`LinkedIn account connected successfully.`);
       handleComplete();
       window.history.replaceState({}, document.title, window.location.pathname);
+      
     } else if (authResult === 'failure') {
       setError(t`LinkedIn authentication failed. Please try again.`);
       window.history.replaceState({}, document.title, window.location.pathname);

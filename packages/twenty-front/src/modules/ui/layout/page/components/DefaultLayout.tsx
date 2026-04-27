@@ -2,7 +2,7 @@ import { AuthModal } from '@/auth/components/AuthModal';
 import { signInBackgroundUseOrgChartMockState } from '@/client-config/states/signInBackgroundUseOrgChartMockState';
 import { CommandMenuRouter } from '@/command-menu/components/CommandMenuRouter';
 import { AppErrorBoundary } from '@/error-handler/components/AppErrorBoundary';
-import { InformationBannerLinkedinUnipileAutoConnect } from '@/information-banner/components/InformationBannerLinkedinUnipileAutoConnect';
+import { InformationBannerWrapper } from '@/information-banner/components/InformationBannerWrapper';
 import { KeyboardShortcutMenu } from '@/keyboard-shortcut-menu/components/KeyboardShortcutMenu';
 import { AppNavigationDrawer } from '@/navigation/components/AppNavigationDrawer';
 import { MobileNavigationBar } from '@/navigation/components/MobileNavigationBar';
@@ -64,7 +64,17 @@ const StyledAppNavigationDrawerMock = styled(SignInAppNavigationDrawerMock)`
 
 const StyledMainContainer = styled.div`
   display: flex;
-  flex: 0 1 100%;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+`;
+
+const StyledRoutedContent = styled.div`
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
   overflow: hidden;
 `;
 
@@ -141,8 +151,10 @@ export const DefaultLayout = () => {
               <StyledAppNavigationDrawer />
               <StyledMainContainer>
                 <AppErrorBoundary>
-                  <InformationBannerLinkedinUnipileAutoConnect />
-                  <Outlet />
+                  <InformationBannerWrapper />
+                  <StyledRoutedContent>
+                    <Outlet />
+                  </StyledRoutedContent>
                 </AppErrorBoundary>
               </StyledMainContainer>
             </>

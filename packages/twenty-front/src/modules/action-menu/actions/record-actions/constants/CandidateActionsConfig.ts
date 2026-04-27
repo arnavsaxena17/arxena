@@ -2,21 +2,19 @@ import { MultipleRecordsActionKeys } from '@/action-menu/actions/record-actions/
 import { ActionHook } from '@/action-menu/actions/types/ActionHook';
 import { ActionViewType } from '@/action-menu/actions/types/ActionViewType';
 import {
-    ActionMenuEntry,
-    ActionMenuEntryScope,
-    ActionMenuEntryType,
+  ActionMenuEntry,
+  ActionMenuEntryScope,
+  ActionMenuEntryType,
 } from '@/action-menu/types/ActionMenuEntry';
 import { msg } from '@lingui/core/macro';
+import { IconBriefcase, IconMessageCircle, IconMessages, IconShare } from '@tabler/icons-react';
 import {
-    IconBriefcase,
-    IconCopy,
-    IconList,
-    IconMessageCircle,
-    IconMessages,
-    IconRefresh,
-    IconShare,
-    IconVideo,
+  IconCopy,
+  IconList,
+  IconRefresh,
+  IconVideo,
 } from 'twenty-ui';
+
 
 import { useCloneMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCloneMultipleRecordsAction';
 import { useCreateMultipleVideoInterviewLinksAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCreateMultipleVideoInterviewLinksAction';

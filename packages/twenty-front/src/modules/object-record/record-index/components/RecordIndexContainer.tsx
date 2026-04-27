@@ -10,7 +10,6 @@ import { RecordIndexViewBarEffect } from '@/object-record/record-index/component
 import { recordIndexViewTypeState } from '@/object-record/record-index/states/recordIndexViewTypeState';
 import { recordTableRefetchFunctionState } from '@/object-record/record-table/states/refetchFunctionAtom';
 
-import { InformationBannerWrapper } from '@/information-banner/components/InformationBannerWrapper';
 import { useRecordIndexContextOrThrow } from '@/object-record/record-index/contexts/RecordIndexContext';
 import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-store/contexts/RecordFieldValueSelectorContext';
 import { SpreadsheetImportProvider } from '@/spreadsheet-import/provider/components/SpreadsheetImportProvider';
@@ -89,7 +88,6 @@ export const RecordIndexContainer = () => {
   return (
     <>
       <StyledContainer>
-        <InformationBannerWrapper />
         <RecordFieldValueSelectorContextProvider>
           <SpreadsheetImportProvider>
             <ViewBar

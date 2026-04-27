@@ -1,20 +1,36 @@
 import { InformationBannerBillingSubscriptionPaused } from '@/information-banner/components/billing/InformationBannerBillingSubscriptionPaused';
 import { InformationBannerFailPaymentInfo } from '@/information-banner/components/billing/InformationBannerFailPaymentInfo';
 import { InformationBannerNoBillingSubscription } from '@/information-banner/components/billing/InformationBannerNoBillingSubscription';
+import { InformationBannerLinkedinUnipileAutoConnect } from '@/information-banner/components/InformationBannerLinkedinUnipileAutoConnect';
 import { InformationBannerReconnectAccountEmailAliases } from '@/information-banner/components/reconnect-account/InformationBannerReconnectAccountEmailAliases';
 import { InformationBannerReconnectAccountInsufficientPermissions } from '@/information-banner/components/reconnect-account/InformationBannerReconnectAccountInsufficientPermissions';
 import { useIsWorkspaceActivationStatusSuspended } from '@/workspace/hooks/useIsWorkspaceActivationStatusSuspended';
 import { useSubscriptionStatus } from '@/workspace/hooks/useSubscriptionStatus';
 import styled from '@emotion/styled';
 import { isDefined } from 'twenty-shared';
+import { MOBILE_VIEWPORT } from 'twenty-ui';
 import { SubscriptionStatus } from '~/generated-metadata/graphql';
 
 const StyledInformationBannerWrapper = styled.div`
-  height: 40px;
-  position: relative;
+  min-height: 32px;
+  display: flex;
+  flex-direction: column;
+  background: ${({ theme }) => theme.background.tertiary};
+  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
+  box-shadow: 0 1px 0 ${({ theme }) => theme.border.color.light};
+  padding: ${({ theme }) => theme.spacing(1)};
+  padding-left: 0;
+  padding-right: ${({ theme }) => theme.spacing(3)};
+  gap: ${({ theme }) => theme.spacing(1)};
+
+  @media (max-width: ${MOBILE_VIEWPORT}px) {
+    box-sizing: border-box;
+    padding: ${({ theme }) => theme.spacing(2)};
+  }
 
   &:empty {
-    height: 0;
+    min-height: 0;
+    display: none;
   }
 `;
 
@@ -34,6 +50,7 @@ export const InformationBannerWrapper = () => {
 
   return (
     <StyledInformationBannerWrapper>
+      <InformationBannerLinkedinUnipileAutoConnect />
       <InformationBannerReconnectAccountInsufficientPermissions />
       <InformationBannerReconnectAccountEmailAliases />
       {displayBillingSubscriptionPausedBanner && (
