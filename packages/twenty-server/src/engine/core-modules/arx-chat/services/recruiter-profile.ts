@@ -12,6 +12,28 @@ import {
 export class RecruiterProfileService {
   constructor(private readonly staticGraphQLService: StaticGraphQLService) {}
 
+  private getSafeOrigin(origin: string | undefined): string {
+    const trimmed = origin?.trim();
+    if (trimmed && trimmed.startsWith('http')) {
+      return trimmed;
+    }
+
+    const fallback =
+      process.env.SERVER_BASE_URL ||
+      process.env.FRONT_BASE_URL ||
+      'http://localhost:3000';
+
+    if (trimmed && trimmed.length > 0) {
+      console.warn(
+        '[RecruiterProfileService] Invalid/missing origin passed to getCurrentUser; using fallback',
+        { provided: trimmed, fallback },
+      );
+      console.warn(new Error('[RecruiterProfileService] getCurrentUser origin trace').stack);
+    }
+
+    return fallback;
+  }
+
   async getRecruiterProfileByJob(
     candidateJob: Job,
     apiToken: string,
@@ -53,11 +75,16 @@ export class RecruiterProfileService {
 }
 
  async getCurrentUser(apiToken: string, origin: string) {
+  const safeOrigin = this.getSafeOrigin(origin);
+  console.log('[RecruiterProfileService] getCurrentUser origin:', {
+    provided: origin,
+    used: safeOrigin,
+  });
   const getCurrentUserQuery = JSON.stringify({
     query: graphqlQueryToGetCurrentUser,
     variables: {},
   });
-  const response = await axiosRequest(getCurrentUserQuery, apiToken, origin);
+  const response = await axiosRequest(getCurrentUserQuery, apiToken, safeOrigin);
   return response.data?.data?.currentUser;
 }
 

@@ -1,21 +1,22 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository } from 'typeorm';
 import { isDefined } from 'twenty-shared';
+import { Repository } from 'typeorm';
 
+import { SEED_APPLE_WORKSPACE_ID } from 'src/database/typeorm-seeds/core/workspaces';
+import { WorkspaceSubdomainCustomDomainAndIsCustomDomainEnabledType } from 'src/engine/core-modules/domain-manager/domain-manager.type';
 import { CustomDomainValidRecords } from 'src/engine/core-modules/domain-manager/dtos/custom-domain-valid-records';
 import { generateRandomSubdomain } from 'src/engine/core-modules/domain-manager/utils/generate-random-subdomain';
 import { getSubdomainFromEmail } from 'src/engine/core-modules/domain-manager/utils/get-subdomain-from-email';
 import { getSubdomainNameFromDisplayName } from 'src/engine/core-modules/domain-manager/utils/get-subdomain-name-from-display-name';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
-import { WorkspaceSubdomainCustomDomainAndIsCustomDomainEnabledType } from 'src/engine/core-modules/domain-manager/domain-manager.type';
-import { SEED_APPLE_WORKSPACE_ID } from 'src/database/typeorm-seeds/core/workspaces';
 import { workspaceValidator } from 'src/engine/core-modules/workspace/workspace.validate';
 
 @Injectable()
 export class DomainManagerService {
+  private readonly logger = new Logger(DomainManagerService.name);
   constructor(
     @InjectRepository(Workspace, 'core')
     private readonly workspaceRepository: Repository<Workspace>,
@@ -166,19 +167,53 @@ export class DomainManagerService {
       return this.getDefaultWorkspace();
     }
 
-    const { subdomain, customDomain } =
-      this.getSubdomainAndCustomDomainFromUrl(origin);
+    const defaultSubdomain = this.environmentService.get('DEFAULT_SUBDOMAIN');
 
-    if (!customDomain && !subdomain) return;
+    if (!origin || typeof origin !== 'string') {
+      return defaultSubdomain
+        ? this.getWorkspaceBySubdomainOrDefaultWorkspace(defaultSubdomain)
+        : undefined;
+    }
+
+    let subdomain: string | undefined;
+    let customDomain: string | null | undefined;
+    try {
+      ({ subdomain, customDomain } =
+        this.getSubdomainAndCustomDomainFromUrl(origin));
+    } catch (error) {
+      this.logger?.warn?.(
+        `[DomainManagerService] Invalid origin URL "${origin}", falling back to default workspace`,
+      );
+      return defaultSubdomain
+        ? this.getWorkspaceBySubdomainOrDefaultWorkspace(defaultSubdomain)
+        : undefined;
+    }
+
+    if (!customDomain && !subdomain) {
+      return defaultSubdomain
+        ? this.getWorkspaceBySubdomainOrDefaultWorkspace(defaultSubdomain)
+        : undefined;
+    }
 
     const where = isDefined(customDomain) ? { customDomain } : { subdomain };
 
-    return (
+    const workspace =
       (await this.workspaceRepository.findOne({
         where,
         relations: ['workspaceSSOIdentityProviders'],
-      })) ?? undefined
+      })) ?? undefined;
+
+    if (workspace) {
+      return workspace;
+    }
+
+    this.logger?.warn?.(
+      `[DomainManagerService] Workspace not found for origin "${origin}" (where=${JSON.stringify(where)}), falling back to default workspace`,
     );
+
+    return defaultSubdomain
+      ? this.getWorkspaceBySubdomainOrDefaultWorkspace(defaultSubdomain)
+      : this.getDefaultWorkspace();
   }
 
   private extractSubdomain(params?: { email?: string; displayName?: string }) {

@@ -11,7 +11,6 @@ export const config = {
 
 
 export default async function handler(req: any, res: any) {
-  console.log("Using api key :, process.env.OPENAI_API_KEY), process.env.OPENAI_API_KEY" , process.env.OPENAI_API_KEY)
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });

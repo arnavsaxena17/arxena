@@ -1,8 +1,8 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Mutation, Resolver } from '@nestjs/graphql';
 
-import { OnboardingIntentPath } from 'src/engine/core-modules/onboarding/enums/onboarding-intent-path.enum';
 import { OnboardingStepSuccess } from 'src/engine/core-modules/onboarding/dtos/onboarding-step-success.dto';
+import { OnboardingIntentPath } from 'src/engine/core-modules/onboarding/enums/onboarding-intent-path.enum';
 import { OnboardingService } from 'src/engine/core-modules/onboarding/onboarding.service';
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';

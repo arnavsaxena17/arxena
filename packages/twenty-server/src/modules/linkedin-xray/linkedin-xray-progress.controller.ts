@@ -20,15 +20,35 @@ export class LinkedinXrayProgressController {
     @Res() response: Response,
   ): Promise<void> {
     const apiToken = request.query.token;
-    const origin =
-      request.headers['x-origin-domain'] ||
-      request.headers.origin ||
-      request.query.origin;
+    const originHeader = request.headers['x-origin-domain'];
+    const originFromOriginHeader = request.headers.origin;
+    const originFromQuery = request.query.origin;
+    const origin = originHeader || originFromOriginHeader || originFromQuery;
+
+    console.log('[LinkedinXrayProgressController] Origin resolved:', {
+      resolved: origin,
+      source: originHeader
+        ? 'headers[x-origin-domain]'
+        : originFromOriginHeader
+          ? 'headers[origin]'
+          : originFromQuery
+            ? 'query[origin]'
+            : 'none',
+      raw: {
+        'x-origin-domain': originHeader,
+        origin: originFromOriginHeader,
+        'query.origin': originFromQuery,
+      },
+    });
 
     if (!apiToken) {
       throw new Error('Token is required as query parameter');
     }
 
+    console.log(
+      '[LinkedinXrayProgressController] Calling getCurrentUser with origin:',
+      origin,
+    );
     const currentUser = await new RecruiterProfileService(
       this.staticGraphQLService,
     ).getCurrentUser(apiToken, String(origin || ''));

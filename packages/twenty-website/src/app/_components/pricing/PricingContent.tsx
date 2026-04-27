@@ -3,11 +3,17 @@
 import styled from '@emotion/styled';
 import { IconCheck } from '@tabler/icons-react';
 import Link from 'next/link';
+import React from 'react';
 
-import { type CreditPack, CREDIT_PACKS } from 'twenty-shared';
+import {
+  type CreditPack,
+  type PricingIntent,
+  CREDIT_PACKS_BY_INTENT,
+  creditPackPricingFootnote,
+} from 'twenty-shared';
 
 const StyledSection = styled.section`
-  max-width: 900px;
+  max-width: 1160px;
   margin: 0 auto;
   padding: 64px 24px 96px;
 `;
@@ -30,16 +36,45 @@ const StyledHeadlineSub = styled.p`
 
 const StyledCardsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  justify-content: center;
+  gap: 32px;
   margin-bottom: 48px;
-
-  @media (max-width: 1024px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
 
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
+  }
+`;
+
+const StyledIntentTabs = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin: 24px 0 32px;
+  padding: 6px;
+  background: #fafafa;
+  border: 1px solid rgba(20, 20, 20, 0.08);
+  border-radius: 999px;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+`;
+
+const StyledIntentTab = styled.button<{ isActive: boolean }>`
+  appearance: none;
+  background: ${({ isActive }) => (isActive ? '#fff' : 'transparent')};
+  border: 0;
+  border-radius: 999px;
+  color: #141414;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 14px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: ${({ isActive }) => (isActive ? '#fff' : '#f1f1f1')};
   }
 `;
 
@@ -181,19 +216,64 @@ type PricingContentProps = {
 };
 
 export const PricingContent = ({ signUpUrl }: PricingContentProps) => {
+  const [intent, setIntent] = React.useState<PricingIntent>('SALES');
+
+  const packs = CREDIT_PACKS_BY_INTENT[intent];
+  const intentCopy: Record<PricingIntent, { headline: string; sub: string }> = {
+    SALES: {
+      headline: "Pipeline-grade org intelligence for Sales / ABM",
+      sub:
+        "Map buying committees, champions, and blockers across target accounts — then reveal/export only what matters.",
+    },
+    INVESTING: {
+      headline: "Deal diligence org intelligence for PE / VC",
+      sub:
+        "For the most informed first call with your target companies. Diligence faster, monitor portfolios, and benchmark management teams.",
+    },
+    RECRUITING: {
+      headline: "Org intelligence for Recruiting",
+      sub:
+        "Map teams, find the right candidates, and build shortlists with org-chart context before the recruiters start calling.",
+    },
+  };
+
   return (
     <StyledSection>
-      <StyledHeadline>Map any company&apos;s org chart</StyledHeadline>
-      <StyledHeadlineSub>
-        Credits for live org intelligence on the companies you care about —
-        champions, gatekeepers — before your first message.
-      </StyledHeadlineSub>
+      <StyledHeadline>{intentCopy[intent].headline}</StyledHeadline>
+      <StyledHeadlineSub>{intentCopy[intent].sub}</StyledHeadlineSub>
+
+      <StyledIntentTabs>
+        <StyledIntentTab
+          type="button"
+          isActive={intent === 'INVESTING'}
+          onClick={() => setIntent('INVESTING')}
+        >
+          PE / VC
+        </StyledIntentTab>
+        <StyledIntentTab
+          type="button"
+          isActive={intent === 'SALES'}
+          onClick={() => setIntent('SALES')}
+        >
+          Sales / ABM
+        </StyledIntentTab>
+        <StyledIntentTab
+          type="button"
+          isActive={intent === 'RECRUITING'}
+          onClick={() => setIntent('RECRUITING')}
+        >
+          Recruiting
+        </StyledIntentTab>
+      </StyledIntentTabs>
 
       <StyledCardsGrid>
-        {CREDIT_PACKS.map((pack: CreditPack) => (
+        {packs.map((pack: CreditPack) => (
           <StyledCard key={pack.name}>
             <StyledCardTitle>{pack.name}</StyledCardTitle>
-            <StyledPrice>${(pack.amountSubunits / 100).toLocaleString()}</StyledPrice>
+            <StyledPrice>
+              {pack.currency === 'GBP' ? '£' : '$'}
+              {(pack.amountSubunits / 100).toLocaleString()}
+            </StyledPrice>
             <StyledCredits>{pack.creditsDisplay}</StyledCredits>
             <StyledFeatureList>
               {pack.features.map((feature: string) => (
@@ -210,20 +290,14 @@ export const PricingContent = ({ signUpUrl }: PricingContentProps) => {
 
       <StyledRoiSection>
         <StyledRoiTitle>
-          One placement costs $5K–40K. Map the entire org for less.
+          Understand the org before your first message.
         </StyledRoiTitle>
         <StyledRoiText>
-          Recruiters charge $5K–40K per placement — and don&apos;t provide
-          mapping. ZoomInfo costs $25K+. We give you the full org chart for a
-          fraction of one hire.
+          Most tools sell contacts without context. Arxena sells verified org
+          structure first — then you reveal/export only the contacts you need.
         </StyledRoiText>
         <p style={{ margin: '16px 0 0 0', fontSize: 14, color: '#818181' }}>
-          1 credit = 1 org chart (&lt;100 employees). Larger org charts consume
-          more (e.g. 300 employees = 3 credits).
-        </p>
-        <p style={{ margin: '12px 0 0 0', fontSize: 14, color: '#818181' }}>
-          Credit card payments: +3% surcharge. Pay by invoice: no surcharge.
-          (Invoice option available after sign-up.)
+          {creditPackPricingFootnote}
         </p>
       </StyledRoiSection>
 

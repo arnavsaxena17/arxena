@@ -18,10 +18,27 @@ export class UploadProgressController {
     
     // Get token from query parameter since EventSource doesn't support headers
     const apiToken = request.query.token;
-    const origin = request.headers['x-origin-domain'] || request.headers.origin || request.query.origin;
+    const originHeader = request.headers['x-origin-domain'];
+    const originFromOriginHeader = request.headers.origin;
+    const originFromQuery = request.query.origin;
+    const origin = originHeader || originFromOriginHeader || originFromQuery;
     
     console.log('🔗 [UploadProgressController] API Token from query:', apiToken ? 'Present' : 'Missing');
-    console.log('🔗 [UploadProgressController] Origin:', origin);
+    console.log('🔗 [UploadProgressController] Origin resolved:', {
+      resolved: origin,
+      source: originHeader
+        ? 'headers[x-origin-domain]'
+        : originFromOriginHeader
+          ? 'headers[origin]'
+          : originFromQuery
+            ? 'query[origin]'
+            : 'none',
+      raw: {
+        'x-origin-domain': originHeader,
+        origin: originFromOriginHeader,
+        'query.origin': originFromQuery,
+      },
+    });
     
     if (!apiToken) {
       console.error('❌ [UploadProgressController] No API token provided');
@@ -30,8 +47,7 @@ export class UploadProgressController {
 
     try {
       console.log('🔗 [UploadProgressController] Getting current user for SSE...');
-      console.log('🔗 [UploadProgressController] API Token preview:', apiToken?.substring(0, 50) + '...');
-      console.log('🔗 [UploadProgressController] Origin:', origin);
+      console.log('🔗 [UploadProgressController] Calling getCurrentUser with origin:', origin);
       
       // Get current user to get recruiter ID
       const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);

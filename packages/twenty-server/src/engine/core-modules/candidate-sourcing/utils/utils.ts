@@ -40,10 +40,7 @@ export async function axiosRequest(data: string, apiToken: string, origin: strin
       origin,
       'for grapqhl request of ::',
       data,
-      'token given is ::',
-      apiToken,
-      "data is ::",
-      data,
+      'note: token redacted',
     );
   }
 

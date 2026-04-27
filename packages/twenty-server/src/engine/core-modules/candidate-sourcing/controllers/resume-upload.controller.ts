@@ -87,13 +87,38 @@ export class ResumeUploadController {
       const apiToken = request.headers.authorization?.split(' ')[1]?.replace(/[\r\n]+/g, '') || '';
       
       this.logger.log(`Resume upload - API token length: ${apiToken?.length}`);
-      this.logger.log(`Resume upload - API token preview: ${apiToken?.substring(0, 50)}...`);
       this.logger.log(`Resume upload - User ID: ${userId}`);
 
       // Get workspace member ID for progress reporting (same as SSE connection)
       let workspaceMemberId = userId; // fallback to user ID
-      const origin = request.headers['x-origin-domain'] || request.headers.origin || request.headers.referer || 'unknown';
+      const originHeader = request.headers['x-origin-domain'];
+      const originFromOriginHeader = request.headers.origin;
+      const originFromReferer = request.headers.referer;
+      const origin =
+        originHeader ||
+        originFromOriginHeader ||
+        originFromReferer ||
+        'unknown';
+
+      this.logger.log(
+        `Resume upload - Origin resolved: ${JSON.stringify({
+          resolved: origin,
+          source: originHeader
+            ? 'headers[x-origin-domain]'
+            : originFromOriginHeader
+              ? 'headers[origin]'
+              : originFromReferer
+                ? 'headers[referer]'
+                : 'fallback[unknown]',
+          raw: {
+            'x-origin-domain': originHeader,
+            origin: originFromOriginHeader,
+            referer: originFromReferer,
+          },
+        })}`,
+      );
       try {
+        this.logger.log(`Resume upload - Calling getCurrentUser with origin: ${origin}`);
         const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
         workspaceMemberId = currentUser?.workspaceMember?.id || userId;
         this.logger.log(`Resume upload - Workspace Member ID: ${workspaceMemberId}`);

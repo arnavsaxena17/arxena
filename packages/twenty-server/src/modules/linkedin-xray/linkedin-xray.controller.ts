@@ -37,17 +37,41 @@ export class LinkedinXrayController {
     const apiToken =
       request?.headers?.authorization?.split(' ')[1]?.replace(/[\r\n]+/g, '') ||
       '';
+    const originHeader = request.headers['x-origin-domain'];
+    const originFromOriginHeader = request.headers.origin;
+    const originFromReferer = request.headers.referer;
+    const originFromQuery = request.query?.origin;
     const origin =
-      request.headers['x-origin-domain'] ||
-      request.headers.origin ||
-      request.headers.referer ||
-      request.query?.origin ||
+      originHeader ||
+      originFromOriginHeader ||
+      originFromReferer ||
+      originFromQuery ||
       'unknown';
+
+    console.log('[LinkedinXrayController] Origin resolved:', {
+      resolved: origin,
+      source: originHeader
+        ? 'headers[x-origin-domain]'
+        : originFromOriginHeader
+          ? 'headers[origin]'
+          : originFromReferer
+            ? 'headers[referer]'
+            : originFromQuery
+              ? 'query[origin]'
+              : 'fallback[unknown]',
+      raw: {
+        'x-origin-domain': originHeader,
+        origin: originFromOriginHeader,
+        referer: originFromReferer,
+        'query.origin': originFromQuery,
+      },
+    });
 
     if (!apiToken) {
       throw new Error('Authorization token is required');
     }
 
+    console.log('[LinkedinXrayController] Calling getCurrentUser with origin:', origin);
     const currentUser = await new RecruiterProfileService(
       this.staticGraphQLService,
     ).getCurrentUser(apiToken, origin);

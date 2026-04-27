@@ -15,13 +15,32 @@ export class AiFilteringProgressController {
   @Sse('ai-filtering-progress-stream')
   async streamAiFilteringProgress(@Req() request: any): Promise<Observable<any>> {
     const apiToken = request.query.token;
-    const origin = request.headers.origin || request.query.origin;
+    const originFromOriginHeader = request.headers.origin;
+    const originFromQuery = request.query.origin;
+    const origin = originFromOriginHeader || originFromQuery;
+
+    console.log('[AiFilteringProgressController] Origin resolved:', {
+      resolved: origin,
+      source: originFromOriginHeader
+        ? 'headers[origin]'
+        : originFromQuery
+          ? 'query[origin]'
+          : 'none',
+      raw: {
+        origin: originFromOriginHeader,
+        'query.origin': originFromQuery,
+      },
+    });
 
     if (!apiToken) {
       throw new Error('Token is required as query parameter');
     }
 
     try {
+      console.log(
+        '[AiFilteringProgressController] Calling getCurrentUser with origin:',
+        origin,
+      );
       const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
 

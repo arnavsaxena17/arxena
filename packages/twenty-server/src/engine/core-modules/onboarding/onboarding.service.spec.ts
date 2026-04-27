@@ -6,8 +6,8 @@ import { EnvironmentService } from 'src/engine/core-modules/environment/environm
 import { OnboardingIntentPath } from 'src/engine/core-modules/onboarding/enums/onboarding-intent-path.enum';
 import { OnboardingStatus } from 'src/engine/core-modules/onboarding/enums/onboarding-status.enum';
 import {
-    OnboardingService,
-    OnboardingStepKeys,
+  OnboardingService,
+  OnboardingStepKeys,
 } from 'src/engine/core-modules/onboarding/onboarding.service';
 import { UserVarsService } from 'src/engine/core-modules/user/user-vars/services/user-vars.service';
 import { User } from 'src/engine/core-modules/user/user.entity';

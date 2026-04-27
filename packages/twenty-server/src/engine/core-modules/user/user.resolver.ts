@@ -151,6 +151,8 @@ export class UserResolver {
 
     const userVarAllowList = [
       OnboardingStepKeys.ONBOARDING_CONNECT_ACCOUNT_PENDING,
+      OnboardingStepKeys.ONBOARDING_INTENT_CHOICE_PENDING,
+      OnboardingStepKeys.ONBOARDING_INTENT_PATH,
       AccountsToReconnectKeys.ACCOUNTS_TO_RECONNECT_INSUFFICIENT_PERMISSIONS,
       AccountsToReconnectKeys.ACCOUNTS_TO_RECONNECT_EMAIL_ALIASES,
     ] as string[];
@@ -338,12 +340,14 @@ export class UserResolver {
   @ResolveField(() => OnboardingStatus)
   async onboardingStatus(
     @Parent() user: User,
+    @AuthWorkspace() authWorkspace: Workspace,
     @OriginHeader() origin: string,
   ): Promise<OnboardingStatus> {
     const workspace =
-      await this.domainManagerService.getWorkspaceByOriginOrDefaultWorkspace(
+      authWorkspace ??
+      (await this.domainManagerService.getWorkspaceByOriginOrDefaultWorkspace(
         origin,
-      );
+      ));
 
     workspaceValidator.assertIsDefinedOrThrow(workspace);
 

@@ -15,14 +15,14 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { isDefined } from 'twenty-shared';
 import {
-    ActionLink,
-    AnimatedEaseIn,
-    IconPhone,
-    IconSearch,
-    IconUsers,
-    Loader,
-    Pill,
-    ThemeType,
+  ActionLink,
+  AnimatedEaseIn,
+  IconPhone,
+  IconSearch,
+  IconUsers,
+  Loader,
+  Pill,
+  ThemeType,
 } from 'twenty-ui';
 import { OnboardingIntentPath, OnboardingStatus } from '~/generated/graphql';
 import { Mixpanel } from '~/mixpanel';

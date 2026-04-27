@@ -9,17 +9,17 @@ import {
   CardContent,
   H2Title,
   IconCheck,
-  IconCircleX,
   IconCreditCard,
   IconFileText,
   MOBILE_VIEWPORT,
-  Section,
+  Section
 } from 'twenty-ui';
 
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { InvoiceRequestModal } from '@/billing/components/InvoiceRequestModal';
 import { billingState } from '@/client-config/states/billingState';
 import { useRedirect } from '@/domain-manager/hooks/useRedirect';
+import { onboardingIntentPathState } from '@/onboarding/states/onboardingIntentPathState';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import { SettingsPath } from '@/types/SettingsPath';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
@@ -28,7 +28,13 @@ import { TextInput } from '@/ui/input/components/TextInput';
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 import { SubMenuTopBarContainer } from '@/ui/layout/page/components/SubMenuTopBarContainer';
 import { useSubscriptionStatus } from '@/workspace/hooks/useSubscriptionStatus';
-import { isDefined } from 'twenty-shared';
+import {
+  CREDIT_PACKS_BY_INTENT,
+  creditPackPricingFootnote,
+  isDefined,
+  type PricingIntent,
+  type CreditPack as SharedCreditPack,
+} from 'twenty-shared';
 import {
   BillingPlanKey,
   SubscriptionInterval,
@@ -88,6 +94,38 @@ type SwitchInfo = {
 const StyledBillingRoot = styled.div`
   max-width: ${({ theme }) => theme.spacing(300)};
   width: 100%;
+`;
+
+const StyledIntentTabs = styled.div`
+  background: ${({ theme }) => theme.background.transparent.lighter};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.pill};
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing(1)};
+  justify-content: center;
+  margin: ${({ theme }) => theme.spacing(4)} auto ${({ theme }) => theme.spacing(4)};
+  padding: ${({ theme }) => theme.spacing(1)};
+  width: fit-content;
+`;
+
+const StyledIntentTab = styled.button<{ isActive: boolean }>`
+  appearance: none;
+  background: ${({ isActive, theme }) =>
+    isActive ? theme.background.transparent.primary : 'transparent'};
+  border: 0;
+  border-radius: ${({ theme }) => theme.border.radius.pill};
+  color: ${({ theme }) => theme.font.color.primary};
+  cursor: pointer;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  padding: ${({ theme }) => `${theme.spacing(2)} ${theme.spacing(3)}`};
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: ${({ isActive, theme }) =>
+      isActive ? theme.background.transparent.primary : theme.background.transparent.lighter};
+  }
 `;
 
 const StyledBillingCard = styled(Card)`
@@ -154,12 +192,12 @@ const StyledLicenceInputWrap = styled.div`
 const StyledCreditCardsGrid = styled.div`
   display: grid;
   gap: ${({ theme }) => theme.spacing(6)};
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, ${({ theme }) => theme.spacing(60)}), 1fr)
+  );
+  justify-content: center;
   margin-top: ${({ theme }) => theme.spacing(4)};
-
-  @media (max-width: 1200px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 
   @media (max-width: ${MOBILE_VIEWPORT}px) {
     grid-template-columns: 1fr;
@@ -171,6 +209,7 @@ const StyledCreditPackCardContent = styled(CardContent)`
   flex: 1;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(3)};
+  min-width: 0;
 `;
 
 const StyledCreditCardTitle = styled.div`
@@ -256,7 +295,6 @@ export const SettingsBilling = () => {
     | undefined;
   const isRazorpay = billing?.provider === 'razorpay';
   const billingEnabled = billing?.isBillingEnabled === true;
-
   const { redirect } = useRedirect();
 
   const MONTHLY_SWITCH_INFO: SwitchInfo = {
@@ -575,6 +613,7 @@ export const SettingsBilling = () => {
 
   const to = switchingInfo.to;
   const impact = switchingInfo.impact;
+
   const switchInterval = async () => {
     try {
       await updateBillingSubscription();
@@ -597,6 +636,31 @@ export const SettingsBilling = () => {
       });
     }
   };
+
+  const intentPath = useRecoilValue(onboardingIntentPathState);
+  const initialIntent: PricingIntent =
+    intentPath === null || intentPath === undefined || intentPath === 'EXTENSION_INSTALL'
+      ? 'SALES'
+      : intentPath === 'DEAL_DILIGENCE'
+        ? 'INVESTING'
+        : 'RECRUITING';
+
+  const [intent, setIntent] = useState<PricingIntent>(initialIntent);
+
+  const sharedPackMetaByKey = (() => {
+    const allPacks: SharedCreditPack[] = Object.values(CREDIT_PACKS_BY_INTENT).flat();
+    return new Map(allPacks.map((p) => [p.key, p]));
+  })();
+
+  const visibleCreditPacks = (() => {
+    const desiredKeys = CREDIT_PACKS_BY_INTENT[intent].map((p) => p.key);
+    const byKey = new Map(creditPacks.map((p) => [p.key, p]));
+    const packsForIntent = desiredKeys
+      .map((key) => byKey.get(key))
+      .filter(isDefined);
+
+    return packsForIntent.length > 0 ? packsForIntent : creditPacks;
+  })();
 
   return (
     <SubMenuTopBarContainer
@@ -692,36 +756,48 @@ export const SettingsBilling = () => {
             <Section>
               <H2Title
                 title={t`Org chart credits`}
-                description={t`Add org chart credits to your workspace. 1 credit = 1 org chart (<100 employees). Larger org charts consume more (e.g. 300 employees = 3 credits). Credit card: +3% surcharge. Pay by invoice: no surcharge.`}
+                description={t`Add org chart credits to your workspace. ${creditPackPricingFootnote}`}
               />
+              <StyledIntentTabs>
+                <StyledIntentTab
+                  type="button"
+                  isActive={intent === 'INVESTING'}
+                  onClick={() => setIntent('INVESTING')}
+                >
+                  PE / VC
+                </StyledIntentTab>
+                <StyledIntentTab
+                  type="button"
+                  isActive={intent === 'SALES'}
+                  onClick={() => setIntent('SALES')}
+                >
+                  Sales / ABM
+                </StyledIntentTab>
+                <StyledIntentTab
+                  type="button"
+                  isActive={intent === 'RECRUITING'}
+                  onClick={() => setIntent('RECRUITING')}
+                >
+                  Recruiting
+                </StyledIntentTab>
+              </StyledIntentTabs>
               <StyledCreditCardsGrid>
-                {creditPacks.map((pack) => {
+                {visibleCreditPacks.map((pack) => {
+                  const meta = sharedPackMetaByKey.get(pack.key);
                   const baseAmount = pack.amountSubunits / 100;
                   const cardAmount =
                     Math.round(pack.amountSubunits * 1.03) / 100;
-                  const packCredits = pack.credits;
-                  const perCreditUsd = Math.round(baseAmount / packCredits);
                   const creditsLabel =
-                    packCredits === 1
+                    meta?.creditsDisplay ??
+                    (pack.credits === 1
                       ? t`1 credit (<100 employees)`
-                      : t`${packCredits} credits (~$${perCreditUsd}/credit)`;
-                  const features =
-                    pack.credits === 1
-                      ? [
-                          t`Full org chart structure`,
-                          t`LinkedIn profiles + emails`,
-                          t`Sign up to unmask names`,
-                        ]
-                      : [
-                          pack.name,
-                          t`All features included`,
-                          t`12-month expiry`,
-                        ];
+                      : t`${pack.credits} credits`);
+                  const features = meta?.features ?? [pack.name];
                   return (
                     <StyledBillingCard key={pack.key} fullWidth rounded>
                       <StyledCreditPackCardContent>
                         <StyledCreditCardTitle>
-                          {pack.name}
+                          {meta?.name ?? pack.name}
                         </StyledCreditCardTitle>
                         <StyledCreditCardPrice>
                           {pack.currency === 'USD' ? '$' : pack.currency + ' '}
@@ -768,7 +844,7 @@ export const SettingsBilling = () => {
               </StyledCreditCardsGrid>
             </Section>
           )}
-          {!isRazorpay && (
+          {/* {!isRazorpay && (
             <Section>
               <H2Title
                 title={t`Cancel your subscription`}
@@ -783,7 +859,7 @@ export const SettingsBilling = () => {
                 disabled={!hasNotCanceledCurrentSubscription}
               />
             </Section>
-          )}
+          )} */}
         </StyledBillingRoot>
       </SettingsPageContainer>
       <InvoiceRequestModal
