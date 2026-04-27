@@ -10,6 +10,38 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 
+const INSUFFICIENT_CONTACT_CREDITS_SNACKBAR =
+  'You’re out of contact credits. Add credits to continue.';
+
+const getResponseErrorMessage = async (response: Response) => {
+  try {
+    const json = (await response.json()) as unknown;
+    if (
+      json !== null &&
+      json !== undefined &&
+      typeof json === 'object' &&
+      'message' in json &&
+      typeof (json as { message?: unknown }).message === 'string' &&
+      (json as { message: string }).message.trim().length > 0
+    ) {
+      return (json as { message: string }).message.trim();
+    }
+  } catch {
+    // ignore JSON parse errors
+  }
+
+  try {
+    const text = await response.text();
+    if (text.trim().length > 0) {
+      return text.trim();
+    }
+  } catch {
+    // ignore
+  }
+
+  return `Request failed (${response.status})`;
+};
+
 export const useFetchContactDetailsAction: ActionHookWithObjectMetadataItem =
   ({ objectMetadataItem }) => {
     const location = useLocation();
@@ -248,7 +280,12 @@ export const useFetchContactDetailsAction: ActionHookWithObjectMetadataItem =
         );
 
         if (!fetchResponse.ok) {
-          throw new Error('Failed to fetch contact details');
+          const message = await getResponseErrorMessage(fetchResponse);
+          throw new Error(
+            fetchResponse.status === 403 || /insufficient contact credits/i.test(message)
+              ? INSUFFICIENT_CONTACT_CREDITS_SNACKBAR
+              : message,
+          );
         }
 
         const fetchData = await fetchResponse.json();

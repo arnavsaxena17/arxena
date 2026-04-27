@@ -586,7 +586,6 @@ const useClickedContactLinkImage = (
           Authorization: `Bearer ${tokenPair.accessToken.token}`,
         },
         body: JSON.stringify(body),
-        credentials: 'include',
       });
 
       if (!response.ok) {

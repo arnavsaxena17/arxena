@@ -796,7 +796,6 @@ export const useOrgChartActions = ({
             wantEmail,
             wantPhone,
           }),
-          credentials: 'include',
         });
         if (!res.ok) {
           let msg = 'Contact match request failed.';

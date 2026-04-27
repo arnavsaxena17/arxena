@@ -1,15 +1,15 @@
 import {
-    Body,
-    Controller,
-    Get,
-    HttpException,
-    HttpStatus,
-    Logger,
-    Param,
-    Post,
-    Query,
-    Req,
-    UseGuards
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Query,
+  Req,
+  UseGuards
 } from '@nestjs/common';
 
 import { Request } from 'express';
@@ -25,9 +25,9 @@ import { PdlProvider } from '../providers/pdl.provider';
 import { ContactEnrichmentJobService } from '../services/contact-enrichment-job.service';
 import { ContactEnrichmentWaterfallService } from '../services/contact-enrichment-waterfall.service';
 import type {
-    ContactAvailability,
-    ContactEnrichmentOptions,
-    ContactResult,
+  ContactAvailability,
+  ContactEnrichmentOptions,
+  ContactResult,
 } from '../types/contact-enrichment.types';
 
 @Controller('contact-enrichment')
@@ -134,6 +134,7 @@ export class ContactEnrichmentController {
     | { jobId: string; status: string; total: number }
     | { results: Record<string, ContactResult> }
   > {
+    console.log("This is the body:", body);
     const apolloId = body.apolloPersonId?.trim() ?? body.m7kqPersonId?.trim();
     const apolloDomain = body.companyDomain?.trim();
     const hasApollo = Boolean(apolloId && apolloDomain);
