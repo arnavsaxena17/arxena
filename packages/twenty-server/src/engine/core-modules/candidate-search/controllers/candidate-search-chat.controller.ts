@@ -141,9 +141,7 @@ export class CandidateSearchChatController {
         } catch (error) {
           // Connection closed or destroyed - catch write errors
           isAborted = true;
-          this.logger.log(
-            `Failed to send event ${event} - connection closed: ${error instanceof Error ? error.message : String(error)}`,
-          );
+          this.logger.log( `Failed to send event ${event} - connection closed: ${error instanceof Error ? error.message : String(error)}` );
           return false;
         }
       };

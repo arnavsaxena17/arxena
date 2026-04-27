@@ -15,7 +15,8 @@ mixpanel.init(MIXPANEL_TOKEN, {
 });
 
 const isTrackingEnabled = () =>
-  process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development';
+  process.env.NODE_ENV === 'production' ||
+  process.env.NODE_ENV === 'development';
 
 const devLog = (msg: string, ...args: unknown[]) => {
   if (isDev) {
@@ -30,7 +31,9 @@ export const Mixpanel = {
         mixpanel.identify(id);
         devLog('Mixpanel identify:', id);
       } catch (error) {
-        if (isDev) console.error('Mixpanel identify error:', error);
+        if (isDev) {
+          console.error('Mixpanel identify error:', error);
+        }
       }
     }
   },
@@ -41,7 +44,9 @@ export const Mixpanel = {
         mixpanel.alias(id);
         devLog('Mixpanel alias:', id);
       } catch (error) {
-        if (isDev) console.error('Mixpanel alias error:', error);
+        if (isDev) {
+          console.error('Mixpanel alias error:', error);
+        }
       }
     }
   },
@@ -56,7 +61,9 @@ export const Mixpanel = {
         });
         devLog('Mixpanel track:', name, props);
       } catch (error) {
-        if (isDev) console.error('Mixpanel track error:', error);
+        if (isDev) {
+          console.error('Mixpanel track error:', error);
+        }
       }
     }
   },
@@ -68,7 +75,9 @@ export const Mixpanel = {
           mixpanel.people.set(props);
           devLog('Mixpanel people.set:', props);
         } catch (error) {
-          if (isDev) console.error('Mixpanel people.set error:', error);
+          if (isDev) {
+            console.error('Mixpanel people.set error:', error);
+          }
         }
       }
     },
@@ -84,7 +93,9 @@ export const Mixpanel = {
         });
         devLog('Mixpanel page view:', pageName);
       } catch (error) {
-        if (isDev) console.error('Mixpanel page view error:', error);
+        if (isDev) {
+          console.error('Mixpanel page view error:', error);
+        }
       }
     }
   },

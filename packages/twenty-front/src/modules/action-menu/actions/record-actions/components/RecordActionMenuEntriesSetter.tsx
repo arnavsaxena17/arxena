@@ -51,7 +51,6 @@ export const RecordActionMenuEntriesSetter = () => {
       )
     : [];
 
-
   return (
     <>
       {actionsToRegister.map((action) => (

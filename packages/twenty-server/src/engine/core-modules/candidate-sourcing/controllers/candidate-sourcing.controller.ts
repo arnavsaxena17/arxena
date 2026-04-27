@@ -2723,6 +2723,8 @@ export class CandidateSourcingController {
       }
 
       const results: Record<string, { saved: boolean; candidateIds?: string[]; jobIds?: string[] }> = {};
+      const isNonEmptyString = (value: unknown): value is string =>
+        typeof value === 'string' && value.length > 0;
 
       for (const linkedinUrl of linkedinUrls) {
         try {
@@ -2736,7 +2738,7 @@ export class CandidateSourcingController {
             // Extract job IDs from candidates if available
             const jobIds = candidates
               .map((c: any) => getCandidateJobIdForByLinkedInUrls(c as Record<string, unknown>))
-              .filter((id: any) => id);
+              .filter(isNonEmptyString);
 
             // Filter by jobId if provided
             if (jobId) {
@@ -2756,7 +2758,7 @@ export class CandidateSourcingController {
                         .map((c: any) =>
                           getCandidateJobIdForByLinkedInUrls(c as Record<string, unknown>),
                         )
-                        .filter((id: any) => id)
+                        .filter(isNonEmptyString)
                     : undefined,
               };
             } else {

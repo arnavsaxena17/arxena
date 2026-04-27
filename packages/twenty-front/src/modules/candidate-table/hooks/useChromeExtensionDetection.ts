@@ -15,26 +15,12 @@ export const useChromeExtensionDetection = () => {
 
   const checkExtensionInstalled = useCallback(() => {
     setState(prev => ({ ...prev, isChecking: true, error: null }));
-
-    // Send a ping message to check if extension is listening
     const pingMessage = {
       type: 'EXTENSION_PING',
       timestamp: Date.now(),
     };
 
-    // Set up a timeout for the response
-    const timeoutId = setTimeout(() => {
-      setState(prev => ({
-        ...prev,
-        isExtensionInstalled: false,
-        isChecking: false,
-        error: 'Extension not responding',
-      }));
-    }, 3000); // 3 second timeout
-
-    // Set up message listener for response
     const handleMessage = (event: MessageEvent) => {
-      // Check if the message is from our extension
       if (event.data?.type === 'EXTENSION_PONG') {
         clearTimeout(timeoutId);
         setState(prev => ({
@@ -47,12 +33,18 @@ export const useChromeExtensionDetection = () => {
       }
     };
 
+    const timeoutId = setTimeout(() => {
+      window.removeEventListener('message', handleMessage);
+      setState(prev => ({
+        ...prev,
+        isExtensionInstalled: false,
+        isChecking: false,
+        error: 'Extension not responding',
+      }));
+    }, 3000);
+
     window.addEventListener('message', handleMessage);
-
-    // Send the ping message
     window.postMessage(pingMessage, window.location.origin);
-
-    // Cleanup function
     return () => {
       clearTimeout(timeoutId);
       window.removeEventListener('message', handleMessage);

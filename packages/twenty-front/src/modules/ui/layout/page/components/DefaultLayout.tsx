@@ -2,6 +2,7 @@ import { AuthModal } from '@/auth/components/AuthModal';
 import { signInBackgroundUseOrgChartMockState } from '@/client-config/states/signInBackgroundUseOrgChartMockState';
 import { CommandMenuRouter } from '@/command-menu/components/CommandMenuRouter';
 import { AppErrorBoundary } from '@/error-handler/components/AppErrorBoundary';
+import { InformationBannerLinkedinUnipileAutoConnect } from '@/information-banner/components/InformationBannerLinkedinUnipileAutoConnect';
 import { KeyboardShortcutMenu } from '@/keyboard-shortcut-menu/components/KeyboardShortcutMenu';
 import { AppNavigationDrawer } from '@/navigation/components/AppNavigationDrawer';
 import { MobileNavigationBar } from '@/navigation/components/MobileNavigationBar';
@@ -140,6 +141,7 @@ export const DefaultLayout = () => {
               <StyledAppNavigationDrawer />
               <StyledMainContainer>
                 <AppErrorBoundary>
+                  <InformationBannerLinkedinUnipileAutoConnect />
                   <Outlet />
                 </AppErrorBoundary>
               </StyledMainContainer>

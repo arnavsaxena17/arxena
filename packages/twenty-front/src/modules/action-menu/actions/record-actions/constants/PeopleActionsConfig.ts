@@ -1,17 +1,16 @@
 import { MultipleRecordsActionKeys } from '@/action-menu/actions/record-actions/multiple-records/types/MultipleRecordsActionKeys';
 import { ActionHook } from '@/action-menu/actions/types/ActionHook';
 import { ActionViewType } from '@/action-menu/actions/types/ActionViewType';
-import { ActionMenuEntry, ActionMenuEntryScope, ActionMenuEntryType, } from '@/action-menu/types/ActionMenuEntry';
-import { msg } from '@lingui/core/macro';
 import {
-  IconCopy
-} from 'twenty-ui';
+  ActionMenuEntry,
+  ActionMenuEntryScope,
+  ActionMenuEntryType,
+} from '@/action-menu/types/ActionMenuEntry';
+import { msg } from '@lingui/core/macro';
+import { IconCopy, IconList } from 'twenty-ui';
 
 import { useCloneMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCloneMultipleRecordsAction';
 import { useDeleteCandidatesAndPeopleAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDeleteCandidatesAndPeopleAction';
-
-import { IconList } from '@tabler/icons-react';
-
 
 export const PEOPLE_SPECIFIC_ACTIONS: Record<
   string,
@@ -29,10 +28,13 @@ export const PEOPLE_SPECIFIC_ACTIONS: Record<
     Icon: IconCopy,
     accent: 'danger',
     isPinned: true,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION, ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION ],
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
     useAction: useCloneMultipleRecordsAction,
   },
-    deleteCandidatesAndPeople: {
+  deleteCandidatesAndPeople: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
     key: MultipleRecordsActionKeys.DELETE_CANDIDATES_AND_PEOPLE,
@@ -42,7 +44,10 @@ export const PEOPLE_SPECIFIC_ACTIONS: Record<
     Icon: IconList,
     accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION, ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION ],
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
     useAction: useDeleteCandidatesAndPeopleAction,
   },
 };

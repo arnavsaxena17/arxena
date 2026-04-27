@@ -1,7 +1,7 @@
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
-import { tableStateAtom } from '@/candidate-table/states/states';
+import { tableStateAtom as tableStateAtomState } from '@/candidate-table/states/states';
 import { contextStoreFiltersComponentState } from '@/context-store/states/contextStoreFiltersComponentState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
@@ -23,7 +23,7 @@ export const useAddToGoogleContactsAction: ActionHookWithObjectMetadataItem =
   ({ objectMetadataItem }) => {
     const location = useLocation();
     const isJobRoute = location.pathname.includes('/job/');
-    const tableState = useRecoilValue(tableStateAtom);
+    const tableStateAtom = useRecoilValue(tableStateAtomState);
     const searchResults = useRecoilValue(searchResultsState);
     const { enqueueSnackBar } = useSnackBar();
     const [tokenPair] = useRecoilState(tokenPairState);
@@ -64,10 +64,11 @@ export const useAddToGoogleContactsAction: ActionHookWithObjectMetadataItem =
     });
 
     const shouldBeRegistered = true;
-    const [isAddToGoogleContactsModalOpen, setIsAddToGoogleContactsModalOpen] = useState(false);
+    const [isAddToGoogleContactsModalOpen, setIsAddToGoogleContactsModalOpen] =
+      useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [loading, setLoading] = useState(false);
-    
+
     const resetState = useCallback(() => {
       setIsProcessing(false);
       setNumberOfSelectedRecords(0);
@@ -77,58 +78,63 @@ export const useAddToGoogleContactsAction: ActionHookWithObjectMetadataItem =
       });
     }, [setNumberOfSelectedRecords, setTargetedRecordsRule]);
 
-    const sendAddToGoogleContactsRequest = useCallback(async (candidateIds: string[], objectNameSingular: string) => {
-      setLoading(true);
-      
-      try {
-        const url = `${process.env.REACT_APP_SERVER_BASE_URL}/contacts/add-candidate-to-google-contacts`;
-        
-        const response = await axios.post(
-          url,
-          { 
-            candidateIds: candidateIds,
-            objectNameSingular: objectNameSingular
-          },
-          { 
-            headers: { 
-              Authorization: `Bearer ${tokenPair?.accessToken?.token}`, 
-              'Content-Type': 'application/json' 
-            } 
-          }
-        );
-        
-        return response.data;
-      } catch (error) {
-        console.error('Error adding candidates to Google Contacts:', error);
-        throw error;
-      } finally {
-        setLoading(false);
-      }
-    }, [tokenPair?.accessToken?.token]);
+    const sendAddToGoogleContactsRequest = useCallback(
+      async (candidateIds: string[], objectNameSingular: string) => {
+        setLoading(true);
+
+        try {
+          const url = `${process.env.REACT_APP_SERVER_BASE_URL}/contacts/add-candidate-to-google-contacts`;
+
+          const response = await axios.post(
+            url,
+            {
+              candidateIds,
+              objectNameSingular,
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+                'Content-Type': 'application/json',
+              },
+            },
+          );
+
+          return response.data;
+        } finally {
+          setLoading(false);
+        }
+      },
+      [tokenPair?.accessToken?.token],
+    );
 
     const validateAndGetRecords = useCallback(async () => {
       let recordsToAddToGoogleContacts;
 
-      if (isJobRoute && tableState?.selectedRowIds?.length > 0) {
-        const selectedIdsSet = new Set(tableState.selectedRowIds);
-        
+      if (isJobRoute && tableStateAtom?.selectedRowIds?.length > 0) {
+        const selectedIdsSet = new Set(tableStateAtom.selectedRowIds);
+
         // Filter database candidates (from rawData) - match by id
-        const databaseCandidates = tableState.rawData.filter(record => 
-          selectedIdsSet.has(record.id)
+        const databaseCandidates = tableStateAtom.rawData.filter((record) =>
+          selectedIdsSet.has(record.id),
         );
-        
+
         // Filter LinkedIn/search candidates (from searchResults) - match by id first, then tempId
         // Since selectedRowIds now prefers permanent id, check id first
         const searchCandidates = searchResults.filter((record) => {
           const recordId = record?.id;
           const recordTempId = record?.tempId;
           // Check if selectedRowIds contains either the permanent id or tempId
-          return (recordId && selectedIdsSet.has(recordId)) || 
-                 (recordTempId && selectedIdsSet.has(recordTempId));
+          return (
+            (recordId && selectedIdsSet.has(recordId)) ||
+            (recordTempId && selectedIdsSet.has(recordTempId))
+          );
         });
-        
+
         // Merge both types of candidates
-        recordsToAddToGoogleContacts = [...databaseCandidates, ...searchCandidates];
+        recordsToAddToGoogleContacts = [
+          ...databaseCandidates,
+          ...searchCandidates,
+        ];
       } else {
         recordsToAddToGoogleContacts = await fetchAllRecordIds();
       }
@@ -138,13 +144,20 @@ export const useAddToGoogleContactsAction: ActionHookWithObjectMetadataItem =
       }
 
       const recordIdsToAddToGoogleContacts = recordsToAddToGoogleContacts
-        .map((record) => 
-          (record as { tempId?: string; id: string | null }).tempId || record.id
+        .map(
+          (record) =>
+            (record as { tempId?: string; id: string | null }).tempId || record.id,
         )
         .filter((id): id is string => id !== null && id !== undefined);
 
       return { recordIdsToAddToGoogleContacts };
-    }, [isJobRoute, tableState, searchResults, fetchAllRecordIds, objectMetadataItem.nameSingular]);
+    }, [
+      fetchAllRecordIds,
+      isJobRoute,
+      objectMetadataItem.nameSingular,
+      searchResults,
+      tableStateAtom,
+    ]);
 
     const handleAddToGoogleContactsClick = useCallback(async () => {
       if (isProcessing) {
@@ -158,25 +171,32 @@ export const useAddToGoogleContactsAction: ActionHookWithObjectMetadataItem =
       try {
         setIsProcessing(true);
         const { recordIdsToAddToGoogleContacts } = await validateAndGetRecords();
-        
+
         const result = await sendAddToGoogleContactsRequest(
           recordIdsToAddToGoogleContacts,
-          objectMetadataItem.nameSingular
+          objectMetadataItem.nameSingular,
         );
 
-        enqueueSnackBar(`Successfully added ${result.created || 0} candidates to Google Contacts. ${result.skipped || 0} candidates were already in contacts.`, {
-          variant: SnackBarVariant.Success,
-          duration: 5000,
-        });
-        
+        enqueueSnackBar(
+          `Successfully added ${result.created || 0} candidates to Google Contacts. ${result.skipped || 0} candidates were already in contacts.`,
+          {
+            variant: SnackBarVariant.Success,
+            duration: 5000,
+          },
+        );
+
         setIsAddToGoogleContactsModalOpen(false);
         resetState();
       } catch (error) {
-        console.error('Error adding candidates to Google Contacts:', error);
-        enqueueSnackBar(error instanceof Error ? error.message : 'Error adding candidates to Google Contacts', {
-          variant: SnackBarVariant.Error,
-          duration: 5000,
-        });
+        enqueueSnackBar(
+          error instanceof Error
+            ? error.message
+            : 'Error adding candidates to Google Contacts',
+          {
+            variant: SnackBarVariant.Error,
+            duration: 5000,
+          },
+        );
       } finally {
         setIsProcessing(false);
       }
@@ -186,7 +206,7 @@ export const useAddToGoogleContactsAction: ActionHookWithObjectMetadataItem =
       sendAddToGoogleContactsRequest,
       objectMetadataItem.nameSingular,
       enqueueSnackBar,
-      resetState
+      resetState,
     ]);
 
     const onClick = useCallback(async () => {
@@ -197,17 +217,19 @@ export const useAddToGoogleContactsAction: ActionHookWithObjectMetadataItem =
       if (isProcessing) {
         return;
       }
-      
+
       try {
         setIsProcessing(true);
         await validateAndGetRecords();
         setIsAddToGoogleContactsModalOpen(true);
       } catch (error) {
-        console.error('Error validating candidates:', error);
-        enqueueSnackBar(error instanceof Error ? error.message : 'Error validating candidates', {
-          variant: SnackBarVariant.Error,
-          duration: 5000,
-        });
+        enqueueSnackBar(
+          error instanceof Error ? error.message : 'Error validating candidates',
+          {
+            variant: SnackBarVariant.Error,
+            duration: 5000,
+          },
+        );
       } finally {
         setIsProcessing(false);
       }
