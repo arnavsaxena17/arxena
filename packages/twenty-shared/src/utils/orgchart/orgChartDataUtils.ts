@@ -46,6 +46,18 @@ export type RawOrgNode = {
 
 export type NodeState = 'preview' | 'active' | 'lock';
 
+const normalizeMaybeImageUrl = (value: unknown): string => {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  const lowered = trimmed.toLowerCase();
+  // Some upstream payloads serialize null-ish values as strings.
+  if (lowered === 'null' || lowered === 'undefined' || lowered === 'none') return '';
+  // Some sources use "0" / 0 for "missing".
+  if (lowered === '0') return '';
+  return trimmed;
+};
+
 /**
  * Raw org chart payload from API/cache.
  * Shape from Python OrgStructure.create_org_charts_json_from_std_people_array.
@@ -151,11 +163,11 @@ function processCandidate(
     candidate?.full_name != null
       ? toTitleCase(candidate.full_name, { skipIfMasked: true })
       : '';
-  const imageUrl =
+  const imageUrlRaw =
     candidate?.image ??
-    (candidate as { profile_picture_url?: string })?.profile_picture_url;
-  node[`image_${index}`] =
-    imageUrl != null && imageUrl !== '' ? imageUrl : '';
+    (candidate as { profile_picture_url?: unknown })?.profile_picture_url;
+  const imageUrl = normalizeMaybeImageUrl(imageUrlRaw);
+  node[`image_${index}`] = imageUrl;
   const rawLinkedin =
     candidate?.std_linkedin_url ??
     (candidate as { linkedin_url?: string } | undefined)?.linkedin_url ??

@@ -639,9 +639,16 @@ export const createNodeTemplate = ({
           {
             desiredSize: new go.Size(30, 30),
             imageStretch: go.GraphObject.UniformToFill,
-            errorFunction: () => defaultAvatarUrl,
+            // Ensure broken/blocked images always fall back.
+            errorFunction: (pic: go.Picture) => {
+              pic.source = defaultAvatarUrl;
+            },
           },
-          new go.Binding('source', `image_${idx}` as const, (src) => (src as string) || defaultAvatarUrl),
+          new go.Binding(
+            'source',
+            `image_${idx}` as const,
+            (src) => (src as string) || defaultAvatarUrl,
+          ),
         ),
       ),
       $(

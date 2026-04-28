@@ -19,7 +19,13 @@ const readImageFromRawCandidate = (
 
   const candidates = [candidateImage, profilePictureUrl, pictureUrl, picture];
   const found = candidates.find(
-    (value) => typeof value === 'string' && value.trim() !== '',
+    (value) => {
+      if (typeof value !== 'string') return false;
+      const trimmed = value.trim();
+      if (!trimmed) return false;
+      const lowered = trimmed.toLowerCase();
+      return lowered !== 'null' && lowered !== 'undefined' && lowered !== 'none' && lowered !== '0';
+    },
   );
 
   return found && typeof found === 'string' ? found : (fallback ?? '');
