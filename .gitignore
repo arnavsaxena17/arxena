@@ -41,6 +41,10 @@ test-results/
 dump.rdb
 .tinyb
 
+# Prevent accidental TypeScript emits into source (twenty-shared)
+packages/twenty-shared/src/**/*.js
+packages/twenty-shared/src/**/*.js.map
+
 .notes
 .claude/
 /data/
