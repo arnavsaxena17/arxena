@@ -30,6 +30,7 @@ import {
   type OrgChartNodeData,
 } from 'twenty-shared';
 
+import { OrgChartShareModal } from '../components/OrgChartShareModal';
 import { useJobOrgChartData } from '../hooks/useJobOrgChartData';
 import { useOrgChartActions } from '../hooks/useOrgChartActions';
 import {
@@ -105,6 +106,7 @@ export const ArxOrgChartContainer = ({
   jobId,
 }: ArxOrgChartProps) => {
   const navigate = useNavigate();
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<string | undefined>();
   const [selectedFunctionRoot, setSelectedFunctionRoot] = useState<string | undefined>();
   const [searchTerm, setSearchTerm] = useState('');
@@ -916,6 +918,7 @@ export const ArxOrgChartContainer = ({
     },
     toolbarTrailing: null,
     onClearCompanyCache: () => void actions.handleBackgroundContextAction('delete_company_cache'),
+    onShare: accessToken && baseUrl ? () => setIsShareModalOpen(true) : undefined,
   };
 
   const showContextProgressBanner =
@@ -924,7 +927,8 @@ export const ArxOrgChartContainer = ({
     !!actions.contextProgressMessage;
 
   return (
-    <ArxOrgChartView
+    <>
+      <ArxOrgChartView
       headerProps={headerProps as any}
       isLoading={isLoading}
       error={error ?? null}
@@ -1058,6 +1062,18 @@ export const ArxOrgChartContainer = ({
         companyName: effectiveCompanyName ?? undefined,
       }}
     />
+      {accessToken && baseUrl ? (
+        <OrgChartShareModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          companyId={companyId}
+          companyName={effectiveCompanyName ?? fallbackCompanyInfo?.companyName}
+          accessToken={accessToken}
+          serverBaseUrl={baseUrl}
+          arxenaSiteBaseUrl={process.env.REACT_APP_ARXENA_SITE_BASE_URL}
+        />
+      ) : null}
+    </>
   );
 };
 

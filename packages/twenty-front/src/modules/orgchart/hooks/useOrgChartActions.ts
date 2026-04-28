@@ -1788,11 +1788,30 @@ export const useOrgChartActions = ({
     node: OrgChartNodeData,
     payload?: OrgChartNodeContextPayload,
   ) => {
+    const multiSelectedNodes =
+      Array.isArray(payload?.selectedNodes) && payload.selectedNodes.length > 1
+        ? payload.selectedNodes
+        : null;
+
     if (action === 'delete_company_cache') {
       return;
     }
 
     if (action === 'current_node') {
+      // When multiple nodes are selected and the user clicks on any node’s context
+      // menu, apply "current node" actions to the entire selection.
+      // For "Get people in this position", the closest multi-node equivalent UX is
+      // a combined "selected_nodes" search (single modal, aggregated results).
+      if (multiSelectedNodes) {
+        await executeOrgchartSearch({
+          mode: 'selected_nodes',
+          origin: 'node',
+          node,
+          selectedNodes: multiSelectedNodes,
+        });
+        return;
+      }
+
       await loadNodePeopleDetails(node);
       return;
     }
@@ -1802,6 +1821,16 @@ export const useOrgChartActions = ({
       action === 'm7kq_fetch_phone' ||
       action === 'm7kq_fetch_email'
     ) {
+      if (multiSelectedNodes) {
+        // Run sequentially to keep UI/snackbars deterministic and avoid spiking
+        // contact enrichment usage.
+        for (const n of multiSelectedNodes) {
+          // eslint-disable-next-line no-await-in-loop
+          await runM7kqNodeProfileFetchFromContext(n, action);
+        }
+        return;
+      }
+
       await runM7kqNodeProfileFetchFromContext(node, action);
       return;
     }

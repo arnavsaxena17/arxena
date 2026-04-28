@@ -1,35 +1,43 @@
 import {
-  Body,
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  Logger,
-  Param,
-  Post,
-  Query,
-  Req,
-  Res,
+    Body,
+    Controller,
+    Get,
+    HttpException,
+    HttpStatus,
+    Logger,
+    Param,
+    Post,
+    Query,
+    Req,
+    Res,
+    UseGuards,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { v4 as uuidV4 } from 'uuid';
 
 import { ApifyEmployeeCountService } from 'src/engine/core-modules/apify/services/apify-employee-count.service';
 import { ApifyService } from 'src/engine/core-modules/apify/services/apify.service';
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/services/bright-data-serp.service';
+import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
+import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
+import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { ApolloIoRestService } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
 import type {
-  ClassicPeopleSearchStrategyResult,
-  GeneratedSearchParameters,
-  RecruiterPeopleSearchStrategyResult,
-  SalesNavigatorPeopleSearchStrategyResult,
+    ClassicPeopleSearchStrategyResult,
+    GeneratedSearchParameters,
+    RecruiterPeopleSearchStrategyResult,
+    SalesNavigatorPeopleSearchStrategyResult,
 } from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
 import { constructSearchParamKey } from 'src/engine/core-modules/candidate-search/utils/search-parameter.utils';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { OrgChartService } from 'src/engine/core-modules/org-chart/services/org-chart.service';
 import { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { LinkedinXraySearchEngine } from 'src/modules/linkedin-xray/types/linkedin-xray-search-job.types';
 import { CompanyAutocompleteDto } from '../dto/company-autocomplete.dto';
 import { OrgChartNodePeopleDto } from '../dto/org-chart-node-people.dto';
@@ -40,6 +48,7 @@ import { OrgChartClientIpService } from '../services/org-chart-client-ip.service
 import { OrgChartEsService } from '../services/org-chart-es.service';
 import { OrgChartLinkedInBuildService } from '../services/org-chart-linkedin-build.service';
 import { OrgChartTheOrgEnrichmentService } from '../services/org-chart-theorg-enrichment.service';
+import { OrgChartS3Service } from '../services/orgchart-s3.service';
 import { PythonOrgChartService } from '../services/python-org-chart.service';
 
 @Controller('org-chart')
@@ -63,7 +72,16 @@ export class OrgChartController {
     private readonly brightDataSerpService: BrightDataSerpService,
     private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
     private readonly apolloIoRestService: ApolloIoRestService,
+    private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly apiKeyService: ApiKeyService,
+    private readonly orgChartS3Service: OrgChartS3Service,
+    @InjectCacheStorage(CacheStorageNamespace.EngineOrgChart)
+    private readonly orgChartCacheStorageService: CacheStorageService,
   ) {}
+
+  private shareCacheKey(shareToken: string): string {
+    return `orgchart-share:${shareToken}`;
+  }
 
   private getAuthToken(req: Request): string | undefined {
     const authHeader = req.headers.authorization;
@@ -99,6 +117,177 @@ export class OrgChartController {
     result: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     return this.imageProxyService.proxyImagesInPayload(result);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('share/create')
+  async createOrgChartShareLink(
+    @Body()
+    body: {
+      companyId?: string;
+      companyName?: string;
+      ttlSeconds?: number;
+    },
+    @Req() req: Request,
+  ): Promise<{
+    status: 'ok';
+    shareToken: string;
+    accessKey: string;
+    expiresAt: string;
+  }> {
+    const authToken = this.getAuthToken(req);
+    if (!authToken) {
+      throw new HttpException('Authentication required', HttpStatus.UNAUTHORIZED);
+    }
+    if (!(req as { user?: unknown }).user) {
+      throw new HttpException('Authentication required', HttpStatus.UNAUTHORIZED);
+    }
+
+    const companyId = body?.companyId?.trim() ?? '';
+    if (!companyId || companyId.includes('/') || companyId.includes('..')) {
+      throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
+    }
+
+    const ttlSeconds =
+      typeof body.ttlSeconds === 'number' && Number.isFinite(body.ttlSeconds)
+        ? Math.floor(body.ttlSeconds)
+        : 0;
+    if (ttlSeconds <= 0) {
+      throw new HttpException(
+        'Body field "ttlSeconds" is required and must be > 0',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    // Guardrail: 30 days max to keep tokens short-lived.
+    if (ttlSeconds > 60 * 60 * 24 * 30) {
+      throw new HttpException(
+        'ttlSeconds cannot exceed 30 days',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Ensure we have a persisted org chart to share (S3 is source of truth for share viewer).
+    const normalizedCompanyId = this.normalizeCompanyId(companyId);
+    const existing = await this.orgChartS3Service.getOrgChart(normalizedCompanyId);
+    if (!existing) {
+      throw new HttpException(
+        'No persisted org chart found. Generate the full org chart first, then share.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(
+      authToken,
+    );
+    if (!workspaceId) {
+      throw new HttpException('Workspace not found', HttpStatus.UNAUTHORIZED);
+    }
+
+    const apiKeyId = uuidV4();
+    const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
+
+    // Create workspace API key row (so JWT jti has backing record + expiresAt/revocation).
+    const createKeyMutation = `
+      mutation CreateOneApiKey($input: ApiKeyCreateInput!) {
+        createApiKey(data: $input) {
+          id
+        }
+      }
+    `;
+    const keyNameParts = [
+      'org_chart_share',
+      normalizedCompanyId,
+      expiresAt.toISOString(),
+    ];
+    const keyName = keyNameParts.join('::').slice(0, 180);
+
+    await this.staticGraphQLService.executeGraphQL(
+      createKeyMutation,
+      {
+        input: {
+          id: apiKeyId,
+          name: keyName,
+          expiresAt: expiresAt.toISOString(),
+        },
+      },
+      authToken,
+    );
+
+    const token =
+      await this.apiKeyService.generateApiKeyToken(workspaceId, apiKeyId, expiresAt);
+    if (!token?.token) {
+      throw new HttpException(
+        'Failed to generate access key',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    const shareToken = uuidV4();
+    await this.orgChartCacheStorageService.set(
+      this.shareCacheKey(shareToken),
+      {
+        companyId: normalizedCompanyId,
+        companyName:
+          typeof body.companyName === 'string' ? body.companyName.trim() : undefined,
+        createdAt: new Date().toISOString(),
+      },
+      ttlSeconds,
+    );
+
+    return {
+      status: 'ok',
+      shareToken,
+      accessKey: token.token,
+      expiresAt: expiresAt.toISOString(),
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('share/:shareToken')
+  async getSharedOrgChart(
+    @Param('shareToken') shareToken: string,
+    @Req() req: Request,
+  ): Promise<{ status: 'ok'; result: Record<string, unknown> }> {
+    const trimmed = (shareToken ?? '').trim();
+    if (!trimmed) {
+      throw new HttpException('Invalid share token', HttpStatus.BAD_REQUEST);
+    }
+
+    const authToken = this.getAuthToken(req);
+    if (!authToken) {
+      throw new HttpException('Access key required', HttpStatus.UNAUTHORIZED);
+    }
+    if (!(req as { apiKey?: unknown }).apiKey) {
+      throw new HttpException('Access key required', HttpStatus.UNAUTHORIZED);
+    }
+
+    const mapping = await this.orgChartCacheStorageService.get<{
+      companyId?: string;
+      companyName?: string;
+    }>(this.shareCacheKey(trimmed));
+
+    const companyId = mapping?.companyId?.trim() ?? '';
+    if (!companyId) {
+      // Treat as expired / missing.
+      throw new HttpException('Share link expired', HttpStatus.GONE);
+    }
+
+    const orgChart = await this.orgChartS3Service.getOrgChart(companyId);
+    if (!orgChart) {
+      throw new HttpException('Org chart not found', HttpStatus.NOT_FOUND);
+    }
+
+    const payload: Record<string, unknown> = {
+      ...(orgChart as unknown as Record<string, unknown>),
+      ...(mapping?.companyName?.trim()
+        ? { job_company_name: mapping.companyName.trim() }
+        : {}),
+    };
+
+    return {
+      status: 'ok' as const,
+      result: await this.proxyOrgChartPayload(payload),
+    };
   }
 
   @Get('company-logo')

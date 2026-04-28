@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import type { OrgChartFiltersProps } from 'twenty-orgchart';
 import { OrgChartFilters } from 'twenty-orgchart';
+import { Button } from 'twenty-ui';
 
 import type { OrgChartBusinessDivisionQueryProps } from './OrgChartBusinessDivisionQuery';
 import { OrgChartBusinessDivisionQuery } from './OrgChartBusinessDivisionQuery';
@@ -48,6 +49,10 @@ const StyledBackButton = styled.button`
   }
 `;
 
+const StyledShareButton = styled(Button)`
+  margin-left: ${({ theme }) => theme.spacing(2)};
+`;
+
 export type OrgChartHeaderProps = OrgChartCompanyInfoProps & {
   onBack?: () => void;
   hasFilters: boolean;
@@ -56,6 +61,7 @@ export type OrgChartHeaderProps = OrgChartCompanyInfoProps & {
   /** Extra controls in the filter toolbar (e.g. LinkedIn query generator preference). */
   toolbarTrailing?: ReactNode;
   onClearCompanyCache?: () => void;
+  onShare?: () => void;
 };
 
 export const OrgChartHeader = ({
@@ -65,6 +71,7 @@ export const OrgChartHeader = ({
   businessDivisionQueryProps,
   toolbarTrailing,
   onClearCompanyCache,
+  onShare,
   ...companyInfoProps
 }: OrgChartHeaderProps) => {
   const [isCompanyDrawerOpen, setIsCompanyDrawerOpen] = useState(false);
@@ -81,6 +88,16 @@ export const OrgChartHeader = ({
           {...companyInfoProps}
           onViewDetails={() => setIsCompanyDrawerOpen(true)}
         />
+        {onShare && (
+          <StyledShareButton
+            title="Share"
+            variant="secondary"
+            accent="default"
+            size="small"
+            type="button"
+            onClick={onShare}
+          />
+        )}
         {hasFilters && (
           <StyledOrgChartToolbar>
             <OrgChartFilters {...filtersProps} omitMarginLeft />

@@ -125,6 +125,6 @@ import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
     // reenable when working on: https://github.com/twentyhq/twenty/issues/9143
     // OAuthService,
   ],
-  exports: [AccessTokenService, LoginTokenService, RefreshTokenService],
+  exports: [AccessTokenService, LoginTokenService, RefreshTokenService, ApiKeyService],
 })
 export class AuthModule {}

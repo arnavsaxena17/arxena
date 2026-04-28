@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 
 import { ApifyModule } from 'src/engine/core-modules/apify/apify.module';
+import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { BrightDataModule } from 'src/engine/core-modules/bright-data/bright-data.module';
 import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
@@ -12,6 +13,8 @@ import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/li
 import { TheOfficialBoardModule } from 'src/engine/core-modules/theofficialboard/theofficialboard.module';
 import { TheOrgModule } from 'src/engine/core-modules/theorg/theorg.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
+import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { LinkedinXrayModule } from 'src/modules/linkedin-xray/linkedin-xray.module';
 
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
@@ -44,6 +47,7 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
   imports: [
     OrgChartClientIpModule,
     ApifyModule,
+    AuthModule,
     BillingModule,
     BrightDataModule,
     CandidateSourcingModule,
@@ -55,12 +59,14 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
     TheOrgModule,
     TheOfficialBoardModule,
     WorkspaceModificationsModule,
+    WorkspaceCacheStorageModule,
     forwardRef(() => CandidateSearchModule),
   ],
   controllers: [OrgChartController],
   providers: [
     UnipileCompanyService,
     WorkspaceMemberProfileUnipileService,
+    JwtAuthGuard,
     OrgChartService,
     OrgChartLinkedInBuildService,
     OrgChartRecordWorkspaceService,

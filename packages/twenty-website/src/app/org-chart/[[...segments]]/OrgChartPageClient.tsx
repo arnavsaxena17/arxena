@@ -15,17 +15,17 @@ import { companySearchLightTheme } from '@/lib/company-search';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- orgchart-core is used alongside dynamic OrgChartDiagram
 import {
-  OrgChartDiagramHandle,
-  OrgChartFilters,
-  OrgChartSearchControls,
-  OrgChartSignUpModal,
-  useCompanyInfoLookup,
-  useOrgChartFilterOptions,
+    OrgChartDiagramHandle,
+    OrgChartFilters,
+    OrgChartSearchControls,
+    OrgChartSignUpModal,
+    useCompanyInfoLookup,
+    useOrgChartFilterOptions,
 } from 'twenty-orgchart/orgchart-core';
 import {
-  appendOrgChartSignupSearchParams,
-  OrgChartNodeData,
-  toSlug,
+    appendOrgChartSignupSearchParams,
+    OrgChartNodeData,
+    toSlug,
 } from 'twenty-shared';
 
 const OrgChartDiagram = dynamic(
@@ -489,8 +489,7 @@ export const OrgChartPageClient = ({
             {showPreviewPersistentBanner && (
               <StyledPreviewPersistentBanner>
                 <span>
-                  This is a preview of the org chart. Get the full org chart for
-                  free when you sign up.
+                  Get access to 10M Real Time Org Charts, Sign up
                 </span>
                 <StyledPreviewBannerSignupLink href={signUpUrlWithContext}>
                   Sign up free

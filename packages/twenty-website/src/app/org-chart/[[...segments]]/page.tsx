@@ -2,13 +2,13 @@ import { Metadata } from 'next';
 import { headers } from 'next/headers';
 
 import {
-  extractOrgData,
-  fromSlug,
-  getProxiedImageUrl,
-  processOrgChartToNodeData,
-  toSlug,
-  toTitleCase,
-  type OrgChartNodeData,
+    extractOrgData,
+    fromSlug,
+    getProxiedImageUrl,
+    processOrgChartToNodeData,
+    toSlug,
+    toTitleCase,
+    type OrgChartNodeData,
 } from 'twenty-shared';
 
 import { getSignUpUrl } from '@/lib/auth-urls';
@@ -16,8 +16,8 @@ import { getBaseUrl } from '@/lib/base-url';
 import { decodeOverEncodedPath } from '@/lib/url-utils';
 
 import {
-  BreadcrumbListSchema,
-  BreadcrumbNav,
+    BreadcrumbListSchema,
+    BreadcrumbNav,
 } from '@/app/_components/BreadcrumbList';
 import { OrgChartPageClient } from './OrgChartPageClient';
 import { OrgChartStructureSSR } from './OrgChartStructureSSR';
@@ -28,6 +28,57 @@ type PageProps = {
   params: Promise<{ segments?: string[] }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
+
+async function fetchSharedOrgChart(input: {
+  shareToken: string;
+  accessKey: string;
+  forwardedUserAgent?: string;
+}): Promise<Record<string, unknown> | null> {
+  const baseUrl = await getBaseUrl();
+  const requestHeaders = await headers();
+  const forwardedHeaders: Record<string, string> = {};
+  const passthroughHeaderNames = [
+    'cloudfront-viewer-address',
+    'cf-connecting-ip',
+    'true-client-ip',
+    'x-forwarded-for',
+    'x-real-ip',
+    'referer',
+  ] as const;
+
+  for (const headerName of passthroughHeaderNames) {
+    const value = requestHeaders.get(headerName);
+    if (value) {
+      forwardedHeaders[headerName] = value;
+    }
+  }
+
+  if (input.forwardedUserAgent) {
+    forwardedHeaders['x-forwarded-user-agent'] = input.forwardedUserAgent;
+  }
+
+  const params = new URLSearchParams();
+  params.set('k', input.accessKey);
+  const url = `${baseUrl}/api/org-chart/share/${encodeURIComponent(
+    input.shareToken,
+  )}?${params.toString()}`;
+
+  try {
+    const res = await fetch(url, {
+      cache: 'no-store',
+      headers:
+        Object.keys(forwardedHeaders).length > 0 ? forwardedHeaders : undefined,
+    });
+    const json = (await res.json()) as {
+      status?: string;
+      result?: Record<string, unknown>;
+    };
+    if (json?.status === 'ok' && json.result) return json.result;
+  } catch {
+    // fetch failed
+  }
+  return null;
+}
 
 async function fetchOrgChart(
   companyId: string,
@@ -100,6 +151,13 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { segments } = await params;
+  if (segments?.[0] === 'share') {
+    return {
+      title: 'Shared Org Chart - Arxena',
+      description: 'A shared org chart link from Arxena.',
+      alternates: { canonical: '/org-chart' },
+    };
+  }
   const companyId = segments?.[0]
     ? decodeOverEncodedPath(segments[0])
     : 'company';
@@ -225,6 +283,145 @@ export default async function OrgChartPage({
   const { segments } = await params;
   const resolvedSearchParams = await searchParams;
 
+  const headersList = await headers();
+  const forwardedUserAgent = headersList.get('user-agent') ?? undefined;
+
+  if (segments?.[0] === 'share') {
+    const shareToken = segments?.[1] ? decodeOverEncodedPath(segments[1]) : '';
+    const accessKey =
+      typeof resolvedSearchParams.k === 'string' ? resolvedSearchParams.k : '';
+
+    if (!shareToken || !accessKey) {
+      return (
+        <div style={{ padding: 48, textAlign: 'center' }}>
+          <h1>Link expired</h1>
+          <p>
+            Get access to 10M Real Time Org Charts, Sign up to view any org chart
+            you want.
+          </p>
+          <a
+            href={getSignUpUrl()}
+            style={{
+              display: 'inline-flex',
+              padding: '12px 18px',
+              borderRadius: 10,
+              background: '#000',
+              color: '#fff',
+              textDecoration: 'none',
+              fontWeight: 600,
+              marginTop: 12,
+            }}
+          >
+            Sign up
+          </a>
+        </div>
+      );
+    }
+
+    const rawData = await fetchSharedOrgChart({
+      shareToken,
+      accessKey,
+      forwardedUserAgent,
+    });
+
+    if (!rawData) {
+      return (
+        <div style={{ padding: 48, textAlign: 'center' }}>
+          <h1>Link expired</h1>
+          <p>
+            Get access to 10M Real Time Org Charts, Sign up to view any org chart
+            you want.
+          </p>
+          <a
+            href={getSignUpUrl()}
+            style={{
+              display: 'inline-flex',
+              padding: '12px 18px',
+              borderRadius: 10,
+              background: '#000',
+              color: '#fff',
+              textDecoration: 'none',
+              fontWeight: 600,
+              marginTop: 12,
+            }}
+          >
+            Sign up
+          </a>
+        </div>
+      );
+    }
+
+    const orgData = extractOrgData(rawData);
+    const baseUrl = await getBaseUrl();
+    const apiBase = `${baseUrl}/api/org-chart`;
+    const rawNodeDataArray = orgData ? processOrgChartToNodeData(orgData) : [];
+    const nodeDataArray = rawNodeDataArray.map((node) => {
+      const out = { ...node } as OrgChartNodeData;
+      for (let i = 0; i < 4; i++) {
+        const key = `image_${i}` as keyof OrgChartNodeData;
+        const val = out[key];
+        if (typeof val === 'string' && val) {
+          (out as Record<string, string>)[key] = getProxiedImageUrl(val, apiBase);
+        }
+      }
+      return out;
+    });
+
+    const companyId =
+      typeof rawData?.company_id === 'string'
+        ? rawData.company_id
+        : typeof rawData?.job_company_id === 'string'
+          ? rawData.job_company_id
+          : 'company';
+    const displayCompanyName = toTitleCase(
+      typeof rawData?.job_company_name === 'string'
+        ? rawData.job_company_name
+        : companyId,
+    );
+
+    const profileCount =
+      typeof rawData?.profile_count === 'number' ? rawData.profile_count : undefined;
+    const locationName =
+      typeof rawData?.location_name === 'string'
+        ? toTitleCase(rawData.location_name)
+        : undefined;
+    const industry =
+      typeof rawData?.industry === 'string' ? toTitleCase(rawData.industry) : undefined;
+    const linkedinUrl =
+      typeof rawData?.linkedin_url === 'string' ? rawData.linkedin_url : undefined;
+
+    return (
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+          width: '100%',
+        }}
+      >
+        <OrgChartPageClient
+          companyId={companyId}
+          companyName={displayCompanyName}
+          profileCount={profileCount}
+          linkedinUrl={linkedinUrl}
+          nodeDataArray={nodeDataArray}
+          orgData={rawData}
+          initialCountry={undefined}
+          initialFunctionRoot={undefined}
+          signUpUrl={getSignUpUrl()}
+        >
+          <OrgChartStructureSSR
+            nodeDataArray={nodeDataArray}
+            companyName={displayCompanyName}
+            locationName={locationName}
+            industry={industry}
+          />
+        </OrgChartPageClient>
+      </div>
+    );
+  }
+
   const rawCompanyId = segments?.[0] ?? null;
   const companyId = rawCompanyId
     ? decodeOverEncodedPath(rawCompanyId)
@@ -262,9 +459,6 @@ export default async function OrgChartPage({
     typeof resolvedSearchParams.website === 'string'
       ? resolvedSearchParams.website
       : undefined;
-
-  const headersList = await headers();
-  const forwardedUserAgent = headersList.get('user-agent') ?? undefined;
 
   const rawData = await fetchOrgChart(companyId, {
     companyName,

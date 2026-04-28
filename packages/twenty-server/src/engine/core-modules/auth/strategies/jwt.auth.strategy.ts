@@ -7,12 +7,12 @@ import { Repository } from 'typeorm';
 
 import { TypeORMService } from 'src/database/typeorm/typeorm.service';
 import {
-  AuthException,
-  AuthExceptionCode,
+    AuthException,
+    AuthExceptionCode,
 } from 'src/engine/core-modules/auth/auth.exception';
 import {
-  AuthContext,
-  JwtPayload,
+    AuthContext,
+    JwtPayload,
 } from 'src/engine/core-modules/auth/types/auth-context.type';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
@@ -94,6 +94,17 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy, 'jwt') {
         'This API Key is revoked',
         AuthExceptionCode.FORBIDDEN_EXCEPTION,
       );
+    }
+
+    // Enforce persisted expiry to ensure time-limited API keys truly time out.
+    if (apiKey.expiresAt) {
+      const expiresAtMs = new Date(apiKey.expiresAt).getTime();
+      if (Number.isFinite(expiresAtMs) && expiresAtMs <= Date.now()) {
+        throw new AuthException(
+          'This API Key is expired',
+          AuthExceptionCode.FORBIDDEN_EXCEPTION,
+        );
+      }
     }
 
     return { apiKey, workspace };

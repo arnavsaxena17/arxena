@@ -711,9 +711,7 @@ export class CreateMetaDataStructure {
             await this.workspaceQueryService.getWorkspaceNameFromToken(apiToken);
 
           if (this.environmentService.get('SKIP_WORKSPACE_SETUP_COMPLETE_EMAIL')) {
-            console.log(
-              'SKIP_WORKSPACE_SETUP_COMPLETE_EMAIL is true; skipping workspace ready email',
-            );
+            console.log( 'SKIP WORKSPACE SETUP COMPLETE EMAIL is true; skipping workspace ready email' );
           } else {
             const emailTemplate = WorkspaceSetupCompleteEmail({
               firstName,

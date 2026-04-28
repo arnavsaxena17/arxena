@@ -23,6 +23,23 @@ const orgChartContextNodeData = (
   return part?.data as OrgChartNodeData | undefined;
 };
 
+const orgChartGetDiagramSelectedNodes = (
+  obj: go.GraphObject,
+  fallback?: OrgChartNodeData,
+): OrgChartNodeData[] => {
+  const dg = obj.diagram;
+  const selectedNodes: OrgChartNodeData[] = [];
+  if (dg) {
+    dg.selection.each((p: go.Part) => {
+      if (p instanceof go.Node && p.data) {
+        selectedNodes.push(p.data as OrgChartNodeData);
+      }
+    });
+  }
+  if (selectedNodes.length > 0) return selectedNodes;
+  return fallback ? [fallback] : [];
+};
+
 const orgChartContextItemText = (
   $: OrgChartGraphObjectMake,
   text: string,
@@ -141,7 +158,10 @@ export const buildOrgChartNodeContextMenu = (
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
-          if (data) onNodeContextAction('current_node', data);
+          if (!data) return;
+          onNodeContextAction('current_node', data, {
+            selectedNodes: orgChartGetDiagramSelectedNodes(obj, data),
+          });
         },
       },
     ),
@@ -154,7 +174,9 @@ export const buildOrgChartNodeContextMenu = (
               click: (_e: go.InputEvent, obj: go.GraphObject) => {
                 const data = orgChartContextNodeData(obj);
                 if (data && orgChartNodeHasM7kqMatchIds(data)) {
-                  onNodeContextAction('m7kq_fetch_complete', data);
+                  onNodeContextAction('m7kq_fetch_complete', data, {
+                    selectedNodes: orgChartGetDiagramSelectedNodes(obj, data),
+                  });
                 }
               },
             },
@@ -166,7 +188,9 @@ export const buildOrgChartNodeContextMenu = (
               click: (_e: go.InputEvent, obj: go.GraphObject) => {
                 const data = orgChartContextNodeData(obj);
                 if (data && orgChartNodeHasM7kqMatchIds(data)) {
-                  onNodeContextAction('m7kq_fetch_phone', data);
+                  onNodeContextAction('m7kq_fetch_phone', data, {
+                    selectedNodes: orgChartGetDiagramSelectedNodes(obj, data),
+                  });
                 }
               },
             },
@@ -178,7 +202,9 @@ export const buildOrgChartNodeContextMenu = (
               click: (_e: go.InputEvent, obj: go.GraphObject) => {
                 const data = orgChartContextNodeData(obj);
                 if (data && orgChartNodeHasM7kqMatchIds(data)) {
-                  onNodeContextAction('m7kq_fetch_email', data);
+                  onNodeContextAction('m7kq_fetch_email', data, {
+                    selectedNodes: orgChartGetDiagramSelectedNodes(obj, data),
+                  });
                 }
               },
             },
@@ -192,17 +218,7 @@ export const buildOrgChartNodeContextMenu = (
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
           if (!data) return;
-          const dg = obj.diagram;
-          const selectedNodes: OrgChartNodeData[] = [];
-          if (dg) {
-            dg.selection.each((p: go.Part) => {
-              if (p instanceof go.Node && p.data) {
-                selectedNodes.push(p.data as OrgChartNodeData);
-              }
-            });
-          }
-          const effectiveSelected =
-            selectedNodes.length > 0 ? selectedNodes : [data];
+          const effectiveSelected = orgChartGetDiagramSelectedNodes(obj, data);
           onNodeContextAction('selected_nodes', data, {
             selectedNodes: effectiveSelected,
           });
@@ -220,7 +236,10 @@ export const buildOrgChartNodeContextMenu = (
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
-          if (data) onNodeContextAction('boolean_keywords', data);
+          if (!data) return;
+          onNodeContextAction('boolean_keywords', data, {
+            selectedNodes: orgChartGetDiagramSelectedNodes(obj, data),
+          });
         },
       },
     ),
@@ -230,7 +249,10 @@ export const buildOrgChartNodeContextMenu = (
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
-          if (data) onNodeContextAction('leadership', data);
+          if (!data) return;
+          onNodeContextAction('leadership', data, {
+            selectedNodes: orgChartGetDiagramSelectedNodes(obj, data),
+          });
         },
       },
     ),
@@ -240,7 +262,10 @@ export const buildOrgChartNodeContextMenu = (
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
-          if (data) onNodeContextAction('entire_company', data);
+          if (!data) return;
+          onNodeContextAction('entire_company', data, {
+            selectedNodes: orgChartGetDiagramSelectedNodes(obj, data),
+          });
         },
       },
     ),
@@ -250,7 +275,10 @@ export const buildOrgChartNodeContextMenu = (
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
-          if (data) onNodeContextAction('function_grade', data);
+          if (!data) return;
+          onNodeContextAction('function_grade', data, {
+            selectedNodes: orgChartGetDiagramSelectedNodes(obj, data),
+          });
         },
       },
     ),
@@ -260,7 +288,10 @@ export const buildOrgChartNodeContextMenu = (
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
-          if (data) onNodeContextAction('similar_companies', data);
+          if (!data) return;
+          onNodeContextAction('similar_companies', data, {
+            selectedNodes: orgChartGetDiagramSelectedNodes(obj, data),
+          });
         },
       },
     ),
@@ -275,7 +306,10 @@ export const buildOrgChartNodeContextMenu = (
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
-          if (data) onNodeContextAction('add_to_job_and_send_invite', data);
+          if (!data) return;
+          onNodeContextAction('add_to_job_and_send_invite', data, {
+            selectedNodes: orgChartGetDiagramSelectedNodes(obj, data),
+          });
         },
       },
     ),
@@ -285,7 +319,10 @@ export const buildOrgChartNodeContextMenu = (
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
-          if (data) onNodeContextAction('add_to_job_and_invite_to_job', data);
+          if (!data) return;
+          onNodeContextAction('add_to_job_and_invite_to_job', data, {
+            selectedNodes: orgChartGetDiagramSelectedNodes(obj, data),
+          });
         },
       },
     ),
@@ -302,6 +339,7 @@ export const buildOrgChartNodeContextMenu = (
           const data = orgChartContextNodeData(obj);
           if (data) {
             onNodeContextAction('outreach_linkedin_invite', data, {
+              selectedNodes: orgChartGetDiagramSelectedNodes(obj, data),
               personSlot: orgChartFirstSlotWithLinkedin(data),
             });
           }
@@ -329,6 +367,7 @@ export const buildOrgChartNodeContextMenu = (
           const data = orgChartContextNodeData(obj);
           if (data) {
             onNodeContextAction('outreach_whatsapp', data, {
+              selectedNodes: orgChartGetDiagramSelectedNodes(obj, data),
               personSlot: orgChartFirstSlotWithPhone(data),
             });
           }
@@ -356,6 +395,7 @@ export const buildOrgChartNodeContextMenu = (
           const data = orgChartContextNodeData(obj);
           if (data) {
             onNodeContextAction('outreach_google_contact', data, {
+              selectedNodes: orgChartGetDiagramSelectedNodes(obj, data),
               personSlot: orgChartFirstSlotWithPhoneAndEmail(data),
             });
           }
@@ -383,6 +423,7 @@ export const buildOrgChartNodeContextMenu = (
           const data = orgChartContextNodeData(obj);
           if (data) {
             onNodeContextAction('outreach_email', data, {
+              selectedNodes: orgChartGetDiagramSelectedNodes(obj, data),
               personSlot: orgChartFirstSlotWithEmail(data),
             });
           }

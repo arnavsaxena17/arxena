@@ -196,11 +196,12 @@ const StyledScrollingStrip = styled.div`
   );
 `;
 
-const StyledScrollingTrack = styled.div`
+const StyledScrollingTrack = styled.div<{ isPaused: boolean }>`
   display: flex;
   gap: 16px;
   width: max-content;
   animation: scroll-strip 40s linear infinite;
+  animation-play-state: ${({ isPaused }) => (isPaused ? 'paused' : 'running')};
 
   @media (prefers-reduced-motion: reduce) {
     animation: none;
@@ -216,7 +217,9 @@ const StyledScrollingTrack = styled.div`
   }
 `;
 
-const StyledExampleCard = styled(Link)`
+const StyledExampleCard = styled(Link, {
+  shouldForwardProp: (propName) => propName !== 'isSelected',
+})<{ isSelected: boolean }>`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -230,13 +233,25 @@ const StyledExampleCard = styled(Link)`
   color: #141414;
   transition:
     background 0.15s ease,
-    border-color 0.15s ease;
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
   flex-shrink: 0;
 
   &:hover {
     background: #f5f5f5;
     border-color: rgba(20, 20, 20, 0.15);
   }
+
+  ${({ isSelected }) =>
+    isSelected
+      ? `
+    background: #fff;
+    border-color: rgba(37, 99, 235, 0.45);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+    transform: translateY(-1px);
+  `
+      : ''}
 `;
 
 const StyledExampleLogo = styled.img`
@@ -317,6 +332,10 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
   const [failedLogoWebsites, setFailedLogoWebsites] = useState<Set<string>>(
     new Set(),
   );
+  const [isExampleStripPaused, setIsExampleStripPaused] = useState(false);
+  const [selectedExampleCompanyKey, setSelectedExampleCompanyKey] = useState<
+    string | null
+  >(null);
   const handleLogoError = useCallback((website: string) => {
     setFailedLogoWebsites((prev) => new Set(prev).add(website));
   }, []);
@@ -329,7 +348,7 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
         </StyledLogoWrapper>
         <StyledTitle>Real-time Org Intelligence.</StyledTitle>
         <StyledHeroLead>
-        Before the call. Before the brief. Before outreach.
+          Before the call. Before the brief. Before outreach.
         </StyledHeroLead>
         <StyledHeroStats>
           1M+ companies · 800M+ professionals · Real-time from LinkedIn and
@@ -388,15 +407,21 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
           Real-time Org Charts & Engagement
         </StyledExampleTitle>
         <StyledScrollingStrip>
-          <StyledScrollingTrack>
+          <StyledScrollingTrack isPaused={isExampleStripPaused}>
             {[...EXAMPLE_COMPANIES, ...EXAMPLE_COMPANIES].map(
               ({ companyId, name, website }, i) => {
                 const logoFailed = failedLogoWebsites.has(website);
+                const key = `${companyId}-${i}`;
                 return (
                   <StyledExampleCard
-                    key={`${companyId}-${i}`}
+                    key={key}
                     href={`/org-chart/${encodeURIComponent(companyId)}`}
                     prefetch={false}
+                    isSelected={selectedExampleCompanyKey === key}
+                    onPointerDown={() => {
+                      setIsExampleStripPaused(true);
+                      setSelectedExampleCompanyKey(key);
+                    }}
                   >
                     {logoFailed ? (
                       <StyledExampleLogoPlaceholder>
