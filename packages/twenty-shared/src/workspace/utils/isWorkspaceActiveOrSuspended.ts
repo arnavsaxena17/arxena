@@ -1,4 +1,4 @@
-import { WorkspaceActivationStatus } from '../types/WorkspaceActivationStatus';
+import type { WorkspaceActivationStatus } from '../types/WorkspaceActivationStatus';
 
 export const isWorkspaceActiveOrSuspended = (
   workspace?: {
@@ -6,7 +6,7 @@ export const isWorkspaceActiveOrSuspended = (
   } | null,
 ): boolean => {
   return (
-    workspace?.activationStatus === WorkspaceActivationStatus.ACTIVE ||
-    workspace?.activationStatus === WorkspaceActivationStatus.SUSPENDED
+    workspace?.activationStatus === 'ACTIVE' ||
+    workspace?.activationStatus === 'SUSPENDED'
   );
 };
