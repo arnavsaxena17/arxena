@@ -51,6 +51,7 @@ export const OrgChartDiagram = forwardRef<
     const overviewDivRef = useRef<HTMLDivElement | null>(null);
     const overviewRef = useRef<go.Overview | null>(null);
     const hasCenteredRef = useRef(false);
+    const structureHashRef = useRef<number | null>(null);
     const searchResultsKeysRef = useRef<go.Key[]>([]);
     const currentResultIndexRef = useRef(0);
 
@@ -234,7 +235,20 @@ export const OrgChartDiagram = forwardRef<
     }, [onDiagramReady, handle]);
 
     useEffect(() => {
-      hasCenteredRef.current = false;
+      const nextHash = nodeDataArray.reduce((acc, n) => {
+        const k = typeof n.key === 'number' ? n.key : 0;
+        const p = typeof (n as { parent?: unknown }).parent === 'number'
+          ? ((n as { parent: number }).parent ?? 0)
+          : 0;
+        // Cheap, stable hash for "structure" changes (keys + parent links).
+        // Intentionally ignores cosmetic fields like `nodeState`.
+        return (((acc * 31) ^ (k * 7 + p * 13)) >>> 0) as number;
+      }, 0);
+
+      if (structureHashRef.current !== nextHash) {
+        structureHashRef.current = nextHash;
+        hasCenteredRef.current = false;
+      }
     }, [nodeDataArray]);
 
     useEffect(() => {
@@ -284,10 +298,25 @@ export const OrgChartDiagram = forwardRef<
         });
       };
 
-      diagram.addDiagramListener('InitialLayoutCompleted', handleInitialLayout);
+      // NOTE: `InitialLayoutCompleted` only fires once per Diagram instance.
+      // We want to center after *any* layout that corresponds to a new org chart
+      // structure (e.g. preview → full chart).
+      diagram.addDiagramListener('LayoutCompleted', handleInitialLayout);
+
+      // Proactively request a layout pass after structure changes so the
+      // LayoutCompleted event runs in cases where the ReactDiagram data update
+      // doesn't trigger a layout immediately.
+      if (!hasCenteredRef.current && nodeDataArray.length > 0) {
+        requestAnimationFrame(() => {
+          const d = getDiagram();
+          if (!d) return;
+          d.layoutDiagram(true);
+        });
+      }
+
       return () => {
         if (settleTimer !== undefined) clearTimeout(settleTimer);
-        diagram.removeDiagramListener('InitialLayoutCompleted', handleInitialLayout);
+        diagram.removeDiagramListener('LayoutCompleted', handleInitialLayout);
       };
     }, [getDiagram, nodeDataArray]);
 

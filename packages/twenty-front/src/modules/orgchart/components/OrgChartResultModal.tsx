@@ -583,7 +583,7 @@ const useClickedContactLinkImage = (
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${tokenPair.accessToken.token}`,
+          'Authorization': `Bearer ${tokenPair.accessToken.token}`,
         },
         body: JSON.stringify(body),
       });
