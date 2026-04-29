@@ -3,14 +3,14 @@ import { isValidLinkedInProfileUrl, type OrgChartNodeData } from 'twenty-shared'
 
 import type { OrgChartDiagramProps } from '../../OrgChartDiagram.types';
 import {
-    DEFAULT_DOWNLOAD_ICON,
-    DEFAULT_LINKEDIN_ICON,
-    DEFAULT_LOCK_ICON,
-    DEFAULT_M7KQ_EMAIL_ICON,
-    DEFAULT_M7KQ_PHONE_ICON,
-    DEFAULT_SIMILAR_ITEMS_ICON,
-    NODE_CAPABILITIES_BULLETS,
-    getOrgChartDataFromToolTipObject,
+  DEFAULT_DOWNLOAD_ICON,
+  DEFAULT_LINKEDIN_ICON,
+  DEFAULT_LOCK_ICON,
+  DEFAULT_M7KQ_EMAIL_ICON,
+  DEFAULT_M7KQ_PHONE_ICON,
+  DEFAULT_SIMILAR_ITEMS_ICON,
+  NODE_CAPABILITIES_BULLETS,
+  getOrgChartDataFromToolTipObject,
 } from '../constants';
 import { buildOrgChartNodeContextMenu } from '../contextMenus';
 
@@ -47,6 +47,8 @@ export const createNodeTemplate = ({
   const M7KQ_PHONE_ICON_URL = iconUrls?.phone ?? DEFAULT_M7KQ_PHONE_ICON;
 
   const $ = go.GraphObject.make;
+  type OrgChartNodeState = 'active' | 'preview' | 'lock';
+  type OrgChartDataMap = Record<string, string | number | boolean | undefined>;
 
   const buildCapabilitiesHoverIntro = (data: OrgChartNodeData | undefined): string => {
     const role =
@@ -56,43 +58,43 @@ export const createNodeTemplate = ({
     return `These are the ${role} teams at ${capabilitiesHoverCompanyLabel}.`;
   };
 
-  const findSize = (size: unknown): number => {
+  const findSize = (size: string | number | undefined): number => {
     const n = typeof size === 'number' ? size : parseInt(String(size ?? 0), 10);
     return Number.isNaN(n) ? 0 : n;
   };
 
-  const textSeeMore = (total: unknown): string => {
+  const textSeeMore = (total: string | number | undefined): string => {
     const count = typeof total === 'number' ? total : parseInt(String(total ?? 0), 10);
     const num = Number.isNaN(count) ? 0 : count;
     return num === 1 ? '1 executive' : `${num} executives`;
   };
 
-  const getLabelFromNodeState = (s: unknown): string => {
+  const getLabelFromNodeState = (s: string | undefined): string => {
     if (s === 'active') return 'Active';
     if (s === 'preview') return 'Preview';
-    if (s === 'lock') return 'Locked';
+    if (s === 'lock') return 'Live';
     return '';
   };
 
-  const showLabelContainer = (s: unknown): number => {
+  const showLabelContainer = (s: string | undefined): number => {
     const label = getLabelFromNodeState(s);
-    return ['Preview', 'Active', 'Locked'].includes(label) ? 20 : 0;
+    return ['Preview', 'Active', 'Live'].includes(label) ? 20 : 0;
   };
 
-  const showLabelContainerTable = (s: unknown): number => {
+  const showLabelContainerTable = (s: string | undefined): number => {
     const label = getLabelFromNodeState(s);
-    return ['Preview', 'Active', 'Locked'].includes(label) ? 40 : 20;
+    return ['Preview', 'Active', 'Live'].includes(label) ? 40 : 20;
   };
 
-  const textLabel = (s: unknown): string => getLabelFromNodeState(s);
+  const textLabel = (s: string | undefined): string => getLabelFromNodeState(s);
 
-  const colorLabel = (s: unknown): string => {
+  const colorLabel = (s: string | undefined): string => {
     if (s === 'active') return 'PaleGreen';
     if (s === 'lock') return '#64748b';
     return 'rgb(36,116,204)';
   };
 
-  const findIconSource = (nodeState: unknown): string =>
+  const findIconSource = (nodeState: string | undefined): string =>
     nodeState === 'active' ? LINKEDIN_ICON_URL : LOCK_ICON_URL;
 
   const lockedNodeToolTip = $(
@@ -162,25 +164,25 @@ export const createNodeTemplate = ({
   };
 
   const createCandidateRow = (idx: number, rowIndex: number) => {
-    const slotEmail = (d: Record<string, unknown> | undefined): string => {
+    const slotEmail = (d: OrgChartDataMap | undefined): string => {
       if (!d) return '';
       const v = d[`email_${idx}`];
       return typeof v === 'string' ? v.trim() : '';
     };
-    const slotPhone = (d: Record<string, unknown> | undefined): string => {
+    const slotPhone = (d: OrgChartDataMap | undefined): string => {
       if (!d) return '';
       const v = d[`phone_${idx}`];
       return typeof v === 'string' ? v.trim() : '';
     };
-    const slotLinkedInUrl = (d: Record<string, unknown> | undefined): string => {
+    const slotLinkedInUrl = (d: OrgChartDataMap | undefined): string => {
       if (!d) return '';
       const v = d[`linkedin_url_${idx}`];
       return typeof v === 'string' ? v.trim() : '';
     };
-    const nodeStateOf = (d: Record<string, unknown> | undefined): string =>
+    const nodeStateOf = (d: OrgChartDataMap | undefined): string =>
       typeof d?.nodeState === 'string' ? (d.nodeState as string) : '';
 
-    const m7kqEmailToolTipText = (d: Record<string, unknown> | undefined): string => {
+    const m7kqEmailToolTipText = (d: OrgChartDataMap | undefined): string => {
       if (!d) return 'Email: not indicated';
       const ev = slotEmail(d);
       if (ev) return ev;
@@ -196,7 +198,7 @@ export const createNodeTemplate = ({
       return 'Email: not indicated';
     };
 
-    const m7kqPhoneToolTipText = (d: Record<string, unknown> | undefined): string => {
+    const m7kqPhoneToolTipText = (d: OrgChartDataMap | undefined): string => {
       if (!d) return 'Phone: not indicated';
       const pv = slotPhone(d);
       if (pv) return pv;
@@ -218,7 +220,7 @@ export const createNodeTemplate = ({
     };
 
     const m7kqLinkedInToolTipText = (
-      d: Record<string, unknown> | undefined,
+      d: OrgChartDataMap | undefined,
     ): string => {
       if (!d) return 'LinkedIn: not indicated';
       const url = slotLinkedInUrl(d);
@@ -231,7 +233,7 @@ export const createNodeTemplate = ({
     };
 
     const m7kqEmailStatusDot = (
-      d: Record<string, unknown> | undefined,
+      d: OrgChartDataMap | undefined,
     ): { text: string; stroke: string } => {
       if (!d) return { text: '·', stroke: '#e2e8f0' };
       const ev = slotEmail(d);
@@ -243,7 +245,7 @@ export const createNodeTemplate = ({
     };
 
     const m7kqPhoneStatusDot = (
-      d: Record<string, unknown> | undefined,
+      d: OrgChartDataMap | undefined,
     ): { text: string; stroke: string } => {
       if (!d) return { text: '·', stroke: '#e2e8f0' };
       const pv = slotPhone(d);
@@ -258,7 +260,7 @@ export const createNodeTemplate = ({
     };
 
     const m7kqLinkedInStatusDot = (
-      d: Record<string, unknown> | undefined,
+      d: OrgChartDataMap | undefined,
     ): { text: string; stroke: string } => {
       if (!d) return { text: '·', stroke: '#e2e8f0' };
       const url = slotLinkedInUrl(d);
@@ -269,7 +271,7 @@ export const createNodeTemplate = ({
     const m7kqLinkedInClick = (_e: go.InputEvent, obj: go.GraphObject) => {
       const data = getOrgChartNodeDataFromObject(obj);
       if (!data) return;
-      const r = data as Record<string, unknown>;
+      const r = data as OrgChartDataMap;
       const urlRaw = r[`linkedin_url_${idx}`];
       const url = typeof urlRaw === 'string' ? urlRaw.trim() : '';
       if (isValidLinkedInProfileUrl(url)) {
@@ -315,37 +317,37 @@ export const createNodeTemplate = ({
                 new go.Binding(
                   'text',
                   `email_${idx}` as const,
-                  (_: unknown, obj: go.GraphObject) =>
+                  (_: string | boolean | undefined, obj: go.GraphObject) =>
                     m7kqEmailToolTipText(
                       getOrgChartDataFromToolTipObject(obj) as
-                        | Record<string, unknown>
+                        | OrgChartDataMap
                         | undefined,
                     ),
                 ),
                 new go.Binding(
                   'text',
                   `has_email_${idx}` as const,
-                  (_: unknown, obj: go.GraphObject) =>
+                  (_: string | boolean | undefined, obj: go.GraphObject) =>
                     m7kqEmailToolTipText(
                       getOrgChartDataFromToolTipObject(obj) as
-                        | Record<string, unknown>
+                        | OrgChartDataMap
                         | undefined,
                     ),
                 ),
                 new go.Binding(
                   'text',
                   'nodeState',
-                  (_: unknown, obj: go.GraphObject) =>
+                  (_: string | boolean | undefined, obj: go.GraphObject) =>
                     m7kqEmailToolTipText(
                       getOrgChartDataFromToolTipObject(obj) as
-                        | Record<string, unknown>
+                        | OrgChartDataMap
                         | undefined,
                     ),
                 ),
               ),
             ),
           },
-          new go.Binding('visible', 'nodeState', (s: unknown) => s !== 'preview'),
+          new go.Binding('visible', 'nodeState', (s: string | undefined) => s !== 'preview'),
           $(
             go.Picture,
             {
@@ -364,26 +366,26 @@ export const createNodeTemplate = ({
             new go.Binding(
               'text',
               `email_${idx}` as const,
-              (_: unknown, obj: go.GraphObject) =>
-                m7kqEmailStatusDot(obj.part?.data as Record<string, unknown> | undefined).text,
+              (_: string | boolean | undefined, obj: go.GraphObject) =>
+                m7kqEmailStatusDot(obj.part?.data as OrgChartDataMap | undefined).text,
             ),
             new go.Binding(
               'text',
               `has_email_${idx}` as const,
-              (_: unknown, obj: go.GraphObject) =>
-                m7kqEmailStatusDot(obj.part?.data as Record<string, unknown> | undefined).text,
+              (_: string | boolean | undefined, obj: go.GraphObject) =>
+                m7kqEmailStatusDot(obj.part?.data as OrgChartDataMap | undefined).text,
             ),
             new go.Binding(
               'stroke',
               `email_${idx}` as const,
-              (_: unknown, obj: go.GraphObject) =>
-                m7kqEmailStatusDot(obj.part?.data as Record<string, unknown> | undefined).stroke,
+              (_: string | boolean | undefined, obj: go.GraphObject) =>
+                m7kqEmailStatusDot(obj.part?.data as OrgChartDataMap | undefined).stroke,
             ),
             new go.Binding(
               'stroke',
               `has_email_${idx}` as const,
-              (_: unknown, obj: go.GraphObject) =>
-                m7kqEmailStatusDot(obj.part?.data as Record<string, unknown> | undefined).stroke,
+              (_: string | boolean | undefined, obj: go.GraphObject) =>
+                m7kqEmailStatusDot(obj.part?.data as OrgChartDataMap | undefined).stroke,
             ),
           ),
         ),
@@ -408,47 +410,47 @@ export const createNodeTemplate = ({
                 new go.Binding(
                   'text',
                   `phone_${idx}` as const,
-                  (_: unknown, obj: go.GraphObject) =>
+                  (_: string | boolean | undefined, obj: go.GraphObject) =>
                     m7kqPhoneToolTipText(
                       getOrgChartDataFromToolTipObject(obj) as
-                        | Record<string, unknown>
+                        | OrgChartDataMap
                         | undefined,
                     ),
                 ),
                 new go.Binding(
                   'text',
                   `has_direct_phone_${idx}` as const,
-                  (_: unknown, obj: go.GraphObject) =>
+                  (_: string | boolean | undefined, obj: go.GraphObject) =>
                     m7kqPhoneToolTipText(
                       getOrgChartDataFromToolTipObject(obj) as
-                        | Record<string, unknown>
+                        | OrgChartDataMap
                         | undefined,
                     ),
                 ),
                 new go.Binding(
                   'text',
                   `has_org_phone_${idx}` as const,
-                  (_: unknown, obj: go.GraphObject) =>
+                  (_: string | boolean | undefined, obj: go.GraphObject) =>
                     m7kqPhoneToolTipText(
                       getOrgChartDataFromToolTipObject(obj) as
-                        | Record<string, unknown>
+                        | OrgChartDataMap
                         | undefined,
                     ),
                 ),
                 new go.Binding(
                   'text',
                   'nodeState',
-                  (_: unknown, obj: go.GraphObject) =>
+                  (_: string | boolean | undefined, obj: go.GraphObject) =>
                     m7kqPhoneToolTipText(
                       getOrgChartDataFromToolTipObject(obj) as
-                        | Record<string, unknown>
+                        | OrgChartDataMap
                         | undefined,
                     ),
                 ),
               ),
             ),
           },
-          new go.Binding('visible', 'nodeState', (s: unknown) => s !== 'preview'),
+          new go.Binding('visible', 'nodeState', (s: string | undefined) => s !== 'preview'),
           $(
             go.Picture,
             {
@@ -466,38 +468,38 @@ export const createNodeTemplate = ({
             new go.Binding(
               'text',
               `phone_${idx}` as const,
-              (_: unknown, obj: go.GraphObject) =>
-                m7kqPhoneStatusDot(obj.part?.data as Record<string, unknown> | undefined).text,
+              (_: string | boolean | undefined, obj: go.GraphObject) =>
+                m7kqPhoneStatusDot(obj.part?.data as OrgChartDataMap | undefined).text,
             ),
             new go.Binding(
               'text',
               `has_direct_phone_${idx}` as const,
-              (_: unknown, obj: go.GraphObject) =>
-                m7kqPhoneStatusDot(obj.part?.data as Record<string, unknown> | undefined).text,
+              (_: string | boolean | undefined, obj: go.GraphObject) =>
+                m7kqPhoneStatusDot(obj.part?.data as OrgChartDataMap | undefined).text,
             ),
             new go.Binding(
               'text',
               `has_org_phone_${idx}` as const,
-              (_: unknown, obj: go.GraphObject) =>
-                m7kqPhoneStatusDot(obj.part?.data as Record<string, unknown> | undefined).text,
+              (_: string | boolean | undefined, obj: go.GraphObject) =>
+                m7kqPhoneStatusDot(obj.part?.data as OrgChartDataMap | undefined).text,
             ),
             new go.Binding(
               'stroke',
               `phone_${idx}` as const,
-              (_: unknown, obj: go.GraphObject) =>
-                m7kqPhoneStatusDot(obj.part?.data as Record<string, unknown> | undefined).stroke,
+              (_: string | boolean | undefined, obj: go.GraphObject) =>
+                m7kqPhoneStatusDot(obj.part?.data as OrgChartDataMap | undefined).stroke,
             ),
             new go.Binding(
               'stroke',
               `has_direct_phone_${idx}` as const,
-              (_: unknown, obj: go.GraphObject) =>
-                m7kqPhoneStatusDot(obj.part?.data as Record<string, unknown> | undefined).stroke,
+              (_: string | boolean | undefined, obj: go.GraphObject) =>
+                m7kqPhoneStatusDot(obj.part?.data as OrgChartDataMap | undefined).stroke,
             ),
             new go.Binding(
               'stroke',
               `has_org_phone_${idx}` as const,
-              (_: unknown, obj: go.GraphObject) =>
-                m7kqPhoneStatusDot(obj.part?.data as Record<string, unknown> | undefined).stroke,
+              (_: string | boolean | undefined, obj: go.GraphObject) =>
+                m7kqPhoneStatusDot(obj.part?.data as OrgChartDataMap | undefined).stroke,
             ),
           ),
         ),
@@ -522,20 +524,20 @@ export const createNodeTemplate = ({
                 new go.Binding(
                   'text',
                   `linkedin_url_${idx}` as const,
-                  (_: unknown, obj: go.GraphObject) =>
+                  (_: string | boolean | undefined, obj: go.GraphObject) =>
                     m7kqLinkedInToolTipText(
                       getOrgChartDataFromToolTipObject(obj) as
-                        | Record<string, unknown>
+                        | OrgChartDataMap
                         | undefined,
                     ),
                 ),
                 new go.Binding(
                   'text',
                   'nodeState',
-                  (_: unknown, obj: go.GraphObject) =>
+                  (_: string | boolean | undefined, obj: go.GraphObject) =>
                     m7kqLinkedInToolTipText(
                       getOrgChartDataFromToolTipObject(obj) as
-                        | Record<string, unknown>
+                        | OrgChartDataMap
                         | undefined,
                     ),
                 ),
@@ -560,14 +562,14 @@ export const createNodeTemplate = ({
             new go.Binding(
               'text',
               `linkedin_url_${idx}` as const,
-              (_: unknown, obj: go.GraphObject) =>
-                m7kqLinkedInStatusDot(obj.part?.data as Record<string, unknown> | undefined).text,
+              (_: string | boolean | undefined, obj: go.GraphObject) =>
+                m7kqLinkedInStatusDot(obj.part?.data as OrgChartDataMap | undefined).text,
             ),
             new go.Binding(
               'stroke',
               `linkedin_url_${idx}` as const,
-              (_: unknown, obj: go.GraphObject) =>
-                m7kqLinkedInStatusDot(obj.part?.data as Record<string, unknown> | undefined).stroke,
+              (_: string | boolean | undefined, obj: go.GraphObject) =>
+                m7kqLinkedInStatusDot(obj.part?.data as OrgChartDataMap | undefined).stroke,
             ),
           ),
         ),
@@ -589,7 +591,7 @@ export const createNodeTemplate = ({
           const node = obj.part as go.Node | undefined;
           const data = node?.data as OrgChartNodeData | undefined;
           if (!data) return;
-          const url = (data as Record<string, unknown>)[`linkedin_url_${idx}`];
+          const url = (data as OrgChartDataMap)[`linkedin_url_${idx}`];
           if (typeof url === 'string' && isValidLinkedInProfileUrl(url)) {
             window.open(url.startsWith('http') ? url : `https://${url}`, '_blank');
           }
@@ -692,7 +694,7 @@ export const createNodeTemplate = ({
   const capabilitiesIntroBinding = new go.Binding(
     'text',
     '',
-    (_val: unknown, obj: go.GraphObject) =>
+    (_val: string | undefined, obj: go.GraphObject) =>
       buildCapabilitiesHoverIntro(getOrgChartDataFromToolTipObject(obj)),
   ).ofObject();
 
@@ -793,22 +795,19 @@ export const createNodeTemplate = ({
         const part = (obj.part ?? null) as go.Node | null;
         const data = part?.data as OrgChartNodeData | undefined;
         if (data) {
+          const allCandidates = (data as { allCandidates?: unknown }).allCandidates;
           // eslint-disable-next-line no-console
           console.log('[orgchart/OrgChartDiagram/doubleClick]', {
             headline: data.headline,
             key: data.key,
             totalPeople: data.total_people,
-            allCandidatesLength: Array.isArray(
-              (data as Record<string, unknown>).allCandidates,
-            )
-              ? ((data as Record<string, unknown>).allCandidates as unknown[]).length
-              : null,
+            allCandidatesLength: Array.isArray(allCandidates) ? allCandidates.length : null,
           });
           onNodeDoubleClick(data);
         }
       },
     },
-    new go.Binding('toolTip', 'nodeState', (state: unknown) => {
+    new go.Binding('toolTip', 'nodeState', (state: OrgChartNodeState | undefined) => {
       if (state === 'lock') {
         return lockedNodeToolTip;
       }
