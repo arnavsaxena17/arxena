@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import type {
-    LinkedInCurrentPosition,
-    LinkedInPeopleSearchResult,
+  LinkedInCurrentPosition,
+  LinkedInPeopleSearchResult,
 } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import {
-    LinkedInSearchTransformerService,
-    TransformedCandidateForTable,
+  LinkedInSearchTransformerService,
+  TransformedCandidateForTable,
 } from './linkedin-search-transformer.service';
 
 type ApifyDatePart = {
