@@ -4,6 +4,8 @@ import axios, { AxiosInstance, isAxiosError } from 'axios';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 
 const APOLLO_API_BASE = 'https://api.apollo.io/api/v1';
+const RAPID_API_APOLLO_SEARCH_BASE =
+  'https://apollo-io-no-cookies-required.p.rapidapi.com';
 
 /** Apollo People API Search (POST /mixed_people/api_search) — non-credit; master API key. */
 export type ApolloPeopleSearchParams = {
@@ -81,6 +83,23 @@ export class ApolloIoRestService {
     return key?.trim() ? key.trim() : null;
   }
 
+  private getRapidApiKey(): string | null {
+    const key = this.environmentService.get(
+      'RAPIDAPI_APOLLO_ORG_SEARCH_KEY' as never,
+    ) as string | undefined;
+    return key?.trim() ? key.trim() : null;
+  }
+
+  private getRapidApiHost(): string {
+    const host = this.environmentService.get(
+      'RAPIDAPI_APOLLO_ORG_SEARCH_HOST' as never,
+    ) as string | undefined;
+
+    return host?.trim()
+      ? host.trim()
+      : 'apollo-io-no-cookies-required.p.rapidapi.com';
+  }
+
   isConfigured(): boolean {
     return this.getApiKey() !== null;
   }
@@ -118,6 +137,66 @@ export class ApolloIoRestService {
     this.logger.error(
       `Apollo ${context} failed: status=${status ?? 'n/a'} body=${dataStr}`,
     );
+  }
+
+  private buildRapidApiApolloOrgResponse(
+    rapidData: Record<string, unknown>,
+  ): Record<string, unknown> {
+    const candidateLists = [
+      rapidData.organizations,
+      rapidData.results,
+      rapidData.data,
+      rapidData.companies,
+    ];
+    const list = candidateLists.find(Array.isArray);
+
+    return {
+      ...rapidData,
+      organizations: Array.isArray(list) ? list : [],
+    };
+  }
+
+  private async organizationsSearchViaRapidApi(
+    input: ApolloOrganizationSearchParams,
+  ): Promise<Record<string, unknown> | null> {
+    const rapidApiKey = this.getRapidApiKey();
+    if (!rapidApiKey) {
+      return null;
+    }
+
+    const params = new URLSearchParams();
+    if (input.q_organization_name?.trim()) {
+      params.set('q_organization_name', input.q_organization_name.trim());
+    }
+    const page = input.page ?? 1;
+    params.set('page', String(page));
+
+    const url = `${RAPID_API_APOLLO_SEARCH_BASE}/search_organization?${params.toString()}`;
+    this.logger.warn(
+      `Falling back to RapidAPI org search ${url.slice(0, 200)}...`,
+    );
+
+    try {
+      const { data } = await axios.get<Record<string, unknown>>(url, {
+        timeout: 120_000,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-rapidapi-host': this.getRapidApiHost(),
+          'x-rapidapi-key': rapidApiKey,
+        },
+      });
+
+      const normalized = this.buildRapidApiApolloOrgResponse(data);
+      const organizations = normalized.organizations;
+      const count = Array.isArray(organizations) ? organizations.length : 0;
+      this.logger.log(
+        `RapidAPI org search succeeded with ${count} organization(s)`,
+      );
+      return normalized;
+    } catch (error) {
+      this.logger.error('RapidAPI org search fallback failed', error);
+      return null;
+    }
   }
 
   /**
@@ -213,6 +292,10 @@ export class ApolloIoRestService {
       return data;
     } catch (error) {
       this.logApolloRequestError('organizationsSearch', error);
+      const rapidFallback = await this.organizationsSearchViaRapidApi(input);
+      if (rapidFallback) {
+        return rapidFallback;
+      }
       throw error;
     }
   }

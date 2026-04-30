@@ -19,23 +19,23 @@ import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
 import { Mixpanel } from '~/mixpanel';
 
 import {
-  normalizeCompanyIdForUrl,
-  OrgChartContextAction,
-  OrgChartNodeContextPayload,
+    normalizeCompanyIdForUrl,
+    OrgChartContextAction,
+    OrgChartNodeContextPayload,
 } from 'twenty-orgchart';
 import {
-  isValidLinkedInProfileUrl,
-  NodeState,
-  OrgChartNodeData,
-  OrgchartSearchMode as OrgchartSearchModeValue,
+    isValidLinkedInProfileUrl,
+    NodeState,
+    OrgChartNodeData,
+    OrgchartSearchMode as OrgchartSearchModeValue,
 } from 'twenty-shared';
 import { ContextResultItem } from '../types';
 import {
-  buildBooleanKeywordsForNode,
-  contextResultItemFromNodePersonSlot,
-  exportContextResultsToCsv,
-  extractCompanyDomainFromWebsite,
-  normalizeCandidateItem,
+    buildBooleanKeywordsForNode,
+    contextResultItemFromNodePersonSlot,
+    exportContextResultsToCsv,
+    extractCompanyDomainFromWebsite,
+    normalizeCandidateItem,
 } from '../utils/orgChartUtils';
 
 const OUTREACH_ACTION_TO_CHANNEL: Partial<
@@ -91,6 +91,8 @@ type OrgChartSearchProgressEvent = {
   companyName?: string;
   data?: {
     message?: string;
+    creditsNeeded?: number;
+    creditsAvailable?: number;
     page?: number;
     engine?: string;
     candidateSource?: string;
@@ -104,6 +106,25 @@ type OrgChartSearchProgressEvent = {
     candidatesCollectedSoFar?: number;
     remainingToFetch?: number;
   };
+};
+
+const formatInsufficientOrgChartCreditsMessage = (input: {
+  message?: string;
+  creditsNeeded?: number;
+  creditsAvailable?: number;
+}): string => {
+  const hasNeeded = typeof input.creditsNeeded === 'number';
+  const hasAvailable = typeof input.creditsAvailable === 'number';
+
+  if (hasNeeded && hasAvailable) {
+    return `Insufficient org chart credits. Available ${input.creditsAvailable}, needed ${input.creditsNeeded}.`;
+  }
+
+  if (typeof input.message === 'string' && input.message.trim().length > 0) {
+    return input.message;
+  }
+
+  return 'Organization chart request failed.';
 };
 
 const createOrgChartRequestId = () =>
@@ -446,10 +467,17 @@ export const useOrgChartActions = ({
       };
 
       if (payload.event === 'error') {
-        const msg =
-          typeof eventData.message === 'string' && eventData.message.length > 0
-            ? eventData.message
-            : 'Organization chart request failed.';
+        const msg = formatInsufficientOrgChartCreditsMessage({
+          message: eventData.message,
+          creditsNeeded:
+            typeof eventData.creditsNeeded === 'number'
+              ? eventData.creditsNeeded
+              : undefined,
+          creditsAvailable:
+            typeof eventData.creditsAvailable === 'number'
+              ? eventData.creditsAvailable
+              : undefined,
+        });
         if (payload.mode === 'entire_company' && companyId) {
           closeSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`);
         }
@@ -1370,12 +1398,17 @@ export const useOrgChartActions = ({
       if (!response.ok) {
         // If there is a string message for an error, prefer it; otherwise try serializing the json
         let serverMessage: string;
-        if (
-          json &&
-          typeof json === 'object' &&
-          typeof json.message === 'string'
-        ) {
-          serverMessage = json.message;
+        if (json && typeof json === 'object') {
+          const jsonObj = json as {
+            message?: string;
+            creditsNeeded?: number;
+            creditsAvailable?: number;
+          };
+          serverMessage = formatInsufficientOrgChartCreditsMessage({
+            message: jsonObj.message,
+            creditsNeeded: jsonObj.creditsNeeded,
+            creditsAvailable: jsonObj.creditsAvailable,
+          });
         } else if (typeof json === 'string') {
           serverMessage = json;
         } else {

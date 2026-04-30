@@ -56,9 +56,9 @@ export const useOrgChartData = (
   const [fallbackReason, setFallbackReason] = useState<string | null>(null);
   const [apolloTotalCount, setApolloTotalCount] = useState<number | null>(null);
   const [apolloQueued, setApolloQueued] = useState(false);
-  const [apolloQueueRequestId, setApolloQueueRequestId] = useState<string | null>(
-    null,
-  );
+  const [apolloQueueRequestId, setApolloQueueRequestId] = useState<
+    string | null
+  >(null);
 
   const fetchOrgChart = useCallback(async () => {
     if (!companyId) {
@@ -148,6 +148,7 @@ export const useOrgChartData = (
       const json = (await response.json()) as {
         status?: string;
         result?: Record<string, unknown>;
+        message?: string | string[];
         orgChartEsTransportError?: boolean;
         firstSourceRequested?: 'apollo' | 'elasticsearch';
         firstSourceUsed?: 'apollo' | 'elasticsearch';
@@ -158,7 +159,11 @@ export const useOrgChartData = (
         apolloQueueRequestId?: string;
       };
 
-      if (json?.status === 'ok' && json.result) {
+      if (response.ok && json?.status === 'ok' && json.result) {
+        const didUseApolloSource = json.firstSourceUsed === 'apollo';
+        const shouldKeepApolloQueued =
+          json.apolloQueued === true && didUseApolloSource === false;
+
         setData(json.result);
         setOrgChartEsTransportError(json.orgChartEsTransportError === true);
         setFirstSourceRequested(json.firstSourceRequested ?? null);
@@ -172,14 +177,23 @@ export const useOrgChartData = (
             ? json.apolloTotalCount
             : null,
         );
-        setApolloQueued(json.apolloQueued === true);
+        setApolloQueued(shouldKeepApolloQueued);
         setApolloQueueRequestId(
-          typeof json.apolloQueueRequestId === 'string'
+          shouldKeepApolloQueued &&
+            typeof json.apolloQueueRequestId === 'string'
             ? json.apolloQueueRequestId
             : null,
         );
       } else {
-        setError('Failed to load org chart');
+        const messageFromServer = Array.isArray(json?.message)
+          ? json.message.join(', ')
+          : typeof json?.message === 'string'
+            ? json.message
+            : null;
+        setError(
+          messageFromServer?.trim() ||
+            `Failed to load org chart (status ${response.status})`,
+        );
         setData(null);
         setOrgChartEsTransportError(false);
         setFirstSourceRequested(null);

@@ -30,6 +30,7 @@ import { extractApiToken } from 'src/engine/core-modules/candidate-search/utils/
 import { CandidateDataService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-data.service';
 import { TransformedCandidateForTable } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { LinkedinXrayTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-xray-transformer.service';
+import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-sourcing/services/orgchart-progress-redis.service';
 import { linkedInPeopleSearchResultMatchesTargetCompany } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-orgchart-company-match.util';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -54,24 +55,75 @@ import { TheOrgService } from 'src/engine/core-modules/theorg/services/theorg.se
 import { TheOrgPerson } from 'src/engine/core-modules/theorg/types/theorg.types';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { LinkedinXrayService } from 'src/modules/linkedin-xray/linkedin-xray.service';
+import { LinkedinXraySearchEngine } from 'src/modules/linkedin-xray/types/linkedin-xray-search-job.types';
 
 import { ContactOutPeopleSearchService } from './contactout-people-search.service';
 import { OrgChartRecordWorkspaceService } from './org-chart-record-workspace.service';
-import { OrgchartCacheBillingService } from './orgchart-cache-billing.service';
 import { OrgChartIncrementalBuildCacheService } from './orgchart-incremental-build-cache.service';
-import {
-  EntireCompanyFilterState,
-  OrgChartBuildCandidateRow,
-  OrgchartSearchType,
-  SearchOrgchartLinkedInBody,
-} from './orgchart-linkedin-build.types';
-import {
-  isM7kqDirectoryCandidateSource,
-  normalizeMultiSources,
-} from './orgchart-linkedin-build.utils';
-import { OrgchartProgressEmitterService } from './orgchart-progress-emitter.service';
 import { OrgChartS3Service } from './orgchart-s3.service';
 import { PythonOrgChartService } from './python-org-chart.service';
+
+type OrgChartBuildCandidateRow = TransformedCandidateForTable | Record<string, unknown>;
+type OrgchartSearchType = 'classic' | 'sales_navigator' | 'recruiter';
+type SearchOrgchartLinkedInBody = {
+  rawQuery: string;
+  cleanedQuery: string;
+  companyName?: string;
+  companyId?: string;
+  jobTitles?: string[];
+  mode: OrgchartSearchMode;
+  maxPages?: number;
+  searchType?: OrgchartSearchType;
+  requestId?: string;
+  country?: string;
+  functionRoot?: string;
+  stdFunction?: string;
+  stdGrade?: string;
+  selectedNodeStdScopes?: Array<{ stdFunction?: string; stdGrade?: string }>;
+  candidateSource?: OrgChartLinkedinCandidateSource;
+  multiSource?: boolean;
+  sources?: string[];
+  linkedinCompanyUrl?: string;
+  companyDomain?: string;
+  apifyMaxItems?: number;
+  profileScraperMode?: string;
+  linkedinUnipileAccountId?: string;
+  businessDivisionRawQuery?: string;
+  validateAndScoreLinkedInResults?: boolean;
+  queryGenerator?: 'python' | 'multi_agent';
+  xraySearchEngine?: LinkedinXraySearchEngine;
+  includePaginatedHtml?: boolean;
+  industry?: string;
+  industryCategory?: string;
+  asOfMonth?: string;
+};
+type EntireCompanyFilterState = {
+  shouldWriteCompanyOrgChartCache: boolean;
+  hasCountryFilter: boolean;
+  hasFunctionRootFilter: boolean;
+  normalizedCountryRaw: string;
+  normalizedFunctionRootRaw: string;
+};
+const isM7kqDirectoryCandidateSource = (
+  source: OrgChartLinkedinCandidateSource | undefined,
+): boolean => source === 'm7kq' || source === 'apollo';
+const normalizeMultiSources = (input: unknown): string[] => {
+  if (Array.isArray(input)) {
+    const cleaned = input
+      .filter((value): value is string => typeof value === 'string')
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean);
+
+    return Array.from(new Set(cleaned));
+  }
+  if (typeof input === 'string') {
+    return input
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+  return [];
+};
 
 @Injectable()
 export class OrgChartBuildService {
@@ -83,8 +135,7 @@ export class OrgChartBuildService {
     private readonly workspaceCreditsService: WorkspaceCreditsService,
     private readonly creditTransactionService: CreditTransactionService,
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly orgchartProgressEmitterService: OrgchartProgressEmitterService,
-    private readonly orgchartCacheBillingService: OrgchartCacheBillingService,
+    private readonly orgChartProgressRedisService: OrgChartProgressRedisService,
     private readonly orgchartCancelRegistry: OrgchartCancelRegistryService,
     private readonly orgChartS3Service: OrgChartS3Service,
     private readonly orgChartRecordWorkspaceService: OrgChartRecordWorkspaceService,
@@ -1383,11 +1434,26 @@ export class OrgChartBuildService {
     workspaceMemberId?: string;
     orgChartS3RelativePath: string;
   }> {
-    return this.orgchartCacheBillingService.buildOrgChartCreditMetadata(
-      apiToken,
+    const persistKey = this.orgChartS3Service.persistedCompanyFolderKey(
       companyId,
       resolvedCompanyName,
     );
+    const orgChartS3RelativePath =
+      this.orgChartS3Service.buildRelativeFolderPathFromPersistedKey(
+        persistKey,
+      );
+    const workspaceMemberId = apiToken
+      ? ((await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
+          apiToken,
+        )) ?? undefined)
+      : undefined;
+
+    return {
+      companyName: resolvedCompanyName,
+      companyId: companyId?.trim() || undefined,
+      orgChartS3RelativePath,
+      workspaceMemberId,
+    };
   }
 
   async buildOrgChartFromJobCandidates(
@@ -4626,10 +4692,28 @@ export class OrgChartBuildService {
       data: Record<string, unknown>;
     },
   ): Promise<void> {
-    await this.orgchartProgressEmitterService.emitOrgchartSearchProgressForToken(
-      apiToken,
-      payload,
-    );
+    try {
+      const authContext =
+        await this.workspaceQueryService.accessTokenService.validateToken(
+          apiToken,
+        );
+      const workspaceMemberId = authContext.workspaceMemberId;
+
+      if (!workspaceMemberId) {
+        return;
+      }
+
+      await this.orgChartProgressRedisService.publish(workspaceMemberId, {
+        event: payload.event,
+        requestId: payload.requestId,
+        mode: payload.mode,
+        searchType: payload.searchType,
+        companyName: payload.companyName,
+        data: payload.data,
+      });
+    } catch {
+      // Invalid token or missing member id — response body still carries orgChartError.
+    }
   }
 
   cancelOrgchartSearch(

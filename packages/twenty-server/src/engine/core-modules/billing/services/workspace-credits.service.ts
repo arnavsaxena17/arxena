@@ -78,6 +78,14 @@ export class WorkspaceCreditsService {
     return available >= creditsNeeded;
   }
 
+  async getOrgChartCreditsAvailable(workspaceId: string): Promise<number> {
+    const row = await this.workspaceCreditsRepository.findOne({
+      where: { workspaceId },
+    });
+
+    return row?.orgChartCredits ?? 0;
+  }
+
   async debitOrgChartCredits(
     workspaceId: string,
     employeeCount: number,
@@ -96,8 +104,15 @@ export class WorkspaceCreditsService {
       employeeCount,
     );
     if (!hasSufficient) {
+      const creditsAvailable =
+        await this.getOrgChartCreditsAvailable(workspaceId);
+
       throw new HttpException(
-        `Insufficient org chart credits. Need ${creditsNeeded} credits for ${employeeCount} employees.`,
+        {
+          message: `Insufficient org chart credits. Need ${creditsNeeded} credits for ${employeeCount} employees.`,
+          creditsNeeded,
+          creditsAvailable,
+        },
         HttpStatus.FORBIDDEN,
       );
     }

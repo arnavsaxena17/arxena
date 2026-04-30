@@ -335,6 +335,7 @@ export const ArxOrgChartContainer = ({
     ? jobOrgChartHook.fetchOrgChart
     : classicOrgChartHook.fetchOrgChart;
   const orgChartEsTransportError = classicOrgChartHook.orgChartEsTransportError;
+  const firstSourceRequested = classicOrgChartHook.firstSourceRequested;
   const firstSourceUsed = classicOrgChartHook.firstSourceUsed;
   const fallbackApplied = classicOrgChartHook.fallbackApplied;
   const fallbackReason = classicOrgChartHook.fallbackReason;
@@ -351,6 +352,35 @@ export const ArxOrgChartContainer = ({
       duration: 4000,
     });
   }, [companyId, enqueueSnackBar, isJobMode, orgChartEsTransportError, t]);
+
+  useEffect(() => {
+    if (isJobMode || !error) return;
+
+    const normalizedError = error.trim();
+    const isApolloRateLimitError =
+      firstSourceRequested === 'apollo' ||
+      firstSourceUsed === 'apollo' ||
+      /apollo/i.test(normalizedError) ||
+      /status\s*429/i.test(normalizedError) ||
+      /maximum number of api calls/i.test(normalizedError);
+
+    const message = isApolloRateLimitError
+      ? `Apollo search failed: ${normalizedError}`
+      : normalizedError;
+
+    enqueueSnackBar(message, {
+      variant: SnackBarVariant.Error,
+      dedupeKey: `org-chart-fetch-error-${companyId ?? ''}-${message}`,
+      duration: 8000,
+    });
+  }, [
+    companyId,
+    enqueueSnackBar,
+    error,
+    firstSourceRequested,
+    firstSourceUsed,
+    isJobMode,
+  ]);
 
   useEffect(() => {
     if (
@@ -478,7 +508,12 @@ export const ArxOrgChartContainer = ({
   }, [apolloQueuePollingKey, apolloQueued, isJobMode]);
 
   useEffect(() => {
-    if (!apolloQueued || isJobMode || apolloQueuePollingTimedOut) {
+    if (
+      !apolloQueued ||
+      isJobMode ||
+      apolloQueuePollingTimedOut ||
+      firstSourceUsed === 'apollo'
+    ) {
       return;
     }
 
@@ -499,7 +534,13 @@ export const ArxOrgChartContainer = ({
     return () => {
       window.clearInterval(interval);
     };
-  }, [apolloQueued, apolloQueuePollingTimedOut, fetchOrgChart, isJobMode]);
+  }, [
+    apolloQueued,
+    apolloQueuePollingTimedOut,
+    fetchOrgChart,
+    firstSourceUsed,
+    isJobMode,
+  ]);
 
   const filterOptions = useOrgChartFilterOptions(orgData);
 
@@ -1232,7 +1273,7 @@ export const ArxOrgChartContainer = ({
             : null
         }
         apolloQueueNotice={
-          !isJobMode && apolloQueued
+          !isJobMode && apolloQueued && firstSourceUsed !== 'apollo'
             ? {
                 isTimedOut: apolloQueuePollingTimedOut,
                 pollAttempts: apolloQueuePollAttempts,
