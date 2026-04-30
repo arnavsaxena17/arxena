@@ -53,16 +53,87 @@ export const StyledSearchOverlay = styled.div`
 `;
 
 export const StyledTopRightActionsOverlay = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing(1)};
   position: absolute;
-  right: ${({ theme }) => theme.spacing(2)};
   top: ${({ theme }) => theme.spacing(2)};
+  left: ${({ theme }) => theme.spacing(2)};
+  right: ${({ theme }) => theme.spacing(2)};
   z-index: 20;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+  pointer-events: none;
 `;
 
 export const StyledTopRightActionButton = styled(Button)`
   justify-content: center;
+  pointer-events: auto;
+`;
+
+export const StyledTopRightActionsRightGroup = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(1)};
+  justify-content: flex-end;
+  pointer-events: auto;
+`;
+
+export const StyledTopRightActionsCenterGroup = styled.div`
+  display: flex;
+  justify-content: center;
+  pointer-events: auto;
+`;
+
+export const StyledAsOfMonthPicker = styled.div`
+  align-items: center;
+  background: ${({ theme }) => theme.background.primary};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  box-shadow: ${({ theme }) => theme.boxShadow.light};
+  display: inline-flex;
+  gap: ${({ theme }) => theme.spacing(1)};
+  height: 32px;
+  padding: 0 ${({ theme }) => theme.spacing(1)};
+`;
+
+export const StyledAsOfMonthLabel = styled.span`
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  white-space: nowrap;
+`;
+
+export const StyledAsOfMonthInput = styled.input`
+  background: ${({ theme }) => theme.background.primary};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  height: 26px;
+  padding: 0 ${({ theme }) => theme.spacing(1)};
+`;
+
+export const StyledAsOfMonthSliderContainer = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  max-width: 320px;
+`;
+
+export const StyledAsOfMonthSlider = styled.input`
+  width: 240px;
+  cursor: pointer;
+`;
+
+export const StyledAsOfMonthSliderValue = styled.span`
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  min-width: 68px;
+  text-align: right;
+`;
+
+export const StyledAsOfMonthSliderDot = styled.div`
+  width: ${({ theme }) => theme.spacing(2)};
+  height: ${({ theme }) => theme.spacing(2)};
+  border-radius: 50%;
+  background: ${({ theme }) => theme.color.blue};
 `;
 
 export const StyledLoadingMessage = styled.div`

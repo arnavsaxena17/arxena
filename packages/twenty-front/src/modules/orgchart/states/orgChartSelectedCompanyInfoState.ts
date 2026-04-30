@@ -8,6 +8,7 @@ export type OrgChartSelectedCompanyInfo = {
   industry?: string;
   profileCount?: number;
   linkedinUrl?: string;
+  companyDomain?: string;
 };
 
 export const orgChartSelectedCompanyInfoState =

@@ -111,6 +111,7 @@ const OrgChartRoute = () => {
         industry?: string;
         profileCount?: number;
         linkedinUrl?: string;
+        companyDomain?: string;
       };
     };
   };
@@ -153,6 +154,7 @@ const OrgChartRoute = () => {
     industry?: string;
     profileCount?: number;
     linkedinUrl?: string;
+    companyDomain?: string;
   }) => {
     navigate(`/${AppPath.OrgChart}/${company.companyId}`, {
       state: { company },
@@ -174,7 +176,7 @@ const OrgChartRoute = () => {
         Icon={IconDatabase}
         onAddJob={handleAddJob}
         onOrgCharts={() => navigate(`/${AppPath.OrgChart}`)}
-        onCompanySelect={handleCompanySelect}
+        onCompanySelect={hasSelectedCompany ? handleCompanySelect : undefined}
         hasToken={!!hasToken}
         isExtensionInstalled={false}
         onDownloadClick={handleDownloadClick}
@@ -196,6 +198,7 @@ const OrgChartRoute = () => {
               industry={companyFromState?.industry}
               profileCount={companyFromState?.profileCount}
               linkedinUrl={companyFromState?.linkedinUrl}
+              companyDomain={companyFromState?.companyDomain}
               onBack={handleBack}
             />
           </React.Suspense>

@@ -32,12 +32,12 @@ import { ResultValidationService } from '../services/result-validation.service';
 import { SearchExecutionService } from '../services/search-execution.service';
 import { SearchParameterGenerationService } from '../services/search-parameter-generation.service';
 import {
-  ClassicPeopleSearchStrategyResult,
-  GeneratedSearchParameters,
-  ParsedJobDescription,
-  RecruiterPeopleSearchStrategyResult,
-  SalesNavigatorPeopleSearchStrategyResult,
-  ResultValidationResult as ValidationResult
+    ClassicPeopleSearchStrategyResult,
+    GeneratedSearchParameters,
+    ParsedJobDescription,
+    RecruiterPeopleSearchStrategyResult,
+    SalesNavigatorPeopleSearchStrategyResult,
+    ResultValidationResult as ValidationResult
 } from '../types/candidate-search-request.type';
 import { LinkedInSearchResult } from '../types/linkedin-search-result.type';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';

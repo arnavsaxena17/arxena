@@ -16,6 +16,7 @@ type OrgChartCompanySearchWrapperProps = {
     industry?: string;
     profileCount?: number;
     linkedinUrl?: string;
+    companyDomain?: string;
   }) => void;
   placeholder?: string;
   disabled?: boolean;
@@ -45,6 +46,7 @@ export const OrgChartCompanySearchWrapper = ({
       industry?: string;
       profileCount?: number;
       linkedinUrl?: string;
+      companyDomain?: string;
     }) => {
       Mixpanel.track('org_chart_company_search', {
         companyId: company.companyId,

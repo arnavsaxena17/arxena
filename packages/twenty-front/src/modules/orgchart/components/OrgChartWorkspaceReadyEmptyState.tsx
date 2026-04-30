@@ -1,10 +1,10 @@
 import styled from '@emotion/styled';
 import { IconHierarchy2 } from '@tabler/icons-react';
 import {
-  AnimatedPlaceholder,
-  AnimatedPlaceholderEmptySubTitle,
-  AnimatedPlaceholderEmptyTextContainer,
-  AnimatedPlaceholderEmptyTitle,
+    AnimatedPlaceholder,
+    AnimatedPlaceholderEmptySubTitle,
+    AnimatedPlaceholderEmptyTextContainer,
+    AnimatedPlaceholderEmptyTitle,
 } from 'twenty-ui';
 
 import { OrgChartCompanySearchWrapper } from '@/orgchart/components/OrgChartCompanySearchWrapper';
@@ -52,6 +52,7 @@ type OrgChartWorkspaceReadyEmptyStateProps = {
     industry?: string;
     profileCount?: number;
     linkedinUrl?: string;
+    companyDomain?: string;
   }) => void;
   hasToken: boolean;
   orgChartCredits?: number;

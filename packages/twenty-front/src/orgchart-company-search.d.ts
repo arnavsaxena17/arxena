@@ -10,6 +10,7 @@ declare module 'twenty-orgchart/company-search' {
       industry?: string;
       profileCount?: number;
       linkedinUrl?: string;
+      companyDomain?: string;
     }) => void;
     placeholder?: string;
     disabled?: boolean;

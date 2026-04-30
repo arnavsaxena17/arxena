@@ -25,6 +25,7 @@ import { OrgChartClientIpModule } from 'src/engine/core-modules/org-chart/org-ch
 import { OrgChartController } from './controllers/org-chart.controller';
 import { ArxenaBackendService } from './services/arxena-backend.service';
 import { CompanyLogoService } from './services/company-logo.service';
+import { ContactOutPeopleSearchService } from './services/contactout-people-search.service';
 import { ContactOutPersonOrgMovementService } from './services/contactout-person-org-movement.service';
 import { CoreSignalPersonOrgMovementService } from './services/coresignal-person-org-movement.service';
 import { ImageProxyService } from './services/image-proxy.service';
@@ -77,6 +78,7 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
     PdlAutocompleteService,
     PdlPersonOrgMovementService,
     CoreSignalPersonOrgMovementService,
+    ContactOutPeopleSearchService,
     ContactOutPersonOrgMovementService,
     PersonOrgMovementService,
     CompanyLogoService,
@@ -97,6 +99,7 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
     OrgChartLinkedInBuildService,
     PdlPersonOrgMovementService,
     CoreSignalPersonOrgMovementService,
+    ContactOutPeopleSearchService,
     ContactOutPersonOrgMovementService,
     PersonOrgMovementService,
   ],

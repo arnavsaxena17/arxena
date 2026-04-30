@@ -62,6 +62,8 @@ export type UseOrgChartActionsParams = {
   industry?: string;
   /** Optional macro industry category override for Python (e.g. "computer software"). */
   industryCategory?: string;
+  /** Optional MonthYear snapshot filter (YYYY-MM). Threaded to org-chart build/search endpoints. */
+  asOfMonth?: string;
   /**
    * Preview template nodes cannot load per-position people until a full chart exists.
    * When set, double-click / “Get people in this position” on a preview node invokes this instead of fetching.
@@ -262,6 +264,7 @@ export const useOrgChartActions = ({
   employeeCount,
   industry,
   industryCategory,
+  asOfMonth,
   onPreviewNodePeopleRequest,
   linkedinCompanyUrl,
   linkedinUnipileAccountId,
@@ -1240,6 +1243,10 @@ export const useOrgChartActions = ({
       typeof industryCategory === 'string' && industryCategory.trim().length > 0
         ? industryCategory.trim()
         : undefined;
+    const trimmedAsOfMonth =
+      typeof asOfMonth === 'string' && asOfMonth.trim().length > 0
+        ? asOfMonth.trim()
+        : undefined;
     const body = {
       rawQuery: requirement,
       cleanedQuery: requirement,
@@ -1258,6 +1265,7 @@ export const useOrgChartActions = ({
       ...(trimmedIndustryCategory
         ? { industryCategory: trimmedIndustryCategory }
         : {}),
+      ...(trimmedAsOfMonth ? { asOfMonth: trimmedAsOfMonth } : {}),
       ...(params.multiSource
         ? {
             multiSource: true,

@@ -39,6 +39,7 @@ import {
     type OrgchartQueryGeneratorPreference,
 } from './orgchart-linkedin-query-router.service';
 import { SearchExecutionService } from './search-execution.service';
+import { applyAsOfSnapshotToCandidates } from '../../org-chart/utils/orgchart-asof-snapshot.util';
 
 type OrgChartCandidateInput = TransformedCandidateForTable | Record<string, unknown>;
 
@@ -608,6 +609,8 @@ export class OrgChartSearchService {
        * chart-level channel (server-only; clients receive opaque `ds_*` slugs on nodes).
        */
       profileSourceFallback?: OrgChartLinkedinCandidateSource;
+      /** Optional MonthYear snapshot filter in YYYY-MM. */
+      asOfMonth?: string;
     },
   ): Promise<OrgChartData> {
     const { companyName, companyId, mode, function: fn } = options;
@@ -632,7 +635,16 @@ export class OrgChartSearchService {
     const personIdToContact = new Map<string, OrgChartNodeContactAvailability>();
     const { profileSourceFallback } = options;
 
-    const people: StandardizedOrgChartPerson[] = candidates.map(
+    const candidatesForSnapshot =
+      options.asOfMonth?.trim()
+        ? applyAsOfSnapshotToCandidates({
+            candidates: candidates as Array<Record<string, unknown>>,
+            companyName: normalizedCompanyName,
+            asOfMonth: options.asOfMonth,
+          })
+        : (candidates as Array<Record<string, unknown>>);
+
+    const people: StandardizedOrgChartPerson[] = candidatesForSnapshot.map(
       (candidate, index) => {
         const raw = candidate as Record<string, unknown>;
 

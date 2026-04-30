@@ -245,6 +245,9 @@ export class ApifyLinkedInCompanyProfileTransformerService {
         locationCountry: country ?? row.locationCountry,
         locationRegion: region ?? row.locationRegion,
         locationLocality: locality ?? row.locationLocality,
+        // Preserve raw experience for timeline snapshotting utilities.
+        org_apify_experience: raw.experience ?? null,
+        org_apify: raw,
         ...(options.companyLinkedinUrl
           ? { jobCompanyLinkedinUrl: options.companyLinkedinUrl.trim() }
           : {}),

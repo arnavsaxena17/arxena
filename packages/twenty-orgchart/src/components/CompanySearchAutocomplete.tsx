@@ -16,6 +16,7 @@ export type CompanySearchAutocompleteProps = {
     industry?: string;
     profileCount?: number;
     linkedinUrl?: string;
+    companyDomain?: string;
   }) => void;
   placeholder?: string;
   disabled?: boolean;
@@ -233,6 +234,21 @@ export const CompanySearchAutocomplete = ({
   logoBaseUrl,
   startIcon,
 }: CompanySearchAutocompleteProps) => {
+  const deriveCompanyDomain = useCallback((website?: string) => {
+    const raw = website?.trim();
+    if (!raw) return undefined;
+    try {
+      const normalized =
+        raw.startsWith('http://') || raw.startsWith('https://')
+          ? raw
+          : `https://${raw}`;
+      const host = new URL(normalized).hostname.trim().toLowerCase();
+      return host || undefined;
+    } catch {
+      return raw.toLowerCase();
+    }
+  }, []);
+
   const [inputValue, setInputValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownRect, setDropdownRect] = useState({ top: 0, left: 0, width: 0 });
@@ -303,6 +319,7 @@ export const CompanySearchAutocomplete = ({
         companyId: company.meta.id,
         companyName: company.name,
         website: company.meta.website,
+        companyDomain: deriveCompanyDomain(company.meta.website),
         locationName: company.meta.location_name,
         industry: company.meta.industry,
         profileCount: company.count,
@@ -312,7 +329,7 @@ export const CompanySearchAutocomplete = ({
       setIsOpen(false);
       clear();
     },
-    [onCompanySelect, clear],
+    [deriveCompanyDomain, onCompanySelect, clear],
   );
 
   const handleBlur = useCallback(() => {

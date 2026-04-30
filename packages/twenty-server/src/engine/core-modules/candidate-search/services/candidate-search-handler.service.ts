@@ -1,16 +1,16 @@
 import {
-  forwardRef,
-  HttpException,
-  HttpStatus,
-  Inject,
-  Injectable,
-  Logger,
+    forwardRef,
+    HttpException,
+    HttpStatus,
+    Inject,
+    Injectable,
+    Logger,
 } from '@nestjs/common';
 import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
 import {
-  LinkedInClassicCompaniesSearchRequest,
-  LinkedInClassicJobsSearchRequest,
-  LinkedInSalesNavigatorCompaniesSearchRequest,
+    LinkedInClassicCompaniesSearchRequest,
+    LinkedInClassicJobsSearchRequest,
+    LinkedInSalesNavigatorCompaniesSearchRequest,
 } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
 import { OrgChartLinkedInBuildService } from 'src/engine/core-modules/org-chart/services/org-chart-linkedin-build.service';
 import { type OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
@@ -18,12 +18,12 @@ import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import {
-  ClassicPeopleSearchStrategyResult,
-  GeneratedSearchParameters,
-  ParsedJobDescription,
-  RecruiterPeopleSearchStrategyResult,
-  ResultValidationResult,
-  SalesNavigatorPeopleSearchStrategyResult,
+    ClassicPeopleSearchStrategyResult,
+    GeneratedSearchParameters,
+    ParsedJobDescription,
+    RecruiterPeopleSearchStrategyResult,
+    ResultValidationResult,
+    SalesNavigatorPeopleSearchStrategyResult,
 } from '../types/candidate-search-request.type';
 import { ChatMessageRequest } from '../types/search-plan.types';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
@@ -41,8 +41,8 @@ import { CleanupService } from './cleanup.service';
 import { JobDescriptionService } from './job-description.service';
 import { OrgchartLinkedInQueryRouterService } from './orgchart-linkedin-query-router.service';
 import {
-  PythonQueryGenerationService,
-  type PythonQueryInput,
+    PythonQueryGenerationService,
+    type PythonQueryInput,
 } from './python-query-generation.service';
 import { RequirementAnalyzerService } from './requirement-analyzer.service';
 import { SearchExecutionService } from './search-execution.service';

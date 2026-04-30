@@ -1,17 +1,18 @@
 import {
-    Body,
-    Controller,
-    Get,
-    HttpException,
-    HttpStatus,
-    Logger,
-    Param,
-    Post,
-    Query,
-    Req,
-    Res,
-    UseGuards,
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
 } from '@nestjs/common';
+
 import { Request, Response } from 'express';
 import { v4 as uuidV4 } from 'uuid';
 
@@ -26,11 +27,11 @@ import { CacheStorageService } from 'src/engine/core-modules/cache-storage/servi
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { ApolloIoRestService } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
-import type {
-    ClassicPeopleSearchStrategyResult,
-    GeneratedSearchParameters,
-    RecruiterPeopleSearchStrategyResult,
-    SalesNavigatorPeopleSearchStrategyResult,
+import {
+  ClassicPeopleSearchStrategyResult,
+  GeneratedSearchParameters,
+  RecruiterPeopleSearchStrategyResult,
+  SalesNavigatorPeopleSearchStrategyResult,
 } from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
 import { constructSearchParamKey } from 'src/engine/core-modules/candidate-search/utils/search-parameter.utils';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -39,6 +40,7 @@ import { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-cha
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { LinkedinXraySearchEngine } from 'src/modules/linkedin-xray/types/linkedin-xray-search-job.types';
+
 import { CompanyAutocompleteDto } from '../dto/company-autocomplete.dto';
 import { OrgChartNodePeopleDto } from '../dto/org-chart-node-people.dto';
 import { OrgChartQueryDto } from '../dto/org-chart-query.dto';
@@ -50,10 +52,24 @@ import { OrgChartLinkedInBuildService } from '../services/org-chart-linkedin-bui
 import { OrgChartTheOrgEnrichmentService } from '../services/org-chart-theorg-enrichment.service';
 import { OrgChartS3Service } from '../services/orgchart-s3.service';
 import { PythonOrgChartService } from '../services/python-org-chart.service';
+import { resolveFirstAutocompleteSource } from '../utils/first-autocomplete-source.util';
+import { applyAsOfSnapshotToCandidates } from '../utils/orgchart-asof-snapshot.util';
+import {
+  computeTimelineMetricsFromCandidates,
+  computeTimelineProfilesFromCandidates,
+} from '../utils/orgchart-timeline-metrics.util';
+import { normalizePersonForPythonOrgChartBuild } from '../utils/python-org-chart-person.util';
+import {
+  ApifyCompanyProfileActorItem,
+  generateSampleApifyCompanyProfileActorItems,
+  generateSampleContactOutPeopleSearchResponse,
+} from '../utils/sample-company/sampleCompanyDatasets';
 
 @Controller('org-chart')
 export class OrgChartController {
   private readonly logger = new Logger(OrgChartController.name);
+  private static readonly APOLLO_FIRST_LOAD_RESULT_CAP = 2000;
+  private static readonly APOLLO_FIRST_LOAD_IN_PROGRESS_TTL_SECONDS = 60 * 10;
 
   constructor(
     private readonly orgChartService: OrgChartService,
@@ -85,14 +101,18 @@ export class OrgChartController {
 
   private getAuthToken(req: Request): string | undefined {
     const authHeader = req.headers.authorization;
+
     if (authHeader?.startsWith('Bearer ')) {
       return authHeader.slice(7);
     }
     const cookies = req.headers.cookie;
+
     if (cookies) {
       const match = cookies.match(/auth_token=([^;]+)/);
+
       if (match) return match[1];
     }
+
     return undefined;
   }
 
@@ -103,13 +123,16 @@ export class OrgChartController {
       return undefined;
     }
     const trimmed = raw.trim();
+
     if (trimmed.length === 0) {
       return undefined;
     }
     const n = Number(trimmed);
+
     if (!Number.isFinite(n) || n <= 0) {
       return undefined;
     }
+
     return n;
   }
 
@@ -117,6 +140,25 @@ export class OrgChartController {
     result: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     return this.imageProxyService.proxyImagesInPayload(result);
+  }
+
+  private extractDomainFromWebsite(website?: string): string | undefined {
+    const raw = website?.trim();
+    if (!raw) return undefined;
+    try {
+      const normalized =
+        raw.startsWith('http://') || raw.startsWith('https://')
+          ? raw
+          : `https://${raw}`;
+      const host = new URL(normalized).hostname.trim().toLowerCase();
+      return host || undefined;
+    } catch {
+      return raw.toLowerCase();
+    }
+  }
+
+  private apolloFirstLoadInProgressKey(companyId: string): string {
+    return `apollo-first-load-in-progress:${companyId}`;
   }
 
   @UseGuards(JwtAuthGuard)
@@ -136,14 +178,22 @@ export class OrgChartController {
     expiresAt: string;
   }> {
     const authToken = this.getAuthToken(req);
+
     if (!authToken) {
-      throw new HttpException('Authentication required', HttpStatus.UNAUTHORIZED);
+      throw new HttpException(
+        'Authentication required',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
     if (!(req as { user?: unknown }).user) {
-      throw new HttpException('Authentication required', HttpStatus.UNAUTHORIZED);
+      throw new HttpException(
+        'Authentication required',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     const companyId = body?.companyId?.trim() ?? '';
+
     if (!companyId || companyId.includes('/') || companyId.includes('..')) {
       throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
     }
@@ -152,6 +202,7 @@ export class OrgChartController {
       typeof body.ttlSeconds === 'number' && Number.isFinite(body.ttlSeconds)
         ? Math.floor(body.ttlSeconds)
         : 0;
+
     if (ttlSeconds <= 0) {
       throw new HttpException(
         'Body field "ttlSeconds" is required and must be > 0',
@@ -168,7 +219,9 @@ export class OrgChartController {
 
     // Ensure we have a persisted org chart to share (S3 is source of truth for share viewer).
     const normalizedCompanyId = this.normalizeCompanyId(companyId);
-    const existing = await this.orgChartS3Service.getOrgChart(normalizedCompanyId);
+    const existing =
+      await this.orgChartS3Service.getOrgChart(normalizedCompanyId);
+
     if (!existing) {
       throw new HttpException(
         'No persisted org chart found. Generate the full org chart first, then share.',
@@ -176,9 +229,9 @@ export class OrgChartController {
       );
     }
 
-    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(
-      authToken,
-    );
+    const workspaceId =
+      await this.workspaceQueryService.getWorkspaceIdFromToken(authToken);
+
     if (!workspaceId) {
       throw new HttpException('Workspace not found', HttpStatus.UNAUTHORIZED);
     }
@@ -213,8 +266,12 @@ export class OrgChartController {
       authToken,
     );
 
-    const token =
-      await this.apiKeyService.generateApiKeyToken(workspaceId, apiKeyId, expiresAt);
+    const token = await this.apiKeyService.generateApiKeyToken(
+      workspaceId,
+      apiKeyId,
+      expiresAt,
+    );
+
     if (!token?.token) {
       throw new HttpException(
         'Failed to generate access key',
@@ -223,12 +280,15 @@ export class OrgChartController {
     }
 
     const shareToken = uuidV4();
+
     await this.orgChartCacheStorageService.set(
       this.shareCacheKey(shareToken),
       {
         companyId: normalizedCompanyId,
         companyName:
-          typeof body.companyName === 'string' ? body.companyName.trim() : undefined,
+          typeof body.companyName === 'string'
+            ? body.companyName.trim()
+            : undefined,
         createdAt: new Date().toISOString(),
       },
       ttlSeconds,
@@ -249,11 +309,13 @@ export class OrgChartController {
     @Req() req: Request,
   ): Promise<{ status: 'ok'; result: Record<string, unknown> }> {
     const trimmed = (shareToken ?? '').trim();
+
     if (!trimmed) {
       throw new HttpException('Invalid share token', HttpStatus.BAD_REQUEST);
     }
 
     const authToken = this.getAuthToken(req);
+
     if (!authToken) {
       throw new HttpException('Access key required', HttpStatus.UNAUTHORIZED);
     }
@@ -267,12 +329,14 @@ export class OrgChartController {
     }>(this.shareCacheKey(trimmed));
 
     const companyId = mapping?.companyId?.trim() ?? '';
+
     if (!companyId) {
       // Treat as expired / missing.
       throw new HttpException('Share link expired', HttpStatus.GONE);
     }
 
     const orgChart = await this.orgChartS3Service.getOrgChart(companyId);
+
     if (!orgChart) {
       throw new HttpException('Org chart not found', HttpStatus.NOT_FOUND);
     }
@@ -304,14 +368,13 @@ export class OrgChartController {
     }
     const { ok, contentType, body } =
       await this.companyLogoService.fetchLogoByWebsite(website);
+
     if (!ok || body.byteLength === 0) {
       res.status(404).send();
+
       return;
     }
-    res.setHeader(
-      'Content-Type',
-      contentType ?? 'image/png',
-    );
+    res.setHeader('Content-Type', contentType ?? 'image/png');
     res.send(Buffer.from(body));
   }
 
@@ -320,10 +383,7 @@ export class OrgChartController {
    * can set Cross-Origin-Resource-Policy and avoid CORP blocking in the browser.
    */
   @Get('image-proxy')
-  async getImageProxy(
-    @Query('url') url: string,
-    @Res() res: Response,
-  ) {
+  async getImageProxy(@Query('url') url: string, @Res() res: Response) {
     const legacyUrl = url?.trim() ?? '';
 
     if (!legacyUrl) {
@@ -337,13 +397,16 @@ export class OrgChartController {
 
     if (!decodedUrl) {
       res.status(404).send();
+
       return;
     }
 
     const { ok, contentType, body } =
       await this.imageProxyService.fetchImage(decodedUrl);
+
     if (!ok || body.byteLength === 0) {
       res.status(404).send();
+
       return;
     }
     res.setHeader('Content-Type', contentType ?? 'image/jpeg');
@@ -366,13 +429,16 @@ export class OrgChartController {
 
     if (!decodedUrl) {
       res.status(404).send();
+
       return;
     }
 
     const { ok, contentType, body } =
       await this.imageProxyService.fetchImage(decodedUrl);
+
     if (!ok || body.byteLength === 0) {
       res.status(404).send();
+
       return;
     }
     res.setHeader('Content-Type', contentType ?? 'image/jpeg');
@@ -397,13 +463,16 @@ export class OrgChartController {
 
     if (!decodedUrl) {
       res.status(404).send();
+
       return;
     }
 
     const { ok, contentType, body } =
       await this.imageProxyService.fetchImage(decodedUrl);
+
     if (!ok || body.byteLength === 0) {
       res.status(404).send();
+
       return;
     }
     res.setHeader('Content-Type', contentType ?? 'image/jpeg');
@@ -414,13 +483,15 @@ export class OrgChartController {
   @Get('companies/sitemap-index')
   async getSitemapIndex() {
     try {
-      const companyIds =
-        await this.orgChartEsService.getIndexedCompanyIds(500);
+      const companyIds = await this.orgChartEsService.getIndexedCompanyIds(500);
+
       return { companyIds, status: 'ok' };
     } catch (error) {
       this.logger.error('Get sitemap index failed', error);
       throw new HttpException(
-        error instanceof Error ? error.message : 'Failed to fetch sitemap index',
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch sitemap index',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -442,7 +513,12 @@ export class OrgChartController {
     const maxExposedCount = maxExposedCountParam
       ? parseInt(maxExposedCountParam, 10)
       : undefined;
-    if (!normalizedLetter || normalizedLetter.length !== 1 || !/[a-z]/.test(normalizedLetter)) {
+
+    if (
+      !normalizedLetter ||
+      normalizedLetter.length !== 1 ||
+      !/[a-z]/.test(normalizedLetter)
+    ) {
       throw new HttpException(
         'Query parameter "letter" is required (a-z)',
         HttpStatus.BAD_REQUEST,
@@ -456,6 +532,7 @@ export class OrgChartController {
           pageSize,
           maxExposedCount,
         );
+
       return { companyIds, hasMore, status: 'ok' };
     } catch (error) {
       this.logger.error(
@@ -463,7 +540,9 @@ export class OrgChartController {
         error,
       );
       throw new HttpException(
-        error instanceof Error ? error.message : 'Failed to fetch companies list',
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch companies list',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -482,6 +561,7 @@ export class OrgChartController {
     if (!companyId?.trim()) return companyId;
     let decoded = companyId.trim();
     let prev = '';
+
     while (prev !== decoded) {
       prev = decoded;
       try {
@@ -490,6 +570,7 @@ export class OrgChartController {
         break;
       }
     }
+
     return decoded.toLowerCase();
   }
 
@@ -509,6 +590,7 @@ export class OrgChartController {
     const maxExposedCount = maxExposedCountParam
       ? parseInt(maxExposedCountParam, 10)
       : undefined;
+
     if (!normalizedCountry) {
       throw new HttpException(
         'Query parameter "country" is required',
@@ -523,6 +605,7 @@ export class OrgChartController {
           pageSize,
           maxExposedCount,
         );
+
       return { companyIds, hasMore, status: 'ok' };
     } catch (error) {
       this.logger.error(
@@ -556,6 +639,7 @@ export class OrgChartController {
     const maxExposedCount = maxExposedCountParam
       ? parseInt(maxExposedCountParam, 10)
       : undefined;
+
     if (!normalizedCountry || !normalizedType) {
       throw new HttpException(
         'Query parameters "country" and "type" are required',
@@ -571,6 +655,7 @@ export class OrgChartController {
           pageSize,
           maxExposedCount,
         );
+
       return { companyIds, hasMore, status: 'ok' };
     } catch (error) {
       this.logger.error(
@@ -609,6 +694,7 @@ export class OrgChartController {
           country,
           type,
         });
+
       return { urls, status: 'ok' };
     } catch (error) {
       this.logger.error('Get sitemap URLs failed', error);
@@ -622,8 +708,8 @@ export class OrgChartController {
   @Get('companies/sitemap-slices')
   async getSitemapSlices() {
     try {
-      const pairs =
-        await this.orgChartEsService.getDistinctCountryTypePairs();
+      const pairs = await this.orgChartEsService.getDistinctCountryTypePairs();
+
       return { slices: pairs, status: 'ok' };
     } catch (error) {
       this.logger.error('Get sitemap slices failed', error);
@@ -638,16 +724,16 @@ export class OrgChartController {
 
   @Get('companies/sitemap-batch-params')
   async getSitemapBatchParams(@Query('batchIndex') batchIndexParam: string) {
-    const batchIndex = Math.max(
-      0,
-      parseInt(batchIndexParam ?? '0', 10) || 0,
-    );
+    const batchIndex = Math.max(0, parseInt(batchIndexParam ?? '0', 10) || 0);
+
     try {
       const params =
         await this.orgChartEsService.getSitemapBatchParams(batchIndex);
+
       if (!params) {
         return { status: 'ok' };
       }
+
       return { ...params, status: 'ok' };
     } catch (error) {
       this.logger.error('Get sitemap batch params failed', error);
@@ -663,8 +749,8 @@ export class OrgChartController {
   @Get('companies/sitemap-global-fullcompany-count')
   async getSitemapGlobalFullcompanyCount() {
     try {
-      const count =
-        await this.orgChartEsService.getGlobalFullcompanyCount();
+      const count = await this.orgChartEsService.getGlobalFullcompanyCount();
+
       return { count, status: 'ok' };
     } catch (error) {
       this.logger.error('Get sitemap global fullcompany count failed', error);
@@ -688,11 +774,9 @@ export class OrgChartController {
       5000,
       Math.max(1, parseInt(limitParam ?? '50', 10) || 50),
     );
-    const batchIndex = Math.max(
-      0,
-      parseInt(batchIndexParam ?? '0', 10) || 0,
-    );
+    const batchIndex = Math.max(0, parseInt(batchIndexParam ?? '0', 10) || 0);
     const depth = batchIndex < 40 ? 'global' : 'countries';
+
     try {
       const companyIds =
         await this.orgChartEsService.getIndexedCompanyIdsPaginated(
@@ -713,8 +797,10 @@ export class OrgChartController {
         for (const companyId of companyIds) {
           const combos =
             await this.orgChartEsService.getIndexedUrlsForCompany(companyId);
+
           for (const { country, type } of combos) {
             const t = type ?? 'fullcompany';
+
             if (depth === 'countries' && t !== 'fullcompany') continue;
             urls.push({
               companyId,
@@ -746,6 +832,7 @@ export class OrgChartController {
       ? this.normalizeCompanyId(companyId.trim())
       : '';
     const urlOrSlug = linkedinUrl?.trim() || normalizedCompanyId;
+
     if (!urlOrSlug) {
       throw new HttpException(
         'Query parameter "companyId" or "linkedinUrl" is required',
@@ -756,6 +843,7 @@ export class OrgChartController {
     try {
       const employeeCount =
         await this.apifyEmployeeCountService.getEmployeeCount(urlOrSlug);
+
       return { employeeCount, status: 'ok' };
     } catch (error) {
       this.logger.error('Employee count lookup failed', error);
@@ -773,6 +861,7 @@ export class OrgChartController {
     @Req() req: Request,
   ) {
     const urlOrSlug = linkedinUrl?.trim() || linkedinSlug?.trim();
+
     if (!urlOrSlug) {
       throw new HttpException(
         'Query parameter "linkedinUrl" or "linkedinSlug" is required',
@@ -781,12 +870,14 @@ export class OrgChartController {
     }
 
     const authToken = this.getAuthToken(req);
+
     if (!authToken) {
       return { linkedinConnected: false, status: 'ok' };
     }
 
     try {
       let workspaceId: string;
+
       try {
         workspaceId =
           await this.workspaceQueryService.getWorkspaceIdFromToken(authToken);
@@ -811,6 +902,7 @@ export class OrgChartController {
 
       const publicIdentifier =
         this.unipileCompanyService.extractPublicIdentifier(urlOrSlug);
+
       if (!publicIdentifier) {
         throw new HttpException(
           'Could not extract company identifier from linkedinUrl or linkedinSlug',
@@ -866,6 +958,7 @@ export class OrgChartController {
             authToken,
             'linkedin',
           );
+
         linkedinUnipileConnected = !!accountId;
       } catch {
         linkedinUnipileConnected = false;
@@ -889,16 +982,18 @@ export class OrgChartController {
   }
 
   @Get('companies/:companyId/top-hired-from')
-  async getTopHiredFrom(
-    @Param('companyId') companyId: string,
-  ) {
+  async getTopHiredFrom(@Param('companyId') companyId: string) {
     if (!companyId || companyId.includes('/') || companyId.includes('..')) {
       throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
     }
     const normalizedCompanyId = this.normalizeCompanyId(companyId);
+
     try {
       const companies =
-        await this.orgChartEsService.getTopHiredFromCompanies(normalizedCompanyId);
+        await this.orgChartEsService.getTopHiredFromCompanies(
+          normalizedCompanyId,
+        );
+
       return { companies, status: 'ok' };
     } catch (error) {
       this.logger.error(
@@ -906,23 +1001,27 @@ export class OrgChartController {
         error,
       );
       throw new HttpException(
-        error instanceof Error ? error.message : 'Failed to fetch top hired from',
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch top hired from',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
   @Get('companies/:companyId/indexed-urls')
-  async getIndexedUrls(
-    @Param('companyId') companyId: string,
-  ) {
+  async getIndexedUrls(@Param('companyId') companyId: string) {
     if (!companyId || companyId.includes('/') || companyId.includes('..')) {
       throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
     }
     const normalizedCompanyId = this.normalizeCompanyId(companyId);
+
     try {
       const urls =
-        await this.orgChartEsService.getIndexedUrlsForCompany(normalizedCompanyId);
+        await this.orgChartEsService.getIndexedUrlsForCompany(
+          normalizedCompanyId,
+        );
+
       return { urls, status: 'ok' };
     } catch (error) {
       this.logger.error(
@@ -937,13 +1036,17 @@ export class OrgChartController {
   }
 
   @Post('companies/autocomplete')
-  async companyAutocomplete(@Body() dto: CompanyAutocompleteDto, @Req() req: Request) {
+  async companyAutocomplete(
+    @Body() dto: CompanyAutocompleteDto,
+    @Req() req: Request,
+  ) {
     try {
       const authToken = this.getAuthToken(req);
       const results = await this.orgChartService.getCompanyAutocomplete(
         dto.input_text,
         authToken,
       );
+
       return { result: results, status: 'ok' };
     } catch (error) {
       this.logger.error('Company autocomplete failed', error);
@@ -964,6 +1067,7 @@ export class OrgChartController {
     @Req() req: Request,
   ) {
     const authToken = this.getAuthToken(req);
+
     if (!authToken) {
       throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
     }
@@ -971,6 +1075,7 @@ export class OrgChartController {
       return { result: [], status: 'ok' as const };
     }
     const q = dto.input_text?.trim() ?? '';
+
     if (!q) {
       return { result: [], status: 'ok' as const };
     }
@@ -994,14 +1099,18 @@ export class OrgChartController {
         const linkedinUrl =
           typeof org.linkedin_url === 'string' ? org.linkedin_url : undefined;
         let linkedin_slug: string | undefined;
+
         if (linkedinUrl) {
           const m = linkedinUrl.match(/linkedin\.com\/company\/([^/?#]+)/i);
+
           linkedin_slug = m?.[1]
             ? decodeURIComponent(m[1].replace(/\/$/, ''))
             : undefined;
         }
         const primaryDomain =
-          typeof org.primary_domain === 'string' ? org.primary_domain : undefined;
+          typeof org.primary_domain === 'string'
+            ? org.primary_domain
+            : undefined;
         const website =
           typeof org.website_url === 'string'
             ? org.website_url
@@ -1050,24 +1159,20 @@ export class OrgChartController {
   }
 
   @Get('manual/:companyId')
-  async getManualOrgChart(
-    @Param('companyId') companyId: string,
-  ) {
+  async getManualOrgChart(@Param('companyId') companyId: string) {
     if (!companyId || companyId.includes('/') || companyId.includes('..')) {
       throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
     }
 
     const normalizedCompanyId = this.normalizeCompanyId(companyId);
+
     try {
-      const result = await this.orgChartService.getManualOrgChart(
-        normalizedCompanyId,
-      );
+      const result =
+        await this.orgChartService.getManualOrgChart(normalizedCompanyId);
+
       return { result, status: 'ok' };
     } catch (error) {
-      this.logger.error(
-        `Get MANUAL org chart failed for ${companyId}`,
-        error,
-      );
+      this.logger.error(`Get MANUAL org chart failed for ${companyId}`, error);
       throw new HttpException(
         error instanceof Error
           ? error.message
@@ -1128,6 +1233,7 @@ export class OrgChartController {
             apiToken,
           },
         );
+
       return {
         result: await this.proxyOrgChartPayload(result),
         status: 'ok',
@@ -1146,6 +1252,171 @@ export class OrgChartController {
     }
   }
 
+  /**
+   * GET /org-chart/:companyId/timeline
+   *
+   * Returns timeline metadata + join/leave deltas for window presets.
+   * For now this is experience-driven and primarily intended for the `sample-company`
+   * dataset and for sources that preserve experience payloads (Apify/ContactOut).
+   *
+   * Query params:
+   * - asOfMonth: YYYY-MM (defaults to current month)
+   * - sampleSource: contactout|apify (sample-company only)
+   * - sampleProfiles: number (sample-company only)
+   * - apifyIncludePast: true|false (sample-company only)
+   */
+  @Get(':companyId/timeline')
+  async getOrgChartTimelineMetrics(
+    @Param('companyId') companyId: string,
+    @Query('companyName') companyName: string | undefined,
+    @Query('asOfMonth') asOfMonth: string | undefined,
+    @Query('sampleSource') sampleSource: string | undefined,
+    @Query('sampleProfiles') sampleProfiles: string | undefined,
+    @Query('apifyIncludePast') apifyIncludePastRaw: string | undefined,
+  ) {
+    if (!companyId || companyId.includes('/') || companyId.includes('..')) {
+      throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
+    }
+    const normalizedCompanyId = this.normalizeCompanyId(companyId);
+    const resolvedName = (companyName ?? '').trim() || normalizedCompanyId;
+
+    // Currently implemented for sample-company (dev dataset).
+    if (normalizedCompanyId !== 'sample-company') {
+      return {
+        status: 'ok',
+        result: computeTimelineMetricsFromCandidates({
+          candidates: [],
+          companyName: resolvedName,
+          asOfMonth,
+        }),
+      };
+    }
+
+    const totalProfilesParsed =
+      sampleProfiles !== undefined ? Number.parseInt(sampleProfiles, 10) : NaN;
+    const totalProfiles =
+      Number.isFinite(totalProfilesParsed) && totalProfilesParsed > 0
+        ? Math.min(1000, totalProfilesParsed)
+        : 100;
+    const includePast =
+      String(apifyIncludePastRaw ?? '').toLowerCase() === 'true';
+
+    const src = (sampleSource ?? 'contactout').trim().toLowerCase();
+    const linkedinCompanyUrl = `https://www.linkedin.com/company/${normalizedCompanyId}/`;
+    const candidates =
+      src === 'apify'
+        ? this.buildSampleCompanyOrgChartPeopleFromApify({
+            companyId: normalizedCompanyId,
+            companyName: resolvedName,
+            linkedinCompanyUrl,
+            totalProfiles,
+            includePast,
+          })
+        : this.buildSampleCompanyOrgChartPeopleFromContactOut({
+            companyId: normalizedCompanyId,
+            companyName: resolvedName,
+            domain: 'sample-company.com',
+            totalProfiles,
+          });
+
+    return {
+      status: 'ok',
+      result: computeTimelineMetricsFromCandidates({
+        candidates,
+        companyName: resolvedName,
+        asOfMonth,
+      }),
+    };
+  }
+
+  @Get(':companyId/timeline/profiles')
+  async getOrgChartTimelineProfiles(
+    @Param('companyId') companyId: string,
+    @Query('companyName') companyName: string | undefined,
+    @Query('asOfMonth') asOfMonth: string | undefined,
+    @Query('sampleSource') sampleSource: string | undefined,
+    @Query('sampleProfiles') sampleProfiles: string | undefined,
+    @Query('apifyIncludePast') apifyIncludePastRaw: string | undefined,
+    @Query('event') eventRaw: string | undefined,
+    @Query('window') windowRaw: string | undefined,
+    @Query('limit') limitRaw: string | undefined,
+  ) {
+    if (!companyId || companyId.includes('/') || companyId.includes('..')) {
+      throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
+    }
+    const normalizedCompanyId = this.normalizeCompanyId(companyId);
+    const resolvedName = (companyName ?? '').trim() || normalizedCompanyId;
+
+    const event =
+      eventRaw === 'joined' ||
+      eventRaw === 'left' ||
+      eventRaw === 'current' ||
+      eventRaw === 'past'
+        ? eventRaw
+        : 'current';
+    const window =
+      windowRaw === '1m' ||
+      windowRaw === '3m' ||
+      windowRaw === '6m' ||
+      windowRaw === '1y'
+        ? windowRaw
+        : '1m';
+    const limitParsed =
+      limitRaw !== undefined ? Number.parseInt(limitRaw, 10) : undefined;
+
+    if (normalizedCompanyId !== 'sample-company') {
+      return {
+        status: 'ok',
+        result: computeTimelineProfilesFromCandidates({
+          candidates: [],
+          companyName: resolvedName,
+          asOfMonth,
+          event,
+          window,
+          limit: limitParsed,
+        }),
+      };
+    }
+
+    const totalProfilesParsed =
+      sampleProfiles !== undefined ? Number.parseInt(sampleProfiles, 10) : NaN;
+    const totalProfiles =
+      Number.isFinite(totalProfilesParsed) && totalProfilesParsed > 0
+        ? Math.min(1000, totalProfilesParsed)
+        : 100;
+    const includePast =
+      String(apifyIncludePastRaw ?? '').toLowerCase() === 'true';
+    const src = (sampleSource ?? 'contactout').trim().toLowerCase();
+    const linkedinCompanyUrl = `https://www.linkedin.com/company/${normalizedCompanyId}/`;
+    const candidates =
+      src === 'apify'
+        ? this.buildSampleCompanyOrgChartPeopleFromApify({
+            companyId: normalizedCompanyId,
+            companyName: resolvedName,
+            linkedinCompanyUrl,
+            totalProfiles,
+            includePast,
+          })
+        : this.buildSampleCompanyOrgChartPeopleFromContactOut({
+            companyId: normalizedCompanyId,
+            companyName: resolvedName,
+            domain: 'sample-company.com',
+            totalProfiles,
+          });
+
+    return {
+      status: 'ok',
+      result: computeTimelineProfilesFromCandidates({
+        candidates,
+        companyName: resolvedName,
+        asOfMonth,
+        event,
+        window,
+        limit: limitParsed,
+      }),
+    };
+  }
+
   @Get(':companyId/:country/:functionRoot')
   async getOrgChartPath3(
     @Param('companyId') companyId: string,
@@ -1153,7 +1424,8 @@ export class OrgChartController {
     @Param('functionRoot') functionRoot: string,
     @Query('companyName') companyName: string | undefined,
     @Query('website') website: string | undefined,
-    @Query('expectedEmployeeCount') expectedEmployeeCountRaw: string | undefined,
+    @Query('expectedEmployeeCount')
+    expectedEmployeeCountRaw: string | undefined,
     @Req() req: Request,
   ) {
     return this.getOrgChartInternal(req, companyId, {
@@ -1161,8 +1433,9 @@ export class OrgChartController {
       website,
       country,
       functionRoot,
-      expectedEmployeeCount:
-        this.parseExpectedEmployeeCountQuery(expectedEmployeeCountRaw),
+      expectedEmployeeCount: this.parseExpectedEmployeeCountQuery(
+        expectedEmployeeCountRaw,
+      ),
     });
   }
 
@@ -1172,7 +1445,8 @@ export class OrgChartController {
     @Param('country') country: string,
     @Query('companyName') companyName: string | undefined,
     @Query('website') website: string | undefined,
-    @Query('expectedEmployeeCount') expectedEmployeeCountRaw: string | undefined,
+    @Query('expectedEmployeeCount')
+    expectedEmployeeCountRaw: string | undefined,
     @Req() req: Request,
   ) {
     return this.getOrgChartInternal(req, companyId, {
@@ -1180,8 +1454,9 @@ export class OrgChartController {
       website,
       country,
       functionRoot: undefined,
-      expectedEmployeeCount:
-        this.parseExpectedEmployeeCountQuery(expectedEmployeeCountRaw),
+      expectedEmployeeCount: this.parseExpectedEmployeeCountQuery(
+        expectedEmployeeCountRaw,
+      ),
     });
   }
 
@@ -1190,18 +1465,24 @@ export class OrgChartController {
     @Param('companyId') companyId: string,
     @Query('companyName') companyName: string | undefined,
     @Query('website') website: string | undefined,
+    @Query('companyDomain') companyDomain: string | undefined,
     @Query('country') country: string | undefined,
     @Query('functionRoot') functionRoot: string | undefined,
-    @Query('expectedEmployeeCount') expectedEmployeeCountRaw: string | undefined,
+    @Query('asOfMonth') asOfMonth: string | undefined,
+    @Query('expectedEmployeeCount')
+    expectedEmployeeCountRaw: string | undefined,
     @Req() req: Request,
   ) {
     return this.getOrgChartInternal(req, companyId, {
       companyName,
       website,
+      companyDomain,
       country,
       functionRoot,
-      expectedEmployeeCount:
-        this.parseExpectedEmployeeCountQuery(expectedEmployeeCountRaw),
+      asOfMonth,
+      expectedEmployeeCount: this.parseExpectedEmployeeCountQuery(
+        expectedEmployeeCountRaw,
+      ),
     });
   }
 
@@ -1211,8 +1492,10 @@ export class OrgChartController {
     options: {
       companyName?: string;
       website?: string;
+      companyDomain?: string;
       country?: string;
       functionRoot?: string;
+      asOfMonth?: string;
       expectedEmployeeCount?: number;
     },
   ) {
@@ -1220,8 +1503,27 @@ export class OrgChartController {
       throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
     }
     const normalizedCompanyId = this.normalizeCompanyId(companyId);
-    const clientIp =
-      OrgChartClientIpService.extractClientIpFromRequest(req);
+
+    if (normalizedCompanyId === 'sample-company') {
+      const result = await this.buildSampleCompanyOrgChart({
+        companyId: normalizedCompanyId,
+        companyName: options.companyName,
+        country: options.country,
+        functionRoot: options.functionRoot,
+        expectedEmployeeCount: options.expectedEmployeeCount,
+        sampleSource:
+          (req.query?.sampleSource as string | undefined) ?? undefined,
+        apifyIncludePast:
+          String(req.query?.apifyIncludePast ?? '').toLowerCase() === 'true',
+        totalProfilesRaw:
+          (req.query?.sampleProfiles as string | undefined) ?? undefined,
+        asOfMonth: options.asOfMonth,
+      });
+
+      return { result: await this.proxyOrgChartPayload(result), status: 'ok' };
+    }
+
+    const clientIp = OrgChartClientIpService.extractClientIpFromRequest(req);
     const clientUserAgent =
       OrgChartClientIpService.extractClientUserAgentFromRequest(req);
     const ipDecision =
@@ -1229,27 +1531,139 @@ export class OrgChartController {
         clientIp,
         clientUserAgent,
       );
+
     if (ipDecision?.blocked) {
       throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
     }
     const serveCachedOnly = ipDecision?.serveCachedOnly === true;
+
     try {
       const authToken = this.getAuthToken(req);
-      const { data: orgChartPayload, orgChartEsTransportError } =
-        await this.orgChartService.getOrgChart(
+      const firstSourceRequested = resolveFirstAutocompleteSource({
+        authToken,
+      });
+      let firstSourceUsed: 'apollo' | 'elasticsearch' = firstSourceRequested;
+      let fallbackApplied = false;
+      let fallbackReason:
+        | 'apollo_result_count_exceeds_limit'
+        | 'apollo_error'
+        | undefined;
+      let apolloTotalCount: number | undefined;
+      let apolloQueued = false;
+      let apolloQueueRequestId: string | undefined;
+
+      let orgChartPayload: Record<string, unknown> | null = null;
+      let orgChartEsTransportError: boolean | undefined;
+
+      if (firstSourceRequested === 'apollo' && !serveCachedOnly && authToken) {
+        try {
+          const countEstimate =
+            await this.orgChartLinkedInBuildService.getApolloOrgPeopleCountEstimate(
+              {
+                companyId: normalizedCompanyId,
+                companyName: options.companyName,
+                website: options.website,
+                country: options.country,
+                functionRoot: options.functionRoot,
+              },
+            );
+
+          if (typeof countEstimate.totalEntries === 'number') {
+            apolloTotalCount = countEstimate.totalEntries;
+          }
+
+          if (
+            typeof apolloTotalCount === 'number' &&
+            apolloTotalCount > OrgChartController.APOLLO_FIRST_LOAD_RESULT_CAP
+          ) {
+            fallbackApplied = true;
+            fallbackReason = 'apollo_result_count_exceeds_limit';
+            firstSourceUsed = 'elasticsearch';
+          } else {
+            const inProgressKey =
+              this.apolloFirstLoadInProgressKey(normalizedCompanyId);
+            const inProgress = await this.orgChartCacheStorageService.get<{
+              requestId?: string;
+            }>(inProgressKey);
+
+            if (inProgress?.requestId?.trim()) {
+              apolloQueued = true;
+              apolloQueueRequestId = inProgress.requestId.trim();
+              firstSourceUsed = 'elasticsearch';
+            } else {
+              const requestId = `orgchart-firstload-${Date.now()}-${Math.random()
+                .toString(36)
+                .slice(2, 8)}`;
+
+              await this.orgChartCacheStorageService.set(
+                inProgressKey,
+                { requestId },
+                OrgChartController.APOLLO_FIRST_LOAD_IN_PROGRESS_TTL_SECONDS,
+              );
+
+              await this.orgChartLinkedInBuildService.enqueueApolloOrgChartBuildJob(
+                {
+                  apiToken: authToken,
+                  requestId,
+                  companyId: normalizedCompanyId,
+                  companyName: options.companyName ?? normalizedCompanyId,
+                  country: options.country,
+                  functionRoot: options.functionRoot,
+                  linkedinCompanyUrl: undefined,
+                  companyDomain:
+                    options.companyDomain?.trim() ||
+                    this.extractDomainFromWebsite(options.website),
+                  shouldWriteCompanyOrgChartCache: true,
+                },
+              );
+
+              apolloQueued = true;
+              apolloQueueRequestId = requestId;
+              firstSourceUsed = 'elasticsearch';
+            }
+          }
+        } catch (error) {
+          this.logger.warn(
+            `Apollo first-load failed for companyId=${normalizedCompanyId}; falling back to Elasticsearch`,
+            error as Error,
+          );
+          fallbackApplied = true;
+          fallbackReason = 'apollo_error';
+          firstSourceUsed = 'elasticsearch';
+        }
+      } else {
+        firstSourceUsed = 'elasticsearch';
+      }
+
+      if (firstSourceUsed === 'elasticsearch' || !orgChartPayload) {
+        const orgChartOutcome = await this.orgChartService.getOrgChart(
           normalizedCompanyId,
           { ...options, serveCachedOnly },
           authToken,
         );
+
+        orgChartPayload = orgChartOutcome.data;
+        orgChartEsTransportError = orgChartOutcome.orgChartEsTransportError;
+      }
+
       if (
         clientIp &&
+        orgChartPayload &&
         this.orgChartClientIpService.shouldCountAsChartServed(orgChartPayload)
       ) {
         await this.orgChartClientIpService.recordChartServed(clientIp);
       }
+
       return {
-        result: await this.proxyOrgChartPayload(orgChartPayload),
+        result: await this.proxyOrgChartPayload(orgChartPayload ?? {}),
         status: 'ok',
+        firstSourceRequested,
+        firstSourceUsed,
+        fallbackApplied,
+        ...(fallbackReason ? { fallbackReason } : {}),
+        ...(typeof apolloTotalCount === 'number' ? { apolloTotalCount } : {}),
+        ...(apolloQueued ? { apolloQueued: true } : {}),
+        ...(apolloQueueRequestId ? { apolloQueueRequestId } : {}),
         ...(orgChartEsTransportError ? { orgChartEsTransportError: true } : {}),
       };
     } catch (error) {
@@ -1259,6 +1673,218 @@ export class OrgChartController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  private pickApifyTitleAtCompany(
+    item: ApifyCompanyProfileActorItem,
+    companyName: string,
+  ): string {
+    const ex = Array.isArray(item.experience) ? item.experience : [];
+    const normalizedWant = companyName.trim().toLowerCase();
+    const atCompany = ex.filter(
+      (e) => (e.companyName ?? '').trim().toLowerCase() === normalizedWant,
+    );
+    // Prefer current: endDate.text === "Present"
+    const current = atCompany.find((e) =>
+      (e.endDate?.text ?? '').toLowerCase().includes('present'),
+    );
+
+    return (
+      current?.position?.trim() ||
+      atCompany[0]?.position?.trim() ||
+      item.headline?.trim() ||
+      ''
+    );
+  }
+
+  private buildSampleCompanyOrgChartPeopleFromApify(input: {
+    companyId: string;
+    companyName: string;
+    linkedinCompanyUrl: string;
+    totalProfiles: number;
+    includePast: boolean;
+  }): Array<Record<string, unknown>> {
+    const raw = generateSampleApifyCompanyProfileActorItems({
+      companyName: input.companyName,
+      linkedinCompanyUrl: input.linkedinCompanyUrl,
+      totalProfiles: input.totalProfiles,
+      seed: 4242,
+    });
+    const filtered = input.includePast
+      ? raw
+      : raw.filter((p) => {
+          const ex = Array.isArray(p.experience) ? p.experience : [];
+          const normalizedWant = input.companyName.trim().toLowerCase();
+
+          return ex.some(
+            (e) =>
+              (e.companyName ?? '').trim().toLowerCase() === normalizedWant &&
+              (e.endDate?.text ?? '').toLowerCase().includes('present'),
+          );
+        });
+
+    return filtered.map((p) => {
+      const firstName = (p.firstName ?? '').trim();
+      const lastName = (p.lastName ?? '').trim();
+      const fullName = `${firstName} ${lastName}`.trim() || 'Unknown';
+      const locParsed = p.location?.parsed;
+      const title = this.pickApifyTitleAtCompany(p, input.companyName);
+      const partial: Record<string, unknown> = {
+        name: fullName,
+        full_name: fullName,
+        job_title: title,
+        job_company_id: input.companyId,
+        job_company_name: input.companyName,
+        job_company_linkedin_url: input.linkedinCompanyUrl,
+        linkedin_url: p.linkedinUrl ?? '',
+        location_country: locParsed?.country ?? '',
+        location_region: locParsed?.state ?? '',
+        location_locality: locParsed?.city ?? '',
+        location_name: p.location?.linkedinText ?? locParsed?.text ?? '',
+        profile_picture_url: p.photo ?? p.profilePicture?.url ?? '',
+        source: 'apify',
+        sources: ['apify'],
+        // keep original payload available for downstream experiments
+        org_apify: p,
+      };
+
+      return normalizePersonForPythonOrgChartBuild(partial, {
+        companyId: input.companyId,
+        companyName: input.companyName,
+        defaultCountry: (locParsed?.country ?? '').trim() || 'global',
+      });
+    });
+  }
+
+  private buildSampleCompanyOrgChartPeopleFromContactOut(input: {
+    companyId: string;
+    companyName: string;
+    domain: string;
+    totalProfiles: number;
+  }): Array<Record<string, unknown>> {
+    const response = generateSampleContactOutPeopleSearchResponse({
+      companyName: input.companyName,
+      domain: input.domain,
+      totalProfiles: input.totalProfiles,
+      seed: 1337,
+    });
+    const profiles = Object.entries(response.profiles);
+
+    return profiles.map(([linkedinUrl, p], index) => {
+      const ex = Array.isArray(p.experience) ? p.experience : [];
+      const normalizedWant = input.companyName.trim().toLowerCase();
+      const atCompany = ex.filter(
+        (e) => (e.company_name ?? '').trim().toLowerCase() === normalizedWant,
+      );
+      const current = atCompany.find((e) => e.is_current === true);
+      const title = current?.title?.trim() || p.title?.trim() || '';
+
+      const fullName =
+        (p.full_name ?? '').trim() || `Sample Person ${index + 1}`;
+      const partial: Record<string, unknown> = {
+        name: fullName,
+        full_name: fullName,
+        job_title: title,
+        job_company_id: input.companyId,
+        job_company_name: input.companyName,
+        job_company_linkedin_url: `https://www.linkedin.com/company/${input.companyName
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, '-')}/`,
+        linkedin_url: linkedinUrl,
+        location_name: p.location ?? '',
+        profile_picture_url: p.profile_picture_url ?? '',
+        source: 'contactout',
+        sources: ['contactout'],
+        org_contactout: p,
+      };
+
+      return normalizePersonForPythonOrgChartBuild(partial, {
+        companyId: input.companyId,
+        companyName: input.companyName,
+        defaultCountry:
+          typeof p.country === 'string' && p.country.trim()
+            ? p.country
+            : 'global',
+      });
+    });
+  }
+
+  private async buildSampleCompanyOrgChart(input: {
+    companyId: string;
+    companyName?: string;
+    country?: string;
+    functionRoot?: string;
+    expectedEmployeeCount?: number;
+    sampleSource?: string;
+    apifyIncludePast: boolean;
+    totalProfilesRaw?: string;
+    asOfMonth?: string;
+  }): Promise<Record<string, unknown>> {
+    const companyName =
+      (input.companyName ?? 'Sample Company').trim() || 'Sample Company';
+    const totalProfilesParsed =
+      input.totalProfilesRaw !== undefined
+        ? Number.parseInt(input.totalProfilesRaw, 10)
+        : NaN;
+    const totalProfiles =
+      Number.isFinite(totalProfilesParsed) && totalProfilesParsed > 0
+        ? Math.min(1000, totalProfilesParsed)
+        : 100;
+
+    const sampleSource = (input.sampleSource ?? 'contactout')
+      .trim()
+      .toLowerCase();
+    const linkedinCompanyUrl = `https://www.linkedin.com/company/${input.companyId}/`;
+
+    const people =
+      sampleSource === 'apify'
+        ? this.buildSampleCompanyOrgChartPeopleFromApify({
+            companyId: input.companyId,
+            companyName,
+            linkedinCompanyUrl,
+            totalProfiles,
+            includePast: input.apifyIncludePast,
+          })
+        : this.buildSampleCompanyOrgChartPeopleFromContactOut({
+            companyId: input.companyId,
+            companyName,
+            domain: 'sample-company.com',
+            totalProfiles,
+          });
+
+    const peopleForAsOf = input.asOfMonth?.trim()
+      ? applyAsOfSnapshotToCandidates({
+          candidates: people as Array<Record<string, unknown>>,
+          companyName,
+          asOfMonth: input.asOfMonth,
+        })
+      : people;
+
+    const built =
+      await this.pythonOrgChartService.createOrgChartFromStandardizedPeople({
+        people: peopleForAsOf,
+        jobName: companyName,
+        jobId: input.companyId,
+        functionRoot: input.functionRoot,
+        country: input.country,
+        industry: 'Computer Software',
+        industryCategory: 'Computer Software',
+      });
+
+    // Ensure the caller sees sample meta too (useful for debugging UI).
+    return {
+      ...built,
+      company_id: input.companyId,
+      job_company_id: input.companyId,
+      job_company_name: companyName,
+      job_company_linkedin_url: linkedinCompanyUrl,
+      people_count: people.length,
+      sample_source: sampleSource,
+      sample_profiles_requested: totalProfiles,
+      sample_apify_include_past: input.apifyIncludePast,
+      ...(input.asOfMonth ? { as_of_month: input.asOfMonth } : {}),
+    };
   }
 
   @Post(':companyId/node-people')
@@ -1272,6 +1898,7 @@ export class OrgChartController {
     }
 
     const normalizedCompanyId = this.normalizeCompanyId(companyId);
+
     try {
       const authToken = this.getAuthToken(req);
       const result = await this.orgChartService.getNodePeople(
@@ -1279,6 +1906,7 @@ export class OrgChartController {
         body,
         authToken,
       );
+
       return {
         ...(await this.imageProxyService.proxyImagesInPayload(result)),
         status: 'ok',
@@ -1311,6 +1939,7 @@ export class OrgChartController {
         },
         authToken,
       );
+
       return { result, status: 'ok' };
     } catch (error) {
       this.logger.error('Org chart query failed', error);
@@ -1358,18 +1987,25 @@ export class OrgChartController {
       | undefined;
   }> {
     const apiToken = this.getAuthToken(req);
+
     if (!apiToken) {
       throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
     }
     if (body.prompt == null || typeof body.prompt !== 'string') {
-      throw new HttpException('prompt is required and must be a string', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'prompt is required and must be a string',
+        HttpStatus.BAD_REQUEST,
+      );
     }
     if (
       body.orgChartContext === undefined ||
       body.orgChartContext === null ||
       typeof body.orgChartContext !== 'object'
     ) {
-      throw new HttpException('orgChartContext is required', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'orgChartContext is required',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const rawQuery = body.rawQuery ?? body.prompt;
@@ -1407,13 +2043,13 @@ export class OrgChartController {
     const strategiesKey = `${searchParamKey}Strategies`;
     const strategies =
       body.searchCategory === 'people'
-        ? (unresolvedSearchParams[strategiesKey] as
+        ? ((unresolvedSearchParams[strategiesKey] as
             | Array<
                 | ClassicPeopleSearchStrategyResult
                 | SalesNavigatorPeopleSearchStrategyResult
                 | RecruiterPeopleSearchStrategyResult
               >
-            | undefined) ?? []
+            | undefined) ?? [])
         : undefined;
 
     return {
@@ -1471,6 +2107,7 @@ export class OrgChartController {
           if (Array.isArray(value)) {
             return [[key, value.join(', ')]];
           }
+
           return typeof value === 'string' ? [[key, value]] : [];
         }),
       );
@@ -1514,6 +2151,7 @@ export class OrgChartController {
         if (Array.isArray(value)) {
           return [[key, value.join(', ')]];
         }
+
         return typeof value === 'string' ? [[key, value]] : [];
       }),
     );
@@ -1533,12 +2171,17 @@ export class OrgChartController {
     @Req() req: Request,
   ) {
     const authToken = this.getAuthToken(req);
+
     if (!authToken) {
-      throw new HttpException('Authentication required', HttpStatus.UNAUTHORIZED);
+      throw new HttpException(
+        'Authentication required',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     const companyId = body?.companyId?.trim();
     const companyName = body?.companyName?.trim();
+
     if (!companyId && !companyName) {
       throw new HttpException(
         'At least one of companyId or companyName is required',
@@ -1551,11 +2194,14 @@ export class OrgChartController {
         companyId: companyId || undefined,
         companyName: companyName || undefined,
       });
+
       return { status: 'ok' as const };
     } catch (error) {
       this.logger.error('Clear company org chart cache failed', error);
       throw new HttpException(
-        error instanceof Error ? error.message : 'Failed to clear org chart cache',
+        error instanceof Error
+          ? error.message
+          : 'Failed to clear org chart cache',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -1582,8 +2228,12 @@ export class OrgChartController {
     @Req() req: Request,
   ) {
     const authToken = this.getAuthToken(req);
+
     if (!authToken) {
-      throw new HttpException('Authentication required', HttpStatus.UNAUTHORIZED);
+      throw new HttpException(
+        'Authentication required',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
     if (!companyId || companyId.includes('/') || companyId.includes('..')) {
       throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
@@ -1606,6 +2256,7 @@ export class OrgChartController {
         },
         authToken,
       );
+
       return { status: 'ok' as const, ...result };
     } catch (error) {
       this.logger.error(
@@ -1628,8 +2279,12 @@ export class OrgChartController {
     @Req() req: Request,
   ) {
     const authToken = this.getAuthToken(req);
+
     if (!authToken) {
-      throw new HttpException('Authentication required', HttpStatus.UNAUTHORIZED);
+      throw new HttpException(
+        'Authentication required',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     try {
@@ -1672,6 +2327,7 @@ export class OrgChartController {
         { linkedinUrl: body.linkedinUrl },
         authToken,
       );
+
       return { ...result, status: 'ok' };
     } catch (error) {
       this.logger.error('Get contact info failed', error);
@@ -1696,16 +2352,22 @@ export class OrgChartController {
 
     try {
       const authToken = this.getAuthToken(req);
+
       if (!authToken) {
-        throw new HttpException('Authentication required', HttpStatus.UNAUTHORIZED);
+        throw new HttpException(
+          'Authentication required',
+          HttpStatus.UNAUTHORIZED,
+        );
       }
 
-      const workspaceMemberId = (req as { workspaceMemberId?: string }).workspaceMemberId;
+      const workspaceMemberId = (req as { workspaceMemberId?: string })
+        .workspaceMemberId;
       const result = await this.orgChartService.findCompanyByName(
         body.companyName,
         authToken,
         workspaceMemberId,
       );
+
       return { ...result, status: 'ok' };
     } catch (error) {
       this.logger.error('Find company by name failed', error);

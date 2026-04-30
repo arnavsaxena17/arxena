@@ -2,27 +2,27 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ApifyLinkedInCompanyProfileTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/apify-linkedin-company-profile-transformer.service';
 import type { TransformedCandidateForTable } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import {
-  ApifyService,
-  type ApifyRunLogProgressArgs,
+    ApifyService,
+    type ApifyRunLogProgressArgs,
 } from '../../apify/services/apify.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { LinkedInSearchParameterType } from '../types/linkedin-search-parameter.type';
 import {
-  LinkedInClassicCompaniesSearchRequest,
-  LinkedInClassicJobsSearchRequest,
-  LinkedInClassicPeopleSearchRequest,
-  LinkedInClassicPostsSearchRequest,
-  LinkedInRecruiterPeopleSearchRequest,
-  LinkedInSalesNavigatorCompaniesSearchRequest,
-  LinkedInSalesNavigatorPeopleSearchRequest,
-  LinkedInSearchFromUrlRequest,
-  LinkedInSearchRequest,
-  LinkedInSearchWithCursorRequest
+    LinkedInClassicCompaniesSearchRequest,
+    LinkedInClassicJobsSearchRequest,
+    LinkedInClassicPeopleSearchRequest,
+    LinkedInClassicPostsSearchRequest,
+    LinkedInRecruiterPeopleSearchRequest,
+    LinkedInSalesNavigatorCompaniesSearchRequest,
+    LinkedInSalesNavigatorPeopleSearchRequest,
+    LinkedInSearchFromUrlRequest,
+    LinkedInSearchRequest,
+    LinkedInSearchWithCursorRequest
 } from '../types/linkedin-search-request.type';
 import {
-  LinkedInErrorResponse,
-  LinkedInSearchParametersList,
-  LinkedInSearchResponse,
+    LinkedInErrorResponse,
+    LinkedInSearchParametersList,
+    LinkedInSearchResponse,
 } from '../types/linkedin-search-response.type';
 import { RawSearchRequestBuilder } from '../utils/raw-search-request-builder.util';
 import { LinkedInHtmlParserService } from './linkedin-html-parser.service';
@@ -43,6 +43,20 @@ export type LinkedInCompanyProfileApifyFetchParams = {
   locations?: string[];
   defaultCompanyName: string;
   companyLinkedinUrl?: string;
+  onProgress?: (message: string) => void | Promise<void>;
+};
+
+export type ApifyEmployeeSearchFetchParams = {
+  linkedinCompanyUrl: string;
+  /** Max profiles to scrape (bounded). Use 1000 to fetch “all” within guardrails. */
+  maxProfiles?: number;
+  /** Apify actor supports currentCompanies vs pastCompanies queries. */
+  employment: 'current' | 'past';
+  profileScraperMode?: string;
+  startPage?: number;
+  defaultCompanyName: string;
+  companyLinkedinUrl?: string;
+  actorId?: string;
   onProgress?: (message: string) => void | Promise<void>;
 };
 
@@ -909,6 +923,121 @@ export class LinkedInSearchService {
           params.companyLinkedinUrl ?? params.linkedinCompanyUrl.trim(),
       },
     );
+  }
+
+  /**
+   * Fetch employees via a “company employees search” actor that supports querying
+   * current and past employees separately (currentCompanies / pastCompanies).
+   *
+   * Matches the response format you shared in output-apify-blume-*.json.
+   *
+   * Guardrails:
+   * - maxProfiles defaults to 2500; hard-capped at 10000.
+   * - caller can set maxProfiles=1000 to “fetch all” within practical limits.
+   */
+  async fetchCompanyEmployeesViaApifyEmployeeSearchActor(
+    params: ApifyEmployeeSearchFetchParams,
+  ): Promise<TransformedCandidateForTable[]> {
+    if (!this.apifyService.isConfigured()) {
+      throw new Error('Apify is not configured (set APIFY_API_TOKEN)');
+    }
+
+    const actorId =
+      params.actorId?.trim() ||
+      process.env.APIFY_LINKEDIN_EMPLOYEE_SEARCH_ACTOR_ID?.trim() ||
+      'M2FMdjRVeF1HPGFcc';
+
+    const maxProfilesRaw =
+      typeof params.maxProfiles === 'number' && Number.isFinite(params.maxProfiles)
+        ? params.maxProfiles
+        : 2500;
+    const maxItems = Math.min(Math.max(1, Math.floor(maxProfilesRaw)), 10000);
+    const startPage =
+      typeof params.startPage === 'number' && Number.isFinite(params.startPage)
+        ? Math.max(1, Math.floor(params.startPage))
+        : 1;
+
+    const companyUrl = params.linkedinCompanyUrl.trim().replace(/\/+$/, '');
+    const input: Record<string, unknown> = {
+      autoQuerySegmentation: false,
+      maxItems,
+      profileScraperMode: params.profileScraperMode ?? 'Full',
+      recentlyChangedJobs: false,
+      recentlyPostedOnLinkedIn: false,
+      startPage,
+      ...(params.employment === 'current'
+        ? { currentCompanies: [companyUrl] }
+        : { pastCompanies: [companyUrl] }),
+    };
+
+    this.logger.log(
+      `Apify employee search: actor=${actorId}, employment=${params.employment}, company=${companyUrl}, maxItems=${maxItems}`,
+    );
+    await params.onProgress?.(
+      `Apify employee search (${params.employment}): actor ${actorId} configured (maxItems=${maxItems}).`,
+    );
+
+    const apifyResult =
+      await this.apifyService.runActorAndListDatasetItemsDetailed(
+        actorId,
+        input,
+        params.onProgress
+          ? {
+              onRunLogProgress: async ({ newLines }: ApifyRunLogProgressArgs) => {
+                for (const line of newLines) {
+                  const raw = line.trim();
+                  if (!raw || isApifyLogLineNoiseForOrgChartProgress(raw)) {
+                    continue;
+                  }
+                  const withoutTs = stripApifyLogLineTimestamp(raw);
+                  const display =
+                    withoutTs.length > 320
+                      ? `${withoutTs.slice(0, 317)}...`
+                      : withoutTs;
+                  await params.onProgress?.(display);
+                }
+              },
+              pollIntervalMs: 2500,
+            }
+          : undefined,
+      );
+
+    const rows = apifyResult?.items ?? null;
+    if (!rows?.length) {
+      return [];
+    }
+
+    return this.apifyLinkedInCompanyProfileTransformer.transformApifyRowsToTableFormat(
+      rows,
+      {
+        defaultCompanyName: params.defaultCompanyName,
+        companyLinkedinUrl: params.companyLinkedinUrl ?? companyUrl,
+      },
+    );
+  }
+
+  /**
+   * Convenience wrapper: fetch BOTH current + past employees and return a single
+   * deduped list (best-effort).
+   */
+  async fetchCompanyEmployeesViaApifyEmployeeSearchActorCurrentAndPast(
+    params: Omit<ApifyEmployeeSearchFetchParams, 'employment'> & {
+      maxProfiles?: number;
+      actorId?: string;
+    },
+  ): Promise<{
+    current: TransformedCandidateForTable[];
+    past: TransformedCandidateForTable[];
+  }> {
+    const current = await this.fetchCompanyEmployeesViaApifyEmployeeSearchActor({
+      ...params,
+      employment: 'current',
+    });
+    const past = await this.fetchCompanyEmployeesViaApifyEmployeeSearchActor({
+      ...params,
+      employment: 'past',
+    });
+    return { current, past };
   }
 
   private async enforceRequestSpacing(): Promise<void> {

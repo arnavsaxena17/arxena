@@ -1,13 +1,19 @@
-import type { ReactNode } from 'react';
+import { ReactNode, useMemo, useState } from 'react';
 
-import type { OrgChartDiagramProps } from 'twenty-orgchart';
-import type { OrgChartNodeData } from 'twenty-shared';
-
-import type { OrgChartDiagramHandle } from 'twenty-orgchart';
-import { OrgChartDiagram, OrgChartSearchControls } from 'twenty-orgchart';
+import {
+  OrgChartDiagramProps,
+  OrgChartDiagramHandle,
+  OrgChartDiagram,
+  OrgChartSearchControls,
+} from 'twenty-orgchart';
+import { OrgChartNodeData } from 'twenty-shared';
 
 import { OrgChartAddToJobModal } from '../components/OrgChartAddToJobModal';
-import { OrgChartHeader } from '../components/OrgChartHeader';
+import { OrgChartCompanyDrawer } from '../components/OrgChartCompanyDrawer';
+import {
+  OrgChartHeader,
+  OrgChartHeaderProps,
+} from '../components/OrgChartHeader';
 import { OrgChartOutreachModal } from '../components/OrgChartOutreachModal';
 import { OrgChartResultModal } from '../components/OrgChartResultModal';
 
@@ -20,9 +26,15 @@ import {
   StyledCenteredButton,
 } from '@/ui/layout/modal/components/ConfirmationModal';
 import { IconChevronDown, MenuItem } from 'twenty-ui';
-import type { OrgChartHeaderProps } from '../components/OrgChartHeader';
 
 import {
+  StyledAsOfMonthInput,
+  StyledAsOfMonthLabel,
+  StyledAsOfMonthPicker,
+  StyledAsOfMonthSlider,
+  StyledAsOfMonthSliderContainer,
+  StyledAsOfMonthSliderDot,
+  StyledAsOfMonthSliderValue,
   StyledContainer,
   StyledDiagramArea,
   StyledDiagramBody,
@@ -41,8 +53,55 @@ import {
   StyledTemplateBanner,
   StyledTemplateBannerButton,
   StyledTopRightActionButton,
-  StyledTopRightActionsOverlay
+  StyledTopRightActionsCenterGroup,
+  StyledTopRightActionsOverlay,
+  StyledTopRightActionsRightGroup,
 } from './ArxOrgChart.styles';
+
+type ArxOrgChartViewType = 'calendarView' | 'sliderView';
+
+const monthKeyRegex = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+const parseMonthToDate = (monthKey: string): Date | null => {
+  if (!monthKeyRegex.test(monthKey)) {
+    return null;
+  }
+
+  const [year, month] = monthKey.split('-').map(Number);
+  return new Date(year, month - 1, 1);
+};
+
+const formatMonthToKey = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+};
+
+const buildMonthRange = (
+  startMonthKey: string,
+  endMonthKey: string,
+): string[] => {
+  const startDate = parseMonthToDate(startMonthKey);
+  const endDate = parseMonthToDate(endMonthKey);
+
+  if (!startDate || !endDate || startDate > endDate) {
+    return [endMonthKey];
+  }
+
+  const months: string[] = [];
+  const cursorDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+  while (cursorDate <= endDate) {
+    months.push(formatMonthToKey(cursorDate));
+    cursorDate.setMonth(cursorDate.getMonth() + 1);
+  }
+
+  return months;
+};
+
+const monthLabelFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  year: 'numeric',
+});
 
 export type ArxOrgChartViewProps = {
   headerProps: OrgChartHeaderProps;
@@ -61,13 +120,23 @@ export type ArxOrgChartViewProps = {
   diagramProps: Omit<OrgChartDiagramProps, 'nodeDataArray'>;
   showNodeCapabilitiesHoverHint: boolean;
   effectiveEmployeeCount?: number;
-  leadershipLayerPreviewBanner: { leadershipN: number; fullN: number | null } | null;
+  leadershipLayerPreviewBanner: {
+    leadershipN: number;
+    fullN: number | null;
+  } | null;
   m7kqPreviewOrgChartBanner: { fetchedN: number; fullN: number | null } | null;
+  apolloFallbackNotice: {
+    apolloTotalCount: number | null;
+    isModalOpen: boolean;
+    onCloseModal: () => void;
+  } | null;
   searchControlsProps: any;
   onTopRightLeadershipOrgChart: () => void;
 
   pendingSearchConfirm: { title: string; run: () => void } | null;
-  setPendingSearchConfirm: (next: { title: string; run: () => void } | null) => void;
+  setPendingSearchConfirm: (
+    next: { title: string; run: () => void } | null,
+  ) => void;
   candidateSearchConfirmSubtitle: ReactNode;
   previewNodeChoiceSubtitle: ReactNode;
   pendingPreviewNodePeopleChoice: OrgChartNodeData | null;
@@ -150,6 +219,7 @@ export const ArxOrgChartView = ({
   effectiveEmployeeCount,
   leadershipLayerPreviewBanner,
   m7kqPreviewOrgChartBanner,
+  apolloFallbackNotice,
   searchControlsProps,
   onTopRightLeadershipOrgChart,
   pendingSearchConfirm,
@@ -166,16 +236,109 @@ export const ArxOrgChartView = ({
   addToJobModalProps,
   outreachModalProps,
 }: ArxOrgChartViewProps) => {
+  const viewType: ArxOrgChartViewType = 'sliderView';
   const multiSourceDropdownId = 'orgchart-multisource-dropdown';
   const { closeDropdown: closeMultiSourceDropdown } = useDropdown(
     multiSourceDropdownId,
   );
+  const [isCompanyDrawerOpen, setIsCompanyDrawerOpen] = useState(false);
 
   const selectedMultiSources: string[] = Array.isArray(
     searchControlsProps?.multiSourceSelectedSources,
   )
     ? searchControlsProps.multiSourceSelectedSources
     : [];
+
+  const companyDrawerProps = useMemo(
+    () => ({
+      companyName: headerProps.companyName,
+      website: headerProps.website,
+      locationName: headerProps.locationName,
+      industry: headerProps.industry,
+      profileCount: headerProps.profileCount,
+      linkedinUrl: headerProps.linkedinUrl,
+      employeeCount: headerProps.employeeCount,
+      linkedinDisplayName: headerProps.linkedinDisplayName,
+      description: headerProps.description,
+      tagline: headerProps.tagline,
+      logoUrl: headerProps.logoUrl,
+      hideProfileCountWhenUnipile: headerProps.hideProfileCountWhenUnipile,
+      timelineMetrics: headerProps.timelineMetrics ?? null,
+      onClearCompanyCache: headerProps.onClearCompanyCache,
+    }),
+    [headerProps],
+  );
+
+  const monthRange = useMemo(() => {
+    const currentMonthKey = formatMonthToKey(new Date());
+    const nodeKeys = new Set<string>();
+
+    for (const node of nodeDataArray) {
+      for (const value of Object.values(node)) {
+        if (typeof value !== 'string') {
+          continue;
+        }
+        const monthMatch = value.match(/\b\d{4}-(0[1-9]|1[0-2])\b/u)?.[0];
+        if (monthMatch) {
+          nodeKeys.add(monthMatch);
+        }
+      }
+    }
+
+    const timelineStartMonth =
+      typeof headerProps.timelineMetrics === 'object' &&
+      headerProps.timelineMetrics !== null &&
+      typeof (
+        headerProps.timelineMetrics as {
+          startMonth?: unknown;
+          startMonthYear?: unknown;
+        }
+      ).startMonth === 'string'
+        ? (
+            headerProps.timelineMetrics as {
+              startMonth: string;
+              startMonthYear?: unknown;
+            }
+          ).startMonth
+        : typeof (
+              headerProps.timelineMetrics as {
+                startMonth?: unknown;
+                startMonthYear?: unknown;
+              } | null
+            )?.startMonthYear === 'string'
+          ? (
+              headerProps.timelineMetrics as {
+                startMonth?: unknown;
+                startMonthYear: string;
+              }
+            ).startMonthYear
+          : null;
+
+    const validNodeKeys = [...nodeKeys]
+      .filter((key) => monthKeyRegex.test(key))
+      .sort();
+    const fallbackStartMonth = validNodeKeys[0] ?? currentMonthKey;
+    const computedStartMonth =
+      timelineStartMonth && monthKeyRegex.test(timelineStartMonth)
+        ? timelineStartMonth
+        : fallbackStartMonth;
+
+    return buildMonthRange(computedStartMonth, currentMonthKey);
+  }, [headerProps.timelineMetrics, nodeDataArray]);
+
+  const selectedMonth = monthKeyRegex.test(headerProps.asOfMonth ?? '')
+    ? (headerProps.asOfMonth as string)
+    : monthRange[monthRange.length - 1];
+
+  const selectedMonthIndex = Math.max(monthRange.indexOf(selectedMonth), 0);
+  const isSingleMonthTimeline = monthRange.length <= 1;
+  const sliderTrackWidth = Math.min(240, Math.max(24, monthRange.length * 14));
+  const sliderPanelWidth = Math.min(320, sliderTrackWidth + 80);
+  const selectedMonthLabel = monthLabelFormatter.format(
+    isSingleMonthTimeline
+      ? new Date()
+      : (parseMonthToDate(monthRange[selectedMonthIndex]) ?? new Date()),
+  );
 
   return (
     <StyledContainer>
@@ -212,7 +375,9 @@ export const ArxOrgChartView = ({
             <StyledLoadingMessage>Loading org chart...</StyledLoadingMessage>
           )}
           {showContextProgressBanner && contextProgressMessage && (
-            <StyledProgressBanner>{contextProgressMessage}</StyledProgressBanner>
+            <StyledProgressBanner>
+              {contextProgressMessage}
+            </StyledProgressBanner>
           )}
           {error && <StyledErrorMessage>{error}</StyledErrorMessage>}
 
@@ -257,7 +422,9 @@ export const ArxOrgChartView = ({
                       This Leadership Org Chart shows only{' '}
                       {leadershipLayerPreviewBanner.leadershipN.toLocaleString()}{' '}
                       leadership profile
-                      {leadershipLayerPreviewBanner.leadershipN === 1 ? '' : 's'}
+                      {leadershipLayerPreviewBanner.leadershipN === 1
+                        ? ''
+                        : 's'}
                       . The full company org chart has{' '}
                       {leadershipLayerPreviewBanner.fullN.toLocaleString()}{' '}
                       profiles — click{' '}
@@ -276,7 +443,9 @@ export const ArxOrgChartView = ({
                       This Leadership Org Chart shows only{' '}
                       {leadershipLayerPreviewBanner.leadershipN.toLocaleString()}{' '}
                       leadership profile
-                      {leadershipLayerPreviewBanner.leadershipN === 1 ? '' : 's'}
+                      {leadershipLayerPreviewBanner.leadershipN === 1
+                        ? ''
+                        : 's'}
                       . Click{' '}
                       <StyledLeadershipBannerLink
                         title="Full org chart"
@@ -311,7 +480,9 @@ export const ArxOrgChartView = ({
                   <span>
                     Org chart loaded with{' '}
                     {m7kqPreviewOrgChartBanner.fetchedN.toLocaleString()}{' '}
-                    {m7kqPreviewOrgChartBanner.fetchedN === 1 ? 'person' : 'people'}{' '}
+                    {m7kqPreviewOrgChartBanner.fetchedN === 1
+                      ? 'person'
+                      : 'people'}{' '}
                     fetched
                     {m7kqPreviewOrgChartBanner.fullN !== null
                       ? ` out of ${m7kqPreviewOrgChartBanner.fullN.toLocaleString()} total employees`
@@ -338,9 +509,11 @@ export const ArxOrgChartView = ({
                       Small preview only:
                     </StyledLeadershipBannerPaidHighlight>{' '}
                     {m7kqPreviewOrgChartBanner.fetchedN.toLocaleString()}{' '}
-                    {m7kqPreviewOrgChartBanner.fetchedN === 1 ? 'person' : 'people'}{' '}
-                    fetched. Full profile details (verified emails, phone numbers
-                    &amp; more) are available for{' '}
+                    {m7kqPreviewOrgChartBanner.fetchedN === 1
+                      ? 'person'
+                      : 'people'}{' '}
+                    fetched. Full profile details (verified emails, phone
+                    numbers &amp; more) are available for{' '}
                     <StyledLeadershipBannerPaidHighlight>
                       paid customers
                     </StyledLeadershipBannerPaidHighlight>
@@ -348,113 +521,184 @@ export const ArxOrgChartView = ({
                   </StyledLeadershipBannerPaidNote>
                 </StyledLeadershipInfoBanner>
               )}
+              {apolloFallbackNotice && (
+                <StyledLeadershipInfoBanner>
+                  <span>
+                    Loaded a sampled org chart because Apollo returned{' '}
+                    {typeof apolloFallbackNotice.apolloTotalCount === 'number'
+                      ? apolloFallbackNotice.apolloTotalCount.toLocaleString()
+                      : 'more than 2,000'}{' '}
+                    employees. Narrow your search with country/function filters
+                    or use Leadership Org Chart for focused results.
+                  </span>
+                </StyledLeadershipInfoBanner>
+              )}
               <StyledTopRightActionsOverlay>
-                <StyledTopRightActionButton
-                  title={
-                    typeof effectiveEmployeeCount === 'number'
-                      ? `Full org chart (${effectiveEmployeeCount.toLocaleString()})`
-                      : 'All'
-                  }
-                  variant="secondary"
-                  accent="default"
-                  size="small"
-                  type="button"
-                  onClick={searchControlsProps.onGetAll}
-                />
-                <Dropdown
-                  dropdownId={multiSourceDropdownId}
-                  dropdownPlacement="bottom-end"
-                  clickableComponent={
-                    <StyledTopRightActionButton
-                      title={`Multi-source${
-                        selectedMultiSources.length > 0
-                          ? ` (${selectedMultiSources.length})`
-                          : ''
-                      }`}
-                      variant="secondary"
-                      accent="default"
-                      size="small"
-                      type="button"
-                      Icon={IconChevronDown}
-                      justify="center"
-                    />
-                  }
-                  dropdownMenuWidth={280}
-                  dropdownComponents={
-                    <DropdownMenuItemsContainer>
-                      <MenuItem
-                        text="Generate multi-source full org chart"
-                        onClick={() => {
-                          closeMultiSourceDropdown();
-                          searchControlsProps.onGetAllMultiSource?.();
-                        }}
+                <div />
+                <StyledTopRightActionsCenterGroup>
+                  {headerProps.onAsOfMonthChange ? (
+                    <StyledAsOfMonthPicker>
+                      <StyledAsOfMonthLabel>As of</StyledAsOfMonthLabel>
+                      {viewType === 'sliderView' ? (
+                        <StyledAsOfMonthSliderContainer
+                          style={
+                            isSingleMonthTimeline
+                              ? undefined
+                              : { width: `${sliderPanelWidth}px` }
+                          }
+                        >
+                          {isSingleMonthTimeline ? (
+                            <StyledAsOfMonthSliderDot />
+                          ) : (
+                            <StyledAsOfMonthSlider
+                              type="range"
+                              min={0}
+                              max={Math.max(monthRange.length - 1, 0)}
+                              step={1}
+                              value={selectedMonthIndex}
+                              style={{ width: `${sliderTrackWidth}px` }}
+                              onChange={(e) => {
+                                const nextIndex = Number(e.target.value);
+                                const nextMonth = monthRange[nextIndex];
+                                if (!nextMonth) {
+                                  return;
+                                }
+                                headerProps.onAsOfMonthChange?.(nextMonth);
+                              }}
+                            />
+                          )}
+                          <StyledAsOfMonthSliderValue>
+                            {selectedMonthLabel}
+                          </StyledAsOfMonthSliderValue>
+                        </StyledAsOfMonthSliderContainer>
+                      ) : (
+                        <StyledAsOfMonthInput
+                          type="month"
+                          value={headerProps.asOfMonth ?? ''}
+                          onChange={(e) =>
+                            headerProps.onAsOfMonthChange?.(e.target.value)
+                          }
+                        />
+                      )}
+                    </StyledAsOfMonthPicker>
+                  ) : null}
+                </StyledTopRightActionsCenterGroup>
+                <StyledTopRightActionsRightGroup>
+                  <StyledTopRightActionButton
+                    title={
+                      typeof effectiveEmployeeCount === 'number'
+                        ? `Full org chart (${effectiveEmployeeCount.toLocaleString()})`
+                        : 'Full Org Chart'
+                    }
+                    variant="secondary"
+                    accent="default"
+                    size="small"
+                    type="button"
+                    onClick={searchControlsProps.onGetAll}
+                  />
+                  <Dropdown
+                    dropdownId={multiSourceDropdownId}
+                    dropdownPlacement="bottom-end"
+                    clickableComponent={
+                      <StyledTopRightActionButton
+                        title={`Multi-source${
+                          selectedMultiSources.length > 0
+                            ? ` (${selectedMultiSources.length})`
+                            : ''
+                        }`}
+                        variant="secondary"
+                        accent="default"
+                        size="small"
+                        type="button"
+                        Icon={IconChevronDown}
+                        justify="center"
                       />
-                      <DropdownMenuSeparator />
-                      <MenuItem
-                        text="LinkedIn (Unipile)"
-                        contextualText={
-                          selectedMultiSources.includes('unipile') ? 'On' : 'Off'
-                        }
-                        onClick={() => {
-                          searchControlsProps.onToggleMultiSource?.('unipile');
-                        }}
-                      />
-                      <MenuItem
-                        text="Public Directory"
-                        contextualText={
-                          selectedMultiSources.includes('apollo') ? 'On' : 'Off'
-                        }
-                        onClick={() => {
-                          searchControlsProps.onToggleMultiSource?.('apollo');
-                        }}
-                      />
-                      <MenuItem
-                        text="Leadership only"
-                        contextualText={
-                          selectedMultiSources.includes('theorg') ? 'On' : 'Off'
-                        }
-                        onClick={() => {
-                          searchControlsProps.onToggleMultiSource?.('theorg');
-                        }}
-                      />
-                      <MenuItem
-                        text="Business Divisions"
-                        contextualText={
-                          selectedMultiSources.includes('officialboard')
-                            ? 'On'
-                            : 'Off'
-                        }
-                        onClick={() => {
-                          searchControlsProps.onToggleMultiSource?.(
-                            'officialboard',
-                          );
-                        }}
-                      />
-                    </DropdownMenuItemsContainer>
-                  }
-                  dropdownHotkeyScope={{ scope: multiSourceDropdownId }}
-                />
-                <StyledTopRightActionButton
-                  title="View all candidates"
-                  variant="secondary"
-                  accent="default"
-                  size="small"
-                  type="button"
-                  onClick={searchControlsProps.onViewAllCandidates}
-                />
-                <StyledTopRightActionButton
-                  title={
-                    isEnrichedLeadershipLoading
-                      ? 'Loading Leadership Org Chart'
-                      : 'Leadership Org Chart'
-                  }
-                  variant="secondary"
-                  accent="default"
-                  size="small"
-                  type="button"
-                  disabled={isEnrichedLeadershipLoading}
-                  onClick={onTopRightLeadershipOrgChart}
-                />
+                    }
+                    dropdownMenuWidth={280}
+                    dropdownComponents={
+                      <DropdownMenuItemsContainer>
+                        <MenuItem
+                          text="Generate multi-source full org chart"
+                          onClick={() => {
+                            closeMultiSourceDropdown();
+                            searchControlsProps.onGetAllMultiSource?.();
+                          }}
+                        />
+                        <DropdownMenuSeparator />
+                        <MenuItem
+                          text="LinkedIn (Unipile)"
+                          contextualText={
+                            selectedMultiSources.includes('unipile')
+                              ? 'On'
+                              : 'Off'
+                          }
+                          onClick={() => {
+                            searchControlsProps.onToggleMultiSource?.(
+                              'unipile',
+                            );
+                          }}
+                        />
+                        <MenuItem
+                          text="Public Directory"
+                          contextualText={
+                            selectedMultiSources.includes('apollo')
+                              ? 'On'
+                              : 'Off'
+                          }
+                          onClick={() => {
+                            searchControlsProps.onToggleMultiSource?.('apollo');
+                          }}
+                        />
+                        <MenuItem
+                          text="Leadership only"
+                          contextualText={
+                            selectedMultiSources.includes('theorg')
+                              ? 'On'
+                              : 'Off'
+                          }
+                          onClick={() => {
+                            searchControlsProps.onToggleMultiSource?.('theorg');
+                          }}
+                        />
+                        <MenuItem
+                          text="Business Divisions"
+                          contextualText={
+                            selectedMultiSources.includes('officialboard')
+                              ? 'On'
+                              : 'Off'
+                          }
+                          onClick={() => {
+                            searchControlsProps.onToggleMultiSource?.(
+                              'officialboard',
+                            );
+                          }}
+                        />
+                      </DropdownMenuItemsContainer>
+                    }
+                    dropdownHotkeyScope={{ scope: multiSourceDropdownId }}
+                  />
+                  <StyledTopRightActionButton
+                    title="View all candidates"
+                    variant="secondary"
+                    accent="default"
+                    size="small"
+                    type="button"
+                    onClick={searchControlsProps.onViewAllCandidates}
+                  />
+                  <StyledTopRightActionButton
+                    title={
+                      isEnrichedLeadershipLoading
+                        ? 'Loading Leadership Org Chart'
+                        : 'Leadership Org Chart'
+                    }
+                    variant="secondary"
+                    accent="default"
+                    size="small"
+                    type="button"
+                    disabled={isEnrichedLeadershipLoading}
+                    onClick={onTopRightLeadershipOrgChart}
+                  />
+                </StyledTopRightActionsRightGroup>
               </StyledTopRightActionsOverlay>
               <StyledSearchOverlay>
                 <OrgChartSearchControls {...searchControlsProps} />
@@ -463,7 +707,9 @@ export const ArxOrgChartView = ({
           )}
 
           {!isLoading && !error && nodeDataArray.length === 0 && (
-            <StyledLoadingMessage>No org chart data available.</StyledLoadingMessage>
+            <StyledLoadingMessage>
+              No org chart data available.
+            </StyledLoadingMessage>
           )}
 
           {contextModalProps?.isOpen ? (
@@ -523,6 +769,32 @@ export const ArxOrgChartView = ({
         </StyledDiagramBody>
       </StyledDiagramArea>
 
+      <OrgChartCompanyDrawer
+        {...companyDrawerProps}
+        isOpen={isCompanyDrawerOpen}
+        onClose={() => setIsCompanyDrawerOpen(false)}
+      />
+
+      <ConfirmationModal
+        isOpen={apolloFallbackNotice?.isModalOpen === true}
+        setIsOpen={(open) => {
+          if (!open) {
+            apolloFallbackNotice?.onCloseModal();
+          }
+        }}
+        title="Loaded sampled org chart"
+        subtitle={`Apollo returned ${
+          typeof apolloFallbackNotice?.apolloTotalCount === 'number'
+            ? apolloFallbackNotice.apolloTotalCount.toLocaleString()
+            : 'more than 2,000'
+        } employees for this query. We loaded a sampled chart from Elasticsearch for speed. Refine country/function filters or use Leadership Org Chart for a smaller scope.`}
+        onConfirmClick={() => {
+          apolloFallbackNotice?.onCloseModal();
+        }}
+        deleteButtonText="Got it"
+        confirmButtonAccent="blue"
+      />
+
       <ConfirmationModal
         isOpen={pendingSearchConfirm !== null}
         setIsOpen={(open) => {
@@ -573,4 +845,3 @@ export const ArxOrgChartView = ({
     </StyledContainer>
   );
 };
-

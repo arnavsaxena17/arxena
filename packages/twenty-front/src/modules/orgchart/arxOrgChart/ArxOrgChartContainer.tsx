@@ -1,15 +1,13 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { useDebouncedCallback } from 'use-debounce';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
 import { ORG_CHART_CANDIDATE_SOURCE_M7KQ } from '@/orgchart/constants/orgChartM7kqSource';
-import {
-  orgChartContactsByKeyState
-} from '@/orgchart/states/orgChartContactsByKeyState';
+import { orgChartContactsByKeyState } from '@/orgchart/states/orgChartContactsByKeyState';
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
 import { orgChartLinkedInSearchTypeState } from '@/orgchart/states/orgChartLinkedInSearchTypeState';
 import { orgChartSelectedCompanyInfoState } from '@/orgchart/states/orgChartSelectedCompanyInfoState';
@@ -17,18 +15,14 @@ import { AppPath } from '@/types/AppPath';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useUnipile } from '@/unipile/contexts/UnipileContext';
-import type { OrgChartDiagramHandle } from 'twenty-orgchart';
 import {
+  OrgChartDiagramHandle,
   normalizeCompanyIdForUrl,
   useCompanyInfoLookup,
   useOrgChartData,
   useOrgChartFilterOptions,
 } from 'twenty-orgchart';
-import {
-  extractOrgData,
-  toTitleCase,
-  type OrgChartNodeData,
-} from 'twenty-shared';
+import { OrgChartNodeData, extractOrgData, toTitleCase } from 'twenty-shared';
 
 import { OrgChartShareModal } from '../components/OrgChartShareModal';
 import { useJobOrgChartData } from '../hooks/useJobOrgChartData';
@@ -46,7 +40,7 @@ import { useOrgChartBanners } from './hooks/useOrgChartBanners';
 import { useOrgChartNodeDataArray } from './hooks/useOrgChartNodeDataArray';
 import { hydrateContactsByKeyFromOrgData } from './utils/contactCacheHydration';
 
-export type ArxOrgChartProps = {
+export type ArxOrgChartContainerProps = {
   companyId: string;
   companyName?: string;
   website?: string;
@@ -54,6 +48,7 @@ export type ArxOrgChartProps = {
   industry?: string;
   profileCount?: number;
   linkedinUrl?: string;
+  companyDomain?: string;
   onBack?: () => void;
   jobId?: string;
 };
@@ -67,7 +62,12 @@ const leadershipOrgChartPythonFailureMessage = (detail: string) =>
 const DEFAULT_ORG_CHART_COUNTRY = 'global';
 const DEFAULT_ORG_CHART_FUNCTION_ROOT = 'fullcompany';
 
-const MULTI_SOURCE_SLUGS = ['unipile', 'apollo', 'theorg', 'officialboard'] as const;
+const MULTI_SOURCE_SLUGS = [
+  'unipile',
+  'apollo',
+  'theorg',
+  'officialboard',
+] as const;
 type MultiSourceSlug = (typeof MULTI_SOURCE_SLUGS)[number];
 
 const normalizeMultiSourceSlug = (raw: string): MultiSourceSlug | null => {
@@ -85,7 +85,9 @@ const normalizeMultiSourceSlug = (raw: string): MultiSourceSlug | null => {
       ? 'unipile'
       : lowered === 'apollo'
         ? 'apollo'
-        : lowered === 'theorg leadership' || lowered === 'the org leadership' || lowered === 'theorg'
+        : lowered === 'theorg leadership' ||
+            lowered === 'the org leadership' ||
+            lowered === 'theorg'
           ? 'theorg'
           : lowered === 'officialboard' || lowered === 'official board'
             ? 'officialboard'
@@ -102,21 +104,35 @@ export const ArxOrgChartContainer = ({
   industry,
   profileCount,
   linkedinUrl,
+  companyDomain,
   onBack,
   jobId,
-}: ArxOrgChartProps) => {
+}: ArxOrgChartContainerProps) => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [showApolloFallbackModal, setShowApolloFallbackModal] = useState(false);
+  const [timelineMetrics, setTimelineMetrics] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
   const [selectedCountry, setSelectedCountry] = useState<string | undefined>();
-  const [selectedFunctionRoot, setSelectedFunctionRoot] = useState<string | undefined>();
+  const [selectedFunctionRoot, setSelectedFunctionRoot] = useState<
+    string | undefined
+  >();
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchResultCount, setSearchResultCount] = useState<number | null>(null);
+  const [searchResultCount, setSearchResultCount] = useState<number | null>(
+    null,
+  );
   const [businessDivisionQuery, setBusinessDivisionQuery] = useState('');
-  const [isEnrichedLeadershipLoading, setIsEnrichedLeadershipLoading] = useState(false);
+  const [isEnrichedLeadershipLoading, setIsEnrichedLeadershipLoading] =
+    useState(false);
   const [multiSourceSelectedSources, setMultiSourceSelectedSources] = useState<
     string[]
-  >(['apollo','theorg']);
-  const [exactEmployeeCount, setExactEmployeeCount] = useState<number | null>(null);
+  >(['apollo', 'theorg']);
+  const [exactEmployeeCount, setExactEmployeeCount] = useState<number | null>(
+    null,
+  );
   const [unipileCompanyProfile, setUnipileCompanyProfile] = useState<{
     employee_count?: number;
     description?: string;
@@ -137,15 +153,21 @@ export const ArxOrgChartContainer = ({
   const tokenPair = useRecoilValue(tokenPairState);
   const accessToken = tokenPair?.accessToken?.token ?? undefined;
 
-  const orgChartLinkedinCandidateSource = useRecoilValue(orgChartLinkedinCandidateSourceState);
-  const orgChartLinkedInSearchType = useRecoilValue(orgChartLinkedInSearchTypeState);
+  const orgChartLinkedinCandidateSource = useRecoilValue(
+    orgChartLinkedinCandidateSourceState,
+  );
+  const orgChartLinkedInSearchType = useRecoilValue(
+    orgChartLinkedInSearchTypeState,
+  );
 
   const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
   const showNodeCapabilitiesHoverHint =
     process.env.REACT_APP_EXPERIMENTAL_ORGCHART_NODE_HOVER_HINTS === 'true';
 
   const { isLinkedinConnected } = useUnipile();
-  const setSelectedCompanyInfo = useSetRecoilState(orgChartSelectedCompanyInfoState);
+  const setSelectedCompanyInfo = useSetRecoilState(
+    orgChartSelectedCompanyInfoState,
+  );
   const setContactsByKey = useSetRecoilState(orgChartContactsByKeyState);
 
   const { refetchJobs } = useJobRefetch();
@@ -160,15 +182,18 @@ export const ArxOrgChartContainer = ({
         .map((s) => normalizeMultiSourceSlug(s))
         .filter((s): s is MultiSourceSlug => !!s);
       const unique = Array.from(new Set(normalized));
-      return unique.includes(slug) ? unique.filter((s) => s !== slug) : [...unique, slug];
+      return unique.includes(slug)
+        ? unique.filter((s) => s !== slug)
+        : [...unique, slug];
     });
   }, []);
   const { t } = useLingui();
 
   const multiSourceSelectedSlugs = useMemo(() => {
-    const normalized = (Array.isArray(multiSourceSelectedSources)
-      ? multiSourceSelectedSources
-      : []
+    const normalized = (
+      Array.isArray(multiSourceSelectedSources)
+        ? multiSourceSelectedSources
+        : []
     )
       .map((s) => normalizeMultiSourceSlug(s))
       .filter((s): s is MultiSourceSlug => !!s);
@@ -185,6 +210,59 @@ export const ArxOrgChartContainer = ({
     website ?? unipileCompanyProfile?.website ?? undefined;
 
   const linkedinUrlToUse = linkedinUrl;
+
+  const asOfMonth = searchParams.get('asOf')?.trim() || '';
+
+  useEffect(() => {
+    if (!baseUrl || !accessToken || !companyId) {
+      setTimelineMetrics(null);
+      return;
+    }
+    let cancelled = false;
+    const fetchMetrics = async () => {
+      try {
+        const params = new URLSearchParams();
+        if (effectiveCompanyName?.trim()) {
+          params.set('companyName', effectiveCompanyName.trim());
+        }
+        if (asOfMonth) params.set('asOfMonth', asOfMonth);
+        // Preserve sample-company toggles if present.
+        const sampleSource = searchParams.get('sampleSource')?.trim();
+        const sampleProfiles = searchParams.get('sampleProfiles')?.trim();
+        const apifyIncludePast = searchParams.get('apifyIncludePast')?.trim();
+        if (sampleSource) params.set('sampleSource', sampleSource);
+        if (sampleProfiles) params.set('sampleProfiles', sampleProfiles);
+        if (apifyIncludePast) params.set('apifyIncludePast', apifyIncludePast);
+
+        const url = `${baseUrl.replace(/\/$/, '')}/org-chart/${encodeURIComponent(
+          companyId,
+        )}/timeline?${params.toString()}`;
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const json = (await res.json()) as { result?: Record<string, unknown> };
+        if (cancelled) return;
+        if (res.ok && json?.result) {
+          setTimelineMetrics(json.result);
+        } else {
+          setTimelineMetrics(null);
+        }
+      } catch {
+        if (!cancelled) setTimelineMetrics(null);
+      }
+    };
+    void fetchMetrics();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    accessToken,
+    asOfMonth,
+    baseUrl,
+    companyId,
+    effectiveCompanyName,
+    searchParams,
+  ]);
 
   const [pendingPreviewNodePeopleChoice, setPendingPreviewNodePeopleChoice] =
     useState<OrgChartNodeData | null>(null);
@@ -209,10 +287,13 @@ export const ArxOrgChartContainer = ({
     website: effectiveCompanyWebsite,
     employeeCount: effectiveEmployeeCount ?? undefined,
     industry: effectiveIndustry,
+    asOfMonth: asOfMonth || undefined,
     linkedinCompanyUrl: linkedinUrlToUse?.trim(),
-    linkedinUnipileAccountId: process.env.REACT_APP_ORGCHART_UNIPILE_ACCOUNT_ID?.trim(),
+    linkedinUnipileAccountId:
+      process.env.REACT_APP_ORGCHART_UNIPILE_ACCOUNT_ID?.trim(),
     businessDivisionRawQuery: businessDivisionQuery.trim() || undefined,
-    onPreviewNodePeopleRequest: (node) => setPendingPreviewNodePeopleChoice(node),
+    onPreviewNodePeopleRequest: (node) =>
+      setPendingPreviewNodePeopleChoice(node),
   });
 
   const { applyOrgChartOverride } = actions;
@@ -227,8 +308,10 @@ export const ArxOrgChartContainer = ({
       companyId,
       companyName: effectiveCompanyName ?? companyName,
       website: effectiveCompanyWebsite,
+      companyDomain,
       country: selectedCountry,
       functionRoot: selectedFunctionRoot,
+      asOfMonth: asOfMonth || undefined,
       expectedEmployeeCount: effectiveEmployeeCount ?? profileCount,
     },
     { baseUrl, accessToken },
@@ -236,13 +319,23 @@ export const ArxOrgChartContainer = ({
 
   const isJobMode = !!jobId;
 
-  const data = (isJobMode ? jobOrgChartHook.data : classicOrgChartHook.data) as
-    | Record<string, unknown>
-    | null;
-  const isLoading = isJobMode ? jobOrgChartHook.isLoading : classicOrgChartHook.isLoading;
+  const data = (
+    isJobMode ? jobOrgChartHook.data : classicOrgChartHook.data
+  ) as Record<string, unknown> | null;
+  const isLoading = isJobMode
+    ? jobOrgChartHook.isLoading
+    : classicOrgChartHook.isLoading;
   const error = isJobMode ? jobOrgChartHook.error : classicOrgChartHook.error;
-  const fetchOrgChart = isJobMode ? jobOrgChartHook.fetchOrgChart : classicOrgChartHook.fetchOrgChart;
+  const fetchOrgChart = isJobMode
+    ? jobOrgChartHook.fetchOrgChart
+    : classicOrgChartHook.fetchOrgChart;
   const orgChartEsTransportError = classicOrgChartHook.orgChartEsTransportError;
+  const firstSourceUsed = classicOrgChartHook.firstSourceUsed;
+  const fallbackApplied = classicOrgChartHook.fallbackApplied;
+  const fallbackReason = classicOrgChartHook.fallbackReason;
+  const apolloTotalCount = classicOrgChartHook.apolloTotalCount;
+  const apolloQueued = classicOrgChartHook.apolloQueued;
+  const apolloQueueRequestId = classicOrgChartHook.apolloQueueRequestId;
 
   useEffect(() => {
     if (isJobMode || !orgChartEsTransportError) return;
@@ -252,6 +345,52 @@ export const ArxOrgChartContainer = ({
       duration: 4000,
     });
   }, [companyId, enqueueSnackBar, isJobMode, orgChartEsTransportError, t]);
+
+  useEffect(() => {
+    if (
+      isJobMode ||
+      firstSourceUsed !== 'elasticsearch' ||
+      fallbackApplied !== true ||
+      fallbackReason !== 'apollo_result_count_exceeds_limit'
+    ) {
+      return;
+    }
+    const countText =
+      typeof apolloTotalCount === 'number'
+        ? apolloTotalCount.toLocaleString()
+        : 'more than 2,000';
+    enqueueSnackBar(
+      `Loaded a sampled org chart because Apollo returned ${countText} employees. Refine country/function filters or use Leadership Org Chart.`,
+      {
+        variant: SnackBarVariant.Warning,
+        dedupeKey: `org-chart-apollo-fallback-${companyId ?? ''}`,
+        duration: 7000,
+      },
+    );
+    setShowApolloFallbackModal(true);
+  }, [
+    apolloTotalCount,
+    companyId,
+    enqueueSnackBar,
+    fallbackApplied,
+    fallbackReason,
+    firstSourceUsed,
+    isJobMode,
+  ]);
+
+  useEffect(() => {
+    if (!apolloQueued || isJobMode) {
+      return;
+    }
+    enqueueSnackBar(
+      'Apollo org chart is building in background. We will refresh automatically when ready.',
+      {
+        variant: SnackBarVariant.Info,
+        dedupeKey: `org-chart-apollo-queued-${apolloQueueRequestId ?? companyId ?? ''}`,
+        duration: 5000,
+      },
+    );
+  }, [apolloQueueRequestId, apolloQueued, companyId, enqueueSnackBar, isJobMode]);
 
   const hasInitialCompanyInfo =
     companyName ||
@@ -274,12 +413,23 @@ export const ArxOrgChartContainer = ({
       return;
     }
     fetchOrgChart();
-  }, [fetchOrgChart, hasInitialCompanyInfo, isCompanyInfoLookupLoading, isJobMode]);
+  }, [
+    fetchOrgChart,
+    hasInitialCompanyInfo,
+    isCompanyInfoLookupLoading,
+    isJobMode,
+  ]);
 
   useEffect(() => {
     if (isJobMode) return;
     actions.clearLatestOrgChart();
-  }, [actions.clearLatestOrgChart, isJobMode, companyId, selectedCountry, selectedFunctionRoot]);
+  }, [
+    actions.clearLatestOrgChart,
+    isJobMode,
+    companyId,
+    selectedCountry,
+    selectedFunctionRoot,
+  ]);
 
   useEffect(() => {
     refetchJobs();
@@ -289,7 +439,10 @@ export const ArxOrgChartContainer = ({
     ? ((actions.latestOrgChart ??
         (data?.orgChart as Record<string, unknown> | null) ??
         null) as Record<string, unknown> | null)
-    : ((actions.latestOrgChart ?? data ?? null) as Record<string, unknown> | null);
+    : ((actions.latestOrgChart ?? data ?? null) as Record<
+        string,
+        unknown
+      > | null);
 
   const orgData = useMemo(() => extractOrgData(orgSource), [orgSource]);
 
@@ -304,8 +457,23 @@ export const ArxOrgChartContainer = ({
   }, [orgData, effectiveCompanyWebsite, website, setContactsByKey]);
 
   const isBlankTemplate =
-    typeof (orgSource as Record<string, unknown> | null)?.is_blank_template === 'boolean' &&
+    typeof (orgSource as Record<string, unknown> | null)?.is_blank_template ===
+      'boolean' &&
     (orgSource as Record<string, unknown>).is_blank_template === true;
+
+  useEffect(() => {
+    if (!apolloQueued || isJobMode || !isBlankTemplate) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      void fetchOrgChart();
+    }, 5000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [apolloQueued, fetchOrgChart, isBlankTemplate, isJobMode]);
 
   const filterOptions = useOrgChartFilterOptions(orgData);
 
@@ -415,26 +583,38 @@ export const ArxOrgChartContainer = ({
       return null;
     }
     const leadershipN =
-      typeof src.org_people_count === 'number' ? (src.org_people_count as number) : null;
+      typeof src.org_people_count === 'number'
+        ? (src.org_people_count as number)
+        : null;
     if (leadershipN === null) return null;
-    const fullN = typeof effectiveEmployeeCount === 'number' ? effectiveEmployeeCount : null;
+    const fullN =
+      typeof effectiveEmployeeCount === 'number'
+        ? effectiveEmployeeCount
+        : null;
     return { leadershipN, fullN };
   }, [orgSource, effectiveEmployeeCount]);
 
-  const { showPreviewPersistentBanner, m7kqPreviewOrgChartBanner, isM7kqOrgChartSource } =
-    useOrgChartBanners({
-      nodeDataArray,
-      isLoading,
-      error,
-      isBlankTemplate,
-      orgSource,
-      effectiveEmployeeCount,
-      orgChartLinkedinCandidateSource,
-      leadershipLayerPreviewBanner,
-    });
+  const {
+    showPreviewPersistentBanner,
+    m7kqPreviewOrgChartBanner,
+    isM7kqOrgChartSource,
+  } = useOrgChartBanners({
+    nodeDataArray,
+    isLoading,
+    error,
+    isBlankTemplate,
+    orgSource,
+    effectiveEmployeeCount,
+    orgChartLinkedinCandidateSource,
+    leadershipLayerPreviewBanner,
+  });
 
   const handleM7kqLockedContactClick = useCallback(
-    (_node: OrgChartNodeData, _personSlotIndex: number, _channel: 'email' | 'phone' | 'linkedin') => {
+    (
+      _node: OrgChartNodeData,
+      _personSlotIndex: number,
+      _channel: 'email' | 'phone' | 'linkedin',
+    ) => {
       enqueueSnackBar(
         t`Contact details and full profiles require a paid plan. Upgrade to unlock emails, phone numbers, and enriched LinkedIn data.`,
         { variant: SnackBarVariant.Info, duration: 6000 },
@@ -477,7 +657,11 @@ export const ArxOrgChartContainer = ({
   } | null>(null);
 
   const requestCandidateSearchConfirm = useCallback(
-    (title: string, run: () => void, kind: 'default' | 'multi_source' = 'default') => {
+    (
+      title: string,
+      run: () => void,
+      kind: 'default' | 'multi_source' = 'default',
+    ) => {
       setPendingSearchConfirm({ title, run, kind });
     },
     [],
@@ -490,7 +674,12 @@ export const ArxOrgChartContainer = ({
       country: selectedCountry,
       functionRoot: selectedFunctionRoot,
     });
-  }, [actions.executeOrgchartSearch, resolvedSearchMode, selectedCountry, selectedFunctionRoot]);
+  }, [
+    actions.executeOrgchartSearch,
+    resolvedSearchMode,
+    selectedCountry,
+    selectedFunctionRoot,
+  ]);
 
   const handleGetAllOrgChartSearch = useCallback(async () => {
     await actions.executeOrgchartSearch({
@@ -499,7 +688,12 @@ export const ArxOrgChartContainer = ({
       country: selectedCountry,
       functionRoot: selectedFunctionRoot,
     });
-  }, [actions.executeOrgchartSearch, resolvedSearchMode, selectedCountry, selectedFunctionRoot]);
+  }, [
+    actions.executeOrgchartSearch,
+    resolvedSearchMode,
+    selectedCountry,
+    selectedFunctionRoot,
+  ]);
 
   const handleGetAllOrgChartSearchMultiSource = useCallback(async () => {
     await actions.executeOrgchartSearch({
@@ -528,7 +722,12 @@ export const ArxOrgChartContainer = ({
       functionRoot: selectedFunctionRoot,
       businessDivisionRawQuery: trimmed,
     });
-  }, [actions.executeOrgchartSearch, businessDivisionQuery, selectedCountry, selectedFunctionRoot]);
+  }, [
+    actions.executeOrgchartSearch,
+    businessDivisionQuery,
+    selectedCountry,
+    selectedFunctionRoot,
+  ]);
 
   const fetchLinkedinDataSourcesStatus = useCallback(async (): Promise<{
     linkedinUnipileConnected: boolean;
@@ -747,7 +946,8 @@ export const ArxOrgChartContainer = ({
           ? t`Apify`
           : orgChartLinkedinCandidateSource === 'linkedin_xray'
             ? t`LinkedIn X-Ray`
-            : orgChartLinkedinCandidateSource === ORG_CHART_CANDIDATE_SOURCE_M7KQ
+            : orgChartLinkedinCandidateSource ===
+                ORG_CHART_CANDIDATE_SOURCE_M7KQ
               ? t`Directory`
               : t`Unknown data source`;
 
@@ -826,7 +1026,9 @@ export const ArxOrgChartContainer = ({
               </StyledOrgChartConfirmDt>
               <StyledOrgChartConfirmDd>
                 {multiSourceSelectedSlugs.length > 0
-                  ? multiSourceSelectedSlugs.map((source) => toTitleCase(source)).join(', ')
+                  ? multiSourceSelectedSlugs
+                      .map((source) => toTitleCase(source))
+                      .join(', ')
                   : t`None selected`}
               </StyledOrgChartConfirmDd>
             </StyledOrgChartConfirmRow>
@@ -834,7 +1036,12 @@ export const ArxOrgChartContainer = ({
         </StyledOrgChartConfirmRows>
       </StyledOrgChartConfirmSummary>
     ),
-    [multiSourceSelectedSlugs, pendingSearchConfirm?.kind, searchConfirmSummary, t],
+    [
+      multiSourceSelectedSlugs,
+      pendingSearchConfirm?.kind,
+      searchConfirmSummary,
+      t,
+    ],
   );
 
   const previewNodeChoiceSubtitle = useMemo(
@@ -907,6 +1114,28 @@ export const ArxOrgChartContainer = ({
     description: unipileCompanyProfile?.description,
     tagline: unipileCompanyProfile?.tagline,
     logoUrl: undefined,
+    asOfMonth: asOfMonth || undefined,
+    timelineMetrics,
+    timelineProfilesOptions: {
+      baseUrl,
+      accessToken,
+      companyId,
+      asOfMonth: asOfMonth || undefined,
+      companyName: effectiveCompanyName,
+      sampleSource: searchParams.get('sampleSource') ?? undefined,
+      sampleProfiles: searchParams.get('sampleProfiles') ?? undefined,
+      apifyIncludePast: searchParams.get('apifyIncludePast') ?? undefined,
+    },
+    onAsOfMonthChange: (next: string) => {
+      const copy = new URLSearchParams(searchParams);
+      const trimmed = next.trim();
+      if (!trimmed) {
+        copy.delete('asOf');
+      } else {
+        copy.set('asOf', trimmed);
+      }
+      setSearchParams(copy, { replace: true });
+    },
     onBack,
     hasFilters: !!orgData,
     filtersProps,
@@ -917,8 +1146,10 @@ export const ArxOrgChartContainer = ({
       isSubmitting: actions.isContextLoading,
     },
     toolbarTrailing: null,
-    onClearCompanyCache: () => void actions.handleBackgroundContextAction('delete_company_cache'),
-    onShare: accessToken && baseUrl ? () => setIsShareModalOpen(true) : undefined,
+    onClearCompanyCache: () =>
+      void actions.handleBackgroundContextAction('delete_company_cache'),
+    onShare:
+      accessToken && baseUrl ? () => setIsShareModalOpen(true) : undefined,
   };
 
   const showContextProgressBanner =
@@ -929,139 +1160,151 @@ export const ArxOrgChartContainer = ({
   return (
     <>
       <ArxOrgChartView
-      headerProps={headerProps as any}
-      isLoading={isLoading}
-      error={error ?? null}
-      nodeDataArray={nodeDataArray}
-      isBlankTemplate={isBlankTemplate}
-      accessToken={accessToken}
-      onNavigateToSignup={() => navigate(AppPath.SignInUp)}
-      showPreviewPersistentBanner={showPreviewPersistentBanner}
-      isEnrichedLeadershipLoading={isEnrichedLeadershipLoading}
-      contextProgressMessage={actions.contextProgressMessage}
-      showContextProgressBanner={showContextProgressBanner}
-      isContextLoading={actions.isContextLoading}
-      diagramHandleRef={diagramHandleRef}
-      diagramProps={{
-        m7kqContactMode: isM7kqOrgChartSource,
-        onLockedContactChannelClick: handleM7kqLockedContactClick,
-        nodeCapabilitiesHoverCompanyName: effectiveCompanyName ?? undefined,
-        iconUrls: {
-          lock: '/img/lock.png',
-          linkedin: '/img/linkedin-icon-png-circle-2.png',
-          download: '/img/download-icon.png',
-          similarItems: '/img/similar-items.png',
-        },
-        onNodeContextAction: actions.handleNodeContextAction,
-        onBackgroundContextAction: actions.handleBackgroundContextAction,
-        onNodeDoubleClick: actions.handleNodeDoubleClick,
-        onDownloadNode: actions.handleDownloadNode,
-        onSimilarPeople: actions.handleSimilarPeople,
-      }}
-      showNodeCapabilitiesHoverHint={showNodeCapabilitiesHoverHint}
-      effectiveEmployeeCount={effectiveEmployeeCount ?? undefined}
-      leadershipLayerPreviewBanner={leadershipLayerPreviewBanner}
-      m7kqPreviewOrgChartBanner={m7kqPreviewOrgChartBanner}
-      searchControlsProps={searchControlsProps}
-      onTopRightLeadershipOrgChart={() => {
-        requestCandidateSearchConfirm(t`Confirm Leadership Org Chart`, () => {
+        headerProps={headerProps as any}
+        isLoading={isLoading}
+        error={error ?? null}
+        nodeDataArray={nodeDataArray}
+        isBlankTemplate={isBlankTemplate}
+        accessToken={accessToken}
+        onNavigateToSignup={() => navigate(AppPath.SignInUp)}
+        showPreviewPersistentBanner={showPreviewPersistentBanner}
+        isEnrichedLeadershipLoading={isEnrichedLeadershipLoading}
+        contextProgressMessage={actions.contextProgressMessage}
+        showContextProgressBanner={showContextProgressBanner}
+        isContextLoading={actions.isContextLoading}
+        diagramHandleRef={diagramHandleRef}
+        diagramProps={{
+          m7kqContactMode: isM7kqOrgChartSource,
+          onLockedContactChannelClick: handleM7kqLockedContactClick,
+          nodeCapabilitiesHoverCompanyName: effectiveCompanyName ?? undefined,
+          iconUrls: {
+            lock: '/img/lock.png',
+            linkedin: '/img/linkedin-icon-png-circle-2.png',
+            download: '/img/download-icon.png',
+            similarItems: '/img/similar-items.png',
+          },
+          onNodeContextAction: actions.handleNodeContextAction,
+          onBackgroundContextAction: actions.handleBackgroundContextAction,
+          onNodeDoubleClick: actions.handleNodeDoubleClick,
+          onDownloadNode: actions.handleDownloadNode,
+          onSimilarPeople: actions.handleSimilarPeople,
+        }}
+        showNodeCapabilitiesHoverHint={showNodeCapabilitiesHoverHint}
+        effectiveEmployeeCount={effectiveEmployeeCount ?? undefined}
+        leadershipLayerPreviewBanner={leadershipLayerPreviewBanner}
+        m7kqPreviewOrgChartBanner={m7kqPreviewOrgChartBanner}
+        apolloFallbackNotice={
+          !isJobMode &&
+          firstSourceUsed === 'elasticsearch' &&
+          fallbackApplied === true &&
+          fallbackReason === 'apollo_result_count_exceeds_limit'
+            ? {
+                apolloTotalCount,
+                isModalOpen: showApolloFallbackModal,
+                onCloseModal: () => setShowApolloFallbackModal(false),
+              }
+            : null
+        }
+        searchControlsProps={searchControlsProps}
+        onTopRightLeadershipOrgChart={() => {
+          requestCandidateSearchConfirm(t`Confirm Leadership Org Chart`, () => {
+            void fetchEnrichedLeadershipOrgChart();
+          });
+        }}
+        pendingSearchConfirm={pendingSearchConfirm}
+        setPendingSearchConfirm={setPendingSearchConfirm}
+        candidateSearchConfirmSubtitle={candidateSearchConfirmSubtitle}
+        previewNodeChoiceSubtitle={previewNodeChoiceSubtitle}
+        pendingPreviewNodePeopleChoice={pendingPreviewNodePeopleChoice}
+        setPendingPreviewNodePeopleChoice={setPendingPreviewNodePeopleChoice}
+        onConfirmPreviewNodeFullOrgChart={() => {
+          setPendingPreviewNodePeopleChoice(null);
+          void handleGetAllOrgChartSearch();
+        }}
+        onConfirmPreviewNodeViewAllCandidates={() => {
+          setPendingPreviewNodePeopleChoice(null);
+          void handleViewAllCandidates();
+        }}
+        onConfirmPreviewNodeLeadership={() => {
+          setPendingPreviewNodePeopleChoice(null);
           void fetchEnrichedLeadershipOrgChart();
-        });
-      }}
-      pendingSearchConfirm={pendingSearchConfirm}
-      setPendingSearchConfirm={setPendingSearchConfirm}
-      candidateSearchConfirmSubtitle={candidateSearchConfirmSubtitle}
-      previewNodeChoiceSubtitle={previewNodeChoiceSubtitle}
-      pendingPreviewNodePeopleChoice={pendingPreviewNodePeopleChoice}
-      setPendingPreviewNodePeopleChoice={setPendingPreviewNodePeopleChoice}
-      onConfirmPreviewNodeFullOrgChart={() => {
-        setPendingPreviewNodePeopleChoice(null);
-        void handleGetAllOrgChartSearch();
-      }}
-      onConfirmPreviewNodeViewAllCandidates={() => {
-        setPendingPreviewNodePeopleChoice(null);
-        void handleViewAllCandidates();
-      }}
-      onConfirmPreviewNodeLeadership={() => {
-        setPendingPreviewNodePeopleChoice(null);
-        void fetchEnrichedLeadershipOrgChart();
-      }}
-      contextModalProps={
-        actions.isContextModalOpen
-          ? {
-              isOpen: true,
-              title: actions.contextModalTitle,
-              isLoading: actions.isContextLoading,
-              loadingStartedAt: actions.contextLoadingStartedAt,
-              loadingProgressMessage: actions.contextProgressMessage,
-              loadingPage: actions.contextProgressPage,
-              loadingTotalPages: actions.contextProgressTotalPages,
-              loadingTotalCandidates: actions.contextProgressTotalCandidates,
-              error: actions.contextError,
-              results: actions.contextResults,
-              booleanKeywordsString: actions.booleanKeywordsString,
-              companyWebsite: headerProps.website,
-              companyId: companyId,
-              onClose: actions.closeContextModal,
-              onDownloadCsv:
-                actions.contextResults.length > 0
-                  ? actions.downloadContextResultsAsCsv
-                  : undefined,
-              addToJobInlineContext: {
-                companyName: effectiveCompanyName ?? undefined,
-                contextModalMode: actions.contextModalMode ?? undefined,
-                selectedNodeFunction: actions.selectedNodeFunction,
-                selectedNodeGrade: actions.selectedNodeGrade,
-              },
-              onStop: actions.cancelOrgchartSearch,
-            }
-          : null
-      }
-      nodeDetailModalProps={
-        actions.selectedNodeForDetails
-          ? {
-              isOpen: true,
-              title: actions.selectedNodeForDetails.headline,
-              isLoading: actions.isNodeDetailLoading,
-              error: actions.nodeDetailError,
-              results: actions.nodeDetailResults,
-              emptyMessage: 'No people are attached to this node yet.',
-              companyWebsite: headerProps.website,
-              companyId: companyId,
-              onClose: actions.closeNodeDetailModal,
-              onDownloadCsv: actions.downloadNodeDetailsAsCsv,
-              addToJobInlineContext: {
-                companyName: effectiveCompanyName ?? undefined,
-                contextModalMode: 'current_node' as const,
-                selectedNodeFunction: actions.selectedNodeFunction,
-                selectedNodeGrade: actions.selectedNodeGrade,
-              },
-              onGetSimilarPeople: () =>
-                actions.executeOrgchartSearch({
-                  mode: 'function_grade',
-                  origin: 'doubleClick',
-                  node: actions.selectedNodeForDetails!,
-                }),
-            }
-          : null
-      }
-      addToJobModalProps={{
-        isOpen: actions.isAddToJobModalOpen,
-        onClose: actions.closeAddToJobModal,
-        node: actions.addToJobNode,
-        companyName: effectiveCompanyName ?? undefined,
-        queueStartChatAfter: actions.addToJobQueueStartChat,
-        onSuccess: actions.closeAddToJobModal,
-      }}
-      outreachModalProps={{
-        isOpen: actions.isOutreachModalOpen,
-        onClose: actions.closeOutreachModal,
-        channel: actions.outreachChannel,
-        contextItem: actions.outreachContextItem,
-        node: actions.outreachNode,
-        companyName: effectiveCompanyName ?? undefined,
-      }}
-    />
+        }}
+        contextModalProps={
+          actions.isContextModalOpen
+            ? {
+                isOpen: true,
+                title: actions.contextModalTitle,
+                isLoading: actions.isContextLoading,
+                loadingStartedAt: actions.contextLoadingStartedAt,
+                loadingProgressMessage: actions.contextProgressMessage,
+                loadingPage: actions.contextProgressPage,
+                loadingTotalPages: actions.contextProgressTotalPages,
+                loadingTotalCandidates: actions.contextProgressTotalCandidates,
+                error: actions.contextError,
+                results: actions.contextResults,
+                booleanKeywordsString: actions.booleanKeywordsString,
+                companyWebsite: headerProps.website,
+                companyId: companyId,
+                onClose: actions.closeContextModal,
+                onDownloadCsv:
+                  actions.contextResults.length > 0
+                    ? actions.downloadContextResultsAsCsv
+                    : undefined,
+                addToJobInlineContext: {
+                  companyName: effectiveCompanyName ?? undefined,
+                  contextModalMode: actions.contextModalMode ?? undefined,
+                  selectedNodeFunction: actions.selectedNodeFunction,
+                  selectedNodeGrade: actions.selectedNodeGrade,
+                },
+                onStop: actions.cancelOrgchartSearch,
+              }
+            : null
+        }
+        nodeDetailModalProps={
+          actions.selectedNodeForDetails
+            ? {
+                isOpen: true,
+                title: actions.selectedNodeForDetails.headline,
+                isLoading: actions.isNodeDetailLoading,
+                error: actions.nodeDetailError,
+                results: actions.nodeDetailResults,
+                emptyMessage: 'No people are attached to this node yet.',
+                companyWebsite: headerProps.website,
+                companyId: companyId,
+                onClose: actions.closeNodeDetailModal,
+                onDownloadCsv: actions.downloadNodeDetailsAsCsv,
+                addToJobInlineContext: {
+                  companyName: effectiveCompanyName ?? undefined,
+                  contextModalMode: 'current_node' as const,
+                  selectedNodeFunction: actions.selectedNodeFunction,
+                  selectedNodeGrade: actions.selectedNodeGrade,
+                },
+                onGetSimilarPeople: () =>
+                  actions.executeOrgchartSearch({
+                    mode: 'function_grade',
+                    origin: 'doubleClick',
+                    node: actions.selectedNodeForDetails!,
+                  }),
+              }
+            : null
+        }
+        addToJobModalProps={{
+          isOpen: actions.isAddToJobModalOpen,
+          onClose: actions.closeAddToJobModal,
+          node: actions.addToJobNode,
+          companyName: effectiveCompanyName ?? undefined,
+          queueStartChatAfter: actions.addToJobQueueStartChat,
+          onSuccess: actions.closeAddToJobModal,
+        }}
+        outreachModalProps={{
+          isOpen: actions.isOutreachModalOpen,
+          onClose: actions.closeOutreachModal,
+          channel: actions.outreachChannel,
+          contextItem: actions.outreachContextItem,
+          node: actions.outreachNode,
+          companyName: effectiveCompanyName ?? undefined,
+        }}
+      />
       {accessToken && baseUrl ? (
         <OrgChartShareModal
           isOpen={isShareModalOpen}
@@ -1076,4 +1319,3 @@ export const ArxOrgChartContainer = ({
     </>
   );
 };
-

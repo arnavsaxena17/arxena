@@ -13,12 +13,42 @@ import type { OrgChartCompanyInfoProps } from './OrgChartCompanyInfo';
 import { OrgChartCompanyInfo } from './OrgChartCompanyInfo';
 
 const StyledHeader = styled.div`
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: ${({ theme }) => theme.spacing(3)};
   padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(4)};
   border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
   flex-shrink: 0;
+`;
+
+const StyledMonthPickerCenter = styled.div`
+  position: absolute;
+  left: 50%;
+  top: ${({ theme }) => theme.spacing(2)};
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(1.5)};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  background: ${({ theme }) => theme.background.primary};
+`;
+
+const StyledMonthLabel = styled.span`
+  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  white-space: nowrap;
+`;
+
+const StyledMonthInput = styled.input`
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.primary};
+  background: ${({ theme }) => theme.background.primary};
 `;
 
 const StyledOrgChartToolbar = styled.div`
@@ -62,6 +92,21 @@ export type OrgChartHeaderProps = OrgChartCompanyInfoProps & {
   toolbarTrailing?: ReactNode;
   onClearCompanyCache?: () => void;
   onShare?: () => void;
+  /** URL-backed MonthYear snapshot (YYYY-MM). */
+  asOfMonth?: string;
+  onAsOfMonthChange?: (next: string) => void;
+  /** Optional timeline metrics payload (shown in drawer). */
+  timelineMetrics?: Record<string, unknown> | null;
+  timelineProfilesOptions?: {
+    baseUrl: string;
+    accessToken?: string;
+    companyId: string;
+    asOfMonth?: string;
+    companyName?: string;
+    sampleSource?: string;
+    sampleProfiles?: string;
+    apifyIncludePast?: string;
+  };
 };
 
 export const OrgChartHeader = ({
@@ -72,6 +117,10 @@ export const OrgChartHeader = ({
   toolbarTrailing,
   onClearCompanyCache,
   onShare,
+  asOfMonth,
+  onAsOfMonthChange,
+  timelineMetrics,
+  timelineProfilesOptions,
   ...companyInfoProps
 }: OrgChartHeaderProps) => {
   const [isCompanyDrawerOpen, setIsCompanyDrawerOpen] = useState(false);
@@ -88,6 +137,16 @@ export const OrgChartHeader = ({
           {...companyInfoProps}
           onViewDetails={() => setIsCompanyDrawerOpen(true)}
         />
+        {/* {onAsOfMonthChange && (
+          <StyledMonthPickerCenter>
+            <StyledMonthLabel>As of</StyledMonthLabel>
+            <StyledMonthInput
+              type="month"
+              value={asOfMonth ?? ''}
+              onChange={(e) => onAsOfMonthChange(e.target.value)}
+            />
+          </StyledMonthPickerCenter>
+        )} */}
         {onShare && (
           <StyledShareButton
             title="Share"
@@ -112,6 +171,8 @@ export const OrgChartHeader = ({
       </StyledHeader>
       <OrgChartCompanyDrawer
         {...companyInfoProps}
+        timelineMetrics={timelineMetrics ?? null}
+        timelineProfilesOptions={timelineProfilesOptions}
         isOpen={isCompanyDrawerOpen}
         onClose={() => setIsCompanyDrawerOpen(false)}
         onClearCompanyCache={onClearCompanyCache}

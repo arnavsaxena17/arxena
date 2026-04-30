@@ -30,7 +30,6 @@ import { extractApiToken } from 'src/engine/core-modules/candidate-search/utils/
 import { CandidateDataService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-data.service';
 import { TransformedCandidateForTable } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { LinkedinXrayTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-xray-transformer.service';
-import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-sourcing/services/orgchart-progress-redis.service';
 import { linkedInPeopleSearchResultMatchesTargetCompany } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-orgchart-company-match.util';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -55,77 +54,28 @@ import { TheOrgService } from 'src/engine/core-modules/theorg/services/theorg.se
 import { TheOrgPerson } from 'src/engine/core-modules/theorg/types/theorg.types';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { LinkedinXrayService } from 'src/modules/linkedin-xray/linkedin-xray.service';
-import { LinkedinXraySearchEngine } from 'src/modules/linkedin-xray/types/linkedin-xray-search-job.types';
 
 import { ContactOutPeopleSearchService } from './contactout-people-search.service';
 import { OrgChartRecordWorkspaceService } from './org-chart-record-workspace.service';
+import { OrgchartCacheBillingService } from './orgchart-cache-billing.service';
 import { OrgChartIncrementalBuildCacheService } from './orgchart-incremental-build-cache.service';
+import {
+  EntireCompanyFilterState,
+  OrgChartBuildCandidateRow,
+  OrgchartSearchType,
+  SearchOrgchartLinkedInBody,
+} from './orgchart-linkedin-build.types';
+import {
+  isM7kqDirectoryCandidateSource,
+  normalizeMultiSources,
+} from './orgchart-linkedin-build.utils';
+import { OrgchartProgressEmitterService } from './orgchart-progress-emitter.service';
 import { OrgChartS3Service } from './orgchart-s3.service';
 import { PythonOrgChartService } from './python-org-chart.service';
 
-/** Matches OrgChartSearchService.buildOrgChartFromLinkedInCompanyCandidates input rows */
-type OrgChartBuildCandidateRow =
-  | TransformedCandidateForTable
-  | Record<string, unknown>;
-
-type OrgchartSearchType = 'classic' | 'sales_navigator' | 'recruiter';
-
-type SearchOrgchartLinkedInBody = {
-  rawQuery: string;
-  cleanedQuery: string;
-  companyName?: string;
-  companyId?: string;
-  jobTitles?: string[];
-  mode: OrgchartSearchMode;
-  maxPages?: number;
-  searchType?: OrgchartSearchType;
-  requestId?: string;
-  country?: string;
-  functionRoot?: string;
-  /** Standardized org-chart function label for current_node / selected_nodes (replaces function_root for Python + post-filter). */
-  stdFunction?: string;
-  /** Standardized org-chart grade label for current_node / selected_nodes. */
-  stdGrade?: string;
-  /** `selected_nodes`: one entry per selected diagram node (std_function + std_grade per node). */
-  selectedNodeStdScopes?: Array<{ stdFunction?: string; stdGrade?: string }>;
-  candidateSource?: OrgChartLinkedinCandidateSource;
-  multiSource?: boolean;
-  sources?: string[];
-  linkedinCompanyUrl?: string;
-  /** Primary email/web domain for the target company (e.g. "litify.com"). When
-   *  ORGCHART_APOLLO_SKIP_RESOLUTION is enabled, this is passed directly as
-   *  q_organization_domains_list[] on Apollo People Search so the flow skips
-   *  the /mixed_companies/search resolution hop. */
-  companyDomain?: string;
-  apifyMaxItems?: number;
-  profileScraperMode?: string;
-  linkedinUnipileAccountId?: string;
-  /** NL business division query; requires Unipile (not Apify) */
-  businessDivisionRawQuery?: string;
-  /** When true, LLM validation/scoring on LinkedIn hit lists. Default false. */
-  validateAndScoreLinkedInResults?: boolean;
-  queryGenerator?: 'python' | 'multi_agent';
-  xraySearchEngine?: LinkedinXraySearchEngine;
-  includePaginatedHtml?: boolean;
-  /** Raw industry label (e.g. "Computer Software") forwarded to Python list_data.industry */
-  industry?: string;
-  /** Macro category override forwarded to Python list_data.industry_category */
-  industryCategory?: string;
-  /** Optional MonthYear snapshot filter (YYYY-MM). When set, org chart is built from candidates active during that month. */
-  asOfMonth?: string;
-};
-
-type EntireCompanyFilterState = {
-  shouldWriteCompanyOrgChartCache: boolean;
-  hasCountryFilter: boolean;
-  hasFunctionRootFilter: boolean;
-  normalizedCountryRaw: string;
-  normalizedFunctionRootRaw: string;
-};
-
 @Injectable()
-export class OrgChartLinkedInBuildService {
-  private readonly logger = new Logger(OrgChartLinkedInBuildService.name);
+export class OrgChartBuildService {
+  private readonly logger = new Logger(OrgChartBuildService.name);
 
   constructor(
     private readonly orgChartSearchService: OrgChartSearchService,
@@ -133,7 +83,8 @@ export class OrgChartLinkedInBuildService {
     private readonly workspaceCreditsService: WorkspaceCreditsService,
     private readonly creditTransactionService: CreditTransactionService,
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly orgChartProgressRedisService: OrgChartProgressRedisService,
+    private readonly orgchartProgressEmitterService: OrgchartProgressEmitterService,
+    private readonly orgchartCacheBillingService: OrgchartCacheBillingService,
     private readonly orgchartCancelRegistry: OrgchartCancelRegistryService,
     private readonly orgChartS3Service: OrgChartS3Service,
     private readonly orgChartRecordWorkspaceService: OrgChartRecordWorkspaceService,
@@ -225,22 +176,6 @@ export class OrgChartLinkedInBuildService {
 
   private isBrightDataLinkedinProfileEnrichEnabled(): boolean {
     return process.env.BRIGHT_DATA_LINKEDIN_PROFILE_ENRICH_ENABLED !== 'false';
-  }
-
-  private isM7kqDirectoryCandidateSource(
-    s: OrgChartLinkedinCandidateSource | undefined,
-  ): boolean {
-    return s === 'm7kq' || s === 'apollo';
-  }
-
-  private normalizeMultiSources(input: unknown): string[] {
-    if (!Array.isArray(input)) return [];
-    const cleaned = input
-      .filter((s): s is string => typeof s === 'string')
-      .map((s) => s.trim().toLowerCase())
-      .filter((s) => s.length > 0);
-
-    return Array.from(new Set(cleaned));
   }
 
   private theOrgPeopleToCandidates(
@@ -925,7 +860,7 @@ export class OrgChartLinkedInBuildService {
     cacheSource: 'none';
     strategyResults: [];
   } | null> {
-    if (!this.isM7kqDirectoryCandidateSource(args.body.candidateSource)) {
+    if (!isM7kqDirectoryCandidateSource(args.body.candidateSource)) {
       return null;
     }
 
@@ -1448,26 +1383,11 @@ export class OrgChartLinkedInBuildService {
     workspaceMemberId?: string;
     orgChartS3RelativePath: string;
   }> {
-    const persistKey = this.orgChartS3Service.persistedCompanyFolderKey(
+    return this.orgchartCacheBillingService.buildOrgChartCreditMetadata(
+      apiToken,
       companyId,
       resolvedCompanyName,
     );
-    const orgChartS3RelativePath =
-      this.orgChartS3Service.buildRelativeFolderPathFromPersistedKey(
-        persistKey,
-      );
-    const workspaceMemberId = apiToken
-      ? ((await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
-          apiToken,
-        )) ?? undefined)
-      : undefined;
-
-    return {
-      companyName: resolvedCompanyName,
-      companyId: companyId?.trim() || undefined,
-      orgChartS3RelativePath,
-      workspaceMemberId,
-    };
   }
 
   async buildOrgChartFromJobCandidates(
@@ -2971,7 +2891,7 @@ export class OrgChartLinkedInBuildService {
     this.logger.log(`body:: ${JSON.stringify(body)}`);
     const canonicalCompanyLinkedinUrl =
       body.linkedinCompanyUrl?.trim().replace(/\/+$/, '') || undefined;
-    const requestedSources = this.normalizeMultiSources(body.sources);
+    const requestedSources = normalizeMultiSources(body.sources);
     const isMultiSourceRequested =
       body.multiSource === true && requestedSources.length > 0;
     // Multi-source orchestration runs later, after we derive mode/searchType/companyName.
@@ -4058,7 +3978,7 @@ export class OrgChartLinkedInBuildService {
     const modeForOrgChartBuild: OrgchartSearchMode = jobData.mode;
 
     console.log('Job Data for Org chart build:', jobData);
-    const requestedSources = this.normalizeMultiSources(jobData.sources);
+    const requestedSources = normalizeMultiSources(jobData.sources);
     const isMultiSourceRequested =
       jobData.multiSource === true && requestedSources.length > 0;
 
@@ -4313,7 +4233,7 @@ export class OrgChartLinkedInBuildService {
 
     const requestedSources = Array.isArray(jobData.requestedSources)
       ? jobData.requestedSources
-      : this.normalizeMultiSources((rawBody as any).sources);
+      : normalizeMultiSources((rawBody as any).sources);
 
     const aggregated: Array<Record<string, unknown>> = [];
 
@@ -4706,33 +4626,10 @@ export class OrgChartLinkedInBuildService {
       data: Record<string, unknown>;
     },
   ): Promise<void> {
-    try {
-      const authContext =
-        await this.workspaceQueryService.accessTokenService.validateToken(
-          apiToken,
-        );
-      const workspaceMemberId = authContext.workspaceMemberId;
-
-      if (!workspaceMemberId) {
-        return;
-      }
-      const progressPayload = {
-        event: payload.event,
-        requestId: payload.requestId,
-        mode: payload.mode,
-        searchType: payload.searchType,
-        companyName: payload.companyName,
-        data: payload.data,
-      };
-
-      console.log('Payload : ', payload);
-      await this.orgChartProgressRedisService.publish(
-        workspaceMemberId,
-        progressPayload,
-      );
-    } catch {
-      // Invalid token or missing member id — response body still carries orgChartError.
-    }
+    await this.orgchartProgressEmitterService.emitOrgchartSearchProgressForToken(
+      apiToken,
+      payload,
+    );
   }
 
   cancelOrgchartSearch(

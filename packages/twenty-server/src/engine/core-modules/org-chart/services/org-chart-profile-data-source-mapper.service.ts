@@ -40,6 +40,7 @@ export class OrgChartProfileDataSourceMapperService {
   > = {
     unipile: 'unipile',
     apify: 'apify',
+    contactout: 'contactout',
     linkedin_xray: 'linkedin_xray',
     m7kq: 'apollo',
     apollo: 'apollo',

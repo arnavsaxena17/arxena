@@ -1,11 +1,13 @@
 import styled from '@emotion/styled';
-import { IconWorld, IconX } from '@tabler/icons-react';
+import { IconWorld } from '@tabler/icons-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Button, IconButton, IconX } from 'twenty-ui';
 
+import { TabList } from '@/ui/layout/tab/components/TabList';
+import { useTabList } from '@/ui/layout/tab/hooks/useTabList';
 import { toTitleCase } from 'twenty-shared';
 
 import type { OrgChartCompanyInfoProps } from './OrgChartCompanyInfo';
-
-const LINKEDIN_ICON_URL = '/img/linkedin.svg';
 
 const StyledDrawerBackdrop = styled.div`
   position: fixed;
@@ -51,24 +53,6 @@ const StyledDrawerTitle = styled.h2`
   font-size: ${({ theme }) => theme.font.size.lg};
   font-weight: 600;
   color: ${({ theme }) => theme.font.color.primary};
-`;
-
-const StyledCloseButton = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background: transparent;
-  color: ${({ theme }) => theme.font.color.tertiary};
-  cursor: pointer;
-
-  &:hover {
-    background: ${({ theme }) => theme.background.transparent.light};
-    color: ${({ theme }) => theme.font.color.primary};
-  }
 `;
 
 const StyledDrawerBody = styled.div`
@@ -153,29 +137,6 @@ const StyledLinkRow = styled.div`
   gap: ${({ theme }) => theme.spacing(1)};
 `;
 
-const StyledLink = styled.a`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(0.5)};
-  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1.5)};
-  border-radius: 999px;
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  text-decoration: none;
-
-  &:hover {
-    background: ${({ theme }) => theme.background.transparent.light};
-  }
-`;
-
-const StyledLinkedinLogo = styled.img`
-  width: 16px;
-  height: 16px;
-  display: block;
-`;
-
 const StyledMetaGrid = styled.div`
   display: grid;
   gap: ${({ theme }) => theme.spacing(2)};
@@ -205,27 +166,51 @@ const StyledActionsRow = styled.div`
   gap: ${({ theme }) => theme.spacing(1)};
 `;
 
-const StyledDangerButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(1.5)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  cursor: pointer;
+const StyledTabsRow = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(1)};
+  flex-wrap: wrap;
+`;
 
-  &:hover {
-    background: ${({ theme }) => theme.background.transparent.light};
-  }
+const StyledTimelineTabList = styled(TabList)`
+  border-bottom: none;
+`;
+
+const StyledWindowButton = styled(Button)`
+  min-width: 48px;
+`;
+
+const StyledProfilesList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledProfileRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(1)};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
 `;
 
 export type OrgChartCompanyDrawerProps = OrgChartCompanyInfoProps & {
   isOpen: boolean;
   onClose: () => void;
   onClearCompanyCache?: () => void;
+  timelineMetrics?: Record<string, unknown> | null;
+  timelineProfilesOptions?: {
+    baseUrl: string;
+    accessToken?: string;
+    companyId: string;
+    asOfMonth?: string;
+    companyName?: string;
+    sampleSource?: string;
+    sampleProfiles?: string;
+    apifyIncludePast?: string;
+  };
 };
 
 export const OrgChartCompanyDrawer = ({
@@ -244,8 +229,19 @@ export const OrgChartCompanyDrawer = ({
   isOpen,
   onClose,
   onClearCompanyCache,
+  timelineMetrics,
+  timelineProfilesOptions,
 }: OrgChartCompanyDrawerProps) => {
-  if (!isOpen) return null;
+  const timelineTabListInstanceId = 'orgchart-company-drawer-timeline-tabs';
+  const { activeTabId } = useTabList(timelineTabListInstanceId);
+  const activeTab = (
+    activeTabId ?? 'company'
+  ) as 'company' | 'joined' | 'left' | 'current' | 'past';
+  const [activeWindow, setActiveWindow] = useState<'1m' | '3m' | '6m' | '1y'>(
+    '1m',
+  );
+  const [timelineProfiles, setTimelineProfiles] = useState<Record<string, unknown> | null>(null);
+  const [isTimelineProfilesLoading, setIsTimelineProfilesLoading] = useState(false);
 
   const getLogoUrl = (site?: string): string | null => {
     if (!site?.trim()) return null;
@@ -274,6 +270,90 @@ export const OrgChartCompanyDrawer = ({
   const displayIndustry = toTitleCase(industry);
   const linkedinLabel =
     toTitleCase(linkedinDisplayName) || displayCompanyName || 'LinkedIn';
+  const websiteUrl = website
+    ? website.startsWith('http')
+      ? website
+      : `https://${website}`
+    : null;
+
+  const shouldFetchProfiles =
+    activeTab === 'joined' ||
+    activeTab === 'left' ||
+    activeTab === 'current' ||
+    activeTab === 'past';
+
+  useEffect(() => {
+    if (!shouldFetchProfiles || !timelineProfilesOptions?.baseUrl?.trim()) {
+      setTimelineProfiles(null);
+      return;
+    }
+    const event =
+      activeTab === 'joined' || activeTab === 'left' || activeTab === 'current' || activeTab === 'past'
+        ? activeTab
+        : 'current';
+    let cancelled = false;
+    const run = async () => {
+      setIsTimelineProfilesLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (timelineProfilesOptions.companyName?.trim()) {
+          params.set('companyName', timelineProfilesOptions.companyName.trim());
+        }
+        if (timelineProfilesOptions.asOfMonth?.trim()) {
+          params.set('asOfMonth', timelineProfilesOptions.asOfMonth.trim());
+        }
+        if (timelineProfilesOptions.sampleSource?.trim()) {
+          params.set('sampleSource', timelineProfilesOptions.sampleSource.trim());
+        }
+        if (timelineProfilesOptions.sampleProfiles?.trim()) {
+          params.set('sampleProfiles', timelineProfilesOptions.sampleProfiles.trim());
+        }
+        if (timelineProfilesOptions.apifyIncludePast?.trim()) {
+          params.set(
+            'apifyIncludePast',
+            timelineProfilesOptions.apifyIncludePast.trim(),
+          );
+        }
+        params.set('event', event);
+        params.set('window', activeWindow);
+        params.set('limit', '100');
+        const url = `${timelineProfilesOptions.baseUrl.replace(
+          /\/$/,
+          '',
+        )}/org-chart/${encodeURIComponent(
+          timelineProfilesOptions.companyId,
+        )}/timeline/profiles?${params.toString()}`;
+        const res = await fetch(url, {
+          headers: {
+            ...(timelineProfilesOptions.accessToken
+              ? { Authorization: `Bearer ${timelineProfilesOptions.accessToken}` }
+              : {}),
+          },
+        });
+        const json = (await res.json()) as {
+          result?: Record<string, unknown>;
+        };
+        if (!cancelled) {
+          setTimelineProfiles(res.ok ? json.result ?? null : null);
+        }
+      } catch {
+        if (!cancelled) setTimelineProfiles(null);
+      } finally {
+        if (!cancelled) setIsTimelineProfilesLoading(false);
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, activeWindow, shouldFetchProfiles, timelineProfilesOptions]);
+
+  const timelineProfilesRows = useMemo(() => {
+    const rows = timelineProfiles?.profiles;
+    return Array.isArray(rows) ? rows : [];
+  }, [timelineProfiles]);
+
+  if (!isOpen) return null;
 
   return (
     <>
@@ -281,13 +361,12 @@ export const OrgChartCompanyDrawer = ({
       <StyledDrawer role="dialog" aria-modal="true" aria-label="Company details">
         <StyledDrawerHeader>
           <StyledDrawerTitle>Company details</StyledDrawerTitle>
-          <StyledCloseButton
-            type="button"
+          <IconButton
+            Icon={IconX}
             onClick={onClose}
+            variant="tertiary"
             aria-label="Close company details"
-          >
-            <IconX size={20} />
-          </StyledCloseButton>
+          />
         </StyledDrawerHeader>
         <StyledDrawerBody>
           <StyledCompanyHeader>
@@ -309,26 +388,23 @@ export const OrgChartCompanyDrawer = ({
               <StyledSectionTitle>Links</StyledSectionTitle>
               <StyledLinkRow>
                 {linkedinUrl && (
-                  <StyledLink
-                    href={linkedinUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label="Open LinkedIn company page"
-                  >
-                    <StyledLinkedinLogo src={LINKEDIN_ICON_URL} alt="" />
-                    {linkedinLabel}
-                  </StyledLink>
+                  <Button
+                    title={linkedinLabel}
+                    variant="secondary"
+                    size="small"
+                    onClick={() => window.open(linkedinUrl, '_blank', 'noopener,noreferrer')}
+                    ariaLabel="Open LinkedIn company page"
+                  />
                 )}
-                {website && (
-                  <StyledLink
-                    href={website.startsWith('http') ? website : `https://${website}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label="Open company website"
-                  >
-                    <IconWorld size={16} />
-                    {websiteDomain || 'Website'}
-                  </StyledLink>
+                {websiteUrl && (
+                  <Button
+                    title={websiteDomain || 'Website'}
+                    variant="secondary"
+                    size="small"
+                    Icon={IconWorld}
+                    onClick={() => window.open(websiteUrl, '_blank', 'noopener,noreferrer')}
+                    ariaLabel="Open company website"
+                  />
                 )}
               </StyledLinkRow>
             </StyledSection>
@@ -368,6 +444,127 @@ export const OrgChartCompanyDrawer = ({
             </StyledMetaGrid>
           </StyledSection>
 
+          <StyledSection>
+            <StyledSectionTitle>Timeline</StyledSectionTitle>
+            <StyledTimelineTabList
+              tabListInstanceId={timelineTabListInstanceId}
+              behaveAsLinks={false}
+              isInRightDrawer
+              tabs={[
+                { id: 'company', title: 'Company info' },
+                { id: 'joined', title: 'Who joined' },
+                { id: 'left', title: 'Who left' },
+                { id: 'current', title: 'Current' },
+                { id: 'past', title: 'Past' },
+              ]}
+            />
+            {activeTab !== 'company' && (
+              <StyledTabsRow>
+                {(['1m', '3m', '6m', '1y'] as const).map((w) => (
+                  <StyledWindowButton
+                    key={w}
+                    title={w}
+                    variant={activeWindow === w ? 'primary' : 'secondary'}
+                    size="small"
+                    onClick={() => setActiveWindow(w)}
+                  />
+                ))}
+              </StyledTabsRow>
+            )}
+          </StyledSection>
+
+          {timelineMetrics && (
+            <StyledSection>
+              <StyledSectionTitle>Timeline metrics</StyledSectionTitle>
+              <StyledSectionContent>
+                <StyledMetaGrid>
+                  <StyledMetaRow>
+                    <StyledMetaLabel>As of</StyledMetaLabel>
+                    <StyledMetaValue>
+                      {typeof timelineMetrics.asOfMonth === 'string'
+                        ? timelineMetrics.asOfMonth
+                        : '—'}
+                    </StyledMetaValue>
+                  </StyledMetaRow>
+                  <StyledMetaRow>
+                    <StyledMetaLabel>Headcount</StyledMetaLabel>
+                    <StyledMetaValue>
+                      {typeof timelineMetrics.headcount === 'number'
+                        ? timelineMetrics.headcount
+                        : '—'}
+                    </StyledMetaValue>
+                  </StyledMetaRow>
+                  {(['1m', '3m', '6m', '1y'] as const).map((w) => {
+                    const windows = timelineMetrics.windows as Record<
+                      string,
+                      unknown
+                    >;
+                    const slot =
+                      windows && typeof windows === 'object'
+                        ? (windows[w] as Record<string, unknown> | undefined)
+                        : undefined;
+                    const joined =
+                      slot?.joined && typeof slot.joined === 'object'
+                        ? (slot.joined as Record<string, unknown>).total
+                        : undefined;
+                    const left =
+                      slot?.left && typeof slot.left === 'object'
+                        ? (slot.left as Record<string, unknown>).total
+                        : undefined;
+                    return (
+                      <StyledMetaRow key={w}>
+                        <StyledMetaLabel>{w}</StyledMetaLabel>
+                        <StyledMetaValue>
+                          joined {typeof joined === 'number' ? joined : '—'} · left{' '}
+                          {typeof left === 'number' ? left : '—'}
+                        </StyledMetaValue>
+                      </StyledMetaRow>
+                    );
+                  })}
+                </StyledMetaGrid>
+              </StyledSectionContent>
+            </StyledSection>
+          )}
+
+          {shouldFetchProfiles && (
+            <StyledSection>
+              <StyledSectionTitle>
+                {activeTab === 'joined'
+                  ? 'Joined profiles'
+                  : activeTab === 'left'
+                    ? 'Left profiles'
+                    : activeTab === 'current'
+                      ? 'Current profiles'
+                      : 'Past profiles'}
+              </StyledSectionTitle>
+              <StyledSectionContent>
+                {isTimelineProfilesLoading && <div>Loading profiles…</div>}
+                {!isTimelineProfilesLoading && timelineProfilesRows.length === 0 && (
+                  <div>No profiles found for this selection.</div>
+                )}
+                {!isTimelineProfilesLoading && timelineProfilesRows.length > 0 && (
+                  <StyledProfilesList>
+                    {timelineProfilesRows.map((row, idx) => {
+                      const item = row as Record<string, unknown>;
+                      return (
+                        <StyledProfileRow key={`${String(item.id ?? idx)}`}>
+                          <div>
+                            <div>{String(item.fullName ?? 'Unknown')}</div>
+                            <div>
+                              {String(item.titleAtAsOf ?? '')}
+                              {item.eventMonth ? ` · ${String(item.eventMonth)}` : ''}
+                            </div>
+                          </div>
+                          <div>{String(item.functionRoot ?? 'unclassified')}</div>
+                        </StyledProfileRow>
+                      );
+                    })}
+                  </StyledProfilesList>
+                )}
+              </StyledSectionContent>
+            </StyledSection>
+          )}
+
           {description?.trim() && (
             <StyledSection>
               <StyledSectionTitle>About</StyledSectionTitle>
@@ -383,12 +580,12 @@ export const OrgChartCompanyDrawer = ({
             <StyledSection>
               <StyledSectionTitle>Cache</StyledSectionTitle>
               <StyledActionsRow>
-                <StyledDangerButton
-                  type="button"
+                <Button
+                  title="Clear cached org chart"
+                  variant="secondary"
+                  size="small"
                   onClick={onClearCompanyCache}
-                >
-                  Clear cached org chart
-                </StyledDangerButton>
+                />
               </StyledActionsRow>
             </StyledSection>
           )}
