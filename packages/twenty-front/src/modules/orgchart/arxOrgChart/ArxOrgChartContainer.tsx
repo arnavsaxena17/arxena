@@ -61,6 +61,8 @@ const leadershipOrgChartPythonFailureMessage = (detail: string) =>
 
 const DEFAULT_ORG_CHART_COUNTRY = 'global';
 const DEFAULT_ORG_CHART_FUNCTION_ROOT = 'fullcompany';
+const APOLLO_QUEUE_POLL_INTERVAL_MS = 5000;
+const APOLLO_QUEUE_MAX_ATTEMPTS = 24;
 
 const MULTI_SOURCE_SLUGS = [
   'unipile',
@@ -112,6 +114,9 @@ export const ArxOrgChartContainer = ({
   const [searchParams, setSearchParams] = useSearchParams();
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [showApolloFallbackModal, setShowApolloFallbackModal] = useState(false);
+  const [apolloQueuePollAttempts, setApolloQueuePollAttempts] = useState(0);
+  const [apolloQueuePollingTimedOut, setApolloQueuePollingTimedOut] =
+    useState(false);
   const [timelineMetrics, setTimelineMetrics] = useState<Record<
     string,
     unknown
@@ -336,6 +341,7 @@ export const ArxOrgChartContainer = ({
   const apolloTotalCount = classicOrgChartHook.apolloTotalCount;
   const apolloQueued = classicOrgChartHook.apolloQueued;
   const apolloQueueRequestId = classicOrgChartHook.apolloQueueRequestId;
+  const apolloQueuePollingKey = `${companyId}:${apolloQueueRequestId ?? ''}`;
 
   useEffect(() => {
     if (isJobMode || !orgChartEsTransportError) return;
@@ -462,18 +468,38 @@ export const ArxOrgChartContainer = ({
     (orgSource as Record<string, unknown>).is_blank_template === true;
 
   useEffect(() => {
-    if (!apolloQueued || isJobMode || !isBlankTemplate) {
+    if (!apolloQueued || isJobMode) {
+      setApolloQueuePollAttempts(0);
+      setApolloQueuePollingTimedOut(false);
+      return;
+    }
+    setApolloQueuePollAttempts(0);
+    setApolloQueuePollingTimedOut(false);
+  }, [apolloQueuePollingKey, apolloQueued, isJobMode]);
+
+  useEffect(() => {
+    if (!apolloQueued || isJobMode || apolloQueuePollingTimedOut) {
       return;
     }
 
     const interval = window.setInterval(() => {
-      void fetchOrgChart();
-    }, 5000);
+      setApolloQueuePollAttempts((currentAttempts) => {
+        const nextAttempts = currentAttempts + 1;
+
+        if (nextAttempts >= APOLLO_QUEUE_MAX_ATTEMPTS) {
+          setApolloQueuePollingTimedOut(true);
+          return nextAttempts;
+        }
+
+        void fetchOrgChart();
+        return nextAttempts;
+      });
+    }, APOLLO_QUEUE_POLL_INTERVAL_MS);
 
     return () => {
       window.clearInterval(interval);
     };
-  }, [apolloQueued, fetchOrgChart, isBlankTemplate, isJobMode]);
+  }, [apolloQueued, apolloQueuePollingTimedOut, fetchOrgChart, isJobMode]);
 
   const filterOptions = useOrgChartFilterOptions(orgData);
 
@@ -1202,6 +1228,20 @@ export const ArxOrgChartContainer = ({
                 apolloTotalCount,
                 isModalOpen: showApolloFallbackModal,
                 onCloseModal: () => setShowApolloFallbackModal(false),
+              }
+            : null
+        }
+        apolloQueueNotice={
+          !isJobMode && apolloQueued
+            ? {
+                isTimedOut: apolloQueuePollingTimedOut,
+                pollAttempts: apolloQueuePollAttempts,
+                maxAttempts: APOLLO_QUEUE_MAX_ATTEMPTS,
+                onRetry: () => {
+                  setApolloQueuePollAttempts(0);
+                  setApolloQueuePollingTimedOut(false);
+                  void fetchOrgChart();
+                },
               }
             : null
         }

@@ -1,18 +1,18 @@
 import { ReactNode, useMemo, useState } from 'react';
 
 import {
-  OrgChartDiagramProps,
-  OrgChartDiagramHandle,
-  OrgChartDiagram,
-  OrgChartSearchControls,
+    OrgChartDiagram,
+    OrgChartDiagramHandle,
+    OrgChartDiagramProps,
+    OrgChartSearchControls,
 } from 'twenty-orgchart';
 import { OrgChartNodeData } from 'twenty-shared';
 
 import { OrgChartAddToJobModal } from '../components/OrgChartAddToJobModal';
 import { OrgChartCompanyDrawer } from '../components/OrgChartCompanyDrawer';
 import {
-  OrgChartHeader,
-  OrgChartHeaderProps,
+    OrgChartHeader,
+    OrgChartHeaderProps,
 } from '../components/OrgChartHeader';
 import { OrgChartOutreachModal } from '../components/OrgChartOutreachModal';
 import { OrgChartResultModal } from '../components/OrgChartResultModal';
@@ -22,40 +22,40 @@ import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/Drop
 import { DropdownMenuSeparator } from '@/ui/layout/dropdown/components/DropdownMenuSeparator';
 import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
 import {
-  ConfirmationModal,
-  StyledCenteredButton,
+    ConfirmationModal,
+    StyledCenteredButton,
 } from '@/ui/layout/modal/components/ConfirmationModal';
 import { IconChevronDown, MenuItem } from 'twenty-ui';
 
 import {
-  StyledAsOfMonthInput,
-  StyledAsOfMonthLabel,
-  StyledAsOfMonthPicker,
-  StyledAsOfMonthSlider,
-  StyledAsOfMonthSliderContainer,
-  StyledAsOfMonthSliderDot,
-  StyledAsOfMonthSliderValue,
-  StyledContainer,
-  StyledDiagramArea,
-  StyledDiagramBody,
-  StyledErrorMessage,
-  StyledLeadershipBannerLink,
-  StyledLeadershipBannerPaidHighlight,
-  StyledLeadershipBannerPaidNote,
-  StyledLeadershipInfoBanner,
-  StyledLeadershipLoadingOverlay,
-  StyledLoadingMessage,
-  StyledPreviewBannerSignupButton,
-  StyledPreviewPersistentBanner,
-  StyledProgressBanner,
-  StyledSearchOverlay,
-  StyledSpinner,
-  StyledTemplateBanner,
-  StyledTemplateBannerButton,
-  StyledTopRightActionButton,
-  StyledTopRightActionsCenterGroup,
-  StyledTopRightActionsOverlay,
-  StyledTopRightActionsRightGroup,
+    StyledAsOfMonthInput,
+    StyledAsOfMonthLabel,
+    StyledAsOfMonthPicker,
+    StyledAsOfMonthSlider,
+    StyledAsOfMonthSliderContainer,
+    StyledAsOfMonthSliderDot,
+    StyledAsOfMonthSliderValue,
+    StyledContainer,
+    StyledDiagramArea,
+    StyledDiagramBody,
+    StyledErrorMessage,
+    StyledLeadershipBannerLink,
+    StyledLeadershipBannerPaidHighlight,
+    StyledLeadershipBannerPaidNote,
+    StyledLeadershipInfoBanner,
+    StyledLeadershipLoadingOverlay,
+    StyledLoadingMessage,
+    StyledPreviewBannerSignupButton,
+    StyledPreviewPersistentBanner,
+    StyledProgressBanner,
+    StyledSearchOverlay,
+    StyledSpinner,
+    StyledTemplateBanner,
+    StyledTemplateBannerButton,
+    StyledTopRightActionButton,
+    StyledTopRightActionsCenterGroup,
+    StyledTopRightActionsOverlay,
+    StyledTopRightActionsRightGroup,
 } from './ArxOrgChart.styles';
 
 type ArxOrgChartViewType = 'calendarView' | 'sliderView';
@@ -129,6 +129,12 @@ export type ArxOrgChartViewProps = {
     apolloTotalCount: number | null;
     isModalOpen: boolean;
     onCloseModal: () => void;
+  } | null;
+  apolloQueueNotice: {
+    isTimedOut: boolean;
+    pollAttempts: number;
+    maxAttempts: number;
+    onRetry: () => void;
   } | null;
   searchControlsProps: any;
   onTopRightLeadershipOrgChart: () => void;
@@ -220,6 +226,7 @@ export const ArxOrgChartView = ({
   leadershipLayerPreviewBanner,
   m7kqPreviewOrgChartBanner,
   apolloFallbackNotice,
+  apolloQueueNotice,
   searchControlsProps,
   onTopRightLeadershipOrgChart,
   pendingSearchConfirm,
@@ -531,6 +538,30 @@ export const ArxOrgChartView = ({
                     employees. Narrow your search with country/function filters
                     or use Leadership Org Chart for focused results.
                   </span>
+                </StyledLeadershipInfoBanner>
+              )}
+              {apolloQueueNotice && (
+                <StyledLeadershipInfoBanner>
+                  <span>
+                    {apolloQueueNotice.isTimedOut
+                      ? 'Apollo org chart is still processing. Auto-refresh paused to avoid polling forever.'
+                      : 'Apollo org chart is building in background. This view refreshes automatically when ready.'}
+                  </span>
+                  {apolloQueueNotice.isTimedOut ? (
+                    <StyledLeadershipBannerLink
+                      title="Retry now"
+                      variant="tertiary"
+                      accent="blue"
+                      size="small"
+                      type="button"
+                      onClick={apolloQueueNotice.onRetry}
+                    />
+                  ) : (
+                    <StyledLeadershipBannerPaidNote>
+                      Auto-refresh attempts: {apolloQueueNotice.pollAttempts}/
+                      {apolloQueueNotice.maxAttempts}
+                    </StyledLeadershipBannerPaidNote>
+                  )}
                 </StyledLeadershipInfoBanner>
               )}
               <StyledTopRightActionsOverlay>
