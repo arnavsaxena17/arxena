@@ -108,6 +108,52 @@ export class CreditTransactionService {
   }
 
   /**
+   * True if the workspace has any org_chart debit/access grant tied to the same
+   * S3 folder path as `orgChartS3RelativePath` (or matching legacy companyId metadata).
+   *
+   * Use this for workspace-shared org chart access where all members in the
+   * same workspace may read a chart created by one member.
+   */
+  async hasOrgChartS3AccessForWorkspace(
+    workspaceId: string,
+    orgChartS3RelativePath: string,
+    legacyCompanyIdMatch?: string,
+  ): Promise<boolean> {
+    const qb = this.creditTransactionRepository
+      .createQueryBuilder('t')
+      .where('t.workspaceId = :workspaceId', { workspaceId })
+      .andWhere('t.creditType = :ct', { ct: 'org_chart' })
+      .andWhere('t.type = :type', { type: 'debit' })
+      .andWhere(
+        new Brackets((sub) => {
+          sub.where(`t.metadata->>'orgChartS3RelativePath' = :path`, {
+            path: orgChartS3RelativePath,
+          });
+          if (legacyCompanyIdMatch?.trim()) {
+            const legacy = legacyCompanyIdMatch.trim().toLowerCase();
+
+            sub.orWhere(
+              new Brackets((inner) => {
+                inner
+                  .where(
+                    `(COALESCE(t.metadata->>'orgChartS3RelativePath', '') = '')`,
+                  )
+                  .andWhere(
+                    `LOWER(TRIM(COALESCE(t.metadata->>'companyId',''))) = :legacy`,
+                    { legacy },
+                  );
+              }),
+            );
+          }
+        }),
+      );
+
+    const found = await qb.getOne();
+
+    return !!found;
+  }
+
+  /**
    * Records org chart S3 access when billing is off (no credit debit). Same row shape as debit
    * metadata so hasOrgChartS3AccessForMember can authorize loads from shared S3 paths.
    */

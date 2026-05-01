@@ -369,6 +369,30 @@ export class OrgChartService {
     const hasAuthToken =
       typeof authToken === 'string' && authToken.trim() !== '';
     const authTokenString = hasAuthToken ? (authToken as string) : undefined;
+    const persistKeyForS3 = this.orgChartS3Service.persistedCompanyFolderKey(
+      companyId,
+      options.companyName?.trim() || companyId,
+    );
+    const orgChartS3RelativePath =
+      this.orgChartS3Service.buildRelativeFolderPathFromPersistedKey(
+        persistKeyForS3,
+      );
+    let workspaceHasOrgChartAccess = false;
+
+    if (authTokenString) {
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(
+        authTokenString,
+      );
+
+      if (workspaceId) {
+        workspaceHasOrgChartAccess =
+          await this.creditTransactionService.hasOrgChartS3AccessForWorkspace(
+            workspaceId,
+            orgChartS3RelativePath,
+            persistKeyForS3,
+          );
+      }
+    }
 
     const cacheKey = this.buildCompanyOrgChartCacheKey(
       options.companyName,
@@ -380,8 +404,8 @@ export class OrgChartService {
       itemCount?: number;
     }>(cacheKey);
 
-    // Authenticated users should prefer Redis/S3 over ES preview templates.
-    if (hasAuthToken && cachedOrgChartPayload?.orgChart) {
+    // Authenticated users should only read workspace-authorized cached org charts.
+    if (hasAuthToken && workspaceHasOrgChartAccess && cachedOrgChartPayload?.orgChart) {
       return {
         data: normalizeOrgChartPayload(cachedOrgChartPayload.orgChart),
         ...(orgChartEsTransportError
@@ -390,40 +414,11 @@ export class OrgChartService {
       };
     }
 
-    // Redis miss: try S3 only if this workspace member has a credit transaction for this path.
-    const persistKeyForS3 = this.orgChartS3Service.persistedCompanyFolderKey(
-      companyId,
-      options.companyName?.trim() || companyId,
-    );
-    const orgChartS3RelativePath =
-      this.orgChartS3Service.buildRelativeFolderPathFromPersistedKey(
-        persistKeyForS3,
-      );
+    // Redis miss: try S3 only if this workspace has access for this path.
     let s3OrgChart: OrgChartData | null = null;
 
-    if (authTokenString) {
-      const workspaceId =
-        await this.workspaceQueryService.getWorkspaceIdFromToken(
-          authTokenString,
-        );
-      const workspaceMemberId =
-        await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
-          authTokenString,
-        );
-
-      if (workspaceId && workspaceMemberId) {
-        const canReadS3 =
-          await this.creditTransactionService.hasOrgChartS3AccessForMember(
-            workspaceId,
-            workspaceMemberId,
-            orgChartS3RelativePath,
-            persistKeyForS3,
-          );
-
-        if (canReadS3) {
-          s3OrgChart = await this.orgChartS3Service.getOrgChart(companyId);
-        }
-      }
+    if (workspaceHasOrgChartAccess) {
+      s3OrgChart = await this.orgChartS3Service.getOrgChart(companyId);
     }
 
     if (hasAuthToken && s3OrgChart) {
@@ -439,9 +434,10 @@ export class OrgChartService {
       };
     }
 
-    // Unauthenticated (or no cached chart for authed) path: allow ES as the primary source
-    // unless we are explicitly told to serve cached only.
-    if (!options.serveCachedOnly) {
+    // Authenticated users are workspace-scoped: don't return shared ES docs unless this
+    // workspace already has org-chart access. This prevents cross-workspace leakage.
+    const canReadFromEs = !hasAuthToken || workspaceHasOrgChartAccess;
+    if (!options.serveCachedOnly && canReadFromEs) {
       const esOutcome = await this.orgChartEsService.getOrgChartByCompanyId(
         companyId,
         options,
@@ -456,9 +452,11 @@ export class OrgChartService {
       }
     }
 
-    // For authenticated users, allow a Redis hit even if ES misses (and for safety, keep this
-    // check for unauth as well in case a chart is cached by other flows).
-    if (cachedOrgChartPayload?.orgChart) {
+    // For authenticated users, keep Redis fallback workspace-scoped.
+    if (
+      cachedOrgChartPayload?.orgChart &&
+      (!hasAuthToken || workspaceHasOrgChartAccess)
+    ) {
       return {
         data: normalizeOrgChartPayload(cachedOrgChartPayload.orgChart),
         ...(orgChartEsTransportError

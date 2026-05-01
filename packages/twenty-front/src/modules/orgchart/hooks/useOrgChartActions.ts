@@ -295,6 +295,69 @@ const clearCompanyOrgChartCacheRequest = async (input: {
   }
 };
 
+const rebuildCompanyOrgChartFromSavedPeopleRequest = async (input: {
+  baseUrl: string;
+  accessToken: string;
+  companyId: string;
+  companyName?: string;
+  industry?: string;
+  industryCategory?: string;
+}): Promise<{
+  itemCount?: number;
+  orgChart?: Record<string, unknown>;
+  candidateSource?: string;
+}> => {
+  const normalizedBaseUrl = input.baseUrl.replace(/\/$/, '');
+  const res = await fetch(
+    `${normalizedBaseUrl}/org-chart/company-cache/rebuild-using-saved-people`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        authorization: `Bearer ${input.accessToken}`,
+      },
+      body: JSON.stringify({
+        companyId: input.companyId,
+        companyName: input.companyName,
+        industry: input.industry,
+        industryCategory: input.industryCategory,
+      }),
+    },
+  );
+  let json:
+    | {
+        message?: string;
+        status?: string;
+        itemCount?: number;
+        orgChart?: Record<string, unknown>;
+        candidateSource?: string;
+      }
+    | undefined;
+  try {
+    json = (await res.json()) as {
+      message?: string;
+      status?: string;
+      itemCount?: number;
+      orgChart?: Record<string, unknown>;
+      candidateSource?: string;
+    };
+  } catch {
+    // non-JSON error body
+  }
+  if (!res.ok) {
+    const msg =
+      typeof json?.message === 'string' && json.message.trim()
+        ? json.message
+        : `Request failed (${res.status})`;
+    throw new Error(msg);
+  }
+  return {
+    itemCount: json?.itemCount,
+    orgChart: json?.orgChart,
+    candidateSource: json?.candidateSource,
+  };
+};
+
 export const useOrgChartActions = ({
   companyId,
   companyName,
@@ -1022,6 +1085,8 @@ export const useOrgChartActions = ({
     businessDivisionRawQuery?: string;
     multiSource?: boolean;
     sources?: string[];
+    candidateSourceOverride?: string;
+    includeOrgIntelligenceOverride?: boolean;
   }) => {
     if (!companyId) return;
 
@@ -1036,10 +1101,16 @@ export const useOrgChartActions = ({
       return;
     }
 
+    const effectiveCandidateSource =
+      typeof params.candidateSourceOverride === 'string' &&
+      params.candidateSourceOverride.trim().length > 0
+        ? params.candidateSourceOverride.trim()
+        : orgChartLinkedinCandidateSource;
+
     let prereqStatus = await fetchLinkedinDataSourcesStatus();
     if (
       prereqStatus !== null &&
-      orgChartLinkedinCandidateSource === 'unipile' &&
+      effectiveCandidateSource === 'unipile' &&
       prereqStatus.linkedinUnipileConnected !== true
     ) {
       await tryExtensionLinkedinUnipileRecovery({
@@ -1049,7 +1120,7 @@ export const useOrgChartActions = ({
       prereqStatus = await fetchLinkedinDataSourcesStatus();
     }
     if (prereqStatus !== null) {
-      if (orgChartLinkedinCandidateSource === 'apify') {
+      if (effectiveCandidateSource === 'apify') {
         if (prereqStatus.apifyActorConfigured !== true) {
           enqueueSnackBar(APIFY_SOURCE_UNAVAILABLE_SNACKBAR, {
             variant: SnackBarVariant.Error,
@@ -1057,7 +1128,7 @@ export const useOrgChartActions = ({
           });
           return;
         }
-      } else if (orgChartLinkedinCandidateSource === 'linkedin_xray') {
+      } else if (effectiveCandidateSource === 'linkedin_xray') {
         if (prereqStatus.linkedinXrayConfigured !== true) {
           enqueueSnackBar(LINKEDIN_XRAY_SOURCE_UNAVAILABLE_SNACKBAR, {
             variant: SnackBarVariant.Error,
@@ -1066,7 +1137,7 @@ export const useOrgChartActions = ({
           return;
         }
       } else if (
-        orgChartLinkedinCandidateSource === ORG_CHART_CANDIDATE_SOURCE_M7KQ
+        effectiveCandidateSource === ORG_CHART_CANDIDATE_SOURCE_M7KQ
       ) {
         if (prereqStatus.m7kqDirectoryApiReady !== true) {
           enqueueSnackBar(
@@ -1111,7 +1182,7 @@ export const useOrgChartActions = ({
     }
 
     if (
-      orgChartLinkedinCandidateSource === 'apify' &&
+      effectiveCandidateSource === 'apify' &&
       mode !== 'entire_company'
     ) {
       enqueueSnackBar(APIFY_MODE_UNSUPPORTED_SNACKBAR, {
@@ -1122,7 +1193,7 @@ export const useOrgChartActions = ({
     }
 
     if (
-      orgChartLinkedinCandidateSource === ORG_CHART_CANDIDATE_SOURCE_M7KQ &&
+      effectiveCandidateSource === ORG_CHART_CANDIDATE_SOURCE_M7KQ &&
       mode === 'business_division_map'
     ) {
       enqueueSnackBar(
@@ -1279,7 +1350,7 @@ export const useOrgChartActions = ({
     const requirement = `${baseRequirement}${titlesRequirement}${filtersRequirement}${businessDivisionRequirementSuffix}`;
 
     const trimmedLinkedinCompanyUrl = linkedinCompanyUrl?.trim();
-    const useUnipileSource = orgChartLinkedinCandidateSource === 'unipile';
+    const useUnipileSource = effectiveCandidateSource === 'unipile';
     const companyDomain = extractCompanyDomainFromWebsite(website);
     const trimmedIndustry =
       typeof industry === 'string' && industry.trim().length > 0
@@ -1294,8 +1365,10 @@ export const useOrgChartActions = ({
         ? asOfMonth.trim()
         : undefined;
     const shouldIncludeOrgIntelligence =
-      typeof includeOrgIntelligence === 'string' &&
-      includeOrgIntelligence.trim().toLowerCase() === 'true';
+      typeof params.includeOrgIntelligenceOverride === 'boolean'
+        ? params.includeOrgIntelligenceOverride
+        : typeof includeOrgIntelligence === 'string' &&
+          includeOrgIntelligence.trim().toLowerCase() === 'true';
     const body = {
       rawQuery: requirement,
       cleanedQuery: requirement,
@@ -1309,7 +1382,7 @@ export const useOrgChartActions = ({
       ...(mode !== 'current_node' && mode !== 'selected_nodes'
         ? { functionRoot: params.functionRoot }
         : {}),
-      candidateSource: orgChartLinkedinCandidateSource,
+      candidateSource: effectiveCandidateSource,
       ...(trimmedIndustry ? { industry: trimmedIndustry } : {}),
       ...(trimmedIndustryCategory
         ? { industryCategory: trimmedIndustryCategory }
@@ -1972,6 +2045,8 @@ export const useOrgChartActions = ({
       leadership: 'leadership',
       entire_company: 'entire_company',
       delete_company_cache: 'entire_company',
+      rebuild_orgchart_using_saved_people: 'entire_company',
+      reload_apify_org_intelligence: 'entire_company',
       function_grade: 'function_grade',
       business_division_map: 'business_division_map',
       selected_nodes: 'selected_nodes',
@@ -2001,6 +2076,85 @@ export const useOrgChartActions = ({
   const handleBackgroundContextAction = async (
     action: OrgChartContextAction,
   ) => {
+    if (action === 'reload_apify_org_intelligence') {
+      await executeOrgchartSearch({
+        mode: 'entire_company',
+        origin: 'background',
+        candidateSourceOverride: 'apify',
+        includeOrgIntelligenceOverride: true,
+      });
+      return;
+    }
+
+    if (action === 'rebuild_orgchart_using_saved_people') {
+      if (!companyId) {
+        enqueueSnackBar('No company selected.', {
+          variant: SnackBarVariant.Warning,
+          duration: 5000,
+        });
+        return;
+      }
+      const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+      if (!baseUrl.trim()) {
+        enqueueSnackBar('Server URL is not configured.', {
+          variant: SnackBarVariant.Error,
+          duration: 6000,
+        });
+        return;
+      }
+      if (!accessToken) {
+        enqueueSnackBar('Sign in to rebuild org chart.', {
+          variant: SnackBarVariant.Error,
+          duration: 6000,
+        });
+        return;
+      }
+      const label = companyName?.trim() || companyId;
+      try {
+        enqueueSnackBar(`Rebuilding org chart from saved people for ${label}...`, {
+          variant: SnackBarVariant.Info,
+          dedupeKey: `orgchart-rebuild-saved-people-${companyId}`,
+          showProgressBar: true,
+        });
+        const rebuilt = await rebuildCompanyOrgChartFromSavedPeopleRequest({
+          baseUrl,
+          accessToken,
+          companyId,
+          companyName: companyName ?? undefined,
+          industry,
+          industryCategory,
+        });
+        if (rebuilt.orgChart && typeof rebuilt.orgChart === 'object') {
+          const nextOrgChart: Record<string, unknown> = { ...rebuilt.orgChart };
+          if (typeof rebuilt.candidateSource === 'string') {
+            nextOrgChart.candidateSource = rebuilt.candidateSource;
+          }
+          if (typeof rebuilt.itemCount === 'number') {
+            nextOrgChart.itemCount = rebuilt.itemCount;
+          }
+          setLatestOrgChart(nextOrgChart);
+        } else {
+          setLatestOrgChart(null);
+        }
+        closeSnackBarByDedupeKey(`orgchart-rebuild-saved-people-${companyId}`);
+        enqueueSnackBar(
+          `Rebuilt org chart for ${label}${typeof rebuilt.itemCount === 'number' ? ` (${rebuilt.itemCount} people)` : ''}`,
+          {
+            variant: SnackBarVariant.Success,
+            duration: 5000,
+            dedupeKey: `orgchart-rebuild-saved-people-${companyId}-done`,
+          },
+        );
+      } catch (error) {
+        closeSnackBarByDedupeKey(`orgchart-rebuild-saved-people-${companyId}`);
+        enqueueSnackBar(
+          error instanceof Error ? error.message : 'Failed to rebuild org chart',
+          { variant: SnackBarVariant.Error, duration: 8000 },
+        );
+      }
+      return;
+    }
+
     if (action === 'delete_company_cache') {
       if (!companyId) {
         enqueueSnackBar('No company selected.', {

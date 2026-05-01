@@ -5,6 +5,8 @@ export type OrgChartContextAction =
   | 'leadership'
   | 'entire_company'
   | 'delete_company_cache'
+  | 'rebuild_orgchart_using_saved_people'
+  | 'reload_apify_org_intelligence'
   | 'function_grade'
   | 'business_division_map'
   | 'selected_nodes'

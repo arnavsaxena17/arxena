@@ -48,7 +48,11 @@ import { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-cha
 import { dedupeAndMergeOrgChartCandidates } from 'src/engine/core-modules/org-chart/utils/orgchart-candidate-dedupe.util';
 import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import { filterOrgChartCandidatesByNodeStdLabels } from 'src/engine/core-modules/org-chart/utils/orgchart-node-scope-filter.util';
-import { normalizeCountry } from 'src/engine/core-modules/org-chart/utils/orgchart-normalization.util';
+import {
+    normalizeCompanyId,
+    normalizeCompanyName,
+    normalizeCountry,
+} from 'src/engine/core-modules/org-chart/utils/orgchart-normalization.util';
 import { TheOfficialBoardService } from 'src/engine/core-modules/theofficialboard/services/theofficialboard.service';
 import { TheOfficialBoardCandidate } from 'src/engine/core-modules/theofficialboard/types/theofficialboard.types';
 import { TheOrgService } from 'src/engine/core-modules/theorg/services/theorg.service';
@@ -69,6 +73,7 @@ type OrgChartBuildCandidateRow =
   | Record<string, unknown>;
 
 type OrgchartSearchType = 'classic' | 'sales_navigator' | 'recruiter';
+const APIFY_ORG_INTELLIGENCE_SOURCE_TAG = 'apify-org-intelligence';
 
 type SearchOrgchartLinkedInBody = {
   rawQuery: string;
@@ -159,6 +164,128 @@ export class OrgChartLinkedInBuildService {
     @InjectMessageQueue(MessageQueue.orgchartApifyQueue)
     private readonly orgchartApifyQueue: MessageQueueService,
   ) {}
+
+  async rebuildOrgChartUsingSavedPeople(input: {
+    apiToken: string;
+    companyId?: string;
+    companyName?: string;
+    industry?: string;
+    industryCategory?: string;
+  }): Promise<{
+    success: true;
+    companyName: string;
+    companyId: string;
+    itemCount: number;
+    items: Record<string, unknown>[];
+    orgChart: OrgChartData;
+    candidateSource: 'saved_people';
+  }> {
+    const resolvedCompanyName = normalizeCompanyName(input.companyName);
+    const resolvedCompanyId = normalizeCompanyId(
+      input.companyId,
+      resolvedCompanyName,
+    );
+
+    const cachedCandidateList =
+      await this.orgChartCacheService.getCachedCompanyCandidateList({
+        companyName: resolvedCompanyName,
+        companyId: resolvedCompanyId,
+        mode: 'entire_company',
+        searchType: 'classic',
+      });
+
+    let savedItems = Array.isArray(cachedCandidateList?.items)
+      ? (cachedCandidateList?.items as Record<string, unknown>[])
+      : [];
+
+    if (savedItems.length === 0) {
+      const s3PersistKey = this.orgChartS3Service.persistedCompanyFolderKey(
+        resolvedCompanyId,
+        resolvedCompanyName || resolvedCompanyId,
+      );
+      const s3Candidates = await this.orgChartS3Service.getCandidates(s3PersistKey);
+      savedItems = Array.isArray(s3Candidates)
+        ? (s3Candidates as Record<string, unknown>[])
+        : [];
+    }
+
+    if (savedItems.length === 0) {
+      throw new HttpException(
+        'No saved people found for this company. Generate a full org chart first.',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    await this.orgChartCacheService.invalidateEntireCompanyClassicCaches({
+      companyName: resolvedCompanyName,
+      companyId: resolvedCompanyId,
+    });
+    const s3CompanyId = this.orgChartS3Service.persistedCompanyFolderKey(
+      resolvedCompanyId,
+      resolvedCompanyName || resolvedCompanyId,
+    );
+    await this.orgChartS3Service.deletePersistedCompanyFolder(s3CompanyId);
+
+    const orgChart =
+      await this.orgChartSearchService.buildOrgChartFromLinkedInCompanyCandidates(
+        savedItems as OrgChartBuildCandidateRow[],
+        {
+          companyName: resolvedCompanyName || resolvedCompanyId,
+          companyId: resolvedCompanyId,
+          mode: 'entire_company',
+          industry: input.industry,
+          industryCategory: input.industryCategory,
+        },
+      );
+
+    await this.orgChartCacheService.setCachedCompanyCandidateList({
+      companyName: resolvedCompanyName,
+      companyId: resolvedCompanyId,
+      mode: 'entire_company',
+      searchType: 'classic',
+      items: savedItems,
+      itemCount: savedItems.length,
+    });
+    await this.orgChartCacheService.setCachedCompanyOrgChart({
+      companyName: resolvedCompanyName,
+      companyId: resolvedCompanyId,
+      mode: 'entire_company',
+      searchType: 'classic',
+      orgChart,
+      items: savedItems,
+      itemCount: savedItems.length,
+      creditsDebited: true,
+    });
+    await Promise.all([
+      this.orgChartS3Service.saveOrgChart(s3CompanyId, orgChart),
+      this.orgChartS3Service.saveCandidates(s3CompanyId, savedItems),
+    ]);
+
+    const creditMetaForRow = await this.buildOrgChartCreditMetadata(
+      input.apiToken,
+      resolvedCompanyId,
+      resolvedCompanyName,
+    );
+    await this.orgChartRecordWorkspaceService.tryPersistOrgChartRecord({
+      apiToken: input.apiToken,
+      mode: 'entire_company',
+      searchType: 'classic',
+      resolvedCompanyName: resolvedCompanyName || resolvedCompanyId,
+      companyId: resolvedCompanyId,
+      itemCount: savedItems.length,
+      orgChartS3RelativePath: creditMetaForRow.orgChartS3RelativePath,
+    });
+
+    return {
+      success: true,
+      companyName: resolvedCompanyName || resolvedCompanyId,
+      companyId: resolvedCompanyId,
+      itemCount: savedItems.length,
+      items: savedItems,
+      orgChart,
+      candidateSource: 'saved_people',
+    };
+  }
 
   private contactOutProfilesToCandidates(
     profiles: Array<{
@@ -1505,6 +1632,7 @@ export class OrgChartLinkedInBuildService {
     apiToken: string | undefined,
     companyId: string | undefined,
     resolvedCompanyName: string,
+    s3Variant?: string,
   ): Promise<{
     companyName?: string;
     companyId?: string;
@@ -1518,6 +1646,7 @@ export class OrgChartLinkedInBuildService {
     const orgChartS3RelativePath =
       this.orgChartS3Service.buildRelativeFolderPathFromPersistedKey(
         persistKey,
+        s3Variant,
       );
     const workspaceMemberId = apiToken
       ? ((await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
@@ -2181,15 +2310,14 @@ export class OrgChartLinkedInBuildService {
       );
       let canLoadS3 = false;
 
-      if (creditMetaS3.workspaceMemberId && apiToken) {
+      if (apiToken) {
         const workspaceIdS3 =
           await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
 
         if (workspaceIdS3) {
           canLoadS3 =
-            await this.creditTransactionService.hasOrgChartS3AccessForMember(
+            await this.creditTransactionService.hasOrgChartS3AccessForWorkspace(
               workspaceIdS3,
-              creditMetaS3.workspaceMemberId,
               creditMetaS3.orgChartS3RelativePath,
               s3PersistKey,
             );
@@ -2198,7 +2326,7 @@ export class OrgChartLinkedInBuildService {
 
       if (!canLoadS3) {
         this.logger.log(
-          `Skipping S3 org chart for company="${resolvedCompanyName}" (no credit transaction access for this member/path)`,
+          `Skipping S3 org chart for company="${resolvedCompanyName}" (no credit transaction access for this workspace/path)`,
         );
       }
 
@@ -3744,12 +3872,14 @@ export class OrgChartLinkedInBuildService {
     }
 
     const cacheListMode = 'entire_company' as const;
+    const sourceTag = APIFY_ORG_INTELLIGENCE_SOURCE_TAG;
 
     await this.orgChartCacheService.setCachedCompanyCandidateList({
       companyName: resolvedCompanyName,
       companyId,
       mode: cacheListMode,
       searchType,
+      sourceTag,
       items: result.items,
       itemCount: result.itemCount,
     });
@@ -3833,6 +3963,7 @@ export class OrgChartLinkedInBuildService {
             companyId,
             mode: 'entire_company',
             searchType,
+            sourceTag,
             orgChart,
             items: result.items,
             itemCount: result.itemCount,
@@ -3868,6 +3999,7 @@ export class OrgChartLinkedInBuildService {
         apiToken,
         companyId,
         resolvedCompanyName,
+        sourceTag,
       );
 
       await this.workspaceCreditsService.debitOrgChartCredits(
@@ -3895,6 +4027,7 @@ export class OrgChartLinkedInBuildService {
         companyId,
         mode: 'entire_company',
         searchType,
+        sourceTag,
         orgChart,
         items: result.items,
         itemCount: result.itemCount,
@@ -3907,14 +4040,19 @@ export class OrgChartLinkedInBuildService {
       );
 
       await Promise.all([
-        this.orgChartS3Service.saveOrgChart(s3CompanyId, orgChart),
-        this.orgChartS3Service.saveCandidates(s3CompanyId, result.items),
+        this.orgChartS3Service.saveOrgChart(s3CompanyId, orgChart, sourceTag),
+        this.orgChartS3Service.saveCandidates(
+          s3CompanyId,
+          result.items,
+          sourceTag,
+        ),
       ]);
 
       const creditMetaForRowApify = await this.buildOrgChartCreditMetadata(
         apiToken,
         companyId,
         resolvedCompanyName,
+        sourceTag,
       );
 
       await this.orgChartRecordWorkspaceService.tryPersistOrgChartRecord({
@@ -3937,6 +4075,7 @@ export class OrgChartLinkedInBuildService {
           apiToken,
           companyId,
           resolvedCompanyName,
+          sourceTag,
         );
 
         if (workspaceIdForGrant && creditMetaGrant.workspaceMemberId) {

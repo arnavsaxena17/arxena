@@ -15,6 +15,7 @@ export function buildCompanyOrgChartLogicalCacheKey(
   companyId: string | undefined,
   mode: 'entire_company',
   searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  sourceTag?: string,
 ): string {
   const normalizedCompanyName = normalizeCompanyName(companyName);
   const normalizedCompanyId = normalizeCompanyId(
@@ -22,11 +23,17 @@ export function buildCompanyOrgChartLogicalCacheKey(
     normalizedCompanyName,
   );
 
+  const normalizedSourceTag =
+    typeof sourceTag === 'string'
+      ? sourceTag.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_')
+      : '';
+
   return [
     ORG_CHART_COMPANY_CACHE_KEY_PREFIX,
     normalizedCompanyId,
     mode,
     searchType,
+    normalizedSourceTag || 'default',
   ].join(':');
 }
 
@@ -35,6 +42,7 @@ export function buildCompanyOrgChartCandidateListLogicalCacheKey(
   companyId: string | undefined,
   mode: 'entire_company',
   searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  sourceTag?: string,
 ): string {
   const normalizedCompanyName = normalizeCompanyName(companyName);
   const normalizedCompanyId = normalizeCompanyId(
@@ -42,11 +50,17 @@ export function buildCompanyOrgChartCandidateListLogicalCacheKey(
     normalizedCompanyName,
   );
 
+  const normalizedSourceTag =
+    typeof sourceTag === 'string'
+      ? sourceTag.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_')
+      : '';
+
   return [
     ORG_CHART_COMPANY_CANDIDATE_LIST_CACHE_KEY_PREFIX,
     normalizedCompanyId,
     mode,
     searchType,
+    normalizedSourceTag || 'default',
   ].join(':');
 }
 

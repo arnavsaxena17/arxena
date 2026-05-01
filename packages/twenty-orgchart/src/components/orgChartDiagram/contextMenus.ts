@@ -1,14 +1,14 @@
 import * as go from 'gojs';
 import {
-    orgChartFirstSlotWithEmail,
-    orgChartFirstSlotWithLinkedin,
-    orgChartFirstSlotWithPhone,
-    orgChartFirstSlotWithPhoneAndEmail,
-    orgChartNodeHasGoogleContactFields,
-    orgChartNodeHasOutreachEmail,
-    orgChartNodeHasOutreachLinkedin,
-    orgChartNodeHasOutreachPhone,
-    type OrgChartNodeData,
+  orgChartFirstSlotWithEmail,
+  orgChartFirstSlotWithLinkedin,
+  orgChartFirstSlotWithPhone,
+  orgChartFirstSlotWithPhoneAndEmail,
+  orgChartNodeHasGoogleContactFields,
+  orgChartNodeHasOutreachEmail,
+  orgChartNodeHasOutreachLinkedin,
+  orgChartNodeHasOutreachPhone,
+  type OrgChartNodeData,
 } from 'twenty-shared';
 
 import type { OrgChartDiagramProps } from '../OrgChartDiagram.types';
@@ -487,6 +487,21 @@ export const buildOrgChartBackgroundContextMenu = (
         'ContextMenuButton',
         orgChartContextItemText($, 'Delete saved org chart cache'),
         { click: () => onBackgroundContextAction('delete_company_cache') },
+      ),
+      $(
+        'ContextMenuButton',
+        orgChartContextItemText($, 'Rebuild Org Chart Using Saved People'),
+        {
+          click: () =>
+            onBackgroundContextAction('rebuild_orgchart_using_saved_people'),
+        },
+      ),
+      $(
+        'ContextMenuButton',
+        orgChartContextItemText($, 'Reload Org Intelligence'),
+        {
+          click: () => onBackgroundContextAction('reload_apify_org_intelligence'),
+        },
       ),
     ),
   );

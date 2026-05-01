@@ -65,6 +65,7 @@ import { PythonOrgChartService } from './python-org-chart.service';
 
 type OrgChartBuildCandidateRow = TransformedCandidateForTable | Record<string, unknown>;
 type OrgchartSearchType = 'classic' | 'sales_navigator' | 'recruiter';
+const APIFY_ORG_INTELLIGENCE_SOURCE_TAG = 'apify-org-intelligence';
 type SearchOrgchartLinkedInBody = {
   rawQuery: string;
   cleanedQuery: string;
@@ -1490,6 +1491,7 @@ export class OrgChartBuildService {
     apiToken: string | undefined,
     companyId: string | undefined,
     resolvedCompanyName: string,
+    s3Variant?: string,
   ): Promise<{
     companyName?: string;
     companyId?: string;
@@ -1503,6 +1505,7 @@ export class OrgChartBuildService {
     const orgChartS3RelativePath =
       this.orgChartS3Service.buildRelativeFolderPathFromPersistedKey(
         persistKey,
+        s3Variant,
       );
     const workspaceMemberId = apiToken
       ? ((await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
@@ -2150,15 +2153,14 @@ export class OrgChartBuildService {
       );
       let canLoadS3 = false;
 
-      if (creditMetaS3.workspaceMemberId && apiToken) {
+      if (apiToken) {
         const workspaceIdS3 =
           await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
 
         if (workspaceIdS3) {
           canLoadS3 =
-            await this.creditTransactionService.hasOrgChartS3AccessForMember(
+            await this.creditTransactionService.hasOrgChartS3AccessForWorkspace(
               workspaceIdS3,
-              creditMetaS3.workspaceMemberId,
               creditMetaS3.orgChartS3RelativePath,
               s3PersistKey,
             );
@@ -2167,7 +2169,7 @@ export class OrgChartBuildService {
 
       if (!canLoadS3) {
         this.logger.log(
-          `Skipping S3 org chart for company="${resolvedCompanyName}" (no credit transaction access for this member/path)`,
+          `Skipping S3 org chart for company="${resolvedCompanyName}" (no credit transaction access for this workspace/path)`,
         );
       }
 
@@ -3671,12 +3673,14 @@ export class OrgChartBuildService {
     }
 
     const cacheListMode = 'entire_company' as const;
+    const sourceTag = APIFY_ORG_INTELLIGENCE_SOURCE_TAG;
 
     await this.orgChartCacheService.setCachedCompanyCandidateList({
       companyName: resolvedCompanyName,
       companyId,
       mode: cacheListMode,
       searchType,
+      sourceTag,
       items: result.items,
       itemCount: result.itemCount,
     });
@@ -3760,6 +3764,7 @@ export class OrgChartBuildService {
             companyId,
             mode: 'entire_company',
             searchType,
+            sourceTag,
             orgChart,
             items: result.items,
             itemCount: result.itemCount,
@@ -3789,6 +3794,7 @@ export class OrgChartBuildService {
         apiToken,
         companyId,
         resolvedCompanyName,
+        sourceTag,
       );
 
       await this.workspaceCreditsService.debitOrgChartCredits(
@@ -3816,6 +3822,7 @@ export class OrgChartBuildService {
         companyId,
         mode: 'entire_company',
         searchType,
+        sourceTag,
         orgChart,
         items: result.items,
         itemCount: result.itemCount,
@@ -3828,14 +3835,19 @@ export class OrgChartBuildService {
       );
 
       await Promise.all([
-        this.orgChartS3Service.saveOrgChart(s3CompanyId, orgChart),
-        this.orgChartS3Service.saveCandidates(s3CompanyId, result.items),
+        this.orgChartS3Service.saveOrgChart(s3CompanyId, orgChart, sourceTag),
+        this.orgChartS3Service.saveCandidates(
+          s3CompanyId,
+          result.items,
+          sourceTag,
+        ),
       ]);
 
       const creditMetaForRowApify = await this.buildOrgChartCreditMetadata(
         apiToken,
         companyId,
         resolvedCompanyName,
+        sourceTag,
       );
 
       await this.orgChartRecordWorkspaceService.tryPersistOrgChartRecord({
@@ -3858,6 +3870,7 @@ export class OrgChartBuildService {
           apiToken,
           companyId,
           resolvedCompanyName,
+          sourceTag,
         );
 
         if (workspaceIdForGrant && creditMetaGrant.workspaceMemberId) {

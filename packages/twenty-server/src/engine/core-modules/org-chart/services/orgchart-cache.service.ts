@@ -74,12 +74,14 @@ export class OrgChartCacheService {
     companyId?: string;
     mode: 'entire_company';
     searchType: 'classic' | 'sales_navigator' | 'recruiter';
+    sourceTag?: string;
   }): Promise<CachedCompanyOrgChartPayload | undefined> {
     const cacheKey = buildCompanyOrgChartLogicalCacheKey(
       input.companyName,
       input.companyId,
       input.mode,
       input.searchType,
+      input.sourceTag,
     );
 
     const cached =
@@ -106,12 +108,14 @@ export class OrgChartCacheService {
     companyId?: string;
     mode: 'entire_company';
     searchType: 'classic' | 'sales_navigator' | 'recruiter';
+    sourceTag?: string;
   }): Promise<CachedCompanyCandidateListPayload | undefined> {
     const cacheKey = buildCompanyOrgChartCandidateListLogicalCacheKey(
       input.companyName,
       input.companyId,
       input.mode,
       input.searchType,
+      input.sourceTag,
     );
 
     const cached =
@@ -152,6 +156,7 @@ export class OrgChartCacheService {
     companyId?: string;
     mode: 'entire_company';
     searchType: 'classic' | 'sales_navigator' | 'recruiter';
+    sourceTag?: string;
     orgChart: OrgChartData;
     items: any[];
     itemCount: number;
@@ -168,6 +173,7 @@ export class OrgChartCacheService {
       normalizedCompanyId,
       input.mode,
       input.searchType,
+      input.sourceTag,
     );
 
     const payload: CachedCompanyOrgChartPayload = {
@@ -241,6 +247,7 @@ export class OrgChartCacheService {
     companyId?: string;
     mode: 'entire_company';
     searchType: 'classic' | 'sales_navigator' | 'recruiter';
+    sourceTag?: string;
     items: any[];
     itemCount: number;
   }): Promise<void> {
@@ -254,6 +261,7 @@ export class OrgChartCacheService {
       normalizedCompanyId,
       input.mode,
       input.searchType,
+      input.sourceTag,
     );
 
     const payload: CachedCompanyCandidateListPayload = {

@@ -1,16 +1,16 @@
 import {
-  Body,
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  Logger,
-  Param,
-  Post,
-  Query,
-  Req,
-  Res,
-  UseGuards,
+    Body,
+    Controller,
+    Get,
+    HttpException,
+    HttpStatus,
+    Logger,
+    Param,
+    Post,
+    Query,
+    Req,
+    Res,
+    UseGuards,
 } from '@nestjs/common';
 
 import { Request, Response } from 'express';
@@ -28,10 +28,10 @@ import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/typ
 import { ApolloIoRestService } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
 import {
-  ClassicPeopleSearchStrategyResult,
-  GeneratedSearchParameters,
-  RecruiterPeopleSearchStrategyResult,
-  SalesNavigatorPeopleSearchStrategyResult,
+    ClassicPeopleSearchStrategyResult,
+    GeneratedSearchParameters,
+    RecruiterPeopleSearchStrategyResult,
+    SalesNavigatorPeopleSearchStrategyResult,
 } from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
 import { constructSearchParamKey } from 'src/engine/core-modules/candidate-search/utils/search-parameter.utils';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -56,14 +56,14 @@ import { resolveFirstAutocompleteSource } from '../utils/first-autocomplete-sour
 import { applyAsOfSnapshotToCandidates } from '../utils/orgchart-asof-snapshot.util';
 import { buildCompanyOrgChartCandidateListLogicalCacheKey } from '../utils/orgchart-cache-keys.util';
 import {
-  computeTimelineMetricsFromCandidates,
-  computeTimelineProfilesFromCandidates,
+    computeTimelineMetricsFromCandidates,
+    computeTimelineProfilesFromCandidates,
 } from '../utils/orgchart-timeline-metrics.util';
 import { normalizePersonForPythonOrgChartBuild } from '../utils/python-org-chart-person.util';
 import {
-  ApifyCompanyProfileActorItem,
-  generateSampleApifyCompanyProfileActorItems,
-  generateSampleContactOutPeopleSearchResponse,
+    ApifyCompanyProfileActorItem,
+    generateSampleApifyCompanyProfileActorItems,
+    generateSampleContactOutPeopleSearchResponse,
 } from '../utils/sample-company/sampleCompanyDatasets';
 
 @Controller('org-chart')
@@ -2309,6 +2309,69 @@ export class OrgChartController {
         error instanceof Error
           ? error.message
           : 'Failed to clear org chart cache',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('company-cache/rebuild-using-saved-people')
+  async rebuildCompanyOrgChartUsingSavedPeople(
+    @Body()
+    body: {
+      companyId?: string;
+      companyName?: string;
+      industry?: string;
+      industryCategory?: string;
+    },
+    @Req() req: Request,
+  ) {
+    const authToken = this.getAuthToken(req);
+
+    if (!authToken) {
+      throw new HttpException(
+        'Authentication required',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const companyId = body?.companyId?.trim();
+    const companyName = body?.companyName?.trim();
+
+    if (!companyId && !companyName) {
+      throw new HttpException(
+        'At least one of companyId or companyName is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      const rebuilt =
+        await this.orgChartLinkedInBuildService.rebuildOrgChartUsingSavedPeople({
+          apiToken: authToken,
+          companyId: companyId || undefined,
+          companyName: companyName || undefined,
+          industry: body?.industry?.trim() || undefined,
+          industryCategory: body?.industryCategory?.trim() || undefined,
+        });
+
+      return {
+        status: 'ok' as const,
+        itemCount: rebuilt.itemCount,
+        orgChart: await this.proxyOrgChartPayload(rebuilt.orgChart),
+        candidateSource: rebuilt.candidateSource,
+      };
+    } catch (error) {
+      this.logger.error(
+        'Rebuild company org chart using saved people failed',
+        error,
+      );
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to rebuild org chart using saved people',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
