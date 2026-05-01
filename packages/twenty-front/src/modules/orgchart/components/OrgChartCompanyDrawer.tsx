@@ -1,11 +1,11 @@
 import styled from '@emotion/styled';
-import { IconWorld } from '@tabler/icons-react';
+import { IconBrandLinkedin, IconWorld } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Button, IconButton, IconX } from 'twenty-ui';
 
 import { TabList } from '@/ui/layout/tab/components/TabList';
 import { useTabList } from '@/ui/layout/tab/hooks/useTabList';
-import { toTitleCase } from 'twenty-shared';
+import { isValidLinkedInProfileUrl, toTitleCase } from 'twenty-shared';
 
 import type { OrgChartCompanyInfoProps } from './OrgChartCompanyInfo';
 
@@ -196,6 +196,25 @@ const StyledProfileRow = styled.div`
   border-radius: ${({ theme }) => theme.border.radius.sm};
 `;
 
+const StyledProfileMain = styled.div`
+  min-width: 0;
+`;
+
+const StyledProfileTitle = styled.div`
+  color: ${({ theme }) => theme.font.color.secondary};
+`;
+
+const StyledProfileRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  flex-shrink: 0;
+`;
+
+const StyledProfileFunction = styled.div`
+  color: ${({ theme }) => theme.font.color.primary};
+`;
+
 export type OrgChartCompanyDrawerProps = OrgChartCompanyInfoProps & {
   isOpen: boolean;
   onClose: () => void;
@@ -353,6 +372,33 @@ export const OrgChartCompanyDrawer = ({
     return Array.isArray(rows) ? rows : [];
   }, [timelineProfiles]);
 
+  const normalizeLinkedInUrl = (value: unknown): string | null => {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    if (!isValidLinkedInProfileUrl(trimmed)) return null;
+    return trimmed.startsWith('http') ? trimmed : `https://${trimmed}`;
+  };
+
+  const activeWindowMetrics = useMemo(() => {
+    const windows = timelineMetrics?.windows as Record<string, unknown> | undefined;
+    const slot =
+      windows && typeof windows === 'object'
+        ? (windows[activeWindow] as Record<string, unknown> | undefined)
+        : undefined;
+    const joined =
+      slot?.joined && typeof slot.joined === 'object'
+        ? (slot.joined as Record<string, unknown>).total
+        : undefined;
+    const left =
+      slot?.left && typeof slot.left === 'object'
+        ? (slot.left as Record<string, unknown>).total
+        : undefined;
+    return {
+      joined: typeof joined === 'number' ? joined : '—',
+      left: typeof left === 'number' ? left : '—',
+    };
+  }, [activeWindow, timelineMetrics]);
+
   if (!isOpen) return null;
 
   return (
@@ -494,33 +540,12 @@ export const OrgChartCompanyDrawer = ({
                         : '—'}
                     </StyledMetaValue>
                   </StyledMetaRow>
-                  {(['1m', '3m', '6m', '1y'] as const).map((w) => {
-                    const windows = timelineMetrics.windows as Record<
-                      string,
-                      unknown
-                    >;
-                    const slot =
-                      windows && typeof windows === 'object'
-                        ? (windows[w] as Record<string, unknown> | undefined)
-                        : undefined;
-                    const joined =
-                      slot?.joined && typeof slot.joined === 'object'
-                        ? (slot.joined as Record<string, unknown>).total
-                        : undefined;
-                    const left =
-                      slot?.left && typeof slot.left === 'object'
-                        ? (slot.left as Record<string, unknown>).total
-                        : undefined;
-                    return (
-                      <StyledMetaRow key={w}>
-                        <StyledMetaLabel>{w}</StyledMetaLabel>
-                        <StyledMetaValue>
-                          joined {typeof joined === 'number' ? joined : '—'} · left{' '}
-                          {typeof left === 'number' ? left : '—'}
-                        </StyledMetaValue>
-                      </StyledMetaRow>
-                    );
-                  })}
+                  <StyledMetaRow>
+                    <StyledMetaLabel>{activeWindow}</StyledMetaLabel>
+                    <StyledMetaValue>
+                      joined {activeWindowMetrics.joined} · left {activeWindowMetrics.left}
+                    </StyledMetaValue>
+                  </StyledMetaRow>
                 </StyledMetaGrid>
               </StyledSectionContent>
             </StyledSection>
@@ -546,16 +571,32 @@ export const OrgChartCompanyDrawer = ({
                   <StyledProfilesList>
                     {timelineProfilesRows.map((row, idx) => {
                       const item = row as Record<string, unknown>;
+                      const itemLinkedInUrl = normalizeLinkedInUrl(item.linkedinUrl);
                       return (
                         <StyledProfileRow key={`${String(item.id ?? idx)}`}>
-                          <div>
+                          <StyledProfileMain>
                             <div>{String(item.fullName ?? 'Unknown')}</div>
-                            <div>
+                            <StyledProfileTitle>
                               {String(item.titleAtAsOf ?? '')}
                               {item.eventMonth ? ` · ${String(item.eventMonth)}` : ''}
-                            </div>
-                          </div>
-                          <div>{String(item.functionRoot ?? 'unclassified')}</div>
+                            </StyledProfileTitle>
+                          </StyledProfileMain>
+                          <StyledProfileRight>
+                            <StyledProfileFunction>
+                              {toTitleCase(String(item.functionRoot ?? 'unclassified'))}
+                            </StyledProfileFunction>
+                            {itemLinkedInUrl && (
+                              <IconButton
+                                Icon={IconBrandLinkedin}
+                                onClick={() =>
+                                  window.open(itemLinkedInUrl, '_blank', 'noopener,noreferrer')
+                                }
+                                variant="tertiary"
+                                size="small"
+                                aria-label={`Open ${String(item.fullName ?? 'profile')} on LinkedIn`}
+                              />
+                            )}
+                          </StyledProfileRight>
                         </StyledProfileRow>
                       );
                     })}

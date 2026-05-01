@@ -23,6 +23,9 @@ const addMonths = (m: MonthKey, delta: number): MonthKey => {
   return monthKey(d.getUTCFullYear(), d.getUTCMonth() + 1);
 };
 
+const isMonthInRange = (m: MonthKey | undefined, start: MonthKey, end: MonthKey): boolean =>
+  !!m && cmpMonth(m, start) >= 0 && cmpMonth(m, end) <= 0;
+
 const currentUtcMonth = (): MonthKey => {
   const d = new Date();
   return monthKey(d.getUTCFullYear(), d.getUTCMonth() + 1);
@@ -62,6 +65,91 @@ const normalizeFunctionRoot = (s: unknown): string => {
   if (typeof s !== 'string') return 'unclassified';
   const trimmed = s.trim();
   return trimmed ? trimmed.toLowerCase() : 'unclassified';
+};
+
+const readString = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
+
+const inferFunctionRootFromText = (value: string): string | null => {
+  const text = value.trim().toLowerCase();
+  if (!text) return null;
+
+  if (/\b(hr|human resources|talent|people ops|recruit(ing|ment)?)\b/u.test(text)) {
+    return 'human resources';
+  }
+  if (/\b(marketing|brand|demand gen|growth|content|communications?|pr)\b/u.test(text)) {
+    return 'marketing';
+  }
+  if (/\b(product( management| owner| strategy)?|pm)\b/u.test(text)) {
+    return 'product';
+  }
+  if (/\b(engineer|engineering|developer|software|platform|devops|sre|architect)\b/u.test(text)) {
+    return 'engineering';
+  }
+  if (/\b(sales|account executive|business development|revenue)\b/u.test(text)) {
+    return 'sales';
+  }
+  if (/\b(finance|financial|accounting|controller|fp&a|treasury)\b/u.test(text)) {
+    return 'finance';
+  }
+  if (/\b(legal|counsel|compliance)\b/u.test(text)) {
+    return 'legal';
+  }
+  if (/\b(operations|ops|program|project|delivery|strategy)\b/u.test(text)) {
+    return 'operations';
+  }
+  if (/\b(design|ux|ui|product design|creative)\b/u.test(text)) {
+    return 'design';
+  }
+  if (/\b(research|scientist|r&d)\b/u.test(text)) {
+    return 'research';
+  }
+  if (/\b(support|customer success|customer service)\b/u.test(text)) {
+    return 'support service';
+  }
+  if (/\b(technology|it|information technology|security)\b/u.test(text)) {
+    return 'technology';
+  }
+
+  return null;
+};
+
+const resolveFunctionRoot = (row: Record<string, unknown>): string => {
+  const directValues: unknown[] = [
+    row.std_function_root,
+    row.stdFunctionRoot,
+    row.std_functions,
+    row.stdFunctions,
+    row.std_function,
+    row.stdFunction,
+    row.functionRoot,
+    row.function_root,
+    row.job_function,
+    row.jobFunction,
+  ];
+
+  for (const value of directValues) {
+    if (Array.isArray(value)) {
+      const first = value.find((v) => typeof v === 'string' && v.trim().length > 0);
+      const normalized = normalizeFunctionRoot(first);
+      if (normalized && normalized !== 'unclassified') return normalized;
+      continue;
+    }
+    const normalized = normalizeFunctionRoot(value);
+    if (normalized && normalized !== 'unclassified') return normalized;
+  }
+
+  const titleCandidates = [
+    readString(row.titleAtAsOf),
+    readString(row.job_title),
+    readString(row.title),
+    readString(row.headline),
+  ];
+  for (const title of titleCandidates) {
+    const inferred = inferFunctionRootFromText(title);
+    if (inferred) return inferred;
+  }
+
+  return 'unclassified';
 };
 
 function bumpByFunctionRoot(map: Record<string, number>, root: string): void {
@@ -105,9 +193,7 @@ export function computeTimelineMetricsFromCandidates(input: {
       }
     }
 
-    const fnRoot = normalizeFunctionRoot(
-      row.std_function_root ?? row.functionRoot ?? row.function_root,
-    );
+    const fnRoot = resolveFunctionRoot(row);
 
     if (isActiveInMonth(intervals as any, asOfMonth)) {
       activeAtAsOf.push({ row, functionRoot: fnRoot, intervals });
@@ -142,46 +228,33 @@ export function computeTimelineMetricsFromCandidates(input: {
     },
   };
 
-  // join/leave signals: compare membership at asOfMonth vs previousMonth
-  const previousMonth = addMonths(asOfMonth, -1);
+  // join/leave signals: use latest start/end events and bucket by each window range.
   for (const row of input.candidates) {
     const intervals = deriveIntervalsForCandidateAtCompany({
       row,
       companyName: input.companyName,
     });
     if (intervals.length === 0) continue;
-    const was = isActiveInMonth(intervals as any, previousMonth);
-    const now = isActiveInMonth(intervals as any, asOfMonth);
-    const fnRoot = normalizeFunctionRoot(
-      row.std_function_root ?? row.functionRoot ?? row.function_root,
-    );
+    const fnRoot = resolveFunctionRoot(row);
+    const latestStart = [...intervals]
+      .map((i) => i.startMonth)
+      .filter((m): m is MonthKey => isMonthKey(m))
+      .sort()
+      .at(-1);
+    const latestEnd = [...intervals]
+      .map((i) => i.endMonth)
+      .filter((m): m is MonthKey => !!m && isMonthKey(m))
+      .sort()
+      .at(-1);
 
-    // Choose “title at time” so callers can display consistent names if needed.
-    void pickTitleAtMonth(intervals as any, asOfMonth);
-
-    // Joined/left apply to all windows whose range covers the event month.
-    if (!was && now) {
-      for (const w of Object.values(windows)) {
-        const joinedMonth = asOfMonth;
-        if (
-          cmpMonth(joinedMonth, w.range.startMonth) >= 0 &&
-          cmpMonth(joinedMonth, w.range.endMonth) <= 0
-        ) {
-          w.joined.total += 1;
-          bumpByFunctionRoot(w.joined.byFunctionRoot, fnRoot);
-        }
+    for (const w of Object.values(windows)) {
+      if (isMonthInRange(latestStart, w.range.startMonth, w.range.endMonth)) {
+        w.joined.total += 1;
+        bumpByFunctionRoot(w.joined.byFunctionRoot, fnRoot);
       }
-    }
-    if (was && !now) {
-      for (const w of Object.values(windows)) {
-        const leftMonth = asOfMonth;
-        if (
-          cmpMonth(leftMonth, w.range.startMonth) >= 0 &&
-          cmpMonth(leftMonth, w.range.endMonth) <= 0
-        ) {
-          w.left.total += 1;
-          bumpByFunctionRoot(w.left.byFunctionRoot, fnRoot);
-        }
+      if (isMonthInRange(latestEnd, w.range.startMonth, w.range.endMonth)) {
+        w.left.total += 1;
+        bumpByFunctionRoot(w.left.byFunctionRoot, fnRoot);
       }
     }
   }
@@ -228,9 +301,7 @@ export function computeTimelineProfilesFromCandidates(input: {
     });
     if (intervals.length === 0) continue;
 
-    const fnRoot = normalizeFunctionRoot(
-      row.std_function_root ?? row.functionRoot ?? row.function_root,
-    );
+    const fnRoot = resolveFunctionRoot(row);
     const titleAtAsOf = pickTitleAtMonth(intervals as any, asOfMonth) ?? undefined;
     const fullName =
       typeof row.full_name === 'string'
