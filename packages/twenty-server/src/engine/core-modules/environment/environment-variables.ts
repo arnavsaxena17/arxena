@@ -2,17 +2,17 @@ import { LogLevel, Logger } from '@nestjs/common';
 
 import { plainToClass } from 'class-transformer';
 import {
-    IsBoolean,
-    IsDefined,
-    IsEnum,
-    IsIn,
-    IsNumber,
-    IsOptional,
-    IsString,
-    IsUUID,
-    IsUrl,
-    ValidateIf,
-    validateSync,
+  IsBoolean,
+  IsDefined,
+  IsEnum,
+  IsIn,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  IsUrl,
+  ValidateIf,
+  validateSync,
 } from 'class-validator';
 
 import { EmailDriver } from 'src/engine/core-modules/email/interfaces/email.interface';
@@ -1423,7 +1423,7 @@ export class EnvironmentVariables {
   @CastToBoolean()
   @IsOptional()
   @IsBoolean()
-  ORGCHART_APOLLO_SKIP_RESOLUTION = false;
+  ORGCHART_APOLLO_SKIP_RESOLUTION = true;
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.Other,

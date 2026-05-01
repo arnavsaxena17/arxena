@@ -25,6 +25,8 @@ type ApolloPeopleSearchBody = {
   perPage?: number;
 };
 
+const retryOrganisationSearchForId = false
+
 type ApolloCompaniesSearchBody = {
   organizationName?: string;
   domains?: string[];

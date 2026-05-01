@@ -942,55 +942,21 @@ export class OrgChartBuildService {
     let resolvedOrgId: string | undefined;
     let resolvedLinkedinUrl: string | undefined;
     let resolvedOrgDomain: string | undefined;
+    const shouldStartWithDomain = Boolean(companyDomain);
 
-    if (skipApolloOrgResolution) {
-      if (!companyDomain) {
-        this.logger.warn(
-          `Apollo org chart: ORGCHART_APOLLO_SKIP_RESOLUTION is enabled but no companyDomain was provided (company="${args.resolvedCompanyName}")`,
-        );
-        throw new HttpException(
-          `Apollo org chart: companyDomain is required when ORGCHART_APOLLO_SKIP_RESOLUTION is enabled`,
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-      this.logger.log(
-        `Apollo org chart: skipping /mixed_companies/search resolution (company="${args.resolvedCompanyName}", domain="${companyDomain}")`,
-      );
+    if (shouldStartWithDomain) {
       resolvedOrgDomain = companyDomain;
-    } else {
-      await this.emitOrgchartSearchProgressForToken(args.apiToken, {
-        requestId: args.requestId,
-        mode: args.mode,
-        searchType: args.searchType,
-        companyName: args.resolvedCompanyName,
-        event: 'status',
-        data: {
-          message: 'Resolving company on Apollo…',
-          candidateSource: 'm7kq',
-        },
-      });
-
-      const resolved =
-        await this.apolloIoRestService.resolveOrganizationIdForOrgChart({
-          candidateId: args.companyId,
-          companyName: args.resolvedCompanyName,
-          linkedinCompanyUrl,
-          domain: companyDomain,
-        });
-
-      resolvedOrgId = resolved.organizationId;
-      resolvedLinkedinUrl = resolved.linkedinUrl;
-      resolvedOrgDomain = resolved.primaryDomain?.toLowerCase();
-
-      if (!resolvedOrgId) {
-        this.logger.warn(
-          `Apollo org chart: unable to resolve organization_id for company="${args.resolvedCompanyName}" (candidateId=${args.companyId ?? 'none'}, linkedin=${linkedinCompanyUrl ?? 'none'})`,
-        );
-        throw new HttpException(
-          `Apollo org chart: could not find Apollo organization for "${args.resolvedCompanyName}"`,
-          HttpStatus.NOT_FOUND,
-        );
-      }
+      this.logger.log(
+        `Apollo org chart: attempting domain-first people search (company="${args.resolvedCompanyName}", domain="${companyDomain}")`,
+      );
+    } else if (skipApolloOrgResolution) {
+      this.logger.warn(
+        `Apollo org chart: ORGCHART_APOLLO_SKIP_RESOLUTION is enabled but no companyDomain was provided (company="${args.resolvedCompanyName}")`,
+      );
+      throw new HttpException(
+        `Apollo org chart: companyDomain is required when ORGCHART_APOLLO_SKIP_RESOLUTION is enabled`,
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const trimmedFunctionRoot =
@@ -1141,6 +1107,8 @@ export class OrgChartBuildService {
       }
     };
 
+    let usedOrgResolutionFallback = false;
+
     for (let page = 1; page <= APOLLO_MAX_PAGES; page++) {
       const raw = await this.apolloIoRestService.peopleSearch({
         ...apolloParams,
@@ -1192,6 +1160,65 @@ export class OrgChartBuildService {
       }
 
       if (rows.length === 0) {
+        const canFallbackToOrgResolution =
+          page === 1 &&
+          merged.length === 0 &&
+          shouldStartWithDomain &&
+          !skipApolloOrgResolution &&
+          !usedOrgResolutionFallback;
+
+        if (canFallbackToOrgResolution) {
+          await this.emitOrgchartSearchProgressForToken(args.apiToken, {
+            requestId: args.requestId,
+            mode: args.mode,
+            searchType: args.searchType,
+            companyName: args.resolvedCompanyName,
+            event: 'status',
+            data: {
+              message:
+                'No domain results on Apollo. Resolving company and retrying…',
+              candidateSource: 'm7kq',
+            },
+          });
+          const resolved =
+            await this.apolloIoRestService.resolveOrganizationIdForOrgChart({
+              candidateId: args.companyId,
+              companyName: args.resolvedCompanyName,
+              linkedinCompanyUrl,
+              domain: companyDomain,
+            });
+
+          if (!resolved.organizationId) {
+            this.logger.warn(
+              `Apollo org chart: domain-first people search returned no rows and organization_id resolution failed for company="${args.resolvedCompanyName}" (candidateId=${args.companyId ?? 'none'}, linkedin=${linkedinCompanyUrl ?? 'none'})`,
+            );
+          } else {
+            resolvedOrgId = resolved.organizationId;
+            resolvedLinkedinUrl = resolved.linkedinUrl;
+            resolvedOrgDomain = resolved.primaryDomain?.toLowerCase();
+
+            Object.assign(
+              apolloParams,
+              this.buildApolloPeopleSearchParams({
+                body: args.body,
+                mode: args.mode,
+                organizationId: resolvedOrgId,
+                organizationDomain: resolvedOrgDomain,
+                jobTitles:
+                  (args.jobTitles?.length
+                    ? args.jobTitles
+                    : functionRootDerivedTitles) ?? [],
+              }),
+            );
+            usedOrgResolutionFallback = true;
+            this.logger.log(
+              `Apollo org chart: retrying people search with resolved organization_id=${resolvedOrgId}`,
+            );
+            page = 0;
+            continue;
+          }
+        }
+
         await emitPartialSnapshot({
           raw: raw as Record<string, unknown>,
           page,
@@ -1280,13 +1307,9 @@ export class OrgChartBuildService {
     }
 
     const companyDomain = this.extractDomainFromWebsite(args.website);
-    const resolved =
-      await this.apolloIoRestService.resolveOrganizationIdForOrgChart({
-        candidateId: args.companyId,
-        companyName: resolvedCompanyName,
-        linkedinCompanyUrl: args.linkedinCompanyUrl,
-        domain: companyDomain,
-      });
+    const skipApolloOrgResolution = this.environmentService.get(
+      'ORGCHART_APOLLO_SKIP_RESOLUTION',
+    );
 
     const body: SearchOrgchartLinkedInBody = {
       rawQuery: `Find all people currently working at ${resolvedCompanyName}.`,
@@ -1303,30 +1326,53 @@ export class OrgChartBuildService {
         : {}),
     };
 
-    const apolloParams = this.buildApolloPeopleSearchParams({
+    const runCountSearch = async (params: ApolloPeopleSearchParams) => {
+      const pageOne = await this.apolloIoRestService.peopleSearch({
+        ...params,
+        page: 1,
+        per_page: 1,
+      });
+      const pagination = (pageOne.pagination ?? {}) as {
+        total_entries?: unknown;
+      };
+      return typeof pagination.total_entries === 'number' &&
+        Number.isFinite(pagination.total_entries)
+        ? pagination.total_entries
+        : null;
+    };
+
+    const domainParams = this.buildApolloPeopleSearchParams({
+      body,
+      mode: 'entire_company',
+      organizationDomain: companyDomain,
+      jobTitles: [],
+    });
+    const domainTotalEntries = await runCountSearch(domainParams);
+
+    if (domainTotalEntries !== 0 || skipApolloOrgResolution) {
+      return { totalEntries: domainTotalEntries };
+    }
+
+    const resolved =
+      await this.apolloIoRestService.resolveOrganizationIdForOrgChart({
+        candidateId: args.companyId,
+        companyName: resolvedCompanyName,
+        linkedinCompanyUrl: args.linkedinCompanyUrl,
+        domain: companyDomain,
+      });
+    if (!resolved.organizationId) {
+      return { totalEntries: domainTotalEntries };
+    }
+
+    const resolvedParams = this.buildApolloPeopleSearchParams({
       body,
       mode: 'entire_company',
       organizationId: resolved.organizationId,
       organizationDomain: resolved.primaryDomain?.toLowerCase(),
       jobTitles: [],
     });
-
-    const pageOne = await this.apolloIoRestService.peopleSearch({
-      ...apolloParams,
-      page: 1,
-      per_page: 1,
-    });
-
-    const pagination = (pageOne.pagination ?? {}) as {
-      total_entries?: unknown;
-    };
-    const totalEntries =
-      typeof pagination.total_entries === 'number' &&
-      Number.isFinite(pagination.total_entries)
-        ? pagination.total_entries
-        : null;
-
-    return { totalEntries };
+    const resolvedTotalEntries = await runCountSearch(resolvedParams);
+    return { totalEntries: resolvedTotalEntries };
   }
 
   /**
