@@ -2153,17 +2153,6 @@ export function getFieldsData(
     {
       objectName: 'orgChart',
       field: {
-        description: 'Display title for this org chart run',
-        icon: 'IconHierarchy2',
-        label: 'Name',
-        name: 'name',
-        objectMetadataId: objectsNameIdMap.orgChart,
-        type: 'TEXT',
-      },
-    },
-    {
-      objectName: 'orgChart',
-      field: {
         description: 'How the chart was scoped when built',
         icon: 'IconHierarchy2',
         label: 'Chart kind',
