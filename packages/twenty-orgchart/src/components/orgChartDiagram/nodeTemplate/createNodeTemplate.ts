@@ -90,7 +90,7 @@ export const createNodeTemplate = ({
 
   const colorLabel = (s: string | undefined): string => {
     if (s === 'active') return 'PaleGreen';
-    if (s === 'lock') return '#64748b';
+    if (s === 'lock') return '#16a34a';
     return 'rgb(36,116,204)';
   };
 
