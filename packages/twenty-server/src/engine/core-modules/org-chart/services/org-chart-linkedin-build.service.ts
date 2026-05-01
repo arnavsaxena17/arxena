@@ -958,11 +958,19 @@ export class OrgChartLinkedInBuildService {
     let resolvedLinkedinUrl: string | undefined;
     let resolvedOrgDomain: string | undefined;
     const shouldStartWithDomain = Boolean(companyDomain);
+    let apolloSearchStrategy:
+      | 'domain_only'
+      | 'domain_then_org_resolution'
+      | 'org_resolution_first' =
+      shouldStartWithDomain ? 'domain_only' : 'org_resolution_first';
 
     if (shouldStartWithDomain) {
       resolvedOrgDomain = companyDomain;
       this.logger.log(
         `Apollo org chart: attempting domain-first people search (company="${args.resolvedCompanyName}", domain="${companyDomain}")`,
+      );
+      this.logger.log(
+        `[APOLLO_ORGCHART_STRATEGY] strategy=${apolloSearchStrategy} company="${args.resolvedCompanyName}" domain="${companyDomain}"`,
       );
     } else if (skipApolloOrgResolution) {
       this.logger.warn(
@@ -971,6 +979,10 @@ export class OrgChartLinkedInBuildService {
       throw new HttpException(
         `Apollo org chart: companyDomain is required when ORGCHART_APOLLO_SKIP_RESOLUTION is enabled`,
         HttpStatus.BAD_REQUEST,
+      );
+    } else {
+      this.logger.log(
+        `[APOLLO_ORGCHART_STRATEGY] strategy=${apolloSearchStrategy} company="${args.resolvedCompanyName}" domain=none`,
       );
     }
 
@@ -1226,8 +1238,12 @@ export class OrgChartLinkedInBuildService {
               }),
             );
             usedOrgResolutionFallback = true;
+            apolloSearchStrategy = 'domain_then_org_resolution';
             this.logger.log(
               `Apollo org chart: retrying people search with resolved organization_id=${resolvedOrgId}`,
+            );
+            this.logger.log(
+              `[APOLLO_ORGCHART_STRATEGY] strategy=${apolloSearchStrategy} company="${args.resolvedCompanyName}" resolvedOrganizationId="${resolvedOrgId}"`,
             );
             page = 0;
             continue;
