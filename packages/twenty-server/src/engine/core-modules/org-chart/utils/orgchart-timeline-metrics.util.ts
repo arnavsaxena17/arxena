@@ -1,7 +1,7 @@
 import {
-    deriveIntervalsForCandidateAtCompany,
-    isActiveInMonth,
-    pickTitleAtMonth,
+  deriveIntervalsForCandidateAtCompany,
+  isActiveInMonth,
+  pickTitleAtMonth,
 } from './orgchart-asof-snapshot.util';
 
 type MonthKey = `${number}-${string}`;
@@ -36,6 +36,14 @@ type BucketCounts = {
   byFunctionRoot: Record<string, number>;
 };
 
+type WindowRates = {
+  headcountStart: number;
+  headcountEnd: number;
+  averageHeadcount: number;
+  hiringRatePct: number | null;
+  attritionRatePct: number | null;
+};
+
 export type OrgChartTimelineMetrics = {
   asOfMonth: MonthKey;
   startMonth: MonthKey | null;
@@ -47,6 +55,7 @@ export type OrgChartTimelineMetrics = {
       range: { startMonth: MonthKey; endMonth: MonthKey };
       joined: BucketCounts;
       left: BucketCounts;
+      rates: WindowRates;
     }
   >;
 };
@@ -113,7 +122,10 @@ const inferFunctionRootFromText = (value: string): string | null => {
   return null;
 };
 
-const resolveFunctionRoot = (row: Record<string, unknown>): string => {
+const resolveFunctionRoot = (
+  row: Record<string, unknown>,
+  preferredTitle?: string,
+): string => {
   const directValues: unknown[] = [
     row.std_function_root,
     row.stdFunctionRoot,
@@ -139,6 +151,7 @@ const resolveFunctionRoot = (row: Record<string, unknown>): string => {
   }
 
   const titleCandidates = [
+    readString(preferredTitle),
     readString(row.titleAtAsOf),
     readString(row.job_title),
     readString(row.title),
@@ -158,6 +171,16 @@ function bumpByFunctionRoot(map: Record<string, number>, root: string): void {
 
 function emptyCounts(): BucketCounts {
   return { total: 0, byFunctionRoot: {} };
+}
+
+function emptyRates(): WindowRates {
+  return {
+    headcountStart: 0,
+    headcountEnd: 0,
+    averageHeadcount: 0,
+    hiringRatePct: null,
+    attritionRatePct: null,
+  };
 }
 
 export function computeTimelineMetricsFromCandidates(input: {
@@ -210,21 +233,25 @@ export function computeTimelineMetricsFromCandidates(input: {
       range: buildWindow(1),
       joined: emptyCounts(),
       left: emptyCounts(),
+      rates: emptyRates(),
     },
     '3m': {
       range: buildWindow(3),
       joined: emptyCounts(),
       left: emptyCounts(),
+      rates: emptyRates(),
     },
     '6m': {
       range: buildWindow(6),
       joined: emptyCounts(),
       left: emptyCounts(),
+      rates: emptyRates(),
     },
     '1y': {
       range: buildWindow(12),
       joined: emptyCounts(),
       left: emptyCounts(),
+      rates: emptyRates(),
     },
   };
 
@@ -259,6 +286,29 @@ export function computeTimelineMetricsFromCandidates(input: {
     }
   }
 
+  // Compute window-level hiring / attrition rates using average headcount.
+  for (const w of Object.values(windows)) {
+    let headcountStart = 0;
+    let headcountEnd = 0;
+    for (const row of input.candidates) {
+      const intervals = deriveIntervalsForCandidateAtCompany({
+        row,
+        companyName: input.companyName,
+      });
+      if (intervals.length === 0) continue;
+      if (isActiveInMonth(intervals as any, w.range.startMonth)) headcountStart += 1;
+      if (isActiveInMonth(intervals as any, w.range.endMonth)) headcountEnd += 1;
+    }
+    const averageHeadcount = (headcountStart + headcountEnd) / 2;
+    w.rates = {
+      headcountStart,
+      headcountEnd,
+      averageHeadcount,
+      hiringRatePct: averageHeadcount > 0 ? (w.joined.total / averageHeadcount) * 100 : null,
+      attritionRatePct: averageHeadcount > 0 ? (w.left.total / averageHeadcount) * 100 : null,
+    };
+  }
+
   return {
     asOfMonth,
     startMonth,
@@ -291,8 +341,6 @@ export function computeTimelineProfilesFromCandidates(input: {
     typeof input.limit === 'number' && Number.isFinite(input.limit) && input.limit > 0
       ? Math.min(500, Math.floor(input.limit))
       : 100;
-  const previousMonth = addMonths(asOfMonth, -1);
-
   const out: TimelineProfileItem[] = [];
   for (const row of input.candidates) {
     const intervals = deriveIntervalsForCandidateAtCompany({
@@ -301,7 +349,6 @@ export function computeTimelineProfilesFromCandidates(input: {
     });
     if (intervals.length === 0) continue;
 
-    const fnRoot = resolveFunctionRoot(row);
     const titleAtAsOf = pickTitleAtMonth(intervals as any, asOfMonth) ?? undefined;
     const fullName =
       typeof row.full_name === 'string'
@@ -314,7 +361,7 @@ export function computeTimelineProfilesFromCandidates(input: {
         ? row.id
         : typeof row.linkedin_url === 'string' && row.linkedin_url.trim()
           ? row.linkedin_url
-          : `${fullName}-${fnRoot}`;
+          : fullName || 'timeline-profile';
     const linkedinUrl =
       typeof row.linkedin_url === 'string'
         ? row.linkedin_url
@@ -325,7 +372,6 @@ export function computeTimelineProfilesFromCandidates(input: {
       typeof row.profile_picture_url === 'string' ? row.profile_picture_url : undefined;
 
     const activeNow = isActiveInMonth(intervals as any, asOfMonth);
-    const activePrev = isActiveInMonth(intervals as any, previousMonth);
     const latestStart = [...intervals]
       .map((i) => i.startMonth)
       .filter((m): m is MonthKey => isMonthKey(m))
@@ -348,21 +394,25 @@ export function computeTimelineProfilesFromCandidates(input: {
       include = !activeNow;
       eventMonth = latestEnd;
     } else if (input.event === 'joined') {
-      include = !activePrev && activeNow && inWindow(asOfMonth);
-      eventMonth = include ? asOfMonth : latestStart;
+      include = inWindow(latestStart);
+      eventMonth = latestStart;
     } else if (input.event === 'left') {
-      include = activePrev && !activeNow && inWindow(asOfMonth);
-      eventMonth = include ? asOfMonth : latestEnd;
+      include = inWindow(latestEnd);
+      eventMonth = latestEnd;
     }
 
     if (!include) continue;
+    const titleAtEvent = eventMonth
+      ? pickTitleAtMonth(intervals as any, eventMonth) ?? undefined
+      : titleAtAsOf;
+    const fnRoot = resolveFunctionRoot(row, titleAtEvent);
     out.push({
       id,
       fullName,
       linkedinUrl,
       profilePictureUrl,
       functionRoot: fnRoot,
-      titleAtAsOf,
+      titleAtAsOf: titleAtEvent,
       eventMonth,
     });
   }

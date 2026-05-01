@@ -215,6 +215,39 @@ const StyledProfileFunction = styled.div`
   color: ${({ theme }) => theme.font.color.primary};
 `;
 
+const StyledFunctionGroup = styled.details`
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background: ${({ theme }) => theme.background.secondary};
+`;
+
+const StyledFunctionSummary = styled.summary`
+  cursor: pointer;
+  list-style: none;
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(1.5)};
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: ${({ theme }) => theme.font.color.primary};
+  font-weight: 500;
+  &::-webkit-details-marker {
+    display: none;
+  }
+`;
+
+const StyledFunctionGroupLabel = styled.span`
+  color: ${({ theme }) => theme.font.color.primary};
+`;
+
+const StyledFunctionGroupCount = styled.span`
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+`;
+
+const StyledCacheSection = styled(StyledSection)`
+  margin-top: auto;
+`;
+
 export type OrgChartCompanyDrawerProps = OrgChartCompanyInfoProps & {
   isOpen: boolean;
   onClose: () => void;
@@ -399,6 +432,63 @@ export const OrgChartCompanyDrawer = ({
     };
   }, [activeWindow, timelineMetrics]);
 
+  const timelineMetricsByWindow = useMemo(() => {
+    const windows = timelineMetrics?.windows as Record<string, unknown> | undefined;
+    return (['1m', '3m', '6m', '1y'] as const).map((w) => {
+      const slot =
+        windows && typeof windows === 'object'
+          ? (windows[w] as Record<string, unknown> | undefined)
+          : undefined;
+      const joined =
+        slot?.joined && typeof slot.joined === 'object'
+          ? (slot.joined as Record<string, unknown>).total
+          : undefined;
+      const left =
+        slot?.left && typeof slot.left === 'object'
+          ? (slot.left as Record<string, unknown>).total
+          : undefined;
+      const rates =
+        slot?.rates && typeof slot.rates === 'object'
+          ? (slot.rates as Record<string, unknown>)
+          : undefined;
+      const hiringRatePct =
+        typeof rates?.hiringRatePct === 'number' ? rates.hiringRatePct : null;
+      const attritionRatePct =
+        typeof rates?.attritionRatePct === 'number' ? rates.attritionRatePct : null;
+      return {
+        window: w,
+        joined: typeof joined === 'number' ? joined : '—',
+        left: typeof left === 'number' ? left : '—',
+        hiringRatePct:
+          hiringRatePct === null ? '—' : `${hiringRatePct.toFixed(1)}%`,
+        attritionRatePct:
+          attritionRatePct === null ? '—' : `${attritionRatePct.toFixed(1)}%`,
+      };
+    });
+  }, [timelineMetrics]);
+
+  const groupedTimelineRows = useMemo(() => {
+    const showGrouped = activeTab === 'joined' || activeTab === 'left';
+    if (!showGrouped) return null;
+    const groups = new Map<string, Array<Record<string, unknown>>>();
+    for (const row of timelineProfilesRows) {
+      const item = row as Record<string, unknown>;
+      const raw = String(item.functionRoot ?? 'unclassified');
+      const root = toTitleCase(raw);
+      const current = groups.get(root) ?? [];
+      current.push(item);
+      groups.set(root, current);
+    }
+    return Array.from(groups.entries())
+      .map(([functionRoot, items]) => ({
+        functionRoot,
+        items: items.sort((a, b) =>
+          String(a.fullName ?? '').localeCompare(String(b.fullName ?? '')),
+        ),
+      }))
+      .sort((a, b) => a.functionRoot.localeCompare(b.functionRoot));
+  }, [activeTab, timelineProfilesRows]);
+
   if (!isOpen) return null;
 
   return (
@@ -546,6 +636,14 @@ export const OrgChartCompanyDrawer = ({
                       joined {activeWindowMetrics.joined} · left {activeWindowMetrics.left}
                     </StyledMetaValue>
                   </StyledMetaRow>
+                  {/* {timelineMetricsByWindow.map((slot) => (
+                    <StyledMetaRow key={slot.window}>
+                      <StyledMetaLabel>{slot.window} rates</StyledMetaLabel>
+                      <StyledMetaValue>
+                        hiring {slot.hiringRatePct} · attrition {slot.attritionRatePct}
+                      </StyledMetaValue>
+                    </StyledMetaRow>
+                  ))} */}
                 </StyledMetaGrid>
               </StyledSectionContent>
             </StyledSection>
@@ -567,7 +665,50 @@ export const OrgChartCompanyDrawer = ({
                 {!isTimelineProfilesLoading && timelineProfilesRows.length === 0 && (
                   <div>No profiles found for this selection.</div>
                 )}
-                {!isTimelineProfilesLoading && timelineProfilesRows.length > 0 && (
+                {!isTimelineProfilesLoading && timelineProfilesRows.length > 0 && groupedTimelineRows && (
+                  <StyledProfilesList>
+                    {groupedTimelineRows.map((group, groupIdx) => (
+                      <StyledFunctionGroup key={group.functionRoot} open={groupIdx === 0}>
+                        <StyledFunctionSummary>
+                          <StyledFunctionGroupLabel>{group.functionRoot}</StyledFunctionGroupLabel>
+                          <StyledFunctionGroupCount>
+                            {group.items.length}
+                          </StyledFunctionGroupCount>
+                        </StyledFunctionSummary>
+                        <StyledProfilesList>
+                          {group.items.map((item, idx) => {
+                            const itemLinkedInUrl = normalizeLinkedInUrl(item.linkedinUrl);
+                            return (
+                              <StyledProfileRow key={`${String(item.id ?? idx)}`}>
+                                <StyledProfileMain>
+                                  <div>{String(item.fullName ?? 'Unknown')}</div>
+                                  <StyledProfileTitle>
+                                    {String(item.titleAtAsOf ?? '')}
+                                    {item.eventMonth ? ` · ${String(item.eventMonth)}` : ''}
+                                  </StyledProfileTitle>
+                                </StyledProfileMain>
+                                <StyledProfileRight>
+                                  {itemLinkedInUrl && (
+                                    <IconButton
+                                      Icon={IconBrandLinkedin}
+                                      onClick={() =>
+                                        window.open(itemLinkedInUrl, '_blank', 'noopener,noreferrer')
+                                      }
+                                      variant="tertiary"
+                                      size="small"
+                                      aria-label={`Open ${String(item.fullName ?? 'profile')} on LinkedIn`}
+                                    />
+                                  )}
+                                </StyledProfileRight>
+                              </StyledProfileRow>
+                            );
+                          })}
+                        </StyledProfilesList>
+                      </StyledFunctionGroup>
+                    ))}
+                  </StyledProfilesList>
+                )}
+                {!isTimelineProfilesLoading && timelineProfilesRows.length > 0 && !groupedTimelineRows && (
                   <StyledProfilesList>
                     {timelineProfilesRows.map((row, idx) => {
                       const item = row as Record<string, unknown>;
@@ -618,7 +759,7 @@ export const OrgChartCompanyDrawer = ({
           )}
 
           {onClearCompanyCache && (
-            <StyledSection>
+            <StyledCacheSection>
               <StyledSectionTitle>Cache</StyledSectionTitle>
               <StyledActionsRow>
                 <Button
@@ -628,7 +769,7 @@ export const OrgChartCompanyDrawer = ({
                   onClick={onClearCompanyCache}
                 />
               </StyledActionsRow>
-            </StyledSection>
+            </StyledCacheSection>
           )}
         </StyledDrawerBody>
       </StyledDrawer>
