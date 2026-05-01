@@ -54,6 +54,7 @@ import { OrgChartS3Service } from '../services/orgchart-s3.service';
 import { PythonOrgChartService } from '../services/python-org-chart.service';
 import { resolveFirstAutocompleteSource } from '../utils/first-autocomplete-source.util';
 import { applyAsOfSnapshotToCandidates } from '../utils/orgchart-asof-snapshot.util';
+import { buildCompanyOrgChartCandidateListLogicalCacheKey } from '../utils/orgchart-cache-keys.util';
 import {
   computeTimelineMetricsFromCandidates,
   computeTimelineProfilesFromCandidates,
@@ -159,6 +160,90 @@ export class OrgChartController {
 
   private apolloFirstLoadInProgressKey(companyId: string): string {
     return `apollo-first-load-in-progress:${companyId}`;
+  }
+
+  private async loadTimelineCandidates(
+    normalizedCompanyId: string,
+  ): Promise<Array<Record<string, unknown>>> {
+    const cacheKey = buildCompanyOrgChartCandidateListLogicalCacheKey(
+      undefined,
+      normalizedCompanyId,
+      'entire_company',
+      'classic',
+    );
+    const cached =
+      await this.orgChartCacheStorageService.get<{ items?: unknown }>(cacheKey);
+    const cachedItems = cached?.items;
+    if (Array.isArray(cachedItems) && cachedItems.length > 0) {
+      return cachedItems.filter(
+        (row): row is Record<string, unknown> =>
+          typeof row === 'object' && row !== null,
+      );
+    }
+
+    const s3Candidates = await this.orgChartS3Service.getCandidates(
+      normalizedCompanyId,
+    );
+    if (Array.isArray(s3Candidates) && s3Candidates.length > 0) {
+      return s3Candidates.filter(
+        (row): row is Record<string, unknown> =>
+          typeof row === 'object' && row !== null,
+      );
+    }
+
+    return [];
+  }
+
+  private async buildAsOfOrgChartFromCandidates(input: {
+    normalizedCompanyId: string;
+    companyName?: string;
+    country?: string;
+    functionRoot?: string;
+    asOfMonth?: string;
+    baseOrgChartPayload: Record<string, unknown> | null;
+  }): Promise<Record<string, unknown> | null> {
+    const asOfMonthRaw = input.asOfMonth?.trim() ?? '';
+    if (!asOfMonthRaw) {
+      return null;
+    }
+
+    const companyName =
+      input.companyName?.trim() || input.normalizedCompanyId || 'Company';
+    const candidates = await this.loadTimelineCandidates(input.normalizedCompanyId);
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    const peopleForAsOf = applyAsOfSnapshotToCandidates({
+      candidates,
+      companyName,
+      asOfMonth: asOfMonthRaw,
+    });
+
+    const normalizedPeopleForAsOf = peopleForAsOf.map((candidate) =>
+      normalizePersonForPythonOrgChartBuild(candidate, {
+        companyId: input.normalizedCompanyId,
+        companyName,
+        defaultCountry: input.country,
+      }),
+    );
+
+    const built =
+      await this.pythonOrgChartService.createOrgChartFromStandardizedPeople({
+        people: normalizedPeopleForAsOf,
+        jobName: companyName,
+        jobId: input.normalizedCompanyId,
+        functionRoot: input.functionRoot,
+        country: input.country,
+      });
+
+    return {
+      ...(input.baseOrgChartPayload ?? {}),
+      ...built,
+      as_of_month: asOfMonthRaw,
+      people_count: normalizedPeopleForAsOf.length,
+    };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -1280,12 +1365,12 @@ export class OrgChartController {
     const normalizedCompanyId = this.normalizeCompanyId(companyId);
     const resolvedName = (companyName ?? '').trim() || normalizedCompanyId;
 
-    // Currently implemented for sample-company (dev dataset).
     if (normalizedCompanyId !== 'sample-company') {
+      const candidates = await this.loadTimelineCandidates(normalizedCompanyId);
       return {
         status: 'ok',
         result: computeTimelineMetricsFromCandidates({
-          candidates: [],
+          candidates,
           companyName: resolvedName,
           asOfMonth,
         }),
@@ -1365,10 +1450,11 @@ export class OrgChartController {
       limitRaw !== undefined ? Number.parseInt(limitRaw, 10) : undefined;
 
     if (normalizedCompanyId !== 'sample-company') {
+      const candidates = await this.loadTimelineCandidates(normalizedCompanyId);
       return {
         status: 'ok',
         result: computeTimelineProfilesFromCandidates({
-          candidates: [],
+          candidates,
           companyName: resolvedName,
           asOfMonth,
           event,
@@ -1644,6 +1730,27 @@ export class OrgChartController {
 
         orgChartPayload = orgChartOutcome.data;
         orgChartEsTransportError = orgChartOutcome.orgChartEsTransportError;
+      }
+
+      if (orgChartPayload) {
+        try {
+          const asOfOrgChart = await this.buildAsOfOrgChartFromCandidates({
+            normalizedCompanyId,
+            companyName: options.companyName,
+            country: options.country,
+            functionRoot: options.functionRoot,
+            asOfMonth: options.asOfMonth,
+            baseOrgChartPayload: orgChartPayload,
+          });
+          if (asOfOrgChart) {
+            orgChartPayload = asOfOrgChart;
+          }
+        } catch (error) {
+          this.logger.warn(
+            `Failed to build as-of org chart snapshot for companyId=${normalizedCompanyId}; serving default payload`,
+            error as Error,
+          );
+        }
       }
 
       if (

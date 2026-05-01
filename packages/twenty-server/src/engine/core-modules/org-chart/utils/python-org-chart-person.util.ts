@@ -23,7 +23,13 @@ export function normalizePersonForPythonOrgChartBuild(
     return String(value);
   };
 
-  const fullName = str(partial.full_name) || str(partial.name);
+  const fullName =
+    str(partial.full_name) ||
+    str(partial.fullName) ||
+    str(partial.name) ||
+    [str(partial.first_name), str(partial.last_name)]
+      .filter((segment) => segment.trim().length > 0)
+      .join(' ');
   const linkedinUrl =
     str(partial.linkedin_url) || str(partial.std_linkedin_url);
   const id =

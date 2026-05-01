@@ -1,18 +1,18 @@
 import { ReactNode, useMemo, useState } from 'react';
 
 import {
-    OrgChartDiagram,
-    OrgChartDiagramHandle,
-    OrgChartDiagramProps,
-    OrgChartSearchControls,
+  OrgChartDiagram,
+  OrgChartDiagramHandle,
+  OrgChartDiagramProps,
+  OrgChartSearchControls,
 } from 'twenty-orgchart';
 import { OrgChartNodeData } from 'twenty-shared';
 
 import { OrgChartAddToJobModal } from '../components/OrgChartAddToJobModal';
 import { OrgChartCompanyDrawer } from '../components/OrgChartCompanyDrawer';
 import {
-    OrgChartHeader,
-    OrgChartHeaderProps,
+  OrgChartHeader,
+  OrgChartHeaderProps,
 } from '../components/OrgChartHeader';
 import { OrgChartOutreachModal } from '../components/OrgChartOutreachModal';
 import { OrgChartResultModal } from '../components/OrgChartResultModal';
@@ -22,40 +22,41 @@ import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/Drop
 import { DropdownMenuSeparator } from '@/ui/layout/dropdown/components/DropdownMenuSeparator';
 import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
 import {
-    ConfirmationModal,
-    StyledCenteredButton,
+  ConfirmationModal,
+  StyledCenteredButton,
 } from '@/ui/layout/modal/components/ConfirmationModal';
 import { IconChevronDown, MenuItem } from 'twenty-ui';
 
 import {
-    StyledAsOfMonthInput,
-    StyledAsOfMonthLabel,
-    StyledAsOfMonthPicker,
-    StyledAsOfMonthSlider,
-    StyledAsOfMonthSliderContainer,
-    StyledAsOfMonthSliderDot,
-    StyledAsOfMonthSliderValue,
-    StyledContainer,
-    StyledDiagramArea,
-    StyledDiagramBody,
-    StyledErrorMessage,
-    StyledLeadershipBannerLink,
-    StyledLeadershipBannerPaidHighlight,
-    StyledLeadershipBannerPaidNote,
-    StyledLeadershipInfoBanner,
-    StyledLeadershipLoadingOverlay,
-    StyledLoadingMessage,
-    StyledPreviewBannerSignupButton,
-    StyledPreviewPersistentBanner,
-    StyledProgressBanner,
-    StyledSearchOverlay,
-    StyledSpinner,
-    StyledTemplateBanner,
-    StyledTemplateBannerButton,
-    StyledTopRightActionButton,
-    StyledTopRightActionsCenterGroup,
-    StyledTopRightActionsOverlay,
-    StyledTopRightActionsRightGroup,
+  StyledAsOfMonthInput,
+  StyledAsOfMonthLabel,
+  StyledAsOfMonthPicker,
+  StyledAsOfMonthSlider,
+  StyledAsOfMonthSliderContainer,
+  StyledAsOfMonthSliderDot,
+  StyledAsOfMonthSliderRangeLabels,
+  StyledAsOfMonthSliderTimeline,
+  StyledAsOfMonthSliderValue,
+  StyledContainer,
+  StyledDiagramArea,
+  StyledDiagramBody,
+  StyledErrorMessage,
+  StyledLeadershipBannerLink,
+  StyledLeadershipBannerPaidNote,
+  StyledLeadershipInfoBanner,
+  StyledLeadershipLoadingOverlay,
+  StyledLoadingMessage,
+  StyledPreviewBannerSignupButton,
+  StyledPreviewPersistentBanner,
+  StyledProgressBanner,
+  StyledSearchOverlay,
+  StyledSpinner,
+  StyledTemplateBanner,
+  StyledTemplateBannerButton,
+  StyledTopRightActionButton,
+  StyledTopRightActionsCenterGroup,
+  StyledTopRightActionsOverlay,
+  StyledTopRightActionsRightGroup
 } from './ArxOrgChart.styles';
 
 type ArxOrgChartViewType = 'calendarView' | 'sliderView';
@@ -346,6 +347,12 @@ export const ArxOrgChartView = ({
       ? new Date()
       : (parseMonthToDate(monthRange[selectedMonthIndex]) ?? new Date()),
   );
+  const startMonthLabel = monthLabelFormatter.format(
+    parseMonthToDate(monthRange[0]) ?? new Date(),
+  );
+  const endMonthLabel = monthLabelFormatter.format(
+    parseMonthToDate(monthRange[monthRange.length - 1]) ?? new Date(),
+  );
 
   return (
     <StyledContainer>
@@ -465,7 +472,7 @@ export const ArxOrgChartView = ({
                       above to load the full company org chart.
                     </span>
                   )}
-                  <StyledLeadershipBannerPaidNote>
+                  {/* <StyledLeadershipBannerPaidNote>
                     <StyledLeadershipBannerPaidHighlight>
                       Small preview only:
                     </StyledLeadershipBannerPaidHighlight>{' '}
@@ -479,7 +486,7 @@ export const ArxOrgChartView = ({
                       paid customers
                     </StyledLeadershipBannerPaidHighlight>
                     .
-                  </StyledLeadershipBannerPaidNote>
+                  </StyledLeadershipBannerPaidNote> */}
                 </StyledLeadershipInfoBanner>
               )}
               {m7kqPreviewOrgChartBanner && (
@@ -511,7 +518,7 @@ export const ArxOrgChartView = ({
                       </>
                     ) : null}
                   </span>
-                  <StyledLeadershipBannerPaidNote>
+                  {/* <StyledLeadershipBannerPaidNote>
                     <StyledLeadershipBannerPaidHighlight>
                       Small preview only:
                     </StyledLeadershipBannerPaidHighlight>{' '}
@@ -525,7 +532,7 @@ export const ArxOrgChartView = ({
                       paid customers
                     </StyledLeadershipBannerPaidHighlight>
                     .
-                  </StyledLeadershipBannerPaidNote>
+                  </StyledLeadershipBannerPaidNote> */}
                 </StyledLeadershipInfoBanner>
               )}
               {apolloFallbackNotice && (
@@ -581,22 +588,30 @@ export const ArxOrgChartView = ({
                           {isSingleMonthTimeline ? (
                             <StyledAsOfMonthSliderDot />
                           ) : (
-                            <StyledAsOfMonthSlider
-                              type="range"
-                              min={0}
-                              max={Math.max(monthRange.length - 1, 0)}
-                              step={1}
-                              value={selectedMonthIndex}
+                            <StyledAsOfMonthSliderTimeline
                               style={{ width: `${sliderTrackWidth}px` }}
-                              onChange={(e) => {
-                                const nextIndex = Number(e.target.value);
-                                const nextMonth = monthRange[nextIndex];
-                                if (!nextMonth) {
-                                  return;
-                                }
-                                headerProps.onAsOfMonthChange?.(nextMonth);
-                              }}
-                            />
+                            >
+                              <StyledAsOfMonthSlider
+                                type="range"
+                                min={0}
+                                max={Math.max(monthRange.length - 1, 0)}
+                                step={1}
+                                value={selectedMonthIndex}
+                                style={{ width: '100%' }}
+                                onChange={(e) => {
+                                  const nextIndex = Number(e.target.value);
+                                  const nextMonth = monthRange[nextIndex];
+                                  if (!nextMonth) {
+                                    return;
+                                  }
+                                  headerProps.onAsOfMonthChange?.(nextMonth);
+                                }}
+                              />
+                              <StyledAsOfMonthSliderRangeLabels>
+                                <span>{startMonthLabel}</span>
+                                <span>{endMonthLabel}</span>
+                              </StyledAsOfMonthSliderRangeLabels>
+                            </StyledAsOfMonthSliderTimeline>
                           )}
                           <StyledAsOfMonthSliderValue>
                             {selectedMonthLabel}
@@ -626,6 +641,14 @@ export const ArxOrgChartView = ({
                     size="small"
                     type="button"
                     onClick={searchControlsProps.onGetAll}
+                  />
+                  <StyledTopRightActionButton
+                    title="Build Org Intelligence"
+                    variant="secondary"
+                    accent="default"
+                    size="small"
+                    type="button"
+                    onClick={searchControlsProps.onBuildOrgIntelligence}
                   />
                   <Dropdown
                     dropdownId={multiSourceDropdownId}

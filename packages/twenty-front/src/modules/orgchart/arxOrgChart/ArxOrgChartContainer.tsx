@@ -174,6 +174,9 @@ export const ArxOrgChartContainer = ({
     orgChartSelectedCompanyInfoState,
   );
   const setContactsByKey = useSetRecoilState(orgChartContactsByKeyState);
+  const setOrgChartLinkedinCandidateSource = useSetRecoilState(
+    orgChartLinkedinCandidateSourceState,
+  );
 
   const { refetchJobs } = useJobRefetch();
   const { enqueueSnackBar } = useSnackBar();
@@ -234,10 +237,14 @@ export const ArxOrgChartContainer = ({
         // Preserve sample-company toggles if present.
         const sampleSource = searchParams.get('sampleSource')?.trim();
         const sampleProfiles = searchParams.get('sampleProfiles')?.trim();
-        const apifyIncludePast = searchParams.get('apifyIncludePast')?.trim();
+        const includeOrgIntelligence = searchParams
+          .get('includeOrgIntelligence')
+          ?.trim();
         if (sampleSource) params.set('sampleSource', sampleSource);
         if (sampleProfiles) params.set('sampleProfiles', sampleProfiles);
-        if (apifyIncludePast) params.set('apifyIncludePast', apifyIncludePast);
+        if (includeOrgIntelligence) {
+          params.set('includeOrgIntelligence', includeOrgIntelligence);
+        }
 
         const url = `${baseUrl.replace(/\/$/, '')}/org-chart/${encodeURIComponent(
           companyId,
@@ -294,6 +301,8 @@ export const ArxOrgChartContainer = ({
     industry: effectiveIndustry,
     asOfMonth: asOfMonth || undefined,
     linkedinCompanyUrl: linkedinUrlToUse?.trim(),
+    includeOrgIntelligence:
+      searchParams.get('includeOrgIntelligence') ?? undefined,
     linkedinUnipileAccountId:
       process.env.REACT_APP_ORGCHART_UNIPILE_ACCOUNT_ID?.trim(),
     businessDivisionRawQuery: businessDivisionQuery.trim() || undefined,
@@ -779,6 +788,26 @@ export const ArxOrgChartContainer = ({
     multiSourceSelectedSlugs,
   ]);
 
+  const handleBuildOrgIntelligence = useCallback(async () => {
+    setOrgChartLinkedinCandidateSource('apify');
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('includeOrgIntelligence', 'true');
+    setSearchParams(nextParams, { replace: true });
+
+    await actions.executeOrgchartSearch({
+      mode: 'entire_company',
+      origin: 'header',
+      country: DEFAULT_ORG_CHART_COUNTRY,
+      functionRoot: DEFAULT_ORG_CHART_FUNCTION_ROOT,
+    });
+  }, [
+    actions.executeOrgchartSearch,
+    searchParams,
+    setOrgChartLinkedinCandidateSource,
+    setSearchParams,
+  ]);
+
   const handleMapBusinessDivision = useCallback(async () => {
     const trimmed = businessDivisionQuery.trim();
     if (!trimmed) return;
@@ -960,6 +989,11 @@ export const ArxOrgChartContainer = ({
         },
         'multi_source',
       );
+    },
+    onBuildOrgIntelligence: () => {
+      requestCandidateSearchConfirm(t`Confirm org intelligence build`, () => {
+        void handleBuildOrgIntelligence();
+      });
     },
     multiSourceSelectedSources: multiSourceSelectedSlugs,
     onToggleMultiSource: toggleMultiSource,
@@ -1191,7 +1225,8 @@ export const ArxOrgChartContainer = ({
       companyName: effectiveCompanyName,
       sampleSource: searchParams.get('sampleSource') ?? undefined,
       sampleProfiles: searchParams.get('sampleProfiles') ?? undefined,
-      apifyIncludePast: searchParams.get('apifyIncludePast') ?? undefined,
+      includeOrgIntelligence:
+        searchParams.get('includeOrgIntelligence') ?? undefined,
     },
     onAsOfMonthChange: (next: string) => {
       const copy = new URLSearchParams(searchParams);

@@ -375,7 +375,6 @@ export class PythonOrgChartService {
       process.env.ARXENA_SITE_ORGCHART_URL === '';
 
     this.logger.log(`Using ${useCli ? 'CLI' : 'HTTP'} orgchart build`);
-    this.logger.log(`Payload: ${JSON.stringify(payload)}`);
     if (useCli) {
       return this.runPython<OrgChartData>(['orgchart'], payload);
     }

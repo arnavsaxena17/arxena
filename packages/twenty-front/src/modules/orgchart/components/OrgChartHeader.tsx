@@ -105,7 +105,7 @@ export type OrgChartHeaderProps = OrgChartCompanyInfoProps & {
     companyName?: string;
     sampleSource?: string;
     sampleProfiles?: string;
-    apifyIncludePast?: string;
+    includeOrgIntelligence?: string;
   };
 };
 

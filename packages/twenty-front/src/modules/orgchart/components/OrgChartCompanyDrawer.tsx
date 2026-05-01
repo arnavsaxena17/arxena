@@ -209,7 +209,7 @@ export type OrgChartCompanyDrawerProps = OrgChartCompanyInfoProps & {
     companyName?: string;
     sampleSource?: string;
     sampleProfiles?: string;
-    apifyIncludePast?: string;
+    includeOrgIntelligence?: string;
   };
 };
 
@@ -308,10 +308,10 @@ export const OrgChartCompanyDrawer = ({
         if (timelineProfilesOptions.sampleProfiles?.trim()) {
           params.set('sampleProfiles', timelineProfilesOptions.sampleProfiles.trim());
         }
-        if (timelineProfilesOptions.apifyIncludePast?.trim()) {
+        if (timelineProfilesOptions.includeOrgIntelligence?.trim()) {
           params.set(
-            'apifyIncludePast',
-            timelineProfilesOptions.apifyIncludePast.trim(),
+            'includeOrgIntelligence',
+            timelineProfilesOptions.includeOrgIntelligence.trim(),
           );
         }
         params.set('event', event);

@@ -117,9 +117,22 @@ export const StyledAsOfMonthSliderContainer = styled.div`
   max-width: 320px;
 `;
 
+export const StyledAsOfMonthSliderTimeline = styled.div`
+  display: inline-flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(0.5)};
+`;
+
 export const StyledAsOfMonthSlider = styled.input`
   width: 240px;
   cursor: pointer;
+`;
+
+export const StyledAsOfMonthSliderRangeLabels = styled.div`
+  display: flex;
+  justify-content: space-between;
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${({ theme }) => theme.font.size.xs};
 `;
 
 export const StyledAsOfMonthSliderValue = styled.span`

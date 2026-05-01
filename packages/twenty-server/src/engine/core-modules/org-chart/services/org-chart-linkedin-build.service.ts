@@ -1,9 +1,9 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
 import {
-    graphqlToAddNewJob,
-    OrgChartData,
-    OrgchartSearchMode,
+  graphqlToAddNewJob,
+  OrgChartData,
+  OrgchartSearchMode,
 } from 'twenty-shared';
 
 import { ApifyService } from 'src/engine/core-modules/apify/services/apify.service';
@@ -18,9 +18,9 @@ import { OrgchartLinkedinXrayBuildJobData } from 'src/engine/core-modules/candid
 import { OrgchartMultiSourceBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-multisource-build.types';
 import { OrgchartUnipileBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-unipile-build.types';
 import {
-    ApolloIoRestService,
-    ApolloPeopleSearchParams,
-    isApolloOrganizationId,
+  ApolloIoRestService,
+  ApolloPeopleSearchParams,
+  isApolloOrganizationId,
 } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { ApolloPeopleSearchTransformerService } from 'src/engine/core-modules/candidate-search/services/apollo-people-search-transformer.service';
 import { OrgChartSearchService } from 'src/engine/core-modules/candidate-search/services/orgchart-search.service';
@@ -35,8 +35,8 @@ import { linkedInPeopleSearchResultMatchesTargetCompany } from 'src/engine/core-
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import {
-    LinkedInSearchService,
-    parseApifyLinkedinCompanyScraperLogLine,
+  LinkedInSearchService,
+  parseApifyLinkedinCompanyScraperLogLine,
 } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
@@ -99,6 +99,7 @@ type SearchOrgchartLinkedInBody = {
   companyDomain?: string;
   apifyMaxItems?: number;
   profileScraperMode?: string;
+  includeOrgIntelligence?: boolean;
   linkedinUnipileAccountId?: string;
   /** NL business division query; requires Unipile (not Apify) */
   businessDivisionRawQuery?: string;
@@ -2262,6 +2263,7 @@ export class OrgChartLinkedInBuildService {
       linkedinCompanyUrl,
       maxItems,
       profileScraperMode: body.profileScraperMode,
+      includeOrgIntelligence: body.includeOrgIntelligence === true,
       shouldWriteCompanyOrgChartCache,
     };
 
@@ -3506,7 +3508,10 @@ export class OrgChartLinkedInBuildService {
       companyName: resolvedCompanyName,
       event: 'status',
       data: {
-        message: 'Running Apify company employee scraper…',
+        message:
+          jobData.includeOrgIntelligence === true
+            ? 'Running Apify employee search scraper (current + past)…'
+            : 'Running Apify company employee scraper…',
         candidateSource: 'apify',
       },
     });
@@ -3519,83 +3524,113 @@ export class OrgChartLinkedInBuildService {
 
     try {
       items =
-        await this.linkedInSearchService.fetchCompanyEmployeesViaApifyActor({
-          linkedinCompanyUrl: jobData.linkedinCompanyUrl,
-          maxItems: jobData.maxItems,
-          profileScraperMode: jobData.profileScraperMode,
-          defaultCompanyName: resolvedCompanyName,
-          companyLinkedinUrl: jobData.linkedinCompanyUrl,
-          jobTitles: jobData.jobTitles,
-          onProgress: async (message) => {
-            const parsed = parseApifyLinkedinCompanyScraperLogLine(message);
-
-            console.log('This is parsed', parsed);
-            if (parsed?.kind === 'profiles_total') {
-              apifyReportedTotalProfiles = parsed.total;
-              const approxPages = Math.max(1, Math.ceil(parsed.total / 25));
-
-              await this.emitOrgchartSearchProgressForToken(apiToken, {
-                requestId,
-                mode: modeForOrgChartBuild,
-                searchType,
-                companyName: resolvedCompanyName,
-                event: 'paginationInfo',
-                data: {
-                  strategyId: apifyStrategyId,
-                  strategyLabel: apifyStrategyLabel,
-                  totalCount: parsed.total,
-                  totalPages: approxPages,
-                  pageLimit: 25,
-                  candidateSource: 'apify',
+        jobData.includeOrgIntelligence === true
+          ? await this.linkedInSearchService.fetchCompanyEmployeesViaApifyEmployeeSearchActorCurrentAndPast(
+              {
+                linkedinCompanyUrl: jobData.linkedinCompanyUrl,
+                maxProfiles: jobData.maxItems,
+                profileScraperMode: jobData.profileScraperMode ?? 'Full',
+                defaultCompanyName: resolvedCompanyName,
+                companyLinkedinUrl: jobData.linkedinCompanyUrl,
+                onProgress: async (message) => {
+                  await this.emitOrgchartSearchProgressForToken(apiToken, {
+                    requestId,
+                    mode: modeForOrgChartBuild,
+                    searchType,
+                    companyName: resolvedCompanyName,
+                    event: 'status',
+                    data: {
+                      message,
+                      candidateSource: 'apify',
+                    },
+                  });
                 },
-              });
-            }
-            if (parsed?.kind === 'search_page') {
-              const totalPages = apifyReportedTotalProfiles
-                ? Math.max(1, Math.ceil(apifyReportedTotalProfiles / 25))
-                : undefined;
-              const totalCandidatesApprox = apifyReportedTotalProfiles
-                ? Math.min(apifyReportedTotalProfiles, parsed.page * 25)
-                : parsed.page * 25;
-
-              await this.emitOrgchartSearchProgressForToken(apiToken, {
-                requestId,
-                mode: modeForOrgChartBuild,
-                searchType,
-                companyName: resolvedCompanyName,
-                event: 'pageResults',
-                data: {
-                  page: parsed.page,
-                  totalPages,
-                  totalCandidates: totalCandidatesApprox,
-                  candidatesReceived: parsed.profilesOnPage,
-                  totalCountFromAPI: apifyReportedTotalProfiles,
-                  remainingToFetch:
-                    apifyReportedTotalProfiles != null
-                      ? Math.max(
-                          0,
-                          apifyReportedTotalProfiles - totalCandidatesApprox,
-                        )
-                      : undefined,
-                  strategyId: apifyStrategyId,
-                  strategyLabel: apifyStrategyLabel,
-                  candidateSource: 'apify',
-                },
-              });
-            }
-            await this.emitOrgchartSearchProgressForToken(apiToken, {
-              requestId,
-              mode: modeForOrgChartBuild,
-              searchType,
-              companyName: resolvedCompanyName,
-              event: 'status',
-              data: {
-                message,
-                candidateSource: 'apify',
               },
-            });
-          },
-        });
+            ).then(({ current, past }) =>
+              dedupeAndMergeOrgChartCandidates([
+                ...(current as unknown as Array<Record<string, unknown>>),
+                ...(past as unknown as Array<Record<string, unknown>>),
+              ]) as unknown as TransformedCandidateForTable[],
+            )
+          : await this.linkedInSearchService.fetchCompanyEmployeesViaApifyActor(
+              {
+                linkedinCompanyUrl: jobData.linkedinCompanyUrl,
+                maxItems: jobData.maxItems,
+                profileScraperMode: jobData.profileScraperMode,
+                defaultCompanyName: resolvedCompanyName,
+                companyLinkedinUrl: jobData.linkedinCompanyUrl,
+                jobTitles: jobData.jobTitles,
+                onProgress: async (message) => {
+                  const parsed = parseApifyLinkedinCompanyScraperLogLine(message);
+
+                  console.log('This is parsed', parsed);
+                  if (parsed?.kind === 'profiles_total') {
+                    apifyReportedTotalProfiles = parsed.total;
+                    const approxPages = Math.max(1, Math.ceil(parsed.total / 25));
+
+                    await this.emitOrgchartSearchProgressForToken(apiToken, {
+                      requestId,
+                      mode: modeForOrgChartBuild,
+                      searchType,
+                      companyName: resolvedCompanyName,
+                      event: 'paginationInfo',
+                      data: {
+                        strategyId: apifyStrategyId,
+                        strategyLabel: apifyStrategyLabel,
+                        totalCount: parsed.total,
+                        totalPages: approxPages,
+                        pageLimit: 25,
+                        candidateSource: 'apify',
+                      },
+                    });
+                  }
+                  if (parsed?.kind === 'search_page') {
+                    const totalPages = apifyReportedTotalProfiles
+                      ? Math.max(1, Math.ceil(apifyReportedTotalProfiles / 25))
+                      : undefined;
+                    const totalCandidatesApprox = apifyReportedTotalProfiles
+                      ? Math.min(apifyReportedTotalProfiles, parsed.page * 25)
+                      : parsed.page * 25;
+
+                    await this.emitOrgchartSearchProgressForToken(apiToken, {
+                      requestId,
+                      mode: modeForOrgChartBuild,
+                      searchType,
+                      companyName: resolvedCompanyName,
+                      event: 'pageResults',
+                      data: {
+                        page: parsed.page,
+                        totalPages,
+                        totalCandidates: totalCandidatesApprox,
+                        candidatesReceived: parsed.profilesOnPage,
+                        totalCountFromAPI: apifyReportedTotalProfiles,
+                        remainingToFetch:
+                          apifyReportedTotalProfiles != null
+                            ? Math.max(
+                                0,
+                                apifyReportedTotalProfiles - totalCandidatesApprox,
+                              )
+                            : undefined,
+                        strategyId: apifyStrategyId,
+                        strategyLabel: apifyStrategyLabel,
+                        candidateSource: 'apify',
+                      },
+                    });
+                  }
+                  await this.emitOrgchartSearchProgressForToken(apiToken, {
+                    requestId,
+                    mode: modeForOrgChartBuild,
+                    searchType,
+                    companyName: resolvedCompanyName,
+                    event: 'status',
+                    data: {
+                      message,
+                      candidateSource: 'apify',
+                    },
+                  });
+                },
+              },
+            );
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Apify fetch failed';
 
@@ -4581,8 +4616,8 @@ export class OrgChartLinkedInBuildService {
             ? Math.min(apifyMaxItemsRaw, 10000)
             : 2500;
 
-        const apifyIncludePast =
-          String((rawBody as any).apifyIncludePast ?? '').toLowerCase() ===
+        const includeOrgIntelligence =
+          String((rawBody as any).includeOrgIntelligence ?? '').toLowerCase() ===
           'true';
 
         const useEmployeeSearchActor =
@@ -4614,7 +4649,7 @@ export class OrgChartLinkedInBuildService {
                 onProgress,
               })
               .then(async (current) => {
-                if (!apifyIncludePast) {
+                if (!includeOrgIntelligence) {
                   return current;
                 }
                 await onProgress('Apify: fetching past employees…');

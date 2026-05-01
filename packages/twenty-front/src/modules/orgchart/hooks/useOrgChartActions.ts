@@ -71,6 +71,8 @@ export type UseOrgChartActionsParams = {
   onPreviewNodePeopleRequest?: (node: OrgChartNodeData) => void;
   /** Canonical LinkedIn company URL for org-chart search + Python pipeline (e.g. https://www.linkedin.com/company/briskpe/) */
   linkedinCompanyUrl?: string;
+  /** When true, Apify org chart builds should fetch both current and past employees. */
+  includeOrgIntelligence?: string;
   /**
    * Unipile LinkedIn account id for this search (sent as `?account_id=` like linkedin-search).
    * Prefer workspace-linked account; use for local/testing via env if needed.
@@ -125,6 +127,21 @@ const formatInsufficientOrgChartCreditsMessage = (input: {
   }
 
   return 'Organization chart request failed.';
+};
+
+const formatOrgChartTransportErrorMessage = (message: string): string => {
+  const normalized = message.trim();
+  const isRateLimited =
+    /status\s*code\s*429/i.test(normalized) ||
+    /status\s*429/i.test(normalized) ||
+    /too many requests/i.test(normalized) ||
+    /maximum number of api calls/i.test(normalized);
+
+  if (isRateLimited) {
+    return 'Rate limited by Apollo. Please retry later or upgrade your Apollo plan.';
+  }
+
+  return normalized;
 };
 
 const createOrgChartRequestId = () =>
@@ -286,6 +303,7 @@ export const useOrgChartActions = ({
   industry,
   industryCategory,
   asOfMonth,
+  includeOrgIntelligence,
   onPreviewNodePeopleRequest,
   linkedinCompanyUrl,
   linkedinUnipileAccountId,
@@ -1275,6 +1293,9 @@ export const useOrgChartActions = ({
       typeof asOfMonth === 'string' && asOfMonth.trim().length > 0
         ? asOfMonth.trim()
         : undefined;
+    const shouldIncludeOrgIntelligence =
+      typeof includeOrgIntelligence === 'string' &&
+      includeOrgIntelligence.trim().toLowerCase() === 'true';
     const body = {
       rawQuery: requirement,
       cleanedQuery: requirement,
@@ -1294,6 +1315,7 @@ export const useOrgChartActions = ({
         ? { industryCategory: trimmedIndustryCategory }
         : {}),
       ...(trimmedAsOfMonth ? { asOfMonth: trimmedAsOfMonth } : {}),
+      ...(shouldIncludeOrgIntelligence ? { includeOrgIntelligence: true } : {}),
       ...(params.multiSource
         ? {
             multiSource: true,
@@ -1529,8 +1551,10 @@ export const useOrgChartActions = ({
       if (!isAbort) {
         // eslint-disable-next-line no-console
         console.error(err);
-        const errorMessage =
+        const rawErrorMessage =
           err instanceof Error ? err.message : 'Failed to fetch candidates';
+        const errorMessage =
+          formatOrgChartTransportErrorMessage(rawErrorMessage);
         setContextError(errorMessage);
         setContextProgressMessage(null);
         setContextProgressPage(null);

@@ -13,5 +13,6 @@ export type OrgchartApifyBuildJobData = {
   linkedinCompanyUrl: string;
   maxItems: number;
   profileScraperMode?: string;
+  includeOrgIntelligence?: boolean;
   shouldWriteCompanyOrgChartCache: boolean;
 };
