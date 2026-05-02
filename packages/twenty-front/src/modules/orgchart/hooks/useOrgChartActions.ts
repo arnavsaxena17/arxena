@@ -57,6 +57,8 @@ export type UseOrgChartActionsParams = {
   companyId: string;
   companyName?: string;
   website?: string;
+  /** Bare domain (e.g. litify.com). Sent when website-derived domain is missing (query params, autocomplete fallback). */
+  companyDomain?: string;
   employeeCount?: number | null;
   /** Raw industry label (e.g. "Computer Software") to help Python remap functions. */
   industry?: string;
@@ -362,6 +364,7 @@ export const useOrgChartActions = ({
   companyId,
   companyName,
   website,
+  companyDomain: companyDomainHint,
   employeeCount,
   industry,
   industryCategory,
@@ -1393,7 +1396,13 @@ export const useOrgChartActions = ({
 
     const trimmedLinkedinCompanyUrl = linkedinCompanyUrl?.trim();
     const useUnipileSource = effectiveCandidateSource === 'unipile';
-    const companyDomain = extractCompanyDomainFromWebsite(website);
+    const trimmedDomainHint =
+      typeof companyDomainHint === 'string' &&
+      companyDomainHint.trim().length > 0
+        ? companyDomainHint.trim().toLowerCase()
+        : undefined;
+    const companyDomain =
+      trimmedDomainHint ?? extractCompanyDomainFromWebsite(website);
     const trimmedIndustry =
       typeof industry === 'string' && industry.trim().length > 0
         ? industry.trim()

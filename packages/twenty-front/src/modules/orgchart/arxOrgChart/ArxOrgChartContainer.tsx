@@ -38,6 +38,7 @@ import {
 import { ArxOrgChartView } from './ArxOrgChartView';
 import { useOrgChartBanners } from './hooks/useOrgChartBanners';
 import { useOrgChartNodeDataArray } from './hooks/useOrgChartNodeDataArray';
+import { extractCompanyDomainFromWebsite } from '../utils/orgChartUtils';
 import { hydrateContactsByKeyFromOrgData } from './utils/contactCacheHydration';
 
 export type ArxOrgChartContainerProps = {
@@ -222,9 +223,10 @@ export const ArxOrgChartContainer = ({
     unipileCompanyProfile?.name ??
     companyNameFromQuery ??
     undefined;
-  const effectiveCompanyWebsite =
+  /** Props/query/Unipile only — merged with autocomplete fallback below for API calls + header. */
+  const baseCompanyWebsite =
     website ?? unipileCompanyProfile?.website ?? websiteFromQuery ?? undefined;
-  const effectiveCompanyDomain =
+  const baseCompanyDomain =
     companyDomain?.trim() || companyDomainFromQuery || undefined;
 
   const linkedinUrlToUse = linkedinUrl;
@@ -303,10 +305,18 @@ export const ArxOrgChartContainer = ({
       ? unipileCompanyProfile.industry[0]
       : undefined);
 
+  const effectiveCompanyWebsite =
+    baseCompanyWebsite ?? fallbackCompanyInfo?.website ?? undefined;
+  const effectiveCompanyDomain =
+    baseCompanyDomain ||
+    extractCompanyDomainFromWebsite(fallbackCompanyInfo?.website) ||
+    undefined;
+
   const actions = useOrgChartActions({
     companyId,
     companyName: effectiveCompanyName,
     website: effectiveCompanyWebsite,
+    companyDomain: effectiveCompanyDomain,
     employeeCount: effectiveEmployeeCount ?? undefined,
     industry: effectiveIndustry,
     asOfMonth: asOfMonth || undefined,
@@ -1214,7 +1224,7 @@ export const ArxOrgChartContainer = ({
 
   const headerProps = {
     companyName: effectiveCompanyName ?? fallbackCompanyInfo?.companyName,
-    website: effectiveCompanyWebsite ?? fallbackCompanyInfo?.website,
+    website: effectiveCompanyWebsite,
     locationName: locationName ?? fallbackCompanyInfo?.locationName,
     industry: industry ?? fallbackCompanyInfo?.industry,
     profileCount: profileCount ?? fallbackCompanyInfo?.profileCount,
