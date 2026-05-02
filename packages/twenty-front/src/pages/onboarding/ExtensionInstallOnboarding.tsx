@@ -10,6 +10,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 import { ARXENA_CHROME_WEBSTORE_URL } from 'twenty-shared';
 import { ActionLink, Loader, MainButton } from 'twenty-ui';
+import { getPostAuthLandingAppPath } from '~/config';
 import { OnboardingStatus } from '~/generated/graphql';
 import { Mixpanel } from '~/mixpanel';
 import { OnboardingIntentModalLayout } from '~/pages/onboarding/OnboardingIntentModalLayout';
@@ -61,7 +62,7 @@ export const ExtensionInstallOnboarding = () => {
         : currentUser,
     );
 
-    navigate(AppPath.Jobs, { replace: true });
+    navigate(getPostAuthLandingAppPath(), { replace: true });
   };
 
   const handleInstallExtension = () => {

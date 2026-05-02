@@ -7,6 +7,7 @@ import { AppPath } from '@/types/AppPath';
 import { useCallback, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
+import { getPostAuthLandingAppPath } from '~/config';
 
 export const useDefaultHomePagePath = () => {
   const currentUser = useRecoilValue(currentUserState);
@@ -81,7 +82,7 @@ export const useDefaultHomePagePath = () => {
 
     // const namePlural = defaultObjectPathInfo.objectMetadataItem?.namePlural;
     // const viewId = defaultObjectPathInfo.view?.id;
-    return AppPath.Jobs;
+    return getPostAuthLandingAppPath();
 
     // return getAppPath(
     //   AppPath.RecordIndexPage,

@@ -23,6 +23,7 @@ export default defineConfig(({ command, mode }) => {
   const {
     REACT_APP_SERVER_BASE_URL,
     REACT_APP_EXPERIMENTAL_ORGCHART_NODE_HOVER_HINTS,
+    REACT_APP_POST_AUTH_LANDING,
     VITE_BUILD_SOURCEMAP,
     VITE_DISABLE_TYPESCRIPT_CHECKER,
     VITE_DISABLE_ESLINT_CHECKER,
@@ -205,10 +206,12 @@ export default defineConfig(({ command, mode }) => {
       _env_: {
         REACT_APP_SERVER_BASE_URL,
         REACT_APP_EXPERIMENTAL_ORGCHART_NODE_HOVER_HINTS,
+        REACT_APP_POST_AUTH_LANDING,
       },
       'process.env': {
         REACT_APP_SERVER_BASE_URL,
         REACT_APP_EXPERIMENTAL_ORGCHART_NODE_HOVER_HINTS,
+        REACT_APP_POST_AUTH_LANDING,
       },
     },
     css: {

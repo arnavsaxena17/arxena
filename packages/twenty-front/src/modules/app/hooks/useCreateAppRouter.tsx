@@ -1,6 +1,6 @@
 import {
-  AppRouterProviders,
-  MinimalProviders,
+    AppRouterProviders,
+    MinimalProviders,
 } from '@/app/components/AppRouterProviders';
 import { SettingsRoutes } from '@/app/components/SettingsRoutes';
 
@@ -12,13 +12,14 @@ import { AppPath } from '@/types/AppPath';
 import { BlankLayout } from '@/ui/layout/page/components/BlankLayout';
 import { DefaultLayout } from '@/ui/layout/page/components/DefaultLayout';
 import {
-  Route,
-  createBrowserRouter,
-  createRoutesFromElements,
-  useLocation,
-  useNavigate,
-  useParams,
+    Route,
+    createBrowserRouter,
+    createRoutesFromElements,
+    useLocation,
+    useNavigate,
+    useParams,
 } from 'react-router-dom';
+import { getPostAuthLandingAppPath } from '~/config';
 import { Authorize } from '~/pages/auth/Authorize';
 import { PasswordReset } from '~/pages/auth/PasswordReset';
 import { SignInUp } from '~/pages/auth/SignInUp';
@@ -143,7 +144,7 @@ const OrgChartRoute = () => {
   const hasSelectedCompany = Boolean(companyId.trim());
 
   const handleBack = () => {
-    navigate(`/${AppPath.Jobs}`);
+    navigate(`/${getPostAuthLandingAppPath()}`);
   };
 
   const handleCompanySelect = (company: {

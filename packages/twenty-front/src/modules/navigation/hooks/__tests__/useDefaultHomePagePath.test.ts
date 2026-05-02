@@ -83,15 +83,23 @@ describe('useDefaultHomePagePath', () => {
       withCurrentUser: true,
       withExistingView: false,
     });
-    expect(result.current.defaultHomePagePath).toEqual('/objects/companies');
+    expect(result.current.defaultHomePagePath).toEqual(AppPath.Jobs);
   });
   it('should return proper path when currentUser is defined and view exists', () => {
     const { result } = renderHooks({
       withCurrentUser: true,
       withExistingView: true,
     });
-    expect(result.current.defaultHomePagePath).toEqual(
-      '/objects/companies?viewId=viewId',
-    );
+    expect(result.current.defaultHomePagePath).toEqual(AppPath.Jobs);
+  });
+  it('should return org-chart when REACT_APP_POST_AUTH_LANDING is org-chart', () => {
+    const previous = process.env.REACT_APP_POST_AUTH_LANDING;
+    process.env.REACT_APP_POST_AUTH_LANDING = 'org-chart';
+    const { result } = renderHooks({
+      withCurrentUser: true,
+      withExistingView: false,
+    });
+    expect(result.current.defaultHomePagePath).toEqual(AppPath.OrgChart);
+    process.env.REACT_APP_POST_AUTH_LANDING = previous;
   });
 });

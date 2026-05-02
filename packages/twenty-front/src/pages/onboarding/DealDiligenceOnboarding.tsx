@@ -11,17 +11,18 @@ import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import {
-  buildCalendlyUrlWithPrefill,
-  formatCalendlyInviteeName,
+    buildCalendlyUrlWithPrefill,
+    formatCalendlyInviteeName,
 } from 'twenty-shared';
 import {
-  ActionLink,
-  IconPhone,
-  IconTargetArrow,
-  Loader,
-  MainButton,
-  Pill,
+    ActionLink,
+    IconPhone,
+    IconTargetArrow,
+    Loader,
+    MainButton,
+    Pill,
 } from 'twenty-ui';
+import { getPostAuthLandingAppPath } from '~/config';
 import { OnboardingStatus } from '~/generated/graphql';
 import { Mixpanel } from '~/mixpanel';
 import { OnboardingIntentModalLayout } from '~/pages/onboarding/OnboardingIntentModalLayout';
@@ -289,7 +290,7 @@ export const DealDiligenceOnboarding = () => {
         : currentUser,
     );
 
-    navigate(AppPath.Jobs, { replace: true });
+    navigate(getPostAuthLandingAppPath(), { replace: true });
   };
 
   const handleBookCall = () => {

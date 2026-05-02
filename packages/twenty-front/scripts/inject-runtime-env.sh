@@ -5,7 +5,8 @@ echo "Injecting runtime environment variables into index.html..."
 CONFIG_BLOCK=$(cat << EOF
     <script id="arxena-env-config">
       window._env_ = {
-        REACT_APP_SERVER_BASE_URL: "$REACT_APP_SERVER_BASE_URL"
+        REACT_APP_SERVER_BASE_URL: "$REACT_APP_SERVER_BASE_URL",
+        REACT_APP_POST_AUTH_LANDING: "${REACT_APP_POST_AUTH_LANDING:-}"
       };
     </script>
     <!-- END: ARxena Config -->

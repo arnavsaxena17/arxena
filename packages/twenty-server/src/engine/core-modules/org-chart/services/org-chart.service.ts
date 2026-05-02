@@ -18,10 +18,11 @@ import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import {
-  applyBlankOrgChartSizeForExpectedHeadcount,
-  applyBlankOrgChartSubsetFilter,
+    applyBlankOrgChartSizeForExpectedHeadcount,
+    applyBlankOrgChartSubsetFilter,
 } from '../utils/blank-org-chart-subset.util';
 import { mergeManualCompanyAutocompleteResults } from '../utils/manual-company-autocomplete.util';
+import { buildCompanyOrgChartLogicalCacheKey } from '../utils/orgchart-cache-keys.util';
 import { ArxenaBackendService } from './arxena-backend.service';
 import { OrgChartEsService } from './org-chart-es.service';
 import { normalizeOrgChartPayload } from './org-chart-payload-normalize';
@@ -194,7 +195,12 @@ export class OrgChartService {
       );
     }
 
-    const cacheKey = this.buildCompanyOrgChartCacheKey(undefined, companyId);
+    const cacheKey = buildCompanyOrgChartLogicalCacheKey(
+      undefined,
+      companyId,
+      'entire_company',
+      'classic',
+    );
     const cachedOrgChartPayload = await this.orgChartCacheStorageService.get<{
       orgChart?: Record<string, unknown>;
       cachedAt?: string;
@@ -394,9 +400,11 @@ export class OrgChartService {
       }
     }
 
-    const cacheKey = this.buildCompanyOrgChartCacheKey(
+    const cacheKey = buildCompanyOrgChartLogicalCacheKey(
       options.companyName,
       companyId,
+      'entire_company',
+      'classic',
     );
     const cachedOrgChartPayload = await this.orgChartCacheStorageService.get<{
       orgChart?: Record<string, unknown>;
@@ -589,43 +597,6 @@ export class OrgChartService {
     }
 
     return null;
-  }
-
-  private buildCompanyOrgChartCacheKey(
-    companyName: string | undefined,
-    companyId: string | undefined,
-  ): string {
-    const normalizedCompanyName = (companyName ?? '').trim();
-    const normalizedCompanyId = this.normalizeCompanyId(
-      companyId,
-      normalizedCompanyName,
-    );
-
-    return [
-      'company-orgchart',
-      normalizedCompanyId,
-      'entire_company',
-      'classic',
-    ].join(':');
-  }
-
-  private normalizeCompanyId(
-    companyId?: string,
-    fallbackName?: string,
-  ): string {
-    const normalizedCompanyId = (companyId ?? '').trim().toLowerCase();
-
-    if (normalizedCompanyId) {
-      return normalizedCompanyId;
-    }
-
-    const normalizedFallbackName = (fallbackName ?? '')
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '_')
-      .replace(/^_+|_+$/g, '');
-
-    return normalizedFallbackName || 'unknown_company';
   }
 
   /**
