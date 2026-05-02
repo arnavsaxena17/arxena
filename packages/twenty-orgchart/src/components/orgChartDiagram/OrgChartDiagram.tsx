@@ -1,25 +1,25 @@
 import * as go from 'gojs';
 import { ReactDiagram } from 'gojs-react';
 import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useRef,
+    forwardRef,
+    useCallback,
+    useEffect,
+    useImperativeHandle,
+    useMemo,
+    useRef,
 } from 'react';
 import '../../gojs-runtime-patch';
 
 import type {
-  OrgChartDiagramHandle,
-  OrgChartDiagramProps,
+    OrgChartDiagramHandle,
+    OrgChartDiagramProps,
 } from '../OrgChartDiagram.types';
 import { DEFAULT_AVATAR } from './constants';
 import { initOrgChartDiagram } from './diagramInit';
 import { createNodeTemplate } from './nodeTemplate/createNodeTemplate';
 import {
-  StyledDiagramWrapper,
-  StyledOverviewContainer,
+    StyledDiagramWrapper,
+    StyledOverviewContainer,
 } from './OrgChartDiagram.styles';
 import { clearSearch, focusResultAtIndex, performSearch } from './search';
 import { applyZoomAroundNode, getOrgChartRootNode } from './zoomAndRoot';
@@ -43,6 +43,7 @@ export const OrgChartDiagram = forwardRef<
       showNodeCapabilitiesHoverHint = false,
       nodeCapabilitiesHoverCompanyName,
       m7kqContactMode = false,
+      showLinkedInUrlOnNodes = false,
       onLockedContactChannelClick,
     },
     ref,
@@ -72,6 +73,7 @@ export const OrgChartDiagram = forwardRef<
         showNodeCapabilitiesHoverHint,
         capabilitiesHoverCompanyLabel,
         m7kqContactMode,
+        showLinkedInUrlOnNodes,
         onLockedContactChannelClick,
       });
     }, [
@@ -85,6 +87,7 @@ export const OrgChartDiagram = forwardRef<
       showNodeCapabilitiesHoverHint,
       capabilitiesHoverCompanyLabel,
       m7kqContactMode,
+      showLinkedInUrlOnNodes,
       onLockedContactChannelClick,
     ]);
 
@@ -94,12 +97,14 @@ export const OrgChartDiagram = forwardRef<
         onBackgroundContextAction,
         showNodeCapabilitiesHoverHint,
         m7kqContactMode,
+        showLinkedInUrlOnNodes,
       });
     }, [
       createNodeTemplateFactory,
       onBackgroundContextAction,
       showNodeCapabilitiesHoverHint,
       m7kqContactMode,
+      showLinkedInUrlOnNodes,
     ]);
 
     const getDiagram = useCallback((): go.Diagram | null => {

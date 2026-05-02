@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import type {
-  LinkedInCurrentPosition,
-  LinkedInPeopleSearchResult,
+    LinkedInCurrentPosition,
+    LinkedInPeopleSearchResult,
 } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
+import { extractLinkedinProfileUrlFromOrgChartCandidateRow } from 'src/engine/core-modules/org-chart/utils/orgchart-candidate-linkedin-url.util';
 import {
-  LinkedInSearchTransformerService,
-  TransformedCandidateForTable,
+    LinkedInSearchTransformerService,
+    TransformedCandidateForTable,
 } from './linkedin-search-transformer.service';
 
 type ApifyDatePart = {
@@ -123,7 +124,9 @@ function apifyRowToLinkedInPeopleSearchResult(
   const parsed = loc?.parsed;
   const locationName =
     loc?.linkedinText?.trim() || parsed?.text?.trim() || null;
+  const fromRow = extractLinkedinProfileUrlFromOrgChartCandidateRow(raw);
   const linkedinUrl =
+    fromRow ||
     (typeof item.linkedinUrl === 'string' && item.linkedinUrl.trim()) ||
     (item.publicIdentifier
       ? `https://www.linkedin.com/in/${item.publicIdentifier}`

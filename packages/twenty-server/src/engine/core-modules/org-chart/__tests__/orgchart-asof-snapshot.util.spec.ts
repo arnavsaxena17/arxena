@@ -103,6 +103,36 @@ describe('orgchart-asof-snapshot.util', () => {
     expect(asOf[0].title).toBe('Engineer');
   });
 
+  it('timeline profiles include linkedinUrl and profilePictureUrl from table-shaped rows', () => {
+    const candidates: Array<Record<string, unknown>> = [
+      {
+        id: '1',
+        name: 'A',
+        linkedinUrl: 'https://www.linkedin.com/in/a',
+        profilePictureUrl: 'https://img/p.png',
+        org_contactout_experience: [
+          {
+            company_name: 'Acme',
+            title: 'Engineer',
+            start_date_year: 2024,
+            start_date_month: 2,
+            is_current: true,
+          },
+        ],
+      },
+    ];
+    const out = computeTimelineProfilesFromCandidates({
+      candidates,
+      companyName: 'Acme',
+      asOfMonth: '2024-02',
+      event: 'current',
+      window: '1m',
+    });
+    expect(out.total).toBe(1);
+    expect(out.profiles[0]?.linkedinUrl).toBe('https://www.linkedin.com/in/a');
+    expect(out.profiles[0]?.profilePictureUrl).toBe('https://img/p.png');
+  });
+
   it('returns profile rows for joined event', () => {
     const candidates: Array<Record<string, unknown>> = [
       {

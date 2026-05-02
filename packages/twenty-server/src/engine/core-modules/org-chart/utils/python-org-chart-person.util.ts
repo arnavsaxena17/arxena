@@ -1,3 +1,8 @@
+import {
+    extractLinkedinProfileUrlFromOrgChartCandidateRow,
+    extractProfilePictureUrlFromOrgChartCandidateRow,
+} from './orgchart-candidate-linkedin-url.util';
+
 /**
  * Python OrgStructure.create_org_charts_json_from_std_people_array (org_chart_list.py)
  * builds a fixed string from each person using explicit x['field'] lookups — every key
@@ -31,7 +36,9 @@ export function normalizePersonForPythonOrgChartBuild(
       .filter((segment) => segment.trim().length > 0)
       .join(' ');
   const linkedinUrl =
-    str(partial.linkedin_url) || str(partial.std_linkedin_url);
+    extractLinkedinProfileUrlFromOrgChartCandidateRow(partial) ||
+    str(partial.linkedin_url) ||
+    str(partial.std_linkedin_url);
   const id =
     str(partial.id) ||
     str(partial.org_node_id) ||
@@ -64,9 +71,9 @@ export function normalizePersonForPythonOrgChartBuild(
     inferred_years_experience: str(partial.inferred_years_experience),
     emails: str(partial.emails),
     phone_numbers: str(partial.phone_numbers),
-    profile_picture_url: str(
-      partial.profile_picture_url ?? partial.image ?? '',
-    ),
+    profile_picture_url:
+      extractProfilePictureUrlFromOrgChartCandidateRow(partial) ||
+      str(partial.profile_picture_url ?? partial.image ?? ''),
     id,
   };
 

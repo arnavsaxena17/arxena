@@ -1,8 +1,12 @@
 import {
-  deriveIntervalsForCandidateAtCompany,
-  isActiveInMonth,
-  pickTitleAtMonth,
+    deriveIntervalsForCandidateAtCompany,
+    isActiveInMonth,
+    pickTitleAtMonth,
 } from './orgchart-asof-snapshot.util';
+import {
+    extractLinkedinProfileUrlFromOrgChartCandidateRow,
+    extractProfilePictureUrlFromOrgChartCandidateRow,
+} from './orgchart-candidate-linkedin-url.util';
 
 type MonthKey = `${number}-${string}`;
 type WindowKey = '1m' | '3m' | '6m' | '1y';
@@ -362,14 +366,10 @@ export function computeTimelineProfilesFromCandidates(input: {
         : typeof row.linkedin_url === 'string' && row.linkedin_url.trim()
           ? row.linkedin_url
           : fullName || 'timeline-profile';
-    const linkedinUrl =
-      typeof row.linkedin_url === 'string'
-        ? row.linkedin_url
-        : typeof row.linkedinUrl === 'string'
-          ? row.linkedinUrl
-          : undefined;
-    const profilePictureUrl =
-      typeof row.profile_picture_url === 'string' ? row.profile_picture_url : undefined;
+    const linkedinRaw = extractLinkedinProfileUrlFromOrgChartCandidateRow(row);
+    const linkedinUrl = linkedinRaw ? linkedinRaw : undefined;
+    const profilePicRaw = extractProfilePictureUrlFromOrgChartCandidateRow(row);
+    const profilePictureUrl = profilePicRaw ? profilePicRaw : undefined;
 
     const activeNow = isActiveInMonth(intervals as any, asOfMonth);
     const latestStart = [...intervals]

@@ -9,18 +9,22 @@ export const initOrgChartDiagram = ({
   onBackgroundContextAction,
   showNodeCapabilitiesHoverHint,
   m7kqContactMode,
+  showLinkedInUrlOnNodes = false,
 }: {
   createNodeTemplate: () => go.Node;
   onBackgroundContextAction?: OrgChartDiagramProps['onBackgroundContextAction'];
   showNodeCapabilitiesHoverHint: boolean;
   m7kqContactMode: boolean;
+  showLinkedInUrlOnNodes?: boolean;
 }): go.Diagram => {
   const $ = go.GraphObject.make;
 
   const diagram = $(
     go.Diagram,
     {
-      ...(showNodeCapabilitiesHoverHint || m7kqContactMode
+      ...(showNodeCapabilitiesHoverHint ||
+      m7kqContactMode ||
+      showLinkedInUrlOnNodes
         ? {
             'toolManager.hoverDelay': 0,
             'toolManager.toolTipDuration':

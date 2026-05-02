@@ -1288,6 +1288,7 @@ export const ArxOrgChartContainer = ({
         diagramHandleRef={diagramHandleRef}
         diagramProps={{
           m7kqContactMode: isM7kqOrgChartSource,
+          showLinkedInUrlOnNodes: orgChartLinkedinCandidateSource === 'apify',
           onLockedContactChannelClick: handleM7kqLockedContactClick,
           nodeCapabilitiesHoverCompanyName: effectiveCompanyName ?? undefined,
           iconUrls: {

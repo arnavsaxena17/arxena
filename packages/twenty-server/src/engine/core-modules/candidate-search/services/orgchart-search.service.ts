@@ -27,6 +27,8 @@ import {
     normalizeFunctionRoot,
 } from 'src/engine/core-modules/org-chart/utils/orgchart-normalization.util';
 import { OrgChartData } from 'twenty-shared';
+import { applyAsOfSnapshotToCandidates } from '../../org-chart/utils/orgchart-asof-snapshot.util';
+import { extractLinkedinProfileUrlFromOrgChartCandidateRow } from '../../org-chart/utils/orgchart-candidate-linkedin-url.util';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import type { PeopleSearchStrategyResult } from '../utils/extract-strategies.util';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
@@ -39,7 +41,6 @@ import {
     type OrgchartQueryGeneratorPreference,
 } from './orgchart-linkedin-query-router.service';
 import { SearchExecutionService } from './search-execution.service';
-import { applyAsOfSnapshotToCandidates } from '../../org-chart/utils/orgchart-asof-snapshot.util';
 
 type OrgChartCandidateInput = TransformedCandidateForTable | Record<string, unknown>;
 
@@ -701,12 +702,7 @@ export class OrgChartSearchService {
             (raw as { industry: string }).industry) ||
           '';
 
-        const linkedinUrl =
-          (typeof (raw as { linkedinUrl?: unknown }).linkedinUrl === 'string' &&
-            (raw as { linkedinUrl: string }).linkedinUrl) ||
-          (typeof (raw as { profileUrl?: unknown }).profileUrl === 'string' &&
-            (raw as { profileUrl: string }).profileUrl) ||
-          '';
+        const linkedinUrl = extractLinkedinProfileUrlFromOrgChartCandidateRow(raw);
 
         const locationCountry =
           (typeof (raw as { locationCountry?: unknown }).locationCountry ===

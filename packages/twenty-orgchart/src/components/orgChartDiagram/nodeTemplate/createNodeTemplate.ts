@@ -3,14 +3,14 @@ import { isValidLinkedInProfileUrl, type OrgChartNodeData } from 'twenty-shared'
 
 import type { OrgChartDiagramProps } from '../../OrgChartDiagram.types';
 import {
-  DEFAULT_DOWNLOAD_ICON,
-  DEFAULT_LINKEDIN_ICON,
-  DEFAULT_LOCK_ICON,
-  DEFAULT_M7KQ_EMAIL_ICON,
-  DEFAULT_M7KQ_PHONE_ICON,
-  DEFAULT_SIMILAR_ITEMS_ICON,
-  NODE_CAPABILITIES_BULLETS,
-  getOrgChartDataFromToolTipObject,
+    DEFAULT_DOWNLOAD_ICON,
+    DEFAULT_LINKEDIN_ICON,
+    DEFAULT_LOCK_ICON,
+    DEFAULT_M7KQ_EMAIL_ICON,
+    DEFAULT_M7KQ_PHONE_ICON,
+    DEFAULT_SIMILAR_ITEMS_ICON,
+    NODE_CAPABILITIES_BULLETS,
+    getOrgChartDataFromToolTipObject,
 } from '../constants';
 import { buildOrgChartNodeContextMenu } from '../contextMenus';
 
@@ -25,6 +25,7 @@ export const createNodeTemplate = ({
   showNodeCapabilitiesHoverHint,
   capabilitiesHoverCompanyLabel,
   m7kqContactMode,
+  showLinkedInUrlOnNodes = false,
   onLockedContactChannelClick,
 }: {
   defaultAvatarUrl: string;
@@ -37,6 +38,7 @@ export const createNodeTemplate = ({
   showNodeCapabilitiesHoverHint: boolean;
   capabilitiesHoverCompanyLabel: string;
   m7kqContactMode: boolean;
+  showLinkedInUrlOnNodes?: boolean;
   onLockedContactChannelClick?: OrgChartDiagramProps['onLockedContactChannelClick'];
 }): go.Node => {
   const LOCK_ICON_URL = iconUrls?.lock ?? DEFAULT_LOCK_ICON;
@@ -576,40 +578,137 @@ export const createNodeTemplate = ({
       ),
     );
 
-    const classicLinkedInCell = $(
-      go.Panel,
-      'Spot',
-      {
-        row: 1,
-        column: 2,
-        isClipping: true,
-        alignment: go.Spot.Center,
-        margin: new go.Margin(0, 4, 0, 0),
-        cursor: 'pointer',
-        width: 10,
-        click: (_e: go.InputEvent, obj: go.GraphObject) => {
-          const node = obj.part as go.Node | undefined;
-          const data = node?.data as OrgChartNodeData | undefined;
-          if (!data) return;
-          const url = (data as OrgChartDataMap)[`linkedin_url_${idx}`];
-          if (typeof url === 'string' && isValidLinkedInProfileUrl(url)) {
-            window.open(url.startsWith('http') ? url : `https://${url}`, '_blank');
-          }
-        },
-      },
-      new go.Binding('visible', `linkedin_url_${idx}` as const, (url) =>
-        isValidLinkedInProfileUrl(typeof url === 'string' ? url : undefined),
-      ),
-      $(go.Shape, 'Circle', { width: 10, height: 10, strokeWidth: 0, fill: 'white' }),
+    const classicLinkedInProfileToolTip = makeM7kqChannelToolTip(
       $(
-        go.Picture,
+        go.TextBlock,
         {
-          desiredSize: new go.Size(12, 12),
-          imageStretch: go.GraphObject.UniformToFill,
+          margin: new go.Margin(8, 10, 8, 10),
+          font: '10pt system-ui, Segoe UI, sans-serif',
+          wrap: go.TextBlock.WrapFit,
+          maxSize: new go.Size(380, NaN),
+          textAlign: 'left',
+          stroke: '#0f172a',
         },
-        new go.Binding('source', 'nodeState', findIconSource),
+        new go.Binding(
+          'text',
+          `linkedin_url_${idx}` as const,
+          (url: string | undefined) => {
+            const u = typeof url === 'string' ? url.trim() : '';
+            if (isValidLinkedInProfileUrl(u)) {
+              return `${u}\n\nClick to open in a new tab`;
+            }
+            return 'No LinkedIn profile URL for this person';
+          },
+        ),
       ),
     );
+
+    const classicLinkedInOpenClick = (_e: go.InputEvent, obj: go.GraphObject) => {
+      const node = obj.part as go.Node | undefined;
+      const data = node?.data as OrgChartNodeData | undefined;
+      if (!data) return;
+      const urlRaw = (data as OrgChartDataMap)[`linkedin_url_${idx}`];
+      const url = typeof urlRaw === 'string' ? urlRaw.trim() : '';
+      if (isValidLinkedInProfileUrl(url)) {
+        window.open(url.startsWith('http') ? url : `https://${url}`, '_blank');
+      }
+    };
+
+    const classicLinkedInIconPicture = $(
+      go.Picture,
+      {
+        desiredSize: new go.Size(12, 12),
+        imageStretch: go.GraphObject.UniformToFill,
+      },
+      new go.Binding('source', 'nodeState', findIconSource),
+    );
+
+    const classicLinkedInCell = showLinkedInUrlOnNodes
+      ? $(
+          go.Panel,
+          'Vertical',
+          {
+            row: 0,
+            column: 2,
+            rowSpan: 2,
+            alignment: go.Spot.Top,
+            margin: new go.Margin(2, 2, 2, 0),
+            toolTip: classicLinkedInProfileToolTip,
+          },
+          new go.Binding(
+            'visible',
+            `linkedin_url_${idx}` as const,
+            (url: string | undefined) =>
+              isValidLinkedInProfileUrl(typeof url === 'string' ? url : undefined),
+          ),
+          $(
+            go.Panel,
+            'Spot',
+            {
+              isClipping: true,
+              alignment: go.Spot.Center,
+              cursor: 'pointer',
+              width: 10,
+              click: classicLinkedInOpenClick,
+            },
+            $(go.Shape, 'Circle', { width: 10, height: 10, strokeWidth: 0, fill: 'white' }),
+            classicLinkedInIconPicture,
+          ),
+          $(
+            go.TextBlock,
+            {
+              font: '6pt system-ui, Segoe UI, sans-serif',
+              stroke: '#0a66c2',
+              maxLines: 2,
+              overflow: go.TextBlock.OverflowEllipsis,
+              width: 84,
+              wrap: go.TextBlock.WrapFit,
+              textAlign: 'left',
+              cursor: 'pointer',
+              margin: new go.Margin(2, 0, 0, 0),
+              click: classicLinkedInOpenClick,
+              toolTip: classicLinkedInProfileToolTip,
+            },
+            new go.Binding(
+              'visible',
+              `linkedin_url_${idx}` as const,
+              (url: string | undefined) =>
+                isValidLinkedInProfileUrl(typeof url === 'string' ? url : undefined),
+            ),
+            new go.Binding(
+              'text',
+              `linkedin_url_${idx}` as const,
+              (url: string | undefined) => {
+                const u = typeof url === 'string' ? url.trim() : '';
+                if (!isValidLinkedInProfileUrl(u)) return '';
+                return u.length > 46 ? `${u.slice(0, 45)}…` : u;
+              },
+            ),
+          ),
+        )
+      : $(
+          go.Panel,
+          'Spot',
+          {
+            row: 1,
+            column: 2,
+            isClipping: true,
+            alignment: go.Spot.Center,
+            margin: new go.Margin(0, 4, 0, 0),
+            cursor: 'pointer',
+            width: 10,
+            click: classicLinkedInOpenClick,
+            toolTip: classicLinkedInProfileToolTip,
+          },
+          new go.Binding(
+            'visible',
+            `linkedin_url_${idx}` as const,
+            (url: string | undefined) =>
+              isValidLinkedInProfileUrl(typeof url === 'string' ? url : undefined),
+          ),
+          $(go.Shape, 'Circle', { width: 10, height: 10, strokeWidth: 0, fill: 'white' }),
+          classicLinkedInIconPicture,
+        );
 
     return $(
       go.Panel,
@@ -623,7 +722,10 @@ export const createNodeTemplate = ({
       new go.Binding('height', `height_${idx}` as const, findSize),
       $(go.RowColumnDefinition, { column: 0, width: m7kqContactMode ? 44 : 50 }),
       $(go.RowColumnDefinition, { column: 1 }),
-      $(go.RowColumnDefinition, { column: 2, width: m7kqContactMode ? 64 : 18 }),
+      $(
+        go.RowColumnDefinition,
+        { column: 2, width: m7kqContactMode ? 64 : showLinkedInUrlOnNodes ? 90 : 18 },
+      ),
       $(
         go.Panel,
         'Spot',

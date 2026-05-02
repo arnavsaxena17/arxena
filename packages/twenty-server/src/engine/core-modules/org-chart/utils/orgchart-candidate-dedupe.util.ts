@@ -132,6 +132,7 @@ export const mergeOrgChartCandidateRow = (
     'linkedin_url',
     'linkedinurl',
     'linkedinUrl',
+    'linkedInUrl',
   ] as const;
   for (const key of preferIncomingIfMissing) {
     if (

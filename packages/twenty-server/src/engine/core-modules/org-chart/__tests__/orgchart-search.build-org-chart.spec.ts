@@ -84,6 +84,32 @@ describe('OrgChartSearchService.buildOrgChartFromLinkedInCompanyCandidates', () 
     expect(callArg.people[0].job_company_linkedin_url).toBe(canonical);
   });
 
+  it('maps snake_case linkedin_url on candidates to Python linkedin_url', async () => {
+    await service.buildOrgChartFromLinkedInCompanyCandidates(
+      [
+        {
+          name: 'Snake User',
+          jobTitle: 'Engineer',
+          company: 'Acme',
+          linkedin_url: 'https://www.linkedin.com/in/snake-case',
+        } as never,
+      ],
+      {
+        companyName: 'Acme',
+        companyId: 'acme',
+        mode: 'entire_company',
+        companyLinkedinUrl: 'https://www.linkedin.com/company/acme',
+      },
+    );
+
+    const callArg =
+      pythonOrgChartService.createOrgChartFromStandardizedPeople.mock
+        .calls[0][0];
+    expect(callArg.people[0].linkedin_url).toBe(
+      'https://www.linkedin.com/in/snake-case',
+    );
+  });
+
   it('derives /company/{companyId} when companyLinkedinUrl is omitted', async () => {
     await service.buildOrgChartFromLinkedInCompanyCandidates(
       [

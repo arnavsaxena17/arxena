@@ -66,6 +66,11 @@ export type OrgChartDiagramProps = {
   nodeCapabilitiesHoverCompanyName?: string;
   /** When the org chart uses the m7kq channel, show contact hints and paid-plan messaging. */
   m7kqContactMode?: boolean;
+  /**
+   * When true (e.g. Apify org intelligence), show each person’s LinkedIn URL next to the node icon
+   * (truncated) in addition to opening it on click.
+   */
+  showLinkedInUrlOnNodes?: boolean;
   /** Clicks on greyed contact icons in m7kq mode — e.g. show upgrade snackbar. */
   onLockedContactChannelClick?: (
     node: OrgChartNodeData,
