@@ -8,10 +8,10 @@ import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queu
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
-    CandidateNode,
-    Job,
-    chatMessageType,
-    whatappUpdateMessageObjType
+  CandidateNode,
+  Job,
+  chatMessageType,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 import { RecruiterProfileService } from '../recruiter-profile';
@@ -344,14 +344,14 @@ export class EngagedCandidateQueueService {
         console.log(`Found ${existingMessages.length} existing messages for candidate ${candidateProfileData.id}`);
         
         // Debug: Log existing messages
-        existingMessages.forEach((msg, index) => {
-          console.log(`Existing message ${index + 1}:`, {
-            message: msg.message,
-            phoneFrom: msg.phoneFrom,
-            phoneTo: msg.phoneTo,
-            id: msg.id
-          });
-        });
+        // existingMessages.forEach((msg, index) => {
+        //   console.log(`Existing message ${index + 1}:`, {
+        //     message: msg.message,
+        //     phoneFrom: msg.phoneFrom,
+        //     phoneTo: msg.phoneTo,
+        //     id: msg.id
+        //   });
+        // });
         
         // Check if the exact same message content already exists for this candidate
         // Since candidateProfileData is already the correct candidate for the current job,
@@ -364,9 +364,6 @@ export class EngagedCandidateQueueService {
             (msg.phoneFrom === whatsappIncomingMessage.phoneNumberTo.replace("+", "") && 
              msg.phoneTo === whatsappIncomingMessage.phoneNumberFrom.replace("+", ""))
           );
-          
-          console.log(`Checking message "${msg.message}" against "${whatsappIncomingMessage.messages[0].content}": messageMatches=${messageMatches}, participantsMatch=${participantsMatch}`);
-          
           return messageMatches && participantsMatch;
         });
         

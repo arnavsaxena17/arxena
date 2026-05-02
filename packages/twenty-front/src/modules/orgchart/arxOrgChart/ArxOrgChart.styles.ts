@@ -160,11 +160,15 @@ export const StyledLoadingMessage = styled.div`
 `;
 
 export const StyledProgressBanner = styled.div`
+  align-items: center;
   background: ${({ theme }) => theme.background.tertiary};
   border-radius: ${({ theme }) => theme.border.radius.md};
   box-shadow: ${({ theme }) => theme.boxShadow.light};
   color: ${({ theme }) => theme.font.color.primary};
+  display: flex;
+  flex-direction: column;
   font-size: ${({ theme }) => theme.font.size.sm};
+  gap: ${({ theme }) => theme.spacing(0.5)};
   left: 50%;
   max-width: min(720px, calc(100% - ${({ theme }) => theme.spacing(4)}));
   padding: ${({ theme }) => theme.spacing(1.5)}
@@ -174,6 +178,11 @@ export const StyledProgressBanner = styled.div`
   top: ${({ theme }) => theme.spacing(2)};
   transform: translateX(-50%);
   z-index: 25;
+`;
+
+export const StyledProgressElapsed = styled.div`
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${({ theme }) => theme.font.size.xs};
 `;
 
 export const StyledLeadershipLoadingOverlay = styled.div`

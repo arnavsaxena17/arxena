@@ -1,9 +1,9 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
 import {
-  graphqlToAddNewJob,
-  OrgChartData,
-  OrgchartSearchMode,
+    graphqlToAddNewJob,
+    OrgChartData,
+    OrgchartSearchMode,
 } from 'twenty-shared';
 
 import { ApifyService } from 'src/engine/core-modules/apify/services/apify.service';
@@ -18,9 +18,9 @@ import { OrgchartLinkedinXrayBuildJobData } from 'src/engine/core-modules/candid
 import { OrgchartMultiSourceBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-multisource-build.types';
 import { OrgchartUnipileBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-unipile-build.types';
 import {
-  ApolloIoRestService,
-  ApolloPeopleSearchParams,
-  isApolloOrganizationId,
+    ApolloIoRestService,
+    ApolloPeopleSearchParams,
+    isApolloOrganizationId,
 } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { ApolloPeopleSearchTransformerService } from 'src/engine/core-modules/candidate-search/services/apollo-people-search-transformer.service';
 import { OrgChartSearchService } from 'src/engine/core-modules/candidate-search/services/orgchart-search.service';
@@ -35,8 +35,8 @@ import { linkedInPeopleSearchResultMatchesTargetCompany } from 'src/engine/core-
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import {
-  LinkedInSearchService,
-  parseApifyLinkedinCompanyScraperLogLine,
+    LinkedInSearchService,
+    parseApifyLinkedinCompanyScraperLogLine,
 } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
@@ -97,6 +97,8 @@ type SearchOrgchartLinkedInBody = {
   industry?: string;
   industryCategory?: string;
   asOfMonth?: string;
+  /** Company site URL; used to derive `companyDomain` for Apollo when explicit domain is absent. */
+  website?: string;
 };
 type EntireCompanyFilterState = {
   shouldWriteCompanyOrgChartCache: boolean;
@@ -938,7 +940,11 @@ export class OrgChartBuildService {
     const skipApolloOrgResolution = this.environmentService.get(
       'ORGCHART_APOLLO_SKIP_RESOLUTION',
     );
-    const companyDomain = args.body.companyDomain?.trim().toLowerCase();
+    const explicitDomain = args.body.companyDomain?.trim().toLowerCase();
+    const inferredDomain = this.extractDomainFromWebsite(
+      args.body.website,
+    )?.toLowerCase();
+    const companyDomain = explicitDomain || inferredDomain || undefined;
 
     let resolvedOrgId: string | undefined;
     let resolvedLinkedinUrl: string | undefined;
@@ -986,8 +992,13 @@ export class OrgChartBuildService {
         )
       : [];
 
+    const bodyForApollo = {
+      ...args.body,
+      ...(companyDomain ? { companyDomain } : {}),
+    };
+
     const apolloParams = this.buildApolloPeopleSearchParams({
-      body: args.body,
+      body: bodyForApollo,
       mode: args.mode,
       organizationId: resolvedOrgId,
       organizationDomain: resolvedOrgDomain,
@@ -1213,7 +1224,7 @@ export class OrgChartBuildService {
             Object.assign(
               apolloParams,
               this.buildApolloPeopleSearchParams({
-                body: args.body,
+                body: bodyForApollo,
                 mode: args.mode,
                 organizationId: resolvedOrgId,
                 organizationDomain: resolvedOrgDomain,
@@ -1300,7 +1311,7 @@ export class OrgChartBuildService {
 
       return host || undefined;
     } catch {
-      return undefined;
+      return raw.toLowerCase();
     }
   }
 
@@ -3373,9 +3384,15 @@ export class OrgChartBuildService {
       country,
       functionRoot,
       linkedinCompanyUrl,
-      companyDomain,
+      companyDomain: companyDomainFromJob,
+      website: websiteFromJob,
       shouldWriteCompanyOrgChartCache,
     } = jobData;
+
+    const resolvedCompanyDomain =
+      companyDomainFromJob?.trim() ||
+      this.extractDomainFromWebsite(websiteFromJob);
+    const normalizedDomain = resolvedCompanyDomain?.trim().toLowerCase();
 
     const body: SearchOrgchartLinkedInBody = {
       rawQuery: `Find all people currently working at ${companyName}.`,
@@ -3389,7 +3406,8 @@ export class OrgChartBuildService {
       country,
       functionRoot,
       ...(linkedinCompanyUrl ? { linkedinCompanyUrl } : {}),
-      ...(companyDomain ? { companyDomain } : {}),
+      ...(websiteFromJob?.trim() ? { website: websiteFromJob.trim() } : {}),
+      ...(normalizedDomain ? { companyDomain: normalizedDomain } : {}),
     };
 
     try {

@@ -49,6 +49,7 @@ import { HotPage } from '@/hot/hotCandidates';
 import Interview from '@/interviews/components/Interviews';
 import indexAppPath from '@/navigation/utils/indexAppPath';
 import { OrgChartWorkspaceReadyEmptyState } from '@/orgchart/components/OrgChartWorkspaceReadyEmptyState';
+import { orgChartSelectionSearch } from '@/orgchart/utils/orgChartUtils';
 // import OrgChart from '@/orgchart/OrgChart';
 import { useBaileysConnection } from '@/baileys/contexts/BaileysContext';
 import { SearchModels } from '@/search-models/SearchModels';
@@ -157,9 +158,13 @@ const OrgChartRoute = () => {
     linkedinUrl?: string;
     companyDomain?: string;
   }) => {
-    navigate(`/${AppPath.OrgChart}/${company.companyId}`, {
-      state: { company },
-    });
+    navigate(
+      {
+        pathname: `/${AppPath.OrgChart}/${company.companyId}`,
+        search: orgChartSelectionSearch(company),
+      },
+      { state: { company } },
+    );
   };
 
   const handleAddJob = () => {

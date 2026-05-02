@@ -412,6 +412,8 @@ export const useOrgChartActions = ({
   const [contextProgressMessage, setContextProgressMessage] = useState<
     string | null
   >(null);
+  const contextProgressMessageSnapshotRef = useRef<string | null>(null); // eslint-disable-line @nx/workspace-no-state-useref -- snapshot read inside 1s interval, not React state
+  contextProgressMessageSnapshotRef.current = contextProgressMessage;
   const [contextProgressPage, setContextProgressPage] = useState<number | null>(
     null,
   );
@@ -764,6 +766,46 @@ export const useOrgChartActions = ({
       setActiveOrgChartRequestId(null);
     }
   }, [activeOrgChartRequestId, clearProgressUpdateTimeout, isContextLoading]);
+
+  useEffect(() => {
+    if (companyId === '' || isContextLoading !== true) {
+      return;
+    }
+    if (typeof contextLoadingStartedAt !== 'number') {
+      return;
+    }
+
+    const dedupeKey = `orgchart-entire-company-${companyId}`;
+
+    const tick = () => {
+      const base =
+        contextProgressMessageSnapshotRef.current?.trim() || 'Working...';
+      const elapsedSec = Math.max(
+        0,
+        Math.floor((Date.now() - contextLoadingStartedAt) / 1000),
+      );
+      const minutes = Math.floor(elapsedSec / 60)
+        .toString()
+        .padStart(2, '0');
+      const seconds = (elapsedSec % 60).toString().padStart(2, '0');
+      const elapsedLabel = `${minutes}:${seconds}`;
+      updateSnackBarByDedupeKey(dedupeKey, {
+        message: `${base} — Elapsed: ${elapsedLabel}`,
+      });
+    };
+
+    tick();
+    const intervalId = window.setInterval(tick, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [
+    companyId,
+    isContextLoading,
+    contextLoadingStartedAt,
+    updateSnackBarByDedupeKey,
+  ]);
 
   const fetchLinkedinDataSourcesStatus = useCallback(async (): Promise<{
     linkedinUnipileConnected: boolean;
@@ -2076,17 +2118,10 @@ export const useOrgChartActions = ({
   const handleBackgroundContextAction = async (
     action: OrgChartContextAction,
   ) => {
-    if (action === 'reload_apify_org_intelligence') {
-      await executeOrgchartSearch({
-        mode: 'entire_company',
-        origin: 'background',
-        candidateSourceOverride: 'apify',
-        includeOrgIntelligenceOverride: true,
-      });
-      return;
-    }
-
-    if (action === 'rebuild_orgchart_using_saved_people') {
+    if (
+      action === 'rebuild_orgchart_using_saved_people' ||
+      action === 'reload_apify_org_intelligence'
+    ) {
       if (!companyId) {
         enqueueSnackBar('No company selected.', {
           variant: SnackBarVariant.Warning,
@@ -2103,19 +2138,36 @@ export const useOrgChartActions = ({
         return;
       }
       if (!accessToken) {
-        enqueueSnackBar('Sign in to rebuild org chart.', {
-          variant: SnackBarVariant.Error,
-          duration: 6000,
-        });
+        enqueueSnackBar(
+          action === 'reload_apify_org_intelligence'
+            ? 'Sign in to reload org intelligence.'
+            : 'Sign in to rebuild org chart.',
+          {
+            variant: SnackBarVariant.Error,
+            duration: 6000,
+          },
+        );
         return;
       }
+      const isReloadOrgIntelligence = action === 'reload_apify_org_intelligence';
+      const progressDedupeKey = isReloadOrgIntelligence
+        ? `orgchart-reload-org-intelligence-${companyId}`
+        : `orgchart-rebuild-saved-people-${companyId}`;
+      const doneDedupeKey = isReloadOrgIntelligence
+        ? `orgchart-reload-org-intelligence-${companyId}-done`
+        : `orgchart-rebuild-saved-people-${companyId}-done`;
       const label = companyName?.trim() || companyId;
       try {
-        enqueueSnackBar(`Rebuilding org chart from saved people for ${label}...`, {
-          variant: SnackBarVariant.Info,
-          dedupeKey: `orgchart-rebuild-saved-people-${companyId}`,
-          showProgressBar: true,
-        });
+        enqueueSnackBar(
+          isReloadOrgIntelligence
+            ? `Reloading org intelligence from saved people for ${label}...`
+            : `Rebuilding org chart from saved people for ${label}...`,
+          {
+            variant: SnackBarVariant.Info,
+            dedupeKey: progressDedupeKey,
+            showProgressBar: true,
+          },
+        );
         const rebuilt = await rebuildCompanyOrgChartFromSavedPeopleRequest({
           baseUrl,
           accessToken,
@@ -2136,17 +2188,19 @@ export const useOrgChartActions = ({
         } else {
           setLatestOrgChart(null);
         }
-        closeSnackBarByDedupeKey(`orgchart-rebuild-saved-people-${companyId}`);
+        closeSnackBarByDedupeKey(progressDedupeKey);
         enqueueSnackBar(
-          `Rebuilt org chart for ${label}${typeof rebuilt.itemCount === 'number' ? ` (${rebuilt.itemCount} people)` : ''}`,
+          isReloadOrgIntelligence
+            ? `Reloaded org intelligence for ${label}${typeof rebuilt.itemCount === 'number' ? ` (${rebuilt.itemCount} people)` : ''}`
+            : `Rebuilt org chart for ${label}${typeof rebuilt.itemCount === 'number' ? ` (${rebuilt.itemCount} people)` : ''}`,
           {
             variant: SnackBarVariant.Success,
             duration: 5000,
-            dedupeKey: `orgchart-rebuild-saved-people-${companyId}-done`,
+            dedupeKey: doneDedupeKey,
           },
         );
       } catch (error) {
-        closeSnackBarByDedupeKey(`orgchart-rebuild-saved-people-${companyId}`);
+        closeSnackBarByDedupeKey(progressDedupeKey);
         enqueueSnackBar(
           error instanceof Error ? error.message : 'Failed to rebuild org chart',
           { variant: SnackBarVariant.Error, duration: 8000 },

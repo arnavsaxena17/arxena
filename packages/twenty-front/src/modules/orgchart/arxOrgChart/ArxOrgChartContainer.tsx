@@ -16,11 +16,11 @@ import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/Snac
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useUnipile } from '@/unipile/contexts/UnipileContext';
 import {
-  OrgChartDiagramHandle,
-  normalizeCompanyIdForUrl,
-  useCompanyInfoLookup,
-  useOrgChartData,
-  useOrgChartFilterOptions,
+    OrgChartDiagramHandle,
+    normalizeCompanyIdForUrl,
+    useCompanyInfoLookup,
+    useOrgChartData,
+    useOrgChartFilterOptions,
 } from 'twenty-orgchart';
 import { OrgChartNodeData, extractOrgData, toTitleCase } from 'twenty-shared';
 
@@ -28,12 +28,12 @@ import { OrgChartShareModal } from '../components/OrgChartShareModal';
 import { useJobOrgChartData } from '../hooks/useJobOrgChartData';
 import { useOrgChartActions } from '../hooks/useOrgChartActions';
 import {
-  StyledOrgChartConfirmDd,
-  StyledOrgChartConfirmDt,
-  StyledOrgChartConfirmIntro,
-  StyledOrgChartConfirmRow,
-  StyledOrgChartConfirmRows,
-  StyledOrgChartConfirmSummary,
+    StyledOrgChartConfirmDd,
+    StyledOrgChartConfirmDt,
+    StyledOrgChartConfirmIntro,
+    StyledOrgChartConfirmRow,
+    StyledOrgChartConfirmRows,
+    StyledOrgChartConfirmSummary,
 } from './ArxOrgChart.styles';
 import { ArxOrgChartView } from './ArxOrgChartView';
 import { useOrgChartBanners } from './hooks/useOrgChartBanners';
@@ -112,6 +112,11 @@ export const ArxOrgChartContainer = ({
 }: ArxOrgChartContainerProps) => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const companyDomainFromQuery =
+    searchParams.get('companyDomain')?.trim() || undefined;
+  const websiteFromQuery = searchParams.get('website')?.trim() || undefined;
+  const companyNameFromQuery =
+    searchParams.get('companyName')?.trim() || undefined;
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [showApolloFallbackModal, setShowApolloFallbackModal] = useState(false);
   const [apolloQueuePollAttempts, setApolloQueuePollAttempts] = useState(0);
@@ -213,9 +218,14 @@ export const ArxOrgChartContainer = ({
     unipileCompanyProfile?.employee_count ?? exactEmployeeCount ?? undefined;
 
   const effectiveCompanyName =
-    companyName ?? unipileCompanyProfile?.name ?? undefined;
+    companyName ??
+    unipileCompanyProfile?.name ??
+    companyNameFromQuery ??
+    undefined;
   const effectiveCompanyWebsite =
-    website ?? unipileCompanyProfile?.website ?? undefined;
+    website ?? unipileCompanyProfile?.website ?? websiteFromQuery ?? undefined;
+  const effectiveCompanyDomain =
+    companyDomain?.trim() || companyDomainFromQuery || undefined;
 
   const linkedinUrlToUse = linkedinUrl;
 
@@ -322,7 +332,7 @@ export const ArxOrgChartContainer = ({
       companyId,
       companyName: effectiveCompanyName ?? companyName,
       website: effectiveCompanyWebsite,
-      companyDomain,
+      companyDomain: effectiveCompanyDomain,
       country: selectedCountry,
       functionRoot: selectedFunctionRoot,
       asOfMonth: asOfMonth || undefined,
@@ -1272,6 +1282,7 @@ export const ArxOrgChartContainer = ({
         showPreviewPersistentBanner={showPreviewPersistentBanner}
         isEnrichedLeadershipLoading={isEnrichedLeadershipLoading}
         contextProgressMessage={actions.contextProgressMessage}
+        contextLoadingStartedAt={actions.contextLoadingStartedAt}
         showContextProgressBanner={showContextProgressBanner}
         isContextLoading={actions.isContextLoading}
         diagramHandleRef={diagramHandleRef}

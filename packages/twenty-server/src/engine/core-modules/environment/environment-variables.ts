@@ -2,17 +2,17 @@ import { LogLevel, Logger } from '@nestjs/common';
 
 import { plainToClass } from 'class-transformer';
 import {
-  IsBoolean,
-  IsDefined,
-  IsEnum,
-  IsIn,
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsUUID,
-  IsUrl,
-  ValidateIf,
-  validateSync,
+    IsBoolean,
+    IsDefined,
+    IsEnum,
+    IsIn,
+    IsNumber,
+    IsOptional,
+    IsString,
+    IsUUID,
+    IsUrl,
+    ValidateIf,
+    validateSync,
 } from 'class-validator';
 
 import { EmailDriver } from 'src/engine/core-modules/email/interfaces/email.interface';
@@ -1414,6 +1414,36 @@ export class EnvironmentVariables {
   @IsString()
   @IsUrl({ require_tld: false, require_protocol: true })
   APOLLO_WEBHOOK_URL?: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'TTL (seconds) for Apollo organization search (mixed_companies/search) response cache: in-process memory plus Redis (engine:candidate-search namespace) when configured. Default 86400 (24h). Reduces duplicate credit spend across identical queries and across server instances.',
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  @IsNumber()
+  APOLLO_ORG_SEARCH_CACHE_TTL_SEC = 86400;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'TTL (seconds) for in-memory cache of resolveOrganizationIdForOrgChart results (positive hits). Default 86400 (24h).',
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  @IsNumber()
+  APOLLO_ORG_RESOLUTION_CACHE_TTL_SEC = 86400;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'TTL (seconds) for caching negative resolveOrganizationIdForOrgChart outcomes (no org found). Default 3600 (1h).',
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  @IsNumber()
+  APOLLO_ORG_RESOLUTION_NEGATIVE_CACHE_TTL_SEC = 3600;
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.Other,

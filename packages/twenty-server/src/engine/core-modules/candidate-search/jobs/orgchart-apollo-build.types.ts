@@ -7,5 +7,7 @@ export type OrgchartApolloBuildJobData = {
   functionRoot?: string;
   linkedinCompanyUrl?: string;
   companyDomain?: string;
+  /** Lets the worker derive companyDomain when ORGCHART_APOLLO_SKIP_RESOLUTION is on. */
+  website?: string;
   shouldWriteCompanyOrgChartCache: boolean;
 };

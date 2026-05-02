@@ -1,7 +1,6 @@
 import { InformationBannerBillingSubscriptionPaused } from '@/information-banner/components/billing/InformationBannerBillingSubscriptionPaused';
 import { InformationBannerFailPaymentInfo } from '@/information-banner/components/billing/InformationBannerFailPaymentInfo';
 import { InformationBannerNoBillingSubscription } from '@/information-banner/components/billing/InformationBannerNoBillingSubscription';
-import { InformationBannerLinkedinUnipileAutoConnect } from '@/information-banner/components/InformationBannerLinkedinUnipileAutoConnect';
 import { InformationBannerReconnectAccountEmailAliases } from '@/information-banner/components/reconnect-account/InformationBannerReconnectAccountEmailAliases';
 import { InformationBannerReconnectAccountInsufficientPermissions } from '@/information-banner/components/reconnect-account/InformationBannerReconnectAccountInsufficientPermissions';
 import { useIsWorkspaceActivationStatusSuspended } from '@/workspace/hooks/useIsWorkspaceActivationStatusSuspended';
@@ -50,7 +49,7 @@ export const InformationBannerWrapper = () => {
 
   return (
     <StyledInformationBannerWrapper>
-      <InformationBannerLinkedinUnipileAutoConnect />
+      {/* <InformationBannerLinkedinUnipileAutoConnect /> */}
       <InformationBannerReconnectAccountInsufficientPermissions />
       <InformationBannerReconnectAccountEmailAliases />
       {displayBillingSubscriptionPausedBanner && (

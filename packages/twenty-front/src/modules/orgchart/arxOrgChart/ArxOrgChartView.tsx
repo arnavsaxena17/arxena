@@ -1,18 +1,18 @@
-import { ReactNode, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 
 import {
-  OrgChartDiagram,
-  OrgChartDiagramHandle,
-  OrgChartDiagramProps,
-  OrgChartSearchControls,
+    OrgChartDiagram,
+    OrgChartDiagramHandle,
+    OrgChartDiagramProps,
+    OrgChartSearchControls,
 } from 'twenty-orgchart';
 import { OrgChartNodeData } from 'twenty-shared';
 
 import { OrgChartAddToJobModal } from '../components/OrgChartAddToJobModal';
 import { OrgChartCompanyDrawer } from '../components/OrgChartCompanyDrawer';
 import {
-  OrgChartHeader,
-  OrgChartHeaderProps,
+    OrgChartHeader,
+    OrgChartHeaderProps,
 } from '../components/OrgChartHeader';
 import { OrgChartOutreachModal } from '../components/OrgChartOutreachModal';
 import { OrgChartResultModal } from '../components/OrgChartResultModal';
@@ -22,41 +22,42 @@ import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/Drop
 import { DropdownMenuSeparator } from '@/ui/layout/dropdown/components/DropdownMenuSeparator';
 import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
 import {
-  ConfirmationModal,
-  StyledCenteredButton,
+    ConfirmationModal,
+    StyledCenteredButton,
 } from '@/ui/layout/modal/components/ConfirmationModal';
 import { IconChevronDown, MenuItem } from 'twenty-ui';
 
 import {
-  StyledAsOfMonthInput,
-  StyledAsOfMonthLabel,
-  StyledAsOfMonthPicker,
-  StyledAsOfMonthSlider,
-  StyledAsOfMonthSliderContainer,
-  StyledAsOfMonthSliderDot,
-  StyledAsOfMonthSliderRangeLabels,
-  StyledAsOfMonthSliderTimeline,
-  StyledAsOfMonthSliderValue,
-  StyledContainer,
-  StyledDiagramArea,
-  StyledDiagramBody,
-  StyledErrorMessage,
-  StyledLeadershipBannerLink,
-  StyledLeadershipBannerPaidNote,
-  StyledLeadershipInfoBanner,
-  StyledLeadershipLoadingOverlay,
-  StyledLoadingMessage,
-  StyledPreviewBannerSignupButton,
-  StyledPreviewPersistentBanner,
-  StyledProgressBanner,
-  StyledSearchOverlay,
-  StyledSpinner,
-  StyledTemplateBanner,
-  StyledTemplateBannerButton,
-  StyledTopRightActionButton,
-  StyledTopRightActionsCenterGroup,
-  StyledTopRightActionsOverlay,
-  StyledTopRightActionsRightGroup
+    StyledAsOfMonthInput,
+    StyledAsOfMonthLabel,
+    StyledAsOfMonthPicker,
+    StyledAsOfMonthSlider,
+    StyledAsOfMonthSliderContainer,
+    StyledAsOfMonthSliderDot,
+    StyledAsOfMonthSliderRangeLabels,
+    StyledAsOfMonthSliderTimeline,
+    StyledAsOfMonthSliderValue,
+    StyledContainer,
+    StyledDiagramArea,
+    StyledDiagramBody,
+    StyledErrorMessage,
+    StyledLeadershipBannerLink,
+    StyledLeadershipBannerPaidNote,
+    StyledLeadershipInfoBanner,
+    StyledLeadershipLoadingOverlay,
+    StyledLoadingMessage,
+    StyledPreviewBannerSignupButton,
+    StyledPreviewPersistentBanner,
+    StyledProgressBanner,
+    StyledProgressElapsed,
+    StyledSearchOverlay,
+    StyledSpinner,
+    StyledTemplateBanner,
+    StyledTemplateBannerButton,
+    StyledTopRightActionButton,
+    StyledTopRightActionsCenterGroup,
+    StyledTopRightActionsOverlay,
+    StyledTopRightActionsRightGroup,
 } from './ArxOrgChart.styles';
 
 type ArxOrgChartViewType = 'calendarView' | 'sliderView';
@@ -115,6 +116,8 @@ export type ArxOrgChartViewProps = {
   showPreviewPersistentBanner: boolean;
   isEnrichedLeadershipLoading: boolean;
   contextProgressMessage?: string | null;
+  /** Start time (ms) for in-flight context search; used for elapsed timer on diagram banners. */
+  contextLoadingStartedAt?: number | null;
   showContextProgressBanner: boolean;
   isContextLoading: boolean;
   diagramHandleRef: React.Ref<OrgChartDiagramHandle>;
@@ -218,6 +221,7 @@ export const ArxOrgChartView = ({
   showPreviewPersistentBanner,
   isEnrichedLeadershipLoading,
   contextProgressMessage,
+  contextLoadingStartedAt,
   showContextProgressBanner,
   isContextLoading,
   diagramHandleRef,
@@ -287,7 +291,7 @@ export const ArxOrgChartView = ({
           continue;
         }
         const monthMatch = value.match(/\b\d{4}-(0[1-9]|1[0-2])\b/u)?.[0];
-        if (monthMatch) {
+        if (typeof monthMatch === 'string' && monthMatch.length > 0) {
           nodeKeys.add(monthMatch);
         }
       }
@@ -347,6 +351,42 @@ export const ArxOrgChartView = ({
       ? new Date()
       : (parseMonthToDate(monthRange[selectedMonthIndex]) ?? new Date()),
   );
+
+  const [elapsedLabel, setElapsedLabel] = useState('00:00');
+  const shouldShowContextElapsed =
+    typeof contextLoadingStartedAt === 'number' &&
+    isContextLoading === true &&
+    (showContextProgressBanner === true || isBlankTemplate === true);
+
+  useEffect(() => {
+    if (
+      shouldShowContextElapsed !== true ||
+      typeof contextLoadingStartedAt !== 'number'
+    ) {
+      setElapsedLabel('00:00');
+      return;
+    }
+
+    const tick = () => {
+      const elapsedSeconds = Math.max(
+        0,
+        Math.floor((Date.now() - contextLoadingStartedAt) / 1000),
+      );
+      const minutes = Math.floor(elapsedSeconds / 60)
+        .toString()
+        .padStart(2, '0');
+      const seconds = (elapsedSeconds % 60).toString().padStart(2, '0');
+      setElapsedLabel(`${minutes}:${seconds}`);
+    };
+
+    tick();
+    const intervalId = window.setInterval(tick, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [shouldShowContextElapsed, contextLoadingStartedAt]);
+
   const startMonthLabel = monthLabelFormatter.format(
     parseMonthToDate(monthRange[0]) ?? new Date(),
   );
@@ -390,7 +430,12 @@ export const ArxOrgChartView = ({
           )}
           {showContextProgressBanner && contextProgressMessage && (
             <StyledProgressBanner>
-              {contextProgressMessage}
+              <span>{contextProgressMessage}</span>
+              {shouldShowContextElapsed === true && (
+                <StyledProgressElapsed>
+                  Elapsed: {elapsedLabel}
+                </StyledProgressElapsed>
+              )}
             </StyledProgressBanner>
           )}
           {error && <StyledErrorMessage>{error}</StyledErrorMessage>}
@@ -402,6 +447,11 @@ export const ArxOrgChartView = ({
                   <StyledTemplateBanner>
                     <StyledSpinner />
                     <span>{contextProgressMessage || 'Processing...'}</span>
+                    {shouldShowContextElapsed === true && (
+                      <StyledProgressElapsed>
+                        Elapsed: {elapsedLabel}
+                      </StyledProgressElapsed>
+                    )}
                   </StyledTemplateBanner>
                 ) : (
                   <StyledTemplateBanner>

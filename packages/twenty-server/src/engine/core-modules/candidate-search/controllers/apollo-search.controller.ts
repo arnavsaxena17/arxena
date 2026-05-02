@@ -1,14 +1,14 @@
 import {
-  Body,
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  Logger,
-  Param,
-  Post,
-  Query,
-  Req,
+    Body,
+    Controller,
+    Get,
+    HttpException,
+    HttpStatus,
+    Logger,
+    Param,
+    Post,
+    Query,
+    Req,
 } from '@nestjs/common';
 
 import { ApolloIoRestService } from '../services/apollo-io-rest.service';
@@ -139,6 +139,10 @@ export class ApolloSearchController {
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
+
+    this.logger.log(
+      `Apollo searchCompanies request organizationName="${(body.organizationName ?? '').slice(0, 120)}" page=${body.page ?? 1} perPage=${body.perPage ?? 10}`,
+    );
 
     try {
       const raw = await this.apolloIoRestService.organizationsSearch({

@@ -28,6 +28,7 @@ import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-
 import { RecordTableContextProvider } from '@/object-record/record-table/contexts/RecordTableContext';
 import { useOpenObjectRecordsSpreadsheetImportDialog } from '@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog';
 import { OrgChartWorkspaceReadyEmptyState } from '@/orgchart/components/OrgChartWorkspaceReadyEmptyState';
+import { orgChartSelectionSearch } from '@/orgchart/utils/orgChartUtils';
 import { SpreadsheetImportProvider } from '@/spreadsheet-import/provider/components/SpreadsheetImportProvider';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -266,6 +267,7 @@ export const Jobs = () => {
     industry?: string;
     profileCount?: number;
     linkedinUrl?: string;
+    companyDomain?: string;
   } | null>(null);
 
   const [selectedJobForOrgChart, setSelectedJobForOrgChart] = useState<{
@@ -284,12 +286,17 @@ export const Jobs = () => {
       industry?: string;
       profileCount?: number;
       linkedinUrl?: string;
+      companyDomain?: string;
     }) => {
       setSelectedOrgChartCompany(company);
       setSelectedJobForOrgChart(null);
-      navigate(`/${AppPath.OrgChart}/${company.companyId}`, {
-        state: { company },
-      });
+      navigate(
+        {
+          pathname: `/${AppPath.OrgChart}/${company.companyId}`,
+          search: orgChartSelectionSearch(company),
+        },
+        { state: { company } },
+      );
     },
     [navigate],
   );
@@ -601,6 +608,7 @@ export const Jobs = () => {
                     industry={selectedOrgChartCompany.industry}
                     profileCount={selectedOrgChartCompany.profileCount}
                     linkedinUrl={selectedOrgChartCompany.linkedinUrl}
+                    companyDomain={selectedOrgChartCompany.companyDomain}
                     onBack={handleClearOrgChart}
                   />
                 </React.Suspense>

@@ -4,23 +4,23 @@ import type { AssistantThread } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SearchParametersForm } from '@/candidate-search/components/search-components/SearchParametersForm';
 import {
-  getCandidateSearchApolloCompaniesUrl,
-  getCandidateSearchApolloJobPostingsUrl,
-  getCandidateSearchApolloPeopleUrl,
-  getCandidateSearchFromFileUrl,
+    getCandidateSearchApolloCompaniesUrl,
+    getCandidateSearchApolloJobPostingsUrl,
+    getCandidateSearchApolloPeopleUrl,
+    getCandidateSearchFromFileUrl,
 } from '@/candidate-search/constants/candidateSearchApiPaths';
 import { candidateSearchDataSourceState } from '@/candidate-search/states/candidateSearchDataSourceState';
 import { activeAssistantThreadIdState } from '@/candidate-search/states/searchConfigState';
 import {
-  addRecentSearch,
-  isSearchPanelOpenState,
-  loadSearchConfigFromStorage,
-  loadSearchParametersFromStorage,
-  persistentSearchConfigState,
-  persistentSearchParametersState,
-  persistSearchConfig,
-  persistSearchParameters,
-  recentSearchesState
+    addRecentSearch,
+    isSearchPanelOpenState,
+    loadSearchConfigFromStorage,
+    loadSearchParametersFromStorage,
+    persistentSearchConfigState,
+    persistentSearchParametersState,
+    persistSearchConfig,
+    persistSearchParameters,
+    recentSearchesState
 } from '@/candidate-search/states/searchPanelState';
 import { addSearchResults, persistSearchMetadataToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { jobIdAtom, jobsState } from '@/candidate-table/states/states';

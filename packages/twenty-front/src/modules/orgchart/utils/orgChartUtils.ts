@@ -30,6 +30,26 @@ export const extractCompanyDomainFromWebsite = (
   }
 };
 
+/** Query string for `/org-chart/:companyId` so refresh preserves Apollo domain hints. */
+export const orgChartSelectionSearch = (company: {
+  companyName: string;
+  website?: string;
+  companyDomain?: string;
+}): string => {
+  const params = new URLSearchParams();
+  if (company.companyName?.trim()) {
+    params.set('companyName', company.companyName.trim());
+  }
+  if (company.website?.trim()) {
+    params.set('website', company.website.trim());
+  }
+  if (company.companyDomain?.trim()) {
+    params.set('companyDomain', company.companyDomain.trim());
+  }
+  const q = params.toString();
+  return q ? `?${q}` : '';
+};
+
 export const normalizeCandidateItem = (
   raw: Record<string, unknown>,
   index: number,
