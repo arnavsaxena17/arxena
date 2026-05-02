@@ -20,7 +20,7 @@ describe('formatCalendlyInviteeName', () => {
 describe('buildCalendlyUrlWithPrefill', () => {
   it('appends name, email, custom answers, and utm params', () => {
     const out = buildCalendlyUrlWithPrefill(
-      'https://calendly.com/arxena/demo',
+      'https://calendly.com/arxena/30min',
       {
         name: 'Jane Doe',
         email: 'jane@example.com',

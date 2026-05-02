@@ -1,6 +1,6 @@
 import { buildCalendlyUrlWithPrefill } from 'twenty-shared';
 
-const DEFAULT_CALENDLY_URL = 'https://calendly.com/arxena';
+const DEFAULT_CALENDLY_URL = 'https://calendly.com/arxena/30min';
 
 /**
  * Public Calendly scheduling URL for inline embeds.

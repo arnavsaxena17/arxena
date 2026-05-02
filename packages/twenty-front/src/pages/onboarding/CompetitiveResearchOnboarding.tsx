@@ -11,24 +11,24 @@ import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import {
-    ARXENA_CHROME_WEBSTORE_URL,
-    buildCalendlyUrlWithPrefill,
-    formatCalendlyInviteeName,
+  ARXENA_CHROME_WEBSTORE_URL,
+  buildCalendlyUrlWithPrefill,
+  formatCalendlyInviteeName,
 } from 'twenty-shared';
 import {
-    ActionLink,
-    IconBolt,
-    IconPhone,
-    Loader,
-    MainButton,
-    Pill,
+  ActionLink,
+  IconBolt,
+  IconPhone,
+  Loader,
+  MainButton,
+  Pill,
 } from 'twenty-ui';
 import { getPostAuthLandingAppPath } from '~/config';
 import { OnboardingStatus } from '~/generated/graphql';
 import { Mixpanel } from '~/mixpanel';
 import { OnboardingIntentModalLayout } from '~/pages/onboarding/OnboardingIntentModalLayout';
 
-const DEFAULT_CALENDLY_URL = 'https://calendly.com/arxena';
+const DEFAULT_CALENDLY_URL = 'https://calendly.com/arxena/30min';
 
 const StyledPanel = styled.div`
   width: 100%;
