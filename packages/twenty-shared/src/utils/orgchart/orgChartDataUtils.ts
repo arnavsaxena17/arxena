@@ -322,6 +322,12 @@ export function processOrgChartToNodeData(
     const rawNodeFields = raw as Record<string, unknown>;
     for (let i = 0; i < orderedCandidates.length && i < 4; i++) {
       processCandidate(orderedCandidates[i], node, i);
+      const candRec = orderedCandidates[i] as Record<string, unknown> | undefined;
+      const tenureRaw =
+        candRec?.org_chart_company_tenure ?? rawNodeFields[`org_chart_company_tenure_${i}`];
+      if (tenureRaw === 'current' || tenureRaw === 'past') {
+        (node as Record<string, string>)[`org_chart_company_tenure_${i}`] = tenureRaw;
+      }
       const ds = rawNodeFields[`ds_${i}`];
       if (typeof ds === 'string' && ds.length > 0) {
         (node as Record<string, string>)[`ds_${i}`] = ds;

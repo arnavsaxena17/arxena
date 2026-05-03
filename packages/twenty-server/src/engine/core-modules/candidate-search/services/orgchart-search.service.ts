@@ -20,6 +20,7 @@ import {
     readProviderContactHintsFromSearchRow,
     type OrgChartNodeContactAvailability,
 } from 'src/engine/core-modules/org-chart/utils/merge-orgchart-profile-source-slugs.util';
+import { mergeOrgChartCompanyTenureOntoOrgChartData } from 'src/engine/core-modules/org-chart/utils/merge-orgchart-company-tenure.util';
 import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import { filterOrgChartCandidatesByNodeStdLabels } from 'src/engine/core-modules/org-chart/utils/orgchart-node-scope-filter.util';
 import {
@@ -27,7 +28,11 @@ import {
     normalizeFunctionRoot,
 } from 'src/engine/core-modules/org-chart/utils/orgchart-normalization.util';
 import { OrgChartData } from 'twenty-shared';
-import { applyAsOfSnapshotToCandidates } from '../../org-chart/utils/orgchart-asof-snapshot.util';
+import {
+    applyAsOfSnapshotToCandidates,
+    applyEntireCompanyExperienceTitlesToCandidates,
+    companyTenureFromDerivedExperience,
+} from '../../org-chart/utils/orgchart-asof-snapshot.util';
 import { extractLinkedinProfileUrlFromOrgChartCandidateRow } from '../../org-chart/utils/orgchart-candidate-linkedin-url.util';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import type { PeopleSearchStrategyResult } from '../utils/extract-strategies.util';
@@ -636,14 +641,59 @@ export class OrgChartSearchService {
     const personIdToContact = new Map<string, OrgChartNodeContactAvailability>();
     const { profileSourceFallback } = options;
 
-    const candidatesForSnapshot =
-      options.asOfMonth?.trim()
-        ? applyAsOfSnapshotToCandidates({
-            candidates: candidates as Array<Record<string, unknown>>,
-            companyName: normalizedCompanyName,
-            asOfMonth: options.asOfMonth,
-          })
-        : (candidates as Array<Record<string, unknown>>);
+    const asOfMonthTrimmed = options.asOfMonth?.trim() ?? '';
+    const modeNorm = (mode ?? '').trim().toLowerCase();
+    const isEntireCompany = modeNorm === 'entire_company';
+
+    let candidatesForSnapshot = candidates as Array<Record<string, unknown>>;
+    if (asOfMonthTrimmed) {
+      candidatesForSnapshot = applyAsOfSnapshotToCandidates({
+        candidates: candidatesForSnapshot,
+        companyName: normalizedCompanyName,
+        companyLinkedinUrl: companyLinkedinUrl || undefined,
+        asOfMonth: asOfMonthTrimmed,
+      });
+    } else if (isEntireCompany) {
+      candidatesForSnapshot = applyEntireCompanyExperienceTitlesToCandidates({
+        candidates: candidatesForSnapshot,
+        companyName: normalizedCompanyName,
+        companyLinkedinUrl: companyLinkedinUrl || undefined,
+      });
+    }
+
+    const tenureByUrl = new Map<string, 'current' | 'past'>();
+    const tenureById = new Map<string, 'current' | 'past'>();
+    for (const candidate of candidatesForSnapshot) {
+      const raw = candidate as Record<string, unknown>;
+      const tenure = companyTenureFromDerivedExperience({
+        row: raw,
+        companyName: normalizedCompanyName,
+        companyLinkedinUrl: companyLinkedinUrl || undefined,
+      });
+      if (tenure === 'unknown') {
+        continue;
+      }
+      const li = extractLinkedinProfileUrlFromOrgChartCandidateRow(raw).trim();
+      if (li.length > 0) {
+        tenureByUrl.set(normalizeOrgChartLinkedinUrlKey(li), tenure);
+      }
+      const rawPeopleId =
+        typeof raw.peopleId === 'string' ? raw.peopleId.trim() : '';
+      const rawTempId =
+        typeof raw.tempId === 'string' ? raw.tempId.trim() : '';
+      const rawRowId = typeof raw.id === 'string' ? raw.id.trim() : '';
+      const idForTenure =
+        rawPeopleId.length > 0
+          ? rawPeopleId
+          : rawTempId.length > 0
+            ? rawTempId
+            : rawRowId.length > 0
+              ? rawRowId
+              : '';
+      if (idForTenure.length > 0) {
+        tenureById.set(idForTenure, tenure);
+      }
+    }
 
     const people: StandardizedOrgChartPerson[] = candidatesForSnapshot.map(
       (candidate, index) => {
@@ -873,9 +923,14 @@ export class OrgChartSearchService {
         withUrlContact,
         personIdToContact,
       );
+      const withTenure = mergeOrgChartCompanyTenureOntoOrgChartData(
+        merged,
+        tenureByUrl,
+        tenureById,
+      );
       return apolloPublicSlug
-        ? applyApolloOnlyNodeLockState(merged, apolloPublicSlug)
-        : merged;
+        ? applyApolloOnlyNodeLockState(withTenure, apolloPublicSlug)
+        : withTenure;
     } catch (error) {
       if (!isYugaLabsCompany) {
         throw error;
@@ -915,9 +970,14 @@ export class OrgChartSearchService {
         withUrlContact,
         personIdToContact,
       );
+      const withTenure = mergeOrgChartCompanyTenureOntoOrgChartData(
+        merged,
+        tenureByUrl,
+        tenureById,
+      );
       return apolloPublicSlug
-        ? applyApolloOnlyNodeLockState(merged, apolloPublicSlug)
-        : merged;
+        ? applyApolloOnlyNodeLockState(withTenure, apolloPublicSlug)
+        : withTenure;
     }
   }
 

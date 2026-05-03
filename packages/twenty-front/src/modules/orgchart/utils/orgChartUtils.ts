@@ -316,6 +316,10 @@ export const contextResultItemFromNodePersonSlot = (
   const emailRaw = node[emailKey];
   const phoneRaw = node[phoneKey];
   const image = node[imageKey];
+  const tenureKey = `org_chart_company_tenure_${i}` as keyof OrgChartNodeData;
+  const tenureRaw = node[tenureKey];
+  const tenureAtCompany =
+    tenureRaw === 'current' || tenureRaw === 'past' ? tenureRaw : undefined;
   return {
     id: `${node.key}-${i}`,
     fullName: name.trim(),
@@ -330,10 +334,14 @@ export const contextResultItemFromNodePersonSlot = (
       typeof phoneRaw === 'string' && phoneRaw.trim()
         ? phoneRaw.trim()
         : undefined,
-    raw:
-      typeof image === 'string'
+    raw: {
+      ...(typeof image === 'string'
         ? { image, profile_picture_url: image }
-        : {},
+        : {}),
+      ...(tenureAtCompany
+        ? { org_chart_company_tenure: tenureAtCompany }
+        : {}),
+    },
   };
 };
 

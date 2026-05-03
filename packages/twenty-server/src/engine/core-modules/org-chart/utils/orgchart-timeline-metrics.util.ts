@@ -190,6 +190,7 @@ function emptyRates(): WindowRates {
 export function computeTimelineMetricsFromCandidates(input: {
   candidates: Array<Record<string, unknown>>;
   companyName: string;
+  companyLinkedinUrl?: string;
   asOfMonth?: string;
 }): OrgChartTimelineMetrics {
   const asOfRaw = (input.asOfMonth ?? '').trim();
@@ -208,6 +209,7 @@ export function computeTimelineMetricsFromCandidates(input: {
     const intervals = deriveIntervalsForCandidateAtCompany({
       row,
       companyName: input.companyName,
+      companyLinkedinUrl: input.companyLinkedinUrl,
     });
     if (intervals.length === 0) continue;
 
@@ -264,6 +266,7 @@ export function computeTimelineMetricsFromCandidates(input: {
     const intervals = deriveIntervalsForCandidateAtCompany({
       row,
       companyName: input.companyName,
+      companyLinkedinUrl: input.companyLinkedinUrl,
     });
     if (intervals.length === 0) continue;
     const fnRoot = resolveFunctionRoot(row);
@@ -298,6 +301,7 @@ export function computeTimelineMetricsFromCandidates(input: {
       const intervals = deriveIntervalsForCandidateAtCompany({
         row,
         companyName: input.companyName,
+        companyLinkedinUrl: input.companyLinkedinUrl,
       });
       if (intervals.length === 0) continue;
       if (isActiveInMonth(intervals as any, w.range.startMonth)) headcountStart += 1;
@@ -325,6 +329,7 @@ export function computeTimelineMetricsFromCandidates(input: {
 export function computeTimelineProfilesFromCandidates(input: {
   candidates: Array<Record<string, unknown>>;
   companyName: string;
+  companyLinkedinUrl?: string;
   asOfMonth?: string;
   event: 'joined' | 'left' | 'current' | 'past';
   window?: WindowKey;
@@ -350,6 +355,7 @@ export function computeTimelineProfilesFromCandidates(input: {
     const intervals = deriveIntervalsForCandidateAtCompany({
       row,
       companyName: input.companyName,
+      companyLinkedinUrl: input.companyLinkedinUrl,
     });
     if (intervals.length === 0) continue;
 

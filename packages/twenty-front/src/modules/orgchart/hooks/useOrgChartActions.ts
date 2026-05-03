@@ -1760,6 +1760,10 @@ export const useOrgChartActions = ({
           const rawLinkedinVal = n[linkedinKey];
           const rawLi =
             typeof rawLinkedinVal === 'string' ? rawLinkedinVal : '';
+          const tenureKey = `org_chart_company_tenure_${i}` as keyof OrgChartNodeData;
+          const tenureVal = n[tenureKey];
+          const tenure =
+            tenureVal === 'current' || tenureVal === 'past' ? tenureVal : undefined;
           rows.push({
             id: `${i}`,
             fullName: name.trim(),
@@ -1770,10 +1774,12 @@ export const useOrgChartActions = ({
             linkedinUrl: isValidLinkedInProfileUrl(rawLi)
               ? rawLi.trim()
               : undefined,
-            raw:
-              typeof image === 'string'
+            raw: {
+              ...(typeof image === 'string'
                 ? { image, profile_picture_url: image }
-                : {},
+                : {}),
+              ...(tenure ? { org_chart_company_tenure: tenure } : {}),
+            },
           });
         }
       }

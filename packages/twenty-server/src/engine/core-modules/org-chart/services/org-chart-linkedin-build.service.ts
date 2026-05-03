@@ -173,6 +173,10 @@ export class OrgChartLinkedInBuildService {
     companyName?: string;
     industry?: string;
     industryCategory?: string;
+    /** When set, same semantics as org-chart search: snapshot active titles at this month. */
+    asOfMonth?: string;
+    /** Canonical company LinkedIn URL for matching experience rows when the display name differs. */
+    companyLinkedinUrl?: string;
   }): Promise<{
     success: true;
     companyName: string;
@@ -237,6 +241,8 @@ export class OrgChartLinkedInBuildService {
           mode: 'entire_company',
           industry: input.industry,
           industryCategory: input.industryCategory,
+          companyLinkedinUrl: input.companyLinkedinUrl?.trim() || undefined,
+          asOfMonth: input.asOfMonth?.trim() || undefined,
         },
       );
 

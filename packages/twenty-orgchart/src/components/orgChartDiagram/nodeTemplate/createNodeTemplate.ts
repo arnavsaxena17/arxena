@@ -756,20 +756,85 @@ export const createNodeTemplate = ({
         ),
       ),
       $(
-        go.TextBlock,
+        go.Panel,
+        'Horizontal',
         {
           row: 0,
           column: 1,
-          font: '12pt Segoe UI,sans-serif',
-          wrap: go.TextBlock.WrapFit,
-          isMultiline: true,
-          maxLines: 1,
-          overflow: go.TextBlock.OverflowEllipsis,
-          editable: false,
-          minSize: new go.Size(5, 16),
-          width: nameColWidth,
+          alignment: go.Spot.Left,
         },
-        new go.Binding('text', `name_${idx}` as const, (n) => (n as string) || ''),
+        $(
+          go.TextBlock,
+          {
+            font: '12pt Segoe UI,sans-serif',
+            wrap: go.TextBlock.WrapFit,
+            isMultiline: true,
+            maxLines: 1,
+            overflow: go.TextBlock.OverflowEllipsis,
+            editable: false,
+            minSize: new go.Size(5, 16),
+            width: nameColWidth - 11,
+          },
+          new go.Binding('text', `name_${idx}` as const, (n) => (n as string) || ''),
+        ),
+        $(
+          go.TextBlock,
+          {
+            font: '7pt system-ui,Segoe UI,sans-serif',
+            margin: new go.Margin(1, 0, 0, 1),
+            alignment: go.Spot.Left,
+            toolTip: $(
+              'ToolTip',
+              {
+                isShadowed: true,
+                shadowOffset: new go.Point(0, 2),
+                'Border.fill': '#ffffff',
+                'Border.stroke': '#e2e8f0',
+                'Border.strokeWidth': 1,
+              },
+              $(
+                go.TextBlock,
+                {
+                  margin: new go.Margin(8, 10, 8, 10),
+                  font: '10pt system-ui, Segoe UI, sans-serif',
+                  stroke: '#334155',
+                  wrap: go.TextBlock.WrapFit,
+                  maxSize: new go.Size(260, NaN),
+                  textAlign: 'left',
+                },
+                new go.Binding(
+                  'text',
+                  `org_chart_company_tenure_${idx}` as const,
+                  (t: unknown) => {
+                    if (t === 'current') {
+                      return 'Current employee at this company (from profile experience)';
+                    }
+                    if (t === 'past') {
+                      return 'Past employee at this company (from profile experience)';
+                    }
+                    return '';
+                  },
+                ),
+              ),
+            ),
+          },
+          new go.Binding(
+            'visible',
+            `org_chart_company_tenure_${idx}` as const,
+            (t: unknown) => t === 'current' || t === 'past',
+          ),
+          new go.Binding(
+            'text',
+            `org_chart_company_tenure_${idx}` as const,
+            (t: unknown) => (t === 'current' || t === 'past' ? '●' : ''),
+          ),
+          new go.Binding(
+            'stroke',
+            `org_chart_company_tenure_${idx}` as const,
+            (t: unknown) =>
+              t === 'current' ? '#16a34a' : t === 'past' ? '#64748b' : '#cbd5e1',
+          ),
+        ),
       ),
       $(
         go.TextBlock,

@@ -134,4 +134,68 @@ describe('OrgChartSearchService.buildOrgChartFromLinkedInCompanyCandidates', () 
       'https://www.linkedin.com/company/acme-corp',
     );
   });
+
+  it('entire_company without asOfMonth sets job_title from company-matching experience over headline', async () => {
+    await service.buildOrgChartFromLinkedInCompanyCandidates(
+      [
+        {
+          name: 'Pat',
+          jobTitle: 'CEO elsewhere',
+          headline: 'CEO elsewhere',
+          job_title: 'CEO elsewhere',
+          company: 'Acme',
+          linkedinUrl: 'https://www.linkedin.com/in/pat',
+          org_contactout_experience: [
+            {
+              company_name: 'Acme',
+              title: 'Director',
+              start_date_year: 2023,
+              start_date_month: 4,
+              is_current: true,
+            },
+          ],
+        } as never,
+      ],
+      {
+        companyName: 'Acme',
+        companyId: 'acme',
+        mode: 'entire_company',
+      },
+    );
+
+    const callArg =
+      pythonOrgChartService.createOrgChartFromStandardizedPeople.mock.calls[0][0];
+    expect(callArg.people[0].job_title).toBe('Director');
+  });
+
+  it('asOfMonth takes precedence over entire_company experience title rewrite', async () => {
+    await service.buildOrgChartFromLinkedInCompanyCandidates(
+      [
+        {
+          name: 'Pat',
+          jobTitle: 'CEO elsewhere',
+          headline: 'CEO elsewhere',
+          org_contactout_experience: [
+            {
+              company_name: 'Acme',
+              title: 'Director',
+              start_date_year: 2023,
+              start_date_month: 4,
+              is_current: true,
+            },
+          ],
+        } as never,
+      ],
+      {
+        companyName: 'Acme',
+        companyId: 'acme',
+        mode: 'entire_company',
+        asOfMonth: '2020-01',
+      },
+    );
+
+    const callArg =
+      pythonOrgChartService.createOrgChartFromStandardizedPeople.mock.calls[0][0];
+    expect(callArg.people).toHaveLength(0);
+  });
 });

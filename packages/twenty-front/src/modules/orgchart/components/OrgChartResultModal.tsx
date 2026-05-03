@@ -153,11 +153,27 @@ const StyledProfileTextColumn = styled.div`
   min-width: 0;
 `;
 
+const StyledProfileNameRow = styled.div`
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing(1)};
+  min-width: 0;
+`;
+
 const StyledProfileName = styled.div`
   color: ${({ theme }) => theme.font.color.primary};
   font-size: ${({ theme }) => theme.font.size.md};
   font-weight: ${({ theme }) => theme.font.weight.semiBold};
   line-height: ${({ theme }) => theme.text.lineHeight.md};
+`;
+
+const StyledOrgChartTenureDot = styled.span<{ $variant: 'current' | 'past' }>`
+  color: ${({ theme, $variant }) =>
+    $variant === 'current' ? theme.color.green : theme.font.color.light};
+  flex-shrink: 0;
+  font-size: ${({ theme }) => theme.font.size.xs};
+  line-height: 1;
 `;
 
 const StyledProfileSubline = styled.div`
@@ -372,6 +388,7 @@ const ResultItem = ({
   onFetchContacts,
   companyWebsite,
 }: ResultItemProps) => {
+  const { t } = useLingui();
   const theme = useTheme();
   const iconSm = theme.icon.size.sm;
   const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
@@ -381,6 +398,10 @@ const ResultItem = ({
     ? toTitleCase(item.headline, { skipIfMasked: true })
     : '';
   const displayCompany = item.company ? toTitleCase(item.company) : '';
+  const rawTenure = (item.raw as Record<string, unknown> | undefined)
+    ?.org_chart_company_tenure;
+  const companyTenureAtTarget =
+    rawTenure === 'current' || rawTenure === 'past' ? rawTenure : undefined;
   const roleCompanyLine = [displayHeadline, displayCompany]
     .filter((part) => part.length > 0)
     .join(' · ');
@@ -425,7 +446,21 @@ const ResultItem = ({
     >
       <Avatar src={avatarUrl} size={48} />
       <StyledProfileTextColumn>
-        <StyledProfileName>{item.fullName}</StyledProfileName>
+        <StyledProfileNameRow>
+          <StyledProfileName>{item.fullName}</StyledProfileName>
+          {companyTenureAtTarget && (
+            <StyledOrgChartTenureDot
+              $variant={companyTenureAtTarget}
+              title={
+                companyTenureAtTarget === 'current'
+                  ? t`Current employee at this company (from profile experience)`
+                  : t`Past employee at this company (from profile experience)`
+              }
+            >
+              ●
+            </StyledOrgChartTenureDot>
+          )}
+        </StyledProfileNameRow>
         {roleCompanyLine.length > 0 && (
           <StyledProfileSubline>{roleCompanyLine}</StyledProfileSubline>
         )}

@@ -100,6 +100,21 @@ export class OrgChartController {
     return `orgchart-share:${shareToken}`;
   }
 
+  /** Prefer explicit LinkedIn company URL; otherwise `/company/{companyId}` for experience matching at as-of / timeline. */
+  private resolveTimelineCompanyLinkedinUrl(
+    normalizedCompanyId: string,
+    explicit?: string,
+  ): string | undefined {
+    const trimmed = explicit?.trim();
+    if (trimmed) {
+      return trimmed.replace(/\/+$/, '');
+    }
+    return `https://www.linkedin.com/company/${normalizedCompanyId}`.replace(
+      /\/+$/,
+      '',
+    );
+  }
+
   private getAuthToken(req: Request): string | undefined {
     const authHeader = req.headers.authorization;
 
@@ -200,6 +215,7 @@ export class OrgChartController {
     country?: string;
     functionRoot?: string;
     asOfMonth?: string;
+    companyLinkedinUrl?: string;
     baseOrgChartPayload: Record<string, unknown> | null;
   }): Promise<Record<string, unknown> | null> {
     const asOfMonthRaw = input.asOfMonth?.trim() ?? '';
@@ -219,6 +235,10 @@ export class OrgChartController {
       candidates,
       companyName,
       asOfMonth: asOfMonthRaw,
+      companyLinkedinUrl: this.resolveTimelineCompanyLinkedinUrl(
+        input.normalizedCompanyId,
+        input.companyLinkedinUrl,
+      ),
     });
 
     const normalizedPeopleForAsOf = peopleForAsOf.map((candidate) =>
@@ -1245,6 +1265,8 @@ export class OrgChartController {
    *
    * Query params:
    * - asOfMonth: YYYY-MM (defaults to current month)
+   * - companyLinkedinUrl: optional; when set, experience rows match this LinkedIn
+   *   company URL as well as `companyName` (helps when Apify/CO company text ≠ search name)
    * - sampleSource: contactout|apify (sample-company only)
    * - sampleProfiles: number (sample-company only)
    * - apifyIncludePast: true|false (sample-company only)
@@ -1253,6 +1275,7 @@ export class OrgChartController {
   async getOrgChartTimelineMetrics(
     @Param('companyId') companyId: string,
     @Query('companyName') companyName: string | undefined,
+    @Query('companyLinkedinUrl') companyLinkedinUrl: string | undefined,
     @Query('asOfMonth') asOfMonth: string | undefined,
     @Query('sampleSource') sampleSource: string | undefined,
     @Query('sampleProfiles') sampleProfiles: string | undefined,
@@ -1271,6 +1294,10 @@ export class OrgChartController {
         result: computeTimelineMetricsFromCandidates({
           candidates,
           companyName: resolvedName,
+          companyLinkedinUrl: this.resolveTimelineCompanyLinkedinUrl(
+            normalizedCompanyId,
+            companyLinkedinUrl,
+          ),
           asOfMonth,
         }),
       };
@@ -1308,6 +1335,10 @@ export class OrgChartController {
       result: computeTimelineMetricsFromCandidates({
         candidates,
         companyName: resolvedName,
+        companyLinkedinUrl: this.resolveTimelineCompanyLinkedinUrl(
+          normalizedCompanyId,
+          linkedinCompanyUrl,
+        ),
         asOfMonth,
       }),
     };
@@ -1317,6 +1348,7 @@ export class OrgChartController {
   async getOrgChartTimelineProfiles(
     @Param('companyId') companyId: string,
     @Query('companyName') companyName: string | undefined,
+    @Query('companyLinkedinUrl') companyLinkedinUrl: string | undefined,
     @Query('asOfMonth') asOfMonth: string | undefined,
     @Query('sampleSource') sampleSource: string | undefined,
     @Query('sampleProfiles') sampleProfiles: string | undefined,
@@ -1355,6 +1387,10 @@ export class OrgChartController {
         result: computeTimelineProfilesFromCandidates({
           candidates,
           companyName: resolvedName,
+          companyLinkedinUrl: this.resolveTimelineCompanyLinkedinUrl(
+            normalizedCompanyId,
+            companyLinkedinUrl,
+          ),
           asOfMonth,
           event,
           window,
@@ -1394,6 +1430,10 @@ export class OrgChartController {
       result: computeTimelineProfilesFromCandidates({
         candidates,
         companyName: resolvedName,
+        companyLinkedinUrl: this.resolveTimelineCompanyLinkedinUrl(
+          normalizedCompanyId,
+          linkedinCompanyUrl,
+        ),
         asOfMonth,
         event,
         window,
@@ -1454,6 +1494,7 @@ export class OrgChartController {
     @Query('country') country: string | undefined,
     @Query('functionRoot') functionRoot: string | undefined,
     @Query('asOfMonth') asOfMonth: string | undefined,
+    @Query('companyLinkedinUrl') companyLinkedinUrl: string | undefined,
     @Query('expectedEmployeeCount')
     expectedEmployeeCountRaw: string | undefined,
     @Req() req: Request,
@@ -1465,6 +1506,7 @@ export class OrgChartController {
       country,
       functionRoot,
       asOfMonth,
+      companyLinkedinUrl,
       expectedEmployeeCount: this.parseExpectedEmployeeCountQuery(
         expectedEmployeeCountRaw,
       ),
@@ -1481,6 +1523,7 @@ export class OrgChartController {
       country?: string;
       functionRoot?: string;
       asOfMonth?: string;
+      companyLinkedinUrl?: string;
       expectedEmployeeCount?: number;
     },
   ) {
@@ -1640,6 +1683,7 @@ export class OrgChartController {
             country: options.country,
             functionRoot: options.functionRoot,
             asOfMonth: options.asOfMonth,
+            companyLinkedinUrl: options.companyLinkedinUrl,
             baseOrgChartPayload: orgChartPayload,
           });
           if (asOfOrgChart) {
@@ -1865,6 +1909,7 @@ export class OrgChartController {
           candidates: people as Array<Record<string, unknown>>,
           companyName,
           asOfMonth: input.asOfMonth,
+          companyLinkedinUrl: linkedinCompanyUrl.replace(/\/+$/, ''),
         })
       : people;
 
@@ -2222,6 +2267,8 @@ export class OrgChartController {
       companyName?: string;
       industry?: string;
       industryCategory?: string;
+      asOfMonth?: string;
+      companyLinkedinUrl?: string;
     },
     @Req() req: Request,
   ) {
@@ -2252,6 +2299,8 @@ export class OrgChartController {
           companyName: companyName || undefined,
           industry: body?.industry?.trim() || undefined,
           industryCategory: body?.industryCategory?.trim() || undefined,
+          asOfMonth: body?.asOfMonth?.trim() || undefined,
+          companyLinkedinUrl: body?.companyLinkedinUrl?.trim() || undefined,
         });
 
       return {
