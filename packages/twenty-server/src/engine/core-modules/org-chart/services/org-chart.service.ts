@@ -442,9 +442,15 @@ export class OrgChartService {
       };
     }
 
-    // Authenticated users are workspace-scoped: don't return shared ES docs unless this
-    // workspace already has org-chart access. This prevents cross-workspace leakage.
-    const canReadFromEs = !hasAuthToken || workspaceHasOrgChartAccess;
+    // Prefer workspace-scoped S3/Redis when this workspace has org-chart access. If there is
+    // no org chart in the default S3 path for this company (`s3OrgChart` is null after an
+    // attempted read, or we never read S3 because the workspace lacks access), fall back
+    // to the shared Elasticsearch org-charts index instead of serving only the blank
+    // placeholder.
+    const canReadFromEs =
+      !hasAuthToken ||
+      workspaceHasOrgChartAccess ||
+      s3OrgChart === null;
     if (!options.serveCachedOnly && canReadFromEs) {
       const esOutcome = await this.orgChartEsService.getOrgChartByCompanyId(
         companyId,
