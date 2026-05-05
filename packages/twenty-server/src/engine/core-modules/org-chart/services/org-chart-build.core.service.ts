@@ -1,9 +1,9 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
 import {
-    graphqlToAddNewJob,
-    OrgChartData,
-    OrgchartSearchMode,
+  graphqlToAddNewJob,
+  OrgChartData,
+  OrgchartSearchMode,
 } from 'twenty-shared';
 
 import { ApifyService } from 'src/engine/core-modules/apify/services/apify.service';
@@ -18,9 +18,9 @@ import { OrgchartLinkedinXrayBuildJobData } from 'src/engine/core-modules/candid
 import { OrgchartMultiSourceBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-multisource-build.types';
 import { OrgchartUnipileBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-unipile-build.types';
 import {
-    ApolloIoRestService,
-    ApolloPeopleSearchParams,
-    isApolloOrganizationId,
+  ApolloIoRestService,
+  ApolloPeopleSearchParams,
+  isApolloOrganizationId,
 } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { ApolloPeopleSearchTransformerService } from 'src/engine/core-modules/candidate-search/services/apollo-people-search-transformer.service';
 import { OrgChartSearchService } from 'src/engine/core-modules/candidate-search/services/orgchart-search.service';
@@ -35,8 +35,8 @@ import { linkedInPeopleSearchResultMatchesTargetCompany } from 'src/engine/core-
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import {
-    LinkedInSearchService,
-    parseApifyLinkedinCompanyScraperLogLine,
+  LinkedInSearchService,
+  parseApifyLinkedinCompanyScraperLogLine,
 } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
@@ -1025,7 +1025,7 @@ export class OrgChartBuildService {
     // downstream org-chart build latency. If Apollo reports more entries we
     // still stop at this ceiling.
     const APOLLO_PER_PAGE = 100;
-    const APOLLO_MAX_RECORDS = 500;
+    const APOLLO_MAX_RECORDS = 1000;
     const APOLLO_MAX_PAGES = Math.ceil(APOLLO_MAX_RECORDS / APOLLO_PER_PAGE);
 
     const merged: TransformedCandidateForTable[] = [];

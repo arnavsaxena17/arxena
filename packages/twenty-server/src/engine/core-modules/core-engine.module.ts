@@ -26,6 +26,7 @@ import { FileStorageService } from 'src/engine/core-modules/file-storage/file-st
 // import { GoogleContactsModule } from 'src/engine/core-modules/google-contacts/google-contacts.module';
 import { HealthModule } from 'src/engine/core-modules/health/health.module';
 import { LabModule } from 'src/engine/core-modules/lab/lab.module';
+import { LinkedinCompanySearchModule } from 'src/engine/core-modules/linkedin-company-search/linkedin-company-search.module';
 import { LinkedinQueryGenerationModule } from 'src/engine/core-modules/linkedin-query-generation/linkedin-query-generation.module';
 import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
 import { LLMChatModelModule } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.module';
@@ -68,8 +69,8 @@ import { MailerModule } from './gmail-sender/gmail-sender.module';
 import { GoogleDriveModule } from './google-drive/google-drive.module';
 // import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
 import { SearchModelsModule } from './search-models/search-models.module';
-import { TheOrgModule } from './theorg/theorg.module';
 import { TheOfficialBoardModule } from './theofficialboard/theofficialboard.module';
+import { TheOrgModule } from './theorg/theorg.module';
 import { WhiskeySocketsBaileysWhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.module';
 // import { RecruitmentAgentModule } from "src/engine/core-modules/recruitment-agent/recruitment-agent.module";
 
@@ -107,6 +108,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     TheOrgModule,
     TheOfficialBoardModule,
     LinkedinQueryGenerationModule,
+    LinkedinCompanySearchModule,
     // BaileysModule,
     // ...conditionalImports,
     // GoogleSheetsModule,
@@ -202,6 +204,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     TheOrgModule,
     TheOfficialBoardModule,
     LinkedinQueryGenerationModule,
+    LinkedinCompanySearchModule,
     // GoogleSheetsModule,
     GoogleDriveModule,
     LinkedInSearchModule,

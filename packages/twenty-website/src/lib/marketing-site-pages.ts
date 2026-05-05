@@ -45,12 +45,12 @@ export const PRODUCT_PAGES: MarketingDetailPage[] = [
   {
     slug: 'org-timeline',
     title: 'Org Timeline',
-    headline: 'How any company has changed since 2021.',
+    headline: 'Org Chart Velocity as a Signal.',
     metaDescription:
       'Historical org evolution: leadership changes, function build-outs, and structural shifts over time—so workflows run on facts, not assumptions.',
-    lead: 'Who joined, left, was promoted, or moved—quarter by quarter. The signal layer that turns org data into timing and context for every workflow.',
+    lead: 'Who joined, left, was promoted, or month by month. The signal layer that turns org data into timing and context',
     bullets: [
-      'See leadership and function changes quarter by quarter instead of relying on news or secondhand intel.',
+      'See leadership and function changes month by month instead of relying on storytelling.',
       'Surface succession risk, interim roles, and hiring velocity as buying signals, search triggers, or diligence inputs.',
       'Back up BD and recruiting narratives with structural history, not guesswork.',
       'Set alerts when key roles change at companies you are tracking.',

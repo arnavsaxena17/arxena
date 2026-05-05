@@ -180,7 +180,7 @@ export const CREDIT_PACKS_BY_INTENT: Record<PricingIntent, CreditPack[]> = {
       key: 'fund_enterprise_60000',
       name: 'Fund Enterprise',
       credits: 60000,
-      amountSubunits: 250000,
+      amountSubunits: 249900,
       currency: 'GBP',
       creditsDisplay: '60,000+ search credits — institutional-grade org intelligence',
       useCase: 'Large PE, buyout funds and multi-strategy investors',
