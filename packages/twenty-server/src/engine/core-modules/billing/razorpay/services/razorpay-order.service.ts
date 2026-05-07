@@ -3,17 +3,40 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import {
-  RAZORPAY_CREDIT_PACKS,
-  type CreditPackKey,
+    RAZORPAY_CREDIT_PACKS,
+    type CreditPackKey,
 } from 'src/engine/core-modules/billing/razorpay/constants/credit-packs.constant';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
+import {
+    convertPricingAmountSubunits,
+    type SupportedPricingCurrency,
+} from 'twenty-shared';
 
 type OrderNotes = {
   workspaceId?: string;
   creditPackKey?: string;
+  selectedCurrency?: string;
 };
 
 const CREDIT_CARD_SURCHARGE_RATE = 0.03;
+
+const normalizePricingAmountSubunits = (amountSubunits: number): number => {
+  const amountMajor = Math.max(1, Math.round(amountSubunits / 100));
+
+  if (amountMajor >= 1000) {
+    const rounded = Math.round(amountMajor / 1000) * 1000 - 1;
+
+    return Math.max(999, rounded) * 100;
+  }
+
+  if (amountMajor >= 100) {
+    const rounded = Math.round(amountMajor / 100) * 100 - 1;
+
+    return Math.max(99, rounded) * 100;
+  }
+
+  return amountMajor * 100;
+};
 
 export type CreateOrderForCreditsResult = {
   orderId: string;
@@ -31,6 +54,7 @@ export class RazorpayOrderService {
   async createOrderForCredits(
     workspaceId: string,
     creditPackKey: CreditPackKey,
+    selectedCurrency?: SupportedPricingCurrency,
   ): Promise<CreateOrderForCreditsResult> {
     const pack = RAZORPAY_CREDIT_PACKS.find((p) => p.key === creditPackKey);
     if (!pack) {
@@ -44,8 +68,19 @@ export class RazorpayOrderService {
       throw new Error('Razorpay credentials not configured');
     }
     const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
-    const amountWithSurcharge = Math.round(
-      pack.amountSubunits * (1 + CREDIT_CARD_SURCHARGE_RATE),
+    const sourceCurrency = this.toSupportedCurrency(pack.currency) ?? 'GBP';
+    const requestedCurrency = this.toSupportedCurrency(selectedCurrency);
+    const chargeCurrency = requestedCurrency ?? sourceCurrency;
+    const convertedAmountSubunits = convertPricingAmountSubunits(
+      pack.amountSubunits,
+      sourceCurrency,
+      chargeCurrency,
+    );
+    const surchargeAmountSubunits = Math.round(
+      convertedAmountSubunits * CREDIT_CARD_SURCHARGE_RATE,
+    );
+    const amountWithSurcharge = normalizePricingAmountSubunits(
+      convertedAmountSubunits + surchargeAmountSubunits,
     );
     const res = await fetch('https://api.razorpay.com/v1/orders', {
       method: 'POST',
@@ -55,10 +90,11 @@ export class RazorpayOrderService {
       },
       body: JSON.stringify({
         amount: amountWithSurcharge,
-        currency: pack.currency,
+        currency: chargeCurrency,
         notes: {
           workspaceId,
           creditPackKey: pack.key,
+          selectedCurrency: chargeCurrency,
         },
       }),
     });
@@ -74,6 +110,21 @@ export class RazorpayOrderService {
       currency: data.currency,
       keyId,
     };
+  }
+
+  private toSupportedCurrency(
+    currency: string | undefined,
+  ): SupportedPricingCurrency | null {
+    if (
+      currency === 'INR' ||
+      currency === 'USD' ||
+      currency === 'GBP' ||
+      currency === 'EUR'
+    ) {
+      return currency;
+    }
+
+    return null;
   }
 
   async getOrderNotes(orderId: string): Promise<OrderNotes | null> {

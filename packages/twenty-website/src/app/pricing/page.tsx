@@ -1,8 +1,7 @@
 import { getSignInUrl, getSignUpUrl } from '@/lib/auth-urls';
+import { getRequestPricingCurrency } from '@/lib/pricing-currency';
 
-import { PricingContent } from '@/app/_components/pricing/PricingContent';
-import { ContentContainer } from '@/app/_components/ui/layout/ContentContainer';
-import { Header } from '@/app/_components/ui/layout/header';
+import { PricingPageClient } from './PricingPageClient';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,16 +14,16 @@ export const metadata = {
   },
 };
 
-export default function PricingPage() {
+export default async function PricingPage() {
   const signInUrl = getSignInUrl();
   const signUpUrl = getSignUpUrl();
+  const defaultCurrency = await getRequestPricingCurrency();
 
   return (
-    <>
-      <Header showSearch={false} signInUrl={signInUrl} signUpUrl={signUpUrl} />
-      <ContentContainer>
-        <PricingContent signInUrl={signInUrl} signUpUrl={signUpUrl} />
-      </ContentContainer>
-    </>
+    <PricingPageClient
+      signInUrl={signInUrl}
+      signUpUrl={signUpUrl}
+      defaultCurrency={defaultCurrency}
+    />
   );
 }

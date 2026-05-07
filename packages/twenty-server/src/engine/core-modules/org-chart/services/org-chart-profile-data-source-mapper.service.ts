@@ -15,6 +15,7 @@ export class OrgChartProfileDataSourceMapperService {
   private static readonly INTERNAL_TO_SLUG: Readonly<Record<string, string>> = {
     apollo: 'm7kq',
     apify: 'p2nw',
+    harvest: 'v7hr',
     linkedin_xray: 't9vx',
     unipile: 'h4rj',
     serp: 'q5lm',
@@ -40,6 +41,7 @@ export class OrgChartProfileDataSourceMapperService {
   > = {
     unipile: 'unipile',
     apify: 'apify',
+    harvest: 'harvest',
     contactout: 'contactout',
     linkedin_xray: 'linkedin_xray',
     m7kq: 'apollo',

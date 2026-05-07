@@ -18,8 +18,8 @@ import { AdminWorkspaceCreditsRowOutput } from 'src/engine/core-modules/billing/
 import { BillingPlanOutput } from 'src/engine/core-modules/billing/dtos/outputs/billing-plan.output';
 import { BillingProductPricesOutput } from 'src/engine/core-modules/billing/dtos/outputs/billing-product-prices.output';
 import {
-  BillingProviderEnum,
-  BillingProviderOutput,
+    BillingProviderEnum,
+    BillingProviderOutput,
 } from 'src/engine/core-modules/billing/dtos/outputs/billing-provider.output';
 import { BillingSessionOutput } from 'src/engine/core-modules/billing/dtos/outputs/billing-session.output';
 import { BillingUpdateOutput } from 'src/engine/core-modules/billing/dtos/outputs/billing-update.output';
@@ -346,6 +346,7 @@ export class BillingResolver {
     const result = await this.razorpayOrderService.createOrderForCredits(
       workspace.id,
       input.creditPackKey,
+      input.currency,
     );
 
     return {

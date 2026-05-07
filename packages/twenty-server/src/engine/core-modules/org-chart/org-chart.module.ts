@@ -28,6 +28,8 @@ import { CompanyLogoService } from './services/company-logo.service';
 import { ContactOutPeopleSearchService } from './services/contactout-people-search.service';
 import { ContactOutPersonOrgMovementService } from './services/contactout-person-org-movement.service';
 import { CoreSignalPersonOrgMovementService } from './services/coresignal-person-org-movement.service';
+import { HarvestLinkedinTransformerService } from './services/harvest-linkedin-transformer.service';
+import { HarvestLinkedinService } from './services/harvest-linkedin.service';
 import { ImageProxyService } from './services/image-proxy.service';
 import { OrgChartEsService } from './services/org-chart-es.service';
 import { OrgChartLinkedInBuildService } from './services/org-chart-linkedin-build.service';
@@ -70,6 +72,8 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
     JwtAuthGuard,
     OrgChartService,
     OrgChartLinkedInBuildService,
+    HarvestLinkedinService,
+    HarvestLinkedinTransformerService,
     OrgChartRecordWorkspaceService,
     OrgChartTheOrgEnrichmentService,
     ArxenaBackendService,

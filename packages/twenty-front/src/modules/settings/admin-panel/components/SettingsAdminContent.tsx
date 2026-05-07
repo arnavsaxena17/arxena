@@ -5,11 +5,11 @@ import { TabList } from '@/ui/layout/tab/components/TabList';
 import styled from '@emotion/styled';
 import { IconBrandWhatsapp, IconNetwork } from '@tabler/icons-react';
 import {
-    IconCurrencyDollar,
-    IconHeart,
-    IconSettings2,
-    IconUsers,
-    IconVariable,
+  IconCurrencyDollar,
+  IconHeart,
+  IconSettings2,
+  IconUsers,
+  IconVariable,
 } from 'twenty-ui';
 
 const StyledAdminContentWrapper = styled.div`

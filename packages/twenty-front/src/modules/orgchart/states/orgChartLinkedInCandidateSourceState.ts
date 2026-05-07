@@ -6,11 +6,12 @@ import { ORG_CHART_CANDIDATE_SOURCE_M7KQ } from '@/orgchart/constants/orgChartM7
 export type OrgChartLinkedinCandidateSource =
   | 'unipile'
   | 'apify'
+  | 'harvest'
   | 'linkedin_xray'
   | typeof ORG_CHART_CANDIDATE_SOURCE_M7KQ;
 
 export const orgChartLinkedinCandidateSourceState =
   createState<OrgChartLinkedinCandidateSource>({
     key: 'orgChartLinkedinCandidateSourceState',
-    defaultValue: ORG_CHART_CANDIDATE_SOURCE_M7KQ,
+    defaultValue: 'harvest',
   });

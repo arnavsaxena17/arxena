@@ -10,15 +10,15 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title:
-    'Arxena — See inside any company | Org chart intelligence & AI outreach',
+    'Arxena — See inside any company | Real-time Org chart & automated outreach',
   description:
-    'Arxena maps the org chart of any company in the world — not yours, theirs. Search, build lists, get contacts, and let AI reach out in your voice on WhatsApp, LinkedIn, and email. 1M+ companies mapped, 800M+ professionals indexed.',
+    'Arxena maps the org chart of any company in the world — across each levels and all functions. Search, build lists, get contacts, and let AI reach out in your voice on WhatsApp, LinkedIn, and email. 1M+ companies mapped, 800M+ professionals indexed.',
   alternates: {
     canonical: '/',
   },
   openGraph: {
     title:
-      'Arxena — See inside any company | Org chart intelligence & AI outreach',
+      'Arxena — See inside any company | Real-time Org chart & automated outreach',
     description:
       "Map any target company's org chart in real time. Build lists, enrich contacts, and let AI engage for you — you only talk to warm replies.",
     type: 'website',
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title:
-      'Arxena — See inside any company | Org chart intelligence & AI outreach',
+      'Arxena — See inside any company | Real-time Org chart & automated outreach',
     description:
       'Real-time org charts from LinkedIn and other sources. Search → map → list → contact → engage. 1M+ companies, 800M+ professionals.',
   },

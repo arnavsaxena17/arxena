@@ -1,6 +1,7 @@
 export type OrgChartLinkedinCandidateSource =
   | 'unipile'
   | 'apify'
+  | 'harvest'
   | 'contactout'
   | 'linkedin_xray'
   | 'm7kq'

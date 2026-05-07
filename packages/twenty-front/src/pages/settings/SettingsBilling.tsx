@@ -29,11 +29,13 @@ import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModa
 import { SubMenuTopBarContainer } from '@/ui/layout/page/components/SubMenuTopBarContainer';
 import { useSubscriptionStatus } from '@/workspace/hooks/useSubscriptionStatus';
 import {
+  convertPricingAmountSubunits,
   CREDIT_PACKS_BY_INTENT,
-  creditPackPricingFootnote,
+  getPricingCurrencySymbol,
   isDefined,
   type PricingIntent,
   type CreditPack as SharedCreditPack,
+  type SupportedPricingCurrency
 } from 'twenty-shared';
 import {
   BillingPlanKey,
@@ -92,8 +94,42 @@ type SwitchInfo = {
 };
 
 const StyledBillingRoot = styled.div`
-  max-width: ${({ theme }) => theme.spacing(300)};
+  margin: 0 auto;
+  max-width: 1160px;
+  min-width: 0;
   width: 100%;
+`;
+
+const StyledPricingHero = styled.div`
+  margin: 0 auto ${({ theme }) => theme.spacing(4)};
+  max-width: ${({ theme }) => theme.spacing(220)};
+  text-align: center;
+`;
+
+const StyledPricingHeadline = styled.h2`
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.xxl};
+  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  line-height: 1.2;
+  margin: 0 0 ${({ theme }) => theme.spacing(2)} 0;
+
+  @media (max-width: ${MOBILE_VIEWPORT}px) {
+    font-size: ${({ theme }) => theme.font.size.xxl};
+  }
+`;
+
+const StyledPricingSubheadline = styled.p`
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${({ theme }) => theme.font.size.md};
+  line-height: ${({ theme }) => theme.text.lineHeight.lg};
+  margin: 0;
+`;
+
+const StyledPricingControls = styled.div`
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(2)};
 `;
 
 const StyledIntentTabs = styled.div`
@@ -107,6 +143,21 @@ const StyledIntentTabs = styled.div`
   margin: ${({ theme }) => theme.spacing(4)} auto ${({ theme }) => theme.spacing(4)};
   padding: ${({ theme }) => theme.spacing(1)};
   width: fit-content;
+
+  @media (max-width: ${MOBILE_VIEWPORT}px) {
+    border-radius: ${({ theme }) => theme.border.radius.md};
+    width: 100%;
+  }
+`;
+
+const StyledCurrencySelect = styled.select`
+  background: ${({ theme }) => theme.background.primary};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  margin: 0 auto ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => `${theme.spacing(1)} ${theme.spacing(2)}`};
 `;
 
 const StyledIntentTab = styled.button<{ isActive: boolean }>`
@@ -126,19 +177,21 @@ const StyledIntentTab = styled.button<{ isActive: boolean }>`
     background: ${({ isActive, theme }) =>
       isActive ? theme.background.transparent.primary : theme.background.transparent.lighter};
   }
+
+  @media (max-width: ${MOBILE_VIEWPORT}px) {
+    flex: 1;
+    min-width: ${({ theme }) => theme.spacing(22)};
+    text-align: center;
+  }
 `;
 
 const StyledBillingCard = styled(Card)`
+  background: ${({ theme }) => theme.background.primary};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.md};
   display: flex;
   flex-direction: column;
   height: 100%;
-`;
-
-const StyledCreditSummary = styled.div`
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  line-height: ${({ theme }) => theme.text.lineHeight.lg};
-  margin: 0;
 `;
 
 const StyledPlansGrid = styled.div`
@@ -200,15 +253,19 @@ const StyledCreditCardsGrid = styled.div`
   margin-top: ${({ theme }) => theme.spacing(4)};
 
   @media (max-width: ${MOBILE_VIEWPORT}px) {
+    gap: ${({ theme }) => theme.spacing(4)};
     grid-template-columns: 1fr;
   }
 `;
+
+const PRICING_CURRENCY_STORAGE_KEY = 'arxena:pricing-currency';
 
 const StyledCreditPackCardContent = styled(CardContent)`
   display: flex;
   flex: 1;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(3)};
+  padding: ${({ theme }) => theme.spacing(5)};
   min-width: 0;
 `;
 
@@ -222,11 +279,23 @@ const StyledCreditCardPrice = styled.div`
   color: ${({ theme }) => theme.font.color.primary};
   font-size: ${({ theme }) => theme.font.size.xxl};
   font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  line-height: 1.1;
 `;
 
 const StyledCreditCardCredits = styled.div`
   color: ${({ theme }) => theme.font.color.tertiary};
   font-size: ${({ theme }) => theme.font.size.sm};
+`;
+
+const StyledIncludedRevealCredits = styled.div`
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${({ theme }) => theme.font.size.xs};
+`;
+
+const StyledPanelDivider = styled.div`
+  border-top: 1px solid ${({ theme }) => theme.border.color.light};
+  margin: ${({ theme }) => theme.spacing(1)} 0;
+  width: 100%;
 `;
 
 const StyledCreditCardSurcharge = styled.div`
@@ -268,24 +337,23 @@ const StyledCreditActions = styled.div`
   margin-top: auto;
 `;
 
-type CreditBalanceSummaryTextProps = {
-  orgChartCredits: number;
-  emailContactCredits: number;
-  phoneContactCredits: number;
-};
+const normalizePricingAmountSubunits = (amountSubunits: number): number => {
+  const amountMajor = Math.max(1, Math.round(amountSubunits / 100));
 
-const CreditBalanceSummaryText = ({
-  orgChartCredits,
-  emailContactCredits,
-  phoneContactCredits,
-}: CreditBalanceSummaryTextProps) => (
-  <StyledCreditSummary>
-    <Trans>
-      Org chart credits: {orgChartCredits} | Email credits:{' '}
-      {emailContactCredits} | Phone credits: {phoneContactCredits}
-    </Trans>
-  </StyledCreditSummary>
-);
+  if (amountMajor >= 1000) {
+    const rounded = Math.round(amountMajor / 1000) * 1000 - 1;
+
+    return Math.max(999, rounded) * 100;
+  }
+
+  if (amountMajor >= 100) {
+    const rounded = Math.round(amountMajor / 100) * 100 - 1;
+
+    return Math.max(99, rounded) * 100;
+  }
+
+  return amountMajor * 100;
+};
 
 export const SettingsBilling = () => {
   const { t } = useLingui();
@@ -366,22 +434,9 @@ export const SettingsBilling = () => {
     skip: isRazorpay ? false : !hasSubscriptions,
   });
 
-  const { data: creditsData, refetch: refetchCredits } = useQuery(
-    WORKSPACE_CREDITS,
-    { skip: !billingEnabled },
-  );
-  const workspaceCredits =
-    (
-      creditsData as
-        | {
-            workspaceCredits?: {
-              orgChartCredits: number;
-              emailContactCredits: number;
-              phoneContactCredits: number;
-            };
-          }
-        | undefined
-    )?.workspaceCredits ?? null;
+  const { refetch: refetchCredits } = useQuery(WORKSPACE_CREDITS, {
+    skip: !billingEnabled,
+  });
 
   const { data: engagementPlansData } = useQuery(ENGAGEMENT_PLANS, {
     skip: !billingEnabled,
@@ -529,11 +584,14 @@ export const SettingsBilling = () => {
   );
 
   const handleBuyCredits = useCallback(
-    async (creditPackKey: string) => {
+    async (
+      creditPackKey: string,
+      selectedCurrency: SupportedPricingCurrency,
+    ) => {
       setBuyingPackKey(creditPackKey);
       try {
         const { data } = await createRazorpayOrderMutation({
-          variables: { input: { creditPackKey } },
+          variables: { input: { creditPackKey, currency: selectedCurrency } },
         });
         const result = data as
           | {
@@ -646,6 +704,24 @@ export const SettingsBilling = () => {
         : 'RECRUITING';
 
   const [intent, setIntent] = useState<PricingIntent>(initialIntent);
+  const [displayCurrency, setDisplayCurrency] =
+    useState<SupportedPricingCurrency>('USD');
+
+  useEffect(() => {
+    const storedCurrency = localStorage.getItem(PRICING_CURRENCY_STORAGE_KEY);
+    if (
+      storedCurrency === 'INR' ||
+      storedCurrency === 'USD' ||
+      storedCurrency === 'GBP' ||
+      storedCurrency === 'EUR'
+    ) {
+      setDisplayCurrency(storedCurrency);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(PRICING_CURRENCY_STORAGE_KEY, displayCurrency);
+  }, [displayCurrency]);
 
   const sharedPackMetaByKey = (() => {
     const allPacks: SharedCreditPack[] = Object.values(CREDIT_PACKS_BY_INTENT).flat();
@@ -675,19 +751,6 @@ export const SettingsBilling = () => {
     >
       <SettingsPageContainer fullWidth>
         <StyledBillingRoot>
-          {workspaceCredits && billingEnabled && (
-            <Section>
-              <H2Title
-                title={t`Credit balance`}
-                description={t`Credits available for this workspace`}
-              />
-              <CreditBalanceSummaryText
-                orgChartCredits={workspaceCredits.orgChartCredits}
-                emailContactCredits={workspaceCredits.emailContactCredits}
-                phoneContactCredits={workspaceCredits.phoneContactCredits}
-              />
-            </Section>
-          )}
           {engagementPlans.length > 0 && (
             <Section>
               <H2Title
@@ -754,39 +817,82 @@ export const SettingsBilling = () => {
           )}
           {creditPacks.length > 0 && (
             <Section>
-              <H2Title
-                title={t`Org chart credits`}
-                description={t`Add org chart credits to your workspace. ${creditPackPricingFootnote}`}
-              />
-              <StyledIntentTabs>
-                <StyledIntentTab
-                  type="button"
-                  isActive={intent === 'INVESTING'}
-                  onClick={() => setIntent('INVESTING')}
+              <StyledPricingHero>
+                <StyledPricingHeadline>
+                  {intent === 'SALES'
+                    ? t`Pipeline-grade org intelligence for Sales / ABM`
+                    : intent === 'INVESTING'
+                      ? t`Deal diligence org intelligence for PE / VC`
+                      : t`Org intelligence for Recruiting`}
+                </StyledPricingHeadline>
+                <StyledPricingSubheadline>
+                  {intent === 'SALES'
+                    ? t`Map buying committees, champions, and blockers across target accounts — then reveal/export only what matters.`
+                    : intent === 'INVESTING'
+                      ? t`Diligence faster, monitor portfolios, and benchmark leadership teams before your first meeting.`
+                      : t`Map teams, find the right candidates, and build shortlists with org-chart context before outreach.`}
+                </StyledPricingSubheadline>
+              </StyledPricingHero>
+              <StyledPricingControls>
+                <StyledCurrencySelect
+                  aria-label="Select currency"
+                  value={displayCurrency}
+                  onChange={(event) =>
+                    setDisplayCurrency(event.target.value as SupportedPricingCurrency)
+                  }
                 >
-                  PE / VC
-                </StyledIntentTab>
-                <StyledIntentTab
-                  type="button"
-                  isActive={intent === 'SALES'}
-                  onClick={() => setIntent('SALES')}
-                >
-                  Sales / ABM
-                </StyledIntentTab>
-                <StyledIntentTab
-                  type="button"
-                  isActive={intent === 'RECRUITING'}
-                  onClick={() => setIntent('RECRUITING')}
-                >
-                  Recruiting
-                </StyledIntentTab>
-              </StyledIntentTabs>
+                  <option value="USD">USD</option>
+                  <option value="GBP">GBP</option>
+                  <option value="EUR">EUR</option>
+                  <option value="INR">INR</option>
+                </StyledCurrencySelect>
+                <StyledIntentTabs>
+                  <StyledIntentTab
+                    type="button"
+                    isActive={intent === 'INVESTING'}
+                    onClick={() => setIntent('INVESTING')}
+                  >
+                    PE / VC
+                  </StyledIntentTab>
+                  <StyledIntentTab
+                    type="button"
+                    isActive={intent === 'SALES'}
+                    onClick={() => setIntent('SALES')}
+                  >
+                    Sales / ABM
+                  </StyledIntentTab>
+                  <StyledIntentTab
+                    type="button"
+                    isActive={intent === 'RECRUITING'}
+                    onClick={() => setIntent('RECRUITING')}
+                  >
+                    Recruiting
+                  </StyledIntentTab>
+                </StyledIntentTabs>
+              </StyledPricingControls>
               <StyledCreditCardsGrid>
                 {visibleCreditPacks.map((pack) => {
                   const meta = sharedPackMetaByKey.get(pack.key);
-                  const baseAmount = pack.amountSubunits / 100;
-                  const cardAmount =
-                    Math.round(pack.amountSubunits * 1.03) / 100;
+                  const packCurrency =
+                    pack.currency === 'INR' ||
+                    pack.currency === 'USD' ||
+                    pack.currency === 'GBP' ||
+                    pack.currency === 'EUR'
+                      ? (pack.currency as SupportedPricingCurrency)
+                      : 'GBP';
+                  const convertedAmountSubunits = convertPricingAmountSubunits(
+                    pack.amountSubunits,
+                    packCurrency,
+                    displayCurrency,
+                  );
+                  const baseAmount = convertedAmountSubunits / 100;
+                  const surchargeAmountSubunits = Math.round(
+                    convertedAmountSubunits * 0.03,
+                  );
+                  const cardAmountSubunits = normalizePricingAmountSubunits(
+                    convertedAmountSubunits + surchargeAmountSubunits,
+                  );
+                  const cardAmount = cardAmountSubunits / 100;
                   const creditsLabel =
                     meta?.creditsDisplay ??
                     (pack.credits === 1
@@ -800,15 +906,24 @@ export const SettingsBilling = () => {
                           {meta?.name ?? pack.name}
                         </StyledCreditCardTitle>
                         <StyledCreditCardPrice>
-                          {pack.currency === 'USD' ? '$' : pack.currency + ' '}
+                          {getPricingCurrencySymbol(displayCurrency)}
                           {baseAmount.toLocaleString()}
                         </StyledCreditCardPrice>
                         <StyledCreditCardCredits>
                           {creditsLabel}
                         </StyledCreditCardCredits>
+                        <StyledIncludedRevealCredits>
+                          {t`Includes`} {(
+                            meta?.includedEmailCredits ?? 0
+                          ).toLocaleString()}{' '}
+                          {t`email`} +{' '}
+                          {(meta?.includedPhoneCredits ?? 0).toLocaleString()}{' '}
+                          {t`phone credits`}
+                        </StyledIncludedRevealCredits>
+                        <StyledPanelDivider />
                         <StyledCreditCardSurcharge>
                           {t`Credit card`}:{' '}
-                          {pack.currency === 'USD' ? '$' : pack.currency + ' '}
+                          {getPricingCurrencySymbol(displayCurrency)}
                           {cardAmount.toLocaleString()} {t`(+3%)`}
                         </StyledCreditCardSurcharge>
                         <StyledFeatureList>
@@ -826,7 +941,9 @@ export const SettingsBilling = () => {
                             variant="primary"
                             accent="blue"
                             fullWidth
-                            onClick={() => handleBuyCredits(pack.key)}
+                            onClick={() =>
+                              handleBuyCredits(pack.key, displayCurrency)
+                            }
                             disabled={buyingPackKey !== null}
                           />
                           <Button

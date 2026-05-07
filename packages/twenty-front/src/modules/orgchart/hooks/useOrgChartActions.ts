@@ -183,12 +183,16 @@ const LINKEDIN_UNIPILE_SOURCE_UNAVAILABLE_SNACKBAR =
 
 const APIFY_SOURCE_UNAVAILABLE_SNACKBAR =
   'Apify is not configured for org chart. Set APIFY_API_TOKEN on the server or choose LinkedIn (Unipile) in the jobs menu.';
+const HARVEST_SOURCE_UNAVAILABLE_SNACKBAR =
+  'Harvest is not configured for org chart. Set HARVEST_API_KEY on the server or choose LinkedIn (Unipile) in the jobs menu.';
 
 const LINKEDIN_XRAY_SOURCE_UNAVAILABLE_SNACKBAR =
   'LinkedIn x-ray is not configured for org chart. Set BRIGHT_DATA_API_KEY on the server or choose LinkedIn (Unipile) in the jobs menu.';
 
 const APIFY_MODE_UNSUPPORTED_SNACKBAR =
   'Apify org chart data source is only available for full company searches. Switch to LinkedIn (Unipile) for business division mapping, function filters, or other advanced modes.';
+const HARVEST_MODE_UNSUPPORTED_SNACKBAR =
+  'Harvest org chart data source is only available for full company searches. Switch to LinkedIn (Unipile) for business division mapping, function filters, or other advanced modes.';
 
 const ORG_CHART_AGENT_UNAVAILABLE_SNACKBAR =
   'Contact Support. Org chart agent service is not available. Ensure the Python service is running and reachable.';
@@ -813,6 +817,7 @@ export const useOrgChartActions = ({
   const fetchLinkedinDataSourcesStatus = useCallback(async (): Promise<{
     linkedinUnipileConnected: boolean;
     apifyActorConfigured: boolean;
+    harvestConfigured: boolean;
     linkedinXrayConfigured: boolean;
     m7kqDirectoryApiReady: boolean;
     pythonOrgChartAgentAvailable: boolean;
@@ -834,6 +839,7 @@ export const useOrgChartActions = ({
         status?: string;
         linkedinUnipileConnected?: boolean;
         apifyActorConfigured?: boolean;
+        harvestConfigured?: boolean;
         linkedinXrayConfigured?: boolean;
         m7kqDirectoryApiReady?: boolean;
         pythonOrgChartAgentAvailable?: boolean;
@@ -844,6 +850,7 @@ export const useOrgChartActions = ({
       return {
         linkedinUnipileConnected: !!json.linkedinUnipileConnected,
         apifyActorConfigured: !!json.apifyActorConfigured,
+        harvestConfigured: !!json.harvestConfigured,
         linkedinXrayConfigured: !!json.linkedinXrayConfigured,
         m7kqDirectoryApiReady: !!json.m7kqDirectoryApiReady,
         pythonOrgChartAgentAvailable:
@@ -1173,6 +1180,14 @@ export const useOrgChartActions = ({
           });
           return;
         }
+      } else if (effectiveCandidateSource === 'harvest') {
+        if (prereqStatus.harvestConfigured !== true) {
+          enqueueSnackBar(HARVEST_SOURCE_UNAVAILABLE_SNACKBAR, {
+            variant: SnackBarVariant.Error,
+            duration: 8000,
+          });
+          return;
+        }
       } else if (effectiveCandidateSource === 'linkedin_xray') {
         if (prereqStatus.linkedinXrayConfigured !== true) {
           enqueueSnackBar(LINKEDIN_XRAY_SOURCE_UNAVAILABLE_SNACKBAR, {
@@ -1231,6 +1246,16 @@ export const useOrgChartActions = ({
       mode !== 'entire_company'
     ) {
       enqueueSnackBar(APIFY_MODE_UNSUPPORTED_SNACKBAR, {
+        variant: SnackBarVariant.Error,
+        duration: 10000,
+      });
+      return;
+    }
+    if (
+      effectiveCandidateSource === 'harvest' &&
+      mode !== 'entire_company'
+    ) {
+      enqueueSnackBar(HARVEST_MODE_UNSUPPORTED_SNACKBAR, {
         variant: SnackBarVariant.Error,
         duration: 10000,
       });
@@ -1575,6 +1600,9 @@ export const useOrgChartActions = ({
                 json.candidateSource === 'multi'
               ? 'Multi-source org chart queued. Waiting for results...'
             : typeof json.candidateSource === 'string' &&
+                json.candidateSource === 'harvest'
+              ? 'Harvest org chart search queued. Waiting for results...'
+              : typeof json.candidateSource === 'string' &&
                 json.candidateSource === 'unipile'
               ? 'LinkedIn search queued. Waiting for results...'
               : typeof json.candidateSource === 'string' &&

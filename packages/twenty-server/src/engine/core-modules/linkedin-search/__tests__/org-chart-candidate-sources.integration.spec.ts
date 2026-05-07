@@ -10,6 +10,7 @@ import { LinkedInHtmlParserService } from 'src/engine/core-modules/linkedin-sear
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
 import type { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
+import { HarvestLinkedinTransformerService } from 'src/engine/core-modules/org-chart/services/harvest-linkedin-transformer.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 const COMPANY_LI = 'https://www.linkedin.com/company/acme-corp';
@@ -149,18 +150,36 @@ const APIFY_ACTOR_FIXTURE_ROWS: Record<string, unknown>[] = [
 
 describe('Org chart candidate sources (integration-style: real transformers, mocked Apify / no HTTP)', () => {
   let linkedInSearchService: LinkedInSearchService;
-  let apifyService: jest.Mocked<Pick<ApifyService, 'isConfigured' | 'runActorAndListDatasetItems'>>;
+  let apifyService: jest.Mocked<
+    Pick<
+      ApifyService,
+      'isConfigured' | 'runActorAndListDatasetItems' | 'runActorAndListDatasetItemsDetailed'
+    >
+  >;
   let linkedInSearchTransformer: LinkedInSearchTransformerService;
   let apifyLinkedInTransformer: ApifyLinkedInCompanyProfileTransformerService;
+  let harvestLinkedinTransformer: HarvestLinkedinTransformerService;
 
   beforeEach(async () => {
     const apifyMock: jest.Mocked<
-      Pick<ApifyService, 'isConfigured' | 'runActorAndListDatasetItems'>
+      Pick<
+        ApifyService,
+        'isConfigured' | 'runActorAndListDatasetItems' | 'runActorAndListDatasetItemsDetailed'
+      >
     > = {
       isConfigured: jest.fn().mockReturnValue(true),
       runActorAndListDatasetItems: jest
         .fn()
         .mockResolvedValue(APIFY_ACTOR_FIXTURE_ROWS),
+      runActorAndListDatasetItemsDetailed: jest.fn().mockResolvedValue({
+        run: {
+          runId: 'run_1',
+          status: 'SUCCEEDED',
+          defaultDatasetId: 'dataset_1',
+        },
+        items: APIFY_ACTOR_FIXTURE_ROWS,
+        logText: 'ok',
+      }),
     };
 
     const moduleRef = await Test.createTestingModule({
@@ -168,6 +187,7 @@ describe('Org chart candidate sources (integration-style: real transformers, moc
         LinkedInSearchService,
         ApifyLinkedInCompanyProfileTransformerService,
         LinkedInSearchTransformerService,
+        HarvestLinkedinTransformerService,
         DataProcessingUtils,
         { provide: LinkedInSessionTrackerService, useValue: {} },
         { provide: WorkspaceQueryService, useValue: {} },
@@ -182,6 +202,7 @@ describe('Org chart candidate sources (integration-style: real transformers, moc
     apifyLinkedInTransformer = moduleRef.get(
       ApifyLinkedInCompanyProfileTransformerService,
     );
+    harvestLinkedinTransformer = moduleRef.get(HarvestLinkedinTransformerService);
   });
 
   it('Unipile-shaped LinkedInPeopleSearchResult → table format matches org-chart candidate contract', () => {
@@ -224,7 +245,7 @@ describe('Org chart candidate sources (integration-style: real transformers, moc
     });
 
     expect(apifyService.isConfigured).toHaveBeenCalled();
-    expect(apifyService.runActorAndListDatasetItems).toHaveBeenCalled();
+    expect(apifyService.runActorAndListDatasetItemsDetailed).toHaveBeenCalled();
     expect(rows).toHaveLength(1);
     assertOrgChartTableRow(rows[0], 'fetchCompanyEmployeesViaApifyActor');
     expect(rows[0].jobCompanyLinkedinUrl).toBe(COMPANY_LI.trim());
@@ -262,5 +283,43 @@ describe('Org chart candidate sources (integration-style: real transformers, moc
     for (const key of keysBothMustHave) {
       expect(typeof unipile[0][key]).toBe(typeof apify[0][key]);
     }
+  });
+
+  it('Harvest transformer returns org-chart-compatible candidate rows', () => {
+    const current = harvestLinkedinTransformer.transformCurrentLeadsToCandidates(
+      [
+        {
+          name: 'Sara Jain',
+          title: 'Head of HR',
+          linkedinUrl: 'https://www.linkedin.com/in/sarajain',
+          location: 'Mumbai',
+        },
+      ],
+      'Acme',
+      COMPANY_LI,
+    );
+    const past = harvestLinkedinTransformer.transformPastLeadsWithProfilesToCandidates(
+      [
+        {
+          name: 'Rohan Mehta',
+          title: 'Product Manager',
+          linkedinUrl: 'https://www.linkedin.com/in/rohanmehta',
+          location: 'Pune',
+          org_harvest_profile: {
+            experience: [{ companyName: 'Acme', title: 'Product Manager' }],
+          },
+        },
+      ],
+      'Acme',
+      COMPANY_LI,
+    );
+
+    expect(current).toHaveLength(1);
+    expect(past).toHaveLength(1);
+    assertOrgChartTableRow(current[0], 'harvest-current');
+    assertOrgChartTableRow(past[0], 'harvest-past');
+    expect(current[0].source).toBe('harvest');
+    expect(past[0].source).toBe('harvest');
+    expect((past[0] as Record<string, unknown>).org_harvest_experience).toBeDefined();
   });
 });

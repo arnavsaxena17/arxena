@@ -45,6 +45,7 @@ import { CompanyAutocompleteDto } from '../dto/company-autocomplete.dto';
 import { OrgChartNodePeopleDto } from '../dto/org-chart-node-people.dto';
 import { OrgChartQueryDto } from '../dto/org-chart-query.dto';
 import { CompanyLogoService } from '../services/company-logo.service';
+import { HarvestLinkedinService } from '../services/harvest-linkedin.service';
 import { ImageProxyService } from '../services/image-proxy.service';
 import { OrgChartClientIpService } from '../services/org-chart-client-ip.service';
 import { OrgChartEsService } from '../services/org-chart-es.service';
@@ -89,6 +90,7 @@ export class OrgChartController {
     private readonly brightDataSerpService: BrightDataSerpService,
     private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
     private readonly apolloIoRestService: ApolloIoRestService,
+    private readonly harvestLinkedinService: HarvestLinkedinService,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly apiKeyService: ApiKeyService,
     private readonly orgChartS3Service: OrgChartS3Service,
@@ -1071,6 +1073,7 @@ export class OrgChartController {
     }
 
     const apifyActorConfigured = this.apifyService.isConfigured();
+    const harvestConfigured = this.harvestLinkedinService.isConfigured();
     const linkedinXrayConfigured = this.brightDataSerpService.isConfigured();
     const m7kqDirectoryApiReady = this.apolloIoRestService.isConfigured();
     const pythonOrgChartAgentAvailable =
@@ -1080,6 +1083,7 @@ export class OrgChartController {
       status: 'ok' as const,
       linkedinUnipileConnected,
       apifyActorConfigured,
+      harvestConfigured,
       linkedinXrayConfigured,
       m7kqDirectoryApiReady,
       pythonOrgChartAgentAvailable,

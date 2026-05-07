@@ -14,12 +14,42 @@ export const WorkspaceFavorites = () => {
     return <NavigationDrawerSectionForObjectMetadataItemsSkeletonLoader />;
   }
 
-  const nonJobCandidates = workspaceFavoritesObjectMetadataItems.filter(x=> !x.labelSingular.toLowerCase().includes( "jobcandidate"));
+  const hiddenFavoriteObjectLabels = new Set([
+    'interview schedules',
+    'client interviews',
+    'cv sents',
+    'recruiter interviews',
+    'shortlists',
+    'text messages',
+    'phone calls',
+    'video interview models',
+    'video interview templates',
+    'video interview questions',
+    'video interview responses',
+    'video interviews',
+    'client contacts',
+    'candidate reminders',
+    'tasks',
+    'notes',
+    'offers',
+    'screenings',
+  ]);
+
+  const visibleWorkspaceFavoritesObjectMetadataItems =
+    workspaceFavoritesObjectMetadataItems.filter((objectMetadataItem) => {
+      const singularLabel = objectMetadataItem.labelSingular.toLowerCase().trim();
+      const pluralLabel = objectMetadataItem.labelPlural.toLowerCase().trim();
+
+      return (
+        !hiddenFavoriteObjectLabels.has(singularLabel) &&
+        !hiddenFavoriteObjectLabels.has(pluralLabel)
+      );
+    });
 
   return (
     <NavigationDrawerSectionForObjectMetadataItems
       sectionTitle={t`Workspace`}
-      objectMetadataItems={nonJobCandidates}
+      objectMetadataItems={visibleWorkspaceFavoritesObjectMetadataItems}
       isRemote={false}
     />
   );

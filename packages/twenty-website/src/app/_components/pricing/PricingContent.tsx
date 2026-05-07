@@ -5,8 +5,12 @@ import { IconCheck } from '@tabler/icons-react';
 import Link from 'next/link';
 import React from 'react';
 
+import type { SupportedPricingCurrency } from '@/lib/pricing-currency-helpers';
 import {
-  type CreditPack,
+  convertCreditPacksToCurrency,
+  getPricingCurrencySymbol,
+} from '@/lib/pricing-currency-helpers';
+import {
   type PricingIntent,
   CREDIT_PACKS_BY_INTENT,
   creditPackPricingFootnote,
@@ -110,6 +114,12 @@ const _StyledPriceUnit = styled.span`
 const StyledCredits = styled.div`
   font-size: 15px;
   color: #474747;
+  margin-bottom: 8px;
+`;
+
+const StyledIncludedCredits = styled.div`
+  font-size: 14px;
+  color: #6b6b6b;
   margin-bottom: 24px;
 `;
 
@@ -211,14 +221,17 @@ const StyledEngageLink = styled(Link)`
 `;
 
 type PricingContentProps = {
-  signInUrl: string;
   signUpUrl: string;
+  currency: SupportedPricingCurrency;
 };
 
-export const PricingContent = ({ signUpUrl }: PricingContentProps) => {
+export const PricingContent = ({ signUpUrl, currency }: PricingContentProps) => {
   const [intent, setIntent] = React.useState<PricingIntent>('SALES');
 
-  const packs = CREDIT_PACKS_BY_INTENT[intent];
+  const packs = React.useMemo(
+    () => convertCreditPacksToCurrency(CREDIT_PACKS_BY_INTENT[intent], currency),
+    [intent, currency],
+  );
   const intentCopy: Record<PricingIntent, { headline: string; sub: string }> = {
     SALES: {
       headline: "Pipeline-grade org intelligence for Sales / ABM",
@@ -267,14 +280,30 @@ export const PricingContent = ({ signUpUrl }: PricingContentProps) => {
       </StyledIntentTabs>
 
       <StyledCardsGrid>
-        {packs.map((pack: CreditPack) => (
+        {packs.map((pack) => {
+          const includedEmailCredits =
+            typeof (pack as Record<string, unknown>).includedEmailCredits ===
+            'number'
+              ? ((pack as Record<string, unknown>).includedEmailCredits as number)
+              : 0;
+          const includedPhoneCredits =
+            typeof (pack as Record<string, unknown>).includedPhoneCredits ===
+            'number'
+              ? ((pack as Record<string, unknown>).includedPhoneCredits as number)
+              : 0;
+
+          return (
           <StyledCard key={pack.name}>
             <StyledCardTitle>{pack.name}</StyledCardTitle>
             <StyledPrice>
-              {pack.currency === 'GBP' ? '£' : '$'}
+              {getPricingCurrencySymbol(currency)}
               {(pack.amountSubunits / 100).toLocaleString()}
             </StyledPrice>
             <StyledCredits>{pack.creditsDisplay}</StyledCredits>
+            <StyledIncludedCredits>
+              Includes {includedEmailCredits.toLocaleString()} email +{' '}
+              {includedPhoneCredits.toLocaleString()} phone credits
+            </StyledIncludedCredits>
             <StyledFeatureList>
               {pack.features.map((feature: string) => (
                 <StyledFeatureItem key={feature}>
@@ -285,7 +314,8 @@ export const PricingContent = ({ signUpUrl }: PricingContentProps) => {
             </StyledFeatureList>
             <StyledCtaButton href={signUpUrl}>Start for free</StyledCtaButton>
           </StyledCard>
-        ))}
+        );
+        })}
       </StyledCardsGrid>
 
       <StyledRoiSection>

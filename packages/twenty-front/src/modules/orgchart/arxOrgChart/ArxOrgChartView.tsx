@@ -730,6 +730,17 @@ export const ArxOrgChartView = ({
                         />
                         <DropdownMenuSeparator />
                         <MenuItem
+                          text="Harvest"
+                          contextualText={
+                            selectedMultiSources.includes('harvest')
+                              ? 'On'
+                              : 'Off'
+                          }
+                          onClick={() => {
+                            searchControlsProps.onToggleMultiSource?.('harvest');
+                          }}
+                        />
+                        <MenuItem
                           text="LinkedIn (Unipile)"
                           contextualText={
                             selectedMultiSources.includes('unipile')

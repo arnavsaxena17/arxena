@@ -10,17 +10,17 @@ import styled from '@emotion/styled';
 import { useRecoilState } from 'recoil';
 import { LinkedInSearchType } from 'twenty-shared';
 import {
-  Button,
-  IconApi,
-  IconBrandLinkedin,
-  IconChevronDown,
-  IconCoins,
-  IconComment,
-  IconDownload,
-  IconGitCommit,
-  IconPlus,
-  IconSearch,
-  MenuItem,
+    Button,
+    IconApi,
+    IconBrandLinkedin,
+    IconChevronDown,
+    IconCoins,
+    IconComment,
+    IconDownload,
+    IconGitCommit,
+    IconPlus,
+    IconSearch,
+    MenuItem,
 } from 'twenty-ui';
 
 const ORG_CHART_LINKEDIN_SEARCH_TYPE_OPTIONS: {
@@ -284,6 +284,19 @@ export const CandidateTableJobsPageMenuDropdown = ({
               >
                 <IconBrandLinkedin size={iconSm} />
                 LinkedIn
+              </StyledSegmentedOption>
+              <StyledSegmentedOption
+                type="button"
+                data-testid="org-chart-source-harvest"
+                isActive={orgChartLinkedinCandidateSource === 'harvest'}
+                role="radio"
+                aria-checked={orgChartLinkedinCandidateSource === 'harvest'}
+                onClick={() => {
+                  setOrgChartLinkedinCandidateSource('harvest');
+                }}
+              >
+                <IconApi size={iconSm} />
+                Harvest
               </StyledSegmentedOption>
               <StyledSegmentedOption
                 type="button"

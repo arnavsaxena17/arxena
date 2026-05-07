@@ -27,6 +27,7 @@ import { OrgChartNodeData, extractOrgData, toTitleCase } from 'twenty-shared';
 import { OrgChartShareModal } from '../components/OrgChartShareModal';
 import { useJobOrgChartData } from '../hooks/useJobOrgChartData';
 import { useOrgChartActions } from '../hooks/useOrgChartActions';
+import { extractCompanyDomainFromWebsite } from '../utils/orgChartUtils';
 import {
     StyledOrgChartConfirmDd,
     StyledOrgChartConfirmDt,
@@ -38,7 +39,6 @@ import {
 import { ArxOrgChartView } from './ArxOrgChartView';
 import { useOrgChartBanners } from './hooks/useOrgChartBanners';
 import { useOrgChartNodeDataArray } from './hooks/useOrgChartNodeDataArray';
-import { extractCompanyDomainFromWebsite } from '../utils/orgChartUtils';
 import { hydrateContactsByKeyFromOrgData } from './utils/contactCacheHydration';
 
 export type ArxOrgChartContainerProps = {
@@ -66,6 +66,7 @@ const APOLLO_QUEUE_POLL_INTERVAL_MS = 5000;
 const APOLLO_QUEUE_MAX_ATTEMPTS = 24;
 
 const MULTI_SOURCE_SLUGS = [
+  'harvest',
   'unipile',
   'apollo',
   'theorg',
@@ -84,7 +85,9 @@ const normalizeMultiSourceSlug = (raw: string): MultiSourceSlug | null => {
 
   // Defensive mapping in case UI ever passes display labels.
   const mapped =
-    lowered === 'linkedin (unipile)' || lowered === 'linkedin unipile'
+    lowered === 'harvest' || lowered === 'harvestapi'
+      ? 'harvest'
+      : lowered === 'linkedin (unipile)' || lowered === 'linkedin unipile'
       ? 'unipile'
       : lowered === 'apollo'
         ? 'apollo'
@@ -140,7 +143,7 @@ export const ArxOrgChartContainer = ({
     useState(false);
   const [multiSourceSelectedSources, setMultiSourceSelectedSources] = useState<
     string[]
-  >(['apollo', 'theorg']);
+  >(['harvest', 'apollo', 'theorg']);
   const [exactEmployeeCount, setExactEmployeeCount] = useState<number | null>(
     null,
   );
@@ -809,7 +812,7 @@ export const ArxOrgChartContainer = ({
   ]);
 
   const handleBuildOrgIntelligence = useCallback(async () => {
-    setOrgChartLinkedinCandidateSource('apify');
+    setOrgChartLinkedinCandidateSource('harvest');
 
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set('includeOrgIntelligence', 'true');
@@ -1065,6 +1068,8 @@ export const ArxOrgChartContainer = ({
         ? t`LinkedIn · ${linkedinSearchTypeLabel}`
         : orgChartLinkedinCandidateSource === 'apify'
           ? t`Apify`
+          : orgChartLinkedinCandidateSource === 'harvest'
+            ? t`Harvest`
           : orgChartLinkedinCandidateSource === 'linkedin_xray'
             ? t`LinkedIn X-Ray`
             : orgChartLinkedinCandidateSource ===

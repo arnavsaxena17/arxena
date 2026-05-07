@@ -1366,6 +1366,25 @@ export class EnvironmentVariables {
     group: EnvironmentVariablesGroup.Other,
     sensitive: true,
     description:
+      'Harvest API key for LinkedIn lead search + profile enrichment in org chart builds.',
+  })
+  @IsOptional()
+  @IsString()
+  HARVEST_API_KEY?: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'Harvest API base URL. Defaults to https://api.harvest-api.com when unset.',
+  })
+  @IsOptional()
+  @IsString()
+  HARVEST_API_BASE_URL?: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    sensitive: true,
+    description:
       'Elasticsearch endpoint URL for org charts (e.g. http://user:pass@host:9200)',
   })
   @IsOptional()

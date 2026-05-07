@@ -19,6 +19,15 @@ export type LinkedinCompanyCandidate = {
   score: number;
 };
 
+export type CompanyWebsiteCandidate = {
+  websiteUrl: string;
+  domain: string;
+  companyName: string;
+  sourceTitle?: string;
+  rank?: number;
+  score: number;
+};
+
 export function extractLinkedinCompanyCandidatesFromSerpOrganic(input: {
   organic: BrightDataSerpOrganicEntry[] | undefined | null;
   targetCompanyName: string;
@@ -173,4 +182,137 @@ function dedupeCandidatesBySlug(
   }
 
   return [...bySlug.values()];
+}
+
+export function extractCompanyWebsiteCandidatesFromSerpOrganic(input: {
+  organic: BrightDataSerpOrganicEntry[] | undefined | null;
+  targetCompanyName: string;
+}): CompanyWebsiteCandidate[] {
+  if (!input.organic?.length) {
+    return [];
+  }
+
+  const candidates: CompanyWebsiteCandidate[] = [];
+
+  for (const entry of input.organic) {
+    const link = entry.link?.trim() || entry.url?.trim();
+    if (!link) {
+      continue;
+    }
+
+    const parsed = parseCompanyWebsiteUrl(link);
+    if (!parsed) {
+      continue;
+    }
+
+    const companyNameFromResult = extractWebsiteNameFromEntry(entry, parsed.domain);
+    const score = computeNameScore(input.targetCompanyName, companyNameFromResult);
+
+    candidates.push({
+      websiteUrl: parsed.url,
+      domain: parsed.domain,
+      companyName: companyNameFromResult,
+      sourceTitle: entry.title,
+      rank: entry.rank,
+      score,
+    });
+  }
+
+  return dedupeWebsiteCandidatesByDomain(candidates).sort((a, b) => b.score - a.score);
+}
+
+export function buildGoogleCompanyWebsiteSearchUrl(input: {
+  companyName: string;
+  country: string;
+}): string {
+  const query = `${input.companyName} ${input.country} official company website`;
+  const q = encodeURIComponent(query);
+
+  return `https://www.google.com/search?q=${q}`;
+}
+
+function parseCompanyWebsiteUrl(
+  rawUrl: string,
+): { url: string; domain: string } | null {
+  try {
+    const url = new URL(rawUrl);
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      return null;
+    }
+
+    const domain = url.hostname.toLowerCase().replace(/^www\./, '');
+    if (!domain || isBlockedWebsiteDomain(domain)) {
+      return null;
+    }
+
+    return {
+      url: `${url.protocol}//${url.hostname}${url.pathname || '/'}`.replace(/\/+$/, '/'),
+      domain,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function extractWebsiteNameFromEntry(
+  entry: BrightDataSerpOrganicEntry,
+  fallbackDomain: string,
+): string {
+  const profileName = entry.profile?.name?.trim();
+  if (profileName) {
+    return profileName;
+  }
+
+  const title = (entry.title || '').trim();
+  if (title) {
+    const cleaned = title
+      .replace(/\s*[\-|:|]\s*official\s*site\s*$/i, '')
+      .replace(/\s*[\-|:|]\s*official\s*website\s*$/i, '')
+      .replace(/\s*[\-|:|]\s*home\s*$/i, '')
+      .trim();
+    if (cleaned) {
+      return cleaned;
+    }
+  }
+
+  return fallbackDomain.split('.')[0]?.replace(/-/g, ' ').trim() || fallbackDomain;
+}
+
+function dedupeWebsiteCandidatesByDomain(
+  candidates: CompanyWebsiteCandidate[],
+): CompanyWebsiteCandidate[] {
+  const byDomain = new Map<string, CompanyWebsiteCandidate>();
+
+  for (const candidate of candidates) {
+    const existing = byDomain.get(candidate.domain);
+    if (!existing || candidate.score > existing.score) {
+      byDomain.set(candidate.domain, candidate);
+    }
+  }
+
+  return [...byDomain.values()];
+}
+
+function isBlockedWebsiteDomain(domain: string): boolean {
+  const blockedSuffixes = [
+    'linkedin.com',
+    'facebook.com',
+    'instagram.com',
+    'x.com',
+    'twitter.com',
+    'youtube.com',
+    'wikipedia.org',
+    'bloomberg.com',
+    'crunchbase.com',
+    'glassdoor.com',
+    'indeed.com',
+    'ambitionbox.com',
+    'moneycontrol.com',
+    'justdial.com',
+    'zaubacorp.com',
+  ];
+
+  return blockedSuffixes.some(
+    (suffix) => domain === suffix || domain.endsWith(`.${suffix}`),
+  );
 }

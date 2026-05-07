@@ -16,14 +16,14 @@ import { useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { getImageAbsoluteURI, isDefined } from 'twenty-shared';
 import {
-    Button,
-    GithubVersionLink,
-    H1Title,
-    H1TitleFontColor,
-    H2Title,
-    IconRefresh,
-    IconSearch,
-    Section,
+  Button,
+  GithubVersionLink,
+  H1Title,
+  H1TitleFontColor,
+  H2Title,
+  IconRefresh,
+  IconSearch,
+  Section,
 } from 'twenty-ui';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import { useUserLookupAdminPanelMutation } from '~/generated/graphql';

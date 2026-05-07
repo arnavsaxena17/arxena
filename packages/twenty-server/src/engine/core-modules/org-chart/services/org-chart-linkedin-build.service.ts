@@ -1,9 +1,9 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
 import {
-  graphqlToAddNewJob,
-  OrgChartData,
-  OrgchartSearchMode,
+    graphqlToAddNewJob,
+    OrgChartData,
+    OrgchartSearchMode,
 } from 'twenty-shared';
 
 import { ApifyService } from 'src/engine/core-modules/apify/services/apify.service';
@@ -14,13 +14,14 @@ import { BrightDataLinkedinProfileScrapeService } from 'src/engine/core-modules/
 import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/services/bright-data-serp.service';
 import { OrgchartApifyBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-apify-build.types';
 import { OrgchartApolloBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-apollo-build.types';
+import { OrgchartHarvestBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-harvest-build.types';
 import { OrgchartLinkedinXrayBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-linkedin-xray-build.types';
 import { OrgchartMultiSourceBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-multisource-build.types';
 import { OrgchartUnipileBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-unipile-build.types';
 import {
-  ApolloIoRestService,
-  ApolloPeopleSearchParams,
-  isApolloOrganizationId,
+    ApolloIoRestService,
+    ApolloPeopleSearchParams,
+    isApolloOrganizationId,
 } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { ApolloPeopleSearchTransformerService } from 'src/engine/core-modules/candidate-search/services/apollo-people-search-transformer.service';
 import { OrgChartSearchService } from 'src/engine/core-modules/candidate-search/services/orgchart-search.service';
@@ -35,8 +36,8 @@ import { linkedInPeopleSearchResultMatchesTargetCompany } from 'src/engine/core-
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import {
-  LinkedInSearchService,
-  parseApifyLinkedinCompanyScraperLogLine,
+    LinkedInSearchService,
+    parseApifyLinkedinCompanyScraperLogLine,
 } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
@@ -49,9 +50,9 @@ import { dedupeAndMergeOrgChartCandidates } from 'src/engine/core-modules/org-ch
 import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import { filterOrgChartCandidatesByNodeStdLabels } from 'src/engine/core-modules/org-chart/utils/orgchart-node-scope-filter.util';
 import {
-  normalizeCompanyId,
-  normalizeCompanyName,
-  normalizeCountry,
+    normalizeCompanyId,
+    normalizeCompanyName,
+    normalizeCountry,
 } from 'src/engine/core-modules/org-chart/utils/orgchart-normalization.util';
 import { TheOfficialBoardService } from 'src/engine/core-modules/theofficialboard/services/theofficialboard.service';
 import { TheOfficialBoardCandidate } from 'src/engine/core-modules/theofficialboard/types/theofficialboard.types';
@@ -62,6 +63,8 @@ import { LinkedinXrayService } from 'src/modules/linkedin-xray/linkedin-xray.ser
 import { LinkedinXraySearchEngine } from 'src/modules/linkedin-xray/types/linkedin-xray-search-job.types';
 
 import { ContactOutPeopleSearchService } from './contactout-people-search.service';
+import { HarvestLinkedinTransformerService } from './harvest-linkedin-transformer.service';
+import { HarvestLinkedinService } from './harvest-linkedin.service';
 import { OrgChartRecordWorkspaceService } from './org-chart-record-workspace.service';
 import { OrgChartIncrementalBuildCacheService } from './orgchart-incremental-build-cache.service';
 import { OrgChartS3Service } from './orgchart-s3.service';
@@ -163,6 +166,8 @@ export class OrgChartLinkedInBuildService {
     private readonly pythonQueryGenerationService: PythonQueryGenerationService,
     private readonly theOrgService: TheOrgService,
     private readonly theOfficialBoardService: TheOfficialBoardService,
+    private readonly harvestLinkedinService: HarvestLinkedinService,
+    private readonly harvestLinkedinTransformer: HarvestLinkedinTransformerService,
     @InjectMessageQueue(MessageQueue.orgchartApifyQueue)
     private readonly orgchartApifyQueue: MessageQueueService,
   ) {}
@@ -596,7 +601,7 @@ export class OrgChartLinkedInBuildService {
     for (const item of items) {
       const source = item.source;
 
-      if (source === 'linkedin_xray' || source === 'apify') {
+      if (source === 'linkedin_xray' || source === 'apify' || source === 'harvest') {
         return source;
       }
       if (source === 'apollo' || source === 'm7kq') {
@@ -2638,6 +2643,111 @@ export class OrgChartLinkedInBuildService {
     };
   }
 
+  private async maybeQueueHarvestOrgChartBuild(args: {
+    body: SearchOrgchartLinkedInBody;
+    apiToken: string;
+    mode: OrgchartSearchMode;
+    resolvedCompanyName: string;
+    companyId?: string;
+    jobTitles: string[];
+    searchType: OrgchartSearchType;
+    requestId?: string;
+    shouldWriteCompanyOrgChartCache: boolean;
+  }): Promise<unknown> {
+    const {
+      body,
+      apiToken,
+      mode,
+      resolvedCompanyName,
+      companyId,
+      jobTitles,
+      searchType,
+      requestId,
+      shouldWriteCompanyOrgChartCache,
+    } = args;
+
+    if (body.candidateSource !== 'harvest' || mode !== 'entire_company') {
+      return null;
+    }
+
+    const linkedinCompanyUrl =
+      body.linkedinCompanyUrl?.trim() ||
+      (companyId ? `https://www.linkedin.com/company/${companyId}` : '');
+    if (!linkedinCompanyUrl) {
+      throw new HttpException(
+        'linkedinCompanyUrl or companyId is required when candidateSource is harvest',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    if (!this.harvestLinkedinService.isConfigured()) {
+      throw new HttpException(
+        'Harvest is not configured (HARVEST_API_KEY)',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    if (requestId) {
+      this.orgchartCancelRegistry.register(requestId);
+    }
+
+    const maxItems =
+      typeof body.apifyMaxItems === 'number' && body.apifyMaxItems > 0
+        ? Math.min(body.apifyMaxItems, 1000)
+        : 500;
+
+    const jobData: OrgchartHarvestBuildJobData = {
+      apiToken,
+      requestId,
+      rawQuery: body.rawQuery,
+      cleanedQuery: body.cleanedQuery,
+      searchType,
+      mode: 'entire_company',
+      companyName: resolvedCompanyName,
+      companyId,
+      jobTitles: body.jobTitles,
+      country: body.country,
+      functionRoot: body.functionRoot,
+      linkedinCompanyUrl,
+      maxItems,
+      includeOrgIntelligence: body.includeOrgIntelligence === true,
+      shouldWriteCompanyOrgChartCache,
+    };
+
+    await this.orgchartApifyQueue.add('OrgchartHarvestBuildProcessor', jobData, {
+      retryLimit: 0,
+    });
+
+    await this.emitOrgchartSearchProgressForToken(apiToken, {
+      requestId,
+      mode,
+      searchType,
+      companyName: resolvedCompanyName,
+      event: 'status',
+      data: {
+        message: 'Harvest org chart job queued. Waiting for worker pickup…',
+        candidateSource: 'harvest',
+      },
+    });
+
+    return {
+      success: true,
+      queued: true,
+      candidateSource: 'harvest' as const,
+      requestId,
+      mode,
+      searchType,
+      companyName: resolvedCompanyName,
+      companyId,
+      jobTitles,
+      linkedinCompanyUrl,
+      itemCount: 0,
+      items: [],
+      orgChart: undefined,
+      isCached: false,
+      cacheSource: 'none' as const,
+    };
+  }
+
   private async maybeQueueUnipileOrgChartBuild(args: {
     body: SearchOrgchartLinkedInBody;
     apiToken: string;
@@ -2665,6 +2775,7 @@ export class OrgChartLinkedInBuildService {
 
     if (
       body.candidateSource === 'apify' ||
+      body.candidateSource === 'harvest' ||
       body.candidateSource === 'linkedin_xray' ||
       body.candidateSource === 'm7kq' ||
       body.candidateSource === 'apollo'
@@ -3217,9 +3328,12 @@ export class OrgChartLinkedInBuildService {
       requestId,
     } = body;
 
-    if (body.candidateSource === 'apify' && mode !== 'entire_company') {
+    if (
+      (body.candidateSource === 'apify' || body.candidateSource === 'harvest') &&
+      mode !== 'entire_company'
+    ) {
       throw new HttpException(
-        'candidateSource "apify" is only supported for entire_company mode. Business division mapping and other filtered modes require LinkedIn (Unipile).',
+        'candidateSource "apify/harvest" is only supported for entire_company mode. Business division mapping and other filtered modes require LinkedIn (Unipile).',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -3349,6 +3463,22 @@ export class OrgChartLinkedInBuildService {
 
     if (apifyQueued) {
       return apifyQueued;
+    }
+
+    const harvestQueued = await this.maybeQueueHarvestOrgChartBuild({
+      body,
+      apiToken,
+      mode,
+      resolvedCompanyName,
+      companyId,
+      jobTitles,
+      searchType,
+      requestId,
+      shouldWriteCompanyOrgChartCache,
+    });
+
+    if (harvestQueued) {
+      return harvestQueued;
     }
 
     const linkedinXrayQueued = await this.maybeQueueLinkedinXrayOrgChartBuild({
@@ -4572,6 +4702,163 @@ export class OrgChartLinkedInBuildService {
     }
   }
 
+  async handleHarvestOrgChartJob(
+    jobData: OrgchartHarvestBuildJobData,
+  ): Promise<void> {
+    const {
+      apiToken,
+      requestId,
+      searchType,
+      companyName: resolvedCompanyName,
+      companyId,
+      linkedinCompanyUrl,
+    } = jobData;
+
+    const modeForOrgChartBuild: OrgchartSearchMode = jobData.mode;
+
+    if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
+      return;
+    }
+
+    try {
+      await this.emitOrgchartSearchProgressForToken(apiToken, {
+        requestId,
+        mode: modeForOrgChartBuild,
+        searchType,
+        companyName: resolvedCompanyName,
+        event: 'status',
+        data: {
+          message: 'Harvest: fetching current and past employees...',
+          candidateSource: 'harvest',
+        },
+      });
+
+      const { current, pastWithProfiles } =
+        await this.harvestLinkedinService.fetchCurrentAndPastEmployees({
+          linkedinCompanyUrl,
+          maxProfiles: jobData.maxItems,
+          onProgress: async (message) => {
+            await this.emitOrgchartSearchProgressForToken(apiToken, {
+              requestId,
+              mode: modeForOrgChartBuild,
+              searchType,
+              companyName: resolvedCompanyName,
+              event: 'status',
+              data: {
+                message,
+                candidateSource: 'harvest',
+              },
+            });
+          },
+        });
+
+      const currentRows =
+        this.harvestLinkedinTransformer.transformCurrentLeadsToCandidates(
+          current,
+          resolvedCompanyName,
+          linkedinCompanyUrl,
+        );
+      const pastRows =
+        this.harvestLinkedinTransformer.transformPastLeadsWithProfilesToCandidates(
+          pastWithProfiles,
+          resolvedCompanyName,
+          linkedinCompanyUrl,
+        );
+
+      const merged = dedupeAndMergeOrgChartCandidates([
+        ...(currentRows as unknown as Array<Record<string, unknown>>),
+        ...(pastRows as unknown as Array<Record<string, unknown>>),
+      ]) as unknown as TransformedCandidateForTable[];
+
+      const result = {
+        items: merged,
+        itemCount: merged.length,
+        isCached: false as const,
+        cacheSource: 'none' as const,
+        strategyResults: [],
+      };
+
+      const { orgChart, orgChartError } =
+        await this.buildOrgChartAfterLinkedInSearch({
+          apiToken,
+          body: {
+            rawQuery: jobData.rawQuery,
+            cleanedQuery: jobData.cleanedQuery,
+            companyName: resolvedCompanyName,
+            companyId,
+            mode: modeForOrgChartBuild,
+            searchType,
+            candidateSource: 'harvest',
+            includeOrgIntelligence: jobData.includeOrgIntelligence === true,
+          },
+          mode: modeForOrgChartBuild,
+          resolvedCompanyName,
+          companyId,
+          searchType,
+          requestId,
+          canonicalCompanyLinkedinUrl: linkedinCompanyUrl,
+          shouldWriteCompanyOrgChartCache: jobData.shouldWriteCompanyOrgChartCache,
+          result,
+        });
+
+      if (orgChartError) {
+        throw new Error(orgChartError);
+      }
+
+      if (requestId) {
+        this.orgchartCancelRegistry.setCompleted(requestId);
+      }
+
+      await this.emitOrgchartSearchProgressForToken(apiToken, {
+        requestId,
+        mode: modeForOrgChartBuild,
+        searchType,
+        companyName: resolvedCompanyName,
+        event: 'complete',
+        data: {
+          message: `Org chart ready (${result.itemCount} employees via Harvest).`,
+          itemCount: result.itemCount,
+          candidateSource: 'harvest',
+          orgChart,
+          items: result.items,
+        },
+      });
+    } catch (error) {
+      const harvestMessage =
+        error instanceof Error ? error.message : 'Harvest org chart build failed.';
+      this.logger.warn(
+        `Harvest org chart failed for company="${resolvedCompanyName}", falling back to Unipile: ${harvestMessage}`,
+      );
+      await this.emitOrgchartSearchProgressForToken(apiToken, {
+        requestId,
+        mode: modeForOrgChartBuild,
+        searchType,
+        companyName: resolvedCompanyName,
+        event: 'status',
+        data: {
+          message: 'Harvest failed. Falling back to LinkedIn (Unipile)...',
+          candidateSource: 'harvest',
+        },
+      });
+
+      await this.handleUnipileOrgChartJob({
+        apiToken,
+        requestId,
+        rawQuery: jobData.rawQuery,
+        cleanedQuery: jobData.cleanedQuery,
+        searchType,
+        mode: modeForOrgChartBuild,
+        companyName: resolvedCompanyName,
+        companyId,
+        jobTitles: jobData.jobTitles,
+        country: jobData.country,
+        functionRoot: jobData.functionRoot,
+        linkedinCompanyUrl,
+        shouldWriteCompanyOrgChartCache: jobData.shouldWriteCompanyOrgChartCache,
+      });
+    }
+  }
+
   async handleMultiSourceOrgChartJob(
     jobData: OrgchartMultiSourceBuildJobData,
   ): Promise<void> {
@@ -4917,6 +5204,76 @@ export class OrgChartLinkedInBuildService {
       }
     }
 
+    if (requestedSources.includes('harvest')) {
+      const linkedinCompanyUrl =
+        rawBody.linkedinCompanyUrl?.trim() || canonicalCompanyLinkedinUrl || '';
+      if (!linkedinCompanyUrl) {
+        await this.emitOrgchartSearchProgressForToken(apiToken, {
+          requestId,
+          mode: modeForOrgChartBuild,
+          searchType,
+          companyName: resolvedCompanyName,
+          event: 'status',
+          data: {
+            message: 'Harvest skipped: missing linkedinCompanyUrl',
+            candidateSource: 'harvest',
+          },
+        });
+      } else if (!this.harvestLinkedinService.isConfigured()) {
+        await this.emitOrgchartSearchProgressForToken(apiToken, {
+          requestId,
+          mode: modeForOrgChartBuild,
+          searchType,
+          companyName: resolvedCompanyName,
+          event: 'status',
+          data: {
+            message: 'Harvest skipped: HARVEST_API_KEY not configured',
+            candidateSource: 'harvest',
+          },
+        });
+      } else {
+        const { current, pastWithProfiles } =
+          await this.harvestLinkedinService.fetchCurrentAndPastEmployees({
+            linkedinCompanyUrl,
+            maxProfiles:
+              typeof rawBody.apifyMaxItems === 'number'
+                ? Math.min(rawBody.apifyMaxItems, 1000)
+                : 500,
+            onProgress: async (message) => {
+              await this.emitOrgchartSearchProgressForToken(apiToken, {
+                requestId,
+                mode: modeForOrgChartBuild,
+                searchType,
+                companyName: resolvedCompanyName,
+                event: 'status',
+                data: { message, candidateSource: 'harvest' },
+              });
+            },
+          });
+        const currentRows =
+          this.harvestLinkedinTransformer.transformCurrentLeadsToCandidates(
+            current,
+            resolvedCompanyName,
+            linkedinCompanyUrl,
+          );
+        const pastRows =
+          this.harvestLinkedinTransformer.transformPastLeadsWithProfilesToCandidates(
+            pastWithProfiles,
+            resolvedCompanyName,
+            linkedinCompanyUrl,
+          );
+        const mergedHarvest = dedupeAndMergeOrgChartCandidates([
+          ...(currentRows as unknown as Array<Record<string, unknown>>),
+          ...(pastRows as unknown as Array<Record<string, unknown>>),
+        ]);
+        await addCandidates(
+          'harvest',
+          mergedHarvest,
+          `Harvest fetched ${mergedHarvest.length} people; merging…`,
+        );
+      }
+    }
+
     const mergedDeduped = dedupeAndMergeOrgChartCandidates(aggregated);
     const mergedResult = {
       items: mergedDeduped,
@@ -4931,9 +5288,11 @@ export class OrgChartLinkedInBuildService {
         apiToken,
         body: {
           ...(rawBody as any),
-          candidateSource: requestedSources.includes('unipile')
-            ? 'unipile'
-            : 'm7kq',
+          candidateSource: requestedSources.includes('harvest')
+            ? 'harvest'
+            : requestedSources.includes('unipile')
+              ? 'unipile'
+              : 'm7kq',
         },
         mode: modeForOrgChartBuild,
         resolvedCompanyName,

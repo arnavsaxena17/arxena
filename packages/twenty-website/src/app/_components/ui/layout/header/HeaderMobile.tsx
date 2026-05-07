@@ -11,6 +11,10 @@ import { Logo } from '@/app/_components/ui/layout/Logo';
 import { trackGA4Event } from '@/lib/analytics';
 import { PRODUCT_PAGES, SOLUTION_PAGES } from '@/lib/marketing-site-pages';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
+import {
+  SUPPORTED_PRICING_CURRENCIES,
+  type SupportedPricingCurrency,
+} from '@/lib/pricing-currency-helpers';
 
 import { LogoContainer, NavOpen } from './styled';
 
@@ -95,6 +99,16 @@ const StyledSearchWrapper = styled.div`
   max-width: 360px;
 `;
 
+const StyledCurrencySelect = styled.select`
+  border: 1px solid rgba(20, 20, 20, 0.12);
+  border-radius: 8px;
+  color: rgb(71, 71, 71);
+  font-size: 13px;
+  height: 36px;
+  padding: 0 8px;
+  background: #fff;
+`;
+
 const HamburgerContainer = styled.div`
   height: 44px;
   width: 44px;
@@ -140,12 +154,16 @@ type HeaderMobileProps = {
   showSearch?: boolean;
   signInUrl: string;
   signUpUrl: string;
+  currency: SupportedPricingCurrency;
+  onCurrencyChange: (currency: SupportedPricingCurrency) => void;
 };
 
 export const HeaderMobile = ({
   showSearch = true,
   signInUrl,
   signUpUrl,
+  currency,
+  onCurrencyChange,
 }: HeaderMobileProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -197,6 +215,19 @@ export const HeaderMobile = ({
           <StyledNavLink href="/chrome-extension">
             Chrome extension
           </StyledNavLink>
+          <StyledCurrencySelect
+            aria-label="Select currency"
+            value={currency}
+            onChange={(event) =>
+              onCurrencyChange(event.target.value as SupportedPricingCurrency)
+            }
+          >
+            {SUPPORTED_PRICING_CURRENCIES.map((supportedCurrency) => (
+              <option key={supportedCurrency} value={supportedCurrency}>
+                {supportedCurrency}
+              </option>
+            ))}
+          </StyledCurrencySelect>
           {showSearch && (
             <StyledSearchWrapper>
               <OrgChartSearch

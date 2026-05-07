@@ -10,14 +10,14 @@ import {
 
 import { Request } from 'express';
 
-import { LinkedinCompanySearchService } from 'src/engine/core-modules/linkedin-company-search/services/linkedin-company-search.service';
+import { SerpCompanySearchService } from 'src/engine/core-modules/linkedin-company-search/services/linkedin-company-search.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
-@Controller('linkedin-company-search')
+@Controller('serp-company-search')
 @UseGuards(JwtAuthGuard)
-export class LinkedinCompanySearchController {
+export class SerpCompanySearchController {
   constructor(
-    private readonly linkedinCompanySearchService: LinkedinCompanySearchService,
+    private readonly serpCompanySearchService: SerpCompanySearchService,
   ) {}
 
   @Get('resolve-company-url')
@@ -36,7 +36,7 @@ export class LinkedinCompanySearchController {
     try {
       const country = this.extractCountryFromRequest(req);
 
-      return await this.linkedinCompanySearchService.resolveLinkedinCompanyUrl({
+      return await this.serpCompanySearchService.resolveLinkedinCompanyUrl({
         companyName: normalizedCompanyName,
         country,
       });
@@ -45,6 +45,36 @@ export class LinkedinCompanySearchController {
         error instanceof Error
           ? error.message
           : 'LinkedIn company URL resolution failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('resolve-company-website-domain')
+  async resolveCompanyWebsiteDomain(
+    @Req() req: Request,
+    @Query('companyName') companyName: string,
+  ) {
+    const normalizedCompanyName = companyName?.trim();
+    if (!normalizedCompanyName) {
+      throw new HttpException(
+        'Query parameter "companyName" is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      const country = this.extractCountryFromRequest(req);
+
+      return await this.serpCompanySearchService.resolveCompanyWebsiteDomain({
+        companyName: normalizedCompanyName,
+        country,
+      });
+    } catch (error) {
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Company website domain resolution failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
