@@ -91,6 +91,7 @@ export const DefaultLayout = () => {
   const usesIntentWideAuthModal =
     location.pathname === AppPath.IntentChoice ||
     location.pathname === AppPath.CompetitiveResearchOnboarding ||
+    location.pathname === AppPath.CorporateTaOnboarding ||
     location.pathname === AppPath.DealDiligenceOnboarding;
 
   const useTopAlignedAuthModalContent =

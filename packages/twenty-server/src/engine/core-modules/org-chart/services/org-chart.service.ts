@@ -744,22 +744,20 @@ export class OrgChartService {
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(authToken);
       const hasSufficient =
-        await this.workspaceCreditsService.hasSufficientContactCredits(
+        await this.workspaceCreditsService.hasSufficientRevealCredits(
           workspaceId,
-          wantEmail,
-          wantPhone,
+          { emails: wantEmail ? 1 : 0, phones: wantPhone ? 1 : 0 },
         );
 
       if (!hasSufficient) {
         throw new HttpException(
-          'Insufficient contact credits',
+          'Insufficient reveal credits',
           HttpStatus.FORBIDDEN,
         );
       }
-      await this.workspaceCreditsService.debitContactCredits(
+      await this.workspaceCreditsService.debitRevealCredits(
         workspaceId,
-        wantEmail ? 1 : 0,
-        wantPhone ? 1 : 0,
+        { emails: wantEmail ? 1 : 0, phones: wantPhone ? 1 : 0 },
         { linkedinUrl: trimmedUrl, source: 'org_chart_contact' },
       );
     }

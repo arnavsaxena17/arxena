@@ -223,5 +223,52 @@ describe('OnboardingService', () => {
 
       expect(result).toBe(OnboardingStatus.DEAL_DILIGENCE);
     });
+
+    it('should return CORPORATE_TA when intent onboarding path is CORPORATE_TA', async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          OnboardingService,
+          {
+            provide: EnvironmentService,
+            useValue: {
+              get: jest.fn((key: string) => {
+                if (key === 'USE_INTENT_CHOICE_ONBOARDING') {
+                  return true;
+                }
+                return false;
+              }),
+            },
+          },
+          {
+            provide: UserVarsService,
+            useValue: {
+              getAll: jest.fn().mockResolvedValue(
+                new Map([
+                  [
+                    OnboardingStepKeys.ONBOARDING_INTENT_PATH,
+                    OnboardingIntentPath.CORPORATE_TA,
+                  ],
+                ]),
+              ),
+            },
+          },
+        ],
+      }).compile();
+
+      const intentEnabledService = module.get<OnboardingService>(
+        OnboardingService,
+      );
+      const workspaceActive = {
+        id: 'workspaceId',
+        activationStatus: WorkspaceActivationStatus.ACTIVE,
+      } as Workspace;
+
+      const result = await intentEnabledService.getOnboardingStatus(
+        user,
+        workspaceActive,
+      );
+
+      expect(result).toBe(OnboardingStatus.CORPORATE_TA);
+    });
   });
 });

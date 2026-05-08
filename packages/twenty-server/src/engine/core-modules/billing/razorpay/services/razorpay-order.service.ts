@@ -8,7 +8,7 @@ import {
 } from 'src/engine/core-modules/billing/razorpay/constants/credit-packs.constant';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import {
-    convertPricingAmountSubunits,
+    getCreditPackTierPrice,
     type SupportedPricingCurrency,
 } from 'twenty-shared';
 
@@ -71,11 +71,12 @@ export class RazorpayOrderService {
     const sourceCurrency = this.toSupportedCurrency(pack.currency) ?? 'GBP';
     const requestedCurrency = this.toSupportedCurrency(selectedCurrency);
     const chargeCurrency = requestedCurrency ?? sourceCurrency;
-    const convertedAmountSubunits = convertPricingAmountSubunits(
-      pack.amountSubunits,
-      sourceCurrency,
-      chargeCurrency,
-    );
+
+    // Prefer the explicit per-currency price from the tier table when present
+    // (the new 4-plan/volume-tier model has hand-tuned numbers per currency,
+    // not derived from GBP via FX). Falls back to GBP-rate conversion otherwise.
+    const convertedAmountSubunits = getCreditPackTierPrice(pack, chargeCurrency);
+
     const surchargeAmountSubunits = Math.round(
       convertedAmountSubunits * CREDIT_CARD_SURCHARGE_RATE,
     );
@@ -119,7 +120,9 @@ export class RazorpayOrderService {
       currency === 'INR' ||
       currency === 'USD' ||
       currency === 'GBP' ||
-      currency === 'EUR'
+      currency === 'EUR' ||
+      currency === 'AUD' ||
+      currency === 'AED'
     ) {
       return currency;
     }

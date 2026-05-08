@@ -174,20 +174,28 @@ export class RazorpayWebhookService {
       return { received: true, event: 'payment.captured' };
     }
 
+    // Two-pool model: tier.maps funds the org-chart pool (1 credit per chart),
+    // tier.credits funds the unified reveal pool (consumed at runtime via
+    // getRevealCost('email' | 'phone')).
+    const orgChartDelta = pack.mapsCount;
+    const revealDelta = pack.credits;
+
     const row = await this.workspaceCreditsRepository.findOne({
       where: { workspaceId },
     });
     if (row) {
       await this.workspaceCreditsRepository.update(
         { workspaceId },
-        { orgChartCredits: row.orgChartCredits + pack.credits },
+        {
+          orgChartCredits: row.orgChartCredits + orgChartDelta,
+          revealCredits: row.revealCredits + revealDelta,
+        },
       );
     } else {
       await this.workspaceCreditsRepository.insert({
         workspaceId,
-        orgChartCredits: pack.credits,
-        emailContactCredits: 0,
-        phoneContactCredits: 0,
+        orgChartCredits: orgChartDelta,
+        revealCredits: revealDelta,
       });
     }
 
@@ -195,12 +203,20 @@ export class RazorpayWebhookService {
       workspaceId,
       type: 'credit',
       creditType: 'org_chart',
-      amount: pack.credits,
+      amount: orgChartDelta,
+      metadata: { creditPackKey, source: 'payment_captured' },
+    });
+
+    await this.creditTransactionService.recordTransaction({
+      workspaceId,
+      type: 'credit',
+      creditType: 'reveal_top_up',
+      amount: revealDelta,
       metadata: { creditPackKey, source: 'payment_captured' },
     });
 
     this.logger.log(
-      `payment.captured: added ${pack.credits} credits for workspace ${workspaceId}`,
+      `payment.captured: +${orgChartDelta} org chart credits and +${revealDelta} reveal credits for workspace ${workspaceId}`,
     );
     return { received: true, event: 'payment.captured' };
   }

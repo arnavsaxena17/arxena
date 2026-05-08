@@ -7,6 +7,7 @@ const isOnboardingIntentPath = (
 ): value is OnboardingIntentPath => {
   return (
     value === OnboardingIntentPath.COMPETITIVE_RESEARCH ||
+    value === OnboardingIntentPath.CORPORATE_TA ||
     value === OnboardingIntentPath.DEAL_DILIGENCE ||
     value === OnboardingIntentPath.EXTENSION_INSTALL
   );

@@ -1,6 +1,9 @@
 'use client';
 
-import { type SupportedPricingCurrency } from '@/lib/pricing-currency-helpers';
+import {
+  SUPPORTED_PRICING_CURRENCIES,
+  type SupportedPricingCurrency,
+} from '@/lib/pricing-currency-helpers';
 import styled from '@emotion/styled';
 import { useEffect, useState } from 'react';
 
@@ -34,12 +37,12 @@ export const PricingPageClient = ({
   useEffect(() => {
     const storedCurrency = localStorage.getItem(STORAGE_KEY);
     if (
-      storedCurrency === 'INR' ||
-      storedCurrency === 'USD' ||
-      storedCurrency === 'GBP' ||
-      storedCurrency === 'EUR'
+      storedCurrency !== null &&
+      SUPPORTED_PRICING_CURRENCIES.includes(
+        storedCurrency as SupportedPricingCurrency,
+      )
     ) {
-      setCurrency(storedCurrency);
+      setCurrency(storedCurrency as SupportedPricingCurrency);
     }
   }, []);
 

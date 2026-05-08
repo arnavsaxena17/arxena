@@ -7,10 +7,24 @@ import { Brackets, LessThan, Repository } from 'typeorm';
 
 import { CreditTransaction } from 'src/engine/core-modules/billing/entities/credit-transaction.entity';
 
+/**
+ * Tag used in the `creditType` audit column. Active values for the two-pool
+ * model are `'org_chart' | 'email_reveal' | 'phone_reveal' | 'reveal_top_up'`.
+ * Historical rows tagged `'email_contact'` / `'phone_contact'` from the
+ * pre-unification era remain valid for read paths.
+ */
+export type CreditTransactionTag =
+  | 'org_chart'
+  | 'email_reveal'
+  | 'phone_reveal'
+  | 'reveal_top_up'
+  | 'email_contact'
+  | 'phone_contact';
+
 export type RecordTransactionInput = {
   workspaceId: string;
   type: 'debit' | 'credit';
-  creditType: 'org_chart' | 'email_contact' | 'phone_contact';
+  creditType: CreditTransactionTag;
   amount: number;
   metadata?: Record<string, unknown>;
 };
@@ -29,7 +43,7 @@ export class CreditTransactionService {
       creditType: input.creditType,
       amount: input.amount,
       metadata: input.metadata ?? null,
-    });
+    } as Partial<CreditTransaction>);
 
     await this.creditTransactionRepository.save(entity);
   }

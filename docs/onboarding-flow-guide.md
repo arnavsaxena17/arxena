@@ -323,7 +323,7 @@ The intent flow is a good example:
 - `INTENT_CHOICE` is a global onboarding status
 - the selected branch is stored as `ONBOARDING_INTENT_PATH`
 - each chosen path maps to one top-level status:
-  `COMPETITIVE_RESEARCH`, `DEAL_DILIGENCE`, or `EXTENSION_INSTALL`
+  `COMPETITIVE_RESEARCH`, `CORPORATE_TA`, `DEAL_DILIGENCE`, or `EXTENSION_INSTALL`
 
 ## Known failure modes we hit
 
@@ -421,6 +421,7 @@ At the time of writing, the intended onboarding path is:
 - `IntentChoice` if `USE_INTENT_CHOICE_ONBOARDING` is enabled
 - one of:
   - `CompetitiveResearchOnboarding`
+  - `CorporateTaOnboarding`
   - `DealDiligenceOnboarding`
   - `ExtensionInstallOnboarding`
 - `/jobs`

@@ -15,7 +15,10 @@ import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/
 
 /**
  * Audit trail for credit transactions (debits and credits).
- * Records each debit (org chart, email/phone contact) and credit (purchase).
+ * Active tags for the two-pool model are
+ * `'org_chart' | 'email_reveal' | 'phone_reveal' | 'reveal_top_up'`.
+ * Legacy `'email_contact' | 'phone_contact'` rows from the pre-unification
+ * era remain valid for historical reads.
  */
 @Entity({ name: 'creditTransactions', schema: 'core' })
 @Index(['workspaceId', 'createdAt'])
@@ -38,7 +41,13 @@ export class CreditTransaction {
 
   @Field()
   @Column({ type: 'varchar', length: 30 })
-  creditType: 'org_chart' | 'email_contact' | 'phone_contact';
+  creditType:
+    | 'org_chart'
+    | 'email_reveal'
+    | 'phone_reveal'
+    | 'reveal_top_up'
+    | 'email_contact'
+    | 'phone_contact';
 
   @Field()
   @Column({ type: 'int' })

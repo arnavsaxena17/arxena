@@ -35,6 +35,7 @@ export const usePageChangeEffectNavigateLocation = () => {
     isMatchingLocation(AppPath.CollectPhoneNumber) ||
     isMatchingLocation(AppPath.IntentChoice) ||
     isMatchingLocation(AppPath.CompetitiveResearchOnboarding) ||
+    isMatchingLocation(AppPath.CorporateTaOnboarding) ||
     isMatchingLocation(AppPath.DealDiligenceOnboarding) ||
     isMatchingLocation(AppPath.ExtensionInstallOnboarding) ||
     isMatchingLocation(AppPath.ConnectLinkedin) ||
@@ -66,6 +67,8 @@ export const usePageChangeEffectNavigateLocation = () => {
         onboardingStatus === OnboardingStatus.INTENT_CHOICE) ||
       (isMatchingLocation(AppPath.CompetitiveResearchOnboarding) &&
         onboardingStatus === OnboardingStatus.COMPETITIVE_RESEARCH) ||
+      (isMatchingLocation(AppPath.CorporateTaOnboarding) &&
+        onboardingStatus === OnboardingStatus.CORPORATE_TA) ||
       (isMatchingLocation(AppPath.DealDiligenceOnboarding) &&
         onboardingStatus === OnboardingStatus.DEAL_DILIGENCE) ||
       (isMatchingLocation(AppPath.ExtensionInstallOnboarding) &&
@@ -123,6 +126,13 @@ export const usePageChangeEffectNavigateLocation = () => {
     !isMatchingLocation(AppPath.CompetitiveResearchOnboarding)
   ) {
     return AppPath.CompetitiveResearchOnboarding;
+  }
+
+  if (
+    onboardingStatus === OnboardingStatus.CORPORATE_TA &&
+    !isMatchingLocation(AppPath.CorporateTaOnboarding)
+  ) {
+    return AppPath.CorporateTaOnboarding;
   }
 
   if (

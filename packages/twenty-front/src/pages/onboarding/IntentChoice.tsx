@@ -13,23 +13,24 @@ import styled from '@emotion/styled';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { isDefined } from 'twenty-shared';
+import { isDefined, PRICING_PLANS } from 'twenty-shared';
 import {
-    ActionLink,
-    AnimatedEaseIn,
-    IconPhone,
-    IconSearch,
-    IconUsers,
-    Loader,
-    Pill,
-    ThemeType,
+  ActionLink,
+  AnimatedEaseIn,
+  IconBuildingSkyscraper,
+  IconPhone,
+  IconSearch,
+  IconUsers,
+  Loader,
+  Pill,
+  ThemeType,
 } from 'twenty-ui';
 import { getPostAuthLandingAppPath } from '~/config';
 import { OnboardingIntentPath, OnboardingStatus } from '~/generated/graphql';
 import { Mixpanel } from '~/mixpanel';
 import { OnboardingIntentModalLayout } from '~/pages/onboarding/OnboardingIntentModalLayout';
 
-type IntentTone = 'green' | 'purple' | 'orange';
+type IntentTone = 'green' | 'purple' | 'orange' | 'blue';
 
 const getAccentColor = (theme: ThemeType, tone: IntentTone) => {
   switch (tone) {
@@ -39,6 +40,8 @@ const getAccentColor = (theme: ThemeType, tone: IntentTone) => {
       return theme.color.purple60;
     case 'orange':
       return theme.color.orange60;
+    case 'blue':
+      return theme.color.blue60;
   }
 };
 
@@ -50,6 +53,8 @@ const getAccentBackground = (theme: ThemeType, tone: IntentTone) => {
       return theme.color.purple10;
     case 'orange':
       return theme.color.orange10;
+    case 'blue':
+      return theme.color.blue10;
   }
 };
 
@@ -95,11 +100,15 @@ const StyledIntroCopy = styled.div`
 const StyledChoices = styled.div`
   display: grid;
   gap: ${({ theme }) => theme.spacing(3)};
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-top: ${({ theme }) => theme.spacing(2)};
   width: 100%;
 
-  @media (max-width: 1080px) {
+  @media (max-width: 1280px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 720px) {
     grid-template-columns: 1fr;
   }
 `;
@@ -223,6 +232,10 @@ const intentConfig = {
     appPath: AppPath.CompetitiveResearchOnboarding,
     onboardingStatus: OnboardingStatus.COMPETITIVE_RESEARCH,
   },
+  [OnboardingIntentPath.CORPORATE_TA]: {
+    appPath: AppPath.CorporateTaOnboarding,
+    onboardingStatus: OnboardingStatus.CORPORATE_TA,
+  },
   [OnboardingIntentPath.DEAL_DILIGENCE]: {
     appPath: AppPath.DealDiligenceOnboarding,
     onboardingStatus: OnboardingStatus.DEAL_DILIGENCE,
@@ -231,25 +244,33 @@ const intentConfig = {
 
 const intentCards = {
   [OnboardingIntentPath.EXTENSION_INSTALL]: {
-    title: 'Building my team',
-    persona: 'Founder / Recruiter',
-    body: 'Source candidates with the extension, fast org charts, credits to start.',
+    title: PRICING_PLANS.sales.label,
+    persona: 'Founder / Sales',
+    body: PRICING_PLANS.sales.tagline,
     hint: 'Self-serve · extension · ~2 hr delivery',
     Icon: IconUsers,
     tone: 'green',
   },
   [OnboardingIntentPath.COMPETITIVE_RESEARCH]: {
-    title: 'Competitive research',
-    persona: 'Operator',
-    body: 'Map competitor teams—DIY or a short guided walkthrough.',
+    title: PRICING_PLANS.recruitment.label,
+    persona: 'Recruiter',
+    body: PRICING_PLANS.recruitment.tagline,
     hint: 'Self-serve or 20-min live walkthrough',
     Icon: IconSearch,
     tone: 'purple',
   },
+  [OnboardingIntentPath.CORPORATE_TA]: {
+    title: PRICING_PLANS.corporate.label,
+    persona: 'Corporate TA',
+    body: PRICING_PLANS.corporate.tagline,
+    hint: 'Self-serve · multi-company maps',
+    Icon: IconBuildingSkyscraper,
+    tone: 'blue',
+  },
   [OnboardingIntentPath.DEAL_DILIGENCE]: {
-    title: 'Investment / deal diligence',
+    title: PRICING_PLANS.investment.label,
     persona: 'PE / VC',
-    body: 'Map leadership for deals; optional live session on a target.',
+    body: PRICING_PLANS.investment.tagline,
     hint: 'Book a call · live company map',
     Icon: IconPhone,
     tone: 'orange',

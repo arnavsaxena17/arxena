@@ -143,6 +143,7 @@ const testCases: {
 
   { loc: AppPath.IntentChoice, isLoggedIn: true, isWorkspaceSuspended: false, onboardingStatus: OnboardingStatus.INTENT_CHOICE, res: undefined },
   { loc: AppPath.CompetitiveResearchOnboarding, isLoggedIn: true, isWorkspaceSuspended: false, onboardingStatus: OnboardingStatus.COMPETITIVE_RESEARCH, res: undefined },
+  { loc: AppPath.CorporateTaOnboarding, isLoggedIn: true, isWorkspaceSuspended: false, onboardingStatus: OnboardingStatus.CORPORATE_TA, res: undefined },
   { loc: AppPath.DealDiligenceOnboarding, isLoggedIn: true, isWorkspaceSuspended: false, onboardingStatus: OnboardingStatus.DEAL_DILIGENCE, res: undefined },
   { loc: AppPath.ExtensionInstallOnboarding, isLoggedIn: true, isWorkspaceSuspended: false, onboardingStatus: OnboardingStatus.EXTENSION_INSTALL, res: undefined },
 

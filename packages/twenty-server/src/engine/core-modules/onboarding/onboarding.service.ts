@@ -83,6 +83,8 @@ export class OnboardingService {
       switch (onboardingIntentPath) {
         case OnboardingIntentPath.COMPETITIVE_RESEARCH:
           return OnboardingStatus.COMPETITIVE_RESEARCH;
+        case OnboardingIntentPath.CORPORATE_TA:
+          return OnboardingStatus.CORPORATE_TA;
         case OnboardingIntentPath.DEAL_DILIGENCE:
           return OnboardingStatus.DEAL_DILIGENCE;
         case OnboardingIntentPath.EXTENSION_INSTALL:

@@ -4,8 +4,11 @@ export const WORKSPACE_CREDITS = gql`
   query WorkspaceCredits {
     workspaceCredits {
       orgChartCredits
-      emailContactCredits
-      phoneContactCredits
+      revealCredits
+      revealCreditsAsEmailEquivalent
+      revealCreditsAsPhoneEquivalent
+      emailRevealCost
+      phoneRevealCost
     }
   }
 `;

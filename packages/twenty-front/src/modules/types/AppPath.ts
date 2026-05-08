@@ -12,6 +12,7 @@ export enum AppPath {
   CollectPhoneNumber = '/create/phone',
   IntentChoice = '/create/intent',
   CompetitiveResearchOnboarding = '/create/competitive-research',
+  CorporateTaOnboarding = '/create/corporate-ta',
   DealDiligenceOnboarding = '/create/deal-diligence',
   ExtensionInstallOnboarding = '/create/extension-install',
   ConnectLinkedin = '/create/connect-linkedin',

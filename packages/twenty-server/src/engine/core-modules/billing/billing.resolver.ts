@@ -5,7 +5,7 @@ import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { GraphQLError } from 'graphql';
-import { SettingsFeatures } from 'twenty-shared';
+import { getRevealCost, SettingsFeatures } from 'twenty-shared';
 import { Repository } from 'typeorm';
 
 import { AdminAdjustWorkspaceCreditsInput } from 'src/engine/core-modules/billing/dtos/inputs/admin-adjust-workspace-credits.input';
@@ -257,6 +257,18 @@ export class BillingResolver {
       credits: pack.credits,
       amountSubunits: pack.amountSubunits,
       currency: pack.currency,
+      planId: pack.planId,
+      intent: pack.intent,
+      mapsCount: pack.mapsCount,
+      mapType: pack.mapType,
+      mapTypeLabel: pack.mapTypeLabel,
+      tagline: pack.tagline,
+      inheritedFromPlanId: pack.inheritedFromPlanId,
+      ownFeatures: pack.features,
+      includedEmailCredits: pack.includedEmailCredits,
+      includedPhoneCredits: pack.includedPhoneCredits,
+      creditsDisplay: pack.creditsDisplay,
+      pricesSubunitsJson: JSON.stringify(pack.pricesSubunits),
     }));
   }
 
@@ -329,10 +341,20 @@ export class BillingResolver {
       where: { workspaceId: workspace.id },
     });
 
+    const orgChartCredits = row?.orgChartCredits ?? 0;
+    const revealCredits = row?.revealCredits ?? 0;
+    const emailRevealCost = getRevealCost('email');
+    const phoneRevealCost = getRevealCost('phone');
+
     return {
-      orgChartCredits: row?.orgChartCredits ?? 0,
-      emailContactCredits: row?.emailContactCredits ?? 0,
-      phoneContactCredits: row?.phoneContactCredits ?? 0,
+      orgChartCredits,
+      revealCredits,
+      revealCreditsAsEmailEquivalent:
+        emailRevealCost > 0 ? Math.floor(revealCredits / emailRevealCost) : 0,
+      revealCreditsAsPhoneEquivalent:
+        phoneRevealCost > 0 ? Math.floor(revealCredits / phoneRevealCost) : 0,
+      emailRevealCost,
+      phoneRevealCost,
     };
   }
 
@@ -373,6 +395,7 @@ export class BillingResolver {
       billingAddress: input.billingAddress,
       billingEmail: input.billingEmail,
       vatNumber: input.vatNumber,
+      currency: input.currency,
     });
 
     return { success: true };
@@ -418,8 +441,7 @@ export class BillingResolver {
           workspaceCreatorEmail:
             creatorEmailByWorkspaceId.get(workspace.id) ?? null,
           orgChartCredits: credits?.orgChartCredits ?? 0,
-          emailContactCredits: credits?.emailContactCredits ?? 0,
-          phoneContactCredits: credits?.phoneContactCredits ?? 0,
+          revealCredits: credits?.revealCredits ?? 0,
         };
       },
     );
@@ -433,7 +455,7 @@ export class BillingResolver {
   ): Promise<boolean> {
     await this.workspaceCreditsService.adjustCredits(
       input.workspaceId,
-      input.creditType as 'org_chart' | 'email_contact' | 'phone_contact',
+      input.creditType as 'org_chart' | 'reveal',
       input.delta,
     );
 

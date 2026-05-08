@@ -8,8 +8,21 @@ export class WorkspaceCreditsOutput {
   orgChartCredits: number;
 
   @Field()
-  emailContactCredits: number;
+  revealCredits: number;
 
+  /** floor(revealCredits / getRevealCost('email')) — display only. */
   @Field()
-  phoneContactCredits: number;
+  revealCreditsAsEmailEquivalent: number;
+
+  /** floor(revealCredits / getRevealCost('phone')) — display only. */
+  @Field()
+  revealCreditsAsPhoneEquivalent: number;
+
+  /** getRevealCost('email') — runtime-resolved. */
+  @Field()
+  emailRevealCost: number;
+
+  /** getRevealCost('phone') — runtime-resolved. */
+  @Field()
+  phoneRevealCost: number;
 }

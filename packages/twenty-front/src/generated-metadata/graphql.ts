@@ -40,9 +40,8 @@ export type AdminAdjustWorkspaceCreditsInput = {
 
 /** Credit type for admin adjust workspace credits */
 export enum AdminCreditType {
-  EMAIL_CONTACT = 'EMAIL_CONTACT',
   ORG_CHART = 'ORG_CHART',
-  PHONE_CONTACT = 'PHONE_CONTACT'
+  REVEAL = 'REVEAL'
 }
 
 export type AdminPanelHealthServiceData = {
@@ -109,9 +108,8 @@ export type AdminPanelWorkspaceMemberRow = {
 
 export type AdminWorkspaceCreditsRowOutput = {
   __typename?: 'AdminWorkspaceCreditsRowOutput';
-  emailContactCredits: Scalars['Float']['output'];
   orgChartCredits: Scalars['Float']['output'];
-  phoneContactCredits: Scalars['Float']['output'];
+  revealCredits: Scalars['Float']['output'];
   workspaceCreatedAt: Scalars['DateTime']['output'];
   workspaceCreatorEmail?: Maybe<Scalars['String']['output']>;
   workspaceId: Scalars['String']['output'];
@@ -489,9 +487,21 @@ export type CreditPackOutput = {
   __typename?: 'CreditPackOutput';
   amountSubunits: Scalars['Float']['output'];
   credits: Scalars['Float']['output'];
+  creditsDisplay: Scalars['String']['output'];
   currency: Scalars['String']['output'];
+  includedEmailCredits: Scalars['Float']['output'];
+  includedPhoneCredits: Scalars['Float']['output'];
+  inheritedFromPlanId?: Maybe<Scalars['String']['output']>;
+  intent: Scalars['String']['output'];
   key: Scalars['String']['output'];
+  mapType: Scalars['String']['output'];
+  mapTypeLabel: Scalars['String']['output'];
+  mapsCount: Scalars['Float']['output'];
   name: Scalars['String']['output'];
+  ownFeatures: Array<Scalars['String']['output']>;
+  planId: Scalars['String']['output'];
+  pricesSubunitsJson: Scalars['String']['output'];
+  tagline: Scalars['String']['output'];
 };
 
 export type CreditTransactionOutput = {
@@ -1533,6 +1543,7 @@ export type ObjectIndexMetadatasConnection = {
 
 export enum OnboardingIntentPath {
   COMPETITIVE_RESEARCH = 'COMPETITIVE_RESEARCH',
+  CORPORATE_TA = 'CORPORATE_TA',
   DEAL_DILIGENCE = 'DEAL_DILIGENCE',
   EXTENSION_INSTALL = 'EXTENSION_INSTALL'
 }
@@ -1543,6 +1554,7 @@ export enum OnboardingStatus {
   COMPETITIVE_RESEARCH = 'COMPETITIVE_RESEARCH',
   COMPLETED = 'COMPLETED',
   CONNECT_LINKEDIN = 'CONNECT_LINKEDIN',
+  CORPORATE_TA = 'CORPORATE_TA',
   DEAL_DILIGENCE = 'DEAL_DILIGENCE',
   EXTENSION_INSTALL = 'EXTENSION_INSTALL',
   INSTALL_APP = 'INSTALL_APP',
@@ -2557,9 +2569,12 @@ export enum WorkspaceActivationStatus {
 
 export type WorkspaceCreditsOutput = {
   __typename?: 'WorkspaceCreditsOutput';
-  emailContactCredits: Scalars['Float']['output'];
+  emailRevealCost: Scalars['Float']['output'];
   orgChartCredits: Scalars['Float']['output'];
-  phoneContactCredits: Scalars['Float']['output'];
+  phoneRevealCost: Scalars['Float']['output'];
+  revealCredits: Scalars['Float']['output'];
+  revealCreditsAsEmailEquivalent: Scalars['Float']['output'];
+  revealCreditsAsPhoneEquivalent: Scalars['Float']['output'];
 };
 
 export type WorkspaceEdge = {

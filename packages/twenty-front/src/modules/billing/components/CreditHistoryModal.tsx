@@ -91,12 +91,18 @@ type CreditHistoryModalProps = {
   isOpen: boolean;
   onClose: () => void;
   orgChartCredits?: number;
-  emailContactCredits?: number;
-  phoneContactCredits?: number;
+  revealCredits?: number;
+  revealCreditsAsEmailEquivalent?: number;
+  revealCreditsAsPhoneEquivalent?: number;
+  emailRevealCost?: number;
+  phoneRevealCost?: number;
 };
 
 const CREDIT_TYPE_LABELS: Record<string, string> = {
   org_chart: 'Org chart',
+  email_reveal: 'Email reveal',
+  phone_reveal: 'Phone reveal',
+  reveal_top_up: 'Reveal top-up',
   email_contact: 'Email contact',
   phone_contact: 'Phone contact',
 };
@@ -115,9 +121,19 @@ export const CreditHistoryModal = ({
   isOpen,
   onClose,
   orgChartCredits = 0,
-  emailContactCredits = 0,
-  phoneContactCredits = 0,
+  revealCredits = 0,
+  revealCreditsAsEmailEquivalent,
+  revealCreditsAsPhoneEquivalent,
+  emailRevealCost = 1,
+  phoneRevealCost = 5,
 }: CreditHistoryModalProps) => {
+  const emailEquivalent =
+    revealCreditsAsEmailEquivalent ??
+    Math.floor(revealCredits / Math.max(1, emailRevealCost));
+  const phoneEquivalent =
+    revealCreditsAsPhoneEquivalent ??
+    Math.floor(revealCredits / Math.max(1, phoneRevealCost));
+
   const { data, loading, error } = useQuery(CREDIT_TRANSACTIONS, {
     variables: { limit: 50 },
     skip: !isOpen,
@@ -151,12 +167,12 @@ export const CreditHistoryModal = ({
             <StyledBalanceValue>{orgChartCredits}</StyledBalanceValue>
           </StyledBalanceRow>
           <StyledBalanceRow>
-            <StyledBalanceLabel>Email contact credits</StyledBalanceLabel>
-            <StyledBalanceValue>{emailContactCredits}</StyledBalanceValue>
-          </StyledBalanceRow>
-          <StyledBalanceRow>
-            <StyledBalanceLabel>Phone contact credits</StyledBalanceLabel>
-            <StyledBalanceValue>{phoneContactCredits}</StyledBalanceValue>
+            <StyledBalanceLabel>
+              Reveal credits ({emailRevealCost}/email · {phoneRevealCost}/phone)
+            </StyledBalanceLabel>
+            <StyledBalanceValue>
+              {revealCredits} (≈ {emailEquivalent} emails or {phoneEquivalent} phones)
+            </StyledBalanceValue>
           </StyledBalanceRow>
         </StyledBalanceSection>
         <StyledList>

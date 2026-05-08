@@ -197,14 +197,13 @@ export class ContactEnrichmentController {
       const totalEmailCredits = wantEmail ? creditCount : 0;
       const totalPhoneCredits = wantPhone ? creditCount : 0;
       const hasSufficient =
-        await this.workspaceCreditsService.hasSufficientContactCreditsForCount(
+        await this.workspaceCreditsService.hasSufficientRevealCredits(
           workspaceId,
-          totalEmailCredits,
-          totalPhoneCredits,
+          { emails: totalEmailCredits, phones: totalPhoneCredits },
         );
       if (!hasSufficient) {
         throw new HttpException(
-          'Insufficient contact credits',
+          'Insufficient reveal credits',
           HttpStatus.FORBIDDEN,
         );
       }
@@ -217,10 +216,9 @@ export class ContactEnrichmentController {
         workspaceId &&
         (wantEmail || wantPhone)
       ) {
-        await this.workspaceCreditsService.debitContactCredits(
+        await this.workspaceCreditsService.debitRevealCredits(
           workspaceId,
-          wantEmail ? 1 : 0,
-          wantPhone ? 1 : 0,
+          { emails: wantEmail ? 1 : 0, phones: wantPhone ? 1 : 0 },
           {
             linkedinUrl: `apollo:${apolloId}`,
             source: 'contact_enrichment_apollo_match',
@@ -253,10 +251,9 @@ export class ContactEnrichmentController {
           workspaceId &&
           (wantEmail || wantPhone)
         ) {
-          await this.workspaceCreditsService.debitContactCredits(
+          await this.workspaceCreditsService.debitRevealCredits(
             workspaceId,
-            wantEmail ? 1 : 0,
-            wantPhone ? 1 : 0,
+            { emails: wantEmail ? 1 : 0, phones: wantPhone ? 1 : 0 },
             { linkedinUrl: url, source: 'contact_enrichment' },
           );
         }
@@ -620,14 +617,13 @@ export class ContactEnrichmentController {
       const totalEmailCredits = wantEmail ? urls.length : 0;
       const totalPhoneCredits = wantPhone ? urls.length : 0;
       const hasSufficient =
-        await this.workspaceCreditsService.hasSufficientContactCreditsForCount(
+        await this.workspaceCreditsService.hasSufficientRevealCredits(
           workspaceId,
-          totalEmailCredits,
-          totalPhoneCredits,
+          { emails: totalEmailCredits, phones: totalPhoneCredits },
         );
       if (!hasSufficient) {
         throw new HttpException(
-          'Insufficient contact credits',
+          'Insufficient reveal credits',
           HttpStatus.FORBIDDEN,
         );
       }
@@ -658,10 +654,9 @@ export class ContactEnrichmentController {
           workspaceId &&
           (wantEmail || wantPhone)
         ) {
-          await this.workspaceCreditsService.debitContactCredits(
+          await this.workspaceCreditsService.debitRevealCredits(
             workspaceId,
-            wantEmail ? 1 : 0,
-            wantPhone ? 1 : 0,
+            { emails: wantEmail ? 1 : 0, phones: wantPhone ? 1 : 0 },
             { linkedinUrl: url, source: 'contact_enrichment' },
           );
         }

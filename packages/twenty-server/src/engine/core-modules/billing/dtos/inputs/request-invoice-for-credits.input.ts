@@ -18,4 +18,7 @@ export class RequestInvoiceForCreditsInput {
 
   @Field({ nullable: true })
   vatNumber?: string;
+
+  @Field({ nullable: true })
+  currency?: string;
 }

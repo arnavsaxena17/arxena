@@ -133,8 +133,11 @@ export type CandidateTablePageHeaderProps = {
   hasInsufficientCredits?: boolean;
   onAddCredits?: () => void;
   orgChartCredits?: number;
-  emailContactCredits?: number;
-  phoneContactCredits?: number;
+  revealCredits?: number;
+  revealCreditsAsEmailEquivalent?: number;
+  revealCreditsAsPhoneEquivalent?: number;
+  emailRevealCost?: number;
+  phoneRevealCost?: number;
   /** Opens/toggles the job page Floating AI chat (FloatingAIChat). */
   onFloatingAIChatToggle?: () => void;
   onMergeJobs?: () => void;
@@ -166,8 +169,11 @@ export const CandidateTablePageHeader = ({
   hasInsufficientCredits,
   onAddCredits,
   orgChartCredits,
-  emailContactCredits,
-  phoneContactCredits,
+  revealCredits,
+  revealCreditsAsEmailEquivalent,
+  revealCreditsAsPhoneEquivalent,
+  emailRevealCost,
+  phoneRevealCost,
   onFloatingAIChatToggle,
   onMergeJobs,
   isMergeMode,
@@ -183,9 +189,7 @@ export const CandidateTablePageHeader = ({
 
   const creditsTotal =
     orgChartCredits !== undefined
-      ? (orgChartCredits ?? 0) +
-        (emailContactCredits ?? 0) +
-        (phoneContactCredits ?? 0)
+      ? (orgChartCredits ?? 0) + (revealCredits ?? 0)
       : undefined;
 
   const companySearchDisabledByUnipile =
@@ -290,8 +294,11 @@ export const CandidateTablePageHeader = ({
           isOpen={isCreditModalOpen}
           onClose={() => setIsCreditModalOpen(false)}
           orgChartCredits={orgChartCredits}
-          emailContactCredits={emailContactCredits}
-          phoneContactCredits={phoneContactCredits}
+          revealCredits={revealCredits}
+          revealCreditsAsEmailEquivalent={revealCreditsAsEmailEquivalent}
+          revealCreditsAsPhoneEquivalent={revealCreditsAsPhoneEquivalent}
+          emailRevealCost={emailRevealCost}
+          phoneRevealCost={phoneRevealCost}
         />
       )}
     </>

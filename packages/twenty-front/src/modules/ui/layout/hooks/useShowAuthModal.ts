@@ -24,6 +24,7 @@ export const useShowAuthModal = () => {
       isMatchingLocation(AppPath.CollectPhoneNumber) ||
       isMatchingLocation(AppPath.IntentChoice) ||
       isMatchingLocation(AppPath.CompetitiveResearchOnboarding) ||
+      isMatchingLocation(AppPath.CorporateTaOnboarding) ||
       isMatchingLocation(AppPath.DealDiligenceOnboarding) ||
       isMatchingLocation(AppPath.ExtensionInstallOnboarding) ||
       isMatchingLocation(AppPath.ConnectLinkedin) ||

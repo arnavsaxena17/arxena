@@ -85,18 +85,16 @@ export class ContactEnrichmentQueueProcessor {
           (wantEmail || wantPhone)
         ) {
           const hasSufficient =
-            await this.workspaceCreditsService.hasSufficientContactCredits(
+            await this.workspaceCreditsService.hasSufficientRevealCredits(
               workspaceId,
-              wantEmail,
-              wantPhone,
+              { emails: wantEmail ? 1 : 0, phones: wantPhone ? 1 : 0 },
             );
           if (!hasSufficient) {
-            throw new Error('Insufficient contact credits');
+            throw new Error('Insufficient reveal credits');
           }
-          await this.workspaceCreditsService.debitContactCredits(
+          await this.workspaceCreditsService.debitRevealCredits(
             workspaceId,
-            wantEmail ? 1 : 0,
-            wantPhone ? 1 : 0,
+            { emails: wantEmail ? 1 : 0, phones: wantPhone ? 1 : 0 },
             { linkedinUrl, source: 'contact_enrichment_job' },
           );
         }

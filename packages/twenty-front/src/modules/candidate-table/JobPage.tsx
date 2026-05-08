@@ -133,13 +133,21 @@ export const JobPage: React.FC = () => {
   const credits = (creditsData as {
     workspaceCredits?: {
       orgChartCredits: number;
-      emailContactCredits: number;
-      phoneContactCredits: number;
+      revealCredits: number;
+      revealCreditsAsEmailEquivalent?: number;
+      revealCreditsAsPhoneEquivalent?: number;
+      emailRevealCost?: number;
+      phoneRevealCost?: number;
     };
   } | undefined)?.workspaceCredits;
   const orgChartCredits = credits?.orgChartCredits ?? undefined;
-  const emailContactCredits = credits?.emailContactCredits ?? undefined;
-  const phoneContactCredits = credits?.phoneContactCredits ?? undefined;
+  const revealCredits = credits?.revealCredits ?? undefined;
+  const revealCreditsAsEmailEquivalent =
+    credits?.revealCreditsAsEmailEquivalent ?? undefined;
+  const revealCreditsAsPhoneEquivalent =
+    credits?.revealCreditsAsPhoneEquivalent ?? undefined;
+  const emailRevealCost = credits?.emailRevealCost ?? undefined;
+  const phoneRevealCost = credits?.phoneRevealCost ?? undefined;
 
   // Feature flag for new search UI
   // const { isNewSearchUIEnabled } = useNewSearchUI();
@@ -688,8 +696,11 @@ export const JobPage: React.FC = () => {
             isLinkedinConnected={isLinkedinConnected}
             isWhatsappLoggedIn={isWhatsappLoggedIn}
             orgChartCredits={orgChartCredits}
-            emailContactCredits={emailContactCredits}
-            phoneContactCredits={phoneContactCredits}
+            revealCredits={revealCredits}
+            revealCreditsAsEmailEquivalent={revealCreditsAsEmailEquivalent}
+            revealCreditsAsPhoneEquivalent={revealCreditsAsPhoneEquivalent}
+            emailRevealCost={emailRevealCost}
+            phoneRevealCost={phoneRevealCost}
           />
           <StyledPageBody>
             <RecordIndexContextProvider value={recordIndexContextValue}>

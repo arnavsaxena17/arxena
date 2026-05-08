@@ -12,7 +12,7 @@ import {
   IconCreditCard,
   IconFileText,
   MOBILE_VIEWPORT,
-  Section
+  Section,
 } from 'twenty-ui';
 
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
@@ -33,9 +33,13 @@ import {
   CREDIT_PACKS_BY_INTENT,
   getPricingCurrencySymbol,
   isDefined,
+  PRICING_PLANS,
+  SUPPORTED_PRICING_CURRENCIES,
   type PricingIntent,
+  type PricingPlanId,
+  type PricingPlanTier,
   type CreditPack as SharedCreditPack,
-  type SupportedPricingCurrency
+  type SupportedPricingCurrency,
 } from 'twenty-shared';
 import {
   BillingPlanKey,
@@ -67,6 +71,18 @@ type CreditPack = {
   credits: number;
   amountSubunits: number;
   currency: string;
+  planId?: string;
+  intent?: string;
+  mapsCount?: number;
+  mapType?: string;
+  mapTypeLabel?: string;
+  tagline?: string;
+  inheritedFromPlanId?: string | null;
+  ownFeatures?: string[];
+  includedEmailCredits?: number;
+  includedPhoneCredits?: number;
+  creditsDisplay?: string;
+  pricesSubunitsJson?: string;
 };
 
 declare global {
@@ -130,6 +146,17 @@ const StyledPricingControls = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledMapTypePill = styled.div`
+  background: ${({ theme }) => theme.background.transparent.lighter};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.pill};
+  color: ${({ theme }) => theme.font.color.secondary};
+  display: inline-flex;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  margin-top: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => `${theme.spacing(1)} ${theme.spacing(3)}`};
 `;
 
 const StyledIntentTabs = styled.div`
@@ -245,17 +272,41 @@ const StyledLicenceInputWrap = styled.div`
 const StyledCreditCardsGrid = styled.div`
   display: grid;
   gap: ${({ theme }) => theme.spacing(6)};
-  grid-template-columns: repeat(
-    auto-fit,
-    minmax(min(100%, ${({ theme }) => theme.spacing(60)}), 1fr)
-  );
-  justify-content: center;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-top: ${({ theme }) => theme.spacing(4)};
+
+  @media (max-width: 1400px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
   @media (max-width: ${MOBILE_VIEWPORT}px) {
     gap: ${({ theme }) => theme.spacing(4)};
     grid-template-columns: 1fr;
   }
+`;
+
+const StyledTierSelectWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledTierSelectLabel = styled.label`
+  color: ${({ theme }) => theme.font.color.light};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+`;
+
+const StyledTierSelect = styled.select`
+  background: ${({ theme }) => theme.background.primary};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  padding: ${({ theme }) => `${theme.spacing(2)} ${theme.spacing(2)}`};
+  width: 100%;
 `;
 
 const PRICING_CURRENCY_STORAGE_KEY = 'arxena:pricing-currency';
@@ -282,8 +333,19 @@ const StyledCreditCardPrice = styled.div`
   line-height: 1.1;
 `;
 
+const StyledPriceUnit = styled.span`
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${({ theme }) => theme.font.size.md};
+  font-weight: ${({ theme }) => theme.font.weight.regular};
+`;
+
 const StyledCreditCardCredits = styled.div`
   color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+`;
+
+const StyledCreditCardTotal = styled.div`
+  color: ${({ theme }) => theme.font.color.secondary};
   font-size: ${({ theme }) => theme.font.size.sm};
 `;
 
@@ -697,25 +759,34 @@ export const SettingsBilling = () => {
 
   const intentPath = useRecoilValue(onboardingIntentPathState);
   const initialIntent: PricingIntent =
-    intentPath === null || intentPath === undefined || intentPath === 'EXTENSION_INSTALL'
-      ? 'SALES'
-      : intentPath === 'DEAL_DILIGENCE'
-        ? 'INVESTING'
-        : 'RECRUITING';
+    intentPath === 'DEAL_DILIGENCE'
+      ? 'INVESTING'
+      : intentPath === 'COMPETITIVE_RESEARCH'
+        ? 'RECRUITING'
+        : intentPath === 'CORPORATE_TA'
+          ? 'CORPORATE'
+          : 'SALES';
 
-  const [intent, setIntent] = useState<PricingIntent>(initialIntent);
+  const [intent] = useState<PricingIntent>(initialIntent);
   const [displayCurrency, setDisplayCurrency] =
     useState<SupportedPricingCurrency>('USD');
+  const [selectedMapsByPlan, setSelectedMapsByPlan] = useState<
+    Record<PricingPlanId, number>
+  >({
+    sales: PRICING_PLANS.sales.minMaps,
+    recruitment: PRICING_PLANS.recruitment.minMaps,
+    corporate: PRICING_PLANS.corporate.minMaps,
+    investment: PRICING_PLANS.investment.minMaps,
+  });
 
   useEffect(() => {
     const storedCurrency = localStorage.getItem(PRICING_CURRENCY_STORAGE_KEY);
     if (
-      storedCurrency === 'INR' ||
-      storedCurrency === 'USD' ||
-      storedCurrency === 'GBP' ||
-      storedCurrency === 'EUR'
+      SUPPORTED_PRICING_CURRENCIES.includes(
+        storedCurrency as SupportedPricingCurrency,
+      )
     ) {
-      setDisplayCurrency(storedCurrency);
+      setDisplayCurrency(storedCurrency as SupportedPricingCurrency);
     }
   }, []);
 
@@ -728,15 +799,99 @@ export const SettingsBilling = () => {
     return new Map(allPacks.map((p) => [p.key, p]));
   })();
 
-  const visibleCreditPacks = (() => {
-    const desiredKeys = CREDIT_PACKS_BY_INTENT[intent].map((p) => p.key);
-    const byKey = new Map(creditPacks.map((p) => [p.key, p]));
-    const packsForIntent = desiredKeys
-      .map((key) => byKey.get(key))
-      .filter(isDefined);
+  const intentToPlanId: Record<PricingIntent, PricingPlanId> = {
+    SALES: 'sales',
+    RECRUITING: 'recruitment',
+    CORPORATE: 'corporate',
+    INVESTING: 'investment',
+  };
 
-    return packsForIntent.length > 0 ? packsForIntent : creditPacks;
-  })();
+  const activePlan = PRICING_PLANS[intentToPlanId[intent]];
+
+  const INTENT_TABS: ReadonlyArray<{ value: PricingIntent; label: string }> = [
+    { value: 'SALES', label: PRICING_PLANS.sales.label },
+    { value: 'RECRUITING', label: PRICING_PLANS.recruitment.label },
+    { value: 'CORPORATE', label: PRICING_PLANS.corporate.label },
+    { value: 'INVESTING', label: PRICING_PLANS.investment.label },
+  ];
+
+  const HERO_HEADLINES: Record<PricingIntent, string> = {
+    SALES: PRICING_PLANS.sales.label,
+    RECRUITING: PRICING_PLANS.recruitment.label,
+    CORPORATE: PRICING_PLANS.corporate.label,
+    INVESTING: PRICING_PLANS.investment.label,
+  };
+
+  const HERO_SUBHEADLINES: Record<PricingIntent, string> = {
+    SALES: PRICING_PLANS.sales.tagline,
+    RECRUITING: PRICING_PLANS.recruitment.tagline,
+    CORPORATE: PRICING_PLANS.corporate.tagline,
+    INVESTING: PRICING_PLANS.investment.tagline,
+  };
+
+  const resolvePackPriceSubunits = (
+    pack: CreditPack,
+    targetCurrency: SupportedPricingCurrency,
+  ): { subunits: number; isExplicit: boolean } => {
+    const packPricesJson = pack.pricesSubunitsJson;
+    if (typeof packPricesJson === 'string' && packPricesJson.length > 0) {
+      try {
+        const parsed = JSON.parse(packPricesJson) as Partial<
+          Record<SupportedPricingCurrency, number>
+        >;
+        const explicit = parsed[targetCurrency];
+        if (typeof explicit === 'number' && explicit > 0) {
+          return { subunits: explicit, isExplicit: true };
+        }
+      } catch {
+        // fall through to conversion
+      }
+    }
+    const meta = sharedPackMetaByKey.get(pack.key);
+    const explicit = meta?.pricesSubunits?.[targetCurrency];
+    if (typeof explicit === 'number' && explicit > 0) {
+      return { subunits: explicit, isExplicit: true };
+    }
+    const sourceCurrency: SupportedPricingCurrency =
+      pack.currency === 'INR' ||
+      pack.currency === 'USD' ||
+      pack.currency === 'GBP' ||
+      pack.currency === 'EUR' ||
+      pack.currency === 'AUD' ||
+      pack.currency === 'AED'
+        ? (pack.currency as SupportedPricingCurrency)
+        : 'GBP';
+    return {
+      subunits: convertPricingAmountSubunits(
+        pack.amountSubunits,
+        sourceCurrency,
+        targetCurrency,
+      ),
+      isExplicit: false,
+    };
+  };
+
+  const planOrder: PricingPlanId[] = [
+    'sales',
+    'recruitment',
+    'corporate',
+    'investment',
+  ];
+
+  const toIntent = (planId: PricingPlanId): PricingIntent =>
+    planId === 'sales'
+      ? 'SALES'
+      : planId === 'recruitment'
+        ? 'RECRUITING'
+        : planId === 'corporate'
+          ? 'CORPORATE'
+          : 'INVESTING';
+
+  const findTier = (planId: PricingPlanId, maps: number): PricingPlanTier => {
+    const plan = PRICING_PLANS[planId];
+    const exact = plan.tiers.find((tier) => tier.maps === maps);
+    return exact ?? plan.tiers[0];
+  };
 
   return (
     <SubMenuTopBarContainer
@@ -819,19 +974,14 @@ export const SettingsBilling = () => {
             <Section>
               <StyledPricingHero>
                 <StyledPricingHeadline>
-                  {intent === 'SALES'
-                    ? t`Pipeline-grade org intelligence for Sales / ABM`
-                    : intent === 'INVESTING'
-                      ? t`Deal diligence org intelligence for PE / VC`
-                      : t`Org intelligence for Recruiting`}
+                  {HERO_HEADLINES[intent]}
                 </StyledPricingHeadline>
                 <StyledPricingSubheadline>
-                  {intent === 'SALES'
-                    ? t`Map buying committees, champions, and blockers across target accounts — then reveal/export only what matters.`
-                    : intent === 'INVESTING'
-                      ? t`Diligence faster, monitor portfolios, and benchmark leadership teams before your first meeting.`
-                      : t`Map teams, find the right candidates, and build shortlists with org-chart context before outreach.`}
+                  {HERO_SUBHEADLINES[intent]}
                 </StyledPricingSubheadline>
+                <StyledMapTypePill>
+                  {activePlan.icon} {activePlan.mapTypeLabel}
+                </StyledMapTypePill>
               </StyledPricingHero>
               <StyledPricingControls>
                 <StyledCurrencySelect
@@ -841,64 +991,76 @@ export const SettingsBilling = () => {
                     setDisplayCurrency(event.target.value as SupportedPricingCurrency)
                   }
                 >
-                  <option value="USD">USD</option>
-                  <option value="GBP">GBP</option>
-                  <option value="EUR">EUR</option>
-                  <option value="INR">INR</option>
+                  {SUPPORTED_PRICING_CURRENCIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
                 </StyledCurrencySelect>
-                <StyledIntentTabs>
-                  <StyledIntentTab
-                    type="button"
-                    isActive={intent === 'INVESTING'}
-                    onClick={() => setIntent('INVESTING')}
-                  >
-                    PE / VC
-                  </StyledIntentTab>
-                  <StyledIntentTab
-                    type="button"
-                    isActive={intent === 'SALES'}
-                    onClick={() => setIntent('SALES')}
-                  >
-                    Sales / ABM
-                  </StyledIntentTab>
-                  <StyledIntentTab
-                    type="button"
-                    isActive={intent === 'RECRUITING'}
-                    onClick={() => setIntent('RECRUITING')}
-                  >
-                    Recruiting
-                  </StyledIntentTab>
-                </StyledIntentTabs>
               </StyledPricingControls>
               <StyledCreditCardsGrid>
-                {visibleCreditPacks.map((pack) => {
+                {planOrder.map((planId) => {
+                  const plan = PRICING_PLANS[planId];
+                  const selectedMaps = selectedMapsByPlan[planId] ?? plan.minMaps;
+                  const tier = findTier(planId, selectedMaps);
+                  const packKey = `${planId}_maps_${tier.maps}`;
+                  const apiPack = creditPacks.find((p) => p.key === packKey);
+                  const fallbackPack = sharedPackMetaByKey.get(packKey);
+                  const pack =
+                    apiPack ??
+                    (fallbackPack
+                      ? ({
+                          key: fallbackPack.key,
+                          name: fallbackPack.name,
+                          credits: fallbackPack.credits,
+                          amountSubunits: fallbackPack.amountSubunits,
+                          currency: fallbackPack.currency,
+                          planId: fallbackPack.planId,
+                          intent: fallbackPack.intent,
+                          mapsCount: fallbackPack.mapsCount,
+                          mapType: fallbackPack.mapType,
+                          mapTypeLabel: fallbackPack.mapTypeLabel,
+                          tagline: fallbackPack.tagline,
+                          inheritedFromPlanId: fallbackPack.inheritedFromPlanId,
+                          ownFeatures: fallbackPack.features,
+                          includedEmailCredits: fallbackPack.includedEmailCredits,
+                          includedPhoneCredits: fallbackPack.includedPhoneCredits,
+                          creditsDisplay: fallbackPack.creditsDisplay,
+                          pricesSubunitsJson: JSON.stringify(
+                            fallbackPack.pricesSubunits,
+                          ),
+                        } as CreditPack)
+                      : null);
+
+                  if (!pack) {
+                    return null;
+                  }
+
                   const meta = sharedPackMetaByKey.get(pack.key);
-                  const packCurrency =
-                    pack.currency === 'INR' ||
-                    pack.currency === 'USD' ||
-                    pack.currency === 'GBP' ||
-                    pack.currency === 'EUR'
-                      ? (pack.currency as SupportedPricingCurrency)
-                      : 'GBP';
-                  const convertedAmountSubunits = convertPricingAmountSubunits(
-                    pack.amountSubunits,
-                    packCurrency,
-                    displayCurrency,
-                  );
+                  const { subunits: convertedAmountSubunits, isExplicit } =
+                    resolvePackPriceSubunits(pack, displayCurrency);
                   const baseAmount = convertedAmountSubunits / 100;
                   const surchargeAmountSubunits = Math.round(
                     convertedAmountSubunits * 0.03,
                   );
-                  const cardAmountSubunits = normalizePricingAmountSubunits(
-                    convertedAmountSubunits + surchargeAmountSubunits,
-                  );
+                  const cardAmountSubunits = isExplicit
+                    ? convertedAmountSubunits + surchargeAmountSubunits
+                    : normalizePricingAmountSubunits(
+                        convertedAmountSubunits + surchargeAmountSubunits,
+                      );
                   const cardAmount = cardAmountSubunits / 100;
                   const creditsLabel =
+                    pack.creditsDisplay ??
                     meta?.creditsDisplay ??
-                    (pack.credits === 1
-                      ? t`1 credit (<100 employees)`
-                      : t`${pack.credits} credits`);
-                  const features = meta?.features ?? [pack.name];
+                    t`${pack.credits.toLocaleString()} credits`;
+                  const features =
+                    pack.ownFeatures ?? meta?.features ?? [pack.name];
+                  const includedEmail =
+                    pack.includedEmailCredits ?? meta?.includedEmailCredits ?? 0;
+                  const includedPhone =
+                    pack.includedPhoneCredits ?? meta?.includedPhoneCredits ?? 0;
+                  const mapsCount = pack.mapsCount ?? meta?.mapsCount;
+                  const totalAmount = baseAmount * (mapsCount ?? 1);
                   return (
                     <StyledBillingCard key={pack.key} fullWidth rounded>
                       <StyledCreditPackCardContent>
@@ -908,17 +1070,45 @@ export const SettingsBilling = () => {
                         <StyledCreditCardPrice>
                           {getPricingCurrencySymbol(displayCurrency)}
                           {baseAmount.toLocaleString()}
+                          <StyledPriceUnit> / {t`talent map`}</StyledPriceUnit>
                         </StyledCreditCardPrice>
+                        {mapsCount !== undefined && (
+                          <StyledCreditCardTotal>
+                            {t`Total`}: {getPricingCurrencySymbol(displayCurrency)}
+                            {totalAmount.toLocaleString()} / {mapsCount} {t`maps`}
+                          </StyledCreditCardTotal>
+                        )}
                         <StyledCreditCardCredits>
                           {creditsLabel}
                         </StyledCreditCardCredits>
+                        <StyledTierSelectWrap>
+                          <StyledTierSelectLabel htmlFor={`tier-${planId}`}>
+                            {t`Volume`}
+                          </StyledTierSelectLabel>
+                          <StyledTierSelect
+                            id={`tier-${planId}`}
+                            value={selectedMaps}
+                            onChange={(event) => {
+                              const value = parseInt(event.target.value, 10);
+                              setSelectedMapsByPlan((previous) => ({
+                                ...previous,
+                                [planId]: Number.isNaN(value)
+                                  ? plan.minMaps
+                                  : value,
+                              }));
+                            }}
+                          >
+                            {plan.tiers.map((planTier) => (
+                              <option key={planTier.maps} value={planTier.maps}>
+                                {planTier.maps} {t`maps`}
+                              </option>
+                            ))}
+                          </StyledTierSelect>
+                        </StyledTierSelectWrap>
                         <StyledIncludedRevealCredits>
-                          {t`Includes`} {(
-                            meta?.includedEmailCredits ?? 0
-                          ).toLocaleString()}{' '}
-                          {t`email`} +{' '}
-                          {(meta?.includedPhoneCredits ?? 0).toLocaleString()}{' '}
-                          {t`phone credits`}
+                          {t`Includes`} {includedEmail.toLocaleString()}{' '}
+                          {t`email credits`} + {includedPhone.toLocaleString()}{' '}
+                          {t`phone reveals`}
                         </StyledIncludedRevealCredits>
                         <StyledPanelDivider />
                         <StyledCreditCardSurcharge>

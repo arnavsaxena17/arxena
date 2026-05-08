@@ -7,17 +7,20 @@ import React from 'react';
 
 import type { SupportedPricingCurrency } from '@/lib/pricing-currency-helpers';
 import {
-  convertCreditPacksToCurrency,
+  convertPricingAmountSubunits,
   getPricingCurrencySymbol,
 } from '@/lib/pricing-currency-helpers';
 import {
-  type PricingIntent,
-  CREDIT_PACKS_BY_INTENT,
+  PRICING_PLANS,
   creditPackPricingFootnote,
+  getInheritedFeatures,
+  type PricingPlan,
+  type PricingPlanId,
+  type PricingPlanTier,
 } from 'twenty-shared';
 
 const StyledSection = styled.section`
-  max-width: 1160px;
+  max-width: 1280px;
   margin: 0 auto;
   padding: 64px 24px 96px;
 `;
@@ -40,45 +43,16 @@ const StyledHeadlineSub = styled.p`
 
 const StyledCardsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  justify-content: center;
-  gap: 32px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px;
   margin-bottom: 48px;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
-  }
-`;
-
-const StyledIntentTabs = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  justify-content: center;
-  margin: 24px 0 32px;
-  padding: 6px;
-  background: #fafafa;
-  border: 1px solid rgba(20, 20, 20, 0.08);
-  border-radius: 999px;
-  width: fit-content;
-  margin-left: auto;
-  margin-right: auto;
-`;
-
-const StyledIntentTab = styled.button<{ isActive: boolean }>`
-  appearance: none;
-  background: ${({ isActive }) => (isActive ? '#fff' : 'transparent')};
-  border: 0;
-  border-radius: 999px;
-  color: #141414;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  padding: 10px 14px;
-  transition: background-color 0.15s ease, color 0.15s ease;
-
-  &:hover {
-    background: ${({ isActive }) => (isActive ? '#fff' : '#f1f1f1')};
   }
 `;
 
@@ -86,58 +60,147 @@ const StyledCard = styled.div`
   background: #fafafa;
   border: 1px solid rgba(20, 20, 20, 0.08);
   border-radius: 12px;
-  padding: 32px;
+  padding: 28px;
   display: flex;
   flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+`;
+
+const StyledCardHeader = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const StyledCardLabel = styled.div`
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #818181;
+`;
+
+const StyledCardEmoji = styled.span`
+  font-size: 18px;
 `;
 
 const StyledCardTitle = styled.h2`
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
-  margin: 0 0 16px 0;
+  margin: 0;
   color: #141414;
+  line-height: 1.25;
+`;
+
+const StyledCardTagline = styled.p`
+  font-size: 14px;
+  color: #6b6b6b;
+  margin: 0;
+  line-height: 1.45;
+`;
+
+const StyledMapTypePill = styled.div`
+  align-self: flex-start;
+  background: #fff;
+  border: 1px solid rgba(20, 20, 20, 0.1);
+  border-radius: 999px;
+  color: #474747;
+  font-size: 12px;
+  padding: 4px 10px;
+`;
+
+const StyledTierSelectWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const StyledTierSelectLabel = styled.label`
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #818181;
+`;
+
+const StyledTierSelect = styled.select`
+  appearance: none;
+  background: #fff;
+  border: 1px solid rgba(20, 20, 20, 0.12);
+  border-radius: 8px;
+  color: #141414;
+  font-size: 14px;
+  padding: 10px 12px;
+  width: 100%;
+`;
+
+const StyledPriceBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 `;
 
 const StyledPrice = styled.div`
-  font-size: 2.5rem;
+  font-size: 2.25rem;
   font-weight: 700;
   color: #141414;
-  margin-bottom: 4px;
+  line-height: 1.05;
 `;
 
-const _StyledPriceUnit = styled.span`
-  font-size: 16px;
+const StyledPriceUnit = styled.span`
+  font-size: 15px;
   font-weight: 400;
   color: #818181;
 `;
 
-const StyledCredits = styled.div`
-  font-size: 15px;
-  color: #474747;
-  margin-bottom: 8px;
+const StyledPriceFinePrint = styled.div`
+  font-size: 13px;
+  color: #818181;
 `;
 
-const StyledIncludedCredits = styled.div`
-  font-size: 14px;
+const StyledCreditsBlock = styled.div`
+  background: #fff;
+  border: 1px solid rgba(20, 20, 20, 0.08);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+`;
+
+const StyledCreditsEquivalents = styled.div`
   color: #6b6b6b;
-  margin-bottom: 24px;
+  font-size: 13px;
+  line-height: 1.5;
 `;
 
 const StyledFeatureList = styled.ul`
   list-style: none;
   padding: 0;
-  margin: 0 0 32px 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   flex: 1;
 `;
 
 const StyledFeatureItem = styled.li`
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  font-size: 15px;
+  gap: 10px;
+  font-size: 14px;
   color: #474747;
-  margin-bottom: 12px;
   line-height: 1.5;
+`;
+
+const StyledInheritedLine = styled.div`
+  font-size: 13px;
+  font-weight: 500;
+  color: #141414;
 `;
 
 const StyledCheckIcon = styled(IconCheck)`
@@ -146,21 +209,47 @@ const StyledCheckIcon = styled(IconCheck)`
   color: #141414;
 `;
 
-const StyledCtaButton = styled.a`
+const StyledCtaStack = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+`;
+
+const StyledCtaPrimary = styled.a`
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 48px;
+  height: 44px;
   background-color: #000;
   color: #fff;
   border-radius: 8px;
   font-weight: 500;
   text-decoration: none;
-  font-size: 15px;
+  font-size: 14px;
   transition: color 0.15s ease;
 
   &:hover {
     color: #b3b3b3;
+  }
+`;
+
+const StyledCtaSecondary = styled.a`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  background: transparent;
+  border: 1px solid rgba(20, 20, 20, 0.12);
+  color: #141414;
+  border-radius: 8px;
+  font-weight: 500;
+  text-decoration: none;
+  font-size: 14px;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: #f1f1f1;
   }
 `;
 
@@ -178,13 +267,6 @@ const StyledRoiTitle = styled.h3`
   font-weight: 600;
   margin: 0 0 12px 0;
   color: #141414;
-`;
-
-const StyledRoiText = styled.p`
-  font-size: 15px;
-  color: #474747;
-  margin: 0;
-  line-height: 1.6;
 `;
 
 const StyledHelpSection = styled.div`
@@ -225,96 +307,157 @@ type PricingContentProps = {
   currency: SupportedPricingCurrency;
 };
 
-export const PricingContent = ({ signUpUrl, currency }: PricingContentProps) => {
-  const [intent, setIntent] = React.useState<PricingIntent>('SALES');
+const PLAN_ORDER: PricingPlanId[] = [
+  'sales',
+  'recruitment',
+  'corporate',
+  'investment',
+];
 
-  const packs = React.useMemo(
-    () => convertCreditPacksToCurrency(CREDIT_PACKS_BY_INTENT[intent], currency),
-    [intent, currency],
+const REVEAL_COST_EMAIL = 1;
+const REVEAL_COST_PHONE = 5;
+
+const formatMoneyMajor = (subunits: number): string =>
+  Math.round(subunits / 100).toLocaleString();
+
+type PlanCardState = Record<PricingPlanId, number>;
+
+const buildInitialTierState = (): PlanCardState => {
+  return PLAN_ORDER.reduce((acc, planId) => {
+    acc[planId] = PRICING_PLANS[planId].minMaps;
+    return acc;
+  }, {} as PlanCardState);
+};
+
+const findTier = (plan: PricingPlan, maps: number): PricingPlanTier => {
+  const exact = plan.tiers.find((t) => t.maps === maps);
+  return exact ?? plan.tiers[0];
+};
+
+export const PricingContent = ({
+  signUpUrl,
+  currency,
+}: PricingContentProps) => {
+  const [selectedTiers, setSelectedTiers] = React.useState<PlanCardState>(
+    () => buildInitialTierState(),
   );
-  const intentCopy: Record<PricingIntent, { headline: string; sub: string }> = {
-    SALES: {
-      headline: "Pipeline-grade org intelligence for Sales / ABM",
-      sub:
-        "Map buying committees, champions, and blockers across target accounts — then reveal/export only what matters.",
-    },
-    INVESTING: {
-      headline: "Deal diligence org intelligence for PE / VC",
-      sub:
-        "For the most informed first call with your target companies. Diligence faster, monitor portfolios, and benchmark management teams.",
-    },
-    RECRUITING: {
-      headline: "Org intelligence for Recruiting",
-      sub:
-        "Map teams, find the right candidates, and build shortlists with org-chart context before the recruiters start calling.",
-    },
-  };
 
   return (
     <StyledSection>
-      <StyledHeadline>{intentCopy[intent].headline}</StyledHeadline>
-      <StyledHeadlineSub>{intentCopy[intent].sub}</StyledHeadlineSub>
-
-      <StyledIntentTabs>
-        <StyledIntentTab
-          type="button"
-          isActive={intent === 'INVESTING'}
-          onClick={() => setIntent('INVESTING')}
-        >
-          PE / VC
-        </StyledIntentTab>
-        <StyledIntentTab
-          type="button"
-          isActive={intent === 'SALES'}
-          onClick={() => setIntent('SALES')}
-        >
-          Sales / ABM
-        </StyledIntentTab>
-        <StyledIntentTab
-          type="button"
-          isActive={intent === 'RECRUITING'}
-          onClick={() => setIntent('RECRUITING')}
-        >
-          Recruiting
-        </StyledIntentTab>
-      </StyledIntentTabs>
+      <StyledHeadline>
+        Org intelligence priced by the maps you actually need
+      </StyledHeadline>
+      <StyledHeadlineSub>
+        Four plans for Sales, Recruitment, Corporate TA and Investment teams.
+        Pick a volume tier — credits, depth and refresh cadence scale with you.
+      </StyledHeadlineSub>
 
       <StyledCardsGrid>
-        {packs.map((pack) => {
-          const includedEmailCredits =
-            typeof (pack as Record<string, unknown>).includedEmailCredits ===
-            'number'
-              ? ((pack as Record<string, unknown>).includedEmailCredits as number)
-              : 0;
-          const includedPhoneCredits =
-            typeof (pack as Record<string, unknown>).includedPhoneCredits ===
-            'number'
-              ? ((pack as Record<string, unknown>).includedPhoneCredits as number)
-              : 0;
+        {PLAN_ORDER.map((planId) => {
+          const plan = PRICING_PLANS[planId];
+          const selectedMaps = selectedTiers[planId];
+          const tier = findTier(plan, selectedMaps);
+          const explicit = tier.pricesSubunits[currency];
+          const priceSubunits =
+            typeof explicit === 'number' && explicit > 0
+              ? explicit
+              : convertPricingAmountSubunits(
+                  tier.pricesSubunits.GBP,
+                  'GBP',
+                  currency,
+                );
+          const totalCredits = tier.credits;
+          const emailEquivalent = Math.floor(totalCredits / REVEAL_COST_EMAIL);
+          const phoneEquivalent = Math.floor(totalCredits / REVEAL_COST_PHONE);
+          const inherited = getInheritedFeatures(planId);
+          const totalSubunits = priceSubunits * selectedMaps;
 
           return (
-          <StyledCard key={pack.name}>
-            <StyledCardTitle>{pack.name}</StyledCardTitle>
-            <StyledPrice>
-              {getPricingCurrencySymbol(currency)}
-              {(pack.amountSubunits / 100).toLocaleString()}
-            </StyledPrice>
-            <StyledCredits>{pack.creditsDisplay}</StyledCredits>
-            <StyledIncludedCredits>
-              Includes {includedEmailCredits.toLocaleString()} email +{' '}
-              {includedPhoneCredits.toLocaleString()} phone credits
-            </StyledIncludedCredits>
-            <StyledFeatureList>
-              {pack.features.map((feature: string) => (
-                <StyledFeatureItem key={feature}>
-                  <StyledCheckIcon size={20} strokeWidth={2.5} />
-                  {feature}
-                </StyledFeatureItem>
-              ))}
-            </StyledFeatureList>
-            <StyledCtaButton href={signUpUrl}>Start for free</StyledCtaButton>
-          </StyledCard>
-        );
+            <StyledCard key={planId}>
+              <StyledCardHeader>
+                <StyledCardLabel>
+                  <StyledCardEmoji>{plan.icon}</StyledCardEmoji>
+                  {plan.label}
+                </StyledCardLabel>
+                <StyledCardTitle>{plan.tagline}</StyledCardTitle>
+                <StyledCardTagline>{plan.mapTypeLabel}</StyledCardTagline>
+              </StyledCardHeader>
+
+              <StyledMapTypePill>
+                Map type · {plan.mapType}
+              </StyledMapTypePill>
+
+              <StyledTierSelectWrap>
+                <StyledTierSelectLabel htmlFor={`tier-${planId}`}>
+                  Volume
+                </StyledTierSelectLabel>
+                <StyledTierSelect
+                  id={`tier-${planId}`}
+                  value={selectedMaps}
+                  onChange={(event) => {
+                    const v = parseInt(event.target.value, 10);
+                    setSelectedTiers((prev) => ({
+                      ...prev,
+                      [planId]: Number.isNaN(v) ? plan.minMaps : v,
+                    }));
+                  }}
+                >
+                  {plan.tiers.map((t) => (
+                    <option key={t.maps} value={t.maps}>
+                      {t.maps} talent maps
+                    </option>
+                  ))}
+                </StyledTierSelect>
+              </StyledTierSelectWrap>
+
+              <StyledPriceBlock>
+                <StyledPrice>
+                  {getPricingCurrencySymbol(currency)}
+                  {formatMoneyMajor(priceSubunits)}
+                  <StyledPriceUnit>
+                    {' '}
+                    / map
+                  </StyledPriceUnit>
+                </StyledPrice>
+                <StyledPriceFinePrint>
+                  Total:{' '}
+                  {getPricingCurrencySymbol(currency)}
+                  {formatMoneyMajor(totalSubunits)} for {selectedMaps} maps
+                </StyledPriceFinePrint>
+              </StyledPriceBlock>
+
+              <StyledCreditsBlock>
+                <StyledCreditsEquivalents>
+                  Includes {emailEquivalent.toLocaleString()} email credits +{' '}
+                  {phoneEquivalent.toLocaleString()} phone reveals
+                </StyledCreditsEquivalents>
+              </StyledCreditsBlock>
+
+              {inherited.inheritedFromLabel && (
+                <StyledInheritedLine>
+                  Everything in {inherited.inheritedFromLabel}, plus:
+                </StyledInheritedLine>
+              )}
+
+              <StyledFeatureList>
+                {plan.ownFeatures.map((feature) => (
+                  <StyledFeatureItem key={feature}>
+                    <StyledCheckIcon size={18} strokeWidth={2.5} />
+                    {feature}
+                  </StyledFeatureItem>
+                ))}
+              </StyledFeatureList>
+
+              <StyledCtaStack>
+                <StyledCtaPrimary href={signUpUrl}>
+                  Start for free
+                </StyledCtaPrimary>
+                <StyledCtaSecondary href="mailto:hello@arxena.com?subject=Talk%20to%20sales">
+                  Talk to sales
+                </StyledCtaSecondary>
+              </StyledCtaStack>
+            </StyledCard>
+          );
         })}
       </StyledCardsGrid>
 
@@ -322,10 +465,6 @@ export const PricingContent = ({ signUpUrl, currency }: PricingContentProps) => 
         <StyledRoiTitle>
           Understand the lay of the org before your first message.
         </StyledRoiTitle>
-        {/* <StyledRoiText>
-          Most tools sell contacts without context. Arxena sells verified org
-          structure first — then you reveal/export only the contacts you need.
-        </StyledRoiText> */}
         <p style={{ margin: '16px 0 0 0', fontSize: 14, color: '#818181' }}>
           {creditPackPricingFootnote}
         </p>

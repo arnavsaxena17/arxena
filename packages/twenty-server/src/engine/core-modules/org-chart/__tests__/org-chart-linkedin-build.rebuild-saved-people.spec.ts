@@ -69,19 +69,22 @@ describe('OrgChartLinkedInBuildService.rebuildOrgChartUsingSavedPeople', () => {
       },
     } as unknown as OrgChartLinkedInBuildService;
 
-    await expect(
-      OrgChartLinkedInBuildService.prototype.rebuildOrgChartUsingSavedPeople.call(
+    let caught: unknown;
+
+    try {
+      await OrgChartLinkedInBuildService.prototype.rebuildOrgChartUsingSavedPeople.call(
         ctx,
         {
           apiToken: 'token',
           companyId: 'acme',
           companyName: 'Acme',
         },
-      ),
-    ).rejects.toEqual(
-      expect.objectContaining<HttpException>({
-        status: 404,
-      }),
-    );
+      );
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(HttpException);
+    expect((caught as HttpException).getStatus()).toBe(404);
   });
 });

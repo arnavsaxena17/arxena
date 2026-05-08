@@ -4,13 +4,15 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
+import { computeRevealCreditCost, getRevealCost } from 'twenty-shared';
 
 import { WorkspaceCredits } from 'src/engine/core-modules/billing/entities/workspace-credits.entity';
 import { CreditTransactionService } from 'src/engine/core-modules/billing/services/credit-transaction.service';
 
-const DEFAULT_FREE_ORG_CHART_CREDITS = 1;
-const DEFAULT_FREE_EMAIL_CREDITS = 0;
-const DEFAULT_FREE_PHONE_CREDITS = 0;
+const DEFAULT_FREE_ORG_CHART_CREDITS = 3;
+const DEFAULT_FREE_REVEAL_CREDITS = 0;
+
+export type AdminCreditPool = 'org_chart' | 'reveal';
 
 @Injectable()
 export class WorkspaceCreditsService {
@@ -20,31 +22,27 @@ export class WorkspaceCreditsService {
     private readonly creditTransactionService: CreditTransactionService,
   ) {}
 
+  private readEnvCount(envKey: string, defaultValue: number): number {
+    const val = process.env[envKey];
+    if (val !== undefined) {
+      const parsed = parseInt(val, 10);
+      if (!Number.isNaN(parsed) && parsed >= 0) return parsed;
+    }
+    return defaultValue;
+  }
+
   private getFreeOrgChartCredits(): number {
-    const val = process.env.FREE_SIGNUP_ORG_CHART_CREDITS;
-    if (val !== undefined) {
-      const parsed = parseInt(val, 10);
-      if (!Number.isNaN(parsed) && parsed >= 0) return parsed;
-    }
-    return DEFAULT_FREE_ORG_CHART_CREDITS;
+    return this.readEnvCount(
+      'FREE_SIGNUP_ORG_CHART_CREDITS',
+      DEFAULT_FREE_ORG_CHART_CREDITS,
+    );
   }
 
-  private getFreeEmailCredits(): number {
-    const val = process.env.FREE_SIGNUP_EMAIL_CREDITS;
-    if (val !== undefined) {
-      const parsed = parseInt(val, 10);
-      if (!Number.isNaN(parsed) && parsed >= 0) return parsed;
-    }
-    return DEFAULT_FREE_EMAIL_CREDITS;
-  }
-
-  private getFreePhoneCredits(): number {
-    const val = process.env.FREE_SIGNUP_PHONE_CREDITS;
-    if (val !== undefined) {
-      const parsed = parseInt(val, 10);
-      if (!Number.isNaN(parsed) && parsed >= 0) return parsed;
-    }
-    return DEFAULT_FREE_PHONE_CREDITS;
+  private getFreeRevealCredits(): number {
+    return this.readEnvCount(
+      'FREE_SIGNUP_REVEAL_CREDITS',
+      DEFAULT_FREE_REVEAL_CREDITS,
+    );
   }
 
   async getOrCreate(workspaceId: string): Promise<WorkspaceCredits> {
@@ -56,21 +54,24 @@ export class WorkspaceCreditsService {
     row = this.workspaceCreditsRepository.create({
       workspaceId,
       orgChartCredits: this.getFreeOrgChartCredits(),
-      emailContactCredits: this.getFreeEmailCredits(),
-      phoneContactCredits: this.getFreePhoneCredits(),
+      revealCredits: this.getFreeRevealCredits(),
     });
     return this.workspaceCreditsRepository.save(row);
   }
 
-  computeOrgChartCreditsNeeded(employeeCount: number): number {
-    return Math.max(1, Math.ceil(employeeCount / 100));
+  // ---------------------------------------------------------------------------
+  // Org chart credits — flat 1 credit per org chart (no employee-count scaling).
+  // ---------------------------------------------------------------------------
+
+  computeOrgChartCreditsNeeded(_employeeCount?: number): number {
+    return 1;
   }
 
   async hasSufficientOrgChartCredits(
     workspaceId: string,
-    employeeCount: number,
+    _employeeCount?: number,
   ): Promise<boolean> {
-    const creditsNeeded = this.computeOrgChartCreditsNeeded(employeeCount);
+    const creditsNeeded = this.computeOrgChartCreditsNeeded();
     const row = await this.workspaceCreditsRepository.findOne({
       where: { workspaceId },
     });
@@ -88,7 +89,7 @@ export class WorkspaceCreditsService {
 
   async debitOrgChartCredits(
     workspaceId: string,
-    employeeCount: number,
+    employeeCount?: number,
     metadata?: {
       companyName?: string;
       companyId?: string;
@@ -98,18 +99,15 @@ export class WorkspaceCreditsService {
       orgChartS3RelativePath?: string;
     },
   ): Promise<void> {
-    const creditsNeeded = this.computeOrgChartCreditsNeeded(employeeCount);
-    const hasSufficient = await this.hasSufficientOrgChartCredits(
-      workspaceId,
-      employeeCount,
-    );
+    const creditsNeeded = this.computeOrgChartCreditsNeeded();
+    const hasSufficient = await this.hasSufficientOrgChartCredits(workspaceId);
     if (!hasSufficient) {
       const creditsAvailable =
         await this.getOrgChartCreditsAvailable(workspaceId);
 
       throw new HttpException(
         {
-          message: `Insufficient org chart credits. Need ${creditsNeeded} credits for ${employeeCount} employees.`,
+          message: `Insufficient org chart credits. Need ${creditsNeeded} credit per org chart.`,
           creditsNeeded,
           creditsAvailable,
         },
@@ -137,96 +135,14 @@ export class WorkspaceCreditsService {
       type: 'debit',
       creditType: 'org_chart',
       amount: creditsNeeded,
-      metadata: metadata
-        ? { ...metadata, employeeCount }
-        : { employeeCount },
+      metadata:
+        metadata !== undefined || employeeCount !== undefined
+          ? { ...(metadata ?? {}), employeeCount }
+          : undefined,
     });
   }
 
-  async hasSufficientContactCredits(
-    workspaceId: string,
-    wantEmail: boolean,
-    wantPhone: boolean,
-  ): Promise<boolean> {
-    return this.hasSufficientContactCreditsForCount(
-      workspaceId,
-      wantEmail ? 1 : 0,
-      wantPhone ? 1 : 0,
-    );
-  }
-
-  async hasSufficientContactCreditsForCount(
-    workspaceId: string,
-    emailCount: number,
-    phoneCount: number,
-  ): Promise<boolean> {
-    const row = await this.workspaceCreditsRepository.findOne({
-      where: { workspaceId },
-    });
-    const emailCredits = row?.emailContactCredits ?? 0;
-    const phoneCredits = row?.phoneContactCredits ?? 0;
-    return emailCredits >= emailCount && phoneCredits >= phoneCount;
-  }
-
-  async debitContactCredits(
-    workspaceId: string,
-    emailCount: number,
-    phoneCount: number,
-    metadata?: { linkedinUrl?: string; source?: string },
-  ): Promise<void> {
-    const row = await this.workspaceCreditsRepository.findOne({
-      where: { workspaceId },
-    });
-    if (!row) {
-      throw new HttpException(
-        'Workspace credits not found',
-        HttpStatus.FORBIDDEN,
-      );
-    }
-
-    const newEmail = row.emailContactCredits - emailCount;
-    const newPhone = row.phoneContactCredits - phoneCount;
-
-    if (newEmail < 0 || newPhone < 0) {
-      throw new HttpException(
-        'Insufficient contact credits',
-        HttpStatus.FORBIDDEN,
-      );
-    }
-
-    await this.workspaceCreditsRepository.update(
-      { workspaceId },
-      {
-        emailContactCredits: newEmail,
-        phoneContactCredits: newPhone,
-      },
-    );
-
-    const txMetadata = metadata ? { ...metadata } : {};
-    if (emailCount > 0) {
-      await this.creditTransactionService.recordTransaction({
-        workspaceId,
-        type: 'debit',
-        creditType: 'email_contact',
-        amount: emailCount,
-        metadata: Object.keys(txMetadata).length > 0 ? txMetadata : undefined,
-      });
-    }
-    if (phoneCount > 0) {
-      await this.creditTransactionService.recordTransaction({
-        workspaceId,
-        type: 'debit',
-        creditType: 'phone_contact',
-        amount: phoneCount,
-        metadata: Object.keys(txMetadata).length > 0 ? txMetadata : undefined,
-      });
-    }
-  }
-
-  async addOrgChartCredits(
-    workspaceId: string,
-    amount: number,
-  ): Promise<void> {
+  async addOrgChartCredits(workspaceId: string, amount: number): Promise<void> {
     const row = await this.workspaceCreditsRepository.findOne({
       where: { workspaceId },
     });
@@ -239,86 +155,148 @@ export class WorkspaceCreditsService {
       await this.workspaceCreditsRepository.insert({
         workspaceId,
         orgChartCredits: amount,
-        emailContactCredits: 0,
-        phoneContactCredits: 0,
+        revealCredits: 0,
       });
     }
   }
 
-  async addEmailContactCredits(
+  // ---------------------------------------------------------------------------
+  // Reveal credits — unified pool. Cost per email/phone is runtime-configurable
+  // via getRevealCost(kind) which reads CREDIT_COST_EMAIL_REVEAL /
+  // CREDIT_COST_PHONE_REVEAL env vars.
+  // ---------------------------------------------------------------------------
+
+  async getRevealCreditsAvailable(workspaceId: string): Promise<number> {
+    const row = await this.workspaceCreditsRepository.findOne({
+      where: { workspaceId },
+    });
+    return row?.revealCredits ?? 0;
+  }
+
+  async hasSufficientRevealCredits(
     workspaceId: string,
-    amount: number,
+    input: { emails?: number; phones?: number },
+  ): Promise<boolean> {
+    const required = computeRevealCreditCost(input);
+    const available = await this.getRevealCreditsAvailable(workspaceId);
+    return available >= required;
+  }
+
+  async debitRevealCredits(
+    workspaceId: string,
+    input: { emails?: number; phones?: number },
+    metadata?: { linkedinUrl?: string; source?: string },
   ): Promise<void> {
+    const emails = Math.max(0, input.emails ?? 0);
+    const phones = Math.max(0, input.phones ?? 0);
+    const required = computeRevealCreditCost({ emails, phones });
+
+    if (required <= 0) {
+      return;
+    }
+
+    const row = await this.workspaceCreditsRepository.findOne({
+      where: { workspaceId },
+    });
+    if (!row) {
+      throw new HttpException(
+        'Workspace credits not found',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    const newReveal = row.revealCredits - required;
+    if (newReveal < 0) {
+      throw new HttpException(
+        {
+          message: 'Insufficient reveal credits',
+          creditsNeeded: required,
+          creditsAvailable: row.revealCredits,
+        },
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    await this.workspaceCreditsRepository.update(
+      { workspaceId },
+      { revealCredits: newReveal },
+    );
+
+    const txMetadata = metadata ? { ...metadata } : {};
+    if (emails > 0) {
+      await this.creditTransactionService.recordTransaction({
+        workspaceId,
+        type: 'debit',
+        creditType: 'email_reveal',
+        amount: emails * getRevealCost('email'),
+        metadata:
+          Object.keys(txMetadata).length > 0
+            ? { ...txMetadata, emails }
+            : { emails },
+      });
+    }
+    if (phones > 0) {
+      await this.creditTransactionService.recordTransaction({
+        workspaceId,
+        type: 'debit',
+        creditType: 'phone_reveal',
+        amount: phones * getRevealCost('phone'),
+        metadata:
+          Object.keys(txMetadata).length > 0
+            ? { ...txMetadata, phones }
+            : { phones },
+      });
+    }
+  }
+
+  async addRevealCredits(workspaceId: string, amount: number): Promise<void> {
     const row = await this.workspaceCreditsRepository.findOne({
       where: { workspaceId },
     });
     if (row) {
       await this.workspaceCreditsRepository.update(
         { workspaceId },
-        { emailContactCredits: row.emailContactCredits + amount },
+        { revealCredits: row.revealCredits + amount },
       );
     } else {
       await this.workspaceCreditsRepository.insert({
         workspaceId,
         orgChartCredits: 0,
-        emailContactCredits: amount,
-        phoneContactCredits: 0,
+        revealCredits: amount,
       });
     }
   }
 
-  async addPhoneContactCredits(
-    workspaceId: string,
-    amount: number,
-  ): Promise<void> {
-    const row = await this.workspaceCreditsRepository.findOne({
-      where: { workspaceId },
-    });
-    if (row) {
-      await this.workspaceCreditsRepository.update(
-        { workspaceId },
-        { phoneContactCredits: row.phoneContactCredits + amount },
-      );
-    } else {
-      await this.workspaceCreditsRepository.insert({
-        workspaceId,
-        orgChartCredits: 0,
-        emailContactCredits: 0,
-        phoneContactCredits: amount,
-      });
-    }
-  }
+  // ---------------------------------------------------------------------------
+  // Admin: bulk adjust either pool by an arbitrary delta (positive or negative).
+  // ---------------------------------------------------------------------------
 
   async adjustCredits(
     workspaceId: string,
-    creditType: 'org_chart' | 'email_contact' | 'phone_contact',
+    creditType: AdminCreditPool,
     delta: number,
   ): Promise<void> {
-    const row = await this.workspaceCreditsRepository.findOne({
-      where: { workspaceId },
-    });
+    if (delta === 0) {
+      return;
+    }
 
     if (delta > 0) {
       if (creditType === 'org_chart') {
         await this.addOrgChartCredits(workspaceId, delta);
-      } else if (creditType === 'email_contact') {
-        await this.addEmailContactCredits(workspaceId, delta);
       } else {
-        await this.addPhoneContactCredits(workspaceId, delta);
+        await this.addRevealCredits(workspaceId, delta);
       }
       return;
     }
 
+    const row = await this.workspaceCreditsRepository.findOne({
+      where: { workspaceId },
+    });
     if (!row) {
       return;
     }
 
-    const field =
-      creditType === 'org_chart'
-        ? 'orgChartCredits'
-        : creditType === 'email_contact'
-          ? 'emailContactCredits'
-          : 'phoneContactCredits';
+    const field = creditType === 'org_chart' ? 'orgChartCredits' : 'revealCredits';
     const current = row[field];
     const newValue = Math.max(0, current + delta);
     await this.workspaceCreditsRepository.update(

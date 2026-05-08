@@ -30,6 +30,7 @@ import { ChooseYourPlan } from '~/pages/onboarding/ChooseYourPlan';
 import { CollectPhoneNumber } from '~/pages/onboarding/CollectPhoneNumber';
 import { CompetitiveResearchOnboarding } from '~/pages/onboarding/CompetitiveResearchOnboarding';
 import { ConnectLinkedin } from '~/pages/onboarding/ConnectLinkedin';
+import { CorporateTaOnboarding } from '~/pages/onboarding/CorporateTaOnboarding';
 import { CreateProfile } from '~/pages/onboarding/CreateProfile';
 import { CreateWorkspace } from '~/pages/onboarding/CreateWorkspace';
 import { DealDiligenceOnboarding } from '~/pages/onboarding/DealDiligenceOnboarding';
@@ -126,15 +127,21 @@ const OrgChartRoute = () => {
       | {
           workspaceCredits?: {
             orgChartCredits: number;
-            emailContactCredits: number;
-            phoneContactCredits: number;
+            revealCredits: number;
+            revealCreditsAsEmailEquivalent?: number;
+            revealCreditsAsPhoneEquivalent?: number;
+            emailRevealCost?: number;
+            phoneRevealCost?: number;
           };
         }
       | undefined
   )?.workspaceCredits;
   const orgChartCredits = credits?.orgChartCredits;
-  const emailContactCredits = credits?.emailContactCredits;
-  const phoneContactCredits = credits?.phoneContactCredits;
+  const revealCredits = credits?.revealCredits;
+  const revealCreditsAsEmailEquivalent = credits?.revealCreditsAsEmailEquivalent;
+  const revealCreditsAsPhoneEquivalent = credits?.revealCreditsAsPhoneEquivalent;
+  const emailRevealCost = credits?.emailRevealCost;
+  const phoneRevealCost = credits?.phoneRevealCost;
   const { isBaileysLoggedIn } = useBaileysConnection();
   const { isLinkedinConnected, isWhatsappUnipileConnected } = useUnipile();
   const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileConnected;
@@ -190,8 +197,11 @@ const OrgChartRoute = () => {
         isLinkedinConnected={isLinkedinConnected}
         isWhatsappLoggedIn={isWhatsappLoggedIn}
         orgChartCredits={orgChartCredits}
-        emailContactCredits={emailContactCredits}
-        phoneContactCredits={phoneContactCredits}
+        revealCredits={revealCredits}
+        revealCreditsAsEmailEquivalent={revealCreditsAsEmailEquivalent}
+        revealCreditsAsPhoneEquivalent={revealCreditsAsPhoneEquivalent}
+        emailRevealCost={emailRevealCost}
+        phoneRevealCost={phoneRevealCost}
       />
       <PageBody>
         {hasSelectedCompany ? (
@@ -258,6 +268,10 @@ export const useCreateAppRouter = (
             <Route
               path={AppPath.CompetitiveResearchOnboarding}
               element={<CompetitiveResearchOnboarding />}
+            />
+            <Route
+              path={AppPath.CorporateTaOnboarding}
+              element={<CorporateTaOnboarding />}
             />
             <Route
               path={AppPath.DealDiligenceOnboarding}

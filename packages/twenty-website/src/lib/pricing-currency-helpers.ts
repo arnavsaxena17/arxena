@@ -1,19 +1,32 @@
 import { type CreditPack } from 'twenty-shared';
 
-export type SupportedPricingCurrency = 'INR' | 'USD' | 'GBP' | 'EUR';
+export type SupportedPricingCurrency =
+  | 'INR'
+  | 'USD'
+  | 'GBP'
+  | 'EUR'
+  | 'AUD'
+  | 'AED';
 
 export const SUPPORTED_PRICING_CURRENCIES: SupportedPricingCurrency[] = [
   'INR',
   'USD',
   'GBP',
   'EUR',
+  'AUD',
+  'AED',
 ];
 
-const PRICING_CURRENCY_RATES_FROM_GBP: Record<SupportedPricingCurrency, number> = {
+const PRICING_CURRENCY_RATES_FROM_GBP: Record<
+  SupportedPricingCurrency,
+  number
+> = {
   GBP: 1,
   USD: 1.27,
   EUR: 1.17,
   INR: 106,
+  AUD: 1.95,
+  AED: 4.66,
 };
 
 const PRICING_CURRENCY_SYMBOLS: Record<SupportedPricingCurrency, string> = {
@@ -21,6 +34,8 @@ const PRICING_CURRENCY_SYMBOLS: Record<SupportedPricingCurrency, string> = {
   USD: '$',
   EUR: '€',
   INR: '₹',
+  AUD: 'A$',
+  AED: 'AED ',
 };
 
 const EUR_COUNTRY_CODES = new Set([
@@ -44,6 +59,8 @@ const EUR_COUNTRY_CODES = new Set([
   'SI',
   'ES',
 ]);
+
+const GCC_COUNTRY_CODES = new Set(['AE', 'SA', 'KW', 'BH', 'QA', 'OM']);
 
 export const convertPricingAmountSubunits = (
   amountSubunits: number,
@@ -79,24 +96,49 @@ const normalizePricingAmountSubunits = (amountSubunits: number): number => {
   return amountMajor * 100;
 };
 
+const isSupportedCurrency = (
+  value: string | undefined,
+): value is SupportedPricingCurrency =>
+  value === 'INR' ||
+  value === 'USD' ||
+  value === 'GBP' ||
+  value === 'EUR' ||
+  value === 'AUD' ||
+  value === 'AED';
+
+export const convertCreditPackToCurrency = (
+  pack: CreditPack,
+  targetCurrency: SupportedPricingCurrency,
+): CreditPack => {
+  const explicitPrice = pack.pricesSubunits?.[targetCurrency];
+  if (typeof explicitPrice === 'number' && explicitPrice > 0) {
+    return {
+      ...pack,
+      amountSubunits: explicitPrice,
+      currency: targetCurrency,
+    };
+  }
+
+  const sourceCurrency = isSupportedCurrency(pack.currency)
+    ? pack.currency
+    : 'GBP';
+
+  return {
+    ...pack,
+    amountSubunits: convertPricingAmountSubunits(
+      pack.amountSubunits,
+      sourceCurrency,
+      targetCurrency,
+    ),
+    currency: targetCurrency,
+  };
+};
+
 export const convertCreditPacksToCurrency = (
   packs: CreditPack[],
   targetCurrency: SupportedPricingCurrency,
 ): CreditPack[] =>
-  packs.map((pack) => ({
-    ...pack,
-    amountSubunits: convertPricingAmountSubunits(
-      pack.amountSubunits,
-      pack.currency === 'INR' ||
-        pack.currency === 'USD' ||
-        pack.currency === 'GBP' ||
-        pack.currency === 'EUR'
-        ? (pack.currency as SupportedPricingCurrency)
-        : 'GBP',
-      targetCurrency,
-    ),
-    currency: targetCurrency,
-  }));
+  packs.map((pack) => convertCreditPackToCurrency(pack, targetCurrency));
 
 export const getPricingCurrencySymbol = (
   currency: SupportedPricingCurrency,
@@ -114,6 +156,12 @@ export const resolvePricingCurrencyFromCountryCode = (
   }
   if (normalized === 'GB') {
     return 'GBP';
+  }
+  if (normalized === 'AU') {
+    return 'AUD';
+  }
+  if (GCC_COUNTRY_CODES.has(normalized)) {
+    return 'AED';
   }
   if (EUR_COUNTRY_CODES.has(normalized)) {
     return 'EUR';

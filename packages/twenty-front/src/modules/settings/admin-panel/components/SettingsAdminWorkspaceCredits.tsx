@@ -30,11 +30,10 @@ type WorkspaceCreditsRow = {
   workspaceName: string;
   workspaceCreatorEmail?: string | null;
   orgChartCredits: number;
-  emailContactCredits: number;
-  phoneContactCredits: number;
+  revealCredits: number;
 };
 
-type CreditType = 'ORG_CHART' | 'EMAIL_CONTACT' | 'PHONE_CONTACT';
+type CreditType = 'ORG_CHART' | 'REVEAL';
 
 type RowCreditEdit = {
   creditType: CreditType;
@@ -42,7 +41,7 @@ type RowCreditEdit = {
 };
 
 const defaultRowCreditEdit = (): RowCreditEdit => ({
-  creditType: 'EMAIL_CONTACT',
+  creditType: 'REVEAL',
   delta: '',
 });
 
@@ -174,7 +173,7 @@ const StyledMobileSelect = styled(StyledSelect)`
 `;
 
 const TABLE_GRID =
-  'minmax(40px, auto) minmax(96px, 1fr) minmax(104px, 0.9fr) minmax(120px, 1.2fr) minmax(140px, 1.4fr) minmax(72px, 0.55fr) minmax(64px, 0.5fr) minmax(64px, 0.5fr) minmax(260px, 1.4fr)';
+  'minmax(40px, auto) minmax(96px, 1fr) minmax(104px, 0.9fr) minmax(120px, 1.2fr) minmax(140px, 1.4fr) minmax(72px, 0.55fr) minmax(72px, 0.55fr) minmax(260px, 1.4fr)';
 
 const shortWorkspaceId = (id: string) => `${id.slice(0, 8)}…`;
 
@@ -491,10 +490,7 @@ export const SettingsAdminWorkspaceCredits = () => {
                       {t`Org chart`}: {row.orgChartCredits}
                     </StyledMobileCreditItem>
                     <StyledMobileCreditItem>
-                      {t`Email`}: {row.emailContactCredits}
-                    </StyledMobileCreditItem>
-                    <StyledMobileCreditItem>
-                      {t`Phone`}: {row.phoneContactCredits}
+                      {t`Reveal`}: {row.revealCredits}
                     </StyledMobileCreditItem>
                   </StyledMobileCreditsRow>
                   <StyledMobileActionsColumn>
@@ -509,8 +505,7 @@ export const SettingsAdminWorkspaceCredits = () => {
                       aria-label={t`Credit type`}
                     >
                       <option value="ORG_CHART">{t`Org chart`}</option>
-                      <option value="EMAIL_CONTACT">{t`Email`}</option>
-                      <option value="PHONE_CONTACT">{t`Phone`}</option>
+                      <option value="REVEAL">{t`Reveal`}</option>
                     </StyledMobileSelect>
                     <TextInput
                       value={rowCreditEdit.delta}
@@ -551,8 +546,7 @@ export const SettingsAdminWorkspaceCredits = () => {
                 <TableHeader>{t`Name`}</TableHeader>
                 <TableHeader>{t`Creator email`}</TableHeader>
                 <TableHeader align="right">{t`Org chart`}</TableHeader>
-                <TableHeader align="right">{t`Email`}</TableHeader>
-                <TableHeader align="right">{t`Phone`}</TableHeader>
+                <TableHeader align="right">{t`Reveal`}</TableHeader>
                 <TableHeader>{t`Actions`}</TableHeader>
               </TableRow>
               {rows.map((row) => {
@@ -590,10 +584,7 @@ export const SettingsAdminWorkspaceCredits = () => {
                       {row.orgChartCredits}
                     </StyledTableCell>
                     <StyledTableCell align="right">
-                      {row.emailContactCredits}
-                    </StyledTableCell>
-                    <StyledTableCell align="right">
-                      {row.phoneContactCredits}
+                      {row.revealCredits}
                     </StyledTableCell>
                     <StyledTableCell>
                       <StyledActionsControlsRow>
@@ -608,8 +599,7 @@ export const SettingsAdminWorkspaceCredits = () => {
                           aria-label={t`Credit type`}
                         >
                           <option value="ORG_CHART">{t`Org chart`}</option>
-                          <option value="EMAIL_CONTACT">{t`Email`}</option>
-                          <option value="PHONE_CONTACT">{t`Phone`}</option>
+                          <option value="REVEAL">{t`Reveal`}</option>
                         </StyledSelect>
                         <StyledAmountInputWrap>
                           <TextInput

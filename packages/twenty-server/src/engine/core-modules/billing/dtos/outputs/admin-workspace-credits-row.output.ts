@@ -20,8 +20,5 @@ export class AdminWorkspaceCreditsRowOutput {
   orgChartCredits: number;
 
   @Field()
-  emailContactCredits: number;
-
-  @Field()
-  phoneContactCredits: number;
+  revealCredits: number;
 }
