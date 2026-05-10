@@ -566,7 +566,7 @@ const SMALL_PAYMENT_TEST_PRICE_SUBUNITS_BY_CURRENCY: Record<
   SupportedPricingCurrency,
   number
 > = {
-  USD: 100,
+  USD: 25,
   GBP: 79,
   EUR: 93,
   INR: 8300,
