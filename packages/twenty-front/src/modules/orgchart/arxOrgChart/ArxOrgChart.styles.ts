@@ -90,8 +90,7 @@ export const StyledAsOfMonthPicker = styled.div`
   box-shadow: ${({ theme }) => theme.boxShadow.light};
   display: inline-flex;
   gap: ${({ theme }) => theme.spacing(1)};
-  height: 32px;
-  padding: 0 ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(0.75)} ${({ theme }) => theme.spacing(1)};
 `;
 
 export const StyledAsOfMonthLabel = styled.span`
@@ -112,15 +111,20 @@ export const StyledAsOfMonthInput = styled.input`
 
 export const StyledAsOfMonthSliderContainer = styled.div`
   display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(0.5)};
   max-width: 320px;
+`;
+
+export const StyledAsOfMonthSliderMainRow = styled.div`
+  align-items: center;
+  display: inline-flex;
+  gap: ${({ theme }) => theme.spacing(1)};
 `;
 
 export const StyledAsOfMonthSliderTimeline = styled.div`
   display: inline-flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(0.5)};
 `;
 
 export const StyledAsOfMonthSlider = styled.input`
@@ -133,6 +137,8 @@ export const StyledAsOfMonthSliderRangeLabels = styled.div`
   justify-content: space-between;
   color: ${({ theme }) => theme.font.color.tertiary};
   font-size: ${({ theme }) => theme.font.size.xs};
+  padding-left: ${({ theme }) => theme.spacing(4.5)};
+  padding-right: ${({ theme }) => theme.spacing(9)};
 `;
 
 export const StyledAsOfMonthSliderValue = styled.span`

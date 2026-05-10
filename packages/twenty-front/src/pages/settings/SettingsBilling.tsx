@@ -8,18 +8,16 @@ import {
   Card,
   CardContent,
   H2Title,
-  IconCheck,
-  IconCreditCard,
-  IconFileText,
   MOBILE_VIEWPORT,
   Section,
 } from 'twenty-ui';
 
+import { currentUserState } from '@/auth/states/currentUserState';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { InvoiceRequestModal } from '@/billing/components/InvoiceRequestModal';
+import { SettingsBillingPricing } from '@/billing/components/SettingsBillingPricing';
 import { billingState } from '@/client-config/states/billingState';
 import { useRedirect } from '@/domain-manager/hooks/useRedirect';
-import { onboardingIntentPathState } from '@/onboarding/states/onboardingIntentPathState';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import { SettingsPath } from '@/types/SettingsPath';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
@@ -31,15 +29,12 @@ import { useSubscriptionStatus } from '@/workspace/hooks/useSubscriptionStatus';
 import {
   convertPricingAmountSubunits,
   CREDIT_PACKS_BY_INTENT,
-  getPricingCurrencySymbol,
   isDefined,
   PRICING_PLANS,
+  PricingPlanId,
+  CreditPack as SharedCreditPack,
   SUPPORTED_PRICING_CURRENCIES,
-  type PricingIntent,
-  type PricingPlanId,
-  type PricingPlanTier,
-  type CreditPack as SharedCreditPack,
-  type SupportedPricingCurrency,
+  SupportedPricingCurrency,
 } from 'twenty-shared';
 import {
   BillingPlanKey,
@@ -116,102 +111,6 @@ const StyledBillingRoot = styled.div`
   width: 100%;
 `;
 
-const StyledPricingHero = styled.div`
-  margin: 0 auto ${({ theme }) => theme.spacing(4)};
-  max-width: ${({ theme }) => theme.spacing(220)};
-  text-align: center;
-`;
-
-const StyledPricingHeadline = styled.h2`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.xxl};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  line-height: 1.2;
-  margin: 0 0 ${({ theme }) => theme.spacing(2)} 0;
-
-  @media (max-width: ${MOBILE_VIEWPORT}px) {
-    font-size: ${({ theme }) => theme.font.size.xxl};
-  }
-`;
-
-const StyledPricingSubheadline = styled.p`
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.md};
-  line-height: ${({ theme }) => theme.text.lineHeight.lg};
-  margin: 0;
-`;
-
-const StyledPricingControls = styled.div`
-  align-items: center;
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
-`;
-
-const StyledMapTypePill = styled.div`
-  background: ${({ theme }) => theme.background.transparent.lighter};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.pill};
-  color: ${({ theme }) => theme.font.color.secondary};
-  display: inline-flex;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  margin-top: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => `${theme.spacing(1)} ${theme.spacing(3)}`};
-`;
-
-const StyledIntentTabs = styled.div`
-  background: ${({ theme }) => theme.background.transparent.lighter};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.pill};
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(1)};
-  justify-content: center;
-  margin: ${({ theme }) => theme.spacing(4)} auto ${({ theme }) => theme.spacing(4)};
-  padding: ${({ theme }) => theme.spacing(1)};
-  width: fit-content;
-
-  @media (max-width: ${MOBILE_VIEWPORT}px) {
-    border-radius: ${({ theme }) => theme.border.radius.md};
-    width: 100%;
-  }
-`;
-
-const StyledCurrencySelect = styled.select`
-  background: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  margin: 0 auto ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => `${theme.spacing(1)} ${theme.spacing(2)}`};
-`;
-
-const StyledIntentTab = styled.button<{ isActive: boolean }>`
-  appearance: none;
-  background: ${({ isActive, theme }) =>
-    isActive ? theme.background.transparent.primary : 'transparent'};
-  border: 0;
-  border-radius: ${({ theme }) => theme.border.radius.pill};
-  color: ${({ theme }) => theme.font.color.primary};
-  cursor: pointer;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  padding: ${({ theme }) => `${theme.spacing(2)} ${theme.spacing(3)}`};
-  transition: background-color 0.15s ease;
-
-  &:hover {
-    background: ${({ isActive, theme }) =>
-      isActive ? theme.background.transparent.primary : theme.background.transparent.lighter};
-  }
-
-  @media (max-width: ${MOBILE_VIEWPORT}px) {
-    flex: 1;
-    min-width: ${({ theme }) => theme.spacing(22)};
-    text-align: center;
-  }
-`;
-
 const StyledBillingCard = styled(Card)`
   background: ${({ theme }) => theme.background.primary};
   border: 1px solid ${({ theme }) => theme.border.color.light};
@@ -269,153 +168,7 @@ const StyledLicenceInputWrap = styled.div`
   width: ${({ theme }) => theme.spacing(20)};
 `;
 
-const StyledCreditCardsGrid = styled.div`
-  display: grid;
-  gap: ${({ theme }) => theme.spacing(6)};
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin-top: ${({ theme }) => theme.spacing(4)};
-
-  @media (max-width: 1400px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  @media (max-width: ${MOBILE_VIEWPORT}px) {
-    gap: ${({ theme }) => theme.spacing(4)};
-    grid-template-columns: 1fr;
-  }
-`;
-
-const StyledTierSelectWrap = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
-`;
-
-const StyledTierSelectLabel = styled.label`
-  color: ${({ theme }) => theme.font.color.light};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-`;
-
-const StyledTierSelect = styled.select`
-  background: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  padding: ${({ theme }) => `${theme.spacing(2)} ${theme.spacing(2)}`};
-  width: 100%;
-`;
-
 const PRICING_CURRENCY_STORAGE_KEY = 'arxena:pricing-currency';
-
-const StyledCreditPackCardContent = styled(CardContent)`
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(3)};
-  padding: ${({ theme }) => theme.spacing(5)};
-  min-width: 0;
-`;
-
-const StyledCreditCardTitle = styled.div`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-`;
-
-const StyledCreditCardPrice = styled.div`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.xxl};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  line-height: 1.1;
-`;
-
-const StyledPriceUnit = styled.span`
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.regular};
-`;
-
-const StyledCreditCardCredits = styled.div`
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-`;
-
-const StyledCreditCardTotal = styled.div`
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-`;
-
-const StyledIncludedRevealCredits = styled.div`
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.xs};
-`;
-
-const StyledPanelDivider = styled.div`
-  border-top: 1px solid ${({ theme }) => theme.border.color.light};
-  margin: ${({ theme }) => theme.spacing(1)} 0;
-  width: 100%;
-`;
-
-const StyledCreditCardSurcharge = styled.div`
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.xs};
-`;
-
-const StyledFeatureList = styled.ul`
-  flex: 1;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-`;
-
-const StyledFeatureItem = styled.li`
-  align-items: flex-start;
-  color: ${({ theme }) => theme.font.color.secondary};
-  display: flex;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  gap: ${({ theme }) => theme.spacing(3)};
-  line-height: ${({ theme }) => theme.text.lineHeight.lg};
-  margin-bottom: ${({ theme }) => theme.spacing(3)};
-
-  &:last-of-type {
-    margin-bottom: 0;
-  }
-`;
-
-const StyledCheckIcon = styled(IconCheck)`
-  color: ${({ theme }) => theme.font.color.primary};
-  flex-shrink: 0;
-  margin-top: ${({ theme }) => theme.spacing(0.5)};
-`;
-
-const StyledCreditActions = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-top: auto;
-`;
-
-const normalizePricingAmountSubunits = (amountSubunits: number): number => {
-  const amountMajor = Math.max(1, Math.round(amountSubunits / 100));
-
-  if (amountMajor >= 1000) {
-    const rounded = Math.round(amountMajor / 1000) * 1000 - 1;
-
-    return Math.max(999, rounded) * 100;
-  }
-
-  if (amountMajor >= 100) {
-    const rounded = Math.round(amountMajor / 100) * 100 - 1;
-
-    return Math.max(99, rounded) * 100;
-  }
-
-  return amountMajor * 100;
-};
 
 export const SettingsBilling = () => {
   const { t } = useLingui();
@@ -472,6 +225,7 @@ export const SettingsBilling = () => {
   }, [enqueueSnackBar, t]);
 
   const currentWorkspace = useRecoilValue(currentWorkspaceState);
+  const currentUser = useRecoilValue(currentUserState);
   const subscriptions = currentWorkspace?.billingSubscriptions;
   const hasSubscriptions = (subscriptions?.length ?? 0) > 0;
 
@@ -495,7 +249,6 @@ export const SettingsBilling = () => {
     },
     skip: isRazorpay ? false : !hasSubscriptions,
   });
-
   const { refetch: refetchCredits } = useQuery(WORKSPACE_CREDITS, {
     skip: !billingEnabled,
   });
@@ -757,17 +510,6 @@ export const SettingsBilling = () => {
     }
   };
 
-  const intentPath = useRecoilValue(onboardingIntentPathState);
-  const initialIntent: PricingIntent =
-    intentPath === 'DEAL_DILIGENCE'
-      ? 'INVESTING'
-      : intentPath === 'COMPETITIVE_RESEARCH'
-        ? 'RECRUITING'
-        : intentPath === 'CORPORATE_TA'
-          ? 'CORPORATE'
-          : 'SALES';
-
-  const [intent] = useState<PricingIntent>(initialIntent);
   const [displayCurrency, setDisplayCurrency] =
     useState<SupportedPricingCurrency>('USD');
   const [selectedMapsByPlan, setSelectedMapsByPlan] = useState<
@@ -795,39 +537,11 @@ export const SettingsBilling = () => {
   }, [displayCurrency]);
 
   const sharedPackMetaByKey = (() => {
-    const allPacks: SharedCreditPack[] = Object.values(CREDIT_PACKS_BY_INTENT).flat();
+    const allPacks: SharedCreditPack[] = Object.values(
+      CREDIT_PACKS_BY_INTENT,
+    ).flat();
     return new Map(allPacks.map((p) => [p.key, p]));
   })();
-
-  const intentToPlanId: Record<PricingIntent, PricingPlanId> = {
-    SALES: 'sales',
-    RECRUITING: 'recruitment',
-    CORPORATE: 'corporate',
-    INVESTING: 'investment',
-  };
-
-  const activePlan = PRICING_PLANS[intentToPlanId[intent]];
-
-  const INTENT_TABS: ReadonlyArray<{ value: PricingIntent; label: string }> = [
-    { value: 'SALES', label: PRICING_PLANS.sales.label },
-    { value: 'RECRUITING', label: PRICING_PLANS.recruitment.label },
-    { value: 'CORPORATE', label: PRICING_PLANS.corporate.label },
-    { value: 'INVESTING', label: PRICING_PLANS.investment.label },
-  ];
-
-  const HERO_HEADLINES: Record<PricingIntent, string> = {
-    SALES: PRICING_PLANS.sales.label,
-    RECRUITING: PRICING_PLANS.recruitment.label,
-    CORPORATE: PRICING_PLANS.corporate.label,
-    INVESTING: PRICING_PLANS.investment.label,
-  };
-
-  const HERO_SUBHEADLINES: Record<PricingIntent, string> = {
-    SALES: PRICING_PLANS.sales.tagline,
-    RECRUITING: PRICING_PLANS.recruitment.tagline,
-    CORPORATE: PRICING_PLANS.corporate.tagline,
-    INVESTING: PRICING_PLANS.investment.tagline,
-  };
 
   const resolvePackPriceSubunits = (
     pack: CreditPack,
@@ -869,28 +583,6 @@ export const SettingsBilling = () => {
       ),
       isExplicit: false,
     };
-  };
-
-  const planOrder: PricingPlanId[] = [
-    'sales',
-    'recruitment',
-    'corporate',
-    'investment',
-  ];
-
-  const toIntent = (planId: PricingPlanId): PricingIntent =>
-    planId === 'sales'
-      ? 'SALES'
-      : planId === 'recruitment'
-        ? 'RECRUITING'
-        : planId === 'corporate'
-          ? 'CORPORATE'
-          : 'INVESTING';
-
-  const findTier = (planId: PricingPlanId, maps: number): PricingPlanTier => {
-    const plan = PRICING_PLANS[planId];
-    const exact = plan.tiers.find((tier) => tier.maps === maps);
-    return exact ?? plan.tiers[0];
   };
 
   return (
@@ -971,185 +663,18 @@ export const SettingsBilling = () => {
             </Section>
           )}
           {creditPacks.length > 0 && (
-            <Section>
-              <StyledPricingHero>
-                <StyledPricingHeadline>
-                  {HERO_HEADLINES[intent]}
-                </StyledPricingHeadline>
-                <StyledPricingSubheadline>
-                  {HERO_SUBHEADLINES[intent]}
-                </StyledPricingSubheadline>
-                <StyledMapTypePill>
-                  {activePlan.icon} {activePlan.mapTypeLabel}
-                </StyledMapTypePill>
-              </StyledPricingHero>
-              <StyledPricingControls>
-                <StyledCurrencySelect
-                  aria-label="Select currency"
-                  value={displayCurrency}
-                  onChange={(event) =>
-                    setDisplayCurrency(event.target.value as SupportedPricingCurrency)
-                  }
-                >
-                  {SUPPORTED_PRICING_CURRENCIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </StyledCurrencySelect>
-              </StyledPricingControls>
-              <StyledCreditCardsGrid>
-                {planOrder.map((planId) => {
-                  const plan = PRICING_PLANS[planId];
-                  const selectedMaps = selectedMapsByPlan[planId] ?? plan.minMaps;
-                  const tier = findTier(planId, selectedMaps);
-                  const packKey = `${planId}_maps_${tier.maps}`;
-                  const apiPack = creditPacks.find((p) => p.key === packKey);
-                  const fallbackPack = sharedPackMetaByKey.get(packKey);
-                  const pack =
-                    apiPack ??
-                    (fallbackPack
-                      ? ({
-                          key: fallbackPack.key,
-                          name: fallbackPack.name,
-                          credits: fallbackPack.credits,
-                          amountSubunits: fallbackPack.amountSubunits,
-                          currency: fallbackPack.currency,
-                          planId: fallbackPack.planId,
-                          intent: fallbackPack.intent,
-                          mapsCount: fallbackPack.mapsCount,
-                          mapType: fallbackPack.mapType,
-                          mapTypeLabel: fallbackPack.mapTypeLabel,
-                          tagline: fallbackPack.tagline,
-                          inheritedFromPlanId: fallbackPack.inheritedFromPlanId,
-                          ownFeatures: fallbackPack.features,
-                          includedEmailCredits: fallbackPack.includedEmailCredits,
-                          includedPhoneCredits: fallbackPack.includedPhoneCredits,
-                          creditsDisplay: fallbackPack.creditsDisplay,
-                          pricesSubunitsJson: JSON.stringify(
-                            fallbackPack.pricesSubunits,
-                          ),
-                        } as CreditPack)
-                      : null);
-
-                  if (!pack) {
-                    return null;
-                  }
-
-                  const meta = sharedPackMetaByKey.get(pack.key);
-                  const { subunits: convertedAmountSubunits, isExplicit } =
-                    resolvePackPriceSubunits(pack, displayCurrency);
-                  const baseAmount = convertedAmountSubunits / 100;
-                  const surchargeAmountSubunits = Math.round(
-                    convertedAmountSubunits * 0.03,
-                  );
-                  const cardAmountSubunits = isExplicit
-                    ? convertedAmountSubunits + surchargeAmountSubunits
-                    : normalizePricingAmountSubunits(
-                        convertedAmountSubunits + surchargeAmountSubunits,
-                      );
-                  const cardAmount = cardAmountSubunits / 100;
-                  const creditsLabel =
-                    pack.creditsDisplay ??
-                    meta?.creditsDisplay ??
-                    t`${pack.credits.toLocaleString()} credits`;
-                  const features =
-                    pack.ownFeatures ?? meta?.features ?? [pack.name];
-                  const includedEmail =
-                    pack.includedEmailCredits ?? meta?.includedEmailCredits ?? 0;
-                  const includedPhone =
-                    pack.includedPhoneCredits ?? meta?.includedPhoneCredits ?? 0;
-                  const mapsCount = pack.mapsCount ?? meta?.mapsCount;
-                  const totalAmount = baseAmount * (mapsCount ?? 1);
-                  return (
-                    <StyledBillingCard key={pack.key} fullWidth rounded>
-                      <StyledCreditPackCardContent>
-                        <StyledCreditCardTitle>
-                          {meta?.name ?? pack.name}
-                        </StyledCreditCardTitle>
-                        <StyledCreditCardPrice>
-                          {getPricingCurrencySymbol(displayCurrency)}
-                          {baseAmount.toLocaleString()}
-                          <StyledPriceUnit> / {t`talent map`}</StyledPriceUnit>
-                        </StyledCreditCardPrice>
-                        {mapsCount !== undefined && (
-                          <StyledCreditCardTotal>
-                            {t`Total`}: {getPricingCurrencySymbol(displayCurrency)}
-                            {totalAmount.toLocaleString()} / {mapsCount} {t`maps`}
-                          </StyledCreditCardTotal>
-                        )}
-                        <StyledCreditCardCredits>
-                          {creditsLabel}
-                        </StyledCreditCardCredits>
-                        <StyledTierSelectWrap>
-                          <StyledTierSelectLabel htmlFor={`tier-${planId}`}>
-                            {t`Volume`}
-                          </StyledTierSelectLabel>
-                          <StyledTierSelect
-                            id={`tier-${planId}`}
-                            value={selectedMaps}
-                            onChange={(event) => {
-                              const value = parseInt(event.target.value, 10);
-                              setSelectedMapsByPlan((previous) => ({
-                                ...previous,
-                                [planId]: Number.isNaN(value)
-                                  ? plan.minMaps
-                                  : value,
-                              }));
-                            }}
-                          >
-                            {plan.tiers.map((planTier) => (
-                              <option key={planTier.maps} value={planTier.maps}>
-                                {planTier.maps} {t`maps`}
-                              </option>
-                            ))}
-                          </StyledTierSelect>
-                        </StyledTierSelectWrap>
-                        <StyledIncludedRevealCredits>
-                          {t`Includes`} {includedEmail.toLocaleString()}{' '}
-                          {t`email credits`} + {includedPhone.toLocaleString()}{' '}
-                          {t`phone reveals`}
-                        </StyledIncludedRevealCredits>
-                        <StyledPanelDivider />
-                        <StyledCreditCardSurcharge>
-                          {t`Credit card`}:{' '}
-                          {getPricingCurrencySymbol(displayCurrency)}
-                          {cardAmount.toLocaleString()} {t`(+3%)`}
-                        </StyledCreditCardSurcharge>
-                        <StyledFeatureList>
-                          {features.map((feature) => (
-                            <StyledFeatureItem key={feature}>
-                              <StyledCheckIcon size={20} strokeWidth={2.5} />
-                              {feature}
-                            </StyledFeatureItem>
-                          ))}
-                        </StyledFeatureList>
-                        <StyledCreditActions>
-                          <Button
-                            Icon={IconCreditCard}
-                            title={t`Pay by credit card`}
-                            variant="primary"
-                            accent="blue"
-                            fullWidth
-                            onClick={() =>
-                              handleBuyCredits(pack.key, displayCurrency)
-                            }
-                            disabled={buyingPackKey !== null}
-                          />
-                          <Button
-                            Icon={IconFileText}
-                            title={t`Pay by invoice`}
-                            variant="secondary"
-                            fullWidth
-                            onClick={() => setInvoicePackKey(pack.key)}
-                          />
-                        </StyledCreditActions>
-                      </StyledCreditPackCardContent>
-                    </StyledBillingCard>
-                  );
-                })}
-              </StyledCreditCardsGrid>
-            </Section>
+            <SettingsBillingPricing
+              creditPacks={creditPacks}
+              displayCurrency={displayCurrency}
+              setDisplayCurrency={setDisplayCurrency}
+              selectedMapsByPlan={selectedMapsByPlan}
+              setSelectedMapsByPlan={setSelectedMapsByPlan}
+              sharedPackMetaByKey={sharedPackMetaByKey}
+              resolvePackPriceSubunits={resolvePackPriceSubunits}
+              buyingPackKey={buyingPackKey}
+              handleBuyCredits={handleBuyCredits}
+              setInvoicePackKey={setInvoicePackKey}
+            />
           )}
           {/* {!isRazorpay && (
             <Section>
@@ -1172,6 +697,8 @@ export const SettingsBilling = () => {
       <InvoiceRequestModal
         isOpen={invoicePackKey !== null}
         pack={creditPacks.find((p) => p.key === invoicePackKey) ?? null}
+        initialCompanyName={currentWorkspace?.displayName ?? ''}
+        initialBillingEmail={currentUser?.email ?? ''}
         onClose={() => setInvoicePackKey(null)}
         onSubmit={async (params) => {
           if (isDefined(invoicePackKey)) {

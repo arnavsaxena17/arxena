@@ -11,6 +11,8 @@ import {
   getPricingCurrencySymbol,
 } from '@/lib/pricing-currency-helpers';
 import {
+  PRICING_MARKETING_HERO_HEADLINE,
+  PRICING_MARKETING_HERO_SUBHEADLINE,
   PRICING_PLANS,
   creditPackPricingFootnote,
   getInheritedFeatures,
@@ -344,13 +346,16 @@ export const PricingContent = ({
 
   return (
     <StyledSection>
-      <StyledHeadline>
-        Org intelligence priced by the maps you actually need
-      </StyledHeadline>
+      <StyledHeadline>{PRICING_MARKETING_HERO_HEADLINE}</StyledHeadline>
       <StyledHeadlineSub>
-        Four plans for Sales, Recruitment, Corporate TA and Investment teams.
-        Pick a volume tier — credits, depth and refresh cadence scale with you.
+        {PRICING_MARKETING_HERO_SUBHEADLINE.split('\n').map((line: string, index: number) => (
+          <React.Fragment key={index}>
+            {index > 0 ? <br /> : null}
+            {line}
+          </React.Fragment>
+        ))}
       </StyledHeadlineSub>
+ 
 
       <StyledCardsGrid>
         {PLAN_ORDER.map((planId) => {

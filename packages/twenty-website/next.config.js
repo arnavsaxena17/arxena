@@ -61,6 +61,11 @@ const nextConfig = {
         permanent: true,
       },
       {
+        source: '/org-chart/tesla',
+        destination: '/org-chart/tesla-motors',
+        permanent: true,
+      },
+      {
         source: '/org-chart/meta/:path*',
         destination: '/org-chart/facebook/:path*',
         permanent: true,

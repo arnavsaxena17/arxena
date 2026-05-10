@@ -1,109 +1,57 @@
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 
 import {
-    OrgChartDiagram,
-    OrgChartDiagramHandle,
-    OrgChartDiagramProps,
-    OrgChartSearchControls,
+  OrgChartDiagram,
+  OrgChartDiagramHandle,
+  OrgChartDiagramProps,
+  OrgChartSearchControls,
 } from 'twenty-orgchart';
 import { OrgChartNodeData } from 'twenty-shared';
 
 import { OrgChartAddToJobModal } from '../components/OrgChartAddToJobModal';
 import { OrgChartCompanyDrawer } from '../components/OrgChartCompanyDrawer';
 import {
-    OrgChartHeader,
-    OrgChartHeaderProps,
+  OrgChartHeader,
+  OrgChartHeaderProps,
 } from '../components/OrgChartHeader';
 import { OrgChartOutreachModal } from '../components/OrgChartOutreachModal';
 import { OrgChartResultModal } from '../components/OrgChartResultModal';
+import { ArxOrgChartTimelineSlider } from './ArxOrgChartTimelineSlider';
 
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import { DropdownMenuSeparator } from '@/ui/layout/dropdown/components/DropdownMenuSeparator';
 import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
 import {
-    ConfirmationModal,
-    StyledCenteredButton,
+  ConfirmationModal,
+  StyledCenteredButton,
 } from '@/ui/layout/modal/components/ConfirmationModal';
 import { IconChevronDown, MenuItem } from 'twenty-ui';
 
 import {
-    StyledAsOfMonthInput,
-    StyledAsOfMonthLabel,
-    StyledAsOfMonthPicker,
-    StyledAsOfMonthSlider,
-    StyledAsOfMonthSliderContainer,
-    StyledAsOfMonthSliderDot,
-    StyledAsOfMonthSliderRangeLabels,
-    StyledAsOfMonthSliderTimeline,
-    StyledAsOfMonthSliderValue,
-    StyledContainer,
-    StyledDiagramArea,
-    StyledDiagramBody,
-    StyledErrorMessage,
-    StyledLeadershipBannerLink,
-    StyledLeadershipBannerPaidNote,
-    StyledLeadershipInfoBanner,
-    StyledLeadershipLoadingOverlay,
-    StyledLoadingMessage,
-    StyledPreviewBannerSignupButton,
-    StyledPreviewPersistentBanner,
-    StyledProgressBanner,
-    StyledProgressElapsed,
-    StyledSearchOverlay,
-    StyledSpinner,
-    StyledTemplateBanner,
-    StyledTemplateBannerButton,
-    StyledTopRightActionButton,
-    StyledTopRightActionsCenterGroup,
-    StyledTopRightActionsOverlay,
-    StyledTopRightActionsRightGroup,
+  StyledAsOfMonthPicker,
+  StyledContainer,
+  StyledDiagramArea,
+  StyledDiagramBody,
+  StyledErrorMessage,
+  StyledLeadershipBannerLink,
+  StyledLeadershipBannerPaidNote,
+  StyledLeadershipInfoBanner,
+  StyledLeadershipLoadingOverlay,
+  StyledLoadingMessage,
+  StyledPreviewBannerSignupButton,
+  StyledPreviewPersistentBanner,
+  StyledProgressBanner,
+  StyledProgressElapsed,
+  StyledSearchOverlay,
+  StyledSpinner,
+  StyledTemplateBanner,
+  StyledTemplateBannerButton,
+  StyledTopRightActionButton,
+  StyledTopRightActionsCenterGroup,
+  StyledTopRightActionsOverlay,
+  StyledTopRightActionsRightGroup,
 } from './ArxOrgChart.styles';
-
-type ArxOrgChartViewType = 'calendarView' | 'sliderView';
-
-const monthKeyRegex = /^\d{4}-(0[1-9]|1[0-2])$/;
-
-const parseMonthToDate = (monthKey: string): Date | null => {
-  if (!monthKeyRegex.test(monthKey)) {
-    return null;
-  }
-
-  const [year, month] = monthKey.split('-').map(Number);
-  return new Date(year, month - 1, 1);
-};
-
-const formatMonthToKey = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  return `${year}-${month}`;
-};
-
-const buildMonthRange = (
-  startMonthKey: string,
-  endMonthKey: string,
-): string[] => {
-  const startDate = parseMonthToDate(startMonthKey);
-  const endDate = parseMonthToDate(endMonthKey);
-
-  if (!startDate || !endDate || startDate > endDate) {
-    return [endMonthKey];
-  }
-
-  const months: string[] = [];
-  const cursorDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-  while (cursorDate <= endDate) {
-    months.push(formatMonthToKey(cursorDate));
-    cursorDate.setMonth(cursorDate.getMonth() + 1);
-  }
-
-  return months;
-};
-
-const monthLabelFormatter = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  year: 'numeric',
-});
 
 export type ArxOrgChartViewProps = {
   headerProps: OrgChartHeaderProps;
@@ -248,7 +196,6 @@ export const ArxOrgChartView = ({
   addToJobModalProps,
   outreachModalProps,
 }: ArxOrgChartViewProps) => {
-  const viewType: ArxOrgChartViewType = 'sliderView';
   const multiSourceDropdownId = 'orgchart-multisource-dropdown';
   const { closeDropdown: closeMultiSourceDropdown } = useDropdown(
     multiSourceDropdownId,
@@ -279,77 +226,6 @@ export const ArxOrgChartView = ({
       onClearCompanyCache: headerProps.onClearCompanyCache,
     }),
     [headerProps],
-  );
-
-  const monthRange = useMemo(() => {
-    const currentMonthKey = formatMonthToKey(new Date());
-    const nodeKeys = new Set<string>();
-
-    for (const node of nodeDataArray) {
-      for (const value of Object.values(node)) {
-        if (typeof value !== 'string') {
-          continue;
-        }
-        const monthMatch = value.match(/\b\d{4}-(0[1-9]|1[0-2])\b/u)?.[0];
-        if (typeof monthMatch === 'string' && monthMatch.length > 0) {
-          nodeKeys.add(monthMatch);
-        }
-      }
-    }
-
-    const timelineStartMonth =
-      typeof headerProps.timelineMetrics === 'object' &&
-      headerProps.timelineMetrics !== null &&
-      typeof (
-        headerProps.timelineMetrics as {
-          startMonth?: unknown;
-          startMonthYear?: unknown;
-        }
-      ).startMonth === 'string'
-        ? (
-            headerProps.timelineMetrics as {
-              startMonth: string;
-              startMonthYear?: unknown;
-            }
-          ).startMonth
-        : typeof (
-              headerProps.timelineMetrics as {
-                startMonth?: unknown;
-                startMonthYear?: unknown;
-              } | null
-            )?.startMonthYear === 'string'
-          ? (
-              headerProps.timelineMetrics as {
-                startMonth?: unknown;
-                startMonthYear: string;
-              }
-            ).startMonthYear
-          : null;
-
-    const validNodeKeys = [...nodeKeys]
-      .filter((key) => monthKeyRegex.test(key))
-      .sort();
-    const fallbackStartMonth = validNodeKeys[0] ?? currentMonthKey;
-    const computedStartMonth =
-      timelineStartMonth && monthKeyRegex.test(timelineStartMonth)
-        ? timelineStartMonth
-        : fallbackStartMonth;
-
-    return buildMonthRange(computedStartMonth, currentMonthKey);
-  }, [headerProps.timelineMetrics, nodeDataArray]);
-
-  const selectedMonth = monthKeyRegex.test(headerProps.asOfMonth ?? '')
-    ? (headerProps.asOfMonth as string)
-    : monthRange[monthRange.length - 1];
-
-  const selectedMonthIndex = Math.max(monthRange.indexOf(selectedMonth), 0);
-  const isSingleMonthTimeline = monthRange.length <= 1;
-  const sliderTrackWidth = Math.min(240, Math.max(24, monthRange.length * 14));
-  const sliderPanelWidth = Math.min(320, sliderTrackWidth + 80);
-  const selectedMonthLabel = monthLabelFormatter.format(
-    isSingleMonthTimeline
-      ? new Date()
-      : (parseMonthToDate(monthRange[selectedMonthIndex]) ?? new Date()),
   );
 
   const [elapsedLabel, setElapsedLabel] = useState('00:00');
@@ -386,13 +262,6 @@ export const ArxOrgChartView = ({
       window.clearInterval(intervalId);
     };
   }, [shouldShowContextElapsed, contextLoadingStartedAt]);
-
-  const startMonthLabel = monthLabelFormatter.format(
-    parseMonthToDate(monthRange[0]) ?? new Date(),
-  );
-  const endMonthLabel = monthLabelFormatter.format(
-    parseMonthToDate(monthRange[monthRange.length - 1]) ?? new Date(),
-  );
 
   return (
     <StyledContainer>
@@ -626,56 +495,17 @@ export const ArxOrgChartView = ({
                 <StyledTopRightActionsCenterGroup>
                   {headerProps.onAsOfMonthChange ? (
                     <StyledAsOfMonthPicker>
-                      <StyledAsOfMonthLabel>As of</StyledAsOfMonthLabel>
-                      {viewType === 'sliderView' ? (
-                        <StyledAsOfMonthSliderContainer
-                          style={
-                            isSingleMonthTimeline
-                              ? undefined
-                              : { width: `${sliderPanelWidth}px` }
-                          }
-                        >
-                          {isSingleMonthTimeline ? (
-                            <StyledAsOfMonthSliderDot />
-                          ) : (
-                            <StyledAsOfMonthSliderTimeline
-                              style={{ width: `${sliderTrackWidth}px` }}
-                            >
-                              <StyledAsOfMonthSlider
-                                type="range"
-                                min={0}
-                                max={Math.max(monthRange.length - 1, 0)}
-                                step={1}
-                                value={selectedMonthIndex}
-                                style={{ width: '100%' }}
-                                onChange={(e) => {
-                                  const nextIndex = Number(e.target.value);
-                                  const nextMonth = monthRange[nextIndex];
-                                  if (!nextMonth) {
-                                    return;
-                                  }
-                                  headerProps.onAsOfMonthChange?.(nextMonth);
-                                }}
-                              />
-                              <StyledAsOfMonthSliderRangeLabels>
-                                <span>{startMonthLabel}</span>
-                                <span>{endMonthLabel}</span>
-                              </StyledAsOfMonthSliderRangeLabels>
-                            </StyledAsOfMonthSliderTimeline>
-                          )}
-                          <StyledAsOfMonthSliderValue>
-                            {selectedMonthLabel}
-                          </StyledAsOfMonthSliderValue>
-                        </StyledAsOfMonthSliderContainer>
-                      ) : (
-                        <StyledAsOfMonthInput
-                          type="month"
-                          value={headerProps.asOfMonth ?? ''}
-                          onChange={(e) =>
-                            headerProps.onAsOfMonthChange?.(e.target.value)
-                          }
-                        />
-                      )}
+                      <ArxOrgChartTimelineSlider
+                        asOfMonth={headerProps.asOfMonth}
+                        onAsOfMonthChange={headerProps.onAsOfMonthChange}
+                        nodeDataArray={nodeDataArray}
+                        timelineMetrics={
+                          (headerProps.timelineMetrics as {
+                            startMonth?: unknown;
+                            startMonthYear?: unknown;
+                          } | null) ?? null
+                        }
+                      />
                     </StyledAsOfMonthPicker>
                   ) : null}
                 </StyledTopRightActionsCenterGroup>

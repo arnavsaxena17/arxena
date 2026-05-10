@@ -43,6 +43,8 @@ type CreditPack = {
 type InvoiceRequestModalProps = {
   isOpen: boolean;
   pack: CreditPack | null;
+  initialCompanyName?: string;
+  initialBillingEmail?: string;
   onClose: () => void;
   onSubmit: (params: {
     companyName: string;
@@ -55,33 +57,43 @@ type InvoiceRequestModalProps = {
 export const InvoiceRequestModal = ({
   isOpen,
   pack,
+  initialCompanyName,
+  initialBillingEmail,
   onClose,
   onSubmit,
 }: InvoiceRequestModalProps) => {
   const { t } = useLingui();
-  const [companyName, setCompanyName] = useState('');
+  const [companyName, setCompanyName] = useState(initialCompanyName ?? '');
+  const [billingEmail, setBillingEmail] = useState(initialBillingEmail ?? '');
   const [billingAddress, setBillingAddress] = useState('');
-  const [billingEmail, setBillingEmail] = useState('');
+
   const [vatNumber, setVatNumber] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const resetForm = () => {
+    setCompanyName(initialCompanyName ?? '');
+    setBillingEmail(initialBillingEmail ?? '');
+    setVatNumber('');
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
   const handleSubmit = async () => {
-    if (!pack || !companyName.trim() || !billingAddress.trim() || !billingEmail.trim()) {
+    if (!pack || !companyName.trim() || !billingEmail.trim()) {
       return;
     }
     setLoading(true);
     try {
       await onSubmit({
         companyName: companyName.trim(),
-        billingAddress: billingAddress.trim(),
+        billingAddress: billingAddress.trim() || 'Not provided',
         billingEmail: billingEmail.trim(),
         vatNumber: vatNumber.trim() || undefined,
       });
-      setCompanyName('');
-      setBillingAddress('');
-      setBillingEmail('');
-      setVatNumber('');
-      onClose();
+      handleClose();
     } finally {
       setLoading(false);
     }
@@ -102,7 +114,7 @@ export const InvoiceRequestModal = ({
             modalVariant="primary"
           >
             <H1Title
-              title={t`Pay by invoice`}
+              title={t`Create custom quote`}
               fontColor={H1TitleFontColor.Primary}
             />
             <p style={{ margin: '8px 0 16px 0', fontSize: 14, color: 'var(--color-gray-50)' }}>
@@ -152,16 +164,15 @@ export const InvoiceRequestModal = ({
               <Button
                 variant="secondary"
                 title={t`Cancel`}
-                onClick={onClose}
+                onClick={handleClose}
                 fullWidth
               />
               <Button
                 variant="primary"
-                title={t`Request invoice`}
+                title={t`Create custom quote`}
                 onClick={handleSubmit}
                 disabled={
                   !companyName.trim() ||
-                  !billingAddress.trim() ||
                   !billingEmail.trim() ||
                   loading
                 }

@@ -139,7 +139,7 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
     icon: '📡',
     mapType: 'functional',
     mapTypeLabel:
-      'Functional · 3–4 levels · up to 100 people per function',
+      'Functional · all levels & functions · One Chart = 1 Function',
     minMaps: 10,
     inheritedFromPlanId: null,
     ownFeatures: [
@@ -206,10 +206,10 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
     intent: 'RECRUITING',
     label: 'Recruitment / Exec Search',
     tagline:
-      'Full company mapped — every level, every function, 1,000+ people',
+      'Full company mapped — every level, every function',
     icon: '🔍',
     mapType: 'full',
-    mapTypeLabel: 'Full company · 5–6 levels · 1,000+ people mapped',
+    mapTypeLabel: 'Full company · all levels & functions',
     minMaps: 5,
     inheritedFromPlanId: 'sales',
     ownFeatures: [
@@ -288,7 +288,7 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
     intent: 'CORPORATE',
     label: 'Corporate TA',
     tagline:
-      'Competitor benchmarking and internal mobility intelligence',
+      'Competitor benchmarking & talent mobility intelligence',
     icon: '🏛',
     mapType: 'full',
     mapTypeLabel: 'Full company · bulk coverage · multi-company',
@@ -369,11 +369,11 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
     intent: 'INVESTING',
     label: 'Investment Companies',
     tagline:
-      'Portfolio org intelligence + leadership timeline for PE / VC',
+      'Portfolio org development timeline & due diligence for PE / VC',
     icon: '📈',
     mapType: 'timeline',
     mapTypeLabel:
-      'Full company + Org Timeline · alumni data included',
+      'Full company + Org Development Timeline',
     minMaps: 5,
     inheritedFromPlanId: 'corporate',
     ownFeatures: [
@@ -448,13 +448,24 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Marketing hero — matches twenty-website PricingContent above plan cards.
+// ---------------------------------------------------------------------------
+
+export const PRICING_MARKETING_HERO_HEADLINE =
+  'Modern org intelligence—faster, deeper, and radically more affordable than legacy consulting';
+
+/** Two sentences separated by newline; use CSS `white-space: pre-line` or `<br />`. */
+export const PRICING_MARKETING_HERO_SUBHEADLINE =
+  'Four flexible plans for Sales, Recruitment, Corporate TA, and Investment teams.\nChoose your tier—map volume, depth, and refresh cadence all scale for your needs.';
+
 export const PRICING_PLAN_CONTENT_BY_ID: Record<
   PricingPlanId,
   PricingPlanContent
 > = {
   sales: {
-    tabLabel: 'Sales / ABM',
-    onboardingTitle: 'Sales / ABM',
+    tabLabel: PRICING_PLANS.sales.label,
+    onboardingTitle: PRICING_PLANS.sales.label,
     onboardingBody:
       'Functional talent maps for targeted outreach, decision-maker IDs, credits to start.',
     onboardingHint: 'Self-serve · extension · ~2 hr delivery',
@@ -463,8 +474,8 @@ export const PRICING_PLAN_CONTENT_BY_ID: Record<
       'Map buying committees, champions, and blockers across target accounts — then reveal/export only what matters.',
   },
   recruitment: {
-    tabLabel: 'Recruitment / Exec Search',
-    onboardingTitle: 'Recruitment / Exec Search',
+    tabLabel: PRICING_PLANS.recruitment.label,
+    onboardingTitle: PRICING_PLANS.recruitment.label,
     onboardingBody:
       'Full company maps, mandate-specific candidates, contact enrichment.',
     onboardingHint: 'Self-serve or 20-min live walkthrough',
@@ -483,7 +494,7 @@ export const PRICING_PLAN_CONTENT_BY_ID: Record<
       'Track competitor org changes, run BU-level benchmarks, and govern multi-seat access with credit controls.',
   },
   investment: {
-    tabLabel: 'Investment Companies',
+    tabLabel: PRICING_PLANS.investment.label,
     onboardingTitle: 'Investment / deal diligence',
     onboardingBody:
       'Portfolio org intelligence and leadership timeline for deals.',
@@ -529,20 +540,17 @@ const buildCreditPackFromTier = (
 // Derived flat CREDIT_PACKS — runtime keeps using `creditPackKey` end to end.
 // ---------------------------------------------------------------------------
 
-export const CREDIT_PACKS_BY_PLAN: Record<PricingPlanId, CreditPack[]> = {
-  sales: PRICING_PLANS.sales.tiers.map((tier) =>
-    buildCreditPackFromTier(PRICING_PLANS.sales, tier),
-  ),
-  recruitment: PRICING_PLANS.recruitment.tiers.map((tier) =>
-    buildCreditPackFromTier(PRICING_PLANS.recruitment, tier),
-  ),
-  corporate: PRICING_PLANS.corporate.tiers.map((tier) =>
-    buildCreditPackFromTier(PRICING_PLANS.corporate, tier),
-  ),
-  investment: PRICING_PLANS.investment.tiers.map((tier) =>
-    buildCreditPackFromTier(PRICING_PLANS.investment, tier),
-  ),
-};
+export const CREDIT_PACKS_BY_PLAN: Record<PricingPlanId, CreditPack[]> =
+  PRICING_PLAN_IDS.reduce<Record<PricingPlanId, CreditPack[]>>((acc, planId) => {
+    const plan = PRICING_PLANS[planId];
+    acc[planId] = plan.tiers.map((tier) => buildCreditPackFromTier(plan, tier));
+    return acc;
+  }, {
+    sales: [],
+    recruitment: [],
+    corporate: [],
+    investment: [],
+  });
 
 export const CREDIT_PACKS_BY_INTENT: Record<PricingIntent, CreditPack[]> = {
   SALES: CREDIT_PACKS_BY_PLAN.sales,
@@ -568,19 +576,17 @@ export const getCreditPacksForIntent = (
   return CREDIT_PACKS_BY_INTENT[intent] ?? DEFAULT_CREDIT_PACKS;
 };
 
-export const PRICING_INTENT_TO_PLAN_ID: Record<PricingIntent, PricingPlanId> = {
-  SALES: 'sales',
-  RECRUITING: 'recruitment',
-  CORPORATE: 'corporate',
-  INVESTING: 'investment',
-};
+export const PRICING_PLAN_ID_TO_INTENT: Record<PricingPlanId, PricingIntent> =
+  PRICING_PLAN_IDS.reduce<Record<PricingPlanId, PricingIntent>>((acc, planId) => {
+    acc[planId] = PRICING_PLANS[planId].intent;
+    return acc;
+  }, {} as Record<PricingPlanId, PricingIntent>);
 
-export const PRICING_PLAN_ID_TO_INTENT: Record<PricingPlanId, PricingIntent> = {
-  sales: 'SALES',
-  recruitment: 'RECRUITING',
-  corporate: 'CORPORATE',
-  investment: 'INVESTING',
-};
+export const PRICING_INTENT_TO_PLAN_ID: Record<PricingIntent, PricingPlanId> =
+  PRICING_PLAN_IDS.reduce<Record<PricingIntent, PricingPlanId>>((acc, planId) => {
+    acc[PRICING_PLAN_ID_TO_INTENT[planId]] = planId;
+    return acc;
+  }, {} as Record<PricingIntent, PricingPlanId>);
 
 export const getCreditPackByKey = (
   key: CreditPackKey,

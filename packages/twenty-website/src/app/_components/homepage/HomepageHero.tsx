@@ -404,7 +404,7 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
 
       <StyledExampleSection>
         <StyledExampleTitle>
-          Real-time Org Charts & Engagement
+          Check out our Real-time Org Charts & Engagement. Click on any Company Below
         </StyledExampleTitle>
         <StyledScrollingStrip>
           <StyledScrollingTrack isPaused={isExampleStripPaused}>

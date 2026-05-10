@@ -33,6 +33,60 @@ const readImageFromRawCandidate = (
 
 export const PERSON_ROW_HEIGHT = 48;
 
+const sanitizeTreeNodeDataArray = (
+  nodes: OrgChartNodeData[],
+): OrgChartNodeData[] => {
+  const byKey = new Map<number, OrgChartNodeData>();
+  const sanitized: OrgChartNodeData[] = [];
+
+  for (const node of nodes) {
+    if (typeof node.key !== 'number') {
+      continue;
+    }
+    if (byKey.has(node.key)) {
+      continue;
+    }
+    const cloned = { ...node } as OrgChartNodeData;
+    byKey.set(cloned.key, cloned);
+    sanitized.push(cloned);
+  }
+
+  for (const node of sanitized) {
+    const parent = node.parent;
+    if (typeof parent !== 'number') {
+      node.parent = undefined;
+      continue;
+    }
+    if (parent === node.key || !byKey.has(parent)) {
+      node.parent = undefined;
+      continue;
+    }
+
+    const visited = new Set<number>([node.key]);
+    let cursor = parent;
+    let hasCycle = false;
+
+    while (typeof cursor === 'number') {
+      if (visited.has(cursor)) {
+        hasCycle = true;
+        break;
+      }
+      visited.add(cursor);
+      const parentNode = byKey.get(cursor);
+      if (!parentNode || typeof parentNode.parent !== 'number') {
+        break;
+      }
+      cursor = parentNode.parent;
+    }
+
+    if (hasCycle) {
+      node.parent = undefined;
+    }
+  }
+
+  return sanitized;
+};
+
 export const useOrgChartNodeDataArray = ({
   orgData,
   enrichedNodes,
@@ -47,7 +101,7 @@ export const useOrgChartNodeDataArray = ({
 }): OrgChartNodeData[] => {
   return useMemo(() => {
     if (!orgData) return [];
-    const base = processOrgChartToNodeData(orgData);
+    const base = sanitizeTreeNodeDataArray(processOrgChartToNodeData(orgData));
     const apiBase = baseUrl.replace(/\/$/, '');
     const rewriteImage = (url: string) => getProxiedImageUrl(url, apiBase);
 
