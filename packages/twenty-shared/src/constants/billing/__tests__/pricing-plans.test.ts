@@ -1,10 +1,10 @@
 import {
-  ALL_CREDIT_PACKS,
-  getSmallPaymentTestCreditPackKey,
-  PRICING_PLANS,
-  SMALL_PAYMENT_TEST_CREDIT_PACKS,
-  SUPPORTED_PRICING_CURRENCIES,
-  type PricingPlanId,
+    ALL_CREDIT_PACKS,
+    getSmallPaymentTestCreditPackKey,
+    PRICING_PLANS,
+    SMALL_PAYMENT_TEST_CREDIT_PACKS,
+    SUPPORTED_PRICING_CURRENCIES,
+    type PricingPlanId,
 } from '../credit-packs.constant';
 
 describe('SMALL_PAYMENT_TEST_CREDIT_PACKS', () => {
@@ -27,6 +27,7 @@ describe('SMALL_PAYMENT_TEST_CREDIT_PACKS', () => {
       expect(pack.credits).toBe(1);
       expect(pack.includedEmailCredits).toBe(1);
       expect(pack.includedPhoneCredits).toBe(0);
+      expect(pack.pricesSubunits.USD).toBe(100);
 
       for (const currency of SUPPORTED_PRICING_CURRENCIES) {
         const subunits = pack.pricesSubunits[currency];

@@ -2,11 +2,7 @@
 
 export type CreditPackKey = string;
 
-export type PricingIntent =
-  | 'SALES'
-  | 'RECRUITING'
-  | 'CORPORATE'
-  | 'INVESTING';
+export type PricingIntent = 'SALES' | 'RECRUITING' | 'CORPORATE' | 'INVESTING';
 
 export type SupportedPricingCurrency =
   | 'INR'
@@ -137,7 +133,8 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
     tagline: 'Functional talent maps for targeted account outreach',
     icon: '📡',
     mapType: 'functional',
-    mapTypeLabel: 'Functional · all levels & functions · One Chart = 1 Function',
+    mapTypeLabel:
+      'Functional · all levels & functions · One Chart = 1 Function',
     minMaps: 10,
     inheritedFromPlanId: null,
     ownFeatures: [
@@ -203,8 +200,7 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
     id: 'recruitment',
     intent: 'RECRUITING',
     label: 'Recruitment / Exec Search',
-    tagline:
-      'Full company mapped — every level, every function',
+    tagline: 'Full company mapped — every level, every function',
     icon: '🔍',
     mapType: 'full',
     mapTypeLabel: 'Full company · all levels & functions',
@@ -285,8 +281,7 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
     id: 'corporate',
     intent: 'CORPORATE',
     label: 'Corporate TA',
-    tagline:
-      'Competitor benchmarking & talent mobility intelligence',
+    tagline: 'Competitor benchmarking & talent mobility intelligence',
     icon: '🏛',
     mapType: 'full',
     mapTypeLabel: 'Full company · bulk coverage · multi-company',
@@ -366,12 +361,10 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
     id: 'investment',
     intent: 'INVESTING',
     label: 'Investment Companies',
-    tagline:
-      'Portfolio org development timeline & due diligence for PE / VC',
+    tagline: 'Portfolio org development timeline & due diligence for PE / VC',
     icon: '📈',
     mapType: 'timeline',
-    mapTypeLabel:
-      'Full company + Org Development Timeline',
+    mapTypeLabel: 'Full company + Org Development Timeline',
     minMaps: 5,
     inheritedFromPlanId: 'corporate',
     ownFeatures: [
@@ -539,16 +532,21 @@ const buildCreditPackFromTier = (
 // ---------------------------------------------------------------------------
 
 export const CREDIT_PACKS_BY_PLAN: Record<PricingPlanId, CreditPack[]> =
-  PRICING_PLAN_IDS.reduce<Record<PricingPlanId, CreditPack[]>>((acc, planId) => {
-    const plan = PRICING_PLANS[planId];
-    acc[planId] = plan.tiers.map((tier) => buildCreditPackFromTier(plan, tier));
-    return acc;
-  }, {
-    sales: [],
-    recruitment: [],
-    corporate: [],
-    investment: [],
-  });
+  PRICING_PLAN_IDS.reduce<Record<PricingPlanId, CreditPack[]>>(
+    (acc, planId) => {
+      const plan = PRICING_PLANS[planId];
+      acc[planId] = plan.tiers.map((tier) =>
+        buildCreditPackFromTier(plan, tier),
+      );
+      return acc;
+    },
+    {
+      sales: [],
+      recruitment: [],
+      corporate: [],
+      investment: [],
+    },
+  );
 
 export const CREDIT_PACKS_BY_INTENT: Record<PricingIntent, CreditPack[]> = {
   SALES: CREDIT_PACKS_BY_PLAN.sales,
@@ -566,13 +564,19 @@ const SMALL_PAYMENT_TEST_PRICE_SUBUNITS_BY_CURRENCY: Record<
   SupportedPricingCurrency,
   number
 > = {
-  USD: 25,
+  USD: 100,
   GBP: 79,
   EUR: 93,
   INR: 8300,
   AUD: 154,
   AED: 367,
 };
+
+/**
+ * Settings billing volume `<select>` uses this sentinel (not a real map count) so the
+ * extra $1 test SKU can sit alongside normal `{planId}_maps_{n}` product keys.
+ */
+export const SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE = -1;
 
 export const getSmallPaymentTestCreditPackKey = (
   planId: PricingPlanId,
@@ -624,21 +628,26 @@ export const getCreditPacksForIntent = (
 };
 
 export const PRICING_PLAN_ID_TO_INTENT: Record<PricingPlanId, PricingIntent> =
-  PRICING_PLAN_IDS.reduce<Record<PricingPlanId, PricingIntent>>((acc, planId) => {
-    acc[planId] = PRICING_PLANS[planId].intent;
-    return acc;
-  }, {} as Record<PricingPlanId, PricingIntent>);
+  PRICING_PLAN_IDS.reduce<Record<PricingPlanId, PricingIntent>>(
+    (acc, planId) => {
+      acc[planId] = PRICING_PLANS[planId].intent;
+      return acc;
+    },
+    {} as Record<PricingPlanId, PricingIntent>,
+  );
 
 export const PRICING_INTENT_TO_PLAN_ID: Record<PricingIntent, PricingPlanId> =
-  PRICING_PLAN_IDS.reduce<Record<PricingIntent, PricingPlanId>>((acc, planId) => {
-    acc[PRICING_PLAN_ID_TO_INTENT[planId]] = planId;
-    return acc;
-  }, {} as Record<PricingIntent, PricingPlanId>);
+  PRICING_PLAN_IDS.reduce<Record<PricingIntent, PricingPlanId>>(
+    (acc, planId) => {
+      acc[PRICING_PLAN_ID_TO_INTENT[planId]] = planId;
+      return acc;
+    },
+    {} as Record<PricingIntent, PricingPlanId>,
+  );
 
 export const getCreditPackByKey = (
   key: CreditPackKey,
-): CreditPack | undefined =>
-  ALL_CREDIT_PACKS.find((pack) => pack.key === key);
+): CreditPack | undefined => ALL_CREDIT_PACKS.find((pack) => pack.key === key);
 
 /** Walk inheritedFromPlanId to compute the cascading feature list. */
 export const getInheritedFeatures = (

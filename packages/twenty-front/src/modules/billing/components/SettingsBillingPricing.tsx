@@ -1,27 +1,28 @@
 import styled from '@emotion/styled';
 import { Trans, useLingui } from '@lingui/react/macro';
 import {
-    convertPricingAmountSubunits,
-    getPricingCurrencySymbol,
-    getSmallPaymentTestCreditPackKey,
-    PRICING_MARKETING_HERO_HEADLINE,
-    PRICING_MARKETING_HERO_SUBHEADLINE,
-    PRICING_PLANS,
-    PricingPlanId,
-    PricingPlanTier,
-    CreditPack as SharedCreditPack,
-    SUPPORTED_PRICING_CURRENCIES,
-    SupportedPricingCurrency,
+  convertPricingAmountSubunits,
+  getPricingCurrencySymbol,
+  getSmallPaymentTestCreditPackKey,
+  PRICING_MARKETING_HERO_HEADLINE,
+  PRICING_MARKETING_HERO_SUBHEADLINE,
+  PRICING_PLANS,
+  PricingPlanId,
+  PricingPlanTier,
+  CreditPack as SharedCreditPack,
+  SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE,
+  SUPPORTED_PRICING_CURRENCIES,
+  SupportedPricingCurrency,
 } from 'twenty-shared';
 import {
-    Button,
-    Card,
-    CardContent,
-    IconCheck,
-    IconCreditCard,
-    IconFileText,
-    MOBILE_VIEWPORT,
-    Section,
+  Button,
+  Card,
+  CardContent,
+  IconCheck,
+  IconCreditCard,
+  IconFileText,
+  MOBILE_VIEWPORT,
+  Section,
 } from 'twenty-ui';
 
 type CreditPack = {
@@ -304,7 +305,7 @@ export const SettingsBillingPricing = ({
 }: SettingsBillingPricingProps) => {
   const { t } = useLingui();
 
-  const isSmallPaymentTestMode = planOrder.every((planId) =>
+  const smallPaymentTestPacksAvailable = planOrder.every((planId) =>
     creditPacks.some((p) => p.key === getSmallPaymentTestCreditPackKey(planId)),
   );
 
@@ -318,12 +319,13 @@ export const SettingsBillingPricing = ({
           {PRICING_MARKETING_HERO_SUBHEADLINE}
         </StyledPricingSubheadline>
       </StyledPricingHero>
-      {isSmallPaymentTestMode && (
+      {smallPaymentTestPacksAvailable && (
         <StyledSmallPaymentTestBanner>
           <Trans>
-            Small payment testing: each plan shows a ~$1 charge that adds one
-            org-chart credit and one reveal credit. Disable
-            SMALL_PAYMENT_TESTING on the server outside staging.
+            Small payment testing: use Volume → “$1 payment test” for an extra
+            ~$1 SKU (1 org-chart + 1 reveal credit) per plan. Regular map tiers
+            and prices are unchanged. Disable SMALL_PAYMENT_TESTING on the
+            server outside staging.
           </Trans>
         </StyledSmallPaymentTestBanner>
       )}
@@ -345,11 +347,28 @@ export const SettingsBillingPricing = ({
       <StyledCreditCardsGrid>
         {planOrder.map((planId) => {
           const plan = PRICING_PLANS[planId];
-          const selectedMaps = selectedMapsByPlan[planId] ?? plan.minMaps;
-          const tier = findTier(planId, selectedMaps);
+          const smallPackKey = getSmallPaymentTestCreditPackKey(planId);
+          const hasSmallPaymentPack = creditPacks.some(
+            (p) => p.key === smallPackKey,
+          );
+          const rawVolume = selectedMapsByPlan[planId] ?? plan.minMaps;
+          let selectedVolume = rawVolume;
+          if (
+            !hasSmallPaymentPack &&
+            rawVolume === SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE
+          ) {
+            selectedVolume = plan.minMaps;
+          }
+          const isSmallPaymentSelection =
+            hasSmallPaymentPack &&
+            selectedVolume === SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE;
+          const tierMaps = isSmallPaymentSelection
+            ? plan.minMaps
+            : selectedVolume;
+          const tier = findTier(planId, tierMaps);
           const regularPackKey = `${planId}_maps_${tier.maps}`;
-          const packKey = isSmallPaymentTestMode
-            ? getSmallPaymentTestCreditPackKey(planId)
+          const packKey = isSmallPaymentSelection
+            ? smallPackKey
             : regularPackKey;
           const apiPack = creditPacks.find((p) => p.key === packKey);
           const fallbackPack = sharedPackMetaByKey.get(packKey);
@@ -405,8 +424,14 @@ export const SettingsBillingPricing = ({
           const shouldHideCardPayment = totalUsdSubunits > 5000 * 100;
           const totalAmount = baseAmount * (mapsCount ?? 1);
 
+          const selectValue =
+            selectedVolume === SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE &&
+            hasSmallPaymentPack
+              ? SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE
+              : tier.maps;
+
           return (
-            <StyledBillingCard key={pack.key} fullWidth rounded>
+            <StyledBillingCard key={`${planId}-${pack.key}`} fullWidth rounded>
               <StyledCreditPackCardContent>
                 <StyledCreditCardTitle>
                   {meta?.name ?? pack.name}
@@ -425,30 +450,43 @@ export const SettingsBillingPricing = ({
                 <StyledCreditCardCredits>
                   {creditsLabel}
                 </StyledCreditCardCredits>
-                {!isSmallPaymentTestMode && (
-                  <StyledTierSelectWrap>
-                    <StyledTierSelectLabel htmlFor={`tier-${planId}`}>
-                      {t`Volume`}
-                    </StyledTierSelectLabel>
-                    <StyledTierSelect
-                      id={`tier-${planId}`}
-                      value={selectedMaps}
-                      onChange={(event) => {
-                        const value = parseInt(event.target.value, 10);
-                        setSelectedMapsByPlan((previous) => ({
-                          ...previous,
-                          [planId]: Number.isNaN(value) ? plan.minMaps : value,
-                        }));
-                      }}
-                    >
-                      {plan.tiers.map((planTier) => (
-                        <option key={planTier.maps} value={planTier.maps}>
-                          {planTier.maps} {t`maps`}
-                        </option>
-                      ))}
-                    </StyledTierSelect>
-                  </StyledTierSelectWrap>
-                )}
+                <StyledTierSelectWrap>
+                  <StyledTierSelectLabel htmlFor={`tier-${planId}`}>
+                    {t`Volume`}
+                  </StyledTierSelectLabel>
+                  <StyledTierSelect
+                    id={`tier-${planId}`}
+                    value={selectValue}
+                    onChange={(event) => {
+                      const value = parseInt(event.target.value, 10);
+                      let nextMaps = plan.minMaps;
+                      if (value === SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE) {
+                        nextMaps = SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE;
+                      }
+                      if (
+                        value !== SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE &&
+                        !Number.isNaN(value)
+                      ) {
+                        nextMaps = value;
+                      }
+                      setSelectedMapsByPlan((previous) => ({
+                        ...previous,
+                        [planId]: nextMaps,
+                      }));
+                    }}
+                  >
+                    {plan.tiers.map((planTier) => (
+                      <option key={planTier.maps} value={planTier.maps}>
+                        {planTier.maps} {t`maps`}
+                      </option>
+                    ))}
+                    {hasSmallPaymentPack && (
+                      <option value={SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE}>
+                        {t`$1 payment test`} ({t`1 map`}, {t`1 credit`})
+                      </option>
+                    )}
+                  </StyledTierSelect>
+                </StyledTierSelectWrap>
                 <StyledIncludedRevealCredits>
                   {t`Includes`} {includedEmail.toLocaleString()}{' '}
                   {t`email credits`} + {includedPhone.toLocaleString()}{' '}
