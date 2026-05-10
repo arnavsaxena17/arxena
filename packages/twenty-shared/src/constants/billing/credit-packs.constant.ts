@@ -134,12 +134,10 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
     id: 'sales',
     intent: 'SALES',
     label: 'Sales / ABM',
-    tagline:
-      'Functional talent maps for targeted account outreach',
+    tagline: 'Functional talent maps for targeted account outreach',
     icon: '📡',
     mapType: 'functional',
-    mapTypeLabel:
-      'Functional · all levels & functions · One Chart = 1 Function',
+    mapTypeLabel: 'Functional · all levels & functions · One Chart = 1 Function',
     minMaps: 10,
     inheritedFromPlanId: null,
     ownFeatures: [
@@ -562,6 +560,55 @@ export const CREDIT_PACKS_BY_INTENT: Record<PricingIntent, CreditPack[]> = {
 export const ALL_CREDIT_PACKS: CreditPack[] = PRICING_PLAN_IDS.flatMap(
   (planId) => CREDIT_PACKS_BY_PLAN[planId],
 );
+
+/** Approx. $1 USD equivalent per currency; used only when SMALL_PAYMENT_TESTING is enabled on the server. */
+const SMALL_PAYMENT_TEST_PRICE_SUBUNITS_BY_CURRENCY: Record<
+  SupportedPricingCurrency,
+  number
+> = {
+  USD: 100,
+  GBP: 79,
+  EUR: 93,
+  INR: 8300,
+  AUD: 154,
+  AED: 367,
+};
+
+export const getSmallPaymentTestCreditPackKey = (
+  planId: PricingPlanId,
+): CreditPackKey => `${planId}_small_payment_test`;
+
+/** One Razorpay test SKU per pricing plan (~$1 total): grants 1 org-chart credit + 1 reveal credit. */
+export const SMALL_PAYMENT_TEST_CREDIT_PACKS: CreditPack[] =
+  PRICING_PLAN_IDS.map((planId) => {
+    const plan = PRICING_PLANS[planId];
+
+    return {
+      key: getSmallPaymentTestCreditPackKey(planId),
+      name: `${plan.label} — $1 payment test`,
+      credits: 1,
+      amountSubunits: SMALL_PAYMENT_TEST_PRICE_SUBUNITS_BY_CURRENCY.GBP,
+      currency: 'GBP',
+      creditsDisplay:
+        '1 org chart credit · 1 reveal credit (sandbox / card test)',
+      useCase: plan.tagline,
+      features: [
+        '$1 total charge plus card surcharge (Razorpay test mode).',
+        'Grants exactly one map credit and one reveal credit.',
+        'Enable only via SMALL_PAYMENT_TESTING — never leave on in production.',
+      ],
+      includedEmailCredits: 1,
+      includedPhoneCredits: 0,
+      planId,
+      intent: plan.intent,
+      mapsCount: 1,
+      mapType: plan.mapType,
+      mapTypeLabel: plan.mapTypeLabel,
+      tagline: plan.tagline,
+      inheritedFromPlanId: plan.inheritedFromPlanId,
+      pricesSubunits: { ...SMALL_PAYMENT_TEST_PRICE_SUBUNITS_BY_CURRENCY },
+    };
+  });
 
 // Backwards-compatible export (server re-exports this as RAZORPAY_CREDIT_PACKS).
 export const CREDIT_PACKS: CreditPack[] = ALL_CREDIT_PACKS;

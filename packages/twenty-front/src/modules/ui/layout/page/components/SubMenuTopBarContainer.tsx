@@ -19,8 +19,8 @@ type SubMenuTopBarContainerProps = {
 
 const StyledContainer = styled.div`
   display: flex;
-  flex-direction: column;
   flex: 1;
+  flex-direction: column;
   min-height: 0;
   width: 100%;
 `;

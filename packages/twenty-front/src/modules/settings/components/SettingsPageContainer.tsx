@@ -5,12 +5,6 @@ import styled from '@emotion/styled';
 import { ReactNode } from 'react';
 import { isDefined } from 'twenty-shared';
 
-const StyledSettingsPageScrollWrapper = styled(ScrollWrapper)`
-  display: flex;
-  flex: 1;
-  min-height: 0;
-`;
-
 const StyledSettingsPageContainer = styled.div<{
   width?: number;
   fullWidth?: boolean;
@@ -29,9 +23,8 @@ const StyledSettingsPageContainer = styled.div<{
     flex-direction: column;
     gap: ${theme.spacing(8)};
   `}
-  overflow: visible;
+  overflow: auto;
   padding: ${({ theme }) => theme.spacing(6, 8, 8)};
-  min-height: 100%;
   width: ${({ width, fullWidth }) => {
     if (fullWidth) {
       return '100%';
@@ -54,12 +47,12 @@ export const SettingsPageContainer = ({
   children: ReactNode;
   fullWidth?: boolean;
 }) => (
-  <StyledSettingsPageScrollWrapper
+  <ScrollWrapper
     contextProviderName="settingsPageContainer"
     componentInstanceId={'scroll-wrapper-settings-page-container'}
   >
     <StyledSettingsPageContainer fullWidth={fullWidth}>
       {children}
     </StyledSettingsPageContainer>
-  </StyledSettingsPageScrollWrapper>
+  </ScrollWrapper>
 );

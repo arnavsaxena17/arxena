@@ -3,13 +3,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import {
-    getCreditPackTierPrice,
-    SupportedPricingCurrency,
+  getCreditPackTierPrice,
+  SupportedPricingCurrency,
 } from 'twenty-shared';
 
 import {
-    CreditPackKey,
-    RAZORPAY_CREDIT_PACKS,
+  CreditPackKey,
+  RAZORPAY_CREDIT_PACKS,
 } from 'src/engine/core-modules/billing/razorpay/constants/credit-packs.constant';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 
@@ -170,9 +170,10 @@ export class RazorpayOrderService {
 
     try {
       const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${auth}`,
+        method: 'GET',
+        headers: {
+          Authorization: `Basic ${auth}`,
+        },
       });
 
       if (!res.ok) {
@@ -199,17 +200,9 @@ export class RazorpayOrderService {
   private toSupportedCurrency(
     currency: string | undefined,
   ): SupportedPricingCurrency | null {
-    if (
-      currency === 'INR' ||
-      currency === 'USD' ||
-      currency === 'GBP' ||
-      currency === 'EUR' ||
-      currency === 'AUD' ||
-      currency === 'AED'
-    ) {
+    if ( currency === 'INR' || currency === 'USD' || currency === 'GBP' || currency === 'EUR' || currency === 'AUD' || currency === 'AED' ) {
       return currency;
     }
-
     return null;
   }
 }

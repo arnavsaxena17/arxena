@@ -626,6 +626,16 @@ export class EnvironmentVariables {
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.BillingConfig,
+    description:
+        'Staging only: expose four ~$1 Razorpay credit packs (one per plan) that grant 1 org-chart credit + 1 reveal credit. Must stay false in production.',
+  })
+  @CastToBoolean()
+  @IsOptional()
+  @IsBoolean()
+  SMALL_PAYMENT_TESTING = false;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.BillingConfig,
     sensitive: true,
     description: 'Stripe API key for billing',
   })

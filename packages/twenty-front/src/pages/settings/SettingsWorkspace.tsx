@@ -48,10 +48,7 @@ export const SettingsWorkspace = () => {
           <NameField />
         </Section>
         <Section>
-          <H2Title
-            title={t`Chrome extension`}
-            description={t`Install the Arxena Chrome extension from the Web Store to capture profiles and sync with your workspace while you browse.`}
-          />
+          <H2Title title={t`Chrome extension`} description={t`Install the Arxena Chrome extension from the Web Store to capture profiles and sync with your workspace while you browse.`} />
           <Button
             title={t`Install Chrome extension`}
             Icon={IconExternalLink}
@@ -68,10 +65,7 @@ export const SettingsWorkspace = () => {
         {isMultiWorkspaceEnabled && (
           <>
             <Section>
-              <H2Title
-                title={t`Domain`}
-                description={t`Edit your subdomain name or set a custom domain.`}
-              />
+              <H2Title title={t`Domain`} description={t`Edit your subdomain name or set a custom domain.`} />
               <UndecoratedLink to={getSettingsPath(SettingsPath.Domain)}>
                 <SettingsCard
                   title={t`Customize Domain`}
@@ -80,18 +74,12 @@ export const SettingsWorkspace = () => {
               </UndecoratedLink>
             </Section>
             <Section>
-              <H2Title
-                title="Metadata Structure"
-                description="Create and manage your workspace metadata structure"
-              />
+              <H2Title title="Metadata Structure" description="Create and manage your workspace metadata structure" />
               <MetadataStructureSection />
             </Section>
 
             <Section>
-              <H2Title
-                title="API Keys"
-                description="Configure your integration keys"
-              />
+              <H2Title title="API Keys" description="Configure your integration keys" />
               <ApiKeysProvider>
                 <ApiKeysForm />
               </ApiKeysProvider>

@@ -9,9 +9,9 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { H2Title, Section, Status } from 'twenty-ui';
 import {
-  AdminPanelHealthServiceStatus,
-  AdminPanelIndicatorHealthStatusInputEnum,
-  useGetIndicatorHealthStatusQuery,
+    AdminPanelHealthServiceStatus,
+    AdminPanelIndicatorHealthStatusInputEnum,
+    useGetIndicatorHealthStatusQuery,
 } from '~/generated/graphql';
 import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
 

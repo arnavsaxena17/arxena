@@ -1,8 +1,43 @@
 import {
+  ALL_CREDIT_PACKS,
+  getSmallPaymentTestCreditPackKey,
   PRICING_PLANS,
+  SMALL_PAYMENT_TEST_CREDIT_PACKS,
   SUPPORTED_PRICING_CURRENCIES,
   type PricingPlanId,
 } from '../credit-packs.constant';
+
+describe('SMALL_PAYMENT_TEST_CREDIT_PACKS', () => {
+  const liveKeys = new Set(ALL_CREDIT_PACKS.map((p) => p.key));
+
+  it('defines one non-overlapping sandbox pack per pricing plan', () => {
+    const planIds = Object.keys(PRICING_PLANS) as PricingPlanId[];
+
+    expect(SMALL_PAYMENT_TEST_CREDIT_PACKS.length).toBe(planIds.length);
+
+    for (const planId of planIds) {
+      expect(getSmallPaymentTestCreditPackKey(planId)).toMatch(
+        /^[a-z]+_small_payment_test$/,
+      );
+    }
+
+    for (const pack of SMALL_PAYMENT_TEST_CREDIT_PACKS) {
+      expect(liveKeys.has(pack.key)).toBe(false);
+      expect(pack.mapsCount).toBe(1);
+      expect(pack.credits).toBe(1);
+      expect(pack.includedEmailCredits).toBe(1);
+      expect(pack.includedPhoneCredits).toBe(0);
+
+      for (const currency of SUPPORTED_PRICING_CURRENCIES) {
+        const subunits = pack.pricesSubunits[currency];
+
+        expect(subunits).toBeDefined();
+        expect(typeof subunits).toBe('number');
+        expect(subunits).toBeGreaterThan(0);
+      }
+    }
+  });
+});
 
 describe('PRICING_PLANS', () => {
   const planIds = Object.keys(PRICING_PLANS) as PricingPlanId[];
