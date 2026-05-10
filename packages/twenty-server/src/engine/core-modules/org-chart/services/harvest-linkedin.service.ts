@@ -19,25 +19,45 @@ export class HarvestLinkedinService {
   async fetchCurrentAndPastEmployees(input: {
     linkedinCompanyUrl: string;
     maxProfiles?: number;
+    /**
+     * When true (client sets `includeOrgIntelligence`, e.g. Org intelligence button), also
+     * fetch past-company leads and run `/linkedin/profile` enrichment for each past lead.
+     * Default false: current employees only — full `maxProfiles` budget for current.
+     */
+    includePastEmployees?: boolean;
     onProgress?: (message: string) => void | Promise<void>;
   }): Promise<{ current: HarvestLeadItem[]; pastWithProfiles: HarvestLeadItem[] }> {
     const normalizedCompanyUrl = input.linkedinCompanyUrl.trim();
     const maxProfiles = Math.max(1, Math.min(1000, input.maxProfiles ?? 250));
-    const maxPerBucket = Math.max(1, Math.floor(maxProfiles / 2));
+    const includePastEmployees = input.includePastEmployees === true;
+    const maxCurrent = includePastEmployees
+      ? Math.max(1, Math.floor(maxProfiles / 2))
+      : maxProfiles;
 
     await input.onProgress?.('Harvest: fetching current employees...');
     const current = await this.fetchLeads({
       companyUrl: normalizedCompanyUrl,
       type: 'current',
-      maxProfiles: maxPerBucket,
+      maxProfiles: maxCurrent,
     });
 
-    await input.onProgress?.('Harvest: fetching past employees...');
-    const past = await this.fetchLeads({
-      companyUrl: normalizedCompanyUrl,
-      type: 'past',
-      maxProfiles: maxPerBucket,
-    });
+    let past: HarvestLeadItem[] = [];
+    if (includePastEmployees) {
+      const maxPast = Math.max(1, Math.floor(maxProfiles / 2));
+      await input.onProgress?.('Harvest: fetching past employees...');
+      past = await this.fetchLeads({
+        companyUrl: normalizedCompanyUrl,
+        type: 'past',
+        maxProfiles: maxPast,
+      });
+      this.logger.log(
+        `Harvest company employee fetch done companyUrl="${normalizedCompanyUrl}" currentLeadRows=${current.length} pastLeadRows=${past.length} (past enriched next)`,
+      );
+    } else {
+      this.logger.log(
+        `Harvest company employee fetch done companyUrl="${normalizedCompanyUrl}" currentLeadRows=${current.length} pastLeadRows=0 (past skipped — enable includeOrgIntelligence for past + profile enrichment)`,
+      );
+    }
 
     const pastWithProfiles: HarvestLeadItem[] = [];
     for (let index = 0; index < past.length; index += 1) {
@@ -61,6 +81,10 @@ export class HarvestLinkedinService {
       }
     }
 
+    this.logger.log(
+      `Harvest company employee fetch finished companyUrl="${normalizedCompanyUrl}" current=${current.length} pastWithProfiles=${pastWithProfiles.length}`,
+    );
+
     return { current, pastWithProfiles };
   }
 
@@ -81,6 +105,9 @@ export class HarvestLinkedinService {
       const url = `${this.getBaseUrl()}/linkedin/lead-search?${query}&page=${page}`;
       const json = await this.getJson(url);
       const items = this.extractLeadItems(json);
+      this.logger.log(
+        `Harvest lead-search type=${input.type} page=${page} companyUrl="${input.companyUrl}" parsedRows=${items.length} ${this.describeLeadSearchPayloadForLog(json)}`,
+      );
       if (items.length === 0) {
         break;
       }
@@ -101,7 +128,18 @@ export class HarvestLinkedinService {
     )}`;
     try {
       const json = await this.getJson(url);
-      return json && typeof json === 'object' ? (json as HarvestProfileResponse) : null;
+      if (!json || typeof json !== 'object') {
+        return null;
+      }
+      // Harvest /linkedin/profile returns `{ element: Profile, status, error, query }`.
+      // Downstream consumers expect a Profile-shaped object, so unwrap `element`
+      // when present (and tolerate the rare unwrapped shape used in tests).
+      const wrapper = json as Record<string, unknown>;
+      const inner = wrapper.element;
+      if (inner && typeof inner === 'object') {
+        return inner as HarvestProfileResponse;
+      }
+      return wrapper as HarvestProfileResponse;
     } catch (error) {
       this.logger.warn(
         `Harvest profile fetch failed for ${linkedinUrl}: ${
@@ -123,6 +161,7 @@ export class HarvestLinkedinService {
     }
     const objectPayload = payload as Record<string, unknown>;
     const candidates = [
+      objectPayload.elements,
       objectPayload.items,
       objectPayload.results,
       objectPayload.data,
@@ -137,7 +176,35 @@ export class HarvestLinkedinService {
       }
     }
 
+    this.logger.warn(
+      `Harvest lead-search JSON had no known lead array (elements/items/results/data/people). ${this.describeLeadSearchPayloadForLog(payload)}`,
+    );
+
     return [];
+  }
+
+  /** Debug helper: no profile rows, only shapes and Harvest status fields. */
+  private describeLeadSearchPayloadForLog(payload: unknown): string {
+    if (payload === null) {
+      return 'payload=null';
+    }
+    if (Array.isArray(payload)) {
+      return `payload=array length=${payload.length}`;
+    }
+    if (typeof payload !== 'object') {
+      return `payloadType=${typeof payload}`;
+    }
+    const o = payload as Record<string, unknown>;
+    const keys = Object.keys(o).sort().join(',');
+    const arrayLen = (k: string): string => {
+      const v = o[k];
+      return Array.isArray(v) ? String(v.length) : '—';
+    };
+    const status =
+      typeof o.status === 'string' ? o.status : JSON.stringify(o.status);
+    const error =
+      typeof o.error === 'string' ? o.error : JSON.stringify(o.error);
+    return `topLevelKeys=[${keys}] elementsLen=${arrayLen('elements')} itemsLen=${arrayLen('items')} resultsLen=${arrayLen('results')} status=${status} error=${error}`;
   }
 
   private extractLinkedinUrl(lead: HarvestLeadItem): string | undefined {

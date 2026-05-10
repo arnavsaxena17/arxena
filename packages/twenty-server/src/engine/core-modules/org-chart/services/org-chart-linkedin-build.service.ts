@@ -1,9 +1,9 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
 import {
-    graphqlToAddNewJob,
-    OrgChartData,
-    OrgchartSearchMode,
+  graphqlToAddNewJob,
+  OrgChartData,
+  OrgchartSearchMode,
 } from 'twenty-shared';
 
 import { ApifyService } from 'src/engine/core-modules/apify/services/apify.service';
@@ -19,9 +19,9 @@ import { OrgchartLinkedinXrayBuildJobData } from 'src/engine/core-modules/candid
 import { OrgchartMultiSourceBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-multisource-build.types';
 import { OrgchartUnipileBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-unipile-build.types';
 import {
-    ApolloIoRestService,
-    ApolloPeopleSearchParams,
-    isApolloOrganizationId,
+  ApolloIoRestService,
+  ApolloPeopleSearchParams,
+  isApolloOrganizationId,
 } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { ApolloPeopleSearchTransformerService } from 'src/engine/core-modules/candidate-search/services/apollo-people-search-transformer.service';
 import { OrgChartSearchService } from 'src/engine/core-modules/candidate-search/services/orgchart-search.service';
@@ -36,8 +36,8 @@ import { linkedInPeopleSearchResultMatchesTargetCompany } from 'src/engine/core-
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import {
-    LinkedInSearchService,
-    parseApifyLinkedinCompanyScraperLogLine,
+  LinkedInSearchService,
+  parseApifyLinkedinCompanyScraperLogLine,
 } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
@@ -50,9 +50,9 @@ import { dedupeAndMergeOrgChartCandidates } from 'src/engine/core-modules/org-ch
 import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import { filterOrgChartCandidatesByNodeStdLabels } from 'src/engine/core-modules/org-chart/utils/orgchart-node-scope-filter.util';
 import {
-    normalizeCompanyId,
-    normalizeCompanyName,
-    normalizeCountry,
+  normalizeCompanyId,
+  normalizeCompanyName,
+  normalizeCountry,
 } from 'src/engine/core-modules/org-chart/utils/orgchart-normalization.util';
 import { TheOfficialBoardService } from 'src/engine/core-modules/theofficialboard/services/theofficialboard.service';
 import { TheOfficialBoardCandidate } from 'src/engine/core-modules/theofficialboard/types/theofficialboard.types';
@@ -4728,7 +4728,10 @@ export class OrgChartLinkedInBuildService {
         companyName: resolvedCompanyName,
         event: 'status',
         data: {
-          message: 'Harvest: fetching current and past employees...',
+          message:
+            jobData.includeOrgIntelligence === true
+              ? 'Harvest: fetching current and past employees…'
+              : 'Harvest: fetching current employees…',
           candidateSource: 'harvest',
         },
       });
@@ -4737,6 +4740,7 @@ export class OrgChartLinkedInBuildService {
         await this.harvestLinkedinService.fetchCurrentAndPastEmployees({
           linkedinCompanyUrl,
           maxProfiles: jobData.maxItems,
+          includePastEmployees: jobData.includeOrgIntelligence === true,
           onProgress: async (message) => {
             await this.emitOrgchartSearchProgressForToken(apiToken, {
               requestId,
@@ -5232,6 +5236,9 @@ export class OrgChartLinkedInBuildService {
           },
         });
       } else {
+        const harvestIncludePastEmployees =
+          String((rawBody as any).includeOrgIntelligence ?? '').toLowerCase() ===
+          'true';
         const { current, pastWithProfiles } =
           await this.harvestLinkedinService.fetchCurrentAndPastEmployees({
             linkedinCompanyUrl,
@@ -5239,6 +5246,7 @@ export class OrgChartLinkedInBuildService {
               typeof rawBody.apifyMaxItems === 'number'
                 ? Math.min(rawBody.apifyMaxItems, 1000)
                 : 500,
+            includePastEmployees: harvestIncludePastEmployees,
             onProgress: async (message) => {
               await this.emitOrgchartSearchProgressForToken(apiToken, {
                 requestId,

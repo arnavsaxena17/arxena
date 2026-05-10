@@ -51,7 +51,8 @@ const readExperienceRowCompanyLinkedin = (
   row.companyLinkedinUrl ??
   row.company_linkedin_url ??
   row.companyLinkedin ??
-  row.linkedin_company_url;
+  row.linkedin_company_url ??
+  row.companyLink;
 
 const experienceRowMatchesTargetCompany = (input: {
   companyWant: string;
@@ -173,6 +174,49 @@ export function deriveIntervalsForCandidateAtCompany(input: {
   if (Array.isArray(apifyExRaw) && apifyExRaw.length > 0) {
     const out: Interval[] = [];
     for (const eRaw of apifyExRaw as Array<Record<string, unknown>>) {
+      if (
+        !experienceRowMatchesTargetCompany({
+          companyWant,
+          targetLinkedinKey,
+          experienceCompanyName: eRaw.companyName,
+          experienceCompanyLinkedin: readExperienceRowCompanyLinkedin(eRaw),
+        })
+      ) {
+        continue;
+      }
+      const start = monthFromApify(eRaw.startDate, 1);
+      if (!start) continue;
+      const endText =
+        eRaw.endDate && typeof eRaw.endDate === 'object'
+          ? String((eRaw.endDate as { text?: unknown }).text ?? '')
+          : '';
+      const isCurrent = endText.toLowerCase().includes('present');
+      const end = isCurrent ? null : monthFromApify(eRaw.endDate, 12);
+      out.push({
+        startMonth: start,
+        endMonth: clampEndToStart(end, start),
+        title: typeof eRaw.position === 'string' ? eRaw.position.trim() : undefined,
+      });
+    }
+    if (out.length > 0) {
+      return out;
+    }
+  }
+
+  // Harvest: profile.experience uses the same shape as Apify (companyName,
+  // position, startDate{month,year,text}, endDate{month,year,text}), with
+  // `companyLink` as the LinkedIn URL field. Reuse `monthFromApify` because
+  // the date format is identical.
+  const harvestExRaw =
+    row.org_harvest_experience ??
+    (row.org_harvest_profile &&
+    typeof row.org_harvest_profile === 'object' &&
+    row.org_harvest_profile !== null
+      ? (row.org_harvest_profile as { experience?: unknown }).experience
+      : undefined);
+  if (Array.isArray(harvestExRaw) && harvestExRaw.length > 0) {
+    const out: Interval[] = [];
+    for (const eRaw of harvestExRaw as Array<Record<string, unknown>>) {
       if (
         !experienceRowMatchesTargetCompany({
           companyWant,
