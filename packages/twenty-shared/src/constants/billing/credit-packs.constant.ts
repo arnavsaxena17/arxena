@@ -559,7 +559,6 @@ export const ALL_CREDIT_PACKS: CreditPack[] = PRICING_PLAN_IDS.flatMap(
   (planId) => CREDIT_PACKS_BY_PLAN[planId],
 );
 
-/** Approx. $1 USD equivalent per currency; used only when SMALL_PAYMENT_TESTING is enabled on the server. */
 const SMALL_PAYMENT_TEST_PRICE_SUBUNITS_BY_CURRENCY: Record<
   SupportedPricingCurrency,
   number
@@ -572,17 +571,12 @@ const SMALL_PAYMENT_TEST_PRICE_SUBUNITS_BY_CURRENCY: Record<
   AED: 367,
 };
 
-/**
- * Settings billing volume `<select>` uses this sentinel (not a real map count) so the
- * extra $1 test SKU can sit alongside normal `{planId}_maps_{n}` product keys.
- */
 export const SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE = -1;
 
 export const getSmallPaymentTestCreditPackKey = (
   planId: PricingPlanId,
 ): CreditPackKey => `${planId}_small_payment_test`;
 
-/** One Razorpay test SKU per pricing plan (~$1 total): grants 1 org-chart credit + 1 reveal credit. */
 export const SMALL_PAYMENT_TEST_CREDIT_PACKS: CreditPack[] =
   PRICING_PLAN_IDS.map((planId) => {
     const plan = PRICING_PLANS[planId];
