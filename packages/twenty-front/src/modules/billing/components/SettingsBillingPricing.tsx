@@ -1,17 +1,29 @@
 import styled from '@emotion/styled';
-import { Trans, useLingui } from '@lingui/react/macro';
+import { useLingui } from '@lingui/react/macro';
+import { useState } from 'react';
 import {
   convertPricingAmountSubunits,
+  findPricingPlanTier,
+  getInheritedFeatures,
   getPricingCurrencySymbol,
+  getPricingMarketingSubheadlineLines,
   getSmallPaymentTestCreditPackKey,
+  PRICING_COMPARABLE_MAPS_VOLUME,
+  PRICING_MAP_TYPE_LABEL,
   PRICING_MARKETING_HERO_HEADLINE,
-  PRICING_MARKETING_HERO_SUBHEADLINE,
+  PRICING_PLAN_CONTENT_BY_ID,
+  PRICING_PLAN_ORDER,
   PRICING_PLANS,
+  PRICING_RECOMMENDED_PLAN_ID,
+  PRICING_TALENT_MAP_UNIT,
+  PRICING_TALENT_MAPS_UNIT,
+  PRICING_VOLUME_LABEL,
   PricingPlanId,
-  PricingPlanTier,
+  PricingSegmentTone,
+  REVEAL_CREDIT_COST_EMAIL,
+  REVEAL_CREDIT_COST_PHONE,
   CreditPack as SharedCreditPack,
   SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE,
-  SUPPORTED_PRICING_CURRENCIES,
   SupportedPricingCurrency,
 } from 'twenty-shared';
 import {
@@ -22,7 +34,9 @@ import {
   IconCreditCard,
   IconFileText,
   MOBILE_VIEWPORT,
+  Pill,
   Section,
+  ThemeType,
 } from 'twenty-ui';
 
 type CreditPack = {
@@ -53,7 +67,6 @@ type ResolvePackPriceSubunitsResult = {
 type SettingsBillingPricingProps = {
   creditPacks: CreditPack[];
   displayCurrency: SupportedPricingCurrency;
-  setDisplayCurrency: (currency: SupportedPricingCurrency) => void;
   selectedMapsByPlan: Record<PricingPlanId, number>;
   setSelectedMapsByPlan: (
     fn: (
@@ -73,10 +86,61 @@ type SettingsBillingPricingProps = {
   setInvoicePackKey: (packKey: string) => void;
 };
 
+const getSegmentAccentColor = (theme: ThemeType, tone: PricingSegmentTone) => {
+  switch (tone) {
+    case 'orange':
+      return theme.color.orange60;
+    case 'indigo':
+      return theme.color.blue60;
+    case 'teal':
+      return theme.color.turquoise60;
+    case 'forest':
+      return theme.color.green70;
+  }
+};
+
+const getSegmentAccentBackground = (
+  theme: ThemeType,
+  tone: PricingSegmentTone,
+) => {
+  switch (tone) {
+    case 'orange':
+      return theme.color.orange10;
+    case 'indigo':
+      return theme.color.blue10;
+    case 'teal':
+      return theme.color.turquoise10;
+    case 'forest':
+      return theme.color.green10;
+  }
+};
+
+const getSegmentAccentBorder = (
+  theme: ThemeType,
+  tone: PricingSegmentTone,
+) => {
+  switch (tone) {
+    case 'orange':
+      return theme.color.orange30;
+    case 'indigo':
+      return theme.color.blue30;
+    case 'teal':
+      return theme.color.turquoise30;
+    case 'forest':
+      return theme.color.gray50;
+  }
+};
+
+const heroSubheadlineLines = getPricingMarketingSubheadlineLines();
+const heroOrientLead = heroSubheadlineLines[0] ?? '';
+const heroOrientDetail = heroSubheadlineLines[1] ?? '';
+
 const StyledPricingHero = styled.div`
   margin: 0 auto ${({ theme }) => theme.spacing(4)};
   max-width: ${({ theme }) => theme.spacing(220)};
+  min-width: 0;
   text-align: center;
+  width: 100%;
 `;
 
 const StyledPricingHeadline = styled.h2`
@@ -85,60 +149,176 @@ const StyledPricingHeadline = styled.h2`
   font-weight: ${({ theme }) => theme.font.weight.semiBold};
   line-height: 1.2;
   margin: 0 0 ${({ theme }) => theme.spacing(2)} 0;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+
+  @media (max-width: 1100px) {
+    font-size: ${({ theme }) => theme.font.size.xl};
+  }
 
   @media (max-width: ${MOBILE_VIEWPORT}px) {
-    font-size: ${({ theme }) => theme.font.size.xxl};
+    font-size: ${({ theme }) => theme.font.size.lg};
   }
 `;
 
-const StyledPricingSubheadline = styled.p`
+const StyledPricingOrientLead = styled.p`
+  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${({ theme }) => theme.font.size.lg};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  line-height: ${({ theme }) => theme.text.lineHeight.lg};
+  margin: 0 0 ${({ theme }) => theme.spacing(1)} 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+  width: 100%;
+
+  @media (max-width: ${MOBILE_VIEWPORT}px) {
+    font-size: ${({ theme }) => theme.font.size.md};
+  }
+`;
+
+const StyledPricingOrientDetail = styled.p`
   color: ${({ theme }) => theme.font.color.tertiary};
   font-size: ${({ theme }) => theme.font.size.md};
   line-height: ${({ theme }) => theme.text.lineHeight.lg};
   margin: 0;
-  white-space: pre-line;
-`;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+  width: 100%;
 
-const StyledPricingControls = styled.div`
-  align-items: center;
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
-`;
-
-const StyledCurrencySelect = styled.select`
-  background: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  margin: 0 auto ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => `${theme.spacing(1)} ${theme.spacing(2)}`};
-`;
-
-const StyledBillingCard = styled(Card)`
-  background: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+  @media (max-width: ${MOBILE_VIEWPORT}px) {
+    font-size: ${({ theme }) => theme.font.size.sm};
+  }
 `;
 
 const StyledCreditCardsGrid = styled.div`
   display: grid;
-  gap: ${({ theme }) => theme.spacing(6)};
+  gap: ${({ theme }) => theme.spacing(4)};
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-top: ${({ theme }) => theme.spacing(4)};
+  min-width: 0;
+  width: 100%;
 
-  @media (max-width: 1400px) {
+  @media (max-width: 1100px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   @media (max-width: ${MOBILE_VIEWPORT}px) {
-    gap: ${({ theme }) => theme.spacing(4)};
-    grid-template-columns: 1fr;
+    gap: ${({ theme }) => theme.spacing(3)};
+    grid-template-columns: minmax(0, 1fr);
   }
+`;
+
+const StyledBillingCard = styled(Card)<{
+  $isSelected: boolean;
+  $tone: PricingSegmentTone;
+}>`
+  background: ${({ theme, $tone }) =>
+    getSegmentAccentBackground(theme, $tone)};
+  border: 2px solid
+    ${({ theme, $isSelected, $tone }) =>
+      $isSelected
+        ? getSegmentAccentColor(theme, $tone)
+        : getSegmentAccentBorder(theme, $tone)};
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  border-top: 4px solid
+    ${({ theme, $tone }) => getSegmentAccentColor(theme, $tone)};
+  box-shadow: ${({ theme, $isSelected }) =>
+    $isSelected ? theme.boxShadow.strong : theme.boxShadow.light};
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  opacity: ${({ $isSelected }) => ($isSelected ? 1 : 0.9)};
+  transition:
+    border-color ${({ theme }) => theme.animation.duration.normal}ms ease,
+    box-shadow ${({ theme }) => theme.animation.duration.normal}ms ease,
+    opacity ${({ theme }) => theme.animation.duration.normal}ms ease,
+    transform ${({ theme }) => theme.animation.duration.normal}ms ease;
+
+  &:hover {
+    box-shadow: ${({ theme }) => theme.boxShadow.strong};
+    transform: translateY(-2px);
+  }
+`;
+
+const StyledCreditPackCardContent = styled(CardContent)`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(3)};
+  min-width: 0;
+  padding: ${({ theme }) => theme.spacing(4)};
+
+  @media (max-width: ${MOBILE_VIEWPORT}px) {
+    padding: ${({ theme }) => theme.spacing(3)};
+  }
+`;
+
+const StyledCardHeader = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(1.5)};
+`;
+
+const StyledCardLabel = styled.div<{ $tone: PricingSegmentTone }>`
+  align-items: center;
+  color: ${({ theme, $tone }) => getSegmentAccentColor(theme, $tone)};
+  display: flex;
+  font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  gap: ${({ theme }) => theme.spacing(1.5)};
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+`;
+
+const StyledCardEmoji = styled.span`
+  font-size: ${({ theme }) => theme.font.size.lg};
+  line-height: 1;
+`;
+
+const StyledTitleRow = styled.div`
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(1.5)};
+`;
+
+const StyledCreditCardTitle = styled.div`
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.lg};
+  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+`;
+
+const StyledPersonaPill = styled(Pill)<{ $tone: PricingSegmentTone }>`
+  background: ${({ theme, $tone }) =>
+    getSegmentAccentBackground(theme, $tone)};
+  border: 1px solid ${({ theme, $tone }) => getSegmentAccentColor(theme, $tone)};
+  color: ${({ theme, $tone }) => getSegmentAccentColor(theme, $tone)};
+  height: auto;
+  padding: ${({ theme }) => `${theme.spacing(0.5)} ${theme.spacing(2)}`};
+`;
+
+const StyledCardTagline = styled.p`
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  line-height: ${({ theme }) => theme.text.lineHeight.lg};
+  margin: 0;
+  overflow-wrap: anywhere;
+`;
+
+const StyledMapTypePill = styled.div`
+  align-self: flex-start;
+  background: ${({ theme }) => theme.background.primary};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.pill};
+  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  padding: ${({ theme }) => `${theme.spacing(0.5)} ${theme.spacing(2)}`};
 `;
 
 const StyledTierSelectWrap = styled.div`
@@ -165,37 +345,18 @@ const StyledTierSelect = styled.select`
   width: 100%;
 `;
 
-const StyledCreditPackCardContent = styled(CardContent)`
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(3)};
-  min-width: 0;
-  padding: ${({ theme }) => theme.spacing(5)};
-`;
-
-const StyledCreditCardTitle = styled.div`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-`;
-
 const StyledCreditCardPrice = styled.div`
   color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.xxl};
+  font-size: ${({ theme }) => theme.font.size.xl};
   font-weight: ${({ theme }) => theme.font.weight.semiBold};
   line-height: 1.1;
+  overflow-wrap: anywhere;
 `;
 
 const StyledPriceUnit = styled.span`
   color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.regular};
-`;
-
-const StyledCreditCardCredits = styled.div`
-  color: ${({ theme }) => theme.font.color.tertiary};
   font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.regular};
 `;
 
 const StyledCreditCardTotal = styled.div`
@@ -203,9 +364,39 @@ const StyledCreditCardTotal = styled.div`
   font-size: ${({ theme }) => theme.font.size.sm};
 `;
 
+const StyledIncludedCreditsBlock = styled.div`
+  background: ${({ theme }) => theme.background.primary};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  color: ${({ theme }) => theme.font.color.secondary};
+  display: flex;
+  flex-direction: column;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  gap: ${({ theme }) => theme.spacing(1)};
+  line-height: ${({ theme }) => theme.text.lineHeight.lg};
+  padding: ${({ theme }) => theme.spacing(2.5)};
+`;
+
 const StyledIncludedRevealCredits = styled.div`
   color: ${({ theme }) => theme.font.color.tertiary};
   font-size: ${({ theme }) => theme.font.size.xs};
+`;
+
+const StyledChoiceHint = styled.div<{ $tone: PricingSegmentTone }>`
+  background: ${({ theme }) => theme.background.primary};
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  color: ${({ theme, $tone }) => getSegmentAccentColor(theme, $tone)};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  line-height: 1.45;
+  margin-top: auto;
+  padding: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledInheritedLine = styled.div`
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
 `;
 
 const StyledPanelDivider = styled.div`
@@ -226,17 +417,17 @@ const StyledFeatureItem = styled.li`
   color: ${({ theme }) => theme.font.color.secondary};
   display: flex;
   font-size: ${({ theme }) => theme.font.size.sm};
-  gap: ${({ theme }) => theme.spacing(3)};
+  gap: ${({ theme }) => theme.spacing(2)};
   line-height: ${({ theme }) => theme.text.lineHeight.lg};
-  margin-bottom: ${({ theme }) => theme.spacing(3)};
+  margin-bottom: ${({ theme }) => theme.spacing(2)};
 
   &:last-of-type {
     margin-bottom: 0;
   }
 `;
 
-const StyledCheckIcon = styled(IconCheck)`
-  color: ${({ theme }) => theme.font.color.primary};
+const StyledCheckIcon = styled(IconCheck)<{ $tone: PricingSegmentTone }>`
+  color: ${({ theme, $tone }) => getSegmentAccentColor(theme, $tone)};
   flex-shrink: 0;
   margin-top: ${({ theme }) => theme.spacing(0.5)};
 `;
@@ -245,7 +436,7 @@ const StyledCreditActions = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(2)};
-  margin-top: auto;
+  margin-top: ${({ theme }) => theme.spacing(1)};
 `;
 
 const StyledActionsDivider = styled.div`
@@ -260,17 +451,6 @@ const StyledPaymentLimitHint = styled.div`
   margin-top: ${({ theme }) => theme.spacing(1)};
 `;
 
-const StyledSmallPaymentTestBanner = styled.div`
-  background: ${({ theme }) => theme.background.tertiary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  line-height: ${({ theme }) => theme.text.lineHeight.lg};
-  margin-bottom: ${({ theme }) => theme.spacing(3)};
-  padding: ${({ theme }) => `${theme.spacing(2)} ${theme.spacing(3)}`};
-`;
-
 const StyledCardPaymentDisabledState = styled.div`
   background: ${({ theme }) => theme.background.tertiary};
   border: 1px solid ${({ theme }) => theme.border.color.medium};
@@ -278,23 +458,12 @@ const StyledCardPaymentDisabledState = styled.div`
   padding: ${({ theme }) => theme.spacing(2)};
 `;
 
-const planOrder: PricingPlanId[] = [
-  'sales',
-  'recruitment',
-  'corporate',
-  'investment',
-];
-
-const findTier = (planId: PricingPlanId, maps: number): PricingPlanTier => {
-  const plan = PRICING_PLANS[planId];
-  const exact = plan.tiers.find((tier) => tier.maps === maps);
-  return exact ?? plan.tiers[0];
-};
+const formatMoneyMajor = (subunits: number): string =>
+  Math.round(subunits / 100).toLocaleString();
 
 export const SettingsBillingPricing = ({
   creditPacks,
   displayCurrency,
-  setDisplayCurrency,
   selectedMapsByPlan,
   setSelectedMapsByPlan,
   sharedPackMetaByKey,
@@ -304,9 +473,8 @@ export const SettingsBillingPricing = ({
   setInvoicePackKey,
 }: SettingsBillingPricingProps) => {
   const { t } = useLingui();
-
-  const smallPaymentTestPacksAvailable = planOrder.every((planId) =>
-    creditPacks.some((p) => p.key === getSmallPaymentTestCreditPackKey(planId)),
+  const [selectedPlanId, setSelectedPlanId] = useState<PricingPlanId>(
+    PRICING_RECOMMENDED_PLAN_ID,
   );
 
   return (
@@ -315,43 +483,20 @@ export const SettingsBillingPricing = ({
         <StyledPricingHeadline>
           {PRICING_MARKETING_HERO_HEADLINE}
         </StyledPricingHeadline>
-        <StyledPricingSubheadline>
-          {PRICING_MARKETING_HERO_SUBHEADLINE}
-        </StyledPricingSubheadline>
+        <StyledPricingOrientLead>{heroOrientLead}</StyledPricingOrientLead>
+        <StyledPricingOrientDetail>{heroOrientDetail}</StyledPricingOrientDetail>
       </StyledPricingHero>
-      {smallPaymentTestPacksAvailable && (
-        <StyledSmallPaymentTestBanner>
-          <Trans>
-            Small payment testing: use Volume → “$1 payment test” for an extra
-            ~$1 SKU (1 org-chart + 1 reveal credit) per plan. Regular map tiers
-            and prices are unchanged. Disable SMALL_PAYMENT_TESTING on the
-            server outside staging.
-          </Trans>
-        </StyledSmallPaymentTestBanner>
-      )}
-      <StyledPricingControls>
-        <StyledCurrencySelect
-          aria-label="Select currency"
-          value={displayCurrency}
-          onChange={(event) =>
-            setDisplayCurrency(event.target.value as SupportedPricingCurrency)
-          }
-        >
-          {SUPPORTED_PRICING_CURRENCIES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </StyledCurrencySelect>
-      </StyledPricingControls>
       <StyledCreditCardsGrid>
-        {planOrder.map((planId) => {
+        {PRICING_PLAN_ORDER.map((planId) => {
           const plan = PRICING_PLANS[planId];
+          const planContent = PRICING_PLAN_CONTENT_BY_ID[planId];
+          const tone = planContent.segmentTone;
           const smallPackKey = getSmallPaymentTestCreditPackKey(planId);
           const hasSmallPaymentPack = creditPacks.some(
-            (p) => p.key === smallPackKey,
+            (pack) => pack.key === smallPackKey,
           );
-          const rawVolume = selectedMapsByPlan[planId] ?? plan.minMaps;
+          const rawVolume =
+            selectedMapsByPlan[planId] ?? PRICING_COMPARABLE_MAPS_VOLUME;
           let selectedVolume = rawVolume;
           if (
             !hasSmallPaymentPack &&
@@ -365,12 +510,12 @@ export const SettingsBillingPricing = ({
           const tierMaps = isSmallPaymentSelection
             ? plan.minMaps
             : selectedVolume;
-          const tier = findTier(planId, tierMaps);
+          const tier = findPricingPlanTier(plan, tierMaps);
           const regularPackKey = `${planId}_maps_${tier.maps}`;
           const packKey = isSmallPaymentSelection
             ? smallPackKey
             : regularPackKey;
-          const apiPack = creditPacks.find((p) => p.key === packKey);
+          const apiPack = creditPacks.find((pack) => pack.key === packKey);
           const fallbackPack = sharedPackMetaByKey.get(packKey);
           const pack =
             apiPack ??
@@ -414,45 +559,61 @@ export const SettingsBillingPricing = ({
             pack.includedEmailCredits ?? meta?.includedEmailCredits ?? 0;
           const includedPhone =
             pack.includedPhoneCredits ?? meta?.includedPhoneCredits ?? 0;
-          const mapsCount = pack.mapsCount ?? meta?.mapsCount;
-          const totalSubunits = convertedAmountSubunits * (mapsCount ?? 1);
+          const mapsCount = pack.mapsCount ?? meta?.mapsCount ?? tier.maps;
+          const totalSubunits = convertedAmountSubunits * mapsCount;
           const totalUsdSubunits = convertPricingAmountSubunits(
             totalSubunits,
             displayCurrency,
             'USD',
           );
           const shouldHideCardPayment = totalUsdSubunits > 5000 * 100;
-          const totalAmount = baseAmount * (mapsCount ?? 1);
-
+          const inherited = getInheritedFeatures(planId);
           const selectValue =
             selectedVolume === SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE &&
             hasSmallPaymentPack
               ? SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE
               : tier.maps;
+          const emailEquivalent = Math.floor(
+            pack.credits / REVEAL_CREDIT_COST_EMAIL,
+          );
+          const phoneEquivalent = Math.floor(
+            pack.credits / REVEAL_CREDIT_COST_PHONE,
+          );
+          const isSelected = selectedPlanId === planId;
 
           return (
-            <StyledBillingCard key={`${planId}-${pack.key}`} fullWidth rounded>
+            <StyledBillingCard
+              key={`${planId}-${pack.key}`}
+              data-plan-id={planId}
+              fullWidth
+              rounded
+              $isSelected={isSelected}
+              $tone={tone}
+              onClick={() => setSelectedPlanId(planId)}
+            >
               <StyledCreditPackCardContent>
-                <StyledCreditCardTitle>
-                  {meta?.name ?? pack.name}
-                </StyledCreditCardTitle>
-                <StyledCreditCardPrice>
-                  {getPricingCurrencySymbol(displayCurrency)}
-                  {baseAmount.toLocaleString()}
-                  <StyledPriceUnit> / {t`talent map`}</StyledPriceUnit>
-                </StyledCreditCardPrice>
-                {mapsCount !== undefined && (
-                  <StyledCreditCardTotal>
-                    {t`Total`}: {getPricingCurrencySymbol(displayCurrency)}
-                    {totalAmount.toLocaleString()} / {mapsCount} {t`maps`}
-                  </StyledCreditCardTotal>
-                )}
-                <StyledCreditCardCredits>
-                  {creditsLabel}
-                </StyledCreditCardCredits>
-                <StyledTierSelectWrap>
+                <StyledCardHeader>
+                  <StyledCardLabel $tone={tone}>
+                    <StyledCardEmoji>{plan.icon}</StyledCardEmoji>
+                    {plan.label}
+                  </StyledCardLabel>
+                  <StyledTitleRow>
+                    <StyledCreditCardTitle>{plan.tagline}</StyledCreditCardTitle>
+                    <StyledPersonaPill
+                      label={planContent.persona}
+                      $tone={tone}
+                    />
+                  </StyledTitleRow>
+                  <StyledCardTagline>{plan.mapTypeLabel}</StyledCardTagline>
+                </StyledCardHeader>
+                <StyledMapTypePill>
+                  {PRICING_MAP_TYPE_LABEL} · {plan.mapType}
+                </StyledMapTypePill>
+                <StyledTierSelectWrap
+                  onClick={(event) => event.stopPropagation()}
+                >
                   <StyledTierSelectLabel htmlFor={`tier-${planId}`}>
-                    {t`Volume`}
+                    {PRICING_VOLUME_LABEL}
                   </StyledTierSelectLabel>
                   <StyledTierSelect
                     id={`tier-${planId}`}
@@ -477,7 +638,7 @@ export const SettingsBillingPricing = ({
                   >
                     {plan.tiers.map((planTier) => (
                       <option key={planTier.maps} value={planTier.maps}>
-                        {planTier.maps} {t`maps`}
+                        {planTier.maps} {PRICING_TALENT_MAPS_UNIT}
                       </option>
                     ))}
                     {hasSmallPaymentPack && (
@@ -487,59 +648,91 @@ export const SettingsBillingPricing = ({
                     )}
                   </StyledTierSelect>
                 </StyledTierSelectWrap>
-                <StyledIncludedRevealCredits>
-                  {t`Includes`} {includedEmail.toLocaleString()}{' '}
-                  {t`email credits`} + {includedPhone.toLocaleString()}{' '}
-                  {t`phone reveals`}
-                </StyledIncludedRevealCredits>
+                <StyledCreditCardPrice>
+                  {getPricingCurrencySymbol(displayCurrency)}
+                  {formatMoneyMajor(convertedAmountSubunits)}
+                  <StyledPriceUnit>
+                    {' '}
+                    / {PRICING_TALENT_MAP_UNIT}
+                  </StyledPriceUnit>
+                </StyledCreditCardPrice>
+                <StyledCreditCardTotal>
+                  {t`Total`}: {getPricingCurrencySymbol(displayCurrency)}
+                  {formatMoneyMajor(totalSubunits)} {t`for`} {mapsCount}{' '}
+                  {t`maps`}
+                </StyledCreditCardTotal>
+                <StyledIncludedCreditsBlock>
+                  <div>{creditsLabel}</div>
+                  <StyledIncludedRevealCredits>
+                    {t`Includes`} {emailEquivalent.toLocaleString()}{' '}
+                    {t`email credits`} + {phoneEquivalent.toLocaleString()}{' '}
+                    {t`phone reveals`}
+                  </StyledIncludedRevealCredits>
+                </StyledIncludedCreditsBlock>
+                {inherited.inheritedFromLabel && (
+                  <StyledInheritedLine>
+                    {t`Everything in ${inherited.inheritedFromLabel}, plus:`}
+                  </StyledInheritedLine>
+                )}
                 <StyledPanelDivider />
                 <StyledFeatureList>
                   {features.map((feature) => (
                     <StyledFeatureItem key={feature}>
-                      <StyledCheckIcon size={20} strokeWidth={2.5} />
+                      <StyledCheckIcon
+                        $tone={tone}
+                        size={18}
+                        strokeWidth={2.5}
+                      />
                       {feature}
                     </StyledFeatureItem>
                   ))}
                 </StyledFeatureList>
-                <StyledCreditActions>
-                  {shouldHideCardPayment ? (
-                    <StyledCardPaymentDisabledState>
+                <StyledChoiceHint $tone={tone}>
+                  {planContent.onboardingHint}
+                </StyledChoiceHint>
+                {isSelected && (
+                  <StyledCreditActions
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    {shouldHideCardPayment ? (
+                      <StyledCardPaymentDisabledState>
+                        <Button
+                          Icon={IconCreditCard}
+                          title={t`Pay by credit card`}
+                          variant="secondary"
+                          fullWidth
+                          onClick={() =>
+                            handleBuyCredits(pack.key, displayCurrency)
+                          }
+                          disabled
+                        />
+                        <StyledPaymentLimitHint>
+                          {t`Credit card payments are available only below $5,000 total.`}
+                        </StyledPaymentLimitHint>
+                      </StyledCardPaymentDisabledState>
+                    ) : (
                       <Button
                         Icon={IconCreditCard}
                         title={t`Pay by credit card`}
-                        variant="secondary"
+                        variant="primary"
+                        accent="blue"
                         fullWidth
                         onClick={() =>
                           handleBuyCredits(pack.key, displayCurrency)
                         }
-                        disabled
+                        disabled={buyingPackKey !== null}
                       />
-                      <StyledPaymentLimitHint>
-                        {t`Credit card payments are available only below $5,000 total.`}
-                      </StyledPaymentLimitHint>
-                    </StyledCardPaymentDisabledState>
-                  ) : (
+                    )}
+                    <StyledActionsDivider />
                     <Button
-                      Icon={IconCreditCard}
-                      title={t`Pay by credit card`}
-                      variant="primary"
-                      accent="blue"
+                      Icon={IconFileText}
+                      title={t`Create custom quote`}
+                      variant="secondary"
                       fullWidth
-                      onClick={() =>
-                        handleBuyCredits(pack.key, displayCurrency)
-                      }
-                      disabled={buyingPackKey !== null}
+                      onClick={() => setInvoicePackKey(pack.key)}
                     />
-                  )}
-                  <StyledActionsDivider />
-                  <Button
-                    Icon={IconFileText}
-                    title={t`Create custom quote`}
-                    variant="secondary"
-                    fullWidth
-                    onClick={() => setInvoicePackKey(pack.key)}
-                  />
-                </StyledCreditActions>
+                  </StyledCreditActions>
+                )}
               </StyledCreditPackCardContent>
             </StyledBillingCard>
           );

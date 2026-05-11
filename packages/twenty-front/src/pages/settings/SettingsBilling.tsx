@@ -8,8 +8,7 @@ import {
   Card,
   CardContent,
   H2Title,
-  MOBILE_VIEWPORT,
-  Section,
+  Section
 } from 'twenty-ui';
 
 import { currentUserState } from '@/auth/states/currentUserState';
@@ -27,11 +26,10 @@ import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModa
 import { SubMenuTopBarContainer } from '@/ui/layout/page/components/SubMenuTopBarContainer';
 import { useSubscriptionStatus } from '@/workspace/hooks/useSubscriptionStatus';
 import {
+  buildComparableMapsByPlan,
   convertPricingAmountSubunits,
   CREDIT_PACKS_BY_INTENT,
   isDefined,
-  PRICING_PLANS,
-  PricingPlanId,
   CreditPack as SharedCreditPack,
   SUPPORTED_PRICING_CURRENCIES,
   SupportedPricingCurrency,
@@ -107,8 +105,9 @@ type SwitchInfo = {
 
 const StyledBillingRoot = styled.div`
   margin: 0 auto;
-  max-width: 1160px;
+  max-width: 1480px;
   min-width: 0;
+  overflow-x: clip;
   width: 100%;
 `;
 
@@ -119,20 +118,19 @@ const StyledBillingCard = styled(Card)`
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-width: 0;
 `;
 
 const StyledPlansGrid = styled.div`
   display: grid;
   gap: ${({ theme }) => theme.spacing(4)};
   grid-template-columns: repeat(
-    auto-fill,
-    minmax(${({ theme }) => theme.spacing(60)}, 1fr)
+    auto-fit,
+    minmax(min(100%, ${({ theme }) => theme.spacing(60)}), 1fr)
   );
   margin-top: ${({ theme }) => theme.spacing(4)};
-
-  @media (max-width: ${MOBILE_VIEWPORT}px) {
-    grid-template-columns: 1fr;
-  }
+  min-width: 0;
+  width: 100%;
 `;
 
 const StyledPlanCardContent = styled(CardContent)`
@@ -168,9 +166,6 @@ const StyledLicenceLabel = styled.label`
 const StyledLicenceInputWrap = styled.div`
   width: ${({ theme }) => theme.spacing(20)};
 `;
-
-const PRICING_CURRENCY_STORAGE_KEY = 'arxena:pricing-currency';
-const PRICING_CURRENCY_MANUAL_STORAGE_KEY = 'arxena:pricing-currency-manual';
 
 export const SettingsBilling = () => {
   const { t } = useLingui();
@@ -522,40 +517,11 @@ export const SettingsBilling = () => {
   const [displayCurrency, setDisplayCurrency] =
     useState<SupportedPricingCurrency>('USD');
 
-  const handleDisplayCurrencyChange = useCallback(
-    (nextCurrency: SupportedPricingCurrency) => {
-      setDisplayCurrency(nextCurrency);
-      localStorage.setItem(PRICING_CURRENCY_STORAGE_KEY, nextCurrency);
-      localStorage.setItem(PRICING_CURRENCY_MANUAL_STORAGE_KEY, 'true');
-    },
-    [],
+  const [selectedMapsByPlan, setSelectedMapsByPlan] = useState(
+    buildComparableMapsByPlan,
   );
 
-  const [selectedMapsByPlan, setSelectedMapsByPlan] = useState<
-    Record<PricingPlanId, number>
-  >({
-    sales: PRICING_PLANS.sales.minMaps,
-    recruitment: PRICING_PLANS.recruitment.minMaps,
-    corporate: PRICING_PLANS.corporate.minMaps,
-    investment: PRICING_PLANS.investment.minMaps,
-  });
-
   useEffect(() => {
-    const hasManualCurrencyPreference =
-      localStorage.getItem(PRICING_CURRENCY_MANUAL_STORAGE_KEY) === 'true';
-    if (hasManualCurrencyPreference) {
-      const storedCurrency = localStorage.getItem(PRICING_CURRENCY_STORAGE_KEY);
-      if (
-        storedCurrency !== null &&
-        SUPPORTED_PRICING_CURRENCIES.includes(
-          storedCurrency as SupportedPricingCurrency,
-        )
-      ) {
-        setDisplayCurrency(storedCurrency as SupportedPricingCurrency);
-      }
-      return;
-    }
-
     const resolvedCurrency = (
       requestPricingCurrencyData as
         | { requestPricingCurrency?: string }
@@ -701,7 +667,6 @@ export const SettingsBilling = () => {
             <SettingsBillingPricing
               creditPacks={creditPacks}
               displayCurrency={displayCurrency}
-              setDisplayCurrency={handleDisplayCurrencyChange}
               selectedMapsByPlan={selectedMapsByPlan}
               setSelectedMapsByPlan={setSelectedMapsByPlan}
               sharedPackMetaByKey={sharedPackMetaByKey}

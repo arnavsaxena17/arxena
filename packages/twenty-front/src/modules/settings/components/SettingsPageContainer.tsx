@@ -4,6 +4,7 @@ import { ScrollWrapper } from '@/ui/utilities/scroll/components/ScrollWrapper';
 import styled from '@emotion/styled';
 import { ReactNode } from 'react';
 import { isDefined } from 'twenty-shared';
+import { MOBILE_VIEWPORT } from 'twenty-ui';
 
 const StyledSettingsPageContainer = styled.div<{
   width?: number;
@@ -25,6 +26,11 @@ const StyledSettingsPageContainer = styled.div<{
   `}
   overflow: auto;
   padding: ${({ theme }) => theme.spacing(6, 8, 8)};
+
+  @media (max-width: ${MOBILE_VIEWPORT}px) {
+    padding: ${({ theme }) => theme.spacing(4, 4, 8)};
+  }
+
   width: ${({ width, fullWidth }) => {
     if (fullWidth) {
       return '100%';

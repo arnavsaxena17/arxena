@@ -457,9 +457,14 @@ export const PricingContent = ({
                 <StyledCtaPrimary href={signUpUrl}>
                   Start for free
                 </StyledCtaPrimary>
-                <StyledCtaSecondary href="mailto:hello@arxena.com?subject=Talk%20to%20sales">
+                <StyledCtaSecondary
+                  href="https://calendly.com/arxena/30min"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   Talk to sales
                 </StyledCtaSecondary>
+           
               </StyledCtaStack>
             </StyledCard>
           );

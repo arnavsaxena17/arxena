@@ -1,10 +1,17 @@
 import {
-    ALL_CREDIT_PACKS,
-    getSmallPaymentTestCreditPackKey,
-    PRICING_PLANS,
-    SMALL_PAYMENT_TEST_CREDIT_PACKS,
-    SUPPORTED_PRICING_CURRENCIES,
-    type PricingPlanId,
+  ALL_CREDIT_PACKS,
+  buildComparableMapsByPlan,
+  getComparableMapsForPlan,
+  getPricingMarketingSubheadlineLines,
+  getSmallPaymentTestCreditPackKey,
+  PRICING_COMPARABLE_MAPS_VOLUME,
+  PRICING_PLAN_CONTENT_BY_ID,
+  PRICING_PLAN_ORDER,
+  PRICING_PLANS,
+  PRICING_RECOMMENDED_PLAN_ID,
+  SMALL_PAYMENT_TEST_CREDIT_PACKS,
+  SUPPORTED_PRICING_CURRENCIES,
+  type PricingPlanId,
 } from '../credit-packs.constant';
 
 describe('SMALL_PAYMENT_TEST_CREDIT_PACKS', () => {
@@ -37,6 +44,54 @@ describe('SMALL_PAYMENT_TEST_CREDIT_PACKS', () => {
         expect(subunits).toBeGreaterThan(0);
       }
     }
+  });
+});
+
+describe('pricing marketing content', () => {
+  it('keeps the canonical plan order and recommended plan', () => {
+    expect(PRICING_PLAN_ORDER).toEqual([
+      'sales',
+      'recruitment',
+      'corporate',
+      'investment',
+    ]);
+    expect(PRICING_RECOMMENDED_PLAN_ID).toBe('recruitment');
+  });
+
+  it('splits the marketing subheadline into orienting lines', () => {
+    expect(getPricingMarketingSubheadlineLines()).toEqual([
+      'Four flexible plans for Sales, Recruitment, Corporate HR, and Investment teams.',
+      'Choose your tier—map volume, depth, and refresh cadence all scale for your needs.',
+    ]);
+  });
+
+  it('defines segment content for every plan', () => {
+    for (const planId of PRICING_PLAN_ORDER) {
+      const content = PRICING_PLAN_CONTENT_BY_ID[planId];
+      expect(content.persona.length).toBeGreaterThan(0);
+      expect(content.onboardingHint.length).toBeGreaterThan(0);
+      expect(content.segmentTone).toBeDefined();
+    }
+  });
+
+  it('maps each plan to a distinct lane segment tone', () => {
+    expect(PRICING_PLAN_CONTENT_BY_ID.sales.segmentTone).toBe('orange');
+    expect(PRICING_PLAN_CONTENT_BY_ID.recruitment.segmentTone).toBe('indigo');
+    expect(PRICING_PLAN_CONTENT_BY_ID.corporate.segmentTone).toBe('teal');
+    expect(PRICING_PLAN_CONTENT_BY_ID.investment.segmentTone).toBe('forest');
+  });
+
+  it('uses comparable map volume when a plan supports it', () => {
+    expect(getComparableMapsForPlan('sales')).toBe(PRICING_COMPARABLE_MAPS_VOLUME);
+    expect(getComparableMapsForPlan('recruitment')).toBe(
+      PRICING_COMPARABLE_MAPS_VOLUME,
+    );
+    expect(buildComparableMapsByPlan()).toEqual({
+      sales: PRICING_COMPARABLE_MAPS_VOLUME,
+      recruitment: PRICING_COMPARABLE_MAPS_VOLUME,
+      corporate: PRICING_COMPARABLE_MAPS_VOLUME,
+      investment: PRICING_COMPARABLE_MAPS_VOLUME,
+    });
   });
 });
 

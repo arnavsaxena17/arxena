@@ -40,11 +40,15 @@ export type PricingPlan = {
   tiers: PricingPlanTier[];
 };
 
+export type PricingSegmentTone = 'orange' | 'indigo' | 'teal' | 'forest';
+
 export type PricingPlanContent = {
   tabLabel: string;
   onboardingTitle: string;
   onboardingBody: string;
   onboardingHint: string;
+  persona: string;
+  segmentTone: PricingSegmentTone;
   heroHeadline: string;
   heroSubheadline: string;
 };
@@ -442,6 +446,32 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
 export const PRICING_MARKETING_HERO_HEADLINE =
   'Modern org intelligence—faster, deeper, and radically more affordable than legacy consulting';
 export const PRICING_MARKETING_HERO_SUBHEADLINE = 'Four flexible plans for Sales, Recruitment, Corporate HR, and Investment teams.\nChoose your tier—map volume, depth, and refresh cadence all scale for your needs.';
+export const PRICING_BILLING_HERO_HEADLINE =
+  'Choose your org intelligence plan';
+export const PRICING_MARKETING_ROI_HEADLINE =
+  'Understand the lay of the org before your first message.';
+export const PRICING_HELP_ENGAGEMENT_LEAD =
+  'Already have your org charts? Let our AI reach out to the right people.';
+export const PRICING_HELP_ENGAGEMENT_LINK_LABEL = 'Learn about Engagement →';
+export const PRICING_HELP_TITLE = 'Need more information?';
+export const PRICING_HELP_SUBTITLE =
+  "Let's find the perfect solution for your organization.";
+export const PRICING_CTA_START_FOR_FREE = 'Start for free';
+export const PRICING_CTA_TALK_TO_SALES = 'Talk to sales';
+export const PRICING_CTA_BOOK_DEMO = 'Book a demo';
+export const PRICING_MAP_TYPE_LABEL = 'Map type';
+export const PRICING_VOLUME_LABEL = 'Volume';
+export const PRICING_TALENT_MAP_UNIT = 'map';
+export const PRICING_TALENT_MAPS_UNIT = 'talent maps';
+export const PRICING_RECOMMENDED_PLAN_LABEL = 'Recommended';
+export const PRICING_RECOMMENDED_PLAN_ID: PricingPlanId = 'recruitment';
+export const PRICING_COMPARABLE_MAPS_VOLUME = 10;
+export const REVEAL_CREDIT_COST_EMAIL = 1;
+export const REVEAL_CREDIT_COST_PHONE = 5;
+export const PRICING_CREDITS_CONVERSION_HELP =
+  '1 credit = 1 verified email. 5 credits = 1 phone reveal.';
+export const PRICING_SMALL_PAYMENT_TEST_DEV_BANNER =
+  'Development only: small payment test SKUs are enabled on this environment.';
 export const PRICING_PLAN_CONTENT_BY_ID: Record<
   PricingPlanId,
   PricingPlanContent
@@ -451,6 +481,8 @@ export const PRICING_PLAN_CONTENT_BY_ID: Record<
     onboardingTitle: PRICING_PLANS.sales.label,
     onboardingBody: 'Functional talent maps for targeted outreach, decision-maker IDs, credits to start.',
     onboardingHint: 'Self-serve · extension · ~2 hr delivery',
+    persona: 'Founder / Sales',
+    segmentTone: 'orange',
     heroHeadline: 'Pipeline-grade org intelligence for Sales / ABM',
     heroSubheadline: 'Map buying committees, champions, and blockers across target accounts — then reveal/export only what matters.',
   },
@@ -459,6 +491,8 @@ export const PRICING_PLAN_CONTENT_BY_ID: Record<
     onboardingTitle: PRICING_PLANS.recruitment.label,
     onboardingBody: 'Full company maps, mandate-specific candidates, contact enrichment.',
     onboardingHint: 'Self-serve or 20-min live walkthrough',
+    persona: 'Recruiter',
+    segmentTone: 'indigo',
     heroHeadline: 'Full-company talent maps for Recruitment & Exec Search',
     heroSubheadline:
       'Map every level and function across target companies, then run mandate-specific shortlists with verified contacts.',
@@ -469,6 +503,8 @@ export const PRICING_PLAN_CONTENT_BY_ID: Record<
     onboardingBody:
       'Competitor benchmarking, internal mobility, multi-company maps.',
     onboardingHint: 'Self-serve · multi-company maps',
+    persona: 'Corporate TA',
+    segmentTone: 'teal',
     heroHeadline: 'Competitor benchmarking for Corporate HR',
     heroSubheadline:
       'Track competitor org changes, run BU-level benchmarks, and govern multi-seat access with credit controls.',
@@ -479,18 +515,65 @@ export const PRICING_PLAN_CONTENT_BY_ID: Record<
     onboardingBody:
       'Portfolio org intelligence and leadership timeline for deals.',
     onboardingHint: 'Book a call · live company map',
+    persona: 'PE / VC',
+    segmentTone: 'forest',
     heroHeadline: 'Org Timeline for Investment Companies',
     heroSubheadline:
       'Diligence faster, monitor portfolios, and benchmark leadership timelines before your first meeting.',
   },
 };
 
-const PRICING_PLAN_IDS: PricingPlanId[] = [
+export const PRICING_PLAN_ORDER: PricingPlanId[] = [
   'sales',
   'recruitment',
   'corporate',
   'investment',
 ];
+
+export const getPricingMarketingSubheadlineLines = (): string[] =>
+  PRICING_MARKETING_HERO_SUBHEADLINE.split('\n');
+
+export const findPricingPlanTier = (
+  plan: PricingPlan,
+  maps: number,
+): PricingPlanTier => {
+  const exact = plan.tiers.find((tier) => tier.maps === maps);
+  return exact ?? plan.tiers[0];
+};
+
+export const getComparableMapsForPlan = (
+  planId: PricingPlanId,
+  comparableMaps = PRICING_COMPARABLE_MAPS_VOLUME,
+): number => {
+  const plan = PRICING_PLANS[planId];
+  const hasComparableTier = plan.tiers.some(
+    (tier) => tier.maps === comparableMaps,
+  );
+  return hasComparableTier ? comparableMaps : plan.minMaps;
+};
+
+export const buildComparableMapsByPlan = (
+  comparableMaps = PRICING_COMPARABLE_MAPS_VOLUME,
+): Record<PricingPlanId, number> =>
+  PRICING_PLAN_ORDER.reduce(
+    (acc, planId) => {
+      acc[planId] = getComparableMapsForPlan(planId, comparableMaps);
+      return acc;
+    },
+    {} as Record<PricingPlanId, number>,
+  );
+
+export const buildInitialPricingTierStateByMinMaps = (): Record<
+  PricingPlanId,
+  number
+> =>
+  PRICING_PLAN_ORDER.reduce(
+    (acc, planId) => {
+      acc[planId] = PRICING_PLANS[planId].minMaps;
+      return acc;
+    },
+    {} as Record<PricingPlanId, number>,
+  );
 
 const buildCreditPackFromTier = (
   plan: PricingPlan,
@@ -517,7 +600,7 @@ const buildCreditPackFromTier = (
 });
 
 export const CREDIT_PACKS_BY_PLAN: Record<PricingPlanId, CreditPack[]> =
-  PRICING_PLAN_IDS.reduce<Record<PricingPlanId, CreditPack[]>>(
+  PRICING_PLAN_ORDER.reduce<Record<PricingPlanId, CreditPack[]>>(
     (acc, planId) => {
       const plan = PRICING_PLANS[planId];
       acc[planId] = plan.tiers.map((tier) =>
@@ -540,7 +623,7 @@ export const CREDIT_PACKS_BY_INTENT: Record<PricingIntent, CreditPack[]> = {
   INVESTING: CREDIT_PACKS_BY_PLAN.investment,
 };
 
-export const ALL_CREDIT_PACKS: CreditPack[] = PRICING_PLAN_IDS.flatMap(
+export const ALL_CREDIT_PACKS: CreditPack[] = PRICING_PLAN_ORDER.flatMap(
   (planId) => CREDIT_PACKS_BY_PLAN[planId],
 );
 
@@ -563,7 +646,7 @@ export const getSmallPaymentTestCreditPackKey = (
 ): CreditPackKey => `${planId}_small_payment_test`;
 
 export const SMALL_PAYMENT_TEST_CREDIT_PACKS: CreditPack[] =
-  PRICING_PLAN_IDS.map((planId) => {
+  PRICING_PLAN_ORDER.map((planId) => {
     const plan = PRICING_PLANS[planId];
 
     return {
@@ -607,7 +690,7 @@ export const getCreditPacksForIntent = (
 };
 
 export const PRICING_PLAN_ID_TO_INTENT: Record<PricingPlanId, PricingIntent> =
-  PRICING_PLAN_IDS.reduce<Record<PricingPlanId, PricingIntent>>(
+  PRICING_PLAN_ORDER.reduce<Record<PricingPlanId, PricingIntent>>(
     (acc, planId) => {
       acc[planId] = PRICING_PLANS[planId].intent;
       return acc;
@@ -616,7 +699,7 @@ export const PRICING_PLAN_ID_TO_INTENT: Record<PricingPlanId, PricingIntent> =
   );
 
 export const PRICING_INTENT_TO_PLAN_ID: Record<PricingIntent, PricingPlanId> =
-  PRICING_PLAN_IDS.reduce<Record<PricingIntent, PricingPlanId>>(
+  PRICING_PLAN_ORDER.reduce<Record<PricingIntent, PricingPlanId>>(
     (acc, planId) => {
       acc[PRICING_PLAN_ID_TO_INTENT[planId]] = planId;
       return acc;
