@@ -20,11 +20,18 @@ export const normalizeLinkedInUrl = (url: string): string => {
  * @param url - The normalized LinkedIn URL from database
  * @returns The LinkedIn URL formatted for display
  */
+const WWW_LINKEDIN_HOST_PLACEHOLDER = '__ARXENA_WWW_LINKEDIN_COM__';
+
 export const reconstructLinkedInUrlForDisplay = (url: string): string => {
   if (!url) return '';
   // Idempotent: collapse any www.www... chain first, then prepend exactly one www.
-  return url.replace(/(?:www\.)+linkedin\.com/gi, 'www.linkedin.com')
-    .replace(/(?<!www\.)linkedin\.com/gi, 'www.linkedin.com');
+  // Avoid RegExp lookbehind (?<!...): unsupported on Safari / WebKit before iOS 16.4, which
+  // breaks the entire bundle at parse time on older iPads.
+  return url
+    .replace(/(?:www\.)+linkedin\.com/gi, WWW_LINKEDIN_HOST_PLACEHOLDER)
+    .replace(/linkedin\.com/gi, 'www.linkedin.com')
+    .split(WWW_LINKEDIN_HOST_PLACEHOLDER)
+    .join('www.linkedin.com');
 };
 
 /**
