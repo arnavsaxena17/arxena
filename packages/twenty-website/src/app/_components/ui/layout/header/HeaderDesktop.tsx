@@ -53,6 +53,12 @@ const StyledNavLink = styled(Link)`
   }
 `;
 
+const StyledNavLinkHiddenOnTablet = styled(StyledNavLink)`
+  @media (min-width: 810px) and (max-width: 1199px) {
+    display: none;
+  }
+`;
+
 const StyledSearchWrapper = styled.div`
   flex: 1;
   min-width: 200px;
@@ -108,6 +114,7 @@ const StyledSignUp = styled.a`
 
 type HeaderDesktopProps = {
   showSearch?: boolean;
+  showCurrencySelector?: boolean;
   signInUrl: string;
   signUpUrl: string;
   currency: SupportedPricingCurrency;
@@ -116,6 +123,7 @@ type HeaderDesktopProps = {
 
 export const HeaderDesktop = ({
   showSearch = true,
+  showCurrencySelector = true,
   signInUrl,
   signUpUrl,
   currency,
@@ -136,14 +144,21 @@ export const HeaderDesktop = ({
           label="Products"
           items={PRODUCT_PAGES}
         />
-        <StyledNavLink href="/resources">Resources</StyledNavLink>
+        <StyledNavLinkHiddenOnTablet href="/resources">
+          Resources
+        </StyledNavLinkHiddenOnTablet>
         <StyledNavLink href="/team">Team</StyledNavLink>
         <StyledNavLink href="/contact">Contact</StyledNavLink>
         <StyledNavLink href="/pricing">Pricing</StyledNavLink>
-        <StyledNavLink href="/engage" aria-label="Engage — WhatsApp & LinkedIn">
+        <StyledNavLinkHiddenOnTablet
+          href="/engage"
+          aria-label="Engage — WhatsApp & LinkedIn"
+        >
           Engage
-        </StyledNavLink>
-        <StyledNavLink href="/chrome-extension">Chrome extension</StyledNavLink>
+        </StyledNavLinkHiddenOnTablet>
+        <StyledNavLinkHiddenOnTablet href="/chrome-extension">
+          Chrome extension
+        </StyledNavLinkHiddenOnTablet>
       </StyledNav>
       {showSearch && (
         <StyledSearchWrapper>
@@ -154,19 +169,21 @@ export const HeaderDesktop = ({
         </StyledSearchWrapper>
       )}
       <StyledAuthLinks>
-        <StyledCurrencySelect
-          aria-label="Select currency"
-          value={currency}
-          onChange={(event) =>
-            onCurrencyChange(event.target.value as SupportedPricingCurrency)
-          }
-        >
-          {SUPPORTED_PRICING_CURRENCIES.map((supportedCurrency) => (
-            <option key={supportedCurrency} value={supportedCurrency}>
-              {supportedCurrency}
-            </option>
-          ))}
-        </StyledCurrencySelect>
+        {showCurrencySelector && (
+          <StyledCurrencySelect
+            aria-label="Select currency"
+            value={currency}
+            onChange={(event) =>
+              onCurrencyChange(event.target.value as SupportedPricingCurrency)
+            }
+          >
+            {SUPPORTED_PRICING_CURRENCIES.map((supportedCurrency) => (
+              <option key={supportedCurrency} value={supportedCurrency}>
+                {supportedCurrency}
+              </option>
+            ))}
+          </StyledCurrencySelect>
+        )}
         <StyledSignIn
           href={signInUrl}
           onClick={() => {

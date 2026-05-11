@@ -1,7 +1,6 @@
 'use client';
 
 import styled from '@emotion/styled';
-import Script from 'next/script';
 
 const StyledEmbedWrap = styled.div`
   width: 100%;
@@ -12,24 +11,25 @@ const StyledEmbedWrap = styled.div`
   background: #fafafa;
 `;
 
+const StyledCalendlyFrame = styled.iframe`
+  background: #fafafa;
+  border: 0;
+  display: block;
+  height: 700px;
+  width: 100%;
+`;
+
 type CalendlyInlineProps = {
   url: string;
 };
 
 export const CalendlyInline = ({ url }: CalendlyInlineProps) => {
   return (
-    <>
-      <Script
-        src="https://assets.calendly.com/assets/external/widget.js"
-        strategy="lazyOnload"
+    <StyledEmbedWrap>
+      <StyledCalendlyFrame
+        src={url}
+        title="Schedule a call with Arxena"
       />
-      <StyledEmbedWrap>
-        <div
-          className="calendly-inline-widget"
-          data-url={url}
-          style={{ minWidth: '320px', height: '700px' }}
-        />
-      </StyledEmbedWrap>
-    </>
+    </StyledEmbedWrap>
   );
 };

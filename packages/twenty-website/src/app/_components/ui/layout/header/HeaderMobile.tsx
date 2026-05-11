@@ -64,6 +64,12 @@ const StyledNavLink = styled(Link)`
   }
 `;
 
+const StyledNavLinkHiddenOnTablet = styled(StyledNavLink)`
+  @media (min-width: 768px) and (max-width: 809px) {
+    display: none;
+  }
+`;
+
 const StyledSignIn = styled.a`
   color: rgb(71, 71, 71);
   text-decoration: none;
@@ -152,6 +158,7 @@ const HamburgerLine2 = styled(HamburgerLine)`
 
 type HeaderMobileProps = {
   showSearch?: boolean;
+  showCurrencySelector?: boolean;
   signInUrl: string;
   signUpUrl: string;
   currency: SupportedPricingCurrency;
@@ -160,6 +167,7 @@ type HeaderMobileProps = {
 
 export const HeaderMobile = ({
   showSearch = true,
+  showCurrencySelector = true,
   signInUrl,
   signUpUrl,
   currency,
@@ -202,32 +210,32 @@ export const HeaderMobile = ({
             items={PRODUCT_PAGES}
             onItemNavigate={() => setMenuOpen(false)}
           />
-          <StyledNavLink href="/resources">Resources</StyledNavLink>
-          <StyledNavLink href="/team">Team</StyledNavLink>
+          <StyledNavLinkHiddenOnTablet href="/resources">
+            Resources
+          </StyledNavLinkHiddenOnTablet>
           <StyledNavLink href="/contact">Contact</StyledNavLink>
           <StyledNavLink href="/pricing">Pricing</StyledNavLink>
-          <StyledNavLink
+          <StyledNavLinkHiddenOnTablet
             href="/engage"
             aria-label="Engage — WhatsApp & LinkedIn"
           >
             Engage
-          </StyledNavLink>
-          <StyledNavLink href="/chrome-extension">
-            Chrome extension
-          </StyledNavLink>
-          <StyledCurrencySelect
-            aria-label="Select currency"
-            value={currency}
-            onChange={(event) =>
-              onCurrencyChange(event.target.value as SupportedPricingCurrency)
-            }
-          >
-            {SUPPORTED_PRICING_CURRENCIES.map((supportedCurrency) => (
-              <option key={supportedCurrency} value={supportedCurrency}>
-                {supportedCurrency}
-              </option>
-            ))}
-          </StyledCurrencySelect>
+          </StyledNavLinkHiddenOnTablet>
+          {showCurrencySelector && (
+            <StyledCurrencySelect
+              aria-label="Select currency"
+              value={currency}
+              onChange={(event) =>
+                onCurrencyChange(event.target.value as SupportedPricingCurrency)
+              }
+            >
+              {SUPPORTED_PRICING_CURRENCIES.map((supportedCurrency) => (
+                <option key={supportedCurrency} value={supportedCurrency}>
+                  {supportedCurrency}
+                </option>
+              ))}
+            </StyledCurrencySelect>
+          )}
           {showSearch && (
             <StyledSearchWrapper>
               <OrgChartSearch

@@ -1,6 +1,5 @@
 import styled from '@emotion/styled';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { toTitleCase } from 'twenty-shared';
 
@@ -36,10 +35,10 @@ export type CompanySearchAutocompleteProps = {
 const DROPDOWN_MIN_WIDTH = 520;
 const DROPDOWN_MAX_HEIGHT = 360;
 
-const StyledWrapper = styled.div`
+const StyledWrapper = styled.div<{ $isOpen?: boolean }>`
   position: relative;
   width: 100%;
-  z-index: 1;
+  z-index: ${({ $isOpen }) => ($isOpen ? 9998 : 1)};
 `;
 
 const StyledInput = styled.input<{ $hasStartIcon?: boolean }>`
@@ -68,11 +67,11 @@ const StyledInput = styled.input<{ $hasStartIcon?: boolean }>`
   }
 `;
 
-const StyledDropdown = styled.ul<{ top: number; left: number; width: number }>`
-  position: fixed;
-  top: ${({ top }) => top}px;
-  left: ${({ left }) => left}px;
-  width: ${({ width }) => width}px;
+const StyledDropdown = styled.ul`
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 100%;
   min-width: ${DROPDOWN_MIN_WIDTH}px;
   max-width: calc(100vw - 16px);
   max-height: ${DROPDOWN_MAX_HEIGHT}px;
@@ -81,6 +80,7 @@ const StyledDropdown = styled.ul<{ top: number; left: number; width: number }>`
   margin: 0;
   padding: ${({ theme }) => theme.spacing(2)};
   list-style: none;
+  text-align: left;
   background: ${({ theme }) => theme.background.primary};
   border: 1px solid ${({ theme }) => theme.border.color.light};
   border-radius: ${({ theme }) => theme.border.radius.xl};
@@ -251,9 +251,7 @@ export const CompanySearchAutocomplete = ({
 
   const [inputValue, setInputValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);
-  const [dropdownRect, setDropdownRect] = useState({ top: 0, left: 0, width: 0 });
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLUListElement>(null);
 
   const { companies, isLoading, error, search, clear } = useCompanyAutocomplete({
@@ -262,41 +260,7 @@ export const CompanySearchAutocomplete = ({
     autocompletePath,
   });
 
-  const updateDropdownPosition = useCallback(() => {
-    const input = inputRef.current;
-    if (input && typeof window !== 'undefined') {
-      const rect = input.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
-      const isMobile = viewportWidth < 810;
-      const dropdownWidth = isMobile
-        ? Math.min(rect.width, viewportWidth - 16)
-        : Math.max(rect.width, DROPDOWN_MIN_WIDTH);
-      const left = isMobile
-        ? Math.max(8, Math.min(rect.left, viewportWidth - dropdownWidth - 8))
-        : Math.max(
-            8,
-            rect.left + (rect.width - dropdownWidth) / 2,
-          );
-      setDropdownRect({
-        top: rect.bottom + 8,
-        left,
-        width: dropdownWidth,
-      });
-    }
-  }, []);
-
   const showDropdown = isOpen && inputValue.trim().length > 0;
-
-  useLayoutEffect(() => {
-    if (showDropdown) updateDropdownPosition();
-  }, [showDropdown, companies, isLoading, updateDropdownPosition]);
-
-  useEffect(() => {
-    if (!showDropdown) return;
-    const handleResize = () => updateDropdownPosition();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [showDropdown, updateDropdownPosition]);
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -359,9 +323,6 @@ export const CompanySearchAutocomplete = ({
   const dropdownContent = showDropdown && (
     <StyledDropdown
       ref={dropdownRef}
-      top={dropdownRect.top}
-      left={dropdownRect.left}
-      width={dropdownRect.width}
       onMouseDown={(e) => e.preventDefault()}
     >
       {isLoading ? (
@@ -433,11 +394,10 @@ export const CompanySearchAutocomplete = ({
   );
 
   return (
-    <StyledWrapper ref={wrapperRef}>
+    <StyledWrapper ref={wrapperRef} $isOpen={showDropdown}>
       <StyledInputWrapper>
         {startIcon && <StyledStartIcon aria-hidden>{startIcon}</StyledStartIcon>}
         <StyledInput
-          ref={inputRef}
           type="text"
           value={inputValue}
           onChange={handleInputChange}
@@ -454,7 +414,7 @@ export const CompanySearchAutocomplete = ({
           </StyledInputSpinner>
         )}
       </StyledInputWrapper>
-      {dropdownContent && createPortal(dropdownContent, document.body)}
+      {dropdownContent}
     </StyledWrapper>
   );
 };

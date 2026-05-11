@@ -1,11 +1,12 @@
 'use client';
 
+import { type SupportedPricingCurrency } from '@/lib/pricing-currency-helpers';
 import { HeaderDesktop } from './HeaderDesktop';
 import { HeaderMobile } from './HeaderMobile';
-import { type SupportedPricingCurrency } from '@/lib/pricing-currency-helpers';
 
 type HeaderProps = {
   showSearch?: boolean;
+  showCurrencySelector?: boolean;
   signInUrl: string;
   signUpUrl: string;
   currency?: SupportedPricingCurrency;
@@ -14,6 +15,7 @@ type HeaderProps = {
 
 export const Header = ({
   showSearch = true,
+  showCurrencySelector = true,
   signInUrl,
   signUpUrl,
   currency = 'USD',
@@ -23,6 +25,7 @@ export const Header = ({
     <>
       <HeaderDesktop
         showSearch={showSearch}
+        showCurrencySelector={showCurrencySelector}
         signInUrl={signInUrl}
         signUpUrl={signUpUrl}
         currency={currency}
@@ -30,6 +33,7 @@ export const Header = ({
       />
       <HeaderMobile
         showSearch={showSearch}
+        showCurrencySelector={showCurrencySelector}
         signInUrl={signInUrl}
         signUpUrl={signUpUrl}
         currency={currency}
