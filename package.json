@@ -409,7 +409,7 @@
   "nx": {},
   "scripts": {
     "start": "npx concurrently --kill-others 'npx nx run-many -t start -p twenty-server twenty-front' 'npx wait-on tcp:3000 && npx nx run twenty-server:worker'",
-    "postinstall": "patch-package && node scripts/patch-gojs.cjs && node -e \"require('fs').rmSync('node_modules/.vite/packages/twenty-front/deps', {recursive:true,force:true})\"",
+    "postinstall": "patch-package && node scripts/fix-tiptap-extension-code-safari-regex.cjs && node scripts/patch-gojs.cjs && node -e \"require('fs').rmSync('node_modules/.vite/packages/twenty-front/deps', {recursive:true,force:true})\"",
     "test:linkedin-query-generation": "yarn workspace twenty-server run test:linkedin-query-generation"
   },
   "workspaces": {
