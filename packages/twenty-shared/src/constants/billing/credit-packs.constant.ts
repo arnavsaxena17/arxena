@@ -361,7 +361,7 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
     id: 'investment',
     intent: 'INVESTING',
     label: 'Investment Companies',
-    tagline: 'Portfolio org development timeline & due diligence for PE / VC',
+    tagline: 'Org development timeline & due diligence for PE / VC',
     icon: '📈',
     mapType: 'timeline',
     mapTypeLabel: 'Full company + Org Development Timeline',
@@ -439,17 +439,9 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
   },
 };
 
-// ---------------------------------------------------------------------------
-// Marketing hero — matches twenty-website PricingContent above plan cards.
-// ---------------------------------------------------------------------------
-
 export const PRICING_MARKETING_HERO_HEADLINE =
   'Modern org intelligence—faster, deeper, and radically more affordable than legacy consulting';
-
-/** Two sentences separated by newline; use CSS `white-space: pre-line` or `<br />`. */
-export const PRICING_MARKETING_HERO_SUBHEADLINE =
-  'Four flexible plans for Sales, Recruitment, Corporate TA, and Investment teams.\nChoose your tier—map volume, depth, and refresh cadence all scale for your needs.';
-
+export const PRICING_MARKETING_HERO_SUBHEADLINE = 'Four flexible plans for Sales, Recruitment, Corporate HR, and Investment teams.\nChoose your tier—map volume, depth, and refresh cadence all scale for your needs.';
 export const PRICING_PLAN_CONTENT_BY_ID: Record<
   PricingPlanId,
   PricingPlanContent
@@ -457,18 +449,15 @@ export const PRICING_PLAN_CONTENT_BY_ID: Record<
   sales: {
     tabLabel: PRICING_PLANS.sales.label,
     onboardingTitle: PRICING_PLANS.sales.label,
-    onboardingBody:
-      'Functional talent maps for targeted outreach, decision-maker IDs, credits to start.',
+    onboardingBody: 'Functional talent maps for targeted outreach, decision-maker IDs, credits to start.',
     onboardingHint: 'Self-serve · extension · ~2 hr delivery',
     heroHeadline: 'Pipeline-grade org intelligence for Sales / ABM',
-    heroSubheadline:
-      'Map buying committees, champions, and blockers across target accounts — then reveal/export only what matters.',
+    heroSubheadline: 'Map buying committees, champions, and blockers across target accounts — then reveal/export only what matters.',
   },
   recruitment: {
     tabLabel: PRICING_PLANS.recruitment.label,
     onboardingTitle: PRICING_PLANS.recruitment.label,
-    onboardingBody:
-      'Full company maps, mandate-specific candidates, contact enrichment.',
+    onboardingBody: 'Full company maps, mandate-specific candidates, contact enrichment.',
     onboardingHint: 'Self-serve or 20-min live walkthrough',
     heroHeadline: 'Full-company talent maps for Recruitment & Exec Search',
     heroSubheadline:
@@ -480,7 +469,7 @@ export const PRICING_PLAN_CONTENT_BY_ID: Record<
     onboardingBody:
       'Competitor benchmarking, internal mobility, multi-company maps.',
     onboardingHint: 'Self-serve · multi-company maps',
-    heroHeadline: 'Competitor benchmarking for Corporate TA',
+    heroHeadline: 'Competitor benchmarking for Corporate HR',
     heroSubheadline:
       'Track competitor org changes, run BU-level benchmarks, and govern multi-seat access with credit controls.',
   },
@@ -526,10 +515,6 @@ const buildCreditPackFromTier = (
   inheritedFromPlanId: plan.inheritedFromPlanId,
   pricesSubunits: tier.pricesSubunits,
 });
-
-// ---------------------------------------------------------------------------
-// Derived flat CREDIT_PACKS — runtime keeps using `creditPackKey` end to end.
-// ---------------------------------------------------------------------------
 
 export const CREDIT_PACKS_BY_PLAN: Record<PricingPlanId, CreditPack[]> =
   PRICING_PLAN_IDS.reduce<Record<PricingPlanId, CreditPack[]>>(
