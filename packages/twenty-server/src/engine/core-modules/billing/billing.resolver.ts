@@ -1,8 +1,9 @@
 /* @license Enterprise */
 
 import { UseFilters, UseGuards } from '@nestjs/common';
-import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Context, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Request } from 'express';
 
 import { GraphQLError } from 'graphql';
 import { getRevealCost, SettingsFeatures } from 'twenty-shared';
@@ -42,6 +43,7 @@ import { BillingPortalWorkspaceService } from 'src/engine/core-modules/billing/s
 import { BillingSubscriptionService } from 'src/engine/core-modules/billing/services/billing-subscription.service';
 import { CreditTransactionService } from 'src/engine/core-modules/billing/services/credit-transaction.service';
 import { InvoiceRequestService } from 'src/engine/core-modules/billing/services/invoice-request.service';
+import { PricingCurrencyService } from 'src/engine/core-modules/billing/services/pricing-currency.service';
 import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { StripePriceService } from 'src/engine/core-modules/billing/stripe/services/stripe-price.service';
 import { BillingPortalCheckoutSessionParameters } from 'src/engine/core-modules/billing/types/billing-portal-checkout-session-parameters.type';
@@ -79,6 +81,7 @@ export class BillingResolver {
     private readonly razorpayPlanService: RazorpayPlanService,
     private readonly razorpayOrderService: RazorpayOrderService,
     private readonly invoiceRequestService: InvoiceRequestService,
+    private readonly pricingCurrencyService: PricingCurrencyService,
     private readonly workspaceCreditsService: WorkspaceCreditsService,
     @InjectRepository(BillingPrice, 'core')
     private readonly billingPriceRepository: Repository<BillingPrice>,
@@ -247,6 +250,15 @@ export class BillingResolver {
           ? BillingProviderEnum.razorpay
           : BillingProviderEnum.stripe,
     };
+  }
+
+  @Query(() => String)
+  async requestPricingCurrency(
+    @Context() context: { req: Request },
+  ): Promise<string> {
+    return this.pricingCurrencyService.getRequestPricingCurrency(
+      context.req,
+    );
   }
 
   @Query(() => [CreditPackOutput])

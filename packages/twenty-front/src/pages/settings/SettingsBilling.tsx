@@ -48,6 +48,7 @@ import { CREATE_RAZORPAY_ORDER_FOR_CREDITS } from '~/modules/billing/graphql/cre
 import { CREDIT_PACKS } from '~/modules/billing/graphql/creditPacks';
 import { ENGAGEMENT_PLANS } from '~/modules/billing/graphql/engagementPlans';
 import { REQUEST_INVOICE_FOR_CREDITS } from '~/modules/billing/graphql/requestInvoiceForCredits';
+import { REQUEST_PRICING_CURRENCY } from '~/modules/billing/graphql/requestPricingCurrency';
 import { WORKSPACE_CREDITS } from '~/modules/billing/graphql/workspaceCredits';
 import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
 
@@ -169,6 +170,7 @@ const StyledLicenceInputWrap = styled.div`
 `;
 
 const PRICING_CURRENCY_STORAGE_KEY = 'arxena:pricing-currency';
+const PRICING_CURRENCY_MANUAL_STORAGE_KEY = 'arxena:pricing-currency-manual';
 
 export const SettingsBilling = () => {
   const { t } = useLingui();
@@ -259,6 +261,13 @@ export const SettingsBilling = () => {
   const engagementPlans: EngagementPlan[] =
     (engagementPlansData as { engagementPlans?: EngagementPlan[] } | undefined)
       ?.engagementPlans ?? [];
+
+  const { data: requestPricingCurrencyData } = useQuery(
+    REQUEST_PRICING_CURRENCY,
+    {
+      skip: !billingEnabled,
+    },
+  );
 
   const { data: creditPacksData } = useQuery(CREDIT_PACKS, {
     skip: !billingEnabled,
@@ -512,6 +521,16 @@ export const SettingsBilling = () => {
 
   const [displayCurrency, setDisplayCurrency] =
     useState<SupportedPricingCurrency>('USD');
+
+  const handleDisplayCurrencyChange = useCallback(
+    (nextCurrency: SupportedPricingCurrency) => {
+      setDisplayCurrency(nextCurrency);
+      localStorage.setItem(PRICING_CURRENCY_STORAGE_KEY, nextCurrency);
+      localStorage.setItem(PRICING_CURRENCY_MANUAL_STORAGE_KEY, 'true');
+    },
+    [],
+  );
+
   const [selectedMapsByPlan, setSelectedMapsByPlan] = useState<
     Record<PricingPlanId, number>
   >({
@@ -522,19 +541,35 @@ export const SettingsBilling = () => {
   });
 
   useEffect(() => {
-    const storedCurrency = localStorage.getItem(PRICING_CURRENCY_STORAGE_KEY);
+    const hasManualCurrencyPreference =
+      localStorage.getItem(PRICING_CURRENCY_MANUAL_STORAGE_KEY) === 'true';
+    if (hasManualCurrencyPreference) {
+      const storedCurrency = localStorage.getItem(PRICING_CURRENCY_STORAGE_KEY);
+      if (
+        storedCurrency !== null &&
+        SUPPORTED_PRICING_CURRENCIES.includes(
+          storedCurrency as SupportedPricingCurrency,
+        )
+      ) {
+        setDisplayCurrency(storedCurrency as SupportedPricingCurrency);
+      }
+      return;
+    }
+
+    const resolvedCurrency = (
+      requestPricingCurrencyData as
+        | { requestPricingCurrency?: string }
+        | undefined
+    )?.requestPricingCurrency;
     if (
+      resolvedCurrency !== undefined &&
       SUPPORTED_PRICING_CURRENCIES.includes(
-        storedCurrency as SupportedPricingCurrency,
+        resolvedCurrency as SupportedPricingCurrency,
       )
     ) {
-      setDisplayCurrency(storedCurrency as SupportedPricingCurrency);
+      setDisplayCurrency(resolvedCurrency as SupportedPricingCurrency);
     }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(PRICING_CURRENCY_STORAGE_KEY, displayCurrency);
-  }, [displayCurrency]);
+  }, [requestPricingCurrencyData]);
 
   const sharedPackMetaByKey = (() => {
     const allPacks: SharedCreditPack[] = Object.values(
@@ -666,7 +701,7 @@ export const SettingsBilling = () => {
             <SettingsBillingPricing
               creditPacks={creditPacks}
               displayCurrency={displayCurrency}
-              setDisplayCurrency={setDisplayCurrency}
+              setDisplayCurrency={handleDisplayCurrencyChange}
               selectedMapsByPlan={selectedMapsByPlan}
               setSelectedMapsByPlan={setSelectedMapsByPlan}
               sharedPackMetaByKey={sharedPackMetaByKey}
