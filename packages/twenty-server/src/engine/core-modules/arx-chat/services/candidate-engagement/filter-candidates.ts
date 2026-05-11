@@ -497,16 +497,6 @@ export class FilterCandidates {
         person?.node?.candidates?.edges || []
       );
 
-      console.log('Number of candidates in candidateDataObjs::', candidateDataObjs.length);
-
-      // Debug: Log all candidates and their status
-      candidateDataObjs.forEach((edge, index) => {
-        const candidate = edge?.node;
-        console.log(`Candidate ${index + 1}:`, {
-          name: candidate?.name,
-          jobName: candidate?.jobs?.name,
-        });
-      });
 
       // Find most recently updated candidate with active job
       // For incoming messages, we should be more permissive and not require startChat to be true
@@ -528,14 +518,7 @@ export class FilterCandidates {
           return bTime - aTime; // Sort descending
         })[0];
 
-      console.log(
-        'Active job candidate found:', 
-        activeJobCandidateObj?.node?.name || 'None',
-        'with updatedAt:',
-        'with id:',
-        activeJobCandidateObj?.node?.id || 'No id',
-        activeJobCandidateObj?.node?.updatedAt || 'No date'
-      );
+
 
       if (activeJobCandidateObj) {
         const personWithActiveJob = peopleEdges.find(

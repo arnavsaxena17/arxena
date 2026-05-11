@@ -28,6 +28,7 @@ function isPrivateOrLocalIp(ip: string): boolean {
 export async function resolveCountryCodeFromClientIp(
   clientIp: string,
 ): Promise<string | null> {
+  
   const normalizedIp = clientIp.trim();
   if (!normalizedIp || isPrivateOrLocalIp(normalizedIp)) {
     return null;

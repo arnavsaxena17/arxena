@@ -1,8 +1,8 @@
 'use client';
 
 import {
-  SUPPORTED_PRICING_CURRENCIES,
-  type SupportedPricingCurrency,
+    SUPPORTED_PRICING_CURRENCIES,
+    type SupportedPricingCurrency,
 } from '@/lib/pricing-currency-helpers';
 import styled from '@emotion/styled';
 import { useEffect, useState } from 'react';
@@ -11,7 +11,8 @@ import { PricingContent } from '@/app/_components/pricing/PricingContent';
 import { ContentContainer } from '@/app/_components/ui/layout/ContentContainer';
 import { Header } from '@/app/_components/ui/layout/header';
 
-const STORAGE_KEY = 'arxena:pricing-currency';
+const CURRENCY_STORAGE_KEY = 'arxena:pricing-currency';
+const CURRENCY_MANUAL_STORAGE_KEY = 'arxena:pricing-currency-manual';
 
 const StyledPricingPage = styled.main`
   background: #fff;
@@ -35,7 +36,13 @@ export const PricingPageClient = ({
     useState<SupportedPricingCurrency>(defaultCurrency);
 
   useEffect(() => {
-    const storedCurrency = localStorage.getItem(STORAGE_KEY);
+    const hasManualCurrencyPreference =
+      localStorage.getItem(CURRENCY_MANUAL_STORAGE_KEY) === 'true';
+    if (!hasManualCurrencyPreference) {
+      return;
+    }
+
+    const storedCurrency = localStorage.getItem(CURRENCY_STORAGE_KEY);
     if (
       storedCurrency !== null &&
       SUPPORTED_PRICING_CURRENCIES.includes(
@@ -46,9 +53,11 @@ export const PricingPageClient = ({
     }
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, currency);
-  }, [currency]);
+  const handleCurrencyChange = (nextCurrency: SupportedPricingCurrency) => {
+    setCurrency(nextCurrency);
+    localStorage.setItem(CURRENCY_STORAGE_KEY, nextCurrency);
+    localStorage.setItem(CURRENCY_MANUAL_STORAGE_KEY, 'true');
+  };
 
   return (
     <StyledPricingPage>
@@ -57,7 +66,7 @@ export const PricingPageClient = ({
         signInUrl={signInUrl}
         signUpUrl={signUpUrl}
         currency={currency}
-        onCurrencyChange={setCurrency}
+        onCurrencyChange={handleCurrencyChange}
       />
       <ContentContainer>
         <PricingContent signUpUrl={signUpUrl} currency={currency} />

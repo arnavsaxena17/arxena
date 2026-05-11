@@ -57,7 +57,6 @@ export class StageWiseClassification {
       apiToken,
     );
 
-    console.log('Local Stage Prompt is:::', localStagePrompt);
     const mostRecentMessageArr: ChatHistoryItem[] = new FilterCandidates(
       this.workspaceQueryService,
       this.staticGraphQLService,
@@ -78,10 +77,7 @@ export class StageWiseClassification {
     const humanReadableConversation =
       generateHumanReadableConversation(mostRecentMessageArr);
 
-    console.log(
-      'Human readable conversation for statge classifcation from cahtshistory:\n',
-      humanReadableConversation,
-    );
+
     // mostRecentMessageArr[0] = { role: 'system', content: stagePrompt };
     const messagesToLLM: ChatCompletionMessageParam[] = [
       {
@@ -94,11 +90,6 @@ export class StageWiseClassification {
       },
     ];
 
-    console.log('Messages to LLM:::', messagesToLLM);
-    console.log(
-      'Finally Sent messages for converation classificaation to OpenAI::: getting stage from chat historry::',
-      mostRecentMessageArr,
-    );
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
     const llmClients =

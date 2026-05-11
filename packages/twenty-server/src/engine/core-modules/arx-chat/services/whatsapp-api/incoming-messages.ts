@@ -1,14 +1,14 @@
 import {
-    BaileysIncomingMessage,
-    CandidateNode,
-    chatMessageType,
-    emptyCandidateProfileObj,
-    graphqlQueryToCreateOneNewWhatsappMessage,
-    graphqlToFetchWhatsappMessageByWhatsappId,
-    graphQlToFetchWhatsappMessages,
-    graphqlToUpdateWhatsappMessageId,
-    Job,
-    WhatsAppBusinessAccount
+  BaileysIncomingMessage,
+  CandidateNode,
+  chatMessageType,
+  emptyCandidateProfileObj,
+  graphqlQueryToCreateOneNewWhatsappMessage,
+  graphqlToFetchWhatsappMessageByWhatsappId,
+  graphQlToFetchWhatsappMessages,
+  graphqlToUpdateWhatsappMessageId,
+  Job,
+  WhatsAppBusinessAccount
 } from 'twenty-shared';
 import { EntityManager } from 'typeorm';
 import { UnipileMessageWebhook } from '../../types/unipile-webhook.types';
@@ -1100,11 +1100,6 @@ export class IncomingWhatsappMessages {
 
       return null;
     }
-
-    console.log(
-      'Person found for WhatsApp Unipile for the phone number::',
-      normalizedPhoneNumber,
-    );
 
     const apiKeys = await this.workspaceQueryService.getApiKeys(
       workspaceId,

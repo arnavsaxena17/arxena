@@ -787,7 +787,6 @@ export class UpdateChat {
       },
     };
 
-    console.log( 'This si the create update whatsapp message::', createNewWhatsappMessageUpdateVariables, );
 
     try {
       console.log(
