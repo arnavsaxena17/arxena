@@ -3,11 +3,20 @@ import { EnvironmentService } from 'src/engine/core-modules/environment/environm
 
 type HarvestLeadItem = Record<string, unknown>;
 type HarvestProfileResponse = Record<string, unknown>;
+type HarvestPagination = {
+  totalPages?: number;
+  totalElements?: number;
+  pageNumber?: number;
+  pageSize?: number;
+};
 
 @Injectable()
 export class HarvestLinkedinService {
   private readonly logger = new Logger(HarvestLinkedinService.name);
   private static readonly DEFAULT_BASE_URL = 'https://api.harvest-api.com';
+  /** Harvest Starter plan concurrency; override with HARVEST_API_CONCURRENCY if the plan changes. */
+  private static readonly DEFAULT_HARVEST_CONCURRENCY = 5;
+  private static readonly MAX_HARVEST_CONCURRENCY = 40;
 
   constructor(private readonly environmentService: EnvironmentService) {}
 
@@ -59,27 +68,19 @@ export class HarvestLinkedinService {
       );
     }
 
-    const pastWithProfiles: HarvestLeadItem[] = [];
-    for (let index = 0; index < past.length; index += 1) {
-      const lead = past[index];
-      const linkedinUrl = this.extractLinkedinUrl(lead);
-      if (!linkedinUrl) {
-        pastWithProfiles.push(lead);
-        continue;
-      }
-
-      const profile = await this.fetchProfile(linkedinUrl);
-      pastWithProfiles.push({
-        ...lead,
-        ...(profile ? { org_harvest_profile: profile } : {}),
-      });
-
-      if (index % 10 === 0) {
-        await input.onProgress?.(
-          `Harvest: enriched ${Math.min(index + 1, past.length)}/${past.length} past profiles...`,
-        );
-      }
-    }
+    const pastWithProfiles =
+      past.length > 0
+        ? await this.enrichLeadsWithProfilesInParallel({
+            leads: past,
+            onProgress: async (completedCount, total) => {
+              if (completedCount % 10 === 0 || completedCount === total) {
+                await input.onProgress?.(
+                  `Harvest: enriched ${completedCount}/${total} past profiles...`,
+                );
+              }
+            },
+          })
+        : [];
 
     this.logger.log(
       `Harvest company employee fetch finished companyUrl="${normalizedCompanyUrl}" current=${current.length} pastWithProfiles=${pastWithProfiles.length}`,
@@ -93,31 +94,256 @@ export class HarvestLinkedinService {
     type: 'current' | 'past';
     maxProfiles: number;
   }): Promise<HarvestLeadItem[]> {
-    const out: HarvestLeadItem[] = [];
-    const pageSize = 25;
-    const maxPages = Math.max(1, Math.ceil(input.maxProfiles / pageSize));
+    const maxPages = Math.max(1, Math.ceil(input.maxProfiles / 25));
+    const firstPage = await this.fetchLeadSearchPage({
+      companyUrl: input.companyUrl,
+      type: input.type,
+      page: 1,
+    });
+    const out = [...firstPage.items];
 
-    for (let page = 1; page <= maxPages; page += 1) {
-      const query =
-        input.type === 'current'
-          ? `currentCompanies=${encodeURIComponent(input.companyUrl)}`
-          : `pastCompanies=${encodeURIComponent(input.companyUrl)}`;
-      const url = `${this.getBaseUrl()}/linkedin/lead-search?${query}&page=${page}`;
-      const json = await this.getJson(url);
-      const items = this.extractLeadItems(json);
-      this.logger.log(
-        `Harvest lead-search type=${input.type} page=${page} companyUrl="${input.companyUrl}" parsedRows=${items.length} ${this.describeLeadSearchPayloadForLog(json)}`,
+    if (out.length >= input.maxProfiles) {
+      return out.slice(0, input.maxProfiles);
+    }
+
+    const totalPages = firstPage.pagination?.totalPages;
+    if (totalPages === 1) {
+      return out;
+    }
+
+    if (typeof totalPages === 'number' && totalPages > 1) {
+      const lastPage = Math.min(maxPages, totalPages);
+      const pages = Array.from(
+        { length: lastPage - 1 },
+        (_, index) => index + 2,
       );
-      if (items.length === 0) {
+      const pageItems = await this.fetchLeadSearchPagesInParallel({
+        companyUrl: input.companyUrl,
+        type: input.type,
+        pages,
+      });
+
+      for (const page of pages) {
+        const items = pageItems.get(page) ?? [];
+        if (items.length === 0) {
+          continue;
+        }
+        out.push(...items);
+        if (out.length >= input.maxProfiles) {
+          return out.slice(0, input.maxProfiles);
+        }
+      }
+
+      return out;
+    }
+
+    return this.fetchLeadSearchPagesSequentially({
+      companyUrl: input.companyUrl,
+      type: input.type,
+      startPage: 2,
+      maxPages,
+      out,
+      maxProfiles: input.maxProfiles,
+    });
+  }
+
+  private async fetchLeadSearchPage(input: {
+    companyUrl: string;
+    type: 'current' | 'past';
+    page: number;
+  }): Promise<{ items: HarvestLeadItem[]; pagination: HarvestPagination | null }> {
+    const url = this.buildLeadSearchUrl(input.companyUrl, input.type, input.page);
+    const json = await this.getJson(url);
+    const items = this.extractLeadItems(json);
+    this.logger.log(
+      `Harvest lead-search type=${input.type} page=${input.page} companyUrl="${input.companyUrl}" parsedRows=${items.length} ${this.describeLeadSearchPayloadForLog(json)}`,
+    );
+
+    return {
+      items,
+      pagination: this.extractPagination(json),
+    };
+  }
+
+  private async fetchLeadSearchPagesInParallel(input: {
+    companyUrl: string;
+    type: 'current' | 'past';
+    pages: number[];
+  }): Promise<Map<number, HarvestLeadItem[]>> {
+    if (input.pages.length === 0) {
+      return new Map();
+    }
+
+    const concurrency = Math.min(
+      this.getHarvestConcurrency(),
+      input.pages.length,
+    );
+    const results = new Map<number, HarvestLeadItem[]>();
+    let nextIndex = 0;
+
+    this.logger.log(
+      `Harvest lead-search type=${input.type} parallel pages=${input.pages[0]}-${input.pages[input.pages.length - 1]} concurrency=${concurrency} companyUrl="${input.companyUrl}"`,
+    );
+
+    const runWorker = async () => {
+      while (true) {
+        const index = nextIndex;
+        nextIndex += 1;
+
+        if (index >= input.pages.length) {
+          break;
+        }
+
+        const page = input.pages[index];
+        const pageResult = await this.fetchLeadSearchPage({
+          companyUrl: input.companyUrl,
+          type: input.type,
+          page,
+        });
+        results.set(page, pageResult.items);
+      }
+    };
+
+    await Promise.all(
+      Array.from({ length: concurrency }, () => runWorker()),
+    );
+
+    return results;
+  }
+
+  private async fetchLeadSearchPagesSequentially(input: {
+    companyUrl: string;
+    type: 'current' | 'past';
+    startPage: number;
+    maxPages: number;
+    out: HarvestLeadItem[];
+    maxProfiles: number;
+  }): Promise<HarvestLeadItem[]> {
+    const out = [...input.out];
+
+    for (let page = input.startPage; page <= input.maxPages; page += 1) {
+      const pageResult = await this.fetchLeadSearchPage({
+        companyUrl: input.companyUrl,
+        type: input.type,
+        page,
+      });
+
+      if (pageResult.items.length === 0) {
         break;
       }
-      out.push(...items);
+
+      out.push(...pageResult.items);
       if (out.length >= input.maxProfiles) {
         return out.slice(0, input.maxProfiles);
       }
     }
 
     return out;
+  }
+
+  private buildLeadSearchUrl(
+    companyUrl: string,
+    type: 'current' | 'past',
+    page: number,
+  ): string {
+    const query =
+      type === 'current'
+        ? `currentCompanies=${encodeURIComponent(companyUrl)}`
+        : `pastCompanies=${encodeURIComponent(companyUrl)}`;
+
+    return `${this.getBaseUrl()}/linkedin/lead-search?${query}&page=${page}`;
+  }
+
+  private async enrichLeadsWithProfilesInParallel(input: {
+    leads: HarvestLeadItem[];
+    onProgress?: (
+      completedCount: number,
+      total: number,
+    ) => void | Promise<void>;
+  }): Promise<HarvestLeadItem[]> {
+    const total = input.leads.length;
+    const results = new Array<HarvestLeadItem>(total);
+    const concurrency = Math.min(this.getHarvestConcurrency(), total);
+    let nextIndex = 0;
+    let completedCount = 0;
+
+    this.logger.log(
+      `Harvest profile enrichment parallel total=${total} concurrency=${concurrency}`,
+    );
+
+    const runWorker = async () => {
+      while (true) {
+        const index = nextIndex;
+        nextIndex += 1;
+
+        if (index >= total) {
+          break;
+        }
+
+        const lead = input.leads[index];
+        const linkedinUrl = this.extractLinkedinUrl(lead);
+
+        if (!linkedinUrl) {
+          results[index] = lead;
+        } else {
+          const profile = await this.fetchProfile(linkedinUrl);
+          results[index] = {
+            ...lead,
+            ...(profile ? { org_harvest_profile: profile } : {}),
+          };
+        }
+
+        completedCount += 1;
+        await input.onProgress?.(completedCount, total);
+      }
+    };
+
+    await Promise.all(
+      Array.from({ length: concurrency }, () => runWorker()),
+    );
+
+    return results;
+  }
+
+  private getHarvestConcurrency(): number {
+    const raw = Number(
+      process.env.HARVEST_API_CONCURRENCY ??
+        HarvestLinkedinService.DEFAULT_HARVEST_CONCURRENCY,
+    );
+    const parsed = Number.isFinite(raw)
+      ? raw
+      : HarvestLinkedinService.DEFAULT_HARVEST_CONCURRENCY;
+
+    return Math.max(
+      1,
+      Math.min(HarvestLinkedinService.MAX_HARVEST_CONCURRENCY, parsed),
+    );
+  }
+
+  private extractPagination(payload: unknown): HarvestPagination | null {
+    if (!payload || typeof payload !== 'object') {
+      return null;
+    }
+
+    const pagination = (payload as Record<string, unknown>).pagination;
+    if (!pagination || typeof pagination !== 'object') {
+      return null;
+    }
+
+    const paginationObject = pagination as Record<string, unknown>;
+    const readNumber = (key: string): number | undefined => {
+      const value = paginationObject[key];
+      return typeof value === 'number' && Number.isFinite(value)
+        ? value
+        : undefined;
+    };
+
+    return {
+      totalPages: readNumber('totalPages'),
+      totalElements: readNumber('totalElements'),
+      pageNumber: readNumber('pageNumber'),
+      pageSize: readNumber('pageSize'),
+    };
   }
 
   private async fetchProfile(
