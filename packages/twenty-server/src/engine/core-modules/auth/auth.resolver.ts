@@ -21,8 +21,8 @@ import { AuthGraphqlApiExceptionFilter } from 'src/engine/core-modules/auth/filt
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 // import { OAuthService } from 'src/engine/core-modules/auth/services/oauth.service';
 import {
-  AuthException,
-  AuthExceptionCode,
+    AuthException,
+    AuthExceptionCode,
 } from 'src/engine/core-modules/auth/auth.exception';
 import { AvailableWorkspaceOutput } from 'src/engine/core-modules/auth/dto/available-workspaces.output';
 import { GetAuthorizationUrlForSSOInput } from 'src/engine/core-modules/auth/dto/get-authorization-url-for-sso.input';
@@ -281,6 +281,7 @@ export class AuthResolver {
       workspace: {
         id: workspace.id,
         workspaceUrls: this.domainManagerService.getWorkspaceUrls(workspace),
+        displayName: workspace.displayName ?? null,
       },
     };
   }

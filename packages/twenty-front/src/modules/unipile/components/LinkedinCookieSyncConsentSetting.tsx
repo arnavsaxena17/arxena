@@ -5,6 +5,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 
+import { LinkedinStoredProfileUnipileActions } from '@/unipile/components/LinkedinStoredProfileUnipileActions';
+
 import {
   getLinkedinCookieSyncSettingsFromPage,
   pingArxChromeExtension,
@@ -40,7 +42,13 @@ const StyledHint = styled.p`
  * Lets the user allow or deny the Chrome extension reading LinkedIn session cookies for Unipile sync.
  * Requires the Arx extension on this page (same as org chart bridge).
  */
-export const LinkedinCookieSyncConsentSetting = () => {
+type LinkedinCookieSyncConsentSettingProps = {
+  onLinkedinStoredProfileAction?: () => void;
+};
+
+export const LinkedinCookieSyncConsentSetting = ({
+  onLinkedinStoredProfileAction,
+}: LinkedinCookieSyncConsentSettingProps) => {
   const { t } = useLingui();
   const { enqueueSnackBar } = useSnackBar();
   const [allowed, setAllowed] = useState(true);
@@ -102,6 +110,10 @@ export const LinkedinCookieSyncConsentSetting = () => {
             LinkedIn cookie sync for Unipile.
           </Trans>
         </StyledHint>
+        <LinkedinStoredProfileUnipileActions
+          isCompact
+          onAfterChange={onLinkedinStoredProfileAction}
+        />
       </StyledRow>
     );
   }
@@ -130,6 +142,10 @@ export const LinkedinCookieSyncConsentSetting = () => {
           in on linkedin.com in this browser profile.
         </Trans>
       </StyledHint>
+      <LinkedinStoredProfileUnipileActions
+        isCompact
+        onAfterChange={onLinkedinStoredProfileAction}
+      />
     </StyledRow>
   );
 };

@@ -24,6 +24,9 @@ import { LinkedinSignup } from './LinkedinSignup';
 export const LinkedinAccounts = () => {
   const [hasConnectedAccounts, setHasConnectedAccounts] = useState(false);
   const [accountsRefreshTrigger, setAccountsRefreshTrigger] = useState(0);
+  const bumpLinkedinUnipileUi = useCallback(() => {
+    setAccountsRefreshTrigger((n) => n + 1);
+  }, []);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const setOrgChartLinkedinCandidateSource = useSetRecoilState(
     orgChartLinkedinCandidateSourceState,
@@ -104,7 +107,9 @@ export const LinkedinAccounts = () => {
             onSignupCancel={handleSignupCancel}
           />
         {/* )} */}
-        <LinkedinCookieSyncConsentSetting />
+        <LinkedinCookieSyncConsentSetting
+          onLinkedinStoredProfileAction={bumpLinkedinUnipileUi}
+        />
         <ConnectedLinkedinAccounts
           refreshTrigger={accountsRefreshTrigger}
           onAccountConnected={handleAccountConnected}

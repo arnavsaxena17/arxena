@@ -22,29 +22,29 @@ build_step() {
   fi
 }
 
-#sudo apt update -y || sudo yum update -y
-        # Install Node.js and npm (using Node.js 18.x as an example)
-        #curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-        #sudo apt-get install -y nodejs || sudo yum install -y nodejs
-        # Install git
-        #sudo apt install -y git || sudo yum install -y git
-        #sudo npm install -g @nestjs/cli
-        #sudo npm install -D vite
-        #sudo npm install --global yarn
+	#sudo apt update -y || sudo yum update -y
+	# Install Node.js and npm (using Node.js 18.x as an example)
+	#curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+	#sudo apt-get install -y nodejs || sudo yum install -y nodejs
+	# Install git
+	#sudo apt install -y git || sudo yum install -y git
+	#sudo npm install -g @nestjs/cli
+	#sudo npm install -D vite
+	#sudo npm install --global yarn
 	#sudo apt-get update
 	#sudo apt install vite
 
-        # Print versions for verification
-       sudo apt update
-       sudo apt install -y build-essential
-       sudo apt install -y build-essential
-       sudo apt install -y libsqlite3-dev
-       yarn cache clean
-       	echo "Node version: $(node -v)"
-        echo "npm version: $(npm -v)"
-        echo "Nest CLI version: $(nest --version)"
-        echo "Vite version: $(npx vite --version 2>/dev/null || echo 'not yet installed')"
-        echo "Build environment setup complete!"
+	# Print versions for verification
+	sudo apt update
+	sudo apt install -y build-essential
+	sudo apt install -y build-essential
+	sudo apt install -y libsqlite3-dev
+	yarn cache clean
+	echo "Node version: $(node -v)"
+	echo "npm version: $(npm -v)"
+	echo "Nest CLI version: $(nest --version)"
+	echo "Vite version: $(npx vite --version 2>/dev/null || echo 'not yet installed')"
+	echo "Build environment setup complete!"
 	export NODE_OPTIONS="--max-old-space-size=4096"
 	source ~/.nvm/nvm.sh
 	nvm install 22
@@ -94,19 +94,22 @@ build_step() {
 	ls -la src/engine/core-modules/i18n/locales/
 	npx lingui compile --verbose
 	ls -la src/engine/core-modules/i18n/locales/generated/
-       	build_step TWENTY_SERVER nest build -p tsconfig.build.json
-        echo "Nest Built, going  to yarn build"
-        cd ~/twenty/packages/twenty-front/
+	build_step TWENTY_SERVER nest build -p tsconfig.build.json
+	echo "Nest Built, going  to yarn build"
+	cd ~/twenty/packages/twenty-front/
 	mkdir -p src/locales/generated
-# Run extraction with verbose output
+	# Run extraction with verbose output
 	npx lingui extract --clean --verbose
-# Check what was extracted
+	echo "Lingui extraction completed"
+	# Check what was extracted
 	ls -la src/locales/
-# Compile with verbose output
+	echo "Lingui extraction completed"
+	# Compile with verbose output
 	npx lingui compile --verbose
-# Check the compiled output
-        ls -la src/locales/generated/
-
+	echo "Lingui compilation completed"
+	# Check the compiled output
+    ls -la src/locales/generated/
+	echo "Lingui compilation completed"
 	yarn cache clean
 	npx nx reset
 	build_step TWENTY_FRONT env VITE_BUILD_SOURCEMAP=false NODE_OPTIONS="--max-old-space-size=8192" yarn build

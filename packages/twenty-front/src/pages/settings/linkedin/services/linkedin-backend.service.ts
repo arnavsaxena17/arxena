@@ -8,6 +8,25 @@ import type {
   UnipileLinkedinAccount,
 } from 'twenty-shared';
 
+export type LinkedinReconnectFromStoredProfileResponse = {
+  success?: boolean;
+  cookies?: { hasLiAt?: boolean; hasLiA?: boolean };
+  linkedin?: {
+    accountId?: string | null;
+    status?: string;
+    connected?: boolean;
+  };
+  reconnect?: {
+    attempted?: boolean;
+    succeeded?: boolean;
+    message?: string | null;
+  };
+  context?: {
+    pageUrl?: string | null;
+    linkedinProfileUrlFromExtension?: string | null;
+  };
+};
+
 export class LinkedinBackendService {
   private baseUrl: string;
 
@@ -241,6 +260,26 @@ export class LinkedinBackendService {
       console.error('Failed to disconnect LinkedIn account:', error);
       return { success: false };
     }
+  }
+
+  /**
+   * Reconnect LinkedIn to Unipile using only cookies stored on the workspace member profile
+   * (`linkedinLiAtToken` / `linkedinLiAToken`). Same response shape as extension sync-cookies.
+   */
+  async reconnectFromStoredProfile(
+    accessToken: string,
+    options?: { user_agent?: string },
+  ): Promise<LinkedinReconnectFromStoredProfileResponse> {
+    const body =
+      options?.user_agent?.trim() !== undefined && options.user_agent.trim() !== ''
+        ? { user_agent: options.user_agent.trim() }
+        : {};
+    return this.makeRequest<LinkedinReconnectFromStoredProfileResponse>(
+      '/reconnect-from-stored-profile',
+      'POST',
+      body,
+      accessToken,
+    );
   }
 
   /**

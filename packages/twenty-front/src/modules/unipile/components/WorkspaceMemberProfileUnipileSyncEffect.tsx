@@ -9,7 +9,7 @@ import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChart
 
 import { workspaceMemberProfileUnipileFieldsState } from '../states/workspaceMemberProfileUnipileFieldsState';
 
-const FIND_WORKSPACE_MEMBER_PROFILES_FOR_UNIPILE = gql`
+export const FIND_WORKSPACE_MEMBER_PROFILES_FOR_UNIPILE = gql`
   ${findWorkspaceMemberProfiles}
 `;
 

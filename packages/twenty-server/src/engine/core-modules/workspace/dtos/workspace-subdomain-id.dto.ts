@@ -9,4 +9,7 @@ export class WorkspaceUrlsAndId {
 
   @Field()
   id: string;
+
+  @Field(() => String, { nullable: true })
+  displayName?: string | null;
 }

@@ -2046,6 +2046,7 @@ export type WorkspaceNameAndId = {
 
 export type WorkspaceUrlsAndId = {
   __typename?: 'WorkspaceUrlsAndId';
+  displayName?: Maybe<Scalars['String']>;
   id: Scalars['String'];
   workspaceUrls: WorkspaceUrls;
 };
@@ -2200,7 +2201,7 @@ export type ImpersonateMutationVariables = Exact<{
 }>;
 
 
-export type ImpersonateMutation = { __typename?: 'Mutation', impersonate: { __typename?: 'ImpersonateOutput', workspace: { __typename?: 'WorkspaceUrlsAndId', id: string, workspaceUrls: { __typename?: 'workspaceUrls', subdomainUrl: string, customUrl?: string | null } }, loginToken: { __typename?: 'AuthToken', token: string, expiresAt: string } } };
+export type ImpersonateMutation = { __typename?: 'Mutation', impersonate: { __typename?: 'ImpersonateOutput', workspace: { __typename?: 'WorkspaceUrlsAndId', id: string, displayName?: string | null, workspaceUrls: { __typename?: 'workspaceUrls', subdomainUrl: string, customUrl?: string | null } }, loginToken: { __typename?: 'AuthToken', token: string, expiresAt: string } } };
 
 export type RenewTokenMutationVariables = Exact<{
   appToken: Scalars['String'];
@@ -2227,7 +2228,7 @@ export type SignUpMutationVariables = Exact<{
 }>;
 
 
-export type SignUpMutation = { __typename?: 'Mutation', signUp: { __typename?: 'SignUpOutput', loginToken: { __typename?: 'AuthToken', token: string, expiresAt: string }, workspace: { __typename?: 'WorkspaceUrlsAndId', id: string, workspaceUrls: { __typename?: 'workspaceUrls', subdomainUrl: string, customUrl?: string | null } } } };
+export type SignUpMutation = { __typename?: 'Mutation', signUp: { __typename?: 'SignUpOutput', loginToken: { __typename?: 'AuthToken', token: string, expiresAt: string }, workspace: { __typename?: 'WorkspaceUrlsAndId', id: string, displayName?: string | null, workspaceUrls: { __typename?: 'workspaceUrls', subdomainUrl: string, customUrl?: string | null } } } };
 
 export type UpdatePasswordViaResetTokenMutationVariables = Exact<{
   token: Scalars['String'];
@@ -3288,6 +3289,7 @@ export const ImpersonateDocument = gql`
     mutation Impersonate($userId: String!, $workspaceId: String!) {
   impersonate(userId: $userId, workspaceId: $workspaceId) {
     workspace {
+      displayName
       workspaceUrls {
         subdomainUrl
         customUrl
@@ -3411,6 +3413,7 @@ export const SignUpDocument = gql`
     }
     workspace {
       id
+      displayName
       workspaceUrls {
         subdomainUrl
         customUrl

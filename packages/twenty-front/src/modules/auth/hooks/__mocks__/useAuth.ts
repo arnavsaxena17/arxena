@@ -1,8 +1,8 @@
 import {
-  GetAuthTokensFromLoginTokenDocument,
-  GetCurrentUserDocument,
-  GetLoginTokenFromCredentialsDocument,
-  SignUpDocument,
+    GetAuthTokensFromLoginTokenDocument,
+    GetCurrentUserDocument,
+    GetLoginTokenFromCredentialsDocument,
+    SignUpDocument,
 } from '~/generated/graphql';
 
 export const queries = {
@@ -45,7 +45,14 @@ export const results = {
       refreshToken: { token, expiresAt: 'expiresAt' },
     },
   },
-  signUp: { loginToken: { token, expiresAt: 'expiresAt' } },
+  signUp: {
+    loginToken: { token, expiresAt: 'expiresAt' },
+    workspace: {
+      id: 'workspace-id',
+      displayName: 'test',
+      workspaceUrls: { subdomainUrl: 'http://localhost:3001', customUrl: null },
+    },
+  },
   getCurrentUser: {
     currentUser: {
       id: 'id',

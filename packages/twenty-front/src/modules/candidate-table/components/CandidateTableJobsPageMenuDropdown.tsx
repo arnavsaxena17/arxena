@@ -8,19 +8,20 @@ import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useRecoilState } from 'recoil';
-import { LinkedInSearchType } from 'twenty-shared';
+import { ARXENA_CHROME_WEBSTORE_URL, LinkedInSearchType } from 'twenty-shared';
 import {
-    Button,
-    IconApi,
-    IconBrandLinkedin,
-    IconChevronDown,
-    IconCoins,
-    IconComment,
-    IconDownload,
-    IconGitCommit,
-    IconPlus,
-    IconSearch,
-    MenuItem,
+  Button,
+  IconApi,
+  IconBrandChrome,
+  IconBrandLinkedin,
+  IconChevronDown,
+  IconCoins,
+  IconComment,
+  IconDownload,
+  IconGitCommit,
+  IconPlus,
+  IconSearch,
+  MenuItem,
 } from 'twenty-ui';
 
 const ORG_CHART_LINKEDIN_SEARCH_TYPE_OPTIONS: {
@@ -240,6 +241,20 @@ export const CandidateTableJobsPageMenuDropdown = ({
               }}
             />
           )}
+          <MenuItem
+            testId="download-chrome-extension"
+            text="Download Chrome Extension"
+            LeftIcon={IconBrandChrome}
+            onClick={() => {
+              window.open(
+                ARXENA_CHROME_WEBSTORE_URL,
+                '_blank',
+                'noopener,noreferrer',
+              );
+              closeDropdown();
+            }}
+          />
+
           {creditsTotal !== undefined && onCreditsClick !== undefined && (
             <MenuItem
               testId="credits-button"

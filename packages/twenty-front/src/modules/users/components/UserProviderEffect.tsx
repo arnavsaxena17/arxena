@@ -91,7 +91,14 @@ export const UserProviderEffect = () => {
     setCurrentUser(currentUser);
 
     if (isDefined(queryData.currentUser.currentWorkspace)) {
-      setCurrentWorkspace(queryData.currentUser.currentWorkspace);
+      const currentWorkspace = queryData.currentUser.currentWorkspace;
+      setCurrentWorkspace(currentWorkspace);
+      if (currentWorkspace?.id) {
+        Mixpanel.registerWorkspaceContext({
+          workspaceSubdomain: currentWorkspace.subdomain,
+          workspaceId: currentWorkspace.id,
+        });
+      }
     }
 
     if (isDefined(queryData.currentUser.currentUserWorkspace)) {

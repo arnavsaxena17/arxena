@@ -19,6 +19,7 @@ import {
     linkedinAccountMatchesWorkspaceMemberProfile,
     shouldRestrictLinkedinByProfile,
 } from '~/modules/unipile/utils/matchUnipileToWorkspaceMemberProfile';
+import { LinkedinStoredProfileUnipileActions } from '@/unipile/components/LinkedinStoredProfileUnipileActions';
 import { getLinkedinService } from '~/pages/settings/linkedin/services/linkedin-backend.service';
 
 const AccountsContainer = styled.div`
@@ -439,6 +440,12 @@ export const ConnectedLinkedinAccounts: React.FC<
   return (
     <AccountsContainer>
       <AccountsTitle>Connected LinkedIn Accounts</AccountsTitle>
+
+      <LinkedinStoredProfileUnipileActions
+        onAfterChange={() => {
+          void loadAccounts();
+        }}
+      />
 
       {error && (
         <ErrorContainer>

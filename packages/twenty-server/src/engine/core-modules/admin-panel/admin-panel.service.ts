@@ -115,6 +115,7 @@ export class AdminPanelService {
         workspaceUrls: this.domainManagerService.getWorkspaceUrls(
           user.workspaces[0].workspace,
         ),
+        displayName: user.workspaces[0].workspace.displayName ?? null,
       },
       loginToken,
     };

@@ -167,6 +167,7 @@ export const PageChangeEffect = () => {
   }, [isMatchingLocation, setHotkeyScope]);
 
   useEffect(() => {
+    Mixpanel.syncRouteContext(location.pathname);
     setTimeout(() => {
       const payload: Record<string, unknown> = {
         pathname: location.pathname,

@@ -3,6 +3,7 @@ import { PublicEnvScript } from 'next-runtime-env';
 import { Gabarito, Inter } from 'next/font/google';
 import Script from 'next/script';
 
+import { MixpanelRouteSync } from '@/lib/MixpanelRouteSync';
 import { isPhase2Exposed } from '@/lib/sitemap';
 
 import { WebSiteStructuredData } from './_components/StructuredData';
@@ -79,6 +80,7 @@ export default async function RootLayout({
         <WebSiteStructuredData />
         <PublicEnvScript />
         <EmotionRootStyleRegistry>
+          <MixpanelRouteSync />
           {/* <AppHeader /> */}
           <div className="container">{children}</div>
           <ConditionalFooter phase2Exposed={isPhase2Exposed()} />

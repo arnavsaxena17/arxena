@@ -54,6 +54,11 @@ interface LinkedinExtensionCookieSyncDto {
   linkedin_profile_url?: string;
 }
 
+/** Optional body for server-side reconnect using only DB-stored `linkedinLiAtToken` / `linkedinLiAToken`. */
+interface LinkedinReconnectFromStoredProfileDto {
+  user_agent?: string;
+}
+
 interface LinkedinCheckpointDto {
   account_id: string;
   provider: 'LINKEDIN';
@@ -447,38 +452,61 @@ export class LinkedinUnipileController {
     }
   }
 
-  @Post('extension/sync-cookies')
-  async syncExtensionCookies(
-    @Body() body: LinkedinExtensionCookieSyncDto,
-    @AuthWorkspace() workspace: Workspace,
-    @Req() request: {
-      workspaceMemberId?: string;
-      headers?: { authorization?: string };
+  /**
+   * Shared LinkedIn Unipile sync for the authenticated workspace member: preflight, identity match,
+   * optional POST /accounts reconnect using request cookies and/or DB `linkedinLiAtToken` / `linkedinLiAToken`.
+   * When `persistRequestCookieTokens` is false, request `li_at` / `li_a` are ignored (server-side reconnect from DB only).
+   */
+  private async linkedinUnipileMemberSyncCore(
+    workspace: Workspace,
+    workspaceMemberId: string,
+    authToken: string,
+    params: {
+      linkedin_profile_url?: string;
+      li_at?: string;
+      li_a?: string;
+      user_agent?: string;
+      page_url?: string;
+      persistRequestCookieTokens: boolean;
     },
   ) {
-    const workspaceMemberId = request.workspaceMemberId;
-    const authToken =
-      request.headers?.authorization?.replace(/^Bearer\s+/i, '') ?? '';
-
-    if (!workspaceMemberId) {
-      throw new HttpException(
-        'workspaceMemberId required (user auth only)',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    if (!authToken) {
-      throw new HttpException(
-        'Authorization header required',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-
     await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberLinkedinUrlFromExtensionIfValid(
       workspaceMemberId,
       authToken,
-      body.linkedin_profile_url,
+      params.linkedin_profile_url,
     );
+
+    const normalizeExtensionToken = (value?: string) => {
+      if (typeof value !== 'string') {
+        return undefined;
+      }
+
+      const trimmed = value.trim();
+
+      return trimmed ? trimmed : undefined;
+    };
+
+    const liAtToken = params.persistRequestCookieTokens
+      ? normalizeExtensionToken(params.li_at)
+      : undefined;
+    const liAToken = params.persistRequestCookieTokens
+      ? normalizeExtensionToken(params.li_a)
+      : undefined;
+    const userAgent = normalizeExtensionToken(params.user_agent);
+
+    if (
+      params.persistRequestCookieTokens &&
+      (liAtToken !== undefined || liAToken !== undefined)
+    ) {
+      await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberLinkedinCookieTokens(
+        workspace.id,
+        workspaceMemberId,
+        {
+          ...(liAtToken !== undefined && { linkedinLiAtToken: liAtToken }),
+          ...(liAToken !== undefined && { linkedinLiAToken: liAToken }),
+        },
+      );
+    }
 
     // Preflight by LinkedIn identity (slug / stored unipile id) BEFORE POST /accounts.
     // This avoids creating duplicate Unipile accounts when the member's stored accountId is missing/stale.
@@ -489,11 +517,16 @@ export class LinkedinUnipileController {
       );
       if (!preflight.proceed) {
         const acc = preflight.account;
+        const storedCookiesAfterPreflight =
+          await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
+            workspace.id,
+            workspaceMemberId,
+          );
         return {
           success: true,
           cookies: {
-            hasLiAt: false,
-            hasLiA: false,
+            hasLiAt: Boolean(storedCookiesAfterPreflight.linkedinLiAtToken),
+            hasLiA: Boolean(storedCookiesAfterPreflight.linkedinLiAToken),
           },
           linkedin: {
             accountId: acc.id,
@@ -509,8 +542,8 @@ export class LinkedinUnipileController {
               'This LinkedIn profile is already connected to Unipile; not starting a new connection.',
           },
           context: {
-            pageUrl: body.page_url ?? null,
-            linkedinProfileUrlFromExtension: body.linkedin_profile_url ?? null,
+            pageUrl: params.page_url ?? null,
+            linkedinProfileUrlFromExtension: params.linkedin_profile_url ?? null,
           },
         };
       }
@@ -519,31 +552,6 @@ export class LinkedinUnipileController {
       if (err instanceof HttpException) {
         throw err;
       }
-    }
-
-    const normalizeToken = (value?: string) => {
-      if (typeof value !== 'string') {
-        return undefined;
-      }
-
-      const trimmed = value.trim();
-
-      return trimmed ? trimmed : undefined;
-    };
-
-    const liAtToken = normalizeToken(body.li_at);
-    const liAToken = normalizeToken(body.li_a);
-    const userAgent = normalizeToken(body.user_agent);
-
-    if (liAtToken !== undefined || liAToken !== undefined) {
-      await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberLinkedinCookieTokens(
-        workspace.id,
-        workspaceMemberId,
-        {
-          ...(liAtToken !== undefined && { linkedinLiAtToken: liAtToken }),
-          ...(liAToken !== undefined && { linkedinLiAToken: liAToken }),
-        },
-      );
     }
 
     const storedCookies =
@@ -709,7 +717,7 @@ export class LinkedinUnipileController {
         reconnectMessage =
           error instanceof Error ? error.message : 'Failed to reconnect';
         this.logger.warn(
-          `LinkedIn extension reconnect failed for member ${workspaceMemberId}: ${reconnectMessage}`,
+          `LinkedIn Unipile reconnect failed for member ${workspaceMemberId}: ${reconnectMessage}`,
         );
       }
     }
@@ -731,10 +739,97 @@ export class LinkedinUnipileController {
         message: reconnectMessage,
       },
       context: {
-        pageUrl: body.page_url ?? null,
-        linkedinProfileUrlFromExtension: body.linkedin_profile_url ?? null,
+        pageUrl: params.page_url ?? null,
+        linkedinProfileUrlFromExtension: params.linkedin_profile_url ?? null,
       },
     };
+  }
+
+  @Post('extension/sync-cookies')
+  async syncExtensionCookies(
+    @Body() body: LinkedinExtensionCookieSyncDto,
+    @AuthWorkspace() workspace: Workspace,
+    @Req() request: {
+      workspaceMemberId?: string;
+      headers?: { authorization?: string };
+    },
+  ) {
+    const workspaceMemberId = request.workspaceMemberId;
+    const authToken =
+      request.headers?.authorization?.replace(/^Bearer\s+/i, '') ?? '';
+
+    if (!workspaceMemberId) {
+      throw new HttpException(
+        'workspaceMemberId required (user auth only)',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (!authToken) {
+      throw new HttpException(
+        'Authorization header required',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    return this.linkedinUnipileMemberSyncCore(
+      workspace,
+      workspaceMemberId,
+      authToken,
+      {
+        linkedin_profile_url: body.linkedin_profile_url,
+        li_at: body.li_at,
+        li_a: body.li_a,
+        user_agent: body.user_agent,
+        page_url: body.page_url,
+        persistRequestCookieTokens: true,
+      },
+    );
+  }
+
+  /**
+   * Server-side LinkedIn Unipile reconnect using only cookies persisted on the workspace member profile
+   * (`linkedinLiAtToken` / `linkedinLiAToken`). Same response shape as `extension/sync-cookies`.
+   * Request body is optional; you may pass `user_agent` for the Unipile POST /accounts call.
+   */
+  @Post('reconnect-from-stored-profile')
+  async reconnectLinkedinFromStoredProfile(
+    @Body() body: LinkedinReconnectFromStoredProfileDto,
+    @AuthWorkspace() workspace: Workspace,
+    @Req() request: {
+      workspaceMemberId?: string;
+      headers?: { authorization?: string };
+    },
+  ) {
+    const workspaceMemberId = request.workspaceMemberId;
+    const authToken =
+      request.headers?.authorization?.replace(/^Bearer\s+/i, '') ?? '';
+
+    if (!workspaceMemberId) {
+      throw new HttpException(
+        'workspaceMemberId required (user auth only)',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (!authToken) {
+      throw new HttpException(
+        'Authorization header required',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const payload = body ?? {};
+
+    return this.linkedinUnipileMemberSyncCore(
+      workspace,
+      workspaceMemberId,
+      authToken,
+      {
+        user_agent: payload.user_agent,
+        persistRequestCookieTokens: false,
+      },
+    );
   }
 
   @Post('accounts/update-member')
@@ -991,9 +1086,31 @@ export class LinkedinUnipileController {
   async disconnectAccount(
     @Param('accountId') accountId: string,
     @AuthWorkspace() workspace: Workspace,
+    @Req() request: { workspaceMemberId?: string; headers?: { authorization?: string } },
   ) {
     try {
       await this.linkedinUnipileRequestService.makeUnipileRequest(`/api/v1/accounts/${accountId}`, 'DELETE');
+
+      const workspaceMemberId = request.workspaceMemberId;
+      const authToken =
+        request.headers?.authorization?.replace(/^Bearer\s+/i, '') ?? '';
+      if (workspaceMemberId && authToken) {
+        const storedId =
+          await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+            workspaceMemberId,
+            workspace.id,
+            authToken,
+            'linkedin',
+          );
+        if (storedId && storedId === accountId) {
+          await this.workspaceMemberProfileUnipileService.clearWorkspaceMemberUnipileAccountId(
+            workspaceMemberId,
+            authToken,
+            'linkedin',
+          );
+        }
+      }
+
       return {
         success: true,
         message: 'LinkedIn account disconnected successfully',

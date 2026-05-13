@@ -8,6 +8,7 @@ import { useReadCaptchaToken } from '@/captcha/hooks/useReadCaptchaToken';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useNavigateApp } from '~/hooks/useNavigateApp';
+import { getSuggestedWorkspaceDisplayNameFromEmail } from '~/pages/onboarding/utils/getSuggestedWorkspaceDisplayNameFromEmail';
 import { EmailVerificationSent } from '../sign-in-up/components/EmailVerificationSent';
 
 export const VerifyEmailEffect = () => {
@@ -46,7 +47,11 @@ export const VerifyEmailEffect = () => {
           variant: SnackBarVariant.Success,
         });
 
-        Mixpanel.track('sign_up_complete', { method: 'email' });
+        Mixpanel.track('sign_up_complete', {
+          method: 'email',
+          email,
+          workspace_name: getSuggestedWorkspaceDisplayNameFromEmail(email),
+        });
         navigate(AppPath.Verify, undefined, { loginToken: loginToken.token });
       } catch (error) {
         enqueueSnackBar('Email verification failed.', {
