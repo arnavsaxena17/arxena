@@ -1,7 +1,6 @@
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import {
   findWorkspaceMemberProfiles,
-  graphqlQueryToGetCurrentUser,
   Job,
   RecruiterProfileType
 } from 'twenty-shared';
@@ -52,12 +51,7 @@ export class RecruiterProfileService {
 }
 
  async getCurrentUser(apiToken: string, origin?: string) {
-  const response = await this.staticGraphQLService.executeGraphQL(
-    graphqlQueryToGetCurrentUser,
-    {},
-    apiToken,
-  );
-  return response?.data?.data?.currentUser;
+  return this.staticGraphQLService.getCurrentUser(apiToken);
 }
 
  async  getRecruiterProfileFromCurrentUser(apiToken: string, origin: string) {
