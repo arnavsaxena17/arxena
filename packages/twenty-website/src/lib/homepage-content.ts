@@ -34,31 +34,31 @@ export const TESTIMONIALS = [
 ] as const;
 
 export const USE_CASES_SECTION_SUBTITLE =
-  'People Discovery when it matters most';
+  'Where blind spots cost you most';
 
 export const USE_CASES = [
   {
     title: 'Investors & PE/VC',
     description:
-      'Know the bench before the management call. IC memos, CIMs, and LP updates backed by real structure—not what the company told you.',
+      'You walked into the first management call not knowing the CFO had left eight months ago. By the time you are in the data room, the impression is already set. Know the bench before the call — not after you are committed.',
     href: '/solutions/pe-vc',
   },
   {
     title: 'Executive search',
     description:
-      'Walk into the mandate conversation with names. Before the client has briefed anyone else.',
+      'Six weeks of shortlisting — against a brief that three stakeholders disagreed on from the start. Walk into the mandate conversation with names and the structural gaps already mapped, before the client has briefed anyone else.',
     href: '/solutions/executive-search',
   },
   {
     title: 'Sales & ABM',
     description:
-      'Know the committee before the first message. Never bet the quarter on a single champion.',
+      'You found one contact. Built rapport. Spent three weeks. Got ghosted. Found another. The deal clock ran the whole time. Map the committee before outreach — not after the chain snaps.',
     href: '/solutions/sales-abm',
   },
   {
     title: 'Corporate strategy',
     description:
-      'See how peers structure functions and invest headcount before you decide how you will.',
+      'Your competitor restructured their GTM. You found out when they made it public. See how peers actually invest headcount and structure functions — before you decide how you will.',
     href: '/solutions/corporate-strategy',
   },
 ] as const;
@@ -96,25 +96,25 @@ export const HOW_IT_WORKS_STEPS = [
 
 export const DIFFERENTIATORS = [
   {
-    title: 'Built for the moment before you act',
+    title: 'The call you walked into without this',
     description:
-      'The call is tomorrow. The brief just came in. You are about to send the first email. That is when Arxena fits—not after the sequence has already stalled.',
+      'You prepared. But you did not know the CFO had changed, the co-founder had stepped back, or who actually held budget. Arxena closes that gap before you are in the room.',
   },
   {
     title: 'Every touch tracked',
     description:
-      'LinkedIn, WhatsApp, email—all in one place. See response rates by persona, function, and sequence. Know what is working.',
+      'LinkedIn, WhatsApp, email — all in one place. See response rates by persona, function, and sequence. Know what is working and stop repeating what is not.',
     href: '/engage',
   },
   {
-    title: 'Structure, not just names',
+    title: 'A list of contacts is not a map',
     description:
-      'Reporting lines, budget owners, gatekeepers. See the org before you approach it—not just a list of contacts to blast.',
+      'Reporting lines, budget owners, decision-makers, gatekeepers. Structure — not just names — so outreach, shortlists, and diligence land on the right person for the right reason.',
   },
   {
     title: 'Map → plan → reach → measure',
     description:
-      'One workflow. No exports. No handoffs to spreadsheets.',
+      'One workflow. No exports. No handoffs to spreadsheets. Each cycle sharper than the last.',
   },
 ] as const;
 

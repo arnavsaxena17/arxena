@@ -494,10 +494,21 @@ export class LinkedinUnipileController {
       : undefined;
     const userAgent = normalizeExtensionToken(params.user_agent);
 
+    this.logger.log(
+      `[syncCookies] workspaceMemberId=${workspaceMemberId} persistRequestCookieTokens=${params.persistRequestCookieTokens} ` +
+      `li_at received=${params.li_at !== undefined} li_at length=${params.li_at?.length ?? 0} ` +
+      `li_a received=${params.li_a !== undefined} li_a length=${params.li_a?.length ?? 0} ` +
+      `liAtToken defined=${liAtToken !== undefined} liAToken defined=${liAToken !== undefined}`,
+    );
+
     if (
       params.persistRequestCookieTokens &&
       (liAtToken !== undefined || liAToken !== undefined)
     ) {
+      this.logger.log(
+        `[syncCookies] Persisting cookie tokens to DB for workspaceMemberId=${workspaceMemberId}: ` +
+        `hasLiAt=${liAtToken !== undefined} hasLiA=${liAToken !== undefined}`,
+      );
       await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberLinkedinCookieTokens(
         workspace.id,
         workspaceMemberId,
@@ -505,6 +516,14 @@ export class LinkedinUnipileController {
           ...(liAtToken !== undefined && { linkedinLiAtToken: liAtToken }),
           ...(liAToken !== undefined && { linkedinLiAToken: liAToken }),
         },
+      );
+      this.logger.log(
+        `[syncCookies] Successfully persisted cookie tokens to DB for workspaceMemberId=${workspaceMemberId}`,
+      );
+    } else {
+      this.logger.warn(
+        `[syncCookies] Skipping DB cookie persist for workspaceMemberId=${workspaceMemberId}: ` +
+        `persistRequestCookieTokens=${params.persistRequestCookieTokens} liAtToken=${liAtToken !== undefined} liAToken=${liAToken !== undefined}`,
       );
     }
 
@@ -771,6 +790,14 @@ export class LinkedinUnipileController {
         HttpStatus.UNAUTHORIZED,
       );
     }
+
+    this.logger.log(
+      `[extension/sync-cookies] Request received: workspaceMemberId=${workspaceMemberId} ` +
+      `li_at present=${Boolean(body.li_at)} li_at length=${body.li_at?.length ?? 0} ` +
+      `li_a present=${Boolean(body.li_a)} li_a length=${body.li_a?.length ?? 0} ` +
+      `user_agent=${body.user_agent?.slice(0, 60) ?? 'none'} page_url=${body.page_url ?? 'none'} ` +
+      `linkedin_profile_url=${body.linkedin_profile_url ?? 'none'}`,
+    );
 
     return this.linkedinUnipileMemberSyncCore(
       workspace,

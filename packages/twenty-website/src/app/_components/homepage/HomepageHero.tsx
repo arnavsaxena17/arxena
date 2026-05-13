@@ -346,9 +346,11 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
         <StyledLogoWrapper>
           <Logo variant="hero" />
         </StyledLogoWrapper>
-        <StyledTitle>Real-time Org Intelligence.</StyledTitle>
+        <StyledTitle>Know who actually runs things.</StyledTitle>
         <StyledHeroLead>
-          Before the call. Before the brief. Before outreach.
+          The CFO changed. The economic buyer wasn&apos;t in the room. The
+          stakeholders had conflicting briefs. Map any org live — so you never
+          walk in blind.
         </StyledHeroLead>
         <StyledHeroStats>
           1M+ companies · 800M+ professionals · Real-time from LinkedIn and

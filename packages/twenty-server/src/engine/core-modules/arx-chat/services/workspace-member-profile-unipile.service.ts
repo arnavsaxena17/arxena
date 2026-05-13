@@ -157,13 +157,23 @@ export class WorkspaceMemberProfileUnipileService {
 
     parameters.push(workspaceMemberId);
 
-    await this.workspaceQueryService.workspaceDataSourceService.executeRawQuery(
-      `UPDATE ${schema}."${profileTable}"
-       SET ${updates.join(', ')},
-           "updatedAt" = NOW()
-       WHERE "workspaceMemberId" = $${parameters.length}`,
-      parameters,
-      workspaceId,
+    this.logger.log(
+      `[updateLinkedinCookieTokens] Executing UPDATE for workspaceMemberId=${workspaceMemberId} ` +
+      `workspaceId=${workspaceId} schema=${schema} table=${profileTable} updates=${updates.join(', ')}`,
+    );
+
+    const result =
+      await this.workspaceQueryService.workspaceDataSourceService.executeRawQuery(
+        `UPDATE ${schema}."${profileTable}"
+         SET ${updates.join(', ')},
+             "updatedAt" = NOW()
+         WHERE "workspaceMemberId" = $${parameters.length}`,
+        parameters,
+        workspaceId,
+      );
+
+    this.logger.log(
+      `[updateLinkedinCookieTokens] UPDATE complete for workspaceMemberId=${workspaceMemberId} rowCount=${(result as { rowCount?: number })?.rowCount ?? 'unknown'}`,
     );
   }
 

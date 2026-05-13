@@ -1,16 +1,16 @@
 import axios from 'axios';
 import {
-  createViewFieldMutation,
-  findManyViewsQuery,
-  FindManyWorkspaceMembers,
-  findWorkspaceMemberProfiles,
-  graphqlQueryToGetCurrentUser,
-  graphqlToCreateOnePrompt,
-  graphQLToCreateOneWorkspaceMemberProfile,
-  graphQLToUpdateOneWorkspaceMemberProfile,
-  isOrgChartEnabledEnv,
-  queryObjectMetadataItems,
-  resolveIsOrgChartEnabledFromWorkspace,
+    createViewFieldMutation,
+    findManyViewsQuery,
+    FindManyWorkspaceMembers,
+    findWorkspaceMemberProfiles,
+    graphqlQueryToGetCurrentUser,
+    graphqlToCreateOnePrompt,
+    graphQLToCreateOneWorkspaceMemberProfile,
+    graphQLToUpdateOneWorkspaceMemberProfile,
+    isOrgChartEnabledEnv,
+    queryObjectMetadataItems,
+    resolveIsOrgChartEnabledFromWorkspace,
 } from 'twenty-shared';
 
 // import { getCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
@@ -37,8 +37,8 @@ import { createObjectMetadataItems } from './services/object-service';
 import { createRelations } from './services/relation-service';
 import { createVideoInterviewModels } from './services/videoInterviewModelService';
 import {
-  createVideoInterviewTemplates,
-  getJobIds,
+    createVideoInterviewTemplates,
+    getJobIds,
 } from './services/videoInterviewTemplateService';
 import { executeQuery } from './utils/graphqlClient';
 

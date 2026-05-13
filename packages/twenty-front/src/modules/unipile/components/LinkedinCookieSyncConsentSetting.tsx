@@ -14,11 +14,11 @@ import {
 } from '../utils/linkedinUnipileExtensionBridge';
 
 const StyledRow = styled.div`
+  border-top: 1px solid ${({ theme }) => theme.border.color.light};
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(1)};
   padding: ${({ theme }) => theme.spacing(3)} 0;
-  border-top: 1px solid ${({ theme }) => theme.border.color.light};
 `;
 
 const StyledLabel = styled.label`
@@ -31,11 +31,11 @@ const StyledLabel = styled.label`
 `;
 
 const StyledHint = styled.p`
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  line-height: 1.5;
   margin: 0;
   padding-left: ${({ theme }) => theme.spacing(6)};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
-  line-height: 1.5;
 `;
 
 /**
@@ -124,15 +124,15 @@ export const LinkedinCookieSyncConsentSetting = ({
         <input
           type="checkbox"
           checked={allowed}
-          disabled={
-            busy || extensionReachable !== true || !settingsLoaded
-          }
+          disabled={busy || extensionReachable !== true || !settingsLoaded}
           onChange={(e) => {
             void onChange(e.target.checked);
           }}
         />
         <span>
-          <Trans>Allow automatic LinkedIn session sync (Chrome extension)</Trans>
+          <Trans>
+            Allow automatic LinkedIn session sync (Chrome extension)
+          </Trans>
         </span>
       </StyledLabel>
       <StyledHint>

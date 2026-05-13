@@ -1,25 +1,26 @@
-import styled from '@emotion/styled';
 import { useApolloClient } from '@apollo/client';
+import styled from '@emotion/styled';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { hasMatchingConnectedLinkedinAccount } from 'twenty-shared';
 
-import { currentWorkspaceMemberState } from '~/modules/auth/states/currentWorkspaceMemberState';
-import { tokenPairState } from '~/modules/auth/states/tokenPairState';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import { getLinkedinService } from '~/pages/settings/linkedin/services/linkedin-backend.service';
+import { currentWorkspaceMemberState } from '~/modules/auth/states/currentWorkspaceMemberState';
+import { tokenPairState } from '~/modules/auth/states/tokenPairState';
 import { linkedinUnipileAccountsState } from '~/modules/linkedin-unipile/states/linkedinUnipileAccountsState';
+import { getLinkedinService } from '~/pages/settings/linkedin/services/linkedin-backend.service';
 
-import { FIND_WORKSPACE_MEMBER_PROFILES_FOR_UNIPILE } from './WorkspaceMemberProfileUnipileSyncEffect';
 import { workspaceMemberProfileUnipileFieldsState } from '../states/workspaceMemberProfileUnipileFieldsState';
+import { FIND_WORKSPACE_MEMBER_PROFILES_FOR_UNIPILE } from './WorkspaceMemberProfileUnipileSyncEffect';
 
 const StyledWrap = styled.div<{ isCompact: boolean }>`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(2)};
-  margin-top: ${({ theme, isCompact }) => (isCompact ? theme.spacing(2) : theme.spacing(3))};
+  margin-top: ${({ theme, isCompact }) =>
+    isCompact ? theme.spacing(2) : theme.spacing(3)};
 `;
 
 const StyledHint = styled.p`
@@ -70,21 +71,23 @@ export const LinkedinStoredProfileUnipileActions = ({
   const client = useApolloClient();
   const tokenPair = useRecoilValue(tokenPairState);
   const accessToken = tokenPair?.accessToken?.token;
-  const workspaceMember = useRecoilValue(currentWorkspaceMemberState);
-  const workspaceMemberId = workspaceMember?.id;
-  const profileFields = useRecoilValue(workspaceMemberProfileUnipileFieldsState);
-  const linkedinAccounts = useRecoilValue(linkedinUnipileAccountsState);
+  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+  const workspaceMemberId = currentWorkspaceMember?.id;
+  const workspaceMemberProfileUnipileFields = useRecoilValue(
+    workspaceMemberProfileUnipileFieldsState,
+  );
+  const linkedinUnipileAccounts = useRecoilValue(linkedinUnipileAccountsState);
 
   const [busyConnect, setBusyConnect] = useState(false);
   const [busyDisconnect, setBusyDisconnect] = useState(false);
 
   const hasConnectedMatch = hasMatchingConnectedLinkedinAccount(
-    linkedinAccounts,
-    profileFields,
+    linkedinUnipileAccounts,
+    workspaceMemberProfileUnipileFields,
   );
 
   const profileLinkedinUnipileId =
-    profileFields?.linkedinUnipileAccountId?.trim() ?? '';
+    workspaceMemberProfileUnipileFields?.linkedinUnipileAccountId?.trim() ?? '';
 
   const refetchWorkspaceMemberProfile = useCallback(async () => {
     if (!workspaceMemberId) {
@@ -121,7 +124,7 @@ export const LinkedinStoredProfileUnipileActions = ({
         li?.status === 'connected' ||
         li?.status === 'pending';
 
-      if (connected) {
+      if (connected === true) {
         enqueueSnackBar(t`LinkedIn connected using saved session.`, {
           variant: SnackBarVariant.Success,
         });
@@ -130,8 +133,13 @@ export const LinkedinStoredProfileUnipileActions = ({
         return;
       }
 
-      if (result.reconnect?.message) {
-        enqueueSnackBar(String(result.reconnect.message), {
+      const reconnectMsg = result.reconnect?.message;
+      if (
+        reconnectMsg != null &&
+        typeof reconnectMsg === 'string' &&
+        reconnectMsg.trim() !== ''
+      ) {
+        enqueueSnackBar(reconnectMsg, {
           variant: SnackBarVariant.Warning,
           duration: 8000,
         });
@@ -144,10 +152,11 @@ export const LinkedinStoredProfileUnipileActions = ({
       await refetchWorkspaceMemberProfile();
       onAfterChange?.();
     } catch (err) {
-      enqueueSnackBar(
-        err instanceof Error ? err.message : t`Connect from saved profile failed.`,
-        { variant: SnackBarVariant.Error },
-      );
+      const message =
+        err instanceof Error
+          ? err.message
+          : t`Connect from saved profile failed.`;
+      enqueueSnackBar(message, { variant: SnackBarVariant.Error });
     } finally {
       setBusyConnect(false);
     }
@@ -199,10 +208,9 @@ export const LinkedinStoredProfileUnipileActions = ({
         });
       }
     } catch (err) {
-      enqueueSnackBar(
-        err instanceof Error ? err.message : t`Disconnect failed.`,
-        { variant: SnackBarVariant.Error },
-      );
+      const message =
+        err instanceof Error ? err.message : t`Disconnect failed.`;
+      enqueueSnackBar(message, { variant: SnackBarVariant.Error });
     } finally {
       setBusyDisconnect(false);
     }
@@ -229,8 +237,8 @@ export const LinkedinStoredProfileUnipileActions = ({
         ) : (
           <Trans>
             Connect or disconnect Unipile using your workspace member profile:
-            saved LinkedIn session cookies and the LinkedIn Unipile account ID on
-            your recruiter profile (no extension cookie payload required).
+            saved LinkedIn session cookies and the LinkedIn Unipile account ID
+            on your recruiter profile (no extension cookie payload required).
           </Trans>
         )}
       </StyledHint>
