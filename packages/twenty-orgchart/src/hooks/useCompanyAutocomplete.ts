@@ -145,6 +145,12 @@ export const useCompanyInfoLookup = (options: UseCompanyAutocompleteOptions) => 
         return;
       }
 
+      if (!accessToken?.trim()) {
+        setCompany(null);
+        setError(null);
+        return;
+      }
+
       setIsLoading(true);
       setError(null);
 

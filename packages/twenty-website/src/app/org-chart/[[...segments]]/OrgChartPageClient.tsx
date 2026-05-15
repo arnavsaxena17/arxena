@@ -320,7 +320,7 @@ export const OrgChartPageClient = ({
     Boolean(website?.trim()) ||
     typeof profileCount === 'number';
 
-  // PDL autocomplete is auth-only on the server; skip client lookup when SSR has metadata.
+  // useCompanyInfoLookup calls PDL only when accessToken is set; public site relies on SSR metadata.
   useEffect(() => {
     if (hasSsrCompanyMetadata) {
       return;
