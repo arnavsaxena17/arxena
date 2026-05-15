@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 
 import { Request, Response } from 'express';
+import { isLikelyBrowserRequest } from 'twenty-shared';
 import { v4 as uuidV4 } from 'uuid';
 
 import { ApifyEmployeeCountService } from 'src/engine/core-modules/apify/services/apify-employee-count.service';
@@ -485,6 +486,12 @@ export class OrgChartController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
+    if (!isLikelyBrowserRequest(req.headers)) {
+      res.status(404).send();
+
+      return;
+    }
+
     if (!website?.trim()) {
       throw new HttpException(
         'Query parameter "website" is required',
@@ -1178,10 +1185,9 @@ export class OrgChartController {
         dto.input_text,
         authToken,
         {
-          isPdlProxyAuthorized: isOrgChartPdlProxyAuthorized(
-            req,
-            this.environmentService,
-          ),
+          isPdlProxyAuthorized:
+            isOrgChartPdlProxyAuthorized(req, this.environmentService) &&
+            isLikelyBrowserRequest(req.headers),
         },
       );
 

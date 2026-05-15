@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { resolveIsLikelyBrowser } from '@/lib/org-chart-api-guard';
+
 export const dynamic = 'force-dynamic';
 
 const getServerBaseUrl = () => {
@@ -13,6 +15,10 @@ const getServerBaseUrl = () => {
 };
 
 export async function GET(request: NextRequest) {
+  if (!resolveIsLikelyBrowser(request.headers)) {
+    return new NextResponse(null, { status: 404 });
+  }
+
   const serverBaseUrl = getServerBaseUrl();
   if (!serverBaseUrl) {
     return new NextResponse(null, { status: 500 });

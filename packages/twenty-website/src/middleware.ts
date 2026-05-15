@@ -1,6 +1,13 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
+import {
+    applyOrgChartLikelyBrowserRequestHeader,
+    checkOrgChartApiGuard,
+    orgChartApiGuardToResponse,
+    resolveOrgChartRateLimitProfile,
+} from '@/lib/org-chart-api-guard';
+
 /**
  * Next.js treats POST + application/x-www-form-urlencoded as a potential Server Action
  * (see getIsServerAction in next/dist/server/lib/server-action-request-meta.js).
@@ -32,7 +39,19 @@ export function middleware(request: NextRequest) {
     return new NextResponse(null, { status: 400 });
   }
 
+  const pathname = request.nextUrl.pathname;
+  const orgChartProfile = resolveOrgChartRateLimitProfile(pathname);
+  if (orgChartProfile) {
+    const guardResult = checkOrgChartApiGuard(request.headers, pathname);
+    if (!guardResult.allowed) {
+      return orgChartApiGuardToResponse(guardResult, orgChartProfile);
+    }
+  }
+
   const requestHeaders = new Headers(request.headers);
+  if (orgChartProfile) {
+    applyOrgChartLikelyBrowserRequestHeader(requestHeaders);
+  }
 
   // Bots and proxied requests often omit Origin. Next.js Server Actions validation
   // then fails with "Missing origin header" and can trigger "s is not a function".

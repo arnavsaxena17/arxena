@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import {
-    buildOrgChartUpstreamHeaders,
-    rejectBlockedOrgChartBot,
-} from '@/lib/org-chart-proxy-headers';
+import { resolveIsLikelyBrowser } from '@/lib/org-chart-api-guard';
+import { buildOrgChartUpstreamHeaders } from '@/lib/org-chart-proxy-headers';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,9 +16,9 @@ const getServerBaseUrl = () => {
 const BACKEND_PATH = '/org-chart/companies/employee-count';
 
 export async function GET(request: NextRequest) {
-  const blocked = rejectBlockedOrgChartBot(request);
-  if (blocked) {
-    return blocked;
+  const allowPdlProxy = resolveIsLikelyBrowser(request.headers);
+  if (!allowPdlProxy) {
+    return NextResponse.json({ employeeCount: null, status: 'ok' }, { status: 200 });
   }
 
   const serverBaseUrl = getServerBaseUrl();
@@ -49,7 +47,9 @@ export async function GET(request: NextRequest) {
     const response = await fetch(
       `${serverBaseUrl}${BACKEND_PATH}?${params.toString()}`,
       {
-        headers: buildOrgChartUpstreamHeaders(request.headers),
+        headers: buildOrgChartUpstreamHeaders(request.headers, {
+          allowPdlProxy,
+        }),
       },
     );
     const data = await response.json();

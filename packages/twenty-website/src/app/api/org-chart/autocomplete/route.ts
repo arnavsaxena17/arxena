@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import {
-    buildOrgChartUpstreamHeaders,
-    rejectBlockedOrgChartBot,
-} from '@/lib/org-chart-proxy-headers';
+import { resolveIsLikelyBrowser } from '@/lib/org-chart-api-guard';
+import { buildOrgChartUpstreamHeaders } from '@/lib/org-chart-proxy-headers';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,8 +23,11 @@ async function proxyToBackend(
     params: Record<string, unknown>;
   },
   requestHeaders: Headers,
+  allowPdlProxy: boolean,
 ) {
-  const upstreamHeaders = buildOrgChartUpstreamHeaders(requestHeaders);
+  const upstreamHeaders = buildOrgChartUpstreamHeaders(requestHeaders, {
+    allowPdlProxy,
+  });
 
   const response = await fetch(`${serverBaseUrl}${BACKEND_PATH}`, {
     method: 'POST',
@@ -42,9 +43,9 @@ async function proxyToBackend(
 }
 
 export async function GET(request: NextRequest) {
-  const blocked = rejectBlockedOrgChartBot(request);
-  if (blocked) {
-    return blocked;
+  const allowPdlProxy = resolveIsLikelyBrowser(request.headers);
+  if (!allowPdlProxy) {
+    return NextResponse.json({ result: [], status: 'ok' }, { status: 200 });
   }
 
   const serverBaseUrl = getServerBaseUrl();
@@ -70,6 +71,7 @@ export async function GET(request: NextRequest) {
       serverBaseUrl,
       { input_text: name.trim(), query: {}, params: {} },
       request.headers,
+      allowPdlProxy,
     );
   } catch {
     return NextResponse.json({ result: [], status: 'ok' }, { status: 200 });
@@ -77,9 +79,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const blocked = rejectBlockedOrgChartBot(request);
-  if (blocked) {
-    return blocked;
+  const allowPdlProxy = resolveIsLikelyBrowser(request.headers);
+  if (!allowPdlProxy) {
+    return NextResponse.json({ result: [], status: 'ok' }, { status: 200 });
   }
 
   const serverBaseUrl = getServerBaseUrl();
@@ -105,6 +107,7 @@ export async function POST(request: NextRequest) {
         params: body?.params ?? {},
       },
       request.headers,
+      allowPdlProxy,
     );
   } catch {
     return NextResponse.json({ result: [], status: 'ok' }, { status: 200 });

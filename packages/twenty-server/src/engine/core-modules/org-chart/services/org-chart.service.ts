@@ -332,8 +332,6 @@ export class OrgChartService {
     const hasAuth = Boolean(authToken?.trim());
     const allowPdl = hasAuth || options?.isPdlProxyAuthorized === true;
 
-    console.log('allowPdl', allowPdl);
-    console.log('this.pdlAutocomplete.isConfigured()', this.pdlAutocomplete.isConfigured());
     let baseResults: Awaited<
       ReturnType<PdlAutocompleteService['getCompanyAutocomplete']>
     > = [];
@@ -346,7 +344,6 @@ export class OrgChartService {
         authToken,
       );
     }
-    console.log('baseResults', baseResults);
     return mergeManualCompanyAutocompleteResults(inputText, baseResults);
   }
 

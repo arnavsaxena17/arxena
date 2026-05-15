@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getRequestMetadata, isBlockedBot } from '@/lib/bot-detection';
+import { getRequestMetadata } from '@/lib/bot-detection';
+import { resolveIsLikelyBrowser } from '@/lib/org-chart-api-guard';
 import { buildOrgChartUpstreamHeaders } from '@/lib/org-chart-proxy-headers';
 import { decodeOverEncodedPath } from '@/lib/url-utils';
 
@@ -23,12 +24,7 @@ export async function GET(
   const forwardedUserAgent = request.headers.get('x-forwarded-user-agent');
   const { userAgent, referer, clientIp } = getRequestMetadata(request);
   const effectiveUserAgent = forwardedUserAgent ?? userAgent;
-  if (isBlockedBot(effectiveUserAgent)) {
-    return NextResponse.json(
-      { status: 'error', message: 'Forbidden' },
-      { status: 403 },
-    );
-  }
+  const allowPdlProxy = resolveIsLikelyBrowser(request.headers);
 
   const serverBaseUrl = getServerBaseUrl();
   if (!serverBaseUrl) {
@@ -79,6 +75,7 @@ export async function GET(
       headers: {
         ...buildOrgChartUpstreamHeaders(request.headers, {
           forwardedUserAgent: effectiveUserAgent,
+          allowPdlProxy,
         }),
         ...(authHeader && { Authorization: authHeader }),
       },

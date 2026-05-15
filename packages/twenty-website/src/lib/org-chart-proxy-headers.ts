@@ -4,10 +4,15 @@ import {
     getClientIpFromHeaders,
     isBlockedBot,
 } from '@/lib/bot-detection';
+import { resolveIsLikelyBrowser } from '@/lib/org-chart-api-guard';
 
 export const buildOrgChartUpstreamHeaders = (
   requestHeaders: Headers,
-  options?: { forwardedUserAgent?: string | null },
+  options?: {
+    forwardedUserAgent?: string | null;
+    /** When false, PDL proxy key is omitted so the server will not call PDL. */
+    allowPdlProxy?: boolean;
+  },
 ): Record<string, string> => {
   const headers: Record<string, string> = {};
   const passthroughHeaderNames = [
@@ -45,8 +50,10 @@ export const buildOrgChartUpstreamHeaders = (
     headers['X-Org-Chart-Client-User-Agent'] = effectiveUserAgent;
   }
 
+  const allowPdlProxy =
+    options?.allowPdlProxy ?? resolveIsLikelyBrowser(requestHeaders);
   const pdlProxySecret = process.env.ORG_CHART_PDL_PROXY_SECRET?.trim();
-  if (pdlProxySecret) {
+  if (allowPdlProxy && pdlProxySecret) {
     headers[ORG_CHART_PDL_PROXY_HEADER] = pdlProxySecret;
   }
 
