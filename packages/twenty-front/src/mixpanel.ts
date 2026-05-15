@@ -170,8 +170,10 @@ export const Mixpanel = {
       try {
         mixpanel.track(name, {
           ...props,
+          visitorDistinctId: mixpanel.get_distinct_id(),
           timestamp: new Date().toISOString(),
           environment: process.env.NODE_ENV,
+          source: 'twenty_front',
         });
         devLog('Mixpanel track:', name, props);
       } catch (error) {

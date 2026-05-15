@@ -4,6 +4,7 @@ import { useState } from 'react';
 import {
   convertPricingAmountSubunits,
   findPricingPlanTier,
+  getCreditPackForPlanVolume,
   getInheritedFeatures,
   getPricingCurrencySymbol,
   getPricingMarketingSubheadlineLines,
@@ -516,7 +517,9 @@ export const SettingsBillingPricing = ({
             ? smallPackKey
             : regularPackKey;
           const apiPack = creditPacks.find((pack) => pack.key === packKey);
-          const fallbackPack = sharedPackMetaByKey.get(packKey);
+          const fallbackPack =
+            getCreditPackForPlanVolume(planId, tierMaps) ??
+            sharedPackMetaByKey.get(packKey);
           const pack =
             apiPack ??
             (fallbackPack
@@ -548,18 +551,19 @@ export const SettingsBillingPricing = ({
           }
 
           const meta = sharedPackMetaByKey.get(pack.key);
+          const tierCredits = tier.credits;
+          const mapsCount = tier.maps;
           const { subunits: convertedAmountSubunits } =
             resolvePackPriceSubunits(pack, displayCurrency);
           const baseAmount = convertedAmountSubunits / 100;
-          const defaultCreditsLabel = `${pack.credits.toLocaleString()} ${t`credits`}`;
+          const defaultCreditsLabel = `${tierCredits.toLocaleString()} ${t`credits`}`;
           const creditsLabel =
             pack.creditsDisplay ?? meta?.creditsDisplay ?? defaultCreditsLabel;
           const features = pack.ownFeatures ?? meta?.features ?? [pack.name];
-          const includedEmail =
-            pack.includedEmailCredits ?? meta?.includedEmailCredits ?? 0;
-          const includedPhone =
-            pack.includedPhoneCredits ?? meta?.includedPhoneCredits ?? 0;
-          const mapsCount = pack.mapsCount ?? meta?.mapsCount ?? tier.maps;
+          const includedEmail = tierCredits;
+          const includedPhone = Math.floor(
+            tierCredits / REVEAL_CREDIT_COST_PHONE,
+          );
           const totalSubunits = convertedAmountSubunits * mapsCount;
           const totalUsdSubunits = convertPricingAmountSubunits(
             totalSubunits,
@@ -574,10 +578,10 @@ export const SettingsBillingPricing = ({
               ? SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE
               : tier.maps;
           const emailEquivalent = Math.floor(
-            pack.credits / REVEAL_CREDIT_COST_EMAIL,
+            tierCredits / REVEAL_CREDIT_COST_EMAIL,
           );
           const phoneEquivalent = Math.floor(
-            pack.credits / REVEAL_CREDIT_COST_PHONE,
+            tierCredits / REVEAL_CREDIT_COST_PHONE,
           );
           const isSelected = selectedPlanId === planId;
 
@@ -666,7 +670,8 @@ export const SettingsBillingPricing = ({
                   <StyledIncludedRevealCredits>
                     {t`Includes`} {emailEquivalent.toLocaleString()}{' '}
                     {t`email credits`} + {phoneEquivalent.toLocaleString()}{' '}
-                    {t`phone reveals`}
+                    {t`phone reveals`} + 1000
+                    {t`AI Conversations Credits`}
                   </StyledIncludedRevealCredits>
                 </StyledIncludedCreditsBlock>
                 {inherited.inheritedFromLabel && (

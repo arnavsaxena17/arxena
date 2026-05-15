@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 
 import { getSignInUrl, getSignUpUrl } from '@/lib/auth-urls';
+import { DEFAULT_OG_TITLE, DEFAULT_SITE_DESCRIPTION } from '@/lib/brand-content';
 
 import { HomepageHero } from './_components/homepage/HomepageHero';
 import { ContentContainer } from './_components/ui/layout/ContentContainer';
@@ -9,26 +10,20 @@ import { Header } from './_components/ui/layout/header';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title:
-    'Arxena — See inside any company | Real-time Org chart & automated outreach',
-  description:
-    'Arxena maps the org chart of any company in the world — across each levels and all functions. Search, build lists, get contacts, and let AI reach out in your voice on WhatsApp, LinkedIn, and email. 1M+ companies mapped, 800M+ professionals indexed.',
+  title: DEFAULT_OG_TITLE,
+  description: DEFAULT_SITE_DESCRIPTION,
   alternates: {
     canonical: '/',
   },
   openGraph: {
-    title:
-      'Arxena — See inside any company | Real-time Org chart & automated outreach',
-    description:
-      "Map any target company's org chart in real time. Build lists, enrich contacts, and let AI engage for you — you only talk to warm replies.",
+    title: DEFAULT_OG_TITLE,
+    description: DEFAULT_SITE_DESCRIPTION,
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title:
-      'Arxena — See inside any company | Real-time Org chart & automated outreach',
-    description:
-      'Real-time org charts from LinkedIn and other sources. Search → map → list → contact → engage. 1M+ companies, 800M+ professionals.',
+    title: DEFAULT_OG_TITLE,
+    description: DEFAULT_SITE_DESCRIPTION,
   },
 };
 

@@ -13,7 +13,14 @@ import styled from '@emotion/styled';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { isDefined, PRICING_PLANS } from 'twenty-shared';
+import {
+  isDefined,
+  ONBOARDING_INTENT_PATH_TO_PRICING_PLAN_ID,
+  PRICING_PLAN_CONTENT_BY_ID,
+  PRICING_PLANS,
+  type OnboardingIntentPathKey,
+  type PricingPlanId,
+} from 'twenty-shared';
 import {
   ActionLink,
   AnimatedEaseIn,
@@ -242,40 +249,54 @@ const intentConfig = {
   },
 } as const;
 
+const intentPathToTone = {
+  [OnboardingIntentPath.EXTENSION_INSTALL]: 'green',
+  [OnboardingIntentPath.COMPETITIVE_RESEARCH]: 'purple',
+  [OnboardingIntentPath.CORPORATE_TA]: 'blue',
+  [OnboardingIntentPath.DEAL_DILIGENCE]: 'orange',
+} as const satisfies Record<OnboardingIntentPath, IntentTone>;
+
+const intentPathToIcon = {
+  [OnboardingIntentPath.EXTENSION_INSTALL]: IconUsers,
+  [OnboardingIntentPath.COMPETITIVE_RESEARCH]: IconSearch,
+  [OnboardingIntentPath.CORPORATE_TA]: IconBuildingSkyscraper,
+  [OnboardingIntentPath.DEAL_DILIGENCE]: IconPhone,
+} as const satisfies Record<OnboardingIntentPath, typeof IconUsers>;
+
+const getPricingPlanIdForIntentPath = (
+  path: OnboardingIntentPath,
+): PricingPlanId =>
+  ONBOARDING_INTENT_PATH_TO_PRICING_PLAN_ID[path as OnboardingIntentPathKey];
+
+const buildIntentCard = (path: OnboardingIntentPath) => {
+  const planId = getPricingPlanIdForIntentPath(path);
+  const plan = PRICING_PLANS[planId];
+  const content = PRICING_PLAN_CONTENT_BY_ID[planId];
+
+  return {
+    title: plan.label,
+    persona: content.persona,
+    body: plan.tagline,
+    hint: content.onboardingHint,
+    Icon: intentPathToIcon[path],
+    tone: intentPathToTone[path],
+  };
+};
+
 const intentCards = {
-  [OnboardingIntentPath.EXTENSION_INSTALL]: {
-    title: PRICING_PLANS.sales.label,
-    persona: 'Founder / Sales',
-    body: PRICING_PLANS.sales.tagline,
-    hint: 'Self-serve · extension · ~2 hr delivery',
-    Icon: IconUsers,
-    tone: 'green',
-  },
-  [OnboardingIntentPath.COMPETITIVE_RESEARCH]: {
-    title: PRICING_PLANS.recruitment.label,
-    persona: 'Recruiter',
-    body: PRICING_PLANS.recruitment.tagline,
-    hint: 'Self-serve or 20-min live walkthrough',
-    Icon: IconSearch,
-    tone: 'purple',
-  },
-  [OnboardingIntentPath.CORPORATE_TA]: {
-    title: PRICING_PLANS.corporate.label,
-    persona: 'Corporate TA',
-    body: PRICING_PLANS.corporate.tagline,
-    hint: 'Self-serve · multi-company maps',
-    Icon: IconBuildingSkyscraper,
-    tone: 'blue',
-  },
-  [OnboardingIntentPath.DEAL_DILIGENCE]: {
-    title: PRICING_PLANS.investment.label,
-    persona: 'PE / VC',
-    body: PRICING_PLANS.investment.tagline,
-    hint: 'Book a call · live company map',
-    Icon: IconPhone,
-    tone: 'orange',
-  },
-} as const;
+  [OnboardingIntentPath.EXTENSION_INSTALL]: buildIntentCard(
+    OnboardingIntentPath.EXTENSION_INSTALL,
+  ),
+  [OnboardingIntentPath.COMPETITIVE_RESEARCH]: buildIntentCard(
+    OnboardingIntentPath.COMPETITIVE_RESEARCH,
+  ),
+  [OnboardingIntentPath.CORPORATE_TA]: buildIntentCard(
+    OnboardingIntentPath.CORPORATE_TA,
+  ),
+  [OnboardingIntentPath.DEAL_DILIGENCE]: buildIntentCard(
+    OnboardingIntentPath.DEAL_DILIGENCE,
+  ),
+};
 
 export const IntentChoice = () => {
   const location = useLocation();

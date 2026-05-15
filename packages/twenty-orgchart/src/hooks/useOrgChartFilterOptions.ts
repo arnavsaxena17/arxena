@@ -8,98 +8,115 @@ import {
 export const useOrgChartFilterOptions = (
   orgData: Record<string, unknown> | null,
 ) => {
-  const { availableCountries, countryPercentLabels } = useMemo(() => {
-    if (!orgData) {
-      return { availableCountries: [] as string[], countryPercentLabels: {} };
-    }
-
-    const rawCountries = (orgData as Record<string, unknown>).countries;
-    let cleaned: string[] = [];
-
-    if (typeof rawCountries === 'string') {
-      try {
-        const parsed = JSON.parse(rawCountries) as unknown;
-        if (Array.isArray(parsed)) {
-          cleaned = parsed
-            .filter((c): c is string => typeof c === 'string')
-            .filter((c) => c !== '0');
-        }
-      } catch {
-        return { availableCountries: [], countryPercentLabels: {} };
+  const { availableCountries, countryPercentLabels, countryCounts } =
+    useMemo(() => {
+      if (!orgData) {
+        return {
+          availableCountries: [] as string[],
+          countryPercentLabels: {} as Record<string, string>,
+          countryCounts: {} as Record<string, number>,
+        };
       }
-    } else if (Array.isArray(rawCountries)) {
-      cleaned = rawCountries
-        .filter((c): c is string => typeof c === 'string')
-        .filter((c) => c !== '0');
-    }
 
-    const labels: Record<string, string> = {};
-    const analyticsRaw = (orgData as Record<string, unknown>).country_analytics;
+      const rawCountries = (orgData as Record<string, unknown>).countries;
+      let cleaned: string[] = [];
 
-    let analytics: Record<string, number> | null = null;
-
-    if (typeof analyticsRaw === 'string') {
-      try {
-        const parsed = JSON.parse(analyticsRaw) as unknown;
-        if (
-          parsed &&
-          typeof parsed === 'object' &&
-          !Array.isArray(parsed)
-        ) {
-          analytics = Object.entries(parsed as Record<string, unknown>).reduce<
-            Record<string, number>
-          >((acc, [key, value]) => {
-            if (typeof value === 'number') {
-              acc[key] = value;
-            }
-            return acc;
-          }, {});
+      if (typeof rawCountries === 'string') {
+        try {
+          const parsed = JSON.parse(rawCountries) as unknown;
+          if (Array.isArray(parsed)) {
+            cleaned = parsed
+              .filter((c): c is string => typeof c === 'string')
+              .filter((c) => c !== '0');
+          }
+        } catch {
+          return {
+            availableCountries: [],
+            countryPercentLabels: {},
+            countryCounts: {},
+          };
         }
-      } catch {
-        analytics = null;
+      } else if (Array.isArray(rawCountries)) {
+        cleaned = rawCountries
+          .filter((c): c is string => typeof c === 'string')
+          .filter((c) => c !== '0');
       }
-    } else if (
-      analyticsRaw &&
-      typeof analyticsRaw === 'object' &&
-      !Array.isArray(analyticsRaw)
-    ) {
-      analytics = Object.entries(
-        analyticsRaw as Record<string, unknown>,
-      ).reduce<Record<string, number>>((acc, [key, value]) => {
-        if (typeof value === 'number') {
-          acc[key] = value;
+
+      const labels: Record<string, string> = {};
+      const countByCountry: Record<string, number> = {};
+      const analyticsRaw = (orgData as Record<string, unknown>)
+        .country_analytics;
+
+      let analytics: Record<string, number> | null = null;
+
+      if (typeof analyticsRaw === 'string') {
+        try {
+          const parsed = JSON.parse(analyticsRaw) as unknown;
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            analytics = Object.entries(
+              parsed as Record<string, unknown>,
+            ).reduce<Record<string, number>>((acc, [key, value]) => {
+              if (typeof value === 'number') {
+                acc[key] = value;
+              }
+              return acc;
+            }, {});
+          }
+        } catch {
+          analytics = null;
         }
-        return acc;
-      }, {});
-    }
-
-    if (analytics) {
-      const globalTotal =
-        typeof analytics.global === 'number' && analytics.global > 0
-          ? analytics.global
-          : null;
-      const total = globalTotal ?? null;
-
-      if (total) {
-        Object.entries(analytics).forEach(([country, count]) => {
-          if (typeof count !== 'number' || count <= 0) return;
-          const percent = (count / total) * 100;
-          labels[country] = `${percent.toFixed(1)}%`;
-        });
+      } else if (
+        analyticsRaw &&
+        typeof analyticsRaw === 'object' &&
+        !Array.isArray(analyticsRaw)
+      ) {
+        analytics = Object.entries(
+          analyticsRaw as Record<string, unknown>,
+        ).reduce<Record<string, number>>((acc, [key, value]) => {
+          if (typeof value === 'number') {
+            acc[key] = value;
+          }
+          return acc;
+        }, {});
       }
-    }
 
-    const withGlobal = [...cleaned, 'global'];
-    const availableCountries = sortOrgChartCountryKeys(withGlobal, labels);
+      if (analytics) {
+        const globalTotal =
+          typeof analytics.global === 'number' && analytics.global > 0
+            ? analytics.global
+            : null;
+        const total = globalTotal ?? null;
 
-    return { availableCountries, countryPercentLabels: labels };
-  }, [orgData]);
+        if (total) {
+          Object.entries(analytics).forEach(([country, count]) => {
+            if (typeof count !== 'number' || count <= 0) return;
+            countByCountry[country] = count;
+            const percent = (count / total) * 100;
+            labels[country] = `${percent.toFixed(1)}%`;
+          });
+        }
+      }
 
-  const { availableFunctionRoots, functionRootPercentLabels } = useMemo(() => {
+      const withGlobal = [...cleaned, 'global'];
+      const availableCountries = sortOrgChartCountryKeys(withGlobal, labels);
+
+      return {
+        availableCountries,
+        countryPercentLabels: labels,
+        countryCounts: countByCountry,
+      };
+    }, [orgData]);
+
+  const {
+    availableFunctionRoots,
+    functionRootPercentLabels,
+    functionRootCounts,
+  } = useMemo(() => {
     if (!orgData) {
       return {
         availableFunctionRoots: [] as string[],
-        functionRootPercentLabels: {},
+        functionRootPercentLabels: {} as Record<string, string>,
+        functionRootCounts: {} as Record<string, number>,
       };
     }
 
@@ -120,12 +137,14 @@ export const useOrgChartFilterOptions = (
           return {
             availableFunctionRoots: [],
             functionRootPercentLabels: {},
+            functionRootCounts: {},
           };
         }
       } catch {
         return {
           availableFunctionRoots: [],
           functionRootPercentLabels: {},
+          functionRootCounts: {},
         };
       }
     } else if (Array.isArray(rawFunctions)) {
@@ -156,6 +175,7 @@ export const useOrgChartFilterOptions = (
           return {
             availableFunctionRoots: withFullCompany,
             functionRootPercentLabels: labels,
+            functionRootCounts: {},
           };
         }
         rawNodes = parsed;
@@ -167,6 +187,7 @@ export const useOrgChartFilterOptions = (
         return {
           availableFunctionRoots: withFullCompany,
           functionRootPercentLabels: labels,
+          functionRootCounts: {},
         };
       }
     } else {
@@ -177,6 +198,7 @@ export const useOrgChartFilterOptions = (
       return {
         availableFunctionRoots: withFullCompany,
         functionRootPercentLabels: labels,
+        functionRootCounts: {},
       };
     }
 
@@ -207,10 +229,13 @@ export const useOrgChartFilterOptions = (
         return {
           availableFunctionRoots: withFullCompany,
           functionRootPercentLabels: labels,
+          functionRootCounts: {},
         };
       }
 
       counts.fullcompany = total;
+
+      const functionRootCountsSnapshot = { ...counts };
 
       Object.entries(counts).forEach(([root, count]) => {
         if (count <= 0) return;
@@ -226,6 +251,7 @@ export const useOrgChartFilterOptions = (
       return {
         availableFunctionRoots: withFullCompany,
         functionRootPercentLabels: labels,
+        functionRootCounts: functionRootCountsSnapshot,
       };
     } catch {
       const withFullCompany = sortOrgChartFunctionRootKeys(
@@ -235,6 +261,7 @@ export const useOrgChartFilterOptions = (
       return {
         availableFunctionRoots: withFullCompany,
         functionRootPercentLabels: labels,
+        functionRootCounts: {},
       };
     }
   }, [orgData]);
@@ -243,6 +270,8 @@ export const useOrgChartFilterOptions = (
     availableCountries,
     availableFunctionRoots,
     countryPercentLabels,
+    countryCounts,
     functionRootPercentLabels,
+    functionRootCounts,
   };
 };

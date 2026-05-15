@@ -1,4 +1,5 @@
 import { getSignInUrl, getSignUpUrl } from '@/lib/auth-urls';
+import { PRODUCTS_INDEX } from '@/lib/brand-content';
 import { PRODUCT_PAGES } from '@/lib/marketing-site-pages';
 
 import { MarketingIndexContent } from '@/app/_components/marketing/MarketingIndexContent';
@@ -7,8 +8,7 @@ import { Header } from '@/app/_components/ui/layout/header';
 
 export const metadata = {
   title: 'Products | Arxena',
-  description:
-    'The capabilities behind the pre-work: org explorer, function maps, timeline, connection intelligence, engagement layer, and API—for investors, search firms, and revenue teams.',
+  description: PRODUCTS_INDEX.sub,
   alternates: {
     canonical: '/products',
   },
@@ -23,8 +23,8 @@ export default function ProductsIndexPage() {
       <Header showSearch={false} signInUrl={signInUrl} signUpUrl={signUpUrl} />
       <ContentContainer>
         <MarketingIndexContent
-          title="Products"
-          sub="Each product is a step in the pre-work—not a standalone chart feature. Map, plan, reach, and measure in one place."
+          title={PRODUCTS_INDEX.title}
+          sub={PRODUCTS_INDEX.sub}
           items={PRODUCT_PAGES}
           basePath="/products"
         />

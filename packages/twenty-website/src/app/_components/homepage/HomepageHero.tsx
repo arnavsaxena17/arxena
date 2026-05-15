@@ -14,6 +14,7 @@ import { UseCasesSection } from '@/app/_components/homepage/UseCasesSection';
 import { OrgChartSearch } from '@/app/_components/orgchart/OrgChartSearch';
 import { Logo } from '@/app/_components/ui/layout/Logo';
 import { trackGA4Event } from '@/lib/analytics';
+import { HOMEPAGE_HERO } from '@/lib/brand-content';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 
 const StyledHero = styled.section`
@@ -346,33 +347,19 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
         <StyledLogoWrapper>
           <Logo variant="hero" />
         </StyledLogoWrapper>
-        <StyledTitle>Know who actually runs things.</StyledTitle>
-        <StyledHeroLead>
-          The CFO changed. The economic buyer wasn&apos;t in the room. The
-          stakeholders had conflicting briefs. Map any org live — so you never
-          walk in blind.
-        </StyledHeroLead>
-        <StyledHeroStats>
-          1M+ companies · 800M+ professionals · Real-time from LinkedIn and
-          others
-        </StyledHeroStats>
+        <StyledTitle>{HOMEPAGE_HERO.title}</StyledTitle>
+        <StyledHeroLead>{HOMEPAGE_HERO.lead}</StyledHeroLead>
+        <StyledHeroStats>{HOMEPAGE_HERO.stats}</StyledHeroStats>
         {/* <StyledClarifySection>
           <StyledClarifyHeading>Worth clarifying</StyledClarifyHeading>
           <StyledClarifyRow>
             <StyledClarifyBlock>
-              <StyledClarifyLabel>Not this</StyledClarifyLabel>
-              <StyledClarifyText>
-                A tool that helps you draw or document your own company&apos;s
-                org chart.
-              </StyledClarifyText>
+              <StyledClarifyLabel>{HOMEPAGE_HERO.clarifyNotLabel}</StyledClarifyLabel>
+              <StyledClarifyText>{HOMEPAGE_HERO.clarifyNotText}</StyledClarifyText>
             </StyledClarifyBlock>
             <StyledClarifyBlock>
-              <StyledClarifyLabel>This</StyledClarifyLabel>
-              <StyledClarifyText>
-                An intelligence platform that fetches the org chart of any
-                company you&apos;re targeting — for sales, recruiting,
-                investing, or competitive research.
-              </StyledClarifyText>
+              <StyledClarifyLabel>{HOMEPAGE_HERO.clarifyIsLabel}</StyledClarifyLabel>
+              <StyledClarifyText>{HOMEPAGE_HERO.clarifyIsText}</StyledClarifyText>
             </StyledClarifyBlock>
           </StyledClarifyRow>
         </StyledClarifySection> */}
@@ -405,9 +392,7 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
       </StyledHero>
 
       <StyledExampleSection>
-        <StyledExampleTitle>
-          Check out our Real-time Org Charts & Engagement. Click on any Company Below
-        </StyledExampleTitle>
+        <StyledExampleTitle>{HOMEPAGE_HERO.exampleStripTitle}</StyledExampleTitle>
         <StyledScrollingStrip>
           <StyledScrollingTrack isPaused={isExampleStripPaused}>
             {[...EXAMPLE_COMPANIES, ...EXAMPLE_COMPANIES].map(

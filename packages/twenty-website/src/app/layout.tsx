@@ -3,6 +3,7 @@ import { PublicEnvScript } from 'next-runtime-env';
 import { Gabarito, Inter } from 'next/font/google';
 import Script from 'next/script';
 
+import { DEFAULT_SITE_DESCRIPTION } from '@/lib/brand-content';
 import { MixpanelRouteSync } from '@/lib/MixpanelRouteSync';
 import { isPhase2Exposed } from '@/lib/sitemap';
 
@@ -18,8 +19,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   metadataBase: new URL('https://arxena.com'),
   title: 'Arxena.com',
-  description:
-    'Before the call. Before the brief. Before outreach. Real-time Org Intelligence - Org Charts & Engagement.',
+  description: DEFAULT_SITE_DESCRIPTION,
   icons: {
     icon: [
       { url: '/favicon.ico/favicon-96x96.png', sizes: '96x96', type: 'image/png' },

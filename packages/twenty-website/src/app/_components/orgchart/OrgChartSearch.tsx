@@ -26,7 +26,7 @@ const CompanySearchAutocomplete = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div style={{ height: 48, background: '#f5f5f5', borderRadius: 8 }} />
+      <div style={{ height: 40, background: '#f5f5f5', borderRadius: 8 }} />
     ),
   },
 );
@@ -34,11 +34,14 @@ const CompanySearchAutocomplete = dynamic(
 type OrgChartSearchProps = {
   placeholder?: string;
   startIcon?: React.ReactNode;
+  /** Compact input for mobile header toolbars. */
+  dense?: boolean;
 };
 
 export const OrgChartSearch = ({
   placeholder = "Search any company's org chart",
   startIcon,
+  dense = false,
 }: OrgChartSearchProps) => {
   const router = useRouter();
   const pathname = usePathname();
@@ -64,6 +67,8 @@ export const OrgChartSearch = ({
     trackWebsiteEvent('org_chart_search', {
       companyId: company.companyId,
       companyName: company.companyName,
+      website: company.website,
+      industry: company.industry,
     });
     setIsNavigating(true);
     const params = new URLSearchParams();
@@ -79,6 +84,7 @@ export const OrgChartSearch = ({
       onCompanySelect={handleCompanySelect}
       isSelecting={isNavigating}
       placeholder={placeholder}
+      dense={dense}
       baseUrl="/api/org-chart"
       autocompletePath="/autocomplete"
       logoBaseUrl="/api/org-chart/company-logo"

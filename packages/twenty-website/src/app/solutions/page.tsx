@@ -1,4 +1,5 @@
 import { getSignInUrl, getSignUpUrl } from '@/lib/auth-urls';
+import { SOLUTIONS_INDEX } from '@/lib/brand-content';
 import { SOLUTION_PAGES } from '@/lib/marketing-site-pages';
 
 import { MarketingIndexContent } from '@/app/_components/marketing/MarketingIndexContent';
@@ -7,8 +8,7 @@ import { Header } from '@/app/_components/ui/layout/header';
 
 export const metadata = {
   title: 'Solutions | Arxena',
-  description:
-    'Pre-call intelligence for investors, longlists before the brief for search, account planning before outreach for sales—each supported from map to conversation.',
+  description: SOLUTIONS_INDEX.sub,
   alternates: {
     canonical: '/solutions',
   },
@@ -23,8 +23,8 @@ export default function SolutionsIndexPage() {
       <Header showSearch={false} signInUrl={signInUrl} signUpUrl={signUpUrl} />
       <ContentContainer>
         <MarketingIndexContent
-          title="Solutions"
-          sub="Pick your workflow. Pre-call intelligence for investors. Longlists before the brief for search. Account planning before outreach for sales."
+          title={SOLUTIONS_INDEX.title}
+          sub={SOLUTIONS_INDEX.sub}
           items={SOLUTION_PAGES}
           basePath="/solutions"
         />

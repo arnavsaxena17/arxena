@@ -3,6 +3,7 @@
 import styled from '@emotion/styled';
 
 import { openSupportChat } from '@/app/_components/support/openSupportChat';
+import { CONTACT_PAGE_SUB } from '@/lib/brand-content';
 import { getCalendlyUrl } from '@/lib/calendly-url';
 import { COMPANY_INFO } from '@/lib/company-info';
 
@@ -127,9 +128,7 @@ export const ContactContent = () => {
   return (
     <StyledSection>
       <StyledHeadline>Contact</StyledHeadline>
-      <StyledHeadlineSub>
-        Email, WhatsApp, live chat, and office locations. Book a time below.
-      </StyledHeadlineSub>
+      <StyledHeadlineSub>{CONTACT_PAGE_SUB}</StyledHeadlineSub>
       <StyledGrid>
         <StyledDetailsCard>
           <StyledDetailsTitle>Contact details</StyledDetailsTitle>

@@ -3,6 +3,7 @@
 import styled from '@emotion/styled';
 import { IconBrandLinkedin } from '@tabler/icons-react';
 
+import { TEAM_PAGE } from '@/lib/brand-content';
 import { TEAM_MEMBERS } from '@/lib/team-content';
 
 const StyledCtaSection = styled.div`
@@ -151,11 +152,8 @@ type TeamContentProps = {
 export const TeamContent = ({ signInUrl, signUpUrl }: TeamContentProps) => {
   return (
     <StyledSection>
-      <StyledHeadline>Meet the team</StyledHeadline>
-      <StyledHeadlineSub>
-        The people building Arxena — from company search to org intelligence and
-        AI outreach in your voice.
-      </StyledHeadlineSub>
+      <StyledHeadline>{TEAM_PAGE.headline}</StyledHeadline>
+      <StyledHeadlineSub>{TEAM_PAGE.subheadline}</StyledHeadlineSub>
       <StyledTeamGrid>
         {TEAM_MEMBERS.map((member) => (
           <StyledMemberCard key={member.name}>

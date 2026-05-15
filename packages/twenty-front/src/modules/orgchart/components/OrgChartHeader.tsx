@@ -1,25 +1,29 @@
 import styled from '@emotion/styled';
-import { useState } from 'react';
+import { ReactNode, useState } from 'react';
 
-import type { ReactNode } from 'react';
-import type { OrgChartFiltersProps } from 'twenty-orgchart';
-import { OrgChartFilters } from 'twenty-orgchart';
+import { OrgChartFilters, OrgChartFiltersProps } from 'twenty-orgchart';
 import { Button } from 'twenty-ui';
 
-import type { OrgChartBusinessDivisionQueryProps } from './OrgChartBusinessDivisionQuery';
-import { OrgChartBusinessDivisionQuery } from './OrgChartBusinessDivisionQuery';
+import {
+    OrgChartBusinessDivisionQuery,
+    OrgChartBusinessDivisionQueryProps,
+} from './OrgChartBusinessDivisionQuery';
 import { OrgChartCompanyDrawer } from './OrgChartCompanyDrawer';
-import type { OrgChartCompanyInfoProps } from './OrgChartCompanyInfo';
-import { OrgChartCompanyInfo } from './OrgChartCompanyInfo';
+import {
+    OrgChartCompanyInfo,
+    OrgChartCompanyInfoProps,
+} from './OrgChartCompanyInfo';
 
 const StyledHeader = styled.div`
-  position: relative;
-  display: flex;
   align-items: flex-start;
+  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
+  container-name: orgchart-header;
+  container-type: inline-size;
+  display: flex;
+  flex-shrink: 0;
   gap: ${({ theme }) => theme.spacing(3)};
   padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(4)};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
-  flex-shrink: 0;
+  position: relative;
 `;
 
 const StyledMonthPickerCenter = styled.div`
@@ -30,7 +34,8 @@ const StyledMonthPickerCenter = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(1.5)};
+  padding: ${({ theme }) => theme.spacing(1)}
+    ${({ theme }) => theme.spacing(1.5)};
   border: 1px solid ${({ theme }) => theme.border.color.light};
   border-radius: ${({ theme }) => theme.border.radius.md};
   background: ${({ theme }) => theme.background.primary};
@@ -43,12 +48,13 @@ const StyledMonthLabel = styled.span`
 `;
 
 const StyledMonthInput = styled.input`
+  background: ${({ theme }) => theme.background.primary};
   border: 1px solid ${({ theme }) => theme.border.color.medium};
   border-radius: ${({ theme }) => theme.border.radius.sm};
-  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
-  font-size: ${({ theme }) => theme.font.size.sm};
   color: ${({ theme }) => theme.font.color.primary};
-  background: ${({ theme }) => theme.background.primary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  padding: ${({ theme }) => theme.spacing(0.5)}
+    ${({ theme }) => theme.spacing(1)};
 `;
 
 const StyledOrgChartToolbar = styled.div`
@@ -58,7 +64,8 @@ const StyledOrgChartToolbar = styled.div`
   flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing(2)};
   flex-shrink: 0;
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(1.5)}
+    ${({ theme }) => theme.spacing(2)};
   border-radius: ${({ theme }) => theme.border.radius.md};
   border: 1px solid ${({ theme }) => theme.border.color.light};
   background: ${({ theme }) => theme.background.transparent.light};

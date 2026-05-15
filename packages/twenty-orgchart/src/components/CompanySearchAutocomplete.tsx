@@ -3,8 +3,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { toTitleCase } from 'twenty-shared';
 
-import type { CompanyAutocompleteItem } from '../hooks/useCompanyAutocomplete';
-import { useCompanyAutocomplete } from '../hooks/useCompanyAutocomplete';
+import {
+    CompanyAutocompleteItem,
+    useCompanyAutocomplete,
+} from '../hooks/useCompanyAutocomplete';
 
 export type CompanySearchAutocompleteProps = {
   onCompanySelect: (company: {
@@ -23,6 +25,8 @@ export type CompanySearchAutocompleteProps = {
   startIcon?: React.ReactNode;
   /** When true, shows loading spinner (e.g. during navigation after selection) */
   isSelecting?: boolean;
+  /** Smaller control for tight toolbars (e.g. mobile site header). */
+  dense?: boolean;
   /** Base URL for API (e.g. https://server.com or /api/org-chart for proxy) */
   baseUrl: string;
   accessToken?: string;
@@ -41,11 +45,16 @@ const StyledWrapper = styled.div<{ $isOpen?: boolean }>`
   z-index: ${({ $isOpen }) => ($isOpen ? 9998 : 1)};
 `;
 
-const StyledInput = styled.input<{ $hasStartIcon?: boolean }>`
+const StyledInput = styled.input<{ $hasStartIcon?: boolean; $dense?: boolean }>`
   width: 100%;
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
-  ${({ $hasStartIcon }) => $hasStartIcon && 'padding-left: 44px;'}
-  font-size: ${({ theme }) => theme.font.size.md};
+  padding: ${({ theme, $dense }) =>
+    $dense
+      ? `${theme.spacing(1)} ${theme.spacing(2)}`
+      : `${theme.spacing(2)} ${theme.spacing(3)}`};
+  ${({ $hasStartIcon, $dense }) =>
+    $hasStartIcon && ($dense ? 'padding-left: 34px;' : 'padding-left: 44px;')}
+  font-size: ${({ theme, $dense }) =>
+    $dense ? theme.font.size.sm : theme.font.size.md};
   font-family: ${({ theme }) => theme.font.family};
   color: ${({ theme }) => theme.font.color.primary};
   background: ${({ theme }) => theme.background.primary};
@@ -96,10 +105,13 @@ const StyledDropdownItem = styled.li`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing(3)};
-  padding: ${({ theme }) => theme.spacing(2.5)} ${({ theme }) => theme.spacing(3)};
+  padding: ${({ theme }) => theme.spacing(2.5)}
+    ${({ theme }) => theme.spacing(3)};
   cursor: pointer;
   border-radius: ${({ theme }) => theme.border.radius.md};
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
   margin-bottom: ${({ theme }) => theme.spacing(0.5)};
 
   &:last-of-type {
@@ -203,9 +215,10 @@ const StyledInputWrapper = styled.div`
   width: 100%;
 `;
 
-const StyledStartIcon = styled.span`
+const StyledStartIcon = styled.span<{ $dense?: boolean }>`
   position: absolute;
-  left: ${({ theme }) => theme.spacing(2)};
+  left: ${({ theme, $dense }) =>
+    $dense ? theme.spacing(1) : theme.spacing(2)};
   top: 50%;
   transform: translateY(-50%);
   display: flex;
@@ -228,6 +241,7 @@ export const CompanySearchAutocomplete = ({
   placeholder = 'Search for a company...',
   disabled = false,
   isSelecting = false,
+  dense = false,
   baseUrl,
   accessToken,
   autocompletePath,
@@ -254,11 +268,13 @@ export const CompanySearchAutocomplete = ({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLUListElement>(null);
 
-  const { companies, isLoading, error, search, clear } = useCompanyAutocomplete({
-    baseUrl,
-    accessToken,
-    autocompletePath,
-  });
+  const { companies, isLoading, error, search, clear } = useCompanyAutocomplete(
+    {
+      baseUrl,
+      accessToken,
+      autocompletePath,
+    },
+  );
 
   const showDropdown = isOpen && inputValue.trim().length > 0;
 
@@ -289,7 +305,7 @@ export const CompanySearchAutocomplete = ({
         profileCount: company.count,
         linkedinUrl,
       });
-      setInputValue(company.name);
+      setInputValue('');
       setIsOpen(false);
       clear();
     },
@@ -314,17 +330,15 @@ export const CompanySearchAutocomplete = ({
   const getLogoUrl = useCallback(
     (website: string | undefined) => {
       if (!website?.trim()) return null;
-      const base = logoBaseUrl ?? `${baseUrl.replace(/\/$/, '')}/org-chart/company-logo`;
+      const base =
+        logoBaseUrl ?? `${baseUrl.replace(/\/$/, '')}/org-chart/company-logo`;
       return `${base.replace(/\/$/, '')}?website=${encodeURIComponent(website)}`;
     },
     [baseUrl, logoBaseUrl],
   );
 
   const dropdownContent = showDropdown && (
-    <StyledDropdown
-      ref={dropdownRef}
-      onMouseDown={(e) => e.preventDefault()}
-    >
+    <StyledDropdown ref={dropdownRef} onMouseDown={(e) => e.preventDefault()}>
       {isLoading ? (
         <StyledEmptyMessage>Searching...</StyledEmptyMessage>
       ) : error ? (
@@ -396,7 +410,11 @@ export const CompanySearchAutocomplete = ({
   return (
     <StyledWrapper ref={wrapperRef} $isOpen={showDropdown}>
       <StyledInputWrapper>
-        {startIcon && <StyledStartIcon aria-hidden>{startIcon}</StyledStartIcon>}
+        {startIcon && (
+          <StyledStartIcon aria-hidden $dense={dense}>
+            {startIcon}
+          </StyledStartIcon>
+        )}
         <StyledInput
           type="text"
           value={inputValue}
@@ -407,6 +425,7 @@ export const CompanySearchAutocomplete = ({
           disabled={disabled || isSelecting}
           autoComplete="off"
           $hasStartIcon={!!startIcon}
+          $dense={dense}
         />
         {isSelecting && (
           <StyledInputSpinner>

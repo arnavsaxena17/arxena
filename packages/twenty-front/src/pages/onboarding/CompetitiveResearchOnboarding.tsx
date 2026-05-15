@@ -2,6 +2,7 @@ import { SubTitle } from '@/auth/components/SubTitle';
 import { Title } from '@/auth/components/Title';
 import { currentUserState } from '@/auth/states/currentUserState';
 import { dealDiligenceCalendlyEmbedUrlState } from '@/client-config/states/dealDiligenceCalendlyEmbedUrlState';
+import { OnboardingPricingPlanFeatures } from '@/onboarding/components/OnboardingPricingPlanFeatures';
 import { COMPLETE_ONBOARDING_INTENT_PATH_STEP } from '@/onboarding/graphql/mutations/completeOnboardingIntentPathStep';
 import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
 import { AppPath } from '@/types/AppPath';
@@ -11,17 +12,19 @@ import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import {
-  ARXENA_CHROME_WEBSTORE_URL,
-  buildCalendlyUrlWithPrefill,
-  formatCalendlyInviteeName,
+    ARXENA_CHROME_WEBSTORE_URL,
+    buildCalendlyUrlWithPrefill,
+    formatCalendlyInviteeName,
+    PRICING_PLAN_CONTENT_BY_ID,
+    PRICING_PLANS,
 } from 'twenty-shared';
 import {
-  ActionLink,
-  IconBolt,
-  IconPhone,
-  Loader,
-  MainButton,
-  Pill,
+    ActionLink,
+    IconBolt,
+    IconPhone,
+    Loader,
+    MainButton,
+    Pill,
 } from 'twenty-ui';
 import { getPostAuthLandingAppPath } from '~/config';
 import { OnboardingStatus } from '~/generated/graphql';
@@ -30,12 +33,16 @@ import { OnboardingIntentModalLayout } from '~/pages/onboarding/OnboardingIntent
 
 const DEFAULT_CALENDLY_URL = 'https://calendly.com/arxena/30min';
 
+const RECRUITMENT_PLAN_ID = 'recruitment' as const;
+const recruitmentPlanContent = PRICING_PLAN_CONTENT_BY_ID[RECRUITMENT_PLAN_ID];
+const recruitmentPlan = PRICING_PLANS[RECRUITMENT_PLAN_ID];
+
 const StyledPanel = styled.div`
   width: 100%;
 `;
 
 const StyledEyebrow = styled.div`
-  color: ${({ theme }) => theme.color.purple60};
+  color: ${({ theme }) => theme.color.blue60};
   font-family: ${({ theme }) => theme.font.family};
   font-size: ${({ theme }) => theme.font.size.sm};
   font-weight: ${({ theme }) => theme.font.weight.medium};
@@ -110,16 +117,6 @@ const StyledOptionCopy = styled.div`
   color: ${({ theme }) => theme.font.color.secondary};
   font-size: ${({ theme }) => theme.font.size.md};
   line-height: 1.7;
-`;
-
-const StyledOptionList = styled.div`
-  color: ${({ theme }) => theme.font.color.secondary};
-  display: flex;
-  flex-direction: column;
-  font-family: ${({ theme }) => theme.font.family};
-  font-size: ${({ theme }) => theme.font.size.md};
-  gap: ${({ theme }) => theme.spacing(1.5)};
-  line-height: 1.6;
 `;
 
 const StyledActionArea = styled.div`
@@ -305,24 +302,23 @@ export const CompetitiveResearchOnboarding = () => {
   return (
     <OnboardingIntentModalLayout panelWidth="xl">
       <StyledPanel data-testid="onboarding-path-competitive-research">
-        <StyledEyebrow>Competitive research path</StyledEyebrow>
+        <StyledEyebrow>{recruitmentPlanContent.onboardingTitle}</StyledEyebrow>
         <StyledHero>
           <StyledTitle noMarginTop>
             {isCalendlyVisible
               ? `Let's map a target company live on the call`
-              : 'Competitive research'}
+              : recruitmentPlan.label}
           </StyledTitle>
           <StyledSubTitle>
             {isCalendlyVisible
               ? `Pick a time and we'll review a target company live together.`
-              : `Understand how competitor teams are structured. Self-serve if you want
-          to move fast, or book a live walkthrough with us.`}
+              : recruitmentPlan.tagline}
           </StyledSubTitle>
         </StyledHero>
         <StyledNotes>
           {isCalendlyVisible
             ? `Book a 20-minute session below, or continue to jobs whenever you're ready.`
-            : `Both paths deliver the same org chart. Choose between speed and live context depending on how much support you want alongside the data.`}
+            : recruitmentPlanContent.onboardingBody}
         </StyledNotes>
 
         {!isCalendlyVisible && (
@@ -336,12 +332,11 @@ export const CompetitiveResearchOnboarding = () => {
                 Full org chart delivered in 2 hours. Uses credits from your free
                 allocation. No call needed.
               </StyledOptionCopy>
-              <StyledOptionList>
-                <div>✓ 487 people mapped</div>
-                <div>✓ Names, titles, LinkedIn profiles</div>
-                <div>✓ Engagement layer included</div>
-                <div>✓ Ready in 2-4 hours</div>
-              </StyledOptionList>
+              <OnboardingPricingPlanFeatures
+                planId={RECRUITMENT_PLAN_ID}
+                layout="column"
+                showInheritedLine
+              />
               <StyledActionArea>
                 <MainButton
                   title="Map now — free (10 credits)"
@@ -362,12 +357,11 @@ export const CompetitiveResearchOnboarding = () => {
                 We map the company during the call and walk you through what the
                 org structure reveals about team strategy and hiring direction.
               </StyledOptionCopy>
-              <StyledOptionList>
-                <div>✓ Same org chart + live context</div>
-                <div>✓ Strategic interpretation</div>
-                <div>✓ Q&amp;A on what you&apos;re seeing</div>
-                <div>✓ Best for first-time users</div>
-              </StyledOptionList>
+              <OnboardingPricingPlanFeatures
+                planId={RECRUITMENT_PLAN_ID}
+                layout="column"
+                showInheritedLine
+              />
               <StyledActionArea>
                 <MainButton
                   title="Book 20 minutes"

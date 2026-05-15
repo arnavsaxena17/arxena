@@ -3,6 +3,8 @@
 import styled from '@emotion/styled';
 import Link from 'next/link';
 
+import { RESOURCES_INDEX } from '@/lib/brand-content';
+
 const StyledSection = styled.section`
   max-width: 960px;
   margin: 0 auto;
@@ -75,30 +77,25 @@ const CARDS: HubCard[] = [
   {
     href: '/resources/blog',
     title: 'Blog',
-    description:
-      'Editorial content on org intelligence, GTM, and talent strategy.',
+    description: RESOURCES_INDEX.cards.blog,
   },
   {
     href: '/resources/org-intelligence-reports',
     title: 'Org intelligence reports',
-    description:
-      'Downloadable research and benchmarks — gated for lead generation.',
+    description: RESOURCES_INDEX.cards.reports,
   },
   {
     href: '/resources/calculators',
     title: 'Calculators',
-    description: 'ROI calculators tailored by buyer segment.',
+    description: RESOURCES_INDEX.cards.calculators,
   },
 ];
 
 export const ResourcesHubContent = () => {
   return (
     <StyledSection>
-      <StyledHeadline>Resources</StyledHeadline>
-      <StyledSub>
-        Guides, research, and tools for turning org intelligence into
-        pipeline—editorial, gated research, and segment ROI models.
-      </StyledSub>
+      <StyledHeadline>{RESOURCES_INDEX.headline}</StyledHeadline>
+      <StyledSub>{RESOURCES_INDEX.sub}</StyledSub>
       <StyledGrid>
         {CARDS.map((card) => (
           <StyledCard key={card.href} href={card.href}>

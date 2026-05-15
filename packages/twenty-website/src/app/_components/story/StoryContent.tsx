@@ -5,6 +5,7 @@ import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+import { STORY_PAGE } from '@/lib/brand-content';
 import { TESTIMONIALS } from '@/lib/homepage-content';
 
 function getAvatarUrl(name: string, photo?: string): string {
@@ -333,27 +334,12 @@ type StoryContentProps = {
 export const StoryContent = ({ signUpUrl }: StoryContentProps) => {
   return (
     <StyledSection>
-      <StyledHeadline>See inside any company</StyledHeadline>
-      <StyledHeadlineSub>
-        Arxena is an intelligence platform for the org chart of companies you
-        target — not yours, theirs. From search to a booked meeting in one
-        workflow.
-      </StyledHeadlineSub>
+      <StyledHeadline>{STORY_PAGE.headline}</StyledHeadline>
+      <StyledHeadlineSub>{STORY_PAGE.subheadline}</StyledHeadlineSub>
 
-      <StyledParagraph>
-        Teams waste hours stitching together databases, spreadsheets, and
-        outreach tools — and still miss who actually matters inside an account.
-        The org chart is the map: who leads what, who reports to whom, and who
-        is reachable today.
-      </StyledParagraph>
+      <StyledParagraph>{STORY_PAGE.paragraph1}</StyledParagraph>
 
-      <StyledParagraph>
-        We fetch live org data from LinkedIn and other sources so you see
-        structure, seniority in real time. You build lists,
-        enrich contacts, and let AI reach out in your voice on WhatsApp,
-        LinkedIn, and email — for sales, recruiting, investing, and competitive
-        research.
-      </StyledParagraph>
+      <StyledParagraph>{STORY_PAGE.paragraph2}</StyledParagraph>
 
       <StyledOrgChartLink href="/org-chart/google">
         See a live example: Google org chart →
@@ -366,10 +352,7 @@ export const StoryContent = ({ signUpUrl }: StoryContentProps) => {
       </p>
 
       <StyledScenarioBlock>
-        <StyledScenarioText>
-          Your competitor just hired 3 senior engineers from Google&apos;s Cloud
-          team. You&apos;d know that if you had their org chart.
-        </StyledScenarioText>
+        <StyledScenarioText>{STORY_PAGE.scenarioExample}</StyledScenarioText>
       </StyledScenarioBlock>
 
       <StyledTractionBlock>

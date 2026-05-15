@@ -4,6 +4,9 @@ import { useEffect } from 'react';
 
 const SDK_PATH = '/packs/js/sdk.js';
 
+/** Aligns with header mobile layout (`styled.ts`); compact launcher matches twenty-front Chatwoot. */
+const COMPACT_CHAT_LAUNCHER_MEDIA_QUERY = '(max-width: 809px)';
+
 type ChatwootWindow = Window & {
   chatwootSettings?: Record<string, unknown>;
   chatwootSDK?: {
@@ -28,13 +31,17 @@ export const WebsiteSupportChat = () => {
     const sdkUrl = `${baseUrl.replace(/\/$/, '')}${SDK_PATH}`;
     const chatwootWindow = window as ChatwootWindow;
 
+    const useExpandedBubble = !window.matchMedia(
+      COMPACT_CHAT_LAUNCHER_MEDIA_QUERY,
+    ).matches;
+
     chatwootWindow.chatwootSettings = {
       hideMessageBubble: false,
       position: 'right',
       locale: 'en',
       darkMode: 'auto',
-      type: 'expanded_bubble',
       launcherTitle: 'Ask Arxena',
+      ...(useExpandedBubble ? { type: 'expanded_bubble' as const } : {}),
     };
 
     const onReady = () => {

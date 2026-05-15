@@ -16,25 +16,26 @@ import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/Snac
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useUnipile } from '@/unipile/contexts/UnipileContext';
 import {
-    OrgChartDiagramHandle,
-    normalizeCompanyIdForUrl,
-    useCompanyInfoLookup,
-    useOrgChartData,
-    useOrgChartFilterOptions,
+  OrgChartDiagramHandle,
+  normalizeCompanyIdForUrl,
+  useCompanyInfoLookup,
+  useOrgChartData,
+  useOrgChartFilterOptions,
 } from 'twenty-orgchart';
 import { OrgChartNodeData, extractOrgData, toTitleCase } from 'twenty-shared';
+import { Mixpanel } from '~/mixpanel';
 
 import { OrgChartShareModal } from '../components/OrgChartShareModal';
 import { useJobOrgChartData } from '../hooks/useJobOrgChartData';
 import { useOrgChartActions } from '../hooks/useOrgChartActions';
 import { extractCompanyDomainFromWebsite } from '../utils/orgChartUtils';
 import {
-    StyledOrgChartConfirmDd,
-    StyledOrgChartConfirmDt,
-    StyledOrgChartConfirmIntro,
-    StyledOrgChartConfirmRow,
-    StyledOrgChartConfirmRows,
-    StyledOrgChartConfirmSummary,
+  StyledOrgChartConfirmDd,
+  StyledOrgChartConfirmDt,
+  StyledOrgChartConfirmIntro,
+  StyledOrgChartConfirmRow,
+  StyledOrgChartConfirmRows,
+  StyledOrgChartConfirmSummary,
 } from './ArxOrgChart.styles';
 import { ArxOrgChartView } from './ArxOrgChartView';
 import { useOrgChartBanners } from './hooks/useOrgChartBanners';
@@ -676,6 +677,26 @@ export const ArxOrgChartContainer = ({
     baseUrl,
   });
 
+  const orgChartViewCompanyName =
+    effectiveCompanyName ?? fallbackCompanyInfo?.companyName;
+
+  useEffect(() => {
+    if (!companyId?.trim()) return;
+    Mixpanel.track('org_chart_view', {
+      companyId,
+      companyName: orgChartViewCompanyName,
+      country: selectedCountry,
+      functionRoot: selectedFunctionRoot,
+      nodeCount: nodeDataArray.length,
+    });
+  }, [
+    companyId,
+    orgChartViewCompanyName,
+    selectedCountry,
+    selectedFunctionRoot,
+    nodeDataArray.length,
+  ]);
+
   const leadershipLayerPreviewBanner = useMemo(() => {
     const src = orgSource as Record<string, unknown> | null;
     if (!src || src.org_enriched !== true) {
@@ -983,10 +1004,12 @@ export const ArxOrgChartContainer = ({
   const filtersProps = {
     availableCountries: filterOptions.availableCountries,
     countryPercentLabels: filterOptions.countryPercentLabels,
+    countryCounts: filterOptions.countryCounts,
     selectedCountry,
     onCountryChange: debouncedSetCountry,
     availableFunctionRoots: filterOptions.availableFunctionRoots,
     functionRootPercentLabels: filterOptions.functionRootPercentLabels,
+    functionRootCounts: filterOptions.functionRootCounts,
     selectedFunctionRoot,
     onFunctionRootChange: debouncedSetFunctionRoot,
     omitMarginLeft: true,

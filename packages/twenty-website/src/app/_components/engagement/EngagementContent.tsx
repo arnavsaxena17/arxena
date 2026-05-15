@@ -3,6 +3,8 @@
 import styled from '@emotion/styled';
 import { IconCheck } from '@tabler/icons-react';
 
+import { ENGAGE_PAGE } from '@/lib/brand-content';
+
 import { EngagementChatDemo } from './EngagementChatDemo';
 
 const StyledSection = styled.section`
@@ -107,12 +109,8 @@ type EngagementContentProps = {
 export const EngagementContent = ({ signUpUrl }: EngagementContentProps) => {
   return (
     <StyledSection>
-      <StyledHeadline>AI engages for you</StyledHeadline>
-      <StyledHeadlineSub>
-        Most tools stop at a contact list. Arxena sends personalized messages on
-        WhatsApp, LinkedIn, and email — written in your voice, with context from
-        the org chart. You step in only when someone has already replied.
-      </StyledHeadlineSub>
+      <StyledHeadline>{ENGAGE_PAGE.headline}</StyledHeadline>
+      <StyledHeadlineSub>{ENGAGE_PAGE.subheadline}</StyledHeadlineSub>
 
       <EngagementChatDemo />
 
@@ -129,8 +127,8 @@ export const EngagementContent = ({ signUpUrl }: EngagementContentProps) => {
       </StyledWorkflowSection>
 
       <StyledDataSources>
-        Built on real-time org data from LinkedIn and other sources — so every
-        message references who people are in the company, not just their title.
+        Built on the live org graph from LinkedIn and other sources—so every
+        message references structure and context, not just a title in a list.
       </StyledDataSources>
 
       <StyledCtaSection>

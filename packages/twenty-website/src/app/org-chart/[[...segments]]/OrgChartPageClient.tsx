@@ -15,17 +15,17 @@ import { companySearchLightTheme } from '@/lib/company-search';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- orgchart-core is used alongside dynamic OrgChartDiagram
 import {
-    OrgChartDiagramHandle,
-    OrgChartFilters,
-    OrgChartSearchControls,
-    OrgChartSignUpModal,
-    useCompanyInfoLookup,
-    useOrgChartFilterOptions,
+  OrgChartDiagramHandle,
+  OrgChartFilters,
+  OrgChartSearchControls,
+  OrgChartSignUpModal,
+  useCompanyInfoLookup,
+  useOrgChartFilterOptions,
 } from 'twenty-orgchart/orgchart-core';
 import {
-    appendOrgChartSignupSearchParams,
-    OrgChartNodeData,
-    toSlug,
+  appendOrgChartSignupSearchParams,
+  OrgChartNodeData,
+  toSlug,
 } from 'twenty-shared';
 
 const OrgChartDiagram = dynamic(
@@ -79,13 +79,49 @@ const StyledStructureWrapper = styled.div<{ $hidden: boolean }>`
 `;
 
 const StyledHeader = styled.header`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(3)};
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(4)};
+  container-type: inline-size;
+  container-name: orgchart-header;
+  padding: ${({ theme }) => theme.spacing(1.5)}
+    ${({ theme }) => theme.spacing(3)};
   border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
   flex-shrink: 0;
-  flex-wrap: wrap;
+
+  @container orgchart-header (min-width: 721px) {
+    padding: ${({ theme }) => theme.spacing(2)}
+      ${({ theme }) => theme.spacing(4)};
+  }
+`;
+
+const StyledOrgChartHeaderTopRow = styled.div`
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: ${({ theme }) => theme.spacing(2)};
+  width: 100%;
+  min-width: 0;
+
+  @container orgchart-header (min-width: 721px) {
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+`;
+
+const StyledOrgChartHeaderCompany = styled.div`
+  flex: 1 1 0;
+  min-width: 0;
+`;
+
+const StyledOrgChartHeaderFilters = styled.div`
+  flex: 0 1 min(210px, 46%);
+  min-width: 0;
+  max-width: min(210px, 48%);
+
+  @container orgchart-header (min-width: 721px) {
+    flex: 0 1 auto;
+    max-width: none;
+    margin-left: auto;
+  }
 `;
 
 const StyledDiagramArea = styled.div`
@@ -112,7 +148,8 @@ const StyledPreviewPersistentBanner = styled.div`
   justify-content: center;
   flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(1.5)}
+    ${({ theme }) => theme.spacing(2)};
   border-bottom: 1px solid ${({ theme }) => theme.border.color.medium};
   background: ${({ theme }) => theme.background.tertiary};
   color: ${({ theme }) => theme.font.color.primary};
@@ -157,6 +194,10 @@ const StyledTopRightActionsOverlay = styled.div`
   z-index: 20;
   display: flex;
   gap: ${({ theme }) => theme.spacing(1)};
+
+  @media (max-width: 720px) {
+    display: none;
+  }
 `;
 
 const StyledTopRightActionButton = styled.button`
@@ -263,7 +304,9 @@ export const OrgChartPageClient = ({
     availableCountries,
     availableFunctionRoots,
     countryPercentLabels,
+    countryCounts,
     functionRootPercentLabels,
+    functionRootCounts,
   } = useOrgChartFilterOptions(orgData);
 
   const { company: fallbackCompanyInfo, lookupByName } = useCompanyInfoLookup({
@@ -408,25 +451,37 @@ export const OrgChartPageClient = ({
   useEffect(() => {
     trackGA4Event('org_chart_view', {
       company_id: companyId,
+      company_name: companyName,
       country: initialCountry,
       function_root: initialFunctionRoot,
     });
     trackWebsiteEvent('org_chart_view', {
       companyId,
+      companyName,
       country: initialCountry,
       functionRoot: initialFunctionRoot,
+      nodeCount: nodeDataArray.length,
     });
-  }, [companyId, initialCountry, initialFunctionRoot]);
+  }, [
+    companyId,
+    companyName,
+    initialCountry,
+    initialFunctionRoot,
+    nodeDataArray.length,
+  ]);
 
   const filtersProps = {
     availableCountries,
     countryPercentLabels,
+    countryCounts,
     selectedCountry,
     onCountryChange: handleCountryChange,
     availableFunctionRoots,
     functionRootPercentLabels,
+    functionRootCounts,
     selectedFunctionRoot,
     onFunctionRootChange: handleFunctionRootChange,
+    omitMarginLeft: true,
   };
 
   const searchControlsProps = {
@@ -472,25 +527,31 @@ export const OrgChartPageClient = ({
             </div>
           )}
           <StyledHeader>
-            <OrgChartCompanyInfo
-              companyName={companyName}
-              website={displayWebsite}
-              locationName={displayLocationName}
-              industry={displayIndustry}
-              profileCount={displayProfileCount}
-              linkedinUrl={displayLinkedinUrl}
-              employeeCount={displayEmployeeCount}
-              logoBaseUrl="/api/org-chart"
-            />
-            {hasFilters && <OrgChartFilters {...filtersProps} />}
+            <StyledOrgChartHeaderTopRow>
+              <StyledOrgChartHeaderCompany>
+                <OrgChartCompanyInfo
+                  companyName={companyName}
+                  website={displayWebsite}
+                  locationName={displayLocationName}
+                  industry={displayIndustry}
+                  profileCount={displayProfileCount}
+                  linkedinUrl={displayLinkedinUrl}
+                  employeeCount={displayEmployeeCount}
+                  logoBaseUrl="/api/org-chart"
+                />
+              </StyledOrgChartHeaderCompany>
+              {hasFilters && (
+                <StyledOrgChartHeaderFilters>
+                  <OrgChartFilters {...filtersProps} />
+                </StyledOrgChartHeaderFilters>
+              )}
+            </StyledOrgChartHeaderTopRow>
           </StyledHeader>
 
           <StyledDiagramArea>
             {showPreviewPersistentBanner && (
               <StyledPreviewPersistentBanner>
-                <span>
-                  Get access to 10M Real Time Org Charts, Sign up
-                </span>
+                <span>Get access to 10M Real Time Org Charts, Sign up</span>
                 <StyledPreviewBannerSignupLink href={signUpUrlWithContext}>
                   Sign up free
                 </StyledPreviewBannerSignupLink>
@@ -524,9 +585,7 @@ export const OrgChartPageClient = ({
                     </StyledTopRightActionButton>
                     <StyledTopRightActionButton
                       type="button"
-                      onClick={() =>
-                        diagramHandleRef.current?.centerContent()
-                      }
+                      onClick={() => diagramHandleRef.current?.centerContent()}
                     >
                       Center
                     </StyledTopRightActionButton>

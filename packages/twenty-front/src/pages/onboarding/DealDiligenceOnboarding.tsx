@@ -2,6 +2,7 @@ import { SubTitle } from '@/auth/components/SubTitle';
 import { Title } from '@/auth/components/Title';
 import { currentUserState } from '@/auth/states/currentUserState';
 import { dealDiligenceCalendlyEmbedUrlState } from '@/client-config/states/dealDiligenceCalendlyEmbedUrlState';
+import { OnboardingPricingPlanFeatures } from '@/onboarding/components/OnboardingPricingPlanFeatures';
 import { COMPLETE_ONBOARDING_INTENT_PATH_STEP } from '@/onboarding/graphql/mutations/completeOnboardingIntentPathStep';
 import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
 import { AppPath } from '@/types/AppPath';
@@ -11,17 +12,12 @@ import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import {
-  buildCalendlyUrlWithPrefill,
-  formatCalendlyInviteeName,
+    buildCalendlyUrlWithPrefill,
+    formatCalendlyInviteeName,
+    PRICING_PLAN_CONTENT_BY_ID,
+    PRICING_PLANS,
 } from 'twenty-shared';
-import {
-  ActionLink,
-  IconPhone,
-  IconTargetArrow,
-  Loader,
-  MainButton,
-  Pill,
-} from 'twenty-ui';
+import { ActionLink, Loader, MainButton, Pill } from 'twenty-ui';
 import { getPostAuthLandingAppPath } from '~/config';
 import { OnboardingStatus } from '~/generated/graphql';
 import { Mixpanel } from '~/mixpanel';
@@ -29,12 +25,16 @@ import { OnboardingIntentModalLayout } from '~/pages/onboarding/OnboardingIntent
 
 const DEFAULT_CALENDLY_URL = 'https://calendly.com/arxena/30min';
 
+const INVESTMENT_PLAN_ID = 'investment' as const;
+const investmentPlanContent = PRICING_PLAN_CONTENT_BY_ID[INVESTMENT_PLAN_ID];
+const investmentPlan = PRICING_PLANS[INVESTMENT_PLAN_ID];
+
 const StyledPanel = styled.div`
   width: 100%;
 `;
 
 const StyledEyebrow = styled.div`
-  color: ${({ theme }) => theme.color.orange60};
+  color: ${({ theme }) => theme.color.green70};
   font-family: ${({ theme }) => theme.font.family};
   font-size: ${({ theme }) => theme.font.size.sm};
   font-weight: ${({ theme }) => theme.font.weight.medium};
@@ -81,8 +81,8 @@ const StyledSummaryGrid = styled.div`
 
 const StyledValueCard = styled.div`
   background: ${({ theme }) =>
-    `linear-gradient(180deg, ${theme.color.orange10} 0%, ${theme.background.primary} 100%)`};
-  border: 2px solid ${({ theme }) => theme.color.orange60};
+    `linear-gradient(180deg, ${theme.color.green10} 0%, ${theme.background.primary} 100%)`};
+  border: 2px solid ${({ theme }) => theme.color.green70};
   border-radius: ${({ theme }) => theme.border.radius.xl};
   display: flex;
   flex-direction: column;
@@ -100,29 +100,6 @@ const StyledValueCopy = styled.div`
   color: ${({ theme }) => theme.font.color.secondary};
   font-size: ${({ theme }) => theme.font.size.md};
   line-height: 1.7;
-`;
-
-const StyledValueList = styled.div`
-  color: ${({ theme }) => theme.font.color.secondary};
-  display: grid;
-  gap: ${({ theme }) => theme.spacing(2)};
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  line-height: 1.6;
-
-  @media (max-width: 720px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const StyledValueListItem = styled.div`
-  align-items: center;
-  display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
-`;
-
-const StyledValueItemIcon = styled.div`
-  color: ${({ theme }) => theme.color.orange60};
-  display: flex;
 `;
 
 const StyledBookingCard = styled.div`
@@ -167,8 +144,8 @@ const StyledBookingLayout = styled.div`
 
 const StyledBookingSidebar = styled.div`
   background: ${({ theme }) =>
-    `linear-gradient(180deg, ${theme.color.orange10} 0%, ${theme.background.primary} 100%)`};
-  border: 1px solid ${({ theme }) => theme.color.orange20};
+    `linear-gradient(180deg, ${theme.color.green10} 0%, ${theme.background.primary} 100%)`};
+  border: 1px solid ${({ theme }) => theme.color.green20};
   border-radius: ${({ theme }) => theme.border.radius.xl};
   display: flex;
   flex-direction: column;
@@ -227,8 +204,8 @@ const StyledSkipRow = styled.div`
 
 const StyledPill = styled(Pill)`
   align-self: flex-start;
-  background: ${({ theme }) => theme.color.orange10};
-  color: ${({ theme }) => theme.color.orange60};
+  background: ${({ theme }) => theme.color.green10};
+  color: ${({ theme }) => theme.color.green70};
 `;
 
 export const DealDiligenceOnboarding = () => {
@@ -311,29 +288,29 @@ export const DealDiligenceOnboarding = () => {
   return (
     <OnboardingIntentModalLayout panelWidth="xl">
       <StyledPanel data-testid="onboarding-path-deal-diligence">
-        <StyledEyebrow>Deal diligence path</StyledEyebrow>
+        <StyledEyebrow>{investmentPlanContent.onboardingTitle}</StyledEyebrow>
         <StyledHero>
           <StyledTitle noMarginTop>
             {isCalendlyVisible
               ? 'Book a diligence walkthrough'
-              : 'Deal diligence'}
+              : investmentPlan.label}
           </StyledTitle>
           <StyledSubTitle>
             {isCalendlyVisible
               ? `Choose a time and we’ll map a target company live with you.`
-              : `Mapping management teams for a fund or acquisition? Book a live session and we’ll walk a target company with you.`}
+              : investmentPlan.tagline}
           </StyledSubTitle>
         </StyledHero>
         <StyledNotes>
           {isCalendlyVisible
             ? `Use the scheduler below to lock time with us, or continue to jobs if you’d rather come back later.`
-            : `This path is built for investors and diligence teams who want a live readout of leadership structure, functional coverage, and org shape before moving deeper.`}
+            : investmentPlanContent.onboardingBody}
         </StyledNotes>
 
         {!isCalendlyVisible && (
           <StyledSummaryGrid>
             <StyledValueCard>
-              <StyledPill label="Live target-company walkthrough" />
+              <StyledPill label={investmentPlan.mapTypeLabel} />
               <StyledValueTitle>
                 Bring a company. We&apos;ll map the leadership team with you.
               </StyledValueTitle>
@@ -342,32 +319,10 @@ export const DealDiligenceOnboarding = () => {
                 leadership gaps, and see how the company is actually wired
                 before the next diligence step.
               </StyledValueCopy>
-              <StyledValueList>
-                <StyledValueListItem>
-                  <StyledValueItemIcon>
-                    <IconTargetArrow size={18} stroke={1.8} />
-                  </StyledValueItemIcon>
-                  Fund and acquisition use cases
-                </StyledValueListItem>
-                <StyledValueListItem>
-                  <StyledValueItemIcon>
-                    <IconTargetArrow size={18} stroke={1.8} />
-                  </StyledValueItemIcon>
-                  Live mapping of the target company
-                </StyledValueListItem>
-                <StyledValueListItem>
-                  <StyledValueItemIcon>
-                    <IconPhone size={18} stroke={1.8} />
-                  </StyledValueItemIcon>
-                  Strategic Q&amp;A during the session
-                </StyledValueListItem>
-                <StyledValueListItem>
-                  <StyledValueItemIcon>
-                    <IconPhone size={18} stroke={1.8} />
-                  </StyledValueItemIcon>
-                  Faster context for investment memos
-                </StyledValueListItem>
-              </StyledValueList>
+              <OnboardingPricingPlanFeatures
+                planId={INVESTMENT_PLAN_ID}
+                showInheritedLine
+              />
             </StyledValueCard>
 
             <StyledBookingCard>

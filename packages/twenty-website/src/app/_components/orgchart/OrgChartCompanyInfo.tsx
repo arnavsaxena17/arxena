@@ -31,6 +31,11 @@ const StyledCompanyLogo = styled.img`
   object-fit: contain;
   background: ${({ theme }) => theme.background.tertiary};
   flex-shrink: 0;
+
+  @container orgchart-header (max-width: 720px) {
+    width: 24px;
+    height: 24px;
+  }
 `;
 
 const StyledCompanyLogoPlaceholder = styled.div`
@@ -45,6 +50,12 @@ const StyledCompanyLogoPlaceholder = styled.div`
   font-size: 14px;
   font-weight: 600;
   flex-shrink: 0;
+
+  @container orgchart-header (max-width: 720px) {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
 `;
 
 const StyledCompanyTitle = styled.h1`
@@ -55,6 +66,20 @@ const StyledCompanyTitle = styled.h1`
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
+
+  @container orgchart-header (max-width: 720px) {
+    font-size: 1.05rem;
+  }
+`;
+
+const StyledHeadcountStrip = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: 600;
+  color: ${({ theme }) => theme.font.color.primary};
 `;
 
 const StyledCompanyMetaRow = styled.div`
@@ -69,6 +94,13 @@ const StyledCompanyMetaLine = styled.span`
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+
+  @container orgchart-header (max-width: 720px) {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
 `;
 
 const StyledLinkIcon = styled.a`
@@ -150,6 +182,7 @@ export const OrgChartCompanyInfo = ({
   );
   const displayLocationName = toTitleCase(locationName);
   const displayIndustry = toTitleCase(industry);
+  const includeDomainInMetaLine = Boolean(websiteDomain) && !website?.trim();
 
   const hasInfo =
     displayCompanyName ||
@@ -160,6 +193,12 @@ export const OrgChartCompanyInfo = ({
     typeof employeeCount === 'number';
 
   if (!hasInfo) return null;
+
+  const metaLineParts = [
+    displayLocationName,
+    displayIndustry,
+    ...(includeDomainInMetaLine && websiteDomain ? [websiteDomain] : []),
+  ].filter((part): part is string => Boolean(part?.trim()));
 
   return (
     <StyledCompanyInfo>
@@ -204,40 +243,25 @@ export const OrgChartCompanyInfo = ({
           ) : null}
         </StyledCompanyTitleRow>
       )}
-      {(displayLocationName ||
-        displayIndustry ||
-        websiteDomain ||
-        typeof profileCount === 'number' ||
-        typeof employeeCount === 'number') && (
+      {(typeof employeeCount === 'number' ||
+        typeof profileCount === 'number') && (
+        <StyledHeadcountStrip>
+          {typeof employeeCount === 'number' ? (
+            <span>{`${employeeCount.toLocaleString()} employees`}</span>
+          ) : null}
+          {typeof employeeCount === 'number' &&
+          typeof profileCount === 'number' ? (
+            <span aria-hidden>·</span>
+          ) : null}
+          {typeof profileCount === 'number' ? (
+            <span>{`${profileCount.toLocaleString()} public profiles`}</span>
+          ) : null}
+        </StyledHeadcountStrip>
+      )}
+      {metaLineParts.length > 0 && (
         <StyledCompanyMetaRow>
-          <StyledCompanyMetaLine
-            title={[
-              displayLocationName,
-              displayIndustry,
-              websiteDomain,
-              typeof profileCount === 'number'
-                ? `${profileCount.toLocaleString()} profiles`
-                : '',
-              typeof employeeCount === 'number'
-                ? `${employeeCount.toLocaleString()} employees`
-                : '',
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          >
-            {[
-              displayLocationName,
-              displayIndustry,
-              websiteDomain,
-              typeof profileCount === 'number'
-                ? `${profileCount.toLocaleString()} profiles`
-                : '',
-              typeof employeeCount === 'number'
-                ? `${employeeCount.toLocaleString()} employees`
-                : '',
-            ]
-              .filter(Boolean)
-              .join(' · ')}
+          <StyledCompanyMetaLine title={metaLineParts.join(' · ')}>
+            {metaLineParts.join(' · ')}
           </StyledCompanyMetaLine>
         </StyledCompanyMetaRow>
       )}

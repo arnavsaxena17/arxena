@@ -18,7 +18,7 @@ export type PricingPlanId =
   | 'corporate'
   | 'investment';
 
-export type MapType = 'functional' | 'full' | 'timeline';
+export type MapType = 'Function Specific' | 'Full Company' | 'Full Company Timelines';
 
 export type PricingPlanTier = {
   maps: number;
@@ -134,19 +134,19 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
     id: 'sales',
     intent: 'SALES',
     label: 'Sales / ABM',
-    tagline: 'Functional talent maps for targeted account outreach',
+    tagline: 'Map the buying committee from the live org graph',
     icon: '📡',
-    mapType: 'functional',
+    mapType: 'Function Specific',
     mapTypeLabel:
-      'Functional · all levels & functions · One Chart = 1 Function',
+      'Any Function · All Levels',
     minMaps: 10,
     inheritedFromPlanId: null,
     ownFeatures: [
-      'Functional talent map (3–4 levels)',
-      'Up to 100 people per function or leadership tier',
-      'Decision-maker identification',
-      'LinkedIn profiles linked',
-      'Shareable tokenized link',
+      'Functional talent map (All Levels)',
+      '100 people per function',
+      'Decision-maker identification and mapping',
+      'Contact enrichment',
+      'WhatsApp/ Email/ Linkedin outreach sequences',
       'Email / WhatsApp export',
     ],
     tiers: [
@@ -154,12 +154,12 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
         maps: 10,
         credits: 500,
         pricesSubunits: {
-          INR: 5000 * 100,
-          USD: 150 * 100,
-          GBP: 110 * 100,
-          EUR: 125 * 100,
-          AUD: 150 * 100,
-          AED: 550 * 100,
+          INR: 7500 * 100,
+          USD: 200 * 100,
+          GBP: 200 * 100,
+          EUR: 200 * 100,
+          AUD: 200 * 100,
+          AED: 750 * 100,
         },
       },
       {
@@ -167,11 +167,11 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
         credits: 1300,
         pricesSubunits: {
           INR: 4500 * 100,
-          USD: 135 * 100,
-          GBP: 98 * 100,
-          EUR: 112 * 100,
-          AUD: 130 * 100,
-          AED: 500 * 100,
+          USD: 180 * 100,
+          GBP: 180 * 100,
+          EUR: 180 * 100,
+          AUD: 180 * 100,
+          AED: 550 * 100,
         },
       },
       {
@@ -179,11 +179,11 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
         credits: 2700,
         pricesSubunits: {
           INR: 4000 * 100,
-          USD: 120 * 100,
-          GBP: 88 * 100,
-          EUR: 100 * 100,
-          AUD: 110 * 100,
-          AED: 440 * 100,
+          USD: 175 * 100,
+          GBP: 175 * 100,
+          EUR: 175 * 100,
+          AUD: 175 * 100,
+          AED: 500 * 100,
         },
       },
       {
@@ -191,11 +191,11 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
         credits: 5500,
         pricesSubunits: {
           INR: 3500 * 100,
-          USD: 100 * 100,
-          GBP: 75 * 100,
-          EUR: 85 * 100,
-          AUD: 100 * 100,
-          AED: 370 * 100,
+          USD: 150 * 100,
+          GBP: 150 * 100,
+          EUR: 150 * 100,
+          AUD: 150 * 100,
+          AED: 400 * 100,
         },
       },
     ],
@@ -204,11 +204,11 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
     id: 'recruitment',
     intent: 'RECRUITING',
     label: 'Recruitment / Exec Search',
-    tagline: 'Full company mapped — every level, every function',
+    tagline: 'Org intelligence before the mandate—every level, every function',
     icon: '🔍',
-    mapType: 'full',
-    mapTypeLabel: 'Full company · all levels & functions',
-    minMaps: 5,
+    mapType: 'Full Company',
+    mapTypeLabel: 'Full company · All Levels & Functions',
+    minMaps: 10,
     inheritedFromPlanId: 'sales',
     ownFeatures: [
       'Full company talent map (5–6 levels)',
@@ -220,27 +220,15 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
     ],
     tiers: [
       {
-        maps: 5,
-        credits: 500,
-        pricesSubunits: {
-          INR: 10000 * 100,
-          USD: 200 * 100,
-          GBP: 155 * 100,
-          EUR: 170 * 100,
-          AUD: 200 * 100,
-          AED: 735 * 100,
-        },
-      },
-      {
         maps: 10,
         credits: 1000,
         pricesSubunits: {
-          INR: 9000 * 100,
-          USD: 185 * 100,
-          GBP: 140 * 100,
-          EUR: 155 * 100,
-          AUD: 200 * 100,
-          AED: 680 * 100,
+          INR: 10000 * 100,
+          USD: 250 * 100,
+          GBP: 250 * 100,
+          EUR: 250 * 100,
+          AUD: 250 * 100,
+          AED: 1000 * 100,
         },
       },
       {
@@ -248,11 +236,11 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
         credits: 2600,
         pricesSubunits: {
           INR: 7500 * 100,
-          USD: 165 * 100,
-          GBP: 125 * 100,
-          EUR: 140 * 100,
-          AUD: 170 * 100,
-          AED: 600 * 100,
+          USD: 200 * 100,
+          GBP: 200 * 100,
+          EUR: 200 * 100,
+          AUD: 200 * 100,
+          AED: 750 * 100,
         },
       },
       {
@@ -260,11 +248,11 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
         credits: 5200,
         pricesSubunits: {
           INR: 6000 * 100,
-          USD: 150 * 100,
-          GBP: 110 * 100,
-          EUR: 125 * 100,
-          AUD: 150 * 100,
-          AED: 550 * 100,
+          USD: 160 * 100,
+          GBP: 160 * 100,
+          EUR: 160 * 100,
+          AUD: 160 * 100,
+          AED: 600 * 100,
         },
       },
       {
@@ -273,10 +261,10 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
         pricesSubunits: {
           INR: 5000 * 100,
           USD: 130 * 100,
-          GBP: 98 * 100,
-          EUR: 110 * 100,
+          GBP: 130 * 100,
+          EUR: 130 * 100,
           AUD: 130 * 100,
-          AED: 480 * 100,
+          AED: 500 * 100,
         },
       },
     ],
@@ -284,11 +272,11 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
   corporate: {
     id: 'corporate',
     intent: 'CORPORATE',
-    label: 'Corporate TA',
-    tagline: 'Competitor benchmarking & talent mobility intelligence',
+    label: 'Corporate HR',
+    tagline: 'Peer org structure as a live benchmark',
     icon: '🏛',
-    mapType: 'full',
-    mapTypeLabel: 'Full company · bulk coverage · multi-company',
+    mapType: 'Full Company',
+    mapTypeLabel: 'Full company · All levels & Functions',
     minMaps: 10,
     inheritedFromPlanId: 'recruitment',
     ownFeatures: [
@@ -303,60 +291,60 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
         maps: 10,
         credits: 1500,
         pricesSubunits: {
-          INR: 8500 * 100,
-          USD: 220 * 100,
-          GBP: 170 * 100,
-          EUR: 188 * 100,
-          AUD: 250 * 100,
-          AED: 800 * 100,
+          INR: 12500 * 100,
+          USD: 300 * 100,
+          GBP: 300 * 100,
+          EUR: 300 * 100,
+          AUD: 300 * 100,
+          AED: 1250 * 100,
         },
       },
       {
         maps: 25,
         credits: 3800,
         pricesSubunits: {
-          INR: 8000 * 100,
-          USD: 210 * 100,
-          GBP: 160 * 100,
-          EUR: 178 * 100,
-          AUD: 250 * 100,
-          AED: 770 * 100,
+          INR: 10500 * 100,
+          USD: 280 * 100,
+          GBP: 280 * 100,
+          EUR: 280 * 100,
+          AUD: 280 * 100,
+          AED: 1050 * 100,
         },
       },
       {
         maps: 50,
         credits: 7500,
         pricesSubunits: {
-          INR: 7500 * 100,
-          USD: 195 * 100,
-          GBP: 150 * 100,
-          EUR: 165 * 100,
-          AUD: 220 * 100,
-          AED: 715 * 100,
+          INR: 10000 * 100,
+          USD: 270 * 100,
+          GBP: 270 * 100,
+          EUR: 270 * 100,
+          AUD: 270 * 100,
+          AED: 1000 * 100,
         },
       },
       {
         maps: 100,
         credits: 15000,
         pricesSubunits: {
-          INR: 7000 * 100,
-          USD: 180 * 100,
-          GBP: 138 * 100,
-          EUR: 152 * 100,
-          AUD: 200 * 100,
-          AED: 660 * 100,
+          INR: 9500 * 100,
+          USD: 255 * 100,
+          GBP: 255 * 100,
+          EUR: 255 * 100,
+          AUD: 255 * 100,
+          AED: 950 * 100,
         },
       },
       {
         maps: 200,
         credits: 28000,
         pricesSubunits: {
-          INR: 6500 * 100,
-          USD: 165 * 100,
-          GBP: 125 * 100,
-          EUR: 140 * 100,
-          AUD: 180 * 100,
-          AED: 600 * 100,
+          INR: 9000 * 100,
+          USD: 240 * 100,
+          GBP: 240 * 100,
+          EUR: 240 * 100,
+          AUD: 240 * 100,
+          AED: 900 * 100,
         },
       },
     ],
@@ -365,78 +353,66 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
     id: 'investment',
     intent: 'INVESTING',
     label: 'Investment Companies',
-    tagline: 'Org development timeline & due diligence for PE / VC',
+    tagline: 'Queryable structure and org timeline for PE / VC',
     icon: '📈',
-    mapType: 'timeline',
-    mapTypeLabel: 'Full company + Org Development Timeline',
-    minMaps: 5,
+    mapType: 'Full Company Timelines',
+    mapTypeLabel: 'Full company · All Levels & Functions',
+    minMaps: 10,
     inheritedFromPlanId: 'corporate',
     ownFeatures: [
       'Portfolio company mapping',
-      'Org Timeline — leadership changes over time',
+      'Org Timeline — complete MoM company changes',
       'Alumni data · up to 3× profile depth',
       'Post-acquisition team buildout tracking',
       'Dedicated account manager',
     ],
     tiers: [
       {
-        maps: 5,
-        credits: 750,
-        pricesSubunits: {
-          INR: 12000 * 100,
-          USD: 200 * 100,
-          GBP: 155 * 100,
-          EUR: 170 * 100,
-          AUD: 220 * 100,
-          AED: 735 * 100,
-        },
-      },
-      {
         maps: 10,
         credits: 1500,
         pricesSubunits: {
-          INR: 11000 * 100,
-          USD: 188 * 100,
-          GBP: 145 * 100,
-          EUR: 160 * 100,
-          AUD: 200 * 100,
-          AED: 690 * 100,
+          INR: 15000 * 100,
+          USD: 400 * 100,
+          GBP: 400 * 100,
+          EUR: 400 * 100,
+          AUD: 400 * 100,
+          AED: 1500 * 100,
         },
       },
       {
         maps: 25,
         credits: 3800,
         pricesSubunits: {
-          INR: 10000 * 100,
-          USD: 175 * 100,
-          GBP: 135 * 100,
-          EUR: 148 * 100,
-          AUD: 200 * 100,
-          AED: 640 * 100,
+          INR: 13500 * 100,
+          USD: 375 * 100,
+          GBP: 375 * 100,
+          EUR: 375 * 100,
+          AUD: 375 * 100,
+          AED: 1350 * 100,
         },
       },
       {
         maps: 50,
         credits: 7500,
         pricesSubunits: {
-          INR: 9000 * 100,
-          USD: 160 * 100,
-          GBP: 120 * 100,
-          EUR: 135 * 100,
-          AUD: 170 * 100,
-          AED: 585 * 100,
+          INR: 12000 * 100,
+          USD: 350 * 100,
+          GBP: 350 * 100,
+          EUR: 350 * 100,
+          AUD: 350 * 100,
+          AED: 1200 * 100,
         },
       },
       {
         maps: 100,
         credits: 15000,
         pricesSubunits: {
-          INR: 8000 * 100,
-          USD: 145 * 100,
-          GBP: 110 * 100,
-          EUR: 122 * 100,
-          AUD: 150 * 100,
-          AED: 530 * 100,
+          INR: 11000 * 100,
+          USD: 325 * 100,
+          GBP: 325 * 100,
+          EUR: 325 * 100,
+          AUD: 325 * 100,
+          AED: 1100 * 100,
         },
       },
     ],
@@ -444,14 +420,15 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
 };
 
 export const PRICING_MARKETING_HERO_HEADLINE =
-  'Modern org intelligence—faster, deeper, and radically more affordable than legacy consulting';
-export const PRICING_MARKETING_HERO_SUBHEADLINE = 'Four flexible plans for Sales, Recruitment, Corporate HR, and Investment teams.\nChoose your tier—map volume, depth, and refresh cadence all scale for your needs.';
+  'Access the org graph—plans for every team that runs on org intelligence';
+export const PRICING_MARKETING_HERO_SUBHEADLINE =
+  'Executive search, investors, sales, and corporate strategy—choose your tier.\nMap volume, depth, and refresh cadence scale with how you query structure.';
 export const PRICING_BILLING_HERO_HEADLINE =
   'Choose your org intelligence plan';
 export const PRICING_MARKETING_ROI_HEADLINE =
-  'Understand the lay of the org before your first message.';
+  'Queryable structure before your first message, brief, or management call.';
 export const PRICING_HELP_ENGAGEMENT_LEAD =
-  'Already have your org charts? Let our AI reach out to the right people.';
+  'Ready to act on the org graph? Engage with precision from the same platform.';
 export const PRICING_HELP_ENGAGEMENT_LINK_LABEL = 'Learn about Engagement →';
 export const PRICING_HELP_TITLE = 'Need more information?';
 export const PRICING_HELP_SUBTITLE =
@@ -481,9 +458,9 @@ export const PRICING_PLAN_CONTENT_BY_ID: Record<
     onboardingTitle: PRICING_PLANS.sales.label,
     onboardingBody: 'Functional talent maps for targeted outreach, decision-maker IDs, credits to start.',
     onboardingHint: 'Self-serve · extension · ~2 hr delivery',
-    persona: 'Founder / Sales',
+    persona: 'Founder/ Sales',
     segmentTone: 'orange',
-    heroHeadline: 'Pipeline-grade org intelligence for Sales / ABM',
+    heroHeadline: 'Pipeline-grade org intelligence for Sales/ ABM',
     heroSubheadline: 'Map buying committees, champions, and blockers across target accounts — then reveal/export only what matters.',
   },
   recruitment: {
@@ -503,7 +480,7 @@ export const PRICING_PLAN_CONTENT_BY_ID: Record<
     onboardingBody:
       'Competitor benchmarking, internal mobility, multi-company maps.',
     onboardingHint: 'Self-serve · multi-company maps',
-    persona: 'Corporate TA',
+    persona: 'Corporate HR',
     segmentTone: 'teal',
     heroHeadline: 'Competitor benchmarking for Corporate HR',
     heroSubheadline:
@@ -515,7 +492,7 @@ export const PRICING_PLAN_CONTENT_BY_ID: Record<
     onboardingBody:
       'Portfolio org intelligence and leadership timeline for deals.',
     onboardingHint: 'Book a call · live company map',
-    persona: 'PE / VC',
+    persona: 'PE/ VC',
     segmentTone: 'forest',
     heroHeadline: 'Org Timeline for Investment Companies',
     heroSubheadline:
@@ -710,6 +687,36 @@ export const PRICING_INTENT_TO_PLAN_ID: Record<PricingIntent, PricingPlanId> =
 export const getCreditPackByKey = (
   key: CreditPackKey,
 ): CreditPack | undefined => ALL_CREDIT_PACKS.find((pack) => pack.key === key);
+
+/** Credit pack for a plan volume — always matches `findPricingPlanTier` (single source with `PRICING_PLANS`). */
+export const getCreditPackForPlanVolume = (
+  planId: PricingPlanId,
+  requestedMaps: number,
+): CreditPack | undefined => {
+  const tier = findPricingPlanTier(PRICING_PLANS[planId], requestedMaps);
+
+  return getCreditPackByKey(`${planId}_maps_${tier.maps}`);
+};
+
+export type OnboardingIntentPathKey =
+  | 'EXTENSION_INSTALL'
+  | 'COMPETITIVE_RESEARCH'
+  | 'CORPORATE_TA'
+  | 'DEAL_DILIGENCE';
+
+/** Maps onboarding intent paths to the pricing plan whose features they promote. */
+export const ONBOARDING_INTENT_PATH_TO_PRICING_PLAN_ID: Record<
+  OnboardingIntentPathKey,
+  PricingPlanId
+> = {
+  EXTENSION_INSTALL: 'sales',
+  COMPETITIVE_RESEARCH: 'recruitment',
+  CORPORATE_TA: 'corporate',
+  DEAL_DILIGENCE: 'investment',
+};
+
+export const getPricingPlanOwnFeatures = (planId: PricingPlanId): string[] =>
+  PRICING_PLANS[planId].ownFeatures;
 
 /** Walk inheritedFromPlanId to compute the cascading feature list. */
 export const getInheritedFeatures = (

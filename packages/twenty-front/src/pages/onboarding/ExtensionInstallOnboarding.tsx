@@ -1,6 +1,7 @@
 import { SubTitle } from '@/auth/components/SubTitle';
 import { Title } from '@/auth/components/Title';
 import { currentUserState } from '@/auth/states/currentUserState';
+import { OnboardingPricingPlanFeatures } from '@/onboarding/components/OnboardingPricingPlanFeatures';
 import { COMPLETE_ONBOARDING_INTENT_PATH_STEP } from '@/onboarding/graphql/mutations/completeOnboardingIntentPathStep';
 import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
 import { AppPath } from '@/types/AppPath';
@@ -8,7 +9,7 @@ import { useMutation } from '@apollo/client';
 import styled from '@emotion/styled';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
-import { ARXENA_CHROME_WEBSTORE_URL } from 'twenty-shared';
+import { ARXENA_CHROME_WEBSTORE_URL, PRICING_PLAN_CONTENT_BY_ID } from 'twenty-shared';
 import { ActionLink, Loader, MainButton } from 'twenty-ui';
 import { getPostAuthLandingAppPath } from '~/config';
 import { OnboardingStatus } from '~/generated/graphql';
@@ -23,12 +24,11 @@ const StyledActionColumn = styled.div`
   width: 100%;
 `;
 
-const StyledHighlights = styled.ul`
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  line-height: 1.7;
-  margin: ${({ theme }) => theme.spacing(4)} 0 0;
-  padding-left: ${({ theme }) => theme.spacing(4)};
+const SALES_PLAN_ID = 'sales' as const;
+const salesPlanContent = PRICING_PLAN_CONTENT_BY_ID[SALES_PLAN_ID];
+
+const StyledFeaturesWrap = styled.div`
+  margin-top: ${({ theme }) => theme.spacing(4)};
 `;
 
 const StyledSkipRow = styled.div`
@@ -83,16 +83,14 @@ export const ExtensionInstallOnboarding = () => {
   return (
     <OnboardingIntentModalLayout>
       <div data-testid="onboarding-path-extension-install">
-        <Title noMarginTop>Build your team</Title>
-        <SubTitle>
-          Install the extension to self-serve org charts, candidate discovery,
-          and your first credits right inside the browser.
-        </SubTitle>
-        <StyledHighlights>
-          <li>Install once and source directly from the browser</li>
-          <li>Generate org charts quickly for hiring targets</li>
-          <li>Keep going now or skip and come back later</li>
-        </StyledHighlights>
+        <Title noMarginTop>{salesPlanContent.onboardingTitle}</Title>
+        <SubTitle>{salesPlanContent.onboardingBody}</SubTitle>
+        <StyledFeaturesWrap>
+          <OnboardingPricingPlanFeatures
+            planId={SALES_PLAN_ID}
+            layout="column"
+          />
+        </StyledFeaturesWrap>
         <StyledActionColumn>
           <MainButton
             title="Install extension"

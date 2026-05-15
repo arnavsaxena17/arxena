@@ -2,13 +2,14 @@
 
 import styled from '@emotion/styled';
 import {
-    IconHierarchy2,
-    IconMessageCircle,
-    IconRefresh,
-    IconRoute2,
+  IconHierarchy2,
+  IconMessageCircle,
+  IconRefresh,
+  IconRoute2,
 } from '@tabler/icons-react';
 import Link from 'next/link';
 
+import { SECTION_SUBTITLES } from '@/lib/brand-content';
 import { DIFFERENTIATORS } from '@/lib/homepage-content';
 
 const StyledSection = styled.section`
@@ -98,7 +99,7 @@ const DIFFERENTIATOR_ICONS = [
 export const DifferentiatorsSection = () => {
   return (
     <StyledSection>
-      <StyledTitle>What makes Arxena different</StyledTitle>
+      <StyledTitle>{SECTION_SUBTITLES.differentiators}</StyledTitle>
       <StyledGrid>
         {DIFFERENTIATORS.map((item, i) => {
           const Icon = DIFFERENTIATOR_ICONS[i];

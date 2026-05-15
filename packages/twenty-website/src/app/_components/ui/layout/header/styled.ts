@@ -84,6 +84,7 @@ export const ListItem = styled.a`
 export const LogoContainer = styled.div`
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   gap: 8px;
   ${mq({
     width: ['auto', 'auto', '202px'],

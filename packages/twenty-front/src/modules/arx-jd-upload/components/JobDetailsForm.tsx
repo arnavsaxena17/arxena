@@ -22,7 +22,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactPhoneNumberInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
-import { graphQLToCreateOneWorkspaceMemberProfile, graphqlToFindManyJobsWithCandidateValues, isDefined } from 'twenty-shared';
+import { graphQLToUpdateOneWorkspaceMemberProfile, graphqlToFindManyJobsWithCandidateValues, isDefined } from 'twenty-shared';
 import { IconEye, IconInfoCircle, TEXT_INPUT_STYLE } from 'twenty-ui';
 import { v4 } from 'uuid';
 import { FormComponentProps } from '../types/FormComponentProps';
@@ -192,7 +192,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
   `);
 
   const [updateWorkspaceMemberProfile] = useMutation(gql`
-    ${graphQLToCreateOneWorkspaceMemberProfile}
+    ${graphQLToUpdateOneWorkspaceMemberProfile}
   `);
 
   const { updateOneRecord } = useUpdateOneRecord({
@@ -403,8 +403,8 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
       // Update the workspace member profile
       await updateWorkspaceMemberProfile({
         variables: {
+          idToUpdate: recruiterProfile.id,
           input: {
-            id: recruiterProfile.id,
             ...(missingRecruiterInfo.name && { name: missingRecruiterInfo.name }),
             ...(missingRecruiterInfo.phoneNumber && { phoneNumber: missingRecruiterInfo.phoneNumber }),
             ...(missingRecruiterInfo.companyDescription && { companyDescription: missingRecruiterInfo.companyDescription }),

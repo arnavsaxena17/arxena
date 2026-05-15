@@ -1,5 +1,6 @@
 import { getAuthBaseUrl } from '@/lib/auth-urls';
 import { getBaseUrl } from '@/lib/base-url';
+import { STRUCTURED_DATA } from '@/lib/brand-content';
 import { COMPANY_INFO } from '@/lib/company-info';
 
 const SITE_NAVIGATION: {
@@ -11,22 +12,22 @@ const SITE_NAVIGATION: {
   {
     name: 'Pricing',
     url: '/pricing',
-    description: 'Credits for mapping any company org chart',
+    description: STRUCTURED_DATA.nav.pricing,
   },
   {
     name: 'Story',
     url: '/story',
-    description: 'Why we built Arxena',
+    description: STRUCTURED_DATA.nav.story,
   },
   {
     name: 'Engage',
     url: '/engage',
-    description: 'AI outreach in your voice',
+    description: STRUCTURED_DATA.nav.engage,
   },
   {
     name: 'App',
     url: '', // Resolved at runtime via getAuthBaseUrl()
-    description: 'Sign in to Arxena',
+    description: STRUCTURED_DATA.nav.app,
     isAbsolute: true,
   },
 ];
@@ -44,8 +45,7 @@ export async function WebSiteStructuredData() {
     '@type': 'WebSite',
     name: 'Arxena',
     url: baseUrl,
-    description:
-      'Map the org chart of any company you are targeting — sales, recruiting, investing, or research. 1M+ companies mapped, 800M+ professionals indexed. Real-time from LinkedIn and other sources.',
+    description: STRUCTURED_DATA.siteDescription,
     publisher: {
       '@type': 'Organization',
       name: 'Arxena',

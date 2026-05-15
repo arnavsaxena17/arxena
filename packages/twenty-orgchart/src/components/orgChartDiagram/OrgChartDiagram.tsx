@@ -7,10 +7,11 @@ import {
     useImperativeHandle,
     useMemo,
     useRef,
+    useSyncExternalStore,
 } from 'react';
 import '../../gojs-runtime-patch';
 
-import type {
+import {
     OrgChartDiagramHandle,
     OrgChartDiagramProps,
 } from '../OrgChartDiagram.types';
@@ -23,6 +24,23 @@ import {
 } from './OrgChartDiagram.styles';
 import { clearSearch, focusResultAtIndex, performSearch } from './search';
 import { applyZoomAroundNode, getOrgChartRootNode } from './zoomAndRoot';
+
+/** Match org chart mobile layout elsewhere (filters, website header). */
+const OVERVIEW_HIDDEN_MAX_WIDTH_PX = 720;
+
+const subscribeOverviewVisible = (callback: () => void) => {
+  const mq = window.matchMedia(
+    `(max-width: ${OVERVIEW_HIDDEN_MAX_WIDTH_PX}px)`,
+  );
+  const onChange = () => {
+    callback();
+  };
+  mq.addEventListener('change', onChange);
+  return () => mq.removeEventListener('change', onChange);
+};
+
+const getOverviewVisibleClient = (): boolean =>
+  !window.matchMedia(`(max-width: ${OVERVIEW_HIDDEN_MAX_WIDTH_PX}px)`).matches;
 
 export const OrgChartDiagram = forwardRef<
   OrgChartDiagramHandle,
@@ -48,6 +66,12 @@ export const OrgChartDiagram = forwardRef<
     },
     ref,
   ) => {
+    const showOverview = useSyncExternalStore(
+      subscribeOverviewVisible,
+      getOverviewVisibleClient,
+      () => true,
+    );
+
     const diagramRef = useRef<ReactDiagram>(null);
     const overviewDivRef = useRef<HTMLDivElement | null>(null);
     const overviewRef = useRef<go.Overview | null>(null);
@@ -115,6 +139,15 @@ export const OrgChartDiagram = forwardRef<
     }, []);
 
     useEffect(() => {
+      if (!showOverview) {
+        if (overviewRef.current) {
+          overviewRef.current.observed = null;
+          overviewRef.current.div = null;
+          overviewRef.current = null;
+        }
+        return;
+      }
+
       const diagram = getDiagram();
       const overviewDiv = overviewDivRef.current;
 
@@ -126,14 +159,10 @@ export const OrgChartDiagram = forwardRef<
       }
 
       const $ = go.GraphObject.make;
-      const overview = $(
-        go.Overview,
-        overviewDiv,
-        {
-          observed: diagram,
-          contentAlignment: go.Spot.Center,
-        },
-      );
+      const overview = $(go.Overview, overviewDiv, {
+        observed: diagram,
+        contentAlignment: go.Spot.Center,
+      });
 
       overviewRef.current = overview;
 
@@ -144,7 +173,7 @@ export const OrgChartDiagram = forwardRef<
           overviewRef.current = null;
         }
       };
-    }, [getDiagram]);
+    }, [getDiagram, showOverview]);
 
     const focusNextResult = useCallback(() => {
       focusResultAtIndex({
@@ -242,9 +271,10 @@ export const OrgChartDiagram = forwardRef<
     useEffect(() => {
       const nextHash = nodeDataArray.reduce((acc, n) => {
         const k = typeof n.key === 'number' ? n.key : 0;
-        const p = typeof (n as { parent?: unknown }).parent === 'number'
-          ? ((n as { parent: number }).parent ?? 0)
-          : 0;
+        const p =
+          typeof (n as { parent?: unknown }).parent === 'number'
+            ? ((n as { parent: number }).parent ?? 0)
+            : 0;
         // Cheap, stable hash for "structure" changes (keys + parent links).
         // Intentionally ignores cosmetic fields like `nodeState`.
         return (((acc * 31) ^ (k * 7 + p * 13)) >>> 0) as number;
@@ -327,7 +357,7 @@ export const OrgChartDiagram = forwardRef<
 
     return (
       <StyledDiagramWrapper>
-        <StyledOverviewContainer ref={overviewDivRef} />
+        {showOverview ? <StyledOverviewContainer ref={overviewDivRef} /> : null}
         <ReactDiagram
           ref={diagramRef}
           divClassName="orgchart-diagram"
@@ -340,4 +370,3 @@ export const OrgChartDiagram = forwardRef<
     );
   },
 );
-

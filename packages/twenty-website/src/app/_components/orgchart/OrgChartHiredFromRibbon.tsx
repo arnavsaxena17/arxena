@@ -25,23 +25,30 @@ function getLogoAbbreviation(website?: string, companyName?: string): string {
 
 const StyledRibbon = styled.section`
   flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(2)};
+  min-width: 0;
   padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(4)};
   background: ${({ theme }) => theme.background.tertiary};
   border-top: 1px solid ${({ theme }) => theme.border.color.light};
-  overflow: hidden;
 `;
 
 const StyledRibbonLabel = styled.span`
-  display: inline-block;
+  flex-shrink: 0;
   font-size: ${({ theme }) => theme.font.size.xs};
   font-weight: 500;
   color: ${({ theme }) => theme.font.color.tertiary};
-  margin-right: ${({ theme }) => theme.spacing(2)};
   white-space: nowrap;
 `;
 
 const StyledRibbonTrack = styled.div`
-  display: inline-flex;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
   align-items: center;
   gap: ${({ theme }) => theme.spacing(1)};
   overflow-x: auto;
@@ -49,6 +56,7 @@ const StyledRibbonTrack = styled.div`
   padding: ${({ theme }) => theme.spacing(0.5)} 0;
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 
   &::-webkit-scrollbar {
     height: 4px;
@@ -150,7 +158,7 @@ export const OrgChartHiredFromRibbon = ({
 
   return (
     <StyledRibbon aria-label="Companies most commonly hired from">
-      <StyledRibbonLabel>Most commonly hired from:</StyledRibbonLabel>
+      <StyledRibbonLabel>Commonly hires from:</StyledRibbonLabel>
       <StyledRibbonTrack>
         {companies.map(({ id, name, website }) => (
           <RibbonCompanyLink key={id} id={id} name={name} website={website} />

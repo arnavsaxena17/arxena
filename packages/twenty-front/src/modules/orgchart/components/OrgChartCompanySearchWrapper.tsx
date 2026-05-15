@@ -48,9 +48,11 @@ export const OrgChartCompanySearchWrapper = ({
       linkedinUrl?: string;
       companyDomain?: string;
     }) => {
-      Mixpanel.track('org_chart_company_search', {
+      Mixpanel.track('org_chart_search', {
         companyId: company.companyId,
         companyName: company.companyName,
+        website: company.website,
+        industry: company.industry,
       });
       setSelectedCompanyInfo(company);
       onCompanySelect(company);

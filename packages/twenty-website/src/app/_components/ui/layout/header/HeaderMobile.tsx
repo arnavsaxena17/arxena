@@ -13,7 +13,7 @@ import { PRODUCT_PAGES, SOLUTION_PAGES } from '@/lib/marketing-site-pages';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 import {
   SUPPORTED_PRICING_CURRENCIES,
-  type SupportedPricingCurrency,
+  SupportedPricingCurrency,
 } from '@/lib/pricing-currency-helpers';
 
 import { LogoContainer, NavOpen } from './styled';
@@ -28,17 +28,26 @@ const StyledMobileMenu = styled.div`
   }
 `;
 
-const StyledMobileNav = styled.nav`
+const StyledNavEmbeddedSearch = styled.div`
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+`;
+
+const StyledMobileNav = styled.nav<{ $embedded?: boolean }>`
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
+  justify-content: ${({ $embedded }) =>
+    $embedded ? 'flex-start' : 'space-between'};
   align-items: center;
-  padding: 0 12px;
+  gap: ${({ $embedded }) => ($embedded ? '8px' : '0')};
+  padding: 0 ${({ $embedded }) => ($embedded ? '10px' : '12px')};
   position: sticky;
   top: 0;
   background-color: white;
   border-bottom: 1px solid rgba(20, 20, 20, 0.08);
-  height: 64px;
+  height: ${({ $embedded }) => ($embedded ? '52px' : '64px')};
   width: 100%;
   z-index: 110;
 `;
@@ -115,10 +124,12 @@ const StyledCurrencySelect = styled.select`
   background: #fff;
 `;
 
-const HamburgerContainer = styled.div`
+const HamburgerContainer = styled.div<{ $embedded?: boolean }>`
   height: 44px;
   width: 44px;
   position: relative;
+  flex-shrink: 0;
+  ${({ $embedded }) => $embedded && 'margin-left: auto;'}
 
   input {
     cursor: pointer;
@@ -163,6 +174,7 @@ type HeaderMobileProps = {
   signUpUrl: string;
   currency: SupportedPricingCurrency;
   onCurrencyChange: (currency: SupportedPricingCurrency) => void;
+  embeddedToolbar?: boolean;
 };
 
 export const HeaderMobile = ({
@@ -172,6 +184,7 @@ export const HeaderMobile = ({
   signUpUrl,
   currency,
   onCurrencyChange,
+  embeddedToolbar = false,
 }: HeaderMobileProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -181,11 +194,20 @@ export const HeaderMobile = ({
 
   return (
     <StyledMobileMenu>
-      <StyledMobileNav>
+      <StyledMobileNav $embedded={embeddedToolbar}>
         <LogoContainer>
-          <Logo />
+          <Logo variant={embeddedToolbar ? 'compact' : 'header'} />
         </LogoContainer>
-        <HamburgerContainer>
+        {embeddedToolbar ? (
+          <StyledNavEmbeddedSearch>
+            <OrgChartSearch
+              dense
+              placeholder="Search any company's org chart"
+              startIcon={<IconHierarchy2 size={16} />}
+            />
+          </StyledNavEmbeddedSearch>
+        ) : null}
+        <HamburgerContainer $embedded={embeddedToolbar}>
           <input type="checkbox" onChange={toggleMenu} checked={menuOpen} />
           <HamburgerLine1 />
           <HamburgerLine2 />

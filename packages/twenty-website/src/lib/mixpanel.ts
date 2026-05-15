@@ -71,6 +71,7 @@ export const trackWebsiteEvent = (
     if (mp) {
       mp.track(eventName, {
         ...props,
+        visitorDistinctId: mp.get_distinct_id(),
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV,
         source: 'website',

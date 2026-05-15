@@ -1,3 +1,5 @@
+import { SECTION_SUBTITLES } from '@/lib/brand-content';
+
 export const TESTIMONIALS = [
   {
     quote:
@@ -33,57 +35,55 @@ export const TESTIMONIALS = [
   },
 ] as const;
 
-export const USE_CASES_SECTION_SUBTITLE =
-  'Where blind spots cost you most';
+export const USE_CASES_SECTION_SUBTITLE = SECTION_SUBTITLES.useCases;
 
 export const USE_CASES = [
   {
-    title: 'Investors & PE/VC',
+    title: 'Executive Search',
     description:
-      'You walked into the first management call not knowing the CFO had left eight months ago. By the time you are in the data room, the impression is already set. Know the bench before the call — not after you are committed.',
-    href: '/solutions/pe-vc',
+      'Map the target function and surface candidates while the mandate is still forming—structure before the brief, stakeholders before the shortlist.',
+    href: '/solutions/executive-search',
   },
   {
-    title: 'Executive search',
+    title: 'Investors & PE/VC',
     description:
-      'Six weeks of shortlisting — against a brief that three stakeholders disagreed on from the start. Walk into the mandate conversation with names and the structural gaps already mapped, before the client has briefed anyone else.',
-    href: '/solutions/executive-search',
+      'Queryable org structure before the management call—leadership tenure, bench depth, and function evolution as diligence inputs.',
+    href: '/solutions/pe-vc',
   },
   {
     title: 'Sales & ABM',
     description:
-      'You found one contact. Built rapport. Spent three weeks. Got ghosted. Found another. The deal clock ran the whole time. Map the committee before outreach — not after the chain snaps.',
+      'Map the buying committee from the live org graph—budget owners, champions, and influencers before the first message.',
     href: '/solutions/sales-abm',
   },
   {
-    title: 'Corporate strategy',
+    title: 'Corporate Strategy',
     description:
-      'Your competitor restructured their GTM. You found out when they made it public. See how peers actually invest headcount and structure functions — before you decide how you will.',
+      'Peer org structure as live intelligence—how competitors invest headcount and structure functions before reorgs or big bets.',
     href: '/solutions/corporate-strategy',
   },
 ] as const;
 
-export const HOW_IT_WORKS_SECTION_SUBTITLE =
-  'From org map to conversation—in one place';
+export const HOW_IT_WORKS_SECTION_SUBTITLE = SECTION_SUBTITLES.howItWorks;
 
 export const HOW_IT_WORKS_STEPS = [
   {
     step: 1,
-    title: 'Map the org',
+    title: 'Query the org graph',
     description:
-      'Search any company. Arxena pulls a real-time view from LinkedIn and other sources—roles, function clusters—navigable in seconds.',
+      'Search any company. Arxena builds a live, navigable view—roles, functions, reporting lines—from LinkedIn and other sources in seconds.',
   },
   {
     step: 2,
     title: 'Plan your move',
     description:
-      'Assess the bench before the call. Find candidates before the brief lands. Map the committee before outreach. The org becomes the plan.',
+      'Assess the bench before the call. Map stakeholders before the brief. See the committee before outreach. Structure becomes the plan.',
   },
   {
     step: 3,
-    title: 'Reach with context',
+    title: 'Engage with precision',
     description:
-      'Arxena enriches contacts and drafts outreach in your voice—with context from the org in every message, not a generic sequence.',
+      'Reach with context from the org graph—enriched contacts and outreach in your voice, not generic sequences.',
   },
   {
     step: 4,
@@ -96,25 +96,27 @@ export const HOW_IT_WORKS_STEPS = [
 
 export const DIFFERENTIATORS = [
   {
-    title: 'The call you walked into without this',
+    title: 'Live org graph, not static lists',
     description:
-      'You prepared. But you did not know the CFO had changed, the co-founder had stepped back, or who actually held budget. Arxena closes that gap before you are in the room.',
+      'Reporting lines, budget owners, decision-makers, and gatekeepers—structure you can query in real time, not names scraped into a spreadsheet.',
   },
   {
-    title: 'Every touch tracked',
+    title: 'Every function, every level, every move',
     description:
-      'LinkedIn, WhatsApp, email — all in one place. See response rates by persona, function, and sequence. Know what is working and stop repeating what is not.',
+      'Org timeline surfaces leadership changes, build-outs, and structural shifts—so timing and context come from the graph, not guesswork.',
+    href: '/products/org-timeline',
+  },
+  {
+    title: 'Structure—not just contacts',
+    description:
+      'Outreach, shortlists, and diligence land on the right person for the right reason—because you see who runs what and who answers to whom.',
+    href: '/products/function-maps',
+  },
+  {
+    title: 'Act on intelligence in one place',
+    description:
+      'Map, plan, reach, and measure from the same org graph—LinkedIn, WhatsApp, and email tied to live structure.',
     href: '/engage',
-  },
-  {
-    title: 'A list of contacts is not a map',
-    description:
-      'Reporting lines, budget owners, decision-makers, gatekeepers. Structure — not just names — so outreach, shortlists, and diligence land on the right person for the right reason.',
-  },
-  {
-    title: 'Map → plan → reach → measure',
-    description:
-      'One workflow. No exports. No handoffs to spreadsheets. Each cycle sharper than the last.',
   },
 ] as const;
 

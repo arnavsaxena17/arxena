@@ -344,6 +344,22 @@ export const PricingContent = ({
     () => buildInitialTierState(),
   );
 
+  React.useEffect(() => {
+    setSelectedTiers((previous) => {
+      let changed = false;
+      const next = { ...previous };
+      for (const planId of PLAN_ORDER) {
+        const plan = PRICING_PLANS[planId];
+        const raw = next[planId];
+        if (raw !== undefined && !plan.tiers.some((t) => t.maps === raw)) {
+          next[planId] = plan.minMaps;
+          changed = true;
+        }
+      }
+      return changed ? next : previous;
+    });
+  }, []);
+
   return (
     <StyledSection>
       <StyledHeadline>{PRICING_MARKETING_HERO_HEADLINE}</StyledHeadline>
@@ -375,7 +391,7 @@ export const PricingContent = ({
           const emailEquivalent = Math.floor(totalCredits / REVEAL_COST_EMAIL);
           const phoneEquivalent = Math.floor(totalCredits / REVEAL_COST_PHONE);
           const inherited = getInheritedFeatures(planId);
-          const totalSubunits = priceSubunits * selectedMaps;
+          const totalSubunits = priceSubunits * tier.maps;
 
           return (
             <StyledCard key={planId}>
@@ -409,7 +425,7 @@ export const PricingContent = ({
                 >
                   {plan.tiers.map((t) => (
                     <option key={t.maps} value={t.maps}>
-                      {t.maps} talent maps
+                      {t.maps} Live Org Charts
                     </option>
                   ))}
                 </StyledTierSelect>
@@ -427,14 +443,14 @@ export const PricingContent = ({
                 <StyledPriceFinePrint>
                   Total:{' '}
                   {getPricingCurrencySymbol(currency)}
-                  {formatMoneyMajor(totalSubunits)} for {selectedMaps} maps
+                  {formatMoneyMajor(totalSubunits)} for {tier.maps} maps
                 </StyledPriceFinePrint>
               </StyledPriceBlock>
 
               <StyledCreditsBlock>
                 <StyledCreditsEquivalents>
                   Includes {emailEquivalent.toLocaleString()} email credits +{' '}
-                  {phoneEquivalent.toLocaleString()} phone reveals
+                  {phoneEquivalent.toLocaleString()} phone reveals + 1000 AI Conversations Credits
                 </StyledCreditsEquivalents>
               </StyledCreditsBlock>
 

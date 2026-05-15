@@ -1,17 +1,22 @@
 import {
-  ALL_CREDIT_PACKS,
-  buildComparableMapsByPlan,
-  getComparableMapsForPlan,
-  getPricingMarketingSubheadlineLines,
-  getSmallPaymentTestCreditPackKey,
-  PRICING_COMPARABLE_MAPS_VOLUME,
-  PRICING_PLAN_CONTENT_BY_ID,
-  PRICING_PLAN_ORDER,
-  PRICING_PLANS,
-  PRICING_RECOMMENDED_PLAN_ID,
-  SMALL_PAYMENT_TEST_CREDIT_PACKS,
-  SUPPORTED_PRICING_CURRENCIES,
-  type PricingPlanId,
+    ALL_CREDIT_PACKS,
+    buildComparableMapsByPlan,
+    findPricingPlanTier,
+    getComparableMapsForPlan,
+    getCreditPackByKey,
+    getCreditPackForPlanVolume,
+    getPricingMarketingSubheadlineLines,
+    getPricingPlanOwnFeatures,
+    getSmallPaymentTestCreditPackKey,
+    ONBOARDING_INTENT_PATH_TO_PRICING_PLAN_ID,
+    PRICING_COMPARABLE_MAPS_VOLUME,
+    PRICING_PLAN_CONTENT_BY_ID,
+    PRICING_PLAN_ORDER,
+    PRICING_PLANS,
+    PRICING_RECOMMENDED_PLAN_ID,
+    SMALL_PAYMENT_TEST_CREDIT_PACKS,
+    SUPPORTED_PRICING_CURRENCIES,
+    type PricingPlanId,
 } from '../credit-packs.constant';
 
 describe('SMALL_PAYMENT_TEST_CREDIT_PACKS', () => {
@@ -60,8 +65,8 @@ describe('pricing marketing content', () => {
 
   it('splits the marketing subheadline into orienting lines', () => {
     expect(getPricingMarketingSubheadlineLines()).toEqual([
-      'Four flexible plans for Sales, Recruitment, Corporate HR, and Investment teams.',
-      'Choose your tier—map volume, depth, and refresh cadence all scale for your needs.',
+      'Executive search, investors, sales, and corporate strategy—choose your tier.',
+      'Map volume, depth, and refresh cadence scale with how you query structure.',
     ]);
   });
 
@@ -71,6 +76,21 @@ describe('pricing marketing content', () => {
       expect(content.persona.length).toBeGreaterThan(0);
       expect(content.onboardingHint.length).toBeGreaterThan(0);
       expect(content.segmentTone).toBeDefined();
+    }
+  });
+
+  it('maps each onboarding intent path to a pricing plan with matching features', () => {
+    expect(ONBOARDING_INTENT_PATH_TO_PRICING_PLAN_ID).toEqual({
+      EXTENSION_INSTALL: 'sales',
+      COMPETITIVE_RESEARCH: 'recruitment',
+      CORPORATE_TA: 'corporate',
+      DEAL_DILIGENCE: 'investment',
+    });
+
+    for (const planId of Object.values(ONBOARDING_INTENT_PATH_TO_PRICING_PLAN_ID)) {
+      expect(getPricingPlanOwnFeatures(planId)).toEqual(
+        PRICING_PLANS[planId].ownFeatures,
+      );
     }
   });
 
@@ -102,6 +122,44 @@ describe('PRICING_PLANS', () => {
     expect(planIds.sort()).toEqual(
       ['corporate', 'investment', 'recruitment', 'sales'].sort(),
     );
+  });
+
+  it('orders INR per-map entry tiers Sales < Recruitment < Corporate < Investment', () => {
+    const refMaps = PRICING_COMPARABLE_MAPS_VOLUME;
+    const inrByPlan = PRICING_PLAN_ORDER.map((planId) => {
+      const tier = findPricingPlanTier(PRICING_PLANS[planId], refMaps);
+
+      return tier.pricesSubunits.INR / 100;
+    });
+
+    expect(inrByPlan[0]).toBeLessThan(inrByPlan[1]);
+    expect(inrByPlan[1]).toBeLessThan(inrByPlan[2]);
+    expect(inrByPlan[2]).toBeLessThan(inrByPlan[3]);
+    expect(inrByPlan[0]).toBe(7500);
+    expect(inrByPlan[1]).toBe(10000);
+    expect(inrByPlan[2]).toBe(12500);
+    expect(inrByPlan[3]).toBe(15000);
+
+    const usdByPlan = PRICING_PLAN_ORDER.map((planId) => {
+      const tier = findPricingPlanTier(PRICING_PLANS[planId], refMaps);
+
+      return tier.pricesSubunits.USD / 100;
+    });
+
+    expect(usdByPlan[0]).toBeLessThan(usdByPlan[1]);
+    expect(usdByPlan[1]).toBeLessThan(usdByPlan[2]);
+    expect(usdByPlan[2]).toBeLessThan(usdByPlan[3]);
+  });
+
+  it('getCreditPackForPlanVolume matches tier maps and key', () => {
+    const pack = getCreditPackForPlanVolume('recruitment', 10);
+
+    expect(pack?.key).toBe('recruitment_maps_10');
+    expect(pack?.mapsCount).toBe(10);
+    expect(getCreditPackForPlanVolume('recruitment', 5)?.key).toBe(
+      'recruitment_maps_10',
+    );
+    expect(getCreditPackByKey('recruitment_maps_5')).toBeUndefined();
   });
 
   it.each(planIds)(

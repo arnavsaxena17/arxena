@@ -325,6 +325,15 @@ export class WorkspaceMemberProfileUnipileService {
         ? 'linkedinUnipileAccountId'
         : 'whatsappUnipileAccountId';
 
+    if (!accountId?.trim()) {
+      this.logger.warn(
+        `Refusing to write empty ${fieldName} for workspace member ${workspaceMemberId} — accountId was "${accountId}"`,
+      );
+      return;
+    }
+
+    const trimmedAccountId = accountId.trim();
+
     try {
       const response = await this.staticGraphQLService.executeGraphQL(
         findWorkspaceMemberProfiles,
@@ -343,11 +352,19 @@ export class WorkspaceMemberProfileUnipileService {
         return;
       }
 
+      const existingValue = profile[fieldName];
+      if (existingValue?.trim() && existingValue.trim() === trimmedAccountId) {
+        this.logger.log(
+          `${fieldName} already set to "${trimmedAccountId}" for workspace member ${workspaceMemberId}, skipping write`,
+        );
+        return;
+      }
+
       await this.staticGraphQLService.executeGraphQL(
         graphQLToUpdateOneWorkspaceMemberProfile,
         {
           idToUpdate: profile.id,
-          input: { [fieldName]: accountId },
+          input: { [fieldName]: trimmedAccountId },
         },
         authToken,
       );
@@ -359,7 +376,7 @@ export class WorkspaceMemberProfileUnipileService {
         await this.workspaceQueryService.upsertUnipileMemberAccountMapping(
           workspaceMemberId,
           workspaceId,
-          accountId,
+          trimmedAccountId,
           type === 'linkedin' ? 'LINKEDIN' : 'WHATSAPP',
         );
       } catch (mappingError) {
@@ -370,7 +387,7 @@ export class WorkspaceMemberProfileUnipileService {
       }
 
       this.logger.log(
-        `Updated ${fieldName} for workspace member ${workspaceMemberId}`,
+        `Updated ${fieldName} to "${trimmedAccountId}" for workspace member ${workspaceMemberId}`,
       );
     } catch (error) {
       this.logger.error(

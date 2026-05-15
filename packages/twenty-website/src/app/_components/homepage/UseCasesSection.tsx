@@ -90,7 +90,12 @@ const StyledCardDescription = styled.div`
   line-height: 1.5;
 `;
 
-const USE_CASE_ICONS = [IconBriefcase, IconUsers, IconChartTreemap, IconRocket];
+const USE_CASE_ICONS = [
+  IconBriefcase,
+  IconRocket,
+  IconChartTreemap,
+  IconUsers,
+];
 
 export const UseCasesSection = () => {
   return (

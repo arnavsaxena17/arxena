@@ -30,7 +30,10 @@ import {
   convertPricingAmountSubunits,
   CREDIT_PACKS_BY_INTENT,
   isDefined,
+  PRICING_PLAN_ORDER,
+  PRICING_PLANS,
   CreditPack as SharedCreditPack,
+  SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE,
   SUPPORTED_PRICING_CURRENCIES,
   SupportedPricingCurrency,
 } from 'twenty-shared';
@@ -520,6 +523,28 @@ export const SettingsBilling = () => {
   const [selectedMapsByPlan, setSelectedMapsByPlan] = useState(
     buildComparableMapsByPlan,
   );
+
+  useEffect(() => {
+    setSelectedMapsByPlan((previous) => {
+      let changed = false;
+      const next = { ...previous };
+      for (const planId of PRICING_PLAN_ORDER) {
+        const plan = PRICING_PLANS[planId];
+        const raw = next[planId];
+        if (
+          raw === undefined ||
+          raw === SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE
+        ) {
+          continue;
+        }
+        if (!plan.tiers.some((t) => t.maps === raw)) {
+          next[planId] = plan.minMaps;
+          changed = true;
+        }
+      }
+      return changed ? next : previous;
+    });
+  }, []);
 
   useEffect(() => {
     const resolvedCurrency = (

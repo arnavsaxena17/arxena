@@ -1,5 +1,6 @@
 'use client';
 
+import { CHROME_EXTENSION_PAGE } from '@/lib/brand-content';
 import styled from '@emotion/styled';
 import { ARXENA_CHROME_WEBSTORE_URL } from 'twenty-shared';
 
@@ -83,12 +84,8 @@ const StyledBulletList = styled.ul`
 export const ChromeExtensionContent = () => {
   return (
     <StyledSection>
-      <StyledHeadline>Arxena Chrome extension</StyledHeadline>
-      <StyledHeadlineSub>
-        Work from LinkedIn: connect your account, view profiles, reveal contact
-        details, and message candidates in context for the roles you are hiring
-        for.
-      </StyledHeadlineSub>
+      <StyledHeadline>{CHROME_EXTENSION_PAGE.headline}</StyledHeadline>
+      <StyledHeadlineSub>{CHROME_EXTENSION_PAGE.subheadline}</StyledHeadlineSub>
 
       <StyledCtaButton
         href={ARXENA_CHROME_WEBSTORE_URL}

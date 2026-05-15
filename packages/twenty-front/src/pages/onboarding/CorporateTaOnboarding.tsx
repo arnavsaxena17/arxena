@@ -1,22 +1,16 @@
 import { SubTitle } from '@/auth/components/SubTitle';
 import { Title } from '@/auth/components/Title';
 import { currentUserState } from '@/auth/states/currentUserState';
+import { OnboardingPricingPlanFeatures } from '@/onboarding/components/OnboardingPricingPlanFeatures';
 import { COMPLETE_ONBOARDING_INTENT_PATH_STEP } from '@/onboarding/graphql/mutations/completeOnboardingIntentPathStep';
 import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
 import { AppPath } from '@/types/AppPath';
 import { useMutation } from '@apollo/client';
 import styled from '@emotion/styled';
-import { IconChartBar } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
-import {
-  ActionLink,
-  IconBuildingSkyscraper,
-  IconUsers,
-  Loader,
-  MainButton,
-  Pill,
-} from 'twenty-ui';
+import { PRICING_PLAN_CONTENT_BY_ID, PRICING_PLANS } from 'twenty-shared';
+import { ActionLink, Loader, MainButton, Pill } from 'twenty-ui';
 import { getPostAuthLandingAppPath } from '~/config';
 import { OnboardingStatus } from '~/generated/graphql';
 import { Mixpanel } from '~/mixpanel';
@@ -26,8 +20,12 @@ const StyledPanel = styled.div`
   width: 100%;
 `;
 
+const CORPORATE_PLAN_ID = 'corporate' as const;
+const corporatePlanContent = PRICING_PLAN_CONTENT_BY_ID[CORPORATE_PLAN_ID];
+const corporatePlan = PRICING_PLANS[CORPORATE_PLAN_ID];
+
 const StyledEyebrow = styled.div`
-  color: ${({ theme }) => theme.color.blue60};
+  color: ${({ theme }) => theme.color.turquoise60};
   font-family: ${({ theme }) => theme.font.family};
   font-size: ${({ theme }) => theme.font.size.sm};
   font-weight: ${({ theme }) => theme.font.weight.medium};
@@ -74,8 +72,8 @@ const StyledSummaryGrid = styled.div`
 
 const StyledValueCard = styled.div`
   background: ${({ theme }) =>
-    `linear-gradient(180deg, ${theme.color.blue10} 0%, ${theme.background.primary} 100%)`};
-  border: 2px solid ${({ theme }) => theme.color.blue60};
+    `linear-gradient(180deg, ${theme.color.turquoise10} 0%, ${theme.background.primary} 100%)`};
+  border: 2px solid ${({ theme }) => theme.color.turquoise60};
   border-radius: ${({ theme }) => theme.border.radius.xl};
   display: flex;
   flex-direction: column;
@@ -93,29 +91,6 @@ const StyledValueCopy = styled.div`
   color: ${({ theme }) => theme.font.color.secondary};
   font-size: ${({ theme }) => theme.font.size.md};
   line-height: 1.7;
-`;
-
-const StyledValueList = styled.div`
-  color: ${({ theme }) => theme.font.color.secondary};
-  display: grid;
-  gap: ${({ theme }) => theme.spacing(2)};
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  line-height: 1.6;
-
-  @media (max-width: 720px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const StyledValueListItem = styled.div`
-  align-items: center;
-  display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
-`;
-
-const StyledValueItemIcon = styled.div`
-  color: ${({ theme }) => theme.color.blue60};
-  display: flex;
 `;
 
 const StyledNextStepCard = styled.div`
@@ -154,8 +129,8 @@ const StyledSkipRow = styled.div`
 
 const StyledPill = styled(Pill)`
   align-self: flex-start;
-  background: ${({ theme }) => theme.color.blue10};
-  color: ${({ theme }) => theme.color.blue60};
+  background: ${({ theme }) => theme.color.turquoise10};
+  color: ${({ theme }) => theme.color.turquoise60};
 `;
 
 export const CorporateTaOnboarding = () => {
@@ -197,23 +172,16 @@ export const CorporateTaOnboarding = () => {
   return (
     <OnboardingIntentModalLayout panelWidth="xl">
       <StyledPanel data-testid="onboarding-path-corporate-ta">
-        <StyledEyebrow>Corporate talent intelligence</StyledEyebrow>
+        <StyledEyebrow>{corporatePlanContent.onboardingTitle}</StyledEyebrow>
         <StyledHero>
-          <StyledTitle noMarginTop>Corporate TA</StyledTitle>
-          <StyledSubTitle>
-            Benchmark competitors and surface internal mobility opportunities
-            with bulk, multi-company talent maps.
-          </StyledSubTitle>
+          <StyledTitle noMarginTop>{corporatePlan.label}</StyledTitle>
+          <StyledSubTitle>{corporatePlan.tagline}</StyledSubTitle>
         </StyledHero>
-        <StyledNotes>
-          Built for in-house TA teams that need to see how their org compares
-          across the market — competitor coverage, function-by-function depth,
-          and team-level views, with credit controls and seat-level access.
-        </StyledNotes>
+        <StyledNotes>{corporatePlanContent.onboardingBody}</StyledNotes>
 
         <StyledSummaryGrid>
           <StyledValueCard>
-            <StyledPill label="Multi-company maps" />
+            <StyledPill label={corporatePlan.mapTypeLabel} />
             <StyledValueTitle>
               Map your org and your competitors side by side.
             </StyledValueTitle>
@@ -222,32 +190,10 @@ export const CorporateTaOnboarding = () => {
               compare team shape, leadership coverage, and functional depth in
               one place.
             </StyledValueCopy>
-            <StyledValueList>
-              <StyledValueListItem>
-                <StyledValueItemIcon>
-                  <IconBuildingSkyscraper size={18} stroke={1.8} />
-                </StyledValueItemIcon>
-                Competitor org tracking
-              </StyledValueListItem>
-              <StyledValueListItem>
-                <StyledValueItemIcon>
-                  <IconChartBar size={18} stroke={1.8} />
-                </StyledValueItemIcon>
-                Team / BU level views
-              </StyledValueListItem>
-              <StyledValueListItem>
-                <StyledValueItemIcon>
-                  <IconUsers size={18} stroke={1.8} />
-                </StyledValueItemIcon>
-                Multi-seat access
-              </StyledValueListItem>
-              <StyledValueListItem>
-                <StyledValueItemIcon>
-                  <IconChartBar size={18} stroke={1.8} />
-                </StyledValueItemIcon>
-                Custom refresh cadence
-              </StyledValueListItem>
-            </StyledValueList>
+            <OnboardingPricingPlanFeatures
+              planId={CORPORATE_PLAN_ID}
+              showInheritedLine
+            />
           </StyledValueCard>
 
           <StyledNextStepCard>

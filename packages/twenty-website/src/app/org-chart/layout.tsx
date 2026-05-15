@@ -16,7 +16,11 @@ export default function OrgChartLayout({
         overflow: 'hidden',
       }}
     >
-      <Header signInUrl={getSignInUrl()} signUpUrl={getSignUpUrl()} />
+      <Header
+        signInUrl={getSignInUrl()}
+        signUpUrl={getSignUpUrl()}
+        embeddedToolbar
+      />
       <div
         style={{
           flex: 1,

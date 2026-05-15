@@ -1,6 +1,6 @@
 'use client';
 
-import { type SupportedPricingCurrency } from '@/lib/pricing-currency-helpers';
+import { SupportedPricingCurrency } from '@/lib/pricing-currency-helpers';
 import { HeaderDesktop } from './HeaderDesktop';
 import { HeaderMobile } from './HeaderMobile';
 
@@ -11,6 +11,8 @@ type HeaderProps = {
   signUpUrl: string;
   currency?: SupportedPricingCurrency;
   onCurrencyChange?: (currency: SupportedPricingCurrency) => void;
+  /** Tighter mobile bar (e.g. org chart canvas pages). */
+  embeddedToolbar?: boolean;
 };
 
 export const Header = ({
@@ -20,6 +22,7 @@ export const Header = ({
   signUpUrl,
   currency = 'USD',
   onCurrencyChange = () => {},
+  embeddedToolbar = false,
 }: HeaderProps) => {
   return (
     <>
@@ -32,12 +35,13 @@ export const Header = ({
         onCurrencyChange={onCurrencyChange}
       />
       <HeaderMobile
-        showSearch={showSearch}
+        showSearch={embeddedToolbar ? false : showSearch}
         showCurrencySelector={showCurrencySelector}
         signInUrl={signInUrl}
         signUpUrl={signUpUrl}
         currency={currency}
         onCurrencyChange={onCurrencyChange}
+        embeddedToolbar={embeddedToolbar}
       />
     </>
   );
