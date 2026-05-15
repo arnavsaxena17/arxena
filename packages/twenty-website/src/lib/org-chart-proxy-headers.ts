@@ -1,8 +1,8 @@
 import { ORG_CHART_PDL_PROXY_HEADER } from 'twenty-shared';
 
 import {
-  getClientIpFromHeaders,
-  isBlockedBot,
+    getClientIpFromHeaders,
+    isBlockedBot,
 } from '@/lib/bot-detection';
 
 export const buildOrgChartUpstreamHeaders = (

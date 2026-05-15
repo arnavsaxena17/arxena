@@ -19,10 +19,12 @@ const getHeaderValue = (req: Request, name: string): string | null => {
 };
 
 const secureCompare = (provided: string, expected: string): boolean => {
-  if (provided.length !== expected.length) {
+  const providedBytes = new TextEncoder().encode(provided);
+  const expectedBytes = new TextEncoder().encode(expected);
+  if (providedBytes.length !== expectedBytes.length) {
     return false;
   }
-  return timingSafeEqual(Buffer.from(provided), Buffer.from(expected));
+  return timingSafeEqual(providedBytes, expectedBytes);
 };
 
 export const isOrgChartPdlProxyAuthorized = (

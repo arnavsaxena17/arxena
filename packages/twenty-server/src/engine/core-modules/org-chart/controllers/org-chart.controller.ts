@@ -21,7 +21,6 @@ import { ApifyService } from 'src/engine/core-modules/apify/services/apify.servi
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
-import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/services/bright-data-serp.service';
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
@@ -35,6 +34,7 @@ import {
   SalesNavigatorPeopleSearchStrategyResult,
 } from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
 import { constructSearchParamKey } from 'src/engine/core-modules/candidate-search/utils/search-parameter.utils';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { OrgChartService } from 'src/engine/core-modules/org-chart/services/org-chart.service';
 import { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';

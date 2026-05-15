@@ -19,8 +19,8 @@ import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import {
-    applyBlankOrgChartSizeForExpectedHeadcount,
-    applyBlankOrgChartSubsetFilter,
+  applyBlankOrgChartSizeForExpectedHeadcount,
+  applyBlankOrgChartSubsetFilter,
 } from '../utils/blank-org-chart-subset.util';
 import { mergeManualCompanyAutocompleteResults } from '../utils/manual-company-autocomplete.util';
 import { buildCompanyOrgChartLogicalCacheKey } from '../utils/orgchart-cache-keys.util';
@@ -332,6 +332,8 @@ export class OrgChartService {
     const hasAuth = Boolean(authToken?.trim());
     const allowPdl = hasAuth || options?.isPdlProxyAuthorized === true;
 
+    console.log('allowPdl', allowPdl);
+    console.log('this.pdlAutocomplete.isConfigured()', this.pdlAutocomplete.isConfigured());
     let baseResults: Awaited<
       ReturnType<PdlAutocompleteService['getCompanyAutocomplete']>
     > = [];
@@ -344,7 +346,7 @@ export class OrgChartService {
         authToken,
       );
     }
-
+    console.log('baseResults', baseResults);
     return mergeManualCompanyAutocompleteResults(inputText, baseResults);
   }
 
