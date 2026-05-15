@@ -155,7 +155,7 @@ export const SettingsAdminOrgChartClientIps = () => {
   const handleAdd = async () => {
     const trimmed = ipInput.trim();
     if (trimmed.length === 0) {
-      enqueueSnackBar('Enter an IP address', {
+      enqueueSnackBar('Enter an IP address or CIDR', {
         variant: SnackBarVariant.Error,
       });
       return;
@@ -209,13 +209,14 @@ export const SettingsAdminOrgChartClientIps = () => {
     <StyledSection>
       <H2Title
         title="Org chart client IPs"
-        description="Track and control public org-chart traffic by IP (add an IP first; only listed IPs are counted)."
+        description="Track and control public org-chart traffic by IP or CIDR range."
       />
       <StyledHint>
-        Block stops all org-chart JSON for that IP (403). Cache-only skips
-        Elasticsearch and only serves Redis, S3, or the blank placeholder—useful
-        to limit cost while still returning something. When both are off, the IP
-        is only monitored. The marketing site sends{' '}
+        Enter a single IPv4 (e.g. 203.0.113.10) or a CIDR block (e.g.
+        43.173.0.0/16). Any client IP matching a rule is counted and controlled.
+        Block stops all org-chart JSON (403). Cache-only skips Elasticsearch and
+        only serves Redis, S3, or the blank placeholder. When both are off, the
+        rule is only monitored. The marketing site sends{' '}
         <code>X-Org-Chart-Client-Ip</code> and{' '}
         <code>X-Org-Chart-Client-User-Agent</code> automatically from the
         org-chart API route.
@@ -229,7 +230,7 @@ export const SettingsAdminOrgChartClientIps = () => {
 
       <StyledAddRow>
         <TextInput
-          placeholder="e.g. 203.0.113.10"
+          placeholder="e.g. 203.0.113.10 or 43.173.0.0/16"
           value={ipInput}
           onChange={setIpInput}
         />
@@ -257,7 +258,7 @@ export const SettingsAdminOrgChartClientIps = () => {
           gridAutoColumns="120px minmax(160px,1fr) 72px 88px 72px 72px minmax(100px,0.8fr)"
           mobileGridAutoColumns="1fr"
         >
-          <TableHeader>IP address</TableHeader>
+          <TableHeader>IP / CIDR</TableHeader>
           <TableHeader>User-Agent</TableHeader>
           <TableHeader align="center">Block</TableHeader>
           <TableHeader align="center">Cache only</TableHeader>
@@ -276,7 +277,7 @@ export const SettingsAdminOrgChartClientIps = () => {
             <TableRow gridAutoColumns="1fr" mobileGridAutoColumns="1fr">
               <TableCell>
                 <StyledEmptyTableMessage>
-                  No IP rules yet. Add one above to track and manage traffic.
+                  No rules yet. Add an IP or CIDR above to track and manage traffic.
                 </StyledEmptyTableMessage>
               </TableCell>
             </TableRow>

@@ -1,0 +1,35 @@
+# Include inside the arxena.com server {} block on twenty-40.
+# Backup protection when traffic bypasses CloudFront (direct EC2 IP, support.arxena.com).
+
+limit_req_zone $binary_remote_addr zone=orgchart_pages:10m rate=10r/s;
+
+location ^~ /org-chart/ {
+  limit_req zone=orgchart_pages burst=20 nodelay;
+
+  deny 43.173.0.0/16;
+  deny 43.172.0.0/16;
+
+  # Optional: require CloudFront origin secret (set same value in CF custom origin header)
+  # if ($http_x_origin_verify != "YOUR_ORIGIN_VERIFY_SECRET") { return 403; }
+
+  proxy_pass http://127.0.0.1:3002;
+  proxy_http_version 1.1;
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+location ^~ /api/org-chart/ {
+  limit_req zone=orgchart_pages burst=10 nodelay;
+
+  deny 43.173.0.0/16;
+  deny 43.172.0.0/16;
+
+  proxy_pass http://127.0.0.1:3002;
+  proxy_http_version 1.1;
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+}

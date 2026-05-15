@@ -1,10 +1,16 @@
-import { ORG_CHART_PDL_PROXY_HEADER } from 'twenty-shared';
+import {
+    ORG_CHART_PDL_PROXY_HEADER,
+    ORG_CHART_VERIFIED_BOT_HEADER,
+} from 'twenty-shared';
 
 import {
     getClientIpFromHeaders,
     isBlockedBot,
 } from '@/lib/bot-detection';
-import { resolveIsLikelyBrowser } from '@/lib/org-chart-api-guard';
+import {
+    ORG_CHART_LIKELY_BROWSER_HEADER,
+    resolveIsLikelyBrowser,
+} from '@/lib/org-chart-api-guard';
 
 export const buildOrgChartUpstreamHeaders = (
   requestHeaders: Headers,
@@ -55,6 +61,16 @@ export const buildOrgChartUpstreamHeaders = (
   const pdlProxySecret = process.env.ORG_CHART_PDL_PROXY_SECRET?.trim();
   if (allowPdlProxy && pdlProxySecret) {
     headers[ORG_CHART_PDL_PROXY_HEADER] = pdlProxySecret;
+  }
+
+  const likelyBrowser = requestHeaders.get(ORG_CHART_LIKELY_BROWSER_HEADER);
+  if (likelyBrowser) {
+    headers['X-Org-Chart-Likely-Browser'] = likelyBrowser;
+  }
+
+  const verifiedBot = requestHeaders.get(ORG_CHART_VERIFIED_BOT_HEADER);
+  if (verifiedBot === '1') {
+    headers['X-Org-Chart-Verified-Bot'] = '1';
   }
 
   return headers;

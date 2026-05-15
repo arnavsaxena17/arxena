@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { resolveIsLikelyBrowser } from '@/lib/org-chart-api-guard';
+import { isLikelyBrowserLogoRequest } from 'twenty-shared';
+
+import { buildOrgChartUpstreamHeaders } from '@/lib/org-chart-proxy-headers';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +17,7 @@ const getServerBaseUrl = () => {
 };
 
 export async function GET(request: NextRequest) {
-  if (!resolveIsLikelyBrowser(request.headers)) {
+  if (!isLikelyBrowserLogoRequest(request.headers)) {
     return new NextResponse(null, { status: 404 });
   }
 
@@ -34,8 +36,10 @@ export async function GET(request: NextRequest) {
     );
   }
   try {
-    const authHeader = request.headers.get('authorization');
-    const cookieHeader = request.headers.get('cookie');
+    const upstreamHeaders = buildOrgChartUpstreamHeaders(request.headers, {
+      allowPdlProxy: false,
+    });
+    upstreamHeaders['X-Org-Chart-Likely-Browser'] = '1';
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 25000);
@@ -45,10 +49,7 @@ export async function GET(request: NextRequest) {
       {
         method: 'GET',
         signal: controller.signal,
-        headers: {
-          ...(authHeader && { Authorization: authHeader }),
-          ...(cookieHeader && { Cookie: cookieHeader }),
-        },
+        headers: upstreamHeaders,
       },
     );
 

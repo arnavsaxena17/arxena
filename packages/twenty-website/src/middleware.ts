@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 
 import {
     applyOrgChartLikelyBrowserRequestHeader,
+    applyOrgChartVerifiedBotRequestHeader,
     checkOrgChartApiGuard,
     orgChartApiGuardToResponse,
     resolveOrgChartRateLimitProfile,
@@ -34,23 +35,28 @@ function isMalformedServerActionStylePost(request: NextRequest): boolean {
   return true;
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   if (isMalformedServerActionStylePost(request)) {
     return new NextResponse(null, { status: 400 });
   }
 
   const pathname = request.nextUrl.pathname;
   const orgChartProfile = resolveOrgChartRateLimitProfile(pathname);
-  if (orgChartProfile) {
-    const guardResult = checkOrgChartApiGuard(request.headers, pathname);
-    if (!guardResult.allowed) {
-      return orgChartApiGuardToResponse(guardResult, orgChartProfile);
-    }
+  const guardResult = orgChartProfile
+    ? await checkOrgChartApiGuard(request.headers, pathname)
+    : null;
+
+  if (orgChartProfile && guardResult && !guardResult.allowed) {
+    return orgChartApiGuardToResponse(guardResult, orgChartProfile);
   }
 
   const requestHeaders = new Headers(request.headers);
-  if (orgChartProfile) {
+  if (orgChartProfile && guardResult?.allowed) {
     applyOrgChartLikelyBrowserRequestHeader(requestHeaders);
+    applyOrgChartVerifiedBotRequestHeader(
+      requestHeaders,
+      guardResult.isVerifiedBot,
+    );
   }
 
   // Bots and proxied requests often omit Origin. Next.js Server Actions validation
@@ -61,7 +67,7 @@ export function middleware(request: NextRequest) {
       requestHeaders.get('x-forwarded-proto') ||
       (request.url.startsWith('https') ? 'https' : 'http');
     const host =
-      requestHeaders.get('x-forwarded-host') || requestHeaders.get('host') || 'arxena.com';
+      requestHeaders.get('x-forwarded-host') || request.headers.get('host') || 'arxena.com';
     requestHeaders.set('origin', `${proto}://${host}`);
   }
 

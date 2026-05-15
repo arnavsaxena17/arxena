@@ -4,17 +4,27 @@ import { Request } from 'express';
 import { Repository } from 'typeorm';
 
 import { OrgChartClientIpRuleEntity } from 'src/engine/core-modules/org-chart/org-chart-client-ip-rule.entity';
+import {
+  isCidrNotation,
+  isIpv4InCidr,
+  normalizeIpOrCidr,
+} from 'src/engine/core-modules/org-chart/utils/org-chart-ip-cidr.util';
 
 export type OrgChartClientIpDecision = {
   blocked: boolean;
   serveCachedOnly: boolean;
 };
 
-const MAX_IP_LEN = 64;
 const MAX_USER_AGENT_LEN = 1024;
+const RULES_CACHE_TTL_MS = 60_000;
 
 @Injectable()
 export class OrgChartClientIpService {
+  private rulesCache: {
+    rules: OrgChartClientIpRuleEntity[];
+    loadedAt: number;
+  } | null = null;
+
   constructor(
     @InjectRepository(OrgChartClientIpRuleEntity, 'core')
     private readonly ruleRepository: Repository<OrgChartClientIpRuleEntity>,
@@ -68,27 +78,27 @@ export class OrgChartClientIpService {
     const fromWebsiteProxy =
       OrgChartClientIpService.headerString(req, 'x-org-chart-client-ip');
     if (fromWebsiteProxy && fromWebsiteProxy.trim().length > 0) {
-      return OrgChartClientIpService.normalizeIp(fromWebsiteProxy);
+      return OrgChartClientIpService.normalizeClientIp(fromWebsiteProxy);
     }
     const cfViewer = OrgChartClientIpService.parseCloudFrontViewerAddress(
       OrgChartClientIpService.headerString(req, 'cloudfront-viewer-address'),
     );
     if (cfViewer) {
-      return OrgChartClientIpService.normalizeIp(cfViewer);
+      return OrgChartClientIpService.normalizeClientIp(cfViewer);
     }
     const cfConnecting = OrgChartClientIpService.headerString(
       req,
       'cf-connecting-ip',
     )?.trim();
     if (cfConnecting) {
-      return OrgChartClientIpService.normalizeIp(cfConnecting);
+      return OrgChartClientIpService.normalizeClientIp(cfConnecting);
     }
     const trueClient = OrgChartClientIpService.headerString(
       req,
       'true-client-ip',
     )?.trim();
     if (trueClient) {
-      return OrgChartClientIpService.normalizeIp(trueClient);
+      return OrgChartClientIpService.normalizeClientIp(trueClient);
     }
     const forwarded = OrgChartClientIpService.headerString(
       req,
@@ -97,7 +107,7 @@ export class OrgChartClientIpService {
     if (forwarded && forwarded.trim().length > 0) {
       const first = forwarded.split(',')[0]?.trim();
       if (first) {
-        return OrgChartClientIpService.normalizeIp(first);
+        return OrgChartClientIpService.normalizeClientIp(first);
       }
     }
     const realIp = OrgChartClientIpService.headerString(
@@ -105,11 +115,11 @@ export class OrgChartClientIpService {
       'x-real-ip',
     )?.trim();
     if (realIp) {
-      return OrgChartClientIpService.normalizeIp(realIp);
+      return OrgChartClientIpService.normalizeClientIp(realIp);
     }
     const socketIp = req.socket?.remoteAddress;
     if (socketIp) {
-      return OrgChartClientIpService.normalizeIp(
+      return OrgChartClientIpService.normalizeClientIp(
         socketIp.replace(/^::ffff:/, ''),
       );
     }
@@ -146,17 +156,55 @@ export class OrgChartClientIpService {
     return trimmed;
   }
 
-  static normalizeIp(raw: string): string | null {
-    const trimmed = raw.trim();
-    if (!trimmed || trimmed.length > MAX_IP_LEN) {
-      return null;
+  /** Normalizes a client IPv4 address (not CIDR). */
+  static normalizeClientIp(raw: string): string | null {
+    return normalizeIpOrCidr(raw);
+  }
+
+  private invalidateRulesCache(): void {
+    this.rulesCache = null;
+  }
+
+  private async loadRulesCached(): Promise<OrgChartClientIpRuleEntity[]> {
+    const now = Date.now();
+    if (
+      this.rulesCache &&
+      now - this.rulesCache.loadedAt < RULES_CACHE_TTL_MS
+    ) {
+      return this.rulesCache.rules;
     }
-    return trimmed;
+    const rules = await this.ruleRepository.find({
+      order: { updatedAt: 'DESC' },
+    });
+    this.rulesCache = { rules, loadedAt: now };
+    return rules;
+  }
+
+  private findRuleForClientIp(
+    clientIp: string,
+    rules: OrgChartClientIpRuleEntity[],
+  ): OrgChartClientIpRuleEntity | null {
+    const exact = rules.find(
+      (rule) =>
+        !isCidrNotation(rule.ipAddress) && rule.ipAddress === clientIp,
+    );
+    if (exact) {
+      return exact;
+    }
+    for (const rule of rules) {
+      if (
+        isCidrNotation(rule.ipAddress) &&
+        isIpv4InCidr(clientIp, rule.ipAddress)
+      ) {
+        return rule;
+      }
+    }
+    return null;
   }
 
   /**
-   * When a rule exists for this IP, increments totalRequests and returns flags.
-   * Returns null when the IP is not on the watch list.
+   * When a rule exists for this IP (exact or CIDR match), increments totalRequests
+   * and returns flags. Returns null when no rule matches.
    */
   async recordRequestAndGetDecision(
     clientIp: string | null,
@@ -165,14 +213,13 @@ export class OrgChartClientIpService {
     if (!clientIp) {
       return null;
     }
-    const normalized = OrgChartClientIpService.normalizeIp(clientIp);
+    const normalized = OrgChartClientIpService.normalizeClientIp(clientIp);
     if (!normalized) {
       return null;
     }
 
-    const existing = await this.ruleRepository.findOne({
-      where: { ipAddress: normalized },
-    });
+    const rules = await this.loadRulesCached();
+    const existing = this.findRuleForClientIp(normalized, rules);
     if (!existing) {
       return null;
     }
@@ -206,14 +253,13 @@ export class OrgChartClientIpService {
     if (!clientIp) {
       return;
     }
-    const normalized = OrgChartClientIpService.normalizeIp(clientIp);
+    const normalized = OrgChartClientIpService.normalizeClientIp(clientIp);
     if (!normalized) {
       return;
     }
 
-    const existing = await this.ruleRepository.findOne({
-      where: { ipAddress: normalized },
-    });
+    const rules = await this.loadRulesCached();
+    const existing = this.findRuleForClientIp(normalized, rules);
     if (!existing) {
       return;
     }
@@ -241,32 +287,39 @@ export class OrgChartClientIpService {
     isBlocked: boolean;
     serveCachedOnly: boolean;
   }): Promise<OrgChartClientIpRuleEntity> {
-    const normalized = OrgChartClientIpService.normalizeIp(input.ipAddress);
+    const normalized = normalizeIpOrCidr(input.ipAddress);
     if (!normalized) {
-      throw new BadRequestException('Invalid IP address');
+      throw new BadRequestException(
+        'Invalid IP address or CIDR (use IPv4 or e.g. 43.173.0.0/16)',
+      );
     }
 
     const existing = await this.ruleRepository.findOne({
       where: { ipAddress: normalized },
     });
+    let saved: OrgChartClientIpRuleEntity;
     if (existing) {
       existing.isBlocked = input.isBlocked;
       existing.serveCachedOnly = input.serveCachedOnly;
-      return this.ruleRepository.save(existing);
+      saved = await this.ruleRepository.save(existing);
+    } else {
+      saved = await this.ruleRepository.save(
+        this.ruleRepository.create({
+          ipAddress: normalized,
+          isBlocked: input.isBlocked,
+          serveCachedOnly: input.serveCachedOnly,
+          totalRequests: 0,
+          chartsServed: 0,
+        }),
+      );
     }
-
-    const created = this.ruleRepository.create({
-      ipAddress: normalized,
-      isBlocked: input.isBlocked,
-      serveCachedOnly: input.serveCachedOnly,
-      totalRequests: 0,
-      chartsServed: 0,
-    });
-    return this.ruleRepository.save(created);
+    this.invalidateRulesCache();
+    return saved;
   }
 
   async deleteRule(id: string): Promise<boolean> {
     const res = await this.ruleRepository.delete({ id });
+    this.invalidateRulesCache();
     return (res.affected ?? 0) > 0;
   }
 
@@ -278,6 +331,7 @@ export class OrgChartClientIpService {
     rule.totalRequests = 0;
     rule.chartsServed = 0;
     await this.ruleRepository.save(rule);
+    this.invalidateRulesCache();
     return true;
   }
 }

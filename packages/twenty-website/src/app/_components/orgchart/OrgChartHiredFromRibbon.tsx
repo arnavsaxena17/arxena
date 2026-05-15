@@ -181,7 +181,10 @@ function RibbonCompanyLink({ id, name, website }: RibbonCompanyLinkProps) {
   const logoAbbreviation = getLogoAbbreviation(website, displayName);
 
   return (
-    <StyledRibbonLink href={`/org-chart/${encodeURIComponent(id)}`}>
+    <StyledRibbonLink
+      href={`/org-chart/${encodeURIComponent(id)}`}
+      prefetch={false}
+    >
       {logoUrl && !logoError ? (
         <StyledRibbonLogo
           src={logoUrl}

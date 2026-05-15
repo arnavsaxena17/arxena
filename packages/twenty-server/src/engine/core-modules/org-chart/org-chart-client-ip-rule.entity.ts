@@ -19,6 +19,7 @@ export class OrgChartClientIpRuleEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  /** Single IPv4 (203.0.113.10) or IPv4 CIDR (43.173.0.0/16). */
   @Field()
   @Column({ type: 'varchar', length: 64 })
   ipAddress: string;

@@ -1,8 +1,15 @@
-import { isLikelyBrowserRequest } from 'twenty-shared';
+import {
+  isLikelyBrowserRequest,
+  isVerifiedSearchBot,
+  ORG_CHART_VERIFIED_BOT_HEADER,
+} from 'twenty-shared';
 
 import { getClientIpFromHeaders, isBlockedBot } from '@/lib/bot-detection';
 
 export const ORG_CHART_LIKELY_BROWSER_HEADER = 'x-org-chart-likely-browser';
+export { ORG_CHART_VERIFIED_BOT_HEADER };
+
+export type OrgChartGuardMode = 'log_only' | 'enforce';
 
 export type OrgChartRateLimitProfile =
   | 'sitemap'
@@ -11,7 +18,7 @@ export type OrgChartRateLimitProfile =
   | 'page';
 
 export type OrgChartApiGuardResult =
-  | { allowed: true; isLikelyBrowser: boolean }
+  | { allowed: true; isLikelyBrowser: boolean; isVerifiedBot: boolean }
   | { allowed: false; status: number; body: Record<string, unknown> };
 
 type RateBucket = {
@@ -41,6 +48,14 @@ const isGuardDisabled = (): boolean =>
   process.env.ORG_CHART_API_GUARD_DISABLED === '1' ||
   process.env.ORG_CHART_API_GUARD_DISABLED === 'true';
 
+export const getOrgChartGuardMode = (): OrgChartGuardMode => {
+  const raw = process.env.ORG_CHART_GUARD_MODE?.trim().toLowerCase();
+  if (raw === 'enforce') {
+    return 'enforce';
+  }
+  return 'log_only';
+};
+
 const getMaxRequestsForProfile = (profile: OrgChartRateLimitProfile): number => {
   switch (profile) {
     case 'sitemap':
@@ -51,15 +66,12 @@ const getMaxRequestsForProfile = (profile: OrgChartRateLimitProfile): number => 
     case 'expensive':
       return parsePositiveInt(
         process.env.ORG_CHART_API_RATE_LIMIT_EXPENSIVE_MAX,
-        20,
+        5,
       );
     case 'page':
-      return parsePositiveInt(
-        process.env.ORG_CHART_PAGE_RATE_LIMIT_MAX,
-        120,
-      );
+      return parsePositiveInt(process.env.ORG_CHART_PAGE_RATE_LIMIT_MAX, 30);
     case 'default':
-      return parsePositiveInt(process.env.ORG_CHART_API_RATE_LIMIT_MAX, 60);
+      return parsePositiveInt(process.env.ORG_CHART_API_RATE_LIMIT_MAX, 30);
   }
 };
 
@@ -99,6 +111,23 @@ const consumeRateLimit = (
   return { allowed: true, retryAfterSeconds: 0 };
 };
 
+const shouldApplyClientAccessPolicy = (
+  profile: OrgChartRateLimitProfile,
+): boolean => profile !== 'sitemap';
+
+const logSuspectedScraper = (input: {
+  pathname: string;
+  clientIp: string;
+  userAgent: string | null;
+}): void => {
+  console.warn('[OrgChart guard] suspected_scraper', {
+    path: input.pathname,
+    clientIp: input.clientIp,
+    userAgent: input.userAgent?.slice(0, 200) ?? '(none)',
+    mode: getOrgChartGuardMode(),
+  });
+};
+
 export const resolveOrgChartRateLimitProfile = (
   pathname: string,
 ): OrgChartRateLimitProfile | null => {
@@ -136,13 +165,17 @@ export const resolveIsLikelyBrowser = (headers: Headers): boolean => {
   return isLikelyBrowserRequest(headers);
 };
 
-export const checkOrgChartApiGuard = (
+export const checkOrgChartApiGuard = async (
   headers: Headers,
   pathname: string,
-): OrgChartApiGuardResult => {
+): Promise<OrgChartApiGuardResult> => {
   const profile = resolveOrgChartRateLimitProfile(pathname);
   if (!profile || isGuardDisabled()) {
-    return { allowed: true, isLikelyBrowser: resolveIsLikelyBrowser(headers) };
+    const isLikelyBrowser = resolveIsLikelyBrowser(headers);
+    const clientIp = getClientIpFromHeaders(headers);
+    const isVerifiedBot =
+      clientIp !== null ? await isVerifiedSearchBot(clientIp) : false;
+    return { allowed: true, isLikelyBrowser, isVerifiedBot };
   }
 
   const forwardedUserAgent = headers.get('x-forwarded-user-agent');
@@ -171,7 +204,30 @@ export const checkOrgChartApiGuard = (
     };
   }
 
-  return { allowed: true, isLikelyBrowser: resolveIsLikelyBrowser(headers) };
+  const isLikelyBrowser = resolveIsLikelyBrowser(headers);
+  const isVerifiedBot =
+    clientIp !== 'unknown'
+      ? await isVerifiedSearchBot(clientIp)
+      : false;
+
+  if (
+    !shouldApplyClientAccessPolicy(profile) ||
+    isLikelyBrowser ||
+    isVerifiedBot
+  ) {
+    return { allowed: true, isLikelyBrowser, isVerifiedBot };
+  }
+
+  if (getOrgChartGuardMode() === 'enforce') {
+    return {
+      allowed: false,
+      status: 403,
+      body: { status: 'error', message: 'Forbidden' },
+    };
+  }
+
+  logSuspectedScraper({ pathname, clientIp, userAgent });
+  return { allowed: true, isLikelyBrowser: false, isVerifiedBot: false };
 };
 
 export const applyOrgChartLikelyBrowserRequestHeader = (
@@ -184,6 +240,13 @@ export const applyOrgChartLikelyBrowserRequestHeader = (
   );
 };
 
+export const applyOrgChartVerifiedBotRequestHeader = (
+  requestHeaders: Headers,
+  isVerifiedBot: boolean,
+): void => {
+  requestHeaders.set(ORG_CHART_VERIFIED_BOT_HEADER, isVerifiedBot ? '1' : '0');
+};
+
 export const orgChartApiGuardToResponse = (
   result: Extract<OrgChartApiGuardResult, { allowed: false }>,
   profile: OrgChartRateLimitProfile,
@@ -193,11 +256,20 @@ export const orgChartApiGuardToResponse = (
     headers['Retry-After'] = String(result.body.retryAfterSeconds);
   }
 
-  if (profile === 'page') {
+  if (profile === 'page' && result.status === 429) {
     return new Response('Too Many Requests', {
       status: result.status,
       headers: {
         ...headers,
+        'Content-Type': 'text/plain; charset=utf-8',
+      },
+    });
+  }
+
+  if (profile === 'page' && result.status === 403) {
+    return new Response('Forbidden', {
+      status: result.status,
+      headers: {
         'Content-Type': 'text/plain; charset=utf-8',
       },
     });

@@ -14,7 +14,10 @@ import {
 } from '@nestjs/common';
 
 import { Request, Response } from 'express';
-import { isLikelyBrowserRequest } from 'twenty-shared';
+import {
+  isLikelyBrowserLogoRequest,
+  isLikelyBrowserRequest,
+} from 'twenty-shared';
 import { v4 as uuidV4 } from 'uuid';
 
 import { ApifyEmployeeCountService } from 'src/engine/core-modules/apify/services/apify-employee-count.service';
@@ -57,6 +60,10 @@ import { OrgChartS3Service } from '../services/orgchart-s3.service';
 import { PythonOrgChartService } from '../services/python-org-chart.service';
 import { resolveFirstAutocompleteSource } from '../utils/first-autocomplete-source.util';
 import { isOrgChartPdlProxyAuthorized } from '../utils/org-chart-pdl-proxy.util';
+import {
+  isLikelyBrowserOrgChartRequest,
+  shouldDenyUnauthenticatedOrgChartAccess,
+} from '../utils/org-chart-public-access.util';
 import { applyAsOfSnapshotToCandidates } from '../utils/orgchart-asof-snapshot.util';
 import { buildCompanyOrgChartCandidateListLogicalCacheKey } from '../utils/orgchart-cache-keys.util';
 import {
@@ -486,7 +493,10 @@ export class OrgChartController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    if (!isLikelyBrowserRequest(req.headers)) {
+    if (
+      !isLikelyBrowserOrgChartRequest(req) &&
+      !isLikelyBrowserLogoRequest(req.headers)
+    ) {
       res.status(404).send();
 
       return;
@@ -1604,8 +1614,12 @@ export class OrgChartController {
     }
     const serveCachedOnly = ipDecision?.serveCachedOnly === true;
 
+    const authToken = this.getAuthToken(req);
+    if (shouldDenyUnauthenticatedOrgChartAccess(req, Boolean(authToken))) {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+
     try {
-      const authToken = this.getAuthToken(req);
       const firstSourceRequested = resolveFirstAutocompleteSource({
         authToken,
       });
