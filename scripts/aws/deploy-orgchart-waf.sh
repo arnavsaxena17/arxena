@@ -47,6 +47,19 @@ import os
 def b64(value: str) -> str:
     return base64.b64encode(value.encode("utf-8")).decode("utf-8")
 
+def uri_path_contains(fragment: str) -> dict:
+    return {
+        "ByteMatchStatement": {
+            "SearchString": b64(fragment),
+            "FieldToMatch": {"UriPath": {}},
+            "TextTransformations": [{"Priority": 0, "Type": "NONE"}],
+            "PositionalConstraint": "CONTAINS",
+        }
+    }
+
+def uri_path_excludes(fragment: str) -> dict:
+    return {"NotStatement": {"Statement": uri_path_contains(fragment)}}
+
 ip_set_arn = os.environ["IP_SET_ARN"]
 rules = [
   {
@@ -92,11 +105,11 @@ rules = [
         "Limit": 60,
         "AggregateKeyType": "IP",
         "ScopeDownStatement": {
-          "ByteMatchStatement": {
-            "SearchString": b64("/api/org-chart"),
-            "FieldToMatch": {"UriPath": {}},
-            "TextTransformations": [{"Priority": 0, "Type": "NONE"}],
-            "PositionalConstraint": "CONTAINS",
+          "AndStatement": {
+            "Statements": [
+              uri_path_contains("/api/org-chart"),
+              uri_path_excludes("company-logo"),
+            ]
           }
         },
       }

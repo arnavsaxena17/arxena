@@ -144,10 +144,12 @@ export const resolveOrgChartRateLimitProfile = (
   }
   if (
     pathname.includes('/autocomplete') ||
-    pathname.includes('/company-logo') ||
     pathname.includes('/employee-count')
   ) {
     return 'expensive';
+  }
+  if (pathname.includes('/company-logo')) {
+    return null;
   }
   if (pathname.startsWith('/api/org-chart')) {
     return 'default';
