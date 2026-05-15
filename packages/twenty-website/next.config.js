@@ -97,6 +97,7 @@ const nextConfig = {
       'twenty-orgchart': orgchartDist,
       'twenty-orgchart/company-search': path.join(orgchartDist, 'company-search.js'),
     };
+
     if (!isServer) {
       config.plugins.push(
         new webpack.ProvidePlugin({

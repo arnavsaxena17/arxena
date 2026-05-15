@@ -38,6 +38,28 @@ const path = require('path');
 const KILL_SWITCH = 'Transform.prototype.Ci=Transform.prototype.Mu';
 const NOOP_EXPR   = '(0)'; // safe no-op expression
 
+/** Replace a minified `static Name=()=>{ ... }` with a no-op, preserving surrounding syntax. */
+function replaceStaticArrowMethod(src, signature, replacement) {
+  const start = src.indexOf(signature);
+  if (start < 0) return src;
+
+  const openBrace = start + signature.length - 1;
+  if (src[openBrace] !== '{') return src;
+
+  let depth = 0;
+  for (let i = openBrace; i < src.length; i++) {
+    if (src[i] === '{') depth++;
+    else if (src[i] === '}') {
+      depth--;
+      if (depth === 0) {
+        return src.slice(0, start) + replacement + src.slice(i + 1);
+      }
+    }
+  }
+
+  return src;
+}
+
 // Debug bundles use different internal names:
 //   RP→Yk, IO→KO, Ph→Aa (static), Ph()→Aa() (DiagramHelper method),
 //   jw→Zw, Ci→De, Mu→Lu
@@ -70,20 +92,9 @@ for (const filePath of files) {
   let src = fs.readFileSync(filePath, 'utf8');
   const original = src;
 
-  // ── 1. Neutralize Diagram.RP ─────────────────────────────────────────
-  const rpStart = src.indexOf('static RP=()=>{');
-  const ioStart = src.indexOf('static IO=');
-  if (rpStart > 0 && ioStart > rpStart) {
-    src = src.slice(0, rpStart) + 'static RP=()=>{};' + src.slice(ioStart);
-  }
-
-  // ── 2. Neutralize Diagram.IO ─────────────────────────────────────────
-  const ioFnStart = src.indexOf('static IO=()=>{');
-  const diagHelperStart = src.indexOf('class DiagramHelper{', ioFnStart);
-  if (ioFnStart > 0 && diagHelperStart > ioFnStart) {
-    // Keep the final '}' that closes the enclosing Diagram class
-    src = src.slice(0, ioFnStart) + 'static IO=()=>{};' + src.slice(diagHelperStart - 1);
-  }
+  // ── 1–2. Neutralize Diagram.RP / Diagram.IO ─────────────────────────
+  src = replaceStaticArrowMethod(src, 'static RP=()=>{', 'static RP=()=>{};');
+  src = replaceStaticArrowMethod(src, 'static IO=()=>{', 'static IO=()=>{};');
 
   // ── 3. Patch DiagramHelper.Ph() to always return false ───────────────
   // EO() (the license validator) has an early-return branch when no key is
@@ -104,15 +115,8 @@ for (const filePath of files) {
     filePath.endsWith('go-debug-module.js');
   if (isDebug) {
     // Yk = RP, KO = IO, Aa() = Ph() method, De/Lu = Ci/Mu
-    const ykStart = src.indexOf('static Yk=()=>{');
-    const koPrefix = src.indexOf('static KO=');
-    if (ykStart > 0 && koPrefix > ykStart)
-      src = src.slice(0, ykStart) + 'static Yk=()=>{};' + src.slice(koPrefix);
-
-    const koStart = src.indexOf('static KO=()=>{');
-    const dhStart = src.indexOf('class DiagramHelper{', koStart);
-    if (koStart > 0 && dhStart > koStart)
-      src = src.slice(0, koStart) + 'static KO=()=>{};' + src.slice(dhStart - 1);
+    src = replaceStaticArrowMethod(src, 'static Yk=()=>{', 'static Yk=()=>{};');
+    src = replaceStaticArrowMethod(src, 'static KO=()=>{', 'static KO=()=>{};');
 
     if (src.includes(DEBUG_NAMES.PH_ORIG))
       src = src.split(DEBUG_NAMES.PH_ORIG).join(DEBUG_NAMES.PH_PATCHED);
