@@ -1,13 +1,24 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
+import { isVerifiedSearchBot } from 'twenty-shared';
+
+import { getClientIpFromHeaders } from '@/lib/bot-detection';
 import {
-    applyOrgChartLikelyBrowserRequestHeader,
-    applyOrgChartVerifiedBotRequestHeader,
-    checkOrgChartApiGuard,
-    orgChartApiGuardToResponse,
-    resolveOrgChartRateLimitProfile,
+  applyOrgChartLikelyBrowserRequestHeader,
+  applyOrgChartVerifiedBotRequestHeader,
+  checkOrgChartApiGuard,
+  orgChartApiGuardToResponse,
+  resolveIsLikelyBrowser,
+  resolveOrgChartRateLimitProfile,
 } from '@/lib/org-chart-api-guard';
+import {
+  getArxStaticCookieOptions,
+  hasArxStaticAssetCookie,
+  isOrgChartStaticAssetRequest,
+  ORG_CHART_STATIC_ONLY_HEADER,
+  resolveOrgChartStaticOnly,
+} from '@/lib/org-chart-static-only';
 
 /**
  * Next.js treats POST + application/x-www-form-urlencoded as a potential Server Action
@@ -35,7 +46,35 @@ function isMalformedServerActionStylePost(request: NextRequest): boolean {
   return true;
 }
 
+function handleNextStaticAssetGate(request: NextRequest): NextResponse | null {
+  if (!request.nextUrl.pathname.startsWith('/_next/static')) {
+    return null;
+  }
+
+  if (hasArxStaticAssetCookie(request.cookies)) {
+    return NextResponse.next();
+  }
+
+  const referer = request.headers.get('referer');
+  if (!isOrgChartStaticAssetRequest(referer)) {
+    return NextResponse.next();
+  }
+
+  return new NextResponse(null, { status: 403 });
+}
+
+function isOrgChartDocumentPath(pathname: string): boolean {
+  return (
+    pathname === '/org-chart' || pathname.startsWith('/org-chart/')
+  );
+}
+
 export async function middleware(request: NextRequest) {
+  const staticAssetGate = handleNextStaticAssetGate(request);
+  if (staticAssetGate) {
+    return staticAssetGate;
+  }
+
   if (isMalformedServerActionStylePost(request)) {
     return new NextResponse(null, { status: 400 });
   }
@@ -51,23 +90,42 @@ export async function middleware(request: NextRequest) {
   }
 
   const requestHeaders = new Headers(request.headers);
-  if (orgChartProfile && guardResult?.allowed) {
+  const guardAllowed = guardResult?.allowed === true ? guardResult : null;
+  const isLikelyBrowser =
+    guardAllowed?.isLikelyBrowser ?? resolveIsLikelyBrowser(request.headers);
+
+  let isVerifiedBot = guardAllowed?.isVerifiedBot ?? false;
+  if (!guardResult && isOrgChartDocumentPath(pathname)) {
+    const clientIp = getClientIpFromHeaders(request.headers);
+    isVerifiedBot =
+      clientIp !== null ? await isVerifiedSearchBot(clientIp) : false;
+  }
+
+  const staticOnly = resolveOrgChartStaticOnly({
+    headers: request.headers,
+    isVerifiedBot,
+  });
+
+  if (isOrgChartDocumentPath(pathname)) {
+    requestHeaders.set(ORG_CHART_STATIC_ONLY_HEADER, staticOnly ? '1' : '0');
+  }
+
+  if (orgChartProfile && guardAllowed) {
     applyOrgChartLikelyBrowserRequestHeader(requestHeaders);
     applyOrgChartVerifiedBotRequestHeader(
       requestHeaders,
-      guardResult.isVerifiedBot,
+      guardAllowed.isVerifiedBot,
     );
   }
 
-  // Bots and proxied requests often omit Origin. Next.js Server Actions validation
-  // then fails with "Missing origin header" and can trigger "s is not a function".
-  // Set Origin from Host when missing so validation sees a same-origin value.
   if (!requestHeaders.get('origin')) {
     const proto =
       requestHeaders.get('x-forwarded-proto') ||
       (request.url.startsWith('https') ? 'https' : 'http');
     const host =
-      requestHeaders.get('x-forwarded-host') || request.headers.get('host') || 'arxena.com';
+      requestHeaders.get('x-forwarded-host') ||
+      request.headers.get('host') ||
+      'arxena.com';
     requestHeaders.set('origin', `${proto}://${host}`);
   }
 
@@ -75,7 +133,15 @@ export async function middleware(request: NextRequest) {
     request: { headers: requestHeaders },
   });
 
-  // CORS for API routes only (existing behavior)
+  if (
+    isOrgChartDocumentPath(pathname) &&
+    !staticOnly &&
+    isLikelyBrowser &&
+    request.method === 'GET'
+  ) {
+    res.cookies.set(getArxStaticCookieOptions());
+  }
+
   if (request.nextUrl.pathname.startsWith('/api/')) {
     res.headers.append('Access-Control-Allow-Origin', '*');
     res.headers.append('Access-Control-Allow-Credentials', 'true');
@@ -93,6 +159,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Run for all routes except static assets so missing Origin is fixed for crawlers (e.g. /org-chart/pandadoc)
-  matcher: ['/((?!_next/static|_next/image|favicon\\.ico).*)'],
+  matcher: ['/((?!_next/image|favicon\\.ico).*)'],
 };

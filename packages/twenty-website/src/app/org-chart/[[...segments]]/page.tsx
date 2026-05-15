@@ -14,6 +14,7 @@ import {
 import { getSignUpUrl } from '@/lib/auth-urls';
 import { getBaseUrl, getInternalAppUrl } from '@/lib/base-url';
 import { getClientIpFromHeaders } from '@/lib/bot-detection';
+import { readOrgChartStaticOnlyFromHeaders } from '@/lib/org-chart-static-only';
 import { decodeOverEncodedPath } from '@/lib/url-utils';
 
 import {
@@ -22,6 +23,7 @@ import {
 } from '@/app/_components/BreadcrumbList';
 import { OrgChartPageClient } from './OrgChartPageClient';
 import { OrgChartStructureSSR } from './OrgChartStructureSSR';
+import { StaticOrgChartPage } from './StaticOrgChartPage';
 
 export const dynamic = 'force-dynamic';
 
@@ -293,6 +295,7 @@ export default async function OrgChartPage({
 
   const headersList = await headers();
   const forwardedUserAgent = headersList.get('user-agent') ?? undefined;
+  const staticOnly = readOrgChartStaticOnlyFromHeaders(headersList);
 
   if (segments?.[0] === 'share') {
     const shareToken = segments?.[1] ? decodeOverEncodedPath(segments[1]) : '';
@@ -539,16 +542,36 @@ export default async function OrgChartPage({
     });
   }
 
+  const pageShellStyle = {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    minHeight: 0,
+    width: '100%',
+  };
+
+  if (staticOnly) {
+    return (
+      <div style={pageShellStyle}>
+        <BreadcrumbListSchema items={breadcrumbItems} baseUrl={baseUrl} />
+        <StaticOrgChartPage
+          companyId={companyId}
+          companyName={displayCompanyName}
+          website={website}
+          locationName={locationName}
+          industry={industry}
+          profileCount={profileCount}
+          linkedinUrl={linkedinUrl}
+          nodeDataArray={nodeDataArray}
+          signUpUrl={getSignUpUrl()}
+          breadcrumb={<BreadcrumbNav items={breadcrumbItems} />}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div
-      style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: 0,
-        width: '100%',
-      }}
-    >
+    <div style={pageShellStyle}>
       <BreadcrumbListSchema items={breadcrumbItems} baseUrl={baseUrl} />
       <OrgChartPageClient
         companyId={companyId}
