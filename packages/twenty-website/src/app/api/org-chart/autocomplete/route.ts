@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import {
+    buildOrgChartUpstreamHeaders,
+    rejectBlockedOrgChartBot,
+} from '@/lib/org-chart-proxy-headers';
+
 export const dynamic = 'force-dynamic';
 
 const getServerBaseUrl = () => {
@@ -19,17 +24,15 @@ async function proxyToBackend(
     query: Record<string, unknown>;
     params: Record<string, unknown>;
   },
-  headers: Headers,
+  requestHeaders: Headers,
 ) {
-  const authHeader = headers.get('authorization');
-  const cookieHeader = headers.get('cookie');
+  const upstreamHeaders = buildOrgChartUpstreamHeaders(requestHeaders);
 
   const response = await fetch(`${serverBaseUrl}${BACKEND_PATH}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(authHeader && { Authorization: authHeader }),
-      ...(cookieHeader && { Cookie: cookieHeader }),
+      ...upstreamHeaders,
     },
     body: JSON.stringify(body),
   });
@@ -39,6 +42,11 @@ async function proxyToBackend(
 }
 
 export async function GET(request: NextRequest) {
+  const blocked = rejectBlockedOrgChartBot(request);
+  if (blocked) {
+    return blocked;
+  }
+
   const serverBaseUrl = getServerBaseUrl();
   if (!serverBaseUrl) {
     return NextResponse.json(
@@ -69,6 +77,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const blocked = rejectBlockedOrgChartBot(request);
+  if (blocked) {
+    return blocked;
+  }
+
   const serverBaseUrl = getServerBaseUrl();
   if (!serverBaseUrl) {
     return NextResponse.json(

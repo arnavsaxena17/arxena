@@ -12,6 +12,7 @@ import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decora
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { ContactEnrichmentWaterfallService } from 'src/engine/core-modules/contact-enrichment/services/contact-enrichment-waterfall.service';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services/orgchart-cache.service';
@@ -41,6 +42,7 @@ export class OrgChartService {
   private readonly logger = new Logger(OrgChartService.name);
 
   constructor(
+    private readonly environmentService: EnvironmentService,
     private readonly arxenaBackend: ArxenaBackendService,
     private readonly pdlAutocomplete: PdlAutocompleteService,
     private readonly orgChartEsService: OrgChartEsService,
@@ -314,6 +316,7 @@ export class OrgChartService {
   async getCompanyAutocomplete(
     inputText: string,
     authToken?: string,
+    options?: { isPdlProxyAuthorized?: boolean },
   ): Promise<
     {
       name: string;
@@ -326,9 +329,21 @@ export class OrgChartService {
       count: number;
     }[]
   > {
-    const baseResults = this.pdlAutocomplete.isConfigured()
-      ? await this.pdlAutocomplete.getCompanyAutocomplete(inputText)
-      : await this.arxenaBackend.getCompanyAutocomplete(inputText, authToken);
+    const hasAuth = Boolean(authToken?.trim());
+    const allowPdl = hasAuth || options?.isPdlProxyAuthorized === true;
+
+    let baseResults: Awaited<
+      ReturnType<PdlAutocompleteService['getCompanyAutocomplete']>
+    > = [];
+
+    if (allowPdl && this.pdlAutocomplete.isConfigured()) {
+      baseResults = await this.pdlAutocomplete.getCompanyAutocomplete(inputText);
+    } else if (hasAuth) {
+      baseResults = await this.arxenaBackend.getCompanyAutocomplete(
+        inputText,
+        authToken,
+      );
+    }
 
     return mergeManualCompanyAutocompleteResults(inputText, baseResults);
   }

@@ -12,7 +12,8 @@ import {
 } from 'twenty-shared';
 
 import { getSignUpUrl } from '@/lib/auth-urls';
-import { getBaseUrl } from '@/lib/base-url';
+import { getBaseUrl, getInternalAppUrl } from '@/lib/base-url';
+import { getClientIpFromHeaders } from '@/lib/bot-detection';
 import { decodeOverEncodedPath } from '@/lib/url-utils';
 
 import {
@@ -24,6 +25,45 @@ import { OrgChartStructureSSR } from './OrgChartStructureSSR';
 
 export const dynamic = 'force-dynamic';
 
+function buildForwardedOrgChartHeaders(
+  requestHeaders: Headers,
+  forwardedUserAgent?: string,
+): Record<string, string> {
+  const forwardedHeaders: Record<string, string> = {};
+  const passthroughHeaderNames = [
+    'cloudfront-viewer-address',
+    'cf-connecting-ip',
+    'true-client-ip',
+    'x-forwarded-for',
+    'x-real-ip',
+    'referer',
+    'sec-fetch-site',
+    'sec-fetch-mode',
+    'sec-fetch-dest',
+    'sec-ch-ua',
+    'sec-ch-ua-mobile',
+    'sec-ch-ua-platform',
+  ] as const;
+
+  for (const headerName of passthroughHeaderNames) {
+    const value = requestHeaders.get(headerName);
+    if (value) {
+      forwardedHeaders[headerName] = value;
+    }
+  }
+
+  const clientIp = getClientIpFromHeaders(requestHeaders);
+  if (clientIp) {
+    forwardedHeaders['x-org-chart-client-ip'] = clientIp;
+  }
+
+  if (forwardedUserAgent) {
+    forwardedHeaders['x-forwarded-user-agent'] = forwardedUserAgent;
+  }
+
+  return forwardedHeaders;
+}
+
 type PageProps = {
   params: Promise<{ segments?: string[] }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -34,28 +74,12 @@ async function fetchSharedOrgChart(input: {
   accessKey: string;
   forwardedUserAgent?: string;
 }): Promise<Record<string, unknown> | null> {
-  const baseUrl = await getBaseUrl();
+  const baseUrl = await getInternalAppUrl();
   const requestHeaders = await headers();
-  const forwardedHeaders: Record<string, string> = {};
-  const passthroughHeaderNames = [
-    'cloudfront-viewer-address',
-    'cf-connecting-ip',
-    'true-client-ip',
-    'x-forwarded-for',
-    'x-real-ip',
-    'referer',
-  ] as const;
-
-  for (const headerName of passthroughHeaderNames) {
-    const value = requestHeaders.get(headerName);
-    if (value) {
-      forwardedHeaders[headerName] = value;
-    }
-  }
-
-  if (input.forwardedUserAgent) {
-    forwardedHeaders['x-forwarded-user-agent'] = input.forwardedUserAgent;
-  }
+  const forwardedHeaders = buildForwardedOrgChartHeaders(
+    requestHeaders,
+    input.forwardedUserAgent,
+  );
 
   const params = new URLSearchParams();
   params.set('k', input.accessKey);
@@ -90,7 +114,7 @@ async function fetchOrgChart(
     forwardedUserAgent?: string;
   },
 ): Promise<Record<string, unknown> | null> {
-  const baseUrl = await getBaseUrl();
+  const baseUrl = await getInternalAppUrl();
   const params = new URLSearchParams();
   if (options.companyName) params.set('companyName', options.companyName);
   if (options.website) params.set('website', options.website);
@@ -102,26 +126,10 @@ async function fetchOrgChart(
     companyId.toLowerCase() === 'yuga_labs' ? `manual/${companyId}` : companyId;
   const url = `${baseUrl}/api/org-chart/${path}${queryString ? `?${queryString}` : ''}`;
   const requestHeaders = await headers();
-  const forwardedHeaders: Record<string, string> = {};
-  const passthroughHeaderNames = [
-    'cloudfront-viewer-address',
-    'cf-connecting-ip',
-    'true-client-ip',
-    'x-forwarded-for',
-    'x-real-ip',
-    'referer',
-  ] as const;
-
-  for (const headerName of passthroughHeaderNames) {
-    const value = requestHeaders.get(headerName);
-    if (value) {
-      forwardedHeaders[headerName] = value;
-    }
-  }
-
-  if (options.forwardedUserAgent) {
-    forwardedHeaders['x-forwarded-user-agent'] = options.forwardedUserAgent;
-  }
+  const forwardedHeaders = buildForwardedOrgChartHeaders(
+    requestHeaders,
+    options.forwardedUserAgent,
+  );
 
   try {
     const res = await fetch(url, {

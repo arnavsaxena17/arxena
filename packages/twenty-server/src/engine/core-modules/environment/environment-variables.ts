@@ -2,17 +2,17 @@ import { LogLevel, Logger } from '@nestjs/common';
 
 import { plainToClass } from 'class-transformer';
 import {
-  IsBoolean,
-  IsDefined,
-  IsEnum,
-  IsIn,
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsUUID,
-  IsUrl,
-  ValidateIf,
-  validateSync,
+    IsBoolean,
+    IsDefined,
+    IsEnum,
+    IsIn,
+    IsNumber,
+    IsOptional,
+    IsString,
+    IsUUID,
+    IsUrl,
+    ValidateIf,
+    validateSync,
 } from 'class-validator';
 
 import { EmailDriver } from 'src/engine/core-modules/email/interfaces/email.interface';
@@ -1331,6 +1331,16 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   PDL_API_KEY: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    sensitive: true,
+    description:
+      'Shared secret for X-Org-Chart-Pdl-Proxy-Key. Only twenty-website (or other trusted proxies) should send this header. Required for unauthenticated PDL autocomplete; signed-in users are unaffected.',
+  })
+  @IsOptional()
+  @IsString()
+  ORG_CHART_PDL_PROXY_SECRET?: string;
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.Other,

@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import {
-    getRequestMetadata,
-    isBlockedBot,
-} from '@/lib/bot-detection';
+import { getRequestMetadata, isBlockedBot } from '@/lib/bot-detection';
+import { buildOrgChartUpstreamHeaders } from '@/lib/org-chart-proxy-headers';
 import { decodeOverEncodedPath } from '@/lib/url-utils';
 
 export const dynamic = 'force-dynamic';
@@ -79,11 +77,10 @@ export async function GET(
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        ...(authHeader && { Authorization: authHeader }),
-        ...(clientIp && { 'X-Org-Chart-Client-Ip': clientIp }),
-        ...(effectiveUserAgent && {
-          'X-Org-Chart-Client-User-Agent': effectiveUserAgent,
+        ...buildOrgChartUpstreamHeaders(request.headers, {
+          forwardedUserAgent: effectiveUserAgent,
         }),
+        ...(authHeader && { Authorization: authHeader }),
       },
     });
 

@@ -315,17 +315,27 @@ export const OrgChartPageClient = ({
     autocompletePath: '/autocomplete',
   });
 
-  // Always call PDL autocomplete to enrich with employee count, website, LinkedIn, etc.
-  // even when we have partial data from the org chart API (e.g. industry, location).
+  const hasSsrCompanyMetadata =
+    Boolean(linkedinUrl?.trim()) ||
+    Boolean(website?.trim()) ||
+    typeof profileCount === 'number';
+
+  // PDL autocomplete is auth-only on the server; skip client lookup when SSR has metadata.
   useEffect(() => {
+    if (hasSsrCompanyMetadata) {
+      return;
+    }
     const lookupKey = companyName?.trim() || companyId;
     if (lookupKey) {
       lookupByName(lookupKey);
     }
-  }, [lookupByName, companyName, companyId]);
+  }, [hasSsrCompanyMetadata, lookupByName, companyName, companyId]);
 
-  // Fetch exact employee count from Apify (LinkedIn) when we have company identifier
+  // Employee count uses Apify on the server; skip when SSR already has headcount metadata.
   useEffect(() => {
+    if (hasSsrCompanyMetadata) {
+      return;
+    }
     const linkedinUrlToUse = linkedinUrl ?? fallbackCompanyInfo?.linkedinUrl;
     const identifier = linkedinUrlToUse ?? companyId;
     if (!identifier?.trim()) return;
@@ -355,7 +365,13 @@ export const OrgChartPageClient = ({
     return () => {
       cancelled = true;
     };
-  }, [companyId, linkedinUrl, fallbackCompanyInfo?.linkedinUrl]);
+  }, [
+    companyId,
+    linkedinUrl,
+    fallbackCompanyInfo?.linkedinUrl,
+    hasSsrCompanyMetadata,
+    profileCount,
+  ]);
 
   const displayWebsite = website ?? fallbackCompanyInfo?.website;
   const displayLocationName = locationName ?? fallbackCompanyInfo?.locationName;

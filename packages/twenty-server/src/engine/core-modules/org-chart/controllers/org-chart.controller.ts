@@ -1,16 +1,16 @@
 import {
-    Body,
-    Controller,
-    Get,
-    HttpException,
-    HttpStatus,
-    Logger,
-    Param,
-    Post,
-    Query,
-    Req,
-    Res,
-    UseGuards,
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
 } from '@nestjs/common';
 
 import { Request, Response } from 'express';
@@ -21,6 +21,7 @@ import { ApifyService } from 'src/engine/core-modules/apify/services/apify.servi
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/services/bright-data-serp.service';
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
@@ -28,10 +29,10 @@ import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/typ
 import { ApolloIoRestService } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
 import {
-    ClassicPeopleSearchStrategyResult,
-    GeneratedSearchParameters,
-    RecruiterPeopleSearchStrategyResult,
-    SalesNavigatorPeopleSearchStrategyResult,
+  ClassicPeopleSearchStrategyResult,
+  GeneratedSearchParameters,
+  RecruiterPeopleSearchStrategyResult,
+  SalesNavigatorPeopleSearchStrategyResult,
 } from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
 import { constructSearchParamKey } from 'src/engine/core-modules/candidate-search/utils/search-parameter.utils';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -54,17 +55,18 @@ import { OrgChartTheOrgEnrichmentService } from '../services/org-chart-theorg-en
 import { OrgChartS3Service } from '../services/orgchart-s3.service';
 import { PythonOrgChartService } from '../services/python-org-chart.service';
 import { resolveFirstAutocompleteSource } from '../utils/first-autocomplete-source.util';
+import { isOrgChartPdlProxyAuthorized } from '../utils/org-chart-pdl-proxy.util';
 import { applyAsOfSnapshotToCandidates } from '../utils/orgchart-asof-snapshot.util';
 import { buildCompanyOrgChartCandidateListLogicalCacheKey } from '../utils/orgchart-cache-keys.util';
 import {
-    computeTimelineMetricsFromCandidates,
-    computeTimelineProfilesFromCandidates,
+  computeTimelineMetricsFromCandidates,
+  computeTimelineProfilesFromCandidates,
 } from '../utils/orgchart-timeline-metrics.util';
 import { normalizePersonForPythonOrgChartBuild } from '../utils/python-org-chart-person.util';
 import {
-    ApifyCompanyProfileActorItem,
-    generateSampleApifyCompanyProfileActorItems,
-    generateSampleContactOutPeopleSearchResponse,
+  ApifyCompanyProfileActorItem,
+  generateSampleApifyCompanyProfileActorItems,
+  generateSampleContactOutPeopleSearchResponse,
 } from '../utils/sample-company/sampleCompanyDatasets';
 
 @Controller('org-chart')
@@ -86,6 +88,7 @@ export class OrgChartController {
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly orgChartClientIpService: OrgChartClientIpService,
+    private readonly environmentService: EnvironmentService,
     private readonly pythonOrgChartService: PythonOrgChartService,
     private readonly brightDataSerpService: BrightDataSerpService,
     private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
@@ -132,6 +135,21 @@ export class OrgChartController {
     }
 
     return undefined;
+  }
+
+  private async assertOrgChartClientLookupAllowed(req: Request): Promise<void> {
+    const clientIp = OrgChartClientIpService.extractClientIpFromRequest(req);
+    const clientUserAgent =
+      OrgChartClientIpService.extractClientUserAgentFromRequest(req);
+    const ipDecision =
+      await this.orgChartClientIpService.recordRequestAndGetDecision(
+        clientIp,
+        clientUserAgent,
+      );
+
+    if (ipDecision?.blocked) {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
   }
 
   private parseExpectedEmployeeCountQuery(
@@ -934,7 +952,10 @@ export class OrgChartController {
   async getEmployeeCount(
     @Query('companyId') companyId: string,
     @Query('linkedinUrl') linkedinUrl: string,
+    @Req() req: Request,
   ) {
+    await this.assertOrgChartClientLookupAllowed(req);
+
     const normalizedCompanyId = companyId?.trim()
       ? this.normalizeCompanyId(companyId.trim())
       : '';
@@ -1149,11 +1170,19 @@ export class OrgChartController {
     @Body() dto: CompanyAutocompleteDto,
     @Req() req: Request,
   ) {
+    await this.assertOrgChartClientLookupAllowed(req);
+
     try {
       const authToken = this.getAuthToken(req);
       const results = await this.orgChartService.getCompanyAutocomplete(
         dto.input_text,
         authToken,
+        {
+          isPdlProxyAuthorized: isOrgChartPdlProxyAuthorized(
+            req,
+            this.environmentService,
+          ),
+        },
       );
 
       return { result: results, status: 'ok' };

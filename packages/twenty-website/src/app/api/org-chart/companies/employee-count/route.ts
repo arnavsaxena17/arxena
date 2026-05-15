@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import {
+    buildOrgChartUpstreamHeaders,
+    rejectBlockedOrgChartBot,
+} from '@/lib/org-chart-proxy-headers';
+
 export const dynamic = 'force-dynamic';
 
 const getServerBaseUrl = () => {
@@ -13,6 +18,11 @@ const getServerBaseUrl = () => {
 const BACKEND_PATH = '/org-chart/companies/employee-count';
 
 export async function GET(request: NextRequest) {
+  const blocked = rejectBlockedOrgChartBot(request);
+  if (blocked) {
+    return blocked;
+  }
+
   const serverBaseUrl = getServerBaseUrl();
   if (!serverBaseUrl) {
     return NextResponse.json(
@@ -38,6 +48,9 @@ export async function GET(request: NextRequest) {
   try {
     const response = await fetch(
       `${serverBaseUrl}${BACKEND_PATH}?${params.toString()}`,
+      {
+        headers: buildOrgChartUpstreamHeaders(request.headers),
+      },
     );
     const data = await response.json();
     return NextResponse.json(data, { status: response.status });

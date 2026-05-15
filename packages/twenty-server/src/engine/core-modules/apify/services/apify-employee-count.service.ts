@@ -55,14 +55,11 @@ export class ApifyEmployeeCountService {
       return cached;
     }
 
-    this.logger.log(`Employee count not cached for ${normalizedUrl}, running actor`);
-
     if (APIFY_EMPLOYEE_COUNT_PAUSED) {
-      this.logger.warn(
-        'ApifyEmployeeCountService is paused (free tier limit). Returning null for uncached lookups.',
-      );
       return null;
     }
+
+    this.logger.log(`Employee count not cached for ${normalizedUrl}, running actor`);
 
     if (!this.apifyService.isConfigured()) {
       this.logger.warn(
