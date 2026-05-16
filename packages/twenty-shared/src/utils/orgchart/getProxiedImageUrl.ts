@@ -54,6 +54,21 @@ const buildDeterministicProxyPath = (imageUrl: string): string | null => {
   return null;
 };
 
+/** Next.js website proxy uses `/api/org-chart` + `/image-proxy/...` (not `/org-chart/image-proxy`). */
+const resolveProxyPathForApiBase = (
+  proxyPath: string,
+  normalizedBase: string,
+): string => {
+  if (
+    normalizedBase.endsWith('/org-chart') &&
+    proxyPath.startsWith('/org-chart/image-proxy/')
+  ) {
+    return proxyPath.replace(/^\/org-chart/u, '');
+  }
+
+  return proxyPath;
+};
+
 export function getProxiedImageUrl(
   imageUrl: string | null | undefined,
   apiBaseUrl: string,
@@ -67,7 +82,9 @@ export function getProxiedImageUrl(
   const normalizedBase = apiBaseUrl.replace(/\/$/, '');
 
   if (trimmed.startsWith('/org-chart/image-proxy/')) {
-    return normalizedBase ? `${normalizedBase}${trimmed}` : trimmed;
+    const proxyPath = resolveProxyPathForApiBase(trimmed, normalizedBase);
+
+    return normalizedBase ? `${normalizedBase}${proxyPath}` : trimmed;
   }
 
   if (!trimmed.startsWith('http:') && !trimmed.startsWith('https:')) {
@@ -84,7 +101,9 @@ export function getProxiedImageUrl(
       return imageUrl;
     }
 
-    return normalizedBase ? `${normalizedBase}${proxyPath}` : proxyPath;
+    const resolvedPath = resolveProxyPathForApiBase(proxyPath, normalizedBase);
+
+    return normalizedBase ? `${normalizedBase}${resolvedPath}` : proxyPath;
   } catch {
     return imageUrl;
   }

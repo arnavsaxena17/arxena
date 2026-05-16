@@ -16,26 +16,27 @@ import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/Snac
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useUnipile } from '@/unipile/contexts/UnipileContext';
 import {
-  OrgChartDiagramHandle,
-  normalizeCompanyIdForUrl,
-  useCompanyInfoLookup,
-  useOrgChartData,
-  useOrgChartFilterOptions,
+    OrgChartDiagramHandle,
+    normalizeCompanyIdForUrl,
+    useCompanyInfoLookup,
+    useOrgChartData,
+    useOrgChartFilterOptions,
 } from 'twenty-orgchart';
 import { OrgChartNodeData, extractOrgData, toTitleCase } from 'twenty-shared';
 import { Mixpanel } from '~/mixpanel';
 
+import { getArxenaSiteBaseUrl } from '@/auth/utils/arxenaSiteUrl';
 import { OrgChartShareModal } from '../components/OrgChartShareModal';
 import { useJobOrgChartData } from '../hooks/useJobOrgChartData';
 import { useOrgChartActions } from '../hooks/useOrgChartActions';
 import { extractCompanyDomainFromWebsite } from '../utils/orgChartUtils';
 import {
-  StyledOrgChartConfirmDd,
-  StyledOrgChartConfirmDt,
-  StyledOrgChartConfirmIntro,
-  StyledOrgChartConfirmRow,
-  StyledOrgChartConfirmRows,
-  StyledOrgChartConfirmSummary,
+    StyledOrgChartConfirmDd,
+    StyledOrgChartConfirmDt,
+    StyledOrgChartConfirmIntro,
+    StyledOrgChartConfirmRow,
+    StyledOrgChartConfirmRows,
+    StyledOrgChartConfirmSummary,
 } from './ArxOrgChart.styles';
 import { ArxOrgChartView } from './ArxOrgChartView';
 import { useOrgChartBanners } from './hooks/useOrgChartBanners';
@@ -1479,7 +1480,7 @@ export const ArxOrgChartContainer = ({
           companyName={effectiveCompanyName ?? fallbackCompanyInfo?.companyName}
           accessToken={accessToken}
           serverBaseUrl={baseUrl}
-          arxenaSiteBaseUrl={process.env.REACT_APP_ARXENA_SITE_BASE_URL}
+          arxenaSiteBaseUrl={getArxenaSiteBaseUrl()}
         />
       ) : null}
     </>

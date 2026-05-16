@@ -156,8 +156,8 @@ export const SOLUTION_PAGES: MarketingDetailPage[] = [
     bulletsTitle: 'In practice',
   },
   {
-    slug: 'corporate-strategy',
-    title: 'Corporate strategy',
+    slug: 'corporate-hr',
+    title: 'Corporate HR',
     headline: 'Peer org structure as a live benchmark',
     metaDescription:
       'Benchmark how peers structure functions and invest headcount—before reorgs, big bets, or M&A.',

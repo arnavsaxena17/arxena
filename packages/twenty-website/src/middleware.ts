@@ -65,7 +65,10 @@ function handleNextStaticAssetGate(request: NextRequest): NextResponse | null {
 
 function isOrgChartDocumentPath(pathname: string): boolean {
   return (
-    pathname === '/org-chart' || pathname.startsWith('/org-chart/')
+    pathname === '/org-chart' ||
+    pathname.startsWith('/org-chart/') ||
+    pathname === '/org' ||
+    pathname.startsWith('/org/')
   );
 }
 

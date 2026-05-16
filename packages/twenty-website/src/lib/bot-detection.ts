@@ -27,6 +27,10 @@ const BLOCKED_BOT_PATTERNS = [
   /blexbot/i,
 ];
 
+/** Self-declared crawlers (bingbot, SeznamBot, GPTBot, etc.) — not treated as scrapers. */
+const DECLARED_BOT_UA_PATTERN =
+  /bot|crawler|spider|scraper|bytespider|petalbot/i;
+
 /**
  * Returns true if the User-Agent indicates an unauthorized crawler/scraper.
  * Only blocks when we have a positive match; empty/missing User-Agent is allowed
@@ -41,6 +45,21 @@ export function isBlockedBot(userAgent: string | null): boolean {
 
   return BLOCKED_BOT_PATTERNS.some((pattern) => pattern.test(ua));
 }
+
+/**
+ * User-Agent explicitly identifies as a bot/crawler (e.g. bingbot, SeznamBot).
+ * These are excluded from suspected_scraper logging and enforce-mode blocks.
+ */
+export const isDeclaredBotUserAgent = (userAgent: string | null): boolean => {
+  if (!userAgent || typeof userAgent !== 'string') {
+    return false;
+  }
+  const ua = userAgent.trim();
+  if (ua.length === 0) {
+    return false;
+  }
+  return DECLARED_BOT_UA_PATTERN.test(ua);
+};
 
 /**
  * CloudFront sends viewer IP as `IPv4:port` or `[IPv6]:port` in this header

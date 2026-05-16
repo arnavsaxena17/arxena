@@ -398,8 +398,18 @@ export default async function OrgChartPage({
         : undefined;
     const industry =
       typeof rawData?.industry === 'string' ? toTitleCase(rawData.industry) : undefined;
+    const website =
+      typeof rawData?.job_company_website === 'string'
+        ? rawData.job_company_website
+        : typeof rawData?.website === 'string'
+          ? rawData.website
+          : undefined;
     const linkedinUrl =
-      typeof rawData?.linkedin_url === 'string' ? rawData.linkedin_url : undefined;
+      typeof rawData?.job_company_linkedin_url === 'string'
+        ? rawData.job_company_linkedin_url
+        : typeof rawData?.linkedin_url === 'string'
+          ? rawData.linkedin_url
+          : undefined;
 
     return (
       <div
@@ -414,6 +424,9 @@ export default async function OrgChartPage({
         <OrgChartPageClient
           companyId={companyId}
           companyName={displayCompanyName}
+          website={website}
+          locationName={locationName}
+          industry={industry}
           profileCount={profileCount}
           linkedinUrl={linkedinUrl}
           nodeDataArray={nodeDataArray}
@@ -466,14 +479,14 @@ export default async function OrgChartPage({
     typeof resolvedSearchParams.companyName === 'string'
       ? resolvedSearchParams.companyName
       : undefined;
-  const website =
+  const websiteFromQuery =
     typeof resolvedSearchParams.website === 'string'
       ? resolvedSearchParams.website
       : undefined;
 
   const rawData = await fetchOrgChart(companyId, {
     companyName,
-    website,
+    website: websiteFromQuery,
     country: normalizedCountry?.toLowerCase(),
     functionRoot: normalizedFunctionRoot?.toLowerCase(),
     forwardedUserAgent,
@@ -514,10 +527,19 @@ export default async function OrgChartPage({
     typeof rawData?.industry === 'string'
       ? toTitleCase(rawData.industry)
       : undefined;
+  const website =
+    websiteFromQuery ??
+    (typeof rawData?.job_company_website === 'string'
+      ? rawData.job_company_website
+      : typeof rawData?.website === 'string'
+        ? rawData.website
+        : undefined);
   const linkedinUrl =
-    typeof rawData?.linkedin_url === 'string'
-      ? rawData.linkedin_url
-      : undefined;
+    typeof rawData?.job_company_linkedin_url === 'string'
+      ? rawData.job_company_linkedin_url
+      : typeof rawData?.linkedin_url === 'string'
+        ? rawData.linkedin_url
+        : undefined;
 
   const breadcrumbItems = [
     { name: 'Home', url: '/' },

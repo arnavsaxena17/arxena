@@ -118,4 +118,4 @@ export const hasArxStaticAssetCookie = (
 ): boolean => cookies.get(ARX_STATIC_ASSET_COOKIE)?.value === '1';
 
 export const isOrgChartStaticAssetRequest = (referer: string | null): boolean =>
-  Boolean(referer?.includes('/org-chart'));
+  Boolean(referer?.includes('/org-chart') || referer?.includes('/org/'));

@@ -9,6 +9,7 @@ import { ThemeProvider } from '@emotion/react';
 import styled from '@emotion/styled';
 
 import { useFreeTrialFlow } from '@/app/_components/free-trial/FreeTrialFlowProvider';
+import { FreeTrialModal } from '@/app/_components/free-trial/FreeTrialModal';
 import { useFreeTrialCta } from '@/app/_components/free-trial/useFreeTrialCta';
 import { OrgChartCompanyInfo } from '@/app/_components/orgchart/OrgChartCompanyInfo';
 import { OrgChartHiredFromRibbon } from '@/app/_components/orgchart/OrgChartHiredFromRibbon';
@@ -338,16 +339,16 @@ export const OrgChartPageClient = ({
 
   const { company: fallbackCompanyInfo, lookupByName } = useCompanyInfoLookup({
     baseUrl: '/api/org-chart',
-    accessToken: undefined,
     autocompletePath: '/autocomplete',
   });
 
   const hasSsrCompanyMetadata =
     Boolean(linkedinUrl?.trim()) ||
     Boolean(website?.trim()) ||
-    typeof profileCount === 'number';
+    Boolean(locationName?.trim()) ||
+    Boolean(industry?.trim());
 
-  // useCompanyInfoLookup calls PDL only when accessToken is set; public site relies on SSR metadata.
+  // When org-chart cache has no company metadata, fill header fields via public autocomplete (PDL proxy).
   useEffect(() => {
     if (hasSsrCompanyMetadata) {
       return;
@@ -518,14 +519,6 @@ export const OrgChartPageClient = ({
     [clickedNode?.headline, orgChartContext],
   );
 
-  const { onCtaClick: onNodeModalSignUpClick } = useFreeTrialCta({
-    source: 'org_chart_node_modal',
-    orgChartContext: nodeModalOrgChartContext,
-    legacyMixpanelEvent: 'sign_up_cta_click',
-    legacyGa4Event: 'sign_up_cta_click',
-    legacyGa4Props: { source: 'modal' },
-  });
-
   useEffect(() => {
     trackGA4Event('org_chart_view', {
       company_id: companyId,
@@ -682,17 +675,25 @@ export const OrgChartPageClient = ({
                   </StyledSearchOverlay>
                 </>
               )}
-              {clickedNode && (
+              {clickedNode && isFreeTrialFlow && (
+                <FreeTrialModal
+                  isOpen
+                  source="org_chart_node_modal"
+                  orgChartContext={nodeModalOrgChartContext}
+                  intro={{
+                    node: clickedNode,
+                    companyName,
+                    selectedCountry,
+                    selectedFunctionRoot,
+                  }}
+                  onClose={handleCloseSignUpModal}
+                />
+              )}
+              {clickedNode && !isFreeTrialFlow && (
                 <OrgChartSignUpModal
                   node={clickedNode}
                   onClose={handleCloseSignUpModal}
                   signUpUrl={signUpUrlWithContext}
-                  signUpCtaLabel={
-                    isFreeTrialFlow ? FREE_TRIAL_CTA_LABEL : 'Sign up!'
-                  }
-                  onSignUpClick={
-                    isFreeTrialFlow ? onNodeModalSignUpClick : undefined
-                  }
                   companyName={companyName}
                   selectedCountry={selectedCountry}
                   selectedFunctionRoot={selectedFunctionRoot}

@@ -46,7 +46,7 @@ export async function GET(
   const pathPart = decodeOverEncodedPath(rawPathPart);
   const nextParams = request.nextUrl.searchParams;
   const urlParams = new URL(request.url).searchParams;
-  const isImageProxy = pathPart === 'image-proxy';
+  const isImageProxy = pathPart.startsWith('image-proxy');
 
   const queryParams = new URLSearchParams();
   if (isImageProxy) {
@@ -83,15 +83,21 @@ export async function GET(
 
     const contentType = response.headers.get('content-type') ?? '';
 
-    if (isImageProxy && contentType.startsWith('image/')) {
-      const blob = await response.arrayBuffer();
-      return new NextResponse(blob, {
-        status: response.status,
-        headers: {
-          'Content-Type': contentType,
-          'Cross-Origin-Resource-Policy': 'cross-origin',
-        },
-      });
+    if (isImageProxy) {
+      if (contentType.startsWith('image/')) {
+        const blob = await response.arrayBuffer();
+        return new NextResponse(blob, {
+          status: response.status,
+          headers: {
+            'Content-Type': contentType,
+            'Cross-Origin-Resource-Policy': 'cross-origin',
+          },
+        });
+      }
+
+      if (!response.ok) {
+        return new NextResponse(null, { status: response.status });
+      }
     }
 
     const text = await response.text();

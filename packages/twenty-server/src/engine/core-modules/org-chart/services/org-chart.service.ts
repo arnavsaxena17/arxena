@@ -19,8 +19,8 @@ import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import {
-  applyBlankOrgChartSizeForExpectedHeadcount,
-  applyBlankOrgChartSubsetFilter,
+    applyBlankOrgChartSizeForExpectedHeadcount,
+    applyBlankOrgChartSubsetFilter,
 } from '../utils/blank-org-chart-subset.util';
 import { mergeManualCompanyAutocompleteResults } from '../utils/manual-company-autocomplete.util';
 import { buildCompanyOrgChartLogicalCacheKey } from '../utils/orgchart-cache-keys.util';
@@ -78,6 +78,25 @@ export class OrgChartService {
     await this.orgChartS3Service.deletePersistedCompanyFolder(persistKey);
     this.logger.log(
       `Cleared org chart Redis + S3 cache for persistKey=${persistKey}`,
+    );
+  }
+
+  private isBuiltEntireCompanyOrgChartCache(
+    orgChartPayload: unknown,
+  ): boolean {
+    if (
+      !orgChartPayload ||
+      typeof orgChartPayload !== 'object' ||
+      Array.isArray(orgChartPayload)
+    ) {
+      return false;
+    }
+
+    const rawType = (orgChartPayload as { type?: unknown }).type;
+
+    return (
+      typeof rawType === 'string' &&
+      rawType.trim().toLowerCase() === 'fullcompany'
     );
   }
 
@@ -425,6 +444,31 @@ export class OrgChartService {
       cachedAt?: string;
       itemCount?: number;
     }>(cacheKey);
+
+    const hasEntireCompanySubsetFilters =
+      (options.country?.trim() &&
+        options.country.trim().toLowerCase() !== 'global') ||
+      (options.functionRoot?.trim() &&
+        options.functionRoot.trim().toLowerCase() !== 'fullcompany');
+
+    // Built full-company charts in Redis (workspace builds) take precedence over the
+    // public Elasticsearch index, which stores masked names for SEO pages.
+    if (
+      !hasEntireCompanySubsetFilters &&
+      cachedOrgChartPayload?.orgChart &&
+      this.isBuiltEntireCompanyOrgChartCache(cachedOrgChartPayload.orgChart)
+    ) {
+      this.logger.log(
+        `Serving built entire-company org chart from Redis for companyId=${companyId}`,
+      );
+
+      return {
+        data: normalizeOrgChartPayload(cachedOrgChartPayload.orgChart),
+        ...(orgChartEsTransportError
+          ? { orgChartEsTransportError: true }
+          : {}),
+      };
+    }
 
     // Authenticated users should only read workspace-authorized cached org charts.
     if (hasAuthToken && workspaceHasOrgChartAccess && cachedOrgChartPayload?.orgChart) {

@@ -8,21 +8,35 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { CalendlyInline } from '@/app/_components/contact/CalendlyInline';
 import { trackGA4Event } from '@/lib/analytics';
 import { buildFreeTrialCalendlyUrl } from '@/lib/free-trial-calendly';
+import { FREE_TRIAL_CTA_LABEL } from '@/lib/free-trial-flow';
 import {
-    FreeTrialLeadPayload,
-    FreeTrialOrgChartContext,
-    FreeTrialSource,
+  FreeTrialLeadPayload,
+  FreeTrialOrgChartContext,
+  FreeTrialSource,
 } from '@/lib/free-trial-types';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
+import { OrgChartSignUpIntro } from 'twenty-orgchart/orgchart-core';
+import { type OrgChartNodeData } from 'twenty-shared';
 
-type FreeTrialModalStep = 'form' | 'loading' | 'calendly' | 'success';
+type FreeTrialModalStep = 'intro' | 'form' | 'loading' | 'calendly' | 'success';
+
+export type FreeTrialModalIntro = {
+  node: OrgChartNodeData;
+  companyName?: string;
+  selectedCountry?: string;
+  selectedFunctionRoot?: string;
+};
 
 type FreeTrialModalProps = {
   isOpen: boolean;
   source: FreeTrialSource;
   orgChartContext?: FreeTrialOrgChartContext;
+  intro?: FreeTrialModalIntro;
   onClose: () => void;
 };
+
+const getInitialStep = (intro?: FreeTrialModalIntro): FreeTrialModalStep =>
+  intro ? 'intro' : 'form';
 
 const StyledBackdrop = styled.div`
   position: fixed;
@@ -288,9 +302,12 @@ export const FreeTrialModal = ({
   isOpen,
   source,
   orgChartContext,
+  intro,
   onClose,
 }: FreeTrialModalProps) => {
-  const [step, setStep] = useState<FreeTrialModalStep>('form');
+  const [step, setStep] = useState<FreeTrialModalStep>(() =>
+    getInitialStep(intro),
+  );
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [company, setCompany] = useState('');
@@ -299,14 +316,14 @@ export const FreeTrialModal = ({
   const [lead, setLead] = useState<FreeTrialLeadPayload | null>(null);
 
   const resetModal = useCallback(() => {
-    setStep('form');
+    setStep(getInitialStep(intro));
     setName('');
     setEmail('');
     setCompany('');
     setError(null);
     setIsSubmitting(false);
     setLead(null);
-  }, []);
+  }, [intro]);
 
   const handleClose = useCallback(() => {
     resetModal();
@@ -329,6 +346,12 @@ export const FreeTrialModal = ({
       resetModal();
     }
   }, [isOpen, resetModal]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setStep(getInitialStep(intro));
+    }
+  }, [intro, isOpen]);
 
   useEffect(() => {
     if (step !== 'calendly') {
@@ -385,6 +408,14 @@ export const FreeTrialModal = ({
       orgChartContext: lead.orgChartContext,
     });
   }, [lead]);
+
+  const handleIntroCtaClick = useCallback(() => {
+    trackFreeTrialEvent('free_trial_cta_click', {
+      source,
+      orgChartCompany: orgChartContext?.companyName,
+    });
+    setStep('form');
+  }, [orgChartContext?.companyName, source]);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -473,6 +504,40 @@ export const FreeTrialModal = ({
               Close
             </StyledSuccessButton>
           </StyledSuccessBody>
+        </StyledFormDialog>
+      </StyledBackdrop>
+    );
+  }
+
+  if (step === 'intro' && intro) {
+    return (
+      <StyledBackdrop onClick={handleClose} role="presentation">
+        <StyledFormDialog
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="orgchart-signup-modal-title"
+          onClick={(clickEvent) => {
+            clickEvent.stopPropagation();
+          }}
+        >
+          <StyledCloseButton
+            type="button"
+            onClick={handleClose}
+            aria-label="Close"
+          >
+            <IconX size={20} stroke={1.75} />
+          </StyledCloseButton>
+          <OrgChartSignUpIntro
+            node={intro.node}
+            titleId="orgchart-signup-modal-title"
+            companyName={intro.companyName}
+            selectedCountry={intro.selectedCountry}
+            selectedFunctionRoot={intro.selectedFunctionRoot}
+            ctaLabel={FREE_TRIAL_CTA_LABEL}
+            onCtaClick={handleIntroCtaClick}
+            onDismiss={handleClose}
+            showDismiss={false}
+          />
         </StyledFormDialog>
       </StyledBackdrop>
     );

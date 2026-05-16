@@ -1,8 +1,13 @@
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { useCallback, useMemo, useState } from 'react';
+import { toSlug } from 'twenty-shared';
 import { Button, Section, SectionAlignment, SectionFontColor } from 'twenty-ui';
 
+import {
+    getArxenaSiteBaseUrl,
+    getArxenaSitePublicHost,
+} from '@/auth/utils/arxenaSiteUrl';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TextInput } from '@/ui/input/components/TextInput';
@@ -112,16 +117,34 @@ export const OrgChartShareModal = ({
     useState<ExpiryOption['id']>('12h');
   const [isGenerating, setIsGenerating] = useState(false);
   const [shareUrl, setShareUrl] = useState<string>('');
+  const [publishUrl, setPublishUrl] = useState<string>('');
 
   const selectedExpiry = useMemo(
     () => EXPIRY_OPTIONS.find((o) => o.id === selectedExpiryId) ?? EXPIRY_OPTIONS[1],
     [selectedExpiryId],
   );
 
-  const siteBase = (arxenaSiteBaseUrl ?? 'https://arxena.com').replace(/\/$/, '');
+  const siteBase = useMemo(
+    () => (arxenaSiteBaseUrl?.trim() || getArxenaSiteBaseUrl()).replace(/\/$/, ''),
+    [arxenaSiteBaseUrl],
+  );
+  const sitePublicHost = useMemo(() => {
+    try {
+      return new URL(siteBase).host;
+    } catch {
+      return getArxenaSitePublicHost();
+    }
+  }, [siteBase]);
   const normalizedServerBase = serverBaseUrl.replace(/\/$/, '');
 
-  const generateShareLink = useCallback(async () => {
+  const brandPublishSlug = useMemo(() => {
+    if (companyName?.trim()) {
+      return toSlug(companyName);
+    }
+    return toSlug(companyId.replace(/_/g, '-'));
+  }, [companyId, companyName]);
+
+  const generateShareLinks = useCallback(async () => {
     if (!normalizedServerBase || !accessToken) {
       enqueueSnackBar(t`Missing server configuration`, {
         variant: SnackBarVariant.Error,
@@ -131,51 +154,121 @@ export const OrgChartShareModal = ({
     }
     setIsGenerating(true);
     setShareUrl('');
+    setPublishUrl('');
     try {
-      const res = await fetch(`${normalizedServerBase}/org-chart/share/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          companyId,
-          companyName,
-          ttlSeconds: selectedExpiry.ttlSeconds,
+      const authHeaders = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      };
+      const requestBody = {
+        companyId,
+        companyName,
+        ttlSeconds: selectedExpiry.ttlSeconds,
+      };
+
+      const [shareRes, publishRes] = await Promise.all([
+        fetch(`${normalizedServerBase}/org-chart/share/create`, {
+          method: 'POST',
+          headers: authHeaders,
+          body: JSON.stringify(requestBody),
         }),
-      });
-      const json = (await res.json()) as {
+        fetch(`${normalizedServerBase}/org-chart/publish`, {
+          method: 'POST',
+          headers: authHeaders,
+          body: JSON.stringify({
+            ...requestBody,
+            publishSlug: brandPublishSlug,
+          }),
+        }),
+      ]);
+
+      const shareJson = (await shareRes.json()) as {
         status?: string;
         shareToken?: string;
         accessKey?: string;
-        expiresAt?: string;
         message?: string;
       };
-      if (!res.ok || json?.status !== 'ok' || !json.shareToken || !json.accessKey) {
-        const msg =
-          typeof json?.message === 'string' && json.message.trim()
-            ? json.message.trim()
-            : t`Failed to generate share link`;
-        throw new Error(msg);
+      const publishJson = (await publishRes.json()) as {
+        status?: string;
+        publishSlug?: string;
+        message?: string;
+      };
+
+      let privateLinkOk = false;
+      let publicLinkOk = false;
+
+      if (
+        shareRes.ok &&
+        shareJson?.status === 'ok' &&
+        shareJson.shareToken &&
+        shareJson.accessKey
+      ) {
+        setShareUrl(
+          `${siteBase}/org-chart/share/${encodeURIComponent(
+            shareJson.shareToken,
+          )}?k=${encodeURIComponent(shareJson.accessKey)}`,
+        );
+        privateLinkOk = true;
       }
-      const url = `${siteBase}/org-chart/share/${encodeURIComponent(
-        json.shareToken,
-      )}?k=${encodeURIComponent(json.accessKey)}`;
-      setShareUrl(url);
-      enqueueSnackBar(t`Share link generated`, {
-        variant: SnackBarVariant.Success,
-        duration: 4000,
-      });
+
+      if (publishRes.ok && publishJson?.status === 'ok' && publishJson.publishSlug) {
+        setPublishUrl(
+          `${siteBase}/org/${encodeURIComponent(publishJson.publishSlug)}`,
+        );
+        publicLinkOk = true;
+      }
+
+      if (privateLinkOk && publicLinkOk) {
+        enqueueSnackBar(t`Share links generated`, {
+          variant: SnackBarVariant.Success,
+          duration: 4000,
+        });
+        return;
+      }
+
+      if (privateLinkOk) {
+        const publishMsg =
+          typeof publishJson?.message === 'string' && publishJson.message.trim()
+            ? publishJson.message.trim()
+            : t`Public brand link could not be created`;
+        enqueueSnackBar(publishMsg, {
+          variant: SnackBarVariant.Error,
+          duration: 8000,
+        });
+        return;
+      }
+
+      if (publicLinkOk) {
+        const shareMsg =
+          typeof shareJson?.message === 'string' && shareJson.message.trim()
+            ? shareJson.message.trim()
+            : t`Private share link could not be created`;
+        enqueueSnackBar(shareMsg, {
+          variant: SnackBarVariant.Error,
+          duration: 8000,
+        });
+        return;
+      }
+
+      const msg =
+        typeof shareJson?.message === 'string' && shareJson.message.trim()
+          ? shareJson.message.trim()
+          : t`Failed to generate share links`;
+      throw new Error(msg);
     } catch (e) {
-      enqueueSnackBar(e instanceof Error ? e.message : t`Failed to generate share link`, {
-        variant: SnackBarVariant.Error,
-        duration: 8000,
-      });
+      enqueueSnackBar(
+        e instanceof Error ? e.message : t`Failed to generate share links`,
+        {
+          variant: SnackBarVariant.Error,
+          duration: 8000,
+        },
+      );
     } finally {
       setIsGenerating(false);
     }
   }, [
     accessToken,
+    brandPublishSlug,
     companyId,
     companyName,
     enqueueSnackBar,
@@ -185,21 +278,24 @@ export const OrgChartShareModal = ({
     t,
   ]);
 
-  const copyLink = useCallback(async () => {
-    if (!shareUrl) return;
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      enqueueSnackBar(t`Copied link`, {
-        variant: SnackBarVariant.Success,
-        duration: 2500,
-      });
-    } catch {
-      enqueueSnackBar(t`Failed to copy`, {
-        variant: SnackBarVariant.Error,
-        duration: 5000,
-      });
-    }
-  }, [enqueueSnackBar, shareUrl, t]);
+  const copyText = useCallback(
+    async (value: string, successMessage: string) => {
+      if (!value) return;
+      try {
+        await navigator.clipboard.writeText(value);
+        enqueueSnackBar(successMessage, {
+          variant: SnackBarVariant.Success,
+          duration: 2500,
+        });
+      } catch {
+        enqueueSnackBar(t`Failed to copy`, {
+          variant: SnackBarVariant.Error,
+          duration: 5000,
+        });
+      }
+    },
+    [enqueueSnackBar, t],
+  );
 
   if (!isOpen) return null;
 
@@ -211,7 +307,7 @@ export const OrgChartShareModal = ({
         </Section>
 
         <Section alignment={SectionAlignment.Left} fontColor={SectionFontColor.Secondary}>
-          {t`Choose how long this link should work. After expiry, viewers will see an expired message and a sign-up prompt.`}
+          {t`Choose how long these links should work. Generate creates a private link and a public brand link at ${sitePublicHost}/org/${brandPublishSlug}.`}
         </Section>
 
         <Section alignment={SectionAlignment.Left}>
@@ -239,7 +335,7 @@ export const OrgChartShareModal = ({
                   size="small"
                   type="button"
                   disabled={isGenerating}
-                  onClick={() => void generateShareLink()}
+                  onClick={() => void generateShareLinks()}
                 />
               </StyledExpiryControls>
             </StyledField>
@@ -247,11 +343,11 @@ export const OrgChartShareModal = ({
         </Section>
 
         <Section alignment={SectionAlignment.Left}>
-          <StyledFieldLabel>{t`Share link`}</StyledFieldLabel>
+          <StyledFieldLabel>{t`Private share link`}</StyledFieldLabel>
           <StyledLinkRow>
             <StyledLinkInput
               value={shareUrl}
-              placeholder={t`Generate a link to copy`}
+              placeholder={t`Generate links to copy`}
               onChange={() => {}}
               disabled={true}
             />
@@ -262,7 +358,28 @@ export const OrgChartShareModal = ({
               size="small"
               type="button"
               disabled={!shareUrl}
-              onClick={() => void copyLink()}
+              onClick={() => void copyText(shareUrl, t`Copied link`)}
+            />
+          </StyledLinkRow>
+        </Section>
+
+        <Section alignment={SectionAlignment.Left}>
+          <StyledFieldLabel>{t`Public brand link`}</StyledFieldLabel>
+          <StyledLinkRow>
+            <StyledLinkInput
+              value={publishUrl}
+              placeholder={t`Generate links to copy`}
+              onChange={() => {}}
+              disabled={true}
+            />
+            <Button
+              title={t`Copy`}
+              variant="secondary"
+              accent="default"
+              size="small"
+              type="button"
+              disabled={!publishUrl}
+              onClick={() => void copyText(publishUrl, t`Copied brand link`)}
             />
           </StyledLinkRow>
         </Section>

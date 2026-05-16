@@ -4,7 +4,11 @@ import {
   ORG_CHART_VERIFIED_BOT_HEADER,
 } from 'twenty-shared';
 
-import { getClientIpFromHeaders, isBlockedBot } from '@/lib/bot-detection';
+import {
+  getClientIpFromHeaders,
+  isBlockedBot,
+  isDeclaredBotUserAgent,
+} from '@/lib/bot-detection';
 
 export const ORG_CHART_LIKELY_BROWSER_HEADER = 'x-org-chart-likely-browser';
 export { ORG_CHART_VERIFIED_BOT_HEADER };
@@ -125,6 +129,7 @@ const logSuspectedScraper = (input: {
     clientIp: input.clientIp,
     userAgent: input.userAgent?.slice(0, 200) ?? '(none)',
     mode: getOrgChartGuardMode(),
+    timestamp: Date.now(),
   });
 };
 
@@ -151,10 +156,19 @@ export const resolveOrgChartRateLimitProfile = (
   if (pathname.includes('/company-logo')) {
     return null;
   }
+  if (pathname.includes('/image-proxy')) {
+    return null;
+  }
   if (pathname.startsWith('/api/org-chart')) {
     return 'default';
   }
+  if (pathname.startsWith('/api/org/')) {
+    return 'default';
+  }
   if (pathname.startsWith('/org-chart')) {
+    return 'page';
+  }
+  if (pathname === '/org' || pathname.startsWith('/org/')) {
     return 'page';
   }
   return null;
@@ -211,11 +225,13 @@ export const checkOrgChartApiGuard = async (
     clientIp !== 'unknown'
       ? await isVerifiedSearchBot(clientIp)
       : false;
+  const isDeclaredBot = isDeclaredBotUserAgent(userAgent);
 
   if (
     !shouldApplyClientAccessPolicy(profile) ||
     isLikelyBrowser ||
-    isVerifiedBot
+    isVerifiedBot ||
+    isDeclaredBot
   ) {
     return { allowed: true, isLikelyBrowser, isVerifiedBot };
   }

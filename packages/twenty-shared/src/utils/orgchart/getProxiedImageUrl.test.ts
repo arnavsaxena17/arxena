@@ -33,4 +33,22 @@ describe('getProxiedImageUrl', () => {
       'http://localhost:3000/org-chart/image-proxy/images-2/bWVkaWEubGljZG4uY29t/L2Rtcy9pbWFnZS92Mi90ZXN0LXByb2ZpbGUtcGhvdG8_ZT0xMjMmdj1iZXRhJnQ9YWJj',
     );
   });
+
+  it('maps proxied paths for the marketing-site /api/org-chart proxy', () => {
+    expect(
+      getProxiedImageUrl(
+        '/org-chart/image-proxy/images-1/abc/medium/jpg',
+        'https://arxena.com/api/org-chart',
+      ),
+    ).toBe('https://arxena.com/api/org-chart/image-proxy/images-1/abc/medium/jpg');
+
+    expect(
+      getProxiedImageUrl(
+        'https://media.licdn.com/dms/image/v2/test-profile-photo',
+        'https://arxena.com/api/org-chart',
+      ),
+    ).toBe(
+      'https://arxena.com/api/org-chart/image-proxy/images-2/bWVkaWEubGljZG4uY29t/L2Rtcy9pbWFnZS92Mi90ZXN0LXByb2ZpbGUtcGhvdG8',
+    );
+  });
 });
