@@ -72,10 +72,10 @@ const getMaxRequestsForProfile = (profile: OrgChartRateLimitProfile): number => 
         process.env.ORG_CHART_API_RATE_LIMIT_EXPENSIVE_MAX,
         5,
       );
-    case 'page':
-      return parsePositiveInt(process.env.ORG_CHART_PAGE_RATE_LIMIT_MAX, 30);
     case 'default':
       return parsePositiveInt(process.env.ORG_CHART_API_RATE_LIMIT_MAX, 30);
+    case 'page':
+      return parsePositiveInt(process.env.ORG_CHART_PAGE_RATE_LIMIT_MAX, 60);
   }
 };
 

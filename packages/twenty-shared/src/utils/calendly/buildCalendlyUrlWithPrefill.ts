@@ -17,6 +17,26 @@ export type BuildCalendlyUrlWithPrefillOptions = {
   /** Custom invitee questions: first question is `a1`, second `a2`, etc. */
   customAnswers?: Record<string, string>;
   utm?: CalendlyUtmParams;
+  /**
+   * Calendar-only inline embed: hides logo, event name, duration, location, description.
+   * @see https://help.calendly.com/hc/en-us/articles/223147027-Embed-options-overview
+   */
+  hideEventTypeDetails?: boolean;
+  hideGdprBanner?: boolean;
+};
+
+/** Apply inline-embed query params to any Calendly scheduling URL. */
+export const applyCalendlyInlineEmbedParams = (schedulingPageUrl: string): string => {
+  try {
+    const url = new URL(schedulingPageUrl);
+
+    url.searchParams.set('hide_event_type_details', '1');
+    url.searchParams.set('hide_gdpr_banner', '1');
+
+    return url.toString();
+  } catch {
+    return schedulingPageUrl;
+  }
 };
 
 const UTM_QUERY_KEYS: Record<keyof CalendlyUtmParams, string> = {
@@ -78,6 +98,14 @@ export const buildCalendlyUrlWithPrefill = (
         }
       },
     );
+  }
+
+  if (options.hideEventTypeDetails) {
+    url.searchParams.set('hide_event_type_details', '1');
+  }
+
+  if (options.hideGdprBanner ?? options.hideEventTypeDetails) {
+    url.searchParams.set('hide_gdpr_banner', '1');
   }
 
   return url.toString();

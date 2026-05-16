@@ -1,6 +1,7 @@
 import {
-  buildCalendlyUrlWithPrefill,
-  formatCalendlyInviteeName,
+    applyCalendlyInlineEmbedParams,
+    buildCalendlyUrlWithPrefill,
+    formatCalendlyInviteeName,
 } from '../buildCalendlyUrlWithPrefill';
 
 describe('formatCalendlyInviteeName', () => {
@@ -43,6 +44,17 @@ describe('buildCalendlyUrlWithPrefill', () => {
     expect(url.searchParams.get('utm_campaign')).toBe('deal_diligence');
   });
 
+  it('appends inline embed params when hideEventTypeDetails is set', () => {
+    const out = buildCalendlyUrlWithPrefill(
+      'https://calendly.com/arxena/30min',
+      { hideEventTypeDetails: true },
+    );
+    const url = new URL(out);
+
+    expect(url.searchParams.get('hide_event_type_details')).toBe('1');
+    expect(url.searchParams.get('hide_gdpr_banner')).toBe('1');
+  });
+
   it('preserves existing query params on the base URL', () => {
     const out = buildCalendlyUrlWithPrefill(
       'https://calendly.com/arxena/demo?hide_gdpr_banner=1',
@@ -57,5 +69,18 @@ describe('buildCalendlyUrlWithPrefill', () => {
     expect(buildCalendlyUrlWithPrefill('not-a-url', { email: 'x@y.com' })).toBe(
       'not-a-url',
     );
+  });
+});
+
+describe('applyCalendlyInlineEmbedParams', () => {
+  it('adds calendar-only embed query params', () => {
+    const out = applyCalendlyInlineEmbedParams(
+      'https://calendly.com/arxena/30min?name=Jane',
+    );
+    const url = new URL(out);
+
+    expect(url.searchParams.get('name')).toBe('Jane');
+    expect(url.searchParams.get('hide_event_type_details')).toBe('1');
+    expect(url.searchParams.get('hide_gdpr_banner')).toBe('1');
   });
 });

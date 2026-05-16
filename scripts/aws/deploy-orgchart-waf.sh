@@ -74,32 +74,8 @@ rules = [
     },
   },
   {
-    "Name": "RateLimitOrgChartPages",
-    "Priority": 1,
-    "Statement": {
-      "RateBasedStatement": {
-        "Limit": 200,
-        "AggregateKeyType": "IP",
-        "ScopeDownStatement": {
-          "ByteMatchStatement": {
-            "SearchString": b64("/org-chart"),
-            "FieldToMatch": {"UriPath": {}},
-            "TextTransformations": [{"Priority": 0, "Type": "NONE"}],
-            "PositionalConstraint": "CONTAINS",
-          }
-        },
-      }
-    },
-    "Action": {"Block": {}},
-    "VisibilityConfig": {
-      "SampledRequestsEnabled": True,
-      "CloudWatchMetricsEnabled": True,
-      "MetricName": "RateLimitOrgChartPages",
-    },
-  },
-  {
     "Name": "RateLimitOrgChartApi",
-    "Priority": 2,
+    "Priority": 1,
     "Statement": {
       "RateBasedStatement": {
         "Limit": 60,
@@ -109,6 +85,7 @@ rules = [
             "Statements": [
               uri_path_contains("/api/org-chart"),
               uri_path_excludes("company-logo"),
+              uri_path_excludes("image-proxy"),
             ]
           }
         },
@@ -123,7 +100,7 @@ rules = [
   },
   {
     "Name": "AWSIpReputation",
-    "Priority": 3,
+    "Priority": 2,
     "Statement": {
       "ManagedRuleGroupStatement": {
         "VendorName": "AWS",

@@ -10,8 +10,11 @@ import {
 } from '@/lib/org-chart-api-guard';
 
 describe('org-chart-api-guard', () => {
-  it('rate-limits published brand org pages', () => {
+  it('rate-limits published brand org pages at 60 per minute', () => {
     expect(resolveOrgChartRateLimitProfile('/org/acme-corp')).toBe('page');
+    expect(resolveOrgChartRateLimitProfile('/org-chart/acme-corp')).toBe(
+      'page',
+    );
     expect(resolveOrgChartRateLimitProfile('/api/org/acme-corp')).toBe(
       'default',
     );
@@ -49,7 +52,10 @@ describe('org-chart-api-guard', () => {
       'cloudfront-viewer-address': '157.55.39.10:12345',
     });
 
-    const result = await checkOrgChartApiGuard(headers, '/org-chart/acme');
+    const result = await checkOrgChartApiGuard(
+      headers,
+      '/api/org-chart/companies/acme',
+    );
 
     expect(result.allowed).toBe(true);
     expect(
@@ -69,7 +75,10 @@ describe('org-chart-api-guard', () => {
       'cloudfront-viewer-address': '34.56.168.230:12345',
     });
 
-    const result = await checkOrgChartApiGuard(headers, '/org-chart/acme');
+    const result = await checkOrgChartApiGuard(
+      headers,
+      '/api/org-chart/companies/acme',
+    );
 
     expect(result.allowed).toBe(true);
     expect(

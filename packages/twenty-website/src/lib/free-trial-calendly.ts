@@ -59,6 +59,7 @@ export const buildFreeTrialCalendlyUrl = (params: {
     name: params.name,
     email: params.email,
     customAnswers,
+    hideEventTypeDetails: true,
     utm: {
       source: 'arxena_website',
       medium: 'free_trial',

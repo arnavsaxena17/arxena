@@ -11,6 +11,7 @@ export function getCalendlyUrl(): string {
   const base = url && url.length > 0 ? url : DEFAULT_CALENDLY_URL;
 
   return buildCalendlyUrlWithPrefill(base, {
+    hideEventTypeDetails: true,
     utm: {
       source: 'arxena_website',
       medium: 'contact',

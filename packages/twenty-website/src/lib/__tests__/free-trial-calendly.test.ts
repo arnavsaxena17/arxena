@@ -24,5 +24,7 @@ describe('buildFreeTrialCalendlyUrl', () => {
     expect(parsed.searchParams.get('a2')).toContain('engineering');
     expect(parsed.searchParams.get('utm_medium')).toBe('free_trial');
     expect(parsed.searchParams.get('utm_campaign')).toBe('org_chart_banner');
+    expect(parsed.searchParams.get('hide_event_type_details')).toBe('1');
+    expect(parsed.searchParams.get('hide_gdpr_banner')).toBe('1');
   });
 });

@@ -19,7 +19,6 @@ append_if_missing() {
 touch "${ENV_FILE}"
 append_if_missing ORG_CHART_GUARD_MODE log_only
 append_if_missing ORG_CHART_ALLOW_VERIFIED_BOTS 1
-append_if_missing ORG_CHART_PAGE_RATE_LIMIT_MAX 30
 append_if_missing ORG_CHART_API_RATE_LIMIT_MAX 30
 append_if_missing ORG_CHART_API_RATE_LIMIT_EXPENSIVE_MAX 5
 append_if_missing ORG_CHART_API_RATE_LIMIT_SITEMAP_MAX 600
