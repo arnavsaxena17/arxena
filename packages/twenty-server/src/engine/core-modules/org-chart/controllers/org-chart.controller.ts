@@ -59,6 +59,7 @@ import { OrgChartTheOrgEnrichmentService } from '../services/org-chart-theorg-en
 import { OrgChartS3Service } from '../services/orgchart-s3.service';
 import { PythonOrgChartService } from '../services/python-org-chart.service';
 import { resolveFirstAutocompleteSource } from '../utils/first-autocomplete-source.util';
+import { toOrgChartCacheTtlMs } from '../utils/org-chart-cache-ttl.util';
 import { isOrgChartPdlProxyAuthorized } from '../utils/org-chart-pdl-proxy.util';
 import {
     isLikelyBrowserOrgChartRequest,
@@ -431,7 +432,7 @@ export class OrgChartController {
             : undefined,
         createdAt: new Date().toISOString(),
       },
-      ttlSeconds,
+      toOrgChartCacheTtlMs(ttlSeconds),
     );
 
     return {
@@ -625,15 +626,17 @@ export class OrgChartController {
       publishedAt,
     };
 
+    const publishTtlMs = toOrgChartCacheTtlMs(ttlSeconds);
+
     await this.orgChartCacheStorageService.set(
       orgPublishedSlugCacheKey(publishSlug),
       mapping,
-      ttlSeconds,
+      publishTtlMs,
     );
     await this.orgChartCacheStorageService.set(
       orgPublishedCompanyCacheKey(normalizedCompanyId),
       publishSlug,
-      ttlSeconds,
+      publishTtlMs,
     );
 
     const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
@@ -1876,7 +1879,9 @@ export class OrgChartController {
               await this.orgChartCacheStorageService.set(
                 inProgressKey,
                 { requestId },
-                OrgChartController.APOLLO_FIRST_LOAD_IN_PROGRESS_TTL_SECONDS,
+                toOrgChartCacheTtlMs(
+                  OrgChartController.APOLLO_FIRST_LOAD_IN_PROGRESS_TTL_SECONDS,
+                ),
               );
 
               await this.orgChartLinkedInBuildService.enqueueApolloOrgChartBuildJob(

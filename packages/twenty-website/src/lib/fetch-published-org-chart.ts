@@ -1,7 +1,7 @@
 import { headers } from 'next/headers';
 
-import { getInternalAppUrl } from '@/lib/base-url';
 import { getClientIpFromHeaders } from '@/lib/bot-detection';
+import { getOrgChartServerBaseUrl } from '@/lib/org-chart-server-base-url';
 
 export const buildForwardedOrgChartHeaders = (
   requestHeaders: Headers,
@@ -46,14 +46,16 @@ export async function fetchPublishedOrgChart(input: {
   publishSlug: string;
   forwardedUserAgent?: string;
 }): Promise<Record<string, unknown> | null> {
-  const baseUrl = await getInternalAppUrl();
+  const serverBaseUrl = getOrgChartServerBaseUrl();
   const requestHeaders = await headers();
   const forwardedHeaders = buildForwardedOrgChartHeaders(
     requestHeaders,
     input.forwardedUserAgent,
   );
 
-  const url = `${baseUrl}/api/org/${encodeURIComponent(input.publishSlug)}`;
+  const url = `${serverBaseUrl}/org-chart/published/${encodeURIComponent(
+    input.publishSlug,
+  )}`;
 
   try {
     const res = await fetch(url, {
@@ -64,12 +66,25 @@ export async function fetchPublishedOrgChart(input: {
     const json = (await res.json()) as {
       status?: string;
       result?: Record<string, unknown>;
+      message?: string;
     };
     if (json?.status === 'ok' && json.result) {
       return json.result;
     }
-  } catch {
-    // fetch failed
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[fetchPublishedOrgChart] failed', {
+        publishSlug: input.publishSlug,
+        status: res.status,
+        message: json?.message,
+      });
+    }
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[fetchPublishedOrgChart] error', {
+        publishSlug: input.publishSlug,
+        error,
+      });
+    }
   }
 
   return null;

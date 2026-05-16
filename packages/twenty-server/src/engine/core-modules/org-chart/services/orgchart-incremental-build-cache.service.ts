@@ -4,6 +4,8 @@ import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decora
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 
+import { toOrgChartCacheTtlMs } from '../utils/org-chart-cache-ttl.util';
+
 type OrgChartIncrementalBuildCache = {
   companyName: string;
   companyId?: string;
@@ -44,7 +46,7 @@ export class OrgChartIncrementalBuildCacheService {
     await this.cacheStorage.set(
       this.buildKey(requestId.trim()),
       value,
-      INCREMENTAL_ORGCHART_CACHE_TTL_SECONDS,
+      toOrgChartCacheTtlMs(INCREMENTAL_ORGCHART_CACHE_TTL_SECONDS),
     );
   }
 

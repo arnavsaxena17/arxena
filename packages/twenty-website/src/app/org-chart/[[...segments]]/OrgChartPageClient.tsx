@@ -17,6 +17,11 @@ import { trackGA4Event } from '@/lib/analytics';
 import { companySearchLightTheme } from '@/lib/company-search';
 import { FREE_TRIAL_CTA_LABEL } from '@/lib/free-trial-flow';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
+import {
+  mergeOrgChartCompanyField,
+  needsOrgChartCompanyInfoLookup,
+  normalizeOptionalCompanyField,
+} from '@/lib/org-chart-company-metadata';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- orgchart-core is used alongside dynamic OrgChartDiagram
 import {
   OrgChartDiagramHandle,
@@ -342,51 +347,88 @@ export const OrgChartPageClient = ({
     autocompletePath: '/autocomplete',
   });
 
-  const hasSsrCompanyMetadata =
-    Boolean(linkedinUrl?.trim()) ||
-    Boolean(website?.trim()) ||
-    Boolean(locationName?.trim()) ||
-    Boolean(industry?.trim());
+  const ssrCompanyMetadata = useMemo(
+    () => ({
+      website: normalizeOptionalCompanyField(website),
+      locationName: normalizeOptionalCompanyField(locationName),
+      industry: normalizeOptionalCompanyField(industry),
+      linkedinUrl: normalizeOptionalCompanyField(linkedinUrl),
+    }),
+    [website, locationName, industry, linkedinUrl],
+  );
 
-  // When org-chart cache has no company metadata, fill header fields via public autocomplete (PDL proxy).
+  const needsCompanyInfoLookup = needsOrgChartCompanyInfoLookup(ssrCompanyMetadata);
+
+  // Fill missing header fields via public autocomplete (PDL proxy).
   useEffect(() => {
-    if (hasSsrCompanyMetadata) {
+    if (!needsCompanyInfoLookup) {
       return;
     }
     const lookupKey = companyName?.trim() || companyId;
     if (lookupKey) {
       lookupByName(lookupKey);
     }
-  }, [hasSsrCompanyMetadata, lookupByName, companyName, companyId]);
+  }, [needsCompanyInfoLookup, lookupByName, companyName, companyId]);
 
-  // Employee count uses Apify on the server; skip when SSR already has headcount metadata.
+  const displayWebsite = mergeOrgChartCompanyField(
+    website,
+    fallbackCompanyInfo?.website,
+  );
+  const displayLocationName = mergeOrgChartCompanyField(
+    locationName,
+    fallbackCompanyInfo?.locationName,
+  );
+  const displayIndustry = mergeOrgChartCompanyField(
+    industry,
+    fallbackCompanyInfo?.industry,
+  );
+  const displayProfileCount = profileCount ?? fallbackCompanyInfo?.profileCount;
+  const displayLinkedinUrl = mergeOrgChartCompanyField(
+    linkedinUrl,
+    fallbackCompanyInfo?.linkedinUrl,
+  );
+  const displayEmployeeCount =
+    exactEmployeeCount ?? fallbackCompanyInfo?.employeeCount;
+
+  // Employee count uses Apify on the server when autocomplete did not provide it.
   useEffect(() => {
-    if (hasSsrCompanyMetadata) {
+    if (typeof fallbackCompanyInfo?.employeeCount === 'number') {
       return;
     }
-    const linkedinUrlToUse = linkedinUrl ?? fallbackCompanyInfo?.linkedinUrl;
+
+    const linkedinUrlToUse = displayLinkedinUrl;
+    if (!linkedinUrlToUse && needsCompanyInfoLookup && !fallbackCompanyInfo) {
+      return;
+    }
+
     const identifier = linkedinUrlToUse ?? companyId;
-    if (!identifier?.trim()) return;
+    if (!identifier?.trim()) {
+      return;
+    }
 
     let cancelled = false;
     const fetchEmployeeCount = async () => {
       try {
         const params = new URLSearchParams();
-        if (linkedinUrlToUse?.trim()) {
-          params.set('linkedinUrl', linkedinUrlToUse.trim());
+        if (linkedinUrlToUse) {
+          params.set('linkedinUrl', linkedinUrlToUse);
         } else {
           params.set('companyId', companyId);
         }
         const res = await fetch(
           `/api/org-chart/companies/employee-count?${params.toString()}`,
         );
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         const data = (await res.json()) as { employeeCount?: number | null };
         if (res.ok && typeof data.employeeCount === 'number') {
           setExactEmployeeCount(data.employeeCount);
         }
       } catch {
-        if (!cancelled) setExactEmployeeCount(null);
+        if (!cancelled) {
+          setExactEmployeeCount(null);
+        }
       }
     };
     fetchEmployeeCount();
@@ -395,19 +437,10 @@ export const OrgChartPageClient = ({
     };
   }, [
     companyId,
-    linkedinUrl,
-    fallbackCompanyInfo?.linkedinUrl,
-    hasSsrCompanyMetadata,
-    profileCount,
+    displayLinkedinUrl,
+    fallbackCompanyInfo,
+    needsCompanyInfoLookup,
   ]);
-
-  const displayWebsite = website ?? fallbackCompanyInfo?.website;
-  const displayLocationName = locationName ?? fallbackCompanyInfo?.locationName;
-  const displayIndustry = industry ?? fallbackCompanyInfo?.industry;
-  const displayProfileCount = profileCount ?? fallbackCompanyInfo?.profileCount;
-  const displayLinkedinUrl = linkedinUrl ?? fallbackCompanyInfo?.linkedinUrl;
-  const displayEmployeeCount =
-    exactEmployeeCount ?? fallbackCompanyInfo?.employeeCount;
 
   const buildPath = useCallback(
     (country?: string, fn?: string) => {

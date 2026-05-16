@@ -2,24 +2,28 @@ import { Metadata } from 'next';
 import { headers } from 'next/headers';
 
 import {
-    extractOrgData,
-    fromSlug,
-    getProxiedImageUrl,
-    processOrgChartToNodeData,
-    toSlug,
-    toTitleCase,
-    type OrgChartNodeData,
+  extractOrgData,
+  fromSlug,
+  getProxiedImageUrl,
+  processOrgChartToNodeData,
+  toSlug,
+  toTitleCase,
+  type OrgChartNodeData,
 } from 'twenty-shared';
 
 import { getSignUpUrl } from '@/lib/auth-urls';
 import { getBaseUrl, getInternalAppUrl } from '@/lib/base-url';
 import { getClientIpFromHeaders } from '@/lib/bot-detection';
+import {
+  extractOrgChartCompanyMetadataFromPayload,
+  normalizeOptionalCompanyField,
+} from '@/lib/org-chart-company-metadata';
 import { readOrgChartStaticOnlyFromHeaders } from '@/lib/org-chart-static-only';
 import { decodeOverEncodedPath } from '@/lib/url-utils';
 
 import {
-    BreadcrumbListSchema,
-    BreadcrumbNav,
+  BreadcrumbListSchema,
+  BreadcrumbNav,
 } from '@/app/_components/BreadcrumbList';
 import { OrgChartPageClient } from './OrgChartPageClient';
 import { OrgChartStructureSSR } from './OrgChartStructureSSR';
@@ -390,26 +394,17 @@ export default async function OrgChartPage({
         : companyId,
     );
 
-    const profileCount =
-      typeof rawData?.profile_count === 'number' ? rawData.profile_count : undefined;
-    const locationName =
-      typeof rawData?.location_name === 'string'
-        ? toTitleCase(rawData.location_name)
-        : undefined;
-    const industry =
-      typeof rawData?.industry === 'string' ? toTitleCase(rawData.industry) : undefined;
-    const website =
-      typeof rawData?.job_company_website === 'string'
-        ? rawData.job_company_website
-        : typeof rawData?.website === 'string'
-          ? rawData.website
-          : undefined;
-    const linkedinUrl =
-      typeof rawData?.job_company_linkedin_url === 'string'
-        ? rawData.job_company_linkedin_url
-        : typeof rawData?.linkedin_url === 'string'
-          ? rawData.linkedin_url
-          : undefined;
+    const {
+      profileCount,
+      locationName: locationNameRaw,
+      industry: industryRaw,
+      website,
+      linkedinUrl,
+    } = extractOrgChartCompanyMetadataFromPayload(rawData);
+    const locationName = locationNameRaw
+      ? toTitleCase(locationNameRaw)
+      : undefined;
+    const industry = industryRaw ? toTitleCase(industryRaw) : undefined;
 
     return (
       <div
@@ -508,10 +503,13 @@ export default async function OrgChartPage({
     return out;
   });
 
-  const profileCount =
-    typeof rawData?.profile_count === 'number'
-      ? rawData.profile_count
-      : undefined;
+  const {
+    profileCount,
+    locationName: locationNameRaw,
+    industry: industryRaw,
+    website: websiteFromPayload,
+    linkedinUrl,
+  } = extractOrgChartCompanyMetadataFromPayload(rawData);
   const displayCompanyName = toTitleCase(
     companyName ??
       (typeof rawData?.job_company_name === 'string'
@@ -519,27 +517,12 @@ export default async function OrgChartPage({
         : undefined) ??
       (typeof companyId === 'string' ? companyId : 'Company'),
   );
-  const locationName =
-    typeof rawData?.location_name === 'string'
-      ? toTitleCase(rawData.location_name)
-      : undefined;
-  const industry =
-    typeof rawData?.industry === 'string'
-      ? toTitleCase(rawData.industry)
-      : undefined;
+  const locationName = locationNameRaw
+    ? toTitleCase(locationNameRaw)
+    : undefined;
+  const industry = industryRaw ? toTitleCase(industryRaw) : undefined;
   const website =
-    websiteFromQuery ??
-    (typeof rawData?.job_company_website === 'string'
-      ? rawData.job_company_website
-      : typeof rawData?.website === 'string'
-        ? rawData.website
-        : undefined);
-  const linkedinUrl =
-    typeof rawData?.job_company_linkedin_url === 'string'
-      ? rawData.job_company_linkedin_url
-      : typeof rawData?.linkedin_url === 'string'
-        ? rawData.linkedin_url
-        : undefined;
+    normalizeOptionalCompanyField(websiteFromQuery) ?? websiteFromPayload;
 
   const breadcrumbItems = [
     { name: 'Home', url: '/' },

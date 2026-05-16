@@ -5,6 +5,8 @@ import * as path from 'path';
 
 import { graphqlToFindManyCompanies, OrgChartData } from 'twenty-shared';
 
+import { toOrgChartCacheTtlMs } from '../utils/org-chart-cache-ttl.util';
+
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { CreditTransactionService } from 'src/engine/core-modules/billing/services/credit-transaction.service';
 import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
@@ -317,7 +319,7 @@ export class OrgChartService {
         orgChart: updatedOrgChart,
         cachedAt: new Date().toISOString(),
       },
-      60 * 60 * 24 * 90,
+      toOrgChartCacheTtlMs(60 * 60 * 24 * 90),
     );
     persistedTo.push('redis');
 

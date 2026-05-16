@@ -15,6 +15,7 @@ import { OrgChartStructureSSR } from '@/app/org-chart/[[...segments]]/OrgChartSt
 import { getSignUpUrl } from '@/lib/auth-urls';
 import { getBaseUrl } from '@/lib/base-url';
 import { fetchPublishedOrgChart } from '@/lib/fetch-published-org-chart';
+import { extractOrgChartCompanyMetadataFromPayload } from '@/lib/org-chart-company-metadata';
 import { decodeOverEncodedPath } from '@/lib/url-utils';
 
 export const dynamic = 'force-dynamic';
@@ -116,26 +117,17 @@ export default async function PublishedOrgChartPage({ params }: PageProps) {
       : fromSlug(publishSlug),
   );
 
-  const profileCount =
-    typeof rawData?.profile_count === 'number' ? rawData.profile_count : undefined;
-  const locationName =
-    typeof rawData?.location_name === 'string'
-      ? toTitleCase(rawData.location_name)
-      : undefined;
-  const industry =
-    typeof rawData?.industry === 'string' ? toTitleCase(rawData.industry) : undefined;
-  const website =
-    typeof rawData?.job_company_website === 'string'
-      ? rawData.job_company_website
-      : typeof rawData?.website === 'string'
-        ? rawData.website
-        : undefined;
-  const linkedinUrl =
-    typeof rawData?.job_company_linkedin_url === 'string'
-      ? rawData.job_company_linkedin_url
-      : typeof rawData?.linkedin_url === 'string'
-        ? rawData.linkedin_url
-        : undefined;
+  const {
+    profileCount,
+    locationName: locationNameRaw,
+    industry: industryRaw,
+    website,
+    linkedinUrl,
+  } = extractOrgChartCompanyMetadataFromPayload(rawData);
+  const locationName = locationNameRaw
+    ? toTitleCase(locationNameRaw)
+    : undefined;
+  const industry = industryRaw ? toTitleCase(industryRaw) : undefined;
 
   return (
     <div

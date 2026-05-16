@@ -3,6 +3,8 @@ import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decora
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { OrgChartData } from 'twenty-shared';
+
+import { toOrgChartCacheTtlMs } from '../utils/org-chart-cache-ttl.util';
 import {
     buildCompanyOrgChartCandidateListLogicalCacheKey,
     buildCompanyOrgChartLogicalCacheKey,
@@ -194,7 +196,11 @@ export class OrgChartCacheService {
         ? Math.floor(ttlFromEnv)
         : DEFAULT_ORG_CHART_COMPANY_CACHE_TTL_SECONDS;
 
-    await this.orgChartCacheStorageService.set(cacheKey, payload, ttlSeconds);
+    await this.orgChartCacheStorageService.set(
+      cacheKey,
+      payload,
+      toOrgChartCacheTtlMs(ttlSeconds),
+    );
     this.logger.log(
       `Orgchart cache WRITE: key=${cacheKey}, itemCount=${payload.itemCount}, ttlSeconds=${ttlSeconds}, cachedAt=${payload.cachedAt}`,
     );
@@ -282,7 +288,11 @@ export class OrgChartCacheService {
         ? Math.floor(ttlFromEnv)
         : DEFAULT_ORG_CHART_COMPANY_CANDIDATES_CACHE_TTL_SECONDS;
 
-    await this.orgChartCacheStorageService.set(cacheKey, payload, ttlSeconds);
+    await this.orgChartCacheStorageService.set(
+      cacheKey,
+      payload,
+      toOrgChartCacheTtlMs(ttlSeconds),
+    );
     this.logger.log(
       `Candidate list cache WRITE: key=${cacheKey}, itemCount=${payload.itemCount}, ttlSeconds=${ttlSeconds}, cachedAt=${payload.cachedAt}`,
     );
@@ -395,7 +405,11 @@ export class OrgChartCacheService {
         ? Math.floor(ttlFromEnv)
         : DEFAULT_ORG_CHART_FUNCTION_GRADE_CACHE_TTL_SECONDS;
 
-    await this.orgChartCacheStorageService.set(cacheKey, payload, ttlSeconds);
+    await this.orgChartCacheStorageService.set(
+      cacheKey,
+      payload,
+      toOrgChartCacheTtlMs(ttlSeconds),
+    );
     this.logger.log(
       `Function-grade cache WRITE: key=${cacheKey}, itemCount=${payload.itemCount}, ttlSeconds=${ttlSeconds}, cachedAt=${payload.cachedAt}, hasOrgChart=${!!payload.orgChart}`,
     );

@@ -1,22 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic';
+import { getOrgChartServerBaseUrl } from '@/lib/org-chart-server-base-url';
 
-const getServerBaseUrl = () => {
-  const url =
-    process.env.SERVER_BASE_URL ??
-    process.env.NEXT_PUBLIC_SERVER_BASE_URL ??
-    (process.env.NODE_ENV === 'development'
-      ? 'http://localhost:3000'
-      : 'https://app.arxena.com');
-  return url.replace(/\/$/, '');
-};
+export const dynamic = 'force-dynamic';
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
 ) {
-  const serverBaseUrl = getServerBaseUrl();
+  const serverBaseUrl = getOrgChartServerBaseUrl();
   if (!serverBaseUrl) {
     return NextResponse.json(
       { message: 'Server base URL not configured' },
