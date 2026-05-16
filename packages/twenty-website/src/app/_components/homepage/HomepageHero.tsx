@@ -5,6 +5,7 @@ import { IconHierarchy2 } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useCallback, useState } from 'react';
 
+import { useFreeTrialCta } from '@/app/_components/free-trial/useFreeTrialCta';
 import { ContactUsSection } from '@/app/_components/homepage/ContactUsSection';
 import { DifferentiatorsSection } from '@/app/_components/homepage/DifferentiatorsSection';
 import { HowItWorksSection } from '@/app/_components/homepage/HowItWorksSection';
@@ -15,6 +16,7 @@ import { OrgChartSearch } from '@/app/_components/orgchart/OrgChartSearch';
 import { Logo } from '@/app/_components/ui/layout/Logo';
 import { trackGA4Event } from '@/lib/analytics';
 import { HOMEPAGE_HERO } from '@/lib/brand-content';
+import { FREE_TRIAL_CTA_LABEL } from '@/lib/free-trial-flow';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 
 const StyledHero = styled.section`
@@ -147,7 +149,7 @@ const StyledEngageLink = styled(Link)`
   }
 `;
 
-const StyledPrimaryCta = styled.a`
+const primaryCtaStyles = `
   display: inline-flex;
   align-items: center;
   height: 44px;
@@ -156,13 +158,24 @@ const StyledPrimaryCta = styled.a`
   color: #fff;
   border-radius: 8px;
   font-weight: 500;
-  text-decoration: none;
   font-size: 15px;
   transition: color 0.15s ease;
+  cursor: pointer;
 
   &:hover {
     color: #b3b3b3;
   }
+`;
+
+const StyledPrimaryCta = styled.a`
+  ${primaryCtaStyles}
+  text-decoration: none;
+`;
+
+const StyledPrimaryCtaButton = styled.button`
+  ${primaryCtaStyles}
+  border: none;
+  font-family: inherit;
 `;
 
 const StyledExampleSection = styled.section`
@@ -330,6 +343,12 @@ type HomepageHeroProps = {
 };
 
 export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
+  const { isFreeTrialFlow, onCtaClick } = useFreeTrialCta({
+    source: 'homepage_hero',
+    legacyMixpanelEvent: 'cta_click',
+    legacyGa4Event: 'cta_click',
+    legacyGa4Props: { cta: 'Try it free' },
+  });
   const [failedLogoWebsites, setFailedLogoWebsites] = useState<Set<string>>(
     new Set(),
   );
@@ -370,15 +389,15 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
           />
         </StyledSearchWrapper>
         <StyledAuthLinks>
-          <StyledPrimaryCta
-            href={signUpUrl}
-            onClick={() => {
-              trackGA4Event('cta_click', { cta: 'Try it free' });
-              trackWebsiteEvent('cta_click', { cta: 'Try it free' });
-            }}
-          >
-            Try it free
-          </StyledPrimaryCta>
+          {isFreeTrialFlow ? (
+            <StyledPrimaryCtaButton type="button" onClick={onCtaClick}>
+              {FREE_TRIAL_CTA_LABEL}
+            </StyledPrimaryCtaButton>
+          ) : (
+            <StyledPrimaryCta href={signUpUrl} onClick={onCtaClick}>
+              Try it free
+            </StyledPrimaryCta>
+          )}
           <StyledLink
             href={signInUrl}
             onClick={() => {

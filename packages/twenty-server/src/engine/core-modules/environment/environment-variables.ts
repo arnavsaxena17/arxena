@@ -1336,7 +1336,7 @@ export class EnvironmentVariables {
     group: EnvironmentVariablesGroup.Other,
     sensitive: true,
     description:
-      'Shared secret for X-Org-Chart-Pdl-Proxy-Key. Only twenty-website (or other trusted proxies) should send this header. Required for unauthenticated PDL autocomplete; signed-in users are unaffected.',
+      'Shared secret for X-Org-Chart-Pdl-Proxy-Key. Only twenty-website (or other trusted proxies) should send this header. Used for unauthenticated PDL autocomplete and POST /website/free-trial-lead from the marketing site.',
   })
   @IsOptional()
   @IsString()

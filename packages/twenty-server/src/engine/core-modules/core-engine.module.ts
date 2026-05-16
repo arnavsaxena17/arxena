@@ -40,6 +40,7 @@ import { messageQueueModuleFactory } from 'src/engine/core-modules/message-queue
 import { TimelineMessagingModule } from 'src/engine/core-modules/messaging/timeline-messaging.module';
 import { OpenApiModule } from 'src/engine/core-modules/open-api/open-api.module';
 import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.module';
+import { WebsiteLeadsModule } from 'src/engine/core-modules/website-leads/website-leads.module';
 import { PostgresCredentialsModule } from 'src/engine/core-modules/postgres-credentials/postgres-credentials.module';
 import { RedisClientModule } from 'src/engine/core-modules/redis-client/redis-client.module';
 import { RedisClientService } from 'src/engine/core-modules/redis-client/redis-client.service';
@@ -137,6 +138,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     LabModule,
     LinkedInSearchModule,
     OrgChartModule,
+    WebsiteLeadsModule,
     RoleModule,
     EnvironmentModule.forRoot({}),
     RedisClientModule,

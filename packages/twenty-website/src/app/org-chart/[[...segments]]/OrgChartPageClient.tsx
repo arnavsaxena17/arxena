@@ -8,10 +8,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ThemeProvider } from '@emotion/react';
 import styled from '@emotion/styled';
 
+import { useFreeTrialFlow } from '@/app/_components/free-trial/FreeTrialFlowProvider';
+import { useFreeTrialCta } from '@/app/_components/free-trial/useFreeTrialCta';
 import { OrgChartCompanyInfo } from '@/app/_components/orgchart/OrgChartCompanyInfo';
 import { OrgChartHiredFromRibbon } from '@/app/_components/orgchart/OrgChartHiredFromRibbon';
 import { trackGA4Event } from '@/lib/analytics';
 import { companySearchLightTheme } from '@/lib/company-search';
+import { FREE_TRIAL_CTA_LABEL } from '@/lib/free-trial-flow';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- orgchart-core is used alongside dynamic OrgChartDiagram
 import {
@@ -169,6 +172,30 @@ const StyledPreviewBannerSignupLink = styled(Link)`
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
+
+  &:hover {
+    opacity: 0.92;
+    color: #ffffff;
+  }
+
+  &:active {
+    opacity: 0.85;
+  }
+`;
+
+const StyledPreviewBannerSignupButton = styled.button`
+  display: inline-block;
+  padding: ${({ theme }) => theme.spacing(0.75)}
+    ${({ theme }) => theme.spacing(1.5)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: none;
+  background: ${({ theme }) => theme.color.blue};
+  color: #ffffff;
+  font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: 600;
+  font-family: inherit;
+  white-space: nowrap;
+  cursor: pointer;
 
   &:hover {
     opacity: 0.92;
@@ -464,6 +491,41 @@ export const OrgChartPageClient = ({
     [signUpUrl, companyName, selectedCountry, selectedFunctionRoot],
   );
 
+  const orgChartContext = useMemo(
+    () => ({
+      companyName,
+      selectedCountry,
+      selectedFunctionRoot,
+    }),
+    [companyName, selectedCountry, selectedFunctionRoot],
+  );
+
+  const { isFreeTrialFlow } = useFreeTrialFlow();
+
+  const { onCtaClick: onBannerFreeTrialClick } = useFreeTrialCta({
+    source: 'org_chart_banner',
+    orgChartContext,
+    legacyMixpanelEvent: 'sign_up_click',
+    legacyGa4Event: 'sign_up_click',
+    legacyGa4Props: { source: 'org_chart_banner' },
+  });
+
+  const nodeModalOrgChartContext = useMemo(
+    () => ({
+      ...orgChartContext,
+      nodeHeadline: clickedNode?.headline,
+    }),
+    [clickedNode?.headline, orgChartContext],
+  );
+
+  const { onCtaClick: onNodeModalSignUpClick } = useFreeTrialCta({
+    source: 'org_chart_node_modal',
+    orgChartContext: nodeModalOrgChartContext,
+    legacyMixpanelEvent: 'sign_up_cta_click',
+    legacyGa4Event: 'sign_up_cta_click',
+    legacyGa4Props: { source: 'modal' },
+  });
+
   useEffect(() => {
     trackGA4Event('org_chart_view', {
       company_id: companyId,
@@ -568,9 +630,18 @@ export const OrgChartPageClient = ({
             {showPreviewPersistentBanner && (
               <StyledPreviewPersistentBanner>
                 <span>Get access to 10M Real Time Org Charts, Sign up</span>
-                <StyledPreviewBannerSignupLink href={signUpUrlWithContext}>
-                  Sign up free
-                </StyledPreviewBannerSignupLink>
+                {isFreeTrialFlow ? (
+                  <StyledPreviewBannerSignupButton
+                    type="button"
+                    onClick={onBannerFreeTrialClick}
+                  >
+                    {FREE_TRIAL_CTA_LABEL}
+                  </StyledPreviewBannerSignupButton>
+                ) : (
+                  <StyledPreviewBannerSignupLink href={signUpUrlWithContext}>
+                    Sign up free
+                  </StyledPreviewBannerSignupLink>
+                )}
               </StyledPreviewPersistentBanner>
             )}
             <StyledDiagramBody>
@@ -616,6 +687,12 @@ export const OrgChartPageClient = ({
                   node={clickedNode}
                   onClose={handleCloseSignUpModal}
                   signUpUrl={signUpUrlWithContext}
+                  signUpCtaLabel={
+                    isFreeTrialFlow ? FREE_TRIAL_CTA_LABEL : 'Sign up!'
+                  }
+                  onSignUpClick={
+                    isFreeTrialFlow ? onNodeModalSignUpClick : undefined
+                  }
                   companyName={companyName}
                   selectedCountry={selectedCountry}
                   selectedFunctionRoot={selectedFunctionRoot}

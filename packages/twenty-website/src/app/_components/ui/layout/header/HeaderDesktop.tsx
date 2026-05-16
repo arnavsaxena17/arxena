@@ -4,15 +4,17 @@ import styled from '@emotion/styled';
 import { IconHierarchy2 } from '@tabler/icons-react';
 import Link from 'next/link';
 
+import { useFreeTrialCta } from '@/app/_components/free-trial/useFreeTrialCta';
 import { OrgChartSearch } from '@/app/_components/orgchart/OrgChartSearch';
 import { HeaderNavDropdown } from '@/app/_components/ui/layout/header/HeaderNavDropdown';
 import { Logo } from '@/app/_components/ui/layout/Logo';
 import { trackGA4Event } from '@/lib/analytics';
+import { FREE_TRIAL_CTA_LABEL } from '@/lib/free-trial-flow';
 import { PRODUCT_PAGES, SOLUTION_PAGES } from '@/lib/marketing-site-pages';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 import {
-  SUPPORTED_PRICING_CURRENCIES,
-  type SupportedPricingCurrency,
+    SUPPORTED_PRICING_CURRENCIES,
+    type SupportedPricingCurrency,
 } from '@/lib/pricing-currency-helpers';
 
 const StyledDesktopNav = styled.nav`
@@ -94,7 +96,7 @@ const StyledSignIn = styled.a`
   }
 `;
 
-const StyledSignUp = styled.a`
+const headerSignUpStyles = `
   display: flex;
   align-items: center;
   height: 40px;
@@ -103,13 +105,24 @@ const StyledSignUp = styled.a`
   color: #fff;
   border-radius: 8px;
   font-weight: 500;
-  text-decoration: none;
   font-size: 15px;
   transition: color 0.15s ease;
+  cursor: pointer;
 
   &:hover {
     color: #9e9e9e;
   }
+`;
+
+const StyledSignUp = styled.a`
+  ${headerSignUpStyles}
+  text-decoration: none;
+`;
+
+const StyledSignUpButton = styled.button`
+  ${headerSignUpStyles}
+  border: none;
+  font-family: inherit;
 `;
 
 type HeaderDesktopProps = {
@@ -129,6 +142,11 @@ export const HeaderDesktop = ({
   currency,
   onCurrencyChange,
 }: HeaderDesktopProps) => {
+  const { isFreeTrialFlow, onCtaClick } = useFreeTrialCta({
+    source: 'header',
+    legacyGa4Props: { source: 'header' },
+  });
+
   return (
     <StyledDesktopNav>
       <StyledNav>
@@ -193,15 +211,15 @@ export const HeaderDesktop = ({
         >
           Sign in
         </StyledSignIn>
-        <StyledSignUp
-          href={signUpUrl}
-          onClick={() => {
-            trackGA4Event('sign_up_click', { source: 'header' });
-            trackWebsiteEvent('sign_up_click', { source: 'header' });
-          }}
-        >
-          Sign up
-        </StyledSignUp>
+        {isFreeTrialFlow ? (
+          <StyledSignUpButton type="button" onClick={onCtaClick}>
+            {FREE_TRIAL_CTA_LABEL}
+          </StyledSignUpButton>
+        ) : (
+          <StyledSignUp href={signUpUrl} onClick={onCtaClick}>
+            Sign up
+          </StyledSignUp>
+        )}
       </StyledAuthLinks>
     </StyledDesktopNav>
   );

@@ -5,10 +5,12 @@ import { IconHierarchy2 } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
+import { useFreeTrialCta } from '@/app/_components/free-trial/useFreeTrialCta';
 import { OrgChartSearch } from '@/app/_components/orgchart/OrgChartSearch';
 import { HeaderMobileNavDropdown } from '@/app/_components/ui/layout/header/HeaderNavDropdown';
 import { Logo } from '@/app/_components/ui/layout/Logo';
 import { trackGA4Event } from '@/lib/analytics';
+import { FREE_TRIAL_CTA_LABEL } from '@/lib/free-trial-flow';
 import { PRODUCT_PAGES, SOLUTION_PAGES } from '@/lib/marketing-site-pages';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 import {
@@ -91,7 +93,7 @@ const StyledSignIn = styled.a`
   }
 `;
 
-const StyledSignUp = styled.a`
+const mobileSignUpStyles = `
   display: flex;
   align-items: center;
   height: 40px;
@@ -100,13 +102,24 @@ const StyledSignUp = styled.a`
   color: #fff;
   border-radius: 8px;
   font-weight: 500;
-  text-decoration: none;
   font-size: 15px;
   transition: color 0.15s ease;
+  cursor: pointer;
 
   &:hover {
     color: #9e9e9e;
   }
+`;
+
+const StyledSignUp = styled.a`
+  ${mobileSignUpStyles}
+  text-decoration: none;
+`;
+
+const StyledSignUpButton = styled.button`
+  ${mobileSignUpStyles}
+  border: none;
+  font-family: inherit;
 `;
 
 const StyledSearchWrapper = styled.div`
@@ -187,6 +200,10 @@ export const HeaderMobile = ({
   embeddedToolbar = false,
 }: HeaderMobileProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { isFreeTrialFlow, onCtaClick } = useFreeTrialCta({
+    source: 'header_mobile',
+    legacyGa4Props: { source: 'header_mobile' },
+  });
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -275,15 +292,15 @@ export const HeaderMobile = ({
           >
             Sign in
           </StyledSignIn>
-          <StyledSignUp
-            href={signUpUrl}
-            onClick={() => {
-              trackGA4Event('sign_up_click', { source: 'header_mobile' });
-              trackWebsiteEvent('sign_up_click', { source: 'header_mobile' });
-            }}
-          >
-            Sign up
-          </StyledSignUp>
+          {isFreeTrialFlow ? (
+            <StyledSignUpButton type="button" onClick={onCtaClick}>
+              {FREE_TRIAL_CTA_LABEL}
+            </StyledSignUpButton>
+          ) : (
+            <StyledSignUp href={signUpUrl} onClick={onCtaClick}>
+              Sign up
+            </StyledSignUp>
+          )}
         </StyledMobileLinkList>
       </NavOpen>
     </StyledMobileMenu>

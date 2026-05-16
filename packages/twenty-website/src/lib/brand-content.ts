@@ -15,7 +15,7 @@ export const DEFAULT_SITE_DESCRIPTION =
   'Make every company\'s organizational structures visible and queryable in real time. The org graph layer for executive search, investors, sales, and corporate strategy — map, plan, engage, and measure.';
 
 export const HOMEPAGE_HERO = {
-  title: 'Org Intelligence Platform',
+  title: 'Org Intelligence',
   lead: 'Make the hidden structure of any organization visible—queryable in real time.',
   stats:
     '10M+ live, real time company org charts · 800M+ people, contact info & engagement',

@@ -7,6 +7,7 @@ import { DEFAULT_SITE_DESCRIPTION } from '@/lib/brand-content';
 import { MixpanelRouteSync } from '@/lib/MixpanelRouteSync';
 import { isPhase2Exposed } from '@/lib/sitemap';
 
+import { FreeTrialFlowProvider } from './_components/free-trial/FreeTrialFlowProvider';
 import { WebSiteStructuredData } from './_components/StructuredData';
 import { WebsiteSupportChat } from './_components/support/WebsiteSupportChat';
 import { ConditionalFooter } from './_components/ui/layout/footer';
@@ -80,10 +81,12 @@ export default async function RootLayout({
         <WebSiteStructuredData />
         <PublicEnvScript />
         <EmotionRootStyleRegistry>
-          <MixpanelRouteSync />
-          {/* <AppHeader /> */}
-          <div className="container">{children}</div>
-          <ConditionalFooter phase2Exposed={isPhase2Exposed()} />
+          <FreeTrialFlowProvider>
+            <MixpanelRouteSync />
+            {/* <AppHeader /> */}
+            <div className="container">{children}</div>
+            <ConditionalFooter phase2Exposed={isPhase2Exposed()} />
+          </FreeTrialFlowProvider>
         </EmotionRootStyleRegistry>
         <WebsiteSupportChat />
       </body>

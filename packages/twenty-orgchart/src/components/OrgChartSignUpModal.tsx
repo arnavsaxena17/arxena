@@ -146,7 +146,7 @@ const StyledText = styled.p`
   border-left: 3px solid ${({ theme }) => theme.color.blue};
 `;
 
-const StyledButton = styled.a`
+const StyledButtonLink = styled.a`
   align-self: stretch;
   display: block;
   margin-top: ${({ theme }) => theme.spacing(0.5)};
@@ -158,6 +158,39 @@ const StyledButton = styled.a`
   font-weight: 600;
   font-size: ${({ theme }) => theme.font.size.sm};
   text-align: center;
+  transition:
+    filter 0.15s ease,
+    transform 0.15s ease;
+
+  &:hover {
+    filter: brightness(1.12);
+  }
+
+  &:active {
+    transform: scale(0.99);
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.blue};
+    outline-offset: 3px;
+  }
+`;
+
+const StyledButtonAction = styled.button`
+  align-self: stretch;
+  display: block;
+  width: 100%;
+  margin-top: ${({ theme }) => theme.spacing(0.5)};
+  padding: ${({ theme }) => theme.spacing(1.75)} ${({ theme }) => theme.spacing(3)};
+  background: ${({ theme }) => theme.font.color.primary};
+  color: ${({ theme }) => theme.background.primary};
+  border: none;
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  font-weight: 600;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-family: inherit;
+  text-align: center;
+  cursor: pointer;
   transition:
     filter 0.15s ease,
     transform 0.15s ease;
@@ -203,6 +236,8 @@ export type OrgChartSignUpModalProps = {
   node: OrgChartNodeData | null;
   onClose: () => void;
   signUpUrl?: string;
+  signUpCtaLabel?: string;
+  onSignUpClick?: () => void;
   companyName?: string;
   selectedCountry?: string;
   selectedFunctionRoot?: string;
@@ -212,6 +247,8 @@ export const OrgChartSignUpModal = ({
   node,
   onClose,
   signUpUrl = '/welcome',
+  signUpCtaLabel = 'Sign up!',
+  onSignUpClick,
   companyName,
   selectedCountry,
   selectedFunctionRoot,
@@ -284,9 +321,15 @@ export const OrgChartSignUpModal = ({
               Use AI to automatically engage with contacts and focus only on the interested ones.
             </StyledText>
           </StyledCopyBlock>
-          <StyledButton href={signUpUrl} rel="noreferrer">
-            Sign up!
-          </StyledButton>
+          {onSignUpClick ? (
+            <StyledButtonAction type="button" onClick={onSignUpClick}>
+              {signUpCtaLabel}
+            </StyledButtonAction>
+          ) : (
+            <StyledButtonLink href={signUpUrl} rel="noreferrer">
+              {signUpCtaLabel}
+            </StyledButtonLink>
+          )}
           <StyledTextDismiss type="button" onClick={onClose}>
             Close
           </StyledTextDismiss>
