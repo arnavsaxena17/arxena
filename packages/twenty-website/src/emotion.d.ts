@@ -19,6 +19,6 @@ declare module '@emotion/react' {
       color: { medium: string; light: string };
     };
     color: { blue: string };
-    boxShadow?: { strong: string };
+    boxShadow: { strong: string };
   }
 }
