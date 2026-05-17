@@ -1,14 +1,8 @@
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
+import { Suspense } from 'react';
 
-import {
-    extractOrgData,
-    fromSlug,
-    getProxiedImageUrl,
-    processOrgChartToNodeData,
-    toTitleCase,
-    type OrgChartNodeData,
-} from 'twenty-shared';
+import { fromSlug, toTitleCase } from 'twenty-shared';
 
 import { OrgChartPageClient } from '@/app/org-chart/[[...segments]]/OrgChartPageClient';
 import { OrgChartStructureSSR } from '@/app/org-chart/[[...segments]]/OrgChartStructureSSR';
@@ -16,12 +10,24 @@ import { getSignUpUrl } from '@/lib/auth-urls';
 import { getBaseUrl } from '@/lib/base-url';
 import { fetchPublishedOrgChart } from '@/lib/fetch-published-org-chart';
 import { extractOrgChartCompanyMetadataFromPayload } from '@/lib/org-chart-company-metadata';
+import { processPublishedOrgChartPayload } from '@/lib/process-published-org-chart-payload';
 import { decodeOverEncodedPath } from '@/lib/url-utils';
 
 export const dynamic = 'force-dynamic';
 
 type PageProps = {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ asOf?: string }>;
+};
+
+const monthKeyRegex = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+const normalizeAsOfMonthParam = (raw: string | undefined): string | undefined => {
+  const trimmed = raw?.trim() ?? '';
+  if (!trimmed || !monthKeyRegex.test(trimmed)) {
+    return undefined;
+  }
+  return trimmed;
 };
 
 const OrgChartUnavailable = () => (
@@ -69,9 +75,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function PublishedOrgChartPage({ params }: PageProps) {
+export default async function PublishedOrgChartPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { slug } = await params;
+  const resolvedSearchParams = await searchParams;
   const publishSlug = slug ? decodeOverEncodedPath(slug).trim() : '';
+  const initialAsOfMonth = normalizeAsOfMonthParam(resolvedSearchParams.asOf);
 
   if (!publishSlug) {
     return <OrgChartUnavailable />;
@@ -83,27 +94,19 @@ export default async function PublishedOrgChartPage({ params }: PageProps) {
   const rawData = await fetchPublishedOrgChart({
     publishSlug,
     forwardedUserAgent,
+    asOfMonth: initialAsOfMonth,
   });
 
   if (!rawData) {
     return <OrgChartUnavailable />;
   }
 
-  const orgData = extractOrgData(rawData);
   const baseUrl = await getBaseUrl();
   const apiBase = `${baseUrl}/api/org-chart`;
-  const rawNodeDataArray = orgData ? processOrgChartToNodeData(orgData) : [];
-  const nodeDataArray = rawNodeDataArray.map((node) => {
-    const out = { ...node } as OrgChartNodeData;
-    for (let i = 0; i < 4; i++) {
-      const key = `image_${i}` as keyof OrgChartNodeData;
-      const val = out[key];
-      if (typeof val === 'string' && val) {
-        (out as Record<string, string>)[key] = getProxiedImageUrl(val, apiBase);
-      }
-    }
-    return out;
-  });
+  const { orgData, nodeDataArray } = processPublishedOrgChartPayload(
+    rawData,
+    apiBase,
+  );
 
   const companyId =
     typeof rawData?.company_id === 'string'
@@ -139,27 +142,46 @@ export default async function PublishedOrgChartPage({ params }: PageProps) {
         width: '100%',
       }}
     >
-      <OrgChartPageClient
-        companyId={companyId}
-        companyName={displayCompanyName}
-        website={website}
-        locationName={locationName}
-        industry={industry}
-        profileCount={profileCount}
-        linkedinUrl={linkedinUrl}
-        nodeDataArray={nodeDataArray}
-        orgData={rawData}
-        initialCountry={undefined}
-        initialFunctionRoot={undefined}
-        signUpUrl={getSignUpUrl()}
+      <Suspense
+        fallback={
+          <div
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#666',
+            }}
+          >
+            Loading org chart…
+          </div>
+        }
       >
-        <OrgChartStructureSSR
-          nodeDataArray={nodeDataArray}
+        <OrgChartPageClient
+          companyId={companyId}
           companyName={displayCompanyName}
+          website={website}
           locationName={locationName}
           industry={industry}
-        />
-      </OrgChartPageClient>
+          profileCount={profileCount}
+          linkedinUrl={linkedinUrl}
+          nodeDataArray={nodeDataArray}
+          orgData={rawData}
+          initialCountry={undefined}
+          initialFunctionRoot={undefined}
+          signUpUrl={getSignUpUrl()}
+          filterInPlace
+          publishSlug={publishSlug}
+          initialAsOfMonth={initialAsOfMonth}
+        >
+          <OrgChartStructureSSR
+            nodeDataArray={nodeDataArray}
+            companyName={displayCompanyName}
+            locationName={locationName}
+            industry={industry}
+          />
+        </OrgChartPageClient>
+      </Suspense>
     </div>
   );
 }

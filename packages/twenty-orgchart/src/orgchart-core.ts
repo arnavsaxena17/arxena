@@ -14,6 +14,8 @@ export { OrgChartSignUpIntro } from './components/OrgChartSignUpIntro';
 export type { OrgChartSignUpIntroProps } from './components/OrgChartSignUpIntro';
 export { OrgChartSignUpModal } from './components/OrgChartSignUpModal';
 export type { OrgChartSignUpModalProps } from './components/OrgChartSignUpModal';
+export { OrgChartTimelineSlider } from './components/OrgChartTimelineSlider';
+export type { OrgChartTimelineSliderProps } from './components/OrgChartTimelineSlider';
 export { useCompanyAutocomplete, useCompanyInfoLookup } from './hooks/useCompanyAutocomplete';
 export type {
     CompanyAutocompleteItem,

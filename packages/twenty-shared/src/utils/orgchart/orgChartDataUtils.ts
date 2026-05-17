@@ -315,6 +315,10 @@ export function processOrgChartToNodeData(
       node.std_function = raw.std_function;
     }
 
+    if (typeof raw.std_function_root === 'string') {
+      node.std_function_root = raw.std_function_root;
+    }
+
     if (typeof raw.std_grade === 'string') {
       node.std_grade = raw.std_grade;
     }

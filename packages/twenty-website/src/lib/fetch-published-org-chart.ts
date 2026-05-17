@@ -45,6 +45,7 @@ export const buildForwardedOrgChartHeaders = (
 export async function fetchPublishedOrgChart(input: {
   publishSlug: string;
   forwardedUserAgent?: string;
+  asOfMonth?: string;
 }): Promise<Record<string, unknown> | null> {
   const serverBaseUrl = getOrgChartServerBaseUrl();
   const requestHeaders = await headers();
@@ -53,9 +54,15 @@ export async function fetchPublishedOrgChart(input: {
     input.forwardedUserAgent,
   );
 
+  const params = new URLSearchParams();
+  const asOfMonth = input.asOfMonth?.trim();
+  if (asOfMonth) {
+    params.set('asOfMonth', asOfMonth);
+  }
+  const query = params.toString();
   const url = `${serverBaseUrl}/org-chart/published/${encodeURIComponent(
     input.publishSlug,
-  )}`;
+  )}${query ? `?${query}` : ''}`;
 
   try {
     const res = await fetch(url, {

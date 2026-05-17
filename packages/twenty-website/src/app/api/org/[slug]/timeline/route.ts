@@ -26,7 +26,7 @@ export async function GET(
   const query = upstreamParams.toString();
   const upstreamUrl = `${serverBaseUrl}/org-chart/published/${encodeURIComponent(
     publishSlug,
-  )}${query ? `?${query}` : ''}`;
+  )}/timeline${query ? `?${query}` : ''}`;
 
   try {
     const response = await fetch(upstreamUrl, {
@@ -46,7 +46,7 @@ export async function GET(
     return NextResponse.json(json, { status: response.status });
   } catch {
     return NextResponse.json(
-      { status: 'error', message: 'Failed to fetch org chart' },
+      { status: 'error', message: 'Failed to fetch org chart timeline' },
       { status: 503 },
     );
   }

@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ThemeProvider } from '@emotion/react';
@@ -22,17 +22,22 @@ import {
   needsOrgChartCompanyInfoLookup,
   normalizeOptionalCompanyField,
 } from '@/lib/org-chart-company-metadata';
+import { processPublishedOrgChartPayload } from '@/lib/process-published-org-chart-payload';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- orgchart-core is used alongside dynamic OrgChartDiagram
 import {
   OrgChartDiagramHandle,
   OrgChartFilters,
   OrgChartSearchControls,
   OrgChartSignUpModal,
+  OrgChartTimelineSlider,
   useCompanyInfoLookup,
   useOrgChartFilterOptions,
 } from 'twenty-orgchart/orgchart-core';
 import {
   appendOrgChartSignupSearchParams,
+  filterOrgChartNodeDataArray,
+  hasMeaningfulOrgChartCountryFilter,
+  hasMeaningfulOrgChartFunctionRootFilter,
   OrgChartNodeData,
   toSlug,
 } from 'twenty-shared';
@@ -71,7 +76,13 @@ type OrgChartPageClientProps = {
   initialFunctionRoot?: string;
   signUpUrl: string;
   breadcrumb?: React.ReactNode;
+  /** When true (published /org/ pages), filter dropdowns slice the loaded chart in place instead of navigating to /org-chart/... */
+  filterInPlace?: boolean;
+  publishSlug?: string;
+  initialAsOfMonth?: string;
 };
+
+const monthKeyRegex = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 const StyledContainer = styled.div`
   display: flex;
@@ -233,6 +244,34 @@ const StyledTopRightActionsOverlay = styled.div`
   }
 `;
 
+const StyledTimelineOverlay = styled.div`
+  position: absolute;
+  top: ${({ theme }) => theme.spacing(2)};
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  pointer-events: auto;
+
+  @media (max-width: 720px) {
+    left: ${({ theme }) => theme.spacing(2)};
+    right: ${({ theme }) => theme.spacing(2)};
+    transform: none;
+    max-width: calc(100% - ${({ theme }) => theme.spacing(4)});
+  }
+`;
+
+const StyledAsOfMonthPicker = styled.div`
+  align-items: center;
+  background: ${({ theme }) => theme.background.primary};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  box-shadow: ${({ theme }) => theme.boxShadow.strong};
+  display: inline-flex;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(0.75)}
+    ${({ theme }) => theme.spacing(1)};
+`;
+
 const StyledTopRightActionButton = styled.button`
   padding: ${({ theme }) => theme.spacing(1)}
     ${({ theme }) => theme.spacing(1.5)};
@@ -307,9 +346,14 @@ export const OrgChartPageClient = ({
   initialFunctionRoot,
   signUpUrl,
   breadcrumb,
+  filterInPlace = false,
+  publishSlug,
+  initialAsOfMonth,
 }: OrgChartPageClientProps) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const diagramHandleRef = useRef<OrgChartDiagramHandle | null>(null);
+  const timelineEnabled = filterInPlace && !!publishSlug?.trim();
 
   const handleDiagramReady = useCallback((handle: OrgChartDiagramHandle) => {
     diagramHandleRef.current = handle;
@@ -332,6 +376,31 @@ export const OrgChartPageClient = ({
   const [exactEmployeeCount, setExactEmployeeCount] = useState<number | null>(
     null,
   );
+  const [publishedNodeDataArray, setPublishedNodeDataArray] =
+    useState(nodeDataArray);
+  const [publishedOrgData, setPublishedOrgData] = useState(orgData);
+  const [timelineMetrics, setTimelineMetrics] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
+  const [isTimelineChartLoading, setIsTimelineChartLoading] = useState(false);
+
+  const asOfFromUrl = useMemo(() => {
+    const raw = searchParams.get('asOf')?.trim() ?? '';
+    if (!raw || !monthKeyRegex.test(raw)) {
+      return '';
+    }
+    return raw;
+  }, [searchParams]);
+
+  const activeAsOfMonth = timelineEnabled
+    ? asOfFromUrl || initialAsOfMonth || ''
+    : '';
+
+  const chartNodeDataArray = timelineEnabled
+    ? publishedNodeDataArray
+    : nodeDataArray;
+  const chartOrgData = timelineEnabled ? publishedOrgData : orgData;
 
   const {
     availableCountries,
@@ -340,7 +409,179 @@ export const OrgChartPageClient = ({
     countryCounts,
     functionRootPercentLabels,
     functionRootCounts,
-  } = useOrgChartFilterOptions(orgData);
+  } = useOrgChartFilterOptions(chartOrgData);
+
+  const normalizeFilterCountry = useCallback((country?: string) => {
+    if (!hasMeaningfulOrgChartCountryFilter(country)) {
+      return undefined;
+    }
+    return country?.trim();
+  }, []);
+
+  const normalizeFilterFunctionRoot = useCallback((functionRoot?: string) => {
+    if (!hasMeaningfulOrgChartFunctionRootFilter(functionRoot)) {
+      return undefined;
+    }
+    return functionRoot?.trim();
+  }, []);
+
+  const displayedNodeDataArray = useMemo(() => {
+    if (!filterInPlace) {
+      return chartNodeDataArray;
+    }
+    return filterOrgChartNodeDataArray(chartNodeDataArray, {
+      country: selectedCountry,
+      functionRoot: selectedFunctionRoot,
+    });
+  }, [
+    filterInPlace,
+    chartNodeDataArray,
+    selectedCountry,
+    selectedFunctionRoot,
+  ]);
+
+  useEffect(() => {
+    if (!timelineEnabled) {
+      return;
+    }
+    setPublishedNodeDataArray(nodeDataArray);
+    setPublishedOrgData(orgData);
+  }, [timelineEnabled, nodeDataArray, orgData]);
+
+  useEffect(() => {
+    if (!timelineEnabled || !publishSlug?.trim()) {
+      setTimelineMetrics(null);
+      return;
+    }
+
+    let cancelled = false;
+    const fetchTimelineMetrics = async () => {
+      try {
+        const params = new URLSearchParams();
+        if (activeAsOfMonth) {
+          params.set('asOfMonth', activeAsOfMonth);
+        }
+        const query = params.toString();
+        const res = await fetch(
+          `/api/org/${encodeURIComponent(publishSlug)}/timeline${query ? `?${query}` : ''}`,
+        );
+        const json = (await res.json()) as { result?: Record<string, unknown> };
+        if (cancelled) {
+          return;
+        }
+        if (res.ok && json.result) {
+          setTimelineMetrics(json.result);
+        } else {
+          setTimelineMetrics(null);
+        }
+      } catch {
+        if (!cancelled) {
+          setTimelineMetrics(null);
+        }
+      }
+    };
+
+    void fetchTimelineMetrics();
+    return () => {
+      cancelled = true;
+    };
+  }, [timelineEnabled, publishSlug, activeAsOfMonth]);
+
+  useEffect(() => {
+    if (!timelineEnabled || !publishSlug?.trim()) {
+      return;
+    }
+
+    const normalizedInitial = initialAsOfMonth?.trim() ?? '';
+    if (activeAsOfMonth === normalizedInitial) {
+      return;
+    }
+
+    let cancelled = false;
+    const fetchPublishedChart = async () => {
+      setIsTimelineChartLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (activeAsOfMonth) {
+          params.set('asOfMonth', activeAsOfMonth);
+        }
+        const query = params.toString();
+        const res = await fetch(
+          `/api/org/${encodeURIComponent(publishSlug)}${query ? `?${query}` : ''}`,
+        );
+        const json = (await res.json()) as {
+          status?: string;
+          result?: Record<string, unknown>;
+        };
+        if (cancelled || json.status !== 'ok' || !json.result) {
+          return;
+        }
+        const processed = processPublishedOrgChartPayload(
+          json.result,
+          '/api/org-chart',
+        );
+        setPublishedNodeDataArray(processed.nodeDataArray);
+        setPublishedOrgData(processed.orgData as Record<string, unknown> | null);
+      } catch {
+        if (!cancelled) {
+          setPublishedNodeDataArray(nodeDataArray);
+          setPublishedOrgData(orgData);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsTimelineChartLoading(false);
+        }
+      }
+    };
+
+    void fetchPublishedChart();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    timelineEnabled,
+    publishSlug,
+    activeAsOfMonth,
+    initialAsOfMonth,
+    nodeDataArray,
+    orgData,
+  ]);
+
+  const handleAsOfMonthChange = useCallback(
+    (nextMonth: string) => {
+      if (!timelineEnabled || !publishSlug?.trim()) {
+        return;
+      }
+
+      const trimmed = nextMonth.trim();
+      const currentMonthKey = (() => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        return `${year}-${month}`;
+      })();
+
+      const params = new URLSearchParams(searchParams.toString());
+      if (!trimmed || trimmed === currentMonthKey) {
+        params.delete('asOf');
+      } else {
+        params.set('asOf', trimmed);
+      }
+
+      const query = params.toString();
+      const nextPath = `/org/${encodeURIComponent(publishSlug)}${query ? `?${query}` : ''}`;
+      router.replace(nextPath, { scroll: false });
+
+      trackGA4Event('org_chart_timeline', { as_of_month: trimmed || 'current' });
+      trackWebsiteEvent('org_chart_timeline', {
+        asOfMonth: trimmed || 'current',
+        publishSlug,
+      });
+    },
+    [timelineEnabled, publishSlug, router, searchParams],
+  );
+
+  const showTimelineSlider = timelineEnabled && timelineMetrics !== null;
 
   const { company: fallbackCompanyInfo, lookupByName } = useCompanyInfoLookup({
     baseUrl: '/api/org-chart',
@@ -461,34 +702,52 @@ export const OrgChartPageClient = ({
 
   const handleCountryChange = useCallback(
     (country: string | undefined) => {
+      const normalizedCountry = normalizeFilterCountry(country);
       trackGA4Event('org_chart_filter', {
         filter_type: 'country',
-        value: country,
+        value: normalizedCountry ?? country,
       });
       trackWebsiteEvent('org_chart_filter', {
         filterType: 'country',
-        value: country,
+        value: normalizedCountry ?? country,
       });
-      setSelectedCountry(country);
-      router.push(buildPath(country, selectedFunctionRoot));
+      setSelectedCountry(normalizedCountry);
+      if (!filterInPlace) {
+        router.push(buildPath(normalizedCountry, selectedFunctionRoot));
+      }
     },
-    [router, buildPath, selectedFunctionRoot],
+    [
+      router,
+      buildPath,
+      selectedFunctionRoot,
+      filterInPlace,
+      normalizeFilterCountry,
+    ],
   );
 
   const handleFunctionRootChange = useCallback(
     (fn: string | undefined) => {
+      const normalizedFunctionRoot = normalizeFilterFunctionRoot(fn);
       trackGA4Event('org_chart_filter', {
         filter_type: 'function_root',
-        value: fn,
+        value: normalizedFunctionRoot ?? fn,
       });
       trackWebsiteEvent('org_chart_filter', {
         filterType: 'functionRoot',
-        value: fn,
+        value: normalizedFunctionRoot ?? fn,
       });
-      setSelectedFunctionRoot(fn);
-      router.push(buildPath(selectedCountry, fn));
+      setSelectedFunctionRoot(normalizedFunctionRoot);
+      if (!filterInPlace) {
+        router.push(buildPath(selectedCountry, normalizedFunctionRoot));
+      }
     },
-    [router, buildPath, selectedCountry],
+    [
+      router,
+      buildPath,
+      selectedCountry,
+      filterInPlace,
+      normalizeFilterFunctionRoot,
+    ],
   );
 
   const handleSearch = useCallback(() => {
@@ -513,7 +772,7 @@ export const OrgChartPageClient = ({
     setClickedNode(null);
   }, []);
 
-  const hasFilters = !!orgData;
+  const hasFilters = !!chartOrgData;
 
   const signUpUrlWithContext = useMemo(
     () =>
@@ -601,12 +860,21 @@ export const OrgChartPageClient = ({
   };
 
   const hasPreviewOrgChartNodes = useMemo(
-    () => nodeDataArray.some((n) => n.nodeState === 'preview'),
-    [nodeDataArray],
+    () =>
+      displayedNodeDataArray.some(
+        (node: OrgChartNodeData) => node.nodeState === 'preview',
+      ),
+    [displayedNodeDataArray],
   );
 
+  const showFilteredEmptyState =
+    filterInPlace &&
+    chartNodeDataArray.length > 0 &&
+    displayedNodeDataArray.length === 0 &&
+    !isTimelineChartLoading;
+
   const showPreviewPersistentBanner =
-    hasPreviewOrgChartNodes && nodeDataArray.length > 0;
+    hasPreviewOrgChartNodes && displayedNodeDataArray.length > 0;
 
   const showNodeCapabilitiesHoverHint =
     process.env.NEXT_PUBLIC_EXPERIMENTAL_ORGCHART_NODE_HOVER_HINTS === 'true';
@@ -671,11 +939,61 @@ export const OrgChartPageClient = ({
               </StyledPreviewPersistentBanner>
             )}
             <StyledDiagramBody>
-              {nodeDataArray.length > 0 && (
+              {showFilteredEmptyState && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '100%',
+                    padding: 24,
+                    textAlign: 'center',
+                    color: '#666',
+                  }}
+                >
+                  No people match this country and function filter. Try another
+                  selection.
+                </div>
+              )}
+              {showTimelineSlider && (
+                <StyledTimelineOverlay>
+                  <StyledAsOfMonthPicker>
+                    <OrgChartTimelineSlider
+                      asOfMonth={activeAsOfMonth || undefined}
+                      onAsOfMonthChange={handleAsOfMonthChange}
+                      nodeDataArray={chartNodeDataArray}
+                      timelineMetrics={
+                        (timelineMetrics as {
+                          startMonth?: unknown;
+                          startMonthYear?: unknown;
+                        } | null) ?? null
+                      }
+                    />
+                  </StyledAsOfMonthPicker>
+                </StyledTimelineOverlay>
+              )}
+              {isTimelineChartLoading && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'rgba(255,255,255,0.72)',
+                    zIndex: 15,
+                    fontSize: 14,
+                    color: '#666',
+                  }}
+                >
+                  Updating org chart…
+                </div>
+              )}
+              {displayedNodeDataArray.length > 0 && (
                 <>
                   <OrgChartDiagram
                     onDiagramReady={handleDiagramReady}
-                    nodeDataArray={nodeDataArray}
+                    nodeDataArray={displayedNodeDataArray}
                     onNodeClick={handleNodeClick}
                     showNodeCapabilitiesHoverHint={
                       showNodeCapabilitiesHoverHint

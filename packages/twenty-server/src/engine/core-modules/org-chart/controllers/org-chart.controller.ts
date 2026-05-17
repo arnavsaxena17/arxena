@@ -674,10 +674,13 @@ export class OrgChartController {
     };
   }
 
-  @Get('published/:publishSlug')
-  async getPublishedOrgChart(
-    @Param('publishSlug') publishSlugParam: string,
-  ): Promise<{ status: 'ok'; result: Record<string, unknown> }> {
+  private async resolvePublishedOrgChartMapping(
+    publishSlugParam: string,
+  ): Promise<{
+    publishSlug: string;
+    companyId: string;
+    companyName?: string;
+  }> {
     const slugValidation = validatePublishSlug(publishSlugParam ?? '');
 
     if (!slugValidation.ok) {
@@ -694,7 +697,52 @@ export class OrgChartController {
       throw new HttpException('Org chart not found', HttpStatus.NOT_FOUND);
     }
 
-    const orgChart = await this.orgChartS3Service.getOrgChart(companyId);
+    return {
+      publishSlug: slugValidation.slug,
+      companyId,
+      companyName: mapping?.companyName?.trim() || undefined,
+    };
+  }
+
+  @Get('published/:publishSlug/timeline')
+  async getPublishedOrgChartTimeline(
+    @Param('publishSlug') publishSlugParam: string,
+    @Query('asOfMonth') asOfMonth: string | undefined,
+    @Query('companyLinkedinUrl') companyLinkedinUrl: string | undefined,
+  ) {
+    const { companyId, companyName } =
+      await this.resolvePublishedOrgChartMapping(publishSlugParam);
+    const normalizedCompanyId = this.normalizeCompanyId(companyId);
+    const resolvedName = (companyName ?? '').trim() || normalizedCompanyId;
+    const candidates = await this.loadTimelineCandidates(normalizedCompanyId);
+
+    return {
+      status: 'ok' as const,
+      result: computeTimelineMetricsFromCandidates({
+        candidates,
+        companyName: resolvedName,
+        companyLinkedinUrl: this.resolveTimelineCompanyLinkedinUrl(
+          normalizedCompanyId,
+          companyLinkedinUrl,
+        ),
+        asOfMonth,
+      }),
+    };
+  }
+
+  @Get('published/:publishSlug')
+  async getPublishedOrgChart(
+    @Param('publishSlug') publishSlugParam: string,
+    @Query('asOfMonth') asOfMonth: string | undefined,
+    @Query('country') country: string | undefined,
+    @Query('functionRoot') functionRoot: string | undefined,
+    @Query('companyLinkedinUrl') companyLinkedinUrl: string | undefined,
+  ): Promise<{ status: 'ok'; result: Record<string, unknown> }> {
+    const { companyId, companyName } =
+      await this.resolvePublishedOrgChartMapping(publishSlugParam);
+    const normalizedCompanyId = this.normalizeCompanyId(companyId);
+
+    const orgChart = await this.orgChartS3Service.getOrgChart(normalizedCompanyId);
 
     if (!orgChart) {
       throw new HttpException('Org chart not found', HttpStatus.NOT_FOUND);
@@ -702,14 +750,34 @@ export class OrgChartController {
 
     const payload: Record<string, unknown> = {
       ...(orgChart as unknown as Record<string, unknown>),
-      ...(mapping?.companyName?.trim()
-        ? { job_company_name: mapping.companyName.trim() }
-        : {}),
+      ...(companyName ? { job_company_name: companyName } : {}),
     };
+
+    let resultPayload = payload;
+
+    try {
+      const asOfOrgChart = await this.buildAsOfOrgChartFromCandidates({
+        normalizedCompanyId,
+        companyName,
+        country,
+        functionRoot,
+        asOfMonth,
+        companyLinkedinUrl,
+        baseOrgChartPayload: payload,
+      });
+      if (asOfOrgChart) {
+        resultPayload = asOfOrgChart;
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Failed to build as-of published org chart for companyId=${normalizedCompanyId}; serving default payload`,
+        error as Error,
+      );
+    }
 
     return {
       status: 'ok' as const,
-      result: await this.proxyOrgChartPayload(payload),
+      result: await this.proxyOrgChartPayload(resultPayload),
     };
   }
 

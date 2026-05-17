@@ -1,3 +1,9 @@
+export {
+    filterOrgChartNodeDataArray,
+    hasMeaningfulOrgChartCountryFilter,
+    hasMeaningfulOrgChartFunctionRootFilter,
+    type OrgChartNodeDataFilterOptions
+} from './filterOrgChartNodeDataArray';
 export { getProxiedImageUrl } from './getProxiedImageUrl';
 export { isValidLinkedInProfileUrl } from './isValidLinkedInProfileUrl';
 export {
