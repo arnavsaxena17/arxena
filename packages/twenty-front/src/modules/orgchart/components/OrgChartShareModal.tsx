@@ -1,12 +1,12 @@
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { useCallback, useMemo, useState } from 'react';
-import { toSlug } from 'twenty-shared';
+import { resolveBrandPublishSlug } from 'twenty-shared';
 import { Button, Section, SectionAlignment, SectionFontColor } from 'twenty-ui';
 
 import {
-    getArxenaSiteBaseUrl,
-    getArxenaSitePublicHost,
+  getArxenaSiteBaseUrl,
+  getArxenaSitePublicHost,
 } from '@/auth/utils/arxenaSiteUrl';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -79,17 +79,25 @@ const StyledLinkInput = styled(TextInput)`
   flex: 1;
 `;
 
+const ORG_PUBLISH_FOREVER_TTL_SECONDS = 0;
+const ORG_SHARE_MAX_TTL_SECONDS = 60 * 60 * 24 * 30;
+
 type ExpiryOption = {
-  id: '2h' | '12h' | '3d' | '30d';
+  id: '2h' | '12h' | '3d' | '30d' | 'forever';
   label: string;
-  ttlSeconds: number;
+  publishTtlSeconds: number;
 };
 
 const EXPIRY_OPTIONS: ExpiryOption[] = [
-  { id: '2h', label: '2 hours', ttlSeconds: 60 * 60 * 2 },
-  { id: '12h', label: '12 hours', ttlSeconds: 60 * 60 * 12 },
-  { id: '3d', label: '3 days', ttlSeconds: 60 * 60 * 24 * 3 },
-  { id: '30d', label: '30 days', ttlSeconds: 60 * 60 * 24 * 30 },
+  { id: '2h', label: '2 hours', publishTtlSeconds: 60 * 60 * 2 },
+  { id: '12h', label: '12 hours', publishTtlSeconds: 60 * 60 * 12 },
+  { id: '3d', label: '3 days', publishTtlSeconds: 60 * 60 * 24 * 3 },
+  { id: '30d', label: '30 days', publishTtlSeconds: 60 * 60 * 24 * 30 },
+  {
+    id: 'forever',
+    label: 'Never (public link only)',
+    publishTtlSeconds: ORG_PUBLISH_FOREVER_TTL_SECONDS,
+  },
 ];
 
 export type OrgChartShareModalProps = {
@@ -137,12 +145,14 @@ export const OrgChartShareModal = ({
   }, [siteBase]);
   const normalizedServerBase = serverBaseUrl.replace(/\/$/, '');
 
-  const brandPublishSlug = useMemo(() => {
-    if (companyName?.trim()) {
-      return toSlug(companyName);
-    }
-    return toSlug(companyId.replace(/_/g, '-'));
-  }, [companyId, companyName]);
+  const brandPublishSlug = useMemo(
+    () =>
+      resolveBrandPublishSlug({
+        companyId,
+        companyName,
+      }),
+    [companyId, companyName],
+  );
 
   const generateShareLinks = useCallback(async () => {
     if (!normalizedServerBase || !accessToken) {
@@ -160,23 +170,29 @@ export const OrgChartShareModal = ({
         'Content-Type': 'application/json',
         Authorization: `Bearer ${accessToken}`,
       };
-      const requestBody = {
-        companyId,
-        companyName,
-        ttlSeconds: selectedExpiry.ttlSeconds,
-      };
+      const publishTtlSeconds = selectedExpiry.publishTtlSeconds;
+      const shareTtlSeconds =
+        publishTtlSeconds === ORG_PUBLISH_FOREVER_TTL_SECONDS
+          ? ORG_SHARE_MAX_TTL_SECONDS
+          : publishTtlSeconds;
 
       const [shareRes, publishRes] = await Promise.all([
         fetch(`${normalizedServerBase}/org-chart/share/create`, {
           method: 'POST',
           headers: authHeaders,
-          body: JSON.stringify(requestBody),
+          body: JSON.stringify({
+            companyId,
+            companyName,
+            ttlSeconds: shareTtlSeconds,
+          }),
         }),
         fetch(`${normalizedServerBase}/org-chart/publish`, {
           method: 'POST',
           headers: authHeaders,
           body: JSON.stringify({
-            ...requestBody,
+            companyId,
+            companyName,
+            ttlSeconds: publishTtlSeconds,
             publishSlug: brandPublishSlug,
           }),
         }),
@@ -273,7 +289,7 @@ export const OrgChartShareModal = ({
     companyName,
     enqueueSnackBar,
     normalizedServerBase,
-    selectedExpiry.ttlSeconds,
+    selectedExpiry.publishTtlSeconds,
     siteBase,
     t,
   ]);
@@ -307,7 +323,7 @@ export const OrgChartShareModal = ({
         </Section>
 
         <Section alignment={SectionAlignment.Left} fontColor={SectionFontColor.Secondary}>
-          {t`Choose how long these links should work. Generate creates a private link and a public brand link at ${sitePublicHost}/org/${brandPublishSlug}.`}
+          {t`Choose how long the private link should work. The public brand link at ${sitePublicHost}/org/${brandPublishSlug} can be set to never expire. Generate creates both links.`}
         </Section>
 
         <Section alignment={SectionAlignment.Left}>

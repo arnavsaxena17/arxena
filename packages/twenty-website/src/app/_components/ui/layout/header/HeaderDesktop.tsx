@@ -13,8 +13,8 @@ import { FREE_TRIAL_CTA_LABEL } from '@/lib/free-trial-flow';
 import { PRODUCT_PAGES, SOLUTION_PAGES } from '@/lib/marketing-site-pages';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 import {
-    SUPPORTED_PRICING_CURRENCIES,
-    type SupportedPricingCurrency,
+  SUPPORTED_PRICING_CURRENCIES,
+  type SupportedPricingCurrency,
 } from '@/lib/pricing-currency-helpers';
 
 const StyledDesktopNav = styled.nav`
@@ -162,18 +162,18 @@ export const HeaderDesktop = ({
           label="Products"
           items={PRODUCT_PAGES}
         />
-        <StyledNavLinkHiddenOnTablet href="/resources">
+        {/* <StyledNavLinkHiddenOnTablet href="/resources">
           Resources
-        </StyledNavLinkHiddenOnTablet>
-        <StyledNavLink href="/team">Team</StyledNavLink>
-        <StyledNavLink href="/contact">Contact</StyledNavLink>
+        </StyledNavLinkHiddenOnTablet> */}
+        {/* <StyledNavLink href="/team">Team</StyledNavLink> */}
+        {/* <StyledNavLink href="/contact">Contact</StyledNavLink> */}
         <StyledNavLink href="/pricing">Pricing</StyledNavLink>
-        <StyledNavLinkHiddenOnTablet
+        {/* <StyledNavLinkHiddenOnTablet
           href="/engage"
           aria-label="Engage — WhatsApp & LinkedIn"
         >
           Engage
-        </StyledNavLinkHiddenOnTablet>
+        </StyledNavLinkHiddenOnTablet> */}
         <StyledNavLinkHiddenOnTablet href="/chrome-extension">
           Chrome extension
         </StyledNavLinkHiddenOnTablet>

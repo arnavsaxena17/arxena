@@ -59,7 +59,12 @@ import { OrgChartTheOrgEnrichmentService } from '../services/org-chart-theorg-en
 import { OrgChartS3Service } from '../services/orgchart-s3.service';
 import { PythonOrgChartService } from '../services/python-org-chart.service';
 import { resolveFirstAutocompleteSource } from '../utils/first-autocomplete-source.util';
-import { toOrgChartCacheTtlMs } from '../utils/org-chart-cache-ttl.util';
+import {
+    isOrgPublishForeverTtl,
+    ORG_PUBLISH_MAX_TTL_SECONDS,
+    resolveOrgChartPublishCacheTtlMs,
+    toOrgChartCacheTtlMs,
+} from '../utils/org-chart-cache-ttl.util';
 import { isOrgChartPdlProxyAuthorized } from '../utils/org-chart-pdl-proxy.util';
 import {
     isLikelyBrowserOrgChartRequest,
@@ -509,7 +514,7 @@ export class OrgChartController {
   ): Promise<{
     status: 'ok';
     publishSlug: string;
-    expiresAt: string;
+    expiresAt: string | null;
   }> {
     const authToken = this.getAuthToken(req);
 
@@ -532,18 +537,28 @@ export class OrgChartController {
       throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
     }
 
-    const ttlSeconds =
-      typeof body.ttlSeconds === 'number' && Number.isFinite(body.ttlSeconds)
-        ? Math.floor(body.ttlSeconds)
-        : 0;
-
-    if (ttlSeconds <= 0) {
+    if (
+      typeof body.ttlSeconds !== 'number' ||
+      !Number.isFinite(body.ttlSeconds)
+    ) {
       throw new HttpException(
-        'Body field "ttlSeconds" is required and must be > 0',
+        'Body field "ttlSeconds" is required (use 0 for no expiry)',
         HttpStatus.BAD_REQUEST,
       );
     }
-    if (ttlSeconds > 60 * 60 * 24 * 30) {
+
+    const ttlSeconds = Math.floor(body.ttlSeconds);
+
+    if (ttlSeconds < 0) {
+      throw new HttpException(
+        'Body field "ttlSeconds" must be 0 (never) or a positive number of seconds',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    if (
+      !isOrgPublishForeverTtl(ttlSeconds) &&
+      ttlSeconds > ORG_PUBLISH_MAX_TTL_SECONDS
+    ) {
       throw new HttpException(
         'ttlSeconds cannot exceed 30 days',
         HttpStatus.BAD_REQUEST,
@@ -568,15 +583,24 @@ export class OrgChartController {
       throw new HttpException('Workspace not found', HttpStatus.UNAUTHORIZED);
     }
 
-    const slugCandidate =
+    const publishCompanyName =
+      typeof body.companyName === 'string' ? body.companyName.trim() : undefined;
+
+    const requestedPublishSlug =
       typeof body.publishSlug === 'string' && body.publishSlug.trim()
         ? body.publishSlug.trim()
+        : undefined;
+
+    const requestedSlugValidation = requestedPublishSlug
+      ? validatePublishSlug(requestedPublishSlug)
+      : null;
+
+    const slugCandidate =
+      requestedSlugValidation?.ok === true
+        ? requestedSlugValidation.slug
         : buildDefaultPublishSlug({
             companyId: normalizedCompanyId,
-            companyName:
-              typeof body.companyName === 'string'
-                ? body.companyName.trim()
-                : undefined,
+            companyName: publishCompanyName,
           });
 
     const slugValidation = validatePublishSlug(slugCandidate);
@@ -626,7 +650,7 @@ export class OrgChartController {
       publishedAt,
     };
 
-    const publishTtlMs = toOrgChartCacheTtlMs(ttlSeconds);
+    const publishTtlMs = resolveOrgChartPublishCacheTtlMs(ttlSeconds);
 
     await this.orgChartCacheStorageService.set(
       orgPublishedSlugCacheKey(publishSlug),
@@ -639,12 +663,14 @@ export class OrgChartController {
       publishTtlMs,
     );
 
-    const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
+    const expiresAt = isOrgPublishForeverTtl(ttlSeconds)
+      ? null
+      : new Date(Date.now() + ttlSeconds * 1000).toISOString();
 
     return {
       status: 'ok',
       publishSlug,
-      expiresAt: expiresAt.toISOString(),
+      expiresAt,
     };
   }
 
