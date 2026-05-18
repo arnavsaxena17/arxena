@@ -199,7 +199,7 @@ export const OrgChartSignUpIntro = ({
         <StyledSitemapIcon stroke={1.5} />
       </StyledIconWrap>
       <StyledTitle id={titleId}>
-        Start for free, no credit card required!
+        Start for free!
       </StyledTitle>
       <StyledContextBadge>{headline}</StyledContextBadge>
       <StyledCopyBlock>

@@ -97,7 +97,7 @@ export const SignInUp = () => {
 
     if (workspaceName === 'Arxena') {
       if (isOrgChartEnabledEnv) {
-        return t`Start for free, no credit card required!`;
+        return t`Start for free!`;
       }
       return t`Welcome to Arxena.`;
     }
