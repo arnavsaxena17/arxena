@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { OrgChartNodeData } from 'twenty-shared';
 
@@ -106,6 +106,25 @@ export const ArxOrgChartTimelineSlider = ({
     ? (asOfMonth as string)
     : monthRange[monthRange.length - 1];
   const selectedMonthIndex = Math.max(monthRange.indexOf(selectedMonth), 0);
+  const [dragMonthIndex, setDragMonthIndex] = useState<number | null>(null);
+  const displayMonthIndex = dragMonthIndex ?? selectedMonthIndex;
+
+  useEffect(() => {
+    setDragMonthIndex(null);
+  }, [selectedMonthIndex]);
+
+  const commitMonthIndex = useCallback(
+    (index: number) => {
+      const nextMonth = monthRange[index];
+      if (!nextMonth) {
+        return;
+      }
+      setDragMonthIndex(null);
+      onAsOfMonthChange?.(nextMonth);
+    },
+    [monthRange, onAsOfMonthChange],
+  );
+
   const isSingleMonthTimeline = monthRange.length <= 1;
   const sliderTrackWidth = Math.min(240, Math.max(24, monthRange.length * 14));
   const sliderPanelWidth = Math.min(320, sliderTrackWidth + 80);
@@ -116,7 +135,7 @@ export const ArxOrgChartTimelineSlider = ({
   const selectedMonthLabel = monthLabelFormatter.format(
     isSingleMonthTimeline
       ? new Date()
-      : (parseMonthToDate(monthRange[selectedMonthIndex]) ?? new Date()),
+      : (parseMonthToDate(monthRange[displayMonthIndex]) ?? new Date()),
   );
 
   return (
@@ -134,15 +153,24 @@ export const ArxOrgChartTimelineSlider = ({
               min={0}
               max={Math.max(monthRange.length - 1, 0)}
               step={1}
-              value={selectedMonthIndex}
+              value={displayMonthIndex}
               style={{ width: '100%' }}
-              onChange={(e) => {
-                const nextIndex = Number(e.target.value);
-                const nextMonth = monthRange[nextIndex];
-                if (!nextMonth) {
+              onChange={(event) => {
+                setDragMonthIndex(Number(event.target.value));
+              }}
+              onPointerUp={(event) => {
+                commitMonthIndex(Number(event.currentTarget.value));
+              }}
+              onKeyUp={(event) => {
+                if (
+                  event.key !== 'ArrowLeft' &&
+                  event.key !== 'ArrowRight' &&
+                  event.key !== 'Home' &&
+                  event.key !== 'End'
+                ) {
                   return;
                 }
-                onAsOfMonthChange?.(nextMonth);
+                commitMonthIndex(Number(event.currentTarget.value));
               }}
             />
           </StyledAsOfMonthSliderTimeline>

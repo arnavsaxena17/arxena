@@ -84,6 +84,32 @@ interface LinkedinProfileDto {
   notify?: boolean;
 }
 
+interface LinkedinUserPostsDto {
+  account_id: string;
+  identifier: string; // LinkedIn provider_id (e.g. ACoAAASFnFQBOtdZfH_3bd-W2StePCg1aZFPp2g)
+  limit?: number;
+  cursor?: string;
+  is_company?: boolean;
+}
+
+/**
+ * Combined profile overview DTO.
+ * NOTE: Unipile does NOT expose a standalone "activity" endpoint for LinkedIn.
+ * The only activity-adjacent data available is:
+ *   - Posts authored by the user (GET /api/v1/users/{identifier}/posts)
+ *   - "recruiting_activity" profile section — requires LinkedIn Recruiter subscription
+ * This endpoint fetches profile + posts in parallel and surfaces recruiting_activity
+ * inside the profile if include_recruiting_activity is true and the account has Recruiter.
+ */
+interface LinkedinProfileOverviewDto {
+  account_id: string;
+  identifier: string; // public slug (e.g. "arpande") OR provider_id
+  posts_limit?: number;          // how many recent posts to fetch (default 10)
+  include_recruiting_activity?: boolean; // fetch recruiting_activity section (Recruiter only)
+  linkedin_sections?: string[];  // additional profile sections to fetch
+  notify?: boolean;
+}
+
 interface LinkedinMessageDto {
   account_id: string;
   attendees_ids: string[];
@@ -1173,7 +1199,6 @@ export class LinkedinUnipileController {
     try {
       const queryParams = new URLSearchParams({
         account_id: profileRequest.account_id,
-        identifier: profileRequest.identifier,
       });
 
       if (profileRequest.linkedin_sections) {
@@ -1184,7 +1209,7 @@ export class LinkedinUnipileController {
         queryParams.append('notify', profileRequest.notify.toString());
       }
 
-      const response = await this.linkedinUnipileRequestService.makeUnipileRequest(`/api/v1/users/profile?${queryParams}`);
+      const response = await this.linkedinUnipileRequestService.makeUnipileRequest(`/api/v1/users/${encodeURIComponent(profileRequest.identifier)}?${queryParams}`);
       return {
         success: true,
         profile: response,
@@ -1193,6 +1218,143 @@ export class LinkedinUnipileController {
       this.logger.error('Failed to get LinkedIn profile:', error);
       throw error;
     }
+  }
+
+  @Post('profile/posts')
+  async getUserPosts(
+    @Body() postsRequest: LinkedinUserPostsDto,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
+    try {
+      const queryParams = new URLSearchParams({
+        account_id: postsRequest.account_id,
+      });
+
+      if (postsRequest.limit !== undefined) {
+        queryParams.append('limit', postsRequest.limit.toString());
+      }
+
+      if (postsRequest.cursor) {
+        queryParams.append('cursor', postsRequest.cursor);
+      }
+
+      if (postsRequest.is_company !== undefined) {
+        queryParams.append('is_company', postsRequest.is_company.toString());
+      }
+
+      const response = await this.linkedinUnipileRequestService.makeUnipileRequest(
+        `/api/v1/users/${encodeURIComponent(postsRequest.identifier)}/posts?${queryParams}`,
+      );
+
+      return {
+        success: true,
+        posts: response,
+      };
+    } catch (error) {
+      this.logger.error('Failed to get LinkedIn user posts:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Combined endpoint: profile + posts + activity (recruiting_activity section) in one call.
+   *
+   * Activity note: Unipile does not provide a standalone LinkedIn activity endpoint.
+   * Activity data surfaces via two mechanisms only:
+   *   1. Posts: GET /api/v1/users/{identifier}/posts  (always available)
+   *   2. recruiting_activity profile section           (LinkedIn Recruiter accounts only)
+   * Both are fetched in parallel. If recruiting_activity is unavailable (non-Recruiter),
+   * the `activity` field in the response will be null with an explanatory message.
+   */
+  @Post('profile/overview')
+  async getProfileOverview(
+    @Body() req: LinkedinProfileOverviewDto,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
+    // --- Build profile query params ---
+    const profileSections = [...(req.linkedin_sections ?? [])];
+    if (req.include_recruiting_activity && !profileSections.includes('recruiting_activity')) {
+      profileSections.push('recruiting_activity');
+    }
+
+    const profileParams = new URLSearchParams({ account_id: req.account_id });
+    if (profileSections.length > 0) {
+      profileParams.append('linkedin_sections', profileSections.join(','));
+    }
+    if (req.notify !== undefined) {
+      profileParams.append('notify', req.notify.toString());
+    }
+
+    // --- Build posts query params ---
+    const postsParams = new URLSearchParams({ account_id: req.account_id });
+    postsParams.append('limit', String(req.posts_limit ?? 10));
+
+    // --- Fetch profile then posts with a human-like random delay between them ---
+    // Firing both simultaneously risks LinkedIn anti-bot triggers; a random pause mimics human browsing.
+    const randomDelayMs = (min: number, max: number) =>
+      new Promise<void>((resolve) =>
+        setTimeout(resolve, Math.floor(Math.random() * (max - min + 1)) + min),
+      );
+
+    let profileResult: PromiseSettledResult<unknown>;
+    let postsResult: PromiseSettledResult<unknown>;
+
+    try {
+      const profileData = await this.linkedinUnipileRequestService.makeUnipileRequest(
+        `/api/v1/users/${encodeURIComponent(req.identifier)}?${profileParams}`,
+      );
+      profileResult = { status: 'fulfilled', value: profileData };
+    } catch (err) {
+      profileResult = { status: 'rejected', reason: err };
+    }
+
+    // Wait 2–5 seconds between requests (human-like browsing pace)
+    await randomDelayMs(2000, 5000);
+
+    try {
+      const postsData = await this.linkedinUnipileRequestService.makeUnipileRequest(
+        `/api/v1/users/${encodeURIComponent(req.identifier)}/posts?${postsParams}`,
+      );
+      postsResult = { status: 'fulfilled', value: postsData };
+    } catch (err) {
+      postsResult = { status: 'rejected', reason: err };
+    }
+
+    const profile = profileResult.status === 'fulfilled' ? profileResult.value : null;
+    const profileError = profileResult.status === 'rejected'
+      ? (profileResult.reason as Error)?.message ?? 'Failed to fetch profile'
+      : null;
+
+    const postsData = postsResult.status === 'fulfilled' ? postsResult.value : null;
+    const postsError = postsResult.status === 'rejected'
+      ? (postsResult.reason as Error)?.message ?? 'Failed to fetch posts'
+      : null;
+
+    // --- Extract recruiting_activity from profile if requested ---
+    let activity: unknown = null;
+    let activityNote: string =
+      'Unipile does not expose a standalone LinkedIn activity endpoint. ' +
+      'Posts are the primary activity signal. Pass include_recruiting_activity=true ' +
+      'with a LinkedIn Recruiter account to also retrieve recruiter activity.';
+
+    if (req.include_recruiting_activity && profile) {
+      const profileData = profile as Record<string, unknown>;
+      activity = profileData['recruiting_activity'] ?? null;
+      activityNote = activity
+        ? 'recruiting_activity fetched from profile sections (LinkedIn Recruiter).'
+        : 'recruiting_activity section was empty — account may not have LinkedIn Recruiter access.';
+    }
+
+    return {
+      success: true,
+      identifier: req.identifier,
+      profile: profile ?? null,
+      profile_error: profileError,
+      posts: postsData ?? null,
+      posts_error: postsError,
+      activity,
+      activity_note: activityNote,
+    };
   }
 
   @Post('message/send')

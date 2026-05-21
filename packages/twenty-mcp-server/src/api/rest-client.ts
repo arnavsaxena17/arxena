@@ -1,6 +1,6 @@
 const TIMEOUT_MS = 90_000; // 90s — query-generation pipeline can take ~30–40s across 4 LLM agents
 
-type HttpMethod = 'GET' | 'POST' | 'PATCH';
+type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
 
 /** Minimal logger wrapper so MCP server calls are visible in logs. */
 function logMcpRestCall(
@@ -210,6 +210,58 @@ export async function callRestAPIPatch(
     });
 
     return response.json();
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * Call any REST API with DELETE (e.g. disconnect Unipile account).
+ */
+export async function callRestAPIDelete(
+  baseUrl: string,
+  apiToken: string,
+  pathPrefix: string,
+  endpoint: string,
+): Promise<unknown> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  try {
+    const url = buildUrl(baseUrl, pathPrefix, endpoint);
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiToken}`,
+        [MCP_REQUEST_SOURCE_HEADER]: MCP_REQUEST_SOURCE_VALUE,
+      },
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      logMcpRestCall('DELETE', url, response.status, {
+        pathPrefix,
+        endpoint,
+        errorMessage: text,
+      });
+      throw new Error(
+        `REST API DELETE /${pathPrefix}/${endpoint} failed: ${response.status} ${text}`,
+      );
+    }
+
+    logMcpRestCall('DELETE', url, response.status, {
+      pathPrefix,
+      endpoint,
+    });
+
+    const text = await response.text();
+    if (!text.trim()) {
+      return { success: true };
+    }
+
+    return JSON.parse(text) as unknown;
   } finally {
     clearTimeout(timeoutId);
   }

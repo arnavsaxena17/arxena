@@ -303,6 +303,7 @@ export const SEARCH_LINKEDIN_PEOPLE_INPUT_DESCRIPTOR: readonly McpInputFieldDesc
   { key: 'query', type: 'string', description: 'Natural language query for full search flow (optional if searchParameters provided)', required: false },
   { key: 'assistantThreadId', type: 'string', description: 'Assistant thread ID for conversation context (required if using query)', required: false },
   { key: 'parsedJD', type: 'object', description: 'Parsed job description (optional, used with query)', required: false },
+  { key: 'account_id', type: 'string', description: 'LinkedIn Unipile account ID (optional; resolved from auth token if omitted)', required: false },
   { key: 'cursor', type: 'string', description: 'Pagination cursor for continuing search', required: false },
   { key: 'limit', type: 'number', description: 'Maximum number of results to return', required: false },
 ] as const;
@@ -323,6 +324,7 @@ export const SEARCH_LINKEDIN_WITH_QUERY_INPUT_DESCRIPTOR: readonly McpInputField
 export const SEARCH_LINKEDIN_COMPANIES_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
   { key: 'searchType', type: 'string', description: 'One of: classic, sales_navigator', required: true },
   { key: 'searchParameters', type: 'object', description: 'LinkedIn search parameters object', required: true },
+  { key: 'account_id', type: 'string', description: 'LinkedIn Unipile account ID (optional; resolved from auth token if omitted)', required: false },
   { key: 'cursor', type: 'string', description: 'Pagination cursor for continuing search', required: false },
   { key: 'limit', type: 'number', description: 'Maximum number of results to return', required: false },
 ] as const;
@@ -330,7 +332,31 @@ export const SEARCH_LINKEDIN_COMPANIES_INPUT_DESCRIPTOR: readonly McpInputFieldD
 /** Descriptor for search_linkedin_jobs tool input. */
 export const SEARCH_LINKEDIN_JOBS_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
   { key: 'searchParameters', type: 'object', description: 'LinkedIn search parameters object', required: true },
+  { key: 'account_id', type: 'string', description: 'LinkedIn Unipile account ID (optional; resolved from auth token if omitted)', required: false },
   { key: 'cursor', type: 'string', description: 'Pagination cursor for continuing search', required: false },
+  { key: 'limit', type: 'number', description: 'Maximum number of results to return', required: false },
+] as const;
+
+/** Descriptor for search_linkedin_posts tool input. */
+export const SEARCH_LINKEDIN_POSTS_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'searchParameters', type: 'object', description: 'LinkedIn classic posts search parameters object', required: true },
+  { key: 'account_id', type: 'string', description: 'LinkedIn Unipile account ID (optional; resolved from auth token if omitted)', required: false },
+  { key: 'cursor', type: 'string', description: 'Pagination cursor for continuing search', required: false },
+  { key: 'limit', type: 'number', description: 'Maximum number of results to return', required: false },
+] as const;
+
+/** Descriptor for search_linkedin_from_url tool input (Unipile search from pasted LinkedIn search URL). */
+export const SEARCH_LINKEDIN_FROM_URL_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'url', type: 'string', description: 'LinkedIn search results URL from the browser (classic, Sales Navigator, or Recruiter)', required: true },
+  { key: 'account_id', type: 'string', description: 'LinkedIn Unipile account ID (optional; resolved from auth token if omitted)', required: false },
+  { key: 'cursor', type: 'string', description: 'Pagination cursor for continuing search', required: false },
+  { key: 'limit', type: 'number', description: 'Maximum number of results to return', required: false },
+] as const;
+
+/** Descriptor for search_linkedin_continue tool input (next page of profiles/results). */
+export const SEARCH_LINKEDIN_CONTINUE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'cursor', type: 'string', description: 'Cursor from a previous search_linkedin_* response', required: true },
+  { key: 'account_id', type: 'string', description: 'LinkedIn Unipile account ID (optional; resolved from auth token if omitted)', required: false },
   { key: 'limit', type: 'number', description: 'Maximum number of results to return', required: false },
 ] as const;
 
@@ -579,6 +605,102 @@ export const WHATSAPP_SEND_ATTACHMENT_INPUT_DESCRIPTOR: readonly McpInputFieldDe
   { key: 'phoneNumber', type: 'string', description: 'Phone number to send attachment to', required: true },
   { key: 'attachments', type: 'object', description: 'Array of attachment objects', required: true },
   { key: 'caption', type: 'string', description: 'Optional caption for the attachment', required: false },
+] as const;
+
+// ==================== Unipile controller tools (linkedin-unipile / whatsapp-unipile) ====================
+
+export const UNIPILE_ACCOUNT_ID_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'accountId', type: 'string', description: 'Unipile account ID', required: true },
+] as const;
+
+export const LINKEDIN_UNIPILE_CONNECT_CREDENTIALS_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'username', type: 'string', description: 'LinkedIn login email or username', required: true },
+  { key: 'password', type: 'string', description: 'LinkedIn password', required: true },
+] as const;
+
+export const LINKEDIN_UNIPILE_CONNECT_COOKIE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'access_token', type: 'string', description: 'LinkedIn li_at cookie value', required: true },
+  { key: 'user_agent', type: 'string', description: 'Browser user-agent used with the cookie', required: true },
+] as const;
+
+export const LINKEDIN_UNIPILE_EXTENSION_SYNC_COOKIES_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'li_at', type: 'string', description: 'LinkedIn li_at cookie', required: false },
+  { key: 'li_a', type: 'string', description: 'LinkedIn li_a cookie', required: false },
+  { key: 'user_agent', type: 'string', description: 'Browser user-agent', required: false },
+  { key: 'page_url', type: 'string', description: 'Current LinkedIn page URL', required: false },
+  { key: 'linkedin_profile_url', type: 'string', description: 'Canonical LinkedIn profile URL (/in/...)', required: false },
+] as const;
+
+export const LINKEDIN_UNIPILE_RECONNECT_FROM_STORED_PROFILE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'user_agent', type: 'string', description: 'Optional browser user-agent override', required: false },
+] as const;
+
+export const LINKEDIN_UNIPILE_UPDATE_MEMBER_ACCOUNT_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'accountId', type: 'string', description: 'LinkedIn Unipile account ID to bind to workspace member', required: true },
+] as const;
+
+export const LINKEDIN_UNIPILE_ORG_CHART_ENSURE_ACCOUNT_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'success_redirect_url', type: 'string', description: 'Redirect URL after successful hosted auth', required: false },
+  { key: 'failure_redirect_url', type: 'string', description: 'Redirect URL after failed hosted auth', required: false },
+] as const;
+
+export const LINKEDIN_UNIPILE_HOSTED_AUTH_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'type', type: 'string', description: 'create or reconnect', required: false },
+  { key: 'providers', type: 'object', description: 'Provider list or "*"', required: false },
+  { key: 'expiresOn', type: 'string', description: 'ISO expiry for hosted link', required: false },
+  { key: 'success_redirect_url', type: 'string', description: 'Success redirect URL', required: false },
+  { key: 'failure_redirect_url', type: 'string', description: 'Failure redirect URL', required: false },
+  { key: 'notify_url', type: 'string', description: 'Webhook notify URL', required: false },
+  { key: 'name', type: 'string', description: 'Internal user label for Unipile', required: false },
+  { key: 'reconnect_account', type: 'string', description: 'Account ID when reconnecting', required: false },
+] as const;
+
+export const LINKEDIN_UNIPILE_CHECKPOINT_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'account_id', type: 'string', description: 'Unipile account ID awaiting checkpoint', required: true },
+  { key: 'provider', type: 'string', description: 'Must be LINKEDIN', required: true },
+  { key: 'code', type: 'string', description: '2FA/OTP verification code', required: true },
+] as const;
+
+export const LINKEDIN_UNIPILE_GET_PROFILE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'account_id', type: 'string', description: 'LinkedIn Unipile account ID', required: true },
+  { key: 'identifier', type: 'string', description: 'LinkedIn profile identifier or URL slug (/in/username)', required: true },
+  { key: 'linkedin_sections', type: 'object', description: 'Optional LinkedIn profile sections to fetch', required: false },
+  { key: 'notify', type: 'boolean', description: 'Whether to notify on profile view', required: false },
+] as const;
+
+export const LINKEDIN_UNIPILE_GET_PROFILE_OVERVIEW_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'account_id', type: 'string', description: 'LinkedIn Unipile account ID', required: true },
+  { key: 'identifier', type: 'string', description: 'LinkedIn public slug (e.g. "arpande") or provider_id', required: true },
+  { key: 'posts_limit', type: 'number', description: 'Number of recent posts to fetch (default 10, max 100)', required: false },
+  { key: 'include_recruiting_activity', type: 'boolean', description: 'Fetch recruiting_activity profile section (requires LinkedIn Recruiter subscription)', required: false },
+  { key: 'linkedin_sections', type: 'object', description: 'Additional profile sections to fetch (e.g. ["experience","skills"])', required: false },
+  { key: 'notify', type: 'boolean', description: 'Whether to notify the profile owner of the view', required: false },
+] as const;
+
+export const LINKEDIN_UNIPILE_GET_USER_POSTS_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'account_id', type: 'string', description: 'LinkedIn Unipile account ID', required: true },
+  { key: 'identifier', type: 'string', description: 'LinkedIn provider_id of the user (e.g. ACoAAASFnFQBOtdZfH_3bd-W2StePCg1aZFPp2g)', required: true },
+  { key: 'limit', type: 'number', description: 'Number of posts to return (1-100, default 20)', required: false },
+  { key: 'cursor', type: 'string', description: 'Pagination cursor from a previous response', required: false },
+  { key: 'is_company', type: 'boolean', description: 'Set to true to fetch company posts instead of personal posts', required: false },
+] as const;
+
+export const LINKEDIN_UNIPILE_SEND_MESSAGE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'account_id', type: 'string', description: 'LinkedIn Unipile account ID', required: true },
+  { key: 'attendees_ids', type: 'object', description: 'Recipient provider IDs', required: true },
+  { key: 'text', type: 'string', description: 'Message body', required: true },
+  { key: 'subject', type: 'string', description: 'Optional message subject (e.g. InMail)', required: false },
+  { key: 'options', type: 'object', description: 'LinkedIn API options (classic/recruiter/sales_navigator, inmail)', required: false },
+] as const;
+
+export const LINKEDIN_UNIPILE_SEND_INVITATION_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'account_id', type: 'string', description: 'LinkedIn Unipile account ID', required: true },
+  { key: 'provider_id', type: 'string', description: 'LinkedIn provider ID of the invitee', required: true },
+  { key: 'message', type: 'string', description: 'Connection request note', required: true },
+] as const;
+
+export const WHATSAPP_UNIPILE_UPDATE_MEMBER_ACCOUNT_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'accountId', type: 'string', description: 'WhatsApp Unipile account ID to bind to workspace member', required: true },
 ] as const;
 
 // ==================== Candidate Tools ====================

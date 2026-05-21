@@ -18,28 +18,28 @@ import { companySearchLightTheme } from '@/lib/company-search';
 import { FREE_TRIAL_CTA_LABEL } from '@/lib/free-trial-flow';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 import {
-  mergeOrgChartCompanyField,
-  needsOrgChartCompanyInfoLookup,
-  normalizeOptionalCompanyField,
+    mergeOrgChartCompanyField,
+    needsOrgChartCompanyInfoLookup,
+    normalizeOptionalCompanyField,
 } from '@/lib/org-chart-company-metadata';
 import { processPublishedOrgChartPayload } from '@/lib/process-published-org-chart-payload';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- orgchart-core is used alongside dynamic OrgChartDiagram
 import {
-  OrgChartDiagramHandle,
-  OrgChartFilters,
-  OrgChartSearchControls,
-  OrgChartSignUpModal,
-  OrgChartTimelineSlider,
-  useCompanyInfoLookup,
-  useOrgChartFilterOptions,
+    OrgChartDiagramHandle,
+    OrgChartFilters,
+    OrgChartSearchControls,
+    OrgChartSignUpModal,
+    OrgChartTimelineSlider,
+    useCompanyInfoLookup,
+    useOrgChartFilterOptions,
 } from 'twenty-orgchart/orgchart-core';
 import {
-  appendOrgChartSignupSearchParams,
-  filterOrgChartNodeDataArray,
-  hasMeaningfulOrgChartCountryFilter,
-  hasMeaningfulOrgChartFunctionRootFilter,
-  OrgChartNodeData,
-  toSlug,
+    appendOrgChartSignupSearchParams,
+    filterOrgChartNodeDataArray,
+    hasMeaningfulOrgChartCountryFilter,
+    hasMeaningfulOrgChartFunctionRootFilter,
+    OrgChartNodeData,
+    toSlug,
 } from 'twenty-shared';
 
 const OrgChartDiagram = dynamic(
@@ -393,9 +393,27 @@ export const OrgChartPageClient = ({
     return raw;
   }, [searchParams]);
 
-  const activeAsOfMonth = timelineEnabled
-    ? asOfFromUrl || initialAsOfMonth || ''
-    : '';
+  const [committedAsOfMonth, setCommittedAsOfMonth] = useState(() => {
+    if (!filterInPlace || !publishSlug?.trim()) {
+      return '';
+    }
+    const fromInitial = initialAsOfMonth?.trim() ?? '';
+    if (fromInitial && monthKeyRegex.test(fromInitial)) {
+      return fromInitial;
+    }
+    return asOfFromUrl;
+  });
+
+  useEffect(() => {
+    if (!timelineEnabled) {
+      return;
+    }
+    setCommittedAsOfMonth((previous) =>
+      previous === asOfFromUrl ? previous : asOfFromUrl,
+    );
+  }, [timelineEnabled, asOfFromUrl]);
+
+  const activeAsOfMonth = timelineEnabled ? committedAsOfMonth : '';
 
   const chartNodeDataArray = timelineEnabled
     ? publishedNodeDataArray
@@ -457,13 +475,8 @@ export const OrgChartPageClient = ({
     let cancelled = false;
     const fetchTimelineMetrics = async () => {
       try {
-        const params = new URLSearchParams();
-        if (activeAsOfMonth) {
-          params.set('asOfMonth', activeAsOfMonth);
-        }
-        const query = params.toString();
         const res = await fetch(
-          `/api/org/${encodeURIComponent(publishSlug)}/timeline${query ? `?${query}` : ''}`,
+          `/api/org/${encodeURIComponent(publishSlug)}/timeline`,
         );
         const json = (await res.json()) as { result?: Record<string, unknown> };
         if (cancelled) {
@@ -485,7 +498,7 @@ export const OrgChartPageClient = ({
     return () => {
       cancelled = true;
     };
-  }, [timelineEnabled, publishSlug, activeAsOfMonth]);
+  }, [timelineEnabled, publishSlug]);
 
   useEffect(() => {
     if (!timelineEnabled || !publishSlug?.trim()) {
@@ -561,16 +574,20 @@ export const OrgChartPageClient = ({
         return `${year}-${month}`;
       })();
 
-      const params = new URLSearchParams(searchParams.toString());
-      if (!trimmed || trimmed === currentMonthKey) {
+      const committed =
+        !trimmed || trimmed === currentMonthKey ? '' : trimmed;
+      setCommittedAsOfMonth(committed);
+
+      const params = new URLSearchParams(window.location.search);
+      if (!committed) {
         params.delete('asOf');
       } else {
-        params.set('asOf', trimmed);
+        params.set('asOf', committed);
       }
 
       const query = params.toString();
       const nextPath = `/org/${encodeURIComponent(publishSlug)}${query ? `?${query}` : ''}`;
-      router.replace(nextPath, { scroll: false });
+      window.history.replaceState(null, '', nextPath);
 
       trackGA4Event('org_chart_timeline', { as_of_month: trimmed || 'current' });
       trackWebsiteEvent('org_chart_timeline', {
@@ -578,7 +595,7 @@ export const OrgChartPageClient = ({
         publishSlug,
       });
     },
-    [timelineEnabled, publishSlug, router, searchParams],
+    [timelineEnabled, publishSlug],
   );
 
   const showTimelineSlider = timelineEnabled && timelineMetrics !== null;

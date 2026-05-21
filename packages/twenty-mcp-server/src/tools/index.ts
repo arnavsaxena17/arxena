@@ -13,6 +13,7 @@ import { pendingActionsTools } from './pending-actions-tools';
 import { personTools } from './person-tools';
 import { reminderTools } from './reminder-tools';
 import { shortlistCvsentTools } from './shortlist-cvsent-tools';
+import { unipileControllersTools } from './unipile-controllers-tools';
 
 export const publicTools: McpTool[] = [
   ...jobTools,
@@ -28,6 +29,7 @@ export const publicTools: McpTool[] = [
   ...pendingActionsTools,
   ...reminderTools,
   ...agentNotesTools,
+  ...unipileControllersTools,
 ];
 
 export const allTools: McpTool[] = [...publicTools, ...internalTools];

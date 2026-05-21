@@ -38,6 +38,7 @@ export {
     ORG_PUBLISHED_SLUG_MIN_LENGTH,
     ORG_PUBLISHED_SLUG_PATTERN,
     buildDefaultPublishSlug,
+    normalizePublishSlug,
     resolveBrandPublishSlug,
     sanitizePublishSlug,
     validatePublishSlug,

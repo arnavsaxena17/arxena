@@ -19,9 +19,12 @@ import {
     GENERATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR,
     GET_CONTACT_ENRICHMENT_JOB_INPUT_DESCRIPTOR,
     SEARCH_LINKEDIN_COMPANIES_INPUT_DESCRIPTOR,
+    SEARCH_LINKEDIN_CONTINUE_INPUT_DESCRIPTOR,
+    SEARCH_LINKEDIN_FROM_URL_INPUT_DESCRIPTOR,
     SEARCH_LINKEDIN_JOBS_INPUT_DESCRIPTOR,
     SEARCH_LINKEDIN_PARAMETERS_INPUT_DESCRIPTOR,
     SEARCH_LINKEDIN_PEOPLE_INPUT_DESCRIPTOR,
+    SEARCH_LINKEDIN_POSTS_INPUT_DESCRIPTOR,
     VALIDATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR
 } from '../utils/McpToolSchemas';
 
@@ -59,6 +62,24 @@ const LINKEDIN_PARAMETER_TYPE_MAP: Record<string, string> = {
 
 const normalizeLinkedInParameterType = (parameterType: string): string =>
   LINKEDIN_PARAMETER_TYPE_MAP[parameterType] ?? parameterType;
+
+const buildLinkedInSearchQueryParams = (args: {
+  account_id?: string;
+  cursor?: string;
+  limit?: number;
+}): Record<string, string> | undefined => {
+  const queryParams: Record<string, string> = {};
+  if (args.account_id) {
+    queryParams.account_id = args.account_id;
+  }
+  if (args.cursor) {
+    queryParams.cursor = args.cursor;
+  }
+  if (args.limit !== undefined) {
+    queryParams.limit = String(args.limit);
+  }
+  return Object.keys(queryParams).length > 0 ? queryParams : undefined;
+};
 
 export const linkedinSearchTools: McpTool[] = [
   // ==================== LinkedIn Search Tools ====================
@@ -118,7 +139,7 @@ export const linkedinSearchTools: McpTool[] = [
     definition: {
       name: 'search_linkedin_people',
       description:
-      'Search for people on LinkedIn. Do not  use if unless you have generated parameters already.. Supports classic, sales_navigator, and recruiter search types. Requires parsed JSON Can use either searchParameters for direct search or query for full search flow.',
+        'Search LinkedIn profiles (people) via Unipile. Use search_linkedin_parameters first to resolve facet IDs. Supports classic, sales_navigator, and recruiter. Pass searchParameters for direct search, or query + assistantThreadId for the full candidate-search flow. Use search_linkedin_continue for the next page.',
       inputSchema: (() => {
         const baseSchema = descriptorToInputSchema(SEARCH_LINKEDIN_PEOPLE_INPUT_DESCRIPTOR);
         return {
@@ -134,16 +155,25 @@ export const linkedinSearchTools: McpTool[] = [
       })(),
     },
     handler: async (args, config) => {
-      const { searchType, searchParameters, query, assistantThreadId, parsedJD, cursor, limit } =
-        args as {
-          searchType: string;
-          searchParameters?: Record<string, unknown>;
-          query?: string;
-          assistantThreadId?: string;
-          parsedJD?: Record<string, unknown>;
-          cursor?: string;
-          limit?: number;
-        };
+      const {
+        searchType,
+        searchParameters,
+        query,
+        assistantThreadId,
+        parsedJD,
+        account_id,
+        cursor,
+        limit,
+      } = args as {
+        searchType: string;
+        searchParameters?: Record<string, unknown>;
+        query?: string;
+        assistantThreadId?: string;
+        parsedJD?: Record<string, unknown>;
+        account_id?: string;
+        cursor?: string;
+        limit?: number;
+      };
 
       // If query provided, use candidate search streaming flow
       if (query && assistantThreadId) {
@@ -187,17 +217,13 @@ export const linkedinSearchTools: McpTool[] = [
             ? 'search/recruiter/people'
             : 'search/people';
 
-      const queryParams: Record<string, string> = {};
-      if (cursor) queryParams.cursor = cursor;
-      if (limit) queryParams.limit = String(limit);
-
       return callRestAPI(
         config.baseUrl,
         config.apiToken,
         'linkedin-search',
         endpoint,
         effectiveSearchParameters,
-        Object.keys(queryParams).length > 0 ? queryParams : undefined,
+        buildLinkedInSearchQueryParams({ account_id, cursor, limit }),
       );
     },
   },
@@ -222,9 +248,10 @@ export const linkedinSearchTools: McpTool[] = [
       })(),
     },
     handler: async (args, config) => {
-      const { searchType, searchParameters, cursor, limit } = args as {
+      const { searchType, searchParameters, account_id, cursor, limit } = args as {
         searchType: string;
         searchParameters: Record<string, unknown>;
+        account_id?: string;
         cursor?: string;
         limit?: number;
       };
@@ -234,17 +261,13 @@ export const linkedinSearchTools: McpTool[] = [
           ? 'search/sales-navigator/companies'
           : 'search/companies';
 
-      const queryParams: Record<string, string> = {};
-      if (cursor) queryParams.cursor = cursor;
-      if (limit) queryParams.limit = String(limit);
-
       return callRestAPI(
         config.baseUrl,
         config.apiToken,
         'linkedin-search',
         endpoint,
         searchParameters,
-        Object.keys(queryParams).length > 0 ? queryParams : undefined,
+        buildLinkedInSearchQueryParams({ account_id, cursor, limit }),
       );
     },
   },
@@ -256,15 +279,12 @@ export const linkedinSearchTools: McpTool[] = [
       inputSchema: descriptorToInputSchema(SEARCH_LINKEDIN_JOBS_INPUT_DESCRIPTOR),
     },
     handler: async (args, config) => {
-      const { searchParameters, cursor, limit } = args as {
+      const { searchParameters, account_id, cursor, limit } = args as {
         searchParameters: Record<string, unknown>;
+        account_id?: string;
         cursor?: string;
         limit?: number;
       };
-
-      const queryParams: Record<string, string> = {};
-      if (cursor) queryParams.cursor = cursor;
-      if (limit) queryParams.limit = String(limit);
 
       return callRestAPI(
         config.baseUrl,
@@ -272,7 +292,92 @@ export const linkedinSearchTools: McpTool[] = [
         'linkedin-search',
         'search/jobs',
         searchParameters,
-        Object.keys(queryParams).length > 0 ? queryParams : undefined,
+        buildLinkedInSearchQueryParams({ account_id, cursor, limit }),
+      );
+    },
+  },
+
+  {
+    definition: {
+      name: 'search_linkedin_posts',
+      description:
+        'Search LinkedIn posts via Unipile (classic API). Pass searchParameters; use search_linkedin_continue for pagination.',
+      inputSchema: descriptorToInputSchema(SEARCH_LINKEDIN_POSTS_INPUT_DESCRIPTOR),
+    },
+    handler: async (args, config) => {
+      const { searchParameters, account_id, cursor, limit } = args as {
+        searchParameters: Record<string, unknown>;
+        account_id?: string;
+        cursor?: string;
+        limit?: number;
+      };
+
+      return callRestAPI(
+        config.baseUrl,
+        config.apiToken,
+        'linkedin-search',
+        'search/posts',
+        searchParameters,
+        buildLinkedInSearchQueryParams({ account_id, cursor, limit }),
+      );
+    },
+  },
+
+  {
+    definition: {
+      name: 'search_linkedin_from_url',
+      description:
+        'Search LinkedIn profiles/results by pasting a LinkedIn search URL from the browser (classic, Sales Navigator, or Recruiter). Returns the same result shape as search_linkedin_people.',
+      inputSchema: descriptorToInputSchema(SEARCH_LINKEDIN_FROM_URL_INPUT_DESCRIPTOR),
+    },
+    handler: async (args, config) => {
+      const { url, account_id, cursor, limit } = args as {
+        url: string;
+        account_id?: string;
+        cursor?: string;
+        limit?: number;
+      };
+
+      if (!url?.trim()) {
+        throw new Error('url is required');
+      }
+
+      return callRestAPI(
+        config.baseUrl,
+        config.apiToken,
+        'linkedin-search',
+        'search/url',
+        { url },
+        buildLinkedInSearchQueryParams({ account_id, cursor, limit }),
+      );
+    },
+  },
+
+  {
+    definition: {
+      name: 'search_linkedin_continue',
+      description:
+        'Fetch the next page of LinkedIn search results (profiles, companies, etc.) using the cursor from a prior search_linkedin_* response.',
+      inputSchema: descriptorToInputSchema(SEARCH_LINKEDIN_CONTINUE_INPUT_DESCRIPTOR),
+    },
+    handler: async (args, config) => {
+      const { cursor, account_id, limit } = args as {
+        cursor: string;
+        account_id?: string;
+        limit?: number;
+      };
+
+      if (!cursor?.trim()) {
+        throw new Error('cursor is required');
+      }
+
+      return callRestAPI(
+        config.baseUrl,
+        config.apiToken,
+        'linkedin-search',
+        'search/continue',
+        { cursor },
+        buildLinkedInSearchQueryParams({ account_id, limit }),
       );
     },
   },
