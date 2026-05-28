@@ -12,6 +12,7 @@ import { RedisService } from 'src/engine/core-modules/arx-chat/services/ext-sock
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
+import { CandidateAvatarModule } from 'src/engine/core-modules/candidate-avatar/candidate-avatar.module';
 import { AiFilteringProgressController } from 'src/engine/core-modules/candidate-sourcing/controllers/ai-filtering-progress.controller';
 import { CandidateSourcingController } from 'src/engine/core-modules/candidate-sourcing/controllers/candidate-sourcing.controller';
 import { FileUploadController } from 'src/engine/core-modules/candidate-sourcing/controllers/file-upload.controller';
@@ -31,15 +32,15 @@ import { CandidateWorkspaceGraphQLService } from 'src/engine/core-modules/candid
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { ChatService } from 'src/engine/core-modules/candidate-sourcing/services/chat.service';
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
-import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-sourcing/services/orgchart-progress-redis.service';
+import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
-import { RedisClientModule } from 'src/engine/core-modules/redis-client/redis-client.module';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-execution.module';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
+import { RedisClientModule } from 'src/engine/core-modules/redis-client/redis-client.module';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
@@ -78,6 +79,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
 @Module({
   imports: [
     AuthModule,
+    CandidateAvatarModule,
     RedisClientModule,
     WebSocketModule,
     WorkspaceModificationsModule,

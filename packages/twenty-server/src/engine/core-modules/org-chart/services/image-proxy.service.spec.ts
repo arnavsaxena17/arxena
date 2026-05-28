@@ -1,10 +1,31 @@
+import { CandidateAvatarStorageService } from 'src/engine/core-modules/candidate-avatar/services/candidate-avatar-storage.service';
+
 import { ImageProxyService } from './image-proxy.service';
 
 describe('ImageProxyService', () => {
   let service: ImageProxyService;
+  let avatarStorage: jest.Mocked<
+    Pick<
+      CandidateAvatarStorageService,
+      | 'isPersistedAvatarUrl'
+      | 'resolveStableKey'
+      | 'avatarExists'
+      | 'readAvatarBuffer'
+      | 'readMeta'
+    >
+  >;
 
   beforeEach(() => {
-    service = new ImageProxyService();
+    avatarStorage = {
+      isPersistedAvatarUrl: jest.fn((url: string) => url.startsWith('/avatars/')),
+      resolveStableKey: jest.fn(() => null),
+      avatarExists: jest.fn().mockResolvedValue(false),
+      readAvatarBuffer: jest.fn().mockResolvedValue(null),
+      readMeta: jest.fn().mockResolvedValue(null),
+    };
+    service = new ImageProxyService(
+      avatarStorage as unknown as CandidateAvatarStorageService,
+    );
   });
 
   it('builds deterministic proxy URLs for allowed LinkedIn and TheOrg images', async () => {
@@ -59,6 +80,11 @@ describe('ImageProxyService', () => {
     ).toBe(
       'https://media.licdn.com/dms/image/v2/test-profile-photo?e=123&v=beta&t=abc',
     );
+  });
+
+  it('leaves persisted avatar URLs unchanged', async () => {
+    const persisted = `/avatars/${'b'.repeat(64)}`;
+    await expect(service.buildProxyUrl(persisted)).resolves.toBe(persisted);
   });
 
   it('leaves disallowed URLs unchanged', async () => {

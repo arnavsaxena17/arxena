@@ -23,6 +23,10 @@ import { WorkspaceMemberProfileUnipileService } from './services/workspace-membe
     UnipileAccountPoolService,
     UnipileInactivityCronService,
   ],
-  exports: [UnipileAccountPoolService, WorkspaceMemberProfileUnipileService],
+  exports: [
+    UnipileAccountPoolService,
+    WorkspaceMemberProfileUnipileService,
+    LinkedinUnipileRequestService,
+  ],
 })
 export class UnipilePoolModule {}

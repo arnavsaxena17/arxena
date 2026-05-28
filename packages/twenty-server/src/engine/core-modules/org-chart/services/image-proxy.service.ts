@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { CandidateAvatarStorageService } from 'src/engine/core-modules/candidate-avatar/services/candidate-avatar-storage.service';
+
 /** Allowed hostnames for image proxy (e.g. LinkedIn CDN, default avatar). */
 const ALLOWED_IMAGE_HOSTS = new Set([
   'media.licdn.com',
@@ -24,6 +26,10 @@ const IMAGE_FIELD_NAMES = new Set([
 @Injectable()
 export class ImageProxyService {
   private readonly logger = new Logger(ImageProxyService.name);
+
+  constructor(
+    private readonly candidateAvatarStorageService: CandidateAvatarStorageService,
+  ) {}
 
   private isAllowedHost(hostname: string): boolean {
     const normalizedHostname = hostname.toLowerCase();
@@ -51,6 +57,10 @@ export class ImageProxyService {
 
     if (!trimmedUrl) {
       return false;
+    }
+
+    if (this.candidateAvatarStorageService.isPersistedAvatarUrl(trimmedUrl)) {
+      return true;
     }
 
     if (trimmedUrl.startsWith(`${PROXY_PATH}/`)) {
@@ -112,6 +122,10 @@ export class ImageProxyService {
       return null;
     }
 
+    if (this.candidateAvatarStorageService.isPersistedAvatarUrl(trimmedUrl)) {
+      return trimmedUrl;
+    }
+
     if (this.isProxyUrl(trimmedUrl)) {
       return trimmedUrl;
     }
@@ -151,7 +165,13 @@ export class ImageProxyService {
       }
 
       if (typeof currentValue === 'string' && IMAGE_FIELD_NAMES.has(key)) {
-        rewritten[key] = await this.buildProxyUrl(currentValue);
+        if (
+          this.candidateAvatarStorageService.isPersistedAvatarUrl(currentValue)
+        ) {
+          rewritten[key] = currentValue;
+        } else {
+          rewritten[key] = await this.buildProxyUrl(currentValue);
+        }
         continue;
       }
 
@@ -217,6 +237,40 @@ export class ImageProxyService {
     return null;
   }
 
+  private async tryServeFromPersistedCache(url: string): Promise<{
+    ok: boolean;
+    contentType: string | null;
+    body: ArrayBuffer;
+  } | null> {
+    const stableKey = this.candidateAvatarStorageService.resolveStableKey({
+      imageUrl: url,
+    });
+    if (!stableKey) {
+      return null;
+    }
+
+    const exists =
+      await this.candidateAvatarStorageService.avatarExists(stableKey);
+    if (!exists) {
+      return null;
+    }
+
+    const buffer =
+      await this.candidateAvatarStorageService.readAvatarBuffer(stableKey);
+    if (!buffer || buffer.byteLength === 0) {
+      return null;
+    }
+
+    return {
+      ok: true,
+      contentType: 'image/webp',
+      body: buffer.buffer.slice(
+        buffer.byteOffset,
+        buffer.byteOffset + buffer.byteLength,
+      ) as ArrayBuffer,
+    };
+  }
+
   /**
    * Fetch image from URL and return body + content-type for proxying.
    * Only allows configured hosts to avoid open proxy abuse.
@@ -226,6 +280,11 @@ export class ImageProxyService {
     contentType: string | null;
     body: ArrayBuffer;
   }> {
+    const cached = await this.tryServeFromPersistedCache(url);
+    if (cached) {
+      return cached;
+    }
+
     if (!this.isAllowedUrl(url)) {
       this.logger.warn(`Image proxy rejected disallowed URL: ${url}`);
       return {
@@ -242,12 +301,28 @@ export class ImageProxyService {
           'User-Agent':
             'Mozilla/5.0 (compatible; ArxenaImageProxy/1.0)',
           Accept: 'image/*',
+          Referer: 'https://www.linkedin.com/',
         },
       });
 
       const contentType =
         response.headers.get('content-type') ?? 'image/jpeg';
       const body = await response.arrayBuffer();
+
+      if (!response.ok) {
+        const stableKey = this.candidateAvatarStorageService.resolveStableKey({
+          imageUrl: url,
+        });
+        if (stableKey) {
+          const meta =
+            await this.candidateAvatarStorageService.readMeta(stableKey);
+          if (meta?.linkedinUrl) {
+            this.logger.warn(
+              `Image proxy upstream ${response.status}; avatar meta has linkedinUrl for key=${stableKey}`,
+            );
+          }
+        }
+      }
 
       return {
         ok: response.ok,

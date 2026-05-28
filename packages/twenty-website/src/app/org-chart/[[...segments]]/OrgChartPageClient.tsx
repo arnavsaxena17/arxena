@@ -34,10 +34,10 @@ import {
     useOrgChartFilterOptions,
 } from 'twenty-orgchart/orgchart-core';
 import {
-    appendOrgChartSignupSearchParams,
     filterOrgChartNodeDataArray,
     hasMeaningfulOrgChartCountryFilter,
     hasMeaningfulOrgChartFunctionRootFilter,
+    navigateToOrgChartSignup,
     OrgChartNodeData,
     toSlug,
 } from 'twenty-shared';
@@ -791,13 +791,15 @@ export const OrgChartPageClient = ({
 
   const hasFilters = !!chartOrgData;
 
-  const signUpUrlWithContext = useMemo(
-    () =>
-      appendOrgChartSignupSearchParams(signUpUrl, {
+  const handleOrgChartSignUpNavigate = useCallback(
+    (event?: { preventDefault: () => void }) => {
+      event?.preventDefault();
+      navigateToOrgChartSignup(signUpUrl, {
         companyName,
         selectedCountry,
         selectedFunctionRoot,
-      }),
+      });
+    },
     [signUpUrl, companyName, selectedCountry, selectedFunctionRoot],
   );
 
@@ -949,7 +951,10 @@ export const OrgChartPageClient = ({
                     {FREE_TRIAL_CTA_LABEL}
                   </StyledPreviewBannerSignupButton>
                 ) : (
-                  <StyledPreviewBannerSignupLink href={signUpUrlWithContext}>
+                  <StyledPreviewBannerSignupLink
+                    href={signUpUrl}
+                    onClick={handleOrgChartSignUpNavigate}
+                  >
                     Sign up free
                   </StyledPreviewBannerSignupLink>
                 )}
@@ -1061,7 +1066,8 @@ export const OrgChartPageClient = ({
                 <OrgChartSignUpModal
                   node={clickedNode}
                   onClose={handleCloseSignUpModal}
-                  signUpUrl={signUpUrlWithContext}
+                  signUpUrl={signUpUrl}
+                  onSignUpClick={handleOrgChartSignUpNavigate}
                   companyName={companyName}
                   selectedCountry={selectedCountry}
                   selectedFunctionRoot={selectedFunctionRoot}

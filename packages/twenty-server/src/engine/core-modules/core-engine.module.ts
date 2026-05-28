@@ -24,6 +24,7 @@ import { FileStorageModule } from 'src/engine/core-modules/file-storage/file-sto
 import { fileStorageModuleFactory } from 'src/engine/core-modules/file-storage/file-storage.module-factory';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
 // import { GoogleContactsModule } from 'src/engine/core-modules/google-contacts/google-contacts.module';
+import { CandidateAvatarModule } from 'src/engine/core-modules/candidate-avatar/candidate-avatar.module';
 import { HealthModule } from 'src/engine/core-modules/health/health.module';
 import { LabModule } from 'src/engine/core-modules/lab/lab.module';
 import { SerpCompanySearchModule } from 'src/engine/core-modules/linkedin-company-search/linkedin-company-search.module';
@@ -40,7 +41,6 @@ import { messageQueueModuleFactory } from 'src/engine/core-modules/message-queue
 import { TimelineMessagingModule } from 'src/engine/core-modules/messaging/timeline-messaging.module';
 import { OpenApiModule } from 'src/engine/core-modules/open-api/open-api.module';
 import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.module';
-import { WebsiteLeadsModule } from 'src/engine/core-modules/website-leads/website-leads.module';
 import { PostgresCredentialsModule } from 'src/engine/core-modules/postgres-credentials/postgres-credentials.module';
 import { RedisClientModule } from 'src/engine/core-modules/redis-client/redis-client.module';
 import { RedisClientService } from 'src/engine/core-modules/redis-client/redis-client.service';
@@ -50,6 +50,7 @@ import { WorkspaceSSOModule } from 'src/engine/core-modules/sso/sso.module';
 import { TelemetryModule } from 'src/engine/core-modules/telemetry/telemetry.module';
 import { UserModule } from 'src/engine/core-modules/user/user.module';
 import { VideoInterviewModule } from 'src/engine/core-modules/video-interview/video-interview.module';
+import { WebsiteLeadsModule } from 'src/engine/core-modules/website-leads/website-leads.module';
 import { WorkflowApiModule } from 'src/engine/core-modules/workflow/workflow-api.module';
 import { WorkspaceInvitationModule } from 'src/engine/core-modules/workspace-invitation/workspace-invitation.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
@@ -137,6 +138,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     WorkspaceModificationsModule,
     LabModule,
     LinkedInSearchModule,
+    CandidateAvatarModule,
     OrgChartModule,
     WebsiteLeadsModule,
     RoleModule,
@@ -210,6 +212,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     // GoogleSheetsModule,
     GoogleDriveModule,
     LinkedInSearchModule,
+    CandidateAvatarModule,
     OrgChartModule,
     WorkspaceInvitationModule,
     WorkspaceSSOModule,

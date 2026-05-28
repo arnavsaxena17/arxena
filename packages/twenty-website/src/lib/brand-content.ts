@@ -16,9 +16,9 @@ export const DEFAULT_SITE_DESCRIPTION =
 
 export const HOMEPAGE_HERO = {
   title: 'Org Intelligence',
-  lead: 'Make the hidden structure of any organization visible—queryable in real time.',
+  lead: 'Make the hidden structure of any organization visible—queryable in real time - in seconds.',
   stats:
-    '10M+ live, real time company org charts · 800M+ people, contact info & engagement',
+    '10M+ live, real time company org charts · 800M+ people profiles, contact info & engagement',
   exampleStripTitle: 'Explore a live org graph',
   clarifyNotLabel: 'Not this',
   clarifyNotText:

@@ -34,6 +34,13 @@ describe('getProxiedImageUrl', () => {
     );
   });
 
+  it('prefixes persisted avatar paths without image-proxy wrapping', () => {
+    const avatarKey = 'a'.repeat(64);
+    expect(
+      getProxiedImageUrl(`/avatars/${avatarKey}`, 'http://localhost:3000'),
+    ).toBe(`http://localhost:3000/avatars/${avatarKey}`);
+  });
+
   it('maps proxied paths for the marketing-site /api/org-chart proxy', () => {
     expect(
       getProxiedImageUrl(

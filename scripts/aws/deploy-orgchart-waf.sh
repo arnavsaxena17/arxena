@@ -86,6 +86,7 @@ rules = [
               uri_path_contains("/api/org-chart"),
               uri_path_excludes("company-logo"),
               uri_path_excludes("image-proxy"),
+              uri_path_excludes("/avatars/"),
             ]
           }
         },

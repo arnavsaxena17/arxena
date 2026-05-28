@@ -20,6 +20,7 @@ import { LinkedinXrayModule } from 'src/modules/linkedin-xray/linkedin-xray.modu
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 
+import { CandidateAvatarModule } from 'src/engine/core-modules/candidate-avatar/candidate-avatar.module';
 import { OrgChartClientIpModule } from 'src/engine/core-modules/org-chart/org-chart-client-ip.module';
 
 import { OrgChartController } from './controllers/org-chart.controller';
@@ -48,6 +49,7 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
 
 @Module({
   imports: [
+    CandidateAvatarModule,
     OrgChartClientIpModule,
     ApifyModule,
     AuthModule,

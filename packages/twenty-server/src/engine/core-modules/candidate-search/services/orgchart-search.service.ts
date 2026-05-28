@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
+import { CandidateAvatarStorageService } from 'src/engine/core-modules/candidate-avatar/services/candidate-avatar-storage.service';
 import { OrgChartIntentService } from 'src/engine/core-modules/candidate-search/services/org-chart-intent.service';
 import type { TransformedCandidateForTable } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-sourcing/services/orgchart-progress-redis.service';
@@ -8,6 +9,7 @@ import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services
 import { OrgchartCancelRegistryService } from 'src/engine/core-modules/org-chart/services/orgchart-cancel-registry.service';
 import { PythonOrgChartService } from 'src/engine/core-modules/org-chart/services/python-org-chart.service';
 import type { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
+import { mergeOrgChartCompanyTenureOntoOrgChartData } from 'src/engine/core-modules/org-chart/utils/merge-orgchart-company-tenure.util';
 import {
     applyApolloOnlyNodeLockState,
     assignApolloPublicSlugToAllPersonSlots,
@@ -20,7 +22,6 @@ import {
     readProviderContactHintsFromSearchRow,
     type OrgChartNodeContactAvailability,
 } from 'src/engine/core-modules/org-chart/utils/merge-orgchart-profile-source-slugs.util';
-import { mergeOrgChartCompanyTenureOntoOrgChartData } from 'src/engine/core-modules/org-chart/utils/merge-orgchart-company-tenure.util';
 import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import { filterOrgChartCandidatesByNodeStdLabels } from 'src/engine/core-modules/org-chart/utils/orgchart-node-scope-filter.util';
 import {
@@ -101,6 +102,7 @@ export class OrgChartSearchService {
     private readonly orgChartCacheService: OrgChartCacheService,
     private readonly orgChartIntentService: OrgChartIntentService,
     private readonly orgChartProfileDataSourceMapperService: OrgChartProfileDataSourceMapperService,
+    private readonly candidateAvatarStorageService: CandidateAvatarStorageService,
   ) {}
 
   /**
@@ -870,8 +872,12 @@ export class OrgChartSearchService {
       },
     );
 
+    const peopleWithAvatars = await this.candidateAvatarStorageService.ingestBatch(
+      people,
+    );
+
     this.logger.log(
-      `OrgchartLinkedInSearch: building org chart from ${people.length} candidates for company="${normalizedCompanyName}"`,
+      `OrgchartLinkedInSearch: building org chart from ${peopleWithAvatars.length} candidates for company="${normalizedCompanyName}"`,
     );
 
     const jobNameSuffix = fn
@@ -891,7 +897,7 @@ export class OrgChartSearchService {
     try {
       const built = await this.pythonOrgChartService.createOrgChartFromStandardizedPeople(
         {
-          people,
+          people: peopleWithAvatars,
           jobName,
           jobId: normalizedCompanyId || undefined,
           functionRoot: fn,

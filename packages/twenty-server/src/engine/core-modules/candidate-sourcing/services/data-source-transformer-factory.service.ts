@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { UserProfile } from 'twenty-shared';
+
+import { CandidateAvatarStorageService } from 'src/engine/core-modules/candidate-avatar/services/candidate-avatar-storage.service';
 import { ApnaDatabaseTransformerService } from './data-sources/apna-database-transformer.service';
 import { BaseDataSourceTransformerService, TransformationContext } from './data-sources/base-data-source-transformer.service';
 import { HiringNaukriTransformerService } from './data-sources/hiring-naukri-transformer.service';
@@ -53,6 +55,7 @@ export class DataSourceTransformerFactoryService {
     private readonly linkedinSearchTransformer: LinkedInSearchTransformerService,
     private readonly linkedinXrayTransformer: LinkedinXrayTransformerService,
     private readonly parsedCVTransformer: ParsedCVTransformerService,
+    private readonly candidateAvatarStorageService: CandidateAvatarStorageService,
   ) {
     this.initializeTransformers();
   }
@@ -107,9 +110,14 @@ export class DataSourceTransformerFactoryService {
         dataSource,
       };
       console.log("Candidate data before transformation:", candidateData);
-      const transformed = transformer.transformToUserProfile(candidateData, transformationContext);
-      console.log("Candidate data after transformation:", transformed);
-      return transformed;
+      const transformed = transformer.transformToUserProfile(
+        candidateData,
+        transformationContext,
+      );
+      console.log('Candidate data after transformation:', transformed);
+      return this.candidateAvatarStorageService.ingestUserProfileImages(
+        transformed,
+      );
     } catch (error) {
       console.error(`Error transforming candidate data for source ${dataSource}:`, error);
       return null;
@@ -140,9 +148,16 @@ export class DataSourceTransformerFactoryService {
 
     for (const candidateData of candidatesData) {
       try {
-        const transformed = transformer.transformToUserProfile(candidateData, transformationContext);
+        const transformed = transformer.transformToUserProfile(
+          candidateData,
+          transformationContext,
+        );
         if (transformed) {
-          transformedCandidates.push(transformed);
+          transformedCandidates.push(
+            await this.candidateAvatarStorageService.ingestUserProfileImages(
+              transformed,
+            ),
+          );
         }
       } catch (error) {
         console.error(`Error transforming candidate data batch for source ${dataSource}:`, error);

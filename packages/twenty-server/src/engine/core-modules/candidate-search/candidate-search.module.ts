@@ -12,6 +12,7 @@ import { EnvironmentModule } from 'src/engine/core-modules/environment/environme
 import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
 import { LinkedInHtmlParserService } from 'src/engine/core-modules/linkedin-search/services/linkedin-html-parser.service';
 import { UnipilePoolModule } from '../arx-chat/unipile-pool.module';
+import { CandidateAvatarModule } from '../candidate-avatar/candidate-avatar.module';
 import { CandidateSourcingModule } from '../candidate-sourcing/candidate-sourcing.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { LinkedInSearchModule } from '../linkedin-search/linkedin-search.module';
@@ -56,6 +57,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
 @Module({
   imports: [
     BillingModule,
+    CandidateAvatarModule,
     EnvironmentModule,
     LinkedInSearchModule,
     UnipilePoolModule,

@@ -4,6 +4,8 @@ import { CacheStorageService } from 'src/engine/core-modules/cache-storage/servi
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { OrgChartData } from 'twenty-shared';
 
+import { CandidateAvatarStorageService } from 'src/engine/core-modules/candidate-avatar/services/candidate-avatar-storage.service';
+
 import { toOrgChartCacheTtlMs } from '../utils/org-chart-cache-ttl.util';
 import {
     buildCompanyOrgChartCandidateListLogicalCacheKey,
@@ -69,6 +71,7 @@ export class OrgChartCacheService {
   constructor(
     @InjectCacheStorage(CacheStorageNamespace.EngineOrgChart)
     private readonly orgChartCacheStorageService: CacheStorageService,
+    private readonly candidateAvatarStorageService: CandidateAvatarStorageService,
   ) {}
 
   async getCachedCompanyOrgChart(input: {
@@ -178,13 +181,20 @@ export class OrgChartCacheService {
       input.sourceTag,
     );
 
+    const hydrated = await this.candidateAvatarStorageService.hydratePersistPayload(
+      {
+        items: input.items,
+        orgChart: input.orgChart as Record<string, unknown>,
+      },
+    );
+
     const payload: CachedCompanyOrgChartPayload = {
       companyId: normalizedCompanyId,
       companyName: normalizedCompanyName,
       mode: input.mode,
       searchType: input.searchType,
-      orgChart: input.orgChart,
-      items: input.items,
+      orgChart: (hydrated.orgChart ?? input.orgChart) as OrgChartData,
+      items: hydrated.items ?? input.items,
       itemCount: input.itemCount,
       cachedAt: new Date().toISOString(),
       creditsDebited: input.creditsDebited ?? true,
@@ -270,12 +280,16 @@ export class OrgChartCacheService {
       input.sourceTag,
     );
 
+    const hydrated = await this.candidateAvatarStorageService.hydratePersistPayload(
+      { items: input.items },
+    );
+
     const payload: CachedCompanyCandidateListPayload = {
       companyId: normalizedCompanyId,
       companyName: normalizedCompanyName,
       mode: input.mode,
       searchType: input.searchType,
-      items: input.items,
+      items: hydrated.items ?? input.items,
       itemCount: input.itemCount,
       cachedAt: new Date().toISOString(),
     };
@@ -383,6 +397,13 @@ export class OrgChartCacheService {
       keywordsHash: input.keywordsHash,
     });
 
+    const hydrated = await this.candidateAvatarStorageService.hydratePersistPayload(
+      {
+        items: input.items,
+        orgChart: input.orgChart as Record<string, unknown> | undefined,
+      },
+    );
+
     const payload: CachedFunctionGradeSearchPayload = {
       companyId: normalizedCompanyId,
       companyName: normalizedCompanyName,
@@ -391,9 +412,13 @@ export class OrgChartCacheService {
       searchType: input.searchType,
       strategyCap: input.strategyCap,
       keywordsHash: input.keywordsHash,
-      items: input.items,
+      items: hydrated.items ?? input.items,
       itemCount: input.itemCount,
-      ...(input.orgChart ? { orgChart: input.orgChart } : {}),
+      ...(hydrated.orgChart
+        ? { orgChart: hydrated.orgChart as OrgChartData }
+        : input.orgChart
+          ? { orgChart: input.orgChart }
+          : {}),
       cachedAt: new Date().toISOString(),
     };
 

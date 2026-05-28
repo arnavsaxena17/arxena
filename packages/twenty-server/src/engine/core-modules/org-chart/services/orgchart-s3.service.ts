@@ -4,6 +4,7 @@ import { Readable } from 'stream';
 
 import { OrgChartData } from 'twenty-shared';
 
+import { CandidateAvatarStorageService } from 'src/engine/core-modules/candidate-avatar/services/candidate-avatar-storage.service';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
 
 const ORG_CHART_S3_FOLDER = 'org-charts';
@@ -24,7 +25,10 @@ export type OrgChartS3Variant = string | undefined;
 export class OrgChartS3Service {
   private readonly logger = new Logger(OrgChartS3Service.name);
 
-  constructor(private readonly fileStorageService: FileStorageService) {}
+  constructor(
+    private readonly fileStorageService: FileStorageService,
+    private readonly candidateAvatarStorageService: CandidateAvatarStorageService,
+  ) {}
 
   private normalizeSegment(segment: string, fallback = 'unknown'): string {
     return (
@@ -96,10 +100,13 @@ export class OrgChartS3Service {
     variant?: OrgChartS3Variant,
   ): Promise<void> {
     const folder = this.buildFolderPath(companyId, variant);
+    const hydrated = await this.candidateAvatarStorageService.ingestOrgChartData(
+      orgChart as Record<string, unknown>,
+    );
 
     try {
       await this.fileStorageService.write({
-        file: Buffer.from(JSON.stringify(orgChart)),
+        file: Buffer.from(JSON.stringify(hydrated)),
         name: 'orgchart.json',
         folder,
         mimeType: 'application/json',
@@ -119,10 +126,15 @@ export class OrgChartS3Service {
     variant?: OrgChartS3Variant,
   ): Promise<void> {
     const folder = this.buildFolderPath(companyId, variant);
+    const rows = candidates.filter(
+      (row): row is Record<string, unknown> =>
+        !!row && typeof row === 'object' && !Array.isArray(row),
+    );
+    const hydrated = await this.candidateAvatarStorageService.ingestBatch(rows);
 
     try {
       await this.fileStorageService.write({
-        file: Buffer.from(JSON.stringify(candidates)),
+        file: Buffer.from(JSON.stringify(hydrated)),
         name: 'candidates.json',
         folder,
         mimeType: 'application/json',

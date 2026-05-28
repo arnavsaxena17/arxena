@@ -39,6 +39,7 @@ import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/ar
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
+import { CandidateAvatarModule } from 'src/engine/core-modules/candidate-avatar/candidate-avatar.module';
 import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
 import { LinkedinParameterResolver } from 'src/engine/core-modules/candidate-search/utils/linkedin-parameter-resolver.util';
 import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
@@ -127,6 +128,7 @@ const conditionalImports = isWorker
     AuthModule, 
     GraphQLExecutionModule,
     WorkspaceModificationsModule, 
+    CandidateAvatarModule,
     CandidateSearchModule,
     CandidateSourcingModule,
     JwtModule,

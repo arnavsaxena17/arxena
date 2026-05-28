@@ -11,6 +11,19 @@ const ALLOWED_IMAGE_HOSTS = new Set([
 ]);
 
 const ALLOWED_IMAGE_HOST_SUFFIXES = ['.theorg.com'];
+const PERSISTED_AVATAR_PATH_PREFIX = '/avatars/';
+
+const isPersistedAvatarUrl = (url: string): boolean => {
+  const trimmed = url.trim();
+  if (trimmed.startsWith(PERSISTED_AVATAR_PATH_PREFIX)) {
+    return true;
+  }
+  try {
+    return new URL(trimmed).pathname.startsWith(PERSISTED_AVATAR_PATH_PREFIX);
+  } catch {
+    return false;
+  }
+};
 
 const toBase64Url = (value: string): string => {
   if (typeof Buffer !== 'undefined') {
@@ -81,6 +94,13 @@ export function getProxiedImageUrl(
 
   const normalizedBase = apiBaseUrl.replace(/\/$/, '');
 
+  if (isPersistedAvatarUrl(trimmed)) {
+    if (trimmed.startsWith(PERSISTED_AVATAR_PATH_PREFIX) && normalizedBase) {
+      return `${normalizedBase}${trimmed}`;
+    }
+    return trimmed;
+  }
+
   if (trimmed.startsWith('/org-chart/image-proxy/')) {
     const proxyPath = resolveProxyPathForApiBase(trimmed, normalizedBase);
 
@@ -88,6 +108,9 @@ export function getProxiedImageUrl(
   }
 
   if (!trimmed.startsWith('http:') && !trimmed.startsWith('https:')) {
+    if (trimmed.startsWith(PERSISTED_AVATAR_PATH_PREFIX) && normalizedBase) {
+      return `${normalizedBase}${trimmed}`;
+    }
     return imageUrl;
   }
   try {

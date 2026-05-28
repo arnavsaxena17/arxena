@@ -19,10 +19,11 @@ import { useIsCurrentLocationOnDefaultDomain } from '@/domain-manager/hooks/useI
 import { DEFAULT_WORKSPACE_NAME } from '@/ui/navigation/navigation-drawer/constants/DefaultWorkspaceName';
 import { useMemo } from 'react';
 import {
-  formatOrgChartSliceLabel,
-  isDefined,
-  isOrgChartEnabledEnv,
-  ORG_CHART_SIGNUP_SEARCH_PARAMS,
+    consumeOrgChartSignupContext,
+    formatOrgChartSliceLabel,
+    isDefined,
+    isOrgChartEnabledEnv,
+    ORG_CHART_SIGNUP_SEARCH_PARAMS,
 } from 'twenty-shared';
 import { AnimatedEaseIn } from 'twenty-ui';
 
@@ -68,12 +69,16 @@ export const SignInUp = () => {
     useWorkspaceFromInviteHash();
 
   const [searchParams] = useSearchParams();
-  const orgChartCompanyParam = searchParams
-    .get(ORG_CHART_SIGNUP_SEARCH_PARAMS.company)
-    ?.trim();
-  const orgChartFunctionParam = searchParams
-    .get(ORG_CHART_SIGNUP_SEARCH_PARAMS.function)
-    ?.trim();
+  const orgChartSignupContext = useMemo(
+    () => consumeOrgChartSignupContext(),
+    [],
+  );
+  const orgChartCompanyParam =
+    orgChartSignupContext?.companyName?.trim() ??
+    searchParams.get(ORG_CHART_SIGNUP_SEARCH_PARAMS.company)?.trim();
+  const orgChartFunctionParam =
+    orgChartSignupContext?.selectedFunctionRoot?.trim() ??
+    searchParams.get(ORG_CHART_SIGNUP_SEARCH_PARAMS.function)?.trim();
 
   const title = useMemo(() => {
     if (isDefined(workspaceInviteHash)) {
