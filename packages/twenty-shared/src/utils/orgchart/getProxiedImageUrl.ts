@@ -12,6 +12,8 @@ const ALLOWED_IMAGE_HOSTS = new Set([
 
 const ALLOWED_IMAGE_HOST_SUFFIXES = ['.theorg.com'];
 const PERSISTED_AVATAR_PATH_PREFIX = '/avatars/';
+/** Marketing site org-chart API base (e.g. https://arxena.com/api/org-chart). */
+const MARKETING_ORG_CHART_API_SUFFIX = '/api/org-chart';
 
 const isPersistedAvatarUrl = (url: string): boolean => {
   const trimmed = url.trim();
@@ -67,6 +69,47 @@ const buildDeterministicProxyPath = (imageUrl: string): string | null => {
   return null;
 };
 
+const extractPersistedAvatarPath = (url: string): string | null => {
+  const trimmed = url.trim();
+  if (trimmed.startsWith(PERSISTED_AVATAR_PATH_PREFIX)) {
+    return trimmed;
+  }
+  try {
+    const pathname = new URL(trimmed).pathname;
+    if (pathname.startsWith(PERSISTED_AVATAR_PATH_PREFIX)) {
+      return pathname;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+};
+
+/** Maps `/avatars/{key}` to the public URL for the current API base. */
+const resolvePersistedAvatarPublicUrl = (
+  url: string,
+  normalizedBase: string,
+): string => {
+  const avatarPath = extractPersistedAvatarPath(url);
+  if (!avatarPath) {
+    return url;
+  }
+
+  if (normalizedBase.endsWith(MARKETING_ORG_CHART_API_SUFFIX)) {
+    const siteOrigin = normalizedBase.slice(
+      0,
+      -MARKETING_ORG_CHART_API_SUFFIX.length,
+    );
+    return `${siteOrigin}/api${avatarPath}`;
+  }
+
+  if (normalizedBase) {
+    return `${normalizedBase}${avatarPath}`;
+  }
+
+  return avatarPath;
+};
+
 /** Next.js website proxy uses `/api/org-chart` + `/image-proxy/...` (not `/org-chart/image-proxy`). */
 const resolveProxyPathForApiBase = (
   proxyPath: string,
@@ -95,10 +138,7 @@ export function getProxiedImageUrl(
   const normalizedBase = apiBaseUrl.replace(/\/$/, '');
 
   if (isPersistedAvatarUrl(trimmed)) {
-    if (trimmed.startsWith(PERSISTED_AVATAR_PATH_PREFIX) && normalizedBase) {
-      return `${normalizedBase}${trimmed}`;
-    }
-    return trimmed;
+    return resolvePersistedAvatarPublicUrl(trimmed, normalizedBase);
   }
 
   if (trimmed.startsWith('/org-chart/image-proxy/')) {
@@ -108,9 +148,6 @@ export function getProxiedImageUrl(
   }
 
   if (!trimmed.startsWith('http:') && !trimmed.startsWith('https:')) {
-    if (trimmed.startsWith(PERSISTED_AVATAR_PATH_PREFIX) && normalizedBase) {
-      return `${normalizedBase}${trimmed}`;
-    }
     return imageUrl;
   }
   try {

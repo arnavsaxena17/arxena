@@ -1,13 +1,13 @@
 import {
-  isLikelyBrowserRequest,
-  isVerifiedSearchBot,
-  ORG_CHART_VERIFIED_BOT_HEADER,
+    isLikelyBrowserRequest,
+    isVerifiedSearchBot,
+    ORG_CHART_VERIFIED_BOT_HEADER,
 } from 'twenty-shared';
 
 import {
-  getClientIpFromHeaders,
-  isBlockedBot,
-  isDeclaredBotUserAgent,
+    getClientIpFromHeaders,
+    isBlockedBot,
+    isDeclaredBotUserAgent,
 } from '@/lib/bot-detection';
 
 export const ORG_CHART_LIKELY_BROWSER_HEADER = 'x-org-chart-likely-browser';
@@ -157,6 +157,9 @@ export const resolveOrgChartRateLimitProfile = (
     return null;
   }
   if (pathname.includes('/image-proxy')) {
+    return null;
+  }
+  if (pathname.startsWith('/api/avatars/')) {
     return null;
   }
   if (pathname.startsWith('/api/org-chart')) {

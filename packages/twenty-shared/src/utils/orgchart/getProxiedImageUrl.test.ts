@@ -58,4 +58,21 @@ describe('getProxiedImageUrl', () => {
       'https://arxena.com/api/org-chart/image-proxy/images-2/bWVkaWEubGljZG4uY29t/L2Rtcy9pbWFnZS92Mi90ZXN0LXByb2ZpbGUtcGhvdG8',
     );
   });
+
+  it('maps persisted avatars to the marketing-site /api/avatars proxy', () => {
+    const avatarKey = 'a'.repeat(64);
+    expect(
+      getProxiedImageUrl(
+        `/avatars/${avatarKey}`,
+        'https://arxena.com/api/org-chart',
+      ),
+    ).toBe(`https://arxena.com/api/avatars/${avatarKey}`);
+
+    expect(
+      getProxiedImageUrl(
+        `https://app.arxena.com/avatars/${avatarKey}`,
+        'https://arxena.com/api/org-chart',
+      ),
+    ).toBe(`https://arxena.com/api/avatars/${avatarKey}`);
+  });
 });

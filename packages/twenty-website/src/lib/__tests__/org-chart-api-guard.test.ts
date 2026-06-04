@@ -20,7 +20,7 @@ describe('org-chart-api-guard', () => {
     );
   });
 
-  it('does not rate-limit image-proxy or company-logo', () => {
+  it('does not rate-limit image-proxy, avatars, or company-logo', () => {
     expect(
       resolveOrgChartRateLimitProfile(
         '/api/org-chart/image-proxy/images-2/host/path',
@@ -28,6 +28,11 @@ describe('org-chart-api-guard', () => {
     ).toBeNull();
     expect(
       resolveOrgChartRateLimitProfile('/api/org-chart/company-logo/acme'),
+    ).toBeNull();
+    expect(
+      resolveOrgChartRateLimitProfile(
+        `/api/avatars/${'a'.repeat(64)}`,
+      ),
     ).toBeNull();
   });
 
