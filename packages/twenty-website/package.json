@@ -5,7 +5,9 @@
   "scripts": {
     "nx": "NX_DEFAULT_PROJECT=twenty-website node ../../node_modules/nx/bin/nx.js",
     "dev": "npx nx build twenty-orgchart && npx next dev",
-    "build": "npx tsx scripts/generate-sitemaps.ts && npx nx build twenty-orgchart && npx next build",
+    "generate-sitemaps": "npx tsx scripts/generate-sitemaps.ts",
+    "build": "yarn generate-sitemaps && npx nx build twenty-orgchart && npx next build",
+    "build:ci": "npx nx build twenty-orgchart && npx next build",
     "start": "npx next start",
     "lint": "npx next lint",
     "github:sync": "npx tsx src/github/github-sync.ts",

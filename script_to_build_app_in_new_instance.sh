@@ -116,7 +116,7 @@ build_step() {
 
 	echo "Building twenty-website package"
 	cd ~/twenty/packages/twenty-website/
-	build_step TWENTY_WEBSITE yarn build --no-lint
+	build_step TWENTY_WEBSITE yarn build:ci
 
 	echo "Building twenty-emails package"
 	cd ~/twenty/packages/twenty-emails/

@@ -266,6 +266,18 @@ if [ "$DEPLOYMENTS_APPLIED" -eq 1 ]; then
   mkdir -p src/locales/generated
   npx lingui compile --verbose || npx nx run twenty-emails:lingui:compile
 
+  # Static sitemaps need a live twenty-server (SERVER_BASE_URL, typically :3000 on this host).
+  # CI build uses build:ci without sitemaps; generate them here before restarting services.
+  if [ "$(get_deploy_status TWENTY_WEBSITE)" = "updated" ]; then
+    echo "Generating twenty-website static sitemaps on production"
+    cd "$REPO_DIR/packages/twenty-website"
+    if yarn generate-sitemaps; then
+      echo "Static sitemaps generated successfully."
+    else
+      echo "WARNING: Static sitemap generation failed. Existing sitemap files may be stale."
+    fi
+  fi
+
   echo "Restarting NGINX and PM2"
   # 6. Restart services
   sudo systemctl restart nginx
