@@ -150,6 +150,21 @@ export class OrgChartS3Service {
     }
   }
 
+  /**
+   * Tries each lookup entry in order (alias-aware plans from {@link buildOrgChartS3LookupPlan}).
+   */
+  async tryGetOrgChartFromLookupEntries(
+    entries: Array<{ companyId: string; s3Variant?: OrgChartS3Variant }>,
+  ): Promise<OrgChartData | null> {
+    for (const entry of entries) {
+      const orgChart = await this.getOrgChart(entry.companyId, entry.s3Variant);
+      if (orgChart) {
+        return orgChart;
+      }
+    }
+    return null;
+  }
+
   async getOrgChart(
     companyId: string,
     variant?: OrgChartS3Variant,

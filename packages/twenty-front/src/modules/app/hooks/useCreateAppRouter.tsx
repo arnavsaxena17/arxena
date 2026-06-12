@@ -1,6 +1,6 @@
 import {
-    AppRouterProviders,
-    MinimalProviders,
+  AppRouterProviders,
+  MinimalProviders,
 } from '@/app/components/AppRouterProviders';
 import { SettingsRoutes } from '@/app/components/SettingsRoutes';
 
@@ -12,12 +12,12 @@ import { AppPath } from '@/types/AppPath';
 import { BlankLayout } from '@/ui/layout/page/components/BlankLayout';
 import { DefaultLayout } from '@/ui/layout/page/components/DefaultLayout';
 import {
-    Route,
-    createBrowserRouter,
-    createRoutesFromElements,
-    useLocation,
-    useNavigate,
-    useParams,
+  Route,
+  createBrowserRouter,
+  createRoutesFromElements,
+  useLocation,
+  useNavigate,
+  useParams,
 } from 'react-router-dom';
 import { getPostAuthLandingAppPath } from '~/config';
 import { Authorize } from '~/pages/auth/Authorize';
@@ -60,8 +60,13 @@ import { useUnipile } from '@/unipile/contexts/UnipileContext';
 import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import { useQuery } from '@apollo/client';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
+import {
+  buildCanonicalOrgChartPath,
+  resolveOrgChartCanonicalCompanyId,
+  shouldRedirectOrgChartCompanySlug,
+} from 'twenty-shared';
 import { IconDatabase } from 'twenty-ui';
 import { WORKSPACE_CREDITS } from '~/modules/billing/graphql/workspaceCredits';
 
@@ -104,20 +109,22 @@ const VideoInterviewResponseViewerWrapper = () => {
 const OrgChartRoute = () => {
   const { companyKey } = useParams();
   const navigate = useNavigate();
-  const location = useLocation() as {
-    state?: {
-      company?: {
-        companyId: string;
-        companyName: string;
-        website?: string;
-        locationName?: string;
-        industry?: string;
-        profileCount?: number;
-        linkedinUrl?: string;
-        companyDomain?: string;
-      };
+  const location = useLocation();
+
+  type OrgChartRouteLocationState = {
+    company?: {
+      companyId: string;
+      companyName: string;
+      website?: string;
+      locationName?: string;
+      industry?: string;
+      profileCount?: number;
+      linkedinUrl?: string;
+      companyDomain?: string;
     };
   };
+
+  const routeState = location.state as OrgChartRouteLocationState | null;
 
   const tokenPair = useRecoilValue(tokenPairState);
   const hasToken = Boolean(tokenPair?.accessToken?.token);
@@ -146,10 +153,50 @@ const OrgChartRoute = () => {
   const { isLinkedinConnected, isWhatsappUnipileConnected } = useUnipile();
   const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileConnected;
 
-  const companyFromState = location.state?.company;
+  const companyFromState = routeState?.company;
 
-  const companyId = companyFromState?.companyId ?? companyKey ?? '';
+  const rawCompanyId = companyFromState?.companyId ?? companyKey ?? '';
+  const companyId = rawCompanyId
+    ? resolveOrgChartCanonicalCompanyId(rawCompanyId)
+    : '';
   const hasSelectedCompany = Boolean(companyId.trim());
+
+  useEffect(() => {
+    if (!companyKey?.trim() || !companyId.trim()) {
+      return;
+    }
+    const decodedKey = decodeURIComponent(companyKey).trim();
+    if (!shouldRedirectOrgChartCompanySlug(decodedKey)) {
+      return;
+    }
+    const canonicalPath = buildCanonicalOrgChartPath({
+      companyId: decodedKey,
+    }).replace(/^\/org-chart/u, `/${AppPath.OrgChart}`);
+    navigate(
+      {
+        pathname: canonicalPath,
+        search: location.search,
+      },
+      {
+        replace: true,
+        state: companyFromState
+          ? {
+              company: {
+                ...companyFromState,
+                companyId: resolveOrgChartCanonicalCompanyId(decodedKey),
+              },
+            }
+          : routeState,
+      },
+    );
+  }, [
+    companyId,
+    companyKey,
+    companyFromState,
+    location.search,
+    routeState,
+    navigate,
+  ]);
 
   const handleBack = () => {
     navigate(`/${getPostAuthLandingAppPath()}`);

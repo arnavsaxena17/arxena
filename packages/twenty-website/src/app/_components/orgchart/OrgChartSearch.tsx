@@ -5,6 +5,8 @@ import dynamic from 'next/dynamic';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { resolveOrgChartCanonicalCompanyId } from 'twenty-shared';
+
 import { trackGA4Event } from '@/lib/analytics';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 
@@ -75,7 +77,10 @@ export const OrgChartSearch = ({
     if (company.companyName) params.set('companyName', company.companyName);
     if (company.website) params.set('website', company.website);
     const query = params.toString();
-    const path = `/org-chart/${encodeURIComponent(company.companyId)}${query ? `?${query}` : ''}`;
+    const canonicalCompanyId = resolveOrgChartCanonicalCompanyId(
+      company.companyId,
+    );
+    const path = `/org-chart/${encodeURIComponent(canonicalCompanyId)}${query ? `?${query}` : ''}`;
     router.push(path);
   };
 

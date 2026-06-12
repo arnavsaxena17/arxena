@@ -1,0 +1,12 @@
+# Include inside the app.arxena.com / arxena.arxena.com server {} block (twenty.conf).
+# Proxies persisted candidate avatars from twenty-server (local .local-storage/avatars/).
+
+# Quote the regex so nginx does not interpret `{64}` as a config block.
+location ~ "^/avatars/([a-f0-9]{64})$" {
+  proxy_pass http://localhost:3000;
+  proxy_http_version 1.1;
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+}

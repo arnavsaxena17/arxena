@@ -1,29 +1,33 @@
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
+import { permanentRedirect } from 'next/navigation';
 
 import {
-  extractOrgData,
-  fromSlug,
-  getProxiedImageUrl,
-  processOrgChartToNodeData,
-  toSlug,
-  toTitleCase,
-  type OrgChartNodeData,
+    buildCanonicalOrgChartPath,
+    extractOrgData,
+    fromSlug,
+    getProxiedImageUrl,
+    processOrgChartToNodeData,
+    resolveOrgChartCanonicalCompanyId,
+    shouldRedirectOrgChartCompanySlug,
+    toSlug,
+    toTitleCase,
+    type OrgChartNodeData,
 } from 'twenty-shared';
 
 import { getSignUpUrl } from '@/lib/auth-urls';
 import { getBaseUrl, getInternalAppUrl } from '@/lib/base-url';
 import { getClientIpFromHeaders } from '@/lib/bot-detection';
 import {
-  extractOrgChartCompanyMetadataFromPayload,
-  normalizeOptionalCompanyField,
+    extractOrgChartCompanyMetadataFromPayload,
+    normalizeOptionalCompanyField,
 } from '@/lib/org-chart-company-metadata';
 import { readOrgChartStaticOnlyFromHeaders } from '@/lib/org-chart-static-only';
 import { decodeOverEncodedPath } from '@/lib/url-utils';
 
 import {
-  BreadcrumbListSchema,
-  BreadcrumbNav,
+    BreadcrumbListSchema,
+    BreadcrumbNav,
 } from '@/app/_components/BreadcrumbList';
 import { OrgChartPageClient } from './OrgChartPageClient';
 import { OrgChartStructureSSR } from './OrgChartStructureSSR';
@@ -161,6 +165,40 @@ function formatCompanyNameForDisplay(companyId: string): string {
   return fromSlug(decoded);
 }
 
+function buildSearchParamsString(
+  searchParams: Record<string, string | string[] | undefined>,
+): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (typeof value === 'string') {
+      params.set(key, value);
+    }
+    if (Array.isArray(value)) {
+      for (const entry of value) {
+        params.append(key, entry);
+      }
+    }
+  }
+  const serialized = params.toString();
+  return serialized ? `?${serialized}` : '';
+}
+
+function maybePermanentRedirectToCanonicalOrgChartRoute(input: {
+  rawCompanySlug: string;
+  tailSegments: string[];
+  searchParams: Record<string, string | string[] | undefined>;
+}): void {
+  if (!shouldRedirectOrgChartCompanySlug(input.rawCompanySlug)) {
+    return;
+  }
+
+  const path = buildCanonicalOrgChartPath({
+    companyId: input.rawCompanySlug,
+    tailSegments: input.tailSegments,
+  });
+  permanentRedirect(`${path}${buildSearchParamsString(input.searchParams)}`);
+}
+
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
@@ -172,9 +210,10 @@ export async function generateMetadata({
       alternates: { canonical: '/org-chart' },
     };
   }
-  const companyId = segments?.[0]
+  const rawCompanyId = segments?.[0]
     ? decodeOverEncodedPath(segments[0])
     : 'company';
+  const companyId = resolveOrgChartCanonicalCompanyId(rawCompanyId);
   const companyName =
     typeof companyId === 'string'
       ? formatCompanyNameForDisplay(companyId)
@@ -300,6 +339,15 @@ export default async function OrgChartPage({
   const headersList = await headers();
   const forwardedUserAgent = headersList.get('user-agent') ?? undefined;
   const staticOnly = readOrgChartStaticOnlyFromHeaders(headersList);
+
+  if (segments?.[0] && segments[0] !== 'share') {
+    const rawCompanySlug = decodeOverEncodedPath(segments[0]);
+    maybePermanentRedirectToCanonicalOrgChartRoute({
+      rawCompanySlug,
+      tailSegments: segments.slice(1),
+      searchParams: resolvedSearchParams,
+    });
+  }
 
   if (segments?.[0] === 'share') {
     const shareToken = segments?.[1] ? decodeOverEncodedPath(segments[1]) : '';
@@ -443,7 +491,7 @@ export default async function OrgChartPage({
 
   const rawCompanyId = segments?.[0] ?? null;
   const companyId = rawCompanyId
-    ? decodeOverEncodedPath(rawCompanyId)
+    ? resolveOrgChartCanonicalCompanyId(decodeOverEncodedPath(rawCompanyId))
     : null;
   const country = segments?.[1]
     ? decodeOverEncodedPath(segments[1])

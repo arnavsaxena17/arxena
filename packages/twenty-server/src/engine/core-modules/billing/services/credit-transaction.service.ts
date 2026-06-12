@@ -168,6 +168,30 @@ export class CreditTransactionService {
   }
 
   /**
+   * True when the workspace has org-chart access for any of the given S3 paths / legacy IDs.
+   * Used for company alias groups (e.g. stay-vista ↔ vista-rooms).
+   */
+  async hasOrgChartS3AccessForWorkspaceAmong(
+    workspaceId: string,
+    candidates: Array<{
+      orgChartS3RelativePath: string;
+      legacyCompanyId?: string;
+    }>,
+  ): Promise<boolean> {
+    for (const candidate of candidates) {
+      const hasAccess = await this.hasOrgChartS3AccessForWorkspace(
+        workspaceId,
+        candidate.orgChartS3RelativePath,
+        candidate.legacyCompanyId,
+      );
+      if (hasAccess) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Records org chart S3 access when billing is off (no credit debit). Same row shape as debit
    * metadata so hasOrgChartS3AccessForMember can authorize loads from shared S3 paths.
    */

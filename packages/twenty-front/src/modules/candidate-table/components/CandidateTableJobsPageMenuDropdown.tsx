@@ -20,8 +20,7 @@ import {
   IconDownload,
   IconGitCommit,
   IconPlus,
-  IconSearch,
-  MenuItem,
+  MenuItem
 } from 'twenty-ui';
 
 const ORG_CHART_LINKEDIN_SEARCH_TYPE_OPTIONS: {
@@ -313,7 +312,7 @@ export const CandidateTableJobsPageMenuDropdown = ({
                 <IconApi size={iconSm} />
                 Harvest
               </StyledSegmentedOption>
-              <StyledSegmentedOption
+              {/* <StyledSegmentedOption
                 type="button"
                 data-testid="org-chart-source-apify"
                 isActive={orgChartLinkedinCandidateSource === 'apify'}
@@ -325,8 +324,8 @@ export const CandidateTableJobsPageMenuDropdown = ({
               >
                 <IconApi size={iconSm} />
                 Apify
-              </StyledSegmentedOption>
-              <StyledSegmentedOption
+              </StyledSegmentedOption> */}
+              {/* <StyledSegmentedOption
                 type="button"
                 data-testid="org-chart-source-linkedin-xray"
                 isActive={orgChartLinkedinCandidateSource === 'linkedin_xray'}
@@ -341,7 +340,7 @@ export const CandidateTableJobsPageMenuDropdown = ({
               >
                 <IconSearch size={iconSm} />
                 X-Ray
-              </StyledSegmentedOption>
+              </StyledSegmentedOption> */}
               <StyledSegmentedOption
                 type="button"
                 data-testid="org-chart-source-m7kq"

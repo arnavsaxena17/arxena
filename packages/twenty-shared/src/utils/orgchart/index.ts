@@ -7,6 +7,18 @@ export {
 export { getProxiedImageUrl } from './getProxiedImageUrl';
 export { isValidLinkedInProfileUrl } from './isValidLinkedInProfileUrl';
 export {
+    ORG_CHART_COMPANY_ALIAS_GROUPS,
+    buildCanonicalOrgChartPath,
+    buildOrgChartS3LookupPlan,
+    collectOrgChartCompanyIdsForLookup,
+    normalizeOrgChartCompanySlug,
+    resolveOrgChartCanonicalCompanyId,
+    resolveOrgChartCompanyAliasGroup,
+    shouldRedirectOrgChartCompanySlug,
+    type OrgChartCompanyAliasGroup,
+    type OrgChartS3LookupEntry
+} from './orgChartCompanyAliases';
+export {
     extractOrgData,
     isMaskedName,
     processOrgChartToNodeData,

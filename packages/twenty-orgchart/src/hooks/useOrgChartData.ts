@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react';
 
+import { resolveOrgChartCanonicalCompanyId } from 'twenty-shared';
+
 import { normalizeCompanyIdForUrl } from '../utils/normalizeCompanyId';
 
 type OrgChartCompanyInput = {
@@ -88,7 +90,9 @@ export const useOrgChartData = (
 
     try {
       const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
-      const canonicalCompanyId = normalizeCompanyIdForUrl(companyId);
+      const canonicalCompanyId = resolveOrgChartCanonicalCompanyId(
+        normalizeCompanyIdForUrl(companyId),
+      );
       const slugForPath = canonicalCompanyId.replace(/-/g, '_').toLowerCase();
       const params = new URLSearchParams();
 

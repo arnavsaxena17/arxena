@@ -3,7 +3,12 @@ import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { readFile } from 'fs/promises';
 import * as path from 'path';
 
-import { graphqlToFindManyCompanies, OrgChartData } from 'twenty-shared';
+import {
+  buildOrgChartS3LookupPlan,
+  collectOrgChartCompanyIdsForLookup,
+  graphqlToFindManyCompanies,
+  OrgChartData,
+} from 'twenty-shared';
 
 import { toOrgChartCacheTtlMs } from '../utils/org-chart-cache-ttl.util';
 
@@ -25,6 +30,7 @@ import {
     applyBlankOrgChartSubsetFilter,
 } from '../utils/blank-org-chart-subset.util';
 import { mergeManualCompanyAutocompleteResults } from '../utils/manual-company-autocomplete.util';
+import { buildOrgChartS3RelativePathCandidates } from '../utils/org-chart-company-alias.util';
 import { buildCompanyOrgChartLogicalCacheKey } from '../utils/orgchart-cache-keys.util';
 import { ArxenaBackendService } from './arxena-backend.service';
 import { OrgChartEsService } from './org-chart-es.service';
@@ -81,6 +87,38 @@ export class OrgChartService {
     this.logger.log(
       `Cleared org chart Redis + S3 cache for persistKey=${persistKey}`,
     );
+  }
+
+  private async loadCachedOrgChartAmongAliases(input: {
+    companyName?: string;
+    companyIds: string[];
+  }): Promise<
+    | {
+        orgChart?: Record<string, unknown>;
+        cachedAt?: string;
+        itemCount?: number;
+      }
+    | undefined
+  > {
+    for (const aliasCompanyId of input.companyIds) {
+      const cacheKey = buildCompanyOrgChartLogicalCacheKey(
+        input.companyName,
+        aliasCompanyId,
+        'entire_company',
+        'classic',
+      );
+      const cached = await this.orgChartCacheStorageService.get<{
+        orgChart?: Record<string, unknown>;
+        cachedAt?: string;
+        itemCount?: number;
+      }>(cacheKey);
+
+      if (cached?.orgChart) {
+        return cached;
+      }
+    }
+
+    return undefined;
   }
 
   private isBuiltEntireCompanyOrgChartCache(
@@ -410,14 +448,13 @@ export class OrgChartService {
     const hasAuthToken =
       typeof authToken === 'string' && authToken.trim() !== '';
     const authTokenString = hasAuthToken ? (authToken as string) : undefined;
-    const persistKeyForS3 = this.orgChartS3Service.persistedCompanyFolderKey(
+    const s3PathCandidates = buildOrgChartS3RelativePathCandidates({
+      orgChartS3Service: this.orgChartS3Service,
       companyId,
-      options.companyName?.trim() || companyId,
-    );
-    const orgChartS3RelativePath =
-      this.orgChartS3Service.buildRelativeFolderPathFromPersistedKey(
-        persistKeyForS3,
-      );
+      companyName: options.companyName,
+    });
+    const aliasCompanyIds = collectOrgChartCompanyIdsForLookup(companyId);
+    const s3LookupPlan = buildOrgChartS3LookupPlan(companyId);
     let workspaceHasOrgChartAccess = false;
 
     if (authTokenString) {
@@ -427,25 +464,20 @@ export class OrgChartService {
 
       if (workspaceId) {
         workspaceHasOrgChartAccess =
-          await this.creditTransactionService.hasOrgChartS3AccessForWorkspace(
+          await this.creditTransactionService.hasOrgChartS3AccessForWorkspaceAmong(
             workspaceId,
-            orgChartS3RelativePath,
-            persistKeyForS3,
+            s3PathCandidates.map((candidate) => ({
+              orgChartS3RelativePath: candidate.relativePath,
+              legacyCompanyId: candidate.persistKey,
+            })),
           );
       }
     }
 
-    const cacheKey = buildCompanyOrgChartLogicalCacheKey(
-      options.companyName,
-      companyId,
-      'entire_company',
-      'classic',
-    );
-    const cachedOrgChartPayload = await this.orgChartCacheStorageService.get<{
-      orgChart?: Record<string, unknown>;
-      cachedAt?: string;
-      itemCount?: number;
-    }>(cacheKey);
+    const cachedOrgChartPayload = await this.loadCachedOrgChartAmongAliases({
+      companyName: options.companyName,
+      companyIds: aliasCompanyIds,
+    });
 
     const hasEntireCompanySubsetFilters =
       (options.country?.trim() &&
@@ -486,7 +518,10 @@ export class OrgChartService {
     let s3OrgChart: OrgChartData | null = null;
 
     if (workspaceHasOrgChartAccess) {
-      s3OrgChart = await this.orgChartS3Service.getOrgChart(companyId);
+      s3OrgChart =
+        await this.orgChartS3Service.tryGetOrgChartFromLookupEntries(
+          s3LookupPlan,
+        );
     }
 
     if (hasAuthToken && s3OrgChart) {
@@ -512,17 +547,19 @@ export class OrgChartService {
       workspaceHasOrgChartAccess ||
       s3OrgChart === null;
     if (!options.serveCachedOnly && canReadFromEs) {
-      const esOutcome = await this.orgChartEsService.getOrgChartByCompanyId(
-        companyId,
-        options,
-      );
+      for (const esCompanyId of aliasCompanyIds) {
+        const esOutcome = await this.orgChartEsService.getOrgChartByCompanyId(
+          esCompanyId,
+          options,
+        );
 
-      orgChartEsTransportError = esOutcome.esTransportError === true;
+        orgChartEsTransportError = esOutcome.esTransportError === true;
 
-      if (esOutcome.document) {
-        return {
-          data: normalizeOrgChartPayload(esOutcome.document),
-        };
+        if (esOutcome.document) {
+          return {
+            data: normalizeOrgChartPayload(esOutcome.document),
+          };
+        }
       }
     }
 

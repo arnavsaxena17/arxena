@@ -1,4 +1,4 @@
-import type { OrgChartNodeData } from './orgChartDataUtils';
+import type { JsonValue, OrgChartNodeData } from './orgChartDataUtils';
 
 export type OrgChartNodeDataFilterOptions = {
   country?: string;
@@ -8,7 +8,7 @@ export type OrgChartNodeDataFilterOptions = {
 type FilterableOrgChartNode = OrgChartNodeData & {
   std_function_root?: string;
   std_function?: string;
-  allCandidates?: Array<Record<string, unknown>>;
+  allCandidates?: JsonValue[];
 };
 
 export const hasMeaningfulOrgChartCountryFilter = (
@@ -90,11 +90,11 @@ const collectAncestors = (
       if (!node) {
         break;
       }
-      const parent = node.parent;
-      if (parent === '' || parent === null || parent === undefined) {
+      const parentKey = normalizeParentKey(node.parent);
+      if (parentKey === '') {
         break;
       }
-      key = typeof parent === 'number' ? parent : Number(parent);
+      key = parentKey;
     }
   }
 
@@ -104,19 +104,19 @@ const collectAncestors = (
 const rewireParentsForKeptNodes = (
   nodes: FilterableOrgChartNode[],
   keepSet: Set<number>,
-): FilterableOrgChartNode[] => {
+): OrgChartNodeData[] => {
   const byKey = new Map(nodes.map((node) => [node.key, node]));
 
   return nodes
     .filter((node) => keepSet.has(node.key))
     .map((node) => {
-      let parent: number | '' | undefined = node.parent;
+      let parent: number | undefined = node.parent;
 
       while (true) {
-        if (parent === '' || parent === null || parent === undefined) {
+        const parentKey = normalizeParentKey(parent);
+        if (parentKey === '') {
           return { ...node, parent: undefined };
         }
-        const parentKey = typeof parent === 'number' ? parent : Number(parent);
         if (keepSet.has(parentKey)) {
           return { ...node, parent: parentKey };
         }
@@ -149,7 +149,7 @@ const nodeMatchesFunctionRoot = (
 };
 
 const readCandidateCountryValue = (
-  candidate: Record<string, unknown>,
+  candidate: { [key: string]: JsonValue | undefined },
 ): string => {
   const values = [
     candidate.location_country,
@@ -187,6 +187,13 @@ const nodeMatchesCountry = (
   }
 
   return candidates.some((candidate) => {
+    if (
+      typeof candidate !== 'object' ||
+      candidate === null ||
+      Array.isArray(candidate)
+    ) {
+      return false;
+    }
     const countryValue = readCandidateCountryValue(candidate);
     return countryValue.includes(filterCountry);
   });

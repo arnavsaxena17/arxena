@@ -55,26 +55,8 @@ const nextConfig = {
         destination: 'https://app.arxena.com/sign-up',
         permanent: true,
       },
-      {
-        source: '/org-chart/meta',
-        destination: '/org-chart/facebook',
-        permanent: true,
-      },
-      {
-        source: '/org-chart/tesla',
-        destination: '/org-chart/tesla-motors',
-        permanent: true,
-      },
-      {
-        source: '/org-chart/meta/:path*',
-        destination: '/org-chart/facebook/:path*',
-        permanent: true,
-      },
-      {
-        source: '/org-chart/samsung/:path*',
-        destination: '/org-chart/samsung-electronics/:path*',
-        permanent: true,
-      },
+      // Company slug aliases (meta→facebook, tesla→tesla-motors, etc.) are handled in
+      // twenty-shared orgChartCompanyAliases + app-level redirect in org-chart page.
       // /global/fullcompany is equivalent to base URL - redirect to canonical form
       {
         source: '/org-chart/:companyId/global/fullcompany',

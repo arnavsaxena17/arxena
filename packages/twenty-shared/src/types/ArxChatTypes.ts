@@ -705,6 +705,7 @@ export interface UserProfile {
   resumeHeadline?: string | null;
   preferredLocations?: string | null;
   displayPicture?: string | { primaryLinkLabel: string; primaryLinkUrl: string } | null;
+  profilePictureUrl?: string;
   hiringNaukriUrl?: { primaryLinkLabel: string; primaryLinkUrl: string } | null;
   resumeDownloadUrl?: string | null;
   

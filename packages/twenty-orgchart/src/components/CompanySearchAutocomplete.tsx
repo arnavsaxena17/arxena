@@ -1,7 +1,7 @@
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { toTitleCase } from 'twenty-shared';
+import { resolveOrgChartCanonicalCompanyId, toTitleCase } from 'twenty-shared';
 
 import {
     CompanyAutocompleteItem,
@@ -296,7 +296,7 @@ export const CompanySearchAutocomplete = ({
         : company.meta.linkedin_url;
 
       onCompanySelect({
-        companyId: company.meta.id,
+        companyId: resolveOrgChartCanonicalCompanyId(company.meta.id),
         companyName: company.name,
         website: company.meta.website,
         companyDomain: deriveCompanyDomain(company.meta.website),

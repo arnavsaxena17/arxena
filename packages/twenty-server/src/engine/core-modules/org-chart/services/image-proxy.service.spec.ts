@@ -1,4 +1,7 @@
-import { CandidateAvatarStorageService } from 'src/engine/core-modules/candidate-avatar/services/candidate-avatar-storage.service';
+import {
+    AvatarIngestInput,
+    CandidateAvatarStorageService,
+} from 'src/engine/core-modules/candidate-avatar/services/candidate-avatar-storage.service';
 
 import { ImageProxyService } from './image-proxy.service';
 
@@ -18,7 +21,7 @@ describe('ImageProxyService', () => {
   beforeEach(() => {
     avatarStorage = {
       isPersistedAvatarUrl: jest.fn((url: string) => url.startsWith('/avatars/')),
-      resolveStableKey: jest.fn(() => null),
+      resolveStableKey: jest.fn((_input: AvatarIngestInput) => null),
       avatarExists: jest.fn().mockResolvedValue(false),
       readAvatarBuffer: jest.fn().mockResolvedValue(null),
       readMeta: jest.fn().mockResolvedValue(null),
