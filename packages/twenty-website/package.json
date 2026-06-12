@@ -7,7 +7,7 @@
     "dev": "npx nx build twenty-orgchart && npx next dev",
     "generate-sitemaps": "npx tsx scripts/generate-sitemaps.ts",
     "build": "yarn generate-sitemaps && npx nx build twenty-orgchart && npx next build",
-    "build:ci": "npx nx build twenty-orgchart && npx next build",
+    "build:ci": "npx nx build twenty-orgchart && npx next build --no-lint",
     "start": "npx next start",
     "lint": "npx next lint",
     "github:sync": "npx tsx src/github/github-sync.ts",
