@@ -30,11 +30,11 @@ export default defineConfig({
       formats: ['es', 'cjs'],
     },
     rollupOptions: {
+      // Bundle gojs/gojs-react so Next.js consumers never re-parse release/go.js via SWC.
+      // Patched node_modules/gojs (postinstall patch-gojs.cjs) is inlined at this build step.
       external: [
         'react',
         'react-dom',
-        'gojs',
-        'gojs-react',
         '@emotion/react',
         '@emotion/styled',
       ],

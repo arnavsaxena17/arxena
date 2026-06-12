@@ -4,7 +4,6 @@ const path = require('path');
 const webpack = require('webpack');
 
 const orgchartDist = path.resolve(__dirname, '../twenty-orgchart/dist');
-const gojsCjs = path.resolve(__dirname, '../../node_modules/gojs/release/go.js');
 
 const nextConfig = {
   experimental: {
@@ -77,9 +76,6 @@ const nextConfig = {
   webpack: (config, { isServer }) => {
     config.resolve.alias = {
       ...config.resolve.alias,
-      // twenty-orgchart externalizes gojs; webpack must not load release/go.mjs (SWC parse error).
-      gojs: gojsCjs,
-      'gojs/release/go.mjs': gojsCjs,
       'twenty-orgchart': orgchartDist,
       'twenty-orgchart/company-search': path.join(orgchartDist, 'company-search.js'),
     };
