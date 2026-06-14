@@ -1391,6 +1391,7 @@ export const ArxOrgChartContainer = ({
             : null
         }
         searchControlsProps={searchControlsProps}
+        onCancelOrgchartSearch={actions.cancelOrgchartSearch}
         onTopRightLeadershipOrgChart={() => {
           requestCandidateSearchConfirm(t`Confirm Leadership Org Chart`, () => {
             void fetchEnrichedLeadershipOrgChart();

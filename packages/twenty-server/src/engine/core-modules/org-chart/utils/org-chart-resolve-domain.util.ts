@@ -114,3 +114,32 @@ export const buildCompanyWebsiteLookupVariants = (
 
   return [...variants];
 };
+
+const PLACEHOLDER_ORG_CHART_COMPANY_IDS = new Set([
+  'companies',
+  'company',
+  'unknown',
+]);
+
+/** Reject generic placeholder slugs that must never resolve as a real org chart. */
+export const isUsableOrgChartResolveCompanyId = (
+  companyId?: string | null,
+): boolean => {
+  const normalized = companyId?.trim().toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+
+  return !PLACEHOLDER_ORG_CHART_COMPANY_IDS.has(normalized);
+};
+
+export const isUsableOrgChartEsDocument = (document: {
+  job_company_id?: string;
+  is_blank_template?: boolean;
+}): boolean => {
+  if (document.is_blank_template === true) {
+    return false;
+  }
+
+  return isUsableOrgChartResolveCompanyId(document.job_company_id);
+};

@@ -1862,10 +1862,9 @@ export class OrgChartController {
       companyId === 'companies' &&
       country === 'resolve-by-domain'
     ) {
-      throw new HttpException(
-        'Use GET /org-chart/companies/resolve-by-domain?domain=<website-domain>',
-        HttpStatus.NOT_FOUND,
-      );
+      const domainParam =
+        typeof req.query.domain === 'string' ? req.query.domain : '';
+      return this.resolveCompanyByDomain(domainParam, req);
     }
 
     return this.getOrgChartInternal(req, companyId, {

@@ -26,7 +26,7 @@ import {
   ConfirmationModal,
   StyledCenteredButton,
 } from '@/ui/layout/modal/components/ConfirmationModal';
-import { IconChevronDown, MenuItem } from 'twenty-ui';
+import { Button, IconChevronDown, MenuItem } from 'twenty-ui';
 
 import {
   StyledAsOfMonthPicker,
@@ -42,6 +42,7 @@ import {
   StyledPreviewBannerSignupButton,
   StyledPreviewPersistentBanner,
   StyledProgressBanner,
+  StyledProgressCancelRow,
   StyledProgressElapsed,
   StyledSearchOverlay,
   StyledSpinner,
@@ -90,6 +91,7 @@ export type ArxOrgChartViewProps = {
   } | null;
   searchControlsProps: any;
   onTopRightLeadershipOrgChart: () => void;
+  onCancelOrgchartSearch?: () => void;
 
   pendingSearchConfirm: { title: string; run: () => void } | null;
   setPendingSearchConfirm: (
@@ -182,6 +184,7 @@ export const ArxOrgChartView = ({
   apolloQueueNotice,
   searchControlsProps,
   onTopRightLeadershipOrgChart,
+  onCancelOrgchartSearch,
   pendingSearchConfirm,
   setPendingSearchConfirm,
   candidateSearchConfirmSubtitle,
@@ -305,6 +308,16 @@ export const ArxOrgChartView = ({
                   Elapsed: {elapsedLabel}
                 </StyledProgressElapsed>
               )}
+              {onCancelOrgchartSearch && (
+                <StyledProgressCancelRow>
+                  <Button
+                    variant="secondary"
+                    title="Cancel"
+                    size="small"
+                    onClick={onCancelOrgchartSearch}
+                  />
+                </StyledProgressCancelRow>
+              )}
             </StyledProgressBanner>
           )}
           {error && <StyledErrorMessage>{error}</StyledErrorMessage>}
@@ -320,6 +333,16 @@ export const ArxOrgChartView = ({
                       <StyledProgressElapsed>
                         Elapsed: {elapsedLabel}
                       </StyledProgressElapsed>
+                    )}
+                    {onCancelOrgchartSearch && (
+                      <StyledProgressCancelRow>
+                        <Button
+                          variant="secondary"
+                          title="Cancel"
+                          size="small"
+                          onClick={onCancelOrgchartSearch}
+                        />
+                      </StyledProgressCancelRow>
                     )}
                   </StyledTemplateBanner>
                 ) : (

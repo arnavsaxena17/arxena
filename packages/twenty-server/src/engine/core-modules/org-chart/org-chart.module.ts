@@ -10,6 +10,7 @@ import { ContactEnrichmentModule } from 'src/engine/core-modules/contact-enrichm
 import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
 import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-execution.module';
 import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
+import { RedisClientModule } from 'src/engine/core-modules/redis-client/redis-client.module';
 import { TheOfficialBoardModule } from 'src/engine/core-modules/theofficialboard/theofficialboard.module';
 import { TheOrgModule } from 'src/engine/core-modules/theorg/theorg.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
@@ -58,6 +59,7 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
     CandidateSourcingModule,
     ContactEnrichmentModule,
     EnvironmentModule,
+    RedisClientModule,
     GraphQLExecutionModule,
     LinkedInSearchModule,
     LinkedinXrayModule,

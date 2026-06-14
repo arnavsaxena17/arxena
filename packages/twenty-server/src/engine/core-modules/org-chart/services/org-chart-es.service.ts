@@ -4,7 +4,7 @@ import { Client } from '@elastic/elasticsearch';
 
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 
-import { buildCompanyWebsiteLookupVariants } from '../utils/org-chart-resolve-domain.util';
+import { buildCompanyWebsiteLookupVariants, isUsableOrgChartEsDocument, isUsableOrgChartResolveCompanyId } from '../utils/org-chart-resolve-domain.util';
 
 type OrgChartDocument = Record<string, unknown>;
 
@@ -1288,6 +1288,7 @@ export class OrgChartEsService {
         job_company_name?: string;
         job_company_website?: string;
         count_org?: number;
+        is_blank_template?: boolean;
       }>({
         index: this.orgChartsIndex,
         size: 5,
@@ -1306,27 +1307,29 @@ export class OrgChartEsService {
           'job_company_name',
           'job_company_website',
           'count_org',
+          'is_blank_template',
         ],
       });
 
       for (const hit of searchResponse.hits.hits) {
         const src = hit._source;
         const companyId = src?.job_company_id?.trim().toLowerCase();
-        if (companyId) {
-          return {
-            job_company_id: companyId,
-            job_company_name:
-              typeof src?.job_company_name === 'string'
-                ? src.job_company_name
-                : undefined,
-            job_company_website:
-              typeof src?.job_company_website === 'string'
-                ? src.job_company_website
-                : undefined,
-            count_org:
-              typeof src?.count_org === 'number' ? src.count_org : undefined,
-          };
+        if (!companyId || !isUsableOrgChartEsDocument({ ...src, job_company_id: companyId })) {
+          continue;
         }
+        return {
+          job_company_id: companyId,
+          job_company_name:
+            typeof src?.job_company_name === 'string'
+              ? src.job_company_name
+              : undefined,
+          job_company_website:
+            typeof src?.job_company_website === 'string'
+              ? src.job_company_website
+              : undefined,
+          count_org:
+            typeof src?.count_org === 'number' ? src.count_org : undefined,
+        };
       }
 
       return null;
@@ -1372,7 +1375,7 @@ export class OrgChartEsService {
       for (const hit of searchResponse.hits.hits) {
         const src = hit._source;
         const id = src?.id?.trim().toLowerCase();
-        if (id) {
+        if (id && isUsableOrgChartResolveCompanyId(id)) {
           return {
             id,
             name: typeof src?.name === 'string' ? src.name : undefined,
@@ -1410,6 +1413,7 @@ export class OrgChartEsService {
         job_company_name?: string;
         job_company_website?: string;
         count_org?: number;
+        is_blank_template?: boolean;
       }>({
         index: this.orgChartsIndex,
         size: 1,
@@ -1427,12 +1431,13 @@ export class OrgChartEsService {
           'job_company_name',
           'job_company_website',
           'count_org',
+          'is_blank_template',
         ],
       });
 
       const src = searchResponse.hits.hits[0]?._source;
       const resolvedId = src?.job_company_id?.trim().toLowerCase();
-      if (!resolvedId) {
+      if (!resolvedId || !isUsableOrgChartEsDocument({ ...src, job_company_id: resolvedId })) {
         return null;
       }
 

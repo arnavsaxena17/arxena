@@ -199,11 +199,11 @@ export class OrgChartSearchService {
       );
     }
 
-    const emitProgress = (
+    const emitProgress = async (
       event: string,
       data: Record<string, unknown>,
-    ): boolean | void => {
-      if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
+    ): Promise<boolean | void> => {
+      if (requestId && (await this.orgchartCancelRegistry.isCancelled(requestId))) {
         return false;
       }
       sendEvent?.(event, data);
@@ -221,7 +221,15 @@ export class OrgChartSearchService {
         data,
       });
     };
-    emitProgress('status', {
+
+    const emitProgressSync = (
+      event: string,
+      data: Record<string, unknown>,
+    ): boolean | void => {
+      void emitProgress(event, data);
+    };
+
+    await emitProgress('status', {
       message: `Starting org chart search for ${primaryCompanyName || 'company'}...`,
     });
     let businessDivisionEffective:
@@ -235,7 +243,7 @@ export class OrgChartSearchService {
       const { openAIclient: openaiClient } =
         await this.workspaceQueryService.initializeLLMClients(workspaceId);
 
-      emitProgress('status', {
+      await emitProgress('status', {
         message: 'Parsing business division query...',
       });
 
@@ -332,7 +340,7 @@ export class OrgChartSearchService {
           `OrgchartLinkedInSearch: reusing full-company candidate list cache for function-grade search (company="${primaryCompanyName}", functionRoot="${functionRoot}", country="${rawCountryFromOptions || 'global'}") with ${filteredItems.length} candidates after filters.`,
         );
 
-        emitProgress('complete', {
+        await emitProgress('complete', {
           message: `Loaded cached org chart people search with ${filteredItems.length} candidates (from full-company cache).`,
           itemCount: filteredItems.length,
           strategyCount: 0,
@@ -447,7 +455,7 @@ export class OrgChartSearchService {
         this.logger.log(
           `OrgchartLinkedInSearch: function-grade cache HIT for company="${primaryCompanyName}", functionRoot="${normalizedFunctionRoot}", country="${normalizedCountry}", strategyCap=${maxStrategiesToRun}`,
         );
-        emitProgress('complete', {
+        await emitProgress('complete', {
           message: `Loaded cached org chart people search with ${cachedFunctionGrade.itemCount} candidates.`,
           itemCount: cachedFunctionGrade.itemCount,
           strategyCount: strategiesToRun.length,
@@ -473,7 +481,7 @@ export class OrgChartSearchService {
       }
     }
 
-    if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
+    if (requestId && (await this.orgchartCancelRegistry.isCancelled(requestId))) {
       this.logger.log(
         `Orgchart search aborted by user before execution. requestId=${requestId}`,
       );
@@ -500,7 +508,7 @@ export class OrgChartSearchService {
             parameterKey,
             apiToken,
             requirement,
-            emitProgress,
+            emitProgressSync,
             {
               forceClassicPeopleJson: true,
               linkedInAccountId: options?.linkedinUnipileAccountId,
@@ -514,7 +522,7 @@ export class OrgChartSearchService {
             parameterKey,
             apiToken,
             undefined,
-            emitProgress,
+            emitProgressSync,
             {
               forceClassicPeopleJson: true,
               linkedInAccountId: options?.linkedinUnipileAccountId,
@@ -549,7 +557,7 @@ export class OrgChartSearchService {
       `OrgchartLinkedInSearch: collected ${candidatesOut.length} transformed candidates from ${strategyResults.length} strategy/strategies.`,
     );
 
-    emitProgress('complete', {
+    await emitProgress('complete', {
       message: `Completed org chart people search with ${candidatesOut.length} candidates.`,
       itemCount: candidatesOut.length,
       strategyCount: strategyResults.length,

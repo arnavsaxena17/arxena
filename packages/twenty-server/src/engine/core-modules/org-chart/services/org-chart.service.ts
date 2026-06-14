@@ -37,6 +37,7 @@ import {
   collectDomainLookupCandidates,
   extractCompanyNameStemFromDomain,
   extractRootCompanyDomain,
+  isUsableOrgChartResolveCompanyId,
   normalizeBareCompanyDomain,
 } from '../utils/org-chart-resolve-domain.util';
 import {
@@ -1071,6 +1072,12 @@ export class OrgChartService {
       const candidateHit =
         await this.orgChartEsService.resolveCompanyByDomain(candidate);
       if (!candidateHit) {
+        continue;
+      }
+      if (
+        candidateHit.hasOrgChart &&
+        !isUsableOrgChartResolveCompanyId(candidateHit.companyId)
+      ) {
         continue;
       }
       hit = candidateHit;

@@ -1096,7 +1096,7 @@ export const OrgChartResultModal = ({
                 )}
                 {onStop && (
                   <StyledStopRow>
-                    <Button variant="secondary" title="Stop" onClick={onStop} />
+                    <Button variant="secondary" title="Cancel" onClick={onStop} />
                   </StyledStopRow>
                 )}
               </StyledLoadingMessage>

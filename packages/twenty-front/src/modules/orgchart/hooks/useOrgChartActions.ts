@@ -19,23 +19,23 @@ import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
 import { Mixpanel } from '~/mixpanel';
 
 import {
-    normalizeCompanyIdForUrl,
-    OrgChartContextAction,
-    OrgChartNodeContextPayload,
+  normalizeCompanyIdForUrl,
+  OrgChartContextAction,
+  OrgChartNodeContextPayload,
 } from 'twenty-orgchart';
 import {
-    isValidLinkedInProfileUrl,
-    NodeState,
-    OrgChartNodeData,
-    OrgchartSearchMode as OrgchartSearchModeValue,
+  isValidLinkedInProfileUrl,
+  NodeState,
+  OrgChartNodeData,
+  OrgchartSearchMode as OrgchartSearchModeValue,
 } from 'twenty-shared';
 import { ContextResultItem } from '../types';
 import {
-    buildBooleanKeywordsForNode,
-    contextResultItemFromNodePersonSlot,
-    exportContextResultsToCsv,
-    extractCompanyDomainFromWebsite,
-    normalizeCandidateItem,
+  buildBooleanKeywordsForNode,
+  contextResultItemFromNodePersonSlot,
+  exportContextResultsToCsv,
+  extractCompanyDomainFromWebsite,
+  normalizeCandidateItem,
 } from '../utils/orgChartUtils';
 
 const OUTREACH_ACTION_TO_CHANNEL: Partial<
@@ -198,6 +198,11 @@ const ORG_CHART_AGENT_UNAVAILABLE_SNACKBAR =
   'Contact Support. Org chart agent service is not available. Ensure the Python service is running and reachable.';
 
 const ORG_CHART_PROGRESS_UPDATES_TIMEOUT_MS = 240_000;
+
+const ORG_CHART_PROGRESS_STALE_WARNING_MS = 30_000;
+
+const ORG_CHART_PROGRESS_STALE_WARNING_MESSAGE =
+  'No updates from the server for 30 seconds. The org chart may still be building — wait, cancel, or retry.';
 
 const ORG_CHART_PROGRESS_UPDATES_TIMEOUT_SNACKBAR =
   'Backend progress updates were not received. Please retry. If this keeps happening, check that the org chart worker, Python service, and progress stream are running.';
@@ -416,6 +421,7 @@ export const useOrgChartActions = ({
   >(null);
   const orgchartAbortControllerRef = useRef<AbortController | null>(null);
   const progressUpdateTimeoutRef = useRef<number | null>(null);
+  const progressStaleWarningTimeoutRef = useRef<number | null>(null);
   const [contextProgressMessage, setContextProgressMessage] = useState<
     string | null
   >(null);
@@ -497,9 +503,44 @@ export const useOrgChartActions = ({
     }
   }, []);
 
-  const armProgressUpdateTimeout = useCallback(
+  const clearProgressStaleWarningTimeout = useCallback(() => {
+    if (progressStaleWarningTimeoutRef.current !== null) {
+      window.clearTimeout(progressStaleWarningTimeoutRef.current);
+      progressStaleWarningTimeoutRef.current = null;
+    }
+  }, []);
+
+  const clearProgressTimers = useCallback(() => {
+    clearProgressUpdateTimeout();
+    clearProgressStaleWarningTimeout();
+  }, [clearProgressStaleWarningTimeout, clearProgressUpdateTimeout]);
+
+  const armProgressTimers = useCallback(
     (requestId: string) => {
-      clearProgressUpdateTimeout();
+      clearProgressTimers();
+
+      progressStaleWarningTimeoutRef.current = window.setTimeout(() => {
+        setContextProgressMessage((previous) => {
+          const base = previous?.trim() || 'Working...';
+          if (base.includes('No updates from the server for 30 seconds')) {
+            return previous;
+          }
+
+          return `${ORG_CHART_PROGRESS_STALE_WARNING_MESSAGE} Last status: ${base}`;
+        });
+
+        enqueueSnackBar(ORG_CHART_PROGRESS_STALE_WARNING_MESSAGE, {
+          variant: SnackBarVariant.Warning,
+          dedupeKey: `orgchart-progress-stale-${requestId}`,
+          duration: 10_000,
+        });
+
+        if (companyId) {
+          updateSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`, {
+            message: ORG_CHART_PROGRESS_STALE_WARNING_MESSAGE,
+          });
+        }
+      }, ORG_CHART_PROGRESS_STALE_WARNING_MS);
 
       progressUpdateTimeoutRef.current = window.setTimeout(() => {
         setContextError(ORG_CHART_PROGRESS_UPDATES_TIMEOUT_SNACKBAR);
@@ -521,18 +562,19 @@ export const useOrgChartActions = ({
       }, ORG_CHART_PROGRESS_UPDATES_TIMEOUT_MS);
     },
     [
-      clearProgressUpdateTimeout,
+      clearProgressTimers,
       closeSnackBarByDedupeKey,
       companyId,
       enqueueSnackBar,
+      updateSnackBarByDedupeKey,
     ],
   );
 
   useEffect(() => {
     return () => {
-      clearProgressUpdateTimeout();
+      clearProgressTimers();
     };
-  }, [clearProgressUpdateTimeout]);
+  }, [clearProgressTimers]);
 
   useWebSocketEvent<OrgChartSearchProgressEvent>(
     'orgchart-search-progress',
@@ -544,7 +586,7 @@ export const useOrgChartActions = ({
         return;
       }
 
-      armProgressUpdateTimeout(payload.requestId);
+      armProgressTimers(payload.requestId);
 
       const eventData = payload.data ?? {};
 
@@ -584,7 +626,7 @@ export const useOrgChartActions = ({
         setContextProgressTotalPages(null);
         setContextProgressTotalCandidates(null);
         setIsContextLoading(false);
-        clearProgressUpdateTimeout();
+        clearProgressTimers();
         return;
       }
 
@@ -752,13 +794,13 @@ export const useOrgChartActions = ({
 
         setContextError(null);
         setIsContextLoading(false);
-        clearProgressUpdateTimeout();
+        clearProgressTimers();
       }
     },
     [
       activeOrgChartRequestId,
-      armProgressUpdateTimeout,
-      clearProgressUpdateTimeout,
+      armProgressTimers,
+      clearProgressTimers,
       companyId,
       companyName,
       updateSnackBarByDedupeKey,
@@ -769,10 +811,10 @@ export const useOrgChartActions = ({
 
   useEffect(() => {
     if (!isContextLoading && activeOrgChartRequestId) {
-      clearProgressUpdateTimeout();
+      clearProgressTimers();
       setActiveOrgChartRequestId(null);
     }
-  }, [activeOrgChartRequestId, clearProgressUpdateTimeout, isContextLoading]);
+  }, [activeOrgChartRequestId, clearProgressTimers, isContextLoading]);
 
   useEffect(() => {
     if (companyId === '' || isContextLoading !== true) {
@@ -1610,7 +1652,7 @@ export const useOrgChartActions = ({
                 ? 'Directory org chart search queued. Waiting for results...'
                 : 'Org chart search queued. Waiting for results...',
         );
-        armProgressUpdateTimeout(requestId);
+        armProgressTimers(requestId);
         return;
       }
 
@@ -1730,11 +1772,11 @@ export const useOrgChartActions = ({
               : undefined,
           duration: 6000,
         });
-        clearProgressUpdateTimeout();
+        clearProgressTimers();
       } else {
         setContextError('Search stopped.');
         setContextProgressMessage(null);
-        clearProgressUpdateTimeout();
+        clearProgressTimers();
       }
     } finally {
       if (isQueuedAsyncSearch) {
@@ -1742,7 +1784,7 @@ export const useOrgChartActions = ({
         return;
       }
       orgchartAbortControllerRef.current = null;
-      clearProgressUpdateTimeout();
+      clearProgressTimers();
       if (
         mode === 'entire_company' ||
         mode === 'function_grade' ||
@@ -1756,7 +1798,30 @@ export const useOrgChartActions = ({
 
   const cancelOrgchartSearch = useCallback(() => {
     const requestId = activeOrgChartRequestId;
+
+    orgchartAbortControllerRef.current?.abort();
+    clearProgressTimers();
+
+    setIsContextLoading(false);
+    setContextLoadingStartedAt(null);
+    setContextProgressMessage(null);
+    setContextProgressPage(null);
+    setContextProgressTotalPages(null);
+    setContextProgressTotalCandidates(null);
+    setContextError('Org chart search was cancelled.');
+    setActiveOrgChartRequestId(null);
+
+    if (companyId) {
+      closeSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`);
+    }
+
     if (requestId) {
+      enqueueSnackBar('Org chart search was cancelled.', {
+        variant: SnackBarVariant.Warning,
+        dedupeKey: `orgchart-request-cancelled-${requestId}`,
+        duration: 5000,
+      });
+
       const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
       if (baseUrl && accessToken) {
         const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
@@ -1769,10 +1834,15 @@ export const useOrgChartActions = ({
           body: JSON.stringify({ requestId }),
         }).catch(() => {});
       }
-      orgchartAbortControllerRef.current?.abort();
     }
-    setContextProgressMessage('Stopping search...');
-  }, [activeOrgChartRequestId, accessToken]);
+  }, [
+    activeOrgChartRequestId,
+    accessToken,
+    clearProgressTimers,
+    closeSnackBarByDedupeKey,
+    companyId,
+    enqueueSnackBar,
+  ]);
 
   const buildCandidatesFromNode = useCallback(
     (n: OrgChartNodeData): ContextResultItem[] => {

@@ -3,6 +3,8 @@ import {
     collectDomainLookupCandidates,
     extractCompanyNameStemFromDomain,
     extractRootCompanyDomain,
+    isUsableOrgChartEsDocument,
+    isUsableOrgChartResolveCompanyId,
     normalizeBareCompanyDomain,
 } from './org-chart-resolve-domain.util';
 
@@ -43,5 +45,26 @@ describe('org-chart-resolve-domain.util', () => {
       'dashboard.unipile.com',
       'unipile.com',
     ]);
+  });
+
+  it('isUsableOrgChartResolveCompanyId rejects placeholder slugs', () => {
+    console.log('isUsableOrgChartResolveCompanyId rejects placeholder slugs');
+    expect(isUsableOrgChartResolveCompanyId('companies')).toBe(false);
+    expect(isUsableOrgChartResolveCompanyId('unipile')).toBe(true);
+  });
+
+  it('isUsableOrgChartEsDocument rejects blank templates', () => {
+    console.log('isUsableOrgChartEsDocument rejects blank templates');
+    expect(
+      isUsableOrgChartEsDocument({
+        job_company_id: 'unipile',
+        is_blank_template: true,
+      }),
+    ).toBe(false);
+    expect(
+      isUsableOrgChartEsDocument({
+        job_company_id: 'unipile',
+      }),
+    ).toBe(true);
   });
 });

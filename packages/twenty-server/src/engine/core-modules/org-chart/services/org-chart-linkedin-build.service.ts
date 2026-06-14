@@ -1,9 +1,9 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
 import {
-  graphqlToAddNewJob,
-  OrgChartData,
-  OrgchartSearchMode,
+    graphqlToAddNewJob,
+    OrgChartData,
+    OrgchartSearchMode,
 } from 'twenty-shared';
 
 import { ApifyService } from 'src/engine/core-modules/apify/services/apify.service';
@@ -19,9 +19,9 @@ import { OrgchartLinkedinXrayBuildJobData } from 'src/engine/core-modules/candid
 import { OrgchartMultiSourceBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-multisource-build.types';
 import { OrgchartUnipileBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-unipile-build.types';
 import {
-  ApolloIoRestService,
-  ApolloPeopleSearchParams,
-  isApolloOrganizationId,
+    ApolloIoRestService,
+    ApolloPeopleSearchParams,
+    isApolloOrganizationId,
 } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { ApolloPeopleSearchTransformerService } from 'src/engine/core-modules/candidate-search/services/apollo-people-search-transformer.service';
 import { OrgChartSearchService } from 'src/engine/core-modules/candidate-search/services/orgchart-search.service';
@@ -36,8 +36,8 @@ import { linkedInPeopleSearchResultMatchesTargetCompany } from 'src/engine/core-
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import {
-  LinkedInSearchService,
-  parseApifyLinkedinCompanyScraperLogLine,
+    LinkedInSearchService,
+    parseApifyLinkedinCompanyScraperLogLine,
 } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
@@ -50,9 +50,9 @@ import { dedupeAndMergeOrgChartCandidates } from 'src/engine/core-modules/org-ch
 import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import { filterOrgChartCandidatesByNodeStdLabels } from 'src/engine/core-modules/org-chart/utils/orgchart-node-scope-filter.util';
 import {
-  normalizeCompanyId,
-  normalizeCompanyName,
-  normalizeCountry,
+    normalizeCompanyId,
+    normalizeCompanyName,
+    normalizeCountry,
 } from 'src/engine/core-modules/org-chart/utils/orgchart-normalization.util';
 import { TheOfficialBoardService } from 'src/engine/core-modules/theofficialboard/services/theofficialboard.service';
 import { TheOfficialBoardCandidate } from 'src/engine/core-modules/theofficialboard/types/theofficialboard.types';
@@ -732,7 +732,7 @@ export class OrgChartLinkedInBuildService {
             };
           }
 
-          if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
+          if (requestId && await this.orgchartCancelRegistry.isCancelled(requestId)) {
             return {
               candidates: [],
               continuePagination: false,
@@ -746,7 +746,7 @@ export class OrgChartLinkedInBuildService {
                 onProgress: async (event) => {
                   if (
                     requestId &&
-                    this.orgchartCancelRegistry.isCancelled(requestId)
+                    await this.orgchartCancelRegistry.isCancelled(requestId)
                   ) {
                     return;
                   }
@@ -814,7 +814,7 @@ export class OrgChartLinkedInBuildService {
               },
             );
 
-          if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
+          if (requestId && await this.orgchartCancelRegistry.isCancelled(requestId)) {
             return {
               candidates: [],
               continuePagination: false,
@@ -894,7 +894,7 @@ export class OrgChartLinkedInBuildService {
           };
         },
         onStatus: async (update) => {
-          if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
+          if (requestId && await this.orgchartCancelRegistry.isCancelled(requestId)) {
             return;
           }
 
@@ -916,7 +916,7 @@ export class OrgChartLinkedInBuildService {
           });
         },
         onPageFetched: async (update) => {
-          if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
+          if (requestId && await this.orgchartCancelRegistry.isCancelled(requestId)) {
             return;
           }
 
@@ -988,7 +988,7 @@ export class OrgChartLinkedInBuildService {
       `LinkedIn x-ray search complete for company="${resolvedCompanyName}" includePaginatedHtml=${body.includePaginatedHtml === true} itemCount=${results.candidates.length}`,
     );
 
-    if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
+    if (requestId && await this.orgchartCancelRegistry.isCancelled(requestId)) {
       return {
         items: [],
         itemCount: 0,
@@ -2452,7 +2452,11 @@ export class OrgChartLinkedInBuildService {
     }
 
     if (requestId) {
-      this.orgchartCancelRegistry.register(requestId);
+      await this.orgchartCancelRegistry.register(requestId, {
+        mode,
+        searchType,
+        companyName: resolvedCompanyName,
+      });
     }
 
     const maxItems =
@@ -2547,7 +2551,7 @@ export class OrgChartLinkedInBuildService {
       return null;
     }
 
-    const terminalResponse = this.buildTerminalOrgchartRequestResponse({
+    const terminalResponse = await this.buildTerminalOrgchartRequestResponse({
       requestId,
       mode,
       searchType,
@@ -2576,7 +2580,11 @@ export class OrgChartLinkedInBuildService {
     }
 
     if (requestId) {
-      this.orgchartCancelRegistry.register(requestId);
+      await this.orgchartCancelRegistry.register(requestId, {
+        mode,
+        searchType,
+        companyName: resolvedCompanyName,
+      });
     }
 
     const jobData: OrgchartLinkedinXrayBuildJobData = {
@@ -2687,7 +2695,11 @@ export class OrgChartLinkedInBuildService {
     }
 
     if (requestId) {
-      this.orgchartCancelRegistry.register(requestId);
+      await this.orgchartCancelRegistry.register(requestId, {
+        mode: 'entire_company',
+        searchType,
+        companyName: resolvedCompanyName,
+      });
     }
 
     const maxItems =
@@ -2783,7 +2795,7 @@ export class OrgChartLinkedInBuildService {
       return null;
     }
 
-    const terminalResponse = this.buildTerminalOrgchartRequestResponse({
+    const terminalResponse = await this.buildTerminalOrgchartRequestResponse({
       requestId,
       mode,
       searchType,
@@ -2805,7 +2817,11 @@ export class OrgChartLinkedInBuildService {
     }
 
     if (requestId) {
-      this.orgchartCancelRegistry.register(requestId);
+      await this.orgchartCancelRegistry.register(requestId, {
+        mode,
+        searchType,
+        companyName: resolvedCompanyName,
+      });
     }
 
     const jobData: OrgchartUnipileBuildJobData = {
@@ -2875,7 +2891,7 @@ export class OrgChartLinkedInBuildService {
     };
   }
 
-  private buildTerminalOrgchartRequestResponse(input: {
+  private async buildTerminalOrgchartRequestResponse(input: {
     requestId?: string;
     mode: OrgchartSearchMode;
     searchType: OrgchartSearchType;
@@ -2884,7 +2900,7 @@ export class OrgChartLinkedInBuildService {
     jobTitles: string[];
     linkedinCompanyUrl?: string;
     candidateSource: 'unipile' | 'linkedin_xray' | 'apify';
-  }): {
+  }): Promise<{
     success: true;
     queued: false;
     requestId?: string;
@@ -2902,8 +2918,8 @@ export class OrgChartLinkedInBuildService {
     cacheSource: 'none';
     terminalStatus: 'cancelled' | 'completed' | 'failed';
     orgChartError?: string;
-  } | null {
-    const state = this.orgchartCancelRegistry.getState(input.requestId);
+  } | null> {
+    const state = await this.orgchartCancelRegistry.getState(input.requestId);
 
     if (
       !state ||
@@ -3343,7 +3359,11 @@ export class OrgChartLinkedInBuildService {
 
     if (isMultiSourceRequested) {
       if (requestId) {
-        this.orgchartCancelRegistry.register(requestId);
+        await this.orgchartCancelRegistry.register(requestId, {
+          mode,
+          searchType,
+          companyName: resolvedCompanyName,
+        });
       }
 
       const jobData: OrgchartMultiSourceBuildJobData = {
@@ -3727,7 +3747,7 @@ export class OrgChartLinkedInBuildService {
 
       if (!apolloPeopleResult || apolloPeopleResult.itemCount <= 0) {
         if (requestId) {
-          this.orgchartCancelRegistry.setFailed(
+          await this.orgchartCancelRegistry.setFailed(
             requestId,
             'Apollo returned no matching employees.',
           );
@@ -3762,7 +3782,7 @@ export class OrgChartLinkedInBuildService {
 
       if (orgChartError) {
         if (requestId) {
-          this.orgchartCancelRegistry.setFailed(requestId, orgChartError);
+          await this.orgchartCancelRegistry.setFailed(requestId, orgChartError);
         }
         await this.emitOrgchartSearchProgressForToken(apiToken, {
           requestId,
@@ -3779,7 +3799,7 @@ export class OrgChartLinkedInBuildService {
       }
 
       if (requestId) {
-        this.orgchartCancelRegistry.setCompleted(requestId);
+        await this.orgchartCancelRegistry.setCompleted(requestId);
       }
 
       await this.emitOrgchartSearchProgressForToken(apiToken, {
@@ -3804,7 +3824,7 @@ export class OrgChartLinkedInBuildService {
         error as Error,
       );
       if (requestId) {
-        this.orgchartCancelRegistry.setFailed(requestId, message);
+        await this.orgchartCancelRegistry.setFailed(requestId, message);
       }
       await this.emitOrgchartSearchProgressForToken(apiToken, {
         requestId,
@@ -3837,11 +3857,17 @@ export class OrgChartLinkedInBuildService {
     console.log('Org Chart Build :', jobData);
     const modeForOrgChartBuild: OrgchartSearchMode = jobData.mode;
 
-    if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
-      this.logger.log(
-        `Apify org chart job skipped (cancelled) requestId=${requestId}`,
-      );
-
+    if (
+      await this.abortOrgChartJobIfCancelled({
+        apiToken,
+        requestId,
+        mode: modeForOrgChartBuild,
+        searchType,
+        companyName: resolvedCompanyName,
+        candidateSource: 'apify',
+        logLabel: 'Apify org chart job',
+      })
+    ) {
       return;
     }
 
@@ -4295,11 +4321,17 @@ export class OrgChartLinkedInBuildService {
 
     const modeForOrgChartBuild = jobData.mode;
 
-    if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
-      this.logger.log(
-        `LinkedIn x-ray org chart job skipped (cancelled) requestId=${requestId}`,
-      );
-
+    if (
+      await this.abortOrgChartJobIfCancelled({
+        apiToken,
+        requestId,
+        mode: modeForOrgChartBuild,
+        searchType,
+        companyName: resolvedCompanyName,
+        candidateSource: 'linkedin_xray',
+        logLabel: 'LinkedIn x-ray org chart job',
+      })
+    ) {
       return;
     }
 
@@ -4340,7 +4372,7 @@ export class OrgChartLinkedInBuildService {
 
       if (!result) {
         if (requestId) {
-          this.orgchartCancelRegistry.setFailed(
+          await this.orgchartCancelRegistry.setFailed(
             requestId,
             'LinkedIn x-ray job did not produce a result.',
           );
@@ -4362,7 +4394,7 @@ export class OrgChartLinkedInBuildService {
 
       if (result.itemCount === 0) {
         if (requestId) {
-          this.orgchartCancelRegistry.setFailed(
+          await this.orgchartCancelRegistry.setFailed(
             requestId,
             'LinkedIn x-ray returned no matching employees.',
           );
@@ -4399,7 +4431,7 @@ export class OrgChartLinkedInBuildService {
 
       if (orgChartError) {
         if (requestId) {
-          this.orgchartCancelRegistry.setFailed(requestId, orgChartError);
+          await this.orgchartCancelRegistry.setFailed(requestId, orgChartError);
         }
         await this.emitOrgchartSearchProgressForToken(apiToken, {
           requestId,
@@ -4417,7 +4449,7 @@ export class OrgChartLinkedInBuildService {
       }
 
       if (requestId) {
-        this.orgchartCancelRegistry.setCompleted(requestId);
+        await this.orgchartCancelRegistry.setCompleted(requestId);
       }
 
       await this.emitOrgchartSearchProgressForToken(apiToken, {
@@ -4446,7 +4478,7 @@ export class OrgChartLinkedInBuildService {
       );
 
       if (requestId) {
-        this.orgchartCancelRegistry.setFailed(requestId, message);
+        await this.orgchartCancelRegistry.setFailed(requestId, message);
       }
 
       await this.emitOrgchartSearchProgressForToken(apiToken, {
@@ -4482,11 +4514,17 @@ export class OrgChartLinkedInBuildService {
     const isMultiSourceRequested =
       jobData.multiSource === true && requestedSources.length > 0;
 
-    if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
-      this.logger.log(
-        `Unipile org chart job skipped (cancelled) requestId=${requestId}`,
-      );
-
+    if (
+      await this.abortOrgChartJobIfCancelled({
+        apiToken,
+        requestId,
+        mode: modeForOrgChartBuild,
+        searchType,
+        companyName: resolvedCompanyName,
+        candidateSource: 'unipile',
+        logLabel: 'Unipile org chart job',
+      })
+    ) {
       return;
     }
 
@@ -4538,7 +4576,7 @@ export class OrgChartLinkedInBuildService {
 
       if (result.itemCount === 0) {
         if (requestId) {
-          this.orgchartCancelRegistry.setFailed(
+          await this.orgchartCancelRegistry.setFailed(
             requestId,
             'LinkedIn returned no matching employees.',
           );
@@ -4634,7 +4672,7 @@ export class OrgChartLinkedInBuildService {
 
       if (orgChartError) {
         if (requestId) {
-          this.orgchartCancelRegistry.setFailed(requestId, orgChartError);
+          await this.orgchartCancelRegistry.setFailed(requestId, orgChartError);
         }
         await this.emitOrgchartSearchProgressForToken(apiToken, {
           requestId,
@@ -4652,7 +4690,7 @@ export class OrgChartLinkedInBuildService {
       }
 
       if (requestId) {
-        this.orgchartCancelRegistry.setCompleted(requestId);
+        await this.orgchartCancelRegistry.setCompleted(requestId);
       }
 
       await this.emitOrgchartSearchProgressForToken(apiToken, {
@@ -4685,7 +4723,7 @@ export class OrgChartLinkedInBuildService {
       );
 
       if (requestId) {
-        this.orgchartCancelRegistry.setFailed(requestId, message);
+        await this.orgchartCancelRegistry.setFailed(requestId, message);
       }
 
       await this.emitOrgchartSearchProgressForToken(apiToken, {
@@ -4716,7 +4754,17 @@ export class OrgChartLinkedInBuildService {
 
     const modeForOrgChartBuild: OrgchartSearchMode = jobData.mode;
 
-    if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
+    if (
+      await this.abortOrgChartJobIfCancelled({
+        apiToken,
+        requestId,
+        mode: modeForOrgChartBuild,
+        searchType,
+        companyName: resolvedCompanyName,
+        candidateSource: 'harvest',
+        logLabel: 'Harvest org chart job',
+      })
+    ) {
       return;
     }
 
@@ -4810,7 +4858,7 @@ export class OrgChartLinkedInBuildService {
       }
 
       if (requestId) {
-        this.orgchartCancelRegistry.setCompleted(requestId);
+        await this.orgchartCancelRegistry.setCompleted(requestId);
       }
 
       await this.emitOrgchartSearchProgressForToken(apiToken, {
@@ -4878,11 +4926,17 @@ export class OrgChartLinkedInBuildService {
 
     const modeForOrgChartBuild: OrgchartSearchMode = mode;
 
-    if (requestId && this.orgchartCancelRegistry.isCancelled(requestId)) {
-      this.logger.log(
-        `Multi-source org chart job skipped (cancelled) requestId=${requestId}`,
-      );
-
+    if (
+      await this.abortOrgChartJobIfCancelled({
+        apiToken,
+        requestId,
+        mode: modeForOrgChartBuild,
+        searchType,
+        companyName: resolvedCompanyName,
+        candidateSource: 'multi',
+        logLabel: 'Multi-source org chart job',
+      })
+    ) {
       return;
     }
 
@@ -5314,7 +5368,7 @@ export class OrgChartLinkedInBuildService {
 
     if (orgChartError) {
       if (requestId) {
-        this.orgchartCancelRegistry.setFailed(requestId, orgChartError);
+        await this.orgchartCancelRegistry.setFailed(requestId, orgChartError);
       }
       await this.emitOrgchartSearchProgressForToken(apiToken, {
         requestId,
@@ -5329,7 +5383,7 @@ export class OrgChartLinkedInBuildService {
     }
 
     if (requestId) {
-      this.orgchartCancelRegistry.setCompleted(requestId);
+      await this.orgchartCancelRegistry.setCompleted(requestId);
     }
 
     await this.emitOrgchartSearchProgressForToken(apiToken, {
@@ -5352,6 +5406,44 @@ export class OrgChartLinkedInBuildService {
    * Org chart progress for Unipile, Apify, and LinkedIn x-ray (sync + queue workers).
    * Uses Redis pub/sub; the HTTP process forwards to Socket.IO (see OrgChartProgressBridgeService).
    */
+  private async abortOrgChartJobIfCancelled(args: {
+    apiToken: string;
+    requestId: string | undefined;
+    mode: OrgchartSearchMode;
+    searchType: OrgchartSearchType;
+    companyName: string;
+    candidateSource?: string;
+    logLabel: string;
+  }): Promise<boolean> {
+    if (!args.requestId) {
+      return false;
+    }
+
+    if (!(await this.orgchartCancelRegistry.isCancelled(args.requestId))) {
+      return false;
+    }
+
+    this.logger.log(
+      `${args.logLabel} skipped (cancelled) requestId=${args.requestId}`,
+    );
+
+    await this.emitOrgchartSearchProgressForToken(args.apiToken, {
+      requestId: args.requestId,
+      mode: args.mode,
+      searchType: args.searchType,
+      companyName: args.companyName,
+      event: 'error',
+      data: {
+        message: 'Org chart search was cancelled.',
+        ...(args.candidateSource
+          ? { candidateSource: args.candidateSource }
+          : {}),
+      },
+    });
+
+    return true;
+  }
+
   private async emitOrgchartSearchProgressForToken(
     apiToken: string,
     payload: {
@@ -5392,7 +5484,7 @@ export class OrgChartLinkedInBuildService {
     }
   }
 
-  cancelOrgchartSearch(
+  async cancelOrgchartSearch(
     body: { requestId: string },
     headers: Record<string, string>,
   ) {
@@ -5406,8 +5498,20 @@ export class OrgChartLinkedInBuildService {
     if (!requestId || typeof requestId !== 'string') {
       throw new HttpException('requestId is required', HttpStatus.BAD_REQUEST);
     }
-    this.orgchartCancelRegistry.setCancelled(requestId);
+
+    await this.orgchartCancelRegistry.setCancelled(requestId);
     this.logger.log(`Orgchart search cancelled. requestId=${requestId}`);
+
+    const state = await this.orgchartCancelRegistry.getState(requestId);
+
+    await this.emitOrgchartSearchProgressForToken(apiToken, {
+      requestId,
+      mode: (state?.mode as OrgchartSearchMode) ?? 'entire_company',
+      searchType: (state?.searchType as OrgchartSearchType) ?? 'classic',
+      companyName: state?.companyName ?? '',
+      event: 'error',
+      data: { message: 'Org chart search was cancelled.' },
+    });
 
     return { success: true, requestId };
   }

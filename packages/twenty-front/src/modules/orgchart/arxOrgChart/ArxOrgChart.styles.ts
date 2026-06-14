@@ -191,6 +191,10 @@ export const StyledProgressElapsed = styled.div`
   font-size: ${({ theme }) => theme.font.size.xs};
 `;
 
+export const StyledProgressCancelRow = styled.div`
+  margin-top: ${({ theme }) => theme.spacing(1)};
+`;
+
 export const StyledLeadershipLoadingOverlay = styled.div`
   position: absolute;
   inset: 0;
