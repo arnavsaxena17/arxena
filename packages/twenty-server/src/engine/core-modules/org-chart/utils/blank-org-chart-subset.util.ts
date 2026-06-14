@@ -192,6 +192,373 @@ const MAX_LEAF_DIRECT_CHILDREN_OF_ROOT = 2;
 /** Max children for each direct report of the root (depth-1 parent). */
 const MAX_CHILDREN_PER_DEPTH1_PARENT = 6;
 
+/** CEO direct reports to omit from the default blank-template sample. */
+const EXCLUDED_BLANK_TEMPLATE_ROOT_FUNCTION_ROOTS = new Set(['education']);
+
+/** CEO direct reports to prioritize in the default blank-template sample. */
+const PREFERRED_BLANK_TEMPLATE_ROOT_FUNCTION_ROOTS = [
+  'human resources',
+  'technology',
+  'finance',
+  'sales',
+] as const;
+
+/** Functions that receive extra manager nodes in the blank-template sample. */
+const BLANK_TEMPLATE_MANAGER_FUNCTION_ROOTS = [
+  'human resources',
+  'finance',
+  'sales',
+  'manufacturing',
+  'technology',
+] as const;
+
+function getNodeFunctionRootToken(node: OrgChartNode): string {
+  return normalizeFunctionToken(String(node.std_function_root ?? ''));
+}
+
+function getNodeFunctionToken(node: OrgChartNode): string {
+  return normalizeFunctionToken(String(node.std_function ?? ''));
+}
+
+function isBlankTemplateManagerNode(node: OrgChartNode): boolean {
+  const grade = normalizeFunctionToken(String(node.std_grade ?? ''));
+  const headline = String(node.headline ?? '').toUpperCase();
+
+  return grade === 'mid' || headline.includes('MANAGERS');
+}
+
+function isBlankTemplateLeadershipNode(node: OrgChartNode): boolean {
+  const grade = normalizeFunctionToken(String(node.std_grade ?? ''));
+  const headline = String(node.headline ?? '').toUpperCase();
+
+  return grade === 'leadership' || headline.includes('LEADERSHIP');
+}
+
+function matchesBlankTemplateManagerFunctionRoot(
+  node: OrgChartNode,
+  functionRoot: string,
+): boolean {
+  const target = normalizeFunctionToken(functionRoot);
+
+  if (target === 'manufacturing') {
+    return getNodeFunctionToken(node).includes('manufacturing');
+  }
+
+  const root = getNodeFunctionRootToken(node);
+  const fn = getNodeFunctionToken(node);
+
+  return root === target || fn === target;
+}
+
+function hashBlankTemplateSeed(...parts: Array<string | number>): number {
+  let hash = 2166136261;
+
+  for (const part of parts) {
+    const value = String(part);
+    for (let i = 0; i < value.length; i += 1) {
+      hash ^= value.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+  }
+
+  return hash >>> 0;
+}
+
+function pickDeterministicSubset<T>(
+  items: T[],
+  count: number,
+  seed: number,
+): T[] {
+  if (count <= 0 || items.length === 0) {
+    return [];
+  }
+
+  const pool = items.slice();
+  const picked: T[] = [];
+  let state = seed;
+
+  while (picked.length < count && pool.length > 0) {
+    state = Math.imul(state, 1664525) + 1013904223;
+    const index = (state >>> 0) % pool.length;
+    picked.push(pool[index]!);
+    pool.splice(index, 1);
+  }
+
+  return picked;
+}
+
+function pickDepth2ChildrenForBlankTemplate(
+  parentKey: number,
+  childKeys: number[],
+  byKey: Map<number, OrgChartNode>,
+  maxCount: number,
+): number[] {
+  const parentNode = byKey.get(parentKey);
+  if (!parentNode) {
+    return childKeys.slice().sort((a, b) => a - b).slice(0, maxCount);
+  }
+
+  const parentFunctionRoot = getNodeFunctionRootToken(parentNode);
+  const shouldPreferManagers =
+    BLANK_TEMPLATE_MANAGER_FUNCTION_ROOTS.includes(
+      parentFunctionRoot as (typeof BLANK_TEMPLATE_MANAGER_FUNCTION_ROOTS)[number],
+    ) || parentFunctionRoot === 'engineering';
+
+  if (!shouldPreferManagers) {
+    return childKeys.slice().sort((a, b) => a - b).slice(0, maxCount);
+  }
+
+  const managers = childKeys.filter((key) => {
+    const node = byKey.get(key);
+    return node ? isBlankTemplateManagerNode(node) : false;
+  });
+  const nonManagers = childKeys.filter((key) => {
+    const node = byKey.get(key);
+    return node ? !isBlankTemplateManagerNode(node) : false;
+  });
+  const seed = hashBlankTemplateSeed(parentFunctionRoot, parentKey);
+  const managerPickCount = Math.min(
+    managers.length,
+    1 + (seed % 2),
+  );
+  const pickedManagers = pickDeterministicSubset(
+    managers,
+    managerPickCount,
+    seed,
+  );
+  const manufacturingLeadership =
+    parentFunctionRoot === 'engineering'
+      ? nonManagers.filter((key) => {
+          const node = byKey.get(key);
+          return (
+            node &&
+            matchesBlankTemplateManagerFunctionRoot(node, 'manufacturing') &&
+            isBlankTemplateLeadershipNode(node)
+          );
+        })
+      : [];
+  const remainingNonManagers = nonManagers.filter(
+    (key) => !manufacturingLeadership.includes(key),
+  );
+  const remainingSlots = Math.max(
+    0,
+    maxCount - pickedManagers.length - manufacturingLeadership.length,
+  );
+  const pickedOthers = pickDeterministicSubset(
+    remainingNonManagers.slice().sort((a, b) => a - b),
+    remainingSlots,
+    seed + 17,
+  );
+
+  return [...pickedManagers, ...manufacturingLeadership, ...pickedOthers].slice(
+    0,
+    maxCount,
+  );
+}
+
+type BlankOrgChartRootShapeOptions = {
+  enrichManagers?: boolean;
+  maxManagersPerFunctionRoot?: number;
+  maxTotalNodes?: number;
+};
+
+function addManufacturingManagerChains(
+  keep: Set<number>,
+  children: Map<number | string, number[]>,
+  byKey: Map<number, OrgChartNode>,
+  options: BlankOrgChartRootShapeOptions = {},
+): void {
+  const maxTotalNodes = options.maxTotalNodes;
+  const engineeringKeys = [...keep].filter((key) => {
+    const node = byKey.get(key);
+    return (
+      node &&
+      getNodeFunctionRootToken(node) === 'engineering' &&
+      isBlankTemplateLeadershipNode(node)
+    );
+  });
+
+  for (const engineeringKey of engineeringKeys) {
+    const manufacturingLeadership = (children.get(engineeringKey) ?? []).filter(
+      (key) => {
+        const node = byKey.get(key);
+        return (
+          node &&
+          matchesBlankTemplateManagerFunctionRoot(node, 'manufacturing') &&
+          isBlankTemplateLeadershipNode(node)
+        );
+      },
+    );
+
+    for (const leadershipKey of manufacturingLeadership) {
+      keep.add(leadershipKey);
+      const managerCandidates = (children.get(leadershipKey) ?? []).filter(
+        (key) => {
+          const node = byKey.get(key);
+          return (
+            node &&
+            isBlankTemplateManagerNode(node) &&
+            matchesBlankTemplateManagerFunctionRoot(node, 'manufacturing')
+          );
+        },
+      );
+      const seed = hashBlankTemplateSeed('manufacturing', leadershipKey);
+      const pickedManagers = pickDeterministicSubset(
+        managerCandidates,
+        Math.min(managerCandidates.length, 1),
+        seed,
+      );
+
+      for (const managerKey of pickedManagers) {
+        if (
+          maxTotalNodes !== undefined &&
+          keep.size + 1 > maxTotalNodes
+        ) {
+          return;
+        }
+
+        keep.add(managerKey);
+        for (const teamKey of children.get(managerKey) ?? []) {
+          if (
+            maxTotalNodes !== undefined &&
+            keep.size + 1 > maxTotalNodes
+          ) {
+            return;
+          }
+          keep.add(teamKey);
+        }
+      }
+    }
+  }
+}
+
+function extendKeepSetWithRandomManagerChains(
+  keep: Set<number>,
+  sourceNodes: OrgChartNode[],
+  children: Map<number | string, number[]>,
+  byKey: Map<number, OrgChartNode>,
+  options: BlankOrgChartRootShapeOptions = {},
+): void {
+  const maxManagersPerFunctionRoot = options.maxManagersPerFunctionRoot ?? 2;
+  const maxTotalNodes = options.maxTotalNodes;
+  const root = sourceNodes.find(
+    (node) => node.parent === '' || node.parent === null || node.parent === undefined,
+  );
+  const rootKey = root?.key;
+
+  for (const functionRoot of BLANK_TEMPLATE_MANAGER_FUNCTION_ROOTS) {
+    let addedForFunction = 0;
+    const leadershipKeys = [...keep].filter((key) => {
+      const node = byKey.get(key);
+      if (!node || !isBlankTemplateLeadershipNode(node)) {
+        return false;
+      }
+
+      if (!matchesBlankTemplateManagerFunctionRoot(node, functionRoot)) {
+        return false;
+      }
+
+      if (rootKey === undefined) {
+        return true;
+      }
+
+      const parentKey = normalizeParentKey(node.parent);
+      const isCeoDirectReport = parentKey === rootKey;
+      const parentNode =
+        typeof parentKey === 'number' ? byKey.get(parentKey) : undefined;
+      const isDepth2UnderTargetFunction =
+        parentNode !== undefined &&
+        normalizeParentKey(parentNode.parent) === rootKey &&
+        matchesBlankTemplateManagerFunctionRoot(parentNode, functionRoot);
+
+      return isCeoDirectReport || isDepth2UnderTargetFunction;
+    });
+
+    for (const leadershipKey of leadershipKeys) {
+      if (addedForFunction >= maxManagersPerFunctionRoot) {
+        break;
+      }
+
+      const managerCandidates = (children.get(leadershipKey) ?? []).filter(
+        (key) => {
+          const node = byKey.get(key);
+          return (
+            node &&
+            isBlankTemplateManagerNode(node) &&
+            matchesBlankTemplateManagerFunctionRoot(node, functionRoot)
+          );
+        },
+      );
+      const seed = hashBlankTemplateSeed(functionRoot, leadershipKey);
+      const managerPickCount = Math.min(
+        managerCandidates.length,
+        1,
+        maxManagersPerFunctionRoot - addedForFunction,
+      );
+      const pickedManagers = pickDeterministicSubset(
+        managerCandidates,
+        managerPickCount,
+        seed,
+      );
+
+      for (const managerKey of pickedManagers) {
+        if (
+          maxTotalNodes !== undefined &&
+          keep.size + 1 > maxTotalNodes
+        ) {
+          return;
+        }
+
+        keep.add(managerKey);
+        addedForFunction += 1;
+
+        for (const teamKey of children.get(managerKey) ?? []) {
+          if (
+            maxTotalNodes !== undefined &&
+            keep.size + 1 > maxTotalNodes
+          ) {
+            return;
+          }
+          keep.add(teamKey);
+        }
+      }
+    }
+  }
+
+  addManufacturingManagerChains(keep, children, byKey, options);
+}
+
+function isExcludedBlankTemplateRootBranch(node: OrgChartNode): boolean {
+  const functionRoot = getNodeFunctionRootToken(node);
+  const stdFunction = normalizeFunctionToken(String(node.std_function ?? ''));
+
+  return (
+    EXCLUDED_BLANK_TEMPLATE_ROOT_FUNCTION_ROOTS.has(functionRoot) &&
+    stdFunction.includes('teacher')
+  );
+}
+
+function comparePreferredBlankTemplateRootBranches(
+  aKey: number,
+  bKey: number,
+  byKey: Map<number, OrgChartNode>,
+): number {
+  const aRoot = getNodeFunctionRootToken(byKey.get(aKey)!);
+  const bRoot = getNodeFunctionRootToken(byKey.get(bKey)!);
+  const aIndex = PREFERRED_BLANK_TEMPLATE_ROOT_FUNCTION_ROOTS.indexOf(
+    aRoot as (typeof PREFERRED_BLANK_TEMPLATE_ROOT_FUNCTION_ROOTS)[number],
+  );
+  const bIndex = PREFERRED_BLANK_TEMPLATE_ROOT_FUNCTION_ROOTS.indexOf(
+    bRoot as (typeof PREFERRED_BLANK_TEMPLATE_ROOT_FUNCTION_ROOTS)[number],
+  );
+
+  if (aIndex !== bIndex) {
+    return aIndex - bIndex;
+  }
+
+  return aKey - bKey;
+}
+
 /**
  * Enforces a shallow, readable blank-template shape: at most 6 direct reports of
  * the root, at most 2 of those may be leaves, and each non-leaf direct report
@@ -199,8 +566,11 @@ const MAX_CHILDREN_PER_DEPTH1_PARENT = 6;
  */
 function applyBlankOrgChartRootShapeConstraints(
   nodes: OrgChartNode[],
+  sourceNodes: OrgChartNode[] = nodes,
+  options: BlankOrgChartRootShapeOptions = {},
 ): OrgChartNode[] {
-  const children = buildChildrenMap(nodes);
+  const children = buildChildrenMap(sourceNodes);
+  const byKey = new Map(sourceNodes.map((n) => [n.key, n]));
   const root = nodes.find(
     (n) => n.parent === '' || n.parent === null || n.parent === undefined,
   );
@@ -210,30 +580,79 @@ function applyBlankOrgChartRootShapeConstraints(
   }
 
   const rootKey = root.key;
-  const direct = (children.get(rootKey) ?? []).slice().sort((a, b) => a - b);
+  const direct = (children.get(rootKey) ?? [])
+    .slice()
+    .sort((a, b) => a - b)
+    .filter((k) => {
+      const node = byKey.get(k);
+      return node ? !isExcludedBlankTemplateRootBranch(node) : false;
+    });
 
-  const branches: number[] = [];
+  const preferredBranches: number[] = [];
+  const otherBranches: number[] = [];
   const leaves: number[] = [];
 
   for (const k of direct) {
-    if ((children.get(k)?.length ?? 0) > 0) {
-      branches.push(k);
-    } else {
-      leaves.push(k);
+    const node = byKey.get(k);
+    if (!node) {
+      continue;
     }
+
+    if ((children.get(k)?.length ?? 0) > 0) {
+      const functionRoot = getNodeFunctionRootToken(node);
+      if (
+        PREFERRED_BLANK_TEMPLATE_ROOT_FUNCTION_ROOTS.includes(
+          functionRoot as (typeof PREFERRED_BLANK_TEMPLATE_ROOT_FUNCTION_ROOTS)[number],
+        )
+      ) {
+        preferredBranches.push(k);
+      } else {
+        otherBranches.push(k);
+      }
+      continue;
+    }
+
+    leaves.push(k);
   }
+
+  preferredBranches.sort((a, b) =>
+    comparePreferredBlankTemplateRootBranches(a, b, byKey),
+  );
+
+  const maxDirectChildren =
+    options.maxTotalNodes !== undefined && options.maxTotalNodes <= 32
+      ? Math.min(4, MAX_DIRECT_CHILDREN_OF_ROOT)
+      : MAX_DIRECT_CHILDREN_OF_ROOT;
+  const maxChildrenPerDepth1Parent =
+    options.maxTotalNodes !== undefined && options.maxTotalNodes <= 32
+      ? Math.min(3, MAX_CHILDREN_PER_DEPTH1_PARENT)
+      : MAX_CHILDREN_PER_DEPTH1_PARENT;
+  const canAddToKeep = (key: number): boolean => {
+    if (options.maxTotalNodes === undefined) {
+      return true;
+    }
+
+    return keep.size + 1 <= options.maxTotalNodes || keep.has(key);
+  };
 
   const pickedRoot: number[] = [];
 
-  for (const k of branches) {
-    if (pickedRoot.length >= MAX_DIRECT_CHILDREN_OF_ROOT) {
+  for (const k of preferredBranches) {
+    if (pickedRoot.length >= maxDirectChildren) {
+      break;
+    }
+    pickedRoot.push(k);
+  }
+
+  for (const k of otherBranches) {
+    if (pickedRoot.length >= maxDirectChildren) {
       break;
     }
     pickedRoot.push(k);
   }
 
   for (const k of leaves) {
-    if (pickedRoot.length >= MAX_DIRECT_CHILDREN_OF_ROOT) {
+    if (pickedRoot.length >= maxDirectChildren) {
       break;
     }
     const leafDirectCount = pickedRoot.filter(
@@ -249,6 +668,9 @@ function applyBlankOrgChartRootShapeConstraints(
   const keep = new Set<number>([rootKey]);
 
   for (const pk of pickedRoot) {
+    if (!canAddToKeep(pk)) {
+      continue;
+    }
     keep.add(pk);
     const subs = children.get(pk);
 
@@ -256,14 +678,37 @@ function applyBlankOrgChartRootShapeConstraints(
       continue;
     }
 
-    const sortedSubs = subs.slice().sort((a, b) => a - b);
+    const pickedSubs = pickDepth2ChildrenForBlankTemplate(
+      pk,
+      subs,
+      byKey,
+      maxChildrenPerDepth1Parent,
+    );
 
-    for (const g of sortedSubs.slice(0, MAX_CHILDREN_PER_DEPTH1_PARENT)) {
+    for (const g of pickedSubs) {
+      if (!canAddToKeep(g)) {
+        continue;
+      }
       keep.add(g);
     }
   }
 
-  return rewireParentsForKeptNodes(nodes, keep);
+  if (options.enrichManagers === true) {
+    extendKeepSetWithRandomManagerChains(
+      keep,
+      sourceNodes,
+      children,
+      byKey,
+      options,
+    );
+  }
+
+  const combinedByKey = new Map(sourceNodes.map((node) => [node.key, node]));
+  for (const node of nodes) {
+    combinedByKey.set(node.key, node);
+  }
+
+  return rewireParentsForKeptNodes([...combinedByKey.values()], keep);
 }
 
 function breadthFirstLimit(
@@ -381,7 +826,9 @@ export function applyBlankOrgChartSubsetFilter(
     nextNodes = nodes;
   }
 
-  const shapedNodes = applyBlankOrgChartRootShapeConstraints(nextNodes);
+  const shapedNodes = applyBlankOrgChartRootShapeConstraints(nextNodes, nodes, {
+    enrichManagers: false,
+  });
   const orgchartStr = JSON.stringify(shapedNodes);
   const out: Record<string, unknown> = {
     ...parsed,
@@ -460,9 +907,15 @@ export function applyBlankOrgChartSizeForExpectedHeadcount(
     return parsed;
   }
 
-  const afterBfs =
-    nodes.length > maxNodes ? breadthFirstLimit(nodes, maxNodes) : nodes;
-  const nextNodes = applyBlankOrgChartRootShapeConstraints(afterBfs);
+  let nextNodes = applyBlankOrgChartRootShapeConstraints(nodes, nodes, {
+    enrichManagers: true,
+    maxManagersPerFunctionRoot: 2,
+    maxTotalNodes: maxNodes,
+  });
+
+  if (nextNodes.length > maxNodes) {
+    nextNodes = breadthFirstLimit(nextNodes, maxNodes);
+  }
   const orgchartStr = JSON.stringify(nextNodes);
   const out: Record<string, unknown> = {
     ...parsed,

@@ -62,7 +62,6 @@ const BLOCKED_SIGNUP_EMAIL_DOMAINS = new Set([
   'guerrillamailblock.com',
   'pokemail.net',
   'spam4.me',
-  
   'pm.me',
   'proton.me',
   'protonmail.com',
@@ -78,6 +77,9 @@ const BLOCKED_SIGNUP_EMAIL_DOMAINS = new Set([
   'ymail.com',
   'yandex.com',
 ]);
+
+export const WORK_EMAIL_REQUIRED_MESSAGE =
+  'Please use your work email address to create an account. Personal, disposable, and free addresses are not supported.';
 
 export const isAllowedEmailForNewWorkspaceSignup = (email: string): boolean => {
   const domain = getDomainFromEmail(email);

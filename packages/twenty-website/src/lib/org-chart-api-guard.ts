@@ -1,13 +1,13 @@
 import {
-    isLikelyBrowserRequest,
-    isVerifiedSearchBot,
-    ORG_CHART_VERIFIED_BOT_HEADER,
+  isLikelyBrowserRequest,
+  isVerifiedSearchBot,
+  ORG_CHART_VERIFIED_BOT_HEADER,
 } from 'twenty-shared';
 
 import {
-    getClientIpFromHeaders,
-    isBlockedBot,
-    isDeclaredBotUserAgent,
+  getClientIpFromHeaders,
+  isBlockedBot,
+  isDeclaredBotUserAgent,
 } from '@/lib/bot-detection';
 
 export const ORG_CHART_LIKELY_BROWSER_HEADER = 'x-org-chart-likely-browser';
@@ -70,7 +70,7 @@ const getMaxRequestsForProfile = (profile: OrgChartRateLimitProfile): number => 
     case 'expensive':
       return parsePositiveInt(
         process.env.ORG_CHART_API_RATE_LIMIT_EXPENSIVE_MAX,
-        5,
+        30,
       );
     case 'default':
       return parsePositiveInt(process.env.ORG_CHART_API_RATE_LIMIT_MAX, 30);

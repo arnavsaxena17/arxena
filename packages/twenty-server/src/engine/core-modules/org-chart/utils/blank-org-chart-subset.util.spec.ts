@@ -142,6 +142,110 @@ describe('blank-org-chart-subset.util', () => {
     const sized = applyBlankOrgChartSizeForExpectedHeadcount(parsed, 40000);
     const next = JSON.parse(sized.orgchart as string) as BlankNodeRow[];
     assertBlankRootShapeConstraints(next);
-    expect(next.length).toBeLessThanOrEqual(1 + 6 + 6 * 6);
+    expect(next.length).toBeLessThanOrEqual(
+      expectedEmployeeCountToMaxBlankNodes(40000),
+    );
+  });
+
+  it('applyBlankOrgChartSizeForExpectedHeadcount prefers HR and technology over teacher leadership', () => {
+    const raw = readFileSync(blankPath, 'utf8');
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const sized = applyBlankOrgChartSizeForExpectedHeadcount(parsed, 40000);
+    const next = JSON.parse(sized.orgchart as string) as Array<{
+      key: number;
+      parent: number | string;
+      std_function_root?: string;
+      std_function?: string;
+      headline?: string;
+    }>;
+
+    const root = next.find(
+      (n) => n.parent === '' || n.parent === null || n.parent === undefined,
+    );
+    expect(root).toBeDefined();
+
+    const direct = next.filter((n) => n.parent === root?.key);
+    const directFunctionRoots = direct.map((n) =>
+      String(n.std_function_root ?? '').toLowerCase(),
+    );
+
+    console.log(
+      `blank root direct reports: ${direct
+        .map((n) => `${n.std_function_root}/${n.std_function}`)
+        .join(', ')}`,
+    );
+
+    expect(directFunctionRoots).toContain('human resources');
+    expect(directFunctionRoots).toContain('technology');
+    expect(directFunctionRoots).toContain('finance');
+    expect(directFunctionRoots).toContain('sales');
+    expect(directFunctionRoots).not.toContain('education');
+    expect(
+      direct.some((n) =>
+        String(n.headline ?? '').toLowerCase().includes('teacher leadership'),
+      ),
+    ).toBe(false);
+  });
+
+  it('applyBlankOrgChartSizeForExpectedHeadcount adds manager chains for HR, finance, sales, manufacturing, and technology', () => {
+    const raw = readFileSync(blankPath, 'utf8');
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const sized = applyBlankOrgChartSizeForExpectedHeadcount(parsed, 40000);
+    const next = JSON.parse(sized.orgchart as string) as Array<{
+      std_function_root?: string;
+      std_function?: string;
+      std_grade?: string;
+      headline?: string;
+    }>;
+
+    const managerHeadlines = next
+      .filter(
+        (node) =>
+          node.std_grade === 'mid' ||
+          String(node.headline ?? '').toUpperCase().includes('MANAGERS'),
+      )
+      .map((node) =>
+        `${String(node.std_function_root ?? '').toLowerCase()}/${String(
+          node.std_function ?? '',
+        ).toLowerCase()}:${String(node.headline ?? '')}`,
+      );
+
+    console.log(`blank manager nodes: ${managerHeadlines.join(' | ')}`);
+
+    const hasManagerFor = (matcher: (node: (typeof next)[number]) => boolean) =>
+      next.some(
+        (node) =>
+          (node.std_grade === 'mid' ||
+            String(node.headline ?? '').toUpperCase().includes('MANAGERS')) &&
+          matcher(node),
+      );
+
+    expect(
+      hasManagerFor(
+        (node) =>
+          String(node.std_function_root ?? '').toLowerCase() ===
+          'human resources',
+      ),
+    ).toBe(true);
+    expect(
+      hasManagerFor(
+        (node) => String(node.std_function_root ?? '').toLowerCase() === 'finance',
+      ),
+    ).toBe(true);
+    expect(
+      hasManagerFor(
+        (node) => String(node.std_function_root ?? '').toLowerCase() === 'sales',
+      ),
+    ).toBe(true);
+    expect(
+      hasManagerFor((node) =>
+        String(node.std_function ?? '').toLowerCase().includes('manufacturing'),
+      ),
+    ).toBe(true);
+    expect(
+      hasManagerFor(
+        (node) => String(node.std_function_root ?? '').toLowerCase() === 'technology',
+      ),
+    ).toBe(true);
   });
 });

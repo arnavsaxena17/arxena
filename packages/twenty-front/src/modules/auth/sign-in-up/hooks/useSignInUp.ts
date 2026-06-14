@@ -5,18 +5,21 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { Form } from '@/auth/sign-in-up/hooks/useSignInUpForm';
 import { signInUpModeState } from '@/auth/states/signInUpModeState';
 import {
-  SignInUpStep,
-  signInUpStepState,
+    SignInUpStep,
+    signInUpStepState,
 } from '@/auth/states/signInUpStepState';
 import { SignInUpMode } from '@/auth/types/signInUpMode';
-import { isAllowedEmailForNewWorkspaceSignup } from '@/auth/utils/isAllowedEmailForNewWorkspaceSignup';
 import { useReadCaptchaToken } from '@/captcha/hooks/useReadCaptchaToken';
 import { useRequestFreshCaptchaToken } from '@/captcha/hooks/useRequestFreshCaptchaToken';
 import { AppPath } from '@/types/AppPath';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useRecoilState } from 'recoil';
-import { isDefined } from 'twenty-shared';
+import {
+    isAllowedEmailForNewWorkspaceSignup,
+    isDefined,
+    WORK_EMAIL_REQUIRED_MESSAGE,
+} from 'twenty-shared';
 import { useIsMatchingLocation } from '~/hooks/useIsMatchingLocation';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -77,12 +80,9 @@ export const useSignInUp = (form: UseFormReturn<Form>) => {
           !isJoiningExistingWorkspace &&
           !isAllowedEmailForNewWorkspaceSignup(email)
         ) {
-          enqueueSnackBar(
-            'Please use your work email address to create an account. Personal, disposable, and free addresses are not supported.',
-            {
-              variant: SnackBarVariant.Error,
-            },
-          );
+          enqueueSnackBar(WORK_EMAIL_REQUIRED_MESSAGE, {
+            variant: SnackBarVariant.Error,
+          });
           return;
         }
         if (data?.checkUserExists.exists) {
@@ -124,12 +124,9 @@ export const useSignInUp = (form: UseFormReturn<Form>) => {
             !isJoiningExistingWorkspace &&
             !isAllowedEmailForNewWorkspaceSignup(email)
           ) {
-            enqueueSnackBar(
-              'Please use your work email address to create an account. Personal, disposable, and free addresses are not supported.',
-              {
-                variant: SnackBarVariant.Error,
-              },
-            );
+            enqueueSnackBar(WORK_EMAIL_REQUIRED_MESSAGE, {
+              variant: SnackBarVariant.Error,
+            });
             requestFreshCaptchaToken();
             return;
           }

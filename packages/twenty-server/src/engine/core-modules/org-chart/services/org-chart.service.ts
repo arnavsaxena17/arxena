@@ -26,11 +26,15 @@ import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import {
-    applyBlankOrgChartSizeForExpectedHeadcount,
-    applyBlankOrgChartSubsetFilter,
+  applyBlankOrgChartSizeForExpectedHeadcount,
+  applyBlankOrgChartSubsetFilter,
 } from '../utils/blank-org-chart-subset.util';
 import { mergeManualCompanyAutocompleteResults } from '../utils/manual-company-autocomplete.util';
 import { buildOrgChartS3RelativePathCandidates } from '../utils/org-chart-company-alias.util';
+import {
+  applyOrgChartPayloadSubsetFilter,
+  isOrgChartPayloadSubsetRequest,
+} from '../utils/org-chart-subset-filter.util';
 import { buildCompanyOrgChartLogicalCacheKey } from '../utils/orgchart-cache-keys.util';
 import { ArxenaBackendService } from './arxena-backend.service';
 import { OrgChartEsService } from './org-chart-es.service';
@@ -124,6 +128,10 @@ export class OrgChartService {
   private isBuiltEntireCompanyOrgChartCache(
     orgChartPayload: unknown,
   ): boolean {
+    return this.isFullCompanyOrgChartPayload(orgChartPayload);
+  }
+
+  private isFullCompanyOrgChartPayload(orgChartPayload: unknown): boolean {
     if (
       !orgChartPayload ||
       typeof orgChartPayload !== 'object' ||
@@ -134,10 +142,114 @@ export class OrgChartService {
 
     const rawType = (orgChartPayload as { type?: unknown }).type;
 
-    return (
-      typeof rawType === 'string' &&
-      rawType.trim().toLowerCase() === 'fullcompany'
+    if (typeof rawType !== 'string' || rawType.trim().length === 0) {
+      return true;
+    }
+
+    return rawType.trim().toLowerCase() === 'fullcompany';
+  }
+
+  private normalizeOrgChartGetOptions(options: {
+    country?: string;
+    functionRoot?: string;
+  }): { country?: string; functionRoot?: string } {
+    return {
+      country: options.country?.trim() || undefined,
+      functionRoot: options.functionRoot?.trim() || undefined,
+    };
+  }
+
+  private hasEntireCompanySubsetFilters(options: {
+    country?: string;
+    functionRoot?: string;
+  }): boolean {
+    return isOrgChartPayloadSubsetRequest(
+      this.normalizeOrgChartGetOptions(options),
     );
+  }
+
+  private finalizeOrgChartPayload(
+    payload: Record<string, unknown>,
+    options: { country?: string; functionRoot?: string },
+  ): Record<string, unknown> {
+    const normalizedOptions = this.normalizeOrgChartGetOptions(options);
+
+    if (!isOrgChartPayloadSubsetRequest(normalizedOptions)) {
+      return normalizeOrgChartPayload(payload);
+    }
+
+    return normalizeOrgChartPayload(
+      applyOrgChartPayloadSubsetFilter(payload, normalizedOptions),
+    );
+  }
+
+  private async resolveFullCompanyOrgChartBase(input: {
+    aliasCompanyIds: string[];
+    companyName?: string;
+    website?: string;
+    country?: string;
+    cachedOrgChartPayload?: {
+      orgChart?: Record<string, unknown>;
+    };
+    s3OrgChart: OrgChartData | null;
+    canReadFromEs: boolean;
+    serveCachedOnly?: boolean;
+  }): Promise<Record<string, unknown> | null> {
+    const {
+      aliasCompanyIds,
+      companyName,
+      website,
+      country,
+      cachedOrgChartPayload,
+      s3OrgChart,
+      canReadFromEs,
+      serveCachedOnly,
+    } = input;
+
+    if (
+      cachedOrgChartPayload?.orgChart &&
+      this.isFullCompanyOrgChartPayload(cachedOrgChartPayload.orgChart)
+    ) {
+      return cachedOrgChartPayload.orgChart;
+    }
+
+    if (!serveCachedOnly && canReadFromEs) {
+      const countryAttempts = ['global'];
+
+      if (
+        country &&
+        country.trim().length > 0 &&
+        country.trim().toLowerCase() !== 'global'
+      ) {
+        countryAttempts.push(country.trim());
+      }
+
+      for (const countryAttempt of countryAttempts) {
+        for (const esCompanyId of aliasCompanyIds) {
+          const esOutcome = await this.orgChartEsService.getOrgChartByCompanyId(
+            esCompanyId,
+            {
+              companyName,
+              website,
+              country: countryAttempt,
+            },
+          );
+
+          if (
+            esOutcome.document &&
+            this.isFullCompanyOrgChartPayload(esOutcome.document)
+          ) {
+            return esOutcome.document;
+          }
+        }
+      }
+    }
+
+    if (s3OrgChart && this.isFullCompanyOrgChartPayload(s3OrgChart)) {
+      return s3OrgChart as Record<string, unknown>;
+    }
+
+    return null;
   }
 
   private parseOrgChartNodes(value: unknown): Array<Record<string, unknown>> {
@@ -479,11 +591,9 @@ export class OrgChartService {
       companyIds: aliasCompanyIds,
     });
 
-    const hasEntireCompanySubsetFilters =
-      (options.country?.trim() &&
-        options.country.trim().toLowerCase() !== 'global') ||
-      (options.functionRoot?.trim() &&
-        options.functionRoot.trim().toLowerCase() !== 'fullcompany');
+    const hasEntireCompanySubsetFilters = this.hasEntireCompanySubsetFilters(
+      options,
+    );
 
     // Built full-company charts in Redis (workspace builds) take precedence over the
     // public Elasticsearch index, which stores masked names for SEO pages.
@@ -507,7 +617,10 @@ export class OrgChartService {
     // Authenticated users should only read workspace-authorized cached org charts.
     if (hasAuthToken && workspaceHasOrgChartAccess && cachedOrgChartPayload?.orgChart) {
       return {
-        data: normalizeOrgChartPayload(cachedOrgChartPayload.orgChart),
+        data: this.finalizeOrgChartPayload(
+          cachedOrgChartPayload.orgChart,
+          options,
+        ),
         ...(orgChartEsTransportError
           ? { orgChartEsTransportError: true }
           : {}),
@@ -530,7 +643,10 @@ export class OrgChartService {
       );
 
       return {
-        data: normalizeOrgChartPayload(s3OrgChart as Record<string, unknown>),
+        data: this.finalizeOrgChartPayload(
+          s3OrgChart as Record<string, unknown>,
+          options,
+        ),
         ...(orgChartEsTransportError
           ? { orgChartEsTransportError: true }
           : {}),
@@ -563,13 +679,42 @@ export class OrgChartService {
       }
     }
 
+    if (hasEntireCompanySubsetFilters) {
+      const fullCompanyBase = await this.resolveFullCompanyOrgChartBase({
+        aliasCompanyIds,
+        companyName: options.companyName,
+        website: options.website,
+        country: options.country,
+        cachedOrgChartPayload,
+        s3OrgChart,
+        canReadFromEs,
+        serveCachedOnly: options.serveCachedOnly,
+      });
+
+      if (fullCompanyBase) {
+        this.logger.log(
+          `Serving subset-filtered org chart from full-company base for companyId=${companyId}`,
+        );
+
+        return {
+          data: this.finalizeOrgChartPayload(fullCompanyBase, options),
+          ...(orgChartEsTransportError
+            ? { orgChartEsTransportError: true }
+            : {}),
+        };
+      }
+    }
+
     // For authenticated users, keep Redis fallback workspace-scoped.
     if (
       cachedOrgChartPayload?.orgChart &&
       (!hasAuthToken || workspaceHasOrgChartAccess)
     ) {
       return {
-        data: normalizeOrgChartPayload(cachedOrgChartPayload.orgChart),
+        data: this.finalizeOrgChartPayload(
+          cachedOrgChartPayload.orgChart,
+          options,
+        ),
         ...(orgChartEsTransportError
           ? { orgChartEsTransportError: true }
           : {}),
@@ -582,7 +727,10 @@ export class OrgChartService {
       );
 
       return {
-        data: normalizeOrgChartPayload(s3OrgChart as Record<string, unknown>),
+        data: this.finalizeOrgChartPayload(
+          s3OrgChart as Record<string, unknown>,
+          options,
+        ),
         ...(orgChartEsTransportError
           ? { orgChartEsTransportError: true }
           : {}),

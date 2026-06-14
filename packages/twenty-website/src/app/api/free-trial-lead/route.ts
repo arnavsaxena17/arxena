@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+    isAllowedEmailForNewWorkspaceSignup,
+    WORK_EMAIL_REQUIRED_MESSAGE,
+} from 'twenty-shared';
 
 import {
-  SubmitFreeTrialLeadError,
-  submitFreeTrialLeadToServer,
-} from '@/lib/submit-free-trial-lead-to-server';
-import {
-  FreeTrialLeadPayload,
-  FreeTrialOrgChartContext,
-  FreeTrialSource,
+    FreeTrialLeadPayload,
+    FreeTrialOrgChartContext,
+    FreeTrialSource,
 } from '@/lib/free-trial-types';
+import {
+    SubmitFreeTrialLeadError,
+    submitFreeTrialLeadToServer,
+} from '@/lib/submit-free-trial-lead-to-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,7 +60,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as Partial<FreeTrialLeadPayload>;
     const name = typeof body.name === 'string' ? body.name.trim() : '';
-    const email = typeof body.email === 'string' ? body.email.trim() : '';
+    const email =
+      typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
     const company = typeof body.company === 'string' ? body.company.trim() : '';
     const source =
       typeof body.source === 'string' && isFreeTrialSource(body.source)
@@ -72,6 +77,12 @@ export async function POST(request: NextRequest) {
     if (!email) {
       return NextResponse.json(
         { message: 'Email is required.' },
+        { status: 400 },
+      );
+    }
+    if (!isAllowedEmailForNewWorkspaceSignup(email)) {
+      return NextResponse.json(
+        { message: WORK_EMAIL_REQUIRED_MESSAGE },
         { status: 400 },
       );
     }

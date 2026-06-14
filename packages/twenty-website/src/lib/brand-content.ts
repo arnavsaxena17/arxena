@@ -2,48 +2,48 @@ export const BRAND = {
   name: 'Arxena',
   category: 'Org Intelligence',
   northStar: 'The org graph layer',
-  wedge: 'Executive search and PE/VC',
+  wedge: 'Enterprise sales and executive search',
   mission:
-    'To make the hidden structure of organizations visible — so the people and teams that shape the world can be found, understood, and engaged with precision.',
+    'To make the hidden structure of organizations visible — so sales and recruiting teams can have more of the right meetings, with the right people, for the same time and budget.',
   vision:
-    "A world where every company's organizational structure — every function, every level, every move — is queryable in real time, and acting on that intelligence requires no research team, no manual effort, and no guesswork.",
+    "A world where every company's organizational structure — every function, every level, every move — is queryable in real time, so the meetings you book are with the people who actually decide.",
 } as const;
 
 export const DEFAULT_OG_TITLE = `${BRAND.name} — ${BRAND.category} Platform`;
 
 export const DEFAULT_SITE_DESCRIPTION =
-  'Make every company\'s organizational structures visible and queryable in real time. The org graph layer for executive search, investors, sales, and corporate strategy — map, plan, engage, and measure.';
+  "More targeted meetings, same budget. Arxena maps any company's live org structure so enterprise sales and executive search teams reach the right decision-makers — not just more contacts.";
 
 export const HOMEPAGE_HERO = {
   title: 'Org Intelligence',
-  lead: 'Make the hidden structure of any organization visible—queryable in real time - in seconds.',
+  lead: 'View & power through any company\'s org structure — hack growth via relevant, contexual meetings.',
   stats:
-    '10M+ live, real time company org charts · 800M+ people profiles, contact info & engagement',
+    '10M+ live, real-time company org charts · 800M+ people profiles, contact info & engagement',
   exampleStripTitle: 'Explore a live org graph',
   clarifyNotLabel: 'Not this',
   clarifyNotText:
     "A tool that helps you draw or document your own company's org chart.",
   clarifyIsLabel: 'This',
   clarifyIsText:
-    'Org intelligence infrastructure—the live, queryable org graph of any company you target for search, sales, investing, or strategy.',
+    'The live, queryable org graph of any company you sell into or recruit from — so every meeting you book is with someone who can actually say yes.',
 } as const;
 
 export const SECTION_SUBTITLES = {
-  useCases: 'Org intelligence for teams who decide on structure',
-  howItWorks: 'From org graph to conversation—in one place',
+  useCases: 'Built for teams who get paid on meetings, not activity',
+  howItWorks: 'From org graph to a calendar full of the right meetings',
   differentiators: 'Why the org graph layer',
   builtFor: 'Built for',
 } as const;
 
 export const STORY_PAGE = {
-  headline: 'Making organizational structures visible',
+  headline: 'Same effort, more of the right meetings',
   subheadline: BRAND.vision,
   paragraph1:
-    'Every company has an org chart on paper. The real map—who leads what, who reports to whom, who actually holds budget—does not exist anywhere in a structured, queryable form. Arxena is building the org graph layer: org intelligence infrastructure, not another contact database.',
+    "Every rep and every recruiter has a quota of effort — calls, messages, sequences — per week. Most of that effort is spent finding out who to talk to, then talking to the wrong person anyway. Arxena flips the ratio: spend the effort on the conversation, not the org chart.",
   paragraph2:
-    'We fetch live org data from LinkedIn and other sources so structure, seniority, and moves are visible in real time. Map any target company, plan your move on the graph, enrich contacts, and engage with precision on WhatsApp, LinkedIn, and email—for executive search, PE/VC, enterprise sales, corporate strategy, and competitive research.',
+    'We fetch live org data from LinkedIn and other sources so structure, seniority, and ownership are visible before you write the first message. Map any target company, identify the actual decision-maker or hiring stakeholder, enrich their contact details, and engage on LinkedIn, WhatsApp, and email — all from one workflow.',
   scenarioExample:
-    'When a peer restructures its cloud function or loses a CFO, the signal is in the org graph—not in a press release weeks later.',
+    "Two reps send 50 messages each. One sent them to whoever had the right job title. The other sent them to the person who actually owns the budget, mapped from the live org chart. Same volume, same week — very different number of meetings booked.",
 } as const;
 
 export const TEAM_PAGE = {
@@ -53,64 +53,64 @@ export const TEAM_PAGE = {
 } as const;
 
 export const ENGAGE_PAGE = {
-  headline: 'Act on org intelligence',
+  headline: 'Turn the org chart into meetings on your calendar',
   subheadline:
-    'Engage with precision on top of the org graph—personalized outreach in your voice, with structure and context in every message. You step in when someone has already replied.',
+    'The right person is identified. Now reach them with context — in your voice, on LinkedIn, WhatsApp, and email — and track every touch so you know which sequences turn into meetings.',
 } as const;
 
 export const PRODUCTS_INDEX = {
   title: 'Products',
-  sub: 'The org graph layer—explorer, function maps, timeline, connection intelligence, engagement, and API.',
+  sub: 'Everything you need to turn a target account into a booked meeting with the right person: explorer, function maps, timeline, connection intelligence, engagement, and API.',
 } as const;
 
 export const SOLUTIONS_INDEX = {
   title: 'Solutions',
-  sub: 'Executive search and investors start here. Map structure before the mandate, the management call, or the first outreach.',
+  sub: 'Enterprise sales and executive search start here. Know exactly who to talk to before you spend a single message on them.',
 } as const;
 
 export const RESOURCES_INDEX = {
   headline: 'Resources',
-  sub: 'Guides, research, and tools for turning org intelligence into decisions—editorial, gated reports, and segment ROI models.',
+  sub: 'Guides, research, and tools for turning org intelligence into more meetings — editorial, gated reports, and segment ROI models.',
   cards: {
-    blog: 'Editorial on org intelligence, structure, and how teams act on the org graph.',
+    blog: 'Editorial on org intelligence, targeting, and how teams turn structure into meetings.',
     reports:
-      "Research and benchmarks on leadership and functions—built on Arxena's org intelligence dataset.",
+      "Research and benchmarks on leadership and functions — built on Arxena's org intelligence dataset.",
     calculators:
-      'ROI models for teams who run on org intelligence—by segment and workflow.',
+      'Calculate how many extra meetings the org graph adds at your current outreach volume.',
   },
   blogParagraphs: [
-    'Long-form stories and practical guides on org intelligence—from executive search and enterprise sales to strategy and diligence.',
+    'Long-form stories and practical guides on org intelligence — from enterprise sales and executive search to corporate strategy and diligence.',
     'New articles ship on a regular cadence. Subscribe to updates or talk to us about topics you want covered.',
   ],
   reportsParagraphs: [
-    "Deep dives into how companies structure leadership and functions—built on Arxena's org intelligence dataset. Reports are released as PDFs and are typically gated for qualified teams.",
+    "Deep dives into how companies structure leadership and functions — built on Arxena's org intelligence dataset. Reports are released as PDFs and are typically gated for qualified teams.",
     'Request access to upcoming releases or ask us about custom cuts for your sector or geography.',
   ],
   calculatorsParagraphs: [
-    'Interactive ROI calculators tuned by buyer segment—executive search, sales, talent, strategy, and PE/VC—so you can quantify time saved on the org graph or diligence efficiency.',
+    'Interactive calculators showing how many additional qualified meetings the org graph adds per 100 outreach attempts — by segment and workflow.',
     'We are rolling out calculators progressively. Book a conversation to walk through assumptions with your team or get early access.',
   ],
 } as const;
 
 export const PRICING_PAGE_DESCRIPTION =
-  'Access the org graph—credits to map any target company. Plans for executive search, investors, sales, and corporate strategy.';
+  'Access the org graph — credits to map any target company and reach the right person first. Plans for enterprise sales, executive search, investors, and corporate strategy.';
 
 export const CONTACT_PAGE_SUB =
-  'Talk to us about org intelligence for your team—email, WhatsApp, live chat, and office locations.';
+  'Talk to us about getting more of the right meetings for your team — email, WhatsApp, live chat, and office locations.';
 
 export const CHROME_EXTENSION_PAGE = {
   headline: 'Arxena Chrome extension',
   subheadline:
-    'Org intelligence where you work on LinkedIn—connect your account, view profiles in context, and act from the live org graph.',
+    'Org intelligence where you already work on LinkedIn — see who actually owns the function, not just who has the title, and act from the live org graph.',
 } as const;
 
 export const STRUCTURED_DATA = {
   siteDescription:
-    'Org intelligence platform: queryable organizational structure for any company. 10M+ companies, 800M+ professionals. Map, plan, engage, and measure from the live org graph.',
+    'Org intelligence platform: queryable organizational structure for any company. 10M+ companies, 800M+ professionals. Helps sales and recruiting teams book more meetings with the right people for the same effort.',
   nav: {
-    pricing: 'Access the org graph—credits for mapping any target company',
-    story: 'Mission, vision, and why we built org intelligence',
-    engage: 'Act on org intelligence—outreach with context from the org graph',
+    pricing: 'Access the org graph — credits for mapping any target company',
+    story: 'Why more targeted meetings beat more volume',
+    engage: 'Turn org intelligence into booked meetings',
     app: 'Sign in to Arxena',
   },
 } as const;

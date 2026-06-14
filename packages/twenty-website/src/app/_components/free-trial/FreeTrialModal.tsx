@@ -16,7 +16,11 @@ import {
 } from '@/lib/free-trial-types';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 import { OrgChartSignUpIntro } from 'twenty-orgchart/orgchart-core';
-import { type OrgChartNodeData } from 'twenty-shared';
+import {
+  isAllowedEmailForNewWorkspaceSignup,
+  type OrgChartNodeData,
+  WORK_EMAIL_REQUIRED_MESSAGE,
+} from 'twenty-shared';
 
 type FreeTrialModalStep = 'intro' | 'form' | 'loading' | 'calendly' | 'success';
 
@@ -223,6 +227,18 @@ const StyledCalendlyPanel = styled.div`
   justify-content: center;
 `;
 
+const StyledHiddenCalendlyPreload = styled.div`
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 400px;
+  height: 620px;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: -1;
+`;
+
 const StyledLoading = styled.div`
   display: flex;
   flex-direction: column;
@@ -395,19 +411,45 @@ export const FreeTrialModal = ({
     };
   }, [handleClose, step]);
 
-  const calendlyUrl = useMemo(() => {
-    if (!lead) {
-      return '';
+  const isFormComplete =
+    name.trim().length > 0 &&
+    email.trim().length > 0 &&
+    company.trim().length > 0;
+
+  const preloadCalendlyUrl = useMemo(() => {
+    if (lead) {
+      return buildFreeTrialCalendlyUrl({
+        name: lead.name,
+        email: lead.email,
+        company: lead.company,
+        source: lead.source,
+        orgChartContext: lead.orgChartContext,
+      });
+    }
+
+    if (isFormComplete) {
+      return buildFreeTrialCalendlyUrl({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        company: company.trim(),
+        source,
+        orgChartContext,
+      });
     }
 
     return buildFreeTrialCalendlyUrl({
-      name: lead.name,
-      email: lead.email,
-      company: lead.company,
-      source: lead.source,
-      orgChartContext: lead.orgChartContext,
+      name: '',
+      email: '',
+      company: '',
+      source,
+      orgChartContext,
     });
-  }, [lead]);
+  }, [company, email, isFormComplete, lead, name, orgChartContext, source]);
+
+  const calendlyUrl = lead ? preloadCalendlyUrl : '';
+
+  const shouldPreloadCalendly =
+    step === 'intro' || step === 'form' || step === 'loading';
 
   const handleIntroCtaClick = useCallback(() => {
     trackFreeTrialEvent('free_trial_cta_click', {
@@ -422,11 +464,17 @@ export const FreeTrialModal = ({
     setError(null);
 
     const trimmedName = name.trim();
-    const trimmedEmail = email.trim();
+    const trimmedEmail = email.trim().toLowerCase();
     const trimmedCompany = company.trim();
 
     if (!trimmedName || !trimmedEmail || !trimmedCompany) {
       setError('Please fill in all required fields.');
+
+      return;
+    }
+
+    if (!isAllowedEmailForNewWorkspaceSignup(trimmedEmail)) {
+      setError(WORK_EMAIL_REQUIRED_MESSAGE);
 
       return;
     }
@@ -482,6 +530,13 @@ export const FreeTrialModal = ({
     return null;
   }
 
+  const hiddenCalendlyPreload =
+    shouldPreloadCalendly && preloadCalendlyUrl ? (
+      <StyledHiddenCalendlyPreload aria-hidden>
+        <CalendlyInline url={preloadCalendlyUrl} />
+      </StyledHiddenCalendlyPreload>
+    ) : null;
+
   if (step === 'success') {
     return (
       <StyledBackdrop onClick={handleClose} role="presentation">
@@ -509,8 +564,8 @@ export const FreeTrialModal = ({
     );
   }
 
-  if (step === 'intro' && intro) {
-    return (
+  const modalContent =
+    step === 'intro' && intro ? (
       <StyledBackdrop onClick={handleClose} role="presentation">
         <StyledFormDialog
           role="dialog"
@@ -540,11 +595,7 @@ export const FreeTrialModal = ({
           />
         </StyledFormDialog>
       </StyledBackdrop>
-    );
-  }
-
-  if (step === 'form' || step === 'loading') {
-    return (
+    ) : step === 'form' || step === 'loading' ? (
       <StyledBackdrop onClick={handleClose} role="presentation">
         <StyledFormDialog
           role="dialog"
@@ -641,50 +692,54 @@ export const FreeTrialModal = ({
           )}
         </StyledFormDialog>
       </StyledBackdrop>
+    ) : (
+      <StyledBackdrop onClick={handleClose} role="presentation">
+        <StyledDialog
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="free-trial-booking-title"
+          onClick={(clickEvent) => {
+            clickEvent.stopPropagation();
+          }}
+        >
+          <StyledCloseButton
+            type="button"
+            onClick={handleClose}
+            aria-label="Close"
+          >
+            <IconX size={20} stroke={1.75} />
+          </StyledCloseButton>
+          <StyledBookingLayout>
+            <StyledSidebar>
+              <StyledSidebarTitle id="free-trial-booking-title">
+                You&apos;re almost done!
+              </StyledSidebarTitle>
+              <StyledSidebarCopy>
+                Pick a time to talk to one of our org intelligence specialists at{' '}
+                <StyledSidebarEmailLink href="mailto:info@arxena.com">
+                  info@arxena.com
+                </StyledSidebarEmailLink>
+                .
+              </StyledSidebarCopy>
+            </StyledSidebar>
+            <StyledCalendlyPanel>
+              {calendlyUrl ? (
+                <CalendlyInline url={calendlyUrl} />
+              ) : (
+                <StyledLoading>
+                  <StyledSpinner aria-hidden />
+                </StyledLoading>
+              )}
+            </StyledCalendlyPanel>
+          </StyledBookingLayout>
+        </StyledDialog>
+      </StyledBackdrop>
     );
-  }
 
   return (
-    <StyledBackdrop onClick={handleClose} role="presentation">
-      <StyledDialog
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="free-trial-booking-title"
-        onClick={(clickEvent) => {
-          clickEvent.stopPropagation();
-        }}
-      >
-        <StyledCloseButton
-          type="button"
-          onClick={handleClose}
-          aria-label="Close"
-        >
-          <IconX size={20} stroke={1.75} />
-        </StyledCloseButton>
-        <StyledBookingLayout>
-          <StyledSidebar>
-            <StyledSidebarTitle id="free-trial-booking-title">
-              You&apos;re almost done!
-            </StyledSidebarTitle>
-            <StyledSidebarCopy>
-              Pick a time to talk to one of our org intelligence specialists at{' '}
-              <StyledSidebarEmailLink href="mailto:info@arxena.com">
-                info@arxena.com
-              </StyledSidebarEmailLink>
-              .
-            </StyledSidebarCopy>
-          </StyledSidebar>
-          <StyledCalendlyPanel>
-            {calendlyUrl ? (
-              <CalendlyInline url={calendlyUrl} />
-            ) : (
-              <StyledLoading>
-                <StyledSpinner aria-hidden />
-              </StyledLoading>
-            )}
-          </StyledCalendlyPanel>
-        </StyledBookingLayout>
-      </StyledDialog>
-    </StyledBackdrop>
+    <>
+      {hiddenCalendlyPreload}
+      {modalContent}
+    </>
   );
 };
