@@ -6,6 +6,7 @@ import { useDebouncedCallback } from 'use-debounce';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
+import { linkedinUnipileAccountsState } from '@/linkedin-unipile/states/linkedinUnipileAccountsState';
 import { ORG_CHART_CANDIDATE_SOURCE_M7KQ } from '@/orgchart/constants/orgChartM7kqSource';
 import { orgChartContactsByKeyState } from '@/orgchart/states/orgChartContactsByKeyState';
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
@@ -15,14 +16,15 @@ import { AppPath } from '@/types/AppPath';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useUnipile } from '@/unipile/contexts/UnipileContext';
+import { workspaceMemberProfileUnipileFieldsState } from '@/unipile/states/workspaceMemberProfileUnipileFieldsState';
 import {
-    OrgChartDiagramHandle,
-    normalizeCompanyIdForUrl,
-    useCompanyInfoLookup,
-    useOrgChartData,
-    useOrgChartFilterOptions,
+  OrgChartDiagramHandle,
+  normalizeCompanyIdForUrl,
+  useCompanyInfoLookup,
+  useOrgChartData,
+  useOrgChartFilterOptions,
 } from 'twenty-orgchart';
-import { OrgChartNodeData, extractOrgData, toTitleCase } from 'twenty-shared';
+import { OrgChartNodeData, extractOrgData, resolveLinkedinUnipileAccountIdForWorkspaceMember, toTitleCase } from 'twenty-shared';
 import { Mixpanel } from '~/mixpanel';
 
 import { getArxenaSiteBaseUrl } from '@/auth/utils/arxenaSiteUrl';
@@ -31,12 +33,12 @@ import { useJobOrgChartData } from '../hooks/useJobOrgChartData';
 import { useOrgChartActions } from '../hooks/useOrgChartActions';
 import { extractCompanyDomainFromWebsite } from '../utils/orgChartUtils';
 import {
-    StyledOrgChartConfirmDd,
-    StyledOrgChartConfirmDt,
-    StyledOrgChartConfirmIntro,
-    StyledOrgChartConfirmRow,
-    StyledOrgChartConfirmRows,
-    StyledOrgChartConfirmSummary,
+  StyledOrgChartConfirmDd,
+  StyledOrgChartConfirmDt,
+  StyledOrgChartConfirmIntro,
+  StyledOrgChartConfirmRow,
+  StyledOrgChartConfirmRows,
+  StyledOrgChartConfirmSummary,
 } from './ArxOrgChart.styles';
 import { ArxOrgChartView } from './ArxOrgChartView';
 import { useOrgChartBanners } from './hooks/useOrgChartBanners';
@@ -181,6 +183,10 @@ export const ArxOrgChartContainer = ({
     process.env.REACT_APP_EXPERIMENTAL_ORGCHART_NODE_HOVER_HINTS === 'true';
 
   const { isLinkedinConnected } = useUnipile();
+  const workspaceMemberProfileUnipileFields = useRecoilValue(
+    workspaceMemberProfileUnipileFieldsState,
+  );
+  const linkedinUnipileAccounts = useRecoilValue(linkedinUnipileAccountsState);
   const setSelectedCompanyInfo = useSetRecoilState(
     orgChartSelectedCompanyInfoState,
   );
@@ -235,6 +241,19 @@ export const ArxOrgChartContainer = ({
     companyDomain?.trim() || companyDomainFromQuery || undefined;
 
   const linkedinUrlToUse = linkedinUrl;
+
+  const resolvedLinkedinUnipileAccountId = useMemo(() => {
+    const envOverride = process.env.REACT_APP_ORGCHART_UNIPILE_ACCOUNT_ID?.trim();
+    if (envOverride) {
+      return envOverride;
+    }
+    return (
+      resolveLinkedinUnipileAccountIdForWorkspaceMember(
+        workspaceMemberProfileUnipileFields,
+        linkedinUnipileAccounts,
+      ) ?? undefined
+    );
+  }, [workspaceMemberProfileUnipileFields, linkedinUnipileAccounts]);
 
   const asOfMonth = searchParams.get('asOf')?.trim() || '';
 
@@ -328,8 +347,7 @@ export const ArxOrgChartContainer = ({
     linkedinCompanyUrl: linkedinUrlToUse?.trim(),
     includeOrgIntelligence:
       searchParams.get('includeOrgIntelligence') ?? undefined,
-    linkedinUnipileAccountId:
-      process.env.REACT_APP_ORGCHART_UNIPILE_ACCOUNT_ID?.trim(),
+    linkedinUnipileAccountId: resolvedLinkedinUnipileAccountId,
     businessDivisionRawQuery: businessDivisionQuery.trim() || undefined,
     onPreviewNodePeopleRequest: (node) =>
       setPendingPreviewNodePeopleChoice(node),

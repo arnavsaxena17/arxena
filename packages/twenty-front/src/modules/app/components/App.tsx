@@ -14,6 +14,7 @@ import { RecoilRoot } from 'recoil';
 import { RecoilURLSyncJSON } from 'recoil-sync';
 import { IconsProvider } from 'twenty-ui';
 import { initialI18nActivate } from '~/utils/i18n/initialI18nActivate';
+import { OrgChartLinkedinSearchTypeSyncEffect } from '../../unipile/components/OrgChartLinkedinSearchTypeSyncEffect';
 import { UnipileProvider } from '../../unipile/contexts/UnipileContext';
 import { UploadProgressProvider } from '../../websocket-context/UploadProgressProvider';
 import { WebSocketProvider } from '../../websocket-context/WebSocketContextProvider';
@@ -35,6 +36,7 @@ export const App = () => {
                     <HelmetProvider>
                       {/* <BaileysProvider> */}
                         <UnipileProvider>
+                          <OrgChartLinkedinSearchTypeSyncEffect />
                           <ChromeExtensionAuthBridgeEffect />
                           <WebSocketProvider>
                             <UploadProgressProvider>
