@@ -9,13 +9,13 @@ import { LinkedInCompanySearchResult, LinkedInJobSearchResult, LinkedInPeopleSea
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 
 import {
-  GeneratedSearchParameters
+    GeneratedSearchParameters
 } from '../types/candidate-search-request.type';
 import {
-  FileUtils,
-  generateLinkedInSearchUrl,
-  LinkedinParameterResolver,
-  ParameterSanitizer,
+    FileUtils,
+    generateLinkedInSearchUrl,
+    LinkedinParameterResolver,
+    ParameterSanitizer,
 } from '../utils';
 import { JobDescriptionService } from './job-description.service';
 // import { QuerySimplificationService } from './query-simplification.service';
@@ -678,21 +678,13 @@ export class CandidateSearchBaseService {
 
 
   /**
-   * Get LinkedIn account ID from workspace member profile (with workspace fallback).
-   * When UNIPILE_LINKEDIN_ACCOUNT_ID is set (e.g. for testing), returns that value instead.
+   * Resolve LinkedIn Unipile account id: explicit request param, then workspace member
+   * profile, then UNIPILE_LINKEDIN_ACCOUNT_ID env (testing / legacy fallback).
    */
   async getLinkedInAccountId(
     apiToken: string,
     explicitAccountId?: string,
   ): Promise<string> {
-    const envOverride = process.env.UNIPILE_LINKEDIN_ACCOUNT_ID?.trim();
-    if (envOverride) {
-      this.logger.debug(
-        'Using UNIPILE_LINKEDIN_ACCOUNT_ID env override for LinkedIn search',
-      );
-      return envOverride;
-    }
-
     const explicit = explicitAccountId?.trim();
     if (explicit) {
       this.logger.debug(
@@ -702,7 +694,8 @@ export class CandidateSearchBaseService {
     }
 
     try {
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const workspaceMemberId =
         await this.workspaceQueryService.getWorkspaceMemberIdFromToken(apiToken);
       const linkedinAccountId =
@@ -713,15 +706,27 @@ export class CandidateSearchBaseService {
           'linkedin',
         );
 
-      if (!linkedinAccountId) {
-        throw new Error('LinkedIn account ID not found in workspace API keys');
+      if (linkedinAccountId) {
+        return linkedinAccountId;
       }
-
-      return linkedinAccountId;
     } catch (error) {
-      this.logger.error(`Error getting LinkedIn account ID: ${error}`);
-      throw new Error('Failed to get LinkedIn account ID');
+      this.logger.warn(
+        `Workspace member LinkedIn Unipile account lookup failed, trying env fallback: ${error}`,
+      );
     }
+
+    const envFallback = process.env.UNIPILE_LINKEDIN_ACCOUNT_ID?.trim();
+    if (envFallback) {
+      this.logger.debug(
+        'Using UNIPILE_LINKEDIN_ACCOUNT_ID env fallback for LinkedIn search',
+      );
+      return envFallback;
+    }
+
+    this.logger.error(
+      'LinkedIn account ID not found on workspace member profile and no env fallback',
+    );
+    throw new Error('Failed to get LinkedIn account ID');
   }
 
   /**

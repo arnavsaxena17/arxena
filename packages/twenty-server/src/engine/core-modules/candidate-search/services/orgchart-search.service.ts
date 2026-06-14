@@ -126,7 +126,7 @@ export class OrgChartSearchService {
       functionRoot?: string;
       /** Canonical LinkedIn company URL for Python org-chart (e.g. https://www.linkedin.com/company/briskpe/) */
       linkedinCompanyUrl?: string;
-      /** Unipile LinkedIn account id (same as linkedin-search ?account_id); after UNIPILE_LINKEDIN_ACCOUNT_ID env */
+      /** Unipile LinkedIn account id (same as linkedin-search ?account_id); profile/env resolved in getLinkedInAccountId */
       linkedinUnipileAccountId?: string;
       /** Natural-language business division query; triggers structured LLM + keyword strategy */
       businessDivisionRawQuery?: string;
