@@ -4,7 +4,18 @@ import { Client } from '@elastic/elasticsearch';
 
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 
+import { buildCompanyWebsiteLookupVariants } from '../utils/org-chart-resolve-domain.util';
+
 type OrgChartDocument = Record<string, unknown>;
+
+export type OrgChartEsDomainResolveHit = {
+  companyId: string;
+  companyName?: string;
+  website?: string;
+  source: 'orgcharts' | 'companies';
+  hasOrgChart: boolean;
+  countOrg?: number;
+};
 
 export type OrgChartEsGetByCompanyIdOutcome = {
   document: OrgChartDocument | null;
@@ -1257,5 +1268,234 @@ export class OrgChartEsService {
       );
       return [];
     }
+  }
+
+  private async searchOrgChartsByWebsiteVariants(
+    websiteVariants: string[],
+  ): Promise<{
+    job_company_id: string;
+    job_company_name?: string;
+    job_company_website?: string;
+    count_org?: number;
+  } | null> {
+    if (!this.client || websiteVariants.length === 0) {
+      return null;
+    }
+
+    try {
+      const searchResponse = await this.client.search<{
+        job_company_id?: string;
+        job_company_name?: string;
+        job_company_website?: string;
+        count_org?: number;
+      }>({
+        index: this.orgChartsIndex,
+        size: 5,
+        query: {
+          bool: {
+            must: [
+              { terms: { job_company_website: websiteVariants } },
+              { term: { type: 'fullcompany' } },
+              { term: { country: 'global' } },
+            ],
+          },
+        },
+        sort: [{ count_org: { order: 'desc', unmapped_type: 'long' } }],
+        _source: [
+          'job_company_id',
+          'job_company_name',
+          'job_company_website',
+          'count_org',
+        ],
+      });
+
+      for (const hit of searchResponse.hits.hits) {
+        const src = hit._source;
+        const companyId = src?.job_company_id?.trim().toLowerCase();
+        if (companyId) {
+          return {
+            job_company_id: companyId,
+            job_company_name:
+              typeof src?.job_company_name === 'string'
+                ? src.job_company_name
+                : undefined,
+            job_company_website:
+              typeof src?.job_company_website === 'string'
+                ? src.job_company_website
+                : undefined,
+            count_org:
+              typeof src?.count_org === 'number' ? src.count_org : undefined,
+          };
+        }
+      }
+
+      return null;
+    } catch (error) {
+      this.logger.error(
+        'Elasticsearch searchOrgChartsByWebsiteVariants failed',
+        error as Error,
+      );
+      return null;
+    }
+  }
+
+  private async searchCompaniesIndexByWebsiteVariants(
+    websiteVariants: string[],
+  ): Promise<{ id: string; name?: string; website?: string } | null> {
+    if (!this.client || websiteVariants.length === 0) {
+      return null;
+    }
+
+    const companiesIndex =
+      (this.environmentService.get('COMPANIES_ES_INDEX') as string | undefined) ??
+      'companies_index_text';
+
+    try {
+      const searchResponse = await this.client.search<{
+        id?: string;
+        name?: string;
+        website?: string;
+      }>({
+        index: companiesIndex,
+        size: 5,
+        query: {
+          bool: {
+            should: websiteVariants.map((variant) => ({
+              term: { website: variant },
+            })),
+            minimum_should_match: 1,
+          },
+        },
+        _source: ['id', 'name', 'website'],
+      });
+
+      for (const hit of searchResponse.hits.hits) {
+        const src = hit._source;
+        const id = src?.id?.trim().toLowerCase();
+        if (id) {
+          return {
+            id,
+            name: typeof src?.name === 'string' ? src.name : undefined,
+            website:
+              typeof src?.website === 'string' ? src.website : undefined,
+          };
+        }
+      }
+
+      return null;
+    } catch (error) {
+      this.logger.error(
+        'Elasticsearch searchCompaniesIndexByWebsiteVariants failed',
+        error as Error,
+      );
+      return null;
+    }
+  }
+
+  async findOrgChartByCompanyId(
+    companyId: string,
+  ): Promise<OrgChartEsDomainResolveHit | null> {
+    if (!this.client) {
+      return null;
+    }
+
+    const normalizedCompanyId = this.normalizeCompanyId(companyId);
+    if (!normalizedCompanyId) {
+      return null;
+    }
+
+    try {
+      const searchResponse = await this.client.search<{
+        job_company_id?: string;
+        job_company_name?: string;
+        job_company_website?: string;
+        count_org?: number;
+      }>({
+        index: this.orgChartsIndex,
+        size: 1,
+        query: {
+          bool: {
+            must: [
+              { term: { job_company_id: normalizedCompanyId } },
+              { term: { type: 'fullcompany' } },
+              { term: { country: 'global' } },
+            ],
+          },
+        },
+        _source: [
+          'job_company_id',
+          'job_company_name',
+          'job_company_website',
+          'count_org',
+        ],
+      });
+
+      const src = searchResponse.hits.hits[0]?._source;
+      const resolvedId = src?.job_company_id?.trim().toLowerCase();
+      if (!resolvedId) {
+        return null;
+      }
+
+      return {
+        companyId: resolvedId,
+        companyName:
+          typeof src?.job_company_name === 'string'
+            ? src.job_company_name
+            : undefined,
+        website:
+          typeof src?.job_company_website === 'string'
+            ? src.job_company_website
+            : undefined,
+        source: 'orgcharts',
+        hasOrgChart: true,
+        countOrg:
+          typeof src?.count_org === 'number' ? src.count_org : undefined,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Elasticsearch findOrgChartByCompanyId failed for companyId=${companyId}`,
+        error as Error,
+      );
+      return null;
+    }
+  }
+
+  async resolveCompanyByDomain(
+    bareDomain: string,
+  ): Promise<OrgChartEsDomainResolveHit | null> {
+    const websiteVariants = buildCompanyWebsiteLookupVariants(bareDomain);
+    if (websiteVariants.length === 0) {
+      return null;
+    }
+
+    this.logger.log(
+      `resolveCompanyByDomain bareDomain=${bareDomain} variants=${websiteVariants.length}`,
+    );
+
+    const orgHit = await this.searchOrgChartsByWebsiteVariants(websiteVariants);
+    if (orgHit) {
+      return {
+        companyId: orgHit.job_company_id,
+        companyName: orgHit.job_company_name,
+        website: orgHit.job_company_website ?? bareDomain,
+        source: 'orgcharts',
+        hasOrgChart: true,
+        countOrg: orgHit.count_org,
+      };
+    }
+
+    const companyHit =
+      await this.searchCompaniesIndexByWebsiteVariants(websiteVariants);
+    if (companyHit) {
+      return {
+        companyId: companyHit.id,
+        companyName: companyHit.name,
+        website: companyHit.website ?? bareDomain,
+        source: 'companies',
+        hasOrgChart: false,
+      };
+    }
+
+    return null;
   }
 }

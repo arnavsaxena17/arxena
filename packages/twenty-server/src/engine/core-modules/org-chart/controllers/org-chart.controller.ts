@@ -1259,6 +1259,47 @@ export class OrgChartController {
     }
   }
 
+  @Get('companies/resolve-by-domain')
+  async resolveCompanyByDomain(
+    @Query('domain') domain: string,
+    @Req() req: Request,
+  ) {
+    await this.assertOrgChartClientLookupAllowed(req);
+
+    const normalizedDomain = domain?.trim();
+    if (!normalizedDomain) {
+      throw new HttpException(
+        'Query parameter "domain" is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      const authToken = this.getAuthToken(req);
+      const isPdlProxyAuthorized =
+        isOrgChartPdlProxyAuthorized(req, this.environmentService) &&
+        isLikelyBrowserRequest(req.headers);
+
+      const result = await this.orgChartService.resolveCompanyByDomain(
+        normalizedDomain,
+        {
+          authToken,
+          isPdlProxyAuthorized,
+        },
+      );
+
+      return { ...result, status: 'ok' };
+    } catch (error) {
+      this.logger.error('Resolve company by domain failed', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to resolve company by domain',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Get('companies/employee-count')
   async getEmployeeCount(
     @Query('companyId') companyId: string,
@@ -1817,6 +1858,16 @@ export class OrgChartController {
     expectedEmployeeCountRaw: string | undefined,
     @Req() req: Request,
   ) {
+    if (
+      companyId === 'companies' &&
+      country === 'resolve-by-domain'
+    ) {
+      throw new HttpException(
+        'Use GET /org-chart/companies/resolve-by-domain?domain=<website-domain>',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
     return this.getOrgChartInternal(req, companyId, {
       companyName,
       website,

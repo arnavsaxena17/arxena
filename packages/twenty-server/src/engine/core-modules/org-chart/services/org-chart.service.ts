@@ -7,7 +7,9 @@ import {
   buildOrgChartS3LookupPlan,
   collectOrgChartCompanyIdsForLookup,
   graphqlToFindManyCompanies,
+  normalizeOrgChartCompanySlug,
   OrgChartData,
+  resolveOrgChartCanonicalCompanyId,
 } from 'twenty-shared';
 
 import { toOrgChartCacheTtlMs } from '../utils/org-chart-cache-ttl.util';
@@ -32,6 +34,12 @@ import {
 import { mergeManualCompanyAutocompleteResults } from '../utils/manual-company-autocomplete.util';
 import { buildOrgChartS3RelativePathCandidates } from '../utils/org-chart-company-alias.util';
 import {
+  collectDomainLookupCandidates,
+  extractCompanyNameStemFromDomain,
+  extractRootCompanyDomain,
+  normalizeBareCompanyDomain,
+} from '../utils/org-chart-resolve-domain.util';
+import {
   applyOrgChartPayloadSubsetFilter,
   isOrgChartPayloadSubsetRequest,
 } from '../utils/org-chart-subset-filter.util';
@@ -47,6 +55,15 @@ export type OrgChartServiceGetOrgChartResult = {
   data: Record<string, unknown>;
   /** Set when the primary ES org-chart lookup failed with a transport error (e.g. timeout). */
   orgChartEsTransportError?: boolean;
+};
+
+export type ResolveCompanyByDomainResult = {
+  found: boolean;
+  companyId?: string;
+  companyName?: string;
+  website?: string;
+  source?: 'orgcharts' | 'companies' | 'alias' | 'autocomplete';
+  hasOrgChart?: boolean;
 };
 
 @Injectable()
@@ -1026,6 +1043,203 @@ export class OrgChartService {
 
       return { emailAddresses: [], phoneNumbers: [] };
     }
+  }
+
+  /**
+   * Resolve org-chart company slug from a corporate website domain.
+   * ES org-charts index first, then companies index, then shared alias groups,
+   * then autocomplete by TLD-stripped company name stem.
+   */
+  async resolveCompanyByDomain(
+    rawDomain: string,
+    options?: { authToken?: string; isPdlProxyAuthorized?: boolean },
+  ): Promise<ResolveCompanyByDomainResult> {
+    const bareDomain = normalizeBareCompanyDomain(rawDomain);
+    if (!bareDomain) {
+      return { found: false };
+    }
+
+    this.logger.log(`resolveCompanyByDomain input=${rawDomain} bare=${bareDomain}`);
+
+    const domainCandidates = collectDomainLookupCandidates(bareDomain);
+    let hit = null as Awaited<
+      ReturnType<OrgChartEsService['resolveCompanyByDomain']>
+    >;
+    let resolvedSource: ResolveCompanyByDomainResult['source'] = undefined;
+
+    for (const candidate of domainCandidates) {
+      const candidateHit =
+        await this.orgChartEsService.resolveCompanyByDomain(candidate);
+      if (!candidateHit) {
+        continue;
+      }
+      hit = candidateHit;
+      resolvedSource = candidateHit.source;
+      if (candidateHit.hasOrgChart) {
+        break;
+      }
+    }
+
+    if (hit && !hit.hasOrgChart) {
+      const aliasIds = collectOrgChartCompanyIdsForLookup(hit.companyId);
+      for (const aliasId of aliasIds) {
+        if (aliasId === hit.companyId) {
+          continue;
+        }
+        const aliasOrgChart =
+          await this.orgChartEsService.findOrgChartByCompanyId(aliasId);
+        if (aliasOrgChart) {
+          hit = aliasOrgChart;
+          resolvedSource = 'alias';
+          break;
+        }
+      }
+    }
+
+    const stem = extractCompanyNameStemFromDomain(bareDomain);
+    const rootDomain = extractRootCompanyDomain(bareDomain);
+
+    if (!hit && stem) {
+      const canonicalStem = resolveOrgChartCanonicalCompanyId(stem);
+      const stemOrgChart =
+        await this.orgChartEsService.findOrgChartByCompanyId(canonicalStem);
+      if (stemOrgChart) {
+        hit = stemOrgChart;
+        resolvedSource =
+          canonicalStem !== normalizeOrgChartCompanySlug(stem)
+            ? 'alias'
+            : 'orgcharts';
+      }
+    }
+
+    if (!hit && stem) {
+      const autocompleteHit = await this.resolveCompanySlugFromAutocompleteStem(
+        stem,
+        bareDomain,
+        rootDomain,
+        options,
+      );
+      if (autocompleteHit) {
+        return autocompleteHit;
+      }
+
+      return {
+        found: true,
+        companyId: resolveOrgChartCanonicalCompanyId(stem),
+        website: rootDomain,
+        source: 'companies',
+        hasOrgChart: false,
+      };
+    }
+
+    if (!hit) {
+      return { found: false };
+    }
+
+    return {
+      found: true,
+      companyId: resolveOrgChartCanonicalCompanyId(hit.companyId),
+      companyName: hit.companyName,
+      website: hit.website ?? rootDomain,
+      source: hit.hasOrgChart
+        ? resolvedSource === 'alias'
+          ? 'alias'
+          : 'orgcharts'
+        : 'companies',
+      hasOrgChart: hit.hasOrgChart,
+    };
+  }
+
+  private scoreAutocompleteMatch(input: {
+    stem: string;
+    bareDomain: string;
+    rootDomain: string;
+    item: {
+      name: string;
+      meta: { id: string; website?: string };
+    };
+  }): number {
+    const normalizedStem = input.stem.trim().toLowerCase();
+    const itemId = resolveOrgChartCanonicalCompanyId(input.item.meta.id);
+    const itemWebsite = normalizeBareCompanyDomain(input.item.meta.website);
+    const itemRoot = itemWebsite
+      ? extractRootCompanyDomain(itemWebsite)
+      : undefined;
+    const itemStem = itemWebsite
+      ? extractCompanyNameStemFromDomain(itemWebsite)
+      : undefined;
+    const normalizedName = input.item.name.trim().toLowerCase();
+
+    if (itemWebsite === input.bareDomain || itemRoot === input.rootDomain) {
+      return 100;
+    }
+    if (itemStem === normalizedStem || itemId === normalizedStem) {
+      return 80;
+    }
+    if (normalizedName === normalizedStem) {
+      return 70;
+    }
+    if (normalizedName.includes(normalizedStem)) {
+      return 50;
+    }
+    return 0;
+  }
+
+  private async resolveCompanySlugFromAutocompleteStem(
+    stem: string,
+    bareDomain: string,
+    rootDomain: string,
+    options?: { authToken?: string; isPdlProxyAuthorized?: boolean },
+  ): Promise<ResolveCompanyByDomainResult | null> {
+    const normalizedStem = stem.trim();
+    if (!normalizedStem) {
+      return null;
+    }
+
+    this.logger.log(
+      `resolveCompanySlugFromAutocompleteStem stem=${normalizedStem} domain=${bareDomain}`,
+    );
+
+    const results = await this.getCompanyAutocomplete(
+      normalizedStem,
+      options?.authToken,
+      { isPdlProxyAuthorized: options?.isPdlProxyAuthorized },
+    );
+
+    if (results.length === 0) {
+      return null;
+    }
+
+    const ranked = results
+      .map((item) => ({
+        item,
+        score: this.scoreAutocompleteMatch({
+          stem: normalizedStem,
+          bareDomain,
+          rootDomain,
+          item,
+        }),
+      }))
+      .sort((a, b) => b.score - a.score);
+
+    const best =
+      ranked.find((entry) => entry.score > 0)?.item ?? ranked[0]?.item;
+    if (!best) {
+      return null;
+    }
+
+    const companyId = resolveOrgChartCanonicalCompanyId(best.meta.id);
+    const orgChart =
+      await this.orgChartEsService.findOrgChartByCompanyId(companyId);
+
+    return {
+      found: true,
+      companyId,
+      companyName: best.name,
+      website: best.meta.website ?? rootDomain,
+      source: 'autocomplete',
+      hasOrgChart: Boolean(orgChart),
+    };
   }
 
   /**
