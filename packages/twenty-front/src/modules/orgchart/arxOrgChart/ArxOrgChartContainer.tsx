@@ -24,14 +24,15 @@ import {
   useOrgChartData,
   useOrgChartFilterOptions,
 } from 'twenty-orgchart';
-import { OrgChartNodeData, extractOrgData, resolveLinkedinUnipileAccountIdForWorkspaceMember, toTitleCase } from 'twenty-shared';
+import { OrgChartNodeData, extractOrgData, resolveLinkedinUnipileAccountIdForWorkspaceMember, toTitleCase, type OrgchartSearchMode } from 'twenty-shared';
 import { Mixpanel } from '~/mixpanel';
 
 import { getArxenaSiteBaseUrl } from '@/auth/utils/arxenaSiteUrl';
 import { OrgChartShareModal } from '../components/OrgChartShareModal';
+import { OrgChartSuperImposeModal } from '../components/OrgChartSuperImposeModal';
 import { useJobOrgChartData } from '../hooks/useJobOrgChartData';
 import { useOrgChartActions } from '../hooks/useOrgChartActions';
-import { extractCompanyDomainFromWebsite } from '../utils/orgChartUtils';
+import { extractCompanyDomainFromWebsite, needsOrgChartCompanyInfoLookup } from '../utils/orgChartUtils';
 import {
   StyledOrgChartConfirmDd,
   StyledOrgChartConfirmDt,
@@ -126,6 +127,7 @@ export const ArxOrgChartContainer = ({
   const companyNameFromQuery =
     searchParams.get('companyName')?.trim() || undefined;
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isSuperImposeModalOpen, setIsSuperImposeModalOpen] = useState(false);
   const [showApolloFallbackModal, setShowApolloFallbackModal] = useState(false);
   const [apolloQueuePollAttempts, setApolloQueuePollAttempts] = useState(0);
   const [apolloQueuePollingTimedOut, setApolloQueuePollingTimedOut] =
@@ -163,6 +165,11 @@ export const ArxOrgChartContainer = ({
     locations?: Array<{ city?: string; country?: string; area?: string }>;
     industry?: string[];
   } | null>(null);
+  const [domainResolveResult, setDomainResolveResult] = useState<{
+    companyName?: string;
+    website?: string;
+  } | null>(null);
+  const [isDomainResolveLoading, setIsDomainResolveLoading] = useState(false);
 
   const diagramHandleRef = useRef<OrgChartDiagramHandle | null>(null);
   const skipNextRefetchRef = useRef(false);
@@ -233,10 +240,15 @@ export const ArxOrgChartContainer = ({
     companyName ??
     unipileCompanyProfile?.name ??
     companyNameFromQuery ??
+    domainResolveResult?.companyName ??
     undefined;
   /** Props/query/Unipile only — merged with autocomplete fallback below for API calls + header. */
   const baseCompanyWebsite =
-    website ?? unipileCompanyProfile?.website ?? websiteFromQuery ?? undefined;
+    website ??
+    unipileCompanyProfile?.website ??
+    websiteFromQuery ??
+    domainResolveResult?.website ??
+    undefined;
   const baseCompanyDomain =
     companyDomain?.trim() || companyDomainFromQuery || undefined;
 
@@ -369,7 +381,10 @@ export const ArxOrgChartContainer = ({
       country: selectedCountry,
       functionRoot: selectedFunctionRoot,
       asOfMonth: asOfMonth || undefined,
-      expectedEmployeeCount: effectiveEmployeeCount ?? profileCount,
+      expectedEmployeeCount:
+        effectiveEmployeeCount ??
+        profileCount ??
+        fallbackCompanyInfo?.profileCount,
     },
     { baseUrl, accessToken },
   );
@@ -480,13 +495,23 @@ export const ArxOrgChartContainer = ({
     );
   }, [apolloQueueRequestId, apolloQueued, companyId, enqueueSnackBar, isJobMode]);
 
-  const hasInitialCompanyInfo =
-    companyName ||
-    website ||
-    locationName ||
-    industry ||
-    typeof profileCount === 'number' ||
-    linkedinUrl;
+  const needsCompanyInfoLookup = useMemo(
+    () =>
+      needsOrgChartCompanyInfoLookup({
+        website: baseCompanyWebsite,
+        locationName,
+        industry,
+        linkedinUrl,
+        profileCount,
+      }),
+    [
+      baseCompanyWebsite,
+      industry,
+      linkedinUrl,
+      locationName,
+      profileCount,
+    ],
+  );
 
   useEffect(() => {
     if (skipNextRefetchRef.current) {
@@ -495,17 +520,18 @@ export const ArxOrgChartContainer = ({
     }
     if (
       !isJobMode &&
-      !hasInitialCompanyInfo &&
-      isCompanyInfoLookupLoading === true
+      needsCompanyInfoLookup &&
+      (isCompanyInfoLookupLoading === true || isDomainResolveLoading === true)
     ) {
       return;
     }
     fetchOrgChart();
   }, [
     fetchOrgChart,
-    hasInitialCompanyInfo,
     isCompanyInfoLookupLoading,
+    isDomainResolveLoading,
     isJobMode,
+    needsCompanyInfoLookup,
   ]);
 
   useEffect(() => {
@@ -597,10 +623,90 @@ export const ArxOrgChartContainer = ({
   const filterOptions = useOrgChartFilterOptions(orgData);
 
   useEffect(() => {
-    if (hasInitialCompanyInfo) return;
-    const lookupKey = companyName?.trim() || companyId;
-    if (lookupKey) lookupByName(lookupKey);
-  }, [companyId, companyName, hasInitialCompanyInfo, lookupByName]);
+    if (!needsCompanyInfoLookup) {
+      setDomainResolveResult(null);
+      setIsDomainResolveLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const bootstrapCompanyInfo = async () => {
+      const nameFromPropsOrQuery =
+        companyName?.trim() || companyNameFromQuery?.trim() || undefined;
+
+      if (nameFromPropsOrQuery) {
+        setDomainResolveResult(null);
+        await lookupByName(nameFromPropsOrQuery);
+        return;
+      }
+
+      const domainForResolve =
+        baseCompanyDomain ||
+        extractCompanyDomainFromWebsite(baseCompanyWebsite);
+
+      if (domainForResolve && baseUrl) {
+        setIsDomainResolveLoading(true);
+        try {
+          const resolveUrl = `${baseUrl.replace(/\/$/, '')}/org-chart/companies/resolve-by-domain?domain=${encodeURIComponent(domainForResolve)}`;
+          const response = await fetch(resolveUrl, {
+            headers: accessToken
+              ? { Authorization: `Bearer ${accessToken}` }
+              : undefined,
+          });
+          const data = (await response.json()) as {
+            found?: boolean;
+            companyName?: string;
+            website?: string;
+          };
+
+          if (cancelled) {
+            return;
+          }
+
+          if (data.found && data.companyName?.trim()) {
+            const resolved = {
+              companyName: data.companyName.trim(),
+              website: data.website?.trim() || undefined,
+            };
+            setDomainResolveResult(resolved);
+            await lookupByName(resolved.companyName);
+            return;
+          }
+
+          setDomainResolveResult(null);
+        } catch {
+          if (!cancelled) {
+            setDomainResolveResult(null);
+          }
+        } finally {
+          if (!cancelled) {
+            setIsDomainResolveLoading(false);
+          }
+        }
+      }
+
+      if (!cancelled && companyId?.trim()) {
+        await lookupByName(companyId);
+      }
+    };
+
+    void bootstrapCompanyInfo();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    accessToken,
+    baseCompanyDomain,
+    baseCompanyWebsite,
+    baseUrl,
+    companyId,
+    companyName,
+    companyNameFromQuery,
+    lookupByName,
+    needsCompanyInfoLookup,
+  ]);
 
   useEffect(() => {
     if (!fallbackCompanyInfo) return;
@@ -851,6 +957,44 @@ export const ArxOrgChartContainer = ({
     multiSourceSelectedSlugs,
   ]);
 
+  const superImposeCandidateSource: 'harvest' | 'unipile' =
+    orgChartLinkedinCandidateSource === 'harvest' ? 'harvest' : 'unipile';
+
+  const handleSuperImposeGenerate = useCallback(
+    async (input: {
+      linkedinCompanyUrls: string[];
+      websiteUrls: string[];
+      salesNavigatorSearchUrls: string[];
+      linkedinSearchKeywords?: string;
+      appendToExistingChart: boolean;
+      country?: string;
+      functionRoot?: string;
+      businessDivisionRawQuery?: string;
+    }) => {
+      await actions.executeOrgchartSearch({
+        mode: 'super_impose' as OrgchartSearchMode,
+        origin: 'header',
+        country: input.country ?? selectedCountry,
+        functionRoot: input.functionRoot ?? selectedFunctionRoot,
+        businessDivisionRawQuery: input.businessDivisionRawQuery,
+        candidateSourceOverride: superImposeCandidateSource,
+        superImpose: {
+          linkedinCompanyUrls: input.linkedinCompanyUrls,
+          websiteUrls: input.websiteUrls,
+          salesNavigatorSearchUrls: input.salesNavigatorSearchUrls,
+          linkedinSearchKeywords: input.linkedinSearchKeywords,
+          appendToExistingChart: input.appendToExistingChart,
+        },
+      });
+    },
+    [
+      actions.executeOrgchartSearch,
+      selectedCountry,
+      selectedFunctionRoot,
+      superImposeCandidateSource,
+    ],
+  );
+
   const handleBuildOrgIntelligence = useCallback(async () => {
     setOrgChartLinkedinCandidateSource('harvest');
 
@@ -1055,6 +1199,7 @@ export const ArxOrgChartContainer = ({
         'multi_source',
       );
     },
+    onSuperImpose: () => setIsSuperImposeModalOpen(true),
     onBuildOrgIntelligence: () => {
       requestCandidateSearchConfirm(t`Confirm org intelligence build`, () => {
         void handleBuildOrgIntelligence();
@@ -1500,6 +1645,44 @@ export const ArxOrgChartContainer = ({
           accessToken={accessToken}
           serverBaseUrl={baseUrl}
           arxenaSiteBaseUrl={getArxenaSiteBaseUrl()}
+        />
+      ) : null}
+      {accessToken && baseUrl ? (
+        <OrgChartSuperImposeModal
+          isOpen={isSuperImposeModalOpen}
+          onClose={() => setIsSuperImposeModalOpen(false)}
+          companyId={companyId}
+          companyName={effectiveCompanyName ?? fallbackCompanyInfo?.companyName}
+          linkedinCompanyUrl={linkedinUrlToUse}
+          accessToken={accessToken}
+          serverBaseUrl={baseUrl}
+          candidateSource={superImposeCandidateSource}
+          selectedCountry={selectedCountry}
+          selectedFunctionRoot={selectedFunctionRoot}
+          businessDivisionRawQuery={businessDivisionQuery.trim() || undefined}
+          availableCountries={filterOptions.availableCountries}
+          availableFunctionRoots={filterOptions.availableFunctionRoots}
+          countryPercentLabels={filterOptions.countryPercentLabels}
+          functionRootPercentLabels={filterOptions.functionRootPercentLabels}
+          isBlankTemplate={isBlankTemplate}
+          firstSourceUsed={firstSourceUsed}
+          latestOrgChart={
+            (actions.latestOrgChart ?? orgData) as Record<string, unknown> | null
+          }
+          itemCount={
+            typeof (actions.latestOrgChart as Record<string, unknown> | null)
+              ?.itemCount === 'number'
+              ? ((actions.latestOrgChart as Record<string, unknown>)
+                  .itemCount as number)
+              : null
+          }
+          onGenerate={(input) => {
+            requestCandidateSearchConfirm(t`Confirm super impose org chart`, () => {
+              setIsSuperImposeModalOpen(false);
+              void handleSuperImposeGenerate(input);
+            });
+          }}
+          isGenerating={actions.isContextLoading}
         />
       ) : null}
     </>

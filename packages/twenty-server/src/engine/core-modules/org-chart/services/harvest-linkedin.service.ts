@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 
+import type { SuperImposeHarvestQueryParams } from 'src/engine/core-modules/org-chart/types/super-impose.types';
+
 type HarvestLeadItem = Record<string, unknown>;
 type HarvestProfileResponse = Record<string, unknown>;
 type HarvestPagination = {
@@ -87,6 +89,110 @@ export class HarvestLinkedinService {
     );
 
     return { current, pastWithProfiles };
+  }
+
+  buildLeadSearchUrlFromParams(params: SuperImposeHarvestQueryParams): string {
+    const searchParams = new URLSearchParams();
+    searchParams.set('page', String(params.page));
+
+    if (params.salesNavUrl?.trim()) {
+      searchParams.set('salesNavUrl', params.salesNavUrl.trim());
+    } else {
+      if (params.currentCompanies?.trim()) {
+        searchParams.set('currentCompanies', params.currentCompanies.trim());
+      }
+      if (params.search?.trim()) {
+        searchParams.set('search', params.search.trim());
+      }
+      if (params.locations?.trim()) {
+        searchParams.set('locations', params.locations.trim());
+      }
+      if (params.geoIds?.trim()) {
+        searchParams.set('geoIds', params.geoIds.trim());
+      }
+      if (params.functionIds?.trim()) {
+        searchParams.set('functionIds', params.functionIds.trim());
+      }
+    }
+
+    if (params.sessionId?.trim()) {
+      searchParams.set('sessionId', params.sessionId.trim());
+    }
+
+    return `${this.getBaseUrl()}/linkedin/lead-search?${searchParams.toString()}`;
+  }
+
+  async fetchLeadSearchPageFromParams(
+    params: SuperImposeHarvestQueryParams,
+  ): Promise<{ items: HarvestLeadItem[]; pagination: HarvestPagination | null }> {
+    const url = this.buildLeadSearchUrlFromParams(params);
+    const json = await this.getJson(url);
+    const items = this.extractLeadItems(json);
+
+    this.logger.log(
+      `Harvest lead-search page=${params.page} parsedRows=${items.length} ${this.describeLeadSearchPayloadForLog(json)}`,
+    );
+
+    return {
+      items,
+      pagination: this.extractPagination(json),
+    };
+  }
+
+  async estimateLeadSearchTotalElements(
+    params: Omit<SuperImposeHarvestQueryParams, 'page'>,
+  ): Promise<number> {
+    const pageResult = await this.fetchLeadSearchPageFromParams({
+      ...params,
+      page: 1,
+    });
+
+    return pageResult.pagination?.totalElements ?? pageResult.items.length;
+  }
+
+  async fetchAllLeadsFromQueryParams(input: {
+    params: Omit<SuperImposeHarvestQueryParams, 'page'>;
+    maxProfiles?: number;
+    onProgress?: (message: string) => void | Promise<void>;
+  }): Promise<HarvestLeadItem[]> {
+    const maxProfiles = Math.max(1, Math.min(2500, input.maxProfiles ?? 500));
+    const maxPages = Math.max(1, Math.ceil(maxProfiles / 25));
+    const firstPage = await this.fetchLeadSearchPageFromParams({
+      ...input.params,
+      page: 1,
+    });
+    const out = [...firstPage.items];
+
+    if (out.length >= maxProfiles) {
+      return out.slice(0, maxProfiles);
+    }
+
+    const totalPages = firstPage.pagination?.totalPages;
+    if (totalPages === 1) {
+      return out;
+    }
+
+    const lastPage =
+      typeof totalPages === 'number'
+        ? Math.min(maxPages, totalPages, 100)
+        : maxPages;
+
+    for (let page = 2; page <= lastPage; page += 1) {
+      await input.onProgress?.(`Harvest: fetching page ${page}/${lastPage}...`);
+      const pageResult = await this.fetchLeadSearchPageFromParams({
+        ...input.params,
+        page,
+      });
+      out.push(...pageResult.items);
+      if (out.length >= maxProfiles) {
+        return out.slice(0, maxProfiles);
+      }
+      if (pageResult.items.length === 0) {
+        break;
+      }
+    }
+
+    return out;
   }
 
   private async fetchLeads(input: {

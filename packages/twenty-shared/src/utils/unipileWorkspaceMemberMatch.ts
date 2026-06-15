@@ -1,6 +1,6 @@
 import {
-  type UnipileLinkedinAccount,
-  type UnipileWhatsappAccount,
+    type UnipileLinkedinAccount,
+    type UnipileWhatsappAccount,
 } from '../types/ArxChatTypes';
 
 export type WorkspaceMemberProfileUnipileFields = {
@@ -16,6 +16,12 @@ export const normalizeUnipileStatus = (status?: string | null): string =>
 /** True when Unipile reports the account as fully connected (not pending/checkpoint). */
 export const isUnipileConnectedStatus = (status?: string | null): boolean =>
   normalizeUnipileStatus(status) === 'connected';
+
+/** Connected or still syncing — usable for extension / org-chart “LinkedIn linked” UI. */
+export const isUnipileLinkedinUsableStatus = (status?: string | null): boolean => {
+  const n = normalizeUnipileStatus(status);
+  return n === 'connected' || n === 'pending' || n === 'syncing';
+};
 
 export const normalizePhoneDigits = (value: string): string =>
   value.replace(/\D/g, '');
@@ -149,11 +155,12 @@ export const whatsappAccountMatchesWorkspaceMemberProfile = (
   return phonesMatch(profilePhone, accountPhone);
 };
 
-export const linkedinAccountMatchesWorkspaceMemberProfile = (
+const linkedinAccountIdentityMatchesWorkspaceMemberProfileWithStatusCheck = (
   profile: WorkspaceMemberProfileUnipileFields,
   account: UnipileLinkedinAccount,
+  statusOk: (status?: string | null) => boolean,
 ): boolean => {
-  if (!isUnipileConnectedStatus(account.status)) {
+  if (!statusOk(account.status)) {
     return false;
   }
   const storedId = profile.linkedinUnipileAccountId?.trim();
@@ -165,6 +172,28 @@ export const linkedinAccountMatchesWorkspaceMemberProfile = (
     return false;
   }
   return linkedinSlugMatchesProfile(profileUrl, account);
+};
+
+export const linkedinAccountMatchesWorkspaceMemberProfile = (
+  profile: WorkspaceMemberProfileUnipileFields,
+  account: UnipileLinkedinAccount,
+): boolean => {
+  return linkedinAccountIdentityMatchesWorkspaceMemberProfileWithStatusCheck(
+    profile,
+    account,
+    isUnipileConnectedStatus,
+  );
+};
+
+export const linkedinAccountUsableForWorkspaceMemberProfile = (
+  profile: WorkspaceMemberProfileUnipileFields,
+  account: UnipileLinkedinAccount,
+): boolean => {
+  return linkedinAccountIdentityMatchesWorkspaceMemberProfileWithStatusCheck(
+    profile,
+    account,
+    isUnipileLinkedinUsableStatus,
+  );
 };
 
 export const filterWhatsappAccountsForWorkspaceMemberProfile = (
@@ -228,6 +257,21 @@ export const hasMatchingConnectedLinkedinAccount = (
   }
   return accounts.some((acc) =>
     linkedinAccountMatchesWorkspaceMemberProfile(profile, acc),
+  );
+};
+
+export const hasMatchingUsableLinkedinAccount = (
+  accounts: UnipileLinkedinAccount[],
+  profile: WorkspaceMemberProfileUnipileFields | null,
+): boolean => {
+  if (!shouldRestrictLinkedinByProfile(profile)) {
+    return accounts.some((acc) => isUnipileLinkedinUsableStatus(acc.status));
+  }
+  if (profile == null) {
+    return false;
+  }
+  return accounts.some((acc) =>
+    linkedinAccountUsableForWorkspaceMemberProfile(profile, acc),
   );
 };
 

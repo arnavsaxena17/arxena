@@ -30,6 +30,20 @@ export const extractCompanyDomainFromWebsite = (
   }
 };
 
+/** True when header metadata should be enriched via PDL autocomplete / domain resolve. */
+export const needsOrgChartCompanyInfoLookup = (metadata: {
+  website?: string;
+  locationName?: string;
+  industry?: string;
+  linkedinUrl?: string;
+  profileCount?: number;
+}): boolean =>
+  !metadata.website?.trim() ||
+  !metadata.locationName?.trim() ||
+  !metadata.industry?.trim() ||
+  !metadata.linkedinUrl?.trim() ||
+  typeof metadata.profileCount !== 'number';
+
 /** Query string for `/org-chart/:companyId` so refresh preserves Apollo domain hints. */
 export const orgChartSelectionSearch = (company: {
   companyName: string;

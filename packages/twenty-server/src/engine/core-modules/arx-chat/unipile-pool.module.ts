@@ -5,6 +5,7 @@ import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 
 import { LinkedinUnipileRequestService } from './services/linkedin-unipile-request.service';
+import { MemberLinkedinUnipileConnectionService } from './services/member-linkedin-unipile-connection.service';
 import { UnipileAccountPoolService } from './services/unipile-account-pool.service';
 import { UnipileInactivityCronService } from './services/unipile-inactivity-cron.service';
 import { WhatsappUnipileRequestService } from './services/whatsapp-unipile-request.service';
@@ -19,6 +20,7 @@ import { WorkspaceMemberProfileUnipileService } from './services/workspace-membe
   providers: [
     WorkspaceMemberProfileUnipileService,
     LinkedinUnipileRequestService,
+    MemberLinkedinUnipileConnectionService,
     WhatsappUnipileRequestService,
     UnipileAccountPoolService,
     UnipileInactivityCronService,
@@ -27,6 +29,7 @@ import { WorkspaceMemberProfileUnipileService } from './services/workspace-membe
     UnipileAccountPoolService,
     WorkspaceMemberProfileUnipileService,
     LinkedinUnipileRequestService,
+    MemberLinkedinUnipileConnectionService,
   ],
 })
 export class UnipilePoolModule {}

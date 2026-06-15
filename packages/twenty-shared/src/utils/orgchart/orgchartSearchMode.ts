@@ -9,6 +9,7 @@ export const ORG_CHART_SEARCH_MODES = [
   'function_grade',
   'business_division_map',
   'selected_nodes',
+  'super_impose',
 ] as const;
 
 export type OrgchartSearchMode = (typeof ORG_CHART_SEARCH_MODES)[number];

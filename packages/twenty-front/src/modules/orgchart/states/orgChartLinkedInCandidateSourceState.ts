@@ -13,5 +13,5 @@ export type OrgChartLinkedinCandidateSource =
 export const orgChartLinkedinCandidateSourceState =
   createState<OrgChartLinkedinCandidateSource>({
     key: 'orgChartLinkedinCandidateSourceState',
-    defaultValue: 'harvest',
+    defaultValue: 'unipile',
   });

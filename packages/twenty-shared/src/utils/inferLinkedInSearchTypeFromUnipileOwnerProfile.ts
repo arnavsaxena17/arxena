@@ -26,3 +26,17 @@ export const inferLinkedInSearchTypeFromUnipileOwnerProfile = (
   }
   return 'classic';
 };
+
+/** Higher score = prefer keeping this Unipile account when duplicates share the same LinkedIn identity. */
+export const scoreLinkedinUnipileOwnerProfileCapability = (
+  profile: UnipileAccountOwnerProfile,
+): number => {
+  let score = 0;
+  if (profile.sales_navigator != null) {
+    score += 2;
+  }
+  if (profile.recruiter != null) {
+    score += 1;
+  }
+  return score;
+};

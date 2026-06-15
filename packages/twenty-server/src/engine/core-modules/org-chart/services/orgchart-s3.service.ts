@@ -248,6 +248,49 @@ export class OrgChartS3Service {
     }
   }
 
+  async saveSuperImposeManifest(
+    companyId: string,
+    manifest: Record<string, unknown>,
+    variant?: OrgChartS3Variant,
+  ): Promise<void> {
+    const folder = this.buildFolderPath(companyId, variant);
+
+    try {
+      await this.fileStorageService.write({
+        file: Buffer.from(JSON.stringify(manifest)),
+        name: 'super-impose-manifest.json',
+        folder,
+        mimeType: 'application/json',
+      });
+      this.logger.log(
+        `Saved super-impose manifest to S3: ${folder}/super-impose-manifest.json`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to save super-impose manifest for companyId=${companyId}`,
+        error as Error,
+      );
+    }
+  }
+
+  async getSuperImposeManifest(
+    companyId: string,
+    variant?: OrgChartS3Variant,
+  ): Promise<Record<string, unknown> | null> {
+    const folder = this.buildFolderPath(companyId, variant);
+
+    try {
+      const stream = await this.fileStorageService.read({
+        folderPath: folder,
+        filename: 'super-impose-manifest.json',
+      });
+      const content = await this.streamToString(stream);
+      return JSON.parse(content) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  }
+
   private streamToString(stream: Readable): Promise<string> {
     return new Promise((resolve, reject) => {
       const chunks: Uint8Array[] = [];

@@ -272,6 +272,7 @@ export function requestLinkedinUnipileSyncFromPage(): Promise<
 
 export type UnipileConnectionStatusResponse = {
   linkedinConnected: boolean;
+  whatsappConnected: boolean;
   connectLinkedinToUnipileAutomatically: boolean;
 };
 
@@ -293,10 +294,12 @@ export async function fetchUnipileConnectionStatus(
     }
     const json = (await res.json()) as {
       linkedinConnected?: boolean;
+      whatsappConnected?: boolean;
       connectLinkedinToUnipileAutomatically?: boolean;
     };
     return {
       linkedinConnected: Boolean(json.linkedinConnected),
+      whatsappConnected: Boolean(json.whatsappConnected),
       // Default to enabled when backend omits the field (older server versions).
       connectLinkedinToUnipileAutomatically:
         json.connectLinkedinToUnipileAutomatically ?? true,

@@ -1,5 +1,6 @@
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import { resolveOrgChartCanonicalCompanyId, toTitleCase } from 'twenty-shared';
 
@@ -38,11 +39,17 @@ export type CompanySearchAutocompleteProps = {
 
 const DROPDOWN_MIN_WIDTH = 520;
 const DROPDOWN_MAX_HEIGHT = 360;
+const DROPDOWN_PORTAL_Z_INDEX = 10000;
 
-const StyledWrapper = styled.div<{ $isOpen?: boolean }>`
+type DropdownPosition = {
+  top: number;
+  left: number;
+  width: number;
+};
+
+const StyledWrapper = styled.div`
   position: relative;
   width: 100%;
-  z-index: ${({ $isOpen }) => ($isOpen ? 9998 : 1)};
 `;
 
 const StyledInput = styled.input<{ $hasStartIcon?: boolean; $dense?: boolean }>`
@@ -76,11 +83,15 @@ const StyledInput = styled.input<{ $hasStartIcon?: boolean; $dense?: boolean }>`
   }
 `;
 
-const StyledDropdown = styled.ul`
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  width: 100%;
+const StyledDropdown = styled.ul<{
+  $top: number;
+  $left: number;
+  $width: number;
+}>`
+  position: fixed;
+  top: ${({ $top }) => $top}px;
+  left: ${({ $left }) => $left}px;
+  width: ${({ $width }) => $width}px;
   min-width: ${DROPDOWN_MIN_WIDTH}px;
   max-width: calc(100vw - 16px);
   max-height: ${DROPDOWN_MAX_HEIGHT}px;
@@ -94,7 +105,7 @@ const StyledDropdown = styled.ul`
   border: 1px solid ${({ theme }) => theme.border.color.light};
   border-radius: ${({ theme }) => theme.border.radius.xl};
   box-shadow: ${({ theme }) => theme.boxShadow.strong};
-  z-index: 9999;
+  z-index: ${DROPDOWN_PORTAL_Z_INDEX};
 
   @media (max-width: 809px) {
     min-width: 0;
@@ -265,8 +276,35 @@ export const CompanySearchAutocomplete = ({
 
   const [inputValue, setInputValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition>({
+    top: 0,
+    left: 0,
+    width: DROPDOWN_MIN_WIDTH,
+  });
   const wrapperRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLUListElement>(null);
+
+  const updateDropdownPosition = useCallback(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+
+    const rect = wrapper.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const width = Math.min(
+      Math.max(rect.width, DROPDOWN_MIN_WIDTH),
+      viewportWidth - 16,
+    );
+    const left = Math.min(
+      Math.max(8, rect.left),
+      Math.max(8, viewportWidth - width - 8),
+    );
+
+    setDropdownPosition({
+      top: rect.bottom + 8,
+      left,
+      width,
+    });
+  }, []);
 
   const { companies, isLoading, error, search, clear } = useCompanyAutocomplete(
     {
@@ -327,6 +365,24 @@ export const CompanySearchAutocomplete = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (!showDropdown) return;
+
+    updateDropdownPosition();
+
+    const handleLayoutChange = () => {
+      updateDropdownPosition();
+    };
+
+    window.addEventListener('resize', handleLayoutChange);
+    window.addEventListener('scroll', handleLayoutChange, true);
+
+    return () => {
+      window.removeEventListener('resize', handleLayoutChange);
+      window.removeEventListener('scroll', handleLayoutChange, true);
+    };
+  }, [showDropdown, updateDropdownPosition]);
+
   const getLogoUrl = useCallback(
     (website: string | undefined) => {
       if (!website?.trim()) return null;
@@ -337,8 +393,14 @@ export const CompanySearchAutocomplete = ({
     [baseUrl, logoBaseUrl],
   );
 
-  const dropdownContent = showDropdown && (
-    <StyledDropdown ref={dropdownRef} onMouseDown={(e) => e.preventDefault()}>
+  const dropdownList = (
+    <StyledDropdown
+      ref={dropdownRef}
+      $top={dropdownPosition.top}
+      $left={dropdownPosition.left}
+      $width={dropdownPosition.width}
+      onMouseDown={(e) => e.preventDefault()}
+    >
       {isLoading ? (
         <StyledEmptyMessage>Searching...</StyledEmptyMessage>
       ) : error ? (
@@ -407,8 +469,13 @@ export const CompanySearchAutocomplete = ({
     </StyledDropdown>
   );
 
+  const dropdownContent =
+    showDropdown && typeof document !== 'undefined'
+      ? createPortal(dropdownList, document.body)
+      : null;
+
   return (
-    <StyledWrapper ref={wrapperRef} $isOpen={showDropdown}>
+    <StyledWrapper ref={wrapperRef}>
       <StyledInputWrapper>
         {startIcon && (
           <StyledStartIcon aria-hidden $dense={dense}>

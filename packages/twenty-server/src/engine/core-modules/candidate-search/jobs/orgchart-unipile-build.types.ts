@@ -1,3 +1,5 @@
+import type { OrgchartSearchMode } from 'twenty-shared';
+
 export type OrgchartUnipileBuildJobData = {
   apiToken: string;
   requestId?: string;
@@ -6,13 +8,7 @@ export type OrgchartUnipileBuildJobData = {
   rawQuery: string;
   cleanedQuery: string;
   searchType: 'classic' | 'sales_navigator' | 'recruiter';
-  mode:
-    | 'current_node'
-    | 'leadership'
-    | 'entire_company'
-    | 'function_grade'
-    | 'business_division_map'
-    | 'selected_nodes';
+  mode: OrgchartSearchMode;
   companyName: string;
   companyId?: string;
   jobTitles?: string[];

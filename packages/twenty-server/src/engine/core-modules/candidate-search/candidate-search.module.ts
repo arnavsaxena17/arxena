@@ -28,6 +28,7 @@ import { OrgchartApolloBuildProcessor } from './jobs/orgchart-apollo-build.proce
 import { OrgchartHarvestBuildProcessor } from './jobs/orgchart-harvest-build.processor';
 import { OrgchartLinkedinXrayBuildProcessor } from './jobs/orgchart-linkedin-xray-build.processor';
 import { OrgchartMultiSourceBuildProcessor } from './jobs/orgchart-multisource-build.processor';
+import { OrgchartSuperImposeBuildProcessor } from './jobs/orgchart-super-impose-build.processor';
 import { OrgchartUnipileBuildProcessor } from './jobs/orgchart-unipile-build.processor';
 import { SearchParametersPrompts } from './prompts/search-parameters-prompts';
 import { ApolloIoRestService } from './services/apollo-io-rest.service';
@@ -120,6 +121,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     OrgchartLinkedinXrayBuildProcessor,
     OrgchartHarvestBuildProcessor,
     OrgchartMultiSourceBuildProcessor,
+    OrgchartSuperImposeBuildProcessor,
     // Executive search enhancement services
     PythonOrgChartService,
     OrgChartProfileDataSourceMapperService,
@@ -133,6 +135,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     ApolloIoRestService,
     ApolloPeopleSearchTransformerService,
     PythonQueryGenerationService,
+    OrgChartIntentService,
   ],
 })
 export class CandidateSearchModule {}

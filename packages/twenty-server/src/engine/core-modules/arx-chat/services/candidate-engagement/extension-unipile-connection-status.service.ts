@@ -1,19 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
-import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
-import {
-    hasMatchingConnectedLinkedinAccount,
-    hasMatchingConnectedWhatsappAccount,
-    type UnipileLinkedinAccount,
-    type UnipileWhatsappAccount,
-    type WorkspaceMemberProfileUnipileFields,
-} from 'twenty-shared';
 
-import { LinkedinUnipileController } from '../../controllers/linkedin-unipile.controller';
-import { WhatsappUnipileController } from '../../controllers/whatsapp-unipile.controller';
-import { RecruiterProfileService } from '../recruiter-profile';
+import { MemberLinkedinUnipileConnectionService } from '../member-linkedin-unipile-connection.service';
+import { WorkspaceMemberProfileUnipileService } from '../workspace-member-profile-unipile.service';
 
 @Injectable()
 export class ExtensionUnipileConnectionStatusService {
@@ -22,99 +12,70 @@ export class ExtensionUnipileConnectionStatusService {
   );
 
   constructor(
-    private readonly moduleRef: ModuleRef,
-    private readonly staticGraphQLService: StaticGraphQLService,
     private readonly environmentService: EnvironmentService,
+    private readonly memberLinkedinUnipileConnectionService: MemberLinkedinUnipileConnectionService,
+    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
   ) {}
 
   async getConnectionStatusForCurrentUser(
     workspace: Workspace,
     apiToken: string,
-    origin: string,
+    workspaceMemberId: string | undefined,
   ): Promise<{
     linkedinConnected: boolean;
     whatsappConnected: boolean;
     connectLinkedinToUnipileAutomatically: boolean;
   }> {
-    const recruiterService = new RecruiterProfileService(
-      this.staticGraphQLService,
-    );
-    let recruiterProfile: Awaited<
-      ReturnType<typeof recruiterService.getRecruiterProfileFromCurrentUser>
-    > | null = null;
+    if (!workspaceMemberId) {
+      this.logger.warn(
+        'unipile-connection-status: missing workspaceMemberId on JWT',
+      );
+      return {
+        linkedinConnected: false,
+        whatsappConnected: false,
+        connectLinkedinToUnipileAutomatically: this.environmentService.get(
+          'CONNECT_LINKEDIN_TO_UNIPILE_AUTOMATICALLY',
+        ),
+      };
+    }
+
+    let profile = null as Awaited<
+      ReturnType<
+        typeof this.workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields
+      >
+    >;
 
     try {
-      recruiterProfile =
-        (await recruiterService.getRecruiterProfileFromCurrentUser(
+      profile =
+        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields(
+          workspaceMemberId,
           apiToken,
-          origin,
-        )) ?? null;
+        );
     } catch (err) {
       this.logger.warn(
-        'Failed to load recruiter profile for extension unipile status',
+        'Failed to load workspace member profile for extension unipile status',
         err,
       );
     }
 
-    const profileFields: WorkspaceMemberProfileUnipileFields | null =
-      recruiterProfile
-        ? {
-            phoneNumber: recruiterProfile.phoneNumber?.trim()
-              ? recruiterProfile.phoneNumber
-              : null,
-            linkedinUrl: recruiterProfile.linkedinUrl?.trim()
-              ? recruiterProfile.linkedinUrl
-              : null,
-            whatsappUnipileAccountId: recruiterProfile.whatsappUnipileAccountId
-              ?.trim()
-              ? recruiterProfile.whatsappUnipileAccountId
-              : null,
-            linkedinUnipileAccountId: recruiterProfile.linkedinUnipileAccountId
-              ?.trim()
-              ? recruiterProfile.linkedinUnipileAccountId
-              : null,
-          }
-        : null;
-
-    const linkedinCtrl = this.moduleRef.get(LinkedinUnipileController, {
-      strict: false,
-    });
-    const waCtrl = this.moduleRef.get(WhatsappUnipileController, {
-      strict: false,
-    });
-
-    let linkedinAccounts: UnipileLinkedinAccount[] = [];
-    let whatsappAccounts: UnipileWhatsappAccount[] = [];
-
-    try {
-      const li = await linkedinCtrl.getAllAccounts(workspace);
-      linkedinAccounts = (li?.accounts ?? []) as unknown as UnipileLinkedinAccount[];
-    } catch (e) {
-      this.logger.warn(
-        'LinkedIn getAllAccounts failed for extension status',
-        e,
+    const linkedinConnected =
+      await this.memberLinkedinUnipileConnectionService.isLinkedinUsableForProfile(
+        profile,
       );
-    }
-
-    try {
-      const wa = await waCtrl.getAllAccounts(workspace);
-      whatsappAccounts = (wa?.accounts ?? []) as unknown as UnipileWhatsappAccount[];
-    } catch (e) {
-      this.logger.warn(
-        'WhatsApp getAllAccounts failed for extension status',
-        e,
+    const whatsappConnected =
+      await this.memberLinkedinUnipileConnectionService.isWhatsappConnectedForProfile(
+        profile,
+        workspace,
       );
-    }
+
+    this.logger.log(
+      `unipile-connection-status member=${workspaceMemberId} linkedinConnected=${linkedinConnected} whatsappConnected=${whatsappConnected} ` +
+        `storedLinkedinId=${profile?.linkedinUnipileAccountId ?? 'none'} storedWhatsappId=${profile?.whatsappUnipileAccountId ?? 'none'}`,
+    );
 
     return {
-      linkedinConnected: hasMatchingConnectedLinkedinAccount(
-        linkedinAccounts,
-        profileFields,
-      ),
-      whatsappConnected: hasMatchingConnectedWhatsappAccount(
-        whatsappAccounts,
-        profileFields,
-      ),
+      linkedinConnected,
+      whatsappConnected,
       connectLinkedinToUnipileAutomatically: this.environmentService.get(
         'CONNECT_LINKEDIN_TO_UNIPILE_AUTOMATICALLY',
       ),

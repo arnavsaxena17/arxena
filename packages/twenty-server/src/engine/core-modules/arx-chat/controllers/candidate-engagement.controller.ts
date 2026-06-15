@@ -1,12 +1,11 @@
 import {
-  Controller,
-  Get,
-  Headers,
-  HttpException,
-  HttpStatus,
-  Logger,
-  Req,
-  UseGuards,
+    Controller,
+    Get,
+    HttpException,
+    HttpStatus,
+    Logger,
+    Req,
+    UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -27,8 +26,7 @@ export class CandidateEngagementController {
   @Get('unipile-connection-status')
   async getUnipileConnectionStatus(
     @AuthWorkspace() workspace: Workspace,
-    @Req() req: Request,
-    @Headers('x-origin-domain') originHeader?: string,
+    @Req() req: Request & { workspaceMemberId?: string },
   ): Promise<{
     linkedinConnected: boolean;
     whatsappConnected: boolean;
@@ -47,16 +45,11 @@ export class CandidateEngagementController {
       );
     }
 
-    const origin =
-      typeof originHeader === 'string' && originHeader.trim() !== ''
-        ? originHeader.trim()
-        : '';
-
     try {
       return await this.extensionUnipileConnectionStatusService.getConnectionStatusForCurrentUser(
         workspace,
         apiToken,
-        origin,
+        req.workspaceMemberId,
       );
     } catch (err) {
       this.logger.error('unipile-connection-status failed', err);

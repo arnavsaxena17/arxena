@@ -25,7 +25,10 @@ import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import { getLinkedinService } from '../../../pages/settings/linkedin/services/linkedin-backend.service';
 import { getWhatsappUnipileService } from '../../../pages/settings/whatsapp/services/whatsapp-unipile-backend.service';
 import { LinkedinUnipileVisibilityRecoveryEffect } from '../components/LinkedinUnipileVisibilityRecoveryEffect';
-import { tryExtensionLinkedinUnipileRecovery } from '../utils/linkedinUnipileExtensionBridge';
+import {
+    fetchUnipileConnectionStatus,
+    tryExtensionLinkedinUnipileRecovery,
+} from '../utils/linkedinUnipileExtensionBridge';
 // import { getWhatsappUnipileService } from '../../../packages/twenty-front/src/pages/settings/whatsapp/services/whatsapp-unipile-backend.service';
 
 type UnipileContextValue = {
@@ -100,6 +103,10 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  const [serverMemberLinkedinConnected, setServerMemberLinkedinConnected] =
+    useState(false);
+  const [serverMemberWhatsappConnected, setServerMemberWhatsappConnected] =
+    useState(false);
 
   const refreshAccounts = useCallback(async () => {
     if (!accessToken) {
@@ -107,6 +114,8 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
       isRefreshingRef.current = false;
       setLinkedinAccountsState([]);
       setWhatsappAccountsState([]);
+      setServerMemberLinkedinConnected(false);
+      setServerMemberWhatsappConnected(false);
       setLastUpdated(null);
       setError(null);
       setIsLoading(false);
@@ -124,11 +133,28 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const linkedinService = getLinkedinService();
     const whatsappService = getWhatsappUnipileService();
+    const baseUrl = REACT_APP_SERVER_BASE_URL?.replace(/\/$/, '') ?? '';
 
-    const [linkedinResult, whatsappResult] = await Promise.allSettled([
-      linkedinService.getAllAccounts(accessToken),
-      whatsappService.getAllAccounts(accessToken),
-    ]);
+    const [linkedinResult, whatsappResult, memberStatusResult] =
+      await Promise.allSettled([
+        linkedinService.getAllAccounts(accessToken),
+        whatsappService.getAllAccounts(accessToken),
+        baseUrl
+          ? fetchUnipileConnectionStatus(accessToken, baseUrl)
+          : Promise.resolve(null),
+      ]);
+
+    if (
+      memberStatusResult.status === 'fulfilled' &&
+      memberStatusResult.value != null
+    ) {
+      setServerMemberLinkedinConnected(
+        memberStatusResult.value.linkedinConnected,
+      );
+      setServerMemberWhatsappConnected(
+        memberStatusResult.value.whatsappConnected,
+      );
+    }
 
     const nextLinkedinAccounts: UnipileLinkedinAccount[] =
       linkedinResult.status === 'fulfilled'
@@ -192,6 +218,8 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
     } else {
       setLinkedinAccountsState([]);
       setWhatsappAccountsState([]);
+      setServerMemberLinkedinConnected(false);
+      setServerMemberWhatsappConnected(false);
       setIsLoading(false);
       setError(null);
       setLastUpdated(null);
@@ -235,10 +263,15 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
     whatsappAccountsRef.current = whatsappUnipileAccounts;
   }, [whatsappUnipileAccounts]);
 
+  const isLinkedinConnected =
+    isLinkedinUnipileConnected || serverMemberLinkedinConnected;
+  const isWhatsappConnected =
+    isWhatsappUnipileConnected || serverMemberWhatsappConnected;
+
   const contextValue = useMemo<UnipileContextValue>(
     () => ({
-      isLinkedinConnected: isLinkedinUnipileConnected,
-      isWhatsappUnipileConnected: isWhatsappUnipileConnected,
+      isLinkedinConnected,
+      isWhatsappUnipileConnected: isWhatsappConnected,
       linkedinAccounts: linkedinUnipileAccounts,
       whatsappAccounts: whatsappUnipileAccounts,
       isLoading,
@@ -247,8 +280,8 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
       refreshAccounts,
     }),
     [
-      isLinkedinUnipileConnected,
-      isWhatsappUnipileConnected,
+      isLinkedinConnected,
+      isWhatsappConnected,
       linkedinUnipileAccounts,
       whatsappUnipileAccounts,
       isLoading,

@@ -778,12 +778,18 @@ export const useOrgChartActions = ({
         // pattern in JobsNavigationDrawerItems).
         triggerOrgChartsRefetchRef.current();
 
-        if (payload.mode === 'entire_company' && companyId) {
+        if (
+          (payload.mode === 'entire_company' ||
+            payload.mode === 'super_impose') &&
+          companyId
+        ) {
           closeSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`);
           const displayCompanyName =
             payload.companyName ?? companyName ?? companyId;
           enqueueSnackBar(
-            `Org chart ready for ${displayCompanyName} (${typeof eventData.itemCount === 'number' ? eventData.itemCount : completeItems.length} people)`,
+            payload.mode === 'super_impose'
+              ? `Super impose org chart ready for ${displayCompanyName} (${typeof eventData.itemCount === 'number' ? eventData.itemCount : completeItems.length} people)`
+              : `Org chart ready for ${displayCompanyName} (${typeof eventData.itemCount === 'number' ? eventData.itemCount : completeItems.length} people)`,
             {
               variant: SnackBarVariant.Success,
               dedupeKey: `orgchart-entire-company-${companyId}-done`,
@@ -1181,6 +1187,13 @@ export const useOrgChartActions = ({
     sources?: string[];
     candidateSourceOverride?: string;
     includeOrgIntelligenceOverride?: boolean;
+    superImpose?: {
+      linkedinCompanyUrls?: string[];
+      websiteUrls?: string[];
+      salesNavigatorSearchUrls?: string[];
+      linkedinSearchKeywords?: string;
+      appendToExistingChart?: boolean;
+    };
   }) => {
     if (!companyId) return;
 
@@ -1295,7 +1308,8 @@ export const useOrgChartActions = ({
     }
     if (
       effectiveCandidateSource === 'harvest' &&
-      mode !== 'entire_company'
+      mode !== 'entire_company' &&
+      mode !== 'super_impose'
     ) {
       enqueueSnackBar(HARVEST_MODE_UNSUPPORTED_SNACKBAR, {
         variant: SnackBarVariant.Error,
@@ -1321,7 +1335,8 @@ export const useOrgChartActions = ({
       params.origin === 'header' &&
       (mode === 'entire_company' ||
         mode === 'function_grade' ||
-        mode === 'business_division_map');
+        mode === 'business_division_map' ||
+        mode === 'super_impose');
 
     let title: string;
     switch (mode) {
@@ -1342,6 +1357,9 @@ export const useOrgChartActions = ({
         break;
       case 'business_division_map':
         title = 'Map business division';
+        break;
+      case 'super_impose':
+        title = 'Super impose org chart';
         break;
       default:
         title = 'Get all names in this function';
@@ -1529,6 +1547,9 @@ export const useOrgChartActions = ({
       ...(mode === 'selected_nodes' && selectedNodeStdScopes
         ? { selectedNodeStdScopes }
         : {}),
+      ...(mode === 'super_impose' && params.superImpose
+        ? { superImpose: params.superImpose }
+        : {}),
     };
 
     let isQueuedAsyncSearch = false;
@@ -1573,13 +1594,15 @@ export const useOrgChartActions = ({
         }
       }
 
-      if (mode === 'entire_company') {
+      if (mode === 'entire_company' || mode === 'super_impose') {
         const employeeSuffix =
           typeof employeeCount === 'number'
             ? ` (${employeeCount.toLocaleString()} employees)`
             : '';
         enqueueSnackBar(
-          `Generating full org chart for ${resolvedCompanyName}${employeeSuffix}...`,
+          mode === 'super_impose'
+            ? `Generating super impose org chart for ${resolvedCompanyName}...`
+            : `Generating full org chart for ${resolvedCompanyName}${employeeSuffix}...`,
           {
             variant: SnackBarVariant.Info,
             showProgressBar: true,
@@ -1641,6 +1664,9 @@ export const useOrgChartActions = ({
             : typeof json.candidateSource === 'string' &&
                 json.candidateSource === 'multi'
               ? 'Multi-source org chart queued. Waiting for results...'
+            : typeof json.candidateSource === 'string' &&
+                json.candidateSource === 'super_impose'
+              ? 'Super impose org chart queued. Waiting for results...'
             : typeof json.candidateSource === 'string' &&
                 json.candidateSource === 'harvest'
               ? 'Harvest org chart search queued. Waiting for results...'

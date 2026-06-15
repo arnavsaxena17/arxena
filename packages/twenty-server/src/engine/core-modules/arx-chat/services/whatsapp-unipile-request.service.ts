@@ -171,9 +171,7 @@ export class WhatsappUnipileRequestService {
   }
 
   /**
-   * Full WhatsApp account list from Unipile (`GET /api/v1/accounts?provider=whatsapp`).
-   * Does not filter by workspace keys — `workspace` is only used for logs. Prefer this (not CRM profile
-   * alone) as the source of truth for which numbers exist in Unipile.
+   * Full WhatsApp account list from Unipile. Fetches all accounts and filters by type.
    */
   async getAllAccounts(workspace: Workspace): Promise<{
     success: boolean;
@@ -182,14 +180,16 @@ export class WhatsappUnipileRequestService {
   }> {
     try {
       const response = (await this.makeUnipileRequest(
-        '/api/v1/accounts?provider=whatsapp',
+        '/api/v1/accounts',
       )) as { items?: UnipileAccountItem[] };
 
       this.logger.log(
-        `Listing WhatsApp accounts from Unipile for workspace ${workspace.id} (full API list; profile matching is done in callers)`,
+        `Listing WhatsApp accounts from Unipile for workspace ${workspace.id} (filtered from full list)`,
       );
 
-      const accounts = (response.items || []).map((item) => {
+      const accounts = (response.items || [])
+        .filter((item) => String(item.type ?? '').toUpperCase() === 'WHATSAPP')
+        .map((item) => {
         const phoneFromConnection =
           item.connection_params?.im?.phone_number ?? item.phone_number;
         const displayPhone = phoneFromConnection ?? item.phone_number;

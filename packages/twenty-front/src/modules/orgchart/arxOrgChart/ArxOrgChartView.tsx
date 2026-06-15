@@ -645,6 +645,16 @@ export const ArxOrgChartView = ({
                     }
                     dropdownHotkeyScope={{ scope: multiSourceDropdownId }}
                   />
+                  {searchControlsProps?.onSuperImpose ? (
+                    <StyledTopRightActionButton
+                      title="Super Impose"
+                      variant="secondary"
+                      accent="default"
+                      size="small"
+                      type="button"
+                      onClick={searchControlsProps.onSuperImpose}
+                    />
+                  ) : null}
                   <StyledTopRightActionButton
                     title="View all candidates"
                     variant="secondary"

@@ -20,6 +20,7 @@ import { LinkedinXrayModule } from 'src/modules/linkedin-xray/linkedin-xray.modu
 
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { UnipilePoolModule } from 'src/engine/core-modules/arx-chat/unipile-pool.module';
 
 import { CandidateAvatarModule } from 'src/engine/core-modules/candidate-avatar/candidate-avatar.module';
 import { OrgChartClientIpModule } from 'src/engine/core-modules/org-chart/org-chart-client-ip.module';
@@ -36,6 +37,7 @@ import { ImageProxyService } from './services/image-proxy.service';
 import { OrgChartEsService } from './services/org-chart-es.service';
 import { OrgChartLinkedInBuildService } from './services/org-chart-linkedin-build.service';
 import { OrgChartRecordWorkspaceService } from './services/org-chart-record-workspace.service';
+import { OrgChartSuperImposeService } from './services/org-chart-super-impose.service';
 import { OrgChartTheOrgEnrichmentService } from './services/org-chart-theorg-enrichment.service';
 import { OrgChartService } from './services/org-chart.service';
 import { OrgChartCacheService } from './services/orgchart-cache.service';
@@ -47,6 +49,7 @@ import { PdlPersonOrgMovementService } from './services/pdl-person-org-movement.
 import { PeopleEsService } from './services/people-es.service';
 import { PersonOrgMovementService } from './services/person-org-movement.service';
 import { PythonOrgChartService } from './services/python-org-chart.service';
+import { SuperImposeQueryBuilderService } from './services/super-impose-query-builder.service';
 
 @Module({
   imports: [
@@ -68,6 +71,7 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
     WorkspaceModificationsModule,
     WorkspaceCacheStorageModule,
     forwardRef(() => CandidateSearchModule),
+    UnipilePoolModule,
   ],
   controllers: [OrgChartController],
   providers: [
@@ -96,6 +100,8 @@ import { PythonOrgChartService } from './services/python-org-chart.service';
     OrgChartCacheService,
     OrgchartCancelRegistryService,
     OrgChartIncrementalBuildCacheService,
+    SuperImposeQueryBuilderService,
+    OrgChartSuperImposeService,
   ],
   exports: [
     OrgChartService,

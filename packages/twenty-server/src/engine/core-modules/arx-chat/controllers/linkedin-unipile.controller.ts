@@ -1,15 +1,15 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  HttpException,
-  HttpStatus,
-  Logger,
-  Param,
-  Post,
-  Req,
-  Res,
-  UseGuards
+    Body,
+    Controller,
+    Delete,
+    HttpException,
+    HttpStatus,
+    Logger,
+    Param,
+    Post,
+    Req,
+    Res,
+    UseGuards
 } from '@nestjs/common';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -17,21 +17,22 @@ import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import {
-  findLinkedinUnipileAccountSameIdentityForProfile,
-  isUnipileConnectedStatus,
-  normalizeUnipileStatus,
-  shouldBlockNewUnipileConnectionForStatus,
-  type UnipileLinkedinAccount,
+    findLinkedinUnipileAccountSameIdentityForProfile,
+    isUnipileConnectedStatus,
+    normalizeUnipileStatus,
+    shouldBlockNewUnipileConnectionForStatus,
+    type UnipileLinkedinAccount,
 } from 'twenty-shared';
 
 import { LinkedinUnipileRequestService } from '../services/linkedin-unipile-request.service';
 import { LinkedinUnipileMessagingService } from '../services/linkedin-unipile/linkedin-unipile-messaging.service';
+import { MemberLinkedinUnipileConnectionService } from '../services/member-linkedin-unipile-connection.service';
 import { UnipileAccountPoolService } from '../services/unipile-account-pool.service';
 import { UnipileWebhookService } from '../services/unipile-webhook.service';
 import { WorkspaceMemberProfileUnipileService } from '../services/workspace-member-profile-unipile.service';
 import type {
-  CreateWebhookDto,
-  UnipileAccountStatusWebhook,
+    CreateWebhookDto,
+    UnipileAccountStatusWebhook,
 } from '../types/unipile-webhook.types';
 
 // DTOs for LinkedIn Unipile integration
@@ -169,6 +170,7 @@ export class LinkedinUnipileController {
     private readonly unipileAccountPoolService: UnipileAccountPoolService,
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
+    private readonly memberLinkedinUnipileConnectionService: MemberLinkedinUnipileConnectionService,
   ) {
     this.logger.log(`Unipile API URL: ${this.unipileApiUrl}`);
     this.logger.log(`Unipile Access Token configured: ${!!this.unipileAccessToken}`);
@@ -234,6 +236,53 @@ export class LinkedinUnipileController {
       );
     }
     return { proceed: true };
+  }
+
+  private async finalizeMemberLinkedinUnipileSync(
+    workspaceMemberId: string,
+    authToken: string,
+    preferredAccountId: string | null | undefined,
+  ): Promise<string | null> {
+    const profile =
+      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields(
+        workspaceMemberId,
+        authToken,
+      );
+    if (!profile) {
+      return preferredAccountId?.trim() ? preferredAccountId.trim() : null;
+    }
+
+    const keepId =
+      await this.memberLinkedinUnipileConnectionService.pruneDuplicateLinkedinAccountsForProfile(
+        profile,
+        preferredAccountId,
+      );
+    if (!keepId) {
+      return preferredAccountId?.trim() ? preferredAccountId.trim() : null;
+    }
+
+    if (keepId !== profile.linkedinUnipileAccountId?.trim()) {
+      const accountPayload =
+        await this.linkedinUnipileRequestService.fetchAccountByIdIfExists(keepId);
+      if (accountPayload) {
+        await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+          workspaceMemberId,
+          authToken,
+          'linkedin',
+          keepId,
+          accountPayload,
+        );
+      } else {
+        await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberUnipileAccountId(
+          workspaceMemberId,
+          authToken,
+          'linkedin',
+          keepId,
+        );
+      }
+    }
+
+    return keepId;
   }
 
   /**
@@ -562,6 +611,12 @@ export class LinkedinUnipileController {
       );
       if (!preflight.proceed) {
         const acc = preflight.account;
+        const finalizedId = await this.finalizeMemberLinkedinUnipileSync(
+          workspaceMemberId,
+          authToken,
+          acc.id,
+        );
+        const accountId = finalizedId ?? acc.id;
         const storedCookiesAfterPreflight =
           await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
             workspace.id,
@@ -574,7 +629,7 @@ export class LinkedinUnipileController {
             hasLiA: Boolean(storedCookiesAfterPreflight.linkedinLiAToken),
           },
           linkedin: {
-            accountId: acc.id,
+            accountId,
             status: acc.status ?? 'connected',
             connected:
               isUnipileConnectedStatus(acc.status) ||
@@ -764,6 +819,26 @@ export class LinkedinUnipileController {
         this.logger.warn(
           `LinkedIn Unipile reconnect failed for member ${workspaceMemberId}: ${reconnectMessage}`,
         );
+      }
+    }
+
+    if (
+      accountId &&
+      (accountStatus === 'connected' || accountStatus === 'pending')
+    ) {
+      isConnected = true;
+    }
+
+    const finalizedAccountId = await this.finalizeMemberLinkedinUnipileSync(
+      workspaceMemberId,
+      authToken,
+      accountId,
+    );
+    if (finalizedAccountId) {
+      accountId = finalizedAccountId;
+      if (accountStatus === 'not_connected') {
+        accountStatus = 'connected';
+        isConnected = true;
       }
     }
 

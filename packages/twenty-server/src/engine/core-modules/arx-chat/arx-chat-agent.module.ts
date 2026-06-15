@@ -102,6 +102,7 @@ import { GmailDraftShortlistQueueService } from './services/candidate-engagement
 import { UpdateChat } from './services/candidate-engagement/update-chat';
 import { LinkedInUnipileMonitoringService } from './services/linkedin-unipile-monitoring.service';
 import { LinkedinUnipileRequestService } from './services/linkedin-unipile-request.service';
+import { MemberLinkedinUnipileConnectionService } from './services/member-linkedin-unipile-connection.service';
 import { MessagingControls } from './services/messaging-controls';
 import { WhatsAppMonitoringUnifiedService } from './services/whatsapp-monitoring-unified.service';
 import { WhatsappUnipileRequestService } from './services/whatsapp-unipile-request.service';
@@ -210,6 +211,7 @@ const conditionalImports = isWorker
     GmailDraftShortlistQueueProcessor,
     UnipileWebhookService,
     WorkspaceMemberProfileUnipileService,
+    MemberLinkedinUnipileConnectionService,
     ExtensionUnipileConnectionStatusService,
     WhatsappUnipileRequestService,
     LinkedinUnipileRequestService,

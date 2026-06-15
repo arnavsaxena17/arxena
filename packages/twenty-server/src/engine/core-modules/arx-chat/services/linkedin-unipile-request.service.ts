@@ -1,5 +1,7 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
+import { type UnipileAccountOwnerProfile } from 'twenty-shared';
+
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 
@@ -194,24 +196,43 @@ export class LinkedinUnipileRequestService {
   }
 
   /**
-   * All LinkedIn accounts from Unipile (`GET /api/v1/accounts?provider=linkedin`).
-   * Does not filter by workspace keys — workspace metadata can be stale vs member profile;
-   * use this for member-level duplicate checks and match profile hints against these rows.
+   * All LinkedIn accounts from Unipile. Fetches the full account list and filters by
+   * `type === 'LINKEDIN'` (the `?provider=linkedin` query can return an empty list on some DSNs).
    */
   async listAllLinkedinAccountsFromUnipileApi() {
     const response = (await this.makeUnipileRequest(
-      '/api/v1/accounts?provider=linkedin',
+      '/api/v1/accounts',
     )) as { items?: LinkedinUnipileAccountItem[] };
 
-    const accounts = (response.items || []).map((item) =>
-      this.mapLinkedinApiItemToAccountRow(item),
-    );
+    const accounts = (response.items || [])
+      .filter((item) => String(item.type ?? '').toUpperCase() === 'LINKEDIN')
+      .map((item) => this.mapLinkedinApiItemToAccountRow(item));
 
     this.logger.log(
-      `Unipile LinkedIn API: ${accounts.length} account(s) (full list, no workspace filter)`,
+      `Unipile LinkedIn API: ${accounts.length} account(s) (filtered from full list)`,
     );
 
     return { success: true as const, accounts };
+  }
+
+  async fetchLinkedinOwnerProfile(
+    accountId: string,
+  ): Promise<UnipileAccountOwnerProfile | null> {
+    const trimmed = accountId.trim();
+    if (!trimmed) {
+      return null;
+    }
+    try {
+      const response = (await this.makeUnipileRequest(
+        `/api/v1/users/me?account_id=${encodeURIComponent(trimmed)}`,
+      )) as UnipileAccountOwnerProfile;
+      return response ?? null;
+    } catch (err) {
+      this.logger.warn(
+        `fetchLinkedinOwnerProfile failed for ${trimmed}: ${err instanceof Error ? err.message : err}`,
+      );
+      return null;
+    }
   }
 
   async getAllAccounts(workspace: Workspace): Promise<{
@@ -317,10 +338,6 @@ export class LinkedinUnipileRequestService {
     }
   }
 
-  /**
-   * DELETE a Unipile LinkedIn account (e.g. superseded after reconnecting the same member identity).
-   * Swallows errors so profile updates are not rolled back if Unipile already removed the row.
-   */
   async disconnectAccountBestEffort(
     accountId: string,
     context: string,

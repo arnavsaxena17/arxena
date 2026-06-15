@@ -18,6 +18,7 @@ import {
   useLocation,
   useNavigate,
   useParams,
+  useSearchParams,
 } from 'react-router-dom';
 import { getPostAuthLandingAppPath } from '~/config';
 import { Authorize } from '~/pages/auth/Authorize';
@@ -43,6 +44,7 @@ import { SyncEmails } from '~/pages/onboarding/SyncEmails';
 import { AssistantPage } from '@/assistant/components/AssistantPage';
 import { Search } from '@/candidate-search/Search';
 import { CandidateTablePageHeader } from '@/candidate-table/components/CandidateTablePageHeader';
+import { useChromeExtensionDetection } from '@/candidate-table/hooks/useChromeExtensionDetection';
 import { JobPage } from '@/candidate-table/JobPage';
 import { Jobs } from '@/candidate-table/Jobs';
 import GoogleSheet from '@/google-sheet/GoogleSheet';
@@ -152,8 +154,20 @@ const OrgChartRoute = () => {
   const { isBaileysLoggedIn } = useBaileysConnection();
   const { isLinkedinConnected, isWhatsappUnipileConnected } = useUnipile();
   const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileConnected;
+  const { isExtensionInstalled } = useChromeExtensionDetection();
 
   const companyFromState = routeState?.company;
+  const [searchParams] = useSearchParams();
+
+  const companyNameFromQuery = searchParams.get('companyName')?.trim() || undefined;
+  const websiteFromQuery = searchParams.get('website')?.trim() || undefined;
+  const companyDomainFromQuery =
+    searchParams.get('companyDomain')?.trim() || undefined;
+
+  const companyName = companyFromState?.companyName ?? companyNameFromQuery;
+  const website = companyFromState?.website ?? websiteFromQuery;
+  const companyDomain =
+    companyFromState?.companyDomain ?? companyDomainFromQuery;
 
   const rawCompanyId = companyFromState?.companyId ?? companyKey ?? '';
   const companyId = rawCompanyId
@@ -238,7 +252,7 @@ const OrgChartRoute = () => {
         onOrgCharts={() => navigate(`/${AppPath.OrgChart}`)}
         onCompanySelect={hasSelectedCompany ? handleCompanySelect : undefined}
         hasToken={!!hasToken}
-        isExtensionInstalled={false}
+        isExtensionInstalled={isExtensionInstalled}
         onDownloadClick={handleDownloadClick}
         hasInsufficientCredits={false}
         isLinkedinConnected={isLinkedinConnected}
@@ -255,13 +269,13 @@ const OrgChartRoute = () => {
           <React.Suspense fallback={null}>
             <ArxOrgChart
               companyId={companyId}
-              companyName={companyFromState?.companyName}
-              website={companyFromState?.website}
+              companyName={companyName}
+              website={website}
               locationName={companyFromState?.locationName}
               industry={companyFromState?.industry}
               profileCount={companyFromState?.profileCount}
               linkedinUrl={companyFromState?.linkedinUrl}
-              companyDomain={companyFromState?.companyDomain}
+              companyDomain={companyDomain}
               onBack={handleBack}
             />
           </React.Suspense>

@@ -17,6 +17,7 @@ import { OrgchartApolloBuildJobData } from 'src/engine/core-modules/candidate-se
 import { OrgchartHarvestBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-harvest-build.types';
 import { OrgchartLinkedinXrayBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-linkedin-xray-build.types';
 import { OrgchartMultiSourceBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-multisource-build.types';
+import { OrgchartSuperImposeBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-super-impose-build.types';
 import { OrgchartUnipileBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-unipile-build.types';
 import {
     ApolloIoRestService,
@@ -46,6 +47,7 @@ import { MessageQueueService } from 'src/engine/core-modules/message-queue/servi
 import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services/orgchart-cache.service';
 import { OrgchartCancelRegistryService } from 'src/engine/core-modules/org-chart/services/orgchart-cancel-registry.service';
 import { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
+import type { SuperImposeInputs, SuperImposeManifest } from 'src/engine/core-modules/org-chart/types/super-impose.types';
 import { dedupeAndMergeOrgChartCandidates } from 'src/engine/core-modules/org-chart/utils/orgchart-candidate-dedupe.util';
 import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import { filterOrgChartCandidatesByNodeStdLabels } from 'src/engine/core-modules/org-chart/utils/orgchart-node-scope-filter.util';
@@ -66,6 +68,7 @@ import { ContactOutPeopleSearchService } from './contactout-people-search.servic
 import { HarvestLinkedinTransformerService } from './harvest-linkedin-transformer.service';
 import { HarvestLinkedinService } from './harvest-linkedin.service';
 import { OrgChartRecordWorkspaceService } from './org-chart-record-workspace.service';
+import { OrgChartSuperImposeService } from './org-chart-super-impose.service';
 import { OrgChartIncrementalBuildCacheService } from './orgchart-incremental-build-cache.service';
 import { OrgChartS3Service } from './orgchart-s3.service';
 import { PythonOrgChartService } from './python-org-chart.service';
@@ -124,6 +127,7 @@ type SearchOrgchartLinkedInBody = {
   asOfMonth?: string;
   /** Company site URL; used to derive `companyDomain` for Apollo when explicit domain is absent. */
   website?: string;
+  superImpose?: SuperImposeInputs;
 };
 
 type EntireCompanyFilterState = {
@@ -168,6 +172,7 @@ export class OrgChartLinkedInBuildService {
     private readonly theOfficialBoardService: TheOfficialBoardService,
     private readonly harvestLinkedinService: HarvestLinkedinService,
     private readonly harvestLinkedinTransformer: HarvestLinkedinTransformerService,
+    private readonly orgChartSuperImposeService: OrgChartSuperImposeService,
     @InjectMessageQueue(MessageQueue.orgchartApifyQueue)
     private readonly orgchartApifyQueue: MessageQueueService,
   ) {}
@@ -3344,6 +3349,107 @@ export class OrgChartLinkedInBuildService {
       requestId,
     } = body;
 
+    const resolvedCompanyName =
+      companyName || (companyId ? String(companyId) : '');
+
+    if (mode === 'super_impose') {
+      const superImpose = body.superImpose;
+      if (!superImpose) {
+        throw new HttpException(
+          'Body field "superImpose" is required when mode is super_impose',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const candidateSource: 'harvest' | 'unipile' =
+        body.candidateSource === 'harvest' ? 'harvest' : 'unipile';
+
+      if (
+        candidateSource === 'harvest' &&
+        !this.harvestLinkedinService.isConfigured()
+      ) {
+        throw new HttpException(
+          'Harvest is not configured (HARVEST_API_KEY missing)',
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      }
+
+      const hasExtraSources =
+        (superImpose.linkedinCompanyUrls?.length ?? 0) > 0 ||
+        (superImpose.websiteUrls?.length ?? 0) > 0 ||
+        (superImpose.salesNavigatorSearchUrls?.length ?? 0) > 0;
+
+      if (!hasExtraSources && !canonicalCompanyLinkedinUrl && !companyId) {
+        throw new HttpException(
+          'At least one LinkedIn company URL, website URL, or Sales Navigator search URL is required',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      if (requestId) {
+        await this.orgchartCancelRegistry.register(requestId, {
+          mode,
+          searchType,
+          companyName: resolvedCompanyName,
+        });
+      }
+
+      const jobData: OrgchartSuperImposeBuildJobData = {
+        apiToken,
+        requestId,
+        body: body as unknown as Record<string, unknown>,
+        canonicalCompanyLinkedinUrl,
+        resolvedCompanyName,
+        companyId,
+        jobTitles,
+        mode,
+        searchType,
+        superImpose,
+        country: body.country,
+        functionRoot: body.functionRoot,
+        businessDivisionRawQuery: body.businessDivisionRawQuery,
+        candidateSource,
+      };
+
+      await this.orgchartApifyQueue.add(
+        'OrgchartSuperImposeBuildProcessor',
+        jobData,
+        { retryLimit: 0 },
+      );
+
+      await this.emitOrgchartSearchProgressForToken(apiToken, {
+        requestId,
+        mode,
+        searchType,
+        companyName: resolvedCompanyName,
+        event: 'status',
+        data: {
+          message:
+            'Super impose org chart job queued. Waiting for worker pickup…',
+          candidateSource: 'super_impose',
+        },
+      });
+
+      return {
+        success: true,
+        queued: true,
+        candidateSource: 'super_impose' as const,
+        requestId,
+        mode,
+        searchType,
+        companyName: resolvedCompanyName,
+        companyId,
+        jobTitles,
+        linkedinCompanyUrl:
+          canonicalCompanyLinkedinUrl ?? body.linkedinCompanyUrl,
+        itemCount: 0,
+        items: [],
+        orgChart: undefined,
+        isCached: false,
+        cacheSource: 'none' as const,
+      };
+    }
+
     if (
       (body.candidateSource === 'apify' || body.candidateSource === 'harvest') &&
       mode !== 'entire_company'
@@ -3353,9 +3459,6 @@ export class OrgChartLinkedInBuildService {
         HttpStatus.BAD_REQUEST,
       );
     }
-
-    const resolvedCompanyName =
-      companyName || (companyId ? String(companyId) : '');
 
     if (isMultiSourceRequested) {
       if (requestId) {
@@ -5400,6 +5503,337 @@ export class OrgChartLinkedInBuildService {
         items: mergedResult.items,
       },
     });
+  }
+
+  async handleSuperImposeOrgChartJob(
+    jobData: OrgchartSuperImposeBuildJobData,
+  ): Promise<void> {
+    const {
+      apiToken,
+      requestId,
+      mode,
+      searchType,
+      resolvedCompanyName,
+      companyId,
+      superImpose,
+      candidateSource,
+    } = jobData;
+
+    if (
+      await this.abortOrgChartJobIfCancelled({
+        apiToken,
+        requestId,
+        mode,
+        searchType,
+        companyName: resolvedCompanyName,
+        candidateSource: 'super_impose',
+        logLabel: 'Super impose org chart job',
+      })
+    ) {
+      return;
+    }
+
+    const rawBody = jobData.body as SearchOrgchartLinkedInBody;
+    const canonicalCompanyLinkedinUrl =
+      jobData.canonicalCompanyLinkedinUrl ||
+      rawBody.linkedinCompanyUrl?.trim().replace(/\/+$/, '') ||
+      undefined;
+
+    try {
+      const { resolvedCompanies, salesNavigatorSearchUrls, errors } =
+        await this.orgChartSuperImposeService.resolveInputs({
+          inputs: superImpose,
+          primaryCompanyId: companyId,
+          primaryCompanyName: resolvedCompanyName,
+          primaryLinkedinCompanyUrl: canonicalCompanyLinkedinUrl,
+          apiToken,
+        });
+
+      if (errors.length > 0) {
+        await this.emitOrgchartSearchProgressForToken(apiToken, {
+          requestId,
+          mode,
+          searchType,
+          companyName: resolvedCompanyName,
+          event: 'status',
+          data: {
+            message: `Input warnings: ${errors.join('; ')}`,
+            candidateSource: 'super_impose',
+          },
+        });
+      }
+
+      const fetchContext = {
+        apiToken,
+        primaryCompanyName: resolvedCompanyName,
+        companyId,
+        country: jobData.country ?? rawBody.country,
+        functionRoot: jobData.functionRoot ?? rawBody.functionRoot,
+        businessDivisionRawQuery:
+          jobData.businessDivisionRawQuery ?? rawBody.businessDivisionRawQuery,
+        linkedinSearchKeywords: superImpose.linkedinSearchKeywords,
+        candidateSource,
+        searchType,
+        linkedinUnipileAccountId: rawBody.linkedinUnipileAccountId,
+        maxProfiles: this.orgChartSuperImposeService.getSuperImposeThreshold(),
+        onProgress: async (message: string) => {
+          await this.emitOrgchartSearchProgressForToken(apiToken, {
+            requestId,
+            mode,
+            searchType,
+            companyName: resolvedCompanyName,
+            event: 'status',
+            data: { message, candidateSource: 'super_impose' },
+          });
+        },
+      };
+
+      const plan =
+        await this.orgChartSuperImposeService.buildQueryPlanFromContext(
+          fetchContext,
+          resolvedCompanies,
+          salesNavigatorSearchUrls,
+        );
+
+      const estimate =
+        await this.orgChartSuperImposeService.estimateFromPlan(plan);
+
+      if (estimate.scopeRequired) {
+        throw new HttpException(
+          `Too many people (~${estimate.estimatedTotalUpperBound}). Select a country or function filter before generating.`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const aggregated: Array<Record<string, unknown>> = [];
+
+      const addCandidates = async (
+        next: Array<Record<string, unknown>>,
+        message: string,
+      ) => {
+        aggregated.push(...next);
+        await this.emitMergedPartialOrgChart({
+          apiToken,
+          requestId,
+          mode,
+          searchType,
+          resolvedCompanyName,
+          companyId,
+          candidates: aggregated,
+          candidateSourceLabel: 'super_impose',
+          message,
+        });
+      };
+
+      const fetched =
+        await this.orgChartSuperImposeService.fetchCandidatesForPlan(
+          plan,
+          fetchContext,
+        );
+      await addCandidates(
+        fetched,
+        `Fetched ${fetched.length} people from super impose sources; merging…`,
+      );
+
+      if (superImpose.appendToExistingChart === true) {
+        const existing = await this.loadSavedCandidatesForCompany({
+          companyId,
+          companyName: resolvedCompanyName,
+        });
+        if (existing.length === 0) {
+          throw new HttpException(
+            'No saved people found to append to. Generate a full org chart first or disable append.',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        aggregated.unshift(...existing);
+        await addCandidates(
+          aggregated,
+          `Appended ${existing.length} existing people; merging…`,
+        );
+      }
+
+      const filterState = this.getEntireCompanyFilterState({
+        ...rawBody,
+        country: jobData.country ?? rawBody.country,
+        functionRoot: jobData.functionRoot ?? rawBody.functionRoot,
+      });
+
+      const filtered = this.filterItemsByEntireCompanyFilters(
+        aggregated,
+        filterState,
+      );
+
+      const beforeDedupeCount = filtered.length;
+      const mergedDeduped = dedupeAndMergeOrgChartCandidates(filtered);
+      const duplicatesRemoved = Math.max(
+        0,
+        beforeDedupeCount - mergedDeduped.length,
+      );
+
+      const mergedResult = {
+        items: mergedDeduped,
+        itemCount: mergedDeduped.length,
+        isCached: false,
+        cacheSource: 'none' as const,
+        strategyResults: [],
+      };
+
+      const modeForOrgChartBuild = plan.mode;
+
+      const { orgChart, orgChartError } =
+        await this.buildOrgChartAfterLinkedInSearch({
+          apiToken,
+          body: {
+            ...rawBody,
+            mode: modeForOrgChartBuild,
+            candidateSource,
+          },
+          mode: modeForOrgChartBuild,
+          resolvedCompanyName,
+          companyId,
+          searchType: plan.searchType,
+          requestId,
+          canonicalCompanyLinkedinUrl,
+          shouldWriteCompanyOrgChartCache:
+            filterState.shouldWriteCompanyOrgChartCache,
+          result: mergedResult as any,
+        });
+
+      if (orgChartError) {
+        if (requestId) {
+          await this.orgchartCancelRegistry.setFailed(requestId, orgChartError);
+        }
+        await this.emitOrgchartSearchProgressForToken(apiToken, {
+          requestId,
+          mode,
+          searchType,
+          companyName: resolvedCompanyName,
+          event: 'error',
+          data: { message: orgChartError, candidateSource: 'super_impose' },
+        });
+
+        return;
+      }
+
+      const s3CompanyId = this.orgChartS3Service.persistedCompanyFolderKey(
+        companyId,
+        resolvedCompanyName,
+      );
+      const manifest: SuperImposeManifest = {
+        version: 1,
+        primaryCompanyId: companyId ?? resolvedCompanyName,
+        primaryCompanyName: resolvedCompanyName,
+        primaryLinkedinCompanyUrl: canonicalCompanyLinkedinUrl,
+        builtAt: new Date().toISOString(),
+        candidateSource,
+        inputs: {
+          linkedinCompanyUrls: superImpose.linkedinCompanyUrls ?? [],
+          websiteUrls: superImpose.websiteUrls ?? [],
+          salesNavigatorSearchUrls: superImpose.salesNavigatorSearchUrls ?? [],
+          linkedinSearchKeywords: superImpose.linkedinSearchKeywords ?? null,
+          businessDivisionRawQuery:
+            jobData.businessDivisionRawQuery ??
+            rawBody.businessDivisionRawQuery ??
+            null,
+          country: jobData.country ?? rawBody.country,
+          functionRoot: jobData.functionRoot ?? rawBody.functionRoot,
+          appendToExistingChart: superImpose.appendToExistingChart,
+        },
+        resolvedSources: resolvedCompanies,
+        stats: {
+          totalCandidates: mergedDeduped.length,
+          duplicatesRemoved,
+          sourcesFetched:
+            resolvedCompanies.length + salesNavigatorSearchUrls.length,
+        },
+      };
+      await this.orgChartS3Service.saveSuperImposeManifest(
+        s3CompanyId,
+        manifest as unknown as Record<string, unknown>,
+      );
+
+      if (requestId) {
+        await this.orgchartCancelRegistry.setCompleted(requestId);
+      }
+
+      await this.emitOrgchartSearchProgressForToken(apiToken, {
+        requestId,
+        mode,
+        searchType,
+        companyName: resolvedCompanyName,
+        event: 'complete',
+        data: {
+          message: `Super impose org chart ready (${mergedResult.itemCount} people).`,
+          itemCount: mergedResult.itemCount,
+          candidateSource: 'super_impose',
+          orgChart,
+          items: mergedResult.items,
+          superImposeSummary: {
+            companiesFetched: resolvedCompanies.length,
+            salesNavUrlsFetched: salesNavigatorSearchUrls.length,
+            duplicatesRemoved,
+          },
+        },
+      });
+    } catch (error) {
+      const message =
+        error instanceof HttpException
+          ? String(error.message)
+          : error instanceof Error
+            ? error.message
+            : 'Super impose org chart build failed';
+
+      if (requestId) {
+        await this.orgchartCancelRegistry.setFailed(requestId, message);
+      }
+
+      await this.emitOrgchartSearchProgressForToken(apiToken, {
+        requestId,
+        mode,
+        searchType,
+        companyName: resolvedCompanyName,
+        event: 'error',
+        data: { message, candidateSource: 'super_impose' },
+      });
+    }
+  }
+
+  private async loadSavedCandidatesForCompany(input: {
+    companyId?: string;
+    companyName?: string;
+  }): Promise<Record<string, unknown>[]> {
+    const resolvedCompanyName = normalizeCompanyName(input.companyName);
+    const resolvedCompanyId = normalizeCompanyId(
+      input.companyId,
+      resolvedCompanyName,
+    );
+
+    const cachedCandidateList =
+      await this.orgChartCacheService.getCachedCompanyCandidateList({
+        companyName: resolvedCompanyName,
+        companyId: resolvedCompanyId,
+        mode: 'entire_company',
+        searchType: 'classic',
+      });
+
+    const cachedItems = Array.isArray(cachedCandidateList?.items)
+      ? (cachedCandidateList?.items as Record<string, unknown>[])
+      : [];
+
+    if (cachedItems.length > 0) {
+      return cachedItems;
+    }
+
+    const s3PersistKey = this.orgChartS3Service.persistedCompanyFolderKey(
+      resolvedCompanyId,
+      resolvedCompanyName || resolvedCompanyId,
+    );
+    const s3Candidates = await this.orgChartS3Service.getCandidates(s3PersistKey);
+
+    return Array.isArray(s3Candidates)
+      ? (s3Candidates as Record<string, unknown>[])
+      : [];
   }
 
   /**

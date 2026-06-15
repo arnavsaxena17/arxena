@@ -4,11 +4,11 @@ import { IconGitMerge } from '@tabler/icons-react';
 import { ReactNode, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import {
-  Button,
-  IconAlertCircle,
-  IconComponent,
-  IconHierarchy2,
-  IconMessage
+    Button,
+    IconAlertCircle,
+    IconComponent,
+    IconHierarchy2,
+    IconMessage
 } from 'twenty-ui';
 
 import { CreditHistoryModal } from '@/billing/components/CreditHistoryModal';
@@ -25,7 +25,7 @@ const StyledCompanySearchWrapper = styled.div`
   flex: 0 1 420px;
   min-width: 350px;
   max-width: 420px;
-  z-index: 1;
+  z-index: 100;
 
   @media (max-width: 1024px) {
     position: relative;
@@ -42,12 +42,17 @@ const StyledOrgChartSearchRow = styled.div`
   gap: ${({ theme }) => theme.spacing(2)};
 `;
 
+const StyledPageHeaderShell = styled.div`
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+`;
+
 export const StyledPageHeader = styled(PageHeader)`
   flex-shrink: 0;
   padding: 12px 24px;
   overflow: visible;
   position: relative;
-  z-index: 10;
 
   /* Single horizontal row: title (left) | search (center) | buttons (right) */
   & > div {
@@ -209,17 +214,18 @@ export const CandidateTablePageHeader = ({
         }
         isExtensionInstalled={isExtensionInstalled}
       />
-      <StyledPageHeader
-        title={title}
-        Icon={Icon}
-        hasPaginationButtons={hasPaginationButtons}
-        hasPreviousRecord={hasPreviousRecord}
-        hasNextRecord={hasNextRecord}
-        navigateToPreviousRecord={navigateToPreviousRecord}
-        navigateToNextRecord={navigateToNextRecord}
-        hasClosePageButton={hasClosePageButton}
-        onClosePage={onClosePage}
-      >
+      <StyledPageHeaderShell>
+        <StyledPageHeader
+          title={title}
+          Icon={Icon}
+          hasPaginationButtons={hasPaginationButtons}
+          hasPreviousRecord={hasPreviousRecord}
+          hasNextRecord={hasNextRecord}
+          navigateToPreviousRecord={navigateToPreviousRecord}
+          navigateToNextRecord={navigateToNextRecord}
+          hasClosePageButton={hasClosePageButton}
+          onClosePage={onClosePage}
+        >
         {onCompanySelect !== undefined && (
           <StyledCompanySearchWrapper title={companySearchTitle}>
             <StyledOrgChartSearchRow>
@@ -288,7 +294,8 @@ export const CandidateTablePageHeader = ({
               : undefined
           }
         />
-      </StyledPageHeader>
+        </StyledPageHeader>
+      </StyledPageHeaderShell>
       {orgChartCredits !== undefined && (
         <CreditHistoryModal
           isOpen={isCreditModalOpen}

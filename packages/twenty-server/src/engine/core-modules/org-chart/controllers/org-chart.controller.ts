@@ -1,27 +1,28 @@
 import {
-    Body,
-    Controller,
-    Get,
-    HttpException,
-    HttpStatus,
-    Logger,
-    Param,
-    Post,
-    Query,
-    Req,
-    Res,
-    UseGuards,
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
 } from '@nestjs/common';
 
 import { Request, Response } from 'express';
 import {
-    isLikelyBrowserLogoRequest,
-    isLikelyBrowserRequest,
+  isLikelyBrowserLogoRequest,
+  isLikelyBrowserRequest,
 } from 'twenty-shared';
 import { v4 as uuidV4 } from 'uuid';
 
 import { ApifyEmployeeCountService } from 'src/engine/core-modules/apify/services/apify-employee-count.service';
 import { ApifyService } from 'src/engine/core-modules/apify/services/apify.service';
+import { MemberLinkedinUnipileConnectionService } from 'src/engine/core-modules/arx-chat/services/member-linkedin-unipile-connection.service';
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
@@ -32,10 +33,10 @@ import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/typ
 import { ApolloIoRestService } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
 import {
-    ClassicPeopleSearchStrategyResult,
-    GeneratedSearchParameters,
-    RecruiterPeopleSearchStrategyResult,
-    SalesNavigatorPeopleSearchStrategyResult,
+  ClassicPeopleSearchStrategyResult,
+  GeneratedSearchParameters,
+  RecruiterPeopleSearchStrategyResult,
+  SalesNavigatorPeopleSearchStrategyResult,
 } from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
 import { constructSearchParamKey } from 'src/engine/core-modules/candidate-search/utils/search-parameter.utils';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
@@ -55,39 +56,41 @@ import { ImageProxyService } from '../services/image-proxy.service';
 import { OrgChartClientIpService } from '../services/org-chart-client-ip.service';
 import { OrgChartEsService } from '../services/org-chart-es.service';
 import { OrgChartLinkedInBuildService } from '../services/org-chart-linkedin-build.service';
+import { OrgChartSuperImposeService } from '../services/org-chart-super-impose.service';
 import { OrgChartTheOrgEnrichmentService } from '../services/org-chart-theorg-enrichment.service';
 import { OrgChartS3Service } from '../services/orgchart-s3.service';
 import { PythonOrgChartService } from '../services/python-org-chart.service';
+import type { SuperImposeInputs } from '../types/super-impose.types';
 import { resolveFirstAutocompleteSource } from '../utils/first-autocomplete-source.util';
 import {
-    isOrgPublishForeverTtl,
-    ORG_PUBLISH_MAX_TTL_SECONDS,
-    resolveOrgChartPublishCacheTtlMs,
-    toOrgChartCacheTtlMs,
+  isOrgPublishForeverTtl,
+  ORG_PUBLISH_MAX_TTL_SECONDS,
+  resolveOrgChartPublishCacheTtlMs,
+  toOrgChartCacheTtlMs,
 } from '../utils/org-chart-cache-ttl.util';
 import { isOrgChartPdlProxyAuthorized } from '../utils/org-chart-pdl-proxy.util';
 import {
-    isLikelyBrowserOrgChartRequest,
-    shouldDenyUnauthenticatedOrgChartAccess,
+  isLikelyBrowserOrgChartRequest,
+  shouldDenyUnauthenticatedOrgChartAccess,
 } from '../utils/org-chart-public-access.util';
 import {
-    buildDefaultPublishSlug,
-    orgPublishedCompanyCacheKey,
-    orgPublishedSlugCacheKey,
-    type OrgPublishedSlugMapping,
-    validatePublishSlug,
+  buildDefaultPublishSlug,
+  orgPublishedCompanyCacheKey,
+  orgPublishedSlugCacheKey,
+  type OrgPublishedSlugMapping,
+  validatePublishSlug,
 } from '../utils/org-chart-published-slug.util';
 import { applyAsOfSnapshotToCandidates } from '../utils/orgchart-asof-snapshot.util';
 import { buildCompanyOrgChartCandidateListLogicalCacheKey } from '../utils/orgchart-cache-keys.util';
 import {
-    computeTimelineMetricsFromCandidates,
-    computeTimelineProfilesFromCandidates,
+  computeTimelineMetricsFromCandidates,
+  computeTimelineProfilesFromCandidates,
 } from '../utils/orgchart-timeline-metrics.util';
 import { normalizePersonForPythonOrgChartBuild } from '../utils/python-org-chart-person.util';
 import {
-    ApifyCompanyProfileActorItem,
-    generateSampleApifyCompanyProfileActorItems,
-    generateSampleContactOutPeopleSearchResponse,
+  ApifyCompanyProfileActorItem,
+  generateSampleApifyCompanyProfileActorItems,
+  generateSampleContactOutPeopleSearchResponse,
 } from '../utils/sample-company/sampleCompanyDatasets';
 
 @Controller('org-chart')
@@ -99,6 +102,7 @@ export class OrgChartController {
   constructor(
     private readonly orgChartService: OrgChartService,
     private readonly orgChartLinkedInBuildService: OrgChartLinkedInBuildService,
+    private readonly orgChartSuperImposeService: OrgChartSuperImposeService,
     private readonly orgChartEsService: OrgChartEsService,
     private readonly orgChartTheOrgEnrichmentService: OrgChartTheOrgEnrichmentService,
     private readonly companyLogoService: CompanyLogoService,
@@ -107,6 +111,7 @@ export class OrgChartController {
     private readonly apifyService: ApifyService,
     private readonly unipileCompanyService: UnipileCompanyService,
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly memberLinkedinUnipileConnectionService: MemberLinkedinUnipileConnectionService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly orgChartClientIpService: OrgChartClientIpService,
     private readonly environmentService: EnvironmentService,
@@ -1425,21 +1430,17 @@ export class OrgChartController {
 
     if (authToken) {
       try {
-        const workspaceId =
-          await this.workspaceQueryService.getWorkspaceIdFromToken(authToken);
         const workspaceMemberId =
           await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
             authToken,
           );
-        const accountId =
-          await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
-            workspaceMemberId ?? null,
-            workspaceId,
-            authToken,
-            'linkedin',
-          );
-
-        linkedinUnipileConnected = !!accountId;
+        if (workspaceMemberId) {
+          linkedinUnipileConnected =
+            await this.memberLinkedinUnipileConnectionService.isMemberLinkedinUsable(
+              workspaceMemberId,
+              authToken,
+            );
+        }
       } catch {
         linkedinUnipileConnected = false;
       }
@@ -2509,6 +2510,130 @@ export class OrgChartController {
     };
   }
 
+  @Post('super-impose/resolve-inputs')
+  @UseGuards(JwtAuthGuard)
+  async resolveSuperImposeInputs(
+    @Body()
+    body: {
+      superImpose: SuperImposeInputs;
+      companyId?: string;
+      companyName?: string;
+      linkedinCompanyUrl?: string;
+    },
+    @Req() req: Request,
+  ) {
+    const apiToken = this.getAuthToken(req);
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    if (!body?.superImpose) {
+      throw new HttpException(
+        'Body field "superImpose" is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const result = await this.orgChartSuperImposeService.resolveInputs({
+      inputs: body.superImpose,
+      primaryCompanyId: body.companyId,
+      primaryCompanyName: body.companyName,
+      primaryLinkedinCompanyUrl: body.linkedinCompanyUrl,
+      apiToken,
+    });
+
+    return {
+      success: true,
+      resolvedCompanies: result.resolvedCompanies,
+      salesNavigatorSearchUrls: result.salesNavigatorSearchUrls,
+      errors: result.errors,
+    };
+  }
+
+  @Post('super-impose/estimate')
+  @UseGuards(JwtAuthGuard)
+  async estimateSuperImpose(
+    @Body()
+    body: {
+      superImpose: SuperImposeInputs;
+      country?: string;
+      functionRoot?: string;
+      businessDivisionRawQuery?: string;
+      candidateSource: 'harvest' | 'unipile';
+      companyId?: string;
+      companyName?: string;
+      linkedinCompanyUrl?: string;
+      searchType?: 'classic' | 'sales_navigator' | 'recruiter';
+    },
+    @Req() req: Request,
+  ) {
+    const apiToken = this.getAuthToken(req);
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    if (!body?.superImpose) {
+      throw new HttpException(
+        'Body field "superImpose" is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const candidateSource = body.candidateSource === 'harvest' ? 'harvest' : 'unipile';
+    const resolvedCompanyName =
+      body.companyName?.trim() || body.companyId?.trim() || 'company';
+
+    const { resolvedCompanies, salesNavigatorSearchUrls } =
+      await this.orgChartSuperImposeService.resolveInputs({
+        inputs: body.superImpose,
+        primaryCompanyId: body.companyId,
+        primaryCompanyName: body.companyName,
+        primaryLinkedinCompanyUrl: body.linkedinCompanyUrl,
+        apiToken,
+      });
+
+    const plan = await this.orgChartSuperImposeService.buildQueryPlanFromContext(
+      {
+        apiToken,
+        primaryCompanyName: resolvedCompanyName,
+        companyId: body.companyId,
+        country: body.country,
+        functionRoot: body.functionRoot,
+        businessDivisionRawQuery: body.businessDivisionRawQuery,
+        linkedinSearchKeywords: body.superImpose.linkedinSearchKeywords,
+        candidateSource,
+        searchType: body.searchType,
+      },
+      resolvedCompanies,
+      salesNavigatorSearchUrls,
+    );
+
+    const estimate =
+      await this.orgChartSuperImposeService.estimateFromPlan(plan);
+
+    return {
+      success: true,
+      ...estimate,
+    };
+  }
+
+  @Get(':companyId/super-impose-manifest')
+  @UseGuards(JwtAuthGuard)
+  async getSuperImposeManifest(@Param('companyId') companyId: string) {
+    const manifest = await this.orgChartS3Service.getSuperImposeManifest(
+      companyId.trim(),
+    );
+
+    if (!manifest) {
+      throw new HttpException(
+        'Super impose manifest not found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return { success: true, manifest };
+  }
+
   @Post('search')
   async searchOrgChartFromLinkedIn(
     @Body()
@@ -2524,7 +2649,8 @@ export class OrgChartController {
         | 'entire_company'
         | 'function_grade'
         | 'business_division_map'
-        | 'selected_nodes';
+        | 'selected_nodes'
+        | 'super_impose';
       maxPages?: number;
       searchType?: 'classic' | 'sales_navigator' | 'recruiter';
       requestId?: string;
@@ -2548,6 +2674,7 @@ export class OrgChartController {
       queryGenerator?: 'python' | 'multi_agent';
       xraySearchEngine?: LinkedinXraySearchEngine;
       includePaginatedHtml?: boolean;
+      superImpose?: SuperImposeInputs;
     },
     @Query('account_id') accountIdQuery: string | undefined,
     @Req() req: Request,
