@@ -21,13 +21,15 @@ import {
 
 const StyledModal = styled(Modal)`
   border-radius: ${({ theme }) => theme.spacing(1)};
+  max-height: 90dvh;
+  width: min(720px, calc(100vw - ${({ theme }) => theme.spacing(8)}));
 `;
 
 const StyledContent = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(3)};
-  max-width: 640px;
+  width: 100%;
 `;
 
 const StyledTitle = styled.div`
@@ -396,7 +398,6 @@ export const OrgChartSuperImposeModal = ({
     <StyledModal
       isClosable
       onClose={onClose}
-      size="large"
       padding="large"
     >
       <StyledContent>
