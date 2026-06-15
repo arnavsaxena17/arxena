@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { hasOrgChartLinkedInSubsetScopeFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-linkedin-scope.util';
+import { getLinkedInUnipileSearchPageLimit } from 'twenty-shared';
 
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { OrgChartSearchService } from 'src/engine/core-modules/candidate-search/services/orgchart-search.service';
@@ -221,12 +222,28 @@ export class OrgChartSuperImposeService {
       }
     } else {
       for (const salesNavUrl of plan.salesNavigatorSearchUrls) {
-        perSource.push({
-          slug: 'sales-nav-url',
-          sourceType: 'linkedin_search',
-          count: 0,
-          error: 'Unipile estimate requires account; use build to fetch',
-        });
+        const slug = salesNavUrl.slice(0, 40);
+        try {
+          const count = await this.estimateUnipileSalesNavUrlTotal(
+            salesNavUrl,
+            plan.apiToken ?? '',
+            plan.linkedinUnipileAccountId,
+          );
+          perSource.push({ slug, sourceType: 'linkedin_search', count });
+          estimatedTotalUpperBound += count;
+        } catch (error) {
+          this.logger.warn(
+            `Unipile super-impose Sales Navigator estimate failed: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+          perSource.push({
+            slug,
+            sourceType: 'linkedin_search',
+            count: 0,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
       }
       if (
         plan.salesNavigatorSearchUrls.length === 0 &&
@@ -359,6 +376,7 @@ export class OrgChartSuperImposeService {
         companyName: context.primaryCompanyName,
         maxProfiles: context.maxProfiles,
         fetchSource: 'linkedin_search',
+        searchType: plan.searchType,
       });
       aggregated.push(...snRows);
     }
@@ -408,14 +426,41 @@ export class OrgChartSuperImposeService {
     return aggregated;
   }
 
+  private async estimateUnipileSalesNavUrlTotal(
+    url: string,
+    apiToken: string,
+    linkedinUnipileAccountId?: string,
+  ): Promise<number> {
+    if (!apiToken.trim()) {
+      throw new Error('API token is required for Sales Navigator estimate');
+    }
+
+    const accountId = await this.resolveUnipileAccountId({
+      apiToken,
+      primaryCompanyName: '',
+      candidateSource: 'unipile',
+      linkedinUnipileAccountId,
+    });
+
+    const response = await this.linkedInSearchService.searchFromUrl(
+      url,
+      accountId,
+      { limit: 1 },
+    );
+
+    return response.paging?.total_count ?? response.items.length;
+  }
+
   private async fetchUnipileSearchUrlCandidates(input: {
     url: string;
     accountId: string;
     companyName: string;
     maxProfiles?: number;
     fetchSource: SuperImposeFetchSource;
+    searchType: 'classic' | 'sales_navigator' | 'recruiter';
   }): Promise<Array<Record<string, unknown>>> {
     const maxProfiles = Math.max(1, Math.min(2500, input.maxProfiles ?? 500));
+    const pageLimit = getLinkedInUnipileSearchPageLimit(input.searchType);
     const out: Array<Record<string, unknown>> = [];
     let cursor: string | undefined;
     let page = 0;
@@ -424,10 +469,10 @@ export class OrgChartSuperImposeService {
       page += 1;
       const response = cursor
         ? await this.linkedInSearchService.searchWithCursor(cursor, input.accountId, {
-            limit: 25,
+            limit: pageLimit,
           })
         : await this.linkedInSearchService.searchFromUrl(input.url, input.accountId, {
-            limit: 25,
+            limit: pageLimit,
           });
 
       const items = Array.isArray(response.items) ? response.items : [];

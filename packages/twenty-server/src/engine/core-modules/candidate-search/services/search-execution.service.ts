@@ -4,6 +4,7 @@ import {
     randomOrgChartLinkedInPageDelayMs,
     sleepMs,
 } from 'src/engine/core-modules/org-chart/utils/orgchart-linkedin-scope.util';
+import { getLinkedInUnipileSearchPageLimit } from 'twenty-shared';
 import { WorkspaceMemberProfileUnipileService } from '../../arx-chat/services/workspace-member-profile-unipile.service';
 import { LinkedInRecruiterPeopleTransformerService } from '../../candidate-sourcing/services/data-sources/linkedin-recruiter-people-transformer.service';
 import { LinkedInSearchTransformerService, TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
@@ -123,7 +124,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
       return null;
     }
 
-    const pageLimit = 10;
+    const pageLimit = getLinkedInUnipileSearchPageLimit(searchType);
     let strategyResolvedParams: GeneratedSearchParameters = {
       [parameterKey]: strategy.parameters,
     } as GeneratedSearchParameters;
@@ -187,7 +188,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     sendEvent?: (event: string, data: any) => boolean | void,
     executionOptions?: SearchExecutionOptions,
   ): Promise<SearchExecutionPreview | null> {
-    const pageLimit = 10;
+    const pageLimit = getLinkedInUnipileSearchPageLimit(searchType);
     const maxCandidates =
       typeof executionOptions?.maxCandidates === 'number' &&
       executionOptions.maxCandidates > 0
@@ -462,7 +463,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
       linkedInAccountId?: string;
     },
   ): Promise<SearchExecutionPreview | null> {
-    const pageLimit = 10;
+    const pageLimit = getLinkedInUnipileSearchPageLimit(searchType);
     let stateForPartialCatch: {
       allItems: LinkedInSearchResult[];
       allTransformedCandidates: TransformedCandidateForTable[];

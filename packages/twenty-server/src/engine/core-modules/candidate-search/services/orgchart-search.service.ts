@@ -12,33 +12,34 @@ import { PythonOrgChartService } from 'src/engine/core-modules/org-chart/service
 import type { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
 import { mergeOrgChartCompanyTenureOntoOrgChartData } from 'src/engine/core-modules/org-chart/utils/merge-orgchart-company-tenure.util';
 import {
-    applyApolloOnlyNodeLockState,
-    assignApolloPublicSlugToAllPersonSlots,
-    backfillUnmappedLinkedInSlotsWithApolloSlug,
-    mergeContactAvailabilityOntoOrgChartData,
-    mergeContactAvailabilityOntoOrgChartDataByPersonId,
-    mergeProfileSourceSlugsOntoOrgChartData,
-    normalizeOrgChartLinkedinUrlKey,
-    ORGCHART_DATA_SOURCE_SLUG_APOLLO,
-    readProviderContactHintsFromSearchRow,
-    type OrgChartNodeContactAvailability,
+  applyApolloOnlyNodeLockState,
+  assignApolloPublicSlugToAllPersonSlots,
+  backfillUnmappedLinkedInSlotsWithApolloSlug,
+  mergeContactAvailabilityOntoOrgChartData,
+  mergeContactAvailabilityOntoOrgChartDataByPersonId,
+  mergeProfileSourceSlugsOntoOrgChartData,
+  normalizeOrgChartLinkedinUrlKey,
+  ORGCHART_DATA_SOURCE_SLUG_APOLLO,
+  readProviderContactHintsFromSearchRow,
+  type OrgChartNodeContactAvailability,
 } from 'src/engine/core-modules/org-chart/utils/merge-orgchart-profile-source-slugs.util';
 import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import {
-    computeOrgChartLinkedInSearchPlan,
-    getOrgChartLinkedInMaxCandidates,
-    hasOrgChartLinkedInSubsetScopeFilter,
+  computeOrgChartLinkedInMaxPages,
+  computeOrgChartLinkedInSearchPlan,
+  getOrgChartLinkedInMaxCandidates,
+  hasOrgChartLinkedInSubsetScopeFilter,
 } from 'src/engine/core-modules/org-chart/utils/orgchart-linkedin-scope.util';
 import { filterOrgChartCandidatesByNodeStdLabels } from 'src/engine/core-modules/org-chart/utils/orgchart-node-scope-filter.util';
 import {
-    normalizeCountry,
-    normalizeFunctionRoot,
+  normalizeCountry,
+  normalizeFunctionRoot,
 } from 'src/engine/core-modules/org-chart/utils/orgchart-normalization.util';
 import { OrgChartData } from 'twenty-shared';
 import {
-    applyAsOfSnapshotToCandidates,
-    applyEntireCompanyExperienceTitlesToCandidates,
-    companyTenureFromDerivedExperience,
+  applyAsOfSnapshotToCandidates,
+  applyEntireCompanyExperienceTitlesToCandidates,
+  companyTenureFromDerivedExperience,
 } from '../../org-chart/utils/orgchart-asof-snapshot.util';
 import { extractLinkedinProfileUrlFromOrgChartCandidateRow } from '../../org-chart/utils/orgchart-candidate-linkedin-url.util';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
@@ -49,8 +50,8 @@ import { constructSearchParamKey } from '../utils/search-parameter.utils';
 import { buildTitleTaxonomyResolvedIntent } from '../utils/title-taxonomy-resolved-intent.util';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
 import {
-    OrgchartLinkedInQueryRouterService,
-    type OrgchartQueryGeneratorPreference,
+  OrgchartLinkedInQueryRouterService,
+  type OrgchartQueryGeneratorPreference,
 } from './orgchart-linkedin-query-router.service';
 import { SearchExecutionService } from './search-execution.service';
 
@@ -495,6 +496,7 @@ export class OrgChartSearchService {
           searchPlan = computeOrgChartLinkedInSearchPlan({
             totalCountFromApi: probe.totalCount,
             strategiesToRun: strategiesToRun.length,
+            searchType,
             country,
             functionRoot,
             maxCandidates: linkedInExecutionOptions.maxCandidates,
@@ -529,7 +531,11 @@ export class OrgChartSearchService {
 
     const maxPagesForSearch =
       searchPlan?.maxPages ??
-      Math.ceil(linkedInExecutionOptions.maxCandidates / 10);
+      computeOrgChartLinkedInMaxPages(
+        undefined,
+        linkedInExecutionOptions.maxCandidates,
+        searchType,
+      );
 
     const validateAndScoreLinkedInResults =
       options?.validateAndScoreLinkedInResults === true;
@@ -806,6 +812,7 @@ export class OrgChartSearchService {
     const plan = computeOrgChartLinkedInSearchPlan({
       totalCountFromApi: totalCount,
       strategiesToRun: strategiesToRun.length,
+      searchType,
       country,
       functionRoot,
       maxCandidates,

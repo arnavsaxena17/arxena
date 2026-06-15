@@ -173,7 +173,7 @@ export class LinkedInSearchService {
       const queryParams = new URLSearchParams({
         account_id: accountId,
         ...(options.cursor && { cursor: options.cursor }),
-        ...(options.limit && { limit: options.limit.toString() }),
+        ...(options.limit != null && { limit: options.limit.toString() }),
       });
 
       this.logger.log(`Making LinkedIn API call with URL: ${url}?${queryParams}`);

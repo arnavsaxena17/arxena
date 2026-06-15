@@ -1476,8 +1476,8 @@ export const ArxOrgChartContainer = ({
                 </StyledOrgChartConfirmDt>
                 <StyledOrgChartConfirmDd>
                   {pendingSearchConfirm.scopeRequired
-                    ? t`~${pendingSearchConfirm.estimate.estimatedTotalUpperBound.toLocaleString()} (limit ${pendingSearchConfirm.estimate.threshold.toLocaleString()})`
-                    : t`≈ ${pendingSearchConfirm.estimate.estimatedTotal.toLocaleString()} (up to ${pendingSearchConfirm.estimate.estimatedTotalUpperBound.toLocaleString()})`}
+                    ? `~${pendingSearchConfirm.estimate.estimatedTotalUpperBound.toLocaleString()} (limit ${pendingSearchConfirm.estimate.threshold.toLocaleString()})`
+                    : `≈ ${pendingSearchConfirm.estimate.estimatedTotal.toLocaleString()} (up to ${pendingSearchConfirm.estimate.estimatedTotalUpperBound.toLocaleString()})`}
                 </StyledOrgChartConfirmDd>
               </StyledOrgChartConfirmRow>
               <StyledOrgChartConfirmRow>

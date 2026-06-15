@@ -1,6 +1,19 @@
+import type { LinkedInSearchType } from 'twenty-shared';
+import {
+  computeLinkedInUnipilePagesRequired,
+  getLinkedInUnipileSearchPageLimit,
+} from 'twenty-shared';
+
 import { hasMeaningfulOrgChartFunctionRootFilter } from './orgchart-filter.util';
 
-const DEFAULT_ORGCHART_LINKEDIN_PAGE_SIZE = 10;
+export {
+  computeLinkedInUnipilePagesRequired,
+  getLinkedInUnipileSearchPageLimit,
+  LINKEDIN_UNIPILE_CLASSIC_SEARCH_PAGE_LIMIT,
+  LINKEDIN_UNIPILE_RECRUITER_SEARCH_PAGE_LIMIT,
+  LINKEDIN_UNIPILE_SALES_NAVIGATOR_SEARCH_PAGE_LIMIT,
+  LINKEDIN_UNIPILE_SEARCH_PAGE_LIMITS
+} from 'twenty-shared';
 
 export const hasMeaningfulOrgChartCountryFilter = (
   country?: string,
@@ -27,25 +40,25 @@ export const getOrgChartLinkedInMaxCandidates = (): number => {
   return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 500;
 };
 
-export const getOrgChartLinkedInPageSize = (): number =>
-  DEFAULT_ORGCHART_LINKEDIN_PAGE_SIZE;
+export const getOrgChartLinkedInPageSize = (
+  searchType: LinkedInSearchType,
+): number => getLinkedInUnipileSearchPageLimit(searchType);
 
 export const computeOrgChartLinkedInMaxPages = (
   totalCount: number | undefined,
   maxCandidates: number,
-  pageSize = DEFAULT_ORGCHART_LINKEDIN_PAGE_SIZE,
-): number => {
-  const cappedTotal =
-    typeof totalCount === 'number' && totalCount > 0
-      ? Math.min(totalCount, maxCandidates)
-      : maxCandidates;
-
-  return Math.max(1, Math.ceil(cappedTotal / pageSize));
-};
+  searchType: LinkedInSearchType,
+): number =>
+  computeLinkedInUnipilePagesRequired({
+    totalCount,
+    maxCandidates,
+    searchType,
+  });
 
 export const computeOrgChartLinkedInSearchPlan = (input: {
   totalCountFromApi: number;
   strategiesToRun: number;
+  searchType: LinkedInSearchType;
   country?: string;
   functionRoot?: string;
   pageSize?: number;
@@ -59,8 +72,10 @@ export const computeOrgChartLinkedInSearchPlan = (input: {
   scopeRequired: boolean;
   maxPages: number;
   maxCandidates: number;
+  pageSize: number;
 } => {
-  const pageSize = input.pageSize ?? DEFAULT_ORGCHART_LINKEDIN_PAGE_SIZE;
+  const pageSize =
+    input.pageSize ?? getLinkedInUnipileSearchPageLimit(input.searchType);
   const maxCandidates = input.maxCandidates ?? getOrgChartLinkedInMaxCandidates();
   const strategiesToRun = Math.max(1, input.strategiesToRun);
   const totalCount = Math.max(0, input.totalCountFromApi);
@@ -74,7 +89,7 @@ export const computeOrgChartLinkedInSearchPlan = (input: {
   const maxPages = computeOrgChartLinkedInMaxPages(
     totalCount,
     maxCandidates,
-    pageSize,
+    input.searchType,
   );
   const estimatedApiRequests = strategiesToRun * maxPages;
   const thresholdExceeded = totalCount > threshold;
@@ -89,6 +104,7 @@ export const computeOrgChartLinkedInSearchPlan = (input: {
     scopeRequired,
     maxPages,
     maxCandidates,
+    pageSize,
   };
 };
 

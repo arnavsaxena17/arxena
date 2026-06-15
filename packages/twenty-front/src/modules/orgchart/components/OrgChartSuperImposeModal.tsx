@@ -324,6 +324,7 @@ export const OrgChartSuperImposeModal = ({
     enqueueSnackBar,
     functionRoot,
     linkedinCompanyUrl,
+    linkedinUnipileAccountId,
     serverBaseUrl,
     superImposePayload,
   ]);
