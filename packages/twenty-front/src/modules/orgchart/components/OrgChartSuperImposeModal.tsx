@@ -510,12 +510,12 @@ export const OrgChartSuperImposeModal = ({
 
         <StyledEstimateBadge $tone={estimateTone}>
           {estimateLoading
-            ? t`Estimating people…`
+            ? `Estimating people…`
             : estimate
               ? estimate.scopeRequired
-                ? t`Too many people (~${estimate.estimatedTotalUpperBound}). Select a country or function.`
-                : t`≈ ${estimate.estimatedTotal} people (up to ${estimate.estimatedTotalUpperBound})`
-              : t`Enter sources to see an estimate`}
+                ? `Too many people (~${estimate.estimatedTotalUpperBound}). Select a country or function.`
+                : `≈ ${estimate.estimatedTotal} people (up to ${estimate.estimatedTotalUpperBound})`
+              : `Enter sources to see an estimate`}
         </StyledEstimateBadge>
 
         <StyledCheckboxRow>
