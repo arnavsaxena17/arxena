@@ -1,6 +1,10 @@
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  buildVisibleFunctionRoots,
+  formatOrgChartFunctionRootOptionLabel,
+} from 'twenty-orgchart';
 import { Button } from 'twenty-ui';
 import { useDebouncedCallback } from 'use-debounce';
 
@@ -11,8 +15,8 @@ import { TextInput } from '@/ui/input/components/TextInput';
 import { Modal } from '@/ui/layout/modal/components/Modal';
 
 import {
-    canAppendToExistingSuperImposeChart,
-    parseMultilineUrlInput,
+  canAppendToExistingSuperImposeChart,
+  parseMultilineUrlInput,
 } from '../utils/superImposeAppendEligibility';
 
 const StyledModal = styled(Modal)`
@@ -59,8 +63,8 @@ const StyledEstimateBadge = styled.div<{ $tone: 'ok' | 'warn' | 'error' }>`
     $tone === 'error'
       ? theme.background.danger
       : $tone === 'warn'
-        ? theme.background.transparent.warning
-        : theme.background.transparent.success};
+        ? theme.background.transparent.light
+        : theme.background.transparent.blue};
   color: ${({ theme }) => theme.font.color.primary};
 `;
 
@@ -107,6 +111,7 @@ export type OrgChartSuperImposeModalProps = {
   accessToken: string;
   serverBaseUrl: string;
   candidateSource: 'harvest' | 'unipile';
+  linkedinUnipileAccountId?: string;
   selectedCountry?: string;
   selectedFunctionRoot?: string;
   businessDivisionRawQuery?: string;
@@ -114,6 +119,7 @@ export type OrgChartSuperImposeModalProps = {
   availableFunctionRoots: string[];
   countryPercentLabels: Record<string, string>;
   functionRootPercentLabels: Record<string, string>;
+  functionRootCounts?: Record<string, number>;
   isBlankTemplate: boolean;
   firstSourceUsed?: string | null;
   latestOrgChart?: Record<string, unknown> | null;
@@ -140,6 +146,7 @@ export const OrgChartSuperImposeModal = ({
   accessToken,
   serverBaseUrl,
   candidateSource,
+  linkedinUnipileAccountId,
   selectedCountry,
   selectedFunctionRoot,
   businessDivisionRawQuery,
@@ -147,6 +154,7 @@ export const OrgChartSuperImposeModal = ({
   availableFunctionRoots,
   countryPercentLabels,
   functionRootPercentLabels,
+  functionRootCounts,
   isBlankTemplate,
   firstSourceUsed,
   latestOrgChart,
@@ -185,6 +193,18 @@ export const OrgChartSuperImposeModal = ({
         itemCount,
       }),
     [firstSourceUsed, isBlankTemplate, itemCount, latestOrgChart],
+  );
+
+  const visibleFunctionRoots = useMemo(
+    () =>
+      buildVisibleFunctionRoots({
+        availableFunctionRoots,
+        functionRootPercentLabels,
+        selectedFunctionRoot: functionRoot,
+        includePreviewFunctionRoots: true,
+        includeFullCompany: true,
+      }),
+    [availableFunctionRoots, functionRoot, functionRootPercentLabels],
   );
 
   useEffect(() => {
@@ -248,6 +268,7 @@ export const OrgChartSuperImposeModal = ({
     companyId,
     companyName,
     linkedinCompanyUrl,
+    linkedinUnipileAccountId,
     serverBaseUrl,
     superImposePayload,
   ]);
@@ -272,6 +293,7 @@ export const OrgChartSuperImposeModal = ({
           companyId,
           companyName,
           linkedinCompanyUrl,
+          linkedinUnipileAccountId,
         }),
       });
       const json = (await res.json()) as SuperImposeEstimate & {
@@ -376,7 +398,6 @@ export const OrgChartSuperImposeModal = ({
       onClose={onClose}
       size="large"
       padding="large"
-      isOpen={isOpen}
     >
       <StyledContent>
         <StyledTitle>{t`Super Impose Org Chart`}</StyledTitle>
@@ -456,13 +477,13 @@ export const OrgChartSuperImposeModal = ({
             value={functionRoot}
             onChange={(event) => setFunctionRoot(event.target.value)}
           >
-            <option value="fullcompany">{t`Full company`}</option>
-            {availableFunctionRoots.map((key) => (
+            {visibleFunctionRoots.map((key) => (
               <option key={key} value={key}>
-                {key}
-                {functionRootPercentLabels[key]
-                  ? ` (${functionRootPercentLabels[key]})`
-                  : ''}
+                {formatOrgChartFunctionRootOptionLabel(
+                  key,
+                  functionRootPercentLabels,
+                  functionRootCounts,
+                )}
               </option>
             ))}
           </StyledSelect>
@@ -518,12 +539,11 @@ export const OrgChartSuperImposeModal = ({
             disabled={isGenerating}
           />
           <Button
-            title={t`Generate`}
+            title={isGenerating ? t`Generating...` : t`Generate`}
             variant="primary"
             accent="blue"
             onClick={handleGenerate}
             disabled={generateDisabled}
-            isLoading={isGenerating}
           />
         </StyledActions>
       </StyledContent>

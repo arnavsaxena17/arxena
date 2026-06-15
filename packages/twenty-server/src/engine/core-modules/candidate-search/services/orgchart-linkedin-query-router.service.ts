@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
 import type { SearchQuery } from 'src/engine/core-modules/linkedin-query-generation/types/linkedin-query-generation.types';
+import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { normalizeLlmNullishString } from '../schemas/org-chart.schema';
 import type {
@@ -107,15 +108,27 @@ export class OrgchartLinkedInQueryRouterService {
   buildPythonQueryInputForOrgchartMode(args: {
     mode?: string;
     primaryCompanyName: string;
+    companyNames?: string[];
     functionRoot: string;
+    country?: string;
     jobTitles?: string[];
     stdFunction?: string;
     stdGrade?: string;
     selectedNodeStdScopes?: Array<{ stdFunction?: string; stdGrade?: string }>;
   }): PythonQueryInput {
+    const effectiveCompanyNames =
+      args.companyNames?.map((name) => name.trim()).filter(Boolean) ??
+      (args.primaryCompanyName ? [args.primaryCompanyName] : []);
     const pythonInput: PythonQueryInput = {
-      company_names: args.primaryCompanyName ? [args.primaryCompanyName] : [],
+      company_names: effectiveCompanyNames,
     };
+    const countryForLocation = normalizeLlmNullishString(args.country) ?? '';
+    if (
+      countryForLocation.length > 0 &&
+      countryForLocation.toLowerCase() !== 'global'
+    ) {
+      pythonInput.locations = [countryForLocation];
+    }
     const mode = args.mode;
     const stdFn = args.stdFunction?.trim();
     const stdGr = args.stdGrade?.trim();
@@ -198,6 +211,7 @@ export class OrgchartLinkedInQueryRouterService {
     searchType: 'classic' | 'sales_navigator' | 'recruiter';
     mode?: string;
     primaryCompanyName: string;
+    companyNames?: string[];
     jobTitles?: string[];
     country: string;
     functionRoot: string;
@@ -234,6 +248,19 @@ export class OrgchartLinkedInQueryRouterService {
       sendEvent,
     } = args;
 
+    const effectiveCompanyNames =
+      args.companyNames?.map((name) => name.trim()).filter(Boolean) ??
+      (primaryCompanyName ? [primaryCompanyName] : []);
+    const hasScopeFilters =
+      country.trim().length > 0 ||
+      hasMeaningfulOrgChartFunctionRootFilter(functionRoot);
+    const useDirectCompanyFilter =
+      effectiveCompanyNames.length > 0 &&
+      mode === 'entire_company' &&
+      !hasScopeFilters &&
+      !businessDivisionLinkedinKeywords &&
+      (isAllPeopleInCompanyMode || effectiveCompanyNames.length > 1);
+
     if (businessDivisionLinkedinKeywords && primaryCompanyName) {
       this.logger.log(
         `Orgchart router: business division keyword strategy for "${primaryCompanyName}" (searchType=${searchType}).`,
@@ -244,7 +271,7 @@ export class OrgchartLinkedInQueryRouterService {
       const divisionQuery: SearchQuery = {
         keywords: businessDivisionLinkedinKeywords,
         job_title: null,
-        company: [primaryCompanyName],
+        company: effectiveCompanyNames,
         location: locationForQuery,
         years_of_experience: null,
       };
@@ -262,15 +289,18 @@ export class OrgchartLinkedInQueryRouterService {
       };
     }
 
-    if (isAllPeopleInCompanyMode) {
+    if (useDirectCompanyFilter) {
       this.logger.log(
-        `Orgchart router: direct company filter for "${primaryCompanyName}" (mode=${mode}, searchType=${searchType}).`,
+        `Orgchart router: direct company filter for [${effectiveCompanyNames.join(', ')}] (mode=${mode}, searchType=${searchType}).`,
       );
       const companyOnlyQuery: SearchQuery = {
         keywords: null,
         job_title: null,
-        company: [primaryCompanyName],
-        location: null,
+        company: effectiveCompanyNames,
+        location:
+          country.trim().length > 0 && country.toLowerCase() !== 'global'
+            ? [country]
+            : null,
         years_of_experience: null,
       };
       const strategies = this.buildStrategiesFromSingleSearchQuery({
@@ -305,7 +335,9 @@ export class OrgchartLinkedInQueryRouterService {
       const pythonInput = this.buildPythonQueryInputForOrgchartMode({
         mode,
         primaryCompanyName,
+        companyNames: effectiveCompanyNames,
         functionRoot,
+        country,
         jobTitles,
         stdFunction,
         stdGrade,
@@ -398,6 +430,7 @@ export class OrgchartLinkedInQueryRouterService {
     searchType: 'classic' | 'sales_navigator' | 'recruiter';
     mode?: string;
     primaryCompanyName: string;
+    companyNames?: string[];
     jobTitles?: string[];
     country: string;
     functionRoot: string;

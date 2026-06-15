@@ -2,7 +2,6 @@ import styled from '@emotion/styled';
 import { ReactNode, useState } from 'react';
 
 import { OrgChartFilters, OrgChartFiltersProps } from 'twenty-orgchart';
-import { Button } from 'twenty-ui';
 
 import {
     OrgChartBusinessDivisionQuery,
@@ -86,10 +85,6 @@ const StyledBackButton = styled.button`
   }
 `;
 
-const StyledShareButton = styled(Button)`
-  margin-left: ${({ theme }) => theme.spacing(2)};
-`;
-
 export type OrgChartHeaderProps = OrgChartCompanyInfoProps & {
   onBack?: () => void;
   hasFilters: boolean;
@@ -143,6 +138,7 @@ export const OrgChartHeader = ({
         <OrgChartCompanyInfo
           {...companyInfoProps}
           onViewDetails={() => setIsCompanyDrawerOpen(true)}
+          onShare={onShare}
         />
         {/* {onAsOfMonthChange && (
           <StyledMonthPickerCenter>
@@ -154,16 +150,6 @@ export const OrgChartHeader = ({
             />
           </StyledMonthPickerCenter>
         )} */}
-        {onShare && (
-          <StyledShareButton
-            title="Share"
-            variant="secondary"
-            accent="default"
-            size="small"
-            type="button"
-            onClick={onShare}
-          />
-        )}
         {hasFilters && (
           <StyledOrgChartToolbar>
             <OrgChartFilters {...filtersProps} omitMarginLeft />

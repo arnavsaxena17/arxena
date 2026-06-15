@@ -15,6 +15,21 @@ import type { ContextResultItem } from '../types';
  *
  * Returns undefined when the input cannot be parsed into a hostname.
  */
+/** First-letter fallback when `/org-chart/company-logo` returns 404. */
+export const getCompanyLogoAbbreviation = (
+  website?: string,
+  companyName?: string,
+): string => {
+  if (website?.trim()) {
+    const domain = website.replace(/^https?:\/\//, '').split('.')[0];
+    const letter = domain?.[0];
+    return letter
+      ? letter.toUpperCase()
+      : (companyName?.charAt(0)?.toUpperCase() ?? '?');
+  }
+  return companyName?.charAt(0)?.toUpperCase() ?? '?';
+};
+
 export const extractCompanyDomainFromWebsite = (
   site?: string | null,
 ): string | undefined => {

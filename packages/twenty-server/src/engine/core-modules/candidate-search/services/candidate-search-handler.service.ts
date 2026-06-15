@@ -1315,6 +1315,20 @@ export class CandidateSearchHandlerService {
                 parsed,
                 effectiveFunctionRoot: merged.effectiveFunctionRoot,
               });
+          } else {
+            titleTaxonomyResolvedIntent = buildTitleTaxonomyResolvedIntent({
+              companyName: primaryCompanyName,
+              parsed: {
+                business_division_keywords: businessDivisionLinkedinKeywords,
+                country: ctx.country ?? null,
+                business_division: null,
+                role_description: null,
+                std_grade_levels: null,
+                function_root: functionRoot || null,
+                rationale: null,
+              },
+              effectiveFunctionRoot: functionRoot,
+            });
           }
           if (businessDivisionLinkedinKeywords) {
             businessDivisionLinkedinKeywords =

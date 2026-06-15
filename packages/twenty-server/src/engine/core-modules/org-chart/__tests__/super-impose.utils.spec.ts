@@ -6,6 +6,7 @@ import {
     isValidSalesNavigatorPeopleSearchUrl,
     normalizeLinkedinCompanyUrl,
     parseMultilineUrlInput,
+    resolveSuperImposeCompanySearchNames,
 } from 'src/engine/core-modules/org-chart/utils/super-impose-input-resolver.util';
 import {
     andMergeBooleanSearchClauses,
@@ -68,6 +69,29 @@ describe('super-impose-input-resolver.util', () => {
 
   it('parses multiline url input', () => {
     expect(parseMultilineUrlInput('  a\n\nb  ')).toEqual(['a', 'b']);
+  });
+
+  it('derives company search names from resolved companies', () => {
+    expect(
+      resolveSuperImposeCompanySearchNames([
+        {
+          slug: 'insulators-and-electricals-company',
+          linkedinUrl:
+            'https://www.linkedin.com/company/insulators-and-electricals-company/',
+          resolvedFrom: 'primary_chart',
+          companyName: 'Insulators and Electricals Company',
+        },
+        {
+          slug: 'insulator-and-electrical-company',
+          linkedinUrl:
+            'https://www.linkedin.com/company/insulator-and-electrical-company/',
+          resolvedFrom: 'linkedin_url',
+        },
+      ]),
+    ).toEqual([
+      'Insulators and Electricals Company',
+      'insulator and electrical company',
+    ]);
   });
 });
 

@@ -7,6 +7,7 @@ import { TabList } from '@/ui/layout/tab/components/TabList';
 import { useTabList } from '@/ui/layout/tab/hooks/useTabList';
 import { isValidLinkedInProfileUrl, toTitleCase } from 'twenty-shared';
 
+import { getCompanyLogoAbbreviation } from '../utils/orgChartUtils';
 import type { OrgChartCompanyInfoProps } from './OrgChartCompanyInfo';
 
 const StyledDrawerBackdrop = styled.div`
@@ -88,6 +89,8 @@ const StyledCompanyLogoPlaceholder = styled.div`
   border-radius: ${({ theme }) => theme.border.radius.md};
   background: ${({ theme }) => theme.background.tertiary};
   color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: 24px;
+  font-weight: 600;
   flex-shrink: 0;
 `;
 
@@ -284,6 +287,7 @@ export const OrgChartCompanyDrawer = ({
   timelineMetrics,
   timelineProfilesOptions,
 }: OrgChartCompanyDrawerProps) => {
+  const [logoError, setLogoError] = useState(false);
   const timelineTabListInstanceId = 'orgchart-company-drawer-timeline-tabs';
   const { activeTabId } = useTabList(timelineTabListInstanceId);
   const activeTab = (
@@ -327,6 +331,10 @@ export const OrgChartCompanyDrawer = ({
       ? website
       : `https://${website}`
     : null;
+  const logoAbbreviation = getCompanyLogoAbbreviation(
+    website,
+    displayCompanyName || companyName,
+  );
 
   const shouldFetchProfiles =
     activeTab === 'joined' ||
@@ -506,10 +514,17 @@ export const OrgChartCompanyDrawer = ({
         </StyledDrawerHeader>
         <StyledDrawerBody>
           <StyledCompanyHeader>
-            {logoUrl ? (
-              <StyledCompanyLogo src={logoUrl} alt="" loading="lazy" />
+            {logoUrl && !logoError ? (
+              <StyledCompanyLogo
+                src={logoUrl}
+                alt=""
+                loading="lazy"
+                onError={() => setLogoError(true)}
+              />
             ) : (
-              <StyledCompanyLogoPlaceholder />
+              <StyledCompanyLogoPlaceholder>
+                {logoAbbreviation}
+              </StyledCompanyLogoPlaceholder>
             )}
             <StyledCompanyTitleBlock>
               <StyledCompanyName>{displayCompanyName || 'Company'}</StyledCompanyName>

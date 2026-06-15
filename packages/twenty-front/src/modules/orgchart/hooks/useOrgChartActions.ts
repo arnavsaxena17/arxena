@@ -47,11 +47,19 @@ const OUTREACH_ACTION_TO_CHANNEL: Partial<
   outreach_email: 'email',
 };
 
-/** Subset of {@link OrgChartContextAction} used for org-chart search API `mode`. */
-type OrgchartSearchMode = Extract<
-  OrgChartContextAction,
-  OrgchartSearchModeValue
->;
+/** Org-chart search API `mode` (includes header-only modes such as `super_impose`). */
+type OrgchartSearchMode = OrgchartSearchModeValue;
+
+export type OrgChartLinkedInSearchEstimate = {
+  estimatedTotal: number;
+  estimatedTotalUpperBound: number;
+  estimatedApiRequests: number;
+  threshold: number;
+  thresholdExceeded: boolean;
+  scopeRequired: boolean;
+  strategiesExtracted: number;
+  strategiesToRun: number;
+};
 
 export type UseOrgChartActionsParams = {
   companyId: string;
@@ -176,6 +184,54 @@ const uniqueConcatJobTitleListsPreservingOrder = (
     }
   }
   return out;
+};
+
+const buildOrgchartSearchRequirement = (
+  mode: OrgchartSearchModeValue,
+  resolvedCompanyName: string,
+  jobTitles: string[],
+  params: {
+    country?: string;
+    functionRoot?: string;
+    origin?: 'header' | 'view_all_candidates';
+    businessDivisionRawQuery?: string;
+  },
+  divisionRaw: string,
+): string => {
+  const baseRequirement =
+    mode === 'business_division_map'
+      ? `Map business division at ${resolvedCompanyName}. User request: ${divisionRaw}`
+      : mode === 'leadership'
+        ? `Find leadership roles at ${resolvedCompanyName}.`
+        : mode === 'entire_company'
+          ? `Find all people currently working at ${resolvedCompanyName}.`
+          : mode === 'function_grade'
+            ? `Find people at ${resolvedCompanyName} in similar functions and seniority.`
+            : mode === 'selected_nodes'
+              ? `Find people for the selected positions at ${resolvedCompanyName}.`
+              : `Find people in the same position at ${resolvedCompanyName}.`;
+
+  const titlesRequirement =
+    jobTitles.length > 0 ? ` Key titles: ${jobTitles.join(', ')}.` : '';
+
+  const filterParts: string[] = [];
+  if (params.country) {
+    filterParts.push(`located in ${params.country}`);
+  }
+  if (params.functionRoot) {
+    filterParts.push(`working in the ${params.functionRoot} function`);
+  }
+  const filtersRequirement =
+    params.origin === 'view_all_candidates' && filterParts.length > 0
+      ? ` Focus on people ${filterParts.join(' and ')}.`
+      : '';
+
+  const businessDivisionRequirementSuffix =
+    divisionRaw && mode !== 'business_division_map'
+      ? ` User business division focus: ${divisionRaw}.`
+      : '';
+
+  return `${baseRequirement}${titlesRequirement}${filtersRequirement}${businessDivisionRequirementSuffix}`;
 };
 
 const LINKEDIN_UNIPILE_SOURCE_UNAVAILABLE_SNACKBAR =
@@ -1375,7 +1431,7 @@ export const useOrgChartActions = ({
       );
     }
 
-    if (!isHeaderOrgChartRequest) {
+    if (!isHeaderOrgChartRequest && mode !== 'super_impose') {
       setIsContextModalOpen(true);
       setContextModalTitle(title);
       setContextModalMode(mode);
@@ -1820,6 +1876,87 @@ export const useOrgChartActions = ({
       }
       setIsContextLoading(false);
     }
+  };
+
+  const estimateOrgchartLinkedInSearch = async (params: {
+    mode: OrgchartSearchModeValue;
+    origin?: 'header' | 'view_all_candidates';
+    country?: string;
+    functionRoot?: string;
+    businessDivisionRawQuery?: string;
+    node?: OrgChartNodeData;
+    selectedNodes?: OrgChartNodeData[];
+  }): Promise<OrgChartLinkedInSearchEstimate | null> => {
+    const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+    if (!baseUrl || !accessToken || !companyId) {
+      return null;
+    }
+
+    const source = orgChartLinkedinCandidateSource;
+    if (source !== 'unipile' && source !== 'harvest') {
+      return null;
+    }
+
+    const divisionRaw =
+      params.businessDivisionRawQuery?.trim() ||
+      businessDivisionRawQueryFromToolbar?.trim() ||
+      '';
+
+    let jobTitles: string[] = [];
+    if (params.selectedNodes && params.selectedNodes.length > 0) {
+      jobTitles = uniqueConcatJobTitleListsPreservingOrder(
+        params.selectedNodes.map(collectJobTitlesFromOrgChartNode),
+      );
+    } else if (params.node) {
+      jobTitles = collectJobTitlesFromOrgChartNode(params.node);
+    }
+
+    const resolvedCompanyName = companyName ?? companyId;
+    const requirement = buildOrgchartSearchRequirement(
+      params.mode,
+      resolvedCompanyName,
+      jobTitles,
+      params,
+      divisionRaw,
+    );
+
+    const useUnipileSource = source === 'unipile';
+    const body = {
+      rawQuery: requirement,
+      cleanedQuery: requirement,
+      companyName: companyName ?? undefined,
+      companyId,
+      jobTitles,
+      mode: params.mode,
+      searchType: orgChartLinkedInSearchType,
+      country: params.country,
+      ...(params.mode !== 'current_node' && params.mode !== 'selected_nodes'
+        ? { functionRoot: params.functionRoot }
+        : {}),
+      ...(divisionRaw ? { businessDivisionRawQuery: divisionRaw } : {}),
+      queryGenerator: orgChartQueryGeneratorPreference,
+      ...(useUnipileSource && linkedinUnipileAccountId?.trim()
+        ? { linkedinUnipileAccountId: linkedinUnipileAccountId.trim() }
+        : {}),
+    };
+
+    const res = await fetch(`${baseUrl}/org-chart/linkedin-search/estimate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const json = (await res.json()) as OrgChartLinkedInSearchEstimate & {
+      message?: string;
+    };
+    if (!res.ok) {
+      throw new Error(json.message ?? `Estimate failed (${res.status})`);
+    }
+
+    return json;
   };
 
   const cancelOrgchartSearch = useCallback(() => {
@@ -2550,6 +2687,7 @@ export const useOrgChartActions = ({
     applyOrgChartOverride,
     downloadContextResultsAsCsv,
     executeOrgchartSearch,
+    estimateOrgchartLinkedInSearch,
     cancelOrgchartSearch,
 
     selectedNodeForDetails,

@@ -64,6 +64,39 @@ export const dedupeNormalizedLinkedinCompanyUrls = (
   return result;
 };
 
+export const slugToCompanySearchName = (slug: string): string =>
+  slug.replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
+
+export const resolveSuperImposeCompanySearchName = (
+  company: SuperImposeResolvedCompany,
+): string => {
+  const fromName = company.companyName?.trim();
+  if (fromName) {
+    return fromName;
+  }
+
+  return slugToCompanySearchName(company.slug);
+};
+
+export const resolveSuperImposeCompanySearchNames = (
+  companies: SuperImposeResolvedCompany[],
+): string[] => {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const company of companies) {
+    const name = resolveSuperImposeCompanySearchName(company);
+    const key = name.toLowerCase();
+    if (!key || seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    result.push(name);
+  }
+
+  return result;
+};
+
 export const buildResolvedCompanyFromUrl = (
   linkedinUrl: string,
   resolvedFrom: SuperImposeResolvedCompany['resolvedFrom'],

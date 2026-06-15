@@ -1,7 +1,15 @@
 import styled from '@emotion/styled';
-import { IconHierarchy2, IconInfoCircle, IconWorld } from '@tabler/icons-react';
+import {
+    IconHierarchy2,
+    IconInfoCircle,
+    IconShare,
+    IconWorld,
+} from '@tabler/icons-react';
+import { useState } from 'react';
 
 import { toTitleCase } from 'twenty-shared';
+
+import { getCompanyLogoAbbreviation } from '../utils/orgChartUtils';
 
 const LINKEDIN_ICON_URL = '/img/linkedin.svg';
 
@@ -55,6 +63,8 @@ const StyledCompanyLogoPlaceholder = styled.div`
   border-radius: ${({ theme }) => theme.border.radius.md};
   background: ${({ theme }) => theme.background.tertiary};
   color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: 14px;
+  font-weight: 600;
   flex-shrink: 0;
 `;
 
@@ -171,6 +181,7 @@ export type OrgChartCompanyInfoProps = {
   tagline?: string;
   logoUrl?: string;
   onViewDetails?: () => void;
+  onShare?: () => void;
   hideProfileCountWhenUnipile?: boolean;
 };
 
@@ -187,8 +198,11 @@ export const OrgChartCompanyInfo = ({
   tagline,
   logoUrl: logoUrlProp,
   onViewDetails,
+  onShare,
   hideProfileCountWhenUnipile,
 }: OrgChartCompanyInfoProps) => {
+  const [logoError, setLogoError] = useState(false);
+
   const getLogoUrl = (site?: string): string | null => {
     if (!site?.trim()) return null;
     const base = process.env.REACT_APP_SERVER_BASE_URL ?? '';
@@ -217,6 +231,10 @@ export const OrgChartCompanyInfo = ({
   const linkedinLabel =
     toTitleCase(linkedinDisplayName) || displayCompanyName || 'LinkedIn';
   const displayTagline = tagline?.trim();
+  const logoAbbreviation = getCompanyLogoAbbreviation(
+    website,
+    displayCompanyName || companyName,
+  );
 
   const hasInfo =
     displayCompanyName ||
@@ -234,11 +252,20 @@ export const OrgChartCompanyInfo = ({
     <>
       {displayCompanyName && (
         <StyledCompanyTitleRow>
-          {logoUrl ? (
-            <StyledCompanyLogo src={logoUrl} alt="" loading="lazy" />
+          {logoUrl && !logoError ? (
+            <StyledCompanyLogo
+              src={logoUrl}
+              alt=""
+              loading="lazy"
+              onError={() => setLogoError(true)}
+            />
           ) : (
             <StyledCompanyLogoPlaceholder>
-              <IconHierarchy2 size={20} />
+              {logoAbbreviation !== '?' ? (
+                logoAbbreviation
+              ) : (
+                <IconHierarchy2 size={20} />
+              )}
             </StyledCompanyLogoPlaceholder>
           )}
           <StyledCompanyTitle>{displayCompanyName}</StyledCompanyTitle>
@@ -274,6 +301,19 @@ export const OrgChartCompanyInfo = ({
               aria-label="View company details"
             >
               <IconInfoCircle size={16} />
+            </StyledInfoButton>
+          )}
+          {onShare && (
+            <StyledInfoButton
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onShare();
+              }}
+              aria-label="Share org chart"
+              title="Share"
+            >
+              <IconShare size={16} />
             </StyledInfoButton>
           )}
         </StyledCompanyTitleRow>

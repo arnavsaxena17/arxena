@@ -13,6 +13,7 @@ import {
     resolveHarvestFunctionIdsForFunctionRoot,
     resolveHarvestLocationForCountry,
 } from 'src/engine/core-modules/org-chart/utils/super-impose-harvest-scope.util';
+import { resolveSuperImposeCompanySearchNames } from 'src/engine/core-modules/org-chart/utils/super-impose-input-resolver.util';
 import {
     andMergeBooleanSearchClauses,
     wrapJobTitleAsOrClause,
@@ -29,6 +30,7 @@ export type BuildSuperImposeQueryPlanInput = {
   candidateSource: 'harvest' | 'unipile';
   searchType?: 'classic' | 'sales_navigator' | 'recruiter';
   primaryCompanyName: string;
+  linkedinUnipileAccountId?: string;
   apiToken?: string;
 };
 
@@ -58,6 +60,9 @@ export class SuperImposeQueryBuilderService {
     });
 
     const companyUrls = input.resolvedCompanies.map((company) => company.linkedinUrl);
+    const companySearchNames = resolveSuperImposeCompanySearchNames(
+      input.resolvedCompanies,
+    );
     const salesNavigatorSearchUrls = input.salesNavigatorSearchUrls
       .map((url) => url.trim())
       .filter((url) => url.length > 0);
@@ -106,11 +111,16 @@ export class SuperImposeQueryBuilderService {
       candidateSource: input.candidateSource,
       searchType,
       mergedSearchClause,
+      companySearchNames,
       resolvedCompanies: input.resolvedCompanies,
       salesNavigatorSearchUrls,
       harvestBatches,
       useLinkedinSearchForCompanies,
       sessionId,
+      country: input.country,
+      functionRoot: input.functionRoot,
+      apiToken: input.apiToken,
+      linkedinUnipileAccountId: input.linkedinUnipileAccountId,
     };
   }
 

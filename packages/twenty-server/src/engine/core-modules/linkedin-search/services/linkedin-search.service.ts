@@ -572,7 +572,7 @@ export class LinkedInSearchService {
       category: 'people',
       ...request,
     };
-    this.logger.log(`Request in searchCompaniesSalesNavigator:: ${JSON.stringify(request, null, 2)}`);
+    this.logger.log(`Request in searchPeopleSalesNavigator:: ${JSON.stringify(request, null, 2)}`);
     return this.search(searchRequest, accountId, options);
   }
 

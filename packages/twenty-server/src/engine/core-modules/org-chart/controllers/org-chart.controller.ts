@@ -2550,6 +2550,60 @@ export class OrgChartController {
     };
   }
 
+  @Post('linkedin-search/estimate')
+  @UseGuards(JwtAuthGuard)
+  async estimateLinkedInOrgChartSearch(
+    @Body()
+    body: {
+      rawQuery: string;
+      cleanedQuery: string;
+      companyName?: string;
+      companyId?: string;
+      jobTitles?: string[];
+      mode:
+        | 'current_node'
+        | 'leadership'
+        | 'entire_company'
+        | 'function_grade'
+        | 'business_division_map'
+        | 'selected_nodes'
+        | 'super_impose';
+      searchType?: 'classic' | 'sales_navigator' | 'recruiter';
+      country?: string;
+      functionRoot?: string;
+      stdFunction?: string;
+      stdGrade?: string;
+      selectedNodeStdScopes?: Array<{ stdFunction?: string; stdGrade?: string }>;
+      businessDivisionRawQuery?: string;
+      queryGenerator?: 'python' | 'multi_agent';
+      linkedinUnipileAccountId?: string;
+    },
+    @Req() req: Request,
+  ) {
+    const apiToken = this.getAuthToken(req);
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    if (!body?.rawQuery?.trim() || !body?.cleanedQuery?.trim()) {
+      throw new HttpException(
+        'Body fields "rawQuery" and "cleanedQuery" are required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const estimate =
+      await this.orgChartLinkedInBuildService.estimateOrgchartLinkedInSearch(
+        body,
+        apiToken,
+      );
+
+    return {
+      success: true,
+      ...estimate,
+    };
+  }
+
   @Post('super-impose/estimate')
   @UseGuards(JwtAuthGuard)
   async estimateSuperImpose(
@@ -2564,6 +2618,7 @@ export class OrgChartController {
       companyName?: string;
       linkedinCompanyUrl?: string;
       searchType?: 'classic' | 'sales_navigator' | 'recruiter';
+      linkedinUnipileAccountId?: string;
     },
     @Req() req: Request,
   ) {
@@ -2603,6 +2658,7 @@ export class OrgChartController {
         linkedinSearchKeywords: body.superImpose.linkedinSearchKeywords,
         candidateSource,
         searchType: body.searchType,
+        linkedinUnipileAccountId: body.linkedinUnipileAccountId,
       },
       resolvedCompanies,
       salesNavigatorSearchUrls,

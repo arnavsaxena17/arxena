@@ -168,6 +168,51 @@ describe('OrgchartLinkedInQueryRouterService', () => {
     });
   });
 
+  describe('enrichBusinessDivisionLinkedinKeywords', () => {
+    it('ANDs title taxonomy function terms onto base BD keywords', async () => {
+      titleTaxonomyRemoteService.searchKeywordsFromQuery.mockResolvedValue({
+        boolean_query: '(marketing OR brand OR communication)',
+      });
+      const result = await service.enrichBusinessDivisionLinkedinKeywords({
+        businessDivisionRaw: 'vaccines',
+        primaryCompanyName: 'GSK',
+        baseBusinessDivisionKeywords: 'vaccine OR vaccines',
+        requirementForMultiAgent: 'vaccines at gsk',
+        titleTaxonomyResolvedIntent: {
+          std_function_roots: ['marketing'],
+        },
+      });
+      expect(result).toBe(
+        '(vaccine OR vaccines) AND ((marketing OR brand OR communication))',
+      );
+      expect(
+        titleTaxonomyRemoteService.searchKeywordsFromQuery,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          query: 'vaccines',
+          companyName: 'GSK',
+          resolvedIntent: expect.objectContaining({
+            std_function_roots: ['marketing'],
+          }),
+        }),
+      );
+    });
+
+    it('returns base keywords when title taxonomy returns no clause', async () => {
+      titleTaxonomyRemoteService.searchKeywordsFromQuery.mockResolvedValue(null);
+      const result = await service.enrichBusinessDivisionLinkedinKeywords({
+        businessDivisionRaw: 'vaccines',
+        primaryCompanyName: 'GSK',
+        baseBusinessDivisionKeywords: 'vaccine OR vaccines',
+        requirementForMultiAgent: 'vaccines at gsk',
+        titleTaxonomyResolvedIntent: {
+          std_function_roots: ['marketing'],
+        },
+      });
+      expect(result).toBe('vaccine OR vaccines');
+    });
+  });
+
   describe('buildGeneratedSearchParametersForOrgchart — no generator (company / division)', () => {
     it('entire_company: unresolved params are company-only classic search', async () => {
       const params = await service.buildGeneratedSearchParametersForOrgchart({
@@ -184,6 +229,33 @@ describe('OrgchartLinkedInQueryRouterService', () => {
       });
       assertClassicUnresolvedShape(params, 'entire_company');
       expect(params.classicPeopleSearch?.company).toEqual([COMPANY.toLowerCase()]);
+    });
+
+    it('entire_company: sales_navigator uses one combined company filter when multiple companyNames are provided', async () => {
+      const params = await service.buildGeneratedSearchParametersForOrgchart({
+        rawQuery: REQUIREMENT,
+        cleanedQuery: REQUIREMENT,
+        requirement: REQUIREMENT,
+        searchType: 'sales_navigator',
+        mode: 'entire_company',
+        primaryCompanyName: COMPANY,
+        companyNames: [COMPANY, 'Acme Subsidiary'],
+        country: '',
+        functionRoot: '',
+        isAllPeopleInCompanyMode: false,
+        apiToken: API_TOKEN,
+      });
+
+      const strategies = extractStrategiesFromGeneratedParams(
+        params,
+        'sales_navigator',
+        'people',
+      );
+      expect(strategies).toHaveLength(1);
+      expect(strategies[0].parameters.company).toEqual({
+        include: ['acme corp', 'acme subsidiary'],
+      });
+      expect(pythonQueryGenerationService.generateSearchParameters).not.toHaveBeenCalled();
     });
 
     it('business_division_map: unresolved params include keywords + company', async () => {

@@ -44,6 +44,7 @@ import { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-sea
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
+import { OrgChartLinkedInScopeRequiredError } from 'src/engine/core-modules/org-chart/errors/orgchart-linkedin-scope-required.error';
 import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services/orgchart-cache.service';
 import { OrgchartCancelRegistryService } from 'src/engine/core-modules/org-chart/services/orgchart-cancel-registry.service';
 import { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
@@ -3788,6 +3789,50 @@ export class OrgChartLinkedInBuildService {
     };
   }
 
+  async estimateOrgchartLinkedInSearch(
+    body: SearchOrgchartLinkedInBody,
+    apiToken: string,
+  ) {
+    const {
+      rawQuery,
+      cleanedQuery,
+      searchType = 'classic',
+      mode,
+      companyName,
+      companyId,
+      jobTitles,
+      country,
+      functionRoot,
+      stdFunction,
+      stdGrade,
+      selectedNodeStdScopes,
+      businessDivisionRawQuery,
+      queryGenerator,
+      linkedinUnipileAccountId,
+    } = body;
+
+    return this.orgChartSearchService.estimateLinkedInOrgChartSearch(
+      rawQuery,
+      cleanedQuery,
+      searchType,
+      apiToken,
+      {
+        mode,
+        companyName: companyName || (companyId ? String(companyId) : undefined),
+        companyId,
+        jobTitles,
+        country,
+        functionRoot,
+        stdFunction,
+        stdGrade,
+        selectedNodeStdScopes,
+        businessDivisionRawQuery,
+        queryGenerator,
+        linkedinUnipileAccountId,
+      },
+    );
+  }
+
   async enqueueApolloOrgChartBuildJob(
     jobData: OrgchartApolloBuildJobData,
   ): Promise<void> {
@@ -4815,6 +4860,36 @@ export class OrgChartLinkedInBuildService {
         },
       });
     } catch (error) {
+      if (error instanceof OrgChartLinkedInScopeRequiredError) {
+        const scopeMessage = error.message;
+
+        this.logger.warn(
+          `Unipile org chart job blocked for company="${resolvedCompanyName}": ${scopeMessage}`,
+        );
+
+        if (requestId) {
+          await this.orgchartCancelRegistry.setFailed(requestId, scopeMessage);
+        }
+
+        await this.emitOrgchartSearchProgressForToken(apiToken, {
+          requestId,
+          mode: modeForOrgChartBuild,
+          searchType,
+          companyName: resolvedCompanyName,
+          event: 'error',
+          data: {
+            message: scopeMessage,
+            candidateSource: 'unipile',
+            scopeRequired: true,
+            estimatedTotal: error.details.totalCount,
+            maxCandidates: error.details.threshold,
+            estimatedApiRequests: error.details.estimatedApiRequests,
+          },
+        });
+
+        return;
+      }
+
       const message =
         error instanceof Error
           ? error.message

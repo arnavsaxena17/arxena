@@ -57,11 +57,17 @@ export type SuperImposeQueryPlan = {
   candidateSource: 'harvest' | 'unipile';
   searchType: 'classic' | 'sales_navigator' | 'recruiter';
   mergedSearchClause?: string;
+  /** LinkedIn-searchable company names for a single combined people query */
+  companySearchNames: string[];
   resolvedCompanies: SuperImposeResolvedCompany[];
   salesNavigatorSearchUrls: string[];
   harvestBatches: SuperImposeHarvestQueryParams[];
   useLinkedinSearchForCompanies: boolean;
   sessionId: string;
+  country?: string;
+  functionRoot?: string;
+  apiToken?: string;
+  linkedinUnipileAccountId?: string;
 };
 
 export type SuperImposeEstimatePerSource = {

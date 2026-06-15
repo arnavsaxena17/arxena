@@ -2,18 +2,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import styled from '@emotion/styled';
 import {
-    IconAdjustmentsHorizontal,
-    IconChevronDown,
-    IconSearch,
-    IconX,
+  IconAdjustmentsHorizontal,
+  IconChevronDown,
+  IconSearch,
+  IconX,
 } from '@tabler/icons-react';
 
 import { toTitleCase } from 'twenty-shared';
 
 import {
-    sortOrgChartCountryKeys,
-    sortOrgChartFunctionRootKeys,
+  sortOrgChartCountryKeys
 } from '../utils/orgChartFilterDropdownSort';
+import {
+  buildVisibleFunctionRoots,
+  formatOrgChartFunctionRootOptionLabel,
+} from '../utils/orgChartFunctionRootOptions';
 import { OrgChartDiagramHandle } from './OrgChartDiagram.types';
 
 const formatFilterOptionLabel = (
@@ -21,13 +24,13 @@ const formatFilterOptionLabel = (
   percentLabels: Record<string, string>,
   countMap: Record<string, number> | undefined,
 ): string => {
+  if (countMap !== undefined) {
+    return formatOrgChartFunctionRootOptionLabel(key, percentLabels, countMap);
+  }
+
   const title = toTitleCase(key);
   const pct = percentLabels[key];
-  const count = countMap?.[key];
   const parts: string[] = [title];
-  if (typeof count === 'number' && count > 0) {
-    parts.push(`${count.toLocaleString()} people`);
-  }
   if (pct) {
     parts.push(pct);
   }
@@ -371,6 +374,8 @@ export type OrgChartFiltersProps = {
   onFunctionRootChange: (fn: string | undefined) => void;
   /** When true, do not push filters to the far right (parent handles layout). */
   omitMarginLeft?: boolean;
+  /** Blank preview template — merge standard function roots into the dropdown. */
+  isBlankTemplate?: boolean;
 };
 
 export type OrgChartSearchControlsProps = {
@@ -397,6 +402,7 @@ export const OrgChartFilters = ({
   selectedFunctionRoot,
   onFunctionRootChange,
   omitMarginLeft,
+  isBlankTemplate,
 }: OrgChartFiltersProps) => {
   const [isCompactSheetOpen, setIsCompactSheetOpen] = useState(false);
 
@@ -411,20 +417,22 @@ export const OrgChartFilters = ({
     );
   }, [availableCountries, countryPercentLabels, selectedCountry]);
 
-  const visibleFunctionRoots = useMemo(() => {
-    const base = availableFunctionRoots.filter(
-      (fn) => !fn.toLowerCase().includes('assist'),
-    );
-    if (!selectedFunctionRoot) return base;
-    if (base.includes(selectedFunctionRoot)) return base;
-    if (selectedFunctionRoot.toLowerCase().includes('assist')) {
-      return base;
-    }
-    return sortOrgChartFunctionRootKeys(
-      [...base, selectedFunctionRoot],
+  const visibleFunctionRoots = useMemo(
+    () =>
+      buildVisibleFunctionRoots({
+        availableFunctionRoots,
+        functionRootPercentLabels,
+        selectedFunctionRoot,
+        isBlankTemplate,
+        includePreviewFunctionRoots: true,
+      }),
+    [
+      availableFunctionRoots,
       functionRootPercentLabels,
-    );
-  }, [availableFunctionRoots, functionRootPercentLabels, selectedFunctionRoot]);
+      selectedFunctionRoot,
+      isBlankTemplate,
+    ],
+  );
 
   const effectiveCountryKey = selectedCountry ?? 'global';
   const effectiveFunctionKey = selectedFunctionRoot ?? 'fullcompany';

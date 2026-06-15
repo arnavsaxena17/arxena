@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 
+import { BLANK_ORG_CHART_PREVIEW_FUNCTION_ROOTS } from '../constants/blankOrgChartPreviewFunctionRoots';
 import {
     sortOrgChartCountryKeys,
     sortOrgChartFunctionRootKeys,
@@ -149,6 +150,17 @@ export const useOrgChartFilterOptions = (
       }
     } else if (Array.isArray(rawFunctions)) {
       cleaned = rawFunctions.filter(isValidFunctionRoot);
+    }
+
+    const isBlankTemplate =
+      (orgData as Record<string, unknown>).is_blank_template === true;
+    if (isBlankTemplate) {
+      cleaned = Array.from(
+        new Set([
+          ...cleaned,
+          ...BLANK_ORG_CHART_PREVIEW_FUNCTION_ROOTS.filter(isValidFunctionRoot),
+        ]),
+      );
     }
 
     const labels: Record<string, string> = {};

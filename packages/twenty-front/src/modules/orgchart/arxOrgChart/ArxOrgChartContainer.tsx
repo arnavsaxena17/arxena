@@ -31,7 +31,7 @@ import { getArxenaSiteBaseUrl } from '@/auth/utils/arxenaSiteUrl';
 import { OrgChartShareModal } from '../components/OrgChartShareModal';
 import { OrgChartSuperImposeModal } from '../components/OrgChartSuperImposeModal';
 import { useJobOrgChartData } from '../hooks/useJobOrgChartData';
-import { useOrgChartActions } from '../hooks/useOrgChartActions';
+import { useOrgChartActions, type OrgChartLinkedInSearchEstimate } from '../hooks/useOrgChartActions';
 import { extractCompanyDomainFromWebsite, needsOrgChartCompanyInfoLookup } from '../utils/orgChartUtils';
 import {
   StyledOrgChartConfirmDd,
@@ -899,17 +899,70 @@ export const ArxOrgChartContainer = ({
     title: string;
     run: () => void;
     kind?: 'default' | 'multi_source';
+    estimate?: OrgChartLinkedInSearchEstimate | null;
+    estimateLoading?: boolean;
+    scopeRequired?: boolean;
   } | null>(null);
 
   const requestCandidateSearchConfirm = useCallback(
     (
       title: string,
       run: () => void,
-      kind: 'default' | 'multi_source' = 'default',
+      options?: {
+        kind?: 'default' | 'multi_source';
+        estimateParams?: {
+          mode: OrgchartSearchMode;
+          origin?: 'header' | 'view_all_candidates';
+          country?: string;
+          functionRoot?: string;
+        };
+      },
     ) => {
-      setPendingSearchConfirm({ title, run, kind });
+      const kind = options?.kind ?? 'default';
+      const shouldEstimate =
+        (orgChartLinkedinCandidateSource === 'unipile' ||
+          orgChartLinkedinCandidateSource === 'harvest') &&
+        options?.estimateParams;
+
+      setPendingSearchConfirm({
+        title,
+        run,
+        kind,
+        estimate: null,
+        estimateLoading: !!shouldEstimate,
+        scopeRequired: false,
+      });
+
+      if (!shouldEstimate || !options?.estimateParams) {
+        return;
+      }
+
+      void actions
+        .estimateOrgchartLinkedInSearch(options.estimateParams)
+        .then((estimate) => {
+          setPendingSearchConfirm((prev) =>
+            prev?.title === title
+              ? {
+                  ...prev,
+                  estimate,
+                  estimateLoading: false,
+                  scopeRequired: estimate?.scopeRequired === true,
+                }
+              : prev,
+          );
+        })
+        .catch(() => {
+          setPendingSearchConfirm((prev) =>
+            prev?.title === title
+              ? { ...prev, estimateLoading: false }
+              : prev,
+          );
+        });
     },
-    [],
+    [
+      actions.estimateOrgchartLinkedInSearch,
+      orgChartLinkedinCandidateSource,
+    ],
   );
 
   const handleViewAllCandidates = useCallback(async () => {
@@ -972,7 +1025,7 @@ export const ArxOrgChartContainer = ({
       businessDivisionRawQuery?: string;
     }) => {
       await actions.executeOrgchartSearch({
-        mode: 'super_impose' as OrgchartSearchMode,
+        mode: 'super_impose',
         origin: 'header',
         country: input.country ?? selectedCountry,
         functionRoot: input.functionRoot ?? selectedFunctionRoot,
@@ -1176,6 +1229,7 @@ export const ArxOrgChartContainer = ({
     selectedFunctionRoot,
     onFunctionRootChange: debouncedSetFunctionRoot,
     omitMarginLeft: true,
+    isBlankTemplate,
   };
 
   const searchControlsProps = {
@@ -1186,9 +1240,20 @@ export const ArxOrgChartContainer = ({
     onClearSearch: handleClearSearch,
     diagramHandleRef,
     onGetAll: () => {
-      requestCandidateSearchConfirm(t`Confirm full org chart search`, () => {
-        void handleGetAllOrgChartSearch();
-      });
+      requestCandidateSearchConfirm(
+        t`Confirm full org chart search`,
+        () => {
+          void handleGetAllOrgChartSearch();
+        },
+        {
+          estimateParams: {
+            mode: resolvedSearchMode,
+            origin: 'header',
+            country: selectedCountry,
+            functionRoot: selectedFunctionRoot,
+          },
+        },
+      );
     },
     onGetAllMultiSource: () => {
       requestCandidateSearchConfirm(
@@ -1196,31 +1261,72 @@ export const ArxOrgChartContainer = ({
         () => {
           void handleGetAllOrgChartSearchMultiSource();
         },
-        'multi_source',
+        {
+          kind: 'multi_source',
+          estimateParams: {
+            mode: resolvedSearchMode,
+            origin: 'header',
+            country: selectedCountry,
+            functionRoot: selectedFunctionRoot,
+          },
+        },
       );
     },
     onSuperImpose: () => setIsSuperImposeModalOpen(true),
     onBuildOrgIntelligence: () => {
-      requestCandidateSearchConfirm(t`Confirm org intelligence build`, () => {
-        void handleBuildOrgIntelligence();
-      });
+      requestCandidateSearchConfirm(
+        t`Confirm org intelligence build`,
+        () => {
+          void handleBuildOrgIntelligence();
+        },
+        {
+          estimateParams: {
+            mode: 'entire_company',
+            origin: 'header',
+            country: DEFAULT_ORG_CHART_COUNTRY,
+            functionRoot: DEFAULT_ORG_CHART_FUNCTION_ROOT,
+          },
+        },
+      );
     },
     multiSourceSelectedSources: multiSourceSelectedSlugs,
     onToggleMultiSource: toggleMultiSource,
     onViewAllCandidates: () => {
-      requestCandidateSearchConfirm(t`Confirm view all candidates`, () => {
-        void handleViewAllCandidates();
-      });
+      requestCandidateSearchConfirm(
+        t`Confirm view all candidates`,
+        () => {
+          void handleViewAllCandidates();
+        },
+        {
+          estimateParams: {
+            mode: resolvedSearchMode,
+            origin: 'view_all_candidates',
+            country: selectedCountry,
+            functionRoot: selectedFunctionRoot,
+          },
+        },
+      );
     },
     onGetLeaders: () => {
-      requestCandidateSearchConfirm(t`Confirm leadership search`, () => {
-        void actions.executeOrgchartSearch({
-          mode: 'leadership',
-          origin: 'header',
-          country: selectedCountry,
-          functionRoot: selectedFunctionRoot,
-        });
-      });
+      requestCandidateSearchConfirm(
+        t`Confirm leadership search`,
+        () => {
+          void actions.executeOrgchartSearch({
+            mode: 'leadership',
+            origin: 'header',
+            country: selectedCountry,
+            functionRoot: selectedFunctionRoot,
+          });
+        },
+        {
+          estimateParams: {
+            mode: 'leadership',
+            origin: 'header',
+            country: selectedCountry,
+            functionRoot: selectedFunctionRoot,
+          },
+        },
+      );
     },
   };
 
@@ -1286,10 +1392,17 @@ export const ArxOrgChartContainer = ({
     () => (
       <StyledOrgChartConfirmSummary>
         <StyledOrgChartConfirmIntro>
-          <Trans>
-            The search will use the scope below. Confirm to continue, or cancel
-            to adjust filters first.
-          </Trans>
+          {pendingSearchConfirm?.scopeRequired ? (
+            <Trans>
+              LinkedIn reports too many matches for this scope. Select a country
+              or function filter, then try again.
+            </Trans>
+          ) : (
+            <Trans>
+              The search will use the scope below. Confirm to continue, or cancel
+              to adjust filters first.
+            </Trans>
+          )}
         </StyledOrgChartConfirmIntro>
         <StyledOrgChartConfirmRows>
           <StyledOrgChartConfirmRow>
@@ -1346,12 +1459,46 @@ export const ArxOrgChartContainer = ({
               </StyledOrgChartConfirmDd>
             </StyledOrgChartConfirmRow>
           ) : null}
+          {pendingSearchConfirm?.estimateLoading ? (
+            <StyledOrgChartConfirmRow>
+              <StyledOrgChartConfirmDt>
+                <Trans>LinkedIn matches</Trans>
+              </StyledOrgChartConfirmDt>
+              <StyledOrgChartConfirmDd>
+                <Trans>Estimating…</Trans>
+              </StyledOrgChartConfirmDd>
+            </StyledOrgChartConfirmRow>
+          ) : pendingSearchConfirm?.estimate ? (
+            <>
+              <StyledOrgChartConfirmRow>
+                <StyledOrgChartConfirmDt>
+                  <Trans>LinkedIn matches</Trans>
+                </StyledOrgChartConfirmDt>
+                <StyledOrgChartConfirmDd>
+                  {pendingSearchConfirm.scopeRequired
+                    ? t`~${pendingSearchConfirm.estimate.estimatedTotalUpperBound.toLocaleString()} (limit ${pendingSearchConfirm.estimate.threshold.toLocaleString()})`
+                    : t`≈ ${pendingSearchConfirm.estimate.estimatedTotal.toLocaleString()} (up to ${pendingSearchConfirm.estimate.estimatedTotalUpperBound.toLocaleString()})`}
+                </StyledOrgChartConfirmDd>
+              </StyledOrgChartConfirmRow>
+              <StyledOrgChartConfirmRow>
+                <StyledOrgChartConfirmDt>
+                  <Trans>API requests</Trans>
+                </StyledOrgChartConfirmDt>
+                <StyledOrgChartConfirmDd>
+                  {pendingSearchConfirm.estimate.estimatedApiRequests.toLocaleString()}
+                </StyledOrgChartConfirmDd>
+              </StyledOrgChartConfirmRow>
+            </>
+          ) : null}
         </StyledOrgChartConfirmRows>
       </StyledOrgChartConfirmSummary>
     ),
     [
       multiSourceSelectedSlugs,
+      pendingSearchConfirm?.estimate,
+      pendingSearchConfirm?.estimateLoading,
       pendingSearchConfirm?.kind,
+      pendingSearchConfirm?.scopeRequired,
       searchConfirmSummary,
       t,
     ],
@@ -1538,9 +1685,20 @@ export const ArxOrgChartContainer = ({
         searchControlsProps={searchControlsProps}
         onCancelOrgchartSearch={actions.cancelOrgchartSearch}
         onTopRightLeadershipOrgChart={() => {
-          requestCandidateSearchConfirm(t`Confirm Leadership Org Chart`, () => {
-            void fetchEnrichedLeadershipOrgChart();
-          });
+          requestCandidateSearchConfirm(
+            t`Confirm Leadership Org Chart`,
+            () => {
+              void fetchEnrichedLeadershipOrgChart();
+            },
+            {
+              estimateParams: {
+                mode: 'leadership',
+                origin: 'header',
+                country: selectedCountry,
+                functionRoot: selectedFunctionRoot,
+              },
+            },
+          );
         }}
         pendingSearchConfirm={pendingSearchConfirm}
         setPendingSearchConfirm={setPendingSearchConfirm}
@@ -1657,6 +1815,7 @@ export const ArxOrgChartContainer = ({
           accessToken={accessToken}
           serverBaseUrl={baseUrl}
           candidateSource={superImposeCandidateSource}
+          linkedinUnipileAccountId={resolvedLinkedinUnipileAccountId}
           selectedCountry={selectedCountry}
           selectedFunctionRoot={selectedFunctionRoot}
           businessDivisionRawQuery={businessDivisionQuery.trim() || undefined}
@@ -1664,6 +1823,7 @@ export const ArxOrgChartContainer = ({
           availableFunctionRoots={filterOptions.availableFunctionRoots}
           countryPercentLabels={filterOptions.countryPercentLabels}
           functionRootPercentLabels={filterOptions.functionRootPercentLabels}
+          functionRootCounts={filterOptions.functionRootCounts}
           isBlankTemplate={isBlankTemplate}
           firstSourceUsed={firstSourceUsed}
           latestOrgChart={

@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { CandidateRelevanceScoring } from 'src/engine/core-modules/candidate-search/schemas/candidate-relevance-scoring.schema';
+import {
+    randomOrgChartLinkedInPageDelayMs,
+    sleepMs,
+} from 'src/engine/core-modules/org-chart/utils/orgchart-linkedin-scope.util';
 import { WorkspaceMemberProfileUnipileService } from '../../arx-chat/services/workspace-member-profile-unipile.service';
 import { LinkedInRecruiterPeopleTransformerService } from '../../candidate-sourcing/services/data-sources/linkedin-recruiter-people-transformer.service';
 import { LinkedInSearchTransformerService, TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
@@ -7,23 +11,23 @@ import { ResumeReadParseUploadService } from '../../candidate-sourcing/services/
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
 import {
-  LinkedInSearchConfig,
-  LinkedInSearchResponse,
-  LinkedInSearchResult
+    LinkedInSearchConfig,
+    LinkedInSearchResponse,
+    LinkedInSearchResult
 } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import {
-  ClassicPeopleSearchStrategyResult,
-  GeneratedSearchParameters,
-  ParsedJobDescription,
-  RecruiterPeopleSearchStrategyResult,
-  ResultValidationResult,
-  SalesNavigatorPeopleSearchStrategyResult
+    ClassicPeopleSearchStrategyResult,
+    GeneratedSearchParameters,
+    ParsedJobDescription,
+    RecruiterPeopleSearchStrategyResult,
+    ResultValidationResult,
+    SalesNavigatorPeopleSearchStrategyResult
 } from '../types/candidate-search-request.type';
 import {
-  FileUtils,
-  LinkedinParameterResolver,
-  ParameterSanitizer
+    FileUtils,
+    LinkedinParameterResolver,
+    ParameterSanitizer
 } from '../utils';
 import { CandidateScoringService } from './candidate-scoring.service';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
@@ -61,6 +65,15 @@ type SearchExecutionPreview = {
   };
 };
 
+type SearchExecutionOptions = {
+  forceClassicPeopleJson?: boolean;
+  linkedInAccountId?: string;
+  /** When true, sleep 2–3s (configurable) between page fetches. */
+  throttlePages?: boolean;
+  /** Stop collecting once this many unique candidates are gathered. */
+  maxCandidates?: number;
+};
+
 @Injectable()
 export class SearchExecutionService extends CandidateSearchBaseService {
 
@@ -96,6 +109,70 @@ export class SearchExecutionService extends CandidateSearchBaseService {
   }
 
   /**
+   * Fetches page 1 for a strategy and returns LinkedIn paging metadata (for org-chart estimates).
+   */
+  async probeStrategyFirstPageTotalCount(
+    strategy: PeopleSearchStrategyResult,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+    parameterKey: string,
+    apiToken: string,
+    executionOptions?: SearchExecutionOptions,
+  ): Promise<{ totalCount: number; pageCount: number } | null> {
+    if (!strategy.parameters) {
+      return null;
+    }
+
+    const pageLimit = 10;
+    let strategyResolvedParams: GeneratedSearchParameters = {
+      [parameterKey]: strategy.parameters,
+    } as GeneratedSearchParameters;
+
+    const areParamsResolved = this.checkIfParametersResolved(
+      strategyResolvedParams,
+      searchType,
+      searchCategory,
+    );
+    if (!areParamsResolved) {
+      const accountId = await this.getLinkedInAccountId(
+        apiToken,
+        executionOptions?.linkedInAccountId,
+      );
+      strategyResolvedParams = await this.resolveSearchParameters(
+        strategyResolvedParams,
+        searchType,
+        searchCategory,
+        accountId,
+      );
+    }
+
+    const pageResult = await this.fetchPage(
+      strategyResolvedParams,
+      searchType,
+      searchCategory,
+      apiToken,
+      undefined,
+      pageLimit,
+      undefined,
+      1,
+      executionOptions?.forceClassicPeopleJson === true,
+      executionOptions?.linkedInAccountId,
+    );
+
+    if (!pageResult?.paging?.total_count) {
+      return {
+        totalCount: pageResult?.items.length ?? 0,
+        pageCount: pageResult?.items.length ?? 0,
+      };
+    }
+
+    return {
+      totalCount: pageResult.paging.total_count,
+      pageCount: pageResult.items.length,
+    };
+  }
+
+  /**
    * Executes a multi-page search strategy without validation or scoring
    * Returns raw search results with pagination info
    */
@@ -108,12 +185,14 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     apiToken: string,
     maxPages?: number,
     sendEvent?: (event: string, data: any) => boolean | void,
-    executionOptions?: {
-      forceClassicPeopleJson?: boolean;
-      linkedInAccountId?: string;
-    },
+    executionOptions?: SearchExecutionOptions,
   ): Promise<SearchExecutionPreview | null> {
     const pageLimit = 10;
+    const maxCandidates =
+      typeof executionOptions?.maxCandidates === 'number' &&
+      executionOptions.maxCandidates > 0
+        ? executionOptions.maxCandidates
+        : undefined;
     const maxPagesToFetch =
       typeof maxPages === 'number' && maxPages > 0
         ? maxPages
@@ -307,11 +386,33 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           break;
         }
 
+        if (
+          maxCandidates !== undefined &&
+          state.allItems.length >= maxCandidates
+        ) {
+          this.logger.log(
+            `Stopping pagination for strategy ${strategy.id}: reached maxCandidates=${maxCandidates}.`,
+          );
+          break;
+        }
+
         // Break if no more pages for cursor-based pagination.
         // For raw classic people search, pagination is start/offset-based and
         // we rely on empty pages / duplicate detection to stop.
         if (!useRawClassicPeople && !state.currentCursor) {
           break;
+        }
+
+        if (executionOptions?.throttlePages === true && state.currentPage >= 1) {
+          const delayMs = randomOrgChartLinkedInPageDelayMs();
+          this.logger.log(
+            `Throttling org-chart LinkedIn pagination: sleeping ${delayMs}ms before page ${state.currentPage + 1}`,
+          );
+          await sleepMs(delayMs);
+          if (this.shouldAbort(sendEvent)) {
+            this.logger.log('Stream aborted during page throttle delay');
+            break;
+          }
         }
 
         state.currentPage++;

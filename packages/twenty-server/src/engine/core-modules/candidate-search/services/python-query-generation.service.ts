@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import type { SearchQuerySet } from 'src/engine/core-modules/linkedin-query-generation/types/linkedin-query-generation.types';
 import type {
-  GeneratedSearchParameters
+    GeneratedSearchParameters
 } from '../types/candidate-search-request.type';
 import { mapLinkedinSearchQueriesToGeneratedParameters } from '../utils/linkedin-query-generation-mapper.util';
 
@@ -12,6 +12,8 @@ export type PythonQueryInput = {
   function_root?: Array<{ name: string; exclude?: boolean }>;
   company_names?: string[];
   raw_job_titles?: string[];
+  /** Country/region names for LinkedIn location filter (e.g. ["india"]). */
+  locations?: string[];
   top_n_terms?: number;
 };
 
@@ -114,6 +116,9 @@ export class PythonQueryGenerationService {
         function_root: input.function_root ?? [],
         company_names: input.company_names ?? [],
         raw_job_titles: input.raw_job_titles ?? [],
+        ...(Array.isArray(input.locations) && input.locations.length > 0
+          ? { locations: input.locations }
+          : {}),
       }),
     });
 
@@ -157,6 +162,9 @@ export class PythonQueryGenerationService {
         function_root: input.function_root ?? [],
         company_names: input.company_names ?? [],
         raw_job_titles: input.raw_job_titles ?? [],
+        ...(Array.isArray(input.locations) && input.locations.length > 0
+          ? { locations: input.locations }
+          : {}),
         ...(typeof input.top_n_terms === 'number' && input.top_n_terms > 0
           ? { top_n_terms: input.top_n_terms }
           : {}),
@@ -214,13 +222,17 @@ export class PythonQueryGenerationService {
 
     if (!querySet.search_query_set.length) {
       const pythonResult = await this.generateLinkedInQuery(input);
+      const locationFromInput =
+        Array.isArray(input.locations) && input.locations.length > 0
+          ? input.locations
+          : null;
       querySet = {
         search_query_set: [
           {
             keywords: pythonResult.keywords,
             job_title: pythonResult.job_title,
             company: pythonResult.company,
-            location: null,
+            location: locationFromInput,
             years_of_experience: null,
           },
         ],

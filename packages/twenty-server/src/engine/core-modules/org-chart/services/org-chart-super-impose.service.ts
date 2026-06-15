@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { hasOrgChartLinkedInSubsetScopeFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-linkedin-scope.util';
+
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { OrgChartSearchService } from 'src/engine/core-modules/candidate-search/services/orgchart-search.service';
 import { DataSourceTransformerFactoryService } from 'src/engine/core-modules/candidate-sourcing/services/data-source-transformer-factory.service';
@@ -172,6 +174,7 @@ export class OrgChartSuperImposeService {
       searchType: context.searchType,
       primaryCompanyName: context.primaryCompanyName,
       apiToken: context.apiToken,
+      linkedinUnipileAccountId: context.linkedinUnipileAccountId,
     });
   }
 
@@ -185,6 +188,11 @@ export class OrgChartSuperImposeService {
   ): Promise<SuperImposeEstimateResult> {
     const perSource: SuperImposeEstimatePerSource[] = [];
     let estimatedTotalUpperBound = 0;
+    let unipileLinkedInEstimate:
+      | Awaited<
+          ReturnType<OrgChartSearchService['estimateLinkedInOrgChartSearch']>
+        >
+      | undefined;
 
     if (plan.candidateSource === 'harvest') {
       for (const batch of plan.harvestBatches) {
@@ -220,26 +228,75 @@ export class OrgChartSuperImposeService {
           error: 'Unipile estimate requires account; use build to fetch',
         });
       }
-      for (const company of plan.resolvedCompanies) {
-        if (plan.salesNavigatorSearchUrls.length > 0) {
-          continue;
+      if (
+        plan.salesNavigatorSearchUrls.length === 0 &&
+        plan.resolvedCompanies.length > 0 &&
+        plan.candidateSource === 'unipile'
+      ) {
+        const companySearchNames = plan.companySearchNames;
+        const primaryCompany = plan.resolvedCompanies[0];
+        const searchLabel = companySearchNames.join(', ');
+        try {
+          const estimate =
+            await this.orgChartSearchService.estimateLinkedInOrgChartSearch(
+              `Employees at ${searchLabel}`,
+              `Employees at ${searchLabel}`,
+              plan.searchType,
+              plan.apiToken ?? '',
+              {
+                mode: plan.mode,
+                companyName:
+                  primaryCompany.companyName ?? primaryCompany.slug ?? searchLabel,
+                companyNames: companySearchNames,
+                companyId: primaryCompany.slug,
+                country: plan.country,
+                functionRoot: plan.functionRoot,
+                linkedinUnipileAccountId: plan.linkedinUnipileAccountId,
+              },
+            );
+          unipileLinkedInEstimate = estimate;
+          perSource.push({
+            slug: plan.resolvedCompanies.map((company) => company.slug).join('+'),
+            sourceType: 'company_page',
+            count: estimate.estimatedTotalUpperBound,
+          });
+          estimatedTotalUpperBound = estimate.estimatedTotalUpperBound;
+        } catch (error) {
+          this.logger.warn(
+            `Unipile super-impose estimate failed: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+          perSource.push({
+            slug: plan.resolvedCompanies.map((company) => company.slug).join('+'),
+            sourceType: 'company_page',
+            count: 0,
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
-        perSource.push({
-          slug: company.slug,
-          sourceType: 'company_page',
-          count: company.slug.length > 0 ? 50 : 0,
-        });
-        estimatedTotalUpperBound += 50;
+      } else {
+        for (const company of plan.resolvedCompanies) {
+          if (plan.salesNavigatorSearchUrls.length > 0) {
+            continue;
+          }
+          perSource.push({
+            slug: company.slug,
+            sourceType: 'company_page',
+            count: company.slug.length > 0 ? 50 : 0,
+          });
+          estimatedTotalUpperBound += 50;
+        }
       }
     }
 
-    const estimatedTotal = Math.max(
-      0,
-      Math.round(estimatedTotalUpperBound * 0.9),
-    );
     const threshold = this.getSuperImposeThreshold();
+    const estimatedTotal = unipileLinkedInEstimate
+      ? unipileLinkedInEstimate.estimatedTotal
+      : Math.max(0, Math.round(estimatedTotalUpperBound * 0.9));
     const scopeRequired =
-      estimatedTotalUpperBound > threshold && plan.mode === 'entire_company';
+      unipileLinkedInEstimate?.scopeRequired === true ||
+      (estimatedTotalUpperBound > threshold &&
+        !hasOrgChartLinkedInSubsetScopeFilter(plan.country, plan.functionRoot));
 
     return {
       estimatedTotal:
@@ -306,38 +363,46 @@ export class OrgChartSuperImposeService {
       aggregated.push(...snRows);
     }
 
-    if (plan.salesNavigatorSearchUrls.length === 0) {
-      for (const company of plan.resolvedCompanies) {
-        await context.onProgress?.(
-          `Unipile: fetching employees for ${company.slug}...`,
+    if (plan.salesNavigatorSearchUrls.length === 0 && plan.companySearchNames.length > 0) {
+      const primaryCompany = plan.resolvedCompanies[0];
+      const searchLabel = plan.companySearchNames.join(', ');
+      await context.onProgress?.(
+        `Unipile: fetching employees for ${searchLabel}...`,
+      );
+      const searchResult =
+        await this.orgChartSearchService.runOrgchartLinkedInSearch(
+          `Employees at ${searchLabel}`,
+          `Employees at ${searchLabel}`,
+          plan.searchType,
+          context.apiToken,
+          undefined,
+          {
+            mode: plan.mode,
+            companyName:
+              primaryCompany?.companyName ??
+              primaryCompany?.slug ??
+              searchLabel,
+            companyNames: plan.companySearchNames,
+            companyId: primaryCompany?.slug,
+            country: context.country,
+            functionRoot: context.functionRoot,
+            linkedinCompanyUrl: primaryCompany?.linkedinUrl,
+            linkedinUnipileAccountId: context.linkedinUnipileAccountId,
+            businessDivisionRawQuery: context.businessDivisionRawQuery,
+          },
         );
-        const searchResult =
-          await this.orgChartSearchService.runOrgchartLinkedInSearch(
-            `Employees at ${company.companyName ?? company.slug}`,
-            `Employees at ${company.companyName ?? company.slug}`,
-            plan.searchType,
-            context.apiToken,
-            undefined,
-            {
-              mode: plan.mode,
-              companyName: company.companyName ?? company.slug,
-              companyId: company.slug,
-              country: context.country,
-              functionRoot: context.functionRoot,
-              linkedinCompanyUrl: company.linkedinUrl,
-              linkedinUnipileAccountId: context.linkedinUnipileAccountId,
-              businessDivisionRawQuery: context.businessDivisionRawQuery,
-            },
-          );
-        const items = Array.isArray(searchResult.items)
-          ? (searchResult.items as Array<Record<string, unknown>>)
-          : [];
-        aggregated.push(
-          ...items.map((row) =>
-            this.tagSuperImposeRow(row, 'company_page', company.slug),
+      const items = Array.isArray(searchResult.items)
+        ? (searchResult.items as Array<Record<string, unknown>>)
+        : [];
+      aggregated.push(
+        ...items.map((row) =>
+          this.tagSuperImposeRow(
+            row,
+            'company_page',
+            plan.resolvedCompanies.map((company) => company.slug).join('+'),
           ),
-        );
-      }
+        ),
+      );
     }
 
     return aggregated;

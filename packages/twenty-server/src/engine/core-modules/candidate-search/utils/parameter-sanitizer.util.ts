@@ -1,12 +1,146 @@
 import { Logger } from '@nestjs/common';
 import {
-  LinkedInClassicCompaniesSearchRequest,
-  LinkedInClassicJobsSearchRequest,
-  LinkedInClassicPeopleSearchRequest,
+    LinkedInClassicCompaniesSearchRequest,
+    LinkedInClassicJobsSearchRequest,
+    LinkedInClassicPeopleSearchRequest,
 } from '../../linkedin-search/types/linkedin-search-request.type';
+
+type IncludeExcludeStringIds = {
+  include?: string[];
+  exclude?: string[];
+};
 
 export class ParameterSanitizer {
   private readonly logger = new Logger(ParameterSanitizer.name);
+
+  /**
+   * Normalize Sales Navigator / Recruiter include/exclude filters.
+   * Accepts either a flat numeric-id array or an existing { include, exclude } object.
+   */
+  private sanitizeIncludeExcludeNumericIds(
+    value: unknown,
+  ): IncludeExcludeStringIds | undefined {
+    if (Array.isArray(value) && value.length > 0) {
+      const validIds = value.filter(
+        (id): id is string => typeof id === 'string' && /^\d+$/.test(id),
+      );
+      if (validIds.length > 0) {
+        return { include: validIds, exclude: [] };
+      }
+      return undefined;
+    }
+
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return undefined;
+    }
+
+    const param = value as { include?: unknown; exclude?: unknown };
+    if (!param.include && !param.exclude) {
+      return undefined;
+    }
+
+    const result: IncludeExcludeStringIds = {};
+
+    if (Array.isArray(param.include) && param.include.length > 0) {
+      const validIncludeIds = param.include.filter(
+        (id): id is string => typeof id === 'string' && /^\d+$/.test(id),
+      );
+      if (validIncludeIds.length > 0) {
+        result.include = validIncludeIds;
+      }
+    }
+
+    if (Array.isArray(param.exclude) && param.exclude.length > 0) {
+      const validExcludeIds = param.exclude.filter(
+        (id): id is string => typeof id === 'string' && /^\d+$/.test(id),
+      );
+      if (validExcludeIds.length > 0) {
+        result.exclude = validExcludeIds;
+      }
+    }
+
+    if (result.include || result.exclude) {
+      return result;
+    }
+
+    return undefined;
+  }
+
+  private sanitizeSalesNavigatorSeniority(
+    value: unknown,
+  ): IncludeExcludeStringIds | undefined {
+    const validSeniorityValues = [
+      'owner/partner',
+      'cxo',
+      'vice_president',
+      'director',
+      'experienced_manager',
+      'entry_level_manager',
+      'strategic',
+      'senior',
+      'entry_level',
+      'in_training',
+    ];
+
+    if (Array.isArray(value) && value.length > 0) {
+      const validValues = value.filter(
+        (val): val is string =>
+          typeof val === 'string' && validSeniorityValues.includes(val),
+      );
+      if (validValues.length > 0) {
+        return { include: validValues, exclude: [] };
+      }
+      return undefined;
+    }
+
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return undefined;
+    }
+
+    const param = value as { include?: unknown; exclude?: unknown };
+    if (!param.include && !param.exclude) {
+      return undefined;
+    }
+
+    const result: IncludeExcludeStringIds = {};
+
+    if (Array.isArray(param.include) && param.include.length > 0) {
+      const validIncludeValues = param.include.filter(
+        (val): val is string =>
+          typeof val === 'string' && validSeniorityValues.includes(val),
+      );
+      if (validIncludeValues.length > 0) {
+        result.include = validIncludeValues;
+      }
+    }
+
+    if (Array.isArray(param.exclude) && param.exclude.length > 0) {
+      const validExcludeValues = param.exclude.filter(
+        (val): val is string =>
+          typeof val === 'string' && validSeniorityValues.includes(val),
+      );
+      if (validExcludeValues.length > 0) {
+        result.exclude = validExcludeValues;
+      }
+    }
+
+    if (result.include || result.exclude) {
+      return result;
+    }
+
+    return undefined;
+  }
+
+  private assignIncludeExcludeNumericIds(
+    sanitized: Record<string, unknown>,
+    key: string,
+    value: unknown,
+  ): void {
+    const normalized = this.sanitizeIncludeExcludeNumericIds(value);
+    if (normalized) {
+      sanitized[key] = normalized;
+    }
+  }
 
   /**
    * Format keywords string by wrapping multi-word terms in quotes
@@ -472,106 +606,41 @@ export class ParameterSanitizer {
       sanitized.keywords = this.formatKeywordsWithQuotes(request.keywords);
     }
 
-    // Handle location parameter - convert flat array to include/exclude structure
-    if (Array.isArray(request.location) && request.location.length > 0) {
-      const validLocationIds = request.location.filter(id => /^\d+$/.test(id));
-      if (validLocationIds.length > 0) {
-        sanitized.location = {
-          include: validLocationIds,
-          exclude: []
-        };
-      }
-    }
+    // Handle location parameter - flat array or include/exclude structure
+    this.assignIncludeExcludeNumericIds(sanitized, 'location', request.location);
 
-    // Handle industry parameter - convert flat array to include/exclude structure
-    if (Array.isArray(request.industry) && request.industry.length > 0) {
-      const validIndustryIds = request.industry.filter(id => /^\d+$/.test(id));
-      if (validIndustryIds.length > 0) {
-        sanitized.industry = {
-          include: validIndustryIds,
-          exclude: []
-        };
-      }
-    }
+    // Handle industry parameter - flat array or include/exclude structure
+    this.assignIncludeExcludeNumericIds(sanitized, 'industry', request.industry);
 
-    // Handle company parameter - convert flat array to include/exclude structure
-    if (Array.isArray(request.company) && request.company.length > 0) {
-      const validCompanyIds = request.company.filter(id => /^\d+$/.test(id));
-      if (validCompanyIds.length > 0) {
-        sanitized.company = {
-          include: validCompanyIds,
-          exclude: []
-        };
-      }
-    }
+    // Handle company parameter - flat array or include/exclude structure
+    this.assignIncludeExcludeNumericIds(sanitized, 'company', request.company);
 
-    // Handle past_company parameter - convert flat array to include/exclude structure
-    if (Array.isArray(request.past_company) && request.past_company.length > 0) {
-      const validPastCompanyIds = request.past_company.filter(id => /^\d+$/.test(id));
-      if (validPastCompanyIds.length > 0) {
-        sanitized.past_company = {
-          include: validPastCompanyIds,
-          exclude: []
-        };
-      }
-    }
+    // Handle past_company parameter - flat array or include/exclude structure
+    this.assignIncludeExcludeNumericIds(sanitized, 'past_company', request.past_company);
 
-    // Handle school parameter - convert flat array to include/exclude structure
-    if (Array.isArray(request.school) && request.school.length > 0) {
-      const validSchoolIds = request.school.filter(id => /^\d+$/.test(id));
-      if (validSchoolIds.length > 0) {
-        sanitized.school = {
-          include: validSchoolIds,
-          exclude: []
-        };
-      }
-    }
+    // Handle school parameter - flat array or include/exclude structure
+    this.assignIncludeExcludeNumericIds(sanitized, 'school', request.school);
 
-    // Handle function parameter - convert flat array to include/exclude structure
-    if (Array.isArray(request.function) && request.function.length > 0) {
-      const validFunctionIds = request.function.filter(id => /^\d+$/.test(id));
-      if (validFunctionIds.length > 0) {
-        sanitized.function = {
-          include: validFunctionIds,
-          exclude: []
-        };
-      }
-    }
+    // Handle function parameter - flat array or include/exclude structure
+    this.assignIncludeExcludeNumericIds(sanitized, 'function', request.function);
 
-    // Handle role parameter - convert flat array to include/exclude structure
-    if (Array.isArray(request.role) && request.role.length > 0) {
-      const validRoleIds = request.role.filter(id => /^\d+$/.test(id));
-      if (validRoleIds.length > 0) {
-        sanitized.role = {
-          include: validRoleIds,
-          exclude: []
-        };
-      }
-    }
+    // Handle role parameter - flat array or include/exclude structure
+    this.assignIncludeExcludeNumericIds(sanitized, 'role', request.role);
 
-    // Handle past_role parameter - convert flat array to include/exclude structure
-    if (Array.isArray(request.past_role) && request.past_role.length > 0) {
-      const validPastRoleIds = request.past_role.filter(id => /^\d+$/.test(id));
-      if (validPastRoleIds.length > 0) {
-        sanitized.past_role = {
-          include: validPastRoleIds,
-          exclude: []
-        };
-      }
-    }
+    // Handle past_role parameter - flat array or include/exclude structure
+    this.assignIncludeExcludeNumericIds(sanitized, 'past_role', request.past_role);
 
-    // Handle seniority parameter - convert flat array to include/exclude structure
-    if (Array.isArray(request.seniority) && request.seniority.length > 0) {
-      const validSeniorityValues = request.seniority.filter(val => 
-        ['owner/partner', 'cxo', 'vice_president', 'director', 'experienced_manager', 
-         'entry_level_manager', 'strategic', 'senior', 'entry_level', 'in_training'].includes(val)
-      );
-      if (validSeniorityValues.length > 0) {
-        sanitized.seniority = {
-          include: validSeniorityValues,
-          exclude: []
-        };
-      }
+    // Handle company_location parameter - flat array or include/exclude structure
+    this.assignIncludeExcludeNumericIds(
+      sanitized,
+      'company_location',
+      request.company_location,
+    );
+
+    // Handle seniority parameter - flat array or include/exclude structure
+    const seniority = this.sanitizeSalesNavigatorSeniority(request.seniority);
+    if (seniority) {
+      sanitized.seniority = seniority;
     }
 
     // Handle network_distance parameter
@@ -777,27 +846,11 @@ export class ParameterSanitizer {
       sanitized.keywords = this.formatKeywordsWithQuotes(request.keywords);
     }
 
-    // Handle industry parameter - convert flat array to include/exclude structure
-    if (Array.isArray(request.industry) && request.industry.length > 0) {
-      const validIndustryIds = request.industry.filter(id => /^\d+$/.test(id));
-      if (validIndustryIds.length > 0) {
-        sanitized.industry = {
-          include: validIndustryIds,
-          exclude: []
-        };
-      }
-    }
+    // Handle industry parameter - flat array or include/exclude structure
+    this.assignIncludeExcludeNumericIds(sanitized, 'industry', request.industry);
 
-    // Handle location parameter - convert flat array to include/exclude structure
-    if (Array.isArray(request.location) && request.location.length > 0) {
-      const validLocationIds = request.location.filter(id => /^\d+$/.test(id));
-      if (validLocationIds.length > 0) {
-        sanitized.location = {
-          include: validLocationIds,
-          exclude: []
-        };
-      }
-    }
+    // Handle location parameter - flat array or include/exclude structure
+    this.assignIncludeExcludeNumericIds(sanitized, 'location', request.location);
 
     // Handle headcount parameter
     if (Array.isArray(request.headcount) && request.headcount.length > 0) {

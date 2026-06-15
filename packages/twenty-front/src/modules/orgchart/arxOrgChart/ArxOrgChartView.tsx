@@ -27,6 +27,7 @@ import {
   StyledCenteredButton,
 } from '@/ui/layout/modal/components/ConfirmationModal';
 import { Button, IconChevronDown, MenuItem } from 'twenty-ui';
+import type { OrgChartLinkedInSearchEstimate } from '../hooks/useOrgChartActions';
 
 import {
   StyledAsOfMonthPicker,
@@ -93,9 +94,23 @@ export type ArxOrgChartViewProps = {
   onTopRightLeadershipOrgChart: () => void;
   onCancelOrgchartSearch?: () => void;
 
-  pendingSearchConfirm: { title: string; run: () => void } | null;
+  pendingSearchConfirm: {
+    title: string;
+    run: () => void;
+    kind?: 'default' | 'multi_source';
+    estimate?: OrgChartLinkedInSearchEstimate | null;
+    estimateLoading?: boolean;
+    scopeRequired?: boolean;
+  } | null;
   setPendingSearchConfirm: (
-    next: { title: string; run: () => void } | null,
+    next: {
+      title: string;
+      run: () => void;
+      kind?: 'default' | 'multi_source';
+      estimate?: OrgChartLinkedInSearchEstimate | null;
+      estimateLoading?: boolean;
+      scopeRequired?: boolean;
+    } | null,
   ) => void;
   candidateSearchConfirmSubtitle: ReactNode;
   previewNodeChoiceSubtitle: ReactNode;
@@ -782,10 +797,16 @@ export const ArxOrgChartView = ({
         }}
         title={pendingSearchConfirm?.title ?? ''}
         subtitle={candidateSearchConfirmSubtitle}
+        loading={pendingSearchConfirm?.estimateLoading === true}
         onConfirmClick={() => {
+          if (pendingSearchConfirm?.scopeRequired) {
+            return;
+          }
           pendingSearchConfirm?.run();
         }}
-        deleteButtonText="Confirm"
+        deleteButtonText={
+          pendingSearchConfirm?.scopeRequired ? 'Close' : 'Confirm'
+        }
         confirmButtonAccent="blue"
       />
 

@@ -7,6 +7,7 @@ export { OrgChartSignUpIntro } from './components/OrgChartSignUpIntro';
 export type { OrgChartSignUpIntroProps } from './components/OrgChartSignUpIntro';
 export { OrgChartSignUpModal } from './components/OrgChartSignUpModal';
 export type { OrgChartSignUpModalProps } from './components/OrgChartSignUpModal';
+export { BLANK_ORG_CHART_PREVIEW_FUNCTION_ROOTS } from './constants/blankOrgChartPreviewFunctionRoots';
 export { useCompanyAutocomplete, useCompanyInfoLookup } from './hooks/useCompanyAutocomplete';
 export type {
     CompanyAutocompleteItem,
@@ -20,4 +21,9 @@ export { companySearchLightTheme } from './theme/companySearchTheme';
 export type { OrgChartThemeType } from './theme/companySearchTheme';
 export { defaultTheme } from './theme/defaultTheme';
 export { normalizeCompanyIdForUrl } from './utils/normalizeCompanyId';
+export {
+    buildVisibleFunctionRoots,
+    formatOrgChartFunctionRootOptionLabel,
+    mergeBlankPreviewFunctionRoots
+} from './utils/orgChartFunctionRootOptions';
 
