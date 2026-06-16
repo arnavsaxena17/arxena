@@ -23,7 +23,10 @@ import {
   readProviderContactHintsFromSearchRow,
   type OrgChartNodeContactAvailability,
 } from 'src/engine/core-modules/org-chart/utils/merge-orgchart-profile-source-slugs.util';
-import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
+import {
+  filterOrgChartCandidatesByCountryAndFunctionRoot,
+  hasMeaningfulOrgChartFunctionRootFilter,
+} from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import {
   computeOrgChartLinkedInMaxPages,
   computeOrgChartLinkedInSearchPlan,
@@ -301,12 +304,11 @@ export class OrgChartSearchService {
         });
 
       if (cachedCandidateList?.items && Array.isArray(cachedCandidateList.items)) {
-        const filteredItems =
-          this.filterOrgChartCandidatesByCountryAndFunctionRoot(
-            cachedCandidateList.items,
-            country,
-            functionRoot,
-          );
+        const filteredItems = filterOrgChartCandidatesByCountryAndFunctionRoot(
+          cachedCandidateList.items,
+          country,
+          functionRoot,
+        );
 
         this.logger.log(
           `OrgchartLinkedInSearch: reusing full-company candidate list cache for function-grade search (company="${primaryCompanyName}", functionRoot="${functionRoot}", country="${rawCountryFromOptions || 'global'}") with ${filteredItems.length} candidates after filters.`,
@@ -578,13 +580,13 @@ export class OrgChartSearchService {
     );
 
     let candidatesOut = hasSubsetScopeFilters
-      ? this.filterOrgChartCandidatesByCountryAndFunctionRoot(
+      ? filterOrgChartCandidatesByCountryAndFunctionRoot(
           allCandidates,
           country,
           functionRoot,
         )
       : businessDivisionRaw && primaryCompanyName
-        ? this.filterOrgChartCandidatesByCountryAndFunctionRoot(
+        ? filterOrgChartCandidatesByCountryAndFunctionRoot(
             allCandidates,
             country,
             functionRoot,
@@ -1216,72 +1218,6 @@ export class OrgChartSearchService {
         ? applyApolloOnlyNodeLockState(withTenure, apolloPublicSlug)
         : withTenure;
     }
-  }
-
-  private filterOrgChartCandidatesByCountryAndFunctionRoot(
-    items: unknown[],
-    countryRaw?: string,
-    functionRootRaw?: string,
-  ): unknown[] {
-    const normalizedCountryRaw =
-      typeof countryRaw === 'string' ? countryRaw.trim() : '';
-    const hasCountryFilter =
-      normalizedCountryRaw.length > 0 &&
-      normalizedCountryRaw.toLowerCase() !== 'global';
-
-    const normalizedFunctionRootRaw =
-      typeof functionRootRaw === 'string' ? functionRootRaw.trim() : '';
-    const hasFunctionRootFilter =
-      hasMeaningfulOrgChartFunctionRootFilter(normalizedFunctionRootRaw);
-
-    if (!hasCountryFilter && !hasFunctionRootFilter) {
-      return items;
-    }
-
-    return items.filter((item) => {
-      const raw = item as Record<string, unknown>;
-
-      if (hasCountryFilter) {
-        const filterCountry = normalizedCountryRaw.toLowerCase();
-        const possibleCountryValues = [
-          (raw as { locationCountry?: unknown }).locationCountry,
-          (raw as { location_country?: unknown }).location_country,
-          raw.country,
-        ].filter(
-          (v): v is string => typeof v === 'string' && v.trim().length > 0,
-        );
-
-        const normalizedCountry =
-          possibleCountryValues[0]?.trim().toLowerCase() ?? '';
-
-        if (!normalizedCountry.includes(filterCountry)) {
-          return false;
-        }
-      }
-
-      if (hasFunctionRootFilter) {
-        const filterFunctionRoot = normalizedFunctionRootRaw.toLowerCase();
-        const possibleFunctionRootValues = [
-          (raw as { std_function_root?: unknown }).std_function_root,
-          (raw as { functionRoot?: unknown }).functionRoot,
-          (raw as { function_root?: unknown }).function_root,
-        ].filter(
-          (v): v is string => typeof v === 'string' && v.trim().length > 0,
-        );
-
-        const normalizedFunctionRoot =
-          possibleFunctionRootValues[0]?.trim().toLowerCase() ?? '';
-
-        if (
-          normalizedFunctionRoot === '' ||
-          !normalizedFunctionRoot.includes(filterFunctionRoot)
-        ) {
-          return false;
-        }
-      }
-
-      return true;
-    });
   }
 
   /**

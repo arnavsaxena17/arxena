@@ -1837,10 +1837,8 @@ export const ArxOrgChartContainer = ({
               : null
           }
           onGenerate={(input) => {
-            requestCandidateSearchConfirm(t`Confirm super impose org chart`, () => {
-              setIsSuperImposeModalOpen(false);
-              void handleSuperImposeGenerate(input);
-            });
+            setIsSuperImposeModalOpen(false);
+            void handleSuperImposeGenerate(input);
           }}
           isGenerating={actions.isContextLoading}
         />
