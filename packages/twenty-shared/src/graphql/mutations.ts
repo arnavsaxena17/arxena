@@ -288,8 +288,42 @@ export const graphQLToCreateOneWorkspaceMemberProfile = `mutation CreateOneWorks
   export const graphQLToUpdateOneWorkspaceMemberProfile = `mutation UpdateOneWorkspaceMemberProfile($idToUpdate: ID!, $input: WorkspaceMemberProfileUpdateInput!) {
     updateWorkspaceMemberProfile(id: $idToUpdate, data: $input) {
       id
+      workspaceMemberId
+      phoneNumber
+      linkedinUrl
+      whatsappUnipileAccountId
+      linkedinUnipileAccountId
+      keepLinkedinConnected
+      linkedinProfile
+      linkedinLiAtToken
+      linkedinLiAToken
+      linkedinUserAgent
+      linkedinIp
+      linkedinCountry
+      linkedinCookiesLastSyncedAt
+      linkedinCookiesValidatedAt
     }
   }`;
+
+export const graphQLToUpdateWorkspaceMemberLinkedinCookieTokens = `mutation UpdateWorkspaceMemberLinkedinCookieTokens($idToUpdate: ID!, $input: WorkspaceMemberProfileUpdateInput!) {
+  updateWorkspaceMemberProfile(id: $idToUpdate, data: $input) {
+    id
+    linkedinLiAtToken
+    linkedinLiAToken
+    linkedinUserAgent
+    linkedinIp
+    linkedinCountry
+    linkedinCookiesLastSyncedAt
+    linkedinCookiesValidatedAt
+  }
+}`;
+
+export const graphQLToUpdateWorkspaceMemberLinkedinProfile = `mutation UpdateWorkspaceMemberLinkedinProfile($idToUpdate: ID!, $linkedinProfile: JSON!) {
+  updateWorkspaceMemberProfile(id: $idToUpdate, data: { linkedinProfile: $linkedinProfile }) {
+    id
+    linkedinProfile
+  }
+}`;
 
 export const CreateManyCandidates = `mutation CreateCandidates($data: [CandidateCreateInput!]!) {
     createCandidates(data: $data) {

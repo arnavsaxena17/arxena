@@ -1,19 +1,20 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import {
-  QueueCronJobOptions,
-  QueueJobOptions,
+    QueueCronJobOptions,
+    QueueJobOptions,
+    ScheduleDelayedJobOptions,
 } from 'src/engine/core-modules/message-queue/drivers/interfaces/job-options.interface';
 import { MessageQueueDriver } from 'src/engine/core-modules/message-queue/drivers/interfaces/message-queue-driver.interface';
 import {
-  MessageQueueJobData,
-  MessageQueueJob,
+    MessageQueueJob,
+    MessageQueueJobData,
 } from 'src/engine/core-modules/message-queue/interfaces/message-queue-job.interface';
 import { MessageQueueWorkerOptions } from 'src/engine/core-modules/message-queue/interfaces/message-queue-worker-options.interface';
 
 import {
-  MessageQueue,
-  QUEUE_DRIVER,
+    MessageQueue,
+    QUEUE_DRIVER,
 } from 'src/engine/core-modules/message-queue/message-queue.constants';
 
 @Injectable()
@@ -33,6 +34,34 @@ export class MessageQueueService {
     options?: QueueJobOptions,
   ): Promise<void> {
     return this.driver.add(this.queueName, jobName, data, options);
+  }
+
+  scheduleOrRescheduleDelayed<T extends MessageQueueJobData>(
+    jobName: string,
+    data: T,
+    options: ScheduleDelayedJobOptions,
+  ): Promise<void> {
+    if (this.driver.scheduleOrRescheduleDelayed) {
+      return this.driver.scheduleOrRescheduleDelayed(
+        this.queueName,
+        jobName,
+        data,
+        options,
+      );
+    }
+
+    return this.driver.add(this.queueName, jobName, data, {
+      id: options.id,
+      delayMs: options.delayMs,
+    });
+  }
+
+  cancelDelayed(jobId: string): Promise<void> {
+    if (this.driver.cancelDelayed) {
+      return this.driver.cancelDelayed(this.queueName, jobId);
+    }
+
+    return Promise.resolve();
   }
 
   addCron<T extends MessageQueueJobData | undefined>({

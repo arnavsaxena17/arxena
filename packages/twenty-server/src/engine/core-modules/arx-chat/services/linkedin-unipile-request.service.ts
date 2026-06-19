@@ -1,9 +1,42 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { forwardRef, HttpException, HttpStatus, Inject, Injectable, Logger, Optional } from '@nestjs/common';
 
-import { type UnipileAccountOwnerProfile } from 'twenty-shared';
+import {
+  type UnipileAccountOwnerProfile,
+  hasWorkspaceMemberLinkedinFullProfile,
+  hasWorkspaceMemberLinkedinOwnerProfile,
+  inferLinkedInSearchTypeFromUnipileOwnerProfile,
+  workspaceMemberLinkedinProfileMatchesAccountId,
+} from 'twenty-shared';
 
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+
+import type {
+  LinkedinSenderFullProfileCacheEntry,
+  LinkedinSenderFullProfileResult,
+} from '../types/linkedin-sender-profile-cache.types';
+import { UnipileLinkedinAccountUnusableError } from '../errors/unipile-linkedin-account-unusable.error';
+import { LinkedinUnipileAccountCleanupContext } from '../types/linkedin-unipile-account-cleanup.types';
+import { isUnipileLinkedinAccountUnusableError } from '../utils/is-unipile-linkedin-account-unusable-error.util';
+import {
+  fetchUnipileAccountsListWithCache,
+  invalidateUnipileAccountsListCache,
+  shouldInvalidateUnipileAccountsListCache,
+} from '../utils/unipile-accounts-list.cache';
+import {
+  isUnipileDisconnectedAccountApiError,
+  parseAccountIdFromUnipileEndpoint,
+} from '../utils/unipile-disconnected-account.util';
+import type { MemberLinkedinUnipileConnectionService } from './member-linkedin-unipile-connection.service';
+import type { WorkspaceMemberProfileUnipileService } from './workspace-member-profile-unipile.service';
+
+const getMemberLinkedinUnipileConnectionService = () =>
+  require('./member-linkedin-unipile-connection.service')
+    .MemberLinkedinUnipileConnectionService as typeof import('./member-linkedin-unipile-connection.service').MemberLinkedinUnipileConnectionService;
+
+const getWorkspaceMemberProfileUnipileService = () =>
+  require('./workspace-member-profile-unipile.service')
+    .WorkspaceMemberProfileUnipileService as typeof import('./workspace-member-profile-unipile.service').WorkspaceMemberProfileUnipileService;
 
 type LinkedinUnipileAccountItem = Record<string, unknown> & {
   id?: string;
@@ -28,6 +61,12 @@ export class LinkedinUnipileRequestService {
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
+    @Optional()
+    @Inject(forwardRef(getMemberLinkedinUnipileConnectionService))
+    private readonly memberLinkedinUnipileConnectionService?: MemberLinkedinUnipileConnectionService,
+    @Optional()
+    @Inject(forwardRef(getWorkspaceMemberProfileUnipileService))
+    private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
   ) {
     this.logger.log(`Unipile API URL: ${this.unipileApiUrl}`);
     this.logger.log(
@@ -39,7 +78,10 @@ export class LinkedinUnipileRequestService {
     endpoint: string,
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
     body?: unknown,
-    options?: { returnStatus: true },
+    options?: {
+      returnStatus?: boolean;
+      linkedinAccountCleanup?: LinkedinUnipileAccountCleanupContext;
+    },
   ): Promise<unknown> {
     const url = `${this.unipileApiUrl}${endpoint}`;
     const headers = {
@@ -74,11 +116,23 @@ export class LinkedinUnipileRequestService {
           `Unipile API error: Object:`,
           JSON.stringify(data, null, 2),
         );
+
+        await this.handleDisconnectedAccountApiErrorIfNeeded(
+          response.status,
+          data,
+          endpoint,
+          options?.linkedinAccountCleanup,
+        );
+
         const message =
           (data as { detail?: string; message?: string }).detail ||
           (data as { message?: string }).message ||
           `Unipile API error: ${response.statusText}`;
         throw new HttpException(message, response.status);
+      }
+
+      if (shouldInvalidateUnipileAccountsListCache(endpoint, method)) {
+        invalidateUnipileAccountsListCache();
       }
 
       if (options?.returnStatus) {
@@ -96,6 +150,49 @@ export class LinkedinUnipileRequestService {
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
+  }
+
+  private async handleDisconnectedAccountApiErrorIfNeeded(
+    status: number,
+    data: unknown,
+    endpoint: string,
+    cleanupContext?: LinkedinUnipileAccountCleanupContext,
+  ): Promise<void> {
+    if (!isUnipileDisconnectedAccountApiError(status, data)) {
+      return;
+    }
+
+    const accountIdFromEndpoint = parseAccountIdFromUnipileEndpoint(endpoint);
+    const accountId =
+      cleanupContext?.accountId?.trim() || accountIdFromEndpoint?.trim() || '';
+
+    if (!accountId) {
+      this.logger.warn(
+        `Unipile disconnected_account error without account id endpoint=${endpoint}`,
+      );
+      return;
+    }
+
+    if (cleanupContext?.isSharedPoolAccount) {
+      this.logger.warn(
+        `Unipile disconnected_account for shared pool accountId=${accountId}; skipping workspace member profile cleanup context=${cleanupContext.context}`,
+      );
+      return;
+    }
+
+    if (cleanupContext) {
+      await this.memberLinkedinUnipileConnectionService?.cleanupStoredLinkedinAccountAfterDisconnectedApiError(
+        {
+          ...cleanupContext,
+          accountId,
+        },
+      );
+      return;
+    }
+
+    this.logger.warn(
+      `Unipile disconnected_account for accountId=${accountId} without workspace member cleanup context`,
+    );
   }
 
   /** Fetch a single account by id; returns null on 404 (e.g. account disconnected) without logging ERROR. */
@@ -196,13 +293,28 @@ export class LinkedinUnipileRequestService {
   }
 
   /**
+   * Raw Unipile account list (all providers). Cached process-wide because the list is
+   * global to the Unipile DSN, not scoped to a workspace.
+   */
+  async fetchRawUnipileAccountsListCached(): Promise<{
+    items?: LinkedinUnipileAccountItem[];
+  }> {
+    return fetchUnipileAccountsListWithCache(async () => {
+      this.logger.log(
+        'Fetching Unipile account list from API (cache miss or expired)',
+      );
+      return (await this.makeUnipileRequest('/api/v1/accounts')) as {
+        items?: LinkedinUnipileAccountItem[];
+      };
+    });
+  }
+
+  /**
    * All LinkedIn accounts from Unipile. Fetches the full account list and filters by
    * `type === 'LINKEDIN'` (the `?provider=linkedin` query can return an empty list on some DSNs).
    */
   async listAllLinkedinAccountsFromUnipileApi() {
-    const response = (await this.makeUnipileRequest(
-      '/api/v1/accounts',
-    )) as { items?: LinkedinUnipileAccountItem[] };
+    const response = await this.fetchRawUnipileAccountsListCached();
 
     const accounts = (response.items || [])
       .filter((item) => String(item.type ?? '').toUpperCase() === 'LINKEDIN')
@@ -215,21 +327,370 @@ export class LinkedinUnipileRequestService {
     return { success: true as const, accounts };
   }
 
+  async inferLinkedinSearchTypeForAccount(accountId: string): Promise<{
+    inferredSearchType: 'classic' | 'sales_navigator' | 'recruiter';
+    salesNavigatorAvailable: boolean;
+    recruiterAvailable: boolean;
+  } | null> {
+    const profile = await this.fetchLinkedinOwnerProfile(accountId);
+    if (!profile) {
+      return null;
+    }
+    return {
+      inferredSearchType:
+        inferLinkedInSearchTypeFromUnipileOwnerProfile(profile),
+      salesNavigatorAvailable: profile.sales_navigator != null,
+      recruiterAvailable: profile.recruiter != null,
+    };
+  }
+
   async fetchLinkedinOwnerProfile(
     accountId: string,
+    cleanupContext?: LinkedinUnipileAccountCleanupContext,
+    options?: { refresh?: boolean },
   ): Promise<UnipileAccountOwnerProfile | null> {
     const trimmed = accountId.trim();
     if (!trimmed) {
       return null;
     }
+
+    const workspaceMemberId = cleanupContext?.workspaceMemberId?.trim() ?? '';
+    const authToken = cleanupContext?.authToken?.trim() ?? '';
+
+    if (
+      workspaceMemberId &&
+      authToken &&
+      this.workspaceMemberProfileUnipileService &&
+      options?.refresh !== true
+    ) {
+      const stored =
+        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinProfile(
+          workspaceMemberId,
+          authToken,
+        );
+
+      if (
+        stored &&
+        hasWorkspaceMemberLinkedinOwnerProfile(stored) &&
+        workspaceMemberLinkedinProfileMatchesAccountId(stored, trimmed)
+      ) {
+        this.logger.log(
+          `LinkedIn owner profile loaded from workspace member profile for accountId=${trimmed}`,
+        );
+        return stored.me;
+      }
+    }
+
     try {
       const response = (await this.makeUnipileRequest(
         `/api/v1/users/me?account_id=${encodeURIComponent(trimmed)}`,
-      )) as UnipileAccountOwnerProfile;
+        'GET',
+        undefined,
+        {
+          linkedinAccountCleanup: cleanupContext
+            ? { ...cleanupContext, accountId: trimmed }
+            : undefined,
+        },
+      )) as UnipileAccountOwnerProfile & { public_identifier?: string };
+
+      if (response && workspaceMemberId && authToken && this.workspaceMemberProfileUnipileService) {
+        const publicIdentifier =
+          typeof response.public_identifier === 'string'
+            ? response.public_identifier.trim()
+            : undefined;
+
+        await this.workspaceMemberProfileUnipileService.saveWorkspaceMemberLinkedinProfile(
+          workspaceMemberId,
+          authToken,
+          {
+            linkedinUnipileAccountId: trimmed,
+            me: response,
+            ...(publicIdentifier ? { publicIdentifier } : {}),
+            fetchedAt: new Date().toISOString(),
+          },
+        );
+      }
+
       return response ?? null;
     } catch (err) {
       this.logger.warn(
         `fetchLinkedinOwnerProfile failed for ${trimmed}: ${err instanceof Error ? err.message : err}`,
+      );
+      return null;
+    }
+  }
+
+  private toSenderFullProfileEntry(
+    stored: NonNullable<
+      Awaited<
+        ReturnType<
+          WorkspaceMemberProfileUnipileService['getWorkspaceMemberLinkedinProfile']
+        >
+      >
+    >,
+    accountId: string,
+  ): LinkedinSenderFullProfileCacheEntry | null {
+    if (!hasWorkspaceMemberLinkedinFullProfile(stored)) {
+      return null;
+    }
+
+    if (!workspaceMemberLinkedinProfileMatchesAccountId(stored, accountId)) {
+      return null;
+    }
+
+    return {
+      me: stored.me,
+      fullProfile: stored.fullProfile,
+      publicIdentifier: stored.publicIdentifier.trim(),
+      fetchedAt: stored.fetchedAt,
+      linkedinUnipileAccountId: stored.linkedinUnipileAccountId,
+    };
+  }
+
+  async fetchLinkedinSenderFullProfile(
+    accountId: string,
+    options?: {
+      cleanupContext?: LinkedinUnipileAccountCleanupContext;
+      refresh?: boolean;
+    },
+  ): Promise<LinkedinSenderFullProfileResult | null> {
+    const trimmed = accountId.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    const workspaceMemberId =
+      options?.cleanupContext?.workspaceMemberId?.trim() ?? '';
+    const authToken = options?.cleanupContext?.authToken?.trim() ?? '';
+
+    if (
+      !options?.refresh &&
+      workspaceMemberId &&
+      authToken &&
+      this.workspaceMemberProfileUnipileService
+    ) {
+      const stored =
+        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinProfile(
+          workspaceMemberId,
+          authToken,
+        );
+      const entry = stored ? this.toSenderFullProfileEntry(stored, trimmed) : null;
+
+      if (entry) {
+        this.logger.log(
+          `LinkedIn sender full profile loaded from workspace member profile for accountId=${trimmed}`,
+        );
+        return { entry, fromCache: true };
+      }
+    }
+
+    const me = await this.fetchLinkedinOwnerProfile(
+      trimmed,
+      options?.cleanupContext,
+      { refresh: options?.refresh === true },
+    );
+    const meWithIdentifier = me as UnipileAccountOwnerProfile & {
+      public_identifier?: string;
+    };
+    if (!meWithIdentifier?.public_identifier?.trim()) {
+      this.logger.warn(
+        `fetchLinkedinSenderFullProfile: missing public_identifier for accountId=${trimmed}`,
+      );
+      return null;
+    }
+
+    const publicIdentifier = meWithIdentifier.public_identifier.trim();
+    const queryParams = new URLSearchParams({
+      account_id: trimmed,
+      linkedin_sections: '*',
+    });
+
+    try {
+      const fullProfile = (await this.makeUnipileRequest(
+        `/api/v1/users/${encodeURIComponent(publicIdentifier)}?${queryParams}`,
+        'GET',
+        undefined,
+        {
+          linkedinAccountCleanup: options?.cleanupContext
+            ? { ...options.cleanupContext, accountId: trimmed }
+            : undefined,
+        },
+      )) as Record<string, unknown>;
+
+      const entry: LinkedinSenderFullProfileCacheEntry = {
+        linkedinUnipileAccountId: trimmed,
+        me: meWithIdentifier,
+        fullProfile,
+        publicIdentifier,
+        fetchedAt: new Date().toISOString(),
+      };
+
+      if (workspaceMemberId && authToken && this.workspaceMemberProfileUnipileService) {
+        await this.workspaceMemberProfileUnipileService.saveWorkspaceMemberLinkedinProfile(
+          workspaceMemberId,
+          authToken,
+          entry,
+        );
+      }
+
+      this.logger.log(
+        `LinkedIn sender full profile saved for accountId=${trimmed} publicIdentifier=${publicIdentifier}`,
+      );
+
+      return { entry, fromCache: false };
+    } catch (err) {
+      this.logger.warn(
+        `fetchLinkedinSenderFullProfile failed for ${trimmed}: ${err instanceof Error ? err.message : err}`,
+      );
+      return null;
+    }
+  }
+
+  async fetchLinkedinUserProfile(
+    accountId: string,
+    identifier: string,
+    options?: {
+      linkedinSections?: string[];
+      notify?: boolean;
+      cleanupContext?: LinkedinUnipileAccountCleanupContext;
+    },
+  ): Promise<Record<string, unknown> | null> {
+    const trimmedAccountId = accountId.trim();
+    const trimmedIdentifier = identifier.trim();
+    if (!trimmedAccountId || !trimmedIdentifier) {
+      return null;
+    }
+
+    const queryParams = new URLSearchParams({
+      account_id: trimmedAccountId,
+    });
+    const sections = options?.linkedinSections ?? ['*'];
+    if (sections.length > 0) {
+      queryParams.append('linkedin_sections', sections.join(','));
+    }
+    if (options?.notify !== undefined) {
+      queryParams.append('notify', String(options.notify));
+    }
+
+    try {
+      return (await this.makeUnipileRequest(
+        `/api/v1/users/${encodeURIComponent(trimmedIdentifier)}?${queryParams}`,
+        'GET',
+        undefined,
+        {
+          linkedinAccountCleanup: options?.cleanupContext
+            ? { ...options.cleanupContext, accountId: trimmedAccountId }
+            : undefined,
+        },
+      )) as Record<string, unknown>;
+    } catch (err) {
+      if (isUnipileLinkedinAccountUnusableError(err)) {
+        this.logger.warn(
+          `fetchLinkedinUserProfile unusable LinkedIn Unipile account ${trimmedAccountId} for ${trimmedIdentifier}: ${err instanceof Error ? err.message : err}`,
+        );
+        if (err instanceof UnipileLinkedinAccountUnusableError) {
+          throw err;
+        }
+        throw new UnipileLinkedinAccountUnusableError(
+          `LinkedIn Unipile account ${trimmedAccountId} is unusable`,
+          { accountId: trimmedAccountId, cause: err },
+        );
+      }
+
+      this.logger.warn(
+        `fetchLinkedinUserProfile failed for ${trimmedIdentifier}: ${err instanceof Error ? err.message : err}`,
+      );
+      return null;
+    }
+  }
+
+  async fetchLinkedinUserPosts(
+    accountId: string,
+    identifier: string,
+    options?: {
+      limit?: number;
+      cursor?: string;
+      isCompany?: boolean;
+      cleanupContext?: LinkedinUnipileAccountCleanupContext;
+    },
+  ): Promise<Record<string, unknown> | null> {
+    const trimmedAccountId = accountId.trim();
+    const trimmedIdentifier = identifier.trim();
+    if (!trimmedAccountId || !trimmedIdentifier) {
+      return null;
+    }
+
+    const queryParams = new URLSearchParams({
+      account_id: trimmedAccountId,
+    });
+    if (options?.limit !== undefined) {
+      queryParams.append('limit', String(options.limit));
+    }
+    if (options?.cursor) {
+      queryParams.append('cursor', options.cursor);
+    }
+    if (options?.isCompany !== undefined) {
+      queryParams.append('is_company', String(options.isCompany));
+    }
+
+    try {
+      return (await this.makeUnipileRequest(
+        `/api/v1/users/${encodeURIComponent(trimmedIdentifier)}/posts?${queryParams}`,
+        'GET',
+        undefined,
+        {
+          linkedinAccountCleanup: options?.cleanupContext
+            ? { ...options.cleanupContext, accountId: trimmedAccountId }
+            : undefined,
+        },
+      )) as Record<string, unknown>;
+    } catch (err) {
+      this.logger.warn(
+        `fetchLinkedinUserPosts failed for ${trimmedIdentifier}: ${err instanceof Error ? err.message : err}`,
+      );
+      return null;
+    }
+  }
+
+  async fetchLinkedinUserComments(
+    accountId: string,
+    identifier: string,
+    options?: {
+      limit?: number;
+      cursor?: string;
+      cleanupContext?: LinkedinUnipileAccountCleanupContext;
+    },
+  ): Promise<Record<string, unknown> | null> {
+    const trimmedAccountId = accountId.trim();
+    const trimmedIdentifier = identifier.trim();
+    if (!trimmedAccountId || !trimmedIdentifier) {
+      return null;
+    }
+
+    const queryParams = new URLSearchParams({
+      account_id: trimmedAccountId,
+    });
+    if (options?.limit !== undefined) {
+      queryParams.append('limit', String(options.limit));
+    }
+    if (options?.cursor) {
+      queryParams.append('cursor', options.cursor);
+    }
+
+    try {
+      return (await this.makeUnipileRequest(
+        `/api/v1/users/${encodeURIComponent(trimmedIdentifier)}/comments?${queryParams}`,
+        'GET',
+        undefined,
+        {
+          linkedinAccountCleanup: options?.cleanupContext
+            ? { ...options.cleanupContext, accountId: trimmedAccountId }
+            : undefined,
+        },
+      )) as Record<string, unknown>;
+    } catch (err) {
+      this.logger.warn(
+        `fetchLinkedinUserComments failed for ${trimmedIdentifier}: ${err instanceof Error ? err.message : err}`,
       );
       return null;
     }
@@ -258,18 +719,16 @@ export class LinkedinUnipileRequestService {
         };
       }
 
-      const response = (await this.makeUnipileRequest(
-        '/api/v1/accounts?provider=linkedin',
-      )) as { items?: LinkedinUnipileAccountItem[] };
+      const response = await this.fetchRawUnipileAccountsListCached();
       this.logger.log('Getting getAllAccounts response');
 
       this.logger.log(
         `Filtering LinkedIn accounts for workspace ${workspace.id} with linkedin_url: ${linkedinUrl ?? 'none'}, linkedin_unipile_account_id: ${linkedinUnipileAccountId ?? 'none'}`,
       );
 
-      const allAccounts = (response.items || []).map((item) =>
-        this.mapLinkedinApiItemToAccountRow(item),
-      );
+      const allAccounts = (response.items || [])
+        .filter((item) => String(item.type ?? '').toUpperCase() === 'LINKEDIN')
+        .map((item) => this.mapLinkedinApiItemToAccountRow(item));
 
       const accounts = allAccounts.filter((account) => {
         if (linkedinUnipileAccountId && account.id === linkedinUnipileAccountId) {
@@ -346,6 +805,9 @@ export class LinkedinUnipileRequestService {
     if (!trimmed) {
       return;
     }
+    this.logger.log(
+      `Deleting LinkedIn Unipile account accountId=${trimmed} context=${context}`,
+    );
     const url = `${this.unipileApiUrl}/api/v1/accounts/${trimmed}`;
     const headers = {
       Accept: 'application/json',
@@ -354,8 +816,9 @@ export class LinkedinUnipileRequestService {
     try {
       const response = await fetch(url, { method: 'DELETE', headers });
       if (response.ok || response.status === 404) {
+        invalidateUnipileAccountsListCache();
         this.logger.log(
-          `Unipile LinkedIn account ${trimmed} disconnected (${context}); status=${response.status}`,
+          `Deleted LinkedIn Unipile account accountId=${trimmed} context=${context} httpStatus=${response.status}`,
         );
         return;
       }

@@ -36,6 +36,21 @@ describe('superImposeAppendEligibility', () => {
     ).toBe(true);
   });
 
+  it('blocks append when target company differs from background chart', () => {
+    expect(
+      canAppendToExistingSuperImposeChart({
+        isBlankTemplate: false,
+        firstSourceUsed: 'unipile',
+        latestOrgChart: { candidateSource: 'unipile' },
+        itemCount: 42,
+        isDifferentTargetCompany: true,
+      }),
+    ).toEqual({
+      eligible: false,
+      reason: 'Append is only available for the current chart company.',
+    });
+  });
+
   it('parses multiline urls', () => {
     expect(parseMultilineUrlInput('a\nb')).toEqual(['a', 'b']);
   });

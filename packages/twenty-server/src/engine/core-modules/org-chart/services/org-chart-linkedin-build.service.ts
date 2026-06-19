@@ -7,6 +7,8 @@ import {
 } from 'twenty-shared';
 
 import { ApifyService } from 'src/engine/core-modules/apify/services/apify.service';
+import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
+import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { CreditTransactionService } from 'src/engine/core-modules/billing/services/credit-transaction.service';
 import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { BrightDataLinkedinPeopleSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-linkedin-people-search.service';
@@ -129,6 +131,9 @@ type SearchOrgchartLinkedInBody = {
   /** Company site URL; used to derive `companyDomain` for Apollo when explicit domain is absent. */
   website?: string;
   superImpose?: SuperImposeInputs;
+  linkedinLocationId?: string;
+  linkedinLocationName?: string;
+  linkedinCompanyParameterId?: string;
 };
 
 type EntireCompanyFilterState = {
@@ -174,6 +179,8 @@ export class OrgChartLinkedInBuildService {
     private readonly harvestLinkedinService: HarvestLinkedinService,
     private readonly harvestLinkedinTransformer: HarvestLinkedinTransformerService,
     private readonly orgChartSuperImposeService: OrgChartSuperImposeService,
+    private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
+    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     @InjectMessageQueue(MessageQueue.orgchartApifyQueue)
     private readonly orgchartApifyQueue: MessageQueueService,
   ) {}
@@ -1792,6 +1799,13 @@ export class OrgChartLinkedInBuildService {
     }
   }
 
+  private async resolveOrgchartUnipileSearchType(
+    body: SearchOrgchartLinkedInBody,
+    _apiToken: string,
+  ): Promise<OrgchartSearchType> {
+    return body.searchType ?? 'classic';
+  }
+
   private buildOrgchartSearchRequirementText(
     mode: OrgchartSearchMode,
     resolvedCompanyName: string,
@@ -3346,9 +3360,12 @@ export class OrgChartLinkedInBuildService {
       companyId,
       jobTitles = [],
       mode,
-      searchType = 'classic',
       requestId,
     } = body;
+    const searchType = await this.resolveOrgchartUnipileSearchType(
+      body,
+      apiToken,
+    );
 
     const resolvedCompanyName =
       companyName || (companyId ? String(companyId) : '');
@@ -3361,6 +3378,13 @@ export class OrgChartLinkedInBuildService {
           HttpStatus.BAD_REQUEST,
         );
       }
+
+      const targetCompany = superImpose.targetCompany;
+      const effectiveCompanyId = targetCompany?.slug?.trim() || companyId;
+      const effectiveCompanyName =
+        targetCompany?.title?.trim() || resolvedCompanyName;
+      const effectiveLinkedinUrl =
+        targetCompany?.linkedinCompanyUrl?.trim() || canonicalCompanyLinkedinUrl;
 
       const candidateSource: 'harvest' | 'unipile' =
         body.candidateSource === 'harvest' ? 'harvest' : 'unipile';
@@ -3380,9 +3404,14 @@ export class OrgChartLinkedInBuildService {
         (superImpose.websiteUrls?.length ?? 0) > 0 ||
         (superImpose.salesNavigatorSearchUrls?.length ?? 0) > 0;
 
-      if (!hasExtraSources && !canonicalCompanyLinkedinUrl && !companyId) {
+      if (
+        !hasExtraSources &&
+        !effectiveLinkedinUrl &&
+        !effectiveCompanyId &&
+        !targetCompany
+      ) {
         throw new HttpException(
-          'At least one LinkedIn company URL, website URL, or Sales Navigator search URL is required',
+          'Select a target company or provide at least one LinkedIn company URL, website URL, or Sales Navigator search URL',
           HttpStatus.BAD_REQUEST,
         );
       }
@@ -3391,7 +3420,7 @@ export class OrgChartLinkedInBuildService {
         await this.orgchartCancelRegistry.register(requestId, {
           mode,
           searchType,
-          companyName: resolvedCompanyName,
+          companyName: effectiveCompanyName,
         });
       }
 
@@ -3399,17 +3428,23 @@ export class OrgChartLinkedInBuildService {
         apiToken,
         requestId,
         body: body as unknown as Record<string, unknown>,
-        canonicalCompanyLinkedinUrl,
-        resolvedCompanyName,
-        companyId,
+        canonicalCompanyLinkedinUrl: effectiveLinkedinUrl,
+        resolvedCompanyName: effectiveCompanyName,
+        companyId: effectiveCompanyId,
         jobTitles,
         mode,
         searchType,
         superImpose,
-        country: body.country,
+        country: body.linkedinLocationName ?? body.country,
         functionRoot: body.functionRoot,
         businessDivisionRawQuery: body.businessDivisionRawQuery,
         candidateSource,
+        linkedinLocationId:
+          body.linkedinLocationId ?? superImpose.targetLocation?.id,
+        linkedinLocationName:
+          body.linkedinLocationName ?? superImpose.targetLocation?.title,
+        linkedinCompanyParameterId:
+          body.linkedinCompanyParameterId ?? targetCompany?.id,
       };
 
       await this.orgchartApifyQueue.add(
@@ -5650,6 +5685,18 @@ export class OrgChartLinkedInBuildService {
         candidateSource,
         searchType,
         linkedinUnipileAccountId: rawBody.linkedinUnipileAccountId,
+        linkedinLocationId:
+          jobData.linkedinLocationId ??
+          rawBody.linkedinLocationId ??
+          superImpose.targetLocation?.id,
+        linkedinLocationName:
+          jobData.linkedinLocationName ??
+          rawBody.linkedinLocationName ??
+          superImpose.targetLocation?.title,
+        linkedinCompanyParameterId:
+          jobData.linkedinCompanyParameterId ??
+          rawBody.linkedinCompanyParameterId ??
+          superImpose.targetCompany?.id,
         maxProfiles: this.orgChartSuperImposeService.getSuperImposeThreshold(),
         onProgress: async (message: string) => {
           await this.emitOrgchartSearchProgressForToken(apiToken, {

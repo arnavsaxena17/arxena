@@ -6,6 +6,7 @@ jest.mock('openai', () => ({
 }));
 
 import { Test } from '@nestjs/testing';
+import { LinkedinUnipileSessionService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-session.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
 import { JobDescriptionService } from 'src/engine/core-modules/candidate-search/services/job-description.service';
@@ -26,30 +27,21 @@ describe('CandidateSearchBaseService.getLinkedInAccountId', () => {
     getWorkspaceIdFromToken: jest.Mock;
     getWorkspaceMemberIdFromToken: jest.Mock;
   };
-  let workspaceMemberProfileUnipileService: {
-    getWorkspaceMemberUnipileAccountId: jest.Mock;
+  let workspaceMemberProfileUnipileService: Record<string, unknown>;
+  let linkedinUnipileSessionService: {
+    ensureLinkedinAccountId: jest.Mock;
   };
-  const prevEnv = process.env.UNIPILE_LINKEDIN_ACCOUNT_ID;
-
-  afterEach(() => {
-    if (prevEnv === undefined) {
-      delete process.env.UNIPILE_LINKEDIN_ACCOUNT_ID;
-    } else {
-      process.env.UNIPILE_LINKEDIN_ACCOUNT_ID = prevEnv;
-    }
-  });
 
   beforeEach(async () => {
-    delete process.env.UNIPILE_LINKEDIN_ACCOUNT_ID;
-
     workspaceQueryService = {
       getWorkspaceIdFromToken: jest.fn().mockResolvedValue('workspace-id'),
       getWorkspaceMemberIdFromToken: jest
         .fn()
         .mockResolvedValue('workspace-member-id'),
     };
-    workspaceMemberProfileUnipileService = {
-      getWorkspaceMemberUnipileAccountId: jest.fn().mockResolvedValue(null),
+    workspaceMemberProfileUnipileService = {};
+    linkedinUnipileSessionService = {
+      ensureLinkedinAccountId: jest.fn().mockResolvedValue('session-account'),
     };
 
     const moduleRef = await Test.createTestingModule({
@@ -60,6 +52,10 @@ describe('CandidateSearchBaseService.getLinkedInAccountId', () => {
         {
           provide: WorkspaceMemberProfileUnipileService,
           useValue: workspaceMemberProfileUnipileService,
+        },
+        {
+          provide: LinkedinUnipileSessionService,
+          useValue: linkedinUnipileSessionService,
         },
         { provide: LinkedinParameterResolver, useValue: {} },
         { provide: ParameterSanitizer, useValue: {} },
@@ -74,74 +70,43 @@ describe('CandidateSearchBaseService.getLinkedInAccountId', () => {
     service = moduleRef.get(CandidateSearchBaseService);
   });
 
-  it('returns explicit account id when provided and env is unset', async () => {
+  it('delegates explicit account id to LinkedinUnipileSessionService', async () => {
+    linkedinUnipileSessionService.ensureLinkedinAccountId.mockResolvedValue(
+      'kn5idzvKTdGgKehaMbtTjA',
+    );
     const id = await service.getLinkedInAccountId(
       'token',
       'kn5idzvKTdGgKehaMbtTjA',
     );
     expect(id).toBe('kn5idzvKTdGgKehaMbtTjA');
-    expect(
-      workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId,
-    ).not.toHaveBeenCalled();
-  });
-
-  it('prefers explicit account id over workspace member profile and env', async () => {
-    process.env.UNIPILE_LINKEDIN_ACCOUNT_ID = 'env-account';
-    workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId.mockResolvedValue(
-      'profile-account',
-    );
-
-    const id = await service.getLinkedInAccountId(
+    expect(linkedinUnipileSessionService.ensureLinkedinAccountId).toHaveBeenCalledWith(
       'token',
-      'explicit-account',
+      'kn5idzvKTdGgKehaMbtTjA',
     );
-
-    expect(id).toBe('explicit-account');
-    expect(
-      workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId,
-    ).not.toHaveBeenCalled();
   });
 
-  it('prefers workspace member profile over UNIPILE_LINKEDIN_ACCOUNT_ID env', async () => {
-    process.env.UNIPILE_LINKEDIN_ACCOUNT_ID = 'env-account';
-    workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId.mockResolvedValue(
+  it('returns the resolved session account id for implicit lookups', async () => {
+    linkedinUnipileSessionService.ensureLinkedinAccountId.mockResolvedValue(
       'b-UZjNaPS_iTORng22zrtA',
     );
 
     const id = await service.getLinkedInAccountId('token');
 
     expect(id).toBe('b-UZjNaPS_iTORng22zrtA');
+    expect(linkedinUnipileSessionService.ensureLinkedinAccountId).toHaveBeenCalledWith(
+      'token',
+      undefined,
+    );
   });
 
-  it('falls back to UNIPILE_LINKEDIN_ACCOUNT_ID when profile has no account id', async () => {
+  it('falls back to env when session lookup throws', async () => {
     process.env.UNIPILE_LINKEDIN_ACCOUNT_ID = 'env-account';
-    workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId.mockResolvedValue(
-      null,
+    linkedinUnipileSessionService.ensureLinkedinAccountId.mockRejectedValue(
+      new Error('session unavailable'),
     );
 
     const id = await service.getLinkedInAccountId('token');
 
     expect(id).toBe('env-account');
-  });
-
-  it('falls back to UNIPILE_LINKEDIN_ACCOUNT_ID when profile lookup throws', async () => {
-    process.env.UNIPILE_LINKEDIN_ACCOUNT_ID = 'env-account';
-    workspaceQueryService.getWorkspaceIdFromToken.mockRejectedValue(
-      new Error('token invalid'),
-    );
-
-    const id = await service.getLinkedInAccountId('token');
-
-    expect(id).toBe('env-account');
-  });
-
-  it('throws when profile and env fallback are both unavailable', async () => {
-    workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId.mockResolvedValue(
-      null,
-    );
-
-    await expect(service.getLinkedInAccountId('token')).rejects.toThrow(
-      'Failed to get LinkedIn account ID',
-    );
   });
 });

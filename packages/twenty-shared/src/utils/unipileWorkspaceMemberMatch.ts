@@ -1,6 +1,6 @@
 import {
-    type UnipileLinkedinAccount,
-    type UnipileWhatsappAccount,
+  type UnipileLinkedinAccount,
+  type UnipileWhatsappAccount,
 } from '../types/ArxChatTypes';
 
 export type WorkspaceMemberProfileUnipileFields = {
@@ -64,6 +64,42 @@ export const extractLinkedinSlugFromUrl = (rawUrl: string): string => {
     }
     return withoutQuery.replace(/^\/+|\/+$/g, '').toLowerCase();
   }
+};
+
+export type LinkedinBrowserMemberMatchResult =
+  | 'match'
+  | 'no_member_url'
+  | 'no_browser_url'
+  | 'mismatch';
+
+/**
+ * Compare browser LinkedIn profile URL (from extension) with workspace member linkedinUrl.
+ * When member has no URL yet, first connect is allowed (`no_member_url`).
+ */
+export const linkedinBrowserUrlMatchesMemberProfile = (
+  memberLinkedinUrl: string | null | undefined,
+  browserProfileUrl: string | null | undefined,
+): LinkedinBrowserMemberMatchResult => {
+  const memberTrimmed =
+    typeof memberLinkedinUrl === 'string' ? memberLinkedinUrl.trim() : '';
+  const browserTrimmed =
+    typeof browserProfileUrl === 'string' ? browserProfileUrl.trim() : '';
+
+  if (memberTrimmed === '') {
+    return 'no_member_url';
+  }
+  if (browserTrimmed === '') {
+    return 'no_browser_url';
+  }
+  const memberSlug = extractLinkedinSlugFromUrl(memberTrimmed);
+  const browserSlug = extractLinkedinSlugFromUrl(browserTrimmed);
+  if (memberSlug === '' || browserSlug === '') {
+    return 'mismatch';
+  }
+  if (memberSlug === browserSlug) {
+    return 'match';
+  }
+  return 'mismatch';
 };
 
 const getUnipileLinkedinPublicIdentifier = (

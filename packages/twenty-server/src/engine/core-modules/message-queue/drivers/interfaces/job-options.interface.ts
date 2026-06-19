@@ -6,6 +6,12 @@ export interface QueueJobOptions {
   delayMs?: number;
 }
 
+/** Stable job id + delay for sliding-window delayed jobs (reschedule replaces the timer). */
+export type ScheduleDelayedJobOptions = {
+  id: string;
+  delayMs: number;
+};
+
 export interface QueueCronJobOptions extends QueueJobOptions {
   repeat: {
     every?: number;

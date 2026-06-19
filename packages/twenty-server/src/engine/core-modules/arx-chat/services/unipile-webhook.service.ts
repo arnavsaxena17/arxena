@@ -6,14 +6,14 @@ import { MessageQueue } from '../../message-queue/message-queue.constants';
 import { MessageQueueService } from '../../message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import type {
-  CreateWebhookDto,
-  UnipileAccountStatusWebhook,
-  UnipileEmailWebhook,
-  UnipileMessageWebhook,
-  UnipileNewRelationWebhook,
-  UnipileTrackingEmailWebhook,
-  UnipileWebhookAttachment,
-  UnipileWebhookPayload,
+    CreateWebhookDto,
+    UnipileAccountStatusWebhook,
+    UnipileEmailWebhook,
+    UnipileMessageWebhook,
+    UnipileNewRelationWebhook,
+    UnipileTrackingEmailWebhook,
+    UnipileWebhookAttachment,
+    UnipileWebhookPayload,
 } from '../types/unipile-webhook.types';
 import { UnipileAttachmentStorageUtil } from '../utils/unipile-attachment-storage.util';
 import { UnipileAccountPoolService } from './unipile-account-pool.service';
@@ -205,6 +205,12 @@ export class UnipileWebhookService {
    */
   private async handleMessageWebhook(payload: UnipileMessageWebhook): Promise<void> {
     const { account_id, account_type, event, chat_id, message_id, message, sender, timestamp } = payload;
+
+    if (event === 'message_received' && message?.trim()) {
+      await this.attachmentStorage.cacheMessageContentForDeletionTracking(
+        payload,
+      );
+    }
 
     // WhatsApp group chats: Unipile lists every participant in `attendees`; more than four means a group — skip logging and CRM processing.
     if (
@@ -688,12 +694,24 @@ export class UnipileWebhookService {
   }
 
   private async onMessageDeleted(payload: UnipileMessageWebhook): Promise<void> {
-    const { message_id, message, sender, timestamp, account_type, chat_id, account_id, attachments } = payload;
+    const {
+      message_id,
+      message,
+      sender,
+      timestamp,
+      account_type,
+      chat_id,
+      account_id,
+      attachments,
+      provider_chat_id,
+      subject,
+      is_group,
+      attendees,
+    } = payload;
     
-    this.logger.log(`Message deleted: ${message_id}, message: ${message}, sender: ${sender.attendee_name}, timestamp: ${timestamp}, account_type: ${account_type}, chat_id: ${chat_id}, account_id: ${account_id}, attachments: ${attachments}`);
+    this.logger.log(`Message deleted: ${message_id}, message: ${message}, sender: ${sender.attendee_name}, timestamp: ${timestamp}, account_type: ${account_type}, chat_id: ${chat_id}, account_id: ${account_id}, provider_chat_id: ${provider_chat_id}, is_group: ${is_group}, attachments: ${attachments}`);
     
     try {
-      // Save deleted message details to deleted-messages.json
       await this.attachmentStorage.saveDeletedMessage({
         message_id,
         message: message || null,
@@ -703,6 +721,10 @@ export class UnipileWebhookService {
         chat_id,
         account_id,
         attachments,
+        provider_chat_id,
+        subject,
+        is_group,
+        attendees,
       });
 
       const attachmentInfo = attachments 

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
+import { LinkedinUnipileSessionService } from '../../arx-chat/services/linkedin-unipile-session.service';
 import { WorkspaceMemberProfileUnipileService } from '../../arx-chat/services/workspace-member-profile-unipile.service';
 import { LinkedInSearchTransformerService } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { ResumeReadParseUploadService } from '../../candidate-sourcing/services/resume-read-parse-upload.service';
@@ -65,6 +66,7 @@ export class CandidateSearchBaseService {
     protected readonly staticGraphQLService: StaticGraphQLService,
     protected readonly resumeReadParseUploadService: ResumeReadParseUploadService,
     protected readonly jobDescriptionService: JobDescriptionService,
+    protected readonly linkedinUnipileSessionService: LinkedinUnipileSessionService,
     // @Optional() protected readonly querySimplificationService?: QuerySimplificationService,
   ) {}
 
@@ -467,6 +469,7 @@ export class CandidateSearchBaseService {
     this.logger.log(`Are parameters resolved: ${areParametersResolved}`);
     this.logger.log(`Generated searchCategory: ${searchCategory}`);
     this.logger.log(`Generated searchType: ${searchType}`);
+    this.logger.log(`LinkedIn Unipile accountId=${accountId}`);
     this.logger.log(`Options passed to LinkedIn search: ${JSON.stringify(options, null, 2)}`);
     let searchResult: LinkedInSearchResponse | undefined;
     // Handle flat format resolved parameters (when resolvedSearchParameters are sent directly)
@@ -685,30 +688,11 @@ export class CandidateSearchBaseService {
     apiToken: string,
     explicitAccountId?: string,
   ): Promise<string> {
-    const explicit = explicitAccountId?.trim();
-    if (explicit) {
-      this.logger.debug(
-        'Using explicit LinkedIn Unipile account id for this request',
-      );
-      return explicit;
-    }
-
     try {
-      const workspaceId =
-        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const workspaceMemberId =
-        await this.workspaceQueryService.getWorkspaceMemberIdFromToken(apiToken);
-      const linkedinAccountId =
-        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
-          workspaceMemberId,
-          workspaceId,
-          apiToken,
-          'linkedin',
-        );
-
-      if (linkedinAccountId) {
-        return linkedinAccountId;
-      }
+      return await this.linkedinUnipileSessionService.ensureLinkedinAccountId(
+        apiToken,
+        explicitAccountId,
+      );
     } catch (error) {
       this.logger.warn(
         `Workspace member LinkedIn Unipile account lookup failed, trying env fallback: ${error}`,

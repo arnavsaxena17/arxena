@@ -5,9 +5,9 @@ import { Repository } from 'typeorm';
 
 import { OrgChartClientIpRuleEntity } from 'src/engine/core-modules/org-chart/org-chart-client-ip-rule.entity';
 import {
-  isCidrNotation,
-  isIpv4InCidr,
-  normalizeIpOrCidr,
+    isCidrNotation,
+    isIpv4InCidr,
+    normalizeIpOrCidr,
 } from 'src/engine/core-modules/org-chart/utils/org-chart-ip-cidr.util';
 
 export type OrgChartClientIpDecision = {

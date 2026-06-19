@@ -22,4 +22,7 @@ export type OrgchartSuperImposeBuildJobData = {
   functionRoot?: string;
   businessDivisionRawQuery?: string;
   candidateSource: 'harvest' | 'unipile';
+  linkedinLocationId?: string;
+  linkedinLocationName?: string;
+  linkedinCompanyParameterId?: string;
 };

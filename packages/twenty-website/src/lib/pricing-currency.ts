@@ -1,6 +1,6 @@
 import {
-  resolvePricingCurrencyFromCountryCode,
-  SupportedPricingCurrency,
+    resolvePricingCurrencyFromCountryCode,
+    SupportedPricingCurrency,
 } from '@/lib/pricing-currency-helpers';
 import { headers } from 'next/headers';
 

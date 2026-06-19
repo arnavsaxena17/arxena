@@ -5,13 +5,13 @@ import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { normalizeLlmNullishString } from '../schemas/org-chart.schema';
 import type {
-  GeneratedSearchParameters,
-  ParsedJobDescription,
+    GeneratedSearchParameters,
+    ParsedJobDescription,
 } from '../types/candidate-search-request.type';
 import {
-  attachPeopleStrategiesToGeneratedSearchParameters,
-  extractStrategiesFromGeneratedParams,
-  type PeopleSearchStrategyResult,
+    attachPeopleStrategiesToGeneratedSearchParameters,
+    extractStrategiesFromGeneratedParams,
+    type PeopleSearchStrategyResult,
 } from '../utils/extract-strategies.util';
 import { mapLinkedinSearchQueriesToGeneratedParameters } from '../utils/linkedin-query-generation-mapper.util';
 import { createMinimalParsedJobDescription } from '../utils/parsed-job-description.util';
@@ -202,6 +202,59 @@ export class OrgchartLinkedInQueryRouterService {
   }
 
   /**
+   * Builds people strategies from pre-resolved LinkedIn facet IDs (super impose autocomplete).
+   */
+  private buildStrategiesFromPreResolvedFacets(args: {
+    searchType: 'classic' | 'sales_navigator' | 'recruiter';
+    requirement: string;
+    primaryCompanyName: string;
+    linkedinCompanyIds?: string[];
+    linkedinLocationIds?: string[];
+    linkedinCompanyDisplay?: Array<{ id: string; title: string }>;
+    linkedinLocationDisplay?: Array<{ id: string; title: string }>;
+  }): PeopleSearchStrategyResult[] {
+    const companyIds = (args.linkedinCompanyIds ?? [])
+      .map((id) => id.trim())
+      .filter(Boolean);
+    const locationIds = (args.linkedinLocationIds ?? [])
+      .map((id) => id.trim())
+      .filter(Boolean);
+
+    if (companyIds.length === 0 && locationIds.length === 0) {
+      return [];
+    }
+
+    const query: SearchQuery = {
+      keywords: null,
+      job_title: null,
+      company: companyIds.length > 0 ? companyIds : null,
+      location: locationIds.length > 0 ? locationIds : null,
+      years_of_experience: null,
+    };
+
+    const strategies = this.buildStrategiesFromSingleSearchQuery({
+      query,
+      searchType: args.searchType,
+      requirement: args.requirement,
+    });
+
+    if (args.linkedinCompanyDisplay?.length) {
+      for (const strategy of strategies) {
+        (strategy.parameters as Record<string, unknown>).company_display =
+          args.linkedinCompanyDisplay;
+      }
+    }
+    if (args.linkedinLocationDisplay?.length) {
+      for (const strategy of strategies) {
+        (strategy.parameters as Record<string, unknown>).location_display =
+          args.linkedinLocationDisplay;
+      }
+    }
+
+    return strategies;
+  }
+
+  /**
    * Builds LinkedIn people strategies + minimal JD for org-chart flows (Unipile execution).
    */
   async buildOrgchartLinkedInStrategies(args: {
@@ -223,6 +276,10 @@ export class OrgchartLinkedInQueryRouterService {
     apiToken: string;
     queryGenerator?: OrgchartQueryGeneratorPreference;
     sendEvent?: (event: string, data: unknown) => void;
+    linkedinCompanyIds?: string[];
+    linkedinLocationIds?: string[];
+    linkedinCompanyDisplay?: Array<{ id: string; title: string }>;
+    linkedinLocationDisplay?: Array<{ id: string; title: string }>;
   }): Promise<{
     strategies: PeopleSearchStrategyResult[];
     parsedJobDescription: ParsedJobDescription;
@@ -251,6 +308,43 @@ export class OrgchartLinkedInQueryRouterService {
     const effectiveCompanyNames =
       args.companyNames?.map((name) => name.trim()).filter(Boolean) ??
       (primaryCompanyName ? [primaryCompanyName] : []);
+
+    const preResolvedCompanyIds = (args.linkedinCompanyIds ?? [])
+      .map((id) => id.trim())
+      .filter(Boolean);
+    const preResolvedLocationIds = (args.linkedinLocationIds ?? [])
+      .map((id) => id.trim())
+      .filter(Boolean);
+
+    if (
+      preResolvedCompanyIds.length > 0 ||
+      preResolvedLocationIds.length > 0
+    ) {
+      this.logger.log(
+        `Orgchart router: pre-resolved facet strategy (companyIds=${preResolvedCompanyIds.length}, locationIds=${preResolvedLocationIds.length}, searchType=${searchType}).`,
+      );
+      const strategies = this.buildStrategiesFromPreResolvedFacets({
+        searchType,
+        requirement,
+        primaryCompanyName,
+        linkedinCompanyIds: preResolvedCompanyIds,
+        linkedinLocationIds: preResolvedLocationIds,
+        linkedinCompanyDisplay: args.linkedinCompanyDisplay,
+        linkedinLocationDisplay: args.linkedinLocationDisplay,
+      });
+
+      return {
+        strategies,
+        parsedJobDescription: createMinimalParsedJobDescription({
+          jobTitle: primaryCompanyName
+            ? `Employee at ${primaryCompanyName}`
+            : 'Employee',
+          company: primaryCompanyName,
+          location: args.linkedinLocationDisplay?.[0]?.title ?? country,
+        }),
+      };
+    }
+
     const hasScopeFilters =
       country.trim().length > 0 ||
       hasMeaningfulOrgChartFunctionRootFilter(functionRoot);

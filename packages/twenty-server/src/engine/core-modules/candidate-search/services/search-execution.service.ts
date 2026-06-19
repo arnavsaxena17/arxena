@@ -5,6 +5,7 @@ import {
     sleepMs,
 } from 'src/engine/core-modules/org-chart/utils/orgchart-linkedin-scope.util';
 import { getLinkedInUnipileSearchPageLimit } from 'twenty-shared';
+import { LinkedinUnipileSessionService } from '../../arx-chat/services/linkedin-unipile-session.service';
 import { WorkspaceMemberProfileUnipileService } from '../../arx-chat/services/workspace-member-profile-unipile.service';
 import { LinkedInRecruiterPeopleTransformerService } from '../../candidate-sourcing/services/data-sources/linkedin-recruiter-people-transformer.service';
 import { LinkedInSearchTransformerService, TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
@@ -69,11 +70,17 @@ type SearchExecutionPreview = {
 type SearchExecutionOptions = {
   forceClassicPeopleJson?: boolean;
   linkedInAccountId?: string;
+  /** How linkedInAccountId was resolved (from LinkedinUnipileSessionService). */
+  linkedInAccountIdSource?: string;
   /** When true, sleep 2–3s (configurable) between page fetches. */
   throttlePages?: boolean;
   /** Stop collecting once this many unique candidates are gathered. */
   maxCandidates?: number;
+  /** Resolved from withLinkedinSession when parent already holds a session. */
+  inferredSearchType?: 'classic' | 'sales_navigator' | 'recruiter';
 };
+
+export type { SearchExecutionOptions };
 
 @Injectable()
 export class SearchExecutionService extends CandidateSearchBaseService {
@@ -90,6 +97,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     staticGraphQLService: StaticGraphQLService,
     resumeReadParseUploadService: ResumeReadParseUploadService,
     jobDescriptionService: JobDescriptionService,
+    linkedinUnipileSessionService: LinkedinUnipileSessionService,
     // querySimplificationService: QuerySimplificationService,
     private readonly resultValidationService: ResultValidationService,
     private readonly candidateScoringService: CandidateScoringService,
@@ -105,7 +113,34 @@ export class SearchExecutionService extends CandidateSearchBaseService {
       staticGraphQLService,
       resumeReadParseUploadService,
       jobDescriptionService,
+      linkedinUnipileSessionService,
       // querySimplificationService,
+    );
+  }
+
+  private withSearchLinkedinSession<T>(
+    apiToken: string,
+    executionOptions: SearchExecutionOptions | undefined,
+    run: (nextOptions: SearchExecutionOptions | undefined) => Promise<T>,
+  ): Promise<T> {
+    const explicitAccountId = executionOptions?.linkedInAccountId?.trim();
+    if (explicitAccountId) {
+      return run({
+        ...executionOptions,
+        linkedInAccountId: explicitAccountId,
+      });
+    }
+
+    return this.linkedinUnipileSessionService.withLinkedinSession(
+      apiToken,
+      executionOptions?.linkedInAccountId,
+      async (session) =>
+        run({
+          ...executionOptions,
+          linkedInAccountId: session.accountId,
+          linkedInAccountIdSource: session.accountIdSource,
+          inferredSearchType: session.inferredSearchType,
+        }),
     );
   }
 
@@ -123,54 +158,60 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     if (!strategy.parameters) {
       return null;
     }
-
-    const pageLimit = getLinkedInUnipileSearchPageLimit(searchType);
-    let strategyResolvedParams: GeneratedSearchParameters = {
-      [parameterKey]: strategy.parameters,
-    } as GeneratedSearchParameters;
-
-    const areParamsResolved = this.checkIfParametersResolved(
-      strategyResolvedParams,
-      searchType,
-      searchCategory,
-    );
-    if (!areParamsResolved) {
-      const accountId = await this.getLinkedInAccountId(
-        apiToken,
-        executionOptions?.linkedInAccountId,
-      );
-      strategyResolvedParams = await this.resolveSearchParameters(
-        strategyResolvedParams,
-        searchType,
-        searchCategory,
-        accountId,
-      );
-    }
-
-    const pageResult = await this.fetchPage(
-      strategyResolvedParams,
-      searchType,
-      searchCategory,
+    return this.withSearchLinkedinSession(
       apiToken,
-      undefined,
-      pageLimit,
-      undefined,
-      1,
-      executionOptions?.forceClassicPeopleJson === true,
-      executionOptions?.linkedInAccountId,
+      executionOptions,
+      async (sessionExecutionOptions) => {
+        const pageLimit = getLinkedInUnipileSearchPageLimit(searchType);
+        let strategyResolvedParams: GeneratedSearchParameters = {
+          [parameterKey]: strategy.parameters,
+        } as GeneratedSearchParameters;
+
+        const areParamsResolved = this.checkIfParametersResolved(
+          strategyResolvedParams,
+          searchType,
+          searchCategory,
+        );
+        if (!areParamsResolved) {
+          const accountId = await this.getLinkedInAccountId(
+            apiToken,
+            sessionExecutionOptions?.linkedInAccountId,
+          );
+          strategyResolvedParams = await this.resolveSearchParameters(
+            strategyResolvedParams,
+            searchType,
+            searchCategory,
+            accountId,
+          );
+        }
+
+        const pageResult = await this.fetchPage(
+          strategyResolvedParams,
+          searchType,
+          searchCategory,
+          apiToken,
+          undefined,
+          pageLimit,
+          undefined,
+          1,
+          sessionExecutionOptions?.forceClassicPeopleJson === true,
+          sessionExecutionOptions?.linkedInAccountId,
+          sessionExecutionOptions?.linkedInAccountIdSource,
+        );
+
+        if (!pageResult?.paging?.total_count) {
+          return {
+            totalCount: pageResult?.items.length ?? 0,
+            pageCount: pageResult?.items.length ?? 0,
+          };
+        }
+
+        return {
+          totalCount: pageResult.paging.total_count,
+          pageCount: pageResult.items.length,
+        };
+      },
     );
-
-    if (!pageResult?.paging?.total_count) {
-      return {
-        totalCount: pageResult?.items.length ?? 0,
-        pageCount: pageResult?.items.length ?? 0,
-      };
-    }
-
-    return {
-      totalCount: pageResult.paging.total_count,
-      pageCount: pageResult.items.length,
-    };
   }
 
   /**
@@ -187,6 +228,35 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     maxPages?: number,
     sendEvent?: (event: string, data: any) => boolean | void,
     executionOptions?: SearchExecutionOptions,
+  ): Promise<SearchExecutionPreview | null> {
+    return this.withSearchLinkedinSession(
+      apiToken,
+      executionOptions,
+      (sessionExecutionOptions) =>
+        this.executeMultiPageSearchWithoutValidationInSession(
+          parsedJobDescription,
+          strategy,
+          searchType,
+          searchCategory,
+          parameterKey,
+          apiToken,
+          maxPages,
+          sendEvent,
+          sessionExecutionOptions,
+        ),
+    );
+  }
+
+  private async executeMultiPageSearchWithoutValidationInSession(
+    parsedJobDescription: ParsedJobDescription,
+    strategy: PeopleSearchStrategyResult,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+    parameterKey: string,
+    apiToken: string,
+    maxPages: number | undefined,
+    sendEvent: ((event: string, data: any) => boolean | void) | undefined,
+    executionOptions: SearchExecutionOptions | undefined,
   ): Promise<SearchExecutionPreview | null> {
     const pageLimit = getLinkedInUnipileSearchPageLimit(searchType);
     const maxCandidates =
@@ -295,6 +365,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           state.currentPage,
           forceClassicPeopleJson,
           executionOptions?.linkedInAccountId,
+          executionOptions?.linkedInAccountIdSource,
         );
 
         if (!pageResult || pageResult.items.length === 0) {
@@ -458,10 +529,36 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     apiToken: string,
     userMessage: string | undefined,
     sendEvent?: (event: string, data: any) => boolean | void,
-    executionOptions?: {
-      forceClassicPeopleJson?: boolean;
-      linkedInAccountId?: string;
-    },
+    executionOptions?: SearchExecutionOptions,
+  ): Promise<SearchExecutionPreview | null> {
+    return this.withSearchLinkedinSession(
+      apiToken,
+      executionOptions,
+      (sessionExecutionOptions) =>
+        this.executeMultiPageStrategySearchInSession(
+          parsedJobDescription,
+          strategy,
+          searchType,
+          searchCategory,
+          parameterKey,
+          apiToken,
+          userMessage,
+          sendEvent,
+          sessionExecutionOptions,
+        ),
+    );
+  }
+
+  private async executeMultiPageStrategySearchInSession(
+    parsedJobDescription: ParsedJobDescription,
+    strategy: PeopleSearchStrategyResult,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+    parameterKey: string,
+    apiToken: string,
+    userMessage: string | undefined,
+    sendEvent: ((event: string, data: any) => boolean | void) | undefined,
+    executionOptions: SearchExecutionOptions | undefined,
   ): Promise<SearchExecutionPreview | null> {
     const pageLimit = getLinkedInUnipileSearchPageLimit(searchType);
     let stateForPartialCatch: {
@@ -594,6 +691,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
             state.currentPage,
             forceClassicPeopleJson,
             executionOptions?.linkedInAccountId,
+            executionOptions?.linkedInAccountIdSource,
           );
         } catch (fetchErr) {
           const errorMessage =
@@ -889,6 +987,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     currentPage: number = 1,
     forceClassicPeopleJson: boolean = false,
     linkedInAccountIdOverride?: string,
+    linkedInAccountIdSource?: string,
   ): Promise<{
     items: LinkedInSearchResult[];
     transformed: TransformedCandidateForTable[];
@@ -927,6 +1026,12 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     this.logger.log(
       `Fetching page ${currentPage}${start !== undefined ? ` (start=${start})` : ''}`,
     );
+    const sourceSuffix = linkedInAccountIdSource
+      ? ` source=${linkedInAccountIdSource}`
+      : linkedInAccountIdOverride
+        ? ' (caller-provided, source unknown)'
+        : '';
+    this.logger.log(`LinkedIn Unipile accountId=${accountId}${sourceSuffix}`);
 
     const searchResults = await this.executeLinkedInSearch(
       strategyResolvedParams,

@@ -2,23 +2,23 @@ import { BrowserContext, expect, test, type Page } from '@playwright/test';
 import { deleteAccountViaSettings } from '../lib/utils/deleteAccountViaSettings';
 import { getWorkspaceAppOriginFromPageUrl } from '../lib/utils/workspaceAppUrl';
 import {
-  addLinkedInLiAtCookie,
-  assertLinkedInFeedSessionWithLiAt,
-  dismissLinkedinCookieConsentIfPresent,
-  getAppUrl,
-  getExtensionDistPath,
-  getExtensionId,
-  getLinkedInExpectedSessionNameFromEnv,
-  getLinkedInLiAtFromEnv,
-  launchExtensionContext,
-  logStageFailure,
-  openExtensionPopupAsInactiveTab,
-  pageWaitForAWhile,
-  signUpAndReachJobs,
-  StageTracker,
-  waitForContentScriptPong,
-  waitForExtensionStorageValue,
-  waitForLinkedinUnipilePillLifecycle,
+    addLinkedInLiAtCookie,
+    assertLinkedInFeedSessionWithLiAt,
+    dismissLinkedinCookieConsentIfPresent,
+    getAppUrl,
+    getExtensionDistPath,
+    getExtensionId,
+    getLinkedInExpectedSessionNameFromEnv,
+    getLinkedInLiAtFromEnv,
+    launchExtensionContext,
+    logStageFailure,
+    openExtensionPopupAsInactiveTab,
+    pageWaitForAWhile,
+    signUpAndReachJobs,
+    StageTracker,
+    waitForContentScriptPong,
+    waitForExtensionStorageValue,
+    waitForLinkedinUnipilePillLifecycle,
 } from './arx-crx/arxCrxExtensionHelpers';
 
 const appUrl = getAppUrl();
@@ -207,6 +207,41 @@ test.describe('@smoke arx-crx extension', () => {
   //     t.log('onboarding-welcome: done');
   //   }
   // });
+
+  test('ARX CRX popup shows sign-in CTA when not authenticated', async () => {
+    test.setTimeout(120_000);
+    if (!expectAppContentScript) {
+      test.skip(true, 'Needs content script on app origin');
+      return;
+    }
+
+    const t = new StageTracker(8);
+    t.log('signed-out-cta: start', { appUrl });
+
+    const launched = await launchExtensionContext(extensionDistPath);
+    const context = launched.context;
+
+    try {
+      const extensionId = await getExtensionId(context);
+      await waitForContentScriptPong(context, appUrl, extensionId);
+
+      const popupPage = await context.newPage();
+      await popupPage.goto(`chrome-extension://${extensionId}/index.html`, {
+        waitUntil: 'domcontentloaded',
+      });
+
+      await expect(
+        popupPage.getByRole('button', { name: /Sign in or create account/i }),
+      ).toBeVisible({ timeout: 20_000 });
+      t.log('signed-out-cta: CTA visible');
+    } catch (error) {
+      t.fail('signed-out-cta: test body', error, { appUrl, extensionDistPath });
+      throw error;
+    } finally {
+      await context.close();
+      t.log('signed-out-cta: done');
+    }
+  });
 
   test('ARX CRX shows the logged-in popup after a fresh onboarding flow reaches jobs', async () => {
     test.setTimeout(300_000);

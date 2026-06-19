@@ -174,6 +174,7 @@ export type LinkedinUnipileSyncResult = {
   connected?: boolean;
   skipped?: boolean;
   error?: string;
+  code?: string;
   requiresConsent?: boolean;
   featureEnabled?: boolean;
 };
@@ -257,6 +258,7 @@ export function requestLinkedinUnipileSyncFromPage(): Promise<
         connected: Boolean(d.connected),
         skipped: d.skipped,
         error: typeof d.error === 'string' ? d.error : undefined,
+        code: typeof d.code === 'string' ? d.code : undefined,
         requiresConsent: d.requiresConsent,
         featureEnabled: d.featureEnabled,
       });
@@ -272,41 +274,83 @@ export function requestLinkedinUnipileSyncFromPage(): Promise<
 
 export type UnipileConnectionStatusResponse = {
   linkedinConnected: boolean;
+  linkedinCookiesStored?: boolean;
+  linkedinCookiesLastSyncedAt?: string | null;
+  linkedinCookiesValidatedAt?: string | null;
   whatsappConnected: boolean;
   connectLinkedinToUnipileAutomatically: boolean;
+  linkedinUnipileOnDemand?: boolean;
+  linkedinUrl?: string | null;
+  workspaceMemberId?: string | null;
+  linkedinUnipileAccountId?: string | null;
+  inferredSearchType?: 'classic' | 'sales_navigator' | 'recruiter';
+  salesNavigatorAvailable?: boolean;
+  recruiterAvailable?: boolean;
 };
+
+import {
+  coalesceUnipileConnectionStatusFetch,
+  invalidateUnipileConnectionStatusCache,
+} from './unipileConnectionStatusCache';
 
 export async function fetchUnipileConnectionStatus(
   accessToken: string,
   serverBaseUrl: string,
+  options?: { bypassCache?: boolean },
 ): Promise<UnipileConnectionStatusResponse | null> {
   const base = serverBaseUrl.replace(/\/$/, '');
   if (!base) {
     return null;
   }
-  try {
-    const res = await fetchWithRetry(
-      `${base}/candidate-engagement/unipile-connection-status`,
-      { headers: { Authorization: `Bearer ${accessToken}` } },
-    );
-    if (!res.ok) {
+
+  if (options?.bypassCache === true) {
+    invalidateUnipileConnectionStatusCache(accessToken, base);
+  }
+
+  return coalesceUnipileConnectionStatusFetch(accessToken, base, async () => {
+    try {
+      const res = await fetchWithRetry(
+        `${base}/candidate-engagement/unipile-connection-status`,
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+      if (!res.ok) {
+        return null;
+      }
+      const json = (await res.json()) as {
+        linkedinConnected?: boolean;
+        linkedinCookiesStored?: boolean;
+        linkedinCookiesLastSyncedAt?: string | null;
+        linkedinCookiesValidatedAt?: string | null;
+        whatsappConnected?: boolean;
+        connectLinkedinToUnipileAutomatically?: boolean;
+        linkedinUnipileOnDemand?: boolean;
+        linkedinUrl?: string | null;
+        workspaceMemberId?: string | null;
+        linkedinUnipileAccountId?: string | null;
+        inferredSearchType?: 'classic' | 'sales_navigator' | 'recruiter';
+        salesNavigatorAvailable?: boolean;
+        recruiterAvailable?: boolean;
+      };
+      return {
+        linkedinConnected: Boolean(json.linkedinConnected),
+        linkedinCookiesStored: Boolean(json.linkedinCookiesStored),
+        linkedinCookiesLastSyncedAt: json.linkedinCookiesLastSyncedAt ?? null,
+        linkedinCookiesValidatedAt: json.linkedinCookiesValidatedAt ?? null,
+        whatsappConnected: Boolean(json.whatsappConnected),
+        connectLinkedinToUnipileAutomatically:
+          json.connectLinkedinToUnipileAutomatically ?? true,
+        linkedinUnipileOnDemand: Boolean(json.linkedinUnipileOnDemand),
+        linkedinUrl: json.linkedinUrl ?? null,
+        workspaceMemberId: json.workspaceMemberId ?? null,
+        linkedinUnipileAccountId: json.linkedinUnipileAccountId ?? null,
+        inferredSearchType: json.inferredSearchType,
+        salesNavigatorAvailable: json.salesNavigatorAvailable,
+        recruiterAvailable: json.recruiterAvailable,
+      };
+    } catch {
       return null;
     }
-    const json = (await res.json()) as {
-      linkedinConnected?: boolean;
-      whatsappConnected?: boolean;
-      connectLinkedinToUnipileAutomatically?: boolean;
-    };
-    return {
-      linkedinConnected: Boolean(json.linkedinConnected),
-      whatsappConnected: Boolean(json.whatsappConnected),
-      // Default to enabled when backend omits the field (older server versions).
-      connectLinkedinToUnipileAutomatically:
-        json.connectLinkedinToUnipileAutomatically ?? true,
-    };
-  } catch {
-    return null;
-  }
+  });
 }
 
 export async function fetchOrgChartLinkedinUnipileConnected(
@@ -345,7 +389,7 @@ export type ExtensionLinkedinRecoveryResult = {
 };
 
 /**
- * Ping extension → optional cookie sync → poll org-chart LinkedIn status until connected or attempts exhausted.
+ * Ping extension → optional cookie sync → poll connection status until connected or attempts exhausted.
  * Used after login (background) and before org chart Unipile search (blocking).
  */
 export async function tryExtensionLinkedinUnipileRecovery(options: {
@@ -363,14 +407,6 @@ export async function tryExtensionLinkedinUnipileRecovery(options: {
     return { ok: false, extensionPresent: false, syncAttempted: false };
   }
 
-  const orgChartConnectedInitial = await fetchOrgChartLinkedinUnipileConnected(
-    accessToken,
-    serverBaseUrl,
-  );
-  if (orgChartConnectedInitial === true) {
-    return { ok: true, extensionPresent: true, syncAttempted: false };
-  }
-
   const apiStatus = await fetchUnipileConnectionStatus(
     accessToken,
     serverBaseUrl,
@@ -382,17 +418,42 @@ export async function tryExtensionLinkedinUnipileRecovery(options: {
     return { ok: false, extensionPresent: true, syncAttempted: false };
   }
 
+  if (apiStatus?.linkedinConnected && apiStatus.linkedinUnipileOnDemand !== true) {
+    return { ok: true, extensionPresent: true, syncAttempted: false };
+  }
+
+  if (
+    apiStatus?.linkedinUnipileOnDemand === true &&
+    apiStatus.linkedinCookiesStored === true
+  ) {
+    return { ok: true, extensionPresent: true, syncAttempted: false };
+  }
+
   const syncResult = await requestLinkedinUnipileSyncFromPage();
   if (syncResult.skipped) {
     return { ok: false, extensionPresent: true, syncAttempted: true };
   }
 
-  for (let attempt = 0; attempt < 25; attempt += 1) {
-    const connected = await fetchOrgChartLinkedinUnipileConnected(
+  if (apiStatus?.linkedinUnipileOnDemand === true) {
+    const afterPersist = await fetchUnipileConnectionStatus(
       accessToken,
       serverBaseUrl,
+      { bypassCache: true },
     );
-    if (connected === true) {
+    return {
+      ok: afterPersist?.linkedinCookiesStored === true,
+      extensionPresent: true,
+      syncAttempted: true,
+    };
+  }
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const connectedStatus = await fetchUnipileConnectionStatus(
+      accessToken,
+      serverBaseUrl,
+      { bypassCache: true },
+    );
+    if (connectedStatus?.linkedinConnected === true) {
       return { ok: true, extensionPresent: true, syncAttempted: true };
     }
     await sleep(800);
@@ -401,6 +462,7 @@ export async function tryExtensionLinkedinUnipileRecovery(options: {
   const fallback = await fetchUnipileConnectionStatus(
     accessToken,
     serverBaseUrl,
+    { bypassCache: true },
   );
   if (fallback?.linkedinConnected) {
     return { ok: true, extensionPresent: true, syncAttempted: true };

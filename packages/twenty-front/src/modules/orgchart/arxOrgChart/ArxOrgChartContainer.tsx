@@ -18,13 +18,13 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useUnipile } from '@/unipile/contexts/UnipileContext';
 import { workspaceMemberProfileUnipileFieldsState } from '@/unipile/states/workspaceMemberProfileUnipileFieldsState';
 import {
-  OrgChartDiagramHandle,
-  normalizeCompanyIdForUrl,
-  useCompanyInfoLookup,
-  useOrgChartData,
-  useOrgChartFilterOptions,
+    OrgChartDiagramHandle,
+    normalizeCompanyIdForUrl,
+    useCompanyInfoLookup,
+    useOrgChartData,
+    useOrgChartFilterOptions,
 } from 'twenty-orgchart';
-import { OrgChartNodeData, extractOrgData, resolveLinkedinUnipileAccountIdForWorkspaceMember, toTitleCase, type OrgchartSearchMode } from 'twenty-shared';
+import { OrgChartNodeData, extractOrgData, resolveLinkedinUnipileAccountIdForWorkspaceMember, resolveOrgChartCanonicalCompanyId, toTitleCase, type OrgchartSearchMode } from 'twenty-shared';
 import { Mixpanel } from '~/mixpanel';
 
 import { getArxenaSiteBaseUrl } from '@/auth/utils/arxenaSiteUrl';
@@ -32,14 +32,15 @@ import { OrgChartShareModal } from '../components/OrgChartShareModal';
 import { OrgChartSuperImposeModal } from '../components/OrgChartSuperImposeModal';
 import { useJobOrgChartData } from '../hooks/useJobOrgChartData';
 import { useOrgChartActions, type OrgChartLinkedInSearchEstimate } from '../hooks/useOrgChartActions';
-import { extractCompanyDomainFromWebsite, needsOrgChartCompanyInfoLookup } from '../utils/orgChartUtils';
+import { isDifferentSuperImposeTargetCompany } from '../types/superImposeTypes';
+import { extractCompanyDomainFromWebsite, needsOrgChartCompanyInfoLookup, orgChartSelectionSearch } from '../utils/orgChartUtils';
 import {
-  StyledOrgChartConfirmDd,
-  StyledOrgChartConfirmDt,
-  StyledOrgChartConfirmIntro,
-  StyledOrgChartConfirmRow,
-  StyledOrgChartConfirmRows,
-  StyledOrgChartConfirmSummary,
+    StyledOrgChartConfirmDd,
+    StyledOrgChartConfirmDt,
+    StyledOrgChartConfirmIntro,
+    StyledOrgChartConfirmRow,
+    StyledOrgChartConfirmRows,
+    StyledOrgChartConfirmSummary,
 } from './ArxOrgChart.styles';
 import { ArxOrgChartView } from './ArxOrgChartView';
 import { useOrgChartBanners } from './hooks/useOrgChartBanners';
@@ -1020,30 +1021,92 @@ export const ArxOrgChartContainer = ({
       salesNavigatorSearchUrls: string[];
       linkedinSearchKeywords?: string;
       appendToExistingChart: boolean;
-      country?: string;
       functionRoot?: string;
       businessDivisionRawQuery?: string;
+      targetCompany?: {
+        id: string;
+        title: string;
+        slug: string;
+        linkedinCompanyUrl: string;
+      };
+      targetLocation?: { id: string; title: string };
+      linkedinLocationId?: string;
+      linkedinLocationName?: string;
+      linkedinCompanyParameterId?: string;
     }) => {
+      const targetCompany = input.targetCompany;
+      const shouldNavigate =
+        targetCompany &&
+        isDifferentSuperImposeTargetCompany({
+          backgroundCompanyId: companyId,
+          backgroundCompanyName: effectiveCompanyName ?? companyName,
+          targetCompany,
+          resolveSlug: resolveOrgChartCanonicalCompanyId,
+        });
+
+      if (shouldNavigate && targetCompany) {
+        const companyDomain = extractCompanyDomainFromWebsite(
+          targetCompany.linkedinCompanyUrl,
+        );
+        navigate(
+          {
+            pathname: `/${AppPath.OrgChart}/${targetCompany.slug}`,
+            search: orgChartSelectionSearch({
+              companyName: targetCompany.title,
+              website: targetCompany.linkedinCompanyUrl,
+              companyDomain,
+            }),
+          },
+          {
+            state: {
+              company: {
+                companyId: targetCompany.slug,
+                companyName: targetCompany.title,
+                linkedinUrl: targetCompany.linkedinCompanyUrl,
+                companyDomain,
+              },
+            },
+          },
+        );
+        setSelectedCompanyInfo({
+          companyId: targetCompany.slug,
+          companyName: targetCompany.title,
+          linkedinUrl: targetCompany.linkedinCompanyUrl,
+          companyDomain,
+        });
+      }
+
       await actions.executeOrgchartSearch({
         mode: 'super_impose',
         origin: 'header',
-        country: input.country ?? selectedCountry,
         functionRoot: input.functionRoot ?? selectedFunctionRoot,
         businessDivisionRawQuery: input.businessDivisionRawQuery,
         candidateSourceOverride: superImposeCandidateSource,
+        companyIdOverride: targetCompany?.slug,
+        companyNameOverride: targetCompany?.title,
+        linkedinCompanyUrlOverride: targetCompany?.linkedinCompanyUrl,
+        linkedinLocationId: input.linkedinLocationId,
+        linkedinLocationName: input.linkedinLocationName,
+        linkedinCompanyParameterId: input.linkedinCompanyParameterId,
         superImpose: {
           linkedinCompanyUrls: input.linkedinCompanyUrls,
           websiteUrls: input.websiteUrls,
           salesNavigatorSearchUrls: input.salesNavigatorSearchUrls,
           linkedinSearchKeywords: input.linkedinSearchKeywords,
           appendToExistingChart: input.appendToExistingChart,
+          targetCompany: input.targetCompany,
+          targetLocation: input.targetLocation,
         },
       });
     },
     [
       actions.executeOrgchartSearch,
-      selectedCountry,
+      companyId,
+      companyName,
+      effectiveCompanyName,
+      navigate,
       selectedFunctionRoot,
+      setSelectedCompanyInfo,
       superImposeCandidateSource,
     ],
   );
@@ -1816,12 +1879,9 @@ export const ArxOrgChartContainer = ({
           serverBaseUrl={baseUrl}
           candidateSource={superImposeCandidateSource}
           linkedinUnipileAccountId={resolvedLinkedinUnipileAccountId}
-          selectedCountry={selectedCountry}
           selectedFunctionRoot={selectedFunctionRoot}
           businessDivisionRawQuery={businessDivisionQuery.trim() || undefined}
-          availableCountries={filterOptions.availableCountries}
           availableFunctionRoots={filterOptions.availableFunctionRoots}
-          countryPercentLabels={filterOptions.countryPercentLabels}
           functionRootPercentLabels={filterOptions.functionRootPercentLabels}
           functionRootCounts={filterOptions.functionRootCounts}
           isBlankTemplate={isBlankTemplate}

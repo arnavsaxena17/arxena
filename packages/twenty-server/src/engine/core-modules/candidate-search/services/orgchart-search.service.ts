@@ -1,9 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
+import { LinkedinUnipileEstimateAccountService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-estimate-account.service';
+import { LinkedinUnipileSessionService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-session.service';
+import { resolveEffectiveLinkedinSearchType } from 'src/engine/core-modules/arx-chat/utils/resolve-effective-linkedin-search-type.util';
 import { CandidateAvatarStorageService } from 'src/engine/core-modules/candidate-avatar/services/candidate-avatar-storage.service';
 import { OrgChartIntentService } from 'src/engine/core-modules/candidate-search/services/org-chart-intent.service';
 import type { TransformedCandidateForTable } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-sourcing/services/orgchart-progress-redis.service';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { OrgChartLinkedInScopeRequiredError } from 'src/engine/core-modules/org-chart/errors/orgchart-linkedin-scope-required.error';
 import { OrgChartProfileDataSourceMapperService } from 'src/engine/core-modules/org-chart/services/org-chart-profile-data-source-mapper.service';
 import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services/orgchart-cache.service';
@@ -12,37 +16,37 @@ import { PythonOrgChartService } from 'src/engine/core-modules/org-chart/service
 import type { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
 import { mergeOrgChartCompanyTenureOntoOrgChartData } from 'src/engine/core-modules/org-chart/utils/merge-orgchart-company-tenure.util';
 import {
-  applyApolloOnlyNodeLockState,
-  assignApolloPublicSlugToAllPersonSlots,
-  backfillUnmappedLinkedInSlotsWithApolloSlug,
-  mergeContactAvailabilityOntoOrgChartData,
-  mergeContactAvailabilityOntoOrgChartDataByPersonId,
-  mergeProfileSourceSlugsOntoOrgChartData,
-  normalizeOrgChartLinkedinUrlKey,
-  ORGCHART_DATA_SOURCE_SLUG_APOLLO,
-  readProviderContactHintsFromSearchRow,
-  type OrgChartNodeContactAvailability,
+    applyApolloOnlyNodeLockState,
+    assignApolloPublicSlugToAllPersonSlots,
+    backfillUnmappedLinkedInSlotsWithApolloSlug,
+    mergeContactAvailabilityOntoOrgChartData,
+    mergeContactAvailabilityOntoOrgChartDataByPersonId,
+    mergeProfileSourceSlugsOntoOrgChartData,
+    normalizeOrgChartLinkedinUrlKey,
+    ORGCHART_DATA_SOURCE_SLUG_APOLLO,
+    readProviderContactHintsFromSearchRow,
+    type OrgChartNodeContactAvailability,
 } from 'src/engine/core-modules/org-chart/utils/merge-orgchart-profile-source-slugs.util';
 import {
-  filterOrgChartCandidatesByCountryAndFunctionRoot,
-  hasMeaningfulOrgChartFunctionRootFilter,
+    filterOrgChartCandidatesByCountryAndFunctionRoot,
+    hasMeaningfulOrgChartFunctionRootFilter,
 } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import {
-  computeOrgChartLinkedInMaxPages,
-  computeOrgChartLinkedInSearchPlan,
-  getOrgChartLinkedInMaxCandidates,
-  hasOrgChartLinkedInSubsetScopeFilter,
+    computeOrgChartLinkedInMaxPages,
+    computeOrgChartLinkedInSearchPlan,
+    getOrgChartLinkedInMaxCandidates,
+    hasOrgChartLinkedInSubsetScopeFilter,
 } from 'src/engine/core-modules/org-chart/utils/orgchart-linkedin-scope.util';
 import { filterOrgChartCandidatesByNodeStdLabels } from 'src/engine/core-modules/org-chart/utils/orgchart-node-scope-filter.util';
 import {
-  normalizeCountry,
-  normalizeFunctionRoot,
+    normalizeCountry,
+    normalizeFunctionRoot,
 } from 'src/engine/core-modules/org-chart/utils/orgchart-normalization.util';
 import { OrgChartData } from 'twenty-shared';
 import {
-  applyAsOfSnapshotToCandidates,
-  applyEntireCompanyExperienceTitlesToCandidates,
-  companyTenureFromDerivedExperience,
+    applyAsOfSnapshotToCandidates,
+    applyEntireCompanyExperienceTitlesToCandidates,
+    companyTenureFromDerivedExperience,
 } from '../../org-chart/utils/orgchart-asof-snapshot.util';
 import { extractLinkedinProfileUrlFromOrgChartCandidateRow } from '../../org-chart/utils/orgchart-candidate-linkedin-url.util';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
@@ -53,8 +57,8 @@ import { constructSearchParamKey } from '../utils/search-parameter.utils';
 import { buildTitleTaxonomyResolvedIntent } from '../utils/title-taxonomy-resolved-intent.util';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
 import {
-  OrgchartLinkedInQueryRouterService,
-  type OrgchartQueryGeneratorPreference,
+    OrgchartLinkedInQueryRouterService,
+    type OrgchartQueryGeneratorPreference,
 } from './orgchart-linkedin-query-router.service';
 import { SearchExecutionService } from './search-execution.service';
 
@@ -113,6 +117,9 @@ export class OrgChartSearchService {
     private readonly orgChartIntentService: OrgChartIntentService,
     private readonly orgChartProfileDataSourceMapperService: OrgChartProfileDataSourceMapperService,
     private readonly candidateAvatarStorageService: CandidateAvatarStorageService,
+    private readonly linkedinUnipileSessionService: LinkedinUnipileSessionService,
+    private readonly linkedinUnipileEstimateAccountService: LinkedinUnipileEstimateAccountService,
+    private readonly environmentService: EnvironmentService,
   ) {}
 
   /**
@@ -151,6 +158,9 @@ export class OrgChartSearchService {
       stdGrade?: string;
       /** `selected_nodes` only: each selected org-chart node’s std labels; results must match any scope (OR). */
       selectedNodeStdScopes?: Array<{ stdFunction?: string; stdGrade?: string }>;
+      linkedinLocationId?: string;
+      linkedinLocationName?: string;
+      linkedinCompanyParameterId?: string;
     },
   ): Promise<{
     items: unknown[];
@@ -191,6 +201,13 @@ export class OrgChartSearchService {
         ? ''
         : rawCountryFromOptions;
     let functionRoot = rawFunctionFromOptions;
+    const linkedinLocationId = options?.linkedinLocationId?.trim() || '';
+    const linkedinLocationName = options?.linkedinLocationName?.trim() || '';
+    const linkedinCompanyParameterId =
+      options?.linkedinCompanyParameterId?.trim() || '';
+    if (!country && linkedinLocationName) {
+      country = linkedinLocationName;
+    }
 
     const businessDivisionRaw = options?.businessDivisionRawQuery?.trim();
     if (businessDivisionRaw && !primaryCompanyName) {
@@ -276,11 +293,14 @@ export class OrgChartSearchService {
     }
 
     const hasAdditionalFilters =
-      !!country || hasMeaningfulOrgChartFunctionRootFilter(functionRoot);
+      !!country ||
+      hasMeaningfulOrgChartFunctionRootFilter(functionRoot) ||
+      !!linkedinLocationId;
 
     const hasSubsetScopeFilters = hasOrgChartLinkedInSubsetScopeFilter(
       country,
       functionRoot,
+      linkedinLocationId,
     );
 
     const isAllPeopleInCompanyMode =
@@ -333,13 +353,23 @@ export class OrgChartSearchService {
       }
     }
 
+    return this.linkedinUnipileSessionService.withLinkedinSession(
+      apiToken,
+      options?.linkedinUnipileAccountId,
+      async (linkedinSession) => {
+        const effectiveSearchType = resolveEffectiveLinkedinSearchType(
+          searchType,
+          linkedinSession,
+          this.environmentService.get('LINKEDIN_UNIPILE_INFER_SEARCH_TYPE'),
+        );
+
     const routerOutcome =
       await this.orgchartLinkedInQueryRouterService.buildOrgchartLinkedInStrategies(
         {
           rawQuery,
           cleanedQuery,
           requirement,
-          searchType,
+          searchType: effectiveSearchType,
           mode,
           primaryCompanyName,
           companyNames:
@@ -355,6 +385,28 @@ export class OrgChartSearchService {
           apiToken,
           queryGenerator: options?.queryGenerator,
           sendEvent,
+          linkedinCompanyIds: linkedinCompanyParameterId
+            ? [linkedinCompanyParameterId]
+            : undefined,
+          linkedinLocationIds: linkedinLocationId
+            ? [linkedinLocationId]
+            : undefined,
+          linkedinCompanyDisplay: linkedinCompanyParameterId
+            ? [
+                {
+                  id: linkedinCompanyParameterId,
+                  title: primaryCompanyName || linkedinCompanyParameterId,
+                },
+              ]
+            : undefined,
+          linkedinLocationDisplay: linkedinLocationId
+            ? [
+                {
+                  id: linkedinLocationId,
+                  title: linkedinLocationName || linkedinLocationId,
+                },
+              ]
+            : undefined,
         },
       );
     const strategies = routerOutcome.strategies;
@@ -401,7 +453,7 @@ export class OrgChartSearchService {
           companyId: primaryCompanyId,
           functionRoot: normalizedFunctionRoot,
           country: normalizedCountry,
-          searchType,
+          searchType: effectiveSearchType,
           strategyCap: maxStrategiesToRun,
           keywordsHash,
         });
@@ -452,23 +504,19 @@ export class OrgChartSearchService {
 
     const linkedInExecutionOptions = {
       forceClassicPeopleJson: true as const,
-      linkedInAccountId: options?.linkedinUnipileAccountId,
+      linkedInAccountId: linkedinSession.accountId,
+      linkedInAccountIdSource: linkedinSession.accountIdSource,
       throttlePages: true as const,
       maxCandidates: getOrgChartLinkedInMaxCandidates(),
     };
 
     if (shouldPreResolveOrgchartStrategies && strategiesToRun[0]) {
       try {
-        const accountId =
-          await this.candidateSearchBaseService.getLinkedInAccountId(
-            apiToken,
-            options?.linkedinUnipileAccountId,
-          );
         for (const strategyToResolve of strategiesToRun) {
           strategyToResolve.parameters =
             await this.linkedinParameterResolver.resolveParameterIds(
               strategyToResolve.parameters,
-              accountId,
+              linkedinSession.accountId,
               strategyToResolve.id,
             );
         }
@@ -488,7 +536,7 @@ export class OrgChartSearchService {
       try {
         const probe = await this.searchExecutionService.probeStrategyFirstPageTotalCount(
           probeStrategy,
-          searchType,
+          effectiveSearchType,
           searchCategory,
           parameterKey,
           apiToken,
@@ -498,9 +546,10 @@ export class OrgChartSearchService {
           searchPlan = computeOrgChartLinkedInSearchPlan({
             totalCountFromApi: probe.totalCount,
             strategiesToRun: strategiesToRun.length,
-            searchType,
+            searchType: effectiveSearchType,
             country,
             functionRoot,
+            linkedinLocationId,
             maxCandidates: linkedInExecutionOptions.maxCandidates,
           });
           await emitProgress('searchPlan', {
@@ -536,7 +585,7 @@ export class OrgChartSearchService {
       computeOrgChartLinkedInMaxPages(
         undefined,
         linkedInExecutionOptions.maxCandidates,
-        searchType,
+        effectiveSearchType,
       );
 
     const validateAndScoreLinkedInResults =
@@ -547,7 +596,7 @@ export class OrgChartSearchService {
         ? await this.searchExecutionService.executeMultiPageStrategySearch(
             parsedJobDescription,
             strategy,
-            searchType,
+            effectiveSearchType,
             searchCategory,
             parameterKey,
             apiToken,
@@ -555,13 +604,13 @@ export class OrgChartSearchService {
             emitProgressSync,
             {
               forceClassicPeopleJson: true,
-              linkedInAccountId: options?.linkedinUnipileAccountId,
+              linkedInAccountId: linkedinSession.accountId,
             },
           )
         : await this.searchExecutionService.executeMultiPageSearchWithoutValidation(
             parsedJobDescription,
             strategy,
-            searchType,
+            effectiveSearchType,
             searchCategory,
             parameterKey,
             apiToken,
@@ -620,7 +669,7 @@ export class OrgChartSearchService {
         companyId: primaryCompanyId,
         functionRoot: normalizedFunctionRoot,
         country: normalizedCountry,
-        searchType,
+        searchType: effectiveSearchType,
         strategyCap: maxStrategiesToRun,
         keywordsHash,
         items: candidatesOut,
@@ -651,6 +700,8 @@ export class OrgChartSearchService {
         : {}),
       strategyResults,
     };
+      },
+    );
   }
 
   async estimateLinkedInOrgChartSearch(
@@ -672,6 +723,9 @@ export class OrgChartSearchService {
       businessDivisionRawQuery?: string;
       queryGenerator?: 'python' | 'multi_agent';
       linkedinUnipileAccountId?: string;
+      linkedinLocationId?: string;
+      linkedinLocationName?: string;
+      linkedinCompanyParameterId?: string;
     },
   ): Promise<{
     estimatedTotal: number;
@@ -695,6 +749,13 @@ export class OrgChartSearchService {
         ? ''
         : rawCountryFromOptions;
     let functionRoot = rawFunctionFromOptions;
+    const linkedinLocationId = options?.linkedinLocationId?.trim() || '';
+    const linkedinLocationName = options?.linkedinLocationName?.trim() || '';
+    const linkedinCompanyParameterId =
+      options?.linkedinCompanyParameterId?.trim() || '';
+    if (!country && linkedinLocationName) {
+      country = linkedinLocationName;
+    }
     const businessDivisionRaw = options?.businessDivisionRawQuery?.trim();
 
     let businessDivisionLinkedinKeywords: string | undefined;
@@ -722,13 +783,23 @@ export class OrgChartSearchService {
       !hasAdditionalFilters &&
       !businessDivisionRaw;
 
+    return this.linkedinUnipileEstimateAccountService.withEstimateLinkedinSession(
+      apiToken,
+      options?.linkedinUnipileAccountId,
+      async (linkedinSession) => {
+        const effectiveSearchType = resolveEffectiveLinkedinSearchType(
+          searchType,
+          linkedinSession,
+          this.environmentService.get('LINKEDIN_UNIPILE_INFER_SEARCH_TYPE'),
+        );
+
     const routerOutcome =
       await this.orgchartLinkedInQueryRouterService.buildOrgchartLinkedInStrategies(
         {
           rawQuery,
           cleanedQuery,
           requirement,
-          searchType,
+          searchType: effectiveSearchType,
           mode,
           primaryCompanyName,
           companyNames:
@@ -743,12 +814,34 @@ export class OrgChartSearchService {
           isAllPeopleInCompanyMode,
           apiToken,
           queryGenerator: options?.queryGenerator,
+          linkedinCompanyIds: linkedinCompanyParameterId
+            ? [linkedinCompanyParameterId]
+            : undefined,
+          linkedinLocationIds: linkedinLocationId
+            ? [linkedinLocationId]
+            : undefined,
+          linkedinCompanyDisplay: linkedinCompanyParameterId
+            ? [
+                {
+                  id: linkedinCompanyParameterId,
+                  title: primaryCompanyName || linkedinCompanyParameterId,
+                },
+              ]
+            : undefined,
+          linkedinLocationDisplay: linkedinLocationId
+            ? [
+                {
+                  id: linkedinLocationId,
+                  title: linkedinLocationName || linkedinLocationId,
+                },
+              ]
+            : undefined,
         },
       );
 
     const strategies = routerOutcome.strategies;
     const searchCategory: 'people' = 'people';
-    const parameterKey = constructSearchParamKey(searchType, searchCategory);
+    const parameterKey = constructSearchParamKey(effectiveSearchType, searchCategory);
     const configuredMaxStrategiesRaw = process.env.ORGCHART_MAX_STRATEGIES;
     const configuredMaxStrategiesParsed =
       configuredMaxStrategiesRaw !== undefined
@@ -763,7 +856,8 @@ export class OrgChartSearchService {
       strategies.length > 0 ? strategies.slice(0, maxStrategiesToRun) : [];
     const linkedInExecutionOptions = {
       forceClassicPeopleJson: true as const,
-      linkedInAccountId: options?.linkedinUnipileAccountId,
+      linkedInAccountId: linkedinSession.accountId,
+      linkedInAccountIdSource: linkedinSession.accountIdSource,
     };
     const maxCandidates = getOrgChartLinkedInMaxCandidates();
 
@@ -781,16 +875,11 @@ export class OrgChartSearchService {
     }
 
     try {
-      const accountId =
-        await this.candidateSearchBaseService.getLinkedInAccountId(
-          apiToken,
-          options?.linkedinUnipileAccountId,
-        );
       for (const strategyToResolve of strategiesToRun) {
         strategyToResolve.parameters =
           await this.linkedinParameterResolver.resolveParameterIds(
             strategyToResolve.parameters,
-            accountId,
+            linkedinSession.accountId,
             strategyToResolve.id,
           );
       }
@@ -804,7 +893,7 @@ export class OrgChartSearchService {
 
     const probe = await this.searchExecutionService.probeStrategyFirstPageTotalCount(
       strategiesToRun[0],
-      searchType,
+      effectiveSearchType,
       searchCategory,
       parameterKey,
       apiToken,
@@ -814,9 +903,10 @@ export class OrgChartSearchService {
     const plan = computeOrgChartLinkedInSearchPlan({
       totalCountFromApi: totalCount,
       strategiesToRun: strategiesToRun.length,
-      searchType,
+      searchType: effectiveSearchType,
       country,
       functionRoot,
+      linkedinLocationId,
       maxCandidates,
     });
 
@@ -830,6 +920,8 @@ export class OrgChartSearchService {
       strategiesExtracted: strategies.length,
       strategiesToRun: strategiesToRun.length,
     };
+      },
+    );
   }
 
   async buildOrgChartFromLinkedInCompanyCandidates(

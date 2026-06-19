@@ -2,6 +2,12 @@ import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 
+import {
+  fetchUnipileAccountsListWithCache,
+  invalidateUnipileAccountsListCache,
+  shouldInvalidateUnipileAccountsListCache,
+} from '../utils/unipile-accounts-list.cache';
+
 type UnipileAccountItem = Record<string, unknown> & {
   id?: string;
   name?: string;
@@ -77,6 +83,10 @@ export class WhatsappUnipileRequestService {
           errorData.message || `Unipile API error: ${response.statusText}`,
           response.status,
         );
+      }
+
+      if (shouldInvalidateUnipileAccountsListCache(endpoint, method)) {
+        invalidateUnipileAccountsListCache();
       }
 
       return await response.json();
@@ -171,6 +181,45 @@ export class WhatsappUnipileRequestService {
   }
 
   /**
+   * Normalizes a raw WhatsApp account payload from Unipile (list item or GET by id).
+   */
+  mapWhatsappApiItemToAccountRow(item: UnipileAccountItem) {
+    const phoneFromConnection =
+      item.connection_params?.im?.phone_number ?? item.phone_number;
+    const displayPhone = phoneFromConnection ?? item.phone_number;
+    return {
+      id: item.id,
+      username: item.name || displayPhone || 'Unknown',
+      name: item.name || 'Unknown',
+      phone_number: displayPhone,
+      type: item.type,
+      status: this.mapAccountStatus(item),
+      created_at: item.created_at,
+      provider: 'WHATSAPP' as const,
+      connection_params: item.connection_params,
+      sources: item.sources || [],
+      groups: item.groups || [],
+    };
+  }
+
+  /**
+   * Raw Unipile account list (all providers). Cached process-wide because the list is
+   * global to the Unipile DSN, not scoped to a workspace.
+   */
+  async fetchRawUnipileAccountsListCached(): Promise<{
+    items?: UnipileAccountItem[];
+  }> {
+    return fetchUnipileAccountsListWithCache(async () => {
+      this.logger.log(
+        'Fetching Unipile account list from API for WhatsApp (cache miss or expired)',
+      );
+      return (await this.makeUnipileRequest('/api/v1/accounts')) as {
+        items?: UnipileAccountItem[];
+      };
+    });
+  }
+
+  /**
    * Full WhatsApp account list from Unipile. Fetches all accounts and filters by type.
    */
   async getAllAccounts(workspace: Workspace): Promise<{
@@ -179,9 +228,7 @@ export class WhatsappUnipileRequestService {
     message?: string;
   }> {
     try {
-      const response = (await this.makeUnipileRequest(
-        '/api/v1/accounts',
-      )) as { items?: UnipileAccountItem[] };
+      const response = await this.fetchRawUnipileAccountsListCached();
 
       this.logger.log(
         `Listing WhatsApp accounts from Unipile for workspace ${workspace.id} (filtered from full list)`,
@@ -189,24 +236,7 @@ export class WhatsappUnipileRequestService {
 
       const accounts = (response.items || [])
         .filter((item) => String(item.type ?? '').toUpperCase() === 'WHATSAPP')
-        .map((item) => {
-        const phoneFromConnection =
-          item.connection_params?.im?.phone_number ?? item.phone_number;
-        const displayPhone = phoneFromConnection ?? item.phone_number;
-        return {
-          id: item.id,
-          username: item.name || displayPhone || 'Unknown',
-          name: item.name || 'Unknown',
-          phone_number: displayPhone,
-          type: item.type,
-          status: this.mapAccountStatus(item),
-          created_at: item.created_at,
-          provider: 'WHATSAPP',
-          connection_params: item.connection_params,
-          sources: item.sources || [],
-          groups: item.groups || [],
-        };
-      });
+        .map((item) => this.mapWhatsappApiItemToAccountRow(item));
 
       this.logger.log(
         `Returning ${accounts.length} WhatsApp account(s) from Unipile for workspace ${workspace.id}`,
@@ -241,6 +271,7 @@ export class WhatsappUnipileRequestService {
     try {
       const response = await fetch(url, { method: 'DELETE', headers });
       if (response.ok || response.status === 404) {
+        invalidateUnipileAccountsListCache();
         this.logger.log(
           `Unipile WhatsApp account ${trimmed} disconnected (${context}); status=${response.status}`,
         );

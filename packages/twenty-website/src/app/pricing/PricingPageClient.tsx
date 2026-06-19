@@ -4,6 +4,7 @@ import {
     SUPPORTED_PRICING_CURRENCIES,
     type SupportedPricingCurrency,
 } from '@/lib/pricing-currency-helpers';
+import { resolvePricingCurrencyFromCountryCode, getOrFetchClientGeoSession } from 'twenty-shared';
 import styled from '@emotion/styled';
 import { useEffect, useState } from 'react';
 
@@ -52,6 +53,26 @@ export const PricingPageClient = ({
       setCurrency(storedCurrency as SupportedPricingCurrency);
     }
   }, []);
+
+  useEffect(() => {
+    const hasManualCurrencyPreference =
+      localStorage.getItem(CURRENCY_MANUAL_STORAGE_KEY) === 'true';
+    if (hasManualCurrencyPreference) {
+      return;
+    }
+
+    void getOrFetchClientGeoSession().then((session) => {
+      if (!session.country) {
+        return;
+      }
+      const refinedCurrency = resolvePricingCurrencyFromCountryCode(
+        session.country,
+      );
+      if (refinedCurrency !== defaultCurrency && defaultCurrency === 'USD') {
+        setCurrency(refinedCurrency);
+      }
+    });
+  }, [defaultCurrency]);
 
   const handleCurrencyChange = (nextCurrency: SupportedPricingCurrency) => {
     setCurrency(nextCurrency);

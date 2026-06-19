@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import type { SearchQuerySet } from 'src/engine/core-modules/linkedin-query-generation/types/linkedin-query-generation.types';
 import type {
-    GeneratedSearchParameters
+  GeneratedSearchParameters
 } from '../types/candidate-search-request.type';
 import { mapLinkedinSearchQueriesToGeneratedParameters } from '../utils/linkedin-query-generation-mapper.util';
 

@@ -7,6 +7,7 @@ import { v4 } from 'uuid';
 import {
     QueueCronJobOptions,
     QueueJobOptions,
+    ScheduleDelayedJobOptions,
 } from 'src/engine/core-modules/message-queue/drivers/interfaces/job-options.interface';
 import { MessageQueueDriver } from 'src/engine/core-modules/message-queue/drivers/interfaces/message-queue-driver.interface';
 import { MessageQueueJob } from 'src/engine/core-modules/message-queue/interfaces/message-queue-job.interface';
@@ -171,5 +172,66 @@ export class BullMQDriver implements MessageQueueDriver, OnModuleDestroy {
     };
 
     await this.queueMap[queueName].add(jobName, data, queueOptions);
+  }
+
+  async scheduleOrRescheduleDelayed<T>(
+    queueName: MessageQueue,
+    jobName: string,
+    data: T,
+    options: ScheduleDelayedJobOptions,
+  ): Promise<void> {
+    if (!this.queueMap[queueName]) {
+      throw new Error(
+        `Queue ${queueName} is not registered, make sure you have added it as a queue provider`,
+      );
+    }
+
+    const queue = this.queueMap[queueName];
+    const trimmedJobId = options.id.trim();
+    const delayMs = Math.max(0, options.delayMs);
+    const existing = await queue.getJob(trimmedJobId);
+
+    if (existing) {
+      const state = await existing.getState();
+
+      if (state === 'delayed' || state === 'waiting') {
+        await existing.updateData(data);
+        await existing.changeDelay(delayMs);
+        return;
+      }
+
+      if (state === 'completed' || state === 'failed') {
+        await existing.remove();
+      }
+    }
+
+    await queue.add(jobName, data, {
+      jobId: trimmedJobId,
+      delay: delayMs,
+      removeOnComplete: true,
+      removeOnFail: 100,
+      attempts: 1,
+    });
+  }
+
+  async cancelDelayed(queueName: MessageQueue, jobId: string): Promise<void> {
+    if (!this.queueMap[queueName]) {
+      return;
+    }
+
+    const trimmedJobId = jobId.trim();
+    if (!trimmedJobId) {
+      return;
+    }
+
+    const job = await this.queueMap[queueName].getJob(trimmedJobId);
+    if (!job) {
+      return;
+    }
+
+    const state = await job.getState();
+    if (state === 'delayed' || state === 'waiting') {
+      await job.remove();
+    }
   }
 }

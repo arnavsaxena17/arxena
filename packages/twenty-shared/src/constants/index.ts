@@ -9,4 +9,5 @@ export * from './SettingsFeatures';
 export * from './StandardObjectRecordsUnderObjectRecordsPermissions';
 export * from './TwentyCompaniesBaseUrl';
 export * from './TwentyIconsBaseUrl';
+export * from './workspaceMemberProfileFields';
 

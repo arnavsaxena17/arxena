@@ -3,11 +3,19 @@ export type SuperImposeAppendEligibilityInput = {
   firstSourceUsed?: string | null;
   latestOrgChart?: Record<string, unknown> | null;
   itemCount?: number | null;
+  isDifferentTargetCompany?: boolean;
 };
 
 export const canAppendToExistingSuperImposeChart = (
   input: SuperImposeAppendEligibilityInput,
 ): { eligible: boolean; reason?: string } => {
+  if (input.isDifferentTargetCompany) {
+    return {
+      eligible: false,
+      reason: 'Append is only available for the current chart company.',
+    };
+  }
+
   if (input.isBlankTemplate) {
     return {
       eligible: false,

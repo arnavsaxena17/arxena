@@ -1,10 +1,10 @@
 import type {
-  LinkedinCheckpointData,
-  LinkedinCookieAuth,
-  LinkedinCredentials,
-  LinkedinProfileData,
-  LinkedinSignupResponse,
-  UnipileLinkedinAccount,
+    LinkedinCheckpointData,
+    LinkedinCookieAuth,
+    LinkedinCredentials,
+    LinkedinProfileData,
+    LinkedinSignupResponse,
+    UnipileLinkedinAccount,
 } from 'twenty-shared';
 
 export class LinkedinUnipileService {
@@ -90,7 +90,10 @@ export class LinkedinUnipileService {
       const response = await this.makeRequest<any>('/api/v1/accounts', 'POST', {
         provider: 'LINKEDIN',
         access_token: cookieAuth.access_token,
+        ...(cookieAuth.premium_token && { premium_token: cookieAuth.premium_token }),
         ...(cookieAuth.user_agent && { user_agent: cookieAuth.user_agent }),
+        ...(cookieAuth.ip && { ip: cookieAuth.ip }),
+        ...(cookieAuth.country && { country: cookieAuth.country }),
       });
 
       return {

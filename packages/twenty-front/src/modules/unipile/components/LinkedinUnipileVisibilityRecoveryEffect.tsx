@@ -45,7 +45,7 @@ export const LinkedinUnipileVisibilityRecoveryEffect = () => {
           serverBaseUrl: baseUrl,
         });
         if (result.ok) {
-          await refreshAccounts();
+          await refreshAccounts({ force: true });
         }
       })();
     };

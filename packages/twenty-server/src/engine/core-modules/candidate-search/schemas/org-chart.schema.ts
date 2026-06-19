@@ -77,6 +77,16 @@ const NullableFunctionRootSchema = z.preprocess((val: unknown) => {
   return n;
 }, z.union([FunctionRootSchema, z.null()]));
 
+export function parseFunctionRootOrNull(
+  value: string | null | undefined,
+): FunctionRoot | null {
+  const parsed = NullableFunctionRootSchema.safeParse(value ?? null);
+  if (!parsed.success) {
+    return null;
+  }
+  return parsed.data;
+}
+
 const NullableStdGradeLevelsSchema = z.preprocess((val: unknown) => {
   if (val === null || val === undefined) {
     return null;

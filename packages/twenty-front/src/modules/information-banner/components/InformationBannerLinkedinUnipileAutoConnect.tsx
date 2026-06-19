@@ -9,8 +9,7 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useChromeExtensionDetection } from '@/candidate-table/hooks/useChromeExtensionDetection';
 import { useUnipile } from '@/unipile/contexts/UnipileContext';
 import {
-  fetchUnipileConnectionStatus,
-  tryExtensionLinkedinUnipileRecovery,
+    tryExtensionLinkedinUnipileRecovery,
 } from '@/unipile/utils/linkedinUnipileExtensionBridge';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
@@ -70,11 +69,14 @@ export const InformationBannerLinkedinUnipileAutoConnect = () => {
   const accessToken = tokenPair?.accessToken?.token ?? '';
   const baseUrl = REACT_APP_SERVER_BASE_URL?.replace(/\/$/, '') ?? '';
 
-  const { isLinkedinConnected, refreshAccounts } = useUnipile();
+  const { isLinkedinConnected, refreshAccounts, memberConnectionStatus } =
+    useUnipile();
   const { isExtensionInstalled, isChecking } = useChromeExtensionDetection();
   const [autoConnectEnabled, setAutoConnectEnabled] = useState<boolean | null>(
     null,
   );
+  const [cookiesStored, setCookiesStored] = useState<boolean | null>(null);
+  const [onDemandMode, setOnDemandMode] = useState<boolean | null>(null);
   const [phase, setPhase] = useState<AutoConnectPhase>('idle');
 
   const inFlightRef = useRef(false);
@@ -89,14 +91,18 @@ export const InformationBannerLinkedinUnipileAutoConnect = () => {
     if (!canEvaluate) {
       return false;
     }
-    if (isLinkedinConnected) {
+    if (onDemandMode === true) {
+      if (cookiesStored === true) {
+        return false;
+      }
+    } else if (isLinkedinConnected) {
       return false;
     }
     if (autoConnectEnabled !== true) {
       return false;
     }
     return true;
-  }, [autoConnectEnabled, canEvaluate, isLinkedinConnected]);
+  }, [autoConnectEnabled, canEvaluate, cookiesStored, isLinkedinConnected, onDemandMode]);
 
   useEffect(() => {
     // Useful for debugging "banner not showing" reports.
@@ -106,6 +112,8 @@ export const InformationBannerLinkedinUnipileAutoConnect = () => {
       hasAccessToken: Boolean(accessToken.trim()),
       baseUrl,
       isLinkedinConnected,
+      cookiesStored,
+      onDemandMode,
       autoConnectEnabled,
       isExtensionInstalled,
       isChecking,
@@ -117,9 +125,11 @@ export const InformationBannerLinkedinUnipileAutoConnect = () => {
     autoConnectEnabled,
     baseUrl,
     canEvaluate,
+    cookiesStored,
     isChecking,
     isExtensionInstalled,
     isLinkedinConnected,
+    onDemandMode,
     phase,
     shouldShowBanner,
   ]);
@@ -140,7 +150,7 @@ export const InformationBannerLinkedinUnipileAutoConnect = () => {
     if (!canEvaluate) {
       return;
     }
-    if (isLinkedinConnected) {
+    if (onDemandMode !== true && isLinkedinConnected) {
       return;
     }
     if (inFlightRef.current) {
@@ -163,7 +173,9 @@ export const InformationBannerLinkedinUnipileAutoConnect = () => {
         serverBaseUrl: baseUrl,
       });
       if (result.ok) {
-        await refreshAccounts();
+        const nextStatus = await refreshAccounts({ force: true });
+        setCookiesStored(nextStatus?.linkedinCookiesStored === true);
+        setOnDemandMode(nextStatus?.linkedinUnipileOnDemand === true);
         setPhase('idle');
       } else {
         setPhase('failed');
@@ -171,29 +183,23 @@ export const InformationBannerLinkedinUnipileAutoConnect = () => {
     } finally {
       inFlightRef.current = false;
     }
-  }, [accessToken, baseUrl, canEvaluate, isLinkedinConnected, refreshAccounts]);
+  }, [accessToken, baseUrl, canEvaluate, isLinkedinConnected, onDemandMode, refreshAccounts]);
 
   useEffect(() => {
     if (!canEvaluate) {
       setAutoConnectEnabled(null);
       return;
     }
+    if (!memberConnectionStatus) {
+      return;
+    }
 
-    let cancelled = false;
-    void (async () => {
-      const status = await fetchUnipileConnectionStatus(accessToken, baseUrl);
-      if (cancelled) {
-        return;
-      }
-      setAutoConnectEnabled(
-        status ? status.connectLinkedinToUnipileAutomatically : null,
-      );
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [accessToken, baseUrl, canEvaluate]);
+    setAutoConnectEnabled(
+      memberConnectionStatus.connectLinkedinToUnipileAutomatically,
+    );
+    setCookiesStored(memberConnectionStatus.linkedinCookiesStored === true);
+    setOnDemandMode(memberConnectionStatus.linkedinUnipileOnDemand === true);
+  }, [canEvaluate, memberConnectionStatus]);
 
   useEffect(() => {
     if (!shouldShowBanner) {
@@ -240,12 +246,18 @@ export const InformationBannerLinkedinUnipileAutoConnect = () => {
 
   const bannerText = (() => {
     if (!isExtensionInstalled) {
-      return t`LinkedIn (Unipile) is not connected. Install/enable the Arx Chrome extension, then reload this Arxena tab so it can sync your LinkedIn session.`;
+      return onDemandMode === true
+        ? t`LinkedIn cookies are not synced. Install/enable the Arx Chrome extension, then reload this Arxena tab so it can sync your LinkedIn session.`
+        : t`LinkedIn (Unipile) is not connected. Install/enable the Arx Chrome extension, then reload this Arxena tab so it can sync your LinkedIn session.`;
     }
     if (phase === 'failed') {
-      return t`LinkedIn (Unipile) is not connected. Open LinkedIn in this browser, sign in, then retry sync.`;
+      return onDemandMode === true
+        ? t`LinkedIn cookies are not synced. Open LinkedIn in this browser, sign in, then retry sync.`
+        : t`LinkedIn (Unipile) is not connected. Open LinkedIn in this browser, sign in, then retry sync.`;
     }
-    return t`LinkedIn (Unipile) is not connected. Open LinkedIn in this browser, sign in, then retry sync.`;
+    return onDemandMode === true
+      ? t`LinkedIn cookies are not synced. Open LinkedIn in this browser, sign in, then retry sync.`
+      : t`LinkedIn (Unipile) is not connected. Open LinkedIn in this browser, sign in, then retry sync.`;
   })();
 
   return (

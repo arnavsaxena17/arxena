@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
@@ -73,8 +73,11 @@ import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
 import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
+import { LLMChatModelModule } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.module';
+import { LinkedinOutreachOpenerService } from 'src/engine/core-modules/org-chart-outreach/linkedin-outreach-opener.service';
 import { OrgChartOutreachController } from 'src/engine/core-modules/org-chart-outreach/org-chart-outreach.controller';
 import { OrgChartOutreachService } from 'src/engine/core-modules/org-chart-outreach/org-chart-outreach.service';
+import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.module';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module'; // Add this import
@@ -106,6 +109,7 @@ import { MemberLinkedinUnipileConnectionService } from './services/member-linked
 import { MessagingControls } from './services/messaging-controls';
 import { WhatsAppMonitoringUnifiedService } from './services/whatsapp-monitoring-unified.service';
 import { WhatsappUnipileRequestService } from './services/whatsapp-unipile-request.service';
+import { UnipilePoolModule } from './unipile-pool.module';
 
 const isWorker = process.argv[1]?.includes('queue-worker');
 
@@ -122,6 +126,7 @@ const conditionalImports = isWorker
     WebSocketModule,
     DataSourceModule, 
     LinkedInSearchModule,
+    LLMChatModelModule,
     WorkspaceSchemaBuilderModule,
     FeatureFlagModule,
     WorkspaceResolverBuilderModule,
@@ -133,6 +138,8 @@ const conditionalImports = isWorker
     CandidateSearchModule,
     CandidateSourcingModule,
     JwtModule,
+    UnipilePoolModule,
+    forwardRef(() => OrgChartModule),
     TypeORMModule,
     TypeOrmModule.forFeature([Workspace], 'core'),
     TypeOrmModule.forFeature([DataSourceEntity], 'metadata'),
@@ -222,6 +229,7 @@ const conditionalImports = isWorker
     UnipileAccountPoolService,
     LinkedinParameterResolver,
     OrgChartOutreachService,
+    LinkedinOutreachOpenerService,
   ],
   exports: [ExtSockWhatsappService, CandidateEngagementArx],
 })

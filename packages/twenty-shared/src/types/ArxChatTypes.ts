@@ -2325,7 +2325,10 @@ export interface LinkedinCredentials {
 
 export interface LinkedinCookieAuth {
   access_token: string;
-  user_agent: string;
+  premium_token?: string;
+  user_agent?: string;
+  ip?: string;
+  country?: string;
 }
 
 export interface LinkedinProfileData {

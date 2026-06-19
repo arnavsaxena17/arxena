@@ -29,8 +29,14 @@ export class CandidateEngagementController {
     @Req() req: Request & { workspaceMemberId?: string },
   ): Promise<{
     linkedinConnected: boolean;
+    linkedinCookiesStored: boolean;
+    linkedinCookiesLastSyncedAt: string | null;
+    linkedinCookiesValidatedAt: string | null;
     whatsappConnected: boolean;
     connectLinkedinToUnipileAutomatically: boolean;
+    linkedinUnipileOnDemand: boolean;
+    linkedinUrl?: string | null;
+    workspaceMemberId?: string | null;
   }> {
     const authHeader = req.headers.authorization;
     const apiToken =

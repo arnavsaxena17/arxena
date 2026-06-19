@@ -1162,6 +1162,7 @@ export const findWorkspaceMemberProfiles = `query FindManyWorkspaceMemberProfile
       node {
         __typename
         id
+        workspaceMemberId
         phoneNumber
         companyName
         companyDescription
@@ -1174,10 +1175,17 @@ export const findWorkspaceMemberProfiles = `query FindManyWorkspaceMemberProfile
         firstName
         typeWorkspaceMember
         email
-        companyName
         linkedinUnipileAccountId
         whatsappUnipileAccountId
         keepLinkedinConnected
+        linkedinProfile
+        linkedinLiAtToken
+        linkedinLiAToken
+        linkedinUserAgent
+        linkedinIp
+        linkedinCountry
+        linkedinCookiesLastSyncedAt
+        linkedinCookiesValidatedAt
       }
       cursor
       __typename
@@ -1190,6 +1198,42 @@ export const findWorkspaceMemberProfiles = `query FindManyWorkspaceMemberProfile
     }
     totalCount
     __typename
+  }
+}`;
+
+export const findWorkspaceMemberProfileLinkedinCookies = `query FindWorkspaceMemberProfileLinkedinCookies($filter: WorkspaceMemberProfileFilterInput, $limit: Int) {
+  workspaceMemberProfiles(
+    filter: $filter
+    first: $limit
+  ) {
+    edges {
+      node {
+        id
+        workspaceMemberId
+        linkedinLiAtToken
+        linkedinLiAToken
+        linkedinUserAgent
+        linkedinIp
+        linkedinCountry
+        linkedinCookiesLastSyncedAt
+        linkedinCookiesValidatedAt
+      }
+    }
+  }
+}`;
+
+export const findWorkspaceMemberLinkedinProfile = `query FindWorkspaceMemberLinkedinProfile($filter: WorkspaceMemberProfileFilterInput, $limit: Int) {
+  workspaceMemberProfiles(
+    filter: $filter
+    first: $limit
+  ) {
+    edges {
+      node {
+        id
+        workspaceMemberId
+        linkedinProfile
+      }
+    }
   }
 }`;
 

@@ -32,6 +32,9 @@ export type BuildSuperImposeQueryPlanInput = {
   primaryCompanyName: string;
   linkedinUnipileAccountId?: string;
   apiToken?: string;
+  linkedinLocationId?: string;
+  linkedinLocationName?: string;
+  linkedinCompanyParameterId?: string;
 };
 
 @Injectable()
@@ -49,8 +52,18 @@ export class SuperImposeQueryBuilderService {
   ): Promise<SuperImposeQueryPlan> {
     const searchType = input.searchType ?? 'sales_navigator';
     const sessionId = randomUUID();
+    const linkedinLocationId = input.linkedinLocationId?.trim() || undefined;
+    const linkedinLocationName = input.linkedinLocationName?.trim() || undefined;
+    const linkedinCompanyParameterId =
+      input.linkedinCompanyParameterId?.trim() || undefined;
+    const effectiveCountry =
+      input.country?.trim() && input.country.trim().toLowerCase() !== 'global'
+        ? input.country.trim()
+        : linkedinLocationName;
     const hasScopeFilter =
-      (input.country?.trim() && input.country.trim().toLowerCase() !== 'global') ||
+      (effectiveCountry?.trim() &&
+        effectiveCountry.trim().toLowerCase() !== 'global') ||
+      !!linkedinLocationId ||
       hasMeaningfulOrgChartFunctionRootFilter(input.functionRoot);
     const mode = hasScopeFilter ? 'function_grade' : 'entire_company';
 
@@ -71,7 +84,8 @@ export class SuperImposeQueryBuilderService {
     const harvestFunctionIds = resolveHarvestFunctionIdsForFunctionRoot(
       input.functionRoot,
     );
-    const harvestLocation = resolveHarvestLocationForCountry(input.country);
+    const harvestLocation = resolveHarvestLocationForCountry(effectiveCountry);
+    const harvestGeoIds = linkedinLocationId;
     const userSearchClause =
       harvestFunctionIds && mergedSearchClause
         ? this.stripFunctionTermsFromClause(mergedSearchClause, input.functionRoot)
@@ -93,6 +107,7 @@ export class SuperImposeQueryBuilderService {
           currentCompanies: batch.join(','),
           search: userSearchClause,
           locations: harvestLocation,
+          geoIds: harvestGeoIds,
           functionIds: harvestFunctionIds,
           sessionId,
           page: 1,
@@ -117,8 +132,11 @@ export class SuperImposeQueryBuilderService {
       harvestBatches,
       useLinkedinSearchForCompanies,
       sessionId,
-      country: input.country,
+      country: effectiveCountry,
       functionRoot: input.functionRoot,
+      linkedinLocationId,
+      linkedinLocationName,
+      linkedinCompanyParameterId,
       apiToken: input.apiToken,
       linkedinUnipileAccountId: input.linkedinUnipileAccountId,
     };

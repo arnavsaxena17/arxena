@@ -3,7 +3,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { hasOrgChartLinkedInSubsetScopeFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-linkedin-scope.util';
 import { getLinkedInUnipileSearchPageLimit } from 'twenty-shared';
 
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { LinkedinUnipileEstimateAccountService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-estimate-account.service';
+import { LinkedinUnipileSessionService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-session.service';
 import { OrgChartSearchService } from 'src/engine/core-modules/candidate-search/services/orgchart-search.service';
 import { DataSourceTransformerFactoryService } from 'src/engine/core-modules/candidate-sourcing/services/data-source-transformer-factory.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
@@ -12,20 +13,19 @@ import { HarvestLinkedinService } from 'src/engine/core-modules/org-chart/servic
 import { OrgChartService } from 'src/engine/core-modules/org-chart/services/org-chart.service';
 import { SuperImposeQueryBuilderService } from 'src/engine/core-modules/org-chart/services/super-impose-query-builder.service';
 import type {
-  SuperImposeEstimatePerSource,
-  SuperImposeEstimateResult,
-  SuperImposeFetchSource,
-  SuperImposeInputs,
-  SuperImposeQueryPlan,
-  SuperImposeResolvedCompany,
+    SuperImposeEstimatePerSource,
+    SuperImposeEstimateResult,
+    SuperImposeFetchSource,
+    SuperImposeInputs,
+    SuperImposeQueryPlan,
+    SuperImposeResolvedCompany,
 } from 'src/engine/core-modules/org-chart/types/super-impose.types';
 import {
-  buildResolvedCompanyFromUrl,
-  isValidLinkedinCompanyPageUrl,
-  isValidSalesNavigatorPeopleSearchUrl,
-  normalizeLinkedinCompanyUrl
+    buildResolvedCompanyFromUrl,
+    isValidLinkedinCompanyPageUrl,
+    isValidSalesNavigatorPeopleSearchUrl,
+    normalizeLinkedinCompanyUrl
 } from 'src/engine/core-modules/org-chart/utils/super-impose-input-resolver.util';
-import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 export type ResolveSuperImposeInputsArgs = {
   inputs: SuperImposeInputs;
@@ -46,6 +46,9 @@ export type SuperImposeFetchContext = {
   candidateSource: 'harvest' | 'unipile';
   searchType?: 'classic' | 'sales_navigator' | 'recruiter';
   linkedinUnipileAccountId?: string;
+  linkedinLocationId?: string;
+  linkedinLocationName?: string;
+  linkedinCompanyParameterId?: string;
   maxProfiles?: number;
   onProgress?: (message: string) => void | Promise<void>;
 };
@@ -61,8 +64,8 @@ export class OrgChartSuperImposeService {
     private readonly harvestLinkedinTransformer: HarvestLinkedinTransformerService,
     private readonly linkedInSearchService: LinkedInSearchService,
     private readonly orgChartSearchService: OrgChartSearchService,
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
-    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly linkedinUnipileSessionService: LinkedinUnipileSessionService,
+    private readonly linkedinUnipileEstimateAccountService: LinkedinUnipileEstimateAccountService,
     private readonly dataSourceTransformerFactory: DataSourceTransformerFactoryService,
   ) {}
 
@@ -85,7 +88,16 @@ export class OrgChartSuperImposeService {
       resolvedCompanies.push(company);
     };
 
-    if (args.primaryLinkedinCompanyUrl?.trim()) {
+    const targetCompany = args.inputs.targetCompany;
+    if (targetCompany?.linkedinCompanyUrl?.trim()) {
+      addCompany(
+        buildResolvedCompanyFromUrl(
+          targetCompany.linkedinCompanyUrl,
+          'primary_chart',
+          targetCompany.title,
+        ),
+      );
+    } else if (args.primaryLinkedinCompanyUrl?.trim()) {
       addCompany(
         buildResolvedCompanyFromUrl(
           args.primaryLinkedinCompanyUrl,
@@ -176,6 +188,9 @@ export class OrgChartSuperImposeService {
       primaryCompanyName: context.primaryCompanyName,
       apiToken: context.apiToken,
       linkedinUnipileAccountId: context.linkedinUnipileAccountId,
+      linkedinLocationId: context.linkedinLocationId,
+      linkedinLocationName: context.linkedinLocationName,
+      linkedinCompanyParameterId: context.linkedinCompanyParameterId,
     });
   }
 
@@ -221,13 +236,21 @@ export class OrgChartSuperImposeService {
         }
       }
     } else {
+      const apiToken = plan.apiToken ?? '';
+      if (!apiToken.trim()) {
+        throw new Error('API token is required for Unipile super-impose estimate');
+      }
+
+      await this.linkedinUnipileEstimateAccountService.withEstimateLinkedinSession(
+        apiToken,
+        plan.linkedinUnipileAccountId,
+        async (session) => {
       for (const salesNavUrl of plan.salesNavigatorSearchUrls) {
         const slug = salesNavUrl.slice(0, 40);
         try {
           const count = await this.estimateUnipileSalesNavUrlTotal(
             salesNavUrl,
-            plan.apiToken ?? '',
-            plan.linkedinUnipileAccountId,
+            session.accountId,
           );
           perSource.push({ slug, sourceType: 'linkedin_search', count });
           estimatedTotalUpperBound += count;
@@ -259,7 +282,7 @@ export class OrgChartSuperImposeService {
               `Employees at ${searchLabel}`,
               `Employees at ${searchLabel}`,
               plan.searchType,
-              plan.apiToken ?? '',
+              apiToken,
               {
                 mode: plan.mode,
                 companyName:
@@ -268,7 +291,10 @@ export class OrgChartSuperImposeService {
                 companyId: primaryCompany.slug,
                 country: plan.country,
                 functionRoot: plan.functionRoot,
-                linkedinUnipileAccountId: plan.linkedinUnipileAccountId,
+                linkedinUnipileAccountId: session.accountId,
+                linkedinLocationId: plan.linkedinLocationId,
+                linkedinLocationName: plan.linkedinLocationName,
+                linkedinCompanyParameterId: plan.linkedinCompanyParameterId,
               },
             );
           unipileLinkedInEstimate = estimate;
@@ -304,6 +330,8 @@ export class OrgChartSuperImposeService {
           estimatedTotalUpperBound += 50;
         }
       }
+        },
+      );
     }
 
     const threshold = this.getSuperImposeThreshold();
@@ -313,7 +341,11 @@ export class OrgChartSuperImposeService {
     const scopeRequired =
       unipileLinkedInEstimate?.scopeRequired === true ||
       (estimatedTotalUpperBound > threshold &&
-        !hasOrgChartLinkedInSubsetScopeFilter(plan.country, plan.functionRoot));
+        !hasOrgChartLinkedInSubsetScopeFilter(
+          plan.country,
+          plan.functionRoot,
+          plan.linkedinLocationId,
+        ));
 
     return {
       estimatedTotal:
@@ -366,19 +398,23 @@ export class OrgChartSuperImposeService {
       return aggregated;
     }
 
-    const accountId = await this.resolveUnipileAccountId(context);
+    return this.linkedinUnipileSessionService.withLinkedinSession(
+      context.apiToken,
+      context.linkedinUnipileAccountId,
+      async (session) => {
+        const aggregatedInSession: Array<Record<string, unknown>> = [];
 
     for (const salesNavUrl of plan.salesNavigatorSearchUrls) {
       await context.onProgress?.('Unipile: fetching Sales Navigator URL...');
       const snRows = await this.fetchUnipileSearchUrlCandidates({
         url: salesNavUrl,
-        accountId,
+        accountId: session.accountId,
         companyName: context.primaryCompanyName,
         maxProfiles: context.maxProfiles,
         fetchSource: 'linkedin_search',
         searchType: plan.searchType,
       });
-      aggregated.push(...snRows);
+      aggregatedInSession.push(...snRows);
     }
 
     if (plan.salesNavigatorSearchUrls.length === 0 && plan.companySearchNames.length > 0) {
@@ -405,14 +441,19 @@ export class OrgChartSuperImposeService {
             country: context.country,
             functionRoot: context.functionRoot,
             linkedinCompanyUrl: primaryCompany?.linkedinUrl,
-            linkedinUnipileAccountId: context.linkedinUnipileAccountId,
+            linkedinUnipileAccountId: session.accountId,
             businessDivisionRawQuery: context.businessDivisionRawQuery,
+            linkedinLocationId: plan.linkedinLocationId ?? context.linkedinLocationId,
+            linkedinLocationName:
+              plan.linkedinLocationName ?? context.linkedinLocationName,
+            linkedinCompanyParameterId:
+              plan.linkedinCompanyParameterId ?? context.linkedinCompanyParameterId,
           },
         );
       const items = Array.isArray(searchResult.items)
         ? (searchResult.items as Array<Record<string, unknown>>)
         : [];
-      aggregated.push(
+      aggregatedInSession.push(
         ...items.map((row) =>
           this.tagSuperImposeRow(
             row,
@@ -423,25 +464,15 @@ export class OrgChartSuperImposeService {
       );
     }
 
-    return aggregated;
+    return aggregatedInSession;
+      },
+    );
   }
 
   private async estimateUnipileSalesNavUrlTotal(
     url: string,
-    apiToken: string,
-    linkedinUnipileAccountId?: string,
+    accountId: string,
   ): Promise<number> {
-    if (!apiToken.trim()) {
-      throw new Error('API token is required for Sales Navigator estimate');
-    }
-
-    const accountId = await this.resolveUnipileAccountId({
-      apiToken,
-      primaryCompanyName: '',
-      candidateSource: 'unipile',
-      linkedinUnipileAccountId,
-    });
-
     const response = await this.linkedInSearchService.searchFromUrl(
       url,
       accountId,
@@ -521,32 +552,6 @@ export class OrgChartSuperImposeService {
       super_impose_fetch_source: fetchSource,
       ...(sourceSlug ? { super_impose_source_slug: sourceSlug } : {}),
     };
-  }
-
-  private async resolveUnipileAccountId(
-    context: SuperImposeFetchContext,
-  ): Promise<string> {
-    if (context.linkedinUnipileAccountId?.trim()) {
-      return context.linkedinUnipileAccountId.trim();
-    }
-
-    const workspaceId =
-      await this.workspaceQueryService.getWorkspaceIdFromToken(context.apiToken);
-    const workspaceMemberId =
-      await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
-        context.apiToken,
-      );
-    const accountId =
-      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
-        workspaceMemberId ?? null,
-        workspaceId,
-        context.apiToken,
-        'linkedin',
-      );
-    if (!accountId?.trim()) {
-      throw new Error('LinkedIn Unipile account is not connected');
-    }
-    return accountId.trim();
   }
 
   private extractDomainFromWebsiteUrl(websiteUrl: string): string | null {

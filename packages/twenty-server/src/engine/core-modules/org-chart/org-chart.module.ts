@@ -37,6 +37,7 @@ import { ImageProxyService } from './services/image-proxy.service';
 import { OrgChartEsService } from './services/org-chart-es.service';
 import { OrgChartLinkedInBuildService } from './services/org-chart-linkedin-build.service';
 import { OrgChartRecordWorkspaceService } from './services/org-chart-record-workspace.service';
+import { OrgChartSuperImposeAutocompleteService } from './services/org-chart-super-impose-autocomplete.service';
 import { OrgChartSuperImposeService } from './services/org-chart-super-impose.service';
 import { OrgChartTheOrgEnrichmentService } from './services/org-chart-theorg-enrichment.service';
 import { OrgChartService } from './services/org-chart.service';
@@ -102,6 +103,7 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     OrgChartIncrementalBuildCacheService,
     SuperImposeQueryBuilderService,
     OrgChartSuperImposeService,
+    OrgChartSuperImposeAutocompleteService,
   ],
   exports: [
     OrgChartService,
@@ -116,6 +118,7 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     ContactOutPeopleSearchService,
     ContactOutPersonOrgMovementService,
     PersonOrgMovementService,
+    OrgChartSuperImposeAutocompleteService,
   ],
 })
 export class OrgChartModule {}

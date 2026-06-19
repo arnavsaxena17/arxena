@@ -1,18 +1,18 @@
 import type { LinkedInSearchType } from 'twenty-shared';
 import {
-  computeLinkedInUnipilePagesRequired,
-  getLinkedInUnipileSearchPageLimit,
+    computeLinkedInUnipilePagesRequired,
+    getLinkedInUnipileSearchPageLimit,
 } from 'twenty-shared';
 
 import { hasMeaningfulOrgChartFunctionRootFilter } from './orgchart-filter.util';
 
 export {
-  computeLinkedInUnipilePagesRequired,
-  getLinkedInUnipileSearchPageLimit,
-  LINKEDIN_UNIPILE_CLASSIC_SEARCH_PAGE_LIMIT,
-  LINKEDIN_UNIPILE_RECRUITER_SEARCH_PAGE_LIMIT,
-  LINKEDIN_UNIPILE_SALES_NAVIGATOR_SEARCH_PAGE_LIMIT,
-  LINKEDIN_UNIPILE_SEARCH_PAGE_LIMITS
+    computeLinkedInUnipilePagesRequired,
+    getLinkedInUnipileSearchPageLimit,
+    LINKEDIN_UNIPILE_CLASSIC_SEARCH_PAGE_LIMIT,
+    LINKEDIN_UNIPILE_RECRUITER_SEARCH_PAGE_LIMIT,
+    LINKEDIN_UNIPILE_SALES_NAVIGATOR_SEARCH_PAGE_LIMIT,
+    LINKEDIN_UNIPILE_SEARCH_PAGE_LIMITS
 } from 'twenty-shared';
 
 export const hasMeaningfulOrgChartCountryFilter = (
@@ -23,12 +23,18 @@ export const hasMeaningfulOrgChartCountryFilter = (
   return normalized.length > 0 && normalized !== 'global';
 };
 
+export const hasMeaningfulLinkedInLocationIdFilter = (
+  linkedinLocationId?: string,
+): boolean => (linkedinLocationId ?? '').trim().length > 0;
+
 export const hasOrgChartLinkedInSubsetScopeFilter = (
   country?: string,
   functionRoot?: string,
+  linkedinLocationId?: string,
 ): boolean =>
   hasMeaningfulOrgChartCountryFilter(country) ||
-  hasMeaningfulOrgChartFunctionRootFilter(functionRoot);
+  hasMeaningfulOrgChartFunctionRootFilter(functionRoot) ||
+  hasMeaningfulLinkedInLocationIdFilter(linkedinLocationId);
 
 export const getOrgChartLinkedInMaxCandidates = (): number => {
   const raw = Number(
@@ -61,6 +67,7 @@ export const computeOrgChartLinkedInSearchPlan = (input: {
   searchType: LinkedInSearchType;
   country?: string;
   functionRoot?: string;
+  linkedinLocationId?: string;
   pageSize?: number;
   maxCandidates?: number;
 }): {
@@ -82,6 +89,7 @@ export const computeOrgChartLinkedInSearchPlan = (input: {
   const hasScope = hasOrgChartLinkedInSubsetScopeFilter(
     input.country,
     input.functionRoot,
+    input.linkedinLocationId,
   );
   const threshold = maxCandidates;
   const estimatedTotalUpperBound = totalCount;

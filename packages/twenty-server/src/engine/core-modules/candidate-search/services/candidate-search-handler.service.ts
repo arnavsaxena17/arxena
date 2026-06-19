@@ -17,6 +17,7 @@ import { type OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/or
 import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
+import { parseFunctionRootOrNull } from '../schemas/org-chart.schema';
 import {
     ClassicPeopleSearchStrategyResult,
     GeneratedSearchParameters,
@@ -1324,7 +1325,7 @@ export class CandidateSearchHandlerService {
                 business_division: null,
                 role_description: null,
                 std_grade_levels: null,
-                function_root: functionRoot || null,
+                function_root: parseFunctionRootOrNull(functionRoot),
                 rationale: null,
               },
               effectiveFunctionRoot: functionRoot,

@@ -8,12 +8,31 @@ export type SuperImposeResolvedCompany = {
   error?: string;
 };
 
+export type SuperImposeLinkedInFacetSelection = {
+  id: string;
+  title: string;
+  pictureUrl?: string;
+};
+
+export type SuperImposeTargetCompany = SuperImposeLinkedInFacetSelection & {
+  slug: string;
+  linkedinCompanyUrl: string;
+  profileUrl?: string;
+  industry?: string;
+  locationLabel?: string;
+  headcount?: string;
+};
+
+export type SuperImposeTargetLocation = SuperImposeLinkedInFacetSelection;
+
 export type SuperImposeInputs = {
   linkedinCompanyUrls?: string[];
   websiteUrls?: string[];
   salesNavigatorSearchUrls?: string[];
   linkedinSearchKeywords?: string;
   appendToExistingChart?: boolean;
+  targetCompany?: SuperImposeTargetCompany;
+  targetLocation?: SuperImposeTargetLocation;
 };
 
 export type SuperImposeManifest = {
@@ -32,6 +51,8 @@ export type SuperImposeManifest = {
     country?: string;
     functionRoot?: string;
     appendToExistingChart?: boolean;
+    targetCompany?: SuperImposeTargetCompany | null;
+    targetLocation?: SuperImposeTargetLocation | null;
   };
   resolvedSources: SuperImposeResolvedCompany[];
   stats: {
@@ -66,6 +87,9 @@ export type SuperImposeQueryPlan = {
   sessionId: string;
   country?: string;
   functionRoot?: string;
+  linkedinLocationId?: string;
+  linkedinLocationName?: string;
+  linkedinCompanyParameterId?: string;
   apiToken?: string;
   linkedinUnipileAccountId?: string;
 };
@@ -84,4 +108,15 @@ export type SuperImposeEstimateResult = {
   threshold: number;
   thresholdExceeded: boolean;
   scopeRequired: boolean;
+};
+
+export type SuperImposeAutocompleteItem = {
+  id: string;
+  title: string;
+  pictureUrl?: string;
+  profileUrl?: string;
+  slug?: string;
+  industry?: string;
+  locationLabel?: string;
+  headcount?: string;
 };

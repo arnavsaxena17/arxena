@@ -19,23 +19,27 @@ import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
 import { Mixpanel } from '~/mixpanel';
 
 import {
-  normalizeCompanyIdForUrl,
-  OrgChartContextAction,
-  OrgChartNodeContextPayload,
+    normalizeCompanyIdForUrl,
+    OrgChartContextAction,
+    OrgChartNodeContextPayload,
 } from 'twenty-orgchart';
 import {
-  isValidLinkedInProfileUrl,
-  NodeState,
-  OrgChartNodeData,
-  OrgchartSearchMode as OrgchartSearchModeValue,
+    isValidLinkedInProfileUrl,
+    NodeState,
+    OrgChartNodeData,
+    OrgchartSearchMode as OrgchartSearchModeValue,
 } from 'twenty-shared';
 import { ContextResultItem } from '../types';
+import type {
+    SuperImposeTargetCompany,
+    SuperImposeTargetLocation,
+} from '../types/superImposeTypes';
 import {
-  buildBooleanKeywordsForNode,
-  contextResultItemFromNodePersonSlot,
-  exportContextResultsToCsv,
-  extractCompanyDomainFromWebsite,
-  normalizeCandidateItem,
+    buildBooleanKeywordsForNode,
+    contextResultItemFromNodePersonSlot,
+    exportContextResultsToCsv,
+    extractCompanyDomainFromWebsite,
+    normalizeCandidateItem,
 } from '../utils/orgChartUtils';
 
 const OUTREACH_ACTION_TO_CHANNEL: Partial<
@@ -920,6 +924,8 @@ export const useOrgChartActions = ({
 
   const fetchLinkedinDataSourcesStatus = useCallback(async (): Promise<{
     linkedinUnipileConnected: boolean;
+    linkedinCookiesStored: boolean;
+    linkedinUnipileOnDemand: boolean;
     apifyActorConfigured: boolean;
     harvestConfigured: boolean;
     linkedinXrayConfigured: boolean;
@@ -942,6 +948,8 @@ export const useOrgChartActions = ({
       const json = (await res.json()) as {
         status?: string;
         linkedinUnipileConnected?: boolean;
+        linkedinCookiesStored?: boolean;
+        linkedinUnipileOnDemand?: boolean;
         apifyActorConfigured?: boolean;
         harvestConfigured?: boolean;
         linkedinXrayConfigured?: boolean;
@@ -953,6 +961,8 @@ export const useOrgChartActions = ({
       }
       return {
         linkedinUnipileConnected: !!json.linkedinUnipileConnected,
+        linkedinCookiesStored: !!json.linkedinCookiesStored,
+        linkedinUnipileOnDemand: !!json.linkedinUnipileOnDemand,
         apifyActorConfigured: !!json.apifyActorConfigured,
         harvestConfigured: !!json.harvestConfigured,
         linkedinXrayConfigured: !!json.linkedinXrayConfigured,
@@ -1243,15 +1253,25 @@ export const useOrgChartActions = ({
     sources?: string[];
     candidateSourceOverride?: string;
     includeOrgIntelligenceOverride?: boolean;
+    companyIdOverride?: string;
+    companyNameOverride?: string;
+    linkedinCompanyUrlOverride?: string;
+    linkedinLocationId?: string;
+    linkedinLocationName?: string;
+    linkedinCompanyParameterId?: string;
     superImpose?: {
       linkedinCompanyUrls?: string[];
       websiteUrls?: string[];
       salesNavigatorSearchUrls?: string[];
       linkedinSearchKeywords?: string;
       appendToExistingChart?: boolean;
+      targetCompany?: SuperImposeTargetCompany;
+      targetLocation?: SuperImposeTargetLocation;
     };
   }) => {
-    if (!companyId) return;
+    const effectiveCompanyId =
+      params.companyIdOverride?.trim() || companyId;
+    if (!effectiveCompanyId) return;
 
     const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
     if (!baseUrl) return;
@@ -1271,10 +1291,17 @@ export const useOrgChartActions = ({
         : orgChartLinkedinCandidateSource;
 
     let prereqStatus = await fetchLinkedinDataSourcesStatus();
+    const isUnipilePrereqReady = (
+      status: NonNullable<Awaited<ReturnType<typeof fetchLinkedinDataSourcesStatus>>>,
+    ) =>
+      status.linkedinUnipileConnected === true ||
+      (status.linkedinUnipileOnDemand === true &&
+        status.linkedinCookiesStored === true);
+
     if (
       prereqStatus !== null &&
       effectiveCandidateSource === 'unipile' &&
-      prereqStatus.linkedinUnipileConnected !== true
+      !isUnipilePrereqReady(prereqStatus)
     ) {
       await tryExtensionLinkedinUnipileRecovery({
         accessToken,
@@ -1320,7 +1347,7 @@ export const useOrgChartActions = ({
           );
           return;
         }
-      } else if (prereqStatus.linkedinUnipileConnected !== true) {
+      } else if (!isUnipilePrereqReady(prereqStatus)) {
         enqueueSnackBar(LINKEDIN_UNIPILE_SOURCE_UNAVAILABLE_SNACKBAR, {
           variant: SnackBarVariant.Error,
           duration: 8000,
@@ -1499,7 +1526,12 @@ export const useOrgChartActions = ({
         ? nodeRecord.std_grade.trim()
         : undefined;
 
-    const resolvedCompanyName = companyName ?? companyId;
+    const effectiveCompanyName =
+      params.companyNameOverride?.trim() || companyName;
+    const effectiveLinkedinCompanyUrl =
+      params.linkedinCompanyUrlOverride?.trim() || linkedinCompanyUrl;
+
+    const resolvedCompanyName = effectiveCompanyName ?? effectiveCompanyId;
     const baseRequirement =
       mode === 'business_division_map'
         ? `Map business division at ${resolvedCompanyName}. User request: ${divisionRaw}`
@@ -1519,6 +1551,8 @@ export const useOrgChartActions = ({
     const filterParts: string[] = [];
     if (params.country) {
       filterParts.push(`located in ${params.country}`);
+    } else if (params.linkedinLocationName?.trim()) {
+      filterParts.push(`located in ${params.linkedinLocationName.trim()}`);
     }
     if (params.functionRoot) {
       filterParts.push(`working in the ${params.functionRoot} function`);
@@ -1535,7 +1569,7 @@ export const useOrgChartActions = ({
 
     const requirement = `${baseRequirement}${titlesRequirement}${filtersRequirement}${businessDivisionRequirementSuffix}`;
 
-    const trimmedLinkedinCompanyUrl = linkedinCompanyUrl?.trim();
+    const trimmedLinkedinCompanyUrl = effectiveLinkedinCompanyUrl?.trim();
     const useUnipileSource = effectiveCandidateSource === 'unipile';
     const trimmedDomainHint =
       typeof companyDomainHint === 'string' &&
@@ -1564,8 +1598,8 @@ export const useOrgChartActions = ({
     const body = {
       rawQuery: requirement,
       cleanedQuery: requirement,
-      companyName: companyName ?? undefined,
-      companyId,
+      companyName: effectiveCompanyName ?? undefined,
+      companyId: effectiveCompanyId,
       jobTitles,
       mode,
       searchType: orgChartLinkedInSearchType,
@@ -1590,6 +1624,15 @@ export const useOrgChartActions = ({
       ...(trimmedLinkedinCompanyUrl
         ? { linkedinCompanyUrl: trimmedLinkedinCompanyUrl }
         : {}),
+      ...(params.linkedinLocationId?.trim()
+        ? { linkedinLocationId: params.linkedinLocationId.trim() }
+        : {}),
+      ...(params.linkedinLocationName?.trim()
+        ? { linkedinLocationName: params.linkedinLocationName.trim() }
+        : {}),
+      ...(params.linkedinCompanyParameterId?.trim()
+        ? { linkedinCompanyParameterId: params.linkedinCompanyParameterId.trim() }
+        : {}),
       ...(companyDomain ? { companyDomain } : {}),
       ...(useUnipileSource && linkedinUnipileAccountId?.trim()
         ? { linkedinUnipileAccountId: linkedinUnipileAccountId.trim() }
@@ -1611,7 +1654,7 @@ export const useOrgChartActions = ({
     let isQueuedAsyncSearch = false;
 
     try {
-      if (useUnipileSource) {
+      if (useUnipileSource && prereqStatus?.linkedinUnipileOnDemand !== true) {
         const currentUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}${window.location.search}`;
         const ensureRes = await fetch(
           `${baseUrl}/linkedin-unipile/org-chart/ensure-account`,
@@ -1635,6 +1678,7 @@ export const useOrgChartActions = ({
         const ensureJson = (await ensureRes.json()) as
           | { accountId?: string }
           | { redirectUrl?: string }
+          | { onDemandReady?: boolean; linkedinUnipileOnDemand?: boolean }
           | { status: 'pool_full'; slotsUsed: number; maxSlots: number };
         if ('redirectUrl' in ensureJson && ensureJson.redirectUrl) {
           window.location.href = ensureJson.redirectUrl;

@@ -2,17 +2,17 @@ import { LogLevel, Logger } from '@nestjs/common';
 
 import { plainToClass } from 'class-transformer';
 import {
-    IsBoolean,
-    IsDefined,
-    IsEnum,
-    IsIn,
-    IsNumber,
-    IsOptional,
-    IsString,
-    IsUUID,
-    IsUrl,
-    ValidateIf,
-    validateSync,
+  IsBoolean,
+  IsDefined,
+  IsEnum,
+  IsIn,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  IsUrl,
+  ValidateIf,
+  validateSync,
 } from 'class-validator';
 
 import { EmailDriver } from 'src/engine/core-modules/email/interfaces/email.interface';
@@ -100,12 +100,69 @@ export class EnvironmentVariables {
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.Other,
     description:
-      'When true, the Chrome extension may auto-sync LinkedIn cookies to the workspace member profile and connect/reconnect LinkedIn via Unipile when the user opens the extension with a LinkedIn tab available.',
+      'When true, the Chrome extension may auto-run LinkedIn sync when the user opens the extension with a LinkedIn tab available. In on-demand mode this persists cookies only; in legacy mode it may also connect/reconnect via Unipile. Does not gate server-side org-chart or candidate-search Unipile sessions.',
   })
   @CastToBoolean()
   @IsOptional()
   @IsBoolean()
   CONNECT_LINKEDIN_TO_UNIPILE_AUTOMATICALLY = true;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'When true, LinkedIn extension sync runs in on-demand mode: browser cookies are persisted on the workspace member profile and Unipile connections are created only when explicitly requested. Also gates server-side connect→act→disconnect sessions for org-chart, candidate-search, and super-impose pipelines.',
+  })
+  @CastToBoolean()
+  @IsOptional()
+  @IsBoolean()
+  LINKEDIN_UNIPILE_ON_DEMAND = true;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'Idle time in milliseconds before an on-demand LinkedIn Unipile session is disconnected after the last use. Each new session within this window cancels and reschedules the disconnect (rolling window). Default 300000 (5 minutes).',
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  LINKEDIN_UNIPILE_SESSION_IDLE_TTL_MS = 300_000;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'When true and on-demand mode is enabled, explicit LinkedIn session validation from the extension connects to Unipile once, verifies the session, then disconnects unless the workspace member profile is marked keepLinkedinConnected. Does not gate server pipeline sessions.',
+  })
+  @CastToBoolean()
+  @IsOptional()
+  @IsBoolean()
+  LINKEDIN_UNIPILE_VALIDATE_THEN_DISCONNECT = true;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'When true, org-chart Unipile searches infer LinkedIn search type (classic / sales_navigator / recruiter) from Unipile users/me when the client omits searchType or when the inferred type differs from the client value.',
+  })
+  @CastToBoolean()
+  @IsOptional()
+  @IsBoolean()
+  LINKEDIN_UNIPILE_INFER_SEARCH_TYPE = true;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'How org-chart LinkedIn / super-impose estimate endpoints choose a Unipile LinkedIn account: shared_sales_navigator_pool (or 1) lists connected accounts from Unipile, caches Sales Navigator-capable ids, and picks one at random; session (or 2, default) uses the workspace-member session / client account id; env_account_id (or 3) always uses UNIPILE_LINKEDIN_ACCOUNT_ID.',
+  })
+  @IsString()
+  @IsOptional()
+  LINKEDIN_UNIPILE_ESTIMATE_ACCOUNT_MODE = 'shared_sales_navigator_pool';
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'How org-chart outreach generate-message chooses a Unipile LinkedIn account: shared_sales_navigator_pool (or 1) uses a connected Sales Navigator account from the shared pool and reads the sender profile from the cached workspace member profile; session (or 2) uses the workspace-member on-demand / stored session (may POST /accounts from extension cookies); env_account_id (or 3) always uses UNIPILE_LINKEDIN_ACCOUNT_ID.',
+  })
+  @IsString()
+  @IsOptional()
+  LINKEDIN_UNIPILE_OUTREACH_ACCOUNT_MODE = 'shared_sales_navigator_pool';
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.Other,
@@ -1384,6 +1441,18 @@ export class EnvironmentVariables {
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.Other,
+    description:
+      'Super Impose modal company autocomplete backend: linkedin_parameters (default, all plans) or linkedin_company_search (richer Unipile company search; falls back to parameters on recruiter).',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(['linkedin_parameters', 'linkedin_company_search'])
+  SUPER_IMPOSE_COMPANY_AUTOCOMPLETE_SOURCE?:
+    | 'linkedin_parameters'
+    | 'linkedin_company_search';
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
     sensitive: true,
     description:
       'Harvest API key for LinkedIn lead search + profile enrichment in org chart builds.',
@@ -1612,6 +1681,15 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsBoolean()
   ENGAGEMENT_SILENT_HOURS_ENABLED = false;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'IPinfo API token for server-side IP-to-country lookup (pricing geo, LinkedIn session country fallback).',
+  })
+  @IsOptional()
+  @IsString()
+  IPINFO_TOKEN: string;
 }
   
 

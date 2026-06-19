@@ -18,28 +18,28 @@ import { companySearchLightTheme } from '@/lib/company-search';
 import { FREE_TRIAL_CTA_LABEL } from '@/lib/free-trial-flow';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 import {
-    mergeOrgChartCompanyField,
-    needsOrgChartCompanyInfoLookup,
-    normalizeOptionalCompanyField,
+  mergeOrgChartCompanyField,
+  needsOrgChartCompanyInfoLookup,
+  normalizeOptionalCompanyField,
 } from '@/lib/org-chart-company-metadata';
 import { processPublishedOrgChartPayload } from '@/lib/process-published-org-chart-payload';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- orgchart-core is used alongside dynamic OrgChartDiagram
 import {
-    OrgChartDiagramHandle,
-    OrgChartFilters,
-    OrgChartSearchControls,
-    OrgChartSignUpModal,
-    OrgChartTimelineSlider,
-    useCompanyInfoLookup,
-    useOrgChartFilterOptions,
+  OrgChartDiagramHandle,
+  OrgChartFilters,
+  OrgChartSearchControls,
+  OrgChartSignUpModal,
+  OrgChartTimelineSlider,
+  useCompanyInfoLookup,
+  useOrgChartFilterOptions,
 } from 'twenty-orgchart/orgchart-core';
 import {
-    filterOrgChartNodeDataArray,
-    hasMeaningfulOrgChartCountryFilter,
-    hasMeaningfulOrgChartFunctionRootFilter,
-    navigateToOrgChartSignup,
-    OrgChartNodeData,
-    toSlug,
+  filterOrgChartNodeDataArray,
+  hasMeaningfulOrgChartCountryFilter,
+  hasMeaningfulOrgChartFunctionRootFilter,
+  navigateToOrgChartSignup,
+  OrgChartNodeData,
+  toSlug,
 } from 'twenty-shared';
 
 const OrgChartDiagram = dynamic(

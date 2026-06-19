@@ -26,6 +26,7 @@ import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 import { EngagedCandidateProcessor } from '../arx-chat/services/candidate-engagement/engaged-candidate-processor.job';
+import { UnipilePoolModule } from '../arx-chat/unipile-pool.module';
 import { ApiKeyService } from '../auth/services/api-key.service';
 import { MessageQueueModule } from '../message-queue/message-queue.module';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
@@ -66,6 +67,7 @@ const conditionalImports = isWorker
     TypeOrmModule.forFeature([Workspace, FeatureFlag], 'core'),
     // WhiskeySocketsBaileysWhatsappModule,
     MessageQueueModule,
+    UnipilePoolModule,
   ],
   providers: [
     WorkspaceQueryService,

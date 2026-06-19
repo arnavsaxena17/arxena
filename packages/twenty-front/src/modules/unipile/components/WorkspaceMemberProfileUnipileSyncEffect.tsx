@@ -8,6 +8,7 @@ import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMembe
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
 
 import { workspaceMemberProfileUnipileFieldsState } from '../states/workspaceMemberProfileUnipileFieldsState';
+import { ARX_UNIPILE_ACCOUNTS_REFRESHED_EVENT } from '../utils/applyInferredOrgChartLinkedinSearchType';
 
 export const FIND_WORKSPACE_MEMBER_PROFILES_FOR_UNIPILE = gql`
   ${findWorkspaceMemberProfiles}
@@ -23,7 +24,7 @@ export const WorkspaceMemberProfileUnipileSyncEffect = () => {
   );
   const workspaceMemberId = currentWorkspaceMember?.id;
 
-  const { data } = useQuery(FIND_WORKSPACE_MEMBER_PROFILES_FOR_UNIPILE, {
+  const { data, refetch } = useQuery(FIND_WORKSPACE_MEMBER_PROFILES_FOR_UNIPILE, {
     variables: {
       filter: workspaceMemberId
         ? { workspaceMemberId: { eq: workspaceMemberId } }
@@ -33,6 +34,26 @@ export const WorkspaceMemberProfileUnipileSyncEffect = () => {
     skip: !workspaceMemberId,
     fetchPolicy: 'cache-and-network',
   });
+
+  useEffect(() => {
+    const onAccountsRefreshed = () => {
+      if (!workspaceMemberId) {
+        return;
+      }
+      void refetch();
+    };
+
+    window.addEventListener(
+      ARX_UNIPILE_ACCOUNTS_REFRESHED_EVENT,
+      onAccountsRefreshed,
+    );
+    return () => {
+      window.removeEventListener(
+        ARX_UNIPILE_ACCOUNTS_REFRESHED_EVENT,
+        onAccountsRefreshed,
+      );
+    };
+  }, [refetch, workspaceMemberId]);
 
   useEffect(() => {
     if (!workspaceMemberId) {

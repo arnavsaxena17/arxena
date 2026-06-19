@@ -1,11 +1,16 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import type {
-  LinkedinCheckpointData,
-  LinkedinCookieAuth,
-  LinkedinCredentials,
-  LinkedinProfileData,
-  LinkedinSignupResponse,
-  UnipileLinkedinAccount,
+    LinkedinCheckpointData,
+    LinkedinCookieAuth,
+    LinkedinCredentials,
+    LinkedinProfileData,
+    LinkedinSignupResponse,
+    UnipileLinkedinAccount,
+} from 'twenty-shared';
+import {
+    attachClientGeoToCookieAuth,
+    attachClientGeoToLinkedinBody,
+    getOrFetchClientGeoSession,
 } from 'twenty-shared';
 
 export type LinkedinReconnectFromStoredProfileResponse = {
@@ -119,7 +124,9 @@ export class LinkedinBackendService {
    */
   async connectWithCookie(cookieAuth: LinkedinCookieAuth, accessToken?: string): Promise<LinkedinSignupResponse> {
     try {
-      const response = await this.makeRequest<any>('/connect/cookie', 'POST', cookieAuth, accessToken);
+      const clientGeo = await getOrFetchClientGeoSession();
+      const body = attachClientGeoToCookieAuth(cookieAuth, clientGeo);
+      const response = await this.makeRequest<any>('/connect/cookie', 'POST', body, accessToken);
 
       return {
         success: response.success || true,
@@ -270,10 +277,12 @@ export class LinkedinBackendService {
     accessToken: string,
     options?: { user_agent?: string },
   ): Promise<LinkedinReconnectFromStoredProfileResponse> {
-    const body =
+    const clientGeo = await getOrFetchClientGeoSession();
+    const baseBody =
       options?.user_agent?.trim() !== undefined && options.user_agent.trim() !== ''
         ? { user_agent: options.user_agent.trim() }
         : {};
+    const body = attachClientGeoToLinkedinBody(baseBody, clientGeo);
     return this.makeRequest<LinkedinReconnectFromStoredProfileResponse>(
       '/reconnect-from-stored-profile',
       'POST',

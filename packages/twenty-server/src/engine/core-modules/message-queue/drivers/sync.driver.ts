@@ -1,11 +1,11 @@
 import { Logger } from '@nestjs/common';
 
-import {
-  MessageQueueJobData,
-  MessageQueueJob,
-} from 'src/engine/core-modules/message-queue/interfaces/message-queue-job.interface';
+import { QueueJobOptions, ScheduleDelayedJobOptions } from 'src/engine/core-modules/message-queue/drivers/interfaces/job-options.interface';
 import { MessageQueueDriver } from 'src/engine/core-modules/message-queue/drivers/interfaces/message-queue-driver.interface';
-import { QueueJobOptions } from 'src/engine/core-modules/message-queue/drivers/interfaces/job-options.interface';
+import {
+    MessageQueueJob,
+    MessageQueueJobData,
+} from 'src/engine/core-modules/message-queue/interfaces/message-queue-job.interface';
 
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 
@@ -14,6 +14,10 @@ export class SyncDriver implements MessageQueueDriver {
   private workersMap: {
     [queueName: string]: (job: MessageQueueJob) => Promise<void> | void;
   } = {};
+  private readonly delayedJobs = new Map<
+    string,
+    { queueName: MessageQueue; timeoutId: NodeJS.Timeout }
+  >();
 
   constructor() {}
 
@@ -53,6 +57,45 @@ export class SyncDriver implements MessageQueueDriver {
 
   async removeCron({ queueName }: { queueName: MessageQueue }) {
     this.logger.log(`Removing '${queueName}' cron job with SyncDriver`);
+  }
+
+  async scheduleOrRescheduleDelayed<T extends MessageQueueJobData>(
+    queueName: MessageQueue,
+    jobName: string,
+    data: T,
+    options: ScheduleDelayedJobOptions,
+  ): Promise<void> {
+    const trimmedJobId = options.id.trim();
+    const delayMs = Math.max(0, options.delayMs);
+    const existing = this.delayedJobs.get(trimmedJobId);
+
+    if (existing) {
+      clearTimeout(existing.timeoutId);
+      this.delayedJobs.delete(trimmedJobId);
+    }
+
+    const timeoutId = setTimeout(() => {
+      this.delayedJobs.delete(trimmedJobId);
+      void this.processJob(queueName, {
+        id: trimmedJobId,
+        name: jobName,
+        data,
+      });
+    }, delayMs);
+
+    this.delayedJobs.set(trimmedJobId, { queueName, timeoutId });
+  }
+
+  async cancelDelayed(_queueName: MessageQueue, jobId: string): Promise<void> {
+    const trimmedJobId = jobId.trim();
+    const existing = this.delayedJobs.get(trimmedJobId);
+
+    if (!existing) {
+      return;
+    }
+
+    clearTimeout(existing.timeoutId);
+    this.delayedJobs.delete(trimmedJobId);
   }
 
   work<T extends MessageQueueJobData>(

@@ -27,8 +27,10 @@ import { SubMenuTopBarContainer } from '@/ui/layout/page/components/SubMenuTopBa
 import { useSubscriptionStatus } from '@/workspace/hooks/useSubscriptionStatus';
 import {
   buildComparableMapsByPlan,
+  buildClientGeoHeaders,
   convertPricingAmountSubunits,
   CREDIT_PACKS_BY_INTENT,
+  getOrFetchClientGeoSession,
   isDefined,
   PRICING_PLAN_ORDER,
   PRICING_PLANS,
@@ -260,12 +262,30 @@ export const SettingsBilling = () => {
     (engagementPlansData as { engagementPlans?: EngagementPlan[] } | undefined)
       ?.engagementPlans ?? [];
 
-  const { data: requestPricingCurrencyData } = useQuery(
-    REQUEST_PRICING_CURRENCY,
-    {
+  const [pricingGeoHeaders, setPricingGeoHeaders] = useState<
+    Record<string, string>
+  >({});
+
+  useEffect(() => {
+    void getOrFetchClientGeoSession().then((session) => {
+      setPricingGeoHeaders(buildClientGeoHeaders(session));
+    });
+  }, []);
+
+  const { data: requestPricingCurrencyData, refetch: refetchPricingCurrency } =
+    useQuery(REQUEST_PRICING_CURRENCY, {
       skip: !billingEnabled,
-    },
-  );
+      context: {
+        headers: pricingGeoHeaders,
+      },
+    });
+
+  useEffect(() => {
+    if (!billingEnabled || Object.keys(pricingGeoHeaders).length === 0) {
+      return;
+    }
+    void refetchPricingCurrency();
+  }, [billingEnabled, pricingGeoHeaders, refetchPricingCurrency]);
 
   const { data: creditPacksData } = useQuery(CREDIT_PACKS, {
     skip: !billingEnabled,

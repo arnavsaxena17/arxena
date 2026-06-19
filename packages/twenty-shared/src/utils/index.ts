@@ -1,4 +1,5 @@
 export * from './calendly';
+export * from './clientGeo';
 export * from './fieldMetadata';
 export * from './image';
 export * from './inferLinkedInSearchTypeFromUnipileOwnerProfile';
@@ -12,4 +13,6 @@ export * from './strings';
 export * from './unipileWorkspaceMemberMatch';
 export * from './validation';
 export * from './verified-search-bot';
+export * from './workspaceMemberLinkedinProfile';
+export * from './workspaceMemberProfileGraphql';
 

@@ -113,10 +113,7 @@ export const LinkedinStoredProfileUnipileActions = ({
     setBusyConnect(true);
     try {
       const service = getLinkedinService();
-      const result = await service.reconnectFromStoredProfile(accessToken, {
-        user_agent:
-          typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
-      });
+      const result = await service.reconnectFromStoredProfile(accessToken);
 
       const li = result.linkedin;
       const connected =

@@ -3,10 +3,10 @@ import { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 
 import {
-  ARX_CONTENT_SCRIPT_READY,
-  ARX_EXTENSION_AUTH_BRIDGE_ACK,
-  ARX_EXTENSION_REQUEST_AUTH,
-  pushChromeExtensionAuthToContentScript,
+    ARX_CONTENT_SCRIPT_READY,
+    ARX_EXTENSION_AUTH_BRIDGE_ACK,
+    ARX_EXTENSION_REQUEST_AUTH,
+    pushChromeExtensionAuthToContentScript,
 } from '@/unipile/utils/linkedinUnipileExtensionBridge';
 
 /**
@@ -19,7 +19,11 @@ export const ChromeExtensionAuthBridgeEffect = () => {
 
   useEffect(() => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    pushChromeExtensionAuthToContentScript(accessToken, origin);
+    if (accessToken) {
+      pushChromeExtensionAuthToContentScript(accessToken, origin);
+    } else if (typeof window !== 'undefined') {
+      window.postMessage({ type: 'logout' }, window.location.origin);
+    }
 
     const onWindowMessage = (event: MessageEvent) => {
       if (event.source !== window) {

@@ -1,6 +1,7 @@
 import {
-  QueueCronJobOptions,
-  QueueJobOptions,
+    QueueCronJobOptions,
+    QueueJobOptions,
+    ScheduleDelayedJobOptions,
 } from 'src/engine/core-modules/message-queue/drivers/interfaces/job-options.interface';
 import { MessageQueueJobData } from 'src/engine/core-modules/message-queue/interfaces/message-queue-job.interface';
 import { MessageQueueWorkerOptions } from 'src/engine/core-modules/message-queue/interfaces/message-queue-worker-options.interface';
@@ -42,4 +43,11 @@ export interface MessageQueueDriver {
     jobId?: string;
   });
   register?(queueName: MessageQueue): void;
+  scheduleOrRescheduleDelayed?<T extends MessageQueueJobData>(
+    queueName: MessageQueue,
+    jobName: string,
+    data: T,
+    options: ScheduleDelayedJobOptions,
+  ): Promise<void>;
+  cancelDelayed?(queueName: MessageQueue, jobId: string): Promise<void>;
 }

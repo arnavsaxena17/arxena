@@ -2,9 +2,10 @@ import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  buildVisibleFunctionRoots,
-  formatOrgChartFunctionRootOptionLabel,
+    buildVisibleFunctionRoots,
+    formatOrgChartFunctionRootOptionLabel,
 } from 'twenty-orgchart';
+import { resolveOrgChartCanonicalCompanyId } from 'twenty-shared';
 import { Button } from 'twenty-ui';
 import { useDebouncedCallback } from 'use-debounce';
 
@@ -15,9 +16,18 @@ import { TextInput } from '@/ui/input/components/TextInput';
 import { Modal } from '@/ui/layout/modal/components/Modal';
 
 import {
-  canAppendToExistingSuperImposeChart,
-  parseMultilineUrlInput,
+    buildSuperImposeTargetCompanyFromAutocomplete,
+    buildSuperImposeTargetLocationFromAutocomplete,
+    isDifferentSuperImposeTargetCompany,
+    type SuperImposeAutocompleteItem,
+    type SuperImposeTargetCompany,
+    type SuperImposeTargetLocation,
+} from '../types/superImposeTypes';
+import {
+    canAppendToExistingSuperImposeChart,
+    parseMultilineUrlInput,
 } from '../utils/superImposeAppendEligibility';
+import { SuperImposeLinkedInFacetAutocomplete } from './SuperImposeLinkedInFacetAutocomplete';
 
 const StyledModal = styled(Modal)`
   border-radius: ${({ theme }) => theme.spacing(1)};
@@ -55,6 +65,25 @@ const StyledSelect = styled.select`
   background: ${({ theme }) => theme.background.primary};
   color: ${({ theme }) => theme.font.color.primary};
   font-size: ${({ theme }) => theme.font.size.sm};
+`;
+
+const StyledAdvancedSection = styled.details`
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  padding: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledAdvancedSummary = styled.summary`
+  cursor: pointer;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.secondary};
+`;
+
+const StyledAdvancedBody = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(2)};
+  margin-top: ${({ theme }) => theme.spacing(2)};
 `;
 
 const StyledEstimateBadge = styled.div<{ $tone: 'ok' | 'warn' | 'error' }>`
@@ -104,6 +133,26 @@ type SuperImposeEstimate = {
   }>;
 };
 
+const buildInitialTargetCompany = (
+  companyId: string,
+  companyName?: string,
+  linkedinCompanyUrl?: string,
+): SuperImposeAutocompleteItem | null => {
+  const slug = resolveOrgChartCanonicalCompanyId(companyId);
+  if (!slug && !companyName?.trim()) {
+    return null;
+  }
+
+  return {
+    id: slug,
+    title: companyName?.trim() || slug,
+    slug,
+    profileUrl:
+      linkedinCompanyUrl?.trim() ||
+      `https://www.linkedin.com/company/${slug}/`,
+  };
+};
+
 export type OrgChartSuperImposeModalProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -114,12 +163,9 @@ export type OrgChartSuperImposeModalProps = {
   serverBaseUrl: string;
   candidateSource: 'harvest' | 'unipile';
   linkedinUnipileAccountId?: string;
-  selectedCountry?: string;
   selectedFunctionRoot?: string;
   businessDivisionRawQuery?: string;
-  availableCountries: string[];
   availableFunctionRoots: string[];
-  countryPercentLabels: Record<string, string>;
   functionRootPercentLabels: Record<string, string>;
   functionRootCounts?: Record<string, number>;
   isBlankTemplate: boolean;
@@ -132,9 +178,13 @@ export type OrgChartSuperImposeModalProps = {
     salesNavigatorSearchUrls: string[];
     linkedinSearchKeywords?: string;
     appendToExistingChart: boolean;
-    country?: string;
     functionRoot?: string;
     businessDivisionRawQuery?: string;
+    targetCompany?: SuperImposeTargetCompany;
+    targetLocation?: SuperImposeTargetLocation;
+    linkedinLocationId?: string;
+    linkedinLocationName?: string;
+    linkedinCompanyParameterId?: string;
   }) => void;
   isGenerating: boolean;
 };
@@ -149,12 +199,9 @@ export const OrgChartSuperImposeModal = ({
   serverBaseUrl,
   candidateSource,
   linkedinUnipileAccountId,
-  selectedCountry,
   selectedFunctionRoot,
   businessDivisionRawQuery,
-  availableCountries,
   availableFunctionRoots,
-  countryPercentLabels,
   functionRootPercentLabels,
   functionRootCounts,
   isBlankTemplate,
@@ -171,7 +218,10 @@ export const OrgChartSuperImposeModal = ({
   const [websiteUrlsText, setWebsiteUrlsText] = useState('');
   const [salesNavUrlsText, setSalesNavUrlsText] = useState('');
   const [keywords, setKeywords] = useState('');
-  const [country, setCountry] = useState(selectedCountry ?? 'global');
+  const [companySelection, setCompanySelection] =
+    useState<SuperImposeAutocompleteItem | null>(null);
+  const [locationSelection, setLocationSelection] =
+    useState<SuperImposeAutocompleteItem | null>(null);
   const [functionRoot, setFunctionRoot] = useState(
     selectedFunctionRoot ?? 'fullcompany',
   );
@@ -186,6 +236,36 @@ export const OrgChartSuperImposeModal = ({
   >([]);
   const [resolveErrors, setResolveErrors] = useState<string[]>([]);
 
+  const targetCompany = useMemo(
+    () =>
+      companySelection
+        ? buildSuperImposeTargetCompanyFromAutocomplete(
+            companySelection,
+            resolveOrgChartCanonicalCompanyId,
+          )
+        : undefined,
+    [companySelection],
+  );
+
+  const targetLocation = useMemo(
+    () =>
+      locationSelection
+        ? buildSuperImposeTargetLocationFromAutocomplete(locationSelection)
+        : undefined,
+    [locationSelection],
+  );
+
+  const isDifferentTargetCompany = useMemo(
+    () =>
+      isDifferentSuperImposeTargetCompany({
+        backgroundCompanyId: companyId,
+        backgroundCompanyName: companyName,
+        targetCompany: targetCompany ?? null,
+        resolveSlug: resolveOrgChartCanonicalCompanyId,
+      }),
+    [companyId, companyName, targetCompany],
+  );
+
   const appendEligibility = useMemo(
     () =>
       canAppendToExistingSuperImposeChart({
@@ -193,8 +273,15 @@ export const OrgChartSuperImposeModal = ({
         firstSourceUsed,
         latestOrgChart,
         itemCount,
+        isDifferentTargetCompany,
       }),
-    [firstSourceUsed, isBlankTemplate, itemCount, latestOrgChart],
+    [
+      firstSourceUsed,
+      isBlankTemplate,
+      isDifferentTargetCompany,
+      itemCount,
+      latestOrgChart,
+    ],
   );
 
   const visibleFunctionRoots = useMemo(
@@ -213,13 +300,19 @@ export const OrgChartSuperImposeModal = ({
     if (!isOpen) {
       return;
     }
-    setCountry(selectedCountry ?? 'global');
+    setCompanySelection(
+      buildInitialTargetCompany(companyId, companyName, linkedinCompanyUrl),
+    );
+    setLocationSelection(null);
     setFunctionRoot(selectedFunctionRoot ?? 'fullcompany');
     setBusinessDivision(businessDivisionRawQuery ?? '');
+    setAppendToExisting(false);
   }, [
     businessDivisionRawQuery,
+    companyId,
+    companyName,
     isOpen,
-    selectedCountry,
+    linkedinCompanyUrl,
     selectedFunctionRoot,
   ]);
 
@@ -229,9 +322,23 @@ export const OrgChartSuperImposeModal = ({
       websiteUrls: parseMultilineUrlInput(websiteUrlsText),
       salesNavigatorSearchUrls: parseMultilineUrlInput(salesNavUrlsText),
       linkedinSearchKeywords: keywords.trim() || undefined,
+      targetCompany,
+      targetLocation,
     }),
-    [keywords, linkedinUrlsText, salesNavUrlsText, websiteUrlsText],
+    [
+      keywords,
+      linkedinUrlsText,
+      salesNavUrlsText,
+      targetCompany,
+      targetLocation,
+      websiteUrlsText,
+    ],
   );
+
+  const effectiveCompanyId = targetCompany?.slug ?? companyId;
+  const effectiveCompanyName = targetCompany?.title ?? companyName;
+  const effectiveLinkedinUrl =
+    targetCompany?.linkedinCompanyUrl ?? linkedinCompanyUrl;
 
   const fetchResolvePreview = useCallback(async () => {
     const base = serverBaseUrl.replace(/\/$/, '');
@@ -243,9 +350,9 @@ export const OrgChartSuperImposeModal = ({
       },
       body: JSON.stringify({
         superImpose: superImposePayload,
-        companyId,
-        companyName,
-        linkedinCompanyUrl,
+        companyId: effectiveCompanyId,
+        companyName: effectiveCompanyName,
+        linkedinCompanyUrl: effectiveLinkedinUrl,
       }),
     });
     const json = (await res.json()) as {
@@ -267,15 +374,19 @@ export const OrgChartSuperImposeModal = ({
     setResolveErrors(json.errors ?? []);
   }, [
     accessToken,
-    companyId,
-    companyName,
-    linkedinCompanyUrl,
-    linkedinUnipileAccountId,
+    effectiveCompanyId,
+    effectiveCompanyName,
+    effectiveLinkedinUrl,
     serverBaseUrl,
     superImposePayload,
   ]);
 
   const fetchEstimate = useCallback(async () => {
+    if (!targetCompany) {
+      setEstimate(null);
+      return;
+    }
+
     setEstimateLoading(true);
     try {
       const base = serverBaseUrl.replace(/\/$/, '');
@@ -287,15 +398,17 @@ export const OrgChartSuperImposeModal = ({
         },
         body: JSON.stringify({
           superImpose: superImposePayload,
-          country: country === 'global' ? undefined : country,
           functionRoot:
             functionRoot === 'fullcompany' ? undefined : functionRoot,
           businessDivisionRawQuery: businessDivision.trim() || undefined,
           candidateSource,
-          companyId,
-          companyName,
-          linkedinCompanyUrl,
+          companyId: effectiveCompanyId,
+          companyName: effectiveCompanyName,
+          linkedinCompanyUrl: effectiveLinkedinUrl,
           linkedinUnipileAccountId,
+          linkedinLocationId: targetLocation?.id,
+          linkedinLocationName: targetLocation?.title,
+          linkedinCompanyParameterId: targetCompany.id,
         }),
       });
       const json = (await res.json()) as SuperImposeEstimate & {
@@ -318,15 +431,16 @@ export const OrgChartSuperImposeModal = ({
     accessToken,
     businessDivision,
     candidateSource,
-    companyId,
-    companyName,
-    country,
+    effectiveCompanyId,
+    effectiveCompanyName,
+    effectiveLinkedinUrl,
     enqueueSnackBar,
     functionRoot,
-    linkedinCompanyUrl,
     linkedinUnipileAccountId,
     serverBaseUrl,
     superImposePayload,
+    targetCompany,
+    targetLocation,
   ]);
 
   const debouncedResolve = useDebouncedCallback(() => {
@@ -356,15 +470,17 @@ export const OrgChartSuperImposeModal = ({
     debouncedResolve,
     isOpen,
     superImposePayload,
-    country,
     functionRoot,
     businessDivision,
+    targetCompany,
+    targetLocation,
   ]);
 
   const generateDisabled =
     isGenerating ||
     estimateLoading ||
-    estimate?.scopeRequired === true;
+    estimate?.scopeRequired === true ||
+    !targetCompany;
 
   const estimateTone: 'ok' | 'warn' | 'error' =
     estimate?.scopeRequired === true
@@ -374,9 +490,17 @@ export const OrgChartSuperImposeModal = ({
         : 'ok';
 
   const handleGenerate = () => {
+    if (!targetCompany) {
+      enqueueSnackBar(t`Select a target company.`, {
+        variant: SnackBarVariant.Error,
+        duration: 5000,
+      });
+      return;
+    }
+
     if (estimate?.scopeRequired) {
       enqueueSnackBar(
-        t`Too many people. Select a country or function filter first.`,
+        t`Too many people. Select a location or function filter first.`,
         { variant: SnackBarVariant.Error, duration: 6000 },
       );
       return;
@@ -385,9 +509,13 @@ export const OrgChartSuperImposeModal = ({
     onGenerate({
       ...superImposePayload,
       appendToExistingChart: appendToExisting,
-      country: country === 'global' ? undefined : country,
       functionRoot: functionRoot === 'fullcompany' ? undefined : functionRoot,
       businessDivisionRawQuery: businessDivision.trim() || undefined,
+      targetCompany,
+      targetLocation,
+      linkedinLocationId: targetLocation?.id,
+      linkedinLocationName: targetLocation?.title,
+      linkedinCompanyParameterId: targetCompany.id,
     });
   };
 
@@ -396,81 +524,36 @@ export const OrgChartSuperImposeModal = ({
   }
 
   return (
-    <StyledModal
-      isClosable
-      onClose={onClose}
-      padding="large"
-    >
+    <StyledModal isClosable onClose={onClose} padding="large">
       <StyledContent>
         <StyledTitle>{t`Super Impose Org Chart`}</StyledTitle>
         <p>
-          {t`Merge employees from additional LinkedIn company pages, websites, or Sales Navigator searches into this chart.`}
+          {t`Select a target company and optional location, then merge employees from additional sources into the chart.`}
         </p>
 
         <StyledField>
-          <StyledFieldLabel>{t`LinkedIn company URLs (one per line)`}</StyledFieldLabel>
-          <TextArea
-            minRows={3}
-            value={linkedinUrlsText}
-            onChange={setLinkedinUrlsText}
-            placeholder="https://www.linkedin.com/company/example/"
+          <StyledFieldLabel>{t`Company`}</StyledFieldLabel>
+          <SuperImposeLinkedInFacetAutocomplete
+            kind="company"
+            label={t`Company`}
+            value={companySelection}
+            onChange={setCompanySelection}
+            accessToken={accessToken}
+            serverBaseUrl={serverBaseUrl}
           />
         </StyledField>
 
         <StyledField>
-          <StyledFieldLabel>{t`Company websites (one per line)`}</StyledFieldLabel>
-          <TextArea
-            minRows={2}
-            value={websiteUrlsText}
-            onChange={setWebsiteUrlsText}
-            placeholder="example.com"
+          <StyledFieldLabel>{t`Location (optional)`}</StyledFieldLabel>
+          <SuperImposeLinkedInFacetAutocomplete
+            kind="location"
+            label={t`Location`}
+            placeholder={t`Global if empty`}
+            value={locationSelection}
+            onChange={setLocationSelection}
+            accessToken={accessToken}
+            serverBaseUrl={serverBaseUrl}
           />
-        </StyledField>
-
-        <StyledField>
-          <StyledFieldLabel>{t`Sales Navigator search URLs`}</StyledFieldLabel>
-          <TextArea
-            minRows={2}
-            value={salesNavUrlsText}
-            onChange={setSalesNavUrlsText}
-            placeholder="https://www.linkedin.com/sales/search/people?..."
-          />
-        </StyledField>
-
-        <StyledField>
-          <StyledFieldLabel>{t`Keywords (optional)`}</StyledFieldLabel>
-          <TextInput
-            value={keywords}
-            onChange={setKeywords}
-            placeholder={t`Boolean keywords, e.g. insulator OR NGK`}
-          />
-        </StyledField>
-
-        <StyledField>
-          <StyledFieldLabel>{t`Business division (optional)`}</StyledFieldLabel>
-          <TextInput
-            value={businessDivision}
-            onChange={setBusinessDivision}
-            placeholder={t`e.g. textile machinery team`}
-          />
-        </StyledField>
-
-        <StyledField>
-          <StyledFieldLabel>{t`Country`}</StyledFieldLabel>
-          <StyledSelect
-            value={country}
-            onChange={(event) => setCountry(event.target.value)}
-          >
-            <option value="global">{t`Global`}</option>
-            {availableCountries.map((key) => (
-              <option key={key} value={key}>
-                {key}
-                {countryPercentLabels[key]
-                  ? ` (${countryPercentLabels[key]})`
-                  : ''}
-              </option>
-            ))}
-          </StyledSelect>
         </StyledField>
 
         <StyledField>
@@ -490,6 +573,59 @@ export const OrgChartSuperImposeModal = ({
             ))}
           </StyledSelect>
         </StyledField>
+
+        <StyledField>
+          <StyledFieldLabel>{t`Business division (optional)`}</StyledFieldLabel>
+          <TextInput
+            value={businessDivision}
+            onChange={setBusinessDivision}
+            placeholder={t`e.g. textile machinery team`}
+          />
+        </StyledField>
+
+        <StyledAdvancedSection>
+          <StyledAdvancedSummary>{t`Advanced sources`}</StyledAdvancedSummary>
+          <StyledAdvancedBody>
+            <StyledField>
+              <StyledFieldLabel>{t`LinkedIn company URLs (one per line)`}</StyledFieldLabel>
+              <TextArea
+                minRows={2}
+                value={linkedinUrlsText}
+                onChange={setLinkedinUrlsText}
+                placeholder="https://www.linkedin.com/company/example/"
+              />
+            </StyledField>
+
+            <StyledField>
+              <StyledFieldLabel>{t`Company websites (one per line)`}</StyledFieldLabel>
+              <TextArea
+                minRows={2}
+                value={websiteUrlsText}
+                onChange={setWebsiteUrlsText}
+                placeholder="example.com"
+              />
+            </StyledField>
+
+            <StyledField>
+              <StyledFieldLabel>{t`Sales Navigator search URLs`}</StyledFieldLabel>
+              <TextArea
+                minRows={2}
+                value={salesNavUrlsText}
+                onChange={setSalesNavUrlsText}
+                placeholder="https://www.linkedin.com/sales/search/people?..."
+              />
+            </StyledField>
+
+            <StyledField>
+              <StyledFieldLabel>{t`Keywords (optional)`}</StyledFieldLabel>
+              <TextInput
+                value={keywords}
+                onChange={setKeywords}
+                placeholder={t`Boolean keywords, e.g. insulator OR NGK`}
+              />
+            </StyledField>
+          </StyledAdvancedBody>
+        </StyledAdvancedSection>
 
         {resolvedPreview.length > 0 ? (
           <StyledField>
@@ -515,9 +651,11 @@ export const OrgChartSuperImposeModal = ({
             ? `Estimating people…`
             : estimate
               ? estimate.scopeRequired
-                ? `Too many people (~${estimate.estimatedTotalUpperBound}). Select a country or function.`
+                ? `Too many people (~${estimate.estimatedTotalUpperBound}). Select a location or function.`
                 : `≈ ${estimate.estimatedTotal} people (up to ${estimate.estimatedTotalUpperBound})`
-              : `Enter sources to see an estimate`}
+              : targetCompany
+                ? `Estimating…`
+                : `Select a company to see an estimate`}
         </StyledEstimateBadge>
 
         <StyledCheckboxRow>

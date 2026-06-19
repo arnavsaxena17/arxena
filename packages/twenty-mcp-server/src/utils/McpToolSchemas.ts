@@ -629,10 +629,30 @@ export const LINKEDIN_UNIPILE_EXTENSION_SYNC_COOKIES_INPUT_DESCRIPTOR: readonly 
   { key: 'user_agent', type: 'string', description: 'Browser user-agent', required: false },
   { key: 'page_url', type: 'string', description: 'Current LinkedIn page URL', required: false },
   { key: 'linkedin_profile_url', type: 'string', description: 'Canonical LinkedIn profile URL (/in/...)', required: false },
+  { key: 'client_ip', type: 'string', description: 'Public IPv4 resolved by the Chrome extension', required: false },
+  { key: 'client_country', type: 'string', description: 'ISO 3166-1 alpha-2 country from extension ipinfo lookup', required: false },
+] as const;
+
+export const LINKEDIN_UNIPILE_PERSIST_COOKIES_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'li_at', type: 'string', description: 'LinkedIn li_at cookie', required: false },
+  { key: 'li_a', type: 'string', description: 'LinkedIn li_a cookie', required: false },
+  { key: 'user_agent', type: 'string', description: 'Browser user-agent', required: false },
+  { key: 'page_url', type: 'string', description: 'Current LinkedIn page URL', required: false },
+  { key: 'linkedin_profile_url', type: 'string', description: 'Canonical LinkedIn profile URL (/in/...)', required: false },
+  { key: 'client_ip', type: 'string', description: 'Public IPv4 resolved by the Chrome extension', required: false },
+  { key: 'client_country', type: 'string', description: 'ISO 3166-1 alpha-2 country from extension ipinfo lookup', required: false },
 ] as const;
 
 export const LINKEDIN_UNIPILE_RECONNECT_FROM_STORED_PROFILE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
   { key: 'user_agent', type: 'string', description: 'Optional browser user-agent override', required: false },
+  { key: 'client_ip', type: 'string', description: 'Public IPv4 when stored linkedinIp is missing', required: false },
+  { key: 'client_country', type: 'string', description: 'ISO 3166-1 alpha-2 country when stored linkedinCountry is missing', required: false },
+] as const;
+
+export const LINKEDIN_UNIPILE_VALIDATE_SESSION_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'user_agent', type: 'string', description: 'Optional browser user-agent override', required: false },
+  { key: 'client_ip', type: 'string', description: 'Public IPv4 when stored linkedinIp is missing', required: false },
+  { key: 'client_country', type: 'string', description: 'ISO 3166-1 alpha-2 country when stored linkedinCountry is missing', required: false },
 ] as const;
 
 export const LINKEDIN_UNIPILE_UPDATE_MEMBER_ACCOUNT_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [

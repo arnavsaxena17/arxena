@@ -544,6 +544,17 @@ export function getFieldsData(
     {
       objectName: 'workspaceMemberProfile',
       field: {
+        description: 'When LinkedIn cookies were last synced from the extension',
+        icon: 'IconClock',
+        label: 'LinkedIn Cookies Last Synced At',
+        name: 'linkedinCookiesLastSyncedAt',
+        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        type: 'DATE_TIME',
+      },
+    },
+    {
+      objectName: 'workspaceMemberProfile',
+      field: {
         description: 'Current Chrome Extension ID',
         icon: 'IconBrandChrome',
         label: 'Chrome Extension Id',
@@ -566,6 +577,53 @@ export function getFieldsData(
     {
       objectName: 'workspaceMemberProfile',
       field: {
+        description:
+          'Browser user agent captured from the extension at LinkedIn cookie sync (used for Unipile connect)',
+        icon: 'IconBrowser',
+        label: 'LinkedIn User Agent',
+        name: 'linkedinUserAgent',
+        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        type: 'TEXT',
+      },
+    },
+    {
+      objectName: 'workspaceMemberProfile',
+      field: {
+        description:
+          'Client IP captured at LinkedIn cookie sync (used for Unipile connect)',
+        icon: 'IconWorld',
+        label: 'LinkedIn IP',
+        name: 'linkedinIp',
+        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        type: 'TEXT',
+      },
+    },
+    {
+      objectName: 'workspaceMemberProfile',
+      field: {
+        description:
+          'ISO 3166-1 alpha-2 country code resolved from LinkedIn IP at cookie sync',
+        icon: 'IconMapPin',
+        label: 'LinkedIn Country',
+        name: 'linkedinCountry',
+        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        type: 'TEXT',
+      },
+    },
+    {
+      objectName: 'workspaceMemberProfile',
+      field: {
+        description: 'When LinkedIn cookies were last validated against Unipile',
+        icon: 'IconShieldCheck',
+        label: 'LinkedIn Cookies Validated At',
+        name: 'linkedinCookiesValidatedAt',
+        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        type: 'DATE_TIME',
+      },
+    },
+    {
+      objectName: 'workspaceMemberProfile',
+      field: {
         description: 'Unipile account ID for WhatsApp',
         icon: 'IconPhone',
         label: 'WhatsApp Unipile Account ID',
@@ -583,6 +641,18 @@ export function getFieldsData(
         name: 'keepLinkedinConnected',
         objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
         type: 'BOOLEAN',
+      },
+    },
+    {
+      objectName: 'workspaceMemberProfile',
+      field: {
+        description:
+          'Cached LinkedIn profile from Unipile (/me and full sender profile for outreach)',
+        icon: 'IconBrandLinkedin',
+        label: 'LinkedIn Profile',
+        name: 'linkedinProfile',
+        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        type: 'RAW_JSON',
       },
     },
     {

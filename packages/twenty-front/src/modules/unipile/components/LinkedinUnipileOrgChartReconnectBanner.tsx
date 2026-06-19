@@ -87,7 +87,7 @@ export const LinkedinUnipileOrgChartReconnectBanner = ({
       });
       if (result.ok) {
         setLinkedinSyncFailedAfterRetry(false);
-        await refreshAccounts();
+        await refreshAccounts({ force: true });
       } else if (result.syncAttempted) {
         setLinkedinSyncFailedAfterRetry(true);
       }

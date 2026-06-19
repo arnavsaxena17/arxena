@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { LinkedinUnipileSessionService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-session.service';
 import { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import type { GeneratedSearchParameters, ParsedJobDescription, ResultValidationResult } from '../types/candidate-search-request.type';
 import type { PeopleSearchStrategyResult } from '../utils/extract-strategies.util';
@@ -44,6 +45,7 @@ export class StrategyExecutionService {
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly candidateSearchBaseService: CandidateSearchBaseService,
     private readonly searchResponseBuilderService: SearchResponseBuilderService,
+    private readonly linkedinUnipileSessionService: LinkedinUnipileSessionService,
   ) {}
 
   extractStrategiesFromGeneratedParams(
@@ -165,6 +167,35 @@ export class StrategyExecutionService {
     userMessage: string,
     sendEvent?: (event: string, data: unknown) => void,
   ): Promise<SearchExecutionResult | null> {
+    return this.linkedinUnipileSessionService.withLinkedinSession(
+      apiToken,
+      undefined,
+      (session) =>
+        this.executeStrategySearchInSession(
+          parsedJobDescription,
+          strategy,
+          searchType,
+          searchCategory,
+          parameterKey,
+          apiToken,
+          userMessage,
+          sendEvent,
+          session.accountId,
+        ),
+    );
+  }
+
+  private async executeStrategySearchInSession(
+    parsedJobDescription: ParsedJobDescription,
+    strategy: PeopleSearchStrategyResult,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+    parameterKey: string,
+    apiToken: string,
+    userMessage: string,
+    sendEvent: ((event: string, data: unknown) => void) | undefined,
+    accountId: string,
+  ): Promise<SearchExecutionResult | null> {
     const strategyId = strategy.id;
     try {
       if (!strategy.parameters) {
@@ -185,8 +216,7 @@ export class StrategyExecutionService {
         `[Strategy: ${strategyId}] Parameters before resolution: ${JSON.stringify(strategy.parameters, null, 2)}`,
       );
 
-      const accountId =
-        await this.candidateSearchBaseService.getLinkedInAccountId(apiToken);
+      const accountIdForResolution = accountId;
       const originalCompanyNames =
         Array.isArray(strategy.parameters?.company) &&
         strategy.parameters.company.length > 0
@@ -206,7 +236,7 @@ export class StrategyExecutionService {
         const resolvedParams =
           await this.linkedinParameterResolver.resolveParameterIds(
             strategy.parameters,
-            accountId,
+            accountIdForResolution,
             strategyId,
           );
         strategyResolvedParams[parameterKey] = resolvedParams;
@@ -268,6 +298,7 @@ export class StrategyExecutionService {
           apiToken,
           userMessage,
           sendEvent,
+          { linkedInAccountId: accountId },
         );
 
       if (searchResult) {

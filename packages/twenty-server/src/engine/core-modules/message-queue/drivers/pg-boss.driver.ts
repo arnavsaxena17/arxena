@@ -3,12 +3,13 @@ import { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import PgBoss from 'pg-boss';
 
 import {
-  QueueCronJobOptions,
-  QueueJobOptions,
+    QueueCronJobOptions,
+    QueueJobOptions,
+    ScheduleDelayedJobOptions,
 } from 'src/engine/core-modules/message-queue/drivers/interfaces/job-options.interface';
+import { MessageQueueDriver } from 'src/engine/core-modules/message-queue/drivers/interfaces/message-queue-driver.interface';
 import { MessageQueueJob } from 'src/engine/core-modules/message-queue/interfaces/message-queue-job.interface';
 import { MessageQueueWorkerOptions } from 'src/engine/core-modules/message-queue/interfaces/message-queue-worker-options.interface';
-import { MessageQueueDriver } from 'src/engine/core-modules/message-queue/drivers/interfaces/message-queue-driver.interface';
 
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { getJobKey } from 'src/engine/core-modules/message-queue/utils/get-job-key.util';
@@ -21,6 +22,7 @@ export class PgBossDriver
   implements MessageQueueDriver, OnModuleInit, OnModuleDestroy
 {
   private pgBoss: PgBoss;
+  private readonly delayedJobIdsByStableKey = new Map<string, string>();
 
   constructor(options: PgBossDriverOptions) {
     this.pgBoss = new PgBoss(options);
@@ -123,5 +125,46 @@ export class PgBossDriver
       data as object,
       sendOpts,
     );
+  }
+
+  async scheduleOrRescheduleDelayed<T>(
+    queueName: MessageQueue,
+    jobName: string,
+    data: T,
+    options: ScheduleDelayedJobOptions,
+  ): Promise<void> {
+    const trimmedJobId = options.id.trim();
+    const delayMs = Math.max(0, options.delayMs);
+    const jobNameWithQueue = `${queueName}.${jobName}`;
+    const stableKey = `${queueName}:${trimmedJobId}`;
+
+    await this.cancelDelayed(queueName, trimmedJobId);
+
+    const createdJobId = await this.pgBoss.send(jobNameWithQueue, data as object, {
+      singletonKey: trimmedJobId,
+      useSingletonQueue: true,
+      startAfter: new Date(Date.now() + delayMs),
+    });
+
+    if (createdJobId) {
+      this.delayedJobIdsByStableKey.set(stableKey, createdJobId);
+    }
+  }
+
+  async cancelDelayed(queueName: MessageQueue, jobId: string): Promise<void> {
+    const trimmedJobId = jobId.trim();
+    if (!trimmedJobId) {
+      return;
+    }
+
+    const stableKey = `${queueName}:${trimmedJobId}`;
+    const existingJobId = this.delayedJobIdsByStableKey.get(stableKey);
+
+    if (!existingJobId) {
+      return;
+    }
+
+    await this.pgBoss.cancel(existingJobId);
+    this.delayedJobIdsByStableKey.delete(stableKey);
   }
 }
