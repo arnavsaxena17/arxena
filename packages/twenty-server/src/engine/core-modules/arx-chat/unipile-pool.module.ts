@@ -15,6 +15,7 @@ import { LinkedinUnipileTeardownProcessor } from './services/linkedin-unipile-te
 import { MemberLinkedinUnipileConnectionService } from './services/member-linkedin-unipile-connection.service';
 import { UnipileAccountPoolService } from './services/unipile-account-pool.service';
 import { UnipileInactivityCronService } from './services/unipile-inactivity-cron.service';
+import { UnipileLinkedinSnapshotCacheCronService } from './services/unipile-linkedin-snapshot-cache.cron.service';
 import { WhatsappUnipileRequestService } from './services/whatsapp-unipile-request.service';
 import { WorkspaceMemberProfileUnipileService } from './services/workspace-member-profile-unipile.service';
 
@@ -38,6 +39,7 @@ import { WorkspaceMemberProfileUnipileService } from './services/workspace-membe
     WhatsappUnipileRequestService,
     UnipileAccountPoolService,
     UnipileInactivityCronService,
+    UnipileLinkedinSnapshotCacheCronService,
   ],
   exports: [
     UnipileAccountPoolService,

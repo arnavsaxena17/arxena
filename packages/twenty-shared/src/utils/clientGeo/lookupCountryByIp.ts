@@ -1,13 +1,11 @@
-import { isPrivateOrLocalClientIp } from 'twenty-shared';
+import { isPrivateOrLocalClientIp } from './isPrivateOrLocalClientIp';
+import { resolveIpinfoToken } from './resolveIpinfoToken';
 
 const IPINFO_API_BASE = 'https://ipinfo.io';
+const LOOKUP_TIMEOUT_MS = 3_000;
 
 type IpInfoLookupResponse = {
   country?: string;
-};
-
-const resolveIpinfoToken = (): string | undefined => {
-  return process.env.IPINFO_TOKEN?.trim() || undefined;
 };
 
 export const lookupCountryByIp = async (
@@ -24,13 +22,17 @@ export const lookupCountryByIp = async (
     : `${IPINFO_API_BASE}/${encodeURIComponent(normalizedIp)}`;
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), LOOKUP_TIMEOUT_MS);
+
     const response = await fetch(url, {
       headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(3000),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
-      console.warn('[IpInfoGeo] lookup failed', {
+      console.warn('[lookupCountryByIp] ipinfo lookup failed', {
         clientIp: normalizedIp,
         status: response.status,
       });
@@ -41,7 +43,7 @@ export const lookupCountryByIp = async (
     const countryCode = data.country?.trim().toUpperCase();
     return countryCode || null;
   } catch (error) {
-    console.warn('[IpInfoGeo] lookup error', {
+    console.warn('[lookupCountryByIp] ipinfo lookup error', {
       clientIp: normalizedIp,
       error: error instanceof Error ? error.message : String(error),
     });

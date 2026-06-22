@@ -13,18 +13,18 @@ import { HarvestLinkedinService } from 'src/engine/core-modules/org-chart/servic
 import { OrgChartService } from 'src/engine/core-modules/org-chart/services/org-chart.service';
 import { SuperImposeQueryBuilderService } from 'src/engine/core-modules/org-chart/services/super-impose-query-builder.service';
 import type {
-    SuperImposeEstimatePerSource,
-    SuperImposeEstimateResult,
-    SuperImposeFetchSource,
-    SuperImposeInputs,
-    SuperImposeQueryPlan,
-    SuperImposeResolvedCompany,
+  SuperImposeEstimatePerSource,
+  SuperImposeEstimateResult,
+  SuperImposeFetchSource,
+  SuperImposeInputs,
+  SuperImposeQueryPlan,
+  SuperImposeResolvedCompany,
 } from 'src/engine/core-modules/org-chart/types/super-impose.types';
 import {
-    buildResolvedCompanyFromUrl,
-    isValidLinkedinCompanyPageUrl,
-    isValidSalesNavigatorPeopleSearchUrl,
-    normalizeLinkedinCompanyUrl
+  buildResolvedCompanyFromUrl,
+  isValidLinkedinCompanyPageUrl,
+  isValidSalesNavigatorPeopleSearchUrl,
+  normalizeLinkedinCompanyUrl
 } from 'src/engine/core-modules/org-chart/utils/super-impose-input-resolver.util';
 
 export type ResolveSuperImposeInputsArgs = {
@@ -42,6 +42,7 @@ export type SuperImposeFetchContext = {
   country?: string;
   functionRoot?: string;
   businessDivisionRawQuery?: string;
+  leadershipOnly?: boolean;
   linkedinSearchKeywords?: string;
   candidateSource: 'harvest' | 'unipile';
   searchType?: 'classic' | 'sales_navigator' | 'recruiter';
@@ -183,6 +184,7 @@ export class OrgChartSuperImposeService {
       businessDivisionRawQuery: context.businessDivisionRawQuery,
       country: context.country,
       functionRoot: context.functionRoot,
+      leadershipOnly: context.leadershipOnly,
       candidateSource: context.candidateSource,
       searchType: context.searchType,
       primaryCompanyName: context.primaryCompanyName,
@@ -295,6 +297,8 @@ export class OrgChartSuperImposeService {
                 linkedinLocationId: plan.linkedinLocationId,
                 linkedinLocationName: plan.linkedinLocationName,
                 linkedinCompanyParameterId: plan.linkedinCompanyParameterId,
+                linkedinKeywords: plan.mergedSearchClause,
+                leadershipOnly: plan.leadershipOnly,
               },
             );
           unipileLinkedInEstimate = estimate;
@@ -345,6 +349,7 @@ export class OrgChartSuperImposeService {
           plan.country,
           plan.functionRoot,
           plan.linkedinLocationId,
+          plan.leadershipOnly,
         ));
 
     return {
@@ -448,6 +453,8 @@ export class OrgChartSuperImposeService {
               plan.linkedinLocationName ?? context.linkedinLocationName,
             linkedinCompanyParameterId:
               plan.linkedinCompanyParameterId ?? context.linkedinCompanyParameterId,
+            linkedinKeywords: plan.mergedSearchClause,
+            leadershipOnly: plan.leadershipOnly,
           },
         );
       const items = Array.isArray(searchResult.items)

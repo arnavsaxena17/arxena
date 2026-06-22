@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 
-import { UnipileLinkedinAccountUnusableError } from '../errors/unipile-linkedin-account-unusable.error';
 import { LinkedinUnipileEstimateAccountMode } from '../enums/linkedin-unipile-estimate-account-mode.enum';
+import { UnipileLinkedinAccountUnusableError } from '../errors/unipile-linkedin-account-unusable.error';
 import { LinkedinUnipileEstimateAccountService } from './linkedin-unipile-estimate-account.service';
 
 jest.mock('../utils/unipile-accounts-list.cache', () => ({
@@ -200,9 +200,15 @@ describe('LinkedinUnipileEstimateAccountService', () => {
       LinkedinUnipileEstimateAccountMode.SharedSalesNavigatorPool,
     );
 
-    linkedinUnipileSessionService.withLinkedinSession = jest.fn(async () => {
-      throw new Error('LLM timeout');
-    });
+    linkedinUnipileSessionService.withLinkedinSession = jest.fn(
+      async (
+        _token: string,
+        _accountId: string | undefined,
+        _run: (session: { accountId: string }) => Promise<unknown>,
+      ) => {
+        throw new Error('LLM timeout');
+      },
+    );
 
     await expect(
       service.withEstimateLinkedinSession(apiToken, clientAccountId, async () => 'ok'),
@@ -218,12 +224,18 @@ describe('LinkedinUnipileEstimateAccountService', () => {
       LinkedinUnipileEstimateAccountMode.SharedSalesNavigatorPool,
     );
 
-    linkedinUnipileSessionService.withLinkedinSession = jest.fn(async () => {
-      throw new HttpException(
-        { type: 'errors/disconnected_account' },
-        HttpStatus.UNAUTHORIZED,
-      );
-    });
+    linkedinUnipileSessionService.withLinkedinSession = jest.fn(
+      async (
+        _token: string,
+        _accountId: string | undefined,
+        _run: (session: { accountId: string }) => Promise<unknown>,
+      ) => {
+        throw new HttpException(
+          { type: 'errors/disconnected_account' },
+          HttpStatus.UNAUTHORIZED,
+        );
+      },
+    );
 
     await expect(
       service.withEstimateLinkedinSession(apiToken, clientAccountId, async () => 'ok'),

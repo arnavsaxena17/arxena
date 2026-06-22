@@ -154,23 +154,23 @@ export class OrgChartSuperImposeAutocompleteService {
           args.limit,
         );
 
-        return (result.items ?? [])
-          .map((item: LinkedInParameterItem) => {
-            const mapped = this.mapParameterItem(item);
-            if (!mapped) {
-              return null;
-            }
-            const slug = resolveOrgChartCanonicalCompanyId(mapped.id);
-            const profileUrl =
-              normalizeLinkedinCompanyUrl(slug) ??
-              `https://www.linkedin.com/company/${slug}/`;
-            return {
+        return (result.items ?? []).flatMap((item: LinkedInParameterItem) => {
+          const mapped = this.mapParameterItem(item);
+          if (!mapped) {
+            return [];
+          }
+          const slug = resolveOrgChartCanonicalCompanyId(mapped.id);
+          const profileUrl =
+            normalizeLinkedinCompanyUrl(slug) ??
+            `https://www.linkedin.com/company/${slug}/`;
+          return [
+            {
               ...mapped,
               slug,
               profileUrl,
-            };
-          })
-          .filter((item): item is SuperImposeAutocompleteItem => !!item);
+            },
+          ];
+        });
       },
     );
   }

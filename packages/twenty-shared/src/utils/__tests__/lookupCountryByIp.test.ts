@@ -1,4 +1,4 @@
-import { lookupCountryByIp } from '../lookup-country-by-ip.util';
+import { lookupCountryByIp } from '../clientGeo/lookupCountryByIp';
 
 describe('lookupCountryByIp', () => {
   const originalFetch = global.fetch;

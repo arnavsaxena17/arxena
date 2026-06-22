@@ -134,7 +134,7 @@ export class EnvironmentVariables {
   @CastToBoolean()
   @IsOptional()
   @IsBoolean()
-  LINKEDIN_UNIPILE_VALIDATE_THEN_DISCONNECT = true;
+  LINKEDIN_UNIPILE_VALIDATE_THEN_DISCONNECT = false;
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.Other,

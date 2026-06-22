@@ -1,32 +1,47 @@
 import { forwardRef, HttpException, HttpStatus, Inject, Injectable, Logger, Optional } from '@nestjs/common';
 
 import {
-  type UnipileAccountOwnerProfile,
   hasWorkspaceMemberLinkedinFullProfile,
   hasWorkspaceMemberLinkedinOwnerProfile,
   inferLinkedInSearchTypeFromUnipileOwnerProfile,
   workspaceMemberLinkedinProfileMatchesAccountId,
+  type UnipileAccountOwnerProfile,
 } from 'twenty-shared';
 
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 
+import { UnipileLinkedinAccountUnusableError } from '../errors/unipile-linkedin-account-unusable.error';
 import type {
   LinkedinSenderFullProfileCacheEntry,
   LinkedinSenderFullProfileResult,
 } from '../types/linkedin-sender-profile-cache.types';
-import { UnipileLinkedinAccountUnusableError } from '../errors/unipile-linkedin-account-unusable.error';
 import { LinkedinUnipileAccountCleanupContext } from '../types/linkedin-unipile-account-cleanup.types';
 import { isUnipileLinkedinAccountUnusableError } from '../utils/is-unipile-linkedin-account-unusable-error.util';
 import {
   fetchUnipileAccountsListWithCache,
   invalidateUnipileAccountsListCache,
+  seedUnipileAccountsListCache,
   shouldInvalidateUnipileAccountsListCache,
 } from '../utils/unipile-accounts-list.cache';
 import {
   isUnipileDisconnectedAccountApiError,
   parseAccountIdFromUnipileEndpoint,
 } from '../utils/unipile-disconnected-account.util';
+import {
+  getSnapshotLinkedinAccounts,
+  getSnapshotOwnerProfile,
+  getSnapshotRawAccountById,
+  getSnapshotRawAccountsList,
+  hasSnapshotOwnerProfile,
+  isUnipileLinkedinSnapshotFresh,
+  patchSnapshotOwnerProfile,
+  patchSnapshotRawAccount,
+  setUnipileLinkedinSnapshot,
+  UNIPILE_LINKEDIN_SNAPSHOT_TTL_MS,
+  type UnipileLinkedinSnapshotAccountRow,
+  type UnipileLinkedinSnapshotRawAccount,
+} from '../utils/unipile-linkedin-snapshot.cache';
 import type { MemberLinkedinUnipileConnectionService } from './member-linkedin-unipile-connection.service';
 import type { WorkspaceMemberProfileUnipileService } from './workspace-member-profile-unipile.service';
 
@@ -58,6 +73,7 @@ export class LinkedinUnipileRequestService {
 
   private readonly unipileApiUrl = process.env.UNIPILE_API_URL;
   private readonly unipileAccessToken = process.env.UNIPILE_ACCESS_TOKEN;
+  private snapshotRefreshInFlight: Promise<void> | null = null;
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
@@ -198,8 +214,22 @@ export class LinkedinUnipileRequestService {
   /** Fetch a single account by id; returns null on 404 (e.g. account disconnected) without logging ERROR. */
   async fetchAccountByIdIfExists(
     accountId: string,
+    options?: { bypassSnapshot?: boolean },
   ): Promise<LinkedinUnipileAccountItem | null> {
-    const url = `${this.unipileApiUrl}/api/v1/accounts/${accountId}`;
+    const trimmed = accountId.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    if (options?.bypassSnapshot !== true) {
+      await this.ensureLinkedinSnapshotFresh();
+      const snapshotAccount = getSnapshotRawAccountById(trimmed);
+      if (snapshotAccount !== undefined) {
+        return snapshotAccount as LinkedinUnipileAccountItem | null;
+      }
+    }
+
+    const url = `${this.unipileApiUrl}/api/v1/accounts/${trimmed}`;
     const headers = {
       Accept: 'application/json',
       'X-API-KEY': this.unipileAccessToken || '',
@@ -212,8 +242,9 @@ export class LinkedinUnipileRequestService {
       >;
       if (response.status === 404) {
         this.logger.warn(
-          `Workspace linked account ${accountId} not found in Unipile (404); it may have been disconnected`,
+          `Workspace linked account ${trimmed} not found in Unipile (404); it may have been disconnected`,
         );
+        invalidateUnipileAccountsListCache();
         return null;
       }
       if (!response.ok) {
@@ -223,10 +254,115 @@ export class LinkedinUnipileRequestService {
         );
         return null;
       }
+      patchSnapshotRawAccount(data as UnipileLinkedinSnapshotRawAccount);
       return data as LinkedinUnipileAccountItem;
     } catch (err) {
       this.logger.warn(
-        `Could not fetch account ${accountId}: ${err instanceof Error ? err.message : err}`,
+        `Could not fetch account ${trimmed}: ${err instanceof Error ? err.message : err}`,
+      );
+      return null;
+    }
+  }
+
+  async ensureLinkedinSnapshotFresh(): Promise<void> {
+    if (isUnipileLinkedinSnapshotFresh()) {
+      return;
+    }
+
+    await this.refreshLinkedinSnapshotFromApi({ trigger: 'lazy-refresh' });
+  }
+
+  async refreshLinkedinSnapshotFromApi(options?: {
+    force?: boolean;
+    trigger?: string;
+  }): Promise<void> {
+    if (options?.force !== true && isUnipileLinkedinSnapshotFresh()) {
+      return;
+    }
+
+    if (this.snapshotRefreshInFlight) {
+      return this.snapshotRefreshInFlight;
+    }
+
+    this.snapshotRefreshInFlight = this.buildLinkedinSnapshotFromUnipileApi(
+      options?.trigger?.trim() || 'manual',
+    ).finally(() => {
+      this.snapshotRefreshInFlight = null;
+    });
+
+    return this.snapshotRefreshInFlight;
+  }
+
+  private async buildLinkedinSnapshotFromUnipileApi(
+    trigger: string,
+  ): Promise<void> {
+    this.logger.log(
+      `Refreshing Unipile LinkedIn server snapshot (trigger=${trigger})`,
+    );
+
+    const response = (await this.makeUnipileRequest('/api/v1/accounts')) as {
+      items?: LinkedinUnipileAccountItem[];
+    };
+
+    const rawAccountsList = {
+      items: (response.items ?? []) as UnipileLinkedinSnapshotRawAccount[],
+    };
+    const linkedinAccounts = (response.items ?? [])
+      .filter((item) => String(item.type ?? '').toUpperCase() === 'LINKEDIN')
+      .map((item) => this.mapLinkedinApiItemToAccountRow(item));
+
+    const ownerProfilesByAccountId = new Map<
+      string,
+      UnipileAccountOwnerProfile | null
+    >();
+
+    const connectedAccountIds = linkedinAccounts
+      .filter((account) => account.status === 'connected' && account.id?.trim())
+      .map((account) => account.id!.trim());
+
+    await Promise.all(
+      connectedAccountIds.map(async (connectedAccountId) => {
+        ownerProfilesByAccountId.set(
+          connectedAccountId,
+          await this.fetchLinkedinOwnerProfileFromApiUncached(connectedAccountId),
+        );
+      }),
+    );
+
+    setUnipileLinkedinSnapshot({
+      rawAccountsList,
+      linkedinAccounts:
+        linkedinAccounts as UnipileLinkedinSnapshotAccountRow[],
+      ownerProfilesByAccountId,
+    });
+    seedUnipileAccountsListCache(
+      rawAccountsList,
+      UNIPILE_LINKEDIN_SNAPSHOT_TTL_MS,
+    );
+
+    this.logger.log(
+      `Cached Unipile LinkedIn snapshot: ${linkedinAccounts.length} LinkedIn account(s), ${ownerProfilesByAccountId.size} owner profile(s) (trigger=${trigger})`,
+    );
+  }
+
+  private async fetchLinkedinOwnerProfileFromApiUncached(
+    accountId: string,
+  ): Promise<UnipileAccountOwnerProfile | null> {
+    const trimmed = accountId.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    try {
+      const response = (await this.makeUnipileRequest(
+        `/api/v1/users/me?account_id=${encodeURIComponent(trimmed)}`,
+        'GET',
+      )) as UnipileAccountOwnerProfile;
+
+      return response ?? null;
+    } catch (err) {
+      this.logger.warn(
+        `fetchLinkedinOwnerProfileFromApiUncached failed for ${trimmed}: ${err instanceof Error ? err.message : err}`,
       );
       return null;
     }
@@ -299,6 +435,11 @@ export class LinkedinUnipileRequestService {
   async fetchRawUnipileAccountsListCached(): Promise<{
     items?: LinkedinUnipileAccountItem[];
   }> {
+    const snapshotRaw = getSnapshotRawAccountsList();
+    if (snapshotRaw) {
+      return snapshotRaw as { items?: LinkedinUnipileAccountItem[] };
+    }
+
     return fetchUnipileAccountsListWithCache(async () => {
       this.logger.log(
         'Fetching Unipile account list from API (cache miss or expired)',
@@ -314,6 +455,15 @@ export class LinkedinUnipileRequestService {
    * `type === 'LINKEDIN'` (the `?provider=linkedin` query can return an empty list on some DSNs).
    */
   async listAllLinkedinAccountsFromUnipileApi() {
+    await this.ensureLinkedinSnapshotFresh();
+    const snapshotAccounts = getSnapshotLinkedinAccounts();
+    if (snapshotAccounts) {
+      this.logger.log(
+        `Unipile LinkedIn API: ${snapshotAccounts.length} account(s) (server snapshot)`,
+      );
+      return { success: true as const, accounts: snapshotAccounts };
+    }
+
     const response = await this.fetchRawUnipileAccountsListCached();
 
     const accounts = (response.items || [])
@@ -381,6 +531,17 @@ export class LinkedinUnipileRequestService {
       }
     }
 
+    if (options?.refresh !== true && !cleanupContext) {
+      await this.ensureLinkedinSnapshotFresh();
+      if (hasSnapshotOwnerProfile(trimmed)) {
+        const cachedProfile = getSnapshotOwnerProfile(trimmed);
+        this.logger.log(
+          `LinkedIn owner profile loaded from server snapshot for accountId=${trimmed}`,
+        );
+        return cachedProfile ?? null;
+      }
+    }
+
     try {
       const response = (await this.makeUnipileRequest(
         `/api/v1/users/me?account_id=${encodeURIComponent(trimmed)}`,
@@ -409,6 +570,10 @@ export class LinkedinUnipileRequestService {
             fetchedAt: new Date().toISOString(),
           },
         );
+      }
+
+      if (!cleanupContext) {
+        patchSnapshotOwnerProfile(trimmed, response ?? null);
       }
 
       return response ?? null;

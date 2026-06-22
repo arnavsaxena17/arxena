@@ -2,8 +2,8 @@ import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-    buildVisibleFunctionRoots,
-    formatOrgChartFunctionRootOptionLabel,
+  buildVisibleFunctionRoots,
+  formatOrgChartFunctionRootOptionLabel,
 } from 'twenty-orgchart';
 import { resolveOrgChartCanonicalCompanyId } from 'twenty-shared';
 import { Button } from 'twenty-ui';
@@ -16,16 +16,16 @@ import { TextInput } from '@/ui/input/components/TextInput';
 import { Modal } from '@/ui/layout/modal/components/Modal';
 
 import {
-    buildSuperImposeTargetCompanyFromAutocomplete,
-    buildSuperImposeTargetLocationFromAutocomplete,
-    isDifferentSuperImposeTargetCompany,
-    type SuperImposeAutocompleteItem,
-    type SuperImposeTargetCompany,
-    type SuperImposeTargetLocation,
+  buildSuperImposeTargetCompanyFromAutocomplete,
+  buildSuperImposeTargetLocationFromAutocomplete,
+  isDifferentSuperImposeTargetCompany,
+  type SuperImposeAutocompleteItem,
+  type SuperImposeTargetCompany,
+  type SuperImposeTargetLocation,
 } from '../types/superImposeTypes';
 import {
-    canAppendToExistingSuperImposeChart,
-    parseMultilineUrlInput,
+  canAppendToExistingSuperImposeChart,
+  parseMultilineUrlInput,
 } from '../utils/superImposeAppendEligibility';
 import { SuperImposeLinkedInFacetAutocomplete } from './SuperImposeLinkedInFacetAutocomplete';
 
@@ -33,6 +33,7 @@ const StyledModal = styled(Modal)`
   border-radius: ${({ theme }) => theme.spacing(1)};
   max-height: 90dvh;
   width: min(720px, calc(100vw - ${({ theme }) => theme.spacing(8)}));
+  user-select: text;
 `;
 
 const StyledContent = styled.div`
@@ -180,6 +181,7 @@ export type OrgChartSuperImposeModalProps = {
     appendToExistingChart: boolean;
     functionRoot?: string;
     businessDivisionRawQuery?: string;
+    leadershipOnly?: boolean;
     targetCompany?: SuperImposeTargetCompany;
     targetLocation?: SuperImposeTargetLocation;
     linkedinLocationId?: string;
@@ -228,6 +230,7 @@ export const OrgChartSuperImposeModal = ({
   const [businessDivision, setBusinessDivision] = useState(
     businessDivisionRawQuery ?? '',
   );
+  const [leadershipOnly, setLeadershipOnly] = useState(false);
   const [appendToExisting, setAppendToExisting] = useState(false);
   const [estimate, setEstimate] = useState<SuperImposeEstimate | null>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
@@ -306,6 +309,7 @@ export const OrgChartSuperImposeModal = ({
     setLocationSelection(null);
     setFunctionRoot(selectedFunctionRoot ?? 'fullcompany');
     setBusinessDivision(businessDivisionRawQuery ?? '');
+    setLeadershipOnly(false);
     setAppendToExisting(false);
   }, [
     businessDivisionRawQuery,
@@ -401,6 +405,7 @@ export const OrgChartSuperImposeModal = ({
           functionRoot:
             functionRoot === 'fullcompany' ? undefined : functionRoot,
           businessDivisionRawQuery: businessDivision.trim() || undefined,
+          leadershipOnly: leadershipOnly || undefined,
           candidateSource,
           companyId: effectiveCompanyId,
           companyName: effectiveCompanyName,
@@ -436,6 +441,7 @@ export const OrgChartSuperImposeModal = ({
     effectiveLinkedinUrl,
     enqueueSnackBar,
     functionRoot,
+    leadershipOnly,
     linkedinUnipileAccountId,
     serverBaseUrl,
     superImposePayload,
@@ -472,6 +478,7 @@ export const OrgChartSuperImposeModal = ({
     superImposePayload,
     functionRoot,
     businessDivision,
+    leadershipOnly,
     targetCompany,
     targetLocation,
   ]);
@@ -500,7 +507,7 @@ export const OrgChartSuperImposeModal = ({
 
     if (estimate?.scopeRequired) {
       enqueueSnackBar(
-        t`Too many people. Select a location or function filter first.`,
+        t`Too many people. Select a location, function, or leadership filter first.`,
         { variant: SnackBarVariant.Error, duration: 6000 },
       );
       return;
@@ -511,6 +518,7 @@ export const OrgChartSuperImposeModal = ({
       appendToExistingChart: appendToExisting,
       functionRoot: functionRoot === 'fullcompany' ? undefined : functionRoot,
       businessDivisionRawQuery: businessDivision.trim() || undefined,
+      leadershipOnly: leadershipOnly || undefined,
       targetCompany,
       targetLocation,
       linkedinLocationId: targetLocation?.id,
@@ -573,6 +581,15 @@ export const OrgChartSuperImposeModal = ({
             ))}
           </StyledSelect>
         </StyledField>
+
+        <StyledCheckboxRow>
+          <input
+            type="checkbox"
+            checked={leadershipOnly}
+            onChange={(event) => setLeadershipOnly(event.target.checked)}
+          />
+          {t`Fetch leadership positions only`}
+        </StyledCheckboxRow>
 
         <StyledField>
           <StyledFieldLabel>{t`Business division (optional)`}</StyledFieldLabel>
@@ -651,7 +668,7 @@ export const OrgChartSuperImposeModal = ({
             ? `Estimating people…`
             : estimate
               ? estimate.scopeRequired
-                ? `Too many people (~${estimate.estimatedTotalUpperBound}). Select a location or function.`
+                ? `Too many people (~${estimate.estimatedTotalUpperBound}). Select a location, function, or leadership filter.`
                 : `≈ ${estimate.estimatedTotal} people (up to ${estimate.estimatedTotalUpperBound})`
               : targetCompany
                 ? `Estimating…`

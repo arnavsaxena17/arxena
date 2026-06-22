@@ -1,7 +1,9 @@
 import {
     computeLinkedInUnipilePagesRequired,
+    getLinkedInUnipileEstimateProbePageLimit,
     getLinkedInUnipileSearchPageLimit,
     LINKEDIN_UNIPILE_CLASSIC_SEARCH_PAGE_LIMIT,
+    LINKEDIN_UNIPILE_ESTIMATE_PROBE_PAGE_LIMIT,
     LINKEDIN_UNIPILE_RECRUITER_SEARCH_PAGE_LIMIT,
     LINKEDIN_UNIPILE_SALES_NAVIGATOR_SEARCH_PAGE_LIMIT,
 } from './linkedinUnipileSearchPageLimit';
@@ -26,6 +28,11 @@ describe('linkedinUnipileSearchPageLimit', () => {
     expect(getLinkedInUnipileSearchPageLimit('classic')).toBe(50);
     expect(getLinkedInUnipileSearchPageLimit('sales_navigator')).toBe(100);
     expect(getLinkedInUnipileSearchPageLimit('recruiter')).toBe(100);
+  });
+
+  it('exposes a smaller probe page limit for org-chart estimates', () => {
+    expect(LINKEDIN_UNIPILE_ESTIMATE_PROBE_PAGE_LIMIT).toBe(10);
+    expect(getLinkedInUnipileEstimateProbePageLimit()).toBe(10);
   });
 
   it('computes pages required from total count and cap', () => {

@@ -29,6 +29,7 @@ import {
   type UnipileLinkedinAccount,
 } from 'twenty-shared';
 
+import { lookupCountryByIp } from 'twenty-shared';
 import { LinkedinUnipileMemberAccountResolverService } from '../services/linkedin-unipile-member-account-resolver.service';
 import { LinkedinUnipileRequestService } from '../services/linkedin-unipile-request.service';
 import { LinkedinUnipileMessagingService } from '../services/linkedin-unipile/linkedin-unipile-messaging.service';
@@ -45,7 +46,6 @@ import {
   normalizeLinkedinConnectionCountry,
   normalizeLinkedinConnectionIp,
 } from '../utils/build-unipile-linkedin-cookie-connect-body.util';
-import { resolveLinkedinCountryFromIp } from '../utils/resolve-linkedin-country-from-ip.util';
 import { resolveLinkedinSyncClientIp } from '../utils/resolve-linkedin-sync-client-ip.util';
 
 // DTOs for LinkedIn Unipile integration
@@ -388,7 +388,7 @@ export class LinkedinUnipileController {
     const country =
       storedCountry ??
       fallbackCountry ??
-      ((await resolveLinkedinCountryFromIp(ip)) ?? undefined);
+      ((await lookupCountryByIp(ip)) ?? undefined);
 
     return { userAgent, ip, country };
   }
@@ -457,6 +457,7 @@ export class LinkedinUnipileController {
       user_agent?: string;
       clientIp?: string;
       clientCountry?: string;
+      allowMissingBrowserLinkedinUrl?: boolean;
     },
   ): Promise<{
     cookiesChanged: boolean;
@@ -493,7 +494,8 @@ export class LinkedinUnipileController {
 
     if (
       browserMemberUrlMatch === 'no_browser_url' &&
-      profile?.linkedinUrl?.trim()
+      profile?.linkedinUrl?.trim() &&
+      !params.allowMissingBrowserLinkedinUrl
     ) {
       throw new HttpException(
         {
@@ -818,7 +820,7 @@ export class LinkedinUnipileController {
       }
       if (normalizedIp && !connectCountry) {
         connectCountry =
-          (await resolveLinkedinCountryFromIp(normalizedIp)) ?? undefined;
+          (await lookupCountryByIp(normalizedIp)) ?? undefined;
       }
 
       const result = (await this.linkedinUnipileRequestService.makeUnipileRequest(
@@ -958,6 +960,7 @@ export class LinkedinUnipileController {
           user_agent: params.user_agent,
           clientIp: params.clientIp,
           clientCountry: params.clientCountry,
+          allowMissingBrowserLinkedinUrl: !params.linkedin_profile_url?.trim(),
         },
       );
       cookiesChanged = persistResult.cookiesChanged;
@@ -1214,6 +1217,8 @@ export class LinkedinUnipileController {
         ...body,
         clientIp,
         clientCountry,
+        allowMissingBrowserLinkedinUrl:
+          this.isLinkedinUnipileOnDemandEnabled() || !body.linkedin_profile_url?.trim(),
       },
     );
 

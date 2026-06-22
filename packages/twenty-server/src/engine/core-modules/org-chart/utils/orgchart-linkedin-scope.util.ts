@@ -1,18 +1,20 @@
 import type { LinkedInSearchType } from 'twenty-shared';
 import {
-    computeLinkedInUnipilePagesRequired,
-    getLinkedInUnipileSearchPageLimit,
+  computeLinkedInUnipilePagesRequired,
+  getLinkedInUnipileSearchPageLimit,
 } from 'twenty-shared';
 
 import { hasMeaningfulOrgChartFunctionRootFilter } from './orgchart-filter.util';
 
 export {
-    computeLinkedInUnipilePagesRequired,
-    getLinkedInUnipileSearchPageLimit,
-    LINKEDIN_UNIPILE_CLASSIC_SEARCH_PAGE_LIMIT,
-    LINKEDIN_UNIPILE_RECRUITER_SEARCH_PAGE_LIMIT,
-    LINKEDIN_UNIPILE_SALES_NAVIGATOR_SEARCH_PAGE_LIMIT,
-    LINKEDIN_UNIPILE_SEARCH_PAGE_LIMITS
+  computeLinkedInUnipilePagesRequired,
+  getLinkedInUnipileEstimateProbePageLimit,
+  getLinkedInUnipileSearchPageLimit,
+  LINKEDIN_UNIPILE_CLASSIC_SEARCH_PAGE_LIMIT,
+  LINKEDIN_UNIPILE_ESTIMATE_PROBE_PAGE_LIMIT,
+  LINKEDIN_UNIPILE_RECRUITER_SEARCH_PAGE_LIMIT,
+  LINKEDIN_UNIPILE_SALES_NAVIGATOR_SEARCH_PAGE_LIMIT,
+  LINKEDIN_UNIPILE_SEARCH_PAGE_LIMITS
 } from 'twenty-shared';
 
 export const hasMeaningfulOrgChartCountryFilter = (
@@ -27,14 +29,20 @@ export const hasMeaningfulLinkedInLocationIdFilter = (
   linkedinLocationId?: string,
 ): boolean => (linkedinLocationId ?? '').trim().length > 0;
 
+export const hasOrgChartLinkedInLeadershipOnlyFilter = (
+  leadershipOnly?: boolean,
+): boolean => leadershipOnly === true;
+
 export const hasOrgChartLinkedInSubsetScopeFilter = (
   country?: string,
   functionRoot?: string,
   linkedinLocationId?: string,
+  leadershipOnly?: boolean,
 ): boolean =>
   hasMeaningfulOrgChartCountryFilter(country) ||
   hasMeaningfulOrgChartFunctionRootFilter(functionRoot) ||
-  hasMeaningfulLinkedInLocationIdFilter(linkedinLocationId);
+  hasMeaningfulLinkedInLocationIdFilter(linkedinLocationId) ||
+  hasOrgChartLinkedInLeadershipOnlyFilter(leadershipOnly);
 
 export const getOrgChartLinkedInMaxCandidates = (): number => {
   const raw = Number(
@@ -68,6 +76,7 @@ export const computeOrgChartLinkedInSearchPlan = (input: {
   country?: string;
   functionRoot?: string;
   linkedinLocationId?: string;
+  leadershipOnly?: boolean;
   pageSize?: number;
   maxCandidates?: number;
 }): {
@@ -90,6 +99,7 @@ export const computeOrgChartLinkedInSearchPlan = (input: {
     input.country,
     input.functionRoot,
     input.linkedinLocationId,
+    input.leadershipOnly,
   );
   const threshold = maxCandidates;
   const estimatedTotalUpperBound = totalCount;

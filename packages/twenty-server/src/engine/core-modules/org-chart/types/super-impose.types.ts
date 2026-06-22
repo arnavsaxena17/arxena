@@ -50,6 +50,7 @@ export type SuperImposeManifest = {
     businessDivisionRawQuery?: string | null;
     country?: string;
     functionRoot?: string;
+    leadershipOnly?: boolean;
     appendToExistingChart?: boolean;
     targetCompany?: SuperImposeTargetCompany | null;
     targetLocation?: SuperImposeTargetLocation | null;
@@ -87,6 +88,7 @@ export type SuperImposeQueryPlan = {
   sessionId: string;
   country?: string;
   functionRoot?: string;
+  leadershipOnly?: boolean;
   linkedinLocationId?: string;
   linkedinLocationName?: string;
   linkedinCompanyParameterId?: string;

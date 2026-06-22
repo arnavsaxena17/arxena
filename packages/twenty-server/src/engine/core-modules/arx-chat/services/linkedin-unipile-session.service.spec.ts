@@ -1,7 +1,8 @@
 import { LinkedinUnipileSessionService } from './linkedin-unipile-session.service';
 
-jest.mock('../utils/resolve-linkedin-country-from-ip.util', () => ({
-  resolveLinkedinCountryFromIp: jest.fn().mockResolvedValue('US'),
+jest.mock('twenty-shared', () => ({
+  ...jest.requireActual('twenty-shared'),
+  lookupCountryByIp: jest.fn().mockResolvedValue('US'),
 }));
 
 describe('LinkedinUnipileSessionService', () => {

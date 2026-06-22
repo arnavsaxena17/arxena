@@ -117,6 +117,8 @@ type SearchOrgchartLinkedInBody = {
   linkedinUnipileAccountId?: string;
   /** NL business division query; requires Unipile (not Apify) */
   businessDivisionRawQuery?: string;
+  /** Super impose: restrict fetch to leadership-grade LinkedIn keywords. */
+  leadershipOnly?: boolean;
   /** When true, LLM validation/scoring on LinkedIn hit lists. Default false. */
   validateAndScoreLinkedInResults?: boolean;
   queryGenerator?: 'python' | 'multi_agent';
@@ -3438,6 +3440,7 @@ export class OrgChartLinkedInBuildService {
         country: body.linkedinLocationName ?? body.country,
         functionRoot: body.functionRoot,
         businessDivisionRawQuery: body.businessDivisionRawQuery,
+        leadershipOnly: body.leadershipOnly,
         candidateSource,
         linkedinLocationId:
           body.linkedinLocationId ?? superImpose.targetLocation?.id,
@@ -5681,6 +5684,7 @@ export class OrgChartLinkedInBuildService {
         functionRoot: jobData.functionRoot ?? rawBody.functionRoot,
         businessDivisionRawQuery:
           jobData.businessDivisionRawQuery ?? rawBody.businessDivisionRawQuery,
+        leadershipOnly: jobData.leadershipOnly ?? rawBody.leadershipOnly,
         linkedinSearchKeywords: superImpose.linkedinSearchKeywords,
         candidateSource,
         searchType,
@@ -5722,7 +5726,7 @@ export class OrgChartLinkedInBuildService {
 
       if (estimate.scopeRequired) {
         throw new HttpException(
-          `Too many people (~${estimate.estimatedTotalUpperBound}). Select a country or function filter before generating.`,
+          `Too many people (~${estimate.estimatedTotalUpperBound}). Select a country, function, or leadership filter before generating.`,
           HttpStatus.BAD_REQUEST,
         );
       }
@@ -5860,6 +5864,7 @@ export class OrgChartLinkedInBuildService {
             null,
           country: jobData.country ?? rawBody.country,
           functionRoot: jobData.functionRoot ?? rawBody.functionRoot,
+          leadershipOnly: jobData.leadershipOnly ?? rawBody.leadershipOnly,
           appendToExistingChart: superImpose.appendToExistingChart,
         },
         resolvedSources: resolvedCompanies,

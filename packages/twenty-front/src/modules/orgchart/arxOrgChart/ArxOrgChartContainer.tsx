@@ -1023,6 +1023,7 @@ export const ArxOrgChartContainer = ({
       appendToExistingChart: boolean;
       functionRoot?: string;
       businessDivisionRawQuery?: string;
+      leadershipOnly?: boolean;
       targetCompany?: {
         id: string;
         title: string;
@@ -1081,6 +1082,7 @@ export const ArxOrgChartContainer = ({
         origin: 'header',
         functionRoot: input.functionRoot ?? selectedFunctionRoot,
         businessDivisionRawQuery: input.businessDivisionRawQuery,
+        leadershipOnly: input.leadershipOnly,
         candidateSourceOverride: superImposeCandidateSource,
         companyIdOverride: targetCompany?.slug,
         companyNameOverride: targetCompany?.title,

@@ -3,11 +3,12 @@ import { Request } from 'express';
 import {
   CLIENT_GEO_COUNTRY_HEADER,
   CLIENT_GEO_IP_HEADER,
+  getCountryCodeFromCdnHeaders,
   isPrivateOrLocalClientIp,
 } from 'twenty-shared';
 
-import { resolveLinkedinSyncClientIp } from 'src/engine/core-modules/arx-chat/utils/resolve-linkedin-sync-client-ip.util';
 import { normalizeLinkedinConnectionCountry } from 'src/engine/core-modules/arx-chat/utils/build-unipile-linkedin-cookie-connect-body.util';
+import { resolveLinkedinSyncClientIp } from 'src/engine/core-modules/arx-chat/utils/resolve-linkedin-sync-client-ip.util';
 import { IpInfoGeoService } from 'src/engine/core-modules/geo/ip-info-geo.service';
 import { OrgChartClientIpService } from 'src/engine/core-modules/org-chart/services/org-chart-client-ip.service';
 
@@ -41,30 +42,7 @@ export class ClientGeoResolutionService {
   }
 
   private getCountryCodeFromRequest(req: Request): CountryHeaderMatch | null {
-    const headersToTry = [
-      'cloudfront-viewer-country',
-      'cf-ipcountry',
-      'x-vercel-ip-country',
-      'x-country-code',
-    ];
-
-    for (const headerName of headersToTry) {
-      const value = req.headers[headerName];
-      const normalized =
-        typeof value === 'string'
-          ? value.trim()
-          : Array.isArray(value) && value.length > 0 && typeof value[0] === 'string'
-            ? value[0].trim()
-            : '';
-      if (normalized) {
-        return {
-          source: headerName,
-          countryCode: normalized,
-        };
-      }
-    }
-
-    return null;
+    return getCountryCodeFromCdnHeaders((headerName) => req.headers[headerName]);
   }
 
   private getClientCountryHintFromRequest(req: Request): string | null {

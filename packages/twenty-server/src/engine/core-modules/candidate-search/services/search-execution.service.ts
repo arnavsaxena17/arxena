@@ -1,10 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { CandidateRelevanceScoring } from 'src/engine/core-modules/candidate-search/schemas/candidate-relevance-scoring.schema';
 import {
-    randomOrgChartLinkedInPageDelayMs,
-    sleepMs,
+  randomOrgChartLinkedInPageDelayMs,
+  sleepMs,
 } from 'src/engine/core-modules/org-chart/utils/orgchart-linkedin-scope.util';
-import { getLinkedInUnipileSearchPageLimit } from 'twenty-shared';
+import {
+  getLinkedInUnipileEstimateProbePageLimit,
+  getLinkedInUnipileSearchPageLimit,
+} from 'twenty-shared';
 import { LinkedinUnipileSessionService } from '../../arx-chat/services/linkedin-unipile-session.service';
 import { WorkspaceMemberProfileUnipileService } from '../../arx-chat/services/workspace-member-profile-unipile.service';
 import { LinkedInRecruiterPeopleTransformerService } from '../../candidate-sourcing/services/data-sources/linkedin-recruiter-people-transformer.service';
@@ -13,23 +16,23 @@ import { ResumeReadParseUploadService } from '../../candidate-sourcing/services/
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
 import {
-    LinkedInSearchConfig,
-    LinkedInSearchResponse,
-    LinkedInSearchResult
+  LinkedInSearchConfig,
+  LinkedInSearchResponse,
+  LinkedInSearchResult
 } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import {
-    ClassicPeopleSearchStrategyResult,
-    GeneratedSearchParameters,
-    ParsedJobDescription,
-    RecruiterPeopleSearchStrategyResult,
-    ResultValidationResult,
-    SalesNavigatorPeopleSearchStrategyResult
+  ClassicPeopleSearchStrategyResult,
+  GeneratedSearchParameters,
+  ParsedJobDescription,
+  RecruiterPeopleSearchStrategyResult,
+  ResultValidationResult,
+  SalesNavigatorPeopleSearchStrategyResult
 } from '../types/candidate-search-request.type';
 import {
-    FileUtils,
-    LinkedinParameterResolver,
-    ParameterSanitizer
+  FileUtils,
+  LinkedinParameterResolver,
+  ParameterSanitizer
 } from '../utils';
 import { CandidateScoringService } from './candidate-scoring.service';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
@@ -162,7 +165,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
       apiToken,
       executionOptions,
       async (sessionExecutionOptions) => {
-        const pageLimit = getLinkedInUnipileSearchPageLimit(searchType);
+        const pageLimit = getLinkedInUnipileEstimateProbePageLimit();
         let strategyResolvedParams: GeneratedSearchParameters = {
           [parameterKey]: strategy.parameters,
         } as GeneratedSearchParameters;

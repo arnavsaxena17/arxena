@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { lookupCountryByIp } from 'src/engine/core-modules/geo/utils/lookup-country-by-ip.util';
+import { lookupCountryByIp } from 'twenty-shared';
 
 @Injectable()
 export class IpInfoGeoService {

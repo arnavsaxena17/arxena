@@ -1,3 +1,5 @@
+import { invalidateUnipileLinkedinSnapshotCache } from './unipile-linkedin-snapshot.cache';
+
 type UnipileAccountsListResponse = {
   items?: Record<string, unknown>[];
 };
@@ -27,6 +29,18 @@ export const shouldInvalidateUnipileAccountsListCache = (
 
 export const invalidateUnipileAccountsListCache = (): void => {
   cachedList = null;
+  inFlightFetch = null;
+  invalidateUnipileLinkedinSnapshotCache();
+};
+
+export const seedUnipileAccountsListCache = (
+  response: UnipileAccountsListResponse,
+  ttlMs: number = UNIPILE_ACCOUNTS_LIST_CACHE_TTL_MS,
+): void => {
+  cachedList = {
+    response,
+    expiresAt: Date.now() + ttlMs,
+  };
   inFlightFetch = null;
 };
 

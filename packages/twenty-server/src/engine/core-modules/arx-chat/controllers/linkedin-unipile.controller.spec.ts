@@ -357,7 +357,7 @@ describe('LinkedinUnipileController', () => {
       {
         workspaceMemberId: 'member-id',
         headers: { authorization: 'Bearer auth-token' },
-      },
+      } as never,
     );
 
     expect(
@@ -399,7 +399,7 @@ describe('LinkedinUnipileController', () => {
         {
           workspaceMemberId: 'member-id',
           headers: { authorization: 'Bearer auth-token' },
-        },
+        } as never,
       ),
     ).rejects.toMatchObject({
       status: HttpStatus.NOT_FOUND,

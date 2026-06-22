@@ -98,7 +98,12 @@ const normalizeAttachments = (
     attachment_id: attachment.attachment_id || attachment.id,
     attachment_type: attachment.attachment_type || attachment.type || 'unknown',
     attachment_url: attachment.attachment_url || attachment.url || null,
-    attachment_size: attachment.attachment_size || attachment.size || null,
+    attachment_size:
+      typeof attachment.attachment_size === 'number'
+        ? attachment.attachment_size
+        : typeof attachment.size === 'number'
+          ? attachment.size
+          : null,
   }));
 };
 

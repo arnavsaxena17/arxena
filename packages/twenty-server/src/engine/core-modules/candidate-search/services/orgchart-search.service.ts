@@ -16,37 +16,37 @@ import { PythonOrgChartService } from 'src/engine/core-modules/org-chart/service
 import type { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
 import { mergeOrgChartCompanyTenureOntoOrgChartData } from 'src/engine/core-modules/org-chart/utils/merge-orgchart-company-tenure.util';
 import {
-    applyApolloOnlyNodeLockState,
-    assignApolloPublicSlugToAllPersonSlots,
-    backfillUnmappedLinkedInSlotsWithApolloSlug,
-    mergeContactAvailabilityOntoOrgChartData,
-    mergeContactAvailabilityOntoOrgChartDataByPersonId,
-    mergeProfileSourceSlugsOntoOrgChartData,
-    normalizeOrgChartLinkedinUrlKey,
-    ORGCHART_DATA_SOURCE_SLUG_APOLLO,
-    readProviderContactHintsFromSearchRow,
-    type OrgChartNodeContactAvailability,
+  applyApolloOnlyNodeLockState,
+  assignApolloPublicSlugToAllPersonSlots,
+  backfillUnmappedLinkedInSlotsWithApolloSlug,
+  mergeContactAvailabilityOntoOrgChartData,
+  mergeContactAvailabilityOntoOrgChartDataByPersonId,
+  mergeProfileSourceSlugsOntoOrgChartData,
+  normalizeOrgChartLinkedinUrlKey,
+  ORGCHART_DATA_SOURCE_SLUG_APOLLO,
+  readProviderContactHintsFromSearchRow,
+  type OrgChartNodeContactAvailability,
 } from 'src/engine/core-modules/org-chart/utils/merge-orgchart-profile-source-slugs.util';
 import {
-    filterOrgChartCandidatesByCountryAndFunctionRoot,
-    hasMeaningfulOrgChartFunctionRootFilter,
+  filterOrgChartCandidatesByCountryAndFunctionRoot,
+  hasMeaningfulOrgChartFunctionRootFilter,
 } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import {
-    computeOrgChartLinkedInMaxPages,
-    computeOrgChartLinkedInSearchPlan,
-    getOrgChartLinkedInMaxCandidates,
-    hasOrgChartLinkedInSubsetScopeFilter,
+  computeOrgChartLinkedInMaxPages,
+  computeOrgChartLinkedInSearchPlan,
+  getOrgChartLinkedInMaxCandidates,
+  hasOrgChartLinkedInSubsetScopeFilter,
 } from 'src/engine/core-modules/org-chart/utils/orgchart-linkedin-scope.util';
 import { filterOrgChartCandidatesByNodeStdLabels } from 'src/engine/core-modules/org-chart/utils/orgchart-node-scope-filter.util';
 import {
-    normalizeCountry,
-    normalizeFunctionRoot,
+  normalizeCountry,
+  normalizeFunctionRoot,
 } from 'src/engine/core-modules/org-chart/utils/orgchart-normalization.util';
 import { OrgChartData } from 'twenty-shared';
 import {
-    applyAsOfSnapshotToCandidates,
-    applyEntireCompanyExperienceTitlesToCandidates,
-    companyTenureFromDerivedExperience,
+  applyAsOfSnapshotToCandidates,
+  applyEntireCompanyExperienceTitlesToCandidates,
+  companyTenureFromDerivedExperience,
 } from '../../org-chart/utils/orgchart-asof-snapshot.util';
 import { extractLinkedinProfileUrlFromOrgChartCandidateRow } from '../../org-chart/utils/orgchart-candidate-linkedin-url.util';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
@@ -57,8 +57,8 @@ import { constructSearchParamKey } from '../utils/search-parameter.utils';
 import { buildTitleTaxonomyResolvedIntent } from '../utils/title-taxonomy-resolved-intent.util';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
 import {
-    OrgchartLinkedInQueryRouterService,
-    type OrgchartQueryGeneratorPreference,
+  OrgchartLinkedInQueryRouterService,
+  type OrgchartQueryGeneratorPreference,
 } from './orgchart-linkedin-query-router.service';
 import { SearchExecutionService } from './search-execution.service';
 
@@ -161,6 +161,10 @@ export class OrgChartSearchService {
       linkedinLocationId?: string;
       linkedinLocationName?: string;
       linkedinCompanyParameterId?: string;
+      /** Pre-computed boolean keyword clause (e.g. super-impose mergedSearchClause). */
+      linkedinKeywords?: string;
+      /** When true, counts as a LinkedIn subset scope filter for threshold gating. */
+      leadershipOnly?: boolean;
     },
   ): Promise<{
     items: unknown[];
@@ -295,12 +299,14 @@ export class OrgChartSearchService {
     const hasAdditionalFilters =
       !!country ||
       hasMeaningfulOrgChartFunctionRootFilter(functionRoot) ||
-      !!linkedinLocationId;
+      !!linkedinLocationId ||
+      options?.leadershipOnly === true;
 
     const hasSubsetScopeFilters = hasOrgChartLinkedInSubsetScopeFilter(
       country,
       functionRoot,
       linkedinLocationId,
+      options?.leadershipOnly,
     );
 
     const isAllPeopleInCompanyMode =
@@ -407,6 +413,7 @@ export class OrgChartSearchService {
                 },
               ]
             : undefined,
+          linkedinKeywords: options?.linkedinKeywords,
         },
       );
     const strategies = routerOutcome.strategies;
@@ -550,6 +557,7 @@ export class OrgChartSearchService {
             country,
             functionRoot,
             linkedinLocationId,
+            leadershipOnly: options?.leadershipOnly,
             maxCandidates: linkedInExecutionOptions.maxCandidates,
           });
           await emitProgress('searchPlan', {
@@ -559,7 +567,7 @@ export class OrgChartSearchService {
           });
           if (searchPlan.scopeRequired) {
             throw new OrgChartLinkedInScopeRequiredError(
-              `LinkedIn reports ~${searchPlan.estimatedTotalUpperBound.toLocaleString()} matches. Select a country or function to narrow the search (limit ${searchPlan.threshold}).`,
+              `LinkedIn reports ~${searchPlan.estimatedTotalUpperBound.toLocaleString()} matches. Select a country, function, or leadership filter to narrow the search (limit ${searchPlan.threshold}).`,
               {
                 totalCount: searchPlan.estimatedTotalUpperBound,
                 threshold: searchPlan.threshold,
@@ -726,6 +734,9 @@ export class OrgChartSearchService {
       linkedinLocationId?: string;
       linkedinLocationName?: string;
       linkedinCompanyParameterId?: string;
+      /** Pre-computed boolean keyword clause (e.g. super-impose mergedSearchClause). */
+      linkedinKeywords?: string;
+      leadershipOnly?: boolean;
     },
   ): Promise<{
     estimatedTotal: number;
@@ -836,6 +847,7 @@ export class OrgChartSearchService {
                 },
               ]
             : undefined,
+          linkedinKeywords: options?.linkedinKeywords,
         },
       );
 
@@ -907,6 +919,7 @@ export class OrgChartSearchService {
       country,
       functionRoot,
       linkedinLocationId,
+      leadershipOnly: options?.leadershipOnly,
       maxCandidates,
     });
 

@@ -21,6 +21,7 @@ export type OrgchartSuperImposeBuildJobData = {
   country?: string;
   functionRoot?: string;
   businessDivisionRawQuery?: string;
+  leadershipOnly?: boolean;
   candidateSource: 'harvest' | 'unipile';
   linkedinLocationId?: string;
   linkedinLocationName?: string;

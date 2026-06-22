@@ -1,5 +1,5 @@
 import { normalizeLinkedinConnectionIp } from 'src/engine/core-modules/arx-chat/utils/build-unipile-linkedin-cookie-connect-body.util';
-import { isPrivateOrLocalLinkedinConnectionIp } from 'src/engine/core-modules/arx-chat/utils/resolve-linkedin-country-from-ip.util';
+import { isPrivateOrLocalClientIp } from 'twenty-shared';
 
 export const resolveLinkedinSyncClientIp = (args: {
   serverIp?: string | null;
@@ -11,7 +11,7 @@ export const resolveLinkedinSyncClientIp = (args: {
   ].filter((ip): ip is string => Boolean(ip));
 
   for (const ip of candidates) {
-    if (!isPrivateOrLocalLinkedinConnectionIp(ip)) {
+    if (!isPrivateOrLocalClientIp(ip)) {
       return ip;
     }
   }

@@ -25,13 +25,13 @@ import {
 } from 'twenty-shared';
 
 import { normalizeLinkedinConnectionCountry } from 'src/engine/core-modules/arx-chat/utils/build-unipile-linkedin-cookie-connect-body.util';
-import { resolveLinkedinCountryFromIp } from 'src/engine/core-modules/arx-chat/utils/resolve-linkedin-country-from-ip.util';
 import {
   extractLinkedinProfileUrlFromUnipileAccount,
   extractWhatsappPhoneFromUnipileAccount,
 } from 'src/engine/core-modules/arx-chat/utils/unipile-account-member-profile-fields.util';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { lookupCountryByIp } from 'twenty-shared';
 
 type UnipileAccountType = 'linkedin' | 'whatsapp';
 
@@ -247,7 +247,7 @@ export class WorkspaceMemberProfileUnipileService {
     let linkedinCountryToPersist = tokens.linkedinCountry;
     if (tokens.linkedinIp !== undefined && tokens.linkedinCountry === undefined) {
       linkedinCountryToPersist = tokens.linkedinIp
-        ? ((await resolveLinkedinCountryFromIp(tokens.linkedinIp)) ?? null)
+        ? ((await lookupCountryByIp(tokens.linkedinIp)) ?? null)
         : null;
     }
 

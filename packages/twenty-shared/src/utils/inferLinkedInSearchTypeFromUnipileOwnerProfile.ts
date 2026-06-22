@@ -7,6 +7,7 @@ export type UnipileLinkedinProductSeat = {
 
 /** Shape of Unipile `GET /api/v1/users/me` for LinkedIn accounts. */
 export type UnipileAccountOwnerProfile = {
+  public_identifier?: string;
   sales_navigator?: UnipileLinkedinProductSeat | null;
   recruiter?: UnipileLinkedinProductSeat | null;
 };

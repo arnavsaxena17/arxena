@@ -1249,6 +1249,7 @@ export const useOrgChartActions = ({
     country?: string;
     functionRoot?: string;
     businessDivisionRawQuery?: string;
+    leadershipOnly?: boolean;
     multiSource?: boolean;
     sources?: string[];
     candidateSourceOverride?: string;
@@ -1638,6 +1639,7 @@ export const useOrgChartActions = ({
         ? { linkedinUnipileAccountId: linkedinUnipileAccountId.trim() }
         : {}),
       ...(divisionRaw ? { businessDivisionRawQuery: divisionRaw } : {}),
+      ...(params.leadershipOnly ? { leadershipOnly: true } : {}),
       queryGenerator: orgChartQueryGeneratorPreference,
       ...(stdFunctionForCurrentNode
         ? { stdFunction: stdFunctionForCurrentNode }

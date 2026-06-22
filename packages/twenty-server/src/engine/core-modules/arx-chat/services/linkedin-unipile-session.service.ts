@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { lookupCountryByIp } from 'twenty-shared';
 import { EnvironmentService } from '../../environment/environment.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
-import { resolveLinkedinCountryFromIp } from '../utils/resolve-linkedin-country-from-ip.util';
 import { LinkedinUnipileMemberAccountResolverService } from './linkedin-unipile-member-account-resolver.service';
 import { LinkedinUnipileRequestService } from './linkedin-unipile-request.service';
 import { LinkedinUnipileTeardownSchedulerService } from './linkedin-unipile-teardown-scheduler.service';
@@ -192,7 +192,7 @@ export class LinkedinUnipileSessionService {
     const storedCountry =
       storedCookies.linkedinCountry ??
       (storedCookies.linkedinIp
-        ? (await resolveLinkedinCountryFromIp(storedCookies.linkedinIp)) ??
+        ? (await lookupCountryByIp(storedCookies.linkedinIp)) ??
           undefined
         : undefined);
 

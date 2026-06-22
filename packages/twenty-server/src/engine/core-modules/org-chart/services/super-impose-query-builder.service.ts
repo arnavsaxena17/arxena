@@ -9,6 +9,7 @@ import type {
     SuperImposeResolvedCompany,
 } from 'src/engine/core-modules/org-chart/types/super-impose.types';
 import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
+import { hasOrgChartLinkedInLeadershipOnlyFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-linkedin-scope.util';
 import {
     resolveHarvestFunctionIdsForFunctionRoot,
     resolveHarvestLocationForCountry,
@@ -16,7 +17,7 @@ import {
 import { resolveSuperImposeCompanySearchNames } from 'src/engine/core-modules/org-chart/utils/super-impose-input-resolver.util';
 import {
     andMergeBooleanSearchClauses,
-    wrapJobTitleAsOrClause,
+    extractKeywordsClauseFromGeneratedSearchParameters,
 } from 'src/engine/core-modules/org-chart/utils/super-impose-keyword-merge.util';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -27,6 +28,7 @@ export type BuildSuperImposeQueryPlanInput = {
   businessDivisionRawQuery?: string;
   country?: string;
   functionRoot?: string;
+  leadershipOnly?: boolean;
   candidateSource: 'harvest' | 'unipile';
   searchType?: 'classic' | 'sales_navigator' | 'recruiter';
   primaryCompanyName: string;
@@ -64,7 +66,8 @@ export class SuperImposeQueryBuilderService {
       (effectiveCountry?.trim() &&
         effectiveCountry.trim().toLowerCase() !== 'global') ||
       !!linkedinLocationId ||
-      hasMeaningfulOrgChartFunctionRootFilter(input.functionRoot);
+      hasMeaningfulOrgChartFunctionRootFilter(input.functionRoot) ||
+      hasOrgChartLinkedInLeadershipOnlyFilter(input.leadershipOnly);
     const mode = hasScopeFilter ? 'function_grade' : 'entire_company';
 
     const mergedSearchClause = await this.buildMergedSearchClause({
@@ -134,6 +137,7 @@ export class SuperImposeQueryBuilderService {
       sessionId,
       country: effectiveCountry,
       functionRoot: input.functionRoot,
+      leadershipOnly: input.leadershipOnly,
       linkedinLocationId,
       linkedinLocationName,
       linkedinCompanyParameterId,
@@ -144,6 +148,7 @@ export class SuperImposeQueryBuilderService {
 
   private async buildMergedSearchClause(input: {
     functionRoot?: string;
+    leadershipOnly?: boolean;
     linkedinSearchKeywords?: string;
     businessDivisionRawQuery?: string;
     primaryCompanyName: string;
@@ -166,30 +171,36 @@ export class SuperImposeQueryBuilderService {
             input.searchType,
             `Function root search for ${input.primaryCompanyName}`,
           );
-        const classicKeywords =
-          generated.classicPeopleSearch?.keywords?.trim() ||
-          undefined;
-        const strategyKeywords =
-          generated.salesNavigatorPeopleSearchStrategies?.[0]?.parameters
-            ?.keywords;
-        const salesNavKeywords =
-          typeof strategyKeywords === 'string'
-            ? strategyKeywords.trim()
-            : undefined;
-        const classicPeopleSearch = generated.classicPeopleSearch as
-          | { job_title?: string }
-          | undefined;
-        const jobTitleClause = wrapJobTitleAsOrClause(
-          classicPeopleSearch?.job_title ??
-            generated.salesNavigatorPeopleSearchStrategies?.[0]?.parameters
-              ?.role?.include?.[0] ??
-            null,
-        );
         functionRootClause =
-          classicKeywords || salesNavKeywords || jobTitleClause;
+          extractKeywordsClauseFromGeneratedSearchParameters(generated);
       } catch (error) {
         this.logger.warn(
           `Super impose function-root keyword generation failed: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
+
+    let leadershipClause: string | undefined;
+    if (input.leadershipOnly) {
+      try {
+        const generated =
+          await this.pythonQueryGenerationService.generateSearchParameters(
+            {
+              grades: [{ name: 'leadership', exclude: false }],
+              company_names: input.primaryCompanyName
+                ? [input.primaryCompanyName]
+                : [],
+            },
+            input.searchType,
+            `Leadership search for ${input.primaryCompanyName}`,
+          );
+        leadershipClause =
+          extractKeywordsClauseFromGeneratedSearchParameters(generated);
+      } catch (error) {
+        this.logger.warn(
+          `Super impose leadership keyword generation failed: ${
             error instanceof Error ? error.message : String(error)
           }`,
         );
@@ -227,6 +238,7 @@ export class SuperImposeQueryBuilderService {
 
     return andMergeBooleanSearchClauses([
       functionRootClause,
+      leadershipClause,
       businessDivisionClause,
       input.linkedinSearchKeywords?.trim(),
     ]);

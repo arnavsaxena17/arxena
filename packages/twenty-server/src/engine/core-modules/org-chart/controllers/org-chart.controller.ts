@@ -2729,6 +2729,7 @@ export class OrgChartController {
       country?: string;
       functionRoot?: string;
       businessDivisionRawQuery?: string;
+      leadershipOnly?: boolean;
       candidateSource: 'harvest' | 'unipile';
       companyId?: string;
       companyName?: string;
@@ -2785,6 +2786,7 @@ export class OrgChartController {
           body.country,
         functionRoot: body.functionRoot,
         businessDivisionRawQuery: body.businessDivisionRawQuery,
+        leadershipOnly: body.leadershipOnly,
         linkedinSearchKeywords: body.superImpose.linkedinSearchKeywords,
         candidateSource,
         searchType: body.searchType,

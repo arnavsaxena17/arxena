@@ -1,3 +1,5 @@
+import type { GeneratedSearchParameters } from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
+
 export const andMergeBooleanSearchClauses = (
   clauses: Array<string | null | undefined>,
 ): string | undefined => {
@@ -40,4 +42,26 @@ export const wrapJobTitleAsOrClause = (jobTitle: string | null | undefined): str
   }
 
   return terms.join(' OR ');
+};
+
+export const extractKeywordsClauseFromGeneratedSearchParameters = (
+  generated: GeneratedSearchParameters,
+): string | undefined => {
+  const classicKeywords =
+    generated.classicPeopleSearch?.keywords?.trim() || undefined;
+  const strategyKeywords =
+    generated.salesNavigatorPeopleSearchStrategies?.[0]?.parameters?.keywords;
+  const salesNavKeywords =
+    typeof strategyKeywords === 'string' ? strategyKeywords.trim() : undefined;
+  const classicPeopleSearch = generated.classicPeopleSearch as
+    | { job_title?: string }
+    | undefined;
+  const jobTitleClause = wrapJobTitleAsOrClause(
+    classicPeopleSearch?.job_title ??
+      generated.salesNavigatorPeopleSearchStrategies?.[0]?.parameters?.role
+        ?.include?.[0] ??
+      null,
+  );
+
+  return classicKeywords || salesNavKeywords || jobTitleClause;
 };

@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 
 import { Request } from 'express';
+import { getCountryCodeFromCdnHeaders } from 'twenty-shared';
 
 import { SerpCompanySearchService } from 'src/engine/core-modules/linkedin-company-search/services/linkedin-company-search.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
@@ -81,26 +82,9 @@ export class SerpCompanySearchController {
   }
 
   private extractCountryFromRequest(req: Request): string {
-    const headersToTry = [
-      'cloudfront-viewer-country',
-      'cf-ipcountry',
-      'x-vercel-ip-country',
-      'x-country-code',
-    ];
-
-    for (const headerName of headersToTry) {
-      const value = req.headers[headerName];
-      const normalized =
-        typeof value === 'string'
-          ? value.trim()
-          : (Array.isArray(value) && value.length > 0 && typeof value[0] === 'string'
-              ? value[0].trim()
-              : '');
-      if (normalized) {
-        return normalized;
-      }
-    }
-
-    return 'IN';
+    return (
+      getCountryCodeFromCdnHeaders((headerName) => req.headers[headerName])
+        ?.countryCode ?? 'IN'
+    );
   }
 }

@@ -1,5 +1,5 @@
 import { type ClientGeoSession } from './clientGeoSession.types';
-import { resolveClientIpinfoToken } from './resolveClientIpinfoToken';
+import { resolveIpinfoToken } from './resolveIpinfoToken';
 
 const IPINFO_JSON_URL = 'https://ipinfo.io/json';
 const FETCH_TIMEOUT_MS = 5_000;
@@ -38,7 +38,7 @@ const normalizeOptionalString = (value?: string): string | null => {
 
 export const fetchClientGeoFromIpinfo = async (): Promise<ClientGeoSession> => {
   try {
-    const token = resolveClientIpinfoToken();
+    const token = resolveIpinfoToken();
     const url = token
       ? `${IPINFO_JSON_URL}?token=${encodeURIComponent(token)}`
       : IPINFO_JSON_URL;
