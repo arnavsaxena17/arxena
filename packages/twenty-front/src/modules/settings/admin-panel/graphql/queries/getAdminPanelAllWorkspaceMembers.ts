@@ -30,6 +30,13 @@ export const GET_ADMIN_PANEL_ALL_WORKSPACE_MEMBERS = gql`
         companyDescription
         typeWorkspaceMember
         chromeExtensionId
+        extensionInstalled
+        linkedinCookiesStored
+        linkedinLiAStored
+        linkedinCookiesLastSyncedAt
+        linkedinCookiesValidatedAt
+        linkedinIp
+        linkedinCountry
       }
     }
   }

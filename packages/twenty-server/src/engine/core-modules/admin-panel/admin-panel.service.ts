@@ -5,6 +5,7 @@ import { DataSource, IsNull, Repository } from 'typeorm';
 
 import { AdminPanelWorkspaceMemberRecruiterProfile } from 'src/engine/core-modules/admin-panel/dtos/admin-panel-workspace-member-recruiter-profile.output';
 import { AdminPanelWorkspaceMemberRow } from 'src/engine/core-modules/admin-panel/dtos/admin-panel-workspace-member-row.output';
+import { AdminValidateMemberLinkedinStoredCookiesOutput } from 'src/engine/core-modules/admin-panel/dtos/admin-validate-member-linkedin-stored-cookies.output';
 import { EnvironmentVariable } from 'src/engine/core-modules/admin-panel/dtos/environment-variable.dto';
 import { EnvironmentVariablesGroupData } from 'src/engine/core-modules/admin-panel/dtos/environment-variables-group.dto';
 import { EnvironmentVariablesOutput } from 'src/engine/core-modules/admin-panel/dtos/environment-variables.output';
@@ -13,6 +14,7 @@ import {
     AuthException,
     AuthExceptionCode,
 } from 'src/engine/core-modules/auth/auth.exception';
+import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { LoginTokenService } from 'src/engine/core-modules/auth/token/services/login-token.service';
 import { DomainManagerService } from 'src/engine/core-modules/domain-manager/services/domain-manager.service';
 import { ENVIRONMENT_VARIABLES_GROUP_METADATA } from 'src/engine/core-modules/environment/constants/environment-variables-group-metadata';
@@ -30,6 +32,8 @@ import { userValidator } from 'src/engine/core-modules/user/user.validate';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { workspaceValidator } from 'src/engine/core-modules/workspace/workspace.validate';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
+
+import { LinkedinStoredCookieValidationService } from 'src/engine/core-modules/arx-chat/services/linkedin-stored-cookie-validation.service';
 
 const pickStringFromRow = (
   row: Record<string, unknown>,
@@ -65,10 +69,21 @@ const pickBooleanFromRow = (
   return null;
 };
 
+const hasNonEmptyStringRowValue = (
+  row: Record<string, unknown>,
+  key: string,
+): boolean => {
+  const value = pickStringFromRow(row, key);
+
+  return Boolean(value?.trim());
+};
+
 @Injectable()
 export class AdminPanelService {
   constructor(
     private readonly loginTokenService: LoginTokenService,
+    private readonly accessTokenService: AccessTokenService,
+    private readonly linkedinStoredCookieValidationService: LinkedinStoredCookieValidationService,
     private readonly environmentService: EnvironmentService,
     private readonly domainManagerService: DomainManagerService,
     @InjectRepository(User, 'core')
@@ -293,6 +308,19 @@ export class AdminPanelService {
       companyDescription: pickStringFromRow(row, 'companyDescription'),
       typeWorkspaceMember: pickStringFromRow(row, 'typeWorkspaceMember'),
       chromeExtensionId: pickStringFromRow(row, 'chromeExtensionId'),
+      extensionInstalled: hasNonEmptyStringRowValue(row, 'chromeExtensionId'),
+      linkedinCookiesStored: hasNonEmptyStringRowValue(row, 'linkedinLiAtToken'),
+      linkedinLiAStored: hasNonEmptyStringRowValue(row, 'linkedinLiAToken'),
+      linkedinCookiesLastSyncedAt: pickStringFromRow(
+        row,
+        'linkedinCookiesLastSyncedAt',
+      ),
+      linkedinCookiesValidatedAt: pickStringFromRow(
+        row,
+        'linkedinCookiesValidatedAt',
+      ),
+      linkedinIp: pickStringFromRow(row, 'linkedinIp'),
+      linkedinCountry: pickStringFromRow(row, 'linkedinCountry'),
     };
   }
 
@@ -335,6 +363,13 @@ export class AdminPanelService {
           companyDescription: null,
           typeWorkspaceMember: null,
           chromeExtensionId: null,
+          extensionInstalled: false,
+          linkedinCookiesStored: false,
+          linkedinLiAStored: false,
+          linkedinCookiesLastSyncedAt: null,
+          linkedinCookiesValidatedAt: null,
+          linkedinIp: null,
+          linkedinCountry: null,
         };
       }
 
@@ -362,6 +397,13 @@ export class AdminPanelService {
           companyDescription: null,
           typeWorkspaceMember: null,
           chromeExtensionId: null,
+          extensionInstalled: false,
+          linkedinCookiesStored: false,
+          linkedinLiAStored: false,
+          linkedinCookiesLastSyncedAt: null,
+          linkedinCookiesValidatedAt: null,
+          linkedinIp: null,
+          linkedinCountry: null,
         };
       }
 
@@ -379,6 +421,81 @@ export class AdminPanelService {
 
       return null;
     }
+  }
+
+  async validateMemberLinkedinStoredCookies(
+    workspaceId: string,
+    workspaceMemberId: string,
+  ): Promise<AdminValidateMemberLinkedinStoredCookiesOutput> {
+    const workspace = await this.workspaceRepository.findOne({
+      where: { id: workspaceId, deletedAt: IsNull() },
+    });
+
+    workspaceValidator.assertIsDefinedOrThrow(
+      workspace,
+      new AuthException('Workspace not found', AuthExceptionCode.INVALID_INPUT),
+    );
+
+    const schema = this.workspaceDataSourceService.getSchemaName(workspaceId);
+    const memberRows = await this.workspaceDataSourceService.executeRawQuery(
+      `SELECT id, "userId" FROM ${schema}."workspaceMember" WHERE id = $1 LIMIT 1`,
+      [workspaceMemberId],
+      workspaceId,
+    );
+
+    if (!memberRows?.length) {
+      throw new AuthException(
+        'Workspace member not found',
+        AuthExceptionCode.INVALID_INPUT,
+      );
+    }
+
+    const memberRow = memberRows[0] as { id: string; userId: string };
+    const userId = String(memberRow.userId);
+    const authTokenPair = await this.accessTokenService.generateAccessToken(
+      userId,
+      workspaceId,
+    );
+
+    const authContext = await this.accessTokenService.validateToken(
+      authTokenPair.token,
+    );
+
+    if (authContext.workspaceMemberId !== workspaceMemberId) {
+      throw new AuthException(
+        'Workspace member mismatch for generated access token',
+        AuthExceptionCode.INVALID_INPUT,
+      );
+    }
+
+    const result =
+      await this.linkedinStoredCookieValidationService.validateStoredCookiesForMember(
+        {
+          workspace,
+          workspaceMemberId,
+          authToken: authTokenPair.token,
+          audience: 'admin',
+          forceDisconnectAfterValidation: true,
+          logContext: 'admin panel LinkedIn cookie validation',
+        },
+      );
+
+    return {
+      attempted: result.attempted,
+      connected: result.connected,
+      disconnectedAfterValidation: result.disconnectedAfterValidation,
+      keepConnected: result.keepConnected,
+      hasLiAt: result.hasLiAt,
+      hasLiA: result.hasLiA,
+      lastSyncedAt: result.lastSyncedAt,
+      lastValidatedAt: result.lastValidatedAt,
+      message: result.message,
+      errorCode: result.errorCode,
+      reconnectAttempted: result.reconnectAttempted,
+      reconnectSucceeded: result.reconnectSucceeded,
+      accountId: result.accountId,
+      accountStatus: result.accountStatus,
+    };
   }
 
   async updateWorkspaceFeatureFlags(

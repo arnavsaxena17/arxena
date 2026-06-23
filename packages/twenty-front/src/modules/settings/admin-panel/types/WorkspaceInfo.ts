@@ -17,6 +17,13 @@ export type AdminPanelWorkspaceMemberRecruiterProfile = {
   companyDescription?: string | null;
   typeWorkspaceMember?: string | null;
   chromeExtensionId?: string | null;
+  extensionInstalled?: boolean | null;
+  linkedinCookiesStored?: boolean | null;
+  linkedinLiAStored?: boolean | null;
+  linkedinCookiesLastSyncedAt?: string | null;
+  linkedinCookiesValidatedAt?: string | null;
+  linkedinIp?: string | null;
+  linkedinCountry?: string | null;
 };
 
 export type WorkspaceInfo = {

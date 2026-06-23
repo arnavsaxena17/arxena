@@ -1,8 +1,9 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TerminusModule } from '@nestjs/terminus';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
+import { UnipilePoolModule } from 'src/engine/core-modules/arx-chat/unipile-pool.module';
 import { OrgChartClientIpModule } from 'src/engine/core-modules/org-chart/org-chart-client-ip.module';
 
 import { AdminPanelHealthService } from 'src/engine/core-modules/admin-panel/admin-panel-health.service';
@@ -21,6 +22,7 @@ import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/works
 @Module({
   imports: [
     OrgChartClientIpModule,
+    forwardRef(() => UnipilePoolModule),
     TypeORMModule,
     WorkspaceDataSourceModule,
     TypeOrmModule.forFeature([User, Workspace, FeatureFlag], 'core'),

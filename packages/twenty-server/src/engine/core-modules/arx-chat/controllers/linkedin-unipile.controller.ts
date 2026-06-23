@@ -1,15 +1,15 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  HttpException,
-  HttpStatus,
-  Logger,
-  Param,
-  Post,
-  Req,
-  Res,
-  UseGuards
+    Body,
+    Controller,
+    Delete,
+    HttpException,
+    HttpStatus,
+    Logger,
+    Param,
+    Post,
+    Req,
+    Res,
+    UseGuards
 } from '@nestjs/common';
 import { Request } from 'express';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
@@ -20,16 +20,17 @@ import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import {
-  findLinkedinUnipileAccountSameIdentityForProfile,
-  isUnipileConnectedStatus,
-  linkedinBrowserUrlMatchesMemberProfile,
-  normalizeUnipileStatus,
-  shouldBlockNewUnipileConnectionForStatus,
-  type LinkedInSearchType,
-  type UnipileLinkedinAccount,
+    findLinkedinUnipileAccountSameIdentityForProfile,
+    isUnipileConnectedStatus,
+    linkedinBrowserUrlMatchesMemberProfile,
+    normalizeUnipileStatus,
+    shouldBlockNewUnipileConnectionForStatus,
+    type LinkedInSearchType,
+    type UnipileLinkedinAccount,
 } from 'twenty-shared';
 
 import { lookupCountryByIp } from 'twenty-shared';
+import { LinkedinStoredCookieValidationService } from '../services/linkedin-stored-cookie-validation.service';
 import { LinkedinUnipileMemberAccountResolverService } from '../services/linkedin-unipile-member-account-resolver.service';
 import { LinkedinUnipileRequestService } from '../services/linkedin-unipile-request.service';
 import { LinkedinUnipileMessagingService } from '../services/linkedin-unipile/linkedin-unipile-messaging.service';
@@ -38,13 +39,13 @@ import { UnipileAccountPoolService } from '../services/unipile-account-pool.serv
 import { UnipileWebhookService } from '../services/unipile-webhook.service';
 import { WorkspaceMemberProfileUnipileService } from '../services/workspace-member-profile-unipile.service';
 import type {
-  CreateWebhookDto,
-  UnipileAccountStatusWebhook,
+    CreateWebhookDto,
+    UnipileAccountStatusWebhook,
 } from '../types/unipile-webhook.types';
 import {
-  buildUnipileLinkedinCookieConnectBody,
-  normalizeLinkedinConnectionCountry,
-  normalizeLinkedinConnectionIp,
+    buildUnipileLinkedinCookieConnectBody,
+    normalizeLinkedinConnectionCountry,
+    normalizeLinkedinConnectionIp,
 } from '../utils/build-unipile-linkedin-cookie-connect-body.util';
 import { resolveLinkedinSyncClientIp } from '../utils/resolve-linkedin-sync-client-ip.util';
 
@@ -204,6 +205,7 @@ export class LinkedinUnipileController {
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
     private readonly memberLinkedinUnipileConnectionService: MemberLinkedinUnipileConnectionService,
     private readonly linkedinUnipileMemberAccountResolverService: LinkedinUnipileMemberAccountResolverService,
+    private readonly linkedinStoredCookieValidationService: LinkedinStoredCookieValidationService,
   ) {
     this.logger.log(`Unipile API URL: ${this.unipileApiUrl}`);
     this.logger.log(`Unipile Access Token configured: ${!!this.unipileAccessToken}`);
@@ -1307,16 +1309,6 @@ export class LinkedinUnipileController {
       headers?: { authorization?: string };
     },
   ) {
-    if (
-      !this.isLinkedinUnipileOnDemandEnabled() ||
-      !this.isValidateThenDisconnectEnabled()
-    ) {
-      throw new HttpException(
-        'LinkedIn validate-then-disconnect is disabled',
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
     const workspaceMemberId = request.workspaceMemberId;
     const authToken =
       request.headers?.authorization?.replace(/^Bearer\s+/i, '') ?? '';
@@ -1335,88 +1327,46 @@ export class LinkedinUnipileController {
       );
     }
 
-    const result = await this.linkedinUnipileMemberSyncCore(
-      workspace,
-      workspaceMemberId,
-      authToken,
-      request,
-      {
-        user_agent: body?.user_agent,
-        clientIp: body?.client_ip,
-        clientCountry: body?.client_country,
-        persistRequestCookieTokens: false,
-      },
-    );
-
-    const connected =
-      Boolean(result?.linkedin?.connected) ||
-      result?.linkedin?.status === 'connected' ||
-      result?.linkedin?.status === 'pending';
-    const keepConnected =
-      await this.workspaceMemberProfileUnipileService.getKeepLinkedinConnected(
-        workspaceMemberId,
-        authToken,
-      );
-
-    let disconnectedAfterValidation = false;
-
-    if (
-      connected &&
-      result?.linkedin?.accountId &&
-      !keepConnected
-    ) {
-      this.logger.log(
-        `Disconnecting LinkedIn Unipile account after cookie validation (on-demand, keepConnected=false): accountId=${result.linkedin.accountId} workspaceMemberId=${workspaceMemberId}`,
-      );
-      await this.memberLinkedinUnipileConnectionService.disconnectMemberLinkedinUnipileAccount(
+    const payload = body ?? {};
+    const validation =
+      await this.linkedinStoredCookieValidationService.validateStoredCookiesForMember(
         {
-          accountId: result.linkedin.accountId,
-          context: 'validated LinkedIn cookies in on-demand mode',
+          workspace,
           workspaceMemberId,
-          workspaceId: workspace.id,
           authToken,
-          forceClearProfile: true,
+          userAgent: payload.user_agent,
+          clientIp: payload.client_ip,
+          clientCountry: payload.client_country,
+          audience: 'extension',
+          logContext: 'extension validate-session',
         },
-      );
-      disconnectedAfterValidation = true;
-    }
-
-    if (connected) {
-      await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberLinkedinCookieTokens(
-        authToken,
-        workspaceMemberId,
-        {},
-        { touchLastValidatedAt: true },
-      );
-    }
-
-    const storedCookies =
-      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
-        authToken,
-        workspaceMemberId,
       );
 
     return {
-      ...result,
+      success: true,
       cookies: {
-        ...(result?.cookies ?? {}),
-        hasLiAt: Boolean(storedCookies.linkedinLiAtToken),
-        hasLiA: Boolean(storedCookies.linkedinLiAToken),
-        lastSyncedAt: storedCookies.linkedinCookiesLastSyncedAt,
-        lastValidatedAt: storedCookies.linkedinCookiesValidatedAt,
-      },
-      validate: {
-        attempted: true,
-        connected,
-        keepConnected,
-        disconnectedAfterValidation,
+        hasLiAt: validation.hasLiAt,
+        hasLiA: validation.hasLiA,
+        lastSyncedAt: validation.lastSyncedAt,
+        lastValidatedAt: validation.lastValidatedAt,
       },
       linkedin: {
-        ...(result?.linkedin ?? {}),
-        connected: connected && !disconnectedAfterValidation,
-        status: disconnectedAfterValidation
+        connected: validation.connected && !validation.disconnectedAfterValidation,
+        accountId: validation.accountId,
+        status: validation.disconnectedAfterValidation
           ? 'validated_disconnected'
-          : result?.linkedin?.status,
+          : validation.accountStatus ?? (validation.connected ? 'connected' : 'not_connected'),
+      },
+      reconnect: {
+        attempted: validation.reconnectAttempted,
+        succeeded: validation.reconnectSucceeded,
+        message: validation.message,
+      },
+      validate: {
+        attempted: validation.attempted,
+        connected: validation.connected,
+        keepConnected: validation.keepConnected,
+        disconnectedAfterValidation: validation.disconnectedAfterValidation,
       },
     };
   }

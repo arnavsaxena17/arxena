@@ -1,12 +1,16 @@
+import { ADMIN_VALIDATE_MEMBER_LINKEDIN_STORED_COOKIES } from '@/settings/admin-panel/graphql/mutations/adminValidateMemberLinkedinStoredCookies';
 import { GET_ADMIN_PANEL_ALL_WORKSPACE_MEMBERS } from '@/settings/admin-panel/graphql/queries/getAdminPanelAllWorkspaceMembers';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { Table } from '@/ui/layout/table/components/Table';
 import { TableCell } from '@/ui/layout/table/components/TableCell';
 import { TableHeader } from '@/ui/layout/table/components/TableHeader';
 import { TableRow } from '@/ui/layout/table/components/TableRow';
-import { useQuery } from '@apollo/client';
+import { useMutation, useQuery } from '@apollo/client';
 import styled from '@emotion/styled';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { H2Title, Section } from 'twenty-ui';
+import { useState } from 'react';
+import { Button, H2Title, Section } from 'twenty-ui';
 
 type RecruiterProfileRow = {
   workspaceMemberId?: string | null;
@@ -25,6 +29,13 @@ type RecruiterProfileRow = {
   companyDescription?: string | null;
   typeWorkspaceMember?: string | null;
   chromeExtensionId?: string | null;
+  extensionInstalled?: boolean | null;
+  linkedinCookiesStored?: boolean | null;
+  linkedinLiAStored?: boolean | null;
+  linkedinCookiesLastSyncedAt?: string | null;
+  linkedinCookiesValidatedAt?: string | null;
+  linkedinIp?: string | null;
+  linkedinCountry?: string | null;
 };
 
 export type AdminPanelWorkspaceMemberTableRow = {
@@ -45,6 +56,25 @@ type AdminPanelAllWorkspaceMembersData = {
   adminPanelAllWorkspaceMembers: AdminPanelWorkspaceMemberTableRow[];
 };
 
+type ValidateLinkedinCookiesResult = {
+  adminValidateMemberLinkedinStoredCookies: {
+    attempted: boolean;
+    connected: boolean;
+    disconnectedAfterValidation: boolean;
+    keepConnected: boolean;
+    hasLiAt: boolean;
+    hasLiA: boolean;
+    lastSyncedAt?: string | null;
+    lastValidatedAt?: string | null;
+    message?: string | null;
+    errorCode?: string | null;
+    reconnectAttempted: boolean;
+    reconnectSucceeded: boolean;
+    accountId?: string | null;
+    accountStatus?: string | null;
+  };
+};
+
 const StyledTableScroll = styled.div`
   margin-top: ${({ theme }) => theme.spacing(3)};
   overflow-x: auto;
@@ -52,7 +82,7 @@ const StyledTableScroll = styled.div`
 `;
 
 const StyledTable = styled(Table)`
-  min-width: 1400px;
+  min-width: 1800px;
   width: 100%;
 `;
 
@@ -78,29 +108,104 @@ const StyledEllipsis = styled.span`
   white-space: nowrap;
 `;
 
-const TABLE_GRID =
-  'minmax(120px, 1.1fr) minmax(88px, 0.7fr) minmax(100px, 0.85fr) minmax(160px, 1.2fr) minmax(120px, 0.95fr) minmax(100px, 0.85fr) minmax(100px, 0.85fr) minmax(200px, 1.4fr) minmax(88px, 0.65fr) minmax(140px, 1fr) minmax(100px, 0.85fr) minmax(120px, 0.95fr)';
+const StyledValidateCell = styled(StyledTableCell)`
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(1)};
+`;
 
-const formatDt = (iso: string) =>
-  new Date(iso).toLocaleString(undefined, {
+const TABLE_GRID =
+  'minmax(120px, 1.1fr) minmax(88px, 0.7fr) minmax(100px, 0.85fr) minmax(160px, 1.2fr) minmax(120px, 0.95fr) minmax(100px, 0.85fr) minmax(100px, 0.85fr) minmax(200px, 1.4fr) minmax(88px, 0.65fr) minmax(140px, 1fr) minmax(100px, 0.85fr) minmax(120px, 0.95fr) minmax(72px, 0.55fr) minmax(88px, 0.65fr) minmax(140px, 1fr) minmax(140px, 1fr) minmax(120px, 0.9fr)';
+
+const formatDt = (iso: string | null | undefined) => {
+  if (!iso?.trim()) {
+    return '—';
+  }
+
+  return new Date(iso).toLocaleString(undefined, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
   });
+};
 
 const dash = (value: string | null | undefined) =>
   value && String(value).trim().length > 0 ? String(value) : '—';
 
+const yesNo = (value: boolean | null | undefined) => {
+  if (value === true) {
+    return 'Yes';
+  }
+  if (value === false) {
+    return 'No';
+  }
+
+  return '—';
+};
+
 export const SettingsAdminUsers = () => {
   const { t } = useLingui();
-  const { data, loading, error } = useQuery<AdminPanelAllWorkspaceMembersData>(
+  const { enqueueSnackBar } = useSnackBar();
+  const [validatingKey, setValidatingKey] = useState<string | null>(null);
+
+  const { data, loading, error, refetch } = useQuery<AdminPanelAllWorkspaceMembersData>(
     GET_ADMIN_PANEL_ALL_WORKSPACE_MEMBERS,
     { fetchPolicy: 'cache-and-network' },
   );
 
+  const [validateLinkedinCookies] = useMutation<ValidateLinkedinCookiesResult>(
+    ADMIN_VALIDATE_MEMBER_LINKEDIN_STORED_COOKIES,
+  );
+
   const rows = data?.adminPanelAllWorkspaceMembers ?? [];
+
+  const handleValidateCookies = async (
+    workspaceId: string,
+    workspaceMemberId: string,
+  ) => {
+    const rowKey = `${workspaceId}-${workspaceMemberId}`;
+    setValidatingKey(rowKey);
+
+    try {
+      const { data: resultData } = await validateLinkedinCookies({
+        variables: { workspaceId, workspaceMemberId },
+      });
+      const result = resultData?.adminValidateMemberLinkedinStoredCookies;
+
+      if (!result) {
+        enqueueSnackBar(t`No response from cookie validation`, {
+          variant: SnackBarVariant.Error,
+        });
+        return;
+      }
+
+      const summary = result.connected
+        ? result.disconnectedAfterValidation
+          ? t`LinkedIn connected with stored cookies, then disconnected (validate-then-disconnect).`
+          : t`LinkedIn connected with stored cookies.`
+        : t`LinkedIn connection failed with stored cookies.`;
+
+      enqueueSnackBar(
+        `${summary} ${result.message ?? ''}`.trim(),
+        {
+          variant: result.connected
+            ? SnackBarVariant.Success
+            : SnackBarVariant.Warning,
+          duration: 8000,
+        },
+      );
+      await refetch();
+    } catch (mutationError) {
+      const message =
+        mutationError instanceof Error
+          ? mutationError.message
+          : t`Cookie validation failed`;
+      enqueueSnackBar(message, { variant: SnackBarVariant.Error, duration: 8000 });
+    } finally {
+      setValidatingKey(null);
+    }
+  };
 
   return (
     <Section>
@@ -161,7 +266,22 @@ export const SettingsAdminUsers = () => {
                 <Trans>Job / company</Trans>
               </TableHeader>
               <TableHeader>
-                <Trans>Type / Unipile / ext</Trans>
+                <Trans>Type / Unipile</Trans>
+              </TableHeader>
+              <TableHeader>
+                <Trans>Extension</Trans>
+              </TableHeader>
+              <TableHeader>
+                <Trans>Cookies</Trans>
+              </TableHeader>
+              <TableHeader>
+                <Trans>Last synced</Trans>
+              </TableHeader>
+              <TableHeader>
+                <Trans>Last validated</Trans>
+              </TableHeader>
+              <TableHeader>
+                <Trans>Test cookies</Trans>
               </TableHeader>
             </TableRow>
 
@@ -197,16 +317,33 @@ export const SettingsAdminUsers = () => {
                     .join(' · ')
                 : '—';
 
-              const typeUnipileExt = rp
+              const typeUnipile = rp
                 ? [
                     dash(rp.typeWorkspaceMember),
                     dash(rp.linkedinUnipileAccountId),
                     dash(rp.whatsappUnipileAccountId),
-                    dash(rp.chromeExtensionId),
                   ]
                     .filter((x) => x !== '—')
                     .join(' · ')
                 : '—';
+
+              const cookieSummary = rp
+                ? [
+                    rp.linkedinCookiesStored ? 'li_at' : null,
+                    rp.linkedinLiAStored ? 'li_a' : null,
+                  ]
+                    .filter(Boolean)
+                    .join(', ') || '—'
+                : '—';
+
+              const validateKey =
+                rp?.workspaceMemberId != null
+                  ? `${row.workspaceId}-${rp.workspaceMemberId}`
+                  : null;
+              const canValidate = Boolean(
+                rp?.workspaceMemberId && rp.linkedinCookiesStored,
+              );
+              const isValidating = validateKey != null && validatingKey === validateKey;
 
               return (
                 <TableRow
@@ -248,9 +385,52 @@ export const SettingsAdminUsers = () => {
                   <StyledTableCell title={jobCompany}>
                     <StyledEllipsis as="span">{jobCompany}</StyledEllipsis>
                   </StyledTableCell>
-                  <StyledTableCell title={typeUnipileExt}>
-                    <StyledEllipsis as="span">{typeUnipileExt}</StyledEllipsis>
+                  <StyledTableCell title={typeUnipile}>
+                    <StyledEllipsis as="span">{typeUnipile}</StyledEllipsis>
                   </StyledTableCell>
+                  <StyledTableCell title={rp?.chromeExtensionId ?? undefined}>
+                    {yesNo(rp?.extensionInstalled)}
+                    {rp?.chromeExtensionId ? (
+                      <>
+                        <br />
+                        <StyledMuted>{rp.chromeExtensionId.slice(0, 12)}…</StyledMuted>
+                      </>
+                    ) : null}
+                  </StyledTableCell>
+                  <StyledTableCell title={cookieSummary}>
+                    {yesNo(rp?.linkedinCookiesStored)}
+                    {cookieSummary !== '—' ? (
+                      <>
+                        <br />
+                        <StyledMuted>{cookieSummary}</StyledMuted>
+                      </>
+                    ) : null}
+                  </StyledTableCell>
+                  <StyledTableCell>
+                    {formatDt(rp?.linkedinCookiesLastSyncedAt)}
+                  </StyledTableCell>
+                  <StyledTableCell>
+                    {formatDt(rp?.linkedinCookiesValidatedAt)}
+                  </StyledTableCell>
+                  <StyledValidateCell>
+                    <Button
+                      variant="secondary"
+                      size="small"
+                      title={t`Tests stored li_at, li_a, user agent, IP, and country via Unipile, then disconnects. Requires LINKEDIN_UNIPILE_VALIDATE_THEN_DISCONNECT (not used by cookie sync).`}
+                      disabled={!canValidate || isValidating}
+                      onClick={() => {
+                        if (!rp?.workspaceMemberId) {
+                          return;
+                        }
+                        void handleValidateCookies(
+                          row.workspaceId,
+                          rp.workspaceMemberId,
+                        );
+                      }}
+                    >
+                      {isValidating ? t`Testing…` : t`Test`}
+                    </Button>
+                  </StyledValidateCell>
                 </TableRow>
               );
             })}

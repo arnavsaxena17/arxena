@@ -38,6 +38,11 @@ describe('LinkedinUnipileController', () => {
       resolveMemberLinkedinUnipileAccount: jest.fn(),
     };
 
+    const linkedinStoredCookieValidationService = {
+      assertValidateThenDisconnectEnabled: jest.fn(),
+      validateStoredCookiesForMember: jest.fn(),
+    };
+
     const controller = new LinkedinUnipileController(
       {} as never,
       {} as never,
@@ -48,6 +53,7 @@ describe('LinkedinUnipileController', () => {
       linkedinUnipileRequestService as never,
       memberLinkedinUnipileConnectionService as never,
       linkedinUnipileMemberAccountResolverService as never,
+      linkedinStoredCookieValidationService as never,
     );
 
     return {
@@ -56,6 +62,7 @@ describe('LinkedinUnipileController', () => {
       workspaceMemberProfileUnipileService,
       linkedinUnipileRequestService,
       memberLinkedinUnipileConnectionService,
+      linkedinStoredCookieValidationService,
     };
   };
 
@@ -309,45 +316,24 @@ describe('LinkedinUnipileController', () => {
   });
 
   it('validate-session disconnects the temporary Unipile account when keepLinkedinConnected is false', async () => {
-    const {
-      controller,
-      workspaceMemberProfileUnipileService,
-      memberLinkedinUnipileConnectionService,
-    } = createController();
+    const { controller, linkedinStoredCookieValidationService } = createController();
 
-    jest
-      .spyOn(
-        controller as unknown as {
-          linkedinUnipileMemberSyncCore: (
-            workspace: unknown,
-            workspaceMemberId: string,
-            authToken: string,
-            params: unknown,
-          ) => Promise<Record<string, unknown>>;
-        },
-        'linkedinUnipileMemberSyncCore',
-      )
-      .mockResolvedValue({
-        linkedin: {
-          connected: true,
-          accountId: 'unipile-account-id',
-          status: 'connected',
-        },
-        cookies: {},
-      });
-
-    workspaceMemberProfileUnipileService.getKeepLinkedinConnected.mockResolvedValue(
-      false,
-    );
-    workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens.mockResolvedValue(
+    linkedinStoredCookieValidationService.validateStoredCookiesForMember.mockResolvedValue(
       {
-        linkedinLiAtToken: 'li-at',
-        linkedinLiAToken: null,
-        linkedinUserAgent: 'UA',
-        linkedinIp: '203.0.113.10',
-        linkedinCountry: 'US',
-        linkedinCookiesLastSyncedAt: '2026-06-18T00:00:00.000Z',
-        linkedinCookiesValidatedAt: '2026-06-18T00:01:00.000Z',
+        attempted: true,
+        connected: true,
+        disconnectedAfterValidation: true,
+        keepConnected: false,
+        hasLiAt: true,
+        hasLiA: false,
+        lastSyncedAt: '2026-06-18T00:00:00.000Z',
+        lastValidatedAt: '2026-06-18T00:01:00.000Z',
+        message: 'LinkedIn connection succeeded and was disconnected after validation',
+        errorCode: null,
+        reconnectAttempted: true,
+        reconnectSucceeded: true,
+        accountId: 'unipile-account-id',
+        accountStatus: 'connected',
       },
     );
 
@@ -361,14 +347,16 @@ describe('LinkedinUnipileController', () => {
     );
 
     expect(
-      memberLinkedinUnipileConnectionService.disconnectMemberLinkedinUnipileAccount,
+      linkedinStoredCookieValidationService.validateStoredCookiesForMember,
     ).toHaveBeenCalledWith({
-      accountId: 'unipile-account-id',
-      context: 'validated LinkedIn cookies in on-demand mode',
+      workspace: { id: 'workspace-id' },
       workspaceMemberId: 'member-id',
-      workspaceId: 'workspace-id',
       authToken: 'auth-token',
-      forceClearProfile: true,
+      userAgent: 'UA',
+      clientIp: undefined,
+      clientCountry: undefined,
+      audience: 'extension',
+      logContext: 'extension validate-session',
     });
     expect(result).toMatchObject({
       validate: {
@@ -377,20 +365,23 @@ describe('LinkedinUnipileController', () => {
         keepConnected: false,
         disconnectedAfterValidation: true,
       },
+      linkedin: {
+        connected: false,
+        accountId: 'unipile-account-id',
+        status: 'validated_disconnected',
+      },
     });
   });
 
   it('validate-session returns 404 when the feature flag is disabled', async () => {
-    const { controller, environmentService } = createController();
-    environmentService.get.mockImplementation((key: string) => {
-      if (key === 'LINKEDIN_UNIPILE_ON_DEMAND') {
-        return true;
-      }
-      if (key === 'LINKEDIN_UNIPILE_VALIDATE_THEN_DISCONNECT') {
-        return false;
-      }
-      return false;
-    });
+    const { controller, linkedinStoredCookieValidationService } = createController();
+    const { HttpException } = await import('@nestjs/common');
+    linkedinStoredCookieValidationService.validateStoredCookiesForMember.mockRejectedValue(
+      new HttpException(
+        'LinkedIn validate-then-disconnect is disabled',
+        HttpStatus.NOT_FOUND,
+      ),
+    );
 
     await expect(
       controller.validateLinkedinSession(

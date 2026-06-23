@@ -6,6 +6,7 @@ import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-
 import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 
+import { LinkedinStoredCookieValidationService } from './services/linkedin-stored-cookie-validation.service';
 import { LinkedinUnipileEstimateAccountService } from './services/linkedin-unipile-estimate-account.service';
 import { LinkedinUnipileMemberAccountResolverService } from './services/linkedin-unipile-member-account-resolver.service';
 import { LinkedinUnipileRequestService } from './services/linkedin-unipile-request.service';
@@ -40,6 +41,7 @@ import { WorkspaceMemberProfileUnipileService } from './services/workspace-membe
     UnipileAccountPoolService,
     UnipileInactivityCronService,
     UnipileLinkedinSnapshotCacheCronService,
+    LinkedinStoredCookieValidationService,
   ],
   exports: [
     UnipileAccountPoolService,
@@ -50,6 +52,7 @@ import { WorkspaceMemberProfileUnipileService } from './services/workspace-membe
     LinkedinUnipileSessionService,
     LinkedinUnipileTeardownSchedulerService,
     MemberLinkedinUnipileConnectionService,
+    LinkedinStoredCookieValidationService,
   ],
 })
 export class UnipilePoolModule {}

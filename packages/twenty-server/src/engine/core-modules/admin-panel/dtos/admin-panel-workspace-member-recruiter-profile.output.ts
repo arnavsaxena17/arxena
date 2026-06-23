@@ -53,4 +53,25 @@ export class AdminPanelWorkspaceMemberRecruiterProfile {
 
   @Field(() => String, { nullable: true })
   chromeExtensionId?: string | null;
+
+  @Field(() => Boolean, { nullable: true })
+  extensionInstalled?: boolean | null;
+
+  @Field(() => Boolean, { nullable: true })
+  linkedinCookiesStored?: boolean | null;
+
+  @Field(() => Boolean, { nullable: true })
+  linkedinLiAStored?: boolean | null;
+
+  @Field(() => String, { nullable: true })
+  linkedinCookiesLastSyncedAt?: string | null;
+
+  @Field(() => String, { nullable: true })
+  linkedinCookiesValidatedAt?: string | null;
+
+  @Field(() => String, { nullable: true })
+  linkedinIp?: string | null;
+
+  @Field(() => String, { nullable: true })
+  linkedinCountry?: string | null;
 }
