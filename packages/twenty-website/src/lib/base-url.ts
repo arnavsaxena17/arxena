@@ -38,7 +38,8 @@ export async function getInternalAppUrl(): Promise<string> {
   const host = headersList.get('host');
   if (host) {
     const portPart = host.includes(':') ? host.split(':')[1] : null;
-    const port = portPart ?? process.env.PORT ?? process.env.WEBSITE_PORT ?? '3002';
+    const port =
+      portPart ?? process.env.PORT ?? process.env.WEBSITE_PORT ?? '3002';
     return `http://127.0.0.1:${port}`;
   }
 

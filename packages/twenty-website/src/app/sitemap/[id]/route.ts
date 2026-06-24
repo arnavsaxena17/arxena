@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getBaseUrl } from '@/lib/base-url';
 import {
-    buildOrgChartPath,
-    getExposedBatchCount,
-    sitemapEntryToXml,
-    STATIC_ROUTES,
+  buildOrgChartPath,
+  getExposedBatchCount,
+  sitemapEntryToXml,
+  STATIC_ROUTES,
 } from '@/lib/sitemap';
 
 export const dynamic = 'force-dynamic';

@@ -1,7 +1,7 @@
 import {
-    getOrgChartScraperCidrs,
-    isClientIpInScraperCidrs,
-    resolveOrgChartStaticOnly,
+  getOrgChartScraperCidrs,
+  isClientIpInScraperCidrs,
+  resolveOrgChartStaticOnly,
 } from '@/lib/org-chart-static-only';
 
 describe('org-chart-static-only', () => {

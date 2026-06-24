@@ -5,8 +5,7 @@ import { Mixpanel } from 'mixpanel-browser';
 let mixpanelInstance: Mixpanel | null = null;
 let isMixpanelInitialized = false;
 
-const DEFAULT_MIXPANEL_PRODUCTION_TOKEN =
-  '68bdb1eed9eee266fc652c9d5ecef47e';
+const DEFAULT_MIXPANEL_PRODUCTION_TOKEN = '68bdb1eed9eee266fc652c9d5ecef47e';
 
 const DEFAULT_MIXPANEL_DEVELOPMENT_PROJECT_TOKEN =
   '5e39ab7cf4b71a25f7cf7bb16936ec1d';
@@ -14,7 +13,8 @@ const DEFAULT_MIXPANEL_DEVELOPMENT_PROJECT_TOKEN =
 const getToken = () => {
   if (process.env.NODE_ENV === 'production') {
     return (
-      process.env.NEXT_PUBLIC_MIXPANEL_TOKEN ?? DEFAULT_MIXPANEL_PRODUCTION_TOKEN
+      process.env.NEXT_PUBLIC_MIXPANEL_TOKEN ??
+      DEFAULT_MIXPANEL_PRODUCTION_TOKEN
     );
   }
   return (

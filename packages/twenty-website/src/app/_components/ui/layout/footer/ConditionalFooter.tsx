@@ -9,7 +9,9 @@ type ConditionalFooterProps = {
   phase2Exposed?: boolean;
 };
 
-export const ConditionalFooter = ({ phase2Exposed = false }: ConditionalFooterProps) => {
+export const ConditionalFooter = ({
+  phase2Exposed = false,
+}: ConditionalFooterProps) => {
   const pathname = usePathname();
   const isOrgChart = pathname?.startsWith('/org-chart');
 

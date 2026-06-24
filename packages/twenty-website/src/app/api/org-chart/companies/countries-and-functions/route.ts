@@ -31,7 +31,10 @@ export async function GET() {
     const slices = data.slices ?? [];
 
     const countryMap = new Map<string, number>();
-    const functionMap = new Map<string, { country: string; docCount: number }>();
+    const functionMap = new Map<
+      string,
+      { country: string; docCount: number }
+    >();
 
     for (const { country, type, docCount } of slices) {
       if (country === 'global') continue;

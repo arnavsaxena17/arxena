@@ -1,7 +1,4 @@
-import {
-  isBlockedBot,
-  isDeclaredBotUserAgent,
-} from '@/lib/bot-detection';
+import { isBlockedBot, isDeclaredBotUserAgent } from '@/lib/bot-detection';
 
 describe('bot-detection', () => {
   describe('isDeclaredBotUserAgent', () => {

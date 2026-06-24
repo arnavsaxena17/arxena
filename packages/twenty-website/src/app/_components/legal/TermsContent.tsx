@@ -164,8 +164,7 @@ export const TermsContent = () => {
         If you believe that information about you that is provided through the
         Product or Services is inaccurate, false or if you wish such information
         about you to be removed, please send us a request at{' '}
-        <StyledLink href="mailto:info@arxena.com">info@arxena.com</StyledLink>
-        .
+        <StyledLink href="mailto:info@arxena.com">info@arxena.com</StyledLink>.
       </StyledParagraph>
 
       <StyledHeading>Eligibility</StyledHeading>

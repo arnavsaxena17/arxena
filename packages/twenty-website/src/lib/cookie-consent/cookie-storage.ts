@@ -1,11 +1,11 @@
 import {
-    DEFAULT_ACCEPT_ALL_CONSENT_CATEGORIES,
-    DEFAULT_REJECT_CONSENT_CATEGORIES,
-    PRIVACY_CONSENT_COOKIE_NAME,
-    PRIVACY_POLICY_VERSION,
-    type PrivacyConsentAction,
-    type PrivacyConsentCategories,
-    type PrivacyConsentCookieValue,
+  DEFAULT_ACCEPT_ALL_CONSENT_CATEGORIES,
+  DEFAULT_REJECT_CONSENT_CATEGORIES,
+  PRIVACY_CONSENT_COOKIE_NAME,
+  PRIVACY_POLICY_VERSION,
+  PrivacyConsentAction,
+  PrivacyConsentCategories,
+  PrivacyConsentCookieValue,
 } from 'twenty-shared';
 
 const CONSENT_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
@@ -25,7 +25,10 @@ const getConsentCookieDomain = (): string | undefined => {
 };
 
 export const createVisitorId = (): string => {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+  if (
+    typeof crypto !== 'undefined' &&
+    typeof crypto.randomUUID === 'function'
+  ) {
     return crypto.randomUUID();
   }
 
@@ -37,14 +40,12 @@ export const createVisitorId = (): string => {
   });
 };
 
-export const buildConsentCookieValue = (
-  input: {
-    visitorId: string;
-    action: PrivacyConsentAction;
-    categories: PrivacyConsentCategories;
-    policyVersion?: string;
-  },
-): PrivacyConsentCookieValue => ({
+export const buildConsentCookieValue = (input: {
+  visitorId: string;
+  action: PrivacyConsentAction;
+  categories: PrivacyConsentCategories;
+  policyVersion?: string;
+}): PrivacyConsentCookieValue => ({
   visitorId: input.visitorId,
   policyVersion: input.policyVersion ?? PRIVACY_POLICY_VERSION,
   categories: input.categories,

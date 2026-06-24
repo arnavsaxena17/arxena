@@ -1,10 +1,13 @@
 'use client';
 
 import {
-    SUPPORTED_PRICING_CURRENCIES,
-    type SupportedPricingCurrency,
+  SUPPORTED_PRICING_CURRENCIES,
+  SupportedPricingCurrency,
 } from '@/lib/pricing-currency-helpers';
-import { resolvePricingCurrencyFromCountryCode, getOrFetchClientGeoSession } from 'twenty-shared';
+import {
+  resolvePricingCurrencyFromCountryCode,
+  getOrFetchClientGeoSession,
+} from 'twenty-shared';
 import styled from '@emotion/styled';
 import { useEffect, useState } from 'react';
 

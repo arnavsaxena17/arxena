@@ -534,7 +534,9 @@ export const OrgChartPageClient = ({
           '/api/org-chart',
         );
         setPublishedNodeDataArray(processed.nodeDataArray);
-        setPublishedOrgData(processed.orgData as Record<string, unknown> | null);
+        setPublishedOrgData(
+          processed.orgData as Record<string, unknown> | null,
+        );
       } catch {
         if (!cancelled) {
           setPublishedNodeDataArray(nodeDataArray);
@@ -574,8 +576,7 @@ export const OrgChartPageClient = ({
         return `${year}-${month}`;
       })();
 
-      const committed =
-        !trimmed || trimmed === currentMonthKey ? '' : trimmed;
+      const committed = !trimmed || trimmed === currentMonthKey ? '' : trimmed;
       setCommittedAsOfMonth(committed);
 
       const params = new URLSearchParams(window.location.search);
@@ -589,7 +590,9 @@ export const OrgChartPageClient = ({
       const nextPath = `/org/${encodeURIComponent(publishSlug)}${query ? `?${query}` : ''}`;
       window.history.replaceState(null, '', nextPath);
 
-      trackGA4Event('org_chart_timeline', { as_of_month: trimmed || 'current' });
+      trackGA4Event('org_chart_timeline', {
+        as_of_month: trimmed || 'current',
+      });
       trackWebsiteEvent('org_chart_timeline', {
         asOfMonth: trimmed || 'current',
         publishSlug,
@@ -615,7 +618,8 @@ export const OrgChartPageClient = ({
     [website, locationName, industry, linkedinUrl],
   );
 
-  const needsCompanyInfoLookup = needsOrgChartCompanyInfoLookup(ssrCompanyMetadata);
+  const needsCompanyInfoLookup =
+    needsOrgChartCompanyInfoLookup(ssrCompanyMetadata);
 
   // Fill missing header fields via public autocomplete (PDL proxy).
   useEffect(() => {

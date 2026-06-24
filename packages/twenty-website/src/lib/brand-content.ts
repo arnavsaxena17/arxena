@@ -16,7 +16,7 @@ export const DEFAULT_SITE_DESCRIPTION =
 
 export const HOMEPAGE_HERO = {
   title: 'Org Intelligence',
-  lead: 'View & power through any company\'s org structure — hack growth via relevant, contexual meetings.',
+  lead: "View & power through any company's org structure — hack growth via relevant, contexual meetings.",
   stats:
     '10M+ live, real-time company org charts · 800M+ people profiles, contact info & engagement',
   exampleStripTitle: 'Explore a live org graph',
@@ -39,11 +39,11 @@ export const STORY_PAGE = {
   headline: 'Same effort, more of the right meetings',
   subheadline: BRAND.vision,
   paragraph1:
-    "Every rep and every recruiter has a quota of effort — calls, messages, sequences — per week. Most of that effort is spent finding out who to talk to, then talking to the wrong person anyway. Arxena flips the ratio: spend the effort on the conversation, not the org chart.",
+    'Every rep and every recruiter has a quota of effort — calls, messages, sequences — per week. Most of that effort is spent finding out who to talk to, then talking to the wrong person anyway. Arxena flips the ratio: spend the effort on the conversation, not the org chart.',
   paragraph2:
     'We fetch live org data from LinkedIn and other sources so structure, seniority, and ownership are visible before you write the first message. Map any target company, identify the actual decision-maker or hiring stakeholder, enrich their contact details, and engage on LinkedIn, WhatsApp, and email — all from one workflow.',
   scenarioExample:
-    "Two reps send 50 messages each. One sent them to whoever had the right job title. The other sent them to the person who actually owns the budget, mapped from the live org chart. Same volume, same week — very different number of meetings booked.",
+    'Two reps send 50 messages each. One sent them to whoever had the right job title. The other sent them to the person who actually owns the budget, mapped from the live org chart. Same volume, same week — very different number of meetings booked.',
 } as const;
 
 export const TEAM_PAGE = {

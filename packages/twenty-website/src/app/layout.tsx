@@ -23,12 +23,20 @@ export const metadata: Metadata = {
   description: DEFAULT_SITE_DESCRIPTION,
   icons: {
     icon: [
-      { url: '/favicon.ico/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+      {
+        url: '/favicon.ico/favicon-96x96.png',
+        sizes: '96x96',
+        type: 'image/png',
+      },
       { url: '/favicon.ico/favicon.svg', type: 'image/svg+xml' },
     ],
     shortcut: '/favicon.ico/favicon.ico',
     apple: [
-      { url: '/favicon.ico/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      {
+        url: '/favicon.ico/apple-touch-icon.png',
+        sizes: '180x180',
+        type: 'image/png',
+      },
     ],
   },
   manifest: '/favicon.ico/site.webmanifest',

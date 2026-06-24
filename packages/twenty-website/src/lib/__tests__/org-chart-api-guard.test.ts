@@ -5,8 +5,8 @@ jest.mock('twenty-shared', () => ({
 }));
 
 import {
-    checkOrgChartApiGuard,
-    resolveOrgChartRateLimitProfile,
+  checkOrgChartApiGuard,
+  resolveOrgChartRateLimitProfile,
 } from '@/lib/org-chart-api-guard';
 
 describe('org-chart-api-guard', () => {
@@ -30,9 +30,7 @@ describe('org-chart-api-guard', () => {
       resolveOrgChartRateLimitProfile('/api/org-chart/company-logo/acme'),
     ).toBeNull();
     expect(
-      resolveOrgChartRateLimitProfile(
-        `/api/avatars/${'a'.repeat(64)}`,
-      ),
+      resolveOrgChartRateLimitProfile(`/api/avatars/${'a'.repeat(64)}`),
     ).toBeNull();
   });
 

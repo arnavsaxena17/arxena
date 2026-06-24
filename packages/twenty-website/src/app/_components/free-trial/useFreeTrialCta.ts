@@ -5,8 +5,8 @@ import { useCallback } from 'react';
 import { trackGA4Event } from '@/lib/analytics';
 import { FREE_TRIAL_CTA_LABEL } from '@/lib/free-trial-flow';
 import {
-    FreeTrialOrgChartContext,
-    FreeTrialSource,
+  FreeTrialOrgChartContext,
+  FreeTrialSource,
 } from '@/lib/free-trial-types';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 

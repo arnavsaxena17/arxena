@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-    isValidUuid,
-    PRIVACY_CONSENT_ACTIONS,
-    PRIVACY_POLICY_VERSION,
-    type PrivacyConsentAction,
+  isValidUuid,
+  PRIVACY_CONSENT_ACTIONS,
+  PRIVACY_POLICY_VERSION,
+  PrivacyConsentAction,
 } from 'twenty-shared';
 
 import {
-    SubmitPrivacyConsentError,
-    submitPrivacyConsentToServer,
+  SubmitPrivacyConsentError,
+  submitPrivacyConsentToServer,
 } from '@/lib/cookie-consent/submit-privacy-consent-to-server';
 
 export const dynamic = 'force-dynamic';

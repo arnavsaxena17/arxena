@@ -1,8 +1,8 @@
 import {
-    extractOrgChartCompanyMetadataFromPayload,
-    mergeOrgChartCompanyField,
-    needsOrgChartCompanyInfoLookup,
-    normalizeOptionalCompanyField,
+  extractOrgChartCompanyMetadataFromPayload,
+  mergeOrgChartCompanyField,
+  needsOrgChartCompanyInfoLookup,
+  normalizeOptionalCompanyField,
 } from '../org-chart-company-metadata';
 
 describe('org-chart-company-metadata', () => {

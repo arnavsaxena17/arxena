@@ -1,7 +1,10 @@
 import { Metadata } from 'next';
 
 import { getSignInUrl, getSignUpUrl } from '@/lib/auth-urls';
-import { DEFAULT_OG_TITLE, DEFAULT_SITE_DESCRIPTION } from '@/lib/brand-content';
+import {
+  DEFAULT_OG_TITLE,
+  DEFAULT_SITE_DESCRIPTION,
+} from '@/lib/brand-content';
 
 import { HomepageHero } from './_components/homepage/HomepageHero';
 import { ContentContainer } from './_components/ui/layout/ContentContainer';

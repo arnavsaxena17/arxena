@@ -18,7 +18,7 @@ import { trackWebsiteEvent } from '@/lib/mixpanel';
 import { OrgChartSignUpIntro } from 'twenty-orgchart/orgchart-core';
 import {
   isAllowedEmailForNewWorkspaceSignup,
-  type OrgChartNodeData,
+  OrgChartNodeData,
   WORK_EMAIL_REQUIRED_MESSAGE,
 } from 'twenty-shared';
 
@@ -715,7 +715,8 @@ export const FreeTrialModal = ({
                 You&apos;re almost done!
               </StyledSidebarTitle>
               <StyledSidebarCopy>
-                Pick a time to talk to one of our org intelligence specialists at{' '}
+                Pick a time to talk to one of our org intelligence specialists
+                at{' '}
                 <StyledSidebarEmailLink href="mailto:info@arxena.com">
                   info@arxena.com
                 </StyledSidebarEmailLink>

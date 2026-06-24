@@ -5,8 +5,8 @@ import { IconCheck } from '@tabler/icons-react';
 import Link from 'next/link';
 import React from 'react';
 
-import type { SupportedPricingCurrency } from '@/lib/pricing-currency-helpers';
 import {
+  SupportedPricingCurrency,
   convertPricingAmountSubunits,
   getPricingCurrencySymbol,
 } from '@/lib/pricing-currency-helpers';
@@ -16,9 +16,9 @@ import {
   PRICING_PLANS,
   creditPackPricingFootnote,
   getInheritedFeatures,
-  type PricingPlan,
-  type PricingPlanId,
-  type PricingPlanTier,
+  PricingPlan,
+  PricingPlanId,
+  PricingPlanTier,
 } from 'twenty-shared';
 
 const StyledSection = styled.section`
@@ -340,8 +340,8 @@ export const PricingContent = ({
   signUpUrl,
   currency,
 }: PricingContentProps) => {
-  const [selectedTiers, setSelectedTiers] = React.useState<PlanCardState>(
-    () => buildInitialTierState(),
+  const [selectedTiers, setSelectedTiers] = React.useState<PlanCardState>(() =>
+    buildInitialTierState(),
   );
 
   React.useEffect(() => {
@@ -364,14 +364,15 @@ export const PricingContent = ({
     <StyledSection>
       <StyledHeadline>{PRICING_MARKETING_HERO_HEADLINE}</StyledHeadline>
       <StyledHeadlineSub>
-        {PRICING_MARKETING_HERO_SUBHEADLINE.split('\n').map((line: string, index: number) => (
-          <React.Fragment key={index}>
-            {index > 0 ? <br /> : null}
-            {line}
-          </React.Fragment>
-        ))}
+        {PRICING_MARKETING_HERO_SUBHEADLINE.split('\n').map(
+          (line: string, index: number) => (
+            <React.Fragment key={index}>
+              {index > 0 ? <br /> : null}
+              {line}
+            </React.Fragment>
+          ),
+        )}
       </StyledHeadlineSub>
- 
 
       <StyledCardsGrid>
         {PLAN_ORDER.map((planId) => {
@@ -404,9 +405,7 @@ export const PricingContent = ({
                 <StyledCardTagline>{plan.mapTypeLabel}</StyledCardTagline>
               </StyledCardHeader>
 
-              <StyledMapTypePill>
-                Map type · {plan.mapType}
-              </StyledMapTypePill>
+              <StyledMapTypePill>Map type · {plan.mapType}</StyledMapTypePill>
 
               <StyledTierSelectWrap>
                 <StyledTierSelectLabel htmlFor={`tier-${planId}`}>
@@ -435,14 +434,10 @@ export const PricingContent = ({
                 <StyledPrice>
                   {getPricingCurrencySymbol(currency)}
                   {formatMoneyMajor(priceSubunits)}
-                  <StyledPriceUnit>
-                    {' '}
-                    / map
-                  </StyledPriceUnit>
+                  <StyledPriceUnit> / map</StyledPriceUnit>
                 </StyledPrice>
                 <StyledPriceFinePrint>
-                  Total:{' '}
-                  {getPricingCurrencySymbol(currency)}
+                  Total: {getPricingCurrencySymbol(currency)}
                   {formatMoneyMajor(totalSubunits)} for {tier.maps} maps
                 </StyledPriceFinePrint>
               </StyledPriceBlock>
@@ -450,7 +445,8 @@ export const PricingContent = ({
               <StyledCreditsBlock>
                 <StyledCreditsEquivalents>
                   Includes {emailEquivalent.toLocaleString()} email credits +{' '}
-                  {phoneEquivalent.toLocaleString()} phone reveals + 1000 AI Conversations Credits
+                  {phoneEquivalent.toLocaleString()} phone reveals + 1000 AI
+                  Conversations Credits
                 </StyledCreditsEquivalents>
               </StyledCreditsBlock>
 
@@ -480,7 +476,6 @@ export const PricingContent = ({
                 >
                   Talk to sales
                 </StyledCtaSecondary>
-           
               </StyledCtaStack>
             </StyledCard>
           );

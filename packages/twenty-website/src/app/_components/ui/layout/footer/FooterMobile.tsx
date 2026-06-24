@@ -4,14 +4,14 @@ import styled from '@emotion/styled';
 
 import { COMPANY_INFO } from '@/lib/company-info';
 
+import { useCookieConsent } from '../../../cookie-consent/CookieConsentProvider';
 import { openSupportChat } from '../../../support/openSupportChat';
-import { useCookieConsent } from '../../cookie-consent/CookieConsentProvider';
 
 import {
-    DiscordIcon,
-    GithubIcon2,
-    LinkedInIcon,
-    XIcon,
+  DiscordIcon,
+  GithubIcon2,
+  LinkedInIcon,
+  XIcon,
 } from '../../icons/SvgIcons';
 
 const StyledFooterMobile = styled.footer`

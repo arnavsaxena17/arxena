@@ -1,8 +1,8 @@
 import {
-    extractOrgData,
-    getProxiedImageUrl,
-    processOrgChartToNodeData,
-    type OrgChartNodeData,
+  extractOrgData,
+  getProxiedImageUrl,
+  processOrgChartToNodeData,
+  OrgChartNodeData,
 } from 'twenty-shared';
 
 export const processPublishedOrgChartPayload = (

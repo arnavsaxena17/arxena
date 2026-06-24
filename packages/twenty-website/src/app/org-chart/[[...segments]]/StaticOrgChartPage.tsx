@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { type OrgChartNodeData } from 'twenty-shared';
+import { OrgChartNodeData } from 'twenty-shared';
 
 import { OrgChartStructureSSR } from './OrgChartStructureSSR';
 
@@ -63,7 +63,9 @@ export function StaticOrgChartPage({
         ) : null}
         {website ? (
           <p style={{ margin: '8px 0 0', fontSize: '0.9rem' }}>
-            <a href={website.startsWith('http') ? website : `https://${website}`}>
+            <a
+              href={website.startsWith('http') ? website : `https://${website}`}
+            >
               {website}
             </a>
           </p>

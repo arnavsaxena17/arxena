@@ -411,7 +411,9 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
       </StyledHero>
 
       <StyledExampleSection>
-        <StyledExampleTitle>{HOMEPAGE_HERO.exampleStripTitle}</StyledExampleTitle>
+        <StyledExampleTitle>
+          {HOMEPAGE_HERO.exampleStripTitle}
+        </StyledExampleTitle>
         <StyledScrollingStrip>
           <StyledScrollingTrack isPaused={isExampleStripPaused}>
             {[...EXAMPLE_COMPANIES, ...EXAMPLE_COMPANIES].map(

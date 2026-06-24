@@ -6,11 +6,15 @@ import { fromSlug } from 'twenty-shared';
 
 import { getSignInUrl, getSignUpUrl } from '@/lib/auth-urls';
 import { getBaseUrl } from '@/lib/base-url';
-import { getExposedBatchCount, getMaxExposedUrlCount, isPhase2Exposed } from '@/lib/sitemap';
+import {
+  getExposedBatchCount,
+  getMaxExposedUrlCount,
+  isPhase2Exposed,
+} from '@/lib/sitemap';
 
 import {
-    BreadcrumbListSchema,
-    BreadcrumbNav,
+  BreadcrumbListSchema,
+  BreadcrumbNav,
 } from '@/app/_components/BreadcrumbList';
 import { CompaniesPagination } from '@/app/_components/CompaniesPagination';
 import { ContentContainer } from '@/app/_components/ui/layout/ContentContainer';
@@ -176,25 +180,25 @@ export default async function CompaniesSegment2Page({
           signUpUrl={getSignUpUrl()}
         />
         <ContentContainer>
-        <div
-          style={{
-            padding: '48px 32px',
-            maxWidth: 1200,
-            margin: '0 auto',
-          }}
-        >
-          <BreadcrumbNav items={breadcrumbItems} />
-          <h1
+          <div
             style={{
-              fontFamily: 'var(--font-gabarito)',
-              fontSize: 32,
-              fontWeight: 700,
-              marginTop: 24,
-              marginBottom: 12,
+              padding: '48px 32px',
+              maxWidth: 1200,
+              margin: '0 auto',
             }}
           >
-            {countryName} Org Charts
-          </h1>
+            <BreadcrumbNav items={breadcrumbItems} />
+            <h1
+              style={{
+                fontFamily: 'var(--font-gabarito)',
+                fontSize: 32,
+                fontWeight: 700,
+                marginTop: 24,
+                marginBottom: 12,
+              }}
+            >
+              {countryName} Org Charts
+            </h1>
             <p style={{ fontSize: 16, color: '#666', marginBottom: 32 }}>
               Page {pageNum} · Browse companies with org charts in {countryName}
             </p>

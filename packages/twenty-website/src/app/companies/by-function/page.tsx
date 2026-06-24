@@ -7,8 +7,8 @@ import { getBaseUrl } from '@/lib/base-url';
 import { isPhase2Exposed } from '@/lib/sitemap';
 
 import {
-    BreadcrumbListSchema,
-    BreadcrumbNav,
+  BreadcrumbListSchema,
+  BreadcrumbNav,
 } from '@/app/_components/BreadcrumbList';
 import { ContentContainer } from '@/app/_components/ui/layout/ContentContainer';
 import { Header } from '@/app/_components/ui/layout/header';
@@ -33,9 +33,12 @@ async function fetchFunctions(): Promise<
 > {
   const baseUrl = await getBaseUrl();
   try {
-    const res = await fetch(`${baseUrl}/api/org-chart/companies/countries-and-functions`, {
-      cache: 'no-store',
-    });
+    const res = await fetch(
+      `${baseUrl}/api/org-chart/companies/countries-and-functions`,
+      {
+        cache: 'no-store',
+      },
+    );
     const data = (await res.json()) as {
       functions?: {
         type: string;

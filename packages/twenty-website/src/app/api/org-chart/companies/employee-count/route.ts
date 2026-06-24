@@ -18,7 +18,10 @@ const BACKEND_PATH = '/org-chart/companies/employee-count';
 export async function GET(request: NextRequest) {
   const allowPdlProxy = resolveIsLikelyBrowser(request.headers);
   if (!allowPdlProxy) {
-    return NextResponse.json({ employeeCount: null, status: 'ok' }, { status: 200 });
+    return NextResponse.json(
+      { employeeCount: null, status: 'ok' },
+      { status: 200 },
+    );
   }
 
   const serverBaseUrl = getServerBaseUrl();

@@ -22,7 +22,9 @@ type PageProps = {
 
 const monthKeyRegex = /^\d{4}-(0[1-9]|1[0-2])$/;
 
-const normalizeAsOfMonthParam = (raw: string | undefined): string | undefined => {
+const normalizeAsOfMonthParam = (
+  raw: string | undefined,
+): string | undefined => {
   const trimmed = raw?.trim() ?? '';
   if (!trimmed || !monthKeyRegex.test(trimmed)) {
     return undefined;
@@ -55,7 +57,9 @@ const OrgChartUnavailable = () => (
   </div>
 );
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const publishSlug = slug ? decodeOverEncodedPath(slug) : '';
   const displayName = publishSlug
@@ -69,7 +73,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title,
     description,
     alternates: {
-      canonical: publishSlug ? `/org/${encodeURIComponent(publishSlug)}` : '/org',
+      canonical: publishSlug
+        ? `/org/${encodeURIComponent(publishSlug)}`
+        : '/org',
     },
     robots: { index: false, follow: false },
   };

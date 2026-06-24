@@ -39,10 +39,14 @@ export const extractOrgChartCompanyMetadataFromPayload = (
   }
 
   const profileCount =
-    typeof rawData.profile_count === 'number' ? rawData.profile_count : undefined;
+    typeof rawData.profile_count === 'number'
+      ? rawData.profile_count
+      : undefined;
 
   const locationRaw =
-    typeof rawData.location_name === 'string' ? rawData.location_name : undefined;
+    typeof rawData.location_name === 'string'
+      ? rawData.location_name
+      : undefined;
 
   const industryRaw =
     typeof rawData.industry === 'string' ? rawData.industry : undefined;

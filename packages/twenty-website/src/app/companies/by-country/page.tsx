@@ -7,8 +7,8 @@ import { getBaseUrl } from '@/lib/base-url';
 import { isPhase2Exposed } from '@/lib/sitemap';
 
 import {
-    BreadcrumbListSchema,
-    BreadcrumbNav,
+  BreadcrumbListSchema,
+  BreadcrumbNav,
 } from '@/app/_components/BreadcrumbList';
 import { ContentContainer } from '@/app/_components/ui/layout/ContentContainer';
 import { Header } from '@/app/_components/ui/layout/header';
@@ -27,9 +27,12 @@ async function fetchCountries(): Promise<
 > {
   const baseUrl = await getBaseUrl();
   try {
-    const res = await fetch(`${baseUrl}/api/org-chart/companies/countries-and-functions`, {
-      cache: 'no-store',
-    });
+    const res = await fetch(
+      `${baseUrl}/api/org-chart/companies/countries-and-functions`,
+      {
+        cache: 'no-store',
+      },
+    );
     const data = (await res.json()) as {
       countries?: { country: string; countrySlug: string; docCount: number }[];
     };
@@ -151,7 +154,9 @@ export default async function CompaniesByCountryPage() {
                       fontSize: 16,
                     }}
                   >
-                    <span style={{ textTransform: 'capitalize' }}>{country}</span>
+                    <span style={{ textTransform: 'capitalize' }}>
+                      {country}
+                    </span>
                     <span style={{ fontSize: 14, color: '#666' }}>
                       {docCount.toLocaleString()} org charts
                     </span>

@@ -1,6 +1,6 @@
 import { ORG_CHART_PDL_PROXY_HEADER } from 'twenty-shared';
 
-import type { FreeTrialLeadPayload } from '@/lib/free-trial-types';
+import { FreeTrialLeadPayload } from '@/lib/free-trial-types';
 import { getServerBaseUrl } from '@/lib/get-server-base-url';
 
 export class SubmitFreeTrialLeadError extends Error {

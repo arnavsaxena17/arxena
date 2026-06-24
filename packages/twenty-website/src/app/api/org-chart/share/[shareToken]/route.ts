@@ -27,13 +27,19 @@ export async function GET(
   const { shareToken } = await params;
   const token = (shareToken ?? '').trim();
   if (!token) {
-    return NextResponse.json({ message: 'Share token is required' }, { status: 400 });
+    return NextResponse.json(
+      { message: 'Share token is required' },
+      { status: 400 },
+    );
   }
 
   const urlParams = new URL(request.url).searchParams;
   const accessKey = urlParams.get('k')?.trim() ?? '';
   if (!accessKey) {
-    return NextResponse.json({ message: 'Access key is required' }, { status: 401 });
+    return NextResponse.json(
+      { message: 'Access key is required' },
+      { status: 401 },
+    );
   }
 
   const upstreamUrl = `${serverBaseUrl}/org-chart/share/${encodeURIComponent(token)}`;
@@ -63,4 +69,3 @@ export async function GET(
     );
   }
 }
-

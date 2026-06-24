@@ -4,8 +4,8 @@ import styled from '@emotion/styled';
 import Link from 'next/link';
 
 import {
-    HOW_IT_WORKS_SECTION_SUBTITLE,
-    HOW_IT_WORKS_STEPS,
+  HOW_IT_WORKS_SECTION_SUBTITLE,
+  HOW_IT_WORKS_STEPS,
 } from '@/lib/homepage-content';
 
 const StyledSection = styled.section`

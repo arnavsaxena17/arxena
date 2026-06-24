@@ -1,18 +1,18 @@
 'use client';
 
 import {
-    createContext,
-    ReactNode,
-    useCallback,
-    useContext,
-    useMemo,
-    useState,
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
 } from 'react';
 
 import { isFreeTrialLeadFlowEnabled } from '@/lib/free-trial-flow';
 import {
-    FreeTrialOrgChartContext,
-    FreeTrialSource,
+  FreeTrialOrgChartContext,
+  FreeTrialSource,
 } from '@/lib/free-trial-types';
 
 import { FreeTrialModal } from './FreeTrialModal';

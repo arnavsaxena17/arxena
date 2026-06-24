@@ -3,31 +3,31 @@ import { headers } from 'next/headers';
 import { permanentRedirect } from 'next/navigation';
 
 import {
-    buildCanonicalOrgChartPath,
-    extractOrgData,
-    fromSlug,
-    getProxiedImageUrl,
-    processOrgChartToNodeData,
-    resolveOrgChartCanonicalCompanyId,
-    shouldRedirectOrgChartCompanySlug,
-    toSlug,
-    toTitleCase,
-    type OrgChartNodeData,
+  buildCanonicalOrgChartPath,
+  extractOrgData,
+  fromSlug,
+  getProxiedImageUrl,
+  processOrgChartToNodeData,
+  resolveOrgChartCanonicalCompanyId,
+  shouldRedirectOrgChartCompanySlug,
+  toSlug,
+  toTitleCase,
+  OrgChartNodeData,
 } from 'twenty-shared';
 
 import { getSignUpUrl } from '@/lib/auth-urls';
 import { getBaseUrl, getInternalAppUrl } from '@/lib/base-url';
 import { getClientIpFromHeaders } from '@/lib/bot-detection';
 import {
-    extractOrgChartCompanyMetadataFromPayload,
-    normalizeOptionalCompanyField,
+  extractOrgChartCompanyMetadataFromPayload,
+  normalizeOptionalCompanyField,
 } from '@/lib/org-chart-company-metadata';
 import { readOrgChartStaticOnlyFromHeaders } from '@/lib/org-chart-static-only';
 import { decodeOverEncodedPath } from '@/lib/url-utils';
 
 import {
-    BreadcrumbListSchema,
-    BreadcrumbNav,
+  BreadcrumbListSchema,
+  BreadcrumbNav,
 } from '@/app/_components/BreadcrumbList';
 import { OrgChartPageClient } from './OrgChartPageClient';
 import { OrgChartStructureSSR } from './OrgChartStructureSSR';
@@ -145,9 +145,7 @@ async function fetchOrgChart(
     const res = await fetch(url, {
       cache: 'no-store',
       headers:
-        Object.keys(forwardedHeaders).length > 0
-          ? forwardedHeaders
-          : undefined,
+        Object.keys(forwardedHeaders).length > 0 ? forwardedHeaders : undefined,
     });
     const json = (await res.json()) as {
       status?: string;
@@ -359,8 +357,8 @@ export default async function OrgChartPage({
         <div style={{ padding: 48, textAlign: 'center' }}>
           <h1>Link expired</h1>
           <p>
-            Get access to 10M Real Time Org Charts, Sign up to view any org chart
-            you want.
+            Get access to 10M Real Time Org Charts, Sign up to view any org
+            chart you want.
           </p>
           <a
             href={getSignUpUrl()}
@@ -392,8 +390,8 @@ export default async function OrgChartPage({
         <div style={{ padding: 48, textAlign: 'center' }}>
           <h1>Link expired</h1>
           <p>
-            Get access to 10M Real Time Org Charts, Sign up to view any org chart
-            you want.
+            Get access to 10M Real Time Org Charts, Sign up to view any org
+            chart you want.
           </p>
           <a
             href={getSignUpUrl()}
@@ -424,7 +422,10 @@ export default async function OrgChartPage({
         const key = `image_${i}` as keyof OrgChartNodeData;
         const val = out[key];
         if (typeof val === 'string' && val) {
-          (out as Record<string, string>)[key] = getProxiedImageUrl(val, apiBase);
+          (out as Record<string, string>)[key] = getProxiedImageUrl(
+            val,
+            apiBase,
+          );
         }
       }
       return out;

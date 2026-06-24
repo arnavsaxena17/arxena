@@ -2,9 +2,9 @@
 
 import styled from '@emotion/styled';
 import {
-    IconBrandLinkedin,
-    IconHierarchy2,
-    IconWorld,
+  IconBrandLinkedin,
+  IconHierarchy2,
+  IconWorld,
 } from '@tabler/icons-react';
 import { useState } from 'react';
 

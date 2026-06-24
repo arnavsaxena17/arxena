@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 
 import { getBaseUrl } from '@/lib/base-url';
 import {
-    formatSitemapId,
-    getExposedBatchCount,
-    sitemapIndexEntryToXml,
+  formatSitemapId,
+  getExposedBatchCount,
+  sitemapIndexEntryToXml,
 } from '@/lib/sitemap';
 
 export const dynamic = 'force-dynamic';

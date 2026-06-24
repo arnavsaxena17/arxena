@@ -1,4 +1,4 @@
-import { type CreditPack } from 'twenty-shared';
+import { CreditPack } from 'twenty-shared';
 
 export type SupportedPricingCurrency =
   | 'INR'

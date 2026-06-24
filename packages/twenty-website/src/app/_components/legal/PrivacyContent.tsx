@@ -76,10 +76,10 @@ export const PrivacyContent = () => {
       <StyledParagraph>Last updated: March 27, 2025</StyledParagraph>
 
       <StyledParagraph>
-        This Privacy Policy describes how Arxena (&quot;we&quot;, &quot;our&quot;,
-        &quot;us&quot;) collects, uses, and shares information when you use the
-        Arxena website, web application, and Chrome extension (the
-        &quot;Service&quot;).
+        This Privacy Policy describes how Arxena (&quot;we&quot;,
+        &quot;our&quot;, &quot;us&quot;) collects, uses, and shares information
+        when you use the Arxena website, web application, and Chrome extension
+        (the &quot;Service&quot;).
       </StyledParagraph>
 
       <StyledParagraph>
@@ -120,7 +120,9 @@ export const PrivacyContent = () => {
         <li>Login tokens required for authentication</li>
       </StyledList>
 
-      <StyledSubheading>Platform Data (when the user uses the feature)</StyledSubheading>
+      <StyledSubheading>
+        Platform Data (when the user uses the feature)
+      </StyledSubheading>
       <StyledList>
         <li>Profile data from LinkedIn or Naukri pages viewed by the user</li>
         <li>Resume / CV files downloaded by the user</li>
@@ -169,7 +171,9 @@ export const PrivacyContent = () => {
         <li>Improve reliability and performance</li>
       </StyledList>
       <StyledParagraph>We do NOT sell personal data.</StyledParagraph>
-      <StyledParagraph>We do NOT use user data for advertising.</StyledParagraph>
+      <StyledParagraph>
+        We do NOT use user data for advertising.
+      </StyledParagraph>
       <StyledParagraph>
         We do NOT use user data to train AI models.
       </StyledParagraph>
@@ -236,14 +240,18 @@ export const PrivacyContent = () => {
       </StyledParagraph>
 
       <StyledHeading>8. Security</StyledHeading>
-      <StyledParagraph>We use industry-standard safeguards including:</StyledParagraph>
+      <StyledParagraph>
+        We use industry-standard safeguards including:
+      </StyledParagraph>
       <StyledList>
         <li>HTTPS encryption</li>
         <li>Access controls</li>
         <li>Secure storage</li>
         <li>Authentication checks</li>
       </StyledList>
-      <StyledParagraph>We take reasonable steps to protect user data.</StyledParagraph>
+      <StyledParagraph>
+        We take reasonable steps to protect user data.
+      </StyledParagraph>
 
       <StyledHeading>9. Google API Data</StyledHeading>
       <StyledParagraph>
@@ -275,7 +283,9 @@ export const PrivacyContent = () => {
         We may update this policy when required by law or when the Service
         changes.
       </StyledParagraph>
-      <StyledParagraph>The latest version will always be available at:</StyledParagraph>
+      <StyledParagraph>
+        The latest version will always be available at:
+      </StyledParagraph>
       <StyledParagraph>
         <StyledLink href="https://arxena.com/legal/privacy">
           https://www.arxena.com/legal/privacy

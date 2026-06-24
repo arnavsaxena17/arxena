@@ -1,12 +1,9 @@
 import {
-    resolvePricingCurrencyFromCountryCode,
-    type SupportedPricingCurrency,
+  resolvePricingCurrencyFromCountryCode,
+  SupportedPricingCurrency,
 } from '@/lib/pricing-currency-helpers';
 import { headers } from 'next/headers';
-import {
-    getCountryCodeFromCdnHeaders,
-    lookupCountryByIp,
-} from 'twenty-shared';
+import { getCountryCodeFromCdnHeaders, lookupCountryByIp } from 'twenty-shared';
 
 import { getClientIpFromHeaders } from '@/lib/bot-detection';
 

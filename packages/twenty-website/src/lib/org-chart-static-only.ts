@@ -91,9 +91,8 @@ export const resolveOrgChartStaticOnly = (
   return false;
 };
 
-export const readOrgChartStaticOnlyFromHeaders = (
-  headers: Headers,
-): boolean => headers.get(ORG_CHART_STATIC_ONLY_HEADER) === '1';
+export const readOrgChartStaticOnlyFromHeaders = (headers: Headers): boolean =>
+  headers.get(ORG_CHART_STATIC_ONLY_HEADER) === '1';
 
 export const getArxStaticCookieOptions = (): {
   name: string;
@@ -113,9 +112,9 @@ export const getArxStaticCookieOptions = (): {
   secure: process.env.NODE_ENV === 'production',
 });
 
-export const hasArxStaticAssetCookie = (
-  cookies: { get: (name: string) => { value: string } | undefined },
-): boolean => cookies.get(ARX_STATIC_ASSET_COOKIE)?.value === '1';
+export const hasArxStaticAssetCookie = (cookies: {
+  get: (name: string) => { value: string } | undefined;
+}): boolean => cookies.get(ARX_STATIC_ASSET_COOKIE)?.value === '1';
 
 export const isOrgChartStaticAssetRequest = (referer: string | null): boolean =>
   Boolean(referer?.includes('/org-chart') || referer?.includes('/org/'));

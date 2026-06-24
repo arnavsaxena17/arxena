@@ -1,13 +1,13 @@
 import {
-    isLikelyBrowserRequest,
-    isVerifiedSearchBot,
-    ORG_CHART_VERIFIED_BOT_HEADER,
+  isLikelyBrowserRequest,
+  isVerifiedSearchBot,
+  ORG_CHART_VERIFIED_BOT_HEADER,
 } from 'twenty-shared';
 
 import {
-    getClientIpFromHeaders,
-    isBlockedBot,
-    isDeclaredBotUserAgent,
+  getClientIpFromHeaders,
+  isBlockedBot,
+  isDeclaredBotUserAgent,
 } from '@/lib/bot-detection';
 
 export const ORG_CHART_LIKELY_BROWSER_HEADER = 'x-org-chart-likely-browser';
@@ -60,7 +60,9 @@ export const getOrgChartGuardMode = (): OrgChartGuardMode => {
   return 'log_only';
 };
 
-const getMaxRequestsForProfile = (profile: OrgChartRateLimitProfile): number => {
+const getMaxRequestsForProfile = (
+  profile: OrgChartRateLimitProfile,
+): number => {
   switch (profile) {
     case 'sitemap':
       return parsePositiveInt(
@@ -225,9 +227,7 @@ export const checkOrgChartApiGuard = async (
 
   const isLikelyBrowser = resolveIsLikelyBrowser(headers);
   const isVerifiedBot =
-    clientIp !== 'unknown'
-      ? await isVerifiedSearchBot(clientIp)
-      : false;
+    clientIp !== 'unknown' ? await isVerifiedSearchBot(clientIp) : false;
   const isDeclaredBot = isDeclaredBotUserAgent(userAgent);
 
   if (
@@ -273,7 +273,10 @@ export const orgChartApiGuardToResponse = (
   profile: OrgChartRateLimitProfile,
 ): Response => {
   const headers: Record<string, string> = {};
-  if (result.status === 429 && typeof result.body.retryAfterSeconds === 'number') {
+  if (
+    result.status === 429 &&
+    typeof result.body.retryAfterSeconds === 'number'
+  ) {
     headers['Retry-After'] = String(result.body.retryAfterSeconds);
   }
 

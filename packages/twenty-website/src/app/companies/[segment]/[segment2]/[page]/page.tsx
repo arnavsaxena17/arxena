@@ -6,11 +6,15 @@ import { fromSlug } from 'twenty-shared';
 
 import { getSignInUrl, getSignUpUrl } from '@/lib/auth-urls';
 import { getBaseUrl } from '@/lib/base-url';
-import { getExposedBatchCount, getMaxExposedUrlCount, isPhase2Exposed } from '@/lib/sitemap';
+import {
+  getExposedBatchCount,
+  getMaxExposedUrlCount,
+  isPhase2Exposed,
+} from '@/lib/sitemap';
 
 import {
-    BreadcrumbListSchema,
-    BreadcrumbNav,
+  BreadcrumbListSchema,
+  BreadcrumbNav,
 } from '@/app/_components/BreadcrumbList';
 import { CompaniesPagination } from '@/app/_components/CompaniesPagination';
 import { ContentContainer } from '@/app/_components/ui/layout/ContentContainer';

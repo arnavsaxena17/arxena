@@ -1,8 +1,7 @@
-import { ORG_CHART_PDL_PROXY_HEADER } from 'twenty-shared';
-
-import type {
-    PrivacyConsentAction,
-    PrivacyConsentCategories,
+import {
+  ORG_CHART_PDL_PROXY_HEADER,
+  PrivacyConsentAction,
+  PrivacyConsentCategories,
 } from 'twenty-shared';
 
 import { getServerBaseUrl } from '@/lib/get-server-base-url';
@@ -15,7 +14,7 @@ export class SubmitPrivacyConsentError extends Error {
     this.name = 'SubmitPrivacyConsentError';
     this.statusCode = statusCode;
   }
-};
+}
 
 export type SubmitPrivacyConsentPayload = {
   visitorId: string;

@@ -2,10 +2,10 @@
 
 import styled from '@emotion/styled';
 import {
-    IconBriefcase,
-    IconChartTreemap,
-    IconRocket,
-    IconUsers,
+  IconBriefcase,
+  IconChartTreemap,
+  IconRocket,
+  IconUsers,
 } from '@tabler/icons-react';
 import Link from 'next/link';
 
@@ -90,12 +90,7 @@ const StyledCardDescription = styled.div`
   line-height: 1.5;
 `;
 
-const USE_CASE_ICONS = [
-  IconBriefcase,
-  IconRocket,
-  IconChartTreemap,
-  IconUsers,
-];
+const USE_CASE_ICONS = [IconBriefcase, IconRocket, IconChartTreemap, IconUsers];
 
 export const UseCasesSection = () => {
   return (

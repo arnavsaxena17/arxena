@@ -1,25 +1,25 @@
 'use client';
 
 import {
-    createContext,
-    ReactNode,
-    useCallback,
-    useContext,
-    useMemo,
-    useState,
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
 } from 'react';
 import {
-    type PrivacyConsentAction,
-    type PrivacyConsentCategories,
-    type PrivacyConsentCookieValue,
-    readPrivacyConsentCookieFromDocument,
+  PrivacyConsentAction,
+  PrivacyConsentCategories,
+  PrivacyConsentCookieValue,
+  readPrivacyConsentCookieFromDocument,
 } from 'twenty-shared';
 
 import {
-    buildConsentCookieValue,
-    createVisitorId,
-    getConsentCategoriesForAction,
-    writePrivacyConsentCookie,
+  buildConsentCookieValue,
+  createVisitorId,
+  getConsentCategoriesForAction,
+  writePrivacyConsentCookie,
 } from '@/lib/cookie-consent/cookie-storage';
 
 type CookieConsentContextValue = {
@@ -90,9 +90,7 @@ export const CookieConsentProvider = ({
             policyVersion: nextConsent.policyVersion,
             categories: nextConsent.categories,
             locale:
-              typeof navigator !== 'undefined'
-                ? navigator.language
-                : undefined,
+              typeof navigator !== 'undefined' ? navigator.language : undefined,
           }),
         });
 

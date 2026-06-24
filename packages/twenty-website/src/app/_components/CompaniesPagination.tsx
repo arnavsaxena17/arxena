@@ -7,11 +7,7 @@ type CompaniesPaginationProps = {
   letterMode?: boolean;
 };
 
-function pageHref(
-  basePath: string,
-  page: number,
-  letterMode: boolean,
-): string {
+function pageHref(basePath: string, page: number, letterMode: boolean): string {
   if (page <= 1) {
     return letterMode ? `${basePath}-1` : basePath;
   }
@@ -48,7 +44,10 @@ export function CompaniesPagination({
       }}
     >
       {currentPage > 1 && (
-        <Link href={pageHref(basePath, currentPage - 1, letterMode)} style={linkStyle}>
+        <Link
+          href={pageHref(basePath, currentPage - 1, letterMode)}
+          style={linkStyle}
+        >
           ← Previous
         </Link>
       )}
@@ -75,7 +74,10 @@ export function CompaniesPagination({
         ),
       )}
       {hasMore && (
-        <Link href={pageHref(basePath, currentPage + 1, letterMode)} style={linkStyle}>
+        <Link
+          href={pageHref(basePath, currentPage + 1, letterMode)}
+          style={linkStyle}
+        >
           Next →
         </Link>
       )}

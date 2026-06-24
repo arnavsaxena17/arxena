@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-    isAllowedEmailForNewWorkspaceSignup,
-    WORK_EMAIL_REQUIRED_MESSAGE,
+  isAllowedEmailForNewWorkspaceSignup,
+  WORK_EMAIL_REQUIRED_MESSAGE,
 } from 'twenty-shared';
 
 import {
-    FreeTrialLeadPayload,
-    FreeTrialOrgChartContext,
-    FreeTrialSource,
+  FreeTrialLeadPayload,
+  FreeTrialOrgChartContext,
+  FreeTrialSource,
 } from '@/lib/free-trial-types';
 import {
-    SubmitFreeTrialLeadError,
-    submitFreeTrialLeadToServer,
+  SubmitFreeTrialLeadError,
+  submitFreeTrialLeadToServer,
 } from '@/lib/submit-free-trial-lead-to-server';
 
 export const dynamic = 'force-dynamic';

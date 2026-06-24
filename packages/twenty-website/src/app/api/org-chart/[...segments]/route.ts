@@ -138,8 +138,7 @@ export async function GET(
       /bot|crawler|spider|scraper|bytespider|petalbot/i.test(
         effectiveUserAgent,
       );
-    const shouldLog =
-      process.env.LOG_ORG_CHART_REQUESTS === '1' || isLikelyBot;
+    const shouldLog = process.env.LOG_ORG_CHART_REQUESTS === '1' || isLikelyBot;
     if (effectiveUserAgent && shouldLog) {
       console.log('[OrgChart proxy]', {
         path: pathPart,

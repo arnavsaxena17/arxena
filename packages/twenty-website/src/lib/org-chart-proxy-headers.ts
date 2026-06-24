@@ -1,15 +1,12 @@
 import {
-    ORG_CHART_PDL_PROXY_HEADER,
-    ORG_CHART_VERIFIED_BOT_HEADER,
+  ORG_CHART_PDL_PROXY_HEADER,
+  ORG_CHART_VERIFIED_BOT_HEADER,
 } from 'twenty-shared';
 
+import { getClientIpFromHeaders, isBlockedBot } from '@/lib/bot-detection';
 import {
-    getClientIpFromHeaders,
-    isBlockedBot,
-} from '@/lib/bot-detection';
-import {
-    ORG_CHART_LIKELY_BROWSER_HEADER,
-    resolveIsLikelyBrowser,
+  ORG_CHART_LIKELY_BROWSER_HEADER,
+  resolveIsLikelyBrowser,
 } from '@/lib/org-chart-api-guard';
 
 export const buildOrgChartUpstreamHeaders = (
@@ -76,9 +73,7 @@ export const buildOrgChartUpstreamHeaders = (
   return headers;
 };
 
-export const rejectBlockedOrgChartBot = (
-  request: Request,
-): Response | null => {
+export const rejectBlockedOrgChartBot = (request: Request): Response | null => {
   const forwardedUserAgent = request.headers.get('x-forwarded-user-agent');
   const userAgent = forwardedUserAgent ?? request.headers.get('user-agent');
   if (isBlockedBot(userAgent)) {

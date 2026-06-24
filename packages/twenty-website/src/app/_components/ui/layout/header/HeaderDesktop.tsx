@@ -14,7 +14,7 @@ import { PRODUCT_PAGES, SOLUTION_PAGES } from '@/lib/marketing-site-pages';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 import {
   SUPPORTED_PRICING_CURRENCIES,
-  type SupportedPricingCurrency,
+  SupportedPricingCurrency,
 } from '@/lib/pricing-currency-helpers';
 
 const StyledDesktopNav = styled.nav`
