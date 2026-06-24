@@ -71,6 +71,7 @@ export type ArxOrgChartViewProps = {
   showContextProgressBanner: boolean;
   isContextLoading: boolean;
   diagramHandleRef: React.Ref<OrgChartDiagramHandle>;
+  diagramRemountKey: string;
   diagramProps: Omit<OrgChartDiagramProps, 'nodeDataArray'>;
   showNodeCapabilitiesHoverHint: boolean;
   effectiveEmployeeCount?: number;
@@ -190,6 +191,7 @@ export const ArxOrgChartView = ({
   showContextProgressBanner,
   isContextLoading,
   diagramHandleRef,
+  diagramRemountKey,
   diagramProps,
   showNodeCapabilitiesHoverHint,
   effectiveEmployeeCount,
@@ -381,6 +383,7 @@ export const ArxOrgChartView = ({
                   </StyledTemplateBanner>
                 ))}
               <OrgChartDiagram
+                key={diagramRemountKey}
                 ref={diagramHandleRef}
                 nodeDataArray={nodeDataArray}
                 showNodeCapabilitiesHoverHint={showNodeCapabilitiesHoverHint}

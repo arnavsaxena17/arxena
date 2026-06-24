@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { resolveOrgChartCanonicalCompanyId } from 'twenty-shared';
 
@@ -62,7 +62,14 @@ export const useOrgChartData = (
     string | null
   >(null);
 
+  const fetchGenerationRef = useRef(0);
+
   const fetchOrgChart = useCallback(async () => {
+    const fetchGeneration = fetchGenerationRef.current + 1;
+    fetchGenerationRef.current = fetchGeneration;
+
+    const isStale = () => fetchGeneration !== fetchGenerationRef.current;
+
     if (!companyId) {
       setData(null);
       setError(null);
@@ -163,6 +170,10 @@ export const useOrgChartData = (
         apolloQueueRequestId?: string;
       };
 
+      if (isStale()) {
+        return;
+      }
+
       if (response.ok && json?.status === 'ok' && json.result) {
         const didUseApolloSource = json.firstSourceUsed === 'apollo';
         const shouldKeepApolloQueued =
@@ -209,6 +220,9 @@ export const useOrgChartData = (
         setApolloQueueRequestId(null);
       }
     } catch (err) {
+      if (isStale()) {
+        return;
+      }
       setError(
         err instanceof Error ? err.message : 'Failed to fetch org chart',
       );
@@ -222,7 +236,9 @@ export const useOrgChartData = (
       setApolloQueued(false);
       setApolloQueueRequestId(null);
     } finally {
-      setIsLoading(false);
+      if (!isStale()) {
+        setIsLoading(false);
+      }
     }
   }, [
     companyId,
@@ -239,6 +255,7 @@ export const useOrgChartData = (
   ]);
 
   const reset = useCallback(() => {
+    fetchGenerationRef.current += 1;
     setData(null);
     setError(null);
     setIsLoading(false);

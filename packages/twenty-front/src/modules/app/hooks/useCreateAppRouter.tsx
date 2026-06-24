@@ -1,6 +1,6 @@
 import {
-  AppRouterProviders,
-  MinimalProviders,
+    AppRouterProviders,
+    MinimalProviders,
 } from '@/app/components/AppRouterProviders';
 import { SettingsRoutes } from '@/app/components/SettingsRoutes';
 
@@ -12,13 +12,13 @@ import { AppPath } from '@/types/AppPath';
 import { BlankLayout } from '@/ui/layout/page/components/BlankLayout';
 import { DefaultLayout } from '@/ui/layout/page/components/DefaultLayout';
 import {
-  Route,
-  createBrowserRouter,
-  createRoutesFromElements,
-  useLocation,
-  useNavigate,
-  useParams,
-  useSearchParams,
+    Route,
+    createBrowserRouter,
+    createRoutesFromElements,
+    useLocation,
+    useNavigate,
+    useParams,
+    useSearchParams,
 } from 'react-router-dom';
 import { getPostAuthLandingAppPath } from '~/config';
 import { Authorize } from '~/pages/auth/Authorize';
@@ -65,9 +65,9 @@ import { useQuery } from '@apollo/client';
 import React, { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 import {
-  buildCanonicalOrgChartPath,
-  resolveOrgChartCanonicalCompanyId,
-  shouldRedirectOrgChartCompanySlug,
+    buildCanonicalOrgChartPath,
+    resolveOrgChartCanonicalCompanyId,
+    shouldRedirectOrgChartCompanySlug,
 } from 'twenty-shared';
 import { IconDatabase } from 'twenty-ui';
 import { WORKSPACE_CREDITS } from '~/modules/billing/graphql/workspaceCredits';
@@ -268,6 +268,7 @@ const OrgChartRoute = () => {
         {hasSelectedCompany ? (
           <React.Suspense fallback={null}>
             <ArxOrgChart
+              key={companyId}
               companyId={companyId}
               companyName={companyName}
               website={website}

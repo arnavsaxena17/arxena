@@ -615,6 +615,7 @@ export const Jobs = () => {
               {selectedOrgChartCompany ? (
                 <React.Suspense fallback={null}>
                   <ArxOrgChart
+                    key={selectedOrgChartCompany.companyId}
                     companyId={selectedOrgChartCompany.companyId}
                     companyName={selectedOrgChartCompany.companyName}
                     website={selectedOrgChartCompany.website}
@@ -629,6 +630,7 @@ export const Jobs = () => {
               ) : selectedJobForOrgChart ? (
                 <React.Suspense fallback={null}>
                   <ArxOrgChart
+                    key={selectedJobForOrgChart.jobId}
                     companyId={selectedJobForOrgChart.jobId}
                     companyName={selectedJobForOrgChart.jobName}
                     onBack={handleClearOrgChart}

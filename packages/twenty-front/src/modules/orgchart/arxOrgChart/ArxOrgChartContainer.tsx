@@ -402,6 +402,7 @@ export const ArxOrgChartContainer = ({
   const fetchOrgChart = isJobMode
     ? jobOrgChartHook.fetchOrgChart
     : classicOrgChartHook.fetchOrgChart;
+  const resetOrgChartData = classicOrgChartHook.reset;
   const orgChartEsTransportError = classicOrgChartHook.orgChartEsTransportError;
   const firstSourceRequested = classicOrgChartHook.firstSourceRequested;
   const firstSourceUsed = classicOrgChartHook.firstSourceUsed;
@@ -526,8 +527,11 @@ export const ArxOrgChartContainer = ({
     ) {
       return;
     }
-    fetchOrgChart();
+    void fetchOrgChart();
   }, [
+    companyId,
+    selectedCountry,
+    selectedFunctionRoot,
     fetchOrgChart,
     isCompanyInfoLookupLoading,
     isDomainResolveLoading,
@@ -536,14 +540,29 @@ export const ArxOrgChartContainer = ({
   ]);
 
   useEffect(() => {
-    if (isJobMode) return;
+    if (isJobMode) {
+      return;
+    }
+
+    const prev = prevCompanyIdForFiltersRef.current;
+    const companyChanged = prev !== null && prev !== companyId;
+    prevCompanyIdForFiltersRef.current = companyId;
+
+    if (!companyChanged) {
+      return;
+    }
+
+    resetOrgChartData();
     actions.clearLatestOrgChart();
+    setContactsByKey({});
+    setSelectedCountry(DEFAULT_ORG_CHART_COUNTRY);
+    setSelectedFunctionRoot(DEFAULT_ORG_CHART_FUNCTION_ROOT);
   }, [
     actions.clearLatestOrgChart,
-    isJobMode,
     companyId,
-    selectedCountry,
-    selectedFunctionRoot,
+    isJobMode,
+    resetOrgChartData,
+    setContactsByKey,
   ]);
 
   useEffect(() => {
@@ -763,17 +782,6 @@ export const ArxOrgChartContainer = ({
   }, [baseUrl, accessToken, isLinkedinConnected, linkedinUrlToUse]);
 
   useEffect(() => {
-    const prev = prevCompanyIdForFiltersRef.current;
-    const companyChanged = prev !== null && prev !== companyId;
-    prevCompanyIdForFiltersRef.current = companyId;
-
-    if (companyChanged) {
-      skipNextRefetchRef.current = true;
-      setSelectedCountry(DEFAULT_ORG_CHART_COUNTRY);
-      setSelectedFunctionRoot(DEFAULT_ORG_CHART_FUNCTION_ROOT);
-      return;
-    }
-
     if (!orgData || !companyId) return;
 
     setSelectedCountry((current) => {
@@ -1700,6 +1708,7 @@ export const ArxOrgChartContainer = ({
         showContextProgressBanner={showContextProgressBanner}
         isContextLoading={actions.isContextLoading}
         diagramHandleRef={diagramHandleRef}
+        diagramRemountKey={companyId}
         diagramProps={{
           m7kqContactMode: isM7kqOrgChartSource,
           showLinkedInUrlOnNodes: orgChartLinkedinCandidateSource === 'apify',
