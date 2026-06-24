@@ -4,11 +4,11 @@ import { IconGitMerge } from '@tabler/icons-react';
 import { ReactNode, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import {
-    Button,
-    IconAlertCircle,
-    IconComponent,
-    IconHierarchy2,
-    IconMessage
+  Button,
+  IconAlertCircle,
+  IconComponent,
+  IconHierarchy2,
+  IconMessage
 } from 'twenty-ui';
 
 import { CreditHistoryModal } from '@/billing/components/CreditHistoryModal';
@@ -16,7 +16,6 @@ import { CandidateTableJobsPageMenuDropdown } from '@/candidate-table/components
 import { OrgChartCompanySearchWrapper } from '@/orgchart/components/OrgChartCompanySearchWrapper';
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
-import { LinkedinUnipileOrgChartReconnectBanner } from '@/unipile/components/LinkedinUnipileOrgChartReconnectBanner';
 
 const StyledCompanySearchWrapper = styled.div`
   position: absolute;
@@ -206,14 +205,14 @@ export const CandidateTablePageHeader = ({
 
   return (
     <>
-      <LinkedinUnipileOrgChartReconnectBanner
+      {/* <LinkedinUnipileOrgChartReconnectBanner
         key={
           isLinkedinConnected
             ? 'linkedin-unipile-connected'
             : 'linkedin-unipile-disconnected'
         }
         isExtensionInstalled={isExtensionInstalled}
-      />
+      /> */}
       <StyledPageHeaderShell>
         <StyledPageHeader
           title={title}

@@ -2,6 +2,7 @@ import {
   buildUnipileLinkedinCookieConnectBody,
   normalizeLinkedinConnectionCountry,
   normalizeLinkedinConnectionIp,
+  parseExtensionLinkedinCookieToken,
 } from '../build-unipile-linkedin-cookie-connect-body.util';
 
 describe('buildUnipileLinkedinCookieConnectBody', () => {
@@ -57,5 +58,22 @@ describe('normalizeLinkedinConnectionIp', () => {
 
   it('rejects IPv6 addresses', () => {
     expect(normalizeLinkedinConnectionIp('::1')).toBeUndefined();
+  });
+});
+
+describe('parseExtensionLinkedinCookieToken', () => {
+  it('returns undefined when the extension omits the field', () => {
+    expect(parseExtensionLinkedinCookieToken(undefined)).toBeUndefined();
+  });
+
+  it('returns null when the extension sends an empty cookie', () => {
+    expect(parseExtensionLinkedinCookieToken('')).toBeNull();
+    expect(parseExtensionLinkedinCookieToken('   ')).toBeNull();
+  });
+
+  it('returns the trimmed token when present', () => {
+    expect(parseExtensionLinkedinCookieToken('  li-at-token  ')).toBe(
+      'li-at-token',
+    );
   });
 });

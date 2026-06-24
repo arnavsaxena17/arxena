@@ -25,6 +25,22 @@ export const normalizeLinkedinConnectionCountry = (
   return normalized;
 };
 
+/**
+ * Extension cookie sync sends `li_at` / `li_a` as strings; empty string means "no cookie" and should clear DB.
+ * Omitted fields are left unchanged on the workspace member profile.
+ */
+export const parseExtensionLinkedinCookieToken = (
+  value?: string,
+): string | null | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+
+  return trimmed ? trimmed : null;
+};
+
 export const normalizeLinkedinConnectionIp = (
   value?: string | null,
 ): string | undefined => {

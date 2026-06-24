@@ -1,3 +1,5 @@
+import { HttpException, HttpStatus } from '@nestjs/common';
+
 import { LinkedinUnipileMemberAccountResolverService } from './linkedin-unipile-member-account-resolver.service';
 
 describe('LinkedinUnipileMemberAccountResolverService', () => {
@@ -26,6 +28,7 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
       }),
       applyUnipileAccountToWorkspaceMemberProfile: jest.fn(),
       updateWorkspaceMemberUnipileAccountId: jest.fn(),
+      clearWorkspaceMemberLinkedinCookieTokens: jest.fn(),
     };
 
     const linkedinUnipileRequestService = {
@@ -76,6 +79,7 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
       service,
       linkedinUnipileRequestService,
       memberLinkedinUnipileConnectionService,
+      workspaceMemberProfileUnipileService,
     };
   };
 
@@ -147,6 +151,39 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
       accountId: activeAccountId,
       resolution: 'stored_profile',
       reconnectAttempted: false,
+    });
+  });
+
+  it('clears stored LinkedIn cookies when reconnect POST /accounts returns invalid credentials', async () => {
+    const {
+      service,
+      linkedinUnipileRequestService,
+      workspaceMemberProfileUnipileService,
+    } = createService();
+
+    linkedinUnipileRequestService.makeUnipileRequest.mockRejectedValue(
+      new HttpException(
+        'The provided credentials are invalid.',
+        HttpStatus.UNAUTHORIZED,
+      ),
+    );
+
+    const result = await service.resolveMemberLinkedinUnipileAccount({
+      workspaceId,
+      workspaceMemberId,
+      authToken,
+      reconnectSourceToken: 'li-at-token',
+      reconnectLogContext: 'test',
+    });
+
+    expect(
+      workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinCookieTokens,
+    ).toHaveBeenCalledWith(authToken, workspaceMemberId);
+    expect(result).toMatchObject({
+      accountId: null,
+      reconnectAttempted: true,
+      reconnectSucceeded: false,
+      reconnectMessage: 'The provided credentials are invalid.',
     });
   });
 });

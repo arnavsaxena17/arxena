@@ -1,15 +1,15 @@
 import {
-    Body,
-    Controller,
-    Delete,
-    HttpException,
-    HttpStatus,
-    Logger,
-    Param,
-    Post,
-    Req,
-    Res,
-    UseGuards
+  Body,
+  Controller,
+  Delete,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Req,
+  Res,
+  UseGuards
 } from '@nestjs/common';
 import { Request } from 'express';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
@@ -20,13 +20,13 @@ import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import {
-    findLinkedinUnipileAccountSameIdentityForProfile,
-    isUnipileConnectedStatus,
-    linkedinBrowserUrlMatchesMemberProfile,
-    normalizeUnipileStatus,
-    shouldBlockNewUnipileConnectionForStatus,
-    type LinkedInSearchType,
-    type UnipileLinkedinAccount,
+  findLinkedinUnipileAccountSameIdentityForProfile,
+  isUnipileConnectedStatus,
+  linkedinBrowserUrlMatchesMemberProfile,
+  normalizeUnipileStatus,
+  shouldBlockNewUnipileConnectionForStatus,
+  type LinkedInSearchType,
+  type UnipileLinkedinAccount,
 } from 'twenty-shared';
 
 import { lookupCountryByIp } from 'twenty-shared';
@@ -39,14 +39,16 @@ import { UnipileAccountPoolService } from '../services/unipile-account-pool.serv
 import { UnipileWebhookService } from '../services/unipile-webhook.service';
 import { WorkspaceMemberProfileUnipileService } from '../services/workspace-member-profile-unipile.service';
 import type {
-    CreateWebhookDto,
-    UnipileAccountStatusWebhook,
+  CreateWebhookDto,
+  UnipileAccountStatusWebhook,
 } from '../types/unipile-webhook.types';
 import {
-    buildUnipileLinkedinCookieConnectBody,
-    normalizeLinkedinConnectionCountry,
-    normalizeLinkedinConnectionIp,
+  buildUnipileLinkedinCookieConnectBody,
+  normalizeLinkedinConnectionCountry,
+  normalizeLinkedinConnectionIp,
+  parseExtensionLinkedinCookieToken,
 } from '../utils/build-unipile-linkedin-cookie-connect-body.util';
+import { isUnipileInvalidLinkedinCookieCredentialsError } from '../utils/is-unipile-invalid-linkedin-cookie-credentials-error.util';
 import { resolveLinkedinSyncClientIp } from '../utils/resolve-linkedin-sync-client-ip.util';
 
 // DTOs for LinkedIn Unipile integration
@@ -532,8 +534,8 @@ export class LinkedinUnipileController {
       return trimmed ? trimmed : undefined;
     };
 
-    const liAtToken = normalizeExtensionToken(params.li_at);
-    const liAToken = normalizeExtensionToken(params.li_a);
+    const liAtToken = parseExtensionLinkedinCookieToken(params.li_at);
+    const liAToken = parseExtensionLinkedinCookieToken(params.li_a);
     const requestUserAgent = normalizeExtensionToken(params.user_agent);
     const requestIp = normalizeLinkedinConnectionIp(params.clientIp);
     const requestCountry = normalizeLinkedinConnectionCountry(params.clientCountry);
@@ -773,12 +775,13 @@ export class LinkedinUnipileController {
       headers?: { authorization?: string };
     },
   ) {
+    const authTokenCookie =
+      request.headers?.authorization?.replace(/^Bearer\s+/i, '') ?? '';
+    const workspaceMemberId = request.workspaceMemberId;
+
     try {
       this.logger.log(`Connecting LinkedIn account with cookie for workspace: ${workspace.id}`);
 
-      const authTokenCookie =
-        request.headers?.authorization?.replace(/^Bearer\s+/i, '') ?? '';
-      const workspaceMemberId = request.workspaceMemberId;
       const preflightCookie = await this.resolveLinkedinConnectPreflight(
         workspaceMemberId,
         authTokenCookie,
@@ -877,6 +880,21 @@ export class LinkedinUnipileController {
       };
     } catch (error) {
       this.logger.error('Failed to connect LinkedIn with cookie:', error);
+
+      if (
+        workspaceMemberId &&
+        authTokenCookie &&
+        isUnipileInvalidLinkedinCookieCredentialsError(error)
+      ) {
+        this.logger.log(
+          `[connect/cookie] Clearing stored LinkedIn cookies for workspaceMemberId=${workspaceMemberId} after invalid credentials`,
+        );
+        await this.workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinCookieTokens(
+          authTokenCookie,
+          workspaceMemberId,
+        );
+      }
+
       throw error;
     }
   }
@@ -913,10 +931,10 @@ export class LinkedinUnipileController {
     };
 
     const liAtToken = params.persistRequestCookieTokens
-      ? normalizeExtensionToken(params.li_at)
+      ? parseExtensionLinkedinCookieToken(params.li_at)
       : undefined;
     const liAToken = params.persistRequestCookieTokens
-      ? normalizeExtensionToken(params.li_a)
+      ? parseExtensionLinkedinCookieToken(params.li_a)
       : undefined;
     const requestUserAgent = params.persistRequestCookieTokens
       ? normalizeExtensionToken(params.user_agent)
@@ -1046,8 +1064,14 @@ export class LinkedinUnipileController {
       }
     }
 
-    const effectiveLiAtToken = liAtToken ?? storedCookies.linkedinLiAtToken;
-    const effectiveLiAToken = liAToken ?? storedCookies.linkedinLiAToken;
+    const effectiveLiAtToken =
+      liAtToken !== undefined
+        ? liAtToken
+        : storedCookies.linkedinLiAtToken;
+    const effectiveLiAToken =
+      liAToken !== undefined
+        ? liAToken
+        : storedCookies.linkedinLiAToken;
     const reconnectSourceToken = effectiveLiAtToken ?? effectiveLiAToken;
 
     const resolution =

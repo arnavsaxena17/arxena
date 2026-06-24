@@ -200,7 +200,7 @@ describe('LinkedinUnipileController', () => {
     });
   });
 
-  it('persists only li_at when extension sends empty li_a (no recruiter cookie)', async () => {
+  it('persists li_at and clears li_a when extension sends empty li_a (no recruiter cookie)', async () => {
     const { controller, workspaceMemberProfileUnipileService } = createController();
     workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields.mockResolvedValue(
       {
@@ -245,7 +245,68 @@ describe('LinkedinUnipileController', () => {
     ).toHaveBeenCalledWith(
       'auth-token',
       'member-id',
-      { linkedinLiAtToken: 'next-li-at' },
+      { linkedinLiAtToken: 'next-li-at', linkedinLiAToken: null },
+      { touchLastSyncedAt: true },
+    );
+    expect(result).toMatchObject({
+      success: true,
+      cookies: {
+        hasLiAt: true,
+        hasLiA: false,
+        cookiesChanged: true,
+      },
+    });
+  });
+
+  it('clears stale li_a when extension sends empty li_a alongside li_at', async () => {
+    const { controller, workspaceMemberProfileUnipileService } = createController();
+    workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields.mockResolvedValue(
+      {
+        linkedinUrl: null,
+      },
+    );
+    workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens
+      .mockResolvedValueOnce({
+        linkedinLiAtToken: 'old-li-at',
+        linkedinLiAToken: 'stale-li-a',
+        linkedinUserAgent: null,
+        linkedinIp: null,
+        linkedinCountry: null,
+        linkedinCookiesLastSyncedAt: null,
+        linkedinCookiesValidatedAt: null,
+      })
+      .mockResolvedValueOnce({
+        linkedinLiAtToken: 'next-li-at',
+        linkedinLiAToken: null,
+        linkedinUserAgent: null,
+        linkedinIp: null,
+        linkedinCountry: null,
+        linkedinCookiesLastSyncedAt: '2026-06-18T00:00:00.000Z',
+        linkedinCookiesValidatedAt: null,
+      });
+
+    const result = await controller.persistExtensionCookies(
+      {
+        li_at: 'next-li-at',
+        li_a: '',
+        linkedin_profile_url: 'https://www.linkedin.com/in/member-a',
+      },
+      { id: 'workspace-id' } as never,
+      {
+        workspaceMemberId: 'member-id',
+        headers: { authorization: 'Bearer auth-token' },
+      } as never,
+    );
+
+    expect(
+      workspaceMemberProfileUnipileService.updateWorkspaceMemberLinkedinCookieTokens,
+    ).toHaveBeenCalledWith(
+      'auth-token',
+      'member-id',
+      {
+        linkedinLiAtToken: 'next-li-at',
+        linkedinLiAToken: null,
+      },
       { touchLastSyncedAt: true },
     );
     expect(result).toMatchObject({

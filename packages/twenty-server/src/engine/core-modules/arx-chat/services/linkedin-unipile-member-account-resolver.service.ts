@@ -1,20 +1,21 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import {
-  findLinkedinUnipileAccountSameIdentityForProfile,
-  isUnipileConnectedStatus,
-  shouldBlockNewUnipileConnectionForStatus,
-  type UnipileLinkedinAccount
+    findLinkedinUnipileAccountSameIdentityForProfile,
+    isUnipileConnectedStatus,
+    shouldBlockNewUnipileConnectionForStatus,
+    type UnipileLinkedinAccount
 } from 'twenty-shared';
 
 import {
-  type LinkedinUnipileMemberAccountResolution,
-  type LinkedinUnipileMemberAccountStatus,
-  type ResolveMemberLinkedinUnipileAccountArgs,
+    type LinkedinUnipileMemberAccountResolution,
+    type LinkedinUnipileMemberAccountStatus,
+    type ResolveMemberLinkedinUnipileAccountArgs,
 } from '../types/linkedin-unipile-member-account-resolution.types';
+import { buildUnipileLinkedinCookieConnectBody } from '../utils/build-unipile-linkedin-cookie-connect-body.util';
+import { isUnipileInvalidLinkedinCookieCredentialsError } from '../utils/is-unipile-invalid-linkedin-cookie-credentials-error.util';
 import { LinkedinUnipileRequestService } from './linkedin-unipile-request.service';
 import { MemberLinkedinUnipileConnectionService } from './member-linkedin-unipile-connection.service';
 import { WorkspaceMemberProfileUnipileService } from './workspace-member-profile-unipile.service';
-import { buildUnipileLinkedinCookieConnectBody } from '../utils/build-unipile-linkedin-cookie-connect-body.util';
 
 type UnipileConnectHttpResult = {
   status?: number;
@@ -183,6 +184,16 @@ export class LinkedinUnipileMemberAccountResolverService {
       this.logger.warn(
         `LinkedIn Unipile reconnect failed for member ${args.workspaceMemberId}: ${reconnectMessage}`,
       );
+
+      if (isUnipileInvalidLinkedinCookieCredentialsError(error)) {
+        this.logger.log(
+          `[resolveMemberLinkedinUnipileAccount] Clearing stored LinkedIn cookies for workspaceMemberId=${args.workspaceMemberId} after invalid credentials`,
+        );
+        await this.workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinCookieTokens(
+          args.authToken,
+          args.workspaceMemberId,
+        );
+      }
     }
 
     if (
