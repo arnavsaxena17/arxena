@@ -43,6 +43,7 @@ import { I18nContext } from 'src/engine/core-modules/i18n/types/i18n-context.typ
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
+import { PrivacyConsentService } from 'src/engine/core-modules/privacy-consent/privacy-consent.service';
 import { SSOService } from 'src/engine/core-modules/sso/services/sso.service';
 import { UserWorkspaceService } from 'src/engine/core-modules/user-workspace/user-workspace.service';
 import { UserService } from 'src/engine/core-modules/user/services/user.service';
@@ -90,6 +91,7 @@ export class AuthResolver {
     private environmentService: EnvironmentService,
     @InjectMessageQueue(MessageQueue.billingQueue)
     private readonly billingQueueService: MessageQueueService,
+    private readonly privacyConsentService: PrivacyConsentService,
   ) {}
 
   @UseGuards(CaptchaGuard)
@@ -198,7 +200,10 @@ export class AuthResolver {
 
   @UseGuards(CaptchaGuard)
   @Mutation(() => SignUpOutput)
-  async signUp(@Args() signUpInput: SignUpInput): Promise<SignUpOutput> {
+  async signUp(
+    @Args() signUpInput: SignUpInput,
+    @Context() context: I18nContext,
+  ): Promise<SignUpOutput> {
     const currentWorkspace = await this.authService.findWorkspaceForSignInUp({
       workspaceInviteHash: signUpInput.workspaceInviteHash,
       authProvider: 'password',
@@ -219,6 +224,13 @@ export class AuthResolver {
         email: signUpInput.email,
       },
     });
+
+    if (!existingUser && signUpInput.termsAccepted !== true) {
+      throw new AuthException(
+        'You must accept the Terms of Service and Privacy Policy to create an account.',
+        AuthExceptionCode.INVALID_INPUT,
+      );
+    }
 
     const { userData } = this.authService.formatUserDataPayload(
       {
@@ -244,6 +256,16 @@ export class AuthResolver {
         password: signUpInput.password,
       },
     });
+
+    if (!existingUser) {
+      await this.privacyConsentService.recordSignupConsent({
+        userId: user.id,
+        visitorId: signUpInput.consentVisitorId,
+        policyVersion: signUpInput.privacyPolicyVersion,
+        locale: signUpInput.locale,
+        userAgent: context.req.headers['user-agent'],
+      });
+    }
 
     // if (!this.environmentService.get('SKIP_SIGNUP_VERIFICATION_EMAIL')) {
       await this.emailVerificationService.sendVerificationEmail(

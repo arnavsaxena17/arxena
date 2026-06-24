@@ -42,6 +42,7 @@ import { TimelineMessagingModule } from 'src/engine/core-modules/messaging/timel
 import { OpenApiModule } from 'src/engine/core-modules/open-api/open-api.module';
 import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.module';
 import { PostgresCredentialsModule } from 'src/engine/core-modules/postgres-credentials/postgres-credentials.module';
+import { PrivacyConsentModule } from 'src/engine/core-modules/privacy-consent/privacy-consent.module';
 import { RedisClientModule } from 'src/engine/core-modules/redis-client/redis-client.module';
 import { RedisClientService } from 'src/engine/core-modules/redis-client/redis-client.service';
 import { serverlessModuleFactory } from 'src/engine/core-modules/serverless/serverless-module.factory';
@@ -141,6 +142,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     CandidateAvatarModule,
     OrgChartModule,
     WebsiteLeadsModule,
+    PrivacyConsentModule,
     RoleModule,
     EnvironmentModule.forRoot({}),
     RedisClientModule,

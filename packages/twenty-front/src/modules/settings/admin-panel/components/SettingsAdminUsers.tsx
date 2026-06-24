@@ -182,7 +182,7 @@ export const SettingsAdminUsers = () => {
 
       const summary = result.connected
         ? result.disconnectedAfterValidation
-          ? t`LinkedIn connected with stored cookies, then disconnected (validate-then-disconnect).`
+          ? t`LinkedIn connected with stored cookies; idle disconnect scheduled (validate-then-disconnect).`
           : t`LinkedIn connected with stored cookies.`
         : t`LinkedIn connection failed with stored cookies.`;
 
@@ -416,7 +416,7 @@ export const SettingsAdminUsers = () => {
                     <Button
                       variant="secondary"
                       size="small"
-                      title={t`Tests stored li_at, li_a, user agent, IP, and country via Unipile, then disconnects. Requires LINKEDIN_UNIPILE_VALIDATE_THEN_DISCONNECT (not used by cookie sync).`}
+                      title={t`Test cookie connection.`}
                       disabled={!canValidate || isValidating}
                       onClick={() => {
                         if (!rp?.workspaceMemberId) {

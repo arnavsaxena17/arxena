@@ -1,5 +1,5 @@
 # Include inside the app.arxena.com server {} block (twenty.conf).
-# Allows POST /website/free-trial-lead when SERVER_BASE_URL uses the public app host.
+# Allows POST /website/free-trial-lead and /website/privacy-consent when SERVER_BASE_URL uses the public app host.
 
 location ^~ /website/ {
   proxy_pass http://localhost:3000;

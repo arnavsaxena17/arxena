@@ -315,7 +315,7 @@ describe('LinkedinUnipileController', () => {
     );
   });
 
-  it('validate-session disconnects the temporary Unipile account when keepLinkedinConnected is false', async () => {
+  it('validate-session schedules idle disconnect when keepLinkedinConnected is false', async () => {
     const { controller, linkedinStoredCookieValidationService } = createController();
 
     linkedinStoredCookieValidationService.validateStoredCookiesForMember.mockResolvedValue(
@@ -328,7 +328,7 @@ describe('LinkedinUnipileController', () => {
         hasLiA: false,
         lastSyncedAt: '2026-06-18T00:00:00.000Z',
         lastValidatedAt: '2026-06-18T00:01:00.000Z',
-        message: 'LinkedIn connection succeeded and was disconnected after validation',
+        message: 'LinkedIn connection succeeded; idle disconnect scheduled after validation',
         errorCode: null,
         reconnectAttempted: true,
         reconnectSucceeded: true,
@@ -366,9 +366,9 @@ describe('LinkedinUnipileController', () => {
         disconnectedAfterValidation: true,
       },
       linkedin: {
-        connected: false,
+        connected: true,
         accountId: 'unipile-account-id',
-        status: 'validated_disconnected',
+        status: 'validated_disconnect_scheduled',
       },
     });
   });

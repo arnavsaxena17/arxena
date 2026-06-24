@@ -1,6 +1,13 @@
 import { ArgsType, Field } from '@nestjs/graphql';
 
-import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+    IsBoolean,
+    IsEmail,
+    IsNotEmpty,
+    IsOptional,
+    IsString,
+    IsUUID,
+} from 'class-validator';
 import { APP_LOCALES } from 'twenty-shared';
 
 @ArgsType()
@@ -39,4 +46,19 @@ export class SignUpInput {
   @IsString()
   @IsOptional()
   locale?: keyof typeof APP_LOCALES;
+
+  @Field(() => String, { nullable: true })
+  @IsUUID()
+  @IsOptional()
+  consentVisitorId?: string;
+
+  @Field(() => Boolean, { nullable: true })
+  @IsBoolean()
+  @IsOptional()
+  termsAccepted?: boolean;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  privacyPolicyVersion?: string;
 }

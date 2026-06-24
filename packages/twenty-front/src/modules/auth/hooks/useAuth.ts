@@ -20,7 +20,7 @@ import { clientConfigApiStatusState } from '@/client-config/states/clientConfigA
 import { isDebugModeState } from '@/client-config/states/isDebugModeState';
 import { supportChatState } from '@/client-config/states/supportChatState';
 import { ColorScheme } from '@/workspace-member/types/WorkspaceMember';
-import { APP_LOCALES, isDefined } from 'twenty-shared';
+import { APP_LOCALES, isDefined, PRIVACY_POLICY_VERSION, readPrivacyConsentCookieFromDocument } from 'twenty-shared';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import {
     useCheckUserExistsLazyQuery,
@@ -460,6 +460,8 @@ export const useAuth = () => {
     ) => {
       setIsVerifyPendingState(true);
 
+      const consent = readPrivacyConsentCookieFromDocument();
+
       const signUpResult = await signUp({
         variables: {
           email,
@@ -468,6 +470,10 @@ export const useAuth = () => {
           workspacePersonalInviteToken,
           captchaToken,
           locale: i18n.locale ?? 'en',
+          termsAccepted: true,
+          consentVisitorId: consent?.visitorId,
+          privacyPolicyVersion:
+            consent?.policyVersion ?? PRIVACY_POLICY_VERSION,
           ...(workspacePublicData?.id
             ? { workspaceId: workspacePublicData.id }
             : {}),

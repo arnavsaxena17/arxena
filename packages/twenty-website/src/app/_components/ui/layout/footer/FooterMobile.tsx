@@ -5,6 +5,7 @@ import styled from '@emotion/styled';
 import { COMPANY_INFO } from '@/lib/company-info';
 
 import { openSupportChat } from '../../../support/openSupportChat';
+import { useCookieConsent } from '../../cookie-consent/CookieConsentProvider';
 
 import {
     DiscordIcon,
@@ -97,6 +98,8 @@ type FooterMobileProps = {
 };
 
 export const FooterMobile = ({ phase2Exposed = false }: FooterMobileProps) => {
+  const { openPreferences } = useCookieConsent();
+
   return (
     <StyledFooterMobile>
       <StyledLinkSection>
@@ -140,6 +143,9 @@ export const FooterMobile = ({ phase2Exposed = false }: FooterMobileProps) => {
         <StyledSectionTitle>Legal</StyledSectionTitle>
         <StyledLink href="/legal/terms">Terms of Service</StyledLink>
         <StyledLink href="/legal/privacy">Privacy Policy</StyledLink>
+        <StyledChatButton type="button" onClick={openPreferences}>
+          Cookie preferences
+        </StyledChatButton>
       </StyledLinkSection>
       <StyledLinkSection>
         <StyledSectionTitle>Contact</StyledSectionTitle>

@@ -5,6 +5,7 @@ import styled from '@emotion/styled';
 import { COMPANY_INFO } from '@/lib/company-info';
 
 import { openSupportChat } from '../../../support/openSupportChat';
+import { useCookieConsent } from '../../cookie-consent/CookieConsentProvider';
 
 import {
     DiscordIcon,
@@ -90,6 +91,8 @@ type FooterDesktopProps = {
 export const FooterDesktop = ({
   phase2Exposed = false,
 }: FooterDesktopProps) => {
+  const { openPreferences } = useCookieConsent();
+
   return (
     <FooterContainer>
       <RightSideFooter>
@@ -146,6 +149,9 @@ export const FooterDesktop = ({
           <RightSideFooterLink href="/legal/privacy">
             Privacy Policy
           </RightSideFooterLink>
+          <RightSideFooterButton type="button" onClick={openPreferences}>
+            Cookie preferences
+          </RightSideFooterButton>
         </RightSideFooterColumn>
         <RightSideFooterColumn>
           <RightSideFooterColumnTitle>Contact</RightSideFooterColumnTitle>

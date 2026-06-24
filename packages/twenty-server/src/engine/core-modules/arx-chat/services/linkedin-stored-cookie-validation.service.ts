@@ -10,7 +10,7 @@ import {
     normalizeLinkedinConnectionIp,
 } from '../utils/build-unipile-linkedin-cookie-connect-body.util';
 import { LinkedinUnipileMemberAccountResolverService } from './linkedin-unipile-member-account-resolver.service';
-import { MemberLinkedinUnipileConnectionService } from './member-linkedin-unipile-connection.service';
+import { LinkedinUnipileTeardownSchedulerService } from './linkedin-unipile-teardown-scheduler.service';
 import { WorkspaceMemberProfileUnipileService } from './workspace-member-profile-unipile.service';
 
 export type ValidateStoredLinkedinCookiesResult = {
@@ -53,7 +53,7 @@ export class LinkedinStoredCookieValidationService {
   constructor(
     private readonly environmentService: EnvironmentService,
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
-    private readonly memberLinkedinUnipileConnectionService: MemberLinkedinUnipileConnectionService,
+    private readonly linkedinUnipileTeardownSchedulerService: LinkedinUnipileTeardownSchedulerService,
     private readonly linkedinUnipileMemberAccountResolverService: LinkedinUnipileMemberAccountResolverService,
   ) {}
 
@@ -178,19 +178,15 @@ export class LinkedinStoredCookieValidationService {
 
     if (shouldDisconnectAfterValidation && accountId) {
       this.logger.log(
-        `[validateStoredCookies] disconnecting after validation accountId=${accountId} ` +
+        `[validateStoredCookies] scheduling idle disconnect after validation accountId=${accountId} ` +
           `workspaceMemberId=${params.workspaceMemberId}`,
       );
-      await this.memberLinkedinUnipileConnectionService.disconnectMemberLinkedinUnipileAccount(
-        {
-          accountId,
-          context: logContext,
-          workspaceMemberId: params.workspaceMemberId,
-          workspaceId: params.workspace.id,
-          authToken: params.authToken,
-          forceClearProfile: true,
-        },
-      );
+      await this.linkedinUnipileTeardownSchedulerService.scheduleIdleDisconnect({
+        accountId,
+        workspaceMemberId: params.workspaceMemberId,
+        workspaceId: params.workspace.id,
+        authToken: params.authToken,
+      });
       disconnectedAfterValidation = true;
     }
 
@@ -213,7 +209,7 @@ export class LinkedinStoredCookieValidationService {
       resolution.reconnectMessage ??
       (connected
         ? disconnectedAfterValidation
-          ? 'LinkedIn connection succeeded and was disconnected after validation'
+          ? 'LinkedIn connection succeeded; idle disconnect scheduled after validation'
           : 'LinkedIn connection succeeded'
         : 'LinkedIn connection failed with stored cookies');
 

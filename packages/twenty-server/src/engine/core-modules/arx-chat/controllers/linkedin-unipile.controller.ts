@@ -1351,10 +1351,10 @@ export class LinkedinUnipileController {
         lastValidatedAt: validation.lastValidatedAt,
       },
       linkedin: {
-        connected: validation.connected && !validation.disconnectedAfterValidation,
+        connected: validation.connected,
         accountId: validation.accountId,
         status: validation.disconnectedAfterValidation
-          ? 'validated_disconnected'
+          ? 'validated_disconnect_scheduled'
           : validation.accountStatus ?? (validation.connected ? 'connected' : 'not_connected'),
       },
       reconnect: {

@@ -5,6 +5,7 @@ export * from './FieldForTotalCountAggregateOperation';
 export * from './org-chart-guard.constant';
 export * from './org-chart-pdl-proxy.constant';
 export * from './PermissionsOnAllObjectRecords';
+export * from './privacy-consent.constant';
 export * from './SettingsFeatures';
 export * from './StandardObjectRecordsUnderObjectRecordsPermissions';
 export * from './TwentyCompaniesBaseUrl';

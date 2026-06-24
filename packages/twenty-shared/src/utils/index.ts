@@ -8,6 +8,7 @@ export * from './is-likely-browser-request';
 export * from './linkedinUnipileSearchPageLimit';
 export * from './orgchart';
 export * from './permissions';
+export * from './privacy-consent';
 export * from './resolveLinkedinUnipileAccountIdForWorkspaceMember';
 export * from './strings';
 export * from './unipileWorkspaceMemberMatch';

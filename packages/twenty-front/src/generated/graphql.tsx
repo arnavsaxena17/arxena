@@ -998,9 +998,12 @@ export type MutationSendInvitationsArgs = {
 
 export type MutationSignUpArgs = {
   captchaToken?: InputMaybe<Scalars['String']>;
+  consentVisitorId?: InputMaybe<Scalars['String']>;
   email: Scalars['String'];
   locale?: InputMaybe<Scalars['String']>;
   password: Scalars['String'];
+  privacyPolicyVersion?: InputMaybe<Scalars['String']>;
+  termsAccepted?: InputMaybe<Scalars['Boolean']>;
   workspaceId?: InputMaybe<Scalars['String']>;
   workspaceInviteHash?: InputMaybe<Scalars['String']>;
   workspacePersonalInviteToken?: InputMaybe<Scalars['String']>;
@@ -2225,6 +2228,9 @@ export type SignUpMutationVariables = Exact<{
   captchaToken?: InputMaybe<Scalars['String']>;
   workspaceId?: InputMaybe<Scalars['String']>;
   locale?: InputMaybe<Scalars['String']>;
+  consentVisitorId?: InputMaybe<Scalars['String']>;
+  termsAccepted?: InputMaybe<Scalars['Boolean']>;
+  privacyPolicyVersion?: InputMaybe<Scalars['String']>;
 }>;
 
 
@@ -3398,7 +3404,7 @@ export type ResendEmailVerificationTokenMutationHookResult = ReturnType<typeof u
 export type ResendEmailVerificationTokenMutationResult = Apollo.MutationResult<ResendEmailVerificationTokenMutation>;
 export type ResendEmailVerificationTokenMutationOptions = Apollo.BaseMutationOptions<ResendEmailVerificationTokenMutation, ResendEmailVerificationTokenMutationVariables>;
 export const SignUpDocument = gql`
-    mutation SignUp($email: String!, $password: String!, $workspaceInviteHash: String, $workspacePersonalInviteToken: String = null, $captchaToken: String, $workspaceId: String, $locale: String) {
+    mutation SignUp($email: String!, $password: String!, $workspaceInviteHash: String, $workspacePersonalInviteToken: String = null, $captchaToken: String, $workspaceId: String, $locale: String, $consentVisitorId: String, $termsAccepted: Boolean, $privacyPolicyVersion: String) {
   signUp(
     email: $email
     password: $password
@@ -3407,6 +3413,9 @@ export const SignUpDocument = gql`
     captchaToken: $captchaToken
     workspaceId: $workspaceId
     locale: $locale
+    consentVisitorId: $consentVisitorId
+    termsAccepted: $termsAccepted
+    privacyPolicyVersion: $privacyPolicyVersion
   ) {
     loginToken {
       ...AuthTokenFragment

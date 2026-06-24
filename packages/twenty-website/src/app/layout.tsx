@@ -1,15 +1,15 @@
 import { Metadata } from 'next';
 import { PublicEnvScript } from 'next-runtime-env';
 import { Gabarito, Inter } from 'next/font/google';
-import Script from 'next/script';
 
 import { DEFAULT_SITE_DESCRIPTION } from '@/lib/brand-content';
-import { MixpanelRouteSync } from '@/lib/MixpanelRouteSync';
 import { isPhase2Exposed } from '@/lib/sitemap';
 
+import { ConsentGatedScripts } from './_components/cookie-consent/ConsentGatedScripts';
+import { CookieConsentBanner } from './_components/cookie-consent/CookieConsentBanner';
+import { CookieConsentProvider } from './_components/cookie-consent/CookieConsentProvider';
 import { FreeTrialFlowProvider } from './_components/free-trial/FreeTrialFlowProvider';
 import { WebSiteStructuredData } from './_components/StructuredData';
-import { WebsiteSupportChat } from './_components/support/WebsiteSupportChat';
 import { ConditionalFooter } from './_components/ui/layout/footer';
 import EmotionRootStyleRegistry from './emotion-root-style-registry';
 
@@ -62,33 +62,19 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body suppressHydrationWarning>
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-8TK071FYGG"
-          strategy="afterInteractive"
-        />
-        <Script
-          id="google-analytics"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-8TK071FYGG');
-            `,
-          }}
-        />
         <WebSiteStructuredData />
         <PublicEnvScript />
         <EmotionRootStyleRegistry>
-          <FreeTrialFlowProvider>
-            <MixpanelRouteSync />
-            {/* <AppHeader /> */}
-            <div className="container">{children}</div>
-            <ConditionalFooter phase2Exposed={isPhase2Exposed()} />
-          </FreeTrialFlowProvider>
+          <CookieConsentProvider>
+            <ConsentGatedScripts />
+            <CookieConsentBanner />
+            <FreeTrialFlowProvider>
+              {/* <AppHeader /> */}
+              <div className="container">{children}</div>
+              <ConditionalFooter phase2Exposed={isPhase2Exposed()} />
+            </FreeTrialFlowProvider>
+          </CookieConsentProvider>
         </EmotionRootStyleRegistry>
-        <WebsiteSupportChat />
       </body>
     </html>
   );

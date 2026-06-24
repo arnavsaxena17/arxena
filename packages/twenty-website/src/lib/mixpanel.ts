@@ -3,6 +3,7 @@
 import { Mixpanel } from 'mixpanel-browser';
 
 let mixpanelInstance: Mixpanel | null = null;
+let isMixpanelInitialized = false;
 
 const DEFAULT_MIXPANEL_PRODUCTION_TOKEN =
   '68bdb1eed9eee266fc652c9d5ecef47e';
@@ -45,22 +46,29 @@ const applyCoreRegisteredSuperProperties = (instance: Mixpanel) => {
 };
 
 async function getMixpanel() {
-  if (typeof window === 'undefined') return null;
-  if (!mixpanelInstance) {
-    const mixpanel = await import('mixpanel-browser');
-    const instance = mixpanel.default;
-    instance.init(getToken(), {
-      debug: process.env.NODE_ENV !== 'production',
-      track_pageview: isMixpanelSendingEnabled,
-      persistence: 'localStorage',
-    });
-    applyCoreRegisteredSuperProperties(instance);
-    mixpanelInstance = instance;
-  }
+  if (typeof window === 'undefined' || !isMixpanelInitialized) return null;
   return mixpanelInstance;
 }
 
-const isTrackingEnabled = () => isMixpanelSendingEnabled;
+const isTrackingEnabled = () =>
+  isMixpanelSendingEnabled && isMixpanelInitialized;
+
+export const initWebsiteMixpanelWithConsent = async () => {
+  if (typeof window === 'undefined' || isMixpanelInitialized) {
+    return;
+  }
+
+  const mixpanel = await import('mixpanel-browser');
+  const instance = mixpanel.default;
+  instance.init(getToken(), {
+    debug: process.env.NODE_ENV !== 'production',
+    track_pageview: isMixpanelSendingEnabled,
+    persistence: 'localStorage',
+  });
+  applyCoreRegisteredSuperProperties(instance);
+  mixpanelInstance = instance;
+  isMixpanelInitialized = true;
+};
 
 export const trackWebsiteEvent = (
   eventName: string,

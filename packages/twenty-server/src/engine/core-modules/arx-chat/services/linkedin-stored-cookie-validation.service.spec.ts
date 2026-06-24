@@ -22,8 +22,8 @@ describe('LinkedinStoredCookieValidationService', () => {
       updateWorkspaceMemberLinkedinCookieTokens: jest.fn(),
     };
 
-    const memberLinkedinUnipileConnectionService = {
-      disconnectMemberLinkedinUnipileAccount: jest.fn(),
+    const linkedinUnipileTeardownSchedulerService = {
+      scheduleIdleDisconnect: jest.fn(),
     };
 
     const linkedinUnipileMemberAccountResolverService = {
@@ -33,7 +33,7 @@ describe('LinkedinStoredCookieValidationService', () => {
     const service = new LinkedinStoredCookieValidationService(
       environmentService as never,
       workspaceMemberProfileUnipileService as never,
-      memberLinkedinUnipileConnectionService as never,
+      linkedinUnipileTeardownSchedulerService as never,
       linkedinUnipileMemberAccountResolverService as never,
     );
 
@@ -41,7 +41,7 @@ describe('LinkedinStoredCookieValidationService', () => {
       service,
       environmentService,
       workspaceMemberProfileUnipileService,
-      memberLinkedinUnipileConnectionService,
+      linkedinUnipileTeardownSchedulerService,
       linkedinUnipileMemberAccountResolverService,
     };
   };
@@ -73,11 +73,11 @@ describe('LinkedinStoredCookieValidationService', () => {
     });
   });
 
-  it('disconnects after successful validation when keepLinkedinConnected is false', async () => {
+  it('schedules idle disconnect after successful validation when keepLinkedinConnected is false', async () => {
     const {
       service,
       workspaceMemberProfileUnipileService,
-      memberLinkedinUnipileConnectionService,
+      linkedinUnipileTeardownSchedulerService,
       linkedinUnipileMemberAccountResolverService,
     } = createService();
 
@@ -122,8 +122,13 @@ describe('LinkedinStoredCookieValidationService', () => {
     });
 
     expect(
-      memberLinkedinUnipileConnectionService.disconnectMemberLinkedinUnipileAccount,
-    ).toHaveBeenCalled();
+      linkedinUnipileTeardownSchedulerService.scheduleIdleDisconnect,
+    ).toHaveBeenCalledWith({
+      accountId: 'unipile-account-id',
+      workspaceMemberId: 'member-id',
+      workspaceId: 'workspace-id',
+      authToken: 'auth-token',
+    });
     expect(result).toMatchObject({
       connected: true,
       disconnectedAfterValidation: true,
@@ -158,11 +163,11 @@ describe('LinkedinStoredCookieValidationService', () => {
     );
   });
 
-  it('admin probe disconnects even when keepLinkedinConnected is true', async () => {
+  it('admin probe schedules idle disconnect even when keepLinkedinConnected is true', async () => {
     const {
       service,
       workspaceMemberProfileUnipileService,
-      memberLinkedinUnipileConnectionService,
+      linkedinUnipileTeardownSchedulerService,
       linkedinUnipileMemberAccountResolverService,
     } = createService();
 
@@ -209,8 +214,13 @@ describe('LinkedinStoredCookieValidationService', () => {
     });
 
     expect(
-      memberLinkedinUnipileConnectionService.disconnectMemberLinkedinUnipileAccount,
-    ).toHaveBeenCalled();
+      linkedinUnipileTeardownSchedulerService.scheduleIdleDisconnect,
+    ).toHaveBeenCalledWith({
+      accountId: 'unipile-account-id',
+      workspaceMemberId: 'member-id',
+      workspaceId: 'workspace-id',
+      authToken: 'auth-token',
+    });
     expect(result).toMatchObject({
       connected: true,
       disconnectedAfterValidation: true,
