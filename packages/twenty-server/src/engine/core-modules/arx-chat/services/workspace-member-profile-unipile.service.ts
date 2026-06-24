@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'crypto';
 
 import {
@@ -7,7 +7,6 @@ import {
   findWorkspaceMemberLinkedinProfile,
   findWorkspaceMemberProfileLinkedinCookies,
   findWorkspaceMemberProfiles,
-  graphQLToCreateOneWorkspaceMemberProfile,
   graphQLToUpdateOneWorkspaceMemberProfile,
   graphQLToUpdateWorkspaceMemberLinkedinCookieTokens,
   graphQLToUpdateWorkspaceMemberLinkedinProfile,
@@ -34,6 +33,9 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import { lookupCountryByIp } from 'twenty-shared';
 
 type UnipileAccountType = 'linkedin' | 'whatsapp';
+
+export const WORKSPACE_MEMBER_PROFILE_MISSING_FOR_AUTH_TOKEN_MESSAGE =
+  'Auth token is invalid: no workspace member profile exists for this session';
 
 @Injectable()
 export class WorkspaceMemberProfileUnipileService {
@@ -162,10 +164,10 @@ export class WorkspaceMemberProfileUnipileService {
     return extractWorkspaceMemberProfileNode(response);
   }
 
-  private async ensureProfileIdForMember(
+  private async requireProfileIdForMember(
     workspaceMemberId: string,
     authToken: string,
-  ): Promise<string | null> {
+  ): Promise<string> {
     const existing = await this.findProfileNodeByWorkspaceMemberId(
       workspaceMemberId,
       authToken,
@@ -175,30 +177,17 @@ export class WorkspaceMemberProfileUnipileService {
       return existing.id;
     }
 
-    try {
-      const response = await this.staticGraphQLService.executeGraphQL(
-        graphQLToCreateOneWorkspaceMemberProfile,
-        {
-          input: {
-            workspaceMemberId,
-            [WORKSPACE_MEMBER_PROFILE_FIELD_NAMES.typeWorkspaceMember]:
-              'recruiterType',
-          },
-        },
-        authToken,
-      );
+    this.logger.warn(
+      `No workspace member profile for workspaceMemberId=${workspaceMemberId}; rejecting LinkedIn cookie update (invalid auth token)`,
+    );
 
-      return (
-        response?.data?.data?.createWorkspaceMemberProfile?.id ?? null
-      );
-    } catch (error) {
-      this.logger.warn(
-        `Failed to create workspace member profile for ${workspaceMemberId}:`,
-        error,
-      );
-
-      return null;
-    }
+    throw new HttpException(
+      {
+        code: 'AUTH_TOKEN_INVALID',
+        message: WORKSPACE_MEMBER_PROFILE_MISSING_FOR_AUTH_TOKEN_MESSAGE,
+      },
+      HttpStatus.UNAUTHORIZED,
+    );
   }
 
   async updateWorkspaceMemberLinkedinCookieTokens(
@@ -210,17 +199,10 @@ export class WorkspaceMemberProfileUnipileService {
       touchLastValidatedAt?: boolean;
     },
   ): Promise<void> {
-    const profileId = await this.ensureProfileIdForMember(
+    const profileId = await this.requireProfileIdForMember(
       workspaceMemberId,
       authToken,
     );
-
-    if (!profileId) {
-      this.logger.warn(
-        `No workspace member profile for ${workspaceMemberId}, cannot update LinkedIn cookie tokens`,
-      );
-      return;
-    }
 
     const input: Record<string, string> = {};
 
