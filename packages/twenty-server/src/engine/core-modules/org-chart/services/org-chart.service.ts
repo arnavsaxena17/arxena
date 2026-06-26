@@ -4,12 +4,12 @@ import { readFile } from 'fs/promises';
 import * as path from 'path';
 
 import {
-  buildOrgChartS3LookupPlan,
-  collectOrgChartCompanyIdsForLookup,
-  graphqlToFindManyCompanies,
-  normalizeOrgChartCompanySlug,
-  OrgChartData,
-  resolveOrgChartCanonicalCompanyId,
+    buildOrgChartS3LookupPlan,
+    collectOrgChartCompanyIdsForLookup,
+    graphqlToFindManyCompanies,
+    normalizeOrgChartCompanySlug,
+    OrgChartData,
+    resolveOrgChartCanonicalCompanyId,
 } from 'twenty-shared';
 
 import { toOrgChartCacheTtlMs } from '../utils/org-chart-cache-ttl.util';
@@ -28,21 +28,21 @@ import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import {
-  applyBlankOrgChartSizeForExpectedHeadcount,
-  applyBlankOrgChartSubsetFilter,
+    applyBlankOrgChartSizeForExpectedHeadcount,
+    applyBlankOrgChartSubsetFilter,
 } from '../utils/blank-org-chart-subset.util';
 import { mergeManualCompanyAutocompleteResults } from '../utils/manual-company-autocomplete.util';
 import { buildOrgChartS3RelativePathCandidates } from '../utils/org-chart-company-alias.util';
 import {
-  collectDomainLookupCandidates,
-  extractCompanyNameStemFromDomain,
-  extractRootCompanyDomain,
-  isUsableOrgChartResolveCompanyId,
-  normalizeBareCompanyDomain,
+    collectDomainLookupCandidates,
+    extractCompanyNameStemFromDomain,
+    extractRootCompanyDomain,
+    isUsableOrgChartResolveCompanyId,
+    normalizeBareCompanyDomain,
 } from '../utils/org-chart-resolve-domain.util';
 import {
-  applyOrgChartPayloadSubsetFilter,
-  isOrgChartPayloadSubsetRequest,
+    applyOrgChartPayloadSubsetFilter,
+    isOrgChartPayloadSubsetRequest,
 } from '../utils/org-chart-subset-filter.util';
 import { buildCompanyOrgChartLogicalCacheKey } from '../utils/orgchart-cache-keys.util';
 import { ArxenaBackendService } from './arxena-backend.service';
@@ -796,6 +796,70 @@ export class OrgChartService {
         ? { orgChartEsTransportError: true }
         : {}),
     };
+  }
+
+  /** S3 load using company alias plan (e.g. vista-rooms → apify_org_intelligence variant). */
+  async getOrgChartFromS3WithAliasLookup(
+    companyId: string,
+  ): Promise<OrgChartData | null> {
+    const canonicalCompanyId = resolveOrgChartCanonicalCompanyId(
+      normalizeOrgChartCompanySlug(companyId),
+    );
+    const plan = buildOrgChartS3LookupPlan(canonicalCompanyId);
+
+    return this.orgChartS3Service.tryGetOrgChartFromLookupEntries(plan);
+  }
+
+  private async ensureDefaultS3CopyForShare(args: {
+    companyId: string;
+    companyName?: string;
+    orgChart: OrgChartData;
+  }): Promise<void> {
+    const s3CompanyId = this.orgChartS3Service.persistedCompanyFolderKey(
+      args.companyId,
+      args.companyName?.trim() || args.companyId,
+    );
+    const existingDefault = await this.orgChartS3Service.getOrgChart(s3CompanyId);
+
+    if (existingDefault) {
+      return;
+    }
+
+    await this.orgChartS3Service.saveOrgChart(s3CompanyId, args.orgChart);
+    this.logger.log(
+      `Copied org chart to default S3 path for sharing companyId=${args.companyId}`,
+    );
+  }
+
+  /**
+   * Share/publish may only use org charts persisted in S3 (full workspace builds).
+   * Does not fall back to the public Elasticsearch index or blank templates.
+   */
+  async requirePersistedOrgChartFromS3ForShare(args: {
+    companyId: string;
+    companyName?: string;
+  }): Promise<OrgChartData> {
+    const normalizedCompanyId = resolveOrgChartCanonicalCompanyId(
+      normalizeOrgChartCompanySlug(args.companyId),
+    );
+
+    const fromS3 =
+      await this.getOrgChartFromS3WithAliasLookup(normalizedCompanyId);
+
+    if (!fromS3) {
+      throw new HttpException(
+        'No persisted org chart found in S3. Run a full company org chart build first, then share.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await this.ensureDefaultS3CopyForShare({
+      companyId: normalizedCompanyId,
+      companyName: args.companyName,
+      orgChart: fromS3,
+    });
+
+    return fromS3;
   }
 
   /**

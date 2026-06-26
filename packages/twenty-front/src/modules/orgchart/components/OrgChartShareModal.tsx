@@ -5,8 +5,8 @@ import { resolveBrandPublishSlug } from 'twenty-shared';
 import { Button, Section, SectionAlignment, SectionFontColor } from 'twenty-ui';
 
 import {
-  getArxenaSiteBaseUrl,
-  getArxenaSitePublicHost,
+    getArxenaSiteBaseUrl,
+    getArxenaSitePublicHost,
 } from '@/auth/utils/arxenaSiteUrl';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -202,12 +202,19 @@ export const OrgChartShareModal = ({
         status?: string;
         shareToken?: string;
         accessKey?: string;
-        message?: string;
+        message?: string | string[];
       };
       const publishJson = (await publishRes.json()) as {
         status?: string;
         publishSlug?: string;
-        message?: string;
+        message?: string | string[];
+      };
+
+      const formatApiMessage = (message: string | string[] | undefined) => {
+        if (Array.isArray(message)) {
+          return message.join(', ').trim();
+        }
+        return typeof message === 'string' ? message.trim() : '';
       };
 
       let privateLinkOk = false;
@@ -244,9 +251,8 @@ export const OrgChartShareModal = ({
 
       if (privateLinkOk) {
         const publishMsg =
-          typeof publishJson?.message === 'string' && publishJson.message.trim()
-            ? publishJson.message.trim()
-            : t`Public brand link could not be created`;
+          formatApiMessage(publishJson?.message) ||
+          t`Public brand link could not be created`;
         enqueueSnackBar(publishMsg, {
           variant: SnackBarVariant.Error,
           duration: 8000,
@@ -256,9 +262,8 @@ export const OrgChartShareModal = ({
 
       if (publicLinkOk) {
         const shareMsg =
-          typeof shareJson?.message === 'string' && shareJson.message.trim()
-            ? shareJson.message.trim()
-            : t`Private share link could not be created`;
+          formatApiMessage(shareJson?.message) ||
+          t`Private share link could not be created`;
         enqueueSnackBar(shareMsg, {
           variant: SnackBarVariant.Error,
           duration: 8000,
@@ -266,10 +271,12 @@ export const OrgChartShareModal = ({
         return;
       }
 
+      const shareMsg = formatApiMessage(shareJson?.message);
+      const publishMsg = formatApiMessage(publishJson?.message);
       const msg =
-        typeof shareJson?.message === 'string' && shareJson.message.trim()
-          ? shareJson.message.trim()
-          : t`Failed to generate share links`;
+        shareMsg ||
+        publishMsg ||
+        t`Failed to generate share links`;
       throw new Error(msg);
     } catch (e) {
       enqueueSnackBar(

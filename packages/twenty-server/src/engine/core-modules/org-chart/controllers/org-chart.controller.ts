@@ -1,22 +1,22 @@
 import {
-    Body,
-    Controller,
-    Get,
-    HttpException,
-    HttpStatus,
-    Logger,
-    Param,
-    Post,
-    Query,
-    Req,
-    Res,
-    UseGuards,
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
 } from '@nestjs/common';
 
 import { Request, Response } from 'express';
 import {
-    isLikelyBrowserLogoRequest,
-    isLikelyBrowserRequest,
+  isLikelyBrowserLogoRequest,
+  isLikelyBrowserRequest,
 } from 'twenty-shared';
 import { v4 as uuidV4 } from 'uuid';
 
@@ -33,10 +33,10 @@ import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/typ
 import { ApolloIoRestService } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
 import {
-    ClassicPeopleSearchStrategyResult,
-    GeneratedSearchParameters,
-    RecruiterPeopleSearchStrategyResult,
-    SalesNavigatorPeopleSearchStrategyResult,
+  ClassicPeopleSearchStrategyResult,
+  GeneratedSearchParameters,
+  RecruiterPeopleSearchStrategyResult,
+  SalesNavigatorPeopleSearchStrategyResult,
 } from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
 import { constructSearchParamKey } from 'src/engine/core-modules/candidate-search/utils/search-parameter.utils';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
@@ -64,34 +64,34 @@ import { PythonOrgChartService } from '../services/python-org-chart.service';
 import type { SuperImposeInputs } from '../types/super-impose.types';
 import { resolveFirstAutocompleteSource } from '../utils/first-autocomplete-source.util';
 import {
-    isOrgPublishForeverTtl,
-    ORG_PUBLISH_MAX_TTL_SECONDS,
-    resolveOrgChartPublishCacheTtlMs,
-    toOrgChartCacheTtlMs,
+  isOrgPublishForeverTtl,
+  ORG_PUBLISH_MAX_TTL_SECONDS,
+  resolveOrgChartPublishCacheTtlMs,
+  toOrgChartCacheTtlMs,
 } from '../utils/org-chart-cache-ttl.util';
 import { isOrgChartPdlProxyAuthorized } from '../utils/org-chart-pdl-proxy.util';
 import {
-    isLikelyBrowserOrgChartRequest,
-    shouldDenyUnauthenticatedOrgChartAccess,
+  isLikelyBrowserOrgChartRequest,
+  shouldDenyUnauthenticatedOrgChartAccess,
 } from '../utils/org-chart-public-access.util';
 import {
-    buildDefaultPublishSlug,
-    orgPublishedCompanyCacheKey,
-    orgPublishedSlugCacheKey,
-    type OrgPublishedSlugMapping,
-    validatePublishSlug,
+  buildDefaultPublishSlug,
+  orgPublishedCompanyCacheKey,
+  orgPublishedSlugCacheKey,
+  type OrgPublishedSlugMapping,
+  validatePublishSlug,
 } from '../utils/org-chart-published-slug.util';
 import { applyAsOfSnapshotToCandidates } from '../utils/orgchart-asof-snapshot.util';
 import { buildCompanyOrgChartCandidateListLogicalCacheKey } from '../utils/orgchart-cache-keys.util';
 import {
-    computeTimelineMetricsFromCandidates,
-    computeTimelineProfilesFromCandidates,
+  computeTimelineMetricsFromCandidates,
+  computeTimelineProfilesFromCandidates,
 } from '../utils/orgchart-timeline-metrics.util';
 import { normalizePersonForPythonOrgChartBuild } from '../utils/python-org-chart-person.util';
 import {
-    ApifyCompanyProfileActorItem,
-    generateSampleApifyCompanyProfileActorItems,
-    generateSampleContactOutPeopleSearchResponse,
+  ApifyCompanyProfileActorItem,
+  generateSampleApifyCompanyProfileActorItems,
+  generateSampleContactOutPeopleSearchResponse,
 } from '../utils/sample-company/sampleCompanyDatasets';
 
 @Controller('org-chart')
@@ -370,17 +370,15 @@ export class OrgChartController {
       );
     }
 
-    // Ensure we have a persisted org chart to share (S3 is source of truth for share viewer).
     const normalizedCompanyId = this.normalizeCompanyId(companyId);
-    const existing =
-      await this.orgChartS3Service.getOrgChart(normalizedCompanyId);
 
-    if (!existing) {
-      throw new HttpException(
-        'No persisted org chart found. Generate the full org chart first, then share.',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    await this.orgChartService.requirePersistedOrgChartFromS3ForShare({
+      companyId: normalizedCompanyId,
+      companyName:
+        typeof body.companyName === 'string'
+          ? body.companyName.trim()
+          : undefined,
+    });
 
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(authToken);
@@ -488,11 +486,7 @@ export class OrgChartController {
       throw new HttpException('Share link expired', HttpStatus.GONE);
     }
 
-    const orgChart = await this.orgChartS3Service.getOrgChart(companyId);
-
-    if (!orgChart) {
-      throw new HttpException('Org chart not found', HttpStatus.NOT_FOUND);
-    }
+    const orgChart = await this.loadShareableOrgChartFromS3(companyId);
 
     const payload: Record<string, unknown> = {
       ...(orgChart as unknown as Record<string, unknown>),
@@ -573,15 +567,14 @@ export class OrgChartController {
     }
 
     const normalizedCompanyId = this.normalizeCompanyId(companyId);
-    const existing =
-      await this.orgChartS3Service.getOrgChart(normalizedCompanyId);
 
-    if (!existing) {
-      throw new HttpException(
-        'No persisted org chart found. Generate the full org chart first, then publish.',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    await this.orgChartService.requirePersistedOrgChartFromS3ForShare({
+      companyId: normalizedCompanyId,
+      companyName:
+        typeof body.companyName === 'string'
+          ? body.companyName.trim()
+          : undefined,
+    });
 
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(authToken);
@@ -749,11 +742,7 @@ export class OrgChartController {
       await this.resolvePublishedOrgChartMapping(publishSlugParam);
     const normalizedCompanyId = this.normalizeCompanyId(companyId);
 
-    const orgChart = await this.orgChartS3Service.getOrgChart(normalizedCompanyId);
-
-    if (!orgChart) {
-      throw new HttpException('Org chart not found', HttpStatus.NOT_FOUND);
-    }
+    const orgChart = await this.loadShareableOrgChartFromS3(normalizedCompanyId);
 
     const payload: Record<string, unknown> = {
       ...(orgChart as unknown as Record<string, unknown>),
@@ -994,6 +983,23 @@ export class OrgChartController {
   /** Convert URL slug (e.g. united-states) to ES country format (e.g. united states). */
   private slugToCountry(slug: string): string {
     return slug.replace(/-/g, ' ').toLowerCase().trim();
+  }
+
+  private async loadShareableOrgChartFromS3(companyId: string) {
+    const orgChart =
+      await this.orgChartService.getOrgChartFromS3WithAliasLookup(companyId);
+
+    if (orgChart) {
+      return orgChart;
+    }
+
+    const fallback = await this.orgChartS3Service.getOrgChart(companyId);
+
+    if (!fallback) {
+      throw new HttpException('Org chart not found', HttpStatus.NOT_FOUND);
+    }
+
+    return fallback;
   }
 
   /**
