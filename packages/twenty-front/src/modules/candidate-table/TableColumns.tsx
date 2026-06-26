@@ -641,6 +641,7 @@ export const TableColumns = ({
     data: 'name',
     title: 'Name',
     width: 200,
+    readOnly: true,
     renderer: nameRenderer,
   });
 

@@ -2484,8 +2484,13 @@ export class CandidateSourcingController {
         console.log('CV processing completed successfully');
       } catch (cvError) {
         console.error('Error processing CV:', cvError);
-        // Don't fail the whole request if CV processing fails
-        // Just log the error and continue
+        return {
+          status: 'error',
+          message: 'CV saved to storage but failed to attach to candidate',
+          error: cvError instanceof Error ? cvError.message : String(cvError),
+          file_path: filePath,
+          uniqueStringKey,
+        };
       }
       
       // Update table data with error handling

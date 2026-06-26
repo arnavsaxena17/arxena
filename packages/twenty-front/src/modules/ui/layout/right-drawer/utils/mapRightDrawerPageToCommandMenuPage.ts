@@ -21,6 +21,18 @@ export const mapRightDrawerPageToCommandMenuPage = (
       return CommandMenuPages.WorkflowStepView;
     case RightDrawerPages.WorkflowStepEdit:
       return CommandMenuPages.WorkflowStepEdit;
+    case RightDrawerPages.CandidateChat:
+      return CommandMenuPages.CandidateChat;
+    case RightDrawerPages.CandidateActions:
+      return CommandMenuPages.CandidateActions;
+    case RightDrawerPages.ClientChat:
+      return CommandMenuPages.ClientChat;
+    case RightDrawerPages.SimpleActivity:
+      return CommandMenuPages.SimpleActivity;
+    case RightDrawerPages.AllActions:
+      return CommandMenuPages.AllActions;
+    case RightDrawerPages.Notifications:
+      return CommandMenuPages.Notifications;
     default:
       return CommandMenuPages.Root;
   }

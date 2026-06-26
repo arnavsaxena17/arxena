@@ -9,4 +9,10 @@ export enum CommandMenuPages {
   WorkflowStepView = 'workflow-step-view',
   WorkflowStepEdit = 'workflow-step-edit',
   SearchRecords = 'search-records',
+  CandidateChat = 'candidate-chat',
+  CandidateActions = 'candidate-actions',
+  ClientChat = 'client-chat',
+  SimpleActivity = 'simple-activity',
+  AllActions = 'all-actions',
+  Notifications = 'notifications',
 }

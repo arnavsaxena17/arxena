@@ -4,26 +4,26 @@ import * as os from 'os';
 import * as path from 'path';
 
 import {
-    ArxenaCandidateNode,
-    ArxenaPersonNode,
-    CandidateFieldEdge,
-    CandidatesEdge,
-    CreateManyCandidateFieldValues,
-    CreateManyCandidates,
-    createOneCandidateField,
-    getGraphqlToFindManyJobsWithCandidateValues,
-    graphqlQueryToCreateOneCandidateFieldValue,
-    graphqlQueryToFindManyCandidateFields,
-    graphqlToFetchAllCandidateData,
-    graphqlToFindManyCandidateFieldValues,
-    graphQltoUpdateOneCandidate,
-    Job,
-    mutationToUpdateOnePerson,
-    PageInfo,
-    PersonNode,
-    resolveIsOrgChartEnabledFromWorkspace,
-    updateOneCandidateFieldValue,
-    UserProfile
+  ArxenaCandidateNode,
+  ArxenaPersonNode,
+  CandidateFieldEdge,
+  CandidatesEdge,
+  CreateManyCandidateFieldValues,
+  CreateManyCandidates,
+  createOneCandidateField,
+  getGraphqlToFindManyJobsWithCandidateValues,
+  graphqlQueryToCreateOneCandidateFieldValue,
+  graphqlQueryToFindManyCandidateFields,
+  graphqlToFetchAllCandidateData,
+  graphqlToFindManyCandidateFieldValues,
+  graphQltoUpdateOneCandidate,
+  Job,
+  mutationToUpdateOnePerson,
+  PageInfo,
+  PersonNode,
+  resolveIsOrgChartEnabledFromWorkspace,
+  updateOneCandidateFieldValue,
+  UserProfile
 } from 'twenty-shared';
 import { NameProcessor } from '../../workspace-modifications/object-apis/data/nameProcessor';
 
@@ -31,12 +31,12 @@ import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/
 import { generateCompleteMappings, mapArxCandidateToPersonNode, processArxCandidate } from 'src/engine/core-modules/candidate-sourcing/utils/data-transformation-utility';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
 import {
-    CandidateUploadLookup,
-    deduplicateProfilesForUpload,
-    extractUploadUrlBucket,
-    findExistingCandidateForUpload,
-    getUploadProfileDedupMapKey,
-    normalizeUrlForDedup,
+  CandidateUploadLookup,
+  deduplicateProfilesForUpload,
+  extractUploadUrlBucket,
+  findExistingCandidateForUpload,
+  getUploadProfileDedupMapKey,
+  normalizeUrlForDedup,
 } from 'src/engine/core-modules/candidate-sourcing/utils/upload-profile-dedup.utils';
 import { v4 } from 'uuid';
 
@@ -3534,9 +3534,24 @@ export class CandidateService {
   
   private async uploadFileToTwenty(filePath: string, fileName: string, contentType: string, apiToken: string): Promise<{ uploadFilePath: string }> {
     try {
-      const fs = require('fs');
       const FormData = require('form-data');
       const axios = require('axios');
+
+      const lastSlashIndex = filePath.lastIndexOf('/');
+      const folderPath =
+        lastSlashIndex >= 0 ? filePath.substring(0, lastSlashIndex) : '';
+      const storageFileName =
+        lastSlashIndex >= 0 ? filePath.substring(lastSlashIndex + 1) : filePath;
+
+      console.log('Reading CV from storage for Twenty upload:', {
+        folderPath,
+        filename: storageFileName,
+      });
+
+      const fileStream = await this.fileStorageService.read({
+        folderPath,
+        filename: storageFileName,
+      });
       
       const formData = new FormData();
       const operations = JSON.stringify({
@@ -3549,7 +3564,7 @@ export class CandidateService {
       
       formData.append('operations', operations);
       formData.append('map', map);
-      formData.append('1', fs.createReadStream(filePath), {
+      formData.append('1', fileStream, {
         filename: fileName,
         contentType: contentType
       });
