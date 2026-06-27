@@ -4,19 +4,19 @@ import { isVerifiedSearchBot } from 'twenty-shared';
 
 import { getClientIpFromHeaders } from '@/lib/bot-detection';
 import {
-  applyOrgChartLikelyBrowserRequestHeader,
-  applyOrgChartVerifiedBotRequestHeader,
-  checkOrgChartApiGuard,
-  orgChartApiGuardToResponse,
-  resolveIsLikelyBrowser,
-  resolveOrgChartRateLimitProfile,
+    applyOrgChartLikelyBrowserRequestHeader,
+    applyOrgChartVerifiedBotRequestHeader,
+    checkOrgChartApiGuard,
+    orgChartApiGuardToResponse,
+    resolveIsLikelyBrowser,
+    resolveOrgChartRateLimitProfile,
 } from '@/lib/org-chart-api-guard';
 import {
-  getArxStaticCookieOptions,
-  hasArxStaticAssetCookie,
-  isOrgChartStaticAssetRequest,
-  ORG_CHART_STATIC_ONLY_HEADER,
-  resolveOrgChartStaticOnly,
+    getArxStaticCookieOptions,
+    hasArxStaticAssetCookie,
+    ORG_CHART_STATIC_ONLY_HEADER,
+    resolveOrgChartStaticOnly,
+    shouldBlockOrgChartStaticChunkRequest,
 } from '@/lib/org-chart-static-only';
 
 /**
@@ -46,17 +46,15 @@ function isMalformedServerActionStylePost(request: NextRequest): boolean {
 }
 
 function handleNextStaticAssetGate(request: NextRequest): NextResponse | null {
-  if (!request.nextUrl.pathname.startsWith('/_next/static')) {
+  const shouldBlock = shouldBlockOrgChartStaticChunkRequest({
+    pathname: request.nextUrl.pathname,
+    referer: request.headers.get('referer'),
+    hasArxStaticCookie: hasArxStaticAssetCookie(request.cookies),
+    headers: request.headers,
+  });
+
+  if (!shouldBlock) {
     return null;
-  }
-
-  if (hasArxStaticAssetCookie(request.cookies)) {
-    return NextResponse.next();
-  }
-
-  const referer = request.headers.get('referer');
-  if (!isOrgChartStaticAssetRequest(referer)) {
-    return NextResponse.next();
   }
 
   return new NextResponse(null, { status: 403 });

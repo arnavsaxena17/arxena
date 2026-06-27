@@ -1,7 +1,8 @@
 import {
-  getOrgChartScraperCidrs,
-  isClientIpInScraperCidrs,
-  resolveOrgChartStaticOnly,
+    getOrgChartScraperCidrs,
+    isClientIpInScraperCidrs,
+    resolveOrgChartStaticOnly,
+    shouldBlockOrgChartStaticChunkRequest,
 } from '@/lib/org-chart-static-only';
 
 describe('org-chart-static-only', () => {
@@ -73,6 +74,49 @@ describe('org-chart-static-only', () => {
           'cloudfront-viewer-address': '77.75.78.165:12345',
         }),
         isVerifiedBot: false,
+      }),
+    ).toBe(false);
+  });
+
+  it('shouldBlockOrgChartStaticChunkRequest blocks scrapers without arx_static', () => {
+    expect(
+      shouldBlockOrgChartStaticChunkRequest({
+        pathname: '/_next/static/chunks/16-abc.js',
+        referer: 'https://arxena.com/org/stayvista',
+        hasArxStaticCookie: false,
+        headers: new Headers({
+          'user-agent': 'python-requests/2.31.0',
+        }),
+      }),
+    ).toBe(true);
+  });
+
+  it('shouldBlockOrgChartStaticChunkRequest allows real browsers without arx_static', () => {
+    expect(
+      shouldBlockOrgChartStaticChunkRequest({
+        pathname: '/_next/static/chunks/16-abc.js',
+        referer: 'https://arxena.com/org/stayvista',
+        hasArxStaticCookie: false,
+        headers: new Headers({
+          'user-agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+          'sec-fetch-site': 'same-origin',
+          'sec-fetch-mode': 'cors',
+          'sec-ch-ua': '"Chromium";v="120", "Google Chrome";v="120"',
+        }),
+      }),
+    ).toBe(false);
+  });
+
+  it('shouldBlockOrgChartStaticChunkRequest allows when arx_static cookie is present', () => {
+    expect(
+      shouldBlockOrgChartStaticChunkRequest({
+        pathname: '/_next/static/chunks/16-abc.js',
+        referer: 'https://arxena.com/org/stayvista',
+        hasArxStaticCookie: true,
+        headers: new Headers({
+          'user-agent': 'python-requests/2.31.0',
+        }),
       }),
     ).toBe(false);
   });

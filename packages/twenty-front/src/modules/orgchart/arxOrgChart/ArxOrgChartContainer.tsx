@@ -24,7 +24,7 @@ import {
     useOrgChartData,
     useOrgChartFilterOptions,
 } from 'twenty-orgchart';
-import { OrgChartNodeData, extractOrgData, resolveLinkedinUnipileAccountIdForWorkspaceMember, resolveOrgChartCanonicalCompanyId, toTitleCase, type OrgchartSearchMode } from 'twenty-shared';
+import { DEFAULT_ORG_CHART_GRADE_VISIBILITY, OrgChartNodeData, extractOrgData, filterOrgChartNodeDataArray, resolveLinkedinUnipileAccountIdForWorkspaceMember, resolveOrgChartCanonicalCompanyId, toTitleCase, type OrgChartGradeTier, type OrgChartGradeVisibility, type OrgchartSearchMode } from 'twenty-shared';
 import { Mixpanel } from '~/mixpanel';
 
 import { getArxenaSiteBaseUrl } from '@/auth/utils/arxenaSiteUrl';
@@ -144,6 +144,9 @@ export const ArxOrgChartContainer = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResultCount, setSearchResultCount] = useState<number | null>(
     null,
+  );
+  const [gradeVisibility, setGradeVisibility] = useState<OrgChartGradeVisibility>(
+    DEFAULT_ORG_CHART_GRADE_VISIBILITY,
   );
   const [businessDivisionQuery, setBusinessDivisionQuery] = useState('');
   const [isEnrichedLeadershipLoading, setIsEnrichedLeadershipLoading] =
@@ -811,6 +814,24 @@ export const ArxOrgChartContainer = ({
     baseUrl,
   });
 
+  const displayedNodeDataArray = useMemo(
+    () =>
+      filterOrgChartNodeDataArray(nodeDataArray, {
+        gradeVisibility,
+      }),
+    [nodeDataArray, gradeVisibility],
+  );
+
+  const handleGradeVisibilityChange = useCallback(
+    (tier: OrgChartGradeTier, checked: boolean) => {
+      setGradeVisibility((current: OrgChartGradeVisibility) => ({
+        ...current,
+        [tier]: checked,
+      }));
+    },
+    [],
+  );
+
   const orgChartViewCompanyName =
     effectiveCompanyName ?? fallbackCompanyInfo?.companyName;
 
@@ -1312,6 +1333,8 @@ export const ArxOrgChartContainer = ({
     onSearch: handleSearch,
     onClearSearch: handleClearSearch,
     diagramHandleRef,
+    gradeVisibility,
+    onGradeVisibilityChange: handleGradeVisibilityChange,
     onGetAll: () => {
       requestCandidateSearchConfirm(
         t`Confirm full org chart search`,
@@ -1698,6 +1721,7 @@ export const ArxOrgChartContainer = ({
         isLoading={isLoading}
         error={error ?? null}
         nodeDataArray={nodeDataArray}
+        displayedNodeDataArray={displayedNodeDataArray}
         isBlankTemplate={isBlankTemplate}
         accessToken={accessToken}
         onNavigateToSignup={() => navigate(AppPath.SignInUp)}

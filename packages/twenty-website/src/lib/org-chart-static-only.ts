@@ -118,3 +118,38 @@ export const hasArxStaticAssetCookie = (cookies: {
 
 export const isOrgChartStaticAssetRequest = (referer: string | null): boolean =>
   Boolean(referer?.includes('/org-chart') || referer?.includes('/org/'));
+
+export type ShouldBlockOrgChartStaticChunkInput = {
+  pathname: string;
+  referer: string | null;
+  hasArxStaticCookie: boolean;
+  headers: Headers;
+};
+
+/**
+ * Scrapers that fetch org-chart HTML should not load interactive JS bundles unless
+ * they replay the arx_static cookie set on browser document navigations.
+ * Real browsers (Sec-Fetch-* / Sec-CH-UA) are allowed immediately so lazy-loaded
+ * GoJS chunks are not blocked by cookie timing on first paint.
+ */
+export const shouldBlockOrgChartStaticChunkRequest = (
+  input: ShouldBlockOrgChartStaticChunkInput,
+): boolean => {
+  if (!input.pathname.startsWith('/_next/static')) {
+    return false;
+  }
+
+  if (input.hasArxStaticCookie) {
+    return false;
+  }
+
+  if (!isOrgChartStaticAssetRequest(input.referer)) {
+    return false;
+  }
+
+  if (isLikelyBrowserRequest(input.headers)) {
+    return false;
+  }
+
+  return true;
+};

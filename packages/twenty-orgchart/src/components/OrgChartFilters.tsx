@@ -2,20 +2,25 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import styled from '@emotion/styled';
 import {
-  IconAdjustmentsHorizontal,
-  IconChevronDown,
-  IconSearch,
-  IconX,
+    IconAdjustmentsHorizontal,
+    IconChevronDown,
+    IconSearch,
+    IconX,
 } from '@tabler/icons-react';
 
-import { toTitleCase } from 'twenty-shared';
+import {
+    DEFAULT_ORG_CHART_GRADE_VISIBILITY,
+    toTitleCase,
+    type OrgChartGradeTier,
+    type OrgChartGradeVisibility,
+} from 'twenty-shared';
 
 import {
-  sortOrgChartCountryKeys
+    sortOrgChartCountryKeys
 } from '../utils/orgChartFilterDropdownSort';
 import {
-  buildVisibleFunctionRoots,
-  formatOrgChartFunctionRootOptionLabel,
+    buildVisibleFunctionRoots,
+    formatOrgChartFunctionRootOptionLabel,
 } from '../utils/orgChartFunctionRootOptions';
 import { OrgChartDiagramHandle } from './OrgChartDiagram.types';
 
@@ -359,6 +364,49 @@ const StyledSearchViewActions = styled.div`
   }
 `;
 
+const StyledGradeFilterWrap = styled.div`
+  position: relative;
+`;
+
+const StyledGradeFilterTrigger = styled(StyledSearchButton)`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(0.5)};
+`;
+
+const StyledGradeFilterMenu = styled.div`
+  position: absolute;
+  top: calc(100% + ${({ theme }) => theme.spacing(0.5)});
+  right: 0;
+  z-index: 40;
+  min-width: 200px;
+  padding: ${({ theme }) => theme.spacing(1)} 0;
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  background: ${({ theme }) => theme.background.primary};
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+`;
+
+const StyledGradeFilterOption = styled.label`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1.5)};
+  padding: ${({ theme }) => theme.spacing(1)}
+    ${({ theme }) => theme.spacing(1.5)};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.primary};
+  cursor: pointer;
+
+  &:hover {
+    background: ${({ theme }) => theme.background.transparent.light};
+  }
+
+  input {
+    margin: 0;
+    cursor: pointer;
+  }
+`;
+
 export type OrgChartFiltersProps = {
   availableCountries: string[];
   countryPercentLabels: Record<string, string>;
@@ -388,6 +436,85 @@ export type OrgChartSearchControlsProps = {
   onGetAll: () => void;
   onGetLeaders: () => void;
   onViewAllCandidates: () => void;
+  gradeVisibility?: OrgChartGradeVisibility;
+  onGradeVisibilityChange?: (
+    tier: OrgChartGradeTier,
+    checked: boolean,
+  ) => void;
+};
+
+const GRADE_FILTER_OPTIONS: Array<{
+  tier: OrgChartGradeTier;
+  label: string;
+}> = [
+  { tier: 'leadership', label: 'Show leadership' },
+  { tier: 'managers', label: 'Show managers' },
+  { tier: 'executives', label: 'Show executives' },
+];
+
+const OrgChartGradeFilterDropdown = ({
+  gradeVisibility,
+  onGradeVisibilityChange,
+}: {
+  gradeVisibility: OrgChartGradeVisibility;
+  onGradeVisibilityChange: (tier: OrgChartGradeTier, checked: boolean) => void;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!wrapRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isOpen]);
+
+  const activeCount = GRADE_FILTER_OPTIONS.filter(
+    ({ tier }) => gradeVisibility[tier],
+  ).length;
+
+  return (
+    <StyledGradeFilterWrap ref={wrapRef}>
+      <StyledGradeFilterTrigger
+        type="button"
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
+        onClick={() => setIsOpen((open) => !open)}
+      >
+        Levels{activeCount < 3 ? ` (${activeCount})` : ''}
+        <IconChevronDown size={14} aria-hidden />
+      </StyledGradeFilterTrigger>
+      {isOpen ? (
+        <StyledGradeFilterMenu role="menu">
+          {GRADE_FILTER_OPTIONS.map(({ tier, label }) => (
+            <StyledGradeFilterOption key={tier} role="menuitemcheckbox">
+              <input
+                type="checkbox"
+                checked={gradeVisibility[tier]}
+                onChange={(event) => {
+                  onGradeVisibilityChange(tier, event.target.checked);
+                }}
+              />
+              {label}
+            </StyledGradeFilterOption>
+          ))}
+        </StyledGradeFilterMenu>
+      ) : null}
+    </StyledGradeFilterWrap>
+  );
 };
 
 export const OrgChartFilters = ({
@@ -687,6 +814,8 @@ export const OrgChartSearchControls = ({
   onSearch,
   onClearSearch,
   diagramHandleRef,
+  gradeVisibility = DEFAULT_ORG_CHART_GRADE_VISIBILITY,
+  onGradeVisibilityChange,
 }: OrgChartSearchControlsProps) => {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -760,6 +889,12 @@ export const OrgChartSearchControls = ({
           >
             Zoom to fit
           </StyledSearchButton>
+          {onGradeVisibilityChange ? (
+            <OrgChartGradeFilterDropdown
+              gradeVisibility={gradeVisibility}
+              onGradeVisibilityChange={onGradeVisibilityChange}
+            />
+          ) : null}
         </StyledSearchViewActions>
         <StyledSearchMeta>
           {typeof searchResultCount === 'number' && searchResultCount > 0

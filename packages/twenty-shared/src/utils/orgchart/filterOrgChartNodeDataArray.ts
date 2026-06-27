@@ -1,14 +1,84 @@
 import type { JsonValue, OrgChartNodeData } from './orgChartDataUtils';
 
+export type OrgChartGradeTier = 'leadership' | 'managers' | 'executives';
+
+export type OrgChartGradeVisibility = Record<OrgChartGradeTier, boolean>;
+
+export const DEFAULT_ORG_CHART_GRADE_VISIBILITY: OrgChartGradeVisibility = {
+  leadership: true,
+  managers: true,
+  executives: true,
+};
+
 export type OrgChartNodeDataFilterOptions = {
   country?: string;
   functionRoot?: string;
+  gradeVisibility?: OrgChartGradeVisibility;
 };
 
 type FilterableOrgChartNode = OrgChartNodeData & {
   std_function_root?: string;
   std_function?: string;
+  std_grade?: string;
+  std_grade_category?: string;
   allCandidates?: JsonValue[];
+};
+
+export const hasActiveOrgChartGradeFilter = (
+  gradeVisibility?: OrgChartGradeVisibility,
+): boolean => {
+  if (!gradeVisibility) {
+    return false;
+  }
+  return (
+    !gradeVisibility.leadership ||
+    !gradeVisibility.managers ||
+    !gradeVisibility.executives
+  );
+};
+
+const resolveNodeGradeTier = (
+  node: FilterableOrgChartNode,
+): OrgChartGradeTier | null => {
+  const category =
+    typeof node.std_grade_category === 'string'
+      ? node.std_grade_category.trim().toLowerCase()
+      : '';
+  const grade =
+    typeof node.std_grade === 'string'
+      ? node.std_grade.trim().toLowerCase()
+      : '';
+
+  if (
+    category === 'senior' ||
+    category === 'ceo' ||
+    grade === 'leadership' ||
+    grade === 'ceo'
+  ) {
+    return 'leadership';
+  }
+  if (category === 'mid' || grade === 'mid') {
+    return 'managers';
+  }
+  if (category === 'entry' || grade === 'entry') {
+    return 'executives';
+  }
+  return null;
+};
+
+const nodeMatchesGradeVisibility = (
+  node: FilterableOrgChartNode,
+  gradeVisibility: OrgChartGradeVisibility,
+): boolean => {
+  const tier = resolveNodeGradeTier(node);
+  if (!tier) {
+    return (
+      gradeVisibility.leadership &&
+      gradeVisibility.managers &&
+      gradeVisibility.executives
+    );
+  }
+  return gradeVisibility[tier];
 };
 
 export const hasMeaningfulOrgChartCountryFilter = (
@@ -238,6 +308,18 @@ const findCountrySeedKeys = (
     .filter((node) => nodeMatchesCountry(node, requestedCountry))
     .map((node) => node.key);
 
+const buildKeepSetForGradeFilterSeeds = (
+  nodes: FilterableOrgChartNode[],
+  seeds: number[],
+): Set<number> => {
+  if (seeds.length === 0) {
+    return new Set();
+  }
+
+  const byKey = new Map(nodes.map((node) => [node.key, node]));
+  return collectAncestors(seeds, byKey);
+};
+
 const buildKeepSetForSeeds = (
   nodes: FilterableOrgChartNode[],
   seeds: number[],
@@ -267,8 +349,9 @@ export const filterOrgChartNodeDataArray = (
   const hasFunction = hasMeaningfulOrgChartFunctionRootFilter(
     options.functionRoot,
   );
+  const hasGrade = hasActiveOrgChartGradeFilter(options.gradeVisibility);
 
-  if (!hasCountry && !hasFunction) {
+  if (!hasCountry && !hasFunction && !hasGrade) {
     return nodes;
   }
 
@@ -276,9 +359,33 @@ export const filterOrgChartNodeDataArray = (
     return nodes;
   }
 
+  const nodeMatchesActiveFilters = (node: FilterableOrgChartNode): boolean => {
+    if (hasCountry && !nodeMatchesCountry(node, options.country!.trim())) {
+      return false;
+    }
+    if (
+      hasFunction &&
+      !nodeMatchesFunctionRoot(node, options.functionRoot!.trim())
+    ) {
+      return false;
+    }
+    if (
+      hasGrade &&
+      !nodeMatchesGradeVisibility(node, options.gradeVisibility!)
+    ) {
+      return false;
+    }
+    return true;
+  };
+
   let keepSet: Set<number>;
 
-  if (hasCountry && hasFunction) {
+  if (hasGrade) {
+    const seeds = typedNodes
+      .filter(nodeMatchesActiveFilters)
+      .map((node) => node.key);
+    keepSet = buildKeepSetForGradeFilterSeeds(typedNodes, seeds);
+  } else if (hasCountry && hasFunction) {
     const country = options.country!.trim();
     const functionRoot = options.functionRoot!.trim();
     const seeds = typedNodes

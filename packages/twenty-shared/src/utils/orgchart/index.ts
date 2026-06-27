@@ -1,7 +1,11 @@
 export {
+    DEFAULT_ORG_CHART_GRADE_VISIBILITY,
     filterOrgChartNodeDataArray,
+    hasActiveOrgChartGradeFilter,
     hasMeaningfulOrgChartCountryFilter,
     hasMeaningfulOrgChartFunctionRootFilter,
+    type OrgChartGradeTier,
+    type OrgChartGradeVisibility,
     type OrgChartNodeDataFilterOptions
 } from './filterOrgChartNodeDataArray';
 export { getProxiedImageUrl } from './getProxiedImageUrl';

@@ -18,28 +18,31 @@ import { companySearchLightTheme } from '@/lib/company-search';
 import { FREE_TRIAL_CTA_LABEL } from '@/lib/free-trial-flow';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 import {
-  mergeOrgChartCompanyField,
-  needsOrgChartCompanyInfoLookup,
-  normalizeOptionalCompanyField,
+    mergeOrgChartCompanyField,
+    needsOrgChartCompanyInfoLookup,
+    normalizeOptionalCompanyField,
 } from '@/lib/org-chart-company-metadata';
 import { processPublishedOrgChartPayload } from '@/lib/process-published-org-chart-payload';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- orgchart-core is used alongside dynamic OrgChartDiagram
 import {
-  OrgChartDiagramHandle,
-  OrgChartFilters,
-  OrgChartSearchControls,
-  OrgChartSignUpModal,
-  OrgChartTimelineSlider,
-  useCompanyInfoLookup,
-  useOrgChartFilterOptions,
+    OrgChartDiagramHandle,
+    OrgChartFilters,
+    OrgChartSearchControls,
+    OrgChartSignUpModal,
+    OrgChartTimelineSlider,
+    useCompanyInfoLookup,
+    useOrgChartFilterOptions,
 } from 'twenty-orgchart/orgchart-core';
 import {
-  filterOrgChartNodeDataArray,
-  hasMeaningfulOrgChartCountryFilter,
-  hasMeaningfulOrgChartFunctionRootFilter,
-  navigateToOrgChartSignup,
-  OrgChartNodeData,
-  toSlug,
+    DEFAULT_ORG_CHART_GRADE_VISIBILITY,
+    filterOrgChartNodeDataArray,
+    hasMeaningfulOrgChartCountryFilter,
+    hasMeaningfulOrgChartFunctionRootFilter,
+    navigateToOrgChartSignup,
+    OrgChartNodeData,
+    toSlug,
+    type OrgChartGradeTier,
+    type OrgChartGradeVisibility,
 } from 'twenty-shared';
 
 const OrgChartDiagram = dynamic(
@@ -372,6 +375,9 @@ export const OrgChartPageClient = ({
   const [searchResultCount, setSearchResultCount] = useState<number | null>(
     null,
   );
+  const [gradeVisibility, setGradeVisibility] = useState<OrgChartGradeVisibility>(
+    DEFAULT_ORG_CHART_GRADE_VISIBILITY,
+  );
   const [clickedNode, setClickedNode] = useState<OrgChartNodeData | null>(null);
   const [exactEmployeeCount, setExactEmployeeCount] = useState<number | null>(
     null,
@@ -445,18 +451,29 @@ export const OrgChartPageClient = ({
 
   const displayedNodeDataArray = useMemo(() => {
     if (!filterInPlace) {
-      return chartNodeDataArray;
+      return filterOrgChartNodeDataArray(chartNodeDataArray, {
+        gradeVisibility,
+      });
     }
     return filterOrgChartNodeDataArray(chartNodeDataArray, {
       country: selectedCountry,
       functionRoot: selectedFunctionRoot,
+      gradeVisibility,
     });
   }, [
     filterInPlace,
     chartNodeDataArray,
     selectedCountry,
     selectedFunctionRoot,
+    gradeVisibility,
   ]);
+
+  const handleGradeVisibilityChange = useCallback(
+    (tier: OrgChartGradeTier, checked: boolean) => {
+      setGradeVisibility((current) => ({ ...current, [tier]: checked }));
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!timelineEnabled) {
@@ -877,6 +894,8 @@ export const OrgChartPageClient = ({
     onSearch: handleSearch,
     onClearSearch: handleClearSearch,
     diagramHandleRef: diagramHandleRef,
+    gradeVisibility,
+    onGradeVisibilityChange: handleGradeVisibilityChange,
     onGetAll: () => {},
     onGetLeaders: () => {},
     onViewAllCandidates: () => {},

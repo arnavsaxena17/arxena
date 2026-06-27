@@ -1,5 +1,6 @@
 import {
     filterOrgChartNodeDataArray,
+    hasActiveOrgChartGradeFilter,
     hasMeaningfulOrgChartCountryFilter,
     hasMeaningfulOrgChartFunctionRootFilter,
 } from './filterOrgChartNodeDataArray';
@@ -96,5 +97,102 @@ describe('filterOrgChartNodeDataArray', () => {
       functionRoot: 'finance',
     });
     expect(result).toHaveLength(0);
+  });
+
+  it('detects active grade filters', () => {
+    expect(
+      hasActiveOrgChartGradeFilter({
+        leadership: true,
+        managers: true,
+        executives: true,
+      }),
+    ).toBe(false);
+    expect(
+      hasActiveOrgChartGradeFilter({
+        leadership: true,
+        managers: false,
+        executives: true,
+      }),
+    ).toBe(true);
+  });
+
+  it('filters by leadership grade tier with ancestors', () => {
+    const gradedTree: OrgChartNodeData[] = [
+      makeNode({
+        key: 1,
+        parent: undefined,
+        std_grade: 'ceo',
+        std_grade_category: 'senior',
+      }),
+      makeNode({
+        key: 2,
+        parent: 1,
+        std_grade: 'leadership',
+        std_grade_category: 'senior',
+      }),
+      makeNode({
+        key: 3,
+        parent: 2,
+        std_grade: 'mid',
+        std_grade_category: 'mid',
+      }),
+      makeNode({
+        key: 4,
+        parent: 3,
+        std_grade: 'entry',
+        std_grade_category: 'entry',
+      }),
+    ];
+
+    const result = filterOrgChartNodeDataArray(gradedTree, {
+      gradeVisibility: {
+        leadership: true,
+        managers: false,
+        executives: false,
+      },
+    });
+
+    expect(result.map((node) => node.key).sort()).toEqual([1, 2]);
+  });
+
+  it('filters by managers and executives tiers', () => {
+    const gradedTree: OrgChartNodeData[] = [
+      makeNode({
+        key: 1,
+        parent: undefined,
+        std_grade: 'leadership',
+        std_grade_category: 'senior',
+      }),
+      makeNode({
+        key: 2,
+        parent: 1,
+        std_grade: 'mid',
+        std_grade_category: 'mid',
+      }),
+      makeNode({
+        key: 3,
+        parent: 2,
+        std_grade: 'entry',
+        std_grade_category: 'entry',
+      }),
+    ];
+
+    const managersOnly = filterOrgChartNodeDataArray(gradedTree, {
+      gradeVisibility: {
+        leadership: false,
+        managers: true,
+        executives: false,
+      },
+    });
+    expect(managersOnly.map((node) => node.key).sort()).toEqual([1, 2]);
+
+    const executivesOnly = filterOrgChartNodeDataArray(gradedTree, {
+      gradeVisibility: {
+        leadership: false,
+        managers: false,
+        executives: true,
+      },
+    });
+    expect(executivesOnly.map((node) => node.key).sort()).toEqual([1, 2, 3]);
   });
 });

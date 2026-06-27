@@ -122,7 +122,7 @@ export const OrgChartShareModal = ({
   const { t } = useLingui();
   const { enqueueSnackBar } = useSnackBar();
   const [selectedExpiryId, setSelectedExpiryId] =
-    useState<ExpiryOption['id']>('12h');
+    useState<ExpiryOption['id']>('forever');
   const [isGenerating, setIsGenerating] = useState(false);
   const [shareUrl, setShareUrl] = useState<string>('');
   const [publishUrl, setPublishUrl] = useState<string>('');

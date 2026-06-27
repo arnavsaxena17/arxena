@@ -1,18 +1,18 @@
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 
 import {
-  OrgChartDiagram,
-  OrgChartDiagramHandle,
-  OrgChartDiagramProps,
-  OrgChartSearchControls,
+    OrgChartDiagram,
+    OrgChartDiagramHandle,
+    OrgChartDiagramProps,
+    OrgChartSearchControls,
 } from 'twenty-orgchart';
 import { OrgChartNodeData } from 'twenty-shared';
 
 import { OrgChartAddToJobModal } from '../components/OrgChartAddToJobModal';
 import { OrgChartCompanyDrawer } from '../components/OrgChartCompanyDrawer';
 import {
-  OrgChartHeader,
-  OrgChartHeaderProps,
+    OrgChartHeader,
+    OrgChartHeaderProps,
 } from '../components/OrgChartHeader';
 import { OrgChartOutreachModal } from '../components/OrgChartOutreachModal';
 import { OrgChartResultModal } from '../components/OrgChartResultModal';
@@ -23,36 +23,36 @@ import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/Drop
 import { DropdownMenuSeparator } from '@/ui/layout/dropdown/components/DropdownMenuSeparator';
 import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
 import {
-  ConfirmationModal,
-  StyledCenteredButton,
+    ConfirmationModal,
+    StyledCenteredButton,
 } from '@/ui/layout/modal/components/ConfirmationModal';
 import { Button, IconChevronDown, MenuItem } from 'twenty-ui';
 import type { OrgChartLinkedInSearchEstimate } from '../hooks/useOrgChartActions';
 
 import {
-  StyledAsOfMonthPicker,
-  StyledContainer,
-  StyledDiagramArea,
-  StyledDiagramBody,
-  StyledErrorMessage,
-  StyledLeadershipBannerLink,
-  StyledLeadershipBannerPaidNote,
-  StyledLeadershipInfoBanner,
-  StyledLeadershipLoadingOverlay,
-  StyledLoadingMessage,
-  StyledPreviewBannerSignupButton,
-  StyledPreviewPersistentBanner,
-  StyledProgressBanner,
-  StyledProgressCancelRow,
-  StyledProgressElapsed,
-  StyledSearchOverlay,
-  StyledSpinner,
-  StyledTemplateBanner,
-  StyledTemplateBannerButton,
-  StyledTopRightActionButton,
-  StyledTopRightActionsCenterGroup,
-  StyledTopRightActionsOverlay,
-  StyledTopRightActionsRightGroup,
+    StyledAsOfMonthPicker,
+    StyledContainer,
+    StyledDiagramArea,
+    StyledDiagramBody,
+    StyledErrorMessage,
+    StyledLeadershipBannerLink,
+    StyledLeadershipBannerPaidNote,
+    StyledLeadershipInfoBanner,
+    StyledLeadershipLoadingOverlay,
+    StyledLoadingMessage,
+    StyledPreviewBannerSignupButton,
+    StyledPreviewPersistentBanner,
+    StyledProgressBanner,
+    StyledProgressCancelRow,
+    StyledProgressElapsed,
+    StyledSearchOverlay,
+    StyledSpinner,
+    StyledTemplateBanner,
+    StyledTemplateBannerButton,
+    StyledTopRightActionButton,
+    StyledTopRightActionsCenterGroup,
+    StyledTopRightActionsOverlay,
+    StyledTopRightActionsRightGroup,
 } from './ArxOrgChart.styles';
 
 export type ArxOrgChartViewProps = {
@@ -60,6 +60,7 @@ export type ArxOrgChartViewProps = {
   isLoading: boolean;
   error: string | null;
   nodeDataArray: OrgChartNodeData[];
+  displayedNodeDataArray?: OrgChartNodeData[];
   isBlankTemplate: boolean;
   accessToken?: string;
   onNavigateToSignup?: () => void;
@@ -181,6 +182,7 @@ export const ArxOrgChartView = ({
   isLoading,
   error,
   nodeDataArray,
+  displayedNodeDataArray,
   isBlankTemplate,
   accessToken,
   onNavigateToSignup,
@@ -216,6 +218,7 @@ export const ArxOrgChartView = ({
   addToJobModalProps,
   outreachModalProps,
 }: ArxOrgChartViewProps) => {
+  const diagramNodeDataArray = displayedNodeDataArray ?? nodeDataArray;
   const multiSourceDropdownId = 'orgchart-multisource-dropdown';
   const { closeDropdown: closeMultiSourceDropdown } = useDropdown(
     multiSourceDropdownId,
@@ -385,7 +388,7 @@ export const ArxOrgChartView = ({
               <OrgChartDiagram
                 key={diagramRemountKey}
                 ref={diagramHandleRef}
-                nodeDataArray={nodeDataArray}
+                nodeDataArray={diagramNodeDataArray}
                 showNodeCapabilitiesHoverHint={showNodeCapabilitiesHoverHint}
                 {...diagramProps}
               />
