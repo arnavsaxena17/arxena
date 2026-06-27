@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
 import { DataSource, IsNull, Repository } from 'typeorm';
@@ -11,8 +11,8 @@ import { EnvironmentVariablesGroupData } from 'src/engine/core-modules/admin-pan
 import { EnvironmentVariablesOutput } from 'src/engine/core-modules/admin-panel/dtos/environment-variables.output';
 import { UserLookup } from 'src/engine/core-modules/admin-panel/dtos/user-lookup.entity';
 import {
-    AuthException,
-    AuthExceptionCode,
+  AuthException,
+  AuthExceptionCode,
 } from 'src/engine/core-modules/auth/auth.exception';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { LoginTokenService } from 'src/engine/core-modules/auth/token/services/login-token.service';
@@ -23,8 +23,8 @@ import { EnvironmentService } from 'src/engine/core-modules/environment/environm
 import { FeatureFlagKey } from 'src/engine/core-modules/feature-flag/enums/feature-flag-key.enum';
 import { FeatureFlag } from 'src/engine/core-modules/feature-flag/feature-flag.entity';
 import {
-    FeatureFlagException,
-    FeatureFlagExceptionCode,
+  FeatureFlagException,
+  FeatureFlagExceptionCode,
 } from 'src/engine/core-modules/feature-flag/feature-flag.exception';
 import { featureFlagValidator } from 'src/engine/core-modules/feature-flag/validates/feature-flag.validate';
 import { User } from 'src/engine/core-modules/user/user.entity';
@@ -80,6 +80,8 @@ const hasNonEmptyStringRowValue = (
 
 @Injectable()
 export class AdminPanelService {
+  private readonly logger = new Logger(AdminPanelService.name);
+
   constructor(
     private readonly loginTokenService: LoginTokenService,
     private readonly accessTokenService: AccessTokenService,
@@ -436,6 +438,9 @@ export class AdminPanelService {
       new AuthException('Workspace not found', AuthExceptionCode.INVALID_INPUT),
     );
 
+    this.logger.log(`Validating member linkedin stored cookies for workspace id: ${workspaceId} and workspace member id: ${workspaceMemberId}`);
+    this.logger.log(`Workspace in VALIDATE MEMBER LINKEDIN STORED COOKIES: ${JSON.stringify(workspace, null, 2)}`);
+
     const schema = this.workspaceDataSourceService.getSchemaName(workspaceId);
     const memberRows = await this.workspaceDataSourceService.executeRawQuery(
       `SELECT id, "userId" FROM ${schema}."workspaceMember" WHERE id = $1 LIMIT 1`,
@@ -467,6 +472,12 @@ export class AdminPanelService {
         AuthExceptionCode.INVALID_INPUT,
       );
     }
+
+    this.logger.log(`Validating member linkedin stored cookies for workspace id: ${workspaceId} and workspace member id: ${workspaceMemberId}`);
+    this.logger.log(`Auth token in VALIDATE MEMBER LINKEDIN STORED COOKIES: ${authTokenPair.token}`);
+    this.logger.log(`Audience in VALIDATE MEMBER LINKEDIN STORED COOKIES: admin`);
+    this.logger.log(`Force disconnect after validation in VALIDATE MEMBER LINKEDIN STORED COOKIES: true`);
+    this.logger.log(`Log context in VALIDATE MEMBER LINKEDIN STORED COOKIES: admin panel LinkedIn cookie validation`);
 
     const result =
       await this.linkedinStoredCookieValidationService.validateStoredCookiesForMember(

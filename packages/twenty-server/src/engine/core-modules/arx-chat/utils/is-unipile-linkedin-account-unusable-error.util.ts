@@ -1,34 +1,10 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 
 import { UnipileLinkedinAccountUnusableError } from '../errors/unipile-linkedin-account-unusable.error';
-import { isUnipileDisconnectedAccountApiError } from './unipile-disconnected-account.util';
-
-const responseToMessage = (response: unknown): string => {
-  if (typeof response === 'string') {
-    return response;
-  }
-
-  if (response && typeof response === 'object') {
-    const record = response as { detail?: string; message?: string; title?: string };
-    return [record.title, record.detail, record.message].filter(Boolean).join(' ');
-  }
-
-  return '';
-};
-
-const isAccountNotFoundHttpResponse = (status: number, response: unknown): boolean => {
-  if (status !== HttpStatus.NOT_FOUND) {
-    return false;
-  }
-
-  const message = responseToMessage(response).toLowerCase();
-  return (
-    message.includes('account') &&
-    (message.includes('not found') ||
-      message.includes('does not exist') ||
-      message.includes('unknown account'))
-  );
-};
+import {
+  isUnipileAccountNotFoundApiError,
+  isUnipileDisconnectedAccountApiError,
+} from './unipile-disconnected-account.util';
 
 const isLinkedinSearchAccountFailureMessage = (message: string): boolean => {
   const normalized = message.toLowerCase();
@@ -61,7 +37,7 @@ export const isUnipileLinkedinAccountUnusableError = (error: unknown): boolean =
       );
     }
 
-    if (isAccountNotFoundHttpResponse(status, response)) {
+    if (isUnipileAccountNotFoundApiError(status, response)) {
       return true;
     }
   }

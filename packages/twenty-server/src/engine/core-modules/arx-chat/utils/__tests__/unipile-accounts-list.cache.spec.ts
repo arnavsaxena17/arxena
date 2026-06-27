@@ -2,6 +2,8 @@ import {
     fetchUnipileAccountsListWithCache,
     getCachedUnipileAccountsList,
     invalidateUnipileAccountsListCache,
+    removeAccountFromUnipileAccountsListCache,
+    seedUnipileAccountsListCache,
     shouldInvalidateUnipileAccountsListCache,
 } from '../unipile-accounts-list.cache';
 
@@ -64,5 +66,20 @@ describe('unipile-accounts-list.cache', () => {
     const second = await fetchUnipileAccountsListWithCache(fetcher);
     expect(second.items?.[0]?.id).toBe('acc-2');
     expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it('removeAccountFromUnipileAccountsListCache removes one account from cached list', () => {
+    seedUnipileAccountsListCache({
+      items: [
+        { id: 'acc-1', type: 'LINKEDIN' },
+        { id: 'acc-2', type: 'LINKEDIN' },
+      ],
+    });
+
+    expect(removeAccountFromUnipileAccountsListCache('acc-1')).toBe(true);
+    expect(getCachedUnipileAccountsList()?.items).toEqual([
+      { id: 'acc-2', type: 'LINKEDIN' },
+    ]);
+    expect(removeAccountFromUnipileAccountsListCache('missing')).toBe(false);
   });
 });

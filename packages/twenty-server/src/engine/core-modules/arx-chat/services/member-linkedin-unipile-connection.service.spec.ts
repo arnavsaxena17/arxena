@@ -20,6 +20,7 @@ describe('MemberLinkedinUnipileConnectionService', () => {
         .fn()
         .mockResolvedValue({ accounts: [] }),
       disconnectAccountBestEffort: jest.fn(),
+      clearLinkedinUnipileAccountFromCaches: jest.fn(),
     };
 
     const workspaceQueryService = {
@@ -35,6 +36,7 @@ describe('MemberLinkedinUnipileConnectionService', () => {
       }),
       getWorkspaceMemberUnipileAccountId: jest.fn().mockResolvedValue(staleAccountId),
       clearWorkspaceMemberUnipileAccountId: jest.fn(),
+      clearWorkspaceMemberLinkedinUnipileData: jest.fn(),
     };
 
     const service = new MemberLinkedinUnipileConnectionService(
@@ -53,7 +55,8 @@ describe('MemberLinkedinUnipileConnectionService', () => {
   };
 
   it('clearStaleStoredLinkedinAccountIdIfNeeded clears profile when Unipile returns 404', async () => {
-    const { service, workspaceMemberProfileUnipileService } = createService();
+    const { service, linkedinUnipileRequestService, workspaceMemberProfileUnipileService } =
+      createService();
 
     const cleared = await service.clearStaleStoredLinkedinAccountIdIfNeeded(
       workspaceMemberId,
@@ -63,8 +66,39 @@ describe('MemberLinkedinUnipileConnectionService', () => {
 
     expect(cleared).toBe(true);
     expect(
-      workspaceMemberProfileUnipileService.clearWorkspaceMemberUnipileAccountId,
-    ).toHaveBeenCalledWith(workspaceMemberId, authToken, 'linkedin');
+      linkedinUnipileRequestService.fetchAccountByIdIfExists,
+    ).toHaveBeenCalledWith(staleAccountId, { bypassSnapshot: true });
+    expect(
+      linkedinUnipileRequestService.clearLinkedinUnipileAccountFromCaches,
+    ).toHaveBeenCalledWith(staleAccountId);
+    expect(
+      workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinUnipileData,
+    ).toHaveBeenCalledWith(workspaceMemberId, authToken);
+  });
+
+  it('cleanupStoredLinkedinAccountAfterNotFoundApiError clears profile and caches without disconnecting', async () => {
+    const {
+      service,
+      linkedinUnipileRequestService,
+      workspaceMemberProfileUnipileService,
+    } = createService();
+
+    await service.cleanupStoredLinkedinAccountAfterNotFoundApiError({
+      accountId: staleAccountId,
+      workspaceMemberId,
+      authToken,
+      context: 'LinkedIn profile/me',
+    });
+
+    expect(
+      linkedinUnipileRequestService.disconnectAccountBestEffort,
+    ).not.toHaveBeenCalled();
+    expect(
+      linkedinUnipileRequestService.clearLinkedinUnipileAccountFromCaches,
+    ).toHaveBeenCalledWith(staleAccountId);
+    expect(
+      workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinUnipileData,
+    ).toHaveBeenCalledWith(workspaceMemberId, authToken);
   });
 
   it('cleanupUnusableStoredLinkedinAccountIfNeeded disconnects disconnected accounts', async () => {
@@ -94,8 +128,8 @@ describe('MemberLinkedinUnipileConnectionService', () => {
       workspaceQueryService.deleteUnipileMemberAccountMapping,
     ).toHaveBeenCalledWith(workspaceMemberId, 'LINKEDIN');
     expect(
-      workspaceMemberProfileUnipileService.clearWorkspaceMemberUnipileAccountId,
-    ).toHaveBeenCalledWith(workspaceMemberId, authToken, 'linkedin');
+      workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinUnipileData,
+    ).toHaveBeenCalledWith(workspaceMemberId, authToken);
   });
 
   it('clearStaleStoredLinkedinAccountIdIfNeeded is a no-op when account is connected', async () => {
@@ -112,7 +146,37 @@ describe('MemberLinkedinUnipileConnectionService', () => {
 
     expect(cleared).toBe(false);
     expect(
-      workspaceMemberProfileUnipileService.clearWorkspaceMemberUnipileAccountId,
+      workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinUnipileData,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('cleanupUnusableStoredLinkedinAccountIfNeeded skips in-flight connecting accounts', async () => {
+    const {
+      service,
+      linkedinUnipileRequestService,
+      workspaceMemberProfileUnipileService,
+    } = createService({
+      fetchAccountResult: {
+        id: staleAccountId,
+        sources: [{ status: 'CONNECTING' }],
+      },
+      mappedStatus: 'pending',
+    });
+
+    const cleared = await service.cleanupUnusableStoredLinkedinAccountIfNeeded(
+      workspaceMemberId,
+      authToken,
+      staleAccountId,
+      'test connecting cleanup',
+      'workspace-1',
+    );
+
+    expect(cleared).toBe(false);
+    expect(
+      linkedinUnipileRequestService.disconnectAccountBestEffort,
+    ).not.toHaveBeenCalled();
+    expect(
+      workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinUnipileData,
     ).not.toHaveBeenCalled();
   });
 
@@ -150,7 +214,62 @@ describe('MemberLinkedinUnipileConnectionService', () => {
       workspaceQueryService.deleteUnipileMemberAccountMapping,
     ).toHaveBeenCalledWith(workspaceMemberId, 'LINKEDIN');
     expect(
-      workspaceMemberProfileUnipileService.clearWorkspaceMemberUnipileAccountId,
-    ).toHaveBeenCalledWith(workspaceMemberId, authToken, 'linkedin');
+      workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinUnipileData,
+    ).toHaveBeenCalledWith(workspaceMemberId, authToken);
+  });
+
+  it('disconnectStoredLinkedinAccountWhenLiAChangedWhileLiAtUnchanged tears down stored account', async () => {
+    const {
+      service,
+      linkedinUnipileRequestService,
+      workspaceMemberProfileUnipileService,
+      workspaceQueryService,
+    } = createService();
+
+    const disconnected =
+      await service.disconnectStoredLinkedinAccountWhenLiAChangedWhileLiAtUnchanged(
+        {
+          workspaceMemberId,
+          workspaceId: 'workspace-1',
+          authToken,
+          storedAccountId: staleAccountId,
+        },
+      );
+
+    expect(disconnected).toBe(true);
+    expect(
+      linkedinUnipileRequestService.disconnectAccountBestEffort,
+    ).toHaveBeenCalledWith(
+      staleAccountId,
+      'LinkedIn li_a cookie newly acquired while li_at unchanged',
+    );
+    expect(
+      linkedinUnipileRequestService.clearLinkedinUnipileAccountFromCaches,
+    ).toHaveBeenCalledWith(staleAccountId);
+    expect(
+      workspaceQueryService.deleteUnipileMemberAccountMapping,
+    ).toHaveBeenCalledWith(workspaceMemberId, 'LINKEDIN');
+    expect(
+      workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinUnipileData,
+    ).toHaveBeenCalledWith(workspaceMemberId, authToken);
+  });
+
+  it('disconnectStoredLinkedinAccountWhenLiAChangedWhileLiAtUnchanged is a no-op without stored account id', async () => {
+    const { service, linkedinUnipileRequestService } = createService();
+
+    const disconnected =
+      await service.disconnectStoredLinkedinAccountWhenLiAChangedWhileLiAtUnchanged(
+        {
+          workspaceMemberId,
+          workspaceId: 'workspace-1',
+          authToken,
+          storedAccountId: null,
+        },
+      );
+
+    expect(disconnected).toBe(false);
+    expect(
+      linkedinUnipileRequestService.disconnectAccountBestEffort,
+    ).not.toHaveBeenCalled();
   });
 });

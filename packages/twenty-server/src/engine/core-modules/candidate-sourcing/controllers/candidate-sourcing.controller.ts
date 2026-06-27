@@ -1,47 +1,47 @@
 import {
-    Body,
-    Controller,
-    Get,
-    HttpException,
-    HttpStatus,
-    Post,
-    Req,
-    UploadedFile,
-    UseGuards,
-    UseInterceptors
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Post,
+  Req,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from 'multer';
 
 import axios from 'axios';
 import {
-    CandidateEdge,
-    CandidateEnrichmentEdge,
-    createOneCandidateField,
-    CreateOneVideoInterviewTemplate,
-    findWorkspaceMemberProfiles,
-    getGraphqlToFindManyJobs,
-    graphqlMutationToDeleteManyCandidates,
-    graphqlMutationToDeleteManyPeople,
-    graphqlQueryToFindManyPeople,
-    graphqlToAddNewJob,
-    graphqlToCreateOnePrompt,
-    graphqlToFetchAllCandidateData,
-    graphqlToFetchAllCandidateDataWithFieldValues,
-    graphQlTofindManyCandidateEnrichments,
-    graphqlToFindManyJobs,
-    graphQltoUpdateOneCandidate,
-    graphQLToUpdateOneWorkspaceMemberProfile,
-    Job,
-    JobEdge,
-    mutations,
-    PageInfo,
-    PersonEdge,
-    PersonNode,
-    queries,
-    resolveIsOrgChartEnabledFromWorkspace,
-    UpdateOneJob,
-    UserProfile,
+  CandidateEdge,
+  CandidateEnrichmentEdge,
+  createOneCandidateField,
+  CreateOneVideoInterviewTemplate,
+  findWorkspaceMemberProfiles,
+  getGraphqlToFindManyJobs,
+  graphqlMutationToDeleteManyCandidates,
+  graphqlMutationToDeleteManyPeople,
+  graphqlQueryToFindManyPeople,
+  graphqlToAddNewJob,
+  graphqlToCreateOnePrompt,
+  graphqlToFetchAllCandidateData,
+  graphqlToFetchAllCandidateDataWithFieldValues,
+  graphQlTofindManyCandidateEnrichments,
+  graphqlToFindManyJobs,
+  graphQltoUpdateOneCandidate,
+  graphQLToUpdateOneWorkspaceMemberProfile,
+  Job,
+  JobEdge,
+  mutations,
+  PageInfo,
+  PersonEdge,
+  PersonNode,
+  queries,
+  resolveIsOrgChartEnabledFromWorkspace,
+  UpdateOneJob,
+  UserProfile,
 } from 'twenty-shared';
 import { v4 } from 'uuid';
 
@@ -49,8 +49,8 @@ import console from 'console';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import {
-    JobDescriptionParseRequest,
-    ParsedJobDescription,
+  JobDescriptionParseRequest,
+  ParsedJobDescription,
 } from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
 import { DeleteFieldValuesService } from 'src/engine/core-modules/candidate-sourcing/jobs/delete-field-values.service';
 import { ProcessAiFiltersService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-ai-filters.service';
@@ -154,15 +154,6 @@ export class CandidateSourcingController {
       };
     }
   }
-
-
-
-
-
-
-
-
-  
 
 
   @Post('find-many-ai-filters')
@@ -1908,6 +1899,7 @@ export class CandidateSourcingController {
   @Post('set-chrome-extension-id')
   @UseGuards(JwtAuthGuard)
   async setChromeExtensionId(@Req() request: any): Promise<object> {
+    console.log("Going to set chrome extension id", 'CandidateSourcingController');
     try {
       const apiToken = request.headers.authorization
         .split(' ')[1]

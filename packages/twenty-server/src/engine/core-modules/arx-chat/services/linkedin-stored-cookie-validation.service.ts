@@ -6,8 +6,9 @@ import { EnvironmentService } from 'src/engine/core-modules/environment/environm
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 
 import {
-    normalizeLinkedinConnectionCountry,
-    normalizeLinkedinConnectionIp,
+  normalizeLinkedinConnectionCountry,
+  normalizeLinkedinConnectionIp,
+  resolveLinkedinConnectUserAgent,
 } from '../utils/build-unipile-linkedin-cookie-connect-body.util';
 import { LinkedinUnipileMemberAccountResolverService } from './linkedin-unipile-member-account-resolver.service';
 import { LinkedinUnipileTeardownSchedulerService } from './linkedin-unipile-teardown-scheduler.service';
@@ -121,8 +122,10 @@ export class LinkedinStoredCookieValidationService {
       };
     }
 
-    const userAgent =
-      params.userAgent?.trim() || storedCookies.linkedinUserAgent?.trim() || undefined;
+    const userAgent = resolveLinkedinConnectUserAgent({
+      storedUserAgent: storedCookies.linkedinUserAgent,
+      requestUserAgent: params.userAgent,
+    });
     const ip =
       normalizeLinkedinConnectionIp(
         params.clientIp?.trim() || storedCookies.linkedinIp?.trim() || undefined,
@@ -140,7 +143,14 @@ export class LinkedinStoredCookieValidationService {
         `hasLiAt=${hasLiAt} hasLiA=${hasLiA} userAgent=${userAgent?.slice(0, 60) ?? 'none'} ` +
         `ip=${ip ?? 'none'} country=${country ?? 'none'}`,
     );
-
+    this.logger.log(`Resolving member linkedin unipile account for workspace member id: ${params.workspaceMemberId}`);
+    this.logger.log(`Workspace id in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${params.workspace.id}`);
+    this.logger.log(`Auth token in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${params.authToken}`);
+    this.logger.log(`Reconnect source token in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${storedCookies.linkedinLiAtToken}`);
+    this.logger.log(`Premium token in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${storedCookies.linkedinLiAToken}`);
+    this.logger.log(`User agent in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${userAgent}`);
+    this.logger.log(`Ip in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${ip}`);
+    this.logger.log(`Country in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${country}`);
     const resolution =
       await this.linkedinUnipileMemberAccountResolverService.resolveMemberLinkedinUnipileAccount(
         {
@@ -164,12 +174,14 @@ export class LinkedinStoredCookieValidationService {
       accountStatus === 'connected' ||
       accountStatus === 'pending';
 
-    const keepConnected =
+      const keepConnected =
       await this.workspaceMemberProfileUnipileService.getKeepLinkedinConnected(
         params.workspaceMemberId,
         params.authToken,
       );
-
+      this.logger.log(`Workspace member id in GET KEEP LINKEDIN CONNECTED: ${params.workspaceMemberId}`);
+      this.logger.log(`Auth token in GET KEEP LINKEDIN CONNECTED: ${params.authToken}`);
+      this.logger.log(`Keep connected in VALIDATE STORED COOKIES FOR MEMBER: ${keepConnected}`);
     let disconnectedAfterValidation = false;
     const shouldDisconnectAfterValidation =
       connected &&
@@ -190,6 +202,15 @@ export class LinkedinStoredCookieValidationService {
       disconnectedAfterValidation = true;
     }
 
+
+    this.logger.log(`Connected in VALIDATE STORED COOKIES FOR MEMBER: ${connected}`);
+    this.logger.log(`Account id in VALIDATE STORED COOKIES FOR MEMBER: ${accountId}`);
+    this.logger.log(`Workspace member id in VALIDATE STORED COOKIES FOR MEMBER: ${params.workspaceMemberId}`);
+    this.logger.log(`Auth token in VALIDATE STORED COOKIES FOR MEMBER: ${params.authToken}`);
+    this.logger.log(`Workspace id in VALIDATE STORED COOKIES FOR MEMBER: ${params.workspace.id}`);
+    this.logger.log(`Log context in VALIDATE STORED COOKIES FOR MEMBER: ${logContext}`);
+    this.logger.log(`Audience in VALIDATE STORED COOKIES FOR MEMBER: ${audience}`);
+    this.logger.log(`Force disconnect after validation in VALIDATE STORED COOKIES FOR MEMBER: ${params.forceDisconnectAfterValidation}`);
     if (connected) {
       await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberLinkedinCookieTokens(
         params.authToken,
@@ -199,11 +220,20 @@ export class LinkedinStoredCookieValidationService {
       );
     }
 
+    this.logger.log(`Updating workspace member linkedin cookie tokens in VALIDATE STORED COOKIES FOR MEMBER`);
+    this.logger.log(`Auth token in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${params.authToken}`);
+    this.logger.log(`Workspace member id in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${params.workspaceMemberId}`);
+    this.logger.log(`Workspace id in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${params.workspace.id}`);
+    this.logger.log(`Log context in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${logContext}`);
+    this.logger.log(`Audience in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${audience}`);
+    this.logger.log(`Force disconnect after validation in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${params.forceDisconnectAfterValidation}`);
     const storedCookiesAfter =
       await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
         params.authToken,
         params.workspaceMemberId,
       );
+
+    this.logger.log(`Stored cookies after in VALIDATE STORED COOKIES FOR MEMBER: ${JSON.stringify(storedCookiesAfter, null, 2)}`);
 
     const message =
       resolution.reconnectMessage ??
@@ -212,6 +242,12 @@ export class LinkedinStoredCookieValidationService {
           ? 'LinkedIn connection succeeded; idle disconnect scheduled after validation'
           : 'LinkedIn connection succeeded'
         : 'LinkedIn connection failed with stored cookies');
+
+    this.logger.log(`Message in VALIDATE STORED COOKIES FOR MEMBER: ${message}`);
+    this.logger.log(`Reconnect attempted in VALIDATE STORED COOKIES FOR MEMBER: ${resolution.reconnectAttempted}`);
+    this.logger.log(`Reconnect succeeded in VALIDATE STORED COOKIES FOR MEMBER: ${resolution.reconnectSucceeded}`);
+    this.logger.log(`Account id in VALIDATE STORED COOKIES FOR MEMBER: ${accountId ?? null}`);
+    this.logger.log(`Account status in VALIDATE STORED COOKIES FOR MEMBER: ${accountStatus ?? null}`);
 
     return {
       attempted: true,

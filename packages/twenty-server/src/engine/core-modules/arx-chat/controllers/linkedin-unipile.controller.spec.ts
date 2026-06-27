@@ -32,6 +32,7 @@ describe('LinkedinUnipileController', () => {
 
     const memberLinkedinUnipileConnectionService = {
       disconnectMemberLinkedinUnipileAccount: jest.fn(),
+      disconnectStoredLinkedinAccountWhenLiAChangedWhileLiAtUnchanged: jest.fn(),
     };
 
     const linkedinUnipileMemberAccountResolverService = {
@@ -317,6 +318,161 @@ describe('LinkedinUnipileController', () => {
         cookiesChanged: true,
       },
     });
+  });
+
+  it('disconnects stored LinkedIn Unipile account when li_a is first acquired and li_at is unchanged', async () => {
+    const {
+      controller,
+      workspaceMemberProfileUnipileService,
+      memberLinkedinUnipileConnectionService,
+    } = createController();
+    workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields.mockResolvedValue(
+      {
+        linkedinUrl: null,
+        linkedinUnipileAccountId: 'stored-unipile-account',
+      },
+    );
+    workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens
+      .mockResolvedValueOnce({
+        linkedinLiAtToken: 'same-li-at',
+        linkedinLiAToken: null,
+        linkedinUserAgent: null,
+        linkedinIp: null,
+        linkedinCountry: null,
+        linkedinCookiesLastSyncedAt: null,
+        linkedinCookiesValidatedAt: null,
+      })
+      .mockResolvedValueOnce({
+        linkedinLiAtToken: 'same-li-at',
+        linkedinLiAToken: 'new-li-a',
+        linkedinUserAgent: null,
+        linkedinIp: null,
+        linkedinCountry: null,
+        linkedinCookiesLastSyncedAt: '2026-06-18T00:00:00.000Z',
+        linkedinCookiesValidatedAt: null,
+      });
+
+    await controller.persistExtensionCookies(
+      {
+        li_at: 'same-li-at',
+        li_a: 'new-li-a',
+        linkedin_profile_url: 'https://www.linkedin.com/in/member-a',
+      },
+      { id: 'workspace-id' } as never,
+      {
+        workspaceMemberId: 'member-id',
+        headers: { authorization: 'Bearer auth-token' },
+      } as never,
+    );
+
+    expect(
+      memberLinkedinUnipileConnectionService.disconnectStoredLinkedinAccountWhenLiAChangedWhileLiAtUnchanged,
+    ).toHaveBeenCalledWith({
+      workspaceMemberId: 'member-id',
+      workspaceId: 'workspace-id',
+      authToken: 'auth-token',
+      storedAccountId: 'stored-unipile-account',
+    });
+  });
+
+  it('does not disconnect when stored li_a already exists', async () => {
+    const {
+      controller,
+      workspaceMemberProfileUnipileService,
+      memberLinkedinUnipileConnectionService,
+    } = createController();
+    workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields.mockResolvedValue(
+      {
+        linkedinUrl: null,
+        linkedinUnipileAccountId: 'stored-unipile-account',
+      },
+    );
+    workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens
+      .mockResolvedValueOnce({
+        linkedinLiAtToken: 'same-li-at',
+        linkedinLiAToken: 'old-li-a',
+        linkedinUserAgent: null,
+        linkedinIp: null,
+        linkedinCountry: null,
+        linkedinCookiesLastSyncedAt: null,
+        linkedinCookiesValidatedAt: null,
+      })
+      .mockResolvedValueOnce({
+        linkedinLiAtToken: 'same-li-at',
+        linkedinLiAToken: 'new-li-a',
+        linkedinUserAgent: null,
+        linkedinIp: null,
+        linkedinCountry: null,
+        linkedinCookiesLastSyncedAt: '2026-06-18T00:00:00.000Z',
+        linkedinCookiesValidatedAt: null,
+      });
+
+    await controller.persistExtensionCookies(
+      {
+        li_at: 'same-li-at',
+        li_a: 'new-li-a',
+        linkedin_profile_url: 'https://www.linkedin.com/in/member-a',
+      },
+      { id: 'workspace-id' } as never,
+      {
+        workspaceMemberId: 'member-id',
+        headers: { authorization: 'Bearer auth-token' },
+      } as never,
+    );
+
+    expect(
+      memberLinkedinUnipileConnectionService.disconnectStoredLinkedinAccountWhenLiAChangedWhileLiAtUnchanged,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('does not disconnect when li_a changes alongside li_at', async () => {
+    const {
+      controller,
+      workspaceMemberProfileUnipileService,
+      memberLinkedinUnipileConnectionService,
+    } = createController();
+    workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields.mockResolvedValue(
+      {
+        linkedinUrl: null,
+        linkedinUnipileAccountId: 'stored-unipile-account',
+      },
+    );
+    workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens
+      .mockResolvedValueOnce({
+        linkedinLiAtToken: 'old-li-at',
+        linkedinLiAToken: 'old-li-a',
+        linkedinUserAgent: null,
+        linkedinIp: null,
+        linkedinCountry: null,
+        linkedinCookiesLastSyncedAt: null,
+        linkedinCookiesValidatedAt: null,
+      })
+      .mockResolvedValueOnce({
+        linkedinLiAtToken: 'new-li-at',
+        linkedinLiAToken: 'new-li-a',
+        linkedinUserAgent: null,
+        linkedinIp: null,
+        linkedinCountry: null,
+        linkedinCookiesLastSyncedAt: '2026-06-18T00:00:00.000Z',
+        linkedinCookiesValidatedAt: null,
+      });
+
+    await controller.persistExtensionCookies(
+      {
+        li_at: 'new-li-at',
+        li_a: 'new-li-a',
+        linkedin_profile_url: 'https://www.linkedin.com/in/member-a',
+      },
+      { id: 'workspace-id' } as never,
+      {
+        workspaceMemberId: 'member-id',
+        headers: { authorization: 'Bearer auth-token' },
+      } as never,
+    );
+
+    expect(
+      memberLinkedinUnipileConnectionService.disconnectStoredLinkedinAccountWhenLiAChangedWhileLiAtUnchanged,
+    ).not.toHaveBeenCalled();
   });
 
   it('persists extension client_ip and client_country when server sees localhost', async () => {

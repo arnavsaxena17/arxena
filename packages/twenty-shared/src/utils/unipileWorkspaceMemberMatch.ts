@@ -378,7 +378,7 @@ export const findLinkedinUnipileAccountSameIdentityForProfile = (
 
 /**
  * First WhatsApp row matching the member's phone / stored account id.
- */
+ */ 
 export const findWhatsappUnipileAccountSameIdentityForProfile = (
   accounts: UnipileWhatsappAccount[],
   profile: WorkspaceMemberProfileUnipileFields | null,

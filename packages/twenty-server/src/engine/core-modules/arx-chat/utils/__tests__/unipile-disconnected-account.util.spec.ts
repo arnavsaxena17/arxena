@@ -1,4 +1,5 @@
 import {
+    isUnipileAccountNotFoundApiError,
     isUnipileDisconnectedAccountApiError,
     parseAccountIdFromUnipileEndpoint,
 } from '../unipile-disconnected-account.util';
@@ -13,6 +14,23 @@ describe('unipile-disconnected-account.util', () => {
     expect(isUnipileDisconnectedAccountApiError(404, { type: 'errors/not_found' })).toBe(
       false,
     );
+  });
+
+  it('detects account not found 404 errors', () => {
+    expect(
+      isUnipileAccountNotFoundApiError(404, {
+        status: 404,
+        type: 'errors/resource_not_found',
+        title: 'Resource not found.',
+        detail: 'The requested resource were not found.\nAccount not found',
+      }),
+    ).toBe(true);
+    expect(
+      isUnipileAccountNotFoundApiError(404, {
+        title: 'Not found',
+        detail: 'User profile missing',
+      }),
+    ).toBe(false);
   });
 
   it('parses account_id from Unipile endpoint query strings', () => {

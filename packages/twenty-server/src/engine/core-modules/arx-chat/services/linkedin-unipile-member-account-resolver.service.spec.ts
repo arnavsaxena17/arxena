@@ -50,6 +50,10 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
       makeUnipileRequest: jest.fn().mockResolvedValue({
         data: { id: accountId },
       }),
+      waitForLinkedinAccountConnectReady: jest.fn().mockResolvedValue({
+        status: 'connected',
+        timedOut: false,
+      }),
     };
 
     const memberLinkedinUnipileConnectionService = {

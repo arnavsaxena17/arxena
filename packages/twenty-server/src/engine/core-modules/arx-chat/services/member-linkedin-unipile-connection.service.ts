@@ -37,9 +37,37 @@ export class MemberLinkedinUnipileConnectionService {
   ) {}
 
   /**
+   * When a valid `li_a` is acquired for the first time while `li_at` was already stored,
    * DELETE the Unipile LinkedIn account, drop metadata.unipile_accounts mapping, and
-   * optionally clear linkedinUnipileAccountId on the workspace member profile.
+   * clear linkedinUnipileAccountId on the workspace member profile.
    */
+  async disconnectStoredLinkedinAccountWhenLiAChangedWhileLiAtUnchanged(args: {
+    workspaceMemberId: string;
+    workspaceId: string;
+    authToken: string;
+    storedAccountId: string | null | undefined;
+  }): Promise<boolean> {
+    const trimmedAccountId = args.storedAccountId?.trim();
+    if (!trimmedAccountId) {
+      return false;
+    }
+
+    this.logger.log(
+      `Disconnecting stored LinkedIn Unipile account after newly acquired li_a while li_at unchanged workspaceMemberId=${args.workspaceMemberId} accountId=${trimmedAccountId}`,
+    );
+
+    await this.disconnectMemberLinkedinUnipileAccount({
+      accountId: trimmedAccountId,
+      context: 'LinkedIn li_a cookie newly acquired while li_at unchanged',
+      workspaceMemberId: args.workspaceMemberId,
+      workspaceId: args.workspaceId,
+      authToken: args.authToken,
+      forceClearProfile: true,
+    });
+
+    return true;
+  }
+
   async disconnectMemberLinkedinUnipileAccount(args: {
     accountId: string;
     context: string;
@@ -90,10 +118,11 @@ export class MemberLinkedinUnipileConnectionService {
     }
 
     if (args.forceClearProfile) {
-      await this.workspaceMemberProfileUnipileService.clearWorkspaceMemberUnipileAccountId(
+      await this.clearStoredLinkedinUnipileAccountData(
         workspaceMemberId,
         authToken,
-        'linkedin',
+        trimmedAccountId,
+        args.context,
       );
       return;
     }
@@ -110,29 +139,54 @@ export class MemberLinkedinUnipileConnectionService {
         'linkedin',
       );
     if (storedId?.trim() === trimmedAccountId) {
-      await this.workspaceMemberProfileUnipileService.clearWorkspaceMemberUnipileAccountId(
+      await this.clearStoredLinkedinUnipileAccountData(
         workspaceMemberId,
         authToken,
-        'linkedin',
+        trimmedAccountId,
+        args.context,
       );
     }
+  }
+
+  private async clearStoredLinkedinUnipileAccountData(
+    workspaceMemberId: string,
+    authToken: string,
+    accountId: string,
+    context: string,
+  ): Promise<void> {
+    this.linkedinUnipileRequestService.clearLinkedinUnipileAccountFromCaches(
+      accountId,
+    );
+    this.logger.log(
+      `Clearing stored LinkedIn Unipile account data workspaceMemberId=${workspaceMemberId} accountId=${accountId} context=${context}`,
+    );
+    await this.workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinUnipileData(
+      workspaceMemberId,
+      authToken,
+    );
   }
 
   async withMemberLinkedinConnectLock<T>(
     workspaceMemberId: string,
     run: () => Promise<T>,
-  ): Promise<T> {
+  ): Promise<T> { 
+    this.logger.log(`With member linkedin connect lock for workspace member id: ${workspaceMemberId}`); 
+    this.logger.log(`Run in WITH MEMBER LINKEDIN CONNECT LOCK: ${run}`);
     const trimmedMemberId = workspaceMemberId.trim();
+    this.logger.log(`Trimmed member id in WITH MEMBER LINKEDIN CONNECT LOCK: ${trimmedMemberId}`);
     const previous = this.connectLocks.get(trimmedMemberId) ?? Promise.resolve();
+    this.logger.log(`Previous in WITH MEMBER LINKEDIN CONNECT LOCK: ${previous}`);
     let release!: () => void;
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
-    const chain = previous.then(() => gate);
+    const chain = previous.then(() => gate);  
+    this.logger.log(`Chain in WITH MEMBER LINKEDIN CONNECT LOCK: ${chain}`);
     this.connectLocks.set(trimmedMemberId, chain);
 
     try {
       await previous;
+      this.logger.log(`Previous in WITH MEMBER LINKEDIN CONNECT LOCK: ${previous}`);
       return await run();
     } finally {
       release();
@@ -158,25 +212,53 @@ export class MemberLinkedinUnipileConnectionService {
       return false;
     }
 
+    this.logger.log(`Fetching account by id if exists: ${trimmed}`);
     const account =
       await this.linkedinUnipileRequestService.fetchAccountByIdIfExists(
         trimmed,
+        { bypassSnapshot: true },
       );
+    this.logger.log(`Account in CLEANUP UNUSABLE STORED LINKEDIN ACCOUNT IF NEEDED: ${JSON.stringify(account, null, 2)}`);
+
+    const rawSourceStatus = account?.sources?.[0]?.status;
+    if (typeof rawSourceStatus === 'string') {
+      const normalizedSourceStatus = rawSourceStatus.trim().toLowerCase();
+      if (
+        normalizedSourceStatus === 'connecting' ||
+        normalizedSourceStatus === 'pending' ||
+        normalizedSourceStatus === 'syncing'
+      ) {
+        this.logger.log(
+          `Skipping cleanup for in-flight LinkedIn Unipile account id=${trimmed} sourceStatus=${rawSourceStatus} context=${context}`,
+        );
+        return false;
+      }
+    }
 
     if (!account) {
+      this.logger.log(`Account not found in CLEANUP UNUSABLE STORED LINKEDIN ACCOUNT IF NEEDED`);
       this.logger.warn(
         `Clearing missing LinkedIn Unipile account id=${trimmed} from workspace member profile workspaceMemberId=${workspaceMemberId} context=${context}`,
       );
-      await this.workspaceMemberProfileUnipileService.clearWorkspaceMemberUnipileAccountId(
+      this.logger.log(`Clearing missing linkedin account id if needed in CLEANUP UNUSABLE STORED LINKEDIN ACCOUNT IF NEEDED`);
+      await this.clearStoredLinkedinUnipileAccountData(
         workspaceMemberId,
         authToken,
-        'linkedin',
+        trimmed,
+        context,
       );
+      this.logger.log(`Cleared missing linkedin account id if needed in CLEANUP UNUSABLE STORED LINKEDIN ACCOUNT IF NEEDED`);
       return true;
     }
 
     const mappedStatus =
       this.linkedinUnipileRequestService.mapAccountStatus(account);
+    if (mappedStatus === 'pending' || mappedStatus === 'checkpoint_required') {
+      this.logger.log(
+        `Skipping cleanup for non-terminal LinkedIn Unipile account id=${trimmed} mappedStatus=${mappedStatus} context=${context}`,
+      );
+      return false;
+    }
     if (mappedStatus !== 'disconnected') {
       return false;
     }
@@ -193,6 +275,29 @@ export class MemberLinkedinUnipileConnectionService {
       forceClearProfile: true,
     });
     return true;
+  }
+
+  async cleanupStoredLinkedinAccountAfterNotFoundApiError(
+    args: LinkedinUnipileAccountCleanupContext,
+  ): Promise<void> {
+    const accountId = args.accountId.trim();
+    const workspaceMemberId = args.workspaceMemberId.trim();
+    const authToken = args.authToken.trim();
+
+    if (!accountId || !workspaceMemberId || !authToken) {
+      return;
+    }
+
+    this.logger.warn(
+      `Clearing missing LinkedIn Unipile account from workspace member profile after 404 accountId=${accountId} workspaceMemberId=${workspaceMemberId} context=${args.context}`,
+    );
+
+    await this.clearStoredLinkedinUnipileAccountData(
+      workspaceMemberId,
+      authToken,
+      accountId,
+      args.context,
+    );
   }
 
   async cleanupStoredLinkedinAccountAfterDisconnectedApiError(
@@ -226,6 +331,12 @@ export class MemberLinkedinUnipileConnectionService {
     storedAccountId: string | null | undefined,
     workspaceId?: string | null,
   ): Promise<boolean> {
+    this.logger.log(`Clearing stale stored linkedin account id if needed: ${storedAccountId}`);
+    this.logger.log(`Workspace member id in CLEAR STORED LINKEDIN ACCOUNT ID IF NEEDED: ${workspaceMemberId}`);
+    this.logger.log(`Auth token in CLEAR STORED LINKEDIN ACCOUNT ID IF NEEDED: ${authToken}`);
+    this.logger.log(`Workspace id in CLEAR STORED LINKEDIN ACCOUNT ID IF NEEDED: ${workspaceId}`);
+    this.logger.log(`Stored account id in CLEAR STORED LINKEDIN ACCOUNT ID IF NEEDED: ${storedAccountId}`);
+    this.logger.log(`Cleaning up unusable stored linkedin account if needed in CLEAR STORED LINKEDIN ACCOUNT ID IF NEEDED`);
     return this.cleanupUnusableStoredLinkedinAccountIfNeeded(
       workspaceMemberId,
       authToken,
@@ -295,13 +406,19 @@ export class MemberLinkedinUnipileConnectionService {
       return undefined;
     }
 
+    this.logger.log(`Profile in FIND USABLE LINKEDIN ACCOUNT FOR MEMBER: ${JSON.stringify(profile, null, 2)}`); 
+    this.logger.log(`Workspace member id in FIND USABLE LINKEDIN ACCOUNT FOR MEMBER: ${workspaceMemberId}`);
+    this.logger.log(`Auth token in FIND USABLE LINKEDIN ACCOUNT FOR MEMBER: ${authToken}`);
     const accounts = await this.listLinkedinAccountsForMemberStatus(profile);
+    this.logger.log(`Accounts in FIND USABLE LINKEDIN ACCOUNT FOR MEMBER: ${JSON.stringify(accounts, null, 2)}`);
     for (const account of accounts) {
       if (linkedinAccountUsableForWorkspaceMemberProfile(profile, account)) {
+        this.logger.log(`Usable account in FIND USABLE LINKEDIN ACCOUNT FOR MEMBER: ${JSON.stringify(account, null, 2)}`);
         return account;
       }
     }
 
+    this.logger.log(`No usable account found in FIND USABLE LINKEDIN ACCOUNT FOR MEMBER`);
     return undefined;
   }
 

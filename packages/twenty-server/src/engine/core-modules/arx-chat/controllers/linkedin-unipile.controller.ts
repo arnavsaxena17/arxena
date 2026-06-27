@@ -47,6 +47,8 @@ import {
   normalizeLinkedinConnectionCountry,
   normalizeLinkedinConnectionIp,
   parseExtensionLinkedinCookieToken,
+  resolveLinkedinConnectUserAgent,
+  shouldDisconnectStoredLinkedinAccountForNewLiA,
 } from '../utils/build-unipile-linkedin-cookie-connect-body.util';
 import { isUnipileInvalidLinkedinCookieCredentialsError } from '../utils/is-unipile-invalid-linkedin-cookie-credentials-error.util';
 import { resolveLinkedinSyncClientIp } from '../utils/resolve-linkedin-sync-client-ip.util';
@@ -239,15 +241,24 @@ export class LinkedinUnipileController {
       );
     const { accounts } =
       await this.linkedinUnipileRequestService.listAllLinkedinAccountsFromUnipileApi();
+    this.logger.log(`Accounts in RESOLVE LINKEDIN CONNECT PREFLIGHT: ${JSON.stringify(accounts, null, 2)}`);
     const match = findLinkedinUnipileAccountSameIdentityForProfile(
       accounts as UnipileLinkedinAccount[],
       profile,
     );
+    this.logger.log(`Match in RESOLVE LINKEDIN CONNECT PREFLIGHT: ${JSON.stringify(match, null, 2)}`);  
     if (!match) {
       return { proceed: true };
     }
+    this.logger.log(`Match status in RESOLVE LINKEDIN CONNECT PREFLIGHT: ${match.status}`);
     if (isUnipileConnectedStatus(match.status)) {
       try {
+        this.logger.log(`Applying unipile account to workspace member profile in RESOLVE LINKEDIN CONNECT PREFLIGHT`);
+        this.logger.log(`Workspace member id in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${workspaceMemberId}`);
+        this.logger.log(`Auth token in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${authToken}`);
+        this.logger.log(`Type in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: linkedin`);
+        this.logger.log(`Account id in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${match.id}`);
+        this.logger.log(`Account payload in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${JSON.stringify(match, null, 2)}`);
         await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
           workspaceMemberId,
           authToken,
@@ -263,6 +274,8 @@ export class LinkedinUnipileController {
       return { proceed: false, alreadyConnected: true, account: match };
     }
     if (shouldBlockNewUnipileConnectionForStatus(match.status)) {
+      this.logger.log(`Should block new unipile connection for status in RESOLVE LINKEDIN CONNECT PREFLIGHT: ${match.status}`);
+      this.logger.log(`Existing account id in RESOLVE LINKEDIN CONNECT PREFLIGHT: ${match.id}`);
       throw new HttpException(
         {
           message:
@@ -368,8 +381,10 @@ export class LinkedinUnipileController {
     country?: string;
   }> {
     const userAgent =
-      this.normalizeOptionalExtensionString(args.requestUserAgent) ??
-      this.normalizeOptionalExtensionString(args.storedUserAgent ?? undefined);
+      resolveLinkedinConnectUserAgent({
+        storedUserAgent: args.storedUserAgent,
+        requestUserAgent: args.requestUserAgent,
+      });
 
     const ip =
       normalizeLinkedinConnectionIp(
@@ -483,7 +498,17 @@ export class LinkedinUnipileController {
       params.linkedin_profile_url,
     );
 
+    this.logger.log("LI AT TOKEN in MEMBER SYNC", params.li_at);
+    this.logger.log("LI A TOKEN in MEMBER SYNC", params.li_a);
+    this.logger.log("USER AGENT in MEMBER SYNC", params.user_agent);
+    this.logger.log("CLIENT IP in MEMBER SYNC", params.clientIp);
+    this.logger.log("CLIENT COUNTRY in MEMBER SYNC", params.clientCountry);
+    this.logger.log("LINKEDIN PROFILE URL in MEMBER SYNC", params.linkedin_profile_url);
+    this.logger.log("BROWSER MEMBER URL MATCH in MEMBER SYNC", browserMemberUrlMatch);
+    this.logger.log("PROFILE LINKEDIN URL in MEMBER SYNC", profile?.linkedinUrl);
+    this.logger.log("BROWSER LINKEDIN URL in MEMBER SYNC", params.linkedin_profile_url);
     if (browserMemberUrlMatch === 'mismatch') {
+      this.logger.log("Mismatching LinkedIn URLs found in MEMBER SYNC");
       throw new HttpException(
         {
           code: 'LINKEDIN_IDENTITY_MISMATCH',
@@ -501,6 +526,7 @@ export class LinkedinUnipileController {
       profile?.linkedinUrl?.trim() &&
       !params.allowMissingBrowserLinkedinUrl
     ) {
+      this.logger.log("No browser LinkedIn URL found in MEMBER SYNC");
       throw new HttpException(
         {
           code: 'LINKEDIN_IDENTITY_UNKNOWN',
@@ -517,6 +543,7 @@ export class LinkedinUnipileController {
       (browserMemberUrlMatch === 'no_member_url' ||
         browserMemberUrlMatch === 'match')
     ) {
+      this.logger.log("Updating workspace member LinkedIn URL in MEMBER SYNC");
       await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberLinkedinUrlFromExtensionIfValid(
         workspaceMemberId,
         authToken,
@@ -551,6 +578,31 @@ export class LinkedinUnipileController {
       (liAToken !== undefined &&
         liAToken !== storedCookiesBefore.linkedinLiAToken);
 
+    this.logger.log(`Cookies changed in MEMBER SYNC: ${cookiesChanged}`);
+
+    const shouldDisconnectForNewLiA =
+      shouldDisconnectStoredLinkedinAccountForNewLiA({
+        storedLiAt: storedCookiesBefore.linkedinLiAtToken,
+        storedLiA: storedCookiesBefore.linkedinLiAToken,
+        incomingLiAt: liAtToken,
+        incomingLiA: liAToken,
+      });
+
+    if (
+      shouldDisconnectForNewLiA &&
+      profile?.linkedinUnipileAccountId?.trim()
+    ) {
+      await this.memberLinkedinUnipileConnectionService.disconnectStoredLinkedinAccountWhenLiAChangedWhileLiAtUnchanged(
+        {
+          workspaceMemberId,
+          workspaceId: workspace.id,
+          authToken,
+          storedAccountId: profile.linkedinUnipileAccountId,
+        },
+      );
+    }
+
+
     const sessionContextChanged =
       (requestUserAgent !== undefined &&
         requestUserAgent !== storedCookiesBefore.linkedinUserAgent) ||
@@ -558,6 +610,8 @@ export class LinkedinUnipileController {
       (requestCountry !== undefined &&
         requestCountry !== storedCookiesBefore.linkedinCountry);
 
+
+    this.logger.log(`Session context changed in MEMBER SYNC: ${sessionContextChanged}`);
     const profileUpdates: Partial<{
       linkedinLiAtToken: string | null;
       linkedinLiAToken: string | null;
@@ -583,6 +637,7 @@ export class LinkedinUnipileController {
     }
 
     if (Object.keys(profileUpdates).length > 0) {
+      this.logger.log("Updating workspace member LinkedIn cookie tokens in MEMBER SYNC");
       await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberLinkedinCookieTokens(
         authToken,
         workspaceMemberId,
@@ -590,6 +645,7 @@ export class LinkedinUnipileController {
         { touchLastSyncedAt: true },
       );
     }
+    this.logger.log(`Profile updates in MEMBER SYNC: ${JSON.stringify(profileUpdates, null, 2)}`);
 
     const storedCookies =
       await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
@@ -597,6 +653,7 @@ export class LinkedinUnipileController {
         workspaceMemberId,
       );
 
+    this.logger.log(`Stored cookies in MEMBER SYNC: ${JSON.stringify(storedCookies, null, 2)}`);
     return {
       cookiesChanged: cookiesChanged || sessionContextChanged,
       storedCookies,
@@ -802,8 +859,17 @@ export class LinkedinUnipileController {
         };
       }
 
+      const accessToken = cookieAuth.access_token?.trim() ?? '';
+      if (!accessToken) {
+        throw new HttpException(
+          'access_token (LinkedIn li_at cookie) is required and cannot be empty',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
       let storedLinkedinIp: string | null | undefined;
       let storedLinkedinCountry: string | null | undefined;
+      let storedLinkedinUserAgent: string | null | undefined;
       if (workspaceMemberId && authTokenCookie) {
         const storedCookies =
           await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
@@ -812,7 +878,13 @@ export class LinkedinUnipileController {
           );
         storedLinkedinIp = storedCookies.linkedinIp;
         storedLinkedinCountry = storedCookies.linkedinCountry;
+        storedLinkedinUserAgent = storedCookies.linkedinUserAgent;
       }
+
+      const connectUserAgent = resolveLinkedinConnectUserAgent({
+        storedUserAgent: storedLinkedinUserAgent,
+        requestUserAgent: cookieAuth.user_agent,
+      });
 
       const normalizedIp =
         normalizeLinkedinConnectionIp(cookieAuth.ip) ??
@@ -832,9 +904,9 @@ export class LinkedinUnipileController {
         '/api/v1/accounts',
         'POST',
         buildUnipileLinkedinCookieConnectBody({
-          accessToken: cookieAuth.access_token,
+          accessToken,
           premiumToken: cookieAuth.premium_token,
-          userAgent: cookieAuth.user_agent,
+          userAgent: connectUserAgent,
           ip: normalizedIp,
           country: connectCountry,
         }),
@@ -863,6 +935,37 @@ export class LinkedinUnipileController {
 
       const connectedAccountIdCookie = data.id || data.account_id;
 
+      let connectStatus = data.status || 'connected';
+      if (connectedAccountIdCookie) {
+        const ready =
+          await this.linkedinUnipileRequestService.waitForLinkedinAccountConnectReady(
+            connectedAccountIdCookie,
+          );
+        this.logger.log(
+          `Unipile connect/cookie readiness: accountId=${connectedAccountIdCookie} status=${ready.status} timedOut=${ready.timedOut}`,
+        );
+        if (ready.status === 'checkpoint_required') {
+          return {
+            success: true,
+            data: {
+              status: 'checkpoint_required',
+              account_id: connectedAccountIdCookie,
+              checkpoint_type: data?.checkpoint?.type ?? '2FA',
+            },
+          };
+        }
+        if (ready.status === 'disconnected') {
+          throw new HttpException(
+            ready.timedOut
+              ? 'LinkedIn Unipile account did not become ready before timeout'
+              : 'LinkedIn Unipile account failed to connect',
+            HttpStatus.BAD_GATEWAY,
+          );
+        }
+        connectStatus =
+          ready.status === 'connected' ? 'connected' : 'pending';
+      }
+
       await this.syncWorkspaceMemberProfileAfterLinkedinConnectionIfEligible(
         connectedAccountIdCookie,
         request,
@@ -874,7 +977,7 @@ export class LinkedinUnipileController {
         data: {
           account_id: connectedAccountIdCookie,
           provider: 'LINKEDIN',
-          status: data.status || 'connected',
+          status: connectStatus,
           profile: data.profile_data,
         },
       };
@@ -929,6 +1032,14 @@ export class LinkedinUnipileController {
 
       return trimmed ? trimmed : undefined;
     };
+
+    this.logger.log(`LI AT TOKEN in MEMBER SYNC ${params.li_at}`);
+    this.logger.log(`LI A TOKEN in MEMBER SYNC ${params.li_a}`);
+    this.logger.log(`USER AGENT in MEMBER SYNC ${params.user_agent}`);
+    this.logger.log(`CLIENT IP in MEMBER SYNC ${params.clientIp}`);
+    this.logger.log(`CLIENT COUNTRY in MEMBER SYNC ${params.clientCountry}`);
+    this.logger.log(`PERSIST REQUEST COOKIE TOKENS in MEMBER SYNC ${params.persistRequestCookieTokens}`);
+    this.logger.log(`LINKEDIN PROFILE URL in MEMBER SYNC ${params.linkedin_profile_url}`);
 
     const liAtToken = params.persistRequestCookieTokens
       ? parseExtensionLinkedinCookieToken(params.li_at)
@@ -1176,6 +1287,8 @@ export class LinkedinUnipileController {
 
     this.logger.log(
       `[extension/sync-cookies] Request received: workspaceMemberId=${workspaceMemberId} ` +
+      `li_at =${body.li_at ?? 'none'} ` +
+      `li_a =${body.li_a ?? 'none'} ` +
       `li_at present=${Boolean(body.li_at)} li_at length=${body.li_at?.length ?? 0} ` +
       `li_a present=${Boolean(body.li_a)} li_a length=${body.li_a?.length ?? 0} ` +
       `user_agent=${body.user_agent?.slice(0, 60) ?? 'none'} clientIp=${clientIp ?? 'none'} ` +
@@ -1290,6 +1403,8 @@ export class LinkedinUnipileController {
       headers?: { authorization?: string };
     },
   ) {
+
+    this.logger.log(`Reconnect from stored profile request received: ${JSON.stringify(body, null, 2)}`);  
     const workspaceMemberId = request.workspaceMemberId;
     const authToken =
       request.headers?.authorization?.replace(/^Bearer\s+/i, '') ?? '';
@@ -1309,6 +1424,13 @@ export class LinkedinUnipileController {
     }
 
     const payload = body ?? {};
+
+    this.logger.log(`Payload in RECONNECT FROM STORED PROFILE: ${JSON.stringify(payload, null, 2)}`);
+
+    this.logger.log(`Workspace in RECONNECT FROM STORED PROFILE: ${JSON.stringify(workspace, null, 2)}`);
+    this.logger.log(`Workspace member id in RECONNECT FROM STORED PROFILE: ${workspaceMemberId}`);
+    this.logger.log(`Auth token in RECONNECT FROM STORED PROFILE: ${authToken}`);
+    this.logger.log(`Request in RECONNECT FROM STORED PROFILE: ${JSON.stringify(request, null, 2)}`);
 
     return this.linkedinUnipileMemberSyncCore(
       workspace,
@@ -1366,6 +1488,15 @@ export class LinkedinUnipileController {
         },
       );
 
+    this.logger.log(`Validation in VALIDATE LINKEDIN SESSION: ${JSON.stringify(validation, null, 2)}`);
+    this.logger.log(`Validation result in VALIDATE LINKEDIN SESSION: ${JSON.stringify(validation, null, 2)}`);
+    this.logger.log(`Success in VALIDATE LINKEDIN SESSION: true`);
+    this.logger.log(`Cookies in VALIDATE LINKEDIN SESSION: ${JSON.stringify(validation.hasLiAt, null, 2)}`);
+    this.logger.log(`Has Li A in VALIDATE LINKEDIN SESSION: ${JSON.stringify(validation.hasLiA, null, 2)}`);
+    this.logger.log(`Last synced at in VALIDATE LINKEDIN SESSION: ${JSON.stringify(validation.lastSyncedAt, null, 2)}`);
+    this.logger.log(`Last validated at in VALIDATE LINKEDIN SESSION: ${JSON.stringify(validation.lastValidatedAt, null, 2)}`);
+    this.logger.log(`Linkedin in VALIDATE LINKEDIN SESSION: ${JSON.stringify(validation.connected, null, 2)}`);
+    this.logger.log(`Account id in VALIDATE LINKEDIN SESSION: ${JSON.stringify(validation.accountId, null, 2)}`);
     return {
       success: true,
       cookies: {
@@ -1535,10 +1666,10 @@ export class LinkedinUnipileController {
     try {
       // Generate notify_url for webhook callbacks
       const notifyUrl = config.notify_url || `${process.env.SERVER_URL}/linkedin-unipile/webhook/account-connected`;
-      console.log('notifyUrl', notifyUrl);
+      this.logger.log('notifyUrl', notifyUrl);
       // Use workspace member ID as the name for user matching
       const userName = config.name || workspace.id;
-      console.log('userName', userName);
+      this.logger.log('userName', userName);
       const requestBody = {
         type: config.type || 'create',
         providers: config.providers || ['LINKEDIN'],

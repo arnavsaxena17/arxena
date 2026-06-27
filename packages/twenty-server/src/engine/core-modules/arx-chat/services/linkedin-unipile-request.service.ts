@@ -21,10 +21,12 @@ import { isUnipileLinkedinAccountUnusableError } from '../utils/is-unipile-linke
 import {
   fetchUnipileAccountsListWithCache,
   invalidateUnipileAccountsListCache,
+  removeAccountFromUnipileAccountsListCache,
   seedUnipileAccountsListCache,
   shouldInvalidateUnipileAccountsListCache,
 } from '../utils/unipile-accounts-list.cache';
 import {
+  isUnipileAccountNotFoundApiError,
   isUnipileDisconnectedAccountApiError,
   parseAccountIdFromUnipileEndpoint,
 } from '../utils/unipile-disconnected-account.util';
@@ -37,6 +39,7 @@ import {
   isUnipileLinkedinSnapshotFresh,
   patchSnapshotOwnerProfile,
   patchSnapshotRawAccount,
+  removeSnapshotAccountById,
   setUnipileLinkedinSnapshot,
   UNIPILE_LINKEDIN_SNAPSHOT_TTL_MS,
   type UnipileLinkedinSnapshotAccountRow,
@@ -123,7 +126,14 @@ export class LinkedinUnipileRequestService {
 
       const response = await fetch(url, config);
       const data = await response.json().catch(() => ({}));
-
+      this.logger.log(`Data in MAKE UNIPILE REQUEST: ${JSON.stringify(data, null, 2)}`);
+      this.logger.log(`Response in MAKE UNIPILE REQUEST: ${JSON.stringify(response, null, 2)}`);
+      this.logger.log(`Endpoint in MAKE UNIPILE REQUEST: ${endpoint}`);
+      this.logger.log(`Method in MAKE UNIPILE REQUEST: ${method}`);
+      this.logger.log(`Body in MAKE UNIPILE REQUEST: ${JSON.stringify(body, null, 2)}`);
+      this.logger.log(`Options in MAKE UNIPILE REQUEST: ${JSON.stringify(options, null, 2)}`);
+      this.logger.log(`Headers in MAKE UNIPILE REQUEST: ${JSON.stringify(headers, null, 2)}`);
+      this.logger.log(`Config in MAKE UNIPILE REQUEST: ${JSON.stringify(config, null, 2)}`);
       if (!response.ok) {
         this.logger.error(
           `Unipile API error: ${response.status} ${response.statusText}`,
@@ -174,7 +184,10 @@ export class LinkedinUnipileRequestService {
     endpoint: string,
     cleanupContext?: LinkedinUnipileAccountCleanupContext,
   ): Promise<void> {
-    if (!isUnipileDisconnectedAccountApiError(status, data)) {
+    const isDisconnected = isUnipileDisconnectedAccountApiError(status, data);
+    const isNotFound = isUnipileAccountNotFoundApiError(status, data);
+
+    if (!isDisconnected && !isNotFound) {
       return;
     }
 
@@ -184,31 +197,60 @@ export class LinkedinUnipileRequestService {
 
     if (!accountId) {
       this.logger.warn(
-        `Unipile disconnected_account error without account id endpoint=${endpoint}`,
+        `Unipile ${isNotFound ? 'account_not_found' : 'disconnected_account'} error without account id endpoint=${endpoint}`,
       );
       return;
     }
 
     if (cleanupContext?.isSharedPoolAccount) {
       this.logger.warn(
-        `Unipile disconnected_account for shared pool accountId=${accountId}; skipping workspace member profile cleanup context=${cleanupContext.context}`,
+        `Unipile ${isNotFound ? 'account_not_found' : 'disconnected_account'} for shared pool accountId=${accountId}; skipping workspace member profile cleanup context=${cleanupContext.context}`,
       );
       return;
     }
 
     if (cleanupContext) {
-      await this.memberLinkedinUnipileConnectionService?.cleanupStoredLinkedinAccountAfterDisconnectedApiError(
-        {
-          ...cleanupContext,
-          accountId,
-        },
-      );
+      this.clearLinkedinUnipileAccountFromCaches(accountId);
+
+      if (isNotFound) {
+        await this.memberLinkedinUnipileConnectionService?.cleanupStoredLinkedinAccountAfterNotFoundApiError(
+          {
+            ...cleanupContext,
+            accountId,
+          },
+        );
+      } else {
+        await this.memberLinkedinUnipileConnectionService?.cleanupStoredLinkedinAccountAfterDisconnectedApiError(
+          {
+            ...cleanupContext,
+            accountId,
+          },
+        );
+      }
       return;
     }
 
+    this.clearLinkedinUnipileAccountFromCaches(accountId);
+
     this.logger.warn(
-      `Unipile disconnected_account for accountId=${accountId} without workspace member cleanup context`,
+      `Unipile ${isNotFound ? 'account_not_found' : 'disconnected_account'} for accountId=${accountId} without workspace member cleanup context`,
     );
+  }
+
+  clearLinkedinUnipileAccountFromCaches(accountId: string): void {
+    const trimmed = accountId.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    const removedFromSnapshot = removeSnapshotAccountById(trimmed);
+    const removedFromList = removeAccountFromUnipileAccountsListCache(trimmed);
+
+    if (removedFromSnapshot || removedFromList) {
+      this.logger.log(
+        `Cleared stale LinkedIn Unipile account caches accountId=${trimmed} snapshot=${removedFromSnapshot} accountsList=${removedFromList}`,
+      );
+    }
   }
 
   /** Fetch a single account by id; returns null on 404 (e.g. account disconnected) without logging ERROR. */
@@ -396,7 +438,11 @@ export class LinkedinUnipileRequestService {
         return 'checkpoint_required';
       }
 
-      if (status === 'pending' || status === 'syncing') {
+      if (
+        status === 'pending' ||
+        status === 'syncing' ||
+        status === 'connecting'
+      ) {
         return 'pending';
       }
 
@@ -404,6 +450,68 @@ export class LinkedinUnipileRequestService {
     }
 
     return account?.id ? 'connected' : 'disconnected';
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  /**
+   * Poll Unipile until the LinkedIn account leaves CONNECTING/syncing, or timeout.
+   */
+  async waitForLinkedinAccountConnectReady(
+    accountId: string,
+    options?: { timeoutMs?: number; pollIntervalMs?: number },
+  ): Promise<{
+    status: 'connected' | 'disconnected' | 'pending' | 'checkpoint_required';
+    timedOut: boolean;
+  }> {
+    const trimmed = accountId.trim();
+    if (!trimmed) {
+      return { status: 'disconnected', timedOut: false };
+    }
+
+    const timeoutMs = options?.timeoutMs ?? 90_000;
+    const pollIntervalMs = options?.pollIntervalMs ?? 3_000;
+    const deadline = Date.now() + timeoutMs;
+
+    const readStatus = async (): Promise<
+      'connected' | 'disconnected' | 'pending' | 'checkpoint_required'
+    > => {
+      const account = await this.fetchAccountByIdIfExists(trimmed, {
+        bypassSnapshot: true,
+      });
+      if (!account) {
+        return 'disconnected';
+      }
+
+      return this.mapAccountStatus(account);
+    };
+
+    while (Date.now() < deadline) {
+      const status = await readStatus();
+      if (
+        status === 'connected' ||
+        status === 'checkpoint_required' ||
+        status === 'disconnected'
+      ) {
+        return { status, timedOut: false };
+      }
+
+      await this.delay(pollIntervalMs);
+    }
+
+    const finalStatus = await readStatus();
+    if (finalStatus === 'connected' || finalStatus === 'checkpoint_required') {
+      return { status: finalStatus, timedOut: false };
+    }
+    if (finalStatus === 'disconnected') {
+      return { status: 'disconnected', timedOut: true };
+    }
+
+    return { status: 'pending', timedOut: true };
   }
 
   /**

@@ -144,3 +144,34 @@ export const patchSnapshotRawAccount = (
 
   snapshot.rawAccountsList.items = items;
 };
+
+export const removeSnapshotAccountById = (accountId: string): boolean => {
+  const snapshot = getUnipileLinkedinSnapshot();
+  const trimmed = accountId.trim();
+  if (!snapshot || !trimmed) {
+    return false;
+  }
+
+  let removed = false;
+
+  if (snapshot.ownerProfilesByAccountId.delete(trimmed)) {
+    removed = true;
+  }
+
+  const rawItems = snapshot.rawAccountsList.items ?? [];
+  const filteredRawItems = rawItems.filter((item) => item.id?.trim() !== trimmed);
+  if (filteredRawItems.length !== rawItems.length) {
+    snapshot.rawAccountsList.items = filteredRawItems;
+    removed = true;
+  }
+
+  const filteredLinkedinAccounts = snapshot.linkedinAccounts.filter(
+    (item) => item.id?.trim() !== trimmed,
+  );
+  if (filteredLinkedinAccounts.length !== snapshot.linkedinAccounts.length) {
+    snapshot.linkedinAccounts = filteredLinkedinAccounts;
+    removed = true;
+  }
+
+  return removed;
+};

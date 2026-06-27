@@ -64,6 +64,7 @@ describe('LinkedinStoredCookieValidationService', () => {
       workspace: { id: 'workspace-id' } as never,
       workspaceMemberId: 'member-id',
       authToken: 'auth-token',
+      logContext: 'extension validate-session',
     });
 
     expect(result).toMatchObject({

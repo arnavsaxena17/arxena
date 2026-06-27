@@ -33,6 +33,34 @@ export const invalidateUnipileAccountsListCache = (): void => {
   invalidateUnipileLinkedinSnapshotCache();
 };
 
+export const removeAccountFromUnipileAccountsListCache = (
+  accountId: string,
+): boolean => {
+  const trimmed = accountId.trim();
+  if (!trimmed || !cachedList || cachedList.expiresAt <= Date.now()) {
+    return false;
+  }
+
+  const items = cachedList.response.items ?? [];
+  const filteredItems = items.filter(
+    (item) => String(item.id ?? '').trim() !== trimmed,
+  );
+
+  if (filteredItems.length === items.length) {
+    return false;
+  }
+
+  cachedList = {
+    ...cachedList,
+    response: {
+      ...cachedList.response,
+      items: filteredItems,
+    },
+  };
+
+  return true;
+};
+
 export const seedUnipileAccountsListCache = (
   response: UnipileAccountsListResponse,
   ttlMs: number = UNIPILE_ACCOUNTS_LIST_CACHE_TTL_MS,
