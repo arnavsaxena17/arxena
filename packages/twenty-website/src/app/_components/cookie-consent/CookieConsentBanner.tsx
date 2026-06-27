@@ -4,12 +4,13 @@ import styled from '@emotion/styled';
 import Link from 'next/link';
 import { useState } from 'react';
 import {
-  DEFAULT_ACCEPT_ALL_CONSENT_CATEGORIES,
-  DEFAULT_REJECT_CONSENT_CATEGORIES,
-  PrivacyConsentCategories,
+    DEFAULT_ACCEPT_ALL_CONSENT_CATEGORIES,
+    DEFAULT_REJECT_CONSENT_CATEGORIES,
+    PrivacyConsentCategories,
 } from 'twenty-shared';
 
 import { useCookieConsent } from './CookieConsentProvider';
+import { useOrgChartDiagramReady } from './OrgChartDiagramReadyProvider';
 
 const StyledBanner = styled.div`
   position: fixed;
@@ -112,12 +113,17 @@ export const CookieConsentBanner = () => {
     openPreferences,
     saveConsent,
   } = useCookieConsent();
+  const { shouldDeferCookieBanner } = useOrgChartDiagramReady();
   const [customCategories, setCustomCategories] =
     useState<PrivacyConsentCategories>(
       consent?.categories ?? DEFAULT_REJECT_CONSENT_CATEGORIES,
     );
 
   if (isResolved && !isPreferencesOpen) {
+    return null;
+  }
+
+  if (shouldDeferCookieBanner && !isPreferencesOpen) {
     return null;
   }
 

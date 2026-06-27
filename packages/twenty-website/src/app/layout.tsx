@@ -8,6 +8,7 @@ import { isPhase2Exposed } from '@/lib/sitemap';
 import { ConsentGatedScripts } from './_components/cookie-consent/ConsentGatedScripts';
 import { CookieConsentBanner } from './_components/cookie-consent/CookieConsentBanner';
 import { CookieConsentProvider } from './_components/cookie-consent/CookieConsentProvider';
+import { OrgChartDiagramReadyProvider } from './_components/cookie-consent/OrgChartDiagramReadyProvider';
 import { FreeTrialFlowProvider } from './_components/free-trial/FreeTrialFlowProvider';
 import { WebSiteStructuredData } from './_components/StructuredData';
 import { ConditionalFooter } from './_components/ui/layout/footer';
@@ -74,13 +75,15 @@ export default async function RootLayout({
         <PublicEnvScript />
         <EmotionRootStyleRegistry>
           <CookieConsentProvider>
-            <ConsentGatedScripts />
-            <CookieConsentBanner />
-            <FreeTrialFlowProvider>
-              {/* <AppHeader /> */}
-              <div className="container">{children}</div>
-              <ConditionalFooter phase2Exposed={isPhase2Exposed()} />
-            </FreeTrialFlowProvider>
+            <OrgChartDiagramReadyProvider>
+              <ConsentGatedScripts />
+              <CookieConsentBanner />
+              <FreeTrialFlowProvider>
+                {/* <AppHeader /> */}
+                <div className="container">{children}</div>
+                <ConditionalFooter phase2Exposed={isPhase2Exposed()} />
+              </FreeTrialFlowProvider>
+            </OrgChartDiagramReadyProvider>
           </CookieConsentProvider>
         </EmotionRootStyleRegistry>
       </body>

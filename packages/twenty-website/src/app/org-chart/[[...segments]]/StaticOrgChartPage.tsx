@@ -2,6 +2,8 @@ import Link from 'next/link';
 
 import { OrgChartNodeData } from 'twenty-shared';
 
+import { OrgChartStaticPageDiagramReadySignal } from '@/app/_components/cookie-consent/OrgChartStaticPageDiagramReadySignal';
+
 import { OrgChartStructureSSR } from './OrgChartStructureSSR';
 
 type StaticOrgChartPageProps = {
@@ -51,6 +53,7 @@ export function StaticOrgChartPage({
         padding: '0 24px 48px',
       }}
     >
+      <OrgChartStaticPageDiagramReadySignal />
       {breadcrumb}
       <header style={{ paddingTop: 16, paddingBottom: 8 }}>
         <h1 style={{ fontSize: '1.5rem', margin: '0 0 8px' }}>

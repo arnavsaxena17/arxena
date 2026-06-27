@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ThemeProvider } from '@emotion/react';
 import styled from '@emotion/styled';
 
+import { useOrgChartDiagramReady } from '@/app/_components/cookie-consent/OrgChartDiagramReadyProvider';
 import { useFreeTrialFlow } from '@/app/_components/free-trial/FreeTrialFlowProvider';
 import { FreeTrialModal } from '@/app/_components/free-trial/FreeTrialModal';
 import { useFreeTrialCta } from '@/app/_components/free-trial/useFreeTrialCta';
@@ -33,6 +34,8 @@ import {
     useCompanyInfoLookup,
     useOrgChartFilterOptions,
 } from 'twenty-orgchart/orgchart-core';
+import { loadOrgChartDiagramComponent } from './loadOrgChartDiagram';
+
 import {
     DEFAULT_ORG_CHART_GRADE_VISIBILITY,
     filterOrgChartNodeDataArray,
@@ -45,24 +48,21 @@ import {
     type OrgChartGradeVisibility,
 } from 'twenty-shared';
 
-const OrgChartDiagram = dynamic(
-  () => import('twenty-orgchart').then((mod) => mod.OrgChartDiagram),
-  {
-    ssr: false,
-    loading: () => (
-      <div
-        style={{
-          width: '100%',
-          minHeight: 400,
-          background: '#f5f5f5',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      />
-    ),
-  },
-);
+const OrgChartDiagram = dynamic(() => loadOrgChartDiagramComponent(), {
+  ssr: false,
+  loading: () => (
+    <div
+      style={{
+        width: '100%',
+        minHeight: 400,
+        background: '#f5f5f5',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    />
+  ),
+});
 
 type OrgChartPageClientProps = {
   children?: React.ReactNode;
@@ -357,11 +357,17 @@ export const OrgChartPageClient = ({
   const searchParams = useSearchParams();
   const diagramHandleRef = useRef<OrgChartDiagramHandle | null>(null);
   const timelineEnabled = filterInPlace && !!publishSlug?.trim();
+  const { markDiagramReady, markInteractiveOrgChartAbsent } =
+    useOrgChartDiagramReady();
 
-  const handleDiagramReady = useCallback((handle: OrgChartDiagramHandle) => {
-    diagramHandleRef.current = handle;
-    setIsDiagramVisible(true);
-  }, []);
+  const handleDiagramReady = useCallback(
+    (handle: OrgChartDiagramHandle) => {
+      diagramHandleRef.current = handle;
+      setIsDiagramVisible(true);
+      markDiagramReady();
+    },
+    [markDiagramReady],
+  );
 
   const [isDiagramVisible, setIsDiagramVisible] = useState(false);
 
@@ -920,6 +926,20 @@ export const OrgChartPageClient = ({
 
   const showNodeCapabilitiesHoverHint =
     process.env.NEXT_PUBLIC_EXPERIMENTAL_ORGCHART_NODE_HOVER_HINTS === 'true';
+
+  useEffect(() => {
+    if (isTimelineChartLoading) {
+      return;
+    }
+
+    if (displayedNodeDataArray.length === 0) {
+      markInteractiveOrgChartAbsent();
+    }
+  }, [
+    displayedNodeDataArray.length,
+    isTimelineChartLoading,
+    markInteractiveOrgChartAbsent,
+  ]);
 
   return (
     <div
