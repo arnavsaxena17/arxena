@@ -24,7 +24,7 @@ const StyledCompanySearchWrapper = styled.div`
   flex: 0 1 420px;
   min-width: 350px;
   max-width: 420px;
-  z-index: 100;
+  z-index: 1;
 
   @media (max-width: 1024px) {
     position: relative;
@@ -44,7 +44,8 @@ const StyledOrgChartSearchRow = styled.div`
 const StyledPageHeaderShell = styled.div`
   flex-shrink: 0;
   position: relative;
-  z-index: 100;
+  /* Below top bar tooltips (25) and right drawer (30) */
+  z-index: 20;
 `;
 
 export const StyledPageHeader = styled(PageHeader)`

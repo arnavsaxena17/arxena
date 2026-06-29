@@ -74,6 +74,8 @@ const StyledPageBody = styled(PageBody)`
   flex: 1;
   overflow: hidden;
   position: relative;
+  /* Above page header (20), below right drawer (30) */
+  z-index: 25;
 
   @media (max-width: 768px) {
     overflow: auto;

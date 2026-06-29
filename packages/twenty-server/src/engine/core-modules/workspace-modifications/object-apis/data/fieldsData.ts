@@ -1980,6 +1980,17 @@ export function getFieldsData(
     {
       objectName: 'candidate',
       field: {
+        description: 'Location Name',
+        icon: 'IconLocation',
+        label: 'Location Name',
+        name: 'locationName',
+        objectMetadataId: objectsNameIdMap.candidate,
+        type: 'TEXT',
+      },
+    },
+    {
+      objectName: 'candidate',
+      field: {
         description: 'Messaging Channel',
         icon: 'IconMessageCircle',
         label: 'Messaging Channel',

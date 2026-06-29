@@ -19,53 +19,43 @@ import { companySearchLightTheme } from '@/lib/company-search';
 import { FREE_TRIAL_CTA_LABEL } from '@/lib/free-trial-flow';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 import {
-    mergeOrgChartCompanyField,
-    needsOrgChartCompanyInfoLookup,
-    normalizeOptionalCompanyField,
+  mergeOrgChartCompanyField,
+  needsOrgChartCompanyInfoLookup,
+  normalizeOptionalCompanyField,
 } from '@/lib/org-chart-company-metadata';
 import { processPublishedOrgChartPayload } from '@/lib/process-published-org-chart-payload';
 // eslint-disable-next-line @nx/enforce-module-boundaries -- orgchart-core is used alongside dynamic OrgChartDiagram
 import {
-    OrgChartDiagramHandle,
-    OrgChartFilters,
-    OrgChartSearchControls,
-    OrgChartSignUpModal,
-    OrgChartTimelineSlider,
-    useCompanyInfoLookup,
-    useOrgChartFilterOptions,
+  OrgChartDiagramHandle,
+  OrgChartFilters,
+  OrgChartSearchControls,
+  OrgChartSignUpModal,
+  OrgChartTimelineSlider,
+  useCompanyInfoLookup,
+  useOrgChartFilterOptions,
 } from 'twenty-orgchart/orgchart-core';
 import { loadOrgChartDiagramComponent } from './loadOrgChartDiagram';
 
 import {
-    DEFAULT_ORG_CHART_GRADE_VISIBILITY,
-    filterOrgChartNodeDataArray,
-    hasMeaningfulOrgChartCountryFilter,
-    hasMeaningfulOrgChartFunctionRootFilter,
-    navigateToOrgChartSignup,
-    OrgChartNodeData,
-    toSlug,
-    type OrgChartGradeTier,
-    type OrgChartGradeVisibility,
+  DEFAULT_ORG_CHART_GRADE_VISIBILITY,
+  filterOrgChartNodeDataArray,
+  hasMeaningfulOrgChartCountryFilter,
+  hasMeaningfulOrgChartFunctionRootFilter,
+  navigateToOrgChartSignup,
+  OrgChartNodeData,
+  toSlug,
+  type OrgChartGradeTier,
+  type OrgChartGradeVisibility,
 } from 'twenty-shared';
 
 const OrgChartDiagram = dynamic(() => loadOrgChartDiagramComponent(), {
   ssr: false,
-  loading: () => (
-    <div
-      style={{
-        width: '100%',
-        minHeight: 400,
-        background: '#f5f5f5',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    />
-  ),
+  loading: () => null,
 });
 
 type OrgChartPageClientProps = {
   children?: React.ReactNode;
+  diagramLoader?: React.ReactNode;
   companyId: string;
   companyName: string;
   website?: string;
@@ -97,8 +87,26 @@ const StyledContainer = styled.div`
   background: ${({ theme }) => theme.background.primary};
 `;
 
-const StyledStructureWrapper = styled.div<{ $hidden: boolean }>`
-  ${({ $hidden }) => $hidden && 'display: none;'}
+const StyledStructureWrapper = styled.div`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+`;
+
+const StyledDiagramLoaderOverlay = styled.div<{ $visible: boolean }>`
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  ${({ $visible }) => !$visible && 'display: none;'}
 `;
 
 const StyledHeader = styled.header`
@@ -336,6 +344,7 @@ const StyledUnlockButton = styled(Link)`
 
 export const OrgChartPageClient = ({
   children,
+  diagramLoader,
   companyId,
   companyName,
   website,
@@ -1004,6 +1013,11 @@ export const OrgChartPageClient = ({
               </StyledPreviewPersistentBanner>
             )}
             <StyledDiagramBody>
+              {diagramLoader && (
+                <StyledDiagramLoaderOverlay $visible={!isDiagramVisible}>
+                  {diagramLoader}
+                </StyledDiagramLoaderOverlay>
+              )}
               {showFilteredEmptyState && (
                 <div
                   style={{
@@ -1132,12 +1146,7 @@ export const OrgChartPageClient = ({
           </StyledUnlockButton>
         </StyledUnlockBanner> */}
           {children && (
-            <StyledStructureWrapper
-              $hidden={isDiagramVisible}
-              aria-hidden={isDiagramVisible}
-            >
-              {children}
-            </StyledStructureWrapper>
+            <StyledStructureWrapper aria-hidden="true">{children}</StyledStructureWrapper>
           )}
         </StyledContainer>
       </ThemeProvider>

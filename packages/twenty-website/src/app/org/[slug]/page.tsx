@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 
 import { fromSlug, toTitleCase } from 'twenty-shared';
 
+import { OrgChartDiagramLoader } from '@/app/org-chart/[[...segments]]/OrgChartDiagramLoader';
 import { OrgChartPageClient } from '@/app/org-chart/[[...segments]]/OrgChartPageClient';
 import { OrgChartStructureSSR } from '@/app/org-chart/[[...segments]]/OrgChartStructureSSR';
 import { getSignUpUrl } from '@/lib/auth-urls';
@@ -179,6 +180,7 @@ export default async function PublishedOrgChartPage({
           filterInPlace
           publishSlug={publishSlug}
           initialAsOfMonth={initialAsOfMonth}
+          diagramLoader={<OrgChartDiagramLoader />}
         >
           <OrgChartStructureSSR
             nodeDataArray={nodeDataArray}

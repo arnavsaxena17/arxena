@@ -3,32 +3,33 @@ import { headers } from 'next/headers';
 import { permanentRedirect } from 'next/navigation';
 
 import {
-  buildCanonicalOrgChartPath,
-  extractOrgData,
-  fromSlug,
-  getProxiedImageUrl,
-  processOrgChartToNodeData,
-  resolveOrgChartCanonicalCompanyId,
-  shouldRedirectOrgChartCompanySlug,
-  toSlug,
-  toTitleCase,
-  OrgChartNodeData,
+    buildCanonicalOrgChartPath,
+    extractOrgData,
+    fromSlug,
+    getProxiedImageUrl,
+    OrgChartNodeData,
+    processOrgChartToNodeData,
+    resolveOrgChartCanonicalCompanyId,
+    shouldRedirectOrgChartCompanySlug,
+    toSlug,
+    toTitleCase,
 } from 'twenty-shared';
 
 import { getSignUpUrl } from '@/lib/auth-urls';
 import { getBaseUrl, getInternalAppUrl } from '@/lib/base-url';
 import { getClientIpFromHeaders } from '@/lib/bot-detection';
 import {
-  extractOrgChartCompanyMetadataFromPayload,
-  normalizeOptionalCompanyField,
+    extractOrgChartCompanyMetadataFromPayload,
+    normalizeOptionalCompanyField,
 } from '@/lib/org-chart-company-metadata';
 import { readOrgChartStaticOnlyFromHeaders } from '@/lib/org-chart-static-only';
 import { decodeOverEncodedPath } from '@/lib/url-utils';
 
 import {
-  BreadcrumbListSchema,
-  BreadcrumbNav,
+    BreadcrumbListSchema,
+    BreadcrumbNav,
 } from '@/app/_components/BreadcrumbList';
+import { OrgChartDiagramLoader } from './OrgChartDiagramLoader';
 import { OrgChartPageClient } from './OrgChartPageClient';
 import { OrgChartStructureSSR } from './OrgChartStructureSSR';
 import { StaticOrgChartPage } from './StaticOrgChartPage';
@@ -478,6 +479,7 @@ export default async function OrgChartPage({
           initialCountry={undefined}
           initialFunctionRoot={undefined}
           signUpUrl={getSignUpUrl()}
+          diagramLoader={<OrgChartDiagramLoader />}
         >
           <OrgChartStructureSSR
             nodeDataArray={nodeDataArray}
@@ -641,6 +643,7 @@ export default async function OrgChartPage({
         initialFunctionRoot={normalizedFunctionRoot}
         signUpUrl={getSignUpUrl()}
         breadcrumb={<BreadcrumbNav items={breadcrumbItems} />}
+        diagramLoader={<OrgChartDiagramLoader />}
       >
         <OrgChartStructureSSR
           nodeDataArray={nodeDataArray}

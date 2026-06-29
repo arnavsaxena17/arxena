@@ -45,7 +45,6 @@ import {
 } from 'twenty-shared';
 import { v4 } from 'uuid';
 
-import console from 'console';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import {

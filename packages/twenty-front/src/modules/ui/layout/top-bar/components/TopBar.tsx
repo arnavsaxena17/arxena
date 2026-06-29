@@ -85,8 +85,8 @@ const StyledContainer = styled.div`
   margin-left: ${({ theme }) => theme.spacing(2)};
   position: relative;
   flex-direction: column;
-  /* Above CandidateTablePageHeader (z-index: 100) so tooltips/dropdowns render on top */
-  z-index: 101;
+  /* Above page header (20), below right drawer (30) so tooltips are visible */
+  z-index: 25;
 `;
 
 const StyledTopBar = styled.div`

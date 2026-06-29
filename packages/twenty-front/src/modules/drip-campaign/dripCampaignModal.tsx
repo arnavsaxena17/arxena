@@ -5,9 +5,9 @@ import { useRecoilState } from 'recoil';
 import { DripCampaignLeftSideContainer } from '@/drip-campaign/left-side/DripCampaignLeftSideContainer';
 import { DripCampaignRightSideContainer } from '@/drip-campaign/right-side/DripCampaignRightSideContainer';
 import {
-  currentJobIdForDripState,
-  isDripCampaignModalMinimizedState,
-  isDripCampaignModalOpenState
+    currentJobIdForDripState,
+    isDripCampaignModalMinimizedState,
+    isDripCampaignModalOpenState
 } from '@/drip-campaign/states/dripCampaignModalOpenState';
 import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousHotkeyScope';
 import { AppHotkeyScope } from '@/ui/utilities/hotkey/types/AppHotkeyScope';
