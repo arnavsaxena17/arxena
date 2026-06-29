@@ -1,13 +1,14 @@
 import {
-  IconApps,
-  IconAt,
-  IconCalendarEvent,
-  IconComponent,
-  IconCurrencyDollar,
-  IconMail,
-  IconSettings,
-  IconUserCircle,
-  IconUsers
+    IconAddressBook,
+    IconApps,
+    IconAt,
+    IconCalendarEvent,
+    IconComponent,
+    IconCurrencyDollar,
+    IconMail,
+    IconSettings,
+    IconUserCircle,
+    IconUsers
 } from 'twenty-ui';
 
 import { SettingsPath } from '@/types/SettingsPath';
@@ -86,6 +87,12 @@ export const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
               label: t`Calendars`,
               path: SettingsPath.AccountsCalendars,
               Icon: IconCalendarEvent,
+              indentationLevel: 2,
+            },
+            {
+              label: t`Google Contacts`,
+              path: SettingsPath.AccountsContacts,
+              Icon: IconAddressBook,
               indentationLevel: 2,
             },
             // {

@@ -35,9 +35,13 @@ export class GoogleContactsService {
       },
     });
 
-    if (connectedAccountsResponse?.data?.data?.connectedAccounts?.length > 0) {
-      const connectedAccountToUse = connectedAccountsResponse.data.data.connectedAccounts
-        .filter(x => x.handle === process.env.EMAIL_SMTP_USER)[0];
+    const connectedAccounts =
+      connectedAccountsResponse?.data?.data?.connectedAccounts ?? [];
+
+    if (connectedAccounts.length > 0) {
+      const connectedAccountToUse = connectedAccounts.find(
+        (account) => account.provider?.toLowerCase() === 'google',
+      );
       const refreshToken = connectedAccountToUse?.refreshToken;
       
       if (!refreshToken) {
@@ -153,9 +157,10 @@ export class GoogleContactsService {
     try {
       do {
         const response = await people.people.connections.list({
+          resourceName: 'people/me',
           pageSize: 1000,
           personFields: 'phoneNumbers',
-          pageToken: pageToken || undefined
+          pageToken: pageToken || undefined,
         });
 
         const connections = response.data.connections || [];

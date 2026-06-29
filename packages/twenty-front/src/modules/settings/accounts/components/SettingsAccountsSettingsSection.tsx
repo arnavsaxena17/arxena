@@ -1,11 +1,12 @@
 import styled from '@emotion/styled';
 import {
   H2Title,
+  IconAddressBook,
   IconCalendarEvent,
   IconMailCog,
   MOBILE_VIEWPORT,
   Section,
-  UndecoratedLink,
+  UndecoratedLink
 } from 'twenty-ui';
 
 import { SettingsCard } from '@/settings/components/SettingsCard';
@@ -46,6 +47,19 @@ export const SettingsAccountsSettingsSection = () => {
             description={t`Set email visibility, manage your blocklist and more.`}
           />
         </UndecoratedLink>
+        <UndecoratedLink to={getSettingsPath(SettingsPath.AccountsContacts)}>
+          <SettingsCard
+            Icon={
+              <IconAddressBook
+                size={theme.icon.size.lg}
+                stroke={theme.icon.stroke.sm}
+              />
+            }
+            title={t`Google Contacts`}
+            description={t`Connect Google to sync candidates to your contacts.`}
+          />
+        </UndecoratedLink>
+
         <UndecoratedLink to={getSettingsPath(SettingsPath.AccountsCalendars)}>
           <SettingsCard
             Icon={

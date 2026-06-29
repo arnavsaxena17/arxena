@@ -177,6 +177,14 @@ export const useAddToGoogleContactsAction: ActionHookWithObjectMetadataItem =
           objectMetadataItem.nameSingular,
         );
 
+        if (!result?.success) {
+          throw new Error(
+            result?.error ||
+              result?.message ||
+              'Failed to add candidates to Google Contacts. Connect Google Contacts in Settings > Account.',
+          );
+        }
+
         enqueueSnackBar(
           `Successfully added ${result.created || 0} candidates to Google Contacts. ${result.skipped || 0} candidates were already in contacts.`,
           {
