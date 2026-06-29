@@ -69,6 +69,7 @@ export const parsedJDSelector = selector<ParsedJD | null>({
           videoInterview: undefined as any,
           meetingScheduling: undefined as any,
           existingChatQuestions: undefined as any,
+          chatQuestionFieldIds: undefined as any,
         }
       : null;
 

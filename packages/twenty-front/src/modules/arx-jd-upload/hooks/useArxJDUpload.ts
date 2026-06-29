@@ -21,12 +21,13 @@ import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import type { AssistantThread } from '@/assistant/types/assistant.types';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import {
-  companyInfoType, graphQLToUpdateOneWorkspaceMemberProfile, isDefined, LinkedInSearchCategory,
-  LinkedInSearchType
+    companyInfoType, graphQLToUpdateOneWorkspaceMemberProfile, isDefined, LinkedInSearchCategory,
+    LinkedInSearchType
 } from 'twenty-shared';
 import { RecruiterDetails } from '../components/JobDetailsForm';
 import type { AssistantThreadSummary } from '../types/ParsedJD';
 import { createDefaultParsedJD } from '../utils/createDefaultParsedJD';
+import { syncChatQuestionsToDatabase } from '../utils/syncChatQuestions';
 import { useApiKeysRecoil } from './useApiKeysRecoil';
 import { useJobDescriptionParser } from './useJobDescriptionParser';
 import { useSearchParameters } from './useSearchParameters';
@@ -107,6 +108,9 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
   });
   const { createOneRecord: createOneCandidateFieldRecord } = useCreateOneRecord({ 
     objectNameSingular: 'candidateField' 
+  });
+  const { updateOneRecord: updateOneCandidateFieldRecord } = useUpdateOneRecord({
+    objectNameSingular: 'candidateField',
   });
 
   const [updateWorkspaceMemberProfile] = useMutation(gql`
@@ -604,6 +608,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
           videoInterview,
           meetingScheduling,
           existingChatQuestions,
+          chatQuestionFieldIds,
           parsedJobDescription,
           filePath,
           assistantThreads,
@@ -662,6 +667,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
               videoInterview,
               meetingScheduling,
               existingChatQuestions,
+              chatQuestionFieldIds,
               parsedJobDescription,
               filePath,
               assistantThreads,
@@ -689,6 +695,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
               videoInterview,
               meetingScheduling,
               existingChatQuestions,
+              chatQuestionFieldIds,
               parsedJobDescription,
               filePath,
               assistantThreads,
@@ -711,6 +718,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
             videoInterview,
             meetingScheduling,
             existingChatQuestions,
+            chatQuestionFieldIds,
             parsedJobDescription,
             filePath,
             assistantThreads,
@@ -758,33 +766,18 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
         }, 100);
       }
 
-      if (parsedJD?.chatFlow?.questions && parsedJD?.chatFlow?.questions?.length > 0) {
-        try {
-          // Get the new questions by comparing with existingQuestions from ChatQuestionsSection
-          // Use case-insensitive comparison and trim whitespace to avoid duplicates
-          const newQuestions = parsedJD.chatFlow.questions.filter(
-            (question: string) => !parsedJD.existingChatQuestions?.some(
-              (existingQuestion: string) => 
-                existingQuestion.trim().toLowerCase() === question.trim().toLowerCase()
-            )
-          );
+      const jobIdForChatQuestions = parsedJD.id ?? createdJob?.id;
 
-          // Only create candidate fields for new questions
-          const createCandidateFieldsPromises = newQuestions.map(
-            async (question: string) => {
-              return createOneCandidateFieldRecord({
-                name: question.trim(), // Ensure the question is trimmed before saving
-                jobsId: parsedJD.id,
-                candidateFieldType: 'Text',
-              });
-            },
-          );
-          
-          if (newQuestions.length > 0) {
-            await Promise.all(createCandidateFieldsPromises);
-          }
+      if (jobIdForChatQuestions && parsedJD.chatFlow?.questions?.length) {
+        try {
+          await syncChatQuestionsToDatabase({
+            parsedJD,
+            jobId: jobIdForChatQuestions,
+            createOneCandidateFieldRecord,
+            updateOneCandidateFieldRecord,
+          });
         } catch (error) {
-          console.error('Error creating candidate fields:', error);
+          console.error('Error syncing chat questions:', error);
         }
       }
 
@@ -802,6 +795,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
     createOneRecord,
     updateOneRecord,
     createOneCandidateFieldRecord,
+    updateOneCandidateFieldRecord,
     triggerJobsRefetch,
     tokenPair?.accessToken?.token,
   ]);

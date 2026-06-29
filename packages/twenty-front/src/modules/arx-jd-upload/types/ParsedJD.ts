@@ -5,13 +5,13 @@ export type AiFilterConfig = {
 };
 
   import {
-  ClassicCompaniesSearchParameters,
-  ClassicJobsSearchParameters,
-  ClassicPeopleSearchParameters,
-  RecruiterPeopleSearchParameters,
-  SalesNavigatorCompaniesSearchParameters,
-  SalesNavigatorPeopleSearchParameters,
-  SearchParametersResponse,
+    ClassicCompaniesSearchParameters,
+    ClassicJobsSearchParameters,
+    ClassicPeopleSearchParameters,
+    RecruiterPeopleSearchParameters,
+    SalesNavigatorCompaniesSearchParameters,
+    SalesNavigatorPeopleSearchParameters,
+    SearchParametersResponse,
 } from '@/candidate-search/types/candidate-search.types';
 
 export type ParsedJD = {
@@ -47,7 +47,10 @@ export type ParsedJD = {
   videoInterview: {
     questions: string[];
   };
+  /** DB snapshot at fetch time — do not mutate when the user edits the form */
   existingChatQuestions?: string[];
+  /** Candidate field IDs parallel to existingChatQuestions (by index) */
+  chatQuestionFieldIds?: string[];
   meetingScheduling: {
     meetingType: 'walkIn' | 'online' | 'inPerson';
     availableDates: Array<{
@@ -87,13 +90,13 @@ export interface GeneratedSearchParameters {
 
 // Re-export types for convenience
 export type {
-  ClassicCompaniesSearchParameters,
-  ClassicJobsSearchParameters,
-  // LinkedIn Search Parameter Types
-  ClassicPeopleSearchParameters,
-  RecruiterPeopleSearchParameters,
-  SalesNavigatorCompaniesSearchParameters,
-  SalesNavigatorPeopleSearchParameters,
-  SearchParametersResponse
+    ClassicCompaniesSearchParameters,
+    ClassicJobsSearchParameters,
+    // LinkedIn Search Parameter Types
+    ClassicPeopleSearchParameters,
+    RecruiterPeopleSearchParameters,
+    SalesNavigatorCompaniesSearchParameters,
+    SalesNavigatorPeopleSearchParameters,
+    SearchParametersResponse
 };
 
