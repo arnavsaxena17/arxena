@@ -4,9 +4,10 @@ import styled from '@emotion/styled';
 import Link from 'next/link';
 
 import {
+    MCP_CLAUDE_DESKTOP_CONFIG_EXAMPLE,
+    MCP_CURSOR_CONFIG_EXAMPLE,
     MCP_DOCS_URL,
     MCP_OAUTH_ISSUER_URL,
-    MCP_REMOTE_CONFIG_EXAMPLE,
     MCP_SERVER_SOLUTION_PAGE,
     MCP_SERVER_URL,
     MCP_STDIO_CONFIG_EXAMPLE,
@@ -158,30 +159,42 @@ export const McpServerSolutionContent = ({
         </li>
       </StyledOrderedList>
 
-      <StyledBlockTitle>2. Remote MCP (recommended)</StyledBlockTitle>
+      <StyledBlockTitle>2. Cursor (remote MCP)</StyledBlockTitle>
       <StyledParagraph>
-        Use the hosted endpoint at{' '}
-        <StyledLink href={MCP_SERVER_URL}>{MCP_SERVER_URL}</StyledLink> for
-        Cursor, Claude custom connectors, and other clients that support remote
-        MCP over HTTP.
+        Cursor supports <StyledInlineCode>url</StyledInlineCode> +{' '}
+        <StyledInlineCode>headers</StyledInlineCode> directly. Open Settings →
+        MCP → add a custom server:
       </StyledParagraph>
-      <StyledPre>{MCP_REMOTE_CONFIG_EXAMPLE}</StyledPre>
+      <StyledPre>{MCP_CURSOR_CONFIG_EXAMPLE}</StyledPre>
+
+      <StyledBlockTitle>3. Claude Desktop (remote MCP)</StyledBlockTitle>
       <StyledParagraph>
-        In <strong>Cursor</strong>: open Settings → MCP → add a custom server and
-        paste the JSON above (replace the placeholder with your API key JWT).
+        <StyledInlineCode>claude_desktop_config.json</StyledInlineCode> only
+        launches stdio processes — it does not accept a{' '}
+        <StyledInlineCode>url</StyledInlineCode> field. Use the{' '}
+        <StyledInlineCode>mcp-remote</StyledInlineCode> bridge (same pattern as
+        RapidAPI and other remote hubs). Add to{' '}
+        <StyledInlineCode>mcpServers</StyledInlineCode>, then fully quit and
+        reopen Claude Desktop (Cmd+Q):
+      </StyledParagraph>
+      <StyledPre>{MCP_CLAUDE_DESKTOP_CONFIG_EXAMPLE}</StyledPre>
+      <StyledParagraph>
+        Alternatively, use <strong>Settings → Connectors</strong> in Claude
+        Desktop and add <StyledInlineCode>{MCP_SERVER_URL}</StyledInlineCode>{' '}
+        for OAuth (see step 5).
       </StyledParagraph>
 
-      <StyledBlockTitle>3. Local MCP (Claude Desktop)</StyledBlockTitle>
+      <StyledBlockTitle>4. Local MCP (stdio)</StyledBlockTitle>
       <StyledParagraph>
-        Run the stdio server on your machine when a remote connector is not
-        available. Clone the Arxena repo, build{' '}
+        Run the stdio server on your machine instead of the hosted endpoint.
+        Clone the Arxena repo, build{' '}
         <StyledInlineCode>packages/twenty-mcp-server</StyledInlineCode>, then
         point Claude Desktop at <StyledInlineCode>dist/index.js</StyledInlineCode>
         :
       </StyledParagraph>
       <StyledPre>{MCP_STDIO_CONFIG_EXAMPLE}</StyledPre>
 
-      <StyledBlockTitle>4. Claude &amp; ChatGPT app directories (OAuth)</StyledBlockTitle>
+      <StyledBlockTitle>5. Claude &amp; ChatGPT app directories (OAuth)</StyledBlockTitle>
       <StyledParagraph>
         Published directory integrations use OAuth 2.1 against{' '}
         <StyledInlineCode>{MCP_OAUTH_ISSUER_URL}</StyledInlineCode>. Connect

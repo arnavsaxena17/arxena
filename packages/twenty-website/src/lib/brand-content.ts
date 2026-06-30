@@ -19,7 +19,7 @@ export const HOMEPAGE_HERO = {
   lead: "View & power through any company's org structure — hack growth via relevant, contexual meetings.",
   stats:
     '10M+ live, real-time company org charts · 800M+ people profiles, contact info & engagement',
-  exampleStripTitle: 'Explore a live org graph',
+  exampleStripTitle: 'Explore a live org chart: Click on any company below',
   clarifyNotLabel: 'Not this',
   clarifyNotText:
     "A tool that helps you draw or document your own company's org chart.",

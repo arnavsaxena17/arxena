@@ -19,7 +19,11 @@ Remote [Model Context Protocol](https://modelcontextprotocol.io) server for the 
 
 Public setup guide: https://arxena.com/solutions/mcp-server
 
-## Client config (Cursor)
+## Client config
+
+Generate the JWT in **Settings → Developers → API Keys** (copy-paste configs on the API key detail page).
+
+### Cursor
 
 ```json
 {
@@ -32,7 +36,50 @@ Public setup guide: https://arxena.com/solutions/mcp-server
 }
 ```
 
-Generate the JWT in **Settings → Developers → API Keys**.
+### Claude Desktop (`claude_desktop_config.json`)
+
+Claude Desktop only supports stdio in the JSON config — use `mcp-remote` to reach the hosted server:
+
+```json
+{
+  "mcpServers": {
+    "arxena": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://mcp.arxena.com/mcp",
+        "--header",
+        "X-API-KEY: ${ARXENA_API_KEY}"
+      ],
+      "env": {
+        "ARXENA_API_KEY": "<workspace-api-key-jwt>"
+      }
+    }
+  }
+}
+```
+
+Quit Claude Desktop fully (Cmd+Q) after editing the config.
+
+**Alternative:** Settings → Connectors → add `https://mcp.arxena.com/mcp` for OAuth (directory flow).
+
+### Local stdio (optional)
+
+```json
+{
+  "mcpServers": {
+    "arxena": {
+      "command": "node",
+      "args": ["/path/to/twenty-mcp-server/dist/index.js"],
+      "env": {
+        "ARXENA_API_TOKEN": "<workspace-api-key-jwt>",
+        "ARXENA_BASE_URL": "https://app.arxena.com"
+      }
+    }
+  }
+}
+```
 
 ## Directory publication
 

@@ -201,7 +201,7 @@ export const createHttpApp = (config: HttpServerConfig = loadHttpServerConfig())
 <p>Remote MCP endpoint: <code>${config.mcpPublicUrl}</code></p>
 <p>Setup guide: <a href="https://arxena.com/solutions/mcp-server">arxena.com/solutions/mcp-server</a></p>
 <p>Privacy policy: <a href="${config.privacyPolicyUrl}">${config.privacyPolicyUrl}</a></p>
-<h2>Cursor / custom connector</h2>
+<h2>Cursor</h2>
 <pre>{
   "mcpServers": {
     "arxena": {
@@ -210,7 +210,26 @@ export const createHttpApp = (config: HttpServerConfig = loadHttpServerConfig())
     }
   }
 }</pre>
-<h2>Claude / ChatGPT directory</h2>
+<h2>Claude Desktop (claude_desktop_config.json)</h2>
+<p>Use <code>mcp-remote</code> — Claude Desktop JSON config does not support a <code>url</code> field.</p>
+<pre>{
+  "mcpServers": {
+    "arxena": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "${config.mcpPublicUrl}",
+        "--header",
+        "X-API-KEY: \${ARXENA_API_KEY}"
+      ],
+      "env": {
+        "ARXENA_API_KEY": "&lt;workspace-api-key-jwt&gt;"
+      }
+    }
+  }
+}</pre>
+<h2>Claude / ChatGPT Connectors (OAuth)</h2>
 <p>Use OAuth 2.1 against <code>${config.oauthIssuerUrl}</code> with redirect URI <code>https://claude.ai/api/mcp/auth_callback</code>.</p>
 </body></html>`);
   });

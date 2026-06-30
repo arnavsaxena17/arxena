@@ -20,18 +20,43 @@ type SettingsDevelopersMcpConnectorSectionProps = {
 const MCP_PUBLIC_URL =
   import.meta.env.VITE_MCP_PUBLIC_URL ?? 'https://mcp.arxena.com/mcp';
 
+const ARXENA_BASE_URL =
+  import.meta.env.VITE_SERVER_BASE_URL ?? 'https://app.arxena.com';
+
 export const SettingsDevelopersMcpConnectorSection = ({
   apiKeyToken,
 }: SettingsDevelopersMcpConnectorSectionProps) => {
   const { t } = useLingui();
 
-  const remoteConfig = JSON.stringify(
+  const cursorConfig = JSON.stringify(
     {
       mcpServers: {
         arxena: {
           url: MCP_PUBLIC_URL,
           headers: {
             'X-API-KEY': apiKeyToken,
+          },
+        },
+      },
+    },
+    null,
+    2,
+  );
+
+  const claudeDesktopConfig = JSON.stringify(
+    {
+      mcpServers: {
+        arxena: {
+          command: 'npx',
+          args: [
+            '-y',
+            'mcp-remote',
+            MCP_PUBLIC_URL,
+            '--header',
+            'X-API-KEY: ${ARXENA_API_KEY}',
+          ],
+          env: {
+            ARXENA_API_KEY: apiKeyToken,
           },
         },
       },
@@ -48,8 +73,7 @@ export const SettingsDevelopersMcpConnectorSection = ({
           args: ['/path/to/twenty-mcp-server/dist/index.js'],
           env: {
             ARXENA_API_TOKEN: apiKeyToken,
-            ARXENA_BASE_URL:
-              import.meta.env.VITE_SERVER_BASE_URL ?? 'https://arxena.com',
+            ARXENA_BASE_URL,
           },
         },
       },
@@ -62,22 +86,29 @@ export const SettingsDevelopersMcpConnectorSection = ({
     <>
       <Section>
         <H2Title
-          title={t`Remote MCP (Cursor / Claude custom connector)`}
-          description={t`Paste into your MCP client config. The X-API-KEY value is this API key token.`}
+          title={t`Cursor (remote MCP)`}
+          description={t`Paste into Cursor Settings → MCP. Uses url + headers (Streamable HTTP).`}
         />
-        <StyledPre>{remoteConfig}</StyledPre>
+        <StyledPre>{cursorConfig}</StyledPre>
       </Section>
       <Section>
         <H2Title
-          title={t`Local MCP (Claude Desktop stdio)`}
-          description={t`Use when running twenty-mcp-server locally on your machine.`}
+          title={t`Claude Desktop (remote MCP)`}
+          description={t`Paste into claude_desktop_config.json. Claude Desktop only supports stdio — use the mcp-remote bridge with your API key in env.`}
+        />
+        <StyledPre>{claudeDesktopConfig}</StyledPre>
+      </Section>
+      <Section>
+        <H2Title
+          title={t`Claude Desktop (local stdio)`}
+          description={t`Alternative: run twenty-mcp-server on your machine instead of mcp.arxena.com.`}
         />
         <StyledPre>{stdioConfig}</StyledPre>
       </Section>
       <Section>
         <H2Title
-          title={t`Directory publication`}
-          description={t`Claude and ChatGPT app directories require OAuth via https://mcp.arxena.com — not API key headers alone.`}
+          title={t`Claude Connectors UI (OAuth)`}
+          description={t`Settings → Connectors → add https://mcp.arxena.com/mcp for directory-style OAuth (no JSON config). ChatGPT app directory uses the same OAuth flow.`}
         />
       </Section>
     </>

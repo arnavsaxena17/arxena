@@ -193,10 +193,10 @@ export const SOLUTION_PAGES: MarketingDetailPage[] = [
       'Use the Arxena remote MCP server to query org charts, candidates, and outreach from your AI client—with your workspace API key.',
     lead: 'Expose your workspace recruitment data to authorized AI clients via the Model Context Protocol—remote HTTP at mcp.arxena.com or local stdio for Claude Desktop.',
     bullets: [
-      'Remote endpoint for Cursor and custom MCP connectors with X-API-KEY auth.',
-      'OAuth 2.1 for Claude and ChatGPT app directory integrations.',
+      'Cursor: remote MCP with url + X-API-KEY header at mcp.arxena.com.',
+      'Claude Desktop: mcp-remote bridge in claude_desktop_config.json.',
+      'OAuth 2.1 for Claude and ChatGPT Connectors / app directories.',
       'Org charts, candidates, jobs, LinkedIn search, and messaging tools.',
-      'Step-by-step setup: API key, client config, and privacy reference.',
     ],
     bulletsTitle: 'In practice',
   },
