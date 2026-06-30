@@ -1,9 +1,17 @@
 import { ArxenaConfig } from '../config';
 
+export type McpToolAnnotations = {
+  readOnlyHint?: boolean;
+  destructiveHint?: boolean;
+  openWorldHint?: boolean;
+};
+
 export interface McpTool {
   definition: {
     name: string;
+    title?: string;
     description: string;
+    annotations?: McpToolAnnotations;
     inputSchema: {
       type: 'object';
       properties: Record<string, unknown>;

@@ -1,0 +1,37 @@
+# Arxena MCP HTTP — nginx vhost for mcp.arxena.com
+# Deploy: sudo cp to /etc/nginx/sites-available/mcp-arxena.conf && ln -s sites-enabled
+
+server {
+  listen 80;
+  server_name mcp.arxena.com;
+
+  location /.well-known/acme-challenge/ {
+    root /var/www/certbot;
+  }
+
+  location / {
+    return 301 https://$host$request_uri;
+  }
+}
+
+server {
+  listen 443 ssl http2;
+  server_name mcp.arxena.com;
+
+  ssl_certificate /etc/letsencrypt/live/mcp.arxena.com/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/mcp.arxena.com/privkey.pem;
+  include /etc/letsencrypt/options-ssl-nginx.conf;
+  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+  location / {
+    proxy_pass http://127.0.0.1:3005;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_buffering off;
+    proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
+  }
+}

@@ -13,6 +13,7 @@ import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import { ApiKeyInput } from '@/settings/developers/components/ApiKeyInput';
 import { ApiKeyNameInput } from '@/settings/developers/components/ApiKeyNameInput';
+import { SettingsDevelopersMcpConnectorSection } from '@/settings/developers/components/SettingsDevelopersMcpConnectorSection';
 import { apiKeyTokenFamilyState } from '@/settings/developers/states/apiKeyTokenFamilyState';
 import { ApiKey } from '@/settings/developers/types/api-key/ApiKey';
 import { computeNewExpirationDate } from '@/settings/developers/utils/computeNewExpirationDate';
@@ -181,6 +182,7 @@ export const SettingsDevelopersApiKeyDetail = () => {
                     description={t`Copy this key as it will not be visible again`}
                   />
                   <ApiKeyInput apiKey={apiKeyToken} />
+                  <SettingsDevelopersMcpConnectorSection apiKeyToken={apiKeyToken} />
                 </>
               ) : (
                 <>

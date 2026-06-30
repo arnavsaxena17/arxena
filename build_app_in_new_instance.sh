@@ -289,6 +289,9 @@ if [ "$DEPLOYMENTS_APPLIED" -eq 1 ]; then
   echo "Restarting NGINX and PM2"
   # 6. Restart services
   sudo systemctl restart nginx
+  chmod +x "$REPO_DIR/pm2_start_website.sh" 2>/dev/null || true
+  cd "$REPO_DIR"
+  pm2 startOrRestart ecosystem.config.js --only arxena-mcp-http || pm2 restart arxena-mcp-http || true
   pm2 restart all
 else
   echo "No required application build was deployed. Skipping dependency install and service restart."
