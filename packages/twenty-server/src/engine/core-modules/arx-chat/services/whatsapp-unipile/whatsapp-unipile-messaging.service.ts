@@ -12,6 +12,7 @@ import {
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { normalizeWhatsAppOutboundMessage } from 'src/engine/core-modules/arx-chat/utils/whatsapp-message-format.util';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -144,7 +145,11 @@ export class WhatsappUnipileMessagingService {
       }
       const normalizedPhoneNumber = trimmed.replace(/[^\d+]/g, '');
       const attendeeId = `${normalizedPhoneNumber}@s.whatsapp.net`;
-      await this.sendMessage(whatsappAccountId, [attendeeId], message);
+      await this.sendMessage(
+        whatsappAccountId,
+        [attendeeId],
+        normalizeWhatsAppOutboundMessage(message),
+      );
       return { status: 'success' };
     } catch (error) {
       console.error('sendTextToPhoneForJob failed:', error);
@@ -224,8 +229,10 @@ export class WhatsappUnipileMessagingService {
       // Append @s.whatsapp.net suffix required by Unipile API
       const attendeeId = `${normalizedPhoneNumber}@s.whatsapp.net`;
       
-      const messageText = whatappUpdateMessageObj.messages[0].content;
-      
+      const messageText = normalizeWhatsAppOutboundMessage(
+        whatappUpdateMessageObj.messages[0].content ?? '',
+      );
+
       console.log('Sending WhatsApp message via Unipile API in sendWhatsappMessageVIAUnipileAPI:', {
         accountId: whatsappAccountId,
         attendeeId,

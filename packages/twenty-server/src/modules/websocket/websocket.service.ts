@@ -2,10 +2,17 @@
 import { Injectable } from '@nestjs/common';
 import { WAConnectionState } from 'baileys';
 import { Server } from 'socket.io';
+import { RedisClientService } from 'src/engine/core-modules/redis-client/redis-client.service';
+import {
+    WEBSOCKET_USER_CHANNEL_PREFIX,
+    WebSocketUserRedisPayload,
+} from './websocket-user-redis.constants';
 
 @Injectable()
 export class WebSocketService {
   private server: Server;
+
+  constructor(private readonly redisClientService: RedisClientService) {}
   private connectedClients: Map<string, Set<string>> = new Map(); // userId -> Set of socketIds
   private userIdToClientId: Map<string, string> = new Map();
   private acknowledgmentListeners: Map<string, (data: any) => void> = new Map();
@@ -119,9 +126,13 @@ export class WebSocketService {
   }
 
   sendToUser(userId: string, event: string, data: any) {
-    
+    const payload = {
+      ...data,
+      timestamp: new Date().toISOString(),
+    };
+
     if (!this.server) {
-      console.error('WebSocket server not initialized for sendToUser');
+      void this.publishUserEventToRedis(userId, event, payload);
       return;
     }
 
@@ -132,13 +143,27 @@ export class WebSocketService {
     }
 
     console.log(`Found ${socketIds.size} connected sockets for user ${userId}`);
-    
+
     for (const socketId of socketIds) {
       console.log(`Emitting to socket ${socketId}`);
-      this.server.to(socketId).emit(event, {
-        ...data,
-        timestamp: new Date().toISOString(),
-      });
+      this.server.to(socketId).emit(event, payload);
+    }
+  }
+
+  private async publishUserEventToRedis(
+    userId: string,
+    event: string,
+    data: Record<string, unknown>,
+  ): Promise<void> {
+    try {
+      const channel = `${WEBSOCKET_USER_CHANNEL_PREFIX}${userId}`;
+      const message: WebSocketUserRedisPayload = { event, data };
+      await this.redisClientService.getClient().publish(channel, JSON.stringify(message));
+      console.log(
+        `Published websocket user event "${event}" to Redis for user ${userId}`,
+      );
+    } catch (error) {
+      console.error('WebSocket server not initialized for sendToUser', error);
     }
   }
 

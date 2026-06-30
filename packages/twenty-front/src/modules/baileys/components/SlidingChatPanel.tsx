@@ -102,6 +102,8 @@ const MessageBubble = styled.div<{ isSent: boolean }>`
   border-radius: 12px;
   background-color: ${props => (props.isSent ? '#007AFF' : '#E9E9EB')};
   color: ${props => (props.isSent ? 'white' : 'black')};
+  white-space: pre-wrap;
+  word-break: break-word;
 `;
 
 const DateSeparator = styled.div`

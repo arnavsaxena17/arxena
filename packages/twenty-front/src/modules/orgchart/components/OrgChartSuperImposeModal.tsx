@@ -2,11 +2,20 @@ import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  buildVisibleFunctionRoots,
-  formatOrgChartFunctionRootOptionLabel,
+    buildVisibleFunctionRoots,
+    formatOrgChartFunctionRootOptionLabel,
 } from 'twenty-orgchart';
 import { resolveOrgChartCanonicalCompanyId } from 'twenty-shared';
-import { Button } from 'twenty-ui';
+import {
+    Checkbox,
+    CheckboxSize,
+    CheckboxVariant,
+    CircularProgressBar,
+    IconButton,
+    IconX,
+    MainButton,
+    MOBILE_VIEWPORT,
+} from 'twenty-ui';
 import { useDebouncedCallback } from 'use-debounce';
 
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
@@ -14,38 +23,91 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TextArea } from '@/ui/input/components/TextArea';
 import { TextInput } from '@/ui/input/components/TextInput';
 import { Modal } from '@/ui/layout/modal/components/Modal';
+import { OnboardingIntentModalLayout } from '~/pages/onboarding/OnboardingIntentModalLayout';
 
 import {
-  buildSuperImposeTargetCompanyFromAutocomplete,
-  buildSuperImposeTargetLocationFromAutocomplete,
-  isDifferentSuperImposeTargetCompany,
-  type SuperImposeAutocompleteItem,
-  type SuperImposeTargetCompany,
-  type SuperImposeTargetLocation,
+    buildSuperImposeTargetCompanyFromAutocomplete,
+    buildSuperImposeTargetLocationFromAutocomplete,
+    isDifferentSuperImposeTargetCompany,
+    type SuperImposeAutocompleteItem,
+    type SuperImposeTargetCompany,
+    type SuperImposeTargetLocation,
 } from '../types/superImposeTypes';
 import {
-  canAppendToExistingSuperImposeChart,
-  parseMultilineUrlInput,
+    canAppendToExistingSuperImposeChart,
+    parseMultilineUrlInput,
 } from '../utils/superImposeAppendEligibility';
 import { SuperImposeLinkedInFacetAutocomplete } from './SuperImposeLinkedInFacetAutocomplete';
 
 const StyledModal = styled(Modal)`
-  border-radius: ${({ theme }) => theme.spacing(1)};
   max-height: 90dvh;
-  width: min(720px, calc(100vw - ${({ theme }) => theme.spacing(8)}));
+  min-height: 480px;
+  min-width: 640px;
+  padding: 0;
+  position: relative;
   user-select: text;
+  width: min(800px, calc(100vw - ${({ theme }) => theme.spacing(8)}));
+
+  @media (max-width: ${MOBILE_VIEWPORT}px) {
+    min-height: auto;
+    min-width: auto;
+    width: 100%;
+  }
 `;
 
-const StyledContent = styled.div`
+const StyledCloseButtonContainer = styled.div`
+  align-items: center;
+  aspect-ratio: 1;
+  display: flex;
+  height: 60px;
+  justify-content: center;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 1;
+`;
+
+const StyledHeader = styled(Modal.Header)`
+  background-color: ${({ theme }) => theme.background.secondary};
+  border-bottom: 1px solid ${({ theme }) => theme.border.color.medium};
+  height: 60px;
+  padding: 0 ${({ theme }) => theme.spacing(8)} 0
+    ${({ theme }) => theme.spacing(6)};
+
+  @media (max-width: ${MOBILE_VIEWPORT}px) {
+    padding-left: ${({ theme }) => theme.spacing(4)};
+    padding-right: ${({ theme }) => theme.spacing(4)};
+  }
+`;
+
+const StyledHeaderTitle = styled.div`
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.md};
+  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+`;
+
+const StyledContent = styled(Modal.Content)`
+  flex: 1;
+  overflow-y: auto;
+  padding: ${({ theme }) => theme.spacing(6)};
+
+  @media (max-width: ${MOBILE_VIEWPORT}px) {
+    padding: ${({ theme }) => theme.spacing(4)};
+  }
+`;
+
+const StyledBody = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(3)};
   width: 100%;
 `;
 
-const StyledTitle = styled.div`
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+const StyledDescription = styled.p`
+  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  line-height: ${({ theme }) => theme.text.lineHeight.md};
+  margin: 0;
 `;
 
 const StyledField = styled.div`
@@ -54,70 +116,96 @@ const StyledField = styled.div`
   gap: ${({ theme }) => theme.spacing(1)};
 `;
 
-const StyledFieldLabel = styled.div`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+const StyledFieldLabel = styled.label`
+  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
 `;
 
 const StyledSelect = styled.select`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
   background: ${({ theme }) => theme.background.primary};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
   color: ${({ theme }) => theme.font.color.primary};
+  font-family: inherit;
   font-size: ${({ theme }) => theme.font.size.sm};
+  min-height: 36px;
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
 `;
 
 const StyledAdvancedSection = styled.details`
+  background: ${({ theme }) => theme.background.secondary};
   border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  padding: ${({ theme }) => theme.spacing(2)};
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
 `;
 
 const StyledAdvancedSummary = styled.summary`
+  color: ${({ theme }) => theme.font.color.secondary};
   cursor: pointer;
   font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  user-select: none;
 `;
 
 const StyledAdvancedBody = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-top: ${({ theme }) => theme.spacing(2)};
+  gap: ${({ theme }) => theme.spacing(3)};
+  margin-top: ${({ theme }) => theme.spacing(3)};
 `;
 
-const StyledEstimateBadge = styled.div<{ $tone: 'ok' | 'warn' | 'error' }>`
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.sm};
+const StyledInfoCard = styled.div<{ $tone: 'ok' | 'warn' | 'error' }>`
   background: ${({ theme, $tone }) =>
     $tone === 'error'
       ? theme.background.danger
       : $tone === 'warn'
-        ? theme.background.transparent.light
+        ? theme.background.secondary
         : theme.background.transparent.blue};
+  border: 1px solid
+    ${({ theme, $tone }) =>
+      $tone === 'error'
+        ? theme.border.color.danger
+        : theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.md};
   color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  line-height: ${({ theme }) => theme.text.lineHeight.md};
+  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
 `;
 
 const StyledResolvedList = styled.ul`
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  line-height: ${({ theme }) => theme.text.lineHeight.md};
   margin: 0;
   padding-left: ${({ theme }) => theme.spacing(3)};
-  font-size: ${({ theme }) => theme.font.size.sm};
 `;
 
-const StyledActions = styled.div`
-  display: flex;
+const StyledFooter = styled(Modal.Footer)`
+  border-top: 1px solid ${({ theme }) => theme.border.color.light};
+  gap: ${({ theme }) => theme.spacing(2.5)};
+  height: auto;
   justify-content: flex-end;
+  min-height: 60px;
+  padding: ${({ theme }) => theme.spacing(6)} ${({ theme }) => theme.spacing(8)};
+
+  @media (max-width: ${MOBILE_VIEWPORT}px) {
+    padding: ${({ theme }) => theme.spacing(4)};
+  }
+`;
+
+const StyledCheckboxRow = styled.div`
+  align-items: center;
+  color: ${({ theme }) => theme.font.color.primary};
+  display: flex;
+  font-size: ${({ theme }) => theme.font.size.sm};
   gap: ${({ theme }) => theme.spacing(2)};
 `;
 
-const StyledCheckboxRow = styled.label`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+const StyledCheckboxHint = styled.span`
+  color: ${({ theme }) => theme.font.color.tertiary};
   font-size: ${({ theme }) => theme.font.size.sm};
-  cursor: pointer;
 `;
 
 type SuperImposeEstimate = {
@@ -532,178 +620,194 @@ export const OrgChartSuperImposeModal = ({
   }
 
   return (
-    <StyledModal isClosable onClose={onClose} padding="large">
+    <StyledModal isClosable onClose={onClose} padding="none" size="large">
+      <StyledCloseButtonContainer>
+        <IconButton Icon={IconX} onClick={onClose} variant="tertiary" />
+      </StyledCloseButtonContainer>
+
+      <StyledHeader>
+        <StyledHeaderTitle>{t`Super Impose Org Chart`}</StyledHeaderTitle>
+      </StyledHeader>
+
       <StyledContent>
-        <StyledTitle>{t`Super Impose Org Chart`}</StyledTitle>
-        <p>
-          {t`Select a target company and optional location, then merge employees from additional sources into the chart.`}
-        </p>
+        <OnboardingIntentModalLayout panelWidth="lg">
+          <StyledBody>
+            <StyledDescription>
+              {t`Select a target company and optional location, then merge employees from additional sources into the chart.`}
+            </StyledDescription>
 
-        <StyledField>
-          <StyledFieldLabel>{t`Company`}</StyledFieldLabel>
-          <SuperImposeLinkedInFacetAutocomplete
-            kind="company"
-            label={t`Company`}
-            value={companySelection}
-            onChange={setCompanySelection}
-            accessToken={accessToken}
-            serverBaseUrl={serverBaseUrl}
-          />
-        </StyledField>
-
-        <StyledField>
-          <StyledFieldLabel>{t`Location (optional)`}</StyledFieldLabel>
-          <SuperImposeLinkedInFacetAutocomplete
-            kind="location"
-            label={t`Location`}
-            placeholder={t`Global if empty`}
-            value={locationSelection}
-            onChange={setLocationSelection}
-            accessToken={accessToken}
-            serverBaseUrl={serverBaseUrl}
-          />
-        </StyledField>
-
-        <StyledField>
-          <StyledFieldLabel>{t`Function`}</StyledFieldLabel>
-          <StyledSelect
-            value={functionRoot}
-            onChange={(event) => setFunctionRoot(event.target.value)}
-          >
-            {visibleFunctionRoots.map((key) => (
-              <option key={key} value={key}>
-                {formatOrgChartFunctionRootOptionLabel(
-                  key,
-                  functionRootPercentLabels,
-                  functionRootCounts,
-                )}
-              </option>
-            ))}
-          </StyledSelect>
-        </StyledField>
-
-        <StyledCheckboxRow>
-          <input
-            type="checkbox"
-            checked={leadershipOnly}
-            onChange={(event) => setLeadershipOnly(event.target.checked)}
-          />
-          {t`Fetch leadership positions only`}
-        </StyledCheckboxRow>
-
-        <StyledField>
-          <StyledFieldLabel>{t`Business division (optional)`}</StyledFieldLabel>
-          <TextInput
-            value={businessDivision}
-            onChange={setBusinessDivision}
-            placeholder={t`e.g. textile machinery team`}
-          />
-        </StyledField>
-
-        <StyledAdvancedSection>
-          <StyledAdvancedSummary>{t`Advanced sources`}</StyledAdvancedSummary>
-          <StyledAdvancedBody>
             <StyledField>
-              <StyledFieldLabel>{t`LinkedIn company URLs (one per line)`}</StyledFieldLabel>
-              <TextArea
-                minRows={2}
-                value={linkedinUrlsText}
-                onChange={setLinkedinUrlsText}
-                placeholder="https://www.linkedin.com/company/example/"
+              <StyledFieldLabel>{t`Company`}</StyledFieldLabel>
+              <SuperImposeLinkedInFacetAutocomplete
+                kind="company"
+                label={t`Company`}
+                value={companySelection}
+                onChange={setCompanySelection}
+                accessToken={accessToken}
+                serverBaseUrl={serverBaseUrl}
               />
             </StyledField>
 
             <StyledField>
-              <StyledFieldLabel>{t`Company websites (one per line)`}</StyledFieldLabel>
-              <TextArea
-                minRows={2}
-                value={websiteUrlsText}
-                onChange={setWebsiteUrlsText}
-                placeholder="example.com"
+              <StyledFieldLabel>{t`Location (optional)`}</StyledFieldLabel>
+              <SuperImposeLinkedInFacetAutocomplete
+                kind="location"
+                label={t`Location`}
+                placeholder={t`Global if empty`}
+                value={locationSelection}
+                onChange={setLocationSelection}
+                accessToken={accessToken}
+                serverBaseUrl={serverBaseUrl}
               />
             </StyledField>
 
             <StyledField>
-              <StyledFieldLabel>{t`Sales Navigator search URLs`}</StyledFieldLabel>
-              <TextArea
-                minRows={2}
-                value={salesNavUrlsText}
-                onChange={setSalesNavUrlsText}
-                placeholder="https://www.linkedin.com/sales/search/people?..."
-              />
+              <StyledFieldLabel>{t`Function`}</StyledFieldLabel>
+              <StyledSelect
+                value={functionRoot}
+                onChange={(event) => setFunctionRoot(event.target.value)}
+              >
+                {visibleFunctionRoots.map((key) => (
+                  <option key={key} value={key}>
+                    {formatOrgChartFunctionRootOptionLabel(
+                      key,
+                      functionRootPercentLabels,
+                      functionRootCounts,
+                    )}
+                  </option>
+                ))}
+              </StyledSelect>
             </StyledField>
 
+            <StyledCheckboxRow>
+              <Checkbox
+                checked={leadershipOnly}
+                onCheckedChange={setLeadershipOnly}
+                size={CheckboxSize.Small}
+                variant={CheckboxVariant.Primary}
+              />
+              {t`Fetch leadership positions only`}
+            </StyledCheckboxRow>
+
             <StyledField>
-              <StyledFieldLabel>{t`Keywords (optional)`}</StyledFieldLabel>
+              <StyledFieldLabel>{t`Business division (optional)`}</StyledFieldLabel>
               <TextInput
-                value={keywords}
-                onChange={setKeywords}
-                placeholder={t`Boolean keywords, e.g. insulator OR NGK`}
+                value={businessDivision}
+                onChange={setBusinessDivision}
+                placeholder={t`e.g. textile machinery team`}
               />
             </StyledField>
-          </StyledAdvancedBody>
-        </StyledAdvancedSection>
 
-        {resolvedPreview.length > 0 ? (
-          <StyledField>
-            <StyledFieldLabel>{t`Resolved companies`}</StyledFieldLabel>
-            <StyledResolvedList>
-              {resolvedPreview.map((company) => (
-                <li key={company.slug}>
-                  {company.companyName ?? company.slug} ({company.resolvedFrom})
-                </li>
-              ))}
-            </StyledResolvedList>
-          </StyledField>
-        ) : null}
+            <StyledAdvancedSection>
+              <StyledAdvancedSummary>{t`Advanced sources`}</StyledAdvancedSummary>
+              <StyledAdvancedBody>
+                <StyledField>
+                  <StyledFieldLabel>{t`LinkedIn company URLs (one per line)`}</StyledFieldLabel>
+                  <TextArea
+                    minRows={2}
+                    value={linkedinUrlsText}
+                    onChange={setLinkedinUrlsText}
+                    placeholder="https://www.linkedin.com/company/example/"
+                  />
+                </StyledField>
 
-        {resolveErrors.length > 0 ? (
-          <StyledEstimateBadge $tone="warn">
-            {resolveErrors.join(' · ')}
-          </StyledEstimateBadge>
-        ) : null}
+                <StyledField>
+                  <StyledFieldLabel>{t`Company websites (one per line)`}</StyledFieldLabel>
+                  <TextArea
+                    minRows={2}
+                    value={websiteUrlsText}
+                    onChange={setWebsiteUrlsText}
+                    placeholder="example.com"
+                  />
+                </StyledField>
 
-        <StyledEstimateBadge $tone={estimateTone}>
-          {estimateLoading
-            ? `Estimating people…`
-            : estimate
-              ? estimate.scopeRequired
-                ? `Too many people (~${estimate.estimatedTotalUpperBound}). Select a location, function, or leadership filter.`
-                : `≈ ${estimate.estimatedTotal} people (up to ${estimate.estimatedTotalUpperBound})`
-              : targetCompany
-                ? `Estimating…`
-                : `Select a company to see an estimate`}
-        </StyledEstimateBadge>
+                <StyledField>
+                  <StyledFieldLabel>{t`Sales Navigator search URLs`}</StyledFieldLabel>
+                  <TextArea
+                    minRows={2}
+                    value={salesNavUrlsText}
+                    onChange={setSalesNavUrlsText}
+                    placeholder="https://www.linkedin.com/sales/search/people?..."
+                  />
+                </StyledField>
 
-        <StyledCheckboxRow>
-          <input
-            type="checkbox"
-            checked={appendToExisting}
-            disabled={!appendEligibility.eligible}
-            onChange={(event) => setAppendToExisting(event.target.checked)}
-          />
-          {t`Append to existing chart`}
-          {!appendEligibility.eligible && appendEligibility.reason
-            ? ` — ${appendEligibility.reason}`
-            : ''}
-        </StyledCheckboxRow>
+                <StyledField>
+                  <StyledFieldLabel>{t`Keywords (optional)`}</StyledFieldLabel>
+                  <TextInput
+                    value={keywords}
+                    onChange={setKeywords}
+                    placeholder={t`Boolean keywords, e.g. insulator OR NGK`}
+                  />
+                </StyledField>
+              </StyledAdvancedBody>
+            </StyledAdvancedSection>
 
-        <StyledActions>
-          <Button
-            title={t`Cancel`}
-            variant="secondary"
-            onClick={onClose}
-            disabled={isGenerating}
-          />
-          <Button
-            title={isGenerating ? t`Generating...` : t`Generate`}
-            variant="primary"
-            accent="blue"
-            onClick={handleGenerate}
-            disabled={generateDisabled}
-          />
-        </StyledActions>
+            {resolvedPreview.length > 0 ? (
+              <StyledField>
+                <StyledFieldLabel>{t`Resolved companies`}</StyledFieldLabel>
+                <StyledResolvedList>
+                  {resolvedPreview.map((company) => (
+                    <li key={company.slug}>
+                      {company.companyName ?? company.slug} (
+                      {company.resolvedFrom})
+                    </li>
+                  ))}
+                </StyledResolvedList>
+              </StyledField>
+            ) : null}
+
+            {resolveErrors.length > 0 ? (
+              <StyledInfoCard $tone="warn">
+                {resolveErrors.join(' · ')}
+              </StyledInfoCard>
+            ) : null}
+
+            <StyledInfoCard $tone={estimateTone}>
+              {estimateLoading
+                ? t`Estimating people…`
+                : estimate
+                  ? estimate.scopeRequired
+                    ? t`Too many people (~${estimate.estimatedTotalUpperBound}). Select a location, function, or leadership filter.`
+                    : t`≈ ${estimate.estimatedTotal} people (up to ${estimate.estimatedTotalUpperBound})`
+                  : targetCompany
+                    ? t`Estimating…`
+                    : t`Select a company to see an estimate`}
+            </StyledInfoCard>
+
+            <StyledCheckboxRow>
+              <Checkbox
+                checked={appendToExisting}
+                disabled={!appendEligibility.eligible}
+                onCheckedChange={setAppendToExisting}
+                size={CheckboxSize.Small}
+                variant={CheckboxVariant.Primary}
+              />
+              {t`Append to existing chart`}
+              {!appendEligibility.eligible && appendEligibility.reason ? (
+                <StyledCheckboxHint>
+                  — {appendEligibility.reason}
+                </StyledCheckboxHint>
+              ) : null}
+            </StyledCheckboxRow>
+          </StyledBody>
+        </OnboardingIntentModalLayout>
       </StyledContent>
+
+      <StyledFooter>
+        <MainButton
+          title={t`Cancel`}
+          variant="secondary"
+          onClick={onClose}
+          disabled={isGenerating}
+        />
+        <MainButton
+          Icon={isGenerating || estimateLoading ? CircularProgressBar : undefined}
+          title={isGenerating ? t`Generating...` : t`Generate`}
+          variant="primary"
+          onClick={!isGenerating ? handleGenerate : undefined}
+          disabled={generateDisabled}
+        />
+      </StyledFooter>
     </StyledModal>
   );
 };

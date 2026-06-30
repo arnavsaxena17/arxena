@@ -1,9 +1,9 @@
 import {
-  allStatusesArray,
-  CandidateNode,
-  graphqlQueryToFetchPrompts,
-  Job,
-  statusesArray
+    allStatusesArray,
+    CandidateNode,
+    graphqlQueryToFetchPrompts,
+    Job,
+    statusesArray
 } from 'twenty-shared';
 import { z } from 'zod';
 
@@ -278,9 +278,47 @@ export class PromptingAgents {
       variables,
     );
 
-    console.log('Generated getStartChatPrompt prompt:', SYSTEM_PROMPT);
+    const firstChatMessage = this.buildStartChatFirstMessage(variables);
+    const SYSTEM_PROMPT_WITH_FORMATTING = `${SYSTEM_PROMPT.trim()}
 
-    return SYSTEM_PROMPT;
+        For all WhatsApp messages, put each logical sentence or paragraph on its own line. Use a blank line between the greeting, introduction, role pitch, and call-to-action. Never send one long single-line wall of text.
+        Your first message when you receive the prompt "startChat" must be exactly:
+${firstChatMessage}`;
+
+    console.log('Generated getStartChatPrompt prompt:', SYSTEM_PROMPT_WITH_FORMATTING);
+
+    return SYSTEM_PROMPT_WITH_FORMATTING;
+  }
+
+  private buildStartChatFirstMessage(variables: {
+    candidate: { firstName?: string };
+    recruiterProfile: {
+      firstName?: string;
+      jobTitle?: string;
+      companyName?: string;
+      companyDescription?: string;
+    };
+    jobProfile: {
+      name?: string;
+      companyDetails?: string;
+      jobLocation?: string;
+    };
+  }): string {
+    const { candidate, recruiterProfile, jobProfile } = variables;
+    const companyDescription = recruiterProfile?.companyDescription?.trim();
+    const companySuffix = companyDescription ? `, ${companyDescription}` : '';
+    const companyDetails = jobProfile?.companyDetails?.trim() ?? '';
+    const companyDetailsSegment = companyDetails ? ` for ${companyDetails}` : '';
+
+    return [
+      `Hey ${candidate.firstName ?? 'there'},`,
+      '',
+      `I'm ${recruiterProfile.firstName ?? ''}, ${recruiterProfile.jobTitle ?? ''} at ${recruiterProfile.companyName ?? ''}${companySuffix}.`,
+      '',
+      `I'm hiring for a ${jobProfile?.name ?? ''} role${companyDetailsSegment} based out of ${jobProfile?.jobLocation ?? ''} and got your application on my job posting. I believe this might be a good fit.`,
+      '',
+      'Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?',
+    ].join('\n');
   }
 
   async getStartMeetingSchedulingPrompt(
