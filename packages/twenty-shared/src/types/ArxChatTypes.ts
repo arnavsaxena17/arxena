@@ -2046,6 +2046,8 @@ export interface Job {
   startChatSpreadMinutesPerMessage?: number;
   /** Max minutes from first to last start-chat in a batch. Default 120. */
   startChatMaxSpreadMinutes?: number;
+  /** Max outbound WhatsApp messages per minute per connected account. Default 5. */
+  whatsappOutboundMessagesPerMinute?: number;
   name: string;
   id: string;
   recruiterId: string;

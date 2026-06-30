@@ -1,3 +1,4 @@
+import { Injectable, Optional } from '@nestjs/common';
 import axios from 'axios';
 import fs from 'fs';
 import mime from 'mime-types';
@@ -9,6 +10,7 @@ import { LinkedinUnipileMessagingService } from 'src/engine/core-modules/arx-cha
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { BaileysWhatsappAPI } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/baileys/callBaileys';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
+import { WhatsappOutboundRateLimiterService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.service';
 import { WhatsappUnipileMessagingService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-unipile-messaging.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -24,12 +26,24 @@ import {
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 
+@Injectable()
 export class MessagingControls {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
+    @Optional()
+    private readonly whatsappOutboundRateLimiter?: WhatsappOutboundRateLimiterService,
   ) {}
+
+  private createWhatsappUnipileMessagingService(): WhatsappUnipileMessagingService {
+    return new WhatsappUnipileMessagingService(
+      this.workspaceQueryService,
+      this.staticGraphQLService,
+      this.workspaceMemberProfileUnipileService,
+      this.whatsappOutboundRateLimiter,
+    );
+  }
 
   /**
    * Writes a failed outbound row to WhatsApp message history so the candidate chat drawer
@@ -423,11 +437,7 @@ export class MessagingControls {
         }
         return { status: 'success' };
       } else if (whatsapp_key === 'whatsapp-unipile') {
-        const response = await new WhatsappUnipileMessagingService(
-          this.workspaceQueryService,
-          this.staticGraphQLService,
-          this.workspaceMemberProfileUnipileService,
-        ).sendWhatsappMessageVIAUnipileAPI(
+        const response = await this.createWhatsappUnipileMessagingService().sendWhatsappMessageVIAUnipileAPI(
           whatappUpdateMessageObj,
           candidate,
           candidateJob,
@@ -619,11 +629,7 @@ export class MessagingControls {
         apiToken,
       );
     } else if (whatsapp_key === 'whatsapp-unipile') {
-      const response = await new WhatsappUnipileMessagingService(
-        this.workspaceQueryService,
-        this.staticGraphQLService,
-        this.workspaceMemberProfileUnipileService,
-      ).sendWhatsappAttachmentMessage(
+      const response = await this.createWhatsappUnipileMessagingService().sendWhatsappAttachmentMessage(
         attachmentMessage,
         candidate,
         candidateJob,
@@ -730,11 +736,7 @@ export class MessagingControls {
     };
 
     try {
-      await new MessagingControls(
-        this.workspaceQueryService,
-        this.staticGraphQLService,
-        this.workspaceMemberProfileUnipileService,
-      ).sendAttachmentMessageOnWhatsapp(
+      await this.sendAttachmentMessageOnWhatsapp(
         attachmentMessageObj,
         candidate,
         candidateJob,

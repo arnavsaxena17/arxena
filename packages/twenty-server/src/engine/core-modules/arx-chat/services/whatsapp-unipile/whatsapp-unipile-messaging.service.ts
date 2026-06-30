@@ -11,6 +11,9 @@ import {
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
+import { resolveWhatsappOutboundMessagesPerMinute } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limit.util';
+import { getRegisteredWhatsappOutboundRateLimiter } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.registry';
+import { WhatsappOutboundRateLimiterService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { normalizeWhatsAppOutboundMessage } from 'src/engine/core-modules/arx-chat/utils/whatsapp-message-format.util';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -32,11 +35,34 @@ export class WhatsappUnipileMessagingService {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
+    private readonly whatsappOutboundRateLimiter?: WhatsappOutboundRateLimiterService,
     baseUrl?: string,
     accessToken?: string,
   ) {
     this.baseUrl = baseUrl || process.env.UNIPILE_API_URL || '';
     this.accessToken = accessToken || process.env.UNIPILE_ACCESS_TOKEN || '';
+  }
+
+  private resolveRateLimiter(): WhatsappOutboundRateLimiterService | undefined {
+    return (
+      this.whatsappOutboundRateLimiter ??
+      getRegisteredWhatsappOutboundRateLimiter()
+    );
+  }
+
+  private async applyOutboundRateLimit(
+    accountId: string,
+    candidateJob?: Job | null,
+  ): Promise<void> {
+    const rateLimiter = this.resolveRateLimiter();
+    if (!rateLimiter) {
+      return;
+    }
+
+    const messagesPerMinute = resolveWhatsappOutboundMessagesPerMinute(
+      candidateJob,
+    );
+    await rateLimiter.waitForOutboundSlot(accountId, messagesPerMinute);
   }
 
   private async makeRequest<T>(
@@ -149,6 +175,8 @@ export class WhatsappUnipileMessagingService {
         whatsappAccountId,
         [attendeeId],
         normalizeWhatsAppOutboundMessage(message),
+        undefined,
+        candidateJob,
       );
       return { status: 'success' };
     } catch (error) {
@@ -169,7 +197,10 @@ export class WhatsappUnipileMessagingService {
     attendeesIds: string[],
     message: string,
     attachments?: any[],
+    candidateJob?: Job | null,
   ): Promise<any> {
+    await this.applyOutboundRateLimit(accountId, candidateJob);
+
     const formData = new FormData();
     
     formData.append('account_id', accountId);
@@ -244,6 +275,8 @@ export class WhatsappUnipileMessagingService {
         whatsappAccountId,
         [attendeeId],
         messageText,
+        undefined,
+        candidateJob,
       );
 
       if (result) {
@@ -366,6 +399,8 @@ export class WhatsappUnipileMessagingService {
         message: messageText,
         fileName: attachmentMessage.fileData.fileName,
       });
+
+      await this.applyOutboundRateLimit(whatsappAccountId, candidateJob);
 
       // Send message with attachment
       const response = await this.makeRequest('/api/v1/chats', 'POST', formData, true);

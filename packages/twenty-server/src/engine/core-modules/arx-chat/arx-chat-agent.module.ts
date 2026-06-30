@@ -35,6 +35,7 @@ import { RedisService } from 'src/engine/core-modules/arx-chat/services/ext-sock
 import { UnipileAccountPoolService } from 'src/engine/core-modules/arx-chat/services/unipile-account-pool.service';
 import { UnipileWebhookService } from 'src/engine/core-modules/arx-chat/services/unipile-webhook.service';
 import { VoiceCallService } from 'src/engine/core-modules/arx-chat/services/voice-call/voice-call.service';
+import { WhatsappOutboundRateLimiterService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
@@ -218,6 +219,7 @@ const conditionalImports = isWorker
     GmailDraftShortlistQueueProcessor,
     UnipileWebhookService,
     WorkspaceMemberProfileUnipileService,
+    WhatsappOutboundRateLimiterService,
     MemberLinkedinUnipileConnectionService,
     ExtensionUnipileConnectionStatusService,
     WhatsappUnipileRequestService,

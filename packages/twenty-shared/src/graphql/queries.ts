@@ -253,6 +253,7 @@ const graphqlToFindManyJobsFull = `query FindManyJobs($filter: JobFilterInput, $
         engagementProcessingDelayMinutes
         startChatSpreadMinutesPerMessage
         startChatMaxSpreadMinutes
+        whatsappOutboundMessagesPerMinute
         jobCode
         searchName
         reportsTo
@@ -325,6 +326,7 @@ const graphqlToFindManyJobsOrgChart = `query FindManyJobs($filter: JobFilterInpu
         engagementProcessingDelayMinutes
         startChatSpreadMinutesPerMessage
         startChatMaxSpreadMinutes
+        whatsappOutboundMessagesPerMinute
         jobCode
         searchName
         reportsTo
@@ -400,6 +402,7 @@ const graphqlToFindManyJobsWithPromptsFull = `query FindManyJobs($filter: JobFil
         engagementProcessingDelayMinutes
         startChatSpreadMinutesPerMessage
         startChatMaxSpreadMinutes
+        whatsappOutboundMessagesPerMinute
         jobCode
         searchName
         reportsTo
@@ -482,6 +485,7 @@ const graphqlToFindManyJobsWithPromptsOrgChart = `query FindManyJobs($filter: Jo
         engagementProcessingDelayMinutes
         startChatSpreadMinutesPerMessage
         startChatMaxSpreadMinutes
+        whatsappOutboundMessagesPerMinute
         jobCode
         searchName
         reportsTo
@@ -550,6 +554,7 @@ const graphqlToFindManyJobsWithCandidateValuesFull = `query FindManyJobs($filter
         engagementProcessingDelayMinutes
         startChatSpreadMinutesPerMessage
         startChatMaxSpreadMinutes
+        whatsappOutboundMessagesPerMinute
         jobCode
         searchName
         reportsTo
@@ -667,6 +672,7 @@ const graphqlToFindManyJobsWithCandidateValuesOrgChart = `query FindManyJobs($fi
         engagementProcessingDelayMinutes
         startChatSpreadMinutesPerMessage
         startChatMaxSpreadMinutes
+        whatsappOutboundMessagesPerMinute
         jobCode
         searchName
         reportsTo
@@ -795,6 +801,7 @@ const graphqlToFindManyJobsWithCandidatesFull = `query FindManyJobs($filter: Job
         engagementProcessingDelayMinutes
         startChatSpreadMinutesPerMessage
         startChatMaxSpreadMinutes
+        whatsappOutboundMessagesPerMinute
         jobCode
         searchName
         reportsTo
@@ -913,6 +920,7 @@ const graphqlToFindManyJobsWithCandidatesOrgChart = `query FindManyJobs($filter:
         engagementProcessingDelayMinutes
         startChatSpreadMinutesPerMessage
         startChatMaxSpreadMinutes
+        whatsappOutboundMessagesPerMinute
         jobCode
         searchName
         reportsTo
@@ -2871,6 +2879,7 @@ export const graphqlToFetchAllCandidateData = `
             engagementProcessingDelayMinutes
             startChatSpreadMinutesPerMessage
             startChatMaxSpreadMinutes
+            whatsappOutboundMessagesPerMinute
             pathPosition
             createdAt
             updatedAt

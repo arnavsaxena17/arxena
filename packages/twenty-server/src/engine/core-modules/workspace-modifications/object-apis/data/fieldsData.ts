@@ -1289,6 +1289,18 @@ export function getFieldsData(
         defaultValue: 120,
       },
     },
+    {
+      objectName: 'job',
+      field: {
+        description:
+          'Max outbound WhatsApp messages per minute per connected Unipile account for this job. Falls back to WHATSAPP_OUTBOUND_MESSAGES_PER_MINUTE env (default 5).',
+        label: 'WhatsApp outbound messages per minute',
+        name: 'whatsappOutboundMessagesPerMinute',
+        objectMetadataId: objectsNameIdMap.job,
+        type: 'NUMBER',
+        defaultValue: 5,
+      },
+    },
 
     {
       objectName: 'candidate',

@@ -3,6 +3,7 @@ import { Job } from 'twenty-shared';
 
 import { LinkedinUnipileMessagingService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile/linkedin-unipile-messaging.service';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WhatsappOutboundRateLimiterService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.service';
 import { WhatsappUnipileMessagingService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-unipile-messaging.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { SendEmailFunctionality } from 'src/engine/core-modules/arx-chat/utils/send-gmail';
@@ -40,6 +41,7 @@ export class OrgChartOutreachService {
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     private readonly googleContactsService: GoogleContactsService,
     private readonly candidateWorkspaceGraphQLService: CandidateWorkspaceGraphQLService,
+    private readonly whatsappOutboundRateLimiter: WhatsappOutboundRateLimiterService,
   ) {}
 
   private linkedinMessaging(): LinkedinUnipileMessagingService {
@@ -57,6 +59,7 @@ export class OrgChartOutreachService {
       this.workspaceQueryService,
       this.staticGraphQLService,
       this.workspaceMemberProfileUnipileService,
+      this.whatsappOutboundRateLimiter,
     );
   }
 

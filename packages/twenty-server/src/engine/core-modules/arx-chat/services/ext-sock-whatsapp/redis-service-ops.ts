@@ -176,4 +176,52 @@ export class RedisService implements OnModuleInit {
       );
     }
   }
+
+  /**
+   * Atomically try to acquire a slot in a Redis sorted-set sliding window.
+   * Returns acquired=true when the caller may proceed; otherwise waitMs until retry.
+   */
+  async tryAcquireSlidingWindowSlot(
+    key: string,
+    windowMs: number,
+    limit: number,
+    member: string,
+    now: number,
+  ): Promise<{ acquired: boolean; waitMs: number }> {
+    const script = `
+      local key = KEYS[1]
+      local now = tonumber(ARGV[1])
+      local window = tonumber(ARGV[2])
+      local limit = tonumber(ARGV[3])
+      local member = ARGV[4]
+      redis.call('ZREMRANGEBYSCORE', key, 0, now - window)
+      local count = redis.call('ZCARD', key)
+      if count < limit then
+        redis.call('ZADD', key, now, member)
+        redis.call('EXPIRE', key, math.ceil(window / 1000) * 2)
+        return 0
+      end
+      local oldest = redis.call('ZRANGE', key, 0, 0, 'WITHSCORES')
+      if #oldest >= 2 then
+        return tonumber(oldest[2]) + window - now
+      end
+      return window
+    `;
+
+    const result = (await this.redisClient.eval(
+      script,
+      1,
+      key,
+      String(now),
+      String(windowMs),
+      String(limit),
+      member,
+    )) as number;
+
+    if (result === 0) {
+      return { acquired: true, waitMs: 0 };
+    }
+
+    return { acquired: false, waitMs: Math.max(100, Math.ceil(result)) };
+  }
 }
