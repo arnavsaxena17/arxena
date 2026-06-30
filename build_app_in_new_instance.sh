@@ -12,10 +12,18 @@ for config in "$SCRIPT_DIR/build.config" "$HOME/twenty/build.config" "/home/ubun
 done
 BUILD_BRANCH="${BUILD_BRANCH:-onboarding-workspace}"
 
-# Function to cleanup and terminate the instance
+# Function to cleanup staging artifacts and terminate the temporary build instance
 cleanup() {
-    echo "Cleaning up and terminating instance..."
-    aws ec2 terminate-instances --instance-ids $TEMP_INSTANCE_ID
+    if [ -n "$STAGING_ROOT" ] && [ -d "$STAGING_ROOT" ]; then
+        rm -rf "$STAGING_ROOT"
+    fi
+    if [ -n "$BUILD_STATUS_LOCAL_FILE" ] && [ -f "$BUILD_STATUS_LOCAL_FILE" ]; then
+        rm -f "$BUILD_STATUS_LOCAL_FILE"
+    fi
+    if [ -n "$TEMP_INSTANCE_ID" ]; then
+        echo "Cleaning up and terminating instance..."
+        aws ec2 terminate-instances --instance-ids $TEMP_INSTANCE_ID
+    fi
     exit
 }
 

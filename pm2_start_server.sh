@@ -1,4 +1,5 @@
 #!/bin/bash
+ulimit -c 0
 echo "NODE_ENV is: $NODE_ENV"
 
 NODE_BIN=${NVM_NODE_22_BIN:-/home/ubuntu/.nvm/versions/node/v22.16.0/bin/node}

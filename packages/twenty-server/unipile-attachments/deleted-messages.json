@@ -1,165 +1,311 @@
-[
-  {
-    "deleted_at": "2026-01-23T05:47:38.289Z",
-    "message_id": "VKvx6-fXWtSU7VbpfbKlFg",
-    "original_message": "",
-    "sender_name": "You",
-    "sender_phone": "+918411937769",
-    "sent_at": "2026-01-23T05:46:00.000Z",
-    "account_type": "WHATSAPP",
-    "chat_id": "bO-UoUb6VWmvCNdH3kWYew",
-    "account_id": "lBjqMgEeRz2nUC1ghY1-0w"
-  },
-  {
-    "deleted_at": "2026-01-23T05:52:08.197Z",
-    "message_id": "HbjygUVyV86AJc-m1kTEtA",
-    "original_message": "",
-    "sender_name": "You",
-    "sender_phone": "+918411937769",
-    "sent_at": "2026-01-23T05:51:43.000Z",
-    "account_type": "WHATSAPP",
-    "chat_id": "bO-UoUb6VWmvCNdH3kWYew",
-    "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
-    "had_attachments": true,
-    "attachments": [
-      {
-        "attachment_id": "3EB018C1303E9CF5C173D7",
-        "attachment_type": "img",
-        "attachment_url": null,
-        "attachment_size": null
-      }
-    ]
-  },
-  {
-    "deleted_at": "2026-02-16T08:01:06.702Z",
-    "message_id": "MNCv7UBIUY2yl9RXWDiwTw",
-    "original_message": "",
-    "sender_name": "Tapan",
-    "sender_phone": "+919870073690",
-    "sent_at": "2026-02-16T08:00:53.000Z",
-    "account_type": "WHATSAPP",
-    "chat_id": "IDgleYPPXwS0BldcmE9dfQ",
-    "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
-    "had_attachments": true,
-    "attachments": [
-      {
-        "attachment_id": "AC77D5EA95340433F1570C3A516ECB20",
-        "attachment_type": "video",
-        "attachment_url": null,
-        "attachment_size": null
-      }
-    ]
-  },
-  {
-    "deleted_at": "2026-02-18T09:59:47.692Z",
-    "message_id": "ehs2GyawU3mpxpM1vOnc4w",
-    "original_message": "",
-    "sender_name": "Gurlal Singh",
-    "sender_phone": "+919855553839",
-    "sent_at": "2026-02-18T09:59:43.000Z",
-    "account_type": "WHATSAPP",
-    "chat_id": "Y3iD1SFkVTWh5gta3G-UHg",
-    "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
-    "had_attachments": false,
-    "attachments": []
-  },
-  {
-    "deleted_at": "2026-02-18T13:46:23.720Z",
-    "message_id": "AXGvX8YYVX2bysV5eNNReA",
-    "original_message": "",
-    "sender_name": "You",
-    "sender_phone": "+918411937769",
-    "sent_at": "2026-02-18T13:43:03.000Z",
-    "account_type": "WHATSAPP",
-    "chat_id": "zqJoyDfWX8OHduc2e_IdmA",
-    "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
-    "had_attachments": true,
-    "attachments": [
-      {
-        "attachment_id": "3EB05A4960D28FBEF92757",
-        "attachment_type": "img",
-        "attachment_url": null,
-        "attachment_size": null
-      }
-    ]
-  },
-  {
-    "deleted_at": "2026-03-09T07:13:11.179Z",
-    "message_id": "1gNgoOa8WMe0nfvN2ZYE7g",
-    "original_message": "",
-    "sender_name": "You",
-    "sender_phone": "+918411937769",
-    "sent_at": "2026-03-09T07:13:05.000Z",
-    "account_type": "WHATSAPP",
-    "chat_id": "zqJoyDfWX8OHduc2e_IdmA",
-    "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
-    "had_attachments": true,
-    "attachments": [
-      {
-        "attachment_id": "3EB0F81D7DC90058BFC6E8",
-        "attachment_type": "img",
-        "attachment_url": null,
-        "attachment_size": null
-      }
-    ]
-  },
-  {
-    "deleted_at": "2026-03-11T13:51:14.757Z",
-    "message_id": "zEHWTD4pXlq9LBLXB8Peow",
-    "original_message": "",
-    "sender_name": "You",
-    "sender_phone": "+918411937769",
-    "sent_at": "2026-03-11T13:50:45.000Z",
-    "account_type": "WHATSAPP",
-    "chat_id": "zqJoyDfWX8OHduc2e_IdmA",
-    "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
-    "had_attachments": true,
-    "attachments": [
-      {
-        "attachment_id": "3EB02442D7B6130629A1C6",
-        "attachment_type": "img",
-        "attachment_url": null,
-        "attachment_size": null
-      }
-    ]
-  },
-  {
-    "deleted_at": "2026-03-11T14:01:47.344Z",
-    "message_id": "lx95PGynVBSdLmZOrkJPHg",
-    "original_message": "",
-    "sender_name": "Balaji Kamble",
-    "sender_phone": "+919769115079",
-    "sent_at": "2026-03-11T14:01:43.000Z",
-    "account_type": "WHATSAPP",
-    "chat_id": "Ngv6Hsl_WIKzKWMb_SZBfg",
-    "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
-    "had_attachments": false,
-    "attachments": []
-  },
-  {
-    "deleted_at": "2026-03-25T06:07:59.081Z",
-    "message_id": "PTKWdXOTVui_2LfLLV9keA",
-    "original_message": "",
-    "sender_name": "Vivek Krishanlal Uppal",
-    "sender_phone": "+919769882952",
-    "sent_at": "2026-03-25T06:07:19.000Z",
-    "account_type": "WHATSAPP",
-    "chat_id": "IDgleYPPXwS0BldcmE9dfQ",
-    "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
-    "had_attachments": false,
-    "attachments": []
-  },
-  {
-    "deleted_at": "2026-03-25T06:07:59.432Z",
-    "message_id": "PygX1ru_VXiYfSmCLxSg0A",
-    "original_message": "",
-    "sender_name": "Vivek Krishanlal Uppal",
-    "sender_phone": "+919769882952",
-    "sent_at": "2026-03-25T06:07:20.000Z",
-    "account_type": "WHATSAPP",
-    "chat_id": "IDgleYPPXwS0BldcmE9dfQ",
-    "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
-    "had_attachments": false,
-    "attachments": []
-  }
-]
+{
+  "individual": [
+    {
+      "deleted_at": "2026-01-23T05:47:38.289Z",
+      "message_id": "VKvx6-fXWtSU7VbpfbKlFg",
+      "original_message": "",
+      "sender_name": "You",
+      "sender_phone": "+918411937769",
+      "sent_at": "2026-01-23T05:46:00.000Z",
+      "account_type": "WHATSAPP",
+      "chat_id": "bO-UoUb6VWmvCNdH3kWYew",
+      "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
+      "conversation_type": "individual",
+      "provider_chat_id": null,
+      "counterparty_phone": null,
+      "counterparty_name": null,
+      "group_id": null,
+      "group_name": null
+    },
+    {
+      "deleted_at": "2026-01-23T05:52:08.197Z",
+      "message_id": "HbjygUVyV86AJc-m1kTEtA",
+      "original_message": "",
+      "sender_name": "You",
+      "sender_phone": "+918411937769",
+      "sent_at": "2026-01-23T05:51:43.000Z",
+      "account_type": "WHATSAPP",
+      "chat_id": "bO-UoUb6VWmvCNdH3kWYew",
+      "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
+      "had_attachments": true,
+      "attachments": [
+        {
+          "attachment_id": "3EB018C1303E9CF5C173D7",
+          "attachment_type": "img",
+          "attachment_url": null,
+          "attachment_size": null
+        }
+      ],
+      "conversation_type": "individual",
+      "provider_chat_id": null,
+      "counterparty_phone": null,
+      "counterparty_name": null,
+      "group_id": null,
+      "group_name": null
+    },
+    {
+      "deleted_at": "2026-02-16T08:01:06.702Z",
+      "message_id": "MNCv7UBIUY2yl9RXWDiwTw",
+      "original_message": "",
+      "sender_name": "Tapan",
+      "sender_phone": "+919870073690",
+      "sent_at": "2026-02-16T08:00:53.000Z",
+      "account_type": "WHATSAPP",
+      "chat_id": "IDgleYPPXwS0BldcmE9dfQ",
+      "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
+      "had_attachments": true,
+      "attachments": [
+        {
+          "attachment_id": "AC77D5EA95340433F1570C3A516ECB20",
+          "attachment_type": "video",
+          "attachment_url": null,
+          "attachment_size": null
+        }
+      ],
+      "conversation_type": "individual",
+      "provider_chat_id": null,
+      "counterparty_phone": null,
+      "counterparty_name": null,
+      "group_id": null,
+      "group_name": null
+    },
+    {
+      "deleted_at": "2026-02-18T09:59:47.692Z",
+      "message_id": "ehs2GyawU3mpxpM1vOnc4w",
+      "original_message": "",
+      "sender_name": "Gurlal Singh",
+      "sender_phone": "+919855553839",
+      "sent_at": "2026-02-18T09:59:43.000Z",
+      "account_type": "WHATSAPP",
+      "chat_id": "Y3iD1SFkVTWh5gta3G-UHg",
+      "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
+      "had_attachments": false,
+      "attachments": [],
+      "conversation_type": "individual",
+      "provider_chat_id": null,
+      "counterparty_phone": null,
+      "counterparty_name": null,
+      "group_id": null,
+      "group_name": null
+    },
+    {
+      "deleted_at": "2026-02-18T13:46:23.720Z",
+      "message_id": "AXGvX8YYVX2bysV5eNNReA",
+      "original_message": "",
+      "sender_name": "You",
+      "sender_phone": "+918411937769",
+      "sent_at": "2026-02-18T13:43:03.000Z",
+      "account_type": "WHATSAPP",
+      "chat_id": "zqJoyDfWX8OHduc2e_IdmA",
+      "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
+      "had_attachments": true,
+      "attachments": [
+        {
+          "attachment_id": "3EB05A4960D28FBEF92757",
+          "attachment_type": "img",
+          "attachment_url": null,
+          "attachment_size": null
+        }
+      ],
+      "conversation_type": "individual",
+      "provider_chat_id": null,
+      "counterparty_phone": null,
+      "counterparty_name": null,
+      "group_id": null,
+      "group_name": null
+    },
+    {
+      "deleted_at": "2026-03-09T07:13:11.179Z",
+      "message_id": "1gNgoOa8WMe0nfvN2ZYE7g",
+      "original_message": "",
+      "sender_name": "You",
+      "sender_phone": "+918411937769",
+      "sent_at": "2026-03-09T07:13:05.000Z",
+      "account_type": "WHATSAPP",
+      "chat_id": "zqJoyDfWX8OHduc2e_IdmA",
+      "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
+      "had_attachments": true,
+      "attachments": [
+        {
+          "attachment_id": "3EB0F81D7DC90058BFC6E8",
+          "attachment_type": "img",
+          "attachment_url": null,
+          "attachment_size": null
+        }
+      ],
+      "conversation_type": "individual",
+      "provider_chat_id": null,
+      "counterparty_phone": null,
+      "counterparty_name": null,
+      "group_id": null,
+      "group_name": null
+    },
+    {
+      "deleted_at": "2026-03-11T13:51:14.757Z",
+      "message_id": "zEHWTD4pXlq9LBLXB8Peow",
+      "original_message": "",
+      "sender_name": "You",
+      "sender_phone": "+918411937769",
+      "sent_at": "2026-03-11T13:50:45.000Z",
+      "account_type": "WHATSAPP",
+      "chat_id": "zqJoyDfWX8OHduc2e_IdmA",
+      "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
+      "had_attachments": true,
+      "attachments": [
+        {
+          "attachment_id": "3EB02442D7B6130629A1C6",
+          "attachment_type": "img",
+          "attachment_url": null,
+          "attachment_size": null
+        }
+      ],
+      "conversation_type": "individual",
+      "provider_chat_id": null,
+      "counterparty_phone": null,
+      "counterparty_name": null,
+      "group_id": null,
+      "group_name": null
+    },
+    {
+      "deleted_at": "2026-03-11T14:01:47.344Z",
+      "message_id": "lx95PGynVBSdLmZOrkJPHg",
+      "original_message": "",
+      "sender_name": "Balaji Kamble",
+      "sender_phone": "+919769115079",
+      "sent_at": "2026-03-11T14:01:43.000Z",
+      "account_type": "WHATSAPP",
+      "chat_id": "Ngv6Hsl_WIKzKWMb_SZBfg",
+      "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
+      "had_attachments": false,
+      "attachments": [],
+      "conversation_type": "individual",
+      "provider_chat_id": null,
+      "counterparty_phone": null,
+      "counterparty_name": null,
+      "group_id": null,
+      "group_name": null
+    },
+    {
+      "deleted_at": "2026-03-25T06:07:59.081Z",
+      "message_id": "PTKWdXOTVui_2LfLLV9keA",
+      "original_message": "",
+      "sender_name": "Vivek Krishanlal Uppal",
+      "sender_phone": "+919769882952",
+      "sent_at": "2026-03-25T06:07:19.000Z",
+      "account_type": "WHATSAPP",
+      "chat_id": "IDgleYPPXwS0BldcmE9dfQ",
+      "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
+      "had_attachments": false,
+      "attachments": [],
+      "conversation_type": "individual",
+      "provider_chat_id": null,
+      "counterparty_phone": null,
+      "counterparty_name": null,
+      "group_id": null,
+      "group_name": null
+    },
+    {
+      "deleted_at": "2026-03-25T06:07:59.432Z",
+      "message_id": "PygX1ru_VXiYfSmCLxSg0A",
+      "original_message": "",
+      "sender_name": "Vivek Krishanlal Uppal",
+      "sender_phone": "+919769882952",
+      "sent_at": "2026-03-25T06:07:20.000Z",
+      "account_type": "WHATSAPP",
+      "chat_id": "IDgleYPPXwS0BldcmE9dfQ",
+      "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
+      "had_attachments": false,
+      "attachments": [],
+      "conversation_type": "individual",
+      "provider_chat_id": null,
+      "counterparty_phone": null,
+      "counterparty_name": null,
+      "group_id": null,
+      "group_name": null
+    },
+    {
+      "deleted_at": "2026-06-30T07:41:02.407Z",
+      "message_id": "cZESiWJAWIG6zw4cAHJ30g",
+      "original_message": "",
+      "sender_name": "Arnav Saxena",
+      "sender_phone": "+918411937769",
+      "sent_at": "2026-06-30T07:17:41.000Z",
+      "account_type": "WHATSAPP",
+      "chat_id": "mJWc-DCmUq-I9h6jo12Yog",
+      "account_id": "pWhQlMmoTfWsCSI_6oWkfA",
+      "provider_chat_id": "919594503555@s.whatsapp.net",
+      "conversation_type": "individual",
+      "counterparty_phone": "919594503555",
+      "counterparty_name": null,
+      "group_id": null,
+      "group_name": null,
+      "had_attachments": false,
+      "attachments": []
+    },
+    {
+      "deleted_at": "2026-06-30T07:41:22.336Z",
+      "message_id": "rWJ0cQGwUyawh7ozVq9tnQ",
+      "original_message": "",
+      "sender_name": "Arnav Saxena",
+      "sender_phone": "+918411937769",
+      "sent_at": "2026-06-30T07:19:13.000Z",
+      "account_type": "WHATSAPP",
+      "chat_id": "BE14jY_hXg-oAw2Uzzkk8g",
+      "account_id": "pWhQlMmoTfWsCSI_6oWkfA",
+      "provider_chat_id": "918881139257@s.whatsapp.net",
+      "conversation_type": "individual",
+      "counterparty_phone": "918881139257",
+      "counterparty_name": null,
+      "group_id": null,
+      "group_name": null,
+      "had_attachments": false,
+      "attachments": []
+    },
+    {
+      "deleted_at": "2026-06-30T07:42:10.413Z",
+      "message_id": "Wjv_OWJ0V3OqxajlyzUyng",
+      "original_message": "",
+      "sender_name": "Arnav Saxena",
+      "sender_phone": "+918411937769",
+      "sent_at": "2026-06-30T07:22:05.000Z",
+      "account_type": "WHATSAPP",
+      "chat_id": "CjjxwPQhVDuvPBbdayPvCQ",
+      "account_id": "pWhQlMmoTfWsCSI_6oWkfA",
+      "provider_chat_id": "919811928360@s.whatsapp.net",
+      "conversation_type": "individual",
+      "counterparty_phone": "919811928360",
+      "counterparty_name": null,
+      "group_id": null,
+      "group_name": null,
+      "had_attachments": false,
+      "attachments": []
+    },
+    {
+      "deleted_at": "2026-06-30T07:45:12.275Z",
+      "message_id": "znxJlnUqWrWHEUzs00b6eg",
+      "original_message": "",
+      "sender_name": "E",
+      "sender_phone": "+917890418100",
+      "sent_at": "2026-06-30T07:31:49.000Z",
+      "account_type": "WHATSAPP",
+      "chat_id": "XA2TqbcmUpe6M8ZZq3oXGA",
+      "account_id": "pWhQlMmoTfWsCSI_6oWkfA",
+      "provider_chat_id": "917890418100@s.whatsapp.net",
+      "conversation_type": "individual",
+      "counterparty_phone": "917890418100",
+      "counterparty_name": null,
+      "group_id": null,
+      "group_name": null,
+      "had_attachments": true,
+      "attachments": [
+        {
+          "attachment_id": "3EB0A4CB8AF528DBADD2C1",
+          "attachment_type": "file",
+          "attachment_url": null,
+          "attachment_size": null
+        }
+      ]
+    }
+  ],
+  "groups": []
+}
