@@ -14,13 +14,13 @@ import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/ar
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
-    Attachment,
-    AttachmentMessageObject,
-    CandidateNode,
-    ChatControlsObjType,
-    ChatHistoryItem,
-    Job,
-    whatappUpdateMessageObjType
+  Attachment,
+  AttachmentMessageObject,
+  CandidateNode,
+  ChatControlsObjType,
+  ChatHistoryItem,
+  Job,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -685,7 +685,7 @@ export class MessagingControls {
       }
       fileBuffer = Buffer.from(fileData.data);
       await fs.promises.mkdir(path.dirname(localFilePath), { recursive: true });
-      await fs.promises.writeFile(localFilePath, fileBuffer);
+      await fs.promises.writeFile(localFilePath, new Uint8Array(fileBuffer));
       console.log('File has been saved!');
     } catch (error) {
       console.log('Error in downloading the file:', error);
