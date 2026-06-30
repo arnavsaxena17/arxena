@@ -318,13 +318,6 @@ export const graphQLToUpdateWorkspaceMemberLinkedinCookieTokens = `mutation Upda
   }
 }`;
 
-export const graphQLToUpdateWorkspaceMemberLinkedinProfile = `mutation UpdateWorkspaceMemberLinkedinProfile($idToUpdate: ID!, $linkedinProfile: JSON!) {
-  updateWorkspaceMemberProfile(id: $idToUpdate, data: { linkedinProfile: $linkedinProfile }) {
-    id
-    linkedinProfile
-  }
-}`;
-
 export const CreateManyCandidates = `mutation CreateCandidates($data: [CandidateCreateInput!]!) {
     createCandidates(data: $data) {
       __typename

@@ -9,7 +9,6 @@ import {
   findWorkspaceMemberProfiles,
   graphQLToUpdateOneWorkspaceMemberProfile,
   graphQLToUpdateWorkspaceMemberLinkedinCookieTokens,
-  graphQLToUpdateWorkspaceMemberLinkedinProfile,
   mergeWorkspaceMemberLinkedinProfile,
   parseWorkspaceMemberLinkedinCookieTokensFromGraphql,
   parseWorkspaceMemberLinkedinProfile,
@@ -405,10 +404,12 @@ export class WorkspaceMemberProfileUnipileService {
       const merged = mergeWorkspaceMemberLinkedinProfile(existing, patch);
       this.logger.log(`Merged in SAVE WORKSPACE MEMBER LINKEDIN PROFILE: ${JSON.stringify(merged, null, 2)}`);
       await this.staticGraphQLService.executeGraphQL(
-        graphQLToUpdateWorkspaceMemberLinkedinProfile,
+        graphQLToUpdateOneWorkspaceMemberProfile,
         {
           idToUpdate: profile.id,
-          linkedinProfile: merged,
+          input: {
+            linkedinProfile: merged,
+          },
         },
         authToken,
       );

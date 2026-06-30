@@ -39,7 +39,6 @@ export class IncomingWhatsappMessages {
     private readonly staticGraphQLService: StaticGraphQLService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly engagedCandidateMessageQueueService?: MessageQueueService,
     ) {
-    console.log('IncomingWhatsappMessages constructor called with queue service:', !!this.engagedCandidateMessageQueueService);
   }
 
   async queueCandidateForEngagement(
@@ -1034,14 +1033,6 @@ export class IncomingWhatsappMessages {
     const normalizedRecipientPhoneNumber =
       incomingRecipientIdentifierId.replace(/[^\d+]/g, '').replace(/\+/g, '');
 
-    console.log(
-      'This is the normalizedPhoneNumber (sender) for WhatsApp Unipile::',
-      normalizedPhoneNumber,
-    );
-    console.log(
-      'This is the normalizedRecipientPhoneNumber (recipient) for WhatsApp Unipile::',
-      normalizedRecipientPhoneNumber,
-    );
 
     const recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_whatsappMessage" 
       WHERE ("_whatsappMessage"."phoneFrom" ILIKE '%${normalizedPhoneNumber}%' OR "_whatsappMessage"."phoneTo" ILIKE '%${normalizedPhoneNumber}%')
@@ -1077,10 +1068,6 @@ export class IncomingWhatsappMessages {
     });
 
     if (isMessageDuplicate) {
-      console.log(
-        'WhatsApp Unipile message already exists in database, skipping processing',
-      );
-
       return null;
     }
 
