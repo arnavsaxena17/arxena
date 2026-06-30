@@ -649,30 +649,33 @@ export class MessagingControls {
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
-    const fullPath = attachment?.fullPath;
+    if (!attachment?.fullPath) {
+      console.log(
+        'There is no attachment attached, cannot proceed with sending the JD to the candidate',
+      );
+      return;
+    }
+
+    const fullPath = attachment.fullPath;
+    const name = attachment.name || 'attachment.pdf';
+    const jobIdForPath = attachment.jobId ?? candidateJob.id;
+    const localFilePath = path.join(
+      process.cwd(),
+      '.attachments',
+      jobIdForPath,
+      `${candidate.id}_${name}`,
+    );
 
     console.log('Full Path::', fullPath);
-    const name = attachment?.name || 'attachment.pdf';
-
     console.log('This is attachment name:', name);
-    const localFilePath =
-      process.cwd() + '/.attachments' + `/${attachment?.jobId}/` + name;
-
     console.log('This is localFile Path:', localFilePath);
-    // const fileUrl = `${baseUrl}` + '/files/' + fullPath;
-    const fileUrl = fullPath;
-    let fileData;
+
+    let fileBuffer: Buffer;
 
     try {
-      if (!attachment) {
-        console.log(
-          'There is no attachment attached, cannot proceed with sending the JD to the candidate',
-        );
-      }
-      console.log('path:', fullPath, 'name:', name, 'fileUrl:', fileUrl);
+      console.log('path:', fullPath, 'name:', name, 'fileUrl:', fullPath);
       console.log('localFilePath:', localFilePath);
-      // Download and save the file locally
-      fileData = await axios({
+      const fileData = await axios({
         url: fullPath,
         method: 'GET',
         responseType: 'arraybuffer',
@@ -680,14 +683,13 @@ export class MessagingControls {
       if (!fileData?.data) {
         throw new Error('No data found in the file');
       }
-      // Ensure directory exists
+      fileBuffer = Buffer.from(fileData.data);
       await fs.promises.mkdir(path.dirname(localFilePath), { recursive: true });
-      
-      // Write the file synchronously
-      await fs.promises.writeFile(localFilePath, fileData?.data);
+      await fs.promises.writeFile(localFilePath, fileBuffer);
       console.log('File has been saved!');
     } catch (error) {
       console.log('Error in downloading the file:', error);
+      return;
     }
 
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
@@ -698,10 +700,9 @@ export class MessagingControls {
       throw new Error('Recruiter profile not found for job');
     }
 
-    // Set the appropriate message identifiers based on messaging channel
     let phoneNumberTo: string;
     let phoneNumberFrom: string;
-    
+
     if (candidate.messagingChannel === 'linkedin' || candidate.messagingChannel === 'linkedin-premium') {
       phoneNumberTo = candidate.linkedinUrl?.primaryLinkUrl || '';
       phoneNumberFrom = recruiterProfile.linkedinUrl || '';
@@ -716,42 +717,31 @@ export class MessagingControls {
       phoneNumberFrom = recruiterProfile.phoneNumber || '';
     }
 
-    // Read file buffer for LinkedIn attachments
-    let fileBuffer: any = '';
-    if (candidate.messagingChannel === 'linkedin' || candidate.messagingChannel === 'linkedin-premium') {
-      try {
-        fileBuffer = await fs.promises.readFile(localFilePath);
-      } catch (error) {
-        console.log('Error reading file for LinkedIn attachment:', error);
-        fileBuffer = '';
-      }
-    }
-
     const attachmentMessageObj: AttachmentMessageObject = {
       phoneNumberTo,
       phoneNumberFrom,
-      fullPath: fullPath,
+      fullPath,
       fileData: {
         fileName: name,
         filePath: localFilePath,
         mimetype: mime.lookup(name) || 'application/octet-stream',
-        fileBuffer: fileBuffer,
+        fileBuffer: fileBuffer as unknown as string,
       },
     };
 
-    await new MessagingControls(
-      this.workspaceQueryService,
-      this.staticGraphQLService,
-      this.workspaceMemberProfileUnipileService,
-    ).sendAttachmentMessageOnWhatsapp(
-      attachmentMessageObj,
-      candidate,
-      candidateJob,
-      chatControl,
-      apiToken,
-    );
-
-    if (localFilePath) {
+    try {
+      await new MessagingControls(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+        this.workspaceMemberProfileUnipileService,
+      ).sendAttachmentMessageOnWhatsapp(
+        attachmentMessageObj,
+        candidate,
+        candidateJob,
+        chatControl,
+        apiToken,
+      );
+    } finally {
       try {
         await fs.promises.unlink(localFilePath);
       } catch (error) {
