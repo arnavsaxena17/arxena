@@ -15,6 +15,7 @@ import { ProfilePictureUploader } from '@/settings/profile/components/ProfilePic
 import { SettingsPath } from '@/types/SettingsPath';
 import { SubMenuTopBarContainer } from '@/ui/layout/page/components/SubMenuTopBarContainer';
 import { useRecoilValue } from 'recoil';
+import { getWorkspaceSchemaName } from 'twenty-shared';
 import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
 
 const StyledIdsCard = styled.div`
@@ -81,6 +82,10 @@ export const SettingsProfile = () => {
     .filter(Boolean)
     .join(' ') || '—';
 
+  const workspaceSchemaName = currentWorkspace?.id
+    ? getWorkspaceSchemaName(currentWorkspace.id)
+    : '—';
+
   return (
     <SubMenuTopBarContainer
       title={t`Profile`}
@@ -134,6 +139,10 @@ export const SettingsProfile = () => {
               <StyledIdRow>
                 <StyledIdLabel>{t`Workspace ID`}</StyledIdLabel>
                 <StyledIdValue $mono>{currentWorkspace?.id ?? '—'}</StyledIdValue>
+              </StyledIdRow>
+              <StyledIdRow>
+                <StyledIdLabel>{t`Workspace Schema`}</StyledIdLabel>
+                <StyledIdValue $mono>{workspaceSchemaName}</StyledIdValue>
               </StyledIdRow>
               <StyledIdRow>
                 <StyledIdLabel>{t`Workspace Name`}</StyledIdLabel>

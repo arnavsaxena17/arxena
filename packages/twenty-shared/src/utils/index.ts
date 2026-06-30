@@ -1,6 +1,7 @@
 export * from './calendly';
 export * from './clientGeo';
 export * from './fieldMetadata';
+export * from './getWorkspaceSchemaName';
 export * from './image';
 export * from './inferLinkedInSearchTypeFromUnipileOwnerProfile';
 export * from './is-likely-browser-logo-request';
