@@ -35,15 +35,71 @@ describe('resolveWhatsappOutboundMessagesPerMinute', () => {
   });
 });
 
+describe('computeOutboundSendJitterMs', () => {
+  const originalMin = process.env.WHATSAPP_OUTBOUND_JITTER_MIN_MS;
+  const originalMax = process.env.WHATSAPP_OUTBOUND_JITTER_MAX_MS;
+
+  afterEach(() => {
+    if (originalMin === undefined) {
+      delete process.env.WHATSAPP_OUTBOUND_JITTER_MIN_MS;
+    } else {
+      process.env.WHATSAPP_OUTBOUND_JITTER_MIN_MS = originalMin;
+    }
+    if (originalMax === undefined) {
+      delete process.env.WHATSAPP_OUTBOUND_JITTER_MAX_MS;
+    } else {
+      process.env.WHATSAPP_OUTBOUND_JITTER_MAX_MS = originalMax;
+    }
+  });
+
+  it('returns a value within the configured range', async () => {
+    const { computeOutboundSendJitterMs } = await import(
+      './whatsapp-outbound-rate-limit.util'
+    );
+    process.env.WHATSAPP_OUTBOUND_JITTER_MIN_MS = '3000';
+    process.env.WHATSAPP_OUTBOUND_JITTER_MAX_MS = '6000';
+    jest.spyOn(Math, 'random').mockReturnValue(0.5);
+
+    expect(computeOutboundSendJitterMs()).toBe(4500);
+  });
+
+  it('returns 0 when jitter range is disabled', async () => {
+    const { computeOutboundSendJitterMs } = await import(
+      './whatsapp-outbound-rate-limit.util'
+    );
+    process.env.WHATSAPP_OUTBOUND_JITTER_MIN_MS = '0';
+    process.env.WHATSAPP_OUTBOUND_JITTER_MAX_MS = '0';
+
+    expect(computeOutboundSendJitterMs()).toBe(0);
+  });
+});
+
 describe('WhatsappOutboundRateLimiterService', () => {
   const sleepSpy = jest.spyOn(global, 'setTimeout');
+  const originalMin = process.env.WHATSAPP_OUTBOUND_JITTER_MIN_MS;
+  const originalMax = process.env.WHATSAPP_OUTBOUND_JITTER_MAX_MS;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env.WHATSAPP_OUTBOUND_JITTER_MIN_MS = '0';
+    process.env.WHATSAPP_OUTBOUND_JITTER_MAX_MS = '0';
     sleepSpy.mockImplementation((callback: () => void) => {
       callback();
       return 0 as unknown as NodeJS.Timeout;
     });
+  });
+
+  afterEach(() => {
+    if (originalMin === undefined) {
+      delete process.env.WHATSAPP_OUTBOUND_JITTER_MIN_MS;
+    } else {
+      process.env.WHATSAPP_OUTBOUND_JITTER_MIN_MS = originalMin;
+    }
+    if (originalMax === undefined) {
+      delete process.env.WHATSAPP_OUTBOUND_JITTER_MAX_MS;
+    } else {
+      process.env.WHATSAPP_OUTBOUND_JITTER_MAX_MS = originalMax;
+    }
   });
 
   afterAll(() => {
@@ -87,6 +143,27 @@ describe('WhatsappOutboundRateLimiterService', () => {
     await limiter.waitForOutboundSlot('account-1', 5);
 
     expect(redisService.tryAcquireSlidingWindowSlot).toHaveBeenCalledTimes(2);
+  });
+
+  it('applies jitter before send when a slot is acquired', async () => {
+    process.env.WHATSAPP_OUTBOUND_JITTER_MIN_MS = '4000';
+    process.env.WHATSAPP_OUTBOUND_JITTER_MAX_MS = '4000';
+    const redisService = {
+      tryAcquireSlidingWindowSlot: jest
+        .fn()
+        .mockResolvedValue({ acquired: true, waitMs: 0 }),
+    };
+
+    const { WhatsappOutboundRateLimiterService } = await import(
+      './whatsapp-outbound-rate-limiter.service'
+    );
+    const limiter = new WhatsappOutboundRateLimiterService(
+      redisService as never,
+    );
+
+    await limiter.waitForOutboundSlot('account-1', 5);
+
+    expect(sleepSpy).toHaveBeenCalledWith(expect.any(Function), 4000);
   });
 });
 

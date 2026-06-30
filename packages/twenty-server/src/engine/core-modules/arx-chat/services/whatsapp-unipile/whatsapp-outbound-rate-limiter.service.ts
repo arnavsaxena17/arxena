@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 
 import { RedisService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/redis-service-ops';
 
-import { WHATSAPP_OUTBOUND_WINDOW_MS } from './whatsapp-outbound-rate-limit.util';
+import { WHATSAPP_OUTBOUND_WINDOW_MS, computeOutboundSendJitterMs } from './whatsapp-outbound-rate-limit.util';
 import { registerWhatsappOutboundRateLimiter } from './whatsapp-outbound-rate-limiter.registry';
 
 const KEY_PREFIX = 'whatsapp-outbound:';
@@ -41,6 +41,7 @@ export class WhatsappOutboundRateLimiterService implements OnModuleInit {
         );
 
       if (acquired) {
+        await this.applySendJitter(accountId);
         return;
       }
 
@@ -48,10 +49,24 @@ export class WhatsappOutboundRateLimiterService implements OnModuleInit {
         Math.max(100, Math.ceil(waitMs)),
         WHATSAPP_OUTBOUND_WINDOW_MS,
       );
+      const jitterMs = computeOutboundSendJitterMs();
+      const totalWaitMs = boundedWaitMs + jitterMs;
       this.logger.log(
-        `Rate limit reached for account ${accountId}, waiting ${boundedWaitMs}ms (limit: ${limit}/min)`,
+        `Rate limit reached for account ${accountId}, waiting ${totalWaitMs}ms (base ${boundedWaitMs}ms + jitter ${jitterMs}ms, limit: ${limit}/min)`,
       );
-      await sleep(boundedWaitMs);
+      await sleep(totalWaitMs);
     }
+  }
+
+  private async applySendJitter(accountId: string): Promise<void> {
+    const jitterMs = computeOutboundSendJitterMs();
+    if (jitterMs <= 0) {
+      return;
+    }
+
+    this.logger.log(
+      `Outbound send jitter for account ${accountId}: waiting ${jitterMs}ms`,
+    );
+    await sleep(jitterMs);
   }
 }

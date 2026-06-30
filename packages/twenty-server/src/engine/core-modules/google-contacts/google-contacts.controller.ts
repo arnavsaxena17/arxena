@@ -315,7 +315,7 @@ export class ContactsController {
       const result = await this.googleContactsService.batchCreateContacts(
         auth,
         contactsToCreate,
-        ''
+        'Arx'
       );
 
       return {

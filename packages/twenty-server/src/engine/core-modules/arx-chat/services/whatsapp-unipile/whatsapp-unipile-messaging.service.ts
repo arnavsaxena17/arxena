@@ -2,16 +2,16 @@ import axios from 'axios';
 import FormData from 'form-data';
 import * as fs from 'fs';
 import {
-    CandidateNode,
-    ChatControlsObjType,
-    ChatHistoryItem,
-    Job,
-    whatappUpdateMessageObjType
+  CandidateNode,
+  ChatControlsObjType,
+  ChatHistoryItem,
+  Job,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
-import { resolveWhatsappOutboundMessagesPerMinute } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limit.util';
+import { resolveWhatsappOutboundMessagesPerMinute, toWhatsappOutboundRateLimitJob } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limit.util';
 import { getRegisteredWhatsappOutboundRateLimiter } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.registry';
 import { WhatsappOutboundRateLimiterService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
@@ -60,7 +60,7 @@ export class WhatsappUnipileMessagingService {
     }
 
     const messagesPerMinute = resolveWhatsappOutboundMessagesPerMinute(
-      candidateJob,
+      toWhatsappOutboundRateLimitJob(candidateJob),
     );
     await rateLimiter.waitForOutboundSlot(accountId, messagesPerMinute);
   }
