@@ -2,17 +2,17 @@ import { MultipleRecordsActionKeys } from '@/action-menu/actions/record-actions/
 import { ActionHook } from '@/action-menu/actions/types/ActionHook';
 import { ActionViewType } from '@/action-menu/actions/types/ActionViewType';
 import {
-  ActionMenuEntry,
-  ActionMenuEntryScope,
-  ActionMenuEntryType,
+    ActionMenuEntry,
+    ActionMenuEntryScope,
+    ActionMenuEntryType,
 } from '@/action-menu/types/ActionMenuEntry';
 import { msg } from '@lingui/core/macro';
-import { IconBriefcase, IconMessageCircle, IconMessages, IconShare } from '@tabler/icons-react';
+import { IconBriefcase, IconMessageCircle, IconMessageX, IconMessages, IconShare } from '@tabler/icons-react';
 import {
-  IconCopy,
-  IconList,
-  IconRefresh,
-  IconVideo,
+    IconCopy,
+    IconList,
+    IconRefresh,
+    IconVideo,
 } from 'twenty-ui';
 
 
@@ -30,6 +30,7 @@ import { useShareChatAndVideoInterviewBasedShortlistAction } from '@/action-menu
 import { useShareChatBasedShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useShareChatBasedShortlistAction';
 import { useShareMultipleVideoInterviewLinksAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useShareMultipleVideoInterviewLinksAction';
 import { useStartChatWithCandidatesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useStartChatWithCandidatesAction';
+import { useStopChatWithCandidatesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useStopChatWithCandidatesAction';
 import { useUpdateMessagingChannelForCandidatesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useUpdateMessagingChannelForCandidatesAction';
 import { useUpdateSnapshotProfilesFromJobBoardsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useUpdateSnapshotProfilesFromJobBoardsAction';
 
@@ -102,6 +103,22 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
       ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
     ],
     useAction: useStartChatWithCandidatesAction,
+  },
+  stopChatWithCandidates: {
+    type: ActionMenuEntryType.Standard,
+    scope: ActionMenuEntryScope.RecordSelection,
+    key: MultipleRecordsActionKeys.STOP_CHAT_WITH_CANDIDATES,
+    label: msg`Stop Chat with Candidates`,
+    shortLabel: msg`Stop Chat`,
+    position: 3.25,
+    Icon: IconMessageX,
+    accent: 'placeholder',
+    isPinned: false,
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
+    useAction: useStopChatWithCandidatesAction,
   },
   updateMessagingChannelForCandidates: {
     type: ActionMenuEntryType.Standard,

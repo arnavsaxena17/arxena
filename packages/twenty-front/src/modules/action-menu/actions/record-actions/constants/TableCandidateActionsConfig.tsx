@@ -10,6 +10,7 @@ import { useRestartMessagesAction } from '@/action-menu/actions/record-actions/m
 import { useSendToWhatsappAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useSendToWhatsappAction';
 import { useShareChatAndVideoInterviewBasedShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useShareChatAndVideoInterviewBasedShortlistAction';
 import { useStartChatWithCandidatesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useStartChatWithCandidatesAction';
+import { useStopChatWithCandidatesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useStopChatWithCandidatesAction';
 import { useSyncChatsWithWhatsappAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useSyncChatsWithWhatsappAction';
 import { useUpdateMessagingChannelForCandidatesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useUpdateMessagingChannelForCandidatesAction';
 import { useUpdateSnapshotProfilesFromJobBoardsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useUpdateSnapshotProfilesFromJobBoardsAction';
@@ -22,7 +23,7 @@ import {
   ActionMenuEntryType,
 } from '@/action-menu/types/ActionMenuEntry';
 import { msg } from '@lingui/core/macro';
-import { IconBriefcase, IconDownload, IconMail, IconMessageCircle, IconMessages, IconPhone, IconRefresh, IconShare, IconTrashOff, IconTrashX } from '@tabler/icons-react';
+import { IconBriefcase, IconDownload, IconMail, IconMessageCircle, IconMessageX, IconMessages, IconPhone, IconRefresh, IconShare, IconTrashOff, IconTrashX } from '@tabler/icons-react';
 import {
   IconList
 } from 'twenty-ui';
@@ -184,6 +185,23 @@ export const TABLE_CANDIDATE_ACTIONS_CONFIG: Record<
       ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
     ],
     useAction: useStartChatWithCandidatesAction,
+  },
+
+  stopChatWithCandidates: {
+    type: ActionMenuEntryType.Standard,
+    scope: ActionMenuEntryScope.RecordSelection,
+    key: MultipleRecordsActionKeys.STOP_CHAT_WITH_CANDIDATES,
+    label: msg`Stop Chat with Candidates`,
+    shortLabel: msg`Stop Chat`,
+    position: 5.5,
+    Icon: IconMessageX,
+    accent: 'placeholder',
+    isPinned: false,
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
+    useAction: useStopChatWithCandidatesAction,
   },
 
   updateMessagingChannelForCandidates: {
