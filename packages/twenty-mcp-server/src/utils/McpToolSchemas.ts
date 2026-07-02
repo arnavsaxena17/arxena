@@ -284,6 +284,35 @@ export const SEARCH_ORG_CHARTS_BY_FUNCTION_INPUT_DESCRIPTOR: readonly McpInputFi
   { key: 'limit', type: 'number', description: 'Maximum number of results to return (default: 10)', required: false },
 ] as const;
 
+// ==================== Elasticsearch Index Search Tools ====================
+
+/** Descriptor for search_people_index tool input (Arxena people_all ES index). */
+export const SEARCH_PEOPLE_INDEX_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'query', type: 'string', description: 'Free-text search across name, title, company, function, and country', required: false },
+  { key: 'personName', type: 'string', description: 'Person name filter', required: false },
+  { key: 'jobTitle', type: 'string', description: 'Job title filter', required: false },
+  { key: 'companyId', type: 'string', description: 'Company slug/id filter (e.g. google)', required: false },
+  { key: 'companyName', type: 'string', description: 'Company name filter', required: false },
+  { key: 'website', type: 'string', description: 'Company website filter', required: false },
+  { key: 'stdFunction', type: 'string', description: 'Standardized function filter (e.g. engineering, sales)', required: false },
+  { key: 'stdGrade', type: 'string', description: 'Standardized grade filter (e.g. leadership, manager)', required: false },
+  { key: 'country', type: 'string', description: 'Location country filter', required: false },
+  { key: 'linkedinUrl', type: 'string', description: 'LinkedIn profile URL filter', required: false },
+  { key: 'limit', type: 'number', description: 'Maximum results (default 20, max 100)', required: false },
+  { key: 'offset', type: 'number', description: 'Pagination offset', required: false },
+] as const;
+
+/** Descriptor for search_companies_index tool input (std_company_data_scores ES index). */
+export const SEARCH_COMPANIES_INDEX_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'query', type: 'string', description: 'Free-text search across company name, website, industry, and id', required: false },
+  { key: 'companyName', type: 'string', description: 'Company name filter', required: false },
+  { key: 'companyId', type: 'string', description: 'Company slug/id filter', required: false },
+  { key: 'website', type: 'string', description: 'Company website filter', required: false },
+  { key: 'industry', type: 'string', description: 'Industry filter', required: false },
+  { key: 'limit', type: 'number', description: 'Maximum results (default 20, max 100)', required: false },
+  { key: 'offset', type: 'number', description: 'Pagination offset', required: false },
+] as const;
+
 // ==================== LinkedIn Search Tools ====================
 
 /** Descriptor for expand_companies tool input. */

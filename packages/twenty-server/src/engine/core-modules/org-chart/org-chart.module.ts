@@ -25,8 +25,10 @@ import { UnipilePoolModule } from 'src/engine/core-modules/arx-chat/unipile-pool
 import { CandidateAvatarModule } from 'src/engine/core-modules/candidate-avatar/candidate-avatar.module';
 import { OrgChartClientIpModule } from 'src/engine/core-modules/org-chart/org-chart-client-ip.module';
 
+import { ElasticsearchSearchController } from './controllers/elasticsearch-search.controller';
 import { OrgChartController } from './controllers/org-chart.controller';
 import { ArxenaBackendService } from './services/arxena-backend.service';
+import { CompaniesEsService } from './services/companies-es.service';
 import { CompanyLogoService } from './services/company-logo.service';
 import { ContactOutPeopleSearchService } from './services/contactout-people-search.service';
 import { ContactOutPersonOrgMovementService } from './services/contactout-person-org-movement.service';
@@ -74,7 +76,7 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     forwardRef(() => CandidateSearchModule),
     UnipilePoolModule,
   ],
-  controllers: [OrgChartController],
+  controllers: [OrgChartController, ElasticsearchSearchController],
   providers: [
     UnipileCompanyService,
     WorkspaceMemberProfileUnipileService,
@@ -87,6 +89,7 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     OrgChartTheOrgEnrichmentService,
     ArxenaBackendService,
     OrgChartEsService,
+    CompaniesEsService,
     PeopleEsService,
     PdlAutocompleteService,
     PdlPersonOrgMovementService,
@@ -119,6 +122,9 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     ContactOutPersonOrgMovementService,
     PersonOrgMovementService,
     OrgChartSuperImposeAutocompleteService,
+    CompaniesEsService,
+    PeopleEsService,
+    OrgChartEsService,
   ],
 })
 export class OrgChartModule {}

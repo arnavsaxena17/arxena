@@ -305,6 +305,96 @@
           "attachment_size": null
         }
       ]
+    },
+    {
+      "deleted_at": "2026-07-01T09:51:54.982Z",
+      "message_id": "Ngpyn0lwVMa4uJqgVuasog",
+      "original_message": "About Circolife\nCircolife is a Climate-Tech company that provides 5-Star Energy Efficient Smart Air Conditioners on a subscription model, also known as Cooling-as-a-Service (CaaS). Instead of purchasing ACs with a large upfront investment, customers pay a fixed monthly subscription fee that includes the AC, maintenance, servicing, repairs, and spare parts. �\nCircolife +1\nWhat Does Circolife Do?\nCircolife helps businesses reduce their cooling costs and maintenance hassles through:\nBrand-new 5-Star Energy Efficient ACs\nMonthly subscription plans instead of purchasing ACs\nFree maintenance and servicing\nFree spare parts replacement\nGas refill coverage\nIoT-enabled smart monitoring\nPredictive maintenance to avoid breakdowns\nEnergy consumption analytics through a mobile app\nSustainable recycling of ACs at the end of their lifecycle �\nCircolife +1\nTypes of ACs Provided\nCircolife offers:\nSplit ACs\nCassette ACs\n1 Ton ACs\n1.5 Ton ACs\n2 Ton ACs\nAll units are 5-Star rated and designed for lower electricity consumption. �\nCircolife\nTarget Customers\nCircolife primarily serves businesses such as:\nOffices & Co-working Spaces\nGyms & Fitness Centers\nClinics\nSalons & Spas\nRestaurants & Cafes\nPG Accommodations\nCoaching & Tutoring Centers\nSmall and Medium Businesses (SMBs) �\nCircolife +1\nCompany's Mission\nCircolife aims to build India's largest sustainable cooling movement by offering environmentally responsible and energy-efficient cooling solutions. Their focus is on reducing electricity consumption while promoting a circular economy through responsible recycling and reuse of cooling equipment. �\nCircolife\nHeadquarters\nMumbai, Maharashtra, India �\nLinkedIn\nRegions of Operation\nWhile the company is headquartered in Mumbai, it serves customers across major Indian metro cities and business hubs. Their customer base and installations are concentrated in regions such as:\nMumbai\nBengaluru\nHyderabad\nPune\nChennai\nDelhi NCR\nThe company continues to expand its presence across India.",
+      "sender_name": "Ishan Nanda",
+      "sender_phone": "+917204280358",
+      "sent_at": "2026-07-01T09:51:34.000Z",
+      "account_type": "WHATSAPP",
+      "chat_id": "yUSRneu_WM-aTzilas90xg",
+      "account_id": "NjcYtF6LR4yv6uPpA6XbsA",
+      "provider_chat_id": "919003047380@s.whatsapp.net",
+      "conversation_type": "individual",
+      "counterparty_phone": "919003047380",
+      "counterparty_name": null,
+      "group_id": null,
+      "group_name": null,
+      "had_attachments": false,
+      "attachments": []
+    },
+    {
+      "deleted_at": "2026-07-01T09:51:55.380Z",
+      "message_id": "uIUJsgGKUFCZVqNLTybGkA",
+      "original_message": "https://circolife.com/",
+      "sender_name": "Ishan Nanda",
+      "sender_phone": "+917204280358",
+      "sent_at": "2026-07-01T09:51:33.000Z",
+      "account_type": "WHATSAPP",
+      "chat_id": "yUSRneu_WM-aTzilas90xg",
+      "account_id": "NjcYtF6LR4yv6uPpA6XbsA",
+      "provider_chat_id": "919003047380@s.whatsapp.net",
+      "conversation_type": "individual",
+      "counterparty_phone": "919003047380",
+      "counterparty_name": null,
+      "group_id": null,
+      "group_name": null,
+      "had_attachments": false,
+      "attachments": []
+    },
+    {
+      "deleted_at": "2026-07-01T09:51:55.913Z",
+      "message_id": "bMvWg50UUW6ns3CMs870jA",
+      "original_message": "",
+      "sender_name": "Ishan Nanda",
+      "sender_phone": "+917204280358",
+      "sent_at": "2026-07-01T09:51:33.000Z",
+      "account_type": "WHATSAPP",
+      "chat_id": "yUSRneu_WM-aTzilas90xg",
+      "account_id": "NjcYtF6LR4yv6uPpA6XbsA",
+      "provider_chat_id": "919003047380@s.whatsapp.net",
+      "conversation_type": "individual",
+      "counterparty_phone": "919003047380",
+      "counterparty_name": null,
+      "group_id": null,
+      "group_name": null,
+      "had_attachments": true,
+      "attachments": [
+        {
+          "attachment_id": "AC5963D4F438A5244B68ACA886CFE703",
+          "attachment_type": "file",
+          "attachment_url": null,
+          "attachment_size": null
+        }
+      ]
+    },
+    {
+      "deleted_at": "2026-07-01T09:51:56.693Z",
+      "message_id": "TOs4cIwSVCexpi1hfLzOAQ",
+      "original_message": "",
+      "sender_name": "Ishan Nanda",
+      "sender_phone": "+917204280358",
+      "sent_at": "2026-07-01T09:51:33.000Z",
+      "account_type": "WHATSAPP",
+      "chat_id": "yUSRneu_WM-aTzilas90xg",
+      "account_id": "NjcYtF6LR4yv6uPpA6XbsA",
+      "provider_chat_id": "919003047380@s.whatsapp.net",
+      "conversation_type": "individual",
+      "counterparty_phone": "919003047380",
+      "counterparty_name": null,
+      "group_id": null,
+      "group_name": null,
+      "had_attachments": true,
+      "attachments": [
+        {
+          "attachment_id": "ACDB259957700E6E58B89BA4135BCD47",
+          "attachment_type": "file",
+          "attachment_url": null,
+          "attachment_size": null
+        }
+      ]
     }
   ],
   "groups": []

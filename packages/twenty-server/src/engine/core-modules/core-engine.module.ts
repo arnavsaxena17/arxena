@@ -49,6 +49,7 @@ import { serverlessModuleFactory } from 'src/engine/core-modules/serverless/serv
 import { ServerlessModule } from 'src/engine/core-modules/serverless/serverless.module';
 import { WorkspaceSSOModule } from 'src/engine/core-modules/sso/sso.module';
 import { TelemetryModule } from 'src/engine/core-modules/telemetry/telemetry.module';
+import { TestWebhookModule } from 'src/engine/core-modules/test-webhook/test-webhook.module';
 import { UserModule } from 'src/engine/core-modules/user/user.module';
 import { VideoInterviewModule } from 'src/engine/core-modules/video-interview/video-interview.module';
 import { WebsiteLeadsModule } from 'src/engine/core-modules/website-leads/website-leads.module';
@@ -142,6 +143,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     CandidateAvatarModule,
     OrgChartModule,
     WebsiteLeadsModule,
+    TestWebhookModule,
     PrivacyConsentModule,
     RoleModule,
     EnvironmentModule.forRoot({}),

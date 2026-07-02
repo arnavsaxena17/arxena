@@ -228,7 +228,7 @@ export const searchFetchTools: McpTool[] = [
       name: 'search',
       title: 'Search knowledge',
       description:
-        'Search Arxena workspace knowledge: org charts, companies, jobs, and candidates.',
+        'Search Arxena workspace knowledge: org charts, companies, jobs, candidates, and global ES people/companies indices (use search_people_index / search_companies_index for direct index search).',
       annotations: { readOnlyHint: true },
       inputSchema: {
         type: 'object',

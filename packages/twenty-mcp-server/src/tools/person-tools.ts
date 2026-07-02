@@ -29,9 +29,9 @@ import { descriptorToInputSchema } from '../utils/input-schema';
 export const personTools: McpTool[] = [
   {
     definition: {
-      name: 'find_person',
+      name: 'find_person_in_arxena_internal',
       description:
-        'Find a person record by name, email, or phone number. Returns their contact info and linked candidate applications. At least one search parameter required.',
+        'Find a person record in the Arxena Internal Database by name, email, or phone number. Returns their contact info and linked candidate applications. At least one search parameter required.',
       inputSchema: descriptorToInputSchema(FIND_PERSON_INPUT_DESCRIPTOR),
     },
     handler: async (args, config): Promise<{count: number, people: PersonNode[]}> => {
@@ -83,9 +83,9 @@ export const personTools: McpTool[] = [
 
   {
     definition: {
-      name: 'update_contact_info',
+      name: 'update_contact_info_in_arxena_internal',
       description:
-        "Update contact information (phone, email, city, name) for a person record by their person ID. Use find_person or find_candidate first to get the person ID if you don't have it.",
+        "Update contact information (phone, email, city, name) for a person record in the Arxena Internal Database by their person ID. Use find_person_in_arxena_internal or find_candidate_in_arxena_internal first to get the person ID if you don't have it.",
       inputSchema: descriptorToInputSchema(UPDATE_CONTACT_INFO_INPUT_DESCRIPTOR),
     },
     handler: async (

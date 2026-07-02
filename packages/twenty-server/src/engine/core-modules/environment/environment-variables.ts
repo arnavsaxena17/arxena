@@ -1403,6 +1403,26 @@ export class EnvironmentVariables {
     group: EnvironmentVariablesGroup.Other,
     sensitive: true,
     description:
+      'Optional shared secret for verifying signatures on POST /test-webhook/webhook. Set this to the same value as the webhook secret in Settings → Developers → Webhooks.',
+  })
+  @IsOptional()
+  @IsString()
+  TEST_WEBHOOK_SECRET?: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    sensitive: true,
+    description:
+      'Optional secret for X-Test-Webhook-View-Key when listing or clearing captured events via GET/DELETE /test-webhook/events. When unset, those endpoints are only available outside production.',
+  })
+  @IsOptional()
+  @IsString()
+  TEST_WEBHOOK_VIEW_SECRET?: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    sensitive: true,
+    description:
       'CoreSignal API key (https://docs.coresignal.com) for multi-source employee search (org movement, etc.).',
   })
   @IsOptional()
@@ -1504,6 +1524,15 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   COMPANIES_ES_INDEX = 'companies_index_text';
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'Elasticsearch index name for scored company search (name autocomplete, corporate_score, count_org)',
+  })
+  @IsOptional()
+  @IsString()
+  COMPANIES_SCORES_ES_INDEX = 'std_company_data_scores';
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.Other,

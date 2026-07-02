@@ -71,6 +71,14 @@ export class OrgChartEsService {
     }
   }
 
+  isEnabled(): boolean {
+    return this.client !== null;
+  }
+
+  getIndexName(): string {
+    return this.orgChartsIndex;
+  }
+
   private normalizeCompanyId(companyId: string): string {
     return companyId.trim().toLowerCase();
   }

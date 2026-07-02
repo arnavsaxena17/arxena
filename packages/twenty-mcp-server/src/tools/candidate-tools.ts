@@ -81,9 +81,9 @@ export const candidateTools: McpTool[] = [
 
   {
     definition: {
-      name: 'find_candidate',
+      name: 'find_candidate_in_arxena_internal',
       description:
-        'Search for a candidate by name, email, or phone number across all jobs. Returns matching candidates with their job associations. At least one search parameter is required. Use this before updating a candidate.',
+        'Search for a candidate in the Arxena Internal Database by name, email, or phone number across all jobs. Returns matching candidates with their job associations. At least one search parameter is required. Use this before updating a candidate.',
       inputSchema: descriptorToInputSchema(FIND_CANDIDATE_INPUT_DESCRIPTOR),
     },
     handler: async (args, config) => {
@@ -152,7 +152,7 @@ export const candidateTools: McpTool[] = [
 
   {
     definition: {
-      name: 'get_candidate_details',
+      name: 'get_candidate_details_in_arxena_internal',
       description: 'Get full details for a specific candidate by their candidate ID.',
       inputSchema: descriptorToInputSchema(GET_CANDIDATE_DETAILS_INPUT_DESCRIPTOR),
     },
@@ -196,7 +196,7 @@ export const candidateTools: McpTool[] = [
     definition: {
       name: 'create_candidate',
       description:
-        'Create a new candidate and link them to a job. Uses the post-candidates flow which creates both the person record and candidate node. Use list_active_jobs first to get the correct jobId.',
+        'Create a new candidate in the Arxena Internal Database and link them to a job. Uses the post-candidates flow which creates both the person record and candidate node. Use list_active_jobs first to get the correct jobId.',
       inputSchema: descriptorToInputSchema(CREATE_CANDIDATE_INPUT_DESCRIPTOR),
     },
     handler: async (args, config) => {
