@@ -325,6 +325,27 @@ export const EXPAND_JOB_TITLES_INPUT_DESCRIPTOR: readonly McpInputFieldDescripto
   { key: 'parsedRequirement', type: 'object', description: 'Parsed requirement object containing role, industry, location, etc.', required: true },
 ] as const;
 
+/** Descriptor for search_apollo_people tool input. */
+export const SEARCH_APOLLO_PEOPLE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'keywords', type: 'string', description: 'Free-text keywords query for Apollo people search', required: false },
+  { key: 'personTitles', type: 'object', description: 'Person title filters (e.g. ["Software Engineer", "CTO"])', required: false },
+  { key: 'organizationIds', type: 'object', description: 'Apollo organization_id filters (24-char IDs)', required: false },
+  { key: 'personLocations', type: 'object', description: 'Person location filters (e.g. ["India", "United States"])', required: false },
+  { key: 'organizationLocations', type: 'object', description: 'Organization location filters', required: false },
+  { key: 'includeSimilarTitles', type: 'boolean', description: 'Whether Apollo should include similar titles (default true)', required: false },
+  { key: 'page', type: 'number', description: 'Page number (default 1)', required: false },
+  { key: 'perPage', type: 'number', description: 'Results per page (default 25; Apollo max 100)', required: false },
+] as const;
+
+/** Descriptor for search_apollo_companies tool input. */
+export const SEARCH_APOLLO_COMPANIES_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'organizationName', type: 'string', description: 'Company name query for Apollo organization search', required: false },
+  { key: 'domains', type: 'object', description: 'Company domain filters (e.g. ["acme.com"])', required: false },
+  { key: 'organizationLocations', type: 'object', description: 'Organization location filters', required: false },
+  { key: 'page', type: 'number', description: 'Page number (default 1)', required: false },
+  { key: 'perPage', type: 'number', description: 'Results per page (default 10)', required: false },
+] as const;
+
 /** Descriptor for search_linkedin_people tool input. */
 export const SEARCH_LINKEDIN_PEOPLE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
   { key: 'searchType', type: 'string', description: 'One of: classic, sales_navigator, recruiter', required: true },
