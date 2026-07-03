@@ -1,6 +1,8 @@
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
+import { naukriQueueStatusState } from '@/candidate-table/states/naukriQueueStatusState';
 import { tableStateAtom } from '@/candidate-table/states/states';
+import { startNaukriQueueFromPage } from '@/chrome-extension/utils/naukriQueueExtensionBridge';
 import { contextStoreFiltersComponentState } from '@/context-store/states/contextStoreFiltersComponentState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
@@ -15,13 +17,7 @@ import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModa
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import { useCallback, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useRecoilValue } from 'recoil';
-import { sleep } from '~/utils/sleep';
-
-const randomWaitMs = (minMs: number, maxMs: number) => {
-  const delayMs = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
-  return sleep(delayMs);
-};
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => { 
   const { enqueueSnackBar } = useSnackBar();
@@ -29,6 +25,7 @@ export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectM
   const isJobRoute = location.pathname.includes('/job/');
   const tableState = useRecoilValue(tableStateAtom);
   const searchResults = useRecoilValue(searchResultsState);
+  const setNaukriQueueStatus = useSetRecoilState(naukriQueueStatusState);
   const [isUpdateSnapshotProfilesModalOpen, setIsUpdateSnapshotProfilesModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   
@@ -137,41 +134,44 @@ export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectM
         record.hiringNaukriUrl?.primaryLinkUrl?.trim() ||
         record.resdexNaukriUrl?.primaryLinkUrl?.trim(),
       );
-      
-      if (naukriRecords.length > 10) {
-        enqueueSnackBar('Please select no more than 10 profiles to update at once', {
-          variant: SnackBarVariant.Error,
-          duration: 3000,
-        });
-        return;
-      }
 
       if (naukriRecords.length > 0) {
-        const naukriProfileEntries = naukriRecords
-          .map((record) => ({
-            record,
-            url:
+        const naukriUrls = naukriRecords
+          .map(
+            (record) =>
               record.hiringNaukriUrl?.primaryLinkUrl?.trim() ||
               record.resdexNaukriUrl?.primaryLinkUrl?.trim(),
-          }))
-          .filter(
-            (entry): entry is { record: (typeof naukriRecords)[number]; url: string } =>
-              Boolean(entry.url),
-          );
+          )
+          .filter((url): url is string => Boolean(url));
 
-        if (naukriProfileEntries.length > 0) {
-          for (let index = 0; index < naukriProfileEntries.length; index++) {
-            if (index > 0) {
-              await randomWaitMs(1000, 4000);
+        if (naukriUrls.length > 0) {
+          try {
+            const snapshot = await startNaukriQueueFromPage({
+              urls: naukriUrls,
+              currentTableId: objectMetadataItem.id,
+            });
+
+            if (snapshot) {
+              setNaukriQueueStatus(snapshot);
             }
-            const { record, url } = naukriProfileEntries[index];
-            window.postMessage({
-              type: 'FETCH_NAUKRI_PROFILES',
-              urls: [url],
-              current_table_id: objectMetadataItem.id,
-              text: JSON.stringify([record]),
-              columns: Object.keys(gqlFields),
-            }, '*');
+
+            enqueueSnackBar(
+              `Queued ${naukriUrls.length} Naukri profile(s). Processing in throttled batches.`,
+              {
+                variant: SnackBarVariant.Info,
+                duration: 4000,
+              },
+            );
+          } catch (error) {
+            enqueueSnackBar(
+              error instanceof Error
+                ? error.message
+                : 'Failed to queue Naukri profiles. Is the Chrome extension installed?',
+              {
+                variant: SnackBarVariant.Error,
+                duration: 5000,
+              },
+            );
           }
           return;
         }
@@ -218,6 +218,7 @@ export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectM
     objectMetadataItem.nameSingular,
     gqlFields,
     enqueueSnackBar,
+    setNaukriQueueStatus,
   ]);
 
   const onClick = () => {

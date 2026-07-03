@@ -1,8 +1,7 @@
-import { enrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import axios from 'axios';
 import { useCallback, useState } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilValue } from 'recoil';
 
 export type OtherFieldKey = {
   name: string;
@@ -14,8 +13,7 @@ export const useFetchOtherFieldKeys = () => {
   const [isLoadingFields, setIsLoadingFields] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  const [tokenPair] = useRecoilState(tokenPairState);
-  const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
+  const tokenPair = useRecoilValue(tokenPairState);
 
   const fetchOtherFieldKeys = useCallback(async (jobId: string) => {
     if (!jobId || jobId === 'job-id' || jobId === 'undefined' || jobId === 'null') {
@@ -41,7 +39,7 @@ export const useFetchOtherFieldKeys = () => {
 
       console.log('Response from fetch otherField keys:', response.data);
 
-      const fieldKeys =
+      const fieldKeys: OtherFieldKey[] | undefined =
         response.data.otherFieldKeys ??
         response.data.candidateFields;
 
@@ -49,23 +47,6 @@ export const useFetchOtherFieldKeys = () => {
         console.log('Received otherField keys:', fieldKeys);
         setOtherFieldKeys(fieldKeys);
         setApiError(null);
-
-        setEnrichments((prev) => {
-          const updated = prev.map((enrichment) => ({
-            ...enrichment,
-            jobId,
-            otherFieldKeys: fieldKeys,
-          }));
-
-          const hasChanges = prev.some(
-            (enrichment, index) =>
-              enrichment.jobId !== updated[index].jobId ||
-              JSON.stringify((enrichment as { otherFieldKeys?: OtherFieldKey[] }).otherFieldKeys) !==
-                JSON.stringify(updated[index].otherFieldKeys),
-          );
-
-          return hasChanges ? updated : prev;
-        });
       } else if (response.data.status === 'Failed') {
         console.warn('API returned error:', response.data.message || response.data.error);
         setApiError(
@@ -81,7 +62,7 @@ export const useFetchOtherFieldKeys = () => {
     } finally {
       setIsLoadingFields(false);
     }
-  }, [tokenPair?.accessToken?.token, setEnrichments]);
+  }, [tokenPair?.accessToken?.token]);
 
   return {
     otherFieldKeys,

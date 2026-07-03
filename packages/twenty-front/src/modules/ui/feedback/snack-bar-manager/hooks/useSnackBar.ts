@@ -56,7 +56,10 @@ export const useSnackBar = () => {
 
   const updateSnackBarByDedupeKey = useRecoilCallback(
     ({ set }) =>
-      (dedupeKey: string, updates: Partial<Pick<SnackBarOptions, 'message' | 'progressMessage'>>) =>
+      (
+        dedupeKey: string,
+        updates: Partial<Omit<SnackBarOptions, 'id' | 'dedupeKey'>>,
+      ) =>
         set(snackBarInternalScopedState({ scopeId }), (prev) => {
           const idx = prev.queue.findIndex((s) => s.dedupeKey === dedupeKey);
           if (idx < 0) return prev;

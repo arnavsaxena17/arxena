@@ -4,6 +4,7 @@ import { getCandidateSearchFromFileUrl } from '@/candidate-search/constants/cand
 import { fetchSearchResultsCache, persistSearchMetadataToStorage, persistSearchResultsToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { afterChange, afterSelectionEnd, getPermanentId, isUUID, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
 import { CANDIDATE_CONVERSATION_STATUS_LABELS, isAiFilterField } from '@/candidate-table/TableColumns';
+import { NaukriQueueStatusEffect } from '@/candidate-table/components/NaukriQueueStatusEffect';
 import { SortingControls } from '@/candidate-table/components/SortingControls';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { dataTableApplySortsFunctionState } from '@/candidate-table/states/dataTableApplySortsFunctionState';
@@ -1411,6 +1412,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     
     return (
       <StyledTableWrapper>
+        <NaukriQueueStatusEffect />
         {selectedStatus && (
           <StyledFilterBadge>
             <span>Filtered by: {CANDIDATE_CONVERSATION_STATUS_LABELS[selectedStatus]}</span>
