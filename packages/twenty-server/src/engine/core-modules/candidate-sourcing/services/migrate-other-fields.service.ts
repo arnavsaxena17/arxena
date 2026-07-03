@@ -45,6 +45,7 @@ export type MigrateOtherFieldsOptions = {
 export type DeleteLegacyOtherFieldsOptions = {
   workspaceIds?: string[];
   dryRun?: boolean;
+  batchSize?: number;
 };
 
 @Injectable()
@@ -195,6 +196,7 @@ export class MigrateOtherFieldsService {
           schema,
           workspaceId,
           options.dryRun ?? false,
+          options.batchSize,
         );
 
         results.push({
@@ -278,7 +280,12 @@ export class MigrateOtherFieldsService {
     let legacyFieldsDeleted = 0;
 
     if (options.deleteLegacy && !options.dryRun) {
-      const deleted = await this.deleteLegacyRows(schema, workspaceId, false);
+      const deleted = await this.deleteLegacyRows(
+        schema,
+        workspaceId,
+        false,
+        options.batchSize,
+      );
       legacyFieldValuesDeleted = deleted.fieldValuesDeleted;
       legacyFieldsDeleted = deleted.fieldsDeleted;
     }
@@ -482,6 +489,7 @@ export class MigrateOtherFieldsService {
     schema: string,
     workspaceId: string,
     dryRun: boolean,
+    batchSize = 2000,
   ): Promise<{ fieldValuesDeleted: number; fieldsDeleted: number }> {
     const fieldValueCount = (await this.workspaceQueryService.executeRawQuery(
       `
@@ -521,35 +529,83 @@ export class MigrateOtherFieldsService {
       return { fieldValuesDeleted: 0, fieldsDeleted: 0 };
     }
 
-    const deletedFieldValues = (await this.workspaceQueryService.executeRawQuery(
-      `
-        WITH deleted AS (
-          DELETE FROM ${schema}."_candidateFieldValue"
-          WHERE "deletedAt" IS NULL
-          RETURNING id
-        )
-        SELECT COUNT(*)::text as count FROM deleted
-      `,
-      [],
+    const fieldValuesDeleted = await this.deleteLegacyTableInBatches(
+      schema,
       workspaceId,
-    )) as { count: string }[];
+      '_candidateFieldValue',
+      batchSize,
+    );
 
-    const deletedFields = (await this.workspaceQueryService.executeRawQuery(
-      `
-        WITH deleted AS (
-          DELETE FROM ${schema}."_candidateField"
-          WHERE "deletedAt" IS NULL
-          RETURNING id
-        )
-        SELECT COUNT(*)::text as count FROM deleted
-      `,
-      [],
+    const fieldsDeleted = await this.deleteLegacyTableInBatches(
+      schema,
       workspaceId,
-    )) as { count: string }[];
+      '_candidateField',
+      batchSize,
+    );
 
-    return {
-      fieldValuesDeleted: Number(deletedFieldValues?.[0]?.count ?? 0),
-      fieldsDeleted: Number(deletedFields?.[0]?.count ?? 0),
-    };
+    return { fieldValuesDeleted, fieldsDeleted };
+  }
+
+  private async deleteLegacyTableInBatches(
+    schema: string,
+    workspaceId: string,
+    tableName: '_candidateFieldValue' | '_candidateField',
+    batchSize: number,
+  ): Promise<number> {
+    let totalDeleted = 0;
+    const maxRetries = 3;
+
+    while (true) {
+      let batchDeleted = 0;
+      let attempt = 0;
+
+      while (attempt < maxRetries) {
+        try {
+          const deletedRows = (await this.workspaceQueryService.executeRawQuery(
+            `
+              WITH batch AS (
+                SELECT id
+                FROM ${schema}."${tableName}"
+                WHERE "deletedAt" IS NULL
+                LIMIT $1
+              )
+              DELETE FROM ${schema}."${tableName}" target
+              USING batch
+              WHERE target.id = batch.id
+              RETURNING target.id
+            `,
+            [batchSize],
+            workspaceId,
+          )) as { id: string }[];
+
+          batchDeleted = deletedRows?.length ?? 0;
+          break;
+        } catch (error) {
+          attempt++;
+          const message = error instanceof Error ? error.message : String(error);
+          const isTimeout = message.includes('timeout');
+
+          if (!isTimeout || attempt >= maxRetries) {
+            throw error;
+          }
+
+          this.logger.warn(
+            `Workspace ${workspaceId}: ${tableName} delete batch timed out (attempt ${attempt}/${maxRetries}), retrying...`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+        }
+      }
+
+      if (batchDeleted === 0) {
+        break;
+      }
+
+      totalDeleted += batchDeleted;
+      this.logger.log(
+        `Workspace ${workspaceId}: deleted ${batchDeleted} ${tableName} row(s), total=${totalDeleted}`,
+      );
+    }
+
+    return totalDeleted;
   }
 }
