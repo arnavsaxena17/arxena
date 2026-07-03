@@ -13,6 +13,7 @@ import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
 import { CandidateAvatarModule } from 'src/engine/core-modules/candidate-avatar/candidate-avatar.module';
+import { DeleteLegacyOtherFieldsCommand } from 'src/engine/core-modules/candidate-sourcing/commands/delete-legacy-other-fields.command';
 import { MigrateOtherFieldsCommand } from 'src/engine/core-modules/candidate-sourcing/commands/migrate-other-fields.command';
 import { AiFilteringProgressController } from 'src/engine/core-modules/candidate-sourcing/controllers/ai-filtering-progress.controller';
 import { CandidateSourcingController } from 'src/engine/core-modules/candidate-sourcing/controllers/candidate-sourcing.controller';
@@ -127,6 +128,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     OtherFieldsService,
     MigrateOtherFieldsService,
     MigrateOtherFieldsCommand,
+    DeleteLegacyOtherFieldsCommand,
     CandidateWorkspaceGraphQLService,
     WorkspaceQueryService,
     WorkspaceDataSourceService,

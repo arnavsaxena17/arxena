@@ -44,7 +44,7 @@ export class MigrateOtherFieldsCommand extends CommandRunner {
   }
 
   @Option({
-    flags: '--delete-legacy',
+    flags: '-l, --delete-legacy',
     description:
       'Delete legacy _candidateField and _candidateFieldValue rows after migration',
     required: false,
@@ -71,6 +71,7 @@ export class MigrateOtherFieldsCommand extends CommandRunner {
     this.logger.log(
       `Starting otherFields migration${options.dryRun ? ' (dry run)' : ''}${options.deleteLegacy ? ' with legacy delete' : ''}`,
     );
+    this.logger.log(`Options: ${JSON.stringify(options)}`);
 
     const results = await this.migrateOtherFieldsService.migrateAllWorkspaces({
       workspaceIds,

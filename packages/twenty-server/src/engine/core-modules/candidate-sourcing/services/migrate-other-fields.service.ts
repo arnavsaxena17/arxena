@@ -42,6 +42,11 @@ export type MigrateOtherFieldsOptions = {
   batchSize?: number;
 };
 
+export type DeleteLegacyOtherFieldsOptions = {
+  workspaceIds?: string[];
+  dryRun?: boolean;
+};
+
 @Injectable()
 export class MigrateOtherFieldsService {
   private readonly logger = new Logger(MigrateOtherFieldsService.name);
@@ -119,6 +124,112 @@ export class MigrateOtherFieldsService {
     return results;
   }
 
+  async deleteLegacyForAllWorkspaces(
+    options: DeleteLegacyOtherFieldsOptions = {},
+  ): Promise<MigrateOtherFieldsResult[]> {
+    const workspaceIds =
+      options.workspaceIds?.length && options.workspaceIds.length > 0
+        ? options.workspaceIds
+        : await this.workspaceQueryService.getWorkspaces();
+
+    const dataSources = await this.workspaceQueryService.dataSourceRepository.find(
+      {
+        where: { workspaceId: In(workspaceIds) },
+      },
+    );
+    const eligibleWorkspaceIds = new Set(
+      dataSources.map((dataSource) => dataSource.workspaceId),
+    );
+
+    const results: MigrateOtherFieldsResult[] = [];
+
+    for (const workspaceId of workspaceIds) {
+      if (!eligibleWorkspaceIds.has(workspaceId)) {
+        results.push({
+          workspaceId,
+          schema: '',
+          jobsUpdated: 0,
+          candidatesUpdated: 0,
+          legacyFieldValuesDeleted: 0,
+          legacyFieldsDeleted: 0,
+          skipped: true,
+          skipReason: 'No workspace datasource',
+        });
+        continue;
+      }
+
+      const schema = this.workspaceQueryService.getDataSourceSchema(workspaceId);
+
+      try {
+        const hasOtherFieldsColumn =
+          await this.workspaceQueryService.checkIfColumnExists(
+            schema,
+            '_candidate',
+            'otherFields',
+            { silent: true },
+          );
+        const hasChatQuestionsColumn =
+          await this.workspaceQueryService.checkIfColumnExists(
+            schema,
+            '_job',
+            'chatQuestions',
+            { silent: true },
+          );
+
+        if (!hasOtherFieldsColumn || !hasChatQuestionsColumn) {
+          results.push({
+            workspaceId,
+            schema,
+            jobsUpdated: 0,
+            candidatesUpdated: 0,
+            legacyFieldValuesDeleted: 0,
+            legacyFieldsDeleted: 0,
+            skipped: true,
+            skipReason:
+              'otherFields or chatQuestions column missing — run workspace:update-all-metadata-from-code first',
+          });
+          continue;
+        }
+
+        const deleted = await this.deleteLegacyRows(
+          schema,
+          workspaceId,
+          options.dryRun ?? false,
+        );
+
+        results.push({
+          workspaceId,
+          schema,
+          jobsUpdated: 0,
+          candidatesUpdated: 0,
+          legacyFieldValuesDeleted: deleted.fieldValuesDeleted,
+          legacyFieldsDeleted: deleted.fieldsDeleted,
+          skipped: false,
+        });
+      } catch (error) {
+        this.logger.error(
+          `Failed deleting legacy rows for workspace ${workspaceId}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        results.push({
+          workspaceId,
+          schema,
+          jobsUpdated: 0,
+          candidatesUpdated: 0,
+          legacyFieldValuesDeleted: 0,
+          legacyFieldsDeleted: 0,
+          skipped: true,
+          skipReason: error instanceof Error ? error.message : String(error),
+        });
+      } finally {
+        await this.workspaceDataSourceService.releaseWorkspaceDataSource(
+          workspaceId,
+        );
+      }
+    }
+
+    return results;
+  }
+
   async migrateWorkspace(
     schema: string,
     workspaceId: string,
@@ -167,7 +278,7 @@ export class MigrateOtherFieldsService {
     let legacyFieldsDeleted = 0;
 
     if (options.deleteLegacy && !options.dryRun) {
-      const deleted = await this.deleteLegacyRows(schema, workspaceId);
+      const deleted = await this.deleteLegacyRows(schema, workspaceId, false);
       legacyFieldValuesDeleted = deleted.fieldValuesDeleted;
       legacyFieldsDeleted = deleted.fieldsDeleted;
     }
@@ -335,6 +446,18 @@ export class MigrateOtherFieldsService {
           ? legacyOtherFields
           : mergeOtherFieldsForMigration(candidate.otherFields, legacyOtherFields);
 
+        const currentOtherFields: MigrateOtherFieldsRecord = isJsonColumnEmpty(
+          candidate.otherFields,
+        )
+          ? {}
+          : (candidate.otherFields as MigrateOtherFieldsRecord);
+
+        if (
+          JSON.stringify(mergedOtherFields) === JSON.stringify(currentOtherFields)
+        ) {
+          continue;
+        }
+
         if (dryRun) {
           this.logger.log(
             `[dry-run] Would migrate ${Object.keys(legacyOtherFields).length} field(s) to candidate ${candidate.id}`,
@@ -358,7 +481,46 @@ export class MigrateOtherFieldsService {
   private async deleteLegacyRows(
     schema: string,
     workspaceId: string,
+    dryRun: boolean,
   ): Promise<{ fieldValuesDeleted: number; fieldsDeleted: number }> {
+    const fieldValueCount = (await this.workspaceQueryService.executeRawQuery(
+      `
+        SELECT COUNT(*)::text as count
+        FROM ${schema}."_candidateFieldValue"
+        WHERE "deletedAt" IS NULL
+      `,
+      [],
+      workspaceId,
+    )) as { count: string }[];
+
+    const fieldCount = (await this.workspaceQueryService.executeRawQuery(
+      `
+        SELECT COUNT(*)::text as count
+        FROM ${schema}."_candidateField"
+        WHERE "deletedAt" IS NULL
+      `,
+      [],
+      workspaceId,
+    )) as { count: string }[];
+
+    const fieldValuesToDelete = Number(fieldValueCount?.[0]?.count ?? 0);
+    const fieldsToDelete = Number(fieldCount?.[0]?.count ?? 0);
+
+    this.logger.log(
+      `Workspace ${workspaceId}: legacy rows to delete — fieldValues=${fieldValuesToDelete}, fields=${fieldsToDelete}${dryRun ? ' (dry run)' : ''}`,
+    );
+
+    if (dryRun) {
+      return {
+        fieldValuesDeleted: fieldValuesToDelete,
+        fieldsDeleted: fieldsToDelete,
+      };
+    }
+
+    if (fieldValuesToDelete === 0 && fieldsToDelete === 0) {
+      return { fieldValuesDeleted: 0, fieldsDeleted: 0 };
+    }
+
     const deletedFieldValues = (await this.workspaceQueryService.executeRawQuery(
       `
         WITH deleted AS (
