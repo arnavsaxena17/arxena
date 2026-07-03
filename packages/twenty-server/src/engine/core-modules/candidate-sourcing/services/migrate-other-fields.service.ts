@@ -1,15 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  buildOtherFieldsFromLegacyRows,
-  isJsonColumnEmpty,
-  mergeChatQuestionsPreservingOrder,
-  mergeOtherFields,
-  OtherFieldsRecord,
-} from 'twenty-shared';
 import { In } from 'typeorm';
 
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
+
+import {
+  buildOtherFieldsFromLegacyRows,
+  isJsonColumnEmpty,
+  mergeChatQuestionsPreservingOrder,
+  mergeOtherFieldsForMigration,
+  type MigrateOtherFieldsRecord,
+} from '../utils/migrate-other-fields.utils';
 
 type LegacyFieldValueRow = {
   candidateId: string;
@@ -328,11 +329,11 @@ export class MigrateOtherFieldsService {
           continue;
         }
 
-        const mergedOtherFields: OtherFieldsRecord = isJsonColumnEmpty(
+        const mergedOtherFields: MigrateOtherFieldsRecord = isJsonColumnEmpty(
           candidate.otherFields,
         )
           ? legacyOtherFields
-          : mergeOtherFields(candidate.otherFields, legacyOtherFields);
+          : mergeOtherFieldsForMigration(candidate.otherFields, legacyOtherFields);
 
         if (dryRun) {
           this.logger.log(
