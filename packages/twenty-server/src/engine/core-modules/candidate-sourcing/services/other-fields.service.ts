@@ -1,20 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import {
-  candidateFieldValuesToOtherFields,
   CandidateWithCustomFields,
   FindOneJob,
   getResolvedOtherFields,
-  graphqlQueryToFindManyCandidateFields,
   graphqlToFetchAllCandidateDataWithFieldValues,
   graphQltoUpdateOneCandidate,
-  hasLegacyFieldValues,
   isOtherFieldsEmpty,
   mergeOtherFields,
-  normalizeOtherFields,
   OtherFieldsRecord,
   questionsRequireAnswerRemap,
   remapOtherFieldsForQuestionChanges,
-  UpdateOneJob,
+  UpdateOneJob
 } from 'twenty-shared';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -82,32 +78,26 @@ export class OtherFieldsService {
     candidate: CandidateNodeResponse,
     apiToken: string,
   ): Promise<OtherFieldsRecord> {
-    if (!candidate?.id) {
-      return normalizeOtherFields(candidate?.otherFields);
+    const resolved = this.resolveOtherFields(candidate);
+
+    if (!candidate?.id || !isOtherFieldsEmpty(candidate.otherFields)) {
+      return resolved;
     }
 
-    if (!isOtherFieldsEmpty(candidate.otherFields)) {
-      return normalizeOtherFields(candidate.otherFields);
-    }
-
-    if (!hasLegacyFieldValues(candidate)) {
+    if (isOtherFieldsEmpty(resolved)) {
       return {};
     }
-
-    const migrated = candidateFieldValuesToOtherFields(
-      candidate.candidateFieldValues?.edges,
-    );
 
     await this.staticGraphQLService.executeGraphQL(
       graphQltoUpdateOneCandidate,
       {
         idToUpdate: candidate.id,
-        input: { otherFields: migrated },
+        input: { otherFields: resolved },
       },
       apiToken,
     );
 
-    return migrated;
+    return resolved;
   }
 
   async lazyMigrateCandidates(
@@ -156,37 +146,10 @@ export class OtherFieldsService {
     const job = response?.data?.data?.job as
       | { chatQuestions?: string[] | null }
       | undefined;
-    const chatQuestions = Array.isArray(job?.chatQuestions)
+
+    return Array.isArray(job?.chatQuestions)
       ? job.chatQuestions.filter((question) => question?.trim())
       : [];
-
-    if (chatQuestions.length > 0) {
-      return chatQuestions;
-    }
-
-    const legacyResponse = await this.staticGraphQLService.executeGraphQL(
-      graphqlQueryToFindManyCandidateFields,
-      {
-        filter: { jobsId: { in: [jobId] } },
-        orderBy: [{ position: 'AscNullsFirst' }],
-        limit: 100,
-      },
-      apiToken,
-    );
-
-    const legacyQuestions =
-      legacyResponse?.data?.data?.candidateFields?.edges
-        ?.map((edge: { node?: { name?: string } }) => edge?.node?.name)
-        .filter((name: string | undefined): name is string => !!name?.trim()) ??
-      [];
-
-    if (legacyQuestions.length === 0) {
-      return [];
-    }
-
-    await this.updateJobChatQuestions(jobId, legacyQuestions, apiToken);
-
-    return legacyQuestions;
   }
 
   async updateJobChatQuestions(

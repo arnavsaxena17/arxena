@@ -78,8 +78,12 @@ export class WorkspaceBulkMetadataUpdateService {
         errors: [],
       };
 
+      let metadataResult:
+        | Awaited<ReturnType<MetadataUpdateService['updateMetadata']>>
+        | null = null;
+
       try {
-        const metadataResult = await this.metadataUpdateService.updateMetadata(
+        metadataResult = await this.metadataUpdateService.updateMetadata(
           token.token,
           origin ?? '',
         );
@@ -98,24 +102,33 @@ export class WorkspaceBulkMetadataUpdateService {
         workspaceResult.errors.push(`Metadata update error: ${message}`);
       }
 
-      try {
-        const createMetaDataStructure = new CreateMetaDataStructure(
-          this.workspaceQueryService,
-          this.staticGraphQLService,
-          this.environmentService,
-          this.webSocketService,
+      if (metadataResult?.requiresDatabaseIndices) {
+        try {
+          const createMetaDataStructure = new CreateMetaDataStructure(
+            this.workspaceQueryService,
+            this.staticGraphQLService,
+            this.environmentService,
+            this.webSocketService,
+          );
+          await createMetaDataStructure.createDatabaseIndices(token.token);
+          workspaceResult.indicesCreation =
+            'Database indices created successfully';
+          console.log(`Created database indices for workspace ${workspaceId}`);
+        } catch (error: unknown) {
+          const message =
+            error instanceof Error ? error.message : String(error);
+          console.error(
+            `Error creating database indices for workspace ${workspaceId}:`,
+            error,
+          );
+          workspaceResult.errors.push(`Indices creation error: ${message}`);
+        }
+      } else {
+        workspaceResult.indicesCreation =
+          'Skipped — no schema changes requiring indices';
+        console.log(
+          `Skipped database indices for workspace ${workspaceId} (RAW_JSON-only or no changes)`,
         );
-        await createMetaDataStructure.createDatabaseIndices(token.token);
-        workspaceResult.indicesCreation = 'Database indices created successfully';
-        console.log(`Created database indices for workspace ${workspaceId}`);
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : String(error);
-        console.error(
-          `Error creating database indices for workspace ${workspaceId}:`,
-          error,
-        );
-        workspaceResult.errors.push(`Indices creation error: ${message}`);
       }
 
       results.push(workspaceResult);

@@ -2,12 +2,10 @@ import {
   getResolvedOtherFields,
   graphqlQueryToFindManyPeople,
   graphqlToFetchAllCandidateDataWithFieldValues,
-  graphqlToFindManyCandidateFieldValues,
   mutationToUpdateOnePerson,
   People,
   PersonNode,
   type CandidateFieldValueNode,
-  type CandidateFieldValues,
 } from 'twenty-shared';
 import {
   ENRICH_CONTACT_FROM_DATA_INPUT_DESCRIPTOR,
@@ -199,28 +197,9 @@ export const personTools: McpTool[] = [
         candidateFields: { id: name, name },
       }));
 
-      const legacyData = await executeGraphQL(
-        config.baseUrl,
-        config.apiToken,
-        graphqlToFindManyCandidateFieldValues,
-        { filter: { candidateId: { eq: candidateId } }, limit: 50 },
-      );
-      const legacyResult = legacyData as { candidateFieldValues: CandidateFieldValues };
-      const legacyFieldValues = legacyResult?.candidateFieldValues?.edges?.map((e) => e.node) ?? [];
-
-      const mergedFieldValues = [
-        ...fieldValues,
-        ...legacyFieldValues.filter(
-          (legacyValue) =>
-            !fieldValues.some(
-              (fieldValue) => fieldValue.candidateFields?.name === legacyValue.candidateFields?.name,
-            ),
-        ),
-      ];
-
       return {
-        count: mergedFieldValues.length,
-        fieldValues: mergedFieldValues,
+        count: fieldValues.length,
+        fieldValues,
       };
     },
   },

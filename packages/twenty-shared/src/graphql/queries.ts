@@ -588,14 +588,6 @@ const graphqlToFindManyJobsWithCandidateValuesFull = `query FindManyJobs($filter
             }
         }
         name
-        candidateFields {
-            edges{
-                node{
-                    id
-                    name
-                }
-            }
-        }
         company{
             id
             name
@@ -610,18 +602,6 @@ const graphqlToFindManyJobsWithCandidateValuesFull = `query FindManyJobs($filter
               messagingChannel
               whatsappProvider
               otherFields
-              candidateFieldValues{
-              edges{
-                node{
-                    id
-                    name
-                    candidateFields{
-                        name
-                        id
-                    }
-                }
-              }
-            }
             }
           }
         }
@@ -708,14 +688,6 @@ const graphqlToFindManyJobsWithCandidateValuesOrgChart = `query FindManyJobs($fi
             }
         }
         name
-        candidateFields {
-            edges{
-                node{
-                    id
-                    name
-                }
-            }
-        }
         company{
             id
             name
@@ -730,18 +702,6 @@ const graphqlToFindManyJobsWithCandidateValuesOrgChart = `query FindManyJobs($fi
               messagingChannel
               whatsappProvider
               otherFields
-              candidateFieldValues{
-              edges{
-                node{
-                    id
-                    name
-                    candidateFields{
-                        name
-                        id
-                    }
-                }
-              }
-            }
             }
           }
         }
@@ -839,14 +799,6 @@ const graphqlToFindManyJobsWithCandidatesFull = `query FindManyJobs($filter: Job
             }
         }
         name
-        candidateFields {
-            edges{
-                node{
-                    id
-                    name
-                }
-            }
-        }
         company{
             id
             name
@@ -859,18 +811,6 @@ const graphqlToFindManyJobsWithCandidatesFull = `query FindManyJobs($filter: Job
               source
               campaign
               whatsappProvider
-              candidateFieldValues{
-              edges{
-                node{
-                    id
-                    name
-                    candidateFields{
-                        name
-                        id
-                    }
-                }
-              }
-            }
             }
           }
         }
@@ -950,14 +890,6 @@ const graphqlToFindManyJobsWithCandidatesOrgChart = `query FindManyJobs($filter:
         recruiterId
         createdAt
         name
-        candidateFields {
-            edges{
-                node{
-                    id
-                    name
-                }
-            }
-        }
         company{
             id
             name
@@ -970,18 +902,6 @@ const graphqlToFindManyJobsWithCandidatesOrgChart = `query FindManyJobs($filter:
               source
               campaign
               whatsappProvider
-              candidateFieldValues{
-              edges{
-                node{
-                    id
-                    name
-                    candidateFields{
-                        name
-                        id
-                    }
-                }
-              }
-            }
             }
           }
         }
@@ -1545,6 +1465,29 @@ export const queryObjectMetadataItems = `query ObjectMetadataItems($objectFilter
   }
 }`;
 
+/** Lightweight metadata query for bulk update diffing (object + field names and types). */
+export const queryObjectMetadataItemsForComparison = `query ObjectMetadataItems($objectFilter: ObjectFilter, $fieldFilter: FieldFilter) {
+  objects(paging: {first: 1000}, filter: $objectFilter) {
+    edges {
+      node {
+        id
+        dataSourceId
+        nameSingular
+        namePlural
+        fields(paging: {first: 1000}, filter: $fieldFilter) {
+          edges {
+            node {
+              id
+              name
+              type
+            }
+          }
+        }
+      }
+    }
+  }
+}`;
+
 export const graphQlTofindManyCandidateEnrichments = `query FindManyCandidateEnrichments($filter: CandidateEnrichmentFilterInput, $orderBy: [CandidateEnrichmentOrderByInput], $lastCursor: String, $limit: Int) {
           candidateEnrichments(
             filter: $filter
@@ -1818,19 +1761,6 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                         lastName
                       }
                     }
-                    candidateFieldValues{
-                      edges{
-                        node{
-                            id
-                            name
-                            candidateFields{
-                                name
-                                id
-                            }
-                        }
-                      }
-                    }
-
                     whatsappProvider
                     lastEngagementChatControl
                     candConversationStatus
@@ -2218,106 +2148,6 @@ query FindOneWorkspaceMember($objectRecordId: ID!) {
 }
 `;
 
-export const graphqlQueryToFindManyCandidateFields = `query FindManyCandidateFields($filter: CandidateFieldFilterInput, $orderBy: [CandidateFieldOrderByInput], $lastCursor: String, $limit: Int) {
-    candidateFields(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
-      edges {
-        node {
-          createdAt
-          position
-          id
-          jobs {
-            recruiterId
-            id
-            companyId
-            name
-            position
-            createdAt
-            interviewSchedule{
-              edges{
-                  node{
-                      id
-                      name
-                      createdAt
-                      slotsAvailable
-                      meetingType
-                  }
-                }
-              }
-            isActive
-            jobLocation
-            jobCode
-            updatedAt
-          }
-          name
-        }
-        cursor
-      }
-      pageInfo {
-        hasNextPage
-        startCursor
-        endCursor
-      }
-      totalCount
-    }
-  }`;
-
-export const graphqlToFindManyCandidateFieldValues = `query FindManyCandidateFieldValues($filter: CandidateFieldValueFilterInput, $orderBy: [CandidateFieldValueOrderByInput], $lastCursor: String, $limit: Int) {
-    candidateFieldValues(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
-      edges {
-        node {
-          __typename
-          position
-          createdAt
-          name
-          candidateFields {
-            __typename
-            createdAt
-            position
-            id
-            jobsId
-            name
-            updatedAt
-          }
-          candidate {
-            __typename
-            id
-            position
-            engagementStatus
-            messagingChannel
-            whatsappProvider
-            peopleId
-            jobCompanyName
-            jobTitle
-            jobsId
-            name
-            status
-            createdAt
-            updatedAt
-            source
-            campaign
-            whatsappProvider
-            startChat
-            remarks
-            candConversationStatus
-            startVideoInterviewChat
-            startMeetingSchedulingChat
-            stopChat
-          }
-          id
-        }
-        cursor
-        __typename
-      }
-      pageInfo {
-        hasNextPage
-        startCursor
-        endCursor
-        __typename
-      }
-      totalCount
-      __typename
-    }
-  }`;
 export const graphqlQueryToFindManyReminders = `query FindManyCandidateReminders($filter: CandidateReminderFilterInput, $orderBy: [CandidateReminderOrderByInput], $lastCursor: String, $limit: Int) {
   candidateReminders(
     filter: $filter
@@ -2832,16 +2662,6 @@ export const graphqlToFetchAllCandidateData = `
             primaryLinkLabel
           }
           otherFields
-          candidateFieldValues {
-            edges {
-              node {
-                name
-                candidateFields {
-                  name
-                }
-              }
-            }
-          }
           people {
             id
             name {
@@ -2975,18 +2795,6 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
             primaryLinkLabel
           }
           otherFields
-          candidateFieldValues {
-            edges {
-              node {
-                  id
-                  name
-                  candidateFields {
-                      name
-                      id
-                  }
-              }
-            }
-          }
           whatsappMessages {
             edges {
               node {

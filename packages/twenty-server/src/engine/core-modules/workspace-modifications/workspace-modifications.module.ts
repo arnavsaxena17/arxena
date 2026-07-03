@@ -10,6 +10,8 @@ import { MessageQueueModule } from 'src/engine/core-modules/message-queue/messag
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module';
+import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
+import { ObjectMetadataEntity } from 'src/engine/metadata-modules/object-metadata/object-metadata.entity';
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { WebSocketModule } from 'src/modules/websocket/websocket.module';
@@ -54,7 +56,10 @@ import { WorkspaceQueryService } from './workspace-modifications.service';
     WorkspaceResolverBuilderModule,
     GraphQLExecutionModule,
     TypeOrmModule.forFeature([Workspace], 'core'),
-    TypeOrmModule.forFeature([DataSourceEntity], 'metadata'),
+    TypeOrmModule.forFeature(
+      [DataSourceEntity, ObjectMetadataEntity, FieldMetadataEntity],
+      'metadata',
+    ),
     JwtModule,
     WorkspaceDataSourceModule,
     EmailModule,

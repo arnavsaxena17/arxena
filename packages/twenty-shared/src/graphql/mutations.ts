@@ -85,66 +85,6 @@ export const graphqlQueryToRemoveMessages = `mutation DeleteManyWhatsappMessages
     __typename
   }
 }`;
-export const updateCandidateFieldValueMutation = `
-mutation UpdateCandidateFieldValue($id: ID!, $data: CandidateFieldValueUpdateInput!) {
-  updateCandidateFieldValue(id: $id, data: $data) {
-    id
-    name
-    candidateFieldsId
-    candidateId
-  }
-}
-`;
-
-export const updateOneCandidateFieldValue = `
-mutation UpdateOneCandidateFieldValue($idToUpdate: ID!, $input: CandidateFieldValueUpdateInput!) {
-  updateCandidateFieldValue(id: $idToUpdate, data: $input) {
-    id
-    candidateFieldsId
-    candidateId
-    createdAt
-    deletedAt
-    updatedAt
-  }
-}`
-
-
-export const graphqlMutationToDeleteManyCandidateFieldValues = `
-mutation DeleteManyCandidateFieldValues($filter: CandidateFieldValueFilterInput!) {
-  deleteCandidateFieldValues(filter: $filter) {
-    id
-    __typename
-  }
-}
-`;
-
-export const graphqlMutationToDeleteManyCandidateFields = `
-mutation DeleteManyCandidateFields($filter: CandidateFieldFilterInput!) {
-  deleteCandidateFields(filter: $filter) {
-    id
-    __typename
-  }
-}
-`;
-
-export const CreateManyCandidateFieldValues = `mutation CreateCandidateFieldValues($data: [CandidateFieldValueCreateInput!]!) {
-  createCandidateFieldValues(data: $data) {
-    __typename
-    id
-  }
-}`;
-export const graphqlQueryToCreateOneCandidateFieldValue = `mutation CreateOneCandidateFieldValue($input: CandidateFieldValueCreateInput!) {
-  createCandidateFieldValue(data: $input) {
-    position
-    candidateId
-    createdAt
-    name
-    updatedAt
-    candidateFieldsId
-    id
-  }
-}`;
-
 export const graphqlQueryToCreateOneClientInterview = `mutation CreateOneClientInterview($input: ClientInterviewCreateInput!) {
   createClientInterview(data: $input) {
     __typename
@@ -507,15 +447,6 @@ export const UpdateOneJob = `mutation UpdateOneJob($idToUpdate: ID!, $input: Job
 
  }}
 `;
-
-export const createOneCandidateField = `
-mutation CreateOneCandidateField($input: CandidateFieldCreateInput!) {
-  createCandidateField(data: $input) {
-    __typename
-    id
-  }
-}`;
-
 
 export const CreateManyPeople = `
 mutation CreatePeople($data: [PersonCreateInput!]!) {

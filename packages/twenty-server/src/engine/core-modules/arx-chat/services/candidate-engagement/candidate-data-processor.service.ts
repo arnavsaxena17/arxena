@@ -423,32 +423,6 @@ export class CandidateDataProcessorService {
             answer: fieldValue,
           });
         }
-
-        const answers = candidate.node.candidateFieldValues?.edges || [];
-
-        for (const answer of answers) {
-          const answerNode = answer.node;
-          if (
-            answerNode &&
-            answerNode.candidateFields &&
-            answerNode.name &&
-            typeof answerNode.name === 'string' &&
-            !answerNode.name.startsWith('[') &&
-            !answerNode.name.startsWith('{')
-          ) {
-            const question = answerNode.candidateFields.name || '';
-            const questionKey = questionTextToKey(question);
-
-            if (questionKey in resolvedOtherFields) {
-              continue;
-            }
-
-            qaArray.push({
-              question,
-              answer: answerNode.name || '',
-            });
-          }
-        }
       }
 
       return qaArray;

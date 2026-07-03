@@ -17,7 +17,6 @@ import axios from 'axios';
 import {
   CandidateEdge,
   CandidateEnrichmentEdge,
-  CandidateWithCustomFields,
   CreateOneVideoInterviewTemplate,
   findWorkspaceMemberProfiles,
   getGraphqlToFindManyJobs,
@@ -2876,11 +2875,8 @@ export class CandidateSourcingController {
           c."startVideoInterviewChat", c."startMeetingSchedulingChat", c."stopChat", c."uniqueStringKey",
           c."startChat", c."chatCount", c."startChatCompleted", c."startMeetingSchedulingChatCompleted", c."startVideoInterviewChatCompleted",
           c."otherFields",
-          COALESCE(JSON_AGG(CASE WHEN cfv.id IS NOT NULL THEN JSON_BUILD_OBJECT('id', cfv.id, 'name', cfv.name, 'candidateFields', JSON_BUILD_OBJECT('name', cf.name, 'id', cf.id)) ELSE NULL END) FILTER (WHERE cfv.id IS NOT NULL), '[]'::json) as candidate_field_values,
           COALESCE(JSON_AGG(CASE WHEN wm.id IS NOT NULL THEN JSON_BUILD_OBJECT('updatedAt', wm."updatedAt", 'messageObj', wm."messageObj", 'createdAt', wm."createdAt", 'whatsappDeliveryStatus', wm."whatsappDeliveryStatus", 'id', wm.id, 'name', wm.name, 'recruiterId', wm."recruiterId", 'message', wm.message, 'candidateId', wm."candidateId", 'jobsId', wm."jobsId", 'position', wm.position, 'phoneTo', wm."phoneTo", 'phoneFrom', wm."phoneFrom") ELSE NULL END) FILTER (WHERE wm.id IS NOT NULL), '[]'::json) as whatsappMessages
         FROM ${dataSourceSchema}."_candidate" c
-        LEFT JOIN ${dataSourceSchema}."_candidateFieldValue" cfv ON c.id = cfv."candidateId"
-        LEFT JOIN ${dataSourceSchema}."_candidateField" cf ON cfv."candidateFieldsId" = cf.id
         LEFT JOIN ${dataSourceSchema}."_whatsappMessage" wm ON c.id = wm."candidateId"
         WHERE c."deletedAt" IS NULL AND c."stopChat" = false AND c."startChat" = true AND c."startVideoInterviewChatCompleted" IS NULL AND c."jobsId" = ANY($1) ${body.lastCursor ? 'AND c."updatedAt" < $3' : ''}
         GROUP BY c.id
@@ -2939,7 +2935,6 @@ export class CandidateSourcingController {
           resdexNaukriUrl: row.resdex_naukri_url || { primaryLinkUrl: '', primaryLinkLabel: '' },
           linkedinUrl: row.linkedin_url || { primaryLinkUrl: '', primaryLinkLabel: '' },
           otherFields: parseRowOtherFields(row),
-          candidateFieldValues: { edges: (row.candidate_field_values || []).map((cfv: any) => ({ node: cfv })) },
           whatsappMessages: { edges: (row.whatsappMessages || row.whatsapp_messages || []).map((wm: any) => ({ node: wm })) },
           startChat: row.startChat,
           chatCount: row.chatCount,
@@ -3329,11 +3324,7 @@ export class CandidateSourcingController {
       }
       hasNextPage = candidates.pageInfo?.hasNextPage || false;
       const pageCandidates = candidates.edges.map((edge) => edge.node);
-      const migratedCandidates = await this.otherFieldsService.lazyMigrateCandidates(
-        pageCandidates as CandidateWithCustomFields[],
-        apiToken,
-      );
-      allCandidates.push(...migratedCandidates);
+      allCandidates.push(...pageCandidates);
       if (!hasNextPage) break;
       lastCursor = candidates.pageInfo?.endCursor;
     }

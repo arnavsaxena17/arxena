@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { axiosRequestForMetadata } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
-import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
+import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
+import { ObjectMetadataEntity } from 'src/engine/metadata-modules/object-metadata/object-metadata.entity';
 import { WorkspaceQueryService } from '../../workspace-modifications.service';
 import { getFieldsData } from '../data/fieldsData';
 import { getObjectCreationArr } from '../data/objectsData';
@@ -9,227 +12,177 @@ import { createFields } from './field-service';
 import { createObjectMetadataItems } from './object-service';
 import { createRelations } from './relation-service';
 
+type MetadataObjectNode = {
+  id: string;
+  dataSourceId: string;
+  nameSingular: string;
+  namePlural: string;
+  fields?: {
+    edges: Array<{
+      node: {
+        id: string;
+        type: string;
+        name: string;
+      };
+    }>;
+  };
+};
+
+type MetadataComparisonSnapshot = {
+  data: {
+    objects: {
+      edges: Array<{
+        node: MetadataObjectNode;
+      }>;
+    };
+  };
+};
+
+export type MetadataUpdateResult = {
+  message: string;
+  updates: {
+    objects: number;
+    fields: number;
+    relations: number;
+  };
+  requiresDatabaseIndices: boolean;
+};
+
 @Injectable()
 export class MetadataUpdateService {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly staticGraphQLService: StaticGraphQLService,
+    @InjectRepository(ObjectMetadataEntity, 'metadata')
+    private readonly objectMetadataRepository: Repository<ObjectMetadataEntity>,
+    @InjectRepository(FieldMetadataEntity, 'metadata')
+    private readonly fieldMetadataRepository: Repository<FieldMetadataEntity>,
   ) {}
-  async fetchCurrentMetadata(token: string) {
-    try {
-      const data = JSON.stringify({
-        query: `query ObjectMetadataItems($objectFilter: ObjectFilter, $fieldFilter: FieldFilter) {
-          objects(paging: {first: 1000}, filter: $objectFilter) {
-            edges {
-              node {
-                id
-                dataSourceId
-                nameSingular
-                namePlural
-                labelSingular
-                labelPlural
-                description
-                icon
-                isCustom
-                isRemote
-                isActive
-                isSystem
-                createdAt
-                updatedAt
-                labelIdentifierFieldMetadataId
-                imageIdentifierFieldMetadataId
-                fields(paging: {first: 1000}, filter: $fieldFilter) {
-                  edges {
-                    node {
-                      id
-                      type
-                      name
-                      label
-                      description
-                      icon
-                      isCustom
-                      isActive
-                      isSystem
-                      isNullable
-                      createdAt
-                      updatedAt
-                      defaultValue
-                      options
-                      fromRelationMetadata {
-                        id
-                        relationType
-                        toObjectMetadata {
-                          id
-                          dataSourceId
-                          nameSingular
-                          namePlural
-                          isSystem
-                          isRemote
-                        }
-                        toFieldMetadataId
-                      }
-                      toRelationMetadata {
-                        id
-                        relationType
-                        fromObjectMetadata {
-                          id
-                          dataSourceId
-                          nameSingular
-                          namePlural
-                          isSystem
-                          isRemote
-                        }
-                        fromFieldMetadataId
-                      }
-                      relationDefinition {
-                        relationId
-                        direction
-                        sourceObjectMetadata {
-                          id
-                          nameSingular
-                          namePlural
-                        }
-                        sourceFieldMetadata {
-                          id
-                          name
-                        }
-                        targetObjectMetadata {
-                          id
-                          nameSingular
-                          namePlural
-                        }
-                        targetFieldMetadata {
-                          id
-                          name
-                        }
-                      }
-                    }
-                  }
-                  pageInfo {
-                    hasNextPage
-                    hasPreviousPage
-                    startCursor
-                    endCursor
-                  }
-                }
-              }
-            }
-            pageInfo {
-              hasNextPage
-              hasPreviousPage
-              startCursor
-              endCursor
-            }
-          }
-        }`,
-        variables: {},
-      });
 
-      const response = await axiosRequestForMetadata(data, token);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching metadata:', error);
-      throw error;
+  private toComparisonSnapshot(
+    objects: ObjectMetadataEntity[],
+    fieldsByObjectId: Map<string, FieldMetadataEntity[]>,
+  ): MetadataComparisonSnapshot {
+    return {
+      data: {
+        objects: {
+          edges: objects.map((object) => ({
+            node: {
+              id: object.id,
+              dataSourceId: object.dataSourceId,
+              nameSingular: object.nameSingular,
+              namePlural: object.namePlural,
+              fields: {
+                edges: (fieldsByObjectId.get(object.id) ?? []).map((field) => ({
+                  node: {
+                    id: field.id,
+                    type: field.type,
+                    name: field.name,
+                  },
+                })),
+              },
+            },
+          })),
+        },
+      },
+    };
+  }
+
+  /**
+   * Loads object + field metadata in one DB round-trip (no HTTP / N+1 GraphQL).
+   */
+  async loadDetailedMetadata(workspaceId: string): Promise<{
+    detailedMetadata: MetadataComparisonSnapshot;
+    objectsNameIdMap: Record<string, string>;
+  }> {
+    const objects = await this.objectMetadataRepository.find({
+      where: { workspaceId },
+      select: ['id', 'dataSourceId', 'nameSingular', 'namePlural'],
+    });
+
+    const objectIds = objects.map((object) => object.id);
+    const fieldsByObjectId = new Map<string, FieldMetadataEntity[]>();
+
+    if (objectIds.length > 0) {
+      const fields = await this.fieldMetadataRepository
+        .createQueryBuilder('field')
+        .select(['field.id', 'field.name', 'field.type', 'field.objectMetadataId'])
+        .where('field.objectMetadataId IN (:...objectIds)', { objectIds })
+        .andWhere('field.workspaceId = :workspaceId', { workspaceId })
+        .getMany();
+
+      for (const field of fields) {
+        const existing = fieldsByObjectId.get(field.objectMetadataId) ?? [];
+        existing.push(field);
+        fieldsByObjectId.set(field.objectMetadataId, existing);
+      }
     }
+
+    const objectsNameIdMap: Record<string, string> = {};
+    for (const object of objects) {
+      objectsNameIdMap[object.nameSingular] = object.id;
+    }
+
+    return {
+      detailedMetadata: this.toComparisonSnapshot(objects, fieldsByObjectId),
+      objectsNameIdMap,
+    };
   }
 
   compareMetadata(
-    currentMetadata: any,
+    currentMetadata: MetadataComparisonSnapshot,
     objectsNameIdMap: Record<string, string>,
     isOrgChartEnabled?: boolean,
   ) {
     const objectIds = currentMetadata.data.objects.edges.map(
-      (edge: any) => edge.node.id,
-    );
-    console.log('objectIds', objectIds);
-    const existingObjectsById = new Map(
-      currentMetadata.data.objects.edges.map((edge: any) => [
-        edge.node.id,
-        edge.node,
-      ]),
-    );
-    console.log(
-      'existingObjectsById',
-      Array.from(existingObjectsById.values()).map(
-        (edge: any) => edge.nameSingular,
-      ),
+      (edge) => edge.node.id,
     );
     const existingObjectNames = new Set(
-      currentMetadata.data.objects.edges.map((edge: any) => edge.node.nameSingular),
+      currentMetadata.data.objects.edges.map((edge) => edge.node.nameSingular),
     );
     const objectCreationArr = getObjectCreationArr(isOrgChartEnabled);
     const newObjects = objectCreationArr.filter(
       (obj) => !existingObjectNames.has(obj.object.nameSingular),
     );
-    console.log('existingObjectNames', existingObjectNames);
-    console.log('newObjects', newObjects);
+
     const fieldsData = getFieldsData(objectsNameIdMap, isOrgChartEnabled);
-    console.log('Processing fields:', fieldsData.map(field => ({
-      name: field?.field?.name,
-      objectMetadataId: field?.field?.objectMetadataId,
-      type: field?.field?.type
-    })));
-    const existingFields = new Map();
-    currentMetadata.data.objects.edges.forEach((objEdge: any) => {
+    const existingFields = new Map<string, { name: string }>();
+    currentMetadata.data.objects.edges.forEach((objEdge) => {
       const objName = objEdge.node.nameSingular;
       if (objEdge.node.fields?.edges) {
-        objEdge.node.fields.edges.forEach((fieldEdge: any) => {
+        objEdge.node.fields.edges.forEach((fieldEdge) => {
           const key = `${objName}:${fieldEdge.node.name}`;
           existingFields.set(key, fieldEdge.node);
         });
       }
     });
-    console.log('Checking candidateEnrichment fields:');
-    fieldsData
-      .filter(field => field?.field?.objectMetadataId === objectsNameIdMap.candidateEnrichment)
-      .forEach(field => {
-        if (field?.field?.name) {
-          const key = `candidateEnrichment:${field.field.name}`;
-          console.log(`Field ${field.field.name} exists: ${existingFields.has(key)}`);
-        }
-    });
 
-    console.log('existingFields', Array.from(existingFields.values()).map((edge: any) => edge.name));
-    console.log('fieldsData', fieldsData.map((field: any) => field.field.name));
     const newFields = fieldsData.filter((field) => {
       if (!field?.field?.objectMetadataId || !field?.field?.name) {
-        console.log('Skipping field due to missing objectMetadataId or name:', field?.field);
         return false;
       }
 
-      const fieldData = field.field; // Capture the non-null field data
-      
-      // Find the object name by matching the objectMetadataId against the values in objectsNameIdMap
+      const fieldData = field.field;
       const objectName = Object.entries(objectsNameIdMap).find(
-        ([_, id]) => id === fieldData.objectMetadataId
+        ([, id]) => id === fieldData.objectMetadataId,
       )?.[0];
 
       if (!objectName) {
-        console.log('Skipping field due to missing object name for ID:', fieldData.objectMetadataId);
         return false;
       }
 
       const key = `${objectName}:${fieldData.name}`;
-      console.log(`Checking field ${key}, exists: ${existingFields.has(key)}`);
       return !existingFields.has(key);
     });
 
-    console.log('newFields', newFields.map((field: any) => ({
-      name: field.field.name,
-      objectId: field.field.objectMetadataId,
-      key: `${currentMetadata.data.objects.edges.find(
-        (edge: any) => edge.node.id === objectsNameIdMap[field.field.objectMetadataId]
-      )?.node.nameSingular}:${field.field.name}`
-    })));
     const relationsData = getRelationsData(
       objectsNameIdMap,
       isOrgChartEnabled,
     );
-    const existingRelations = new Set();
-    currentMetadata.data.objects.edges.forEach((objEdge: any) => {
+    const existingRelations = new Set<string>();
+    currentMetadata.data.objects.edges.forEach((objEdge) => {
       const objName = objEdge.node.nameSingular;
       if (objEdge.node.fields?.edges) {
-        objEdge.node.fields.edges.forEach((fieldEdge: any) => {
+        objEdge.node.fields.edges.forEach((fieldEdge) => {
           if (fieldEdge.node.type === 'RELATION') {
             const key = `${objName}:${fieldEdge.node.name}`;
             existingRelations.add(key);
@@ -237,225 +190,37 @@ export class MetadataUpdateService {
         });
       }
     });
-    console.log('existingRelations', existingRelations);
-    // Find new relations to create
+
     const newRelations = relationsData.filter((relation) => {
       const fromObjId = relation.relationMetadata.fromObjectMetadataId;
       const fromObjName = currentMetadata.data.objects.edges.find(
-        (edge: any) => edge.node.id === fromObjId
+        (edge) => edge.node.id === fromObjId,
       )?.node.nameSingular;
-      
+
       if (!fromObjName) return false;
-      
+
       const key = `${fromObjName}:${relation.relationMetadata.fromName}`;
       return !existingRelations.has(key);
     });
-    console.log('newRelations', newRelations);
+
     return {
       newObjects,
       newFields,
       newRelations,
-      objectIds, // Return object IDs for further processing if needed
+      objectIds,
     };
   }
 
-  /**
-   * Loads object list + per-object field graphs. Call again after creating new objects so
-   * `objectsNameIdMap` includes freshly created metadata ids (e.g. orgChart) before fields/relations.
-   */
-  async loadDetailedMetadata(token: string): Promise<{
-    detailedMetadata: {
-      data: {
-        objects: {
-          edges: Array<{
-            node: {
-              id: string;
-              dataSourceId: string;
-              nameSingular: string;
-              namePlural: string;
-              fields?: {
-                edges: Array<{
-                  node: {
-                    id: string;
-                    type: string;
-                    name: string;
-                    [key: string]: unknown;
-                  };
-                }>;
-              };
-              [key: string]: unknown;
-            };
-          }>;
-        };
-      };
-    };
-    objectsNameIdMap: Record<string, string>;
-  }> {
-    const currentMetadata = await this.fetchCurrentMetadata(token);
-    const objectsNameIdMap: Record<string, string> = {};
-    const objectIds: string[] = [];
-    currentMetadata.data.objects.edges.forEach(
-      (edge: { node: { id: string; nameSingular: string } }) => {
-        objectsNameIdMap[edge.node.nameSingular] = edge.node.id;
-        objectIds.push(edge.node.id);
-      },
-    );
-
-    const detailedMetadata = {
-      data: {
-        objects: {
-          edges: [] as Array<{
-            node: {
-              id: string;
-              dataSourceId: string;
-              nameSingular: string;
-              namePlural: string;
-              fields?: {
-                edges: Array<{
-                  node: {
-                    id: string;
-                    type: string;
-                    name: string;
-                    [key: string]: unknown;
-                  };
-                }>;
-              };
-              [key: string]: unknown;
-            };
-          }>,
-        },
-      },
-    };
-
-    for (const objectId of objectIds) {
-      const objectMetadata = await this.fetchObjectMetadata(token, objectId);
-      if (objectMetadata.data.objects.edges.length > 0) {
-        detailedMetadata.data.objects.edges.push(
-          ...(objectMetadata.data.objects.edges as typeof detailedMetadata.data.objects.edges),
-        );
-      }
+  private requiresDatabaseIndices(
+    newObjects: ReturnType<MetadataUpdateService['compareMetadata']>['newObjects'],
+    newFields: ReturnType<MetadataUpdateService['compareMetadata']>['newFields'],
+    newRelations: ReturnType<MetadataUpdateService['compareMetadata']>['newRelations'],
+  ): boolean {
+    if (newObjects.length > 0 || newRelations.length > 0) {
+      return true;
     }
 
-    return { detailedMetadata, objectsNameIdMap };
-  }
-
-  async fetchObjectMetadata(token: string, objectId: string) {
-    try {
-      const data = JSON.stringify({
-        query: `query ObjectMetadataItems($objectFilter: ObjectFilter, $fieldFilter: FieldFilter) {
-          objects(paging: {first: 1000}, filter: $objectFilter) {
-            edges {
-              node {
-                id
-                dataSourceId
-                nameSingular
-                namePlural
-                labelSingular
-                labelPlural
-                description
-                icon
-                isCustom
-                isRemote
-                isActive
-                isSystem
-                createdAt
-                updatedAt
-                labelIdentifierFieldMetadataId
-                imageIdentifierFieldMetadataId
-                fields(paging: {first: 1000}, filter: $fieldFilter) {
-                  edges {
-                    node {
-                      id
-                      type
-                      name
-                      label
-                      description
-                      icon
-                      isCustom
-                      isActive
-                      isSystem
-                      isNullable
-                      createdAt
-                      updatedAt
-                      defaultValue
-                      options
-                      fromRelationMetadata {
-                        id
-                        relationType
-                        toObjectMetadata {
-                          id
-                          dataSourceId
-                          nameSingular
-                          namePlural
-                          isSystem
-                          isRemote
-                        }
-                        toFieldMetadataId
-                      }
-                      toRelationMetadata {
-                        id
-                        relationType
-                        fromObjectMetadata {
-                          id
-                          dataSourceId
-                          nameSingular
-                          namePlural
-                          isSystem
-                          isRemote
-                        }
-                        fromFieldMetadataId
-                      }
-                      relationDefinition {
-                        relationId
-                        direction
-                        sourceObjectMetadata {
-                          id
-                          nameSingular
-                          namePlural
-                        }
-                        sourceFieldMetadata {
-                          id
-                          name
-                        }
-                        targetObjectMetadata {
-                          id
-                          nameSingular
-                          namePlural
-                        }
-                        targetFieldMetadata {
-                          id
-                          name
-                        }
-                      }
-                    }
-                  }
-                  pageInfo {
-                    hasNextPage
-                    hasPreviousPage
-                    startCursor
-                    endCursor
-                  }
-                }
-              }
-            }
-          }
-        }`,
-        variables: {
-          objectFilter: {
-            id: {
-              eq: objectId
-            }
-          },
-          fieldFilter: {}
-        },
-      });
-
-      const response = await axiosRequestForMetadata(data, token);
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching metadata for object ${objectId}:`, error);
-      throw error;
-    }
+    return newFields.some((field) => field?.field?.type !== 'RAW_JSON');
   }
 
   async detectNewApiKeyFields(newFields: any[], workspaceId: string): Promise<{
@@ -477,28 +242,21 @@ export class MetadataUpdateService {
     chrome_extension_id?: string;
   }> {
     try {
-      // Get existing API keys from the workspace
       const existingKeys =
         await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
-      console.log('existingWorkspaceKeys from workspace:', existingKeys);
-      
-      // Get the field names that already exist in the workspace
-      const existingFieldNames = Object.keys(existingKeys).map(name => name.toLowerCase());
-      console.log('existingFieldNames from workspace:', existingFieldNames);
-      
-      // Get new field names from the new fields being added
-      const newFieldNames = newFields
-        .map(field => field?.field?.name?.toLowerCase())
-        .filter(fieldName => fieldName);
-      console.log('newFieldNames from metadata:', newFieldNames);
-      
-      // Find which new fields are not present in the existing API key fields
-      const trulyNewApiKeyFields = newFieldNames.filter(fieldName => 
-        !existingFieldNames.includes(fieldName)
+
+      const existingFieldNames = Object.keys(existingKeys).map((name) =>
+        name.toLowerCase(),
       );
-      console.log('trulyNewApiKeyFields:', trulyNewApiKeyFields);
-      
-      // Only return API keys if there are truly new fields that aren't already in the workspace
+
+      const newFieldNames = newFields
+        .map((field) => field?.field?.name?.toLowerCase())
+        .filter((fieldName): fieldName is string => Boolean(fieldName));
+
+      const trulyNewApiKeyFields = newFieldNames.filter(
+        (fieldName) => !existingFieldNames.includes(fieldName),
+      );
+
       if (trulyNewApiKeyFields.length > 0) {
         const apiKeyFields: {
           openaikey?: string;
@@ -519,7 +277,6 @@ export class MetadataUpdateService {
           chrome_extension_id?: string;
         } = {};
 
-        // For each truly new API key field, set a default value only if it doesn't already exist
         for (const fieldName of trulyNewApiKeyFields) {
           switch (fieldName) {
             case 'openaikey':
@@ -579,18 +336,14 @@ export class MetadataUpdateService {
                 apiKeyFields.is_chrome_extension_installed = 'false';
               }
               break;
-            // Other keys (twilio_account_sid, etc.) can be added here with their own defaults if needed,
-            // but we intentionally skip keys that already have a value to avoid overwriting.
             default:
               break;
           }
         }
 
-        console.log('Returning API keys for new fields:', apiKeyFields);
         return apiKeyFields;
       }
-      
-      console.log('No new API key fields detected, returning empty object');
+
       return {};
     } catch (error) {
       console.error('Error detecting new API key fields:', error);
@@ -598,7 +351,10 @@ export class MetadataUpdateService {
     }
   }
 
-  async updateMetadata(token: string, origin: string) {
+  async updateMetadata(
+    token: string,
+    origin: string,
+  ): Promise<MetadataUpdateResult> {
     try {
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(token);
@@ -610,41 +366,23 @@ export class MetadataUpdateService {
           'true') === 'true';
 
       let { detailedMetadata, objectsNameIdMap } =
-        await this.loadDetailedMetadata(token);
-      console.log('objectsNameIdMap:', objectsNameIdMap);
+        await this.loadDetailedMetadata(workspaceId);
 
       let { newObjects, newFields, newRelations } = this.compareMetadata(
         detailedMetadata,
         objectsNameIdMap,
         isOrgChartEnabled,
       );
+
       console.log(
-        'newObjects',
-        newObjects.map((object: { object: { nameSingular: string } }) =>
-          object.object.nameSingular,
-        ),
-      );
-      console.log(
-        'newFields',
-        newFields.map((field: { field: { name: string } }) => field.field.name),
-      );
-      console.log(
-        'newRelations',
-        newRelations.map(
-          (relation: { relationMetadata: { fromName: string } }) =>
-            relation.relationMetadata.fromName,
-        ),
+        `Metadata diff for workspace ${workspaceId}: objects=${newObjects.length}, fields=${newFields.length}, relations=${newRelations.length}`,
       );
 
       if (newObjects.length > 0) {
         await createObjectMetadataItems(token, newObjects, origin);
-        const reloaded = await this.loadDetailedMetadata(token);
+        const reloaded = await this.loadDetailedMetadata(workspaceId);
         detailedMetadata = reloaded.detailedMetadata;
         objectsNameIdMap = reloaded.objectsNameIdMap;
-        console.log(
-          'objectsNameIdMap after new objects:',
-          objectsNameIdMap,
-        );
         const afterCreate = this.compareMetadata(
           detailedMetadata,
           objectsNameIdMap,
@@ -652,51 +390,30 @@ export class MetadataUpdateService {
         );
         newFields = afterCreate.newFields;
         newRelations = afterCreate.newRelations;
-        console.log(
-          'newFields after object create',
-          newFields.map((field: { field: { name: string } }) => field.field.name),
-        );
-        console.log(
-          'newRelations after object create',
-          newRelations.map(
-            (relation: { relationMetadata: { fromName: string } }) =>
-              relation.relationMetadata.fromName,
-          ),
-        );
       }
 
-      // Create new fields
-      // Create new fields
-      // Create new fields
-      // Create new fields
-      // Create new fields
-      // Create new fields
-      // Create new fields
-      // Create new fields
-      // Create new fields
-      // Create new fields
       if (newFields.length > 0) {
         await createFields(newFields, token, origin, 3);
       }
 
-      // Create new relations
-      // Create new relations
       if (newRelations.length > 0) {
         await createRelations(newRelations, token, origin);
       }
 
-      // Check if we need to update workspace API keys
       try {
-        const newApiKeys = await this.detectNewApiKeyFields(newFields, workspaceId);
-        
+        const newApiKeys = await this.detectNewApiKeyFields(
+          newFields,
+          workspaceId,
+        );
+
         if (Object.keys(newApiKeys).length > 0) {
-          console.log('Updating workspace API keys with new keys:', newApiKeys);
-          await this.workspaceQueryService.updateWorkspaceKeys(workspaceId, newApiKeys);
-          console.log('Workspace API keys updated successfully');
+          await this.workspaceQueryService.updateWorkspaceKeys(
+            workspaceId,
+            newApiKeys,
+          );
         }
       } catch (error) {
         console.error('Error updating workspace API keys:', error);
-        // Don't throw here as metadata update should continue even if API key update fails
       }
 
       return {
@@ -706,10 +423,15 @@ export class MetadataUpdateService {
           fields: newFields.length,
           relations: newRelations.length,
         },
+        requiresDatabaseIndices: this.requiresDatabaseIndices(
+          newObjects,
+          newFields,
+          newRelations,
+        ),
       };
     } catch (error) {
       console.error('Error updating metadata:', error);
       throw error;
     }
   }
-} 
+}

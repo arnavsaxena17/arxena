@@ -1,5 +1,4 @@
 import {
-    CandidateFieldEdge,
     CandidateNode,
     CandidatesEdge,
     ChatControlsObjType,
@@ -10,7 +9,6 @@ import {
     ClientMeetingEdge,
     emptyCandidateProfileObj,
     FindOneJob,
-    graphqlQueryToFindManyCandidateFields,
     graphqlQueryToFindManyPeople,
     graphqlQueryToFindScheduledClientMeetings,
     graphqlQueryToFindVideoInterviewTemplatesByJobId,
@@ -573,7 +571,8 @@ export class FilterCandidates {
           startMeetingSchedulingChat: activeJobCandidate?.startMeetingSchedulingChat,
           startVideoInterviewChat: activeJobCandidate?.startVideoInterviewChat,
           stopChat: activeJobCandidate?.stopChat,
-          candidateFieldValues: activeJobCandidate?.candidateFieldValues,
+          otherFields: activeJobCandidate?.otherFields,
+          candidateFieldValues: { edges: [] },
           whatsappMessages: activeJobCandidate?.whatsappMessages,
           status: activeJobCandidate?.status,
           messagingChannel: activeJobCandidate?.messagingChannel,
@@ -629,40 +628,7 @@ export class FilterCandidates {
       return { questionArray: chatQuestions, questionIdArray };
     }
 
-    const legacyResponse = await this.staticGraphQLService.executeGraphQL(
-      graphqlQueryToFindManyCandidateFields,
-      {
-        filter: { jobsId: { in: [`${jobId}`] } },
-        orderBy: { position: 'DescNullsFirst' },
-      },
-      apiToken,
-    );
-
-    const candidateFields = legacyResponse?.data?.data?.candidateFields;
-
-    if (!candidateFields) {
-      return { questionArray: [], questionIdArray: [] };
-    }
-
-    const candidateFieldsEdges = candidateFields as {
-      edges: CandidateFieldEdge[];
-      pageInfo: PageInfo;
-    } | undefined;
-
-    const questionsArray: string[] =
-      candidateFieldsEdges?.edges.map(
-        (val: { node: { name: string } }) => val.node.name,
-      ) || [];
-    const questionIdArray = candidateFieldsEdges?.edges.map(
-      (val: { node: { id: string; name: string } }) => ({
-        questionId: val.node.id,
-        question: val.node.name,
-        questionKey: questionTextToKey(val.node.name),
-      }),
-    );
-
-    console.log('This is the questions array:', questionsArray);
-    return { questionArray: questionsArray, questionIdArray: questionIdArray };
+    return { questionArray: [], questionIdArray: [] };
   }
 
   async getPersonDetailsByCandidateId(candidateId: string, apiToken: string) {

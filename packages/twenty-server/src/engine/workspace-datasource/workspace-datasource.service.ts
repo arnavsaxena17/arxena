@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 
 import { DataSource, EntityManager } from 'typeorm';
 
@@ -14,7 +14,7 @@ const WORKSPACE_IDLE_TTL_MS =
     : DEFAULT_IDLE_TTL_MS;
 
 @Injectable()
-export class WorkspaceDataSourceService {
+export class WorkspaceDataSourceService implements OnModuleDestroy {
   private workspaceToDataSourceId = new Map<string, string>();
   private workspaceReleaseTimers = new Map<string, NodeJS.Timeout>();
   private workspaceUsageCount = new Map<string, number>();
@@ -93,13 +93,24 @@ export class WorkspaceDataSourceService {
     try {
       await this.typeormService.disconnectFromDataSource(dataSourceId);
     } catch (error) {
-      console.error(
+      console.warn(
         `Failed to release workspace data source for workspace ${workspaceId}:`,
         error,
       );
-      throw error;
     } finally {
       this.workspaceToDataSourceId.delete(workspaceId);
+    }
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    for (const workspaceId of this.workspaceReleaseTimers.keys()) {
+      this.clearWorkspaceReleaseTimer(workspaceId);
+    }
+
+    const workspaceIds = [...this.workspaceToDataSourceId.keys()];
+
+    for (const workspaceId of workspaceIds) {
+      await this.releaseWorkspaceDataSource(workspaceId);
     }
   }
 

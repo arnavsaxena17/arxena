@@ -1,7 +1,9 @@
 import {
+    buildOtherFieldsFromLegacyRows,
     buildOtherFieldsFromUnmapped,
     candidateFieldValuesToOtherFields,
     getCandidateCustomField,
+    isJsonColumnEmpty,
     mergeChatQuestionsPreservingOrder,
     mergeOtherFields,
     otherFieldsToFlatRow,
@@ -129,5 +131,23 @@ describe('otherFields utils', () => {
         otherfields: { inferred_salary: '15L' },
       }),
     ).toEqual({ inferred_salary: '15L' });
+  });
+
+  it('buildOtherFieldsFromLegacyRows converts SQL rows', () => {
+    expect(
+      buildOtherFieldsFromLegacyRows([
+        { fieldName: 'inferred_salary', value: '15L' },
+        { fieldName: 'notice_period', value: '30 days' },
+      ]),
+    ).toEqual({
+      inferred_salary: '15L',
+      notice_period: '30 days',
+    });
+  });
+
+  it('isJsonColumnEmpty treats null and empty objects as empty', () => {
+    expect(isJsonColumnEmpty(null)).toBe(true);
+    expect(isJsonColumnEmpty('{}')).toBe(true);
+    expect(isJsonColumnEmpty({ inferred_salary: '10L' })).toBe(false);
   });
 });

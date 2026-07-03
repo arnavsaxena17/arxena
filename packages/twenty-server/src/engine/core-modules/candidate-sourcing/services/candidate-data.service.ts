@@ -130,30 +130,6 @@ export class CandidateDataService {
         baseData[fieldName] = fieldValue;
       }
 
-      // Legacy fallback for non-migrated rows
-      const candidateFieldValues = candidate.candidateFieldValues?.edges || [];
-
-      for (const edge of candidateFieldValues) {
-        const node = edge.node;
-        if (node?.candidateFields?.name && node.name !== null) {
-          const fieldName = node.candidateFields.name;
-          if (baseDataKeys.has(fieldName) || fieldName in flatOtherFields) {
-            continue;
-          }
-          let fieldValue = node.name;
-
-          if (typeof fieldValue === 'string') {
-            try {
-              fieldValue = JSON.parse(fieldValue);
-            } catch {
-              // Keep as string if not valid JSON
-            }
-          }
-
-          baseData[fieldName] = fieldValue;
-        }
-      }
-
       // Use headline/job_title from custom fields when jobTitle is still N/A (for org chart std_grade/std_function)
       const titleFromField =
         (typeof baseData.headline === 'string' && baseData.headline.trim()) ||

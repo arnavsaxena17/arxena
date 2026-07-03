@@ -204,21 +204,7 @@ export const isOtherFieldsEmpty = (otherFields: unknown): boolean =>
 
 export const getResolvedOtherFields = (
   candidate: CandidateWithCustomFields,
-): OtherFieldsRecord => {
-  const direct = normalizeOtherFields(candidate.otherFields);
-
-  if (!isOtherFieldsEmpty(direct)) {
-    return direct;
-  }
-
-  if (!hasLegacyFieldValues(candidate)) {
-    return {};
-  }
-
-  return candidateFieldValuesToOtherFields(
-    candidate.candidateFieldValues?.edges,
-  );
-};
+): OtherFieldsRecord => normalizeOtherFields(candidate.otherFields);
 
 export const getCandidateCustomField = (
   candidate: CandidateWithCustomFields,
@@ -234,19 +220,6 @@ export const getCandidateCustomField = (
 
   if (camelKey in resolved) {
     return resolved[camelKey];
-  }
-
-  for (const edge of candidate.candidateFieldValues?.edges ?? []) {
-    const legacyName = edge.node?.candidateFields?.name;
-
-    if (
-      legacyName &&
-      (legacyName === fieldName ||
-        toSnakeCaseKey(legacyName) === snakeKey ||
-        toCamelCaseKey(legacyName) === camelKey)
-    ) {
-      return parseOtherFieldValue(edge.node?.name);
-    }
   }
 
   return undefined;
@@ -266,6 +239,65 @@ export const collectOtherFieldKeys = (
   }
 
   return Array.from(keys);
+};
+
+export const isJsonColumnEmpty = (value: unknown): boolean => {
+  if (value === null || value === undefined) {
+    return true;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+
+    if (trimmed === '' || trimmed === '{}' || trimmed === '[]' || trimmed === 'null') {
+      return true;
+    }
+
+    try {
+      const parsed = JSON.parse(trimmed) as unknown;
+
+      if (Array.isArray(parsed)) {
+        return parsed.length === 0;
+      }
+
+      if (typeof parsed === 'object' && parsed !== null) {
+        return Object.keys(parsed).length === 0;
+      }
+    } catch {
+      return false;
+    }
+  }
+
+  if (Array.isArray(value)) {
+    return value.length === 0;
+  }
+
+  if (typeof value === 'object') {
+    return Object.keys(value).length === 0;
+  }
+
+  return false;
+};
+
+export type LegacyFieldValueRow = {
+  fieldName: string;
+  value: string;
+};
+
+export const buildOtherFieldsFromLegacyRows = (
+  rows: LegacyFieldValueRow[],
+): OtherFieldsRecord => {
+  const otherFields: OtherFieldsRecord = {};
+
+  for (const row of rows) {
+    if (!row.fieldName || row.value === null || row.value === undefined || row.value === '') {
+      continue;
+    }
+
+    otherFields[toSnakeCaseKey(row.fieldName)] = parseOtherFieldValue(row.value);
+  }
+
+  return otherFields;
 };
 
 export const mergeChatQuestionsPreservingOrder = (

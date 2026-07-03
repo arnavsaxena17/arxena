@@ -13,6 +13,7 @@ import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
 import { CandidateAvatarModule } from 'src/engine/core-modules/candidate-avatar/candidate-avatar.module';
+import { MigrateOtherFieldsCommand } from 'src/engine/core-modules/candidate-sourcing/commands/migrate-other-fields.command';
 import { AiFilteringProgressController } from 'src/engine/core-modules/candidate-sourcing/controllers/ai-filtering-progress.controller';
 import { CandidateSourcingController } from 'src/engine/core-modules/candidate-sourcing/controllers/candidate-sourcing.controller';
 import { FileUploadController } from 'src/engine/core-modules/candidate-sourcing/controllers/file-upload.controller';
@@ -32,6 +33,7 @@ import { CandidateWorkspaceGraphQLService } from 'src/engine/core-modules/candid
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { ChatService } from 'src/engine/core-modules/candidate-sourcing/services/chat.service';
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
+import { MigrateOtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/migrate-other-fields.service';
 import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-sourcing/services/orgchart-progress-redis.service';
 import { OtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/other-fields.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
@@ -123,6 +125,8 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     CandidateDataService,
     CandidateFieldValueService,
     OtherFieldsService,
+    MigrateOtherFieldsService,
+    MigrateOtherFieldsCommand,
     CandidateWorkspaceGraphQLService,
     WorkspaceQueryService,
     WorkspaceDataSourceService,
@@ -163,6 +167,8 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     PersonService,
     CandidateService,
     OtherFieldsService,
+    MigrateOtherFieldsService,
+    MigrateOtherFieldsCommand,
     ChatService,
     CandidateDataService,
     ProcessCandidatesService,

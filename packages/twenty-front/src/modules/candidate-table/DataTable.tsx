@@ -1012,11 +1012,6 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         const rawData = Array.isArray(response.data) ? response.data : [];
         console.log("This is raw data::", rawData);
 
-        const columnsFields = rawData[0]?.candidateFieldValues?.edges?.map((field: any) => {
-          return field?.node?.candidateFields?.name;
-        });
-        console.log("This is columns fields::", columnsFields);
-
         // Process unread messages for each candidate
         const unreadMessagesCounts: Record<string, number> = {};
         rawData.forEach(candidate => {

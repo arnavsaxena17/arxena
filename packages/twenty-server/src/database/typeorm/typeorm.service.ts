@@ -144,7 +144,9 @@ export class TypeORMService implements OnModuleInit, OnModuleDestroy {
 
     const dataSource = this.dataSources.get(dataSourceId);
 
-    await dataSource?.destroy();
+    if (dataSource?.isInitialized) {
+      await dataSource.destroy();
+    }
 
     this.dataSources.delete(dataSourceId);
   }
