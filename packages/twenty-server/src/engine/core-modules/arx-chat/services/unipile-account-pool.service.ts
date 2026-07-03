@@ -58,6 +58,19 @@ export class UnipileAccountPoolService {
     private readonly whatsappUnipileRequestService: WhatsappUnipileRequestService,
   ) {}
 
+  async getWorkspaceIdByAccountId(accountId: string): Promise<string | null> {
+    if (!accountId?.trim()) {
+      return null;
+    }
+
+    const rows = await this.metadataDataSource.query(
+      `SELECT workspace_id FROM metadata.unipile_accounts WHERE account_id = $1 LIMIT 1`,
+      [accountId],
+    );
+
+    return rows?.[0]?.workspace_id ?? null;
+  }
+
   /**
    * Get or create Unipile account for org-chart flow.
    * Returns accountId if connected, redirectUrl if need auth, or pool_full status.

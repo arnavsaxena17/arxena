@@ -79,6 +79,7 @@ import { LinkedinOutreachOpenerService } from 'src/engine/core-modules/org-chart
 import { OrgChartOutreachController } from 'src/engine/core-modules/org-chart-outreach/org-chart-outreach.controller';
 import { OrgChartOutreachService } from 'src/engine/core-modules/org-chart-outreach/org-chart-outreach.service';
 import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.module';
+import { UnipileAttachmentModule } from 'src/engine/core-modules/unipile-attachments/unipile-attachment.module';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { WhatsappMediaModule } from 'src/engine/core-modules/whatsapp-media/whatsapp-media.module';
@@ -138,6 +139,7 @@ const conditionalImports = isWorker
     WorkspaceModificationsModule, 
     CandidateAvatarModule,
     WhatsappMediaModule,
+    UnipileAttachmentModule,
     CandidateSearchModule,
     CandidateSourcingModule,
     JwtModule,

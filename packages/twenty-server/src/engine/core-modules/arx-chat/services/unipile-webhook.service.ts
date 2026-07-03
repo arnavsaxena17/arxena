@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { UnipileAttachmentStorageService } from 'src/engine/core-modules/unipile-attachments/services/unipile-attachment-storage.service';
 import { graphQlToFetchWhatsappMessages, graphqlToUpdateWhatsappMessageId } from 'twenty-shared';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { InjectMessageQueue } from '../../message-queue/decorators/message-queue.decorator';
@@ -30,6 +31,7 @@ export class UnipileWebhookService {
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly unipileAccountPoolService: UnipileAccountPoolService,
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly unipileAttachmentStorageService: UnipileAttachmentStorageService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
   ) {
     this.attachmentStorage = new UnipileAttachmentStorageUtil();
@@ -543,18 +545,28 @@ export class UnipileWebhookService {
       const baseUrl = process.env.UNIPILE_API_URL || '';
       const accessToken = process.env.UNIPILE_ACCESS_TOKEN || '';
 
+      const workspaceId =
+        (account_id
+          ? await this.unipileAccountPoolService.getWorkspaceIdByAccountId(
+              account_id,
+            )
+          : null) ?? 'unknown';
+
       // Save each attachment
       for (const attachment of attachmentsArray) {
         try {
-          const savedPath = await this.attachmentStorage.saveAttachment(
-            attachment,
-            sender,
-            account_type,
-            message_id,
-            timestamp,
-            account_id,
-            baseUrl,
-            accessToken,
+          const savedPath = await this.unipileAttachmentStorageService.saveAttachment(
+            {
+              workspaceId,
+              attachment,
+              sender,
+              accountType: account_type,
+              messageId: message_id,
+              timestamp,
+              accountId: account_id,
+              baseUrl,
+              accessToken,
+            },
           );
 
           if (savedPath) {

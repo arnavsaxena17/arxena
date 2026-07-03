@@ -41,11 +41,35 @@ const directories =
 
 const localPathPrefix = `${storageLocalPath}/`;
 
-const toS3Key = (absoluteFilePath: string): string => {
+const unipileAttachmentsWorkspaceId =
+  process.env.UNIPILE_ATTACHMENTS_WORKSPACE_ID || 'unknown';
+
+const UNIPILE_ATTACHMENTS_DIR = 'unipile-attachments';
+const UNIPILE_ATTACHMENTS_S3_PREFIX = `workspace-${unipileAttachmentsWorkspaceId}/unipile_attachments`;
+
+const toS3Key = (absoluteFilePath: string, sourceDirectory?: string): string => {
   const relativePath = path
     .relative(cwd, absoluteFilePath)
     .split(path.sep)
     .join('/');
+
+  if (
+    sourceDirectory === UNIPILE_ATTACHMENTS_DIR ||
+    sourceDirectory?.endsWith(`/${UNIPILE_ATTACHMENTS_DIR}`)
+  ) {
+    const unipileRelative = relativePath.startsWith(`${UNIPILE_ATTACHMENTS_DIR}/`)
+      ? relativePath.slice(`${UNIPILE_ATTACHMENTS_DIR}/`.length)
+      : relativePath;
+
+    if (
+      unipileRelative === 'deleted-messages.json' ||
+      unipileRelative === 'deleted-message-content-cache.json'
+    ) {
+      return '';
+    }
+
+    return `${UNIPILE_ATTACHMENTS_S3_PREFIX}/${unipileRelative}`;
+  }
 
   if (relativePath.startsWith(localPathPrefix)) {
     return relativePath.slice(localPathPrefix.length);
@@ -79,8 +103,11 @@ const walk = async (dir: string): Promise<string[]> => {
   return files.flat();
 };
 
-const uploadFile = async (absoluteFilePath: string) => {
-  const s3Key = toS3Key(absoluteFilePath);
+const uploadFile = async (
+  absoluteFilePath: string,
+  sourceDirectory?: string,
+) => {
+  const s3Key = toS3Key(absoluteFilePath, sourceDirectory);
 
   if (!s3Key) {
     return;
@@ -130,10 +157,19 @@ const run = async () => {
       continue;
     }
 
+    if (
+      directory === UNIPILE_ATTACHMENTS_DIR ||
+      directory.endsWith(`/${UNIPILE_ATTACHMENTS_DIR}`)
+    ) {
+      console.log(
+        `Migrating ${directory} to s3://${bucketName}/${UNIPILE_ATTACHMENTS_S3_PREFIX}/ (set UNIPILE_ATTACHMENTS_WORKSPACE_ID to target a specific workspace)`,
+      );
+    }
+
     const files = await walk(absoluteDirectoryPath);
 
     for (const file of files) {
-      await uploadFile(file);
+      await uploadFile(file, directory);
       uploadedCount++;
     }
   }

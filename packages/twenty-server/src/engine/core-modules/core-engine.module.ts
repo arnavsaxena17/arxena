@@ -50,6 +50,7 @@ import { ServerlessModule } from 'src/engine/core-modules/serverless/serverless.
 import { WorkspaceSSOModule } from 'src/engine/core-modules/sso/sso.module';
 import { TelemetryModule } from 'src/engine/core-modules/telemetry/telemetry.module';
 import { TestWebhookModule } from 'src/engine/core-modules/test-webhook/test-webhook.module';
+import { UnipileAttachmentModule } from 'src/engine/core-modules/unipile-attachments/unipile-attachment.module';
 import { UserModule } from 'src/engine/core-modules/user/user.module';
 import { VideoInterviewModule } from 'src/engine/core-modules/video-interview/video-interview.module';
 import { WebsiteLeadsModule } from 'src/engine/core-modules/website-leads/website-leads.module';
@@ -143,6 +144,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     LinkedInSearchModule,
     CandidateAvatarModule,
     WhatsappMediaModule,
+    UnipileAttachmentModule,
     OrgChartModule,
     WebsiteLeadsModule,
     TestWebhookModule,
@@ -220,6 +222,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     LinkedInSearchModule,
     CandidateAvatarModule,
     WhatsappMediaModule,
+    UnipileAttachmentModule,
     OrgChartModule,
     WorkspaceInvitationModule,
     WorkspaceSSOModule,
