@@ -23,6 +23,7 @@ import { EnvironmentService } from '../environment/environment.service';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { GraphQLExecutionService } from '../graphql/graphql-execution.service';
 import { SchemaCacheService } from '../graphql/services/schema-cache.service';
+import { WhatsappMediaModule } from '../whatsapp-media/whatsapp-media.module';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { EventsGateway } from './events-gateway-module/events-gateway';
 import { WhatsAppMonitoringController } from './whatsapp-monitoring.controller';
@@ -31,6 +32,7 @@ import { BaileysWhatsappService } from './whiskeysocket-baileys.service';
 
 @Module({
   imports: [
+    WhatsappMediaModule,
     WorkspaceModificationsModule,
     JwtModule,
     AuthModule,

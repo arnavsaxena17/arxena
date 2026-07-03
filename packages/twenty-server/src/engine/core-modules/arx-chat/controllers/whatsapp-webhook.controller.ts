@@ -6,6 +6,7 @@ import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-gra
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
+import { WhatsappMediaStorageService } from 'src/engine/core-modules/whatsapp-media/services/whatsapp-media-storage.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 @Controller('webhook')
@@ -14,6 +15,7 @@ export class WhatsappWebhook {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly voiceCallService: VoiceCallService,
+    private readonly whatsappMediaStorageService: WhatsappMediaStorageService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
   ) {}
 
@@ -107,6 +109,7 @@ export class WhatsappWebhook {
         this.workspaceQueryService,
         this.staticGraphQLService,
         this.messageQueueService,
+        this.whatsappMediaStorageService,
       ).receiveIncomingMessagesFromFacebook(requestBody, requestBody?.entry[0]?.changes[0]?.value?.messages[0]);
     } catch (error) {
       // Handle error

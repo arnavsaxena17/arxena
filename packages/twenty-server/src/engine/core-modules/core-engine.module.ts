@@ -53,6 +53,7 @@ import { TestWebhookModule } from 'src/engine/core-modules/test-webhook/test-web
 import { UserModule } from 'src/engine/core-modules/user/user.module';
 import { VideoInterviewModule } from 'src/engine/core-modules/video-interview/video-interview.module';
 import { WebsiteLeadsModule } from 'src/engine/core-modules/website-leads/website-leads.module';
+import { WhatsappMediaModule } from 'src/engine/core-modules/whatsapp-media/whatsapp-media.module';
 import { WorkflowApiModule } from 'src/engine/core-modules/workflow/workflow-api.module';
 import { WorkspaceInvitationModule } from 'src/engine/core-modules/workspace-invitation/workspace-invitation.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
@@ -141,6 +142,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     LabModule,
     LinkedInSearchModule,
     CandidateAvatarModule,
+    WhatsappMediaModule,
     OrgChartModule,
     WebsiteLeadsModule,
     TestWebhookModule,
@@ -217,6 +219,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     GoogleDriveModule,
     LinkedInSearchModule,
     CandidateAvatarModule,
+    WhatsappMediaModule,
     OrgChartModule,
     WorkspaceInvitationModule,
     WorkspaceSSOModule,

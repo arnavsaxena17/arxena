@@ -81,6 +81,7 @@ import { OrgChartOutreachService } from 'src/engine/core-modules/org-chart-outre
 import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.module';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { User } from 'src/engine/core-modules/user/user.entity';
+import { WhatsappMediaModule } from 'src/engine/core-modules/whatsapp-media/whatsapp-media.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module'; // Add this import
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -136,6 +137,7 @@ const conditionalImports = isWorker
     GraphQLExecutionModule,
     WorkspaceModificationsModule, 
     CandidateAvatarModule,
+    WhatsappMediaModule,
     CandidateSearchModule,
     CandidateSourcingModule,
     JwtModule,

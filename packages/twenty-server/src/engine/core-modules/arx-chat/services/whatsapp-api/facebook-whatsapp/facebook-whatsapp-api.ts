@@ -5,36 +5,38 @@ import path from 'path';
 import axios, { ResponseType } from 'axios';
 import FormData from 'form-data';
 import {
-  AttachmentMessageObject,
-  CandidateNode,
-  ChatControlsObjType,
-  ChatHistoryItem,
-  ChatRequestBody,
-  FacebookWhatsappAttachmentChatRequestBody,
-  Job,
-  sendWhatsappTemplateMessageObjectType,
-  SendWhatsappUtilityMessageObjectType,
-  whatappUpdateMessageObjType,
-  WhatsappMessageType
+    AttachmentMessageObject,
+    CandidateNode,
+    ChatControlsObjType,
+    ChatHistoryItem,
+    ChatRequestBody,
+    FacebookWhatsappAttachmentChatRequestBody,
+    Job,
+    sendWhatsappTemplateMessageObjectType,
+    SendWhatsappUtilityMessageObjectType,
+    whatappUpdateMessageObjType,
+    WhatsappMessageType
 } from 'twenty-shared';
 
 import { ChatControls } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/chat-controls';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import {
-  getContentTypeFromFileName,
-  getTranscriptionFromWhisper,
+    getContentTypeFromFileName,
+    getTranscriptionFromWhisper,
 } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/utils/attachment-processes';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { WhatsappMediaStorageService } from 'src/engine/core-modules/whatsapp-media/services/whatsapp-media-storage.service';
 import { WhatsappTemplateMessages } from './whatsapp-template-messages';
 
 export class FacebookWhatsappChatApi {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly whatsappMediaStorageService?: WhatsappMediaStorageService,
   ) {}
 
   async getWhatsappConfig(
@@ -545,6 +547,26 @@ export class FacebookWhatsappChatApi {
     await new Promise((resolve, reject) => {
       writeStream.on('finish', async () => {
         try {
+          if (this.whatsappMediaStorageService) {
+            const workspaceId =
+              await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+            const fileBuffer = await fs.promises.readFile(filePath);
+            const persistedMedia =
+              await this.whatsappMediaStorageService.saveMedia({
+                workspaceId,
+                candidateId: candidateProfileData.id,
+                mediaType: 'docs',
+                fileName: sendTemplateMessageObj.filename,
+                file: fileBuffer,
+                mimeType: sendTemplateMessageObj.mime_type,
+              });
+
+            console.log(
+              'Persisted WhatsApp document to storage:',
+              persistedMedia.publicUrl,
+            );
+          }
+
           const attachmentObj =
             await new AttachmentProcessingService(this.staticGraphQLService).uploadAttachmentToTwenty(
               filePath,
@@ -735,6 +757,25 @@ export class FacebookWhatsappChatApi {
           },
         );
       });
+
+      if (this.whatsappMediaStorageService) {
+        const workspaceId =
+          await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+        const fileBuffer = await fs.promises.readFile(filePath);
+        const persistedMedia = await this.whatsappMediaStorageService.saveMedia({
+          workspaceId,
+          candidateId: candidateProfileData.id,
+          mediaType: 'audio',
+          fileName: audioMessageObject.filename,
+          file: fileBuffer,
+          mimeType: audioMessageObject.mime_type,
+        });
+
+        console.log(
+          'Persisted WhatsApp audio to storage:',
+          persistedMedia.publicUrl,
+        );
+      }
 
       const attachmentObj =
         await new AttachmentProcessingService(this.staticGraphQLService).uploadAttachmentToTwenty(

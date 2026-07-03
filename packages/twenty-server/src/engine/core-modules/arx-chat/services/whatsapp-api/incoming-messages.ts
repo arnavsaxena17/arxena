@@ -20,6 +20,7 @@ import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-gra
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
+import { WhatsappMediaStorageService } from 'src/engine/core-modules/whatsapp-media/services/whatsapp-media-storage.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 interface MessageResult {
@@ -38,6 +39,7 @@ export class IncomingWhatsappMessages {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly engagedCandidateMessageQueueService?: MessageQueueService,
+    private readonly whatsappMediaStorageService?: WhatsappMediaStorageService,
     ) {
   }
 
@@ -1463,6 +1465,7 @@ export class IncomingWhatsappMessages {
           await new FacebookWhatsappChatApi(
             this.workspaceQueryService,
             this.staticGraphQLService,
+            this.whatsappMediaStorageService,
           ).downloadWhatsappAttachmentMessage(
             sendTemplateMessageObj,
             candidateProfileData,
@@ -1507,6 +1510,7 @@ export class IncomingWhatsappMessages {
           const audioMessageDetails = await new FacebookWhatsappChatApi(
             this.workspaceQueryService,
             this.staticGraphQLService,
+            this.whatsappMediaStorageService,
           ).handleAudioMessage(
             audioMessageObject,
             candidateProfileData,

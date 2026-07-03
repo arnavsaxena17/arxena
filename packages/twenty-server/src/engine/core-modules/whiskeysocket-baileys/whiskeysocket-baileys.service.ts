@@ -6,23 +6,23 @@ import WebSocket from 'ws';
 
 import { Boom } from '@hapi/boom';
 import makeWASocket, {
-  delay,
-  DisconnectReason,
-  downloadMediaMessage,
-  fetchLatestBaileysVersion,
-  makeCacheableSignalKeyStore,
-  useMultiFileAuthState
+    delay,
+    DisconnectReason,
+    downloadMediaMessage,
+    fetchLatestBaileysVersion,
+    makeCacheableSignalKeyStore,
+    useMultiFileAuthState
 } from 'baileys';
 import MAIN_LOGGER from 'baileys/lib/Utils/logger';
 import NodeCache from 'node-cache';
 import {
-  CandidateNode,
-  chatMessageType,
-  emptyCandidateProfileObj,
-  graphqlToFetchWhatsappMessageByWhatsappId,
-  graphQlToFetchWhatsappMessages,
-  graphqlToUpdateWhatsappMessageId,
-  WhatsAppBusinessAccount,
+    CandidateNode,
+    chatMessageType,
+    emptyCandidateProfileObj,
+    graphqlToFetchWhatsappMessageByWhatsappId,
+    graphQlToFetchWhatsappMessages,
+    graphqlToUpdateWhatsappMessageId,
+    WhatsAppBusinessAccount,
 } from 'twenty-shared';
 
 import { ProxyRotationManager } from './utils/proxy-rotation';
@@ -33,6 +33,7 @@ import { AttachmentProcessingService } from '../arx-chat/utils/attachment-proces
 import { InjectMessageQueue } from '../message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from '../message-queue/message-queue.constants';
 import { MessageQueueService } from '../message-queue/services/message-queue.service';
+import { WhatsappMediaStorageService } from '../whatsapp-media/services/whatsapp-media-storage.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 
 // import { IEventsGateway } from './events-gateway-module/events-gateway.interface';
@@ -183,6 +184,7 @@ export class BaileysWhatsappService {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly whatsappMediaStorageService: WhatsappMediaStorageService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
   ) {}
 
@@ -894,6 +896,7 @@ export class BaileysWhatsappService {
                     this.workspaceQueryService,
                     this.staticGraphQLService,
                     this.messageQueueService,
+                    this.whatsappMediaStorageService,
                   ).receiveIncomingMessages(
                     baileysWhatsappIncomingObj,
                     apiToken,
@@ -941,6 +944,7 @@ export class BaileysWhatsappService {
                       this.workspaceQueryService,
                       this.staticGraphQLService,
                       this.messageQueueService,
+                      this.whatsappMediaStorageService,
                     ).receiveIncomingMessagesFromSelfFromBaileys(
                       baileysWhatsappIncomingObj,
                       apiToken,
@@ -1310,7 +1314,28 @@ export class BaileysWhatsappService {
       userDirectory = await this.createDirectoryIfNotExists(userDirectory);
       file.filePath = path.join(userDirectory, file.fileName);
       console.log(file.filePath);
-      await fs.promises.writeFile(file.filePath, file.fileBuffer);
+
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const mediaType =
+        this.whatsappMediaStorageService.parseMediaTypeFromDirectory(
+          userDirectory,
+        );
+      const fileBuffer = Buffer.isBuffer(file.fileBuffer)
+        ? file.fileBuffer
+        : Buffer.from(file.fileBuffer as unknown as Uint8Array);
+
+      const persistedMedia = await this.whatsappMediaStorageService.saveMedia({
+        workspaceId,
+        candidateId: candidateProfileData.id,
+        mediaType,
+        fileName: file.fileName,
+        file: fileBuffer,
+      });
+
+      console.log('Persisted WhatsApp media to storage:', persistedMedia.publicUrl);
+
+      await fs.promises.writeFile(file.filePath, fileBuffer);
       const attachmentObj =
         await new AttachmentProcessingService(this.staticGraphQLService).uploadAttachmentToTwenty(
           file.filePath,
