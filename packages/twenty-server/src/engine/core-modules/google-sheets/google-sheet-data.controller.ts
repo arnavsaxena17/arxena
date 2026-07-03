@@ -20,6 +20,7 @@ import { DeleteFieldValuesService } from '../candidate-sourcing/jobs/delete-fiel
 import { ProcessAiFiltersService } from '../candidate-sourcing/jobs/process-ai-filters.service';
 import { CandidateWorkspaceGraphQLService } from '../candidate-sourcing/services/candidate-workspace-graphql.service';
 import { JDParserService } from '../candidate-sourcing/services/jd-parser.service';
+import { OtherFieldsService } from '../candidate-sourcing/services/other-fields.service';
 import { UploadProgressPubSubService } from '../candidate-sourcing/services/upload-progress-pubsub.service';
 import { FileStorageService } from '../file-storage/file-storage.service';
 
@@ -44,6 +45,7 @@ export class GoogleSheetsDataController {
     private readonly deleteFieldValuesService: DeleteFieldValuesService,
     private readonly jdParserService: JDParserService,
     private readonly candidateWorkspaceGraphQLService: CandidateWorkspaceGraphQLService,
+    private readonly otherFieldsService: OtherFieldsService,
     private readonly fileStorageService: FileStorageService,
   ) {
   }
@@ -79,6 +81,7 @@ export class GoogleSheetsDataController {
       this.deleteFieldValuesService,
       this.jdParserService,
       this.candidateWorkspaceGraphQLService,
+      this.otherFieldsService,
       this.fileStorageService,
     );
     const result = await candidateSourcingController.processAiFilters({
