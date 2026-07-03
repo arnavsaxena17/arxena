@@ -453,6 +453,12 @@ mutation CreatePeople($data: [PersonCreateInput!]!) {
   createPeople(data: $data) {
     __typename
     uniqueStringKey
+    emails {
+      primaryEmail
+    }
+    phones {
+      primaryPhoneNumber
+    }
     id
   }
 }`;

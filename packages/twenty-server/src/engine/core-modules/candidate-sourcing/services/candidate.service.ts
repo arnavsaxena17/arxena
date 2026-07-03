@@ -750,84 +750,12 @@ export class CandidateService {
       console.log('People to create:', peopleToCreate.length);
       console.log('People to skip (existing):', peopleToSkip);
       if (peopleToCreate.length > 0) {
-        const response = await this.personService.createPeople(
+        await this.createPeopleWithDuplicateHandling(
           peopleToCreate,
+          peopleKeys,
+          tracking,
           apiToken,
         );
-        // Check if createPeople was successful
-        if (response?.data?.data?.createPeople) {
-          response.data.data.createPeople.forEach((person, idx) => {
-            if (person?.id) {
-              tracking.personIdMap.set(peopleKeys[idx], person?.id);
-              console.log(`Added personId ${person.id} for key ${peopleKeys[idx]}`);
-            } else {
-              console.log(`No ID found for person ${idx}:`, JSON.stringify(person, null, 2));
-            }
-          });
-        } else if (response?.data?.errors) {
-          // Handle case where createPeople failed (e.g., duplicate emails)
-          console.log('CreatePeople failed with errors, attempting to find existing people by email');
-          const emails = peopleToCreate.map(
-            (profile) => profile.emails?.primaryEmail || '',
-          );
-
-          let existingByEmail = new Map<string, any>();
-          try {
-            existingByEmail =
-              await this.personService.batchGetPersonDetailsByEmails(
-                emails,
-                apiToken,
-              );
-          } catch (error) {
-            console.log(
-              'Error in batchGetPersonDetailsByEmails after createPeople failure:',
-              (error as any)?.message || error,
-            );
-          }
-
-          for (let i = 0; i < peopleKeys.length; i++) {
-            const key = peopleKeys[i];
-            const profile = peopleToCreate[i];
-            const email = profile.emails?.primaryEmail || '';
-
-            console.log(
-              `Attempting to find existing person for key: ${key}, email: ${email}`,
-            );
-            try {
-              let existingPerson: PersonNode | null = null;
-
-              if (email) {
-                existingPerson = existingByEmail.get(email.toLowerCase().trim());
-              }
-
-              if (!existingPerson) {
-                const existingPersonsByKey =
-                  await this.personService.batchGetPersonDetailsByStringKeys(
-                    [key],
-                    apiToken,
-                  );
-                existingPerson = existingPersonsByKey.get(key) || null;
-              }
-
-              if ((existingPerson as PersonNode | null)?.id) {
-                const personIdFromExisting = (existingPerson as PersonNode).id;
-                tracking.personIdMap.set(key, personIdFromExisting);
-                console.log(
-                  `Found existing person for ${key}: ${personIdFromExisting}`,
-                );
-              } else {
-                console.log(
-                  `No existing person found for ${key} after creation failure`,
-                );
-              }
-            } catch (error) {
-              console.log(
-                `Error finding existing person for ${key}:`,
-                (error as any)?.message || error,
-              );
-            }
-          }
-        }
       }
       
       console.log('Final tracking.personIdMap after people processing:', tracking.personIdMap);
@@ -835,6 +763,346 @@ export class CandidateService {
     } catch (error) {
       console.log('Error processing people batch1:', error.data);
       console.log('Error processing people batch2:', error.message);
+    }
+  }
+
+  /**
+   * Creates people while tolerating email-uniqueness collisions.
+   *
+   * The person table enforces uniqueness on primaryEmail, but callers only
+   * skip creation based on uniqueStringKey. A person that already exists under
+   * a different key (or a duplicate email inside the same batch) would
+   * otherwise make the atomic bulk insert roll back the ENTIRE batch, leaving
+   * every unrelated new person (and their candidates) with no linked person.
+   *
+   * Strategy:
+   *   1. Reuse people that already exist in the DB by email.
+   *   2. Drop duplicate emails within the batch (linked after creation).
+   *   3. Attempt a single bulk insert (fast path).
+   *   4. If the bulk insert fails, insert row-by-row so a single duplicate
+   *      cannot sink the rest of the batch, recovering existing ids by email.
+   */
+  private async createPeopleWithDuplicateHandling(
+    peopleToCreate: ArxenaPersonNode[],
+    peopleKeys: string[],
+    tracking: any,
+    apiToken: string,
+  ): Promise<void> {
+    const emails = peopleToCreate
+      .map((person) => (person.emails?.primaryEmail || '').toLowerCase().trim())
+      .filter(Boolean);
+
+    let existingByEmail = new Map<string, any>();
+    if (emails.length > 0) {
+      try {
+        existingByEmail =
+          await this.personService.batchGetPersonDetailsByEmails(
+            emails,
+            apiToken,
+          );
+      } catch (error) {
+        console.log(
+          'Error during email pre-check before createPeople:',
+          (error as any)?.message || error,
+        );
+      }
+    }
+
+    const toInsertPeople: ArxenaPersonNode[] = [];
+    const toInsertKeys: string[] = [];
+    const keyToEmail = new Map<string, string>();
+    const emailToKeys = new Map<string, string[]>();
+    const emailsQueuedForInsert = new Set<string>();
+
+    for (let i = 0; i < peopleToCreate.length; i++) {
+      const person = peopleToCreate[i];
+      const key = peopleKeys[i];
+      const email = (person.emails?.primaryEmail || '').toLowerCase().trim();
+
+      if (email) {
+        keyToEmail.set(key, email);
+        const keysForEmail = emailToKeys.get(email) || [];
+        keysForEmail.push(key);
+        emailToKeys.set(email, keysForEmail);
+      }
+
+      const existingPerson = email ? existingByEmail.get(email) : null;
+      if (existingPerson?.id) {
+        tracking.personIdMap.set(key, existingPerson.id);
+        console.log(
+          `Email pre-check: reusing existing person for key ${key}: ${existingPerson.id}`,
+        );
+        if (this.processingStats) {
+          this.processingStats.peopleToCreate = Math.max(
+            0,
+            this.processingStats.peopleToCreate - 1,
+          );
+          this.processingStats.peopleToSkip += 1;
+        }
+        continue;
+      }
+
+      // Duplicate email within the same batch: insert once, link the rest later.
+      if (email && emailsQueuedForInsert.has(email)) {
+        console.log(
+          `Email pre-check: duplicate email within batch for key ${key} (${email}), will link after creation`,
+        );
+        if (this.processingStats) {
+          this.processingStats.peopleToCreate = Math.max(
+            0,
+            this.processingStats.peopleToCreate - 1,
+          );
+        }
+        continue;
+      }
+
+      if (email) {
+        emailsQueuedForInsert.add(email);
+      }
+      toInsertPeople.push(person);
+      toInsertKeys.push(key);
+    }
+
+    if (toInsertPeople.length === 0) {
+      console.log('No new people to insert after email pre-check');
+      return;
+    }
+
+    const bulkSucceeded = await this.bulkCreateAndLinkPeople(
+      toInsertPeople,
+      toInsertKeys,
+      keyToEmail,
+      emailToKeys,
+      tracking,
+      apiToken,
+    );
+
+    if (bulkSucceeded) {
+      return;
+    }
+
+    console.log(
+      `Bulk createPeople failed, creating ${toInsertPeople.length} people individually`,
+    );
+    await this.createPeopleIndividually(
+      toInsertPeople,
+      toInsertKeys,
+      keyToEmail,
+      emailToKeys,
+      tracking,
+      apiToken,
+    );
+  }
+
+  private async bulkCreateAndLinkPeople(
+    people: ArxenaPersonNode[],
+    keys: string[],
+    keyToEmail: Map<string, string>,
+    emailToKeys: Map<string, string[]>,
+    tracking: any,
+    apiToken: string,
+  ): Promise<boolean> {
+    try {
+      const response = await this.personService.createPeople(people, apiToken);
+      const createdPeople = response?.data?.data?.createPeople;
+
+      if (Array.isArray(createdPeople) && createdPeople.length > 0) {
+        createdPeople.forEach((person: any, idx: number) => {
+          if (!person?.id) {
+            console.log(
+              `No ID found for created person at index ${idx}:`,
+              JSON.stringify(person, null, 2),
+            );
+            return;
+          }
+
+          const returnedKey = person?.uniqueStringKey || keys[idx];
+          const returnedEmail =
+            (person?.emails?.primaryEmail || keyToEmail.get(returnedKey) || '')
+              .toLowerCase()
+              .trim();
+
+          this.linkPersonIdToRelatedKeys(
+            returnedKey,
+            person.id,
+            returnedEmail,
+            emailToKeys,
+            tracking,
+          );
+        });
+        return true;
+      }
+
+      if (response?.data?.errors) {
+        console.log(
+          'Bulk createPeople returned errors:',
+          response.data.errors
+            ?.map((error: any) => error?.message)
+            .join('; '),
+        );
+        return false;
+      }
+
+      console.log(
+        'Bulk createPeople returned no data and no errors, treating as failure',
+      );
+      return false;
+    } catch (error) {
+      console.log(
+        'Bulk createPeople threw an error:',
+        (error as any)?.message || error,
+      );
+      return false;
+    }
+  }
+
+  private async createPeopleIndividually(
+    people: ArxenaPersonNode[],
+    keys: string[],
+    keyToEmail: Map<string, string>,
+    emailToKeys: Map<string, string[]>,
+    tracking: any,
+    apiToken: string,
+  ): Promise<void> {
+    for (let i = 0; i < people.length; i++) {
+      const person = people[i];
+      const key = keys[i];
+
+      if (tracking.personIdMap.has(key)) {
+        continue;
+      }
+
+      try {
+        const response = await this.personService.createPeople(
+          [person],
+          apiToken,
+        );
+        const createdPerson = response?.data?.data?.createPeople?.[0];
+
+        if (createdPerson?.id) {
+          const createdEmail =
+            createdPerson?.emails?.primaryEmail || keyToEmail.get(key) || '';
+          this.linkPersonIdToRelatedKeys(
+            key,
+            createdPerson.id,
+            createdEmail,
+            emailToKeys,
+            tracking,
+          );
+          console.log(
+            `Individually created person for key ${key}: ${createdPerson.id}`,
+          );
+          continue;
+        }
+
+        console.log(
+          `Individual createPeople failed for key ${key}, attempting to find existing person`,
+        );
+        await this.recoverExistingPersonId(
+          key,
+          keyToEmail.get(key) || '',
+          emailToKeys,
+          tracking,
+          apiToken,
+        );
+      } catch (error) {
+        console.log(
+          `Error creating person individually for key ${key}:`,
+          (error as any)?.message || error,
+        );
+        await this.recoverExistingPersonId(
+          key,
+          keyToEmail.get(key) || '',
+          emailToKeys,
+          tracking,
+          apiToken,
+        );
+      }
+    }
+  }
+
+  private async recoverExistingPersonId(
+    key: string,
+    email: string,
+    emailToKeys: Map<string, string[]>,
+    tracking: any,
+    apiToken: string,
+  ): Promise<void> {
+    console.log(
+      `Attempting to find existing person for key: ${key}, email: ${email}`,
+    );
+    try {
+      let existingPerson: PersonNode | null = null;
+
+      if (email) {
+        const existingByEmail =
+          await this.personService.batchGetPersonDetailsByEmails(
+            [email],
+            apiToken,
+          );
+        existingPerson = existingByEmail.get(email.toLowerCase().trim()) || null;
+      }
+
+      if (!existingPerson) {
+        const existingByKey =
+          await this.personService.batchGetPersonDetailsByStringKeys(
+            [key],
+            apiToken,
+          );
+        existingPerson = existingByKey.get(key) || null;
+      }
+
+      if ((existingPerson as PersonNode | null)?.id) {
+        const personId = (existingPerson as PersonNode).id;
+        this.linkPersonIdToRelatedKeys(
+          key,
+          personId,
+          email,
+          emailToKeys,
+          tracking,
+        );
+        console.log(`Found existing person for ${key}: ${personId}`);
+      } else {
+        console.log(
+          `No existing person found for ${key} after creation failure`,
+        );
+      }
+    } catch (error) {
+      console.log(
+        `Error finding existing person for ${key}:`,
+        (error as any)?.message || error,
+      );
+    }
+  }
+
+  /**
+   * Links a resolved personId to a key and to any other keys in the same batch
+   * that shared the same email (intra-batch duplicates that were not inserted).
+   */
+  private linkPersonIdToRelatedKeys(
+    key: string,
+    personId: string,
+    email: string,
+    emailToKeys: Map<string, string[]>,
+    tracking: any,
+  ): void {
+    if (key) {
+      tracking.personIdMap.set(key, personId);
+    }
+
+    const normalizedEmail = (email || '').toLowerCase().trim();
+    if (!normalizedEmail) {
+      return;
+    }
+
+    const relatedKeys = emailToKeys.get(normalizedEmail) || [];
+    for (const relatedKey of relatedKeys) {
+      if (!tracking.personIdMap.has(relatedKey)) {
+        tracking.personIdMap.set(relatedKey, personId);
+        console.log(
+          `Linked personId ${personId} to related key ${relatedKey} (shared email ${normalizedEmail})`,
+        );
+      }
     }
   }
 
