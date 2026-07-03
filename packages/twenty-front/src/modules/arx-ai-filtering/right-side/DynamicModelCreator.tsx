@@ -23,13 +23,13 @@ import { TokenAnalysisComponent } from './components/TokenAnalysis';
 
 // Styled components
 import {
-  Container,
-  ErrorAlert,
-  FieldsList,
-  SelectLabel,
-  StyledInput,
-  StyledSelect,
-  StyledTextArea
+    Container,
+    ErrorAlert,
+    FieldsList,
+    SelectLabel,
+    StyledInput,
+    StyledSelect,
+    StyledTextArea
 } from './components/StyledComponents';
 
 
@@ -38,7 +38,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   objectNameSingular, 
   index, 
   onError,
-  candidateFields,
+  otherFieldKeys,
   isLoadingFields,
   apiError
 }) => {
@@ -167,7 +167,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
 
   const handleProcessAIFilter = useCallback(async () => {
     try {
-      const config = await processAIFilter(localFilterDescription, candidateFields);
+      const config = await processAIFilter(localFilterDescription, otherFieldKeys);
       if (config) {
         updateEnrichment({
           modelName: config.modelName,
@@ -181,7 +181,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
     } catch (error) {
       // Error is handled in the hook
     }
-  }, [processAIFilter, localFilterDescription, candidateFields, updateEnrichment]);
+  }, [processAIFilter, localFilterDescription, otherFieldKeys, updateEnrichment]);
 
   const handleComputeTokens = useCallback(async () => {
     try {
@@ -278,7 +278,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         <>
           <SelectLabel>Select Column Headers</SelectLabel>
           <MetadataFieldsSelector
-            candidateFields={candidateFields}
+            otherFieldKeys={otherFieldKeys}
             isLoadingFields={isLoadingFields}
             apiError={apiError}
             selectedMetadataFields={currentEnrichment.selectedMetadataFields}

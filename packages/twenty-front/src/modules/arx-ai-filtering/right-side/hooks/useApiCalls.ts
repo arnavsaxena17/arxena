@@ -4,7 +4,7 @@ import { TableState, tableStateAtom } from '@/candidate-table/states/states';
 import axios from 'axios';
 import { useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { CandidateField, TokenAnalysis } from '../types';
+import { OtherFieldKey, TokenAnalysis } from '../types';
 
 export const useApiCalls = (index: number, onError: (error: string) => void) => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -22,7 +22,10 @@ export const useApiCalls = (index: number, onError: (error: string) => void) => 
       : tableState?.rawData?.map(row => row.id) || [];
   };
 
-  const processAIFilter = async (filterDescription: string, candidateFields: CandidateField[]) => {
+  const processAIFilter = async (
+    filterDescription: string,
+    otherFieldKeys: OtherFieldKey[],
+  ) => {
     if (!filterDescription) {
       return;
     }
@@ -31,9 +34,9 @@ export const useApiCalls = (index: number, onError: (error: string) => void) => 
     try {
       const response = await axios.post(
         `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/process-filter-description`,
-        { 
-          filterDescription, 
-          candidateFields: candidateFields.map(field => field.name) 
+        {
+          filterDescription,
+          otherFieldKeys: otherFieldKeys.map((field) => field.name),
         },
         { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
       );

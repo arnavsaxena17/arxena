@@ -1,17 +1,17 @@
 import React from 'react';
 import { IconX } from 'twenty-ui';
-import { CandidateField } from '../types';
+import { OtherFieldKey } from '../types';
 import {
-  CheckboxField,
-  CheckboxFieldsContainer,
-  FieldsLoadingContainer,
-  LoadingIndicator,
-  SelectedFieldsContainer,
-  SelectedFieldTag
+    CheckboxField,
+    CheckboxFieldsContainer,
+    FieldsLoadingContainer,
+    LoadingIndicator,
+    SelectedFieldsContainer,
+    SelectedFieldTag
 } from './StyledComponents';
 
 type MetadataFieldsSelectorProps = {
-  candidateFields: CandidateField[];
+  otherFieldKeys: OtherFieldKey[];
   isLoadingFields: boolean;
   apiError: string | null;
   selectedMetadataFields: string[];
@@ -20,7 +20,7 @@ type MetadataFieldsSelectorProps = {
 };
 
 export const MetadataFieldsSelector: React.FC<MetadataFieldsSelectorProps> = ({
-  candidateFields,
+  otherFieldKeys,
   isLoadingFields,
   apiError,
   selectedMetadataFields,
@@ -48,7 +48,7 @@ export const MetadataFieldsSelector: React.FC<MetadataFieldsSelectorProps> = ({
   return (
     <>
       <CheckboxFieldsContainer>
-        {candidateFields.map((field, idx) => (
+        {otherFieldKeys.map((field, idx) => (
           <CheckboxField key={`${field.name}-${idx}`}>
             <input
               type="checkbox"
@@ -63,7 +63,7 @@ export const MetadataFieldsSelector: React.FC<MetadataFieldsSelectorProps> = ({
         ))}
       </CheckboxFieldsContainer>
       
-      {candidateFields.length === 0 && !isLoadingFields && (
+      {otherFieldKeys.length === 0 && !isLoadingFields && (
         <div style={{ marginTop: '0.5rem', color: '#6b7280', fontSize: '0.875rem' }}>
           No custom fields found for this job. Using default metadata fields.
         </div>

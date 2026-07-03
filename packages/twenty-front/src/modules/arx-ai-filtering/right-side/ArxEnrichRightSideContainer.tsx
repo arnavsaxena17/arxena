@@ -85,7 +85,7 @@ interface ArxEnrichRightSideContainerProps {
   closeModal: () => void;
   objectNameSingular: string;
   objectRecordId: string;
-  candidateFields: Array<{name: string, label: string}>;
+  otherFieldKeys: Array<{name: string, label: string}>;
   isLoadingFields: boolean;
   apiError: string | null;
   aiFilteringProgress?: any;
@@ -157,7 +157,7 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
   closeModal, 
   objectNameSingular, 
   objectRecordId,
-  candidateFields,
+  otherFieldKeys,
   isLoadingFields,
   apiError,
   aiFilteringProgress: propAiFilteringProgress,
@@ -441,7 +441,7 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
                 objectNameSingular={objectNameSingular} 
                 index={activeEnrichment}
                 onError={handleError}
-                candidateFields={candidateFields}
+                otherFieldKeys={otherFieldKeys}
                 isLoadingFields={isLoadingFields}
                 apiError={apiError}
               />

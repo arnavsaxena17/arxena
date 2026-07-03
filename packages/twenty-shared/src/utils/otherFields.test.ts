@@ -3,6 +3,7 @@ import {
     buildOtherFieldsFromUnmapped,
     candidateFieldValuesToOtherFields,
     getCandidateCustomField,
+    getResolvedOtherFields,
     isJsonColumnEmpty,
     mergeChatQuestionsPreservingOrder,
     mergeOtherFields,
@@ -60,6 +61,23 @@ describe('otherFields utils', () => {
           },
         },
       ]),
+    ).toEqual({ inferred_salary: '15L' });
+  });
+
+  it('getResolvedOtherFields falls back to legacy candidateFieldValues', () => {
+    expect(
+      getResolvedOtherFields({
+        candidateFieldValues: {
+          edges: [
+            {
+              node: {
+                name: '15L',
+                candidateFields: { name: 'inferred_salary' },
+              },
+            },
+          ],
+        },
+      }),
     ).toEqual({ inferred_salary: '15L' });
   });
 

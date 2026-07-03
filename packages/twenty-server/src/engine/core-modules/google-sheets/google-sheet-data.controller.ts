@@ -7,7 +7,6 @@ import { ProcessCandidatesService } from '../candidate-sourcing/jobs/process-can
 import { AiFilteringProcessorService } from '../candidate-sourcing/services/ai-filtering-processor.service';
 import { AiFilteringService } from '../candidate-sourcing/services/ai-filtering.service';
 import { CandidateDataService } from '../candidate-sourcing/services/candidate-data.service';
-import { CandidateFieldValueService } from '../candidate-sourcing/services/candidate-field-value.service';
 import { CandidateService } from '../candidate-sourcing/services/candidate.service';
 import { ChatService } from '../candidate-sourcing/services/chat.service';
 import { FilterDescriptionProcessorService } from '../candidate-sourcing/services/filter-description-processor.service';
@@ -39,7 +38,6 @@ export class GoogleSheetsDataController {
     private readonly aiFilteringService: AiFilteringService,
     private readonly aiFilteringProcessorService: AiFilteringProcessorService,
     private readonly candidateDataService: CandidateDataService,
-    private readonly candidateFieldValueService: CandidateFieldValueService,
     private readonly filterDescriptionProcessorService: FilterDescriptionProcessorService,
     private readonly uploadProgressPubSubService: UploadProgressPubSubService,
     private readonly deleteFieldValuesService: DeleteFieldValuesService,

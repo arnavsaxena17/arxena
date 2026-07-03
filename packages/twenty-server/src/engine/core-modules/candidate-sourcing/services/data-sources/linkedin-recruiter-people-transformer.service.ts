@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { UserProfile } from 'twenty-shared';
 import {
-  LinkedInEducation,
-  LinkedInPeopleSearchResult,
-  LinkedInSearchResult,
-  LinkedInWorkExperience,
+    LinkedInEducation,
+    LinkedInPeopleSearchResult,
+    LinkedInSearchResult,
+    LinkedInWorkExperience,
 } from '../../../linkedin-search/types/linkedin-search-response.type';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { TransformationContext } from './base-data-source-transformer.service';
 import {
-  LinkedInSearchTransformerService,
-  TransformedCandidateForTable,
+    LinkedInSearchTransformerService,
+    TransformedCandidateForTable,
 } from './linkedin-search-transformer.service';
 
 type RecruiterPrimaryRole = {
@@ -94,7 +94,7 @@ export class LinkedInRecruiterPeopleTransformerService extends LinkedInSearchTra
         lastEngagementChatControl: 'startChat',
         whatsappMessages: { edges: [] },
         emailMessages: { edges: [] },
-        candidateFieldValues: { edges: [] },
+        otherFields: {},
         candidateReminders: { edges: [] },
         jobs: { id: jobId, name: jobName },
         people: { id: peopleId },

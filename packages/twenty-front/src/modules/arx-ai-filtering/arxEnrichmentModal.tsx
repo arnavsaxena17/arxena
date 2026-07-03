@@ -2,7 +2,7 @@ import styled from '@emotion/styled';
 import { useEffect } from 'react';
 import { useRecoilState } from 'recoil';
 
-import { useFetchCandidateFields } from '@/arx-ai-filtering/hooks/useFetchCandidateFields';
+import { useFetchOtherFieldKeys } from '@/arx-ai-filtering/hooks/useFetchOtherFieldKeys';
 import { ArxEnrichLeftSideContainer } from '@/arx-ai-filtering/left-side/ArxEnrichLeftSideContainer';
 import { ArxEnrichRightSideContainer } from '@/arx-ai-filtering/right-side/ArxEnrichRightSideContainer';
 import { currentJobIdState, isArxEnrichModalMinimizedState, isArxEnrichModalOpenState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
@@ -136,7 +136,8 @@ export const ArxEnrichmentModal = ({
   const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
   const [isMinimized, setIsMinimized] = useRecoilState(isArxEnrichModalMinimizedState);
   const [currentJobId] = useRecoilState(currentJobIdState);
-  const { candidateFields, isLoadingFields, apiError, fetchCandidateFields } = useFetchCandidateFields();
+  const { otherFieldKeys, isLoadingFields, apiError, fetchOtherFieldKeys } =
+    useFetchOtherFieldKeys();
   
   // Initialize SSE connection at modal level to ensure it persists
   const { aiFilteringProgress, isConnected, error: sseError, reconnect } = useAiFilteringProgress();
@@ -162,10 +163,10 @@ export const ArxEnrichmentModal = ({
         keyboardShortcutMenu: false,
       });
       if (currentJobId) {
-        fetchCandidateFields(currentJobId);
+        fetchOtherFieldKeys(currentJobId);
       }
     }
-  }, [isArxEnrichModalOpen, setHotkeyScopeAndMemorizePreviousScope, fetchCandidateFields, currentJobId]);
+  }, [isArxEnrichModalOpen, setHotkeyScopeAndMemorizePreviousScope, fetchOtherFieldKeys, currentJobId]);
 
   // Debug SSE connection at modal level
   useEffect(() => {
@@ -197,7 +198,7 @@ export const ArxEnrichmentModal = ({
           closeModal={closeModal}
           objectNameSingular={objectNameSingular}
           objectRecordId={objectRecordId}
-          candidateFields={candidateFields}
+          otherFieldKeys={otherFieldKeys}
           isLoadingFields={isLoadingFields}
           apiError={apiError}
           aiFilteringProgress={aiFilteringProgress}
@@ -222,7 +223,7 @@ export const ArxEnrichmentModal = ({
               closeModal={closeModal}
               objectNameSingular={objectNameSingular}
               objectRecordId={objectRecordId}
-              candidateFields={candidateFields}
+              otherFieldKeys={otherFieldKeys}
               isLoadingFields={isLoadingFields}
               apiError={apiError}
               aiFilteringProgress={aiFilteringProgress}

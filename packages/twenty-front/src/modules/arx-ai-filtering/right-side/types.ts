@@ -14,7 +14,7 @@ export type FieldTypeOption = {
   label: string;
 };
 
-export type CandidateField = {
+export type OtherFieldKey = {
   name: string;
   label: string;
 };
@@ -30,7 +30,7 @@ export type DynamicModelCreatorProps = {
   objectNameSingular: string;
   index: number;
   onError: (error: string) => void;
-  candidateFields: CandidateField[];
+  otherFieldKeys: OtherFieldKey[];
   isLoadingFields: boolean;
   apiError: string | null;
 };

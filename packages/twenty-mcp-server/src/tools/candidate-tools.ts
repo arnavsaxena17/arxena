@@ -537,10 +537,10 @@ export const candidateTools: McpTool[] = [
           ...baseSchema,
           properties: {
             ...baseSchema.properties,
-            candidateFields: {
+            otherFieldKeys: {
               type: 'array',
               items: { type: 'object' },
-              description: 'Available candidate fields for validation (optional)',
+              description: 'Available candidate otherFields keys for validation (optional)',
             },
           },
         };

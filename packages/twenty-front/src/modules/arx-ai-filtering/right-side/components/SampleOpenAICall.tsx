@@ -1,5 +1,6 @@
 import styled from '@emotion/styled';
 import React from 'react';
+import { getCandidateCustomField } from 'twenty-shared';
 import { CodeBlock, SelectLabel } from './StyledComponents';
 
 type SampleOpenAICallProps = {
@@ -30,14 +31,14 @@ export const SampleOpenAICall: React.FC<SampleOpenAICallProps> = ({
   console.log("fields in SampleOpenAICall", fields);
   console.log("prompt in SampleOpenAICall", prompt);
   
-  // Helper function to get field value from candidateFieldValues
   const getFieldValue = (fieldName: string) => {
-    if (!candidateData?.candidateFieldValues?.edges) return null;
-    
-    const field = candidateData?.candidateFieldValues?.edges?.find(
-      (edge: any) => edge?.node?.candidateFields?.name === fieldName
-    );
-    return field?.node?.name || null;
+    const value = getCandidateCustomField(candidateData, fieldName);
+
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    return typeof value === 'string' ? value : JSON.stringify(value);
   };
 
   const metadataValues = selectedMetadataFields.map(fieldName => {

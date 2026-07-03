@@ -39,7 +39,6 @@ import { ProcessCandidatesService } from '../candidate-sourcing/jobs/process-can
 import { AiFilteringProcessorService } from '../candidate-sourcing/services/ai-filtering-processor.service';
 import { AiFilteringService } from '../candidate-sourcing/services/ai-filtering.service';
 import { CandidateDataService } from '../candidate-sourcing/services/candidate-data.service';
-import { CandidateFieldValueService } from '../candidate-sourcing/services/candidate-field-value.service';
 import { CandidateService } from '../candidate-sourcing/services/candidate.service';
 import { ChatService } from '../candidate-sourcing/services/chat.service';
 import { FilterDescriptionProcessorService } from '../candidate-sourcing/services/filter-description-processor.service';
@@ -82,7 +81,6 @@ import { GoogleSheetsService } from './google-sheets.service';
     AiFilteringService,
     AiFilteringProcessorService,
     CandidateDataService,
-    CandidateFieldValueService,
     WorkspaceQueryService,
     WorkspaceDataSourceService,
     EnvironmentService,

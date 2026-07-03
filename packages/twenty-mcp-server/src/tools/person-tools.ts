@@ -3,9 +3,9 @@ import {
   graphqlQueryToFindManyPeople,
   graphqlToFetchAllCandidateDataWithFieldValues,
   mutationToUpdateOnePerson,
+  otherFieldsToFlatRow,
   People,
   PersonNode,
-  type CandidateFieldValueNode,
 } from 'twenty-shared';
 import {
   ENRICH_CONTACT_FROM_DATA_INPUT_DESCRIPTOR,
@@ -16,6 +16,7 @@ import {
   GET_CANDIDATE_FIELDS_FOR_JOB_INPUT_DESCRIPTOR,
   GetCandidateFieldsForJobInput,
   GetCandidateFieldValuesInput,
+  GetCandidateFieldValuesResult,
   UPDATE_CONTACT_INFO_INPUT_DESCRIPTOR,
   UpdateContactInfoInput,
   UpdatedPersonSchema,
@@ -150,7 +151,7 @@ export const personTools: McpTool[] = [
     definition: {
       name: 'get_candidate_fields_for_job',
       description:
-        'Get the list of custom fields configured for candidates in a specific job. Use this to see what fields are available before calling update_candidate_salary or update_candidate_field_value.',
+        'Get the list of custom otherFields keys configured for candidates in a specific job. Use this to see what fields are available before calling update_candidate_salary.',
       inputSchema: descriptorToInputSchema(GET_CANDIDATE_FIELDS_FOR_JOB_INPUT_DESCRIPTOR),
     },
     handler: async (args, config) => {
@@ -172,10 +173,10 @@ export const personTools: McpTool[] = [
     definition: {
       name: 'get_candidate_field_values',
       description:
-        'Get the current values of all custom fields for a specific candidate (e.g. current salary, expected salary, notice period, skills score).',
+        'Get the current values of all custom otherFields for a specific candidate (e.g. current salary, expected salary, notice period, skills score).',
       inputSchema: descriptorToInputSchema(GET_CANDIDATE_FIELD_VALUES_INPUT_DESCRIPTOR),
     },
-    handler: async (args, config): Promise<{count: number, fieldValues: CandidateFieldValueNode[]}> => {
+    handler: async (args, config): Promise<GetCandidateFieldValuesResult> => {
       const { candidateId } = args as GetCandidateFieldValuesInput;
 
       const data = await executeGraphQL(
@@ -190,11 +191,18 @@ export const personTools: McpTool[] = [
       const resolvedOtherFields = getResolvedOtherFields(
         (candidate ?? {}) as Parameters<typeof getResolvedOtherFields>[0],
       );
+      const flatOtherFields = otherFieldsToFlatRow(resolvedOtherFields);
 
-      const fieldValues = Object.entries(resolvedOtherFields).map(([name, value]) => ({
-        id: `${candidateId}:${name}`,
-        name: typeof value === 'string' ? value : JSON.stringify(value),
-        candidateFields: { id: name, name },
+      const fieldValues = Object.entries(flatOtherFields).map(([fieldName, value]) => ({
+        id: `${candidateId}:${fieldName}`,
+        fieldName,
+        fieldLabel: fieldName,
+        value:
+          value === null || value === undefined
+            ? ''
+            : typeof value === 'string'
+              ? value
+              : JSON.stringify(value),
       }));
 
       return {

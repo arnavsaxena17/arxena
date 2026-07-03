@@ -2,7 +2,7 @@ import { ActionMenuComponentInstanceContext } from "@/action-menu/states/context
 import { TableContainer } from "@/candidate-table/components/styled";
 // import { StyledTopBar } from "@/activities/chats/components/chat-window/ChatWindowStyles";
 import { ArxEnrichmentModal } from '@/arx-ai-filtering/arxEnrichmentModal';
-import { useFetchCandidateFields } from '@/arx-ai-filtering/hooks/useFetchCandidateFields';
+import { useFetchOtherFieldKeys } from '@/arx-ai-filtering/hooks/useFetchOtherFieldKeys';
 import { useInitializeEnrichments } from '@/arx-ai-filtering/hooks/useInitializeEnrichments';
 import { useSelectedRecordForEnrichment } from "@/arx-ai-filtering/hooks/useSelectedRecordForEnrichment";
 import { currentJobIdState, isArxEnrichModalOpenState } from "@/arx-ai-filtering/states/arxEnrichModalOpenState";
@@ -173,7 +173,7 @@ export const JobPage: React.FC = () => {
   const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileConnected;
   const { isExtensionInstalled, isChecking: isExtensionChecking } =
     useChromeExtensionDetection();
-  const { candidateFields, fetchCandidateFields } = useFetchCandidateFields();
+  const { fetchOtherFieldKeys } = useFetchOtherFieldKeys();
   const { initializeEnrichments } = useInitializeEnrichments();
 
   const isVideoInterviewModalOpen = useRecoilValue(isVideoInterviewModalOpenState);
@@ -558,16 +558,16 @@ export const JobPage: React.FC = () => {
   }, []); // Remove initializeEnrichments from dependencies
 
   // Fetch candidate fields when jobId changes - memoize the callback
-  const memoizedFetchCandidateFields = useCallback(() => {
+  const memoizedFetchOtherFieldKeys = useCallback(() => {
     if (jobId) {
-      debugLog('JobId changed, fetching candidate fields for:', jobId);
-      fetchCandidateFields(jobId);
+      debugLog('JobId changed, fetching otherField keys for:', jobId);
+      fetchOtherFieldKeys(jobId);
     }
-  }, [jobId, fetchCandidateFields]);
+  }, [jobId, fetchOtherFieldKeys]);
 
   useEffect(() => {
-    memoizedFetchCandidateFields();
-  }, [memoizedFetchCandidateFields]);
+    memoizedFetchOtherFieldKeys();
+  }, [memoizedFetchOtherFieldKeys]);
 
   useEffect(() => {
     if (jobId && jobId !== 'job-id') {

@@ -42,7 +42,7 @@ export type TransformedCandidateForTable = Omit<
   // Relationship edges
   whatsappMessages: { edges: any[] };
   emailMessages: { edges: any[] };
-  candidateFieldValues: { edges: any[] };
+  otherFields?: Record<string, unknown>;
   candidateReminders: { edges: any[] };
   jobs: { id: string; name: string };
   people: { id: string };
@@ -434,7 +434,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         // Relationship edges
         whatsappMessages: { edges: [] },
         emailMessages: { edges: [] },
-        candidateFieldValues: { edges: [] },
+        otherFields: {},
         candidateReminders: { edges: [] },
         attachments: { edges: [] },
         videoInterview: { edges: [] },

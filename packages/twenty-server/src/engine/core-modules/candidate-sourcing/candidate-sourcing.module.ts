@@ -29,7 +29,6 @@ import { AiFilteringProcessorService } from 'src/engine/core-modules/candidate-s
 import { AiFilteringProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filtering-progress-pubsub.service';
 import { AiFilteringService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filtering.service';
 import { CandidateDataService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-data.service';
-import { CandidateFieldValueService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-field-value.service';
 import { CandidateWorkspaceGraphQLService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-workspace-graphql.service';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { ChatService } from 'src/engine/core-modules/candidate-sourcing/services/chat.service';
@@ -124,7 +123,6 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     UploadProgressPubSubService,
     OrgChartProgressRedisService,
     CandidateDataService,
-    CandidateFieldValueService,
     OtherFieldsService,
     MigrateOtherFieldsService,
     MigrateOtherFieldsCommand,

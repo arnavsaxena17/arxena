@@ -204,7 +204,15 @@ export const isOtherFieldsEmpty = (otherFields: unknown): boolean =>
 
 export const getResolvedOtherFields = (
   candidate: CandidateWithCustomFields,
-): OtherFieldsRecord => normalizeOtherFields(candidate.otherFields);
+): OtherFieldsRecord => {
+  const fromOtherFields = normalizeOtherFields(candidate.otherFields);
+
+  if (!isOtherFieldsEmpty(fromOtherFields)) {
+    return fromOtherFields;
+  }
+
+  return candidateFieldValuesToOtherFields(candidate.candidateFieldValues?.edges);
+};
 
 export const getCandidateCustomField = (
   candidate: CandidateWithCustomFields,

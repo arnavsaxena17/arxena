@@ -164,7 +164,7 @@ export const POST_CANDIDATES_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[
 /** Descriptor for process_filter_description tool input. */
 export const PROCESS_FILTER_DESCRIPTION_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
   { key: 'filterDescription', type: 'string', description: 'Natural language filter (e.g. salary > 40L)', required: true },
-  { key: 'candidateFields', type: 'object', description: 'Available candidate fields for validation', required: false },
+  { key: 'otherFieldKeys', type: 'object', description: 'Available candidate otherFields keys for validation', required: false },
 ] as const;
 
 /** Descriptor for process_ai_filters tool input. */

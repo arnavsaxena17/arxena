@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
-  AiFilter,
-  mutationToCreateOneCandidateEnrichment,
+    AiFilter,
+    mutationToCreateOneCandidateEnrichment,
 } from 'twenty-shared';
 
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
@@ -11,7 +11,7 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import { AiFilterConfig, AiFilteringProcessorService } from './ai-filtering-processor.service';
 import { AiFilteringProgressPubSubService } from './ai-filtering-progress-pubsub.service';
 import { CandidateDataService } from './candidate-data.service';
-import { CandidateFieldValueService } from './candidate-field-value.service';
+import { OtherFieldsService } from './other-fields.service';
 
 export interface ProcessAiFiltersRequest {
   aiFilters: AiFilter[];
@@ -34,7 +34,7 @@ export class AiFilteringService {
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly configService: ConfigService,
     private readonly candidateDataService: CandidateDataService,
-    private readonly candidateFieldValueService: CandidateFieldValueService,
+    private readonly otherFieldsService: OtherFieldsService,
     private readonly aiFilteringProcessorService: AiFilteringProcessorService,
     private readonly aiFilteringProgressPubSubService: AiFilteringProgressPubSubService,
     private readonly workspaceQueryService: WorkspaceQueryService,
@@ -187,7 +187,7 @@ export class AiFilteringService {
 
       if (allFieldNames.size > 0) {
         try {
-          await this.candidateFieldValueService.processAiFilterResults(
+          await this.otherFieldsService.processAiFilterResults(
             aiFilterResults,
             Array.from(allFieldNames),
             apiToken

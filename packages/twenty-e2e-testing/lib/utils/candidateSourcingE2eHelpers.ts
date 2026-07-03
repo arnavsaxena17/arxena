@@ -1,6 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import { getCandidateCustomField } from 'twenty-shared';
 import * as XLSX from 'xlsx';
 
 import { DataProcessingUtils } from '../../../twenty-server/src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
@@ -20,15 +21,7 @@ export type CandidateNode = {
   resdexNaukriUrl?: { primaryLinkUrl?: string | null } | null;
   linkedinUrl?: { primaryLinkUrl?: string | null } | null;
   jobs?: Array<{ id?: string | null; name?: string | null }> | null;
-  candidateFieldValues?: {
-    edges?: Array<{
-      node?: {
-        id?: string;
-        name?: string | null;
-        candidateFields?: { id?: string; name?: string | null } | null;
-      } | null;
-    }>;
-  } | null;
+  otherFields?: Record<string, unknown> | null;
 };
 
 export type PersonNode = {
@@ -1306,10 +1299,8 @@ export const waitForCandidatesToContainFieldNames = async (
           jobId: input.jobId,
         });
         return latestCandidates.filter((candidate) =>
-          input.fieldNames.every((fieldName) =>
-            (candidate.candidateFieldValues?.edges ?? []).some(
-              (edge) => edge.node?.candidateFields?.name === fieldName,
-            ),
+          input.fieldNames.every(
+            (fieldName) => getCandidateCustomField(candidate, fieldName) !== undefined,
           ),
         ).length;
       },
@@ -1505,10 +1496,8 @@ export const runAiFilteringAndValidate = async (
   });
 
   const candidatesWithPlannedColumns = afterCandidates.filter((candidate) =>
-    plannedColumnNames.every((fieldName) =>
-      (candidate.candidateFieldValues?.edges ?? []).some(
-        (edge) => edge.node?.candidateFields?.name === fieldName,
-      ),
+    plannedColumnNames.every(
+      (fieldName) => getCandidateCustomField(candidate, fieldName) !== undefined,
     ),
   );
   expect(candidatesWithPlannedColumns.length).toBeGreaterThan(0);

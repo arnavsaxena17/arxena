@@ -1300,6 +1300,7 @@ export class CandidateSourcingController {
       return {
         status: 'Success',
         candidateFields: formattedFields,
+        otherFieldKeys: formattedFields,
       };
     } catch (err) {
       console.error('Error fetching candidate fields by job:', err);

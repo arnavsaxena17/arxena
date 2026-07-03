@@ -453,7 +453,7 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
     return '';
   };
 
-  // Helper function to get field value from candidateFieldValues
+  // Helper function to get field value from candidate otherFields
   const getFieldValue = (candidateData: any, fieldName: string) => {
     const value = getCandidateCustomField(candidateData, fieldName);
     if (value === null || value === undefined) {

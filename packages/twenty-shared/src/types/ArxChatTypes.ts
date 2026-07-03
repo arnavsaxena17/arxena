@@ -604,7 +604,7 @@ export type TransformedCandidateForTable = Omit<
   // Relationship edges
   whatsappMessages: { edges: any[] };
   emailMessages: { edges: any[] };
-  candidateFieldValues: { edges: any[] };
+  otherFields?: OtherFieldsRecord | null;
   candidateReminders: { edges: any[] };
   jobs: { id: string; name: string };
   people: { id: string };
@@ -1187,9 +1187,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
       ],
     },
   },
-  candidateFieldValues: {
-    edges: [],
-  },
+  otherFields: {},
   videoInterview: {
     edges: [
       {
@@ -1861,7 +1859,6 @@ export interface CandidateNode {
   jobs: Job;
   jobsId?: string;
   peopleId: string;
-  candidateFieldValues: CandidateFieldValues;
   otherFields?: OtherFieldsRecord | null;
   candidateReminders: Reminders;
   clientInterview?: ClientInterviews;
