@@ -529,71 +529,163 @@ export class MigrateOtherFieldsService {
       return { fieldValuesDeleted: 0, fieldsDeleted: 0 };
     }
 
-    const fieldValuesDeleted = await this.deleteLegacyTableInBatches(
+    const fieldValuesDeleted = await this.deleteLegacyFieldValuesByCandidate(
       schema,
       workspaceId,
-      '_candidateFieldValue',
-      batchSize,
     );
 
     const fieldsDeleted = await this.deleteLegacyTableInBatches(
       schema,
       workspaceId,
       '_candidateField',
-      batchSize,
+      Math.min(batchSize, 100),
     );
 
     return { fieldValuesDeleted, fieldsDeleted };
   }
 
+  private async deleteLegacyFieldValuesByCandidate(
+    schema: string,
+    workspaceId: string,
+  ): Promise<number> {
+    let totalDeleted = 0;
+    let candidatesProcessed = 0;
+    const candidateBatchSize = 25;
+
+    while (true) {
+      const candidateRows = (await this.workspaceQueryService.executeRawQuery(
+        `
+          SELECT DISTINCT "candidateId" as "candidateId"
+          FROM ${schema}."_candidateFieldValue"
+          WHERE "deletedAt" IS NULL
+          LIMIT $1
+        `,
+        [candidateBatchSize],
+        workspaceId,
+      )) as { candidateId: string }[];
+
+      if (!candidateRows?.length) {
+        break;
+      }
+
+      for (const row of candidateRows) {
+        if (!row.candidateId) {
+          continue;
+        }
+
+        const deletedRows = await this.executeDeleteWithRetry(
+          workspaceId,
+          `${schema}."_candidateFieldValue" candidateId=${row.candidateId}`,
+          () =>
+            this.workspaceQueryService.executeRawQuery(
+              `
+                DELETE FROM ${schema}."_candidateFieldValue"
+                WHERE "deletedAt" IS NULL AND "candidateId" = $1
+                RETURNING id
+              `,
+              [row.candidateId],
+              workspaceId,
+            ) as Promise<{ id: string }[]>,
+        );
+
+        totalDeleted += deletedRows.length;
+        candidatesProcessed++;
+
+        if (candidatesProcessed % 100 === 0) {
+          this.logger.log(
+            `Workspace ${workspaceId}: deleted ${totalDeleted} _candidateFieldValue row(s) across ${candidatesProcessed} candidate(s)`,
+          );
+        }
+      }
+    }
+
+    if (totalDeleted > 0) {
+      this.logger.log(
+        `Workspace ${workspaceId}: finished _candidateFieldValue delete — ${totalDeleted} row(s), ${candidatesProcessed} candidate(s)`,
+      );
+    }
+
+    return totalDeleted;
+  }
+
+  private async executeDeleteWithRetry(
+    workspaceId: string,
+    label: string,
+    execute: () => Promise<{ id: string }[]>,
+  ): Promise<{ id: string }[]> {
+    const maxRetries = 3;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const deletedRows = await execute();
+
+        return deletedRows ?? [];
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const isTimeout = message.includes('timeout');
+
+        if (!isTimeout || attempt >= maxRetries) {
+          throw error;
+        }
+
+        this.logger.warn(
+          `Workspace ${workspaceId}: ${label} delete timed out (attempt ${attempt}/${maxRetries}), retrying...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+      }
+    }
+
+    return [];
+  }
+
   private async deleteLegacyTableInBatches(
     schema: string,
     workspaceId: string,
-    tableName: '_candidateFieldValue' | '_candidateField',
+    tableName: '_candidateField',
     batchSize: number,
   ): Promise<number> {
     let totalDeleted = 0;
-    const maxRetries = 3;
+    let effectiveBatchSize = batchSize;
 
     while (true) {
       let batchDeleted = 0;
-      let attempt = 0;
 
-      while (attempt < maxRetries) {
-        try {
-          const deletedRows = (await this.workspaceQueryService.executeRawQuery(
-            `
-              WITH batch AS (
-                SELECT id
-                FROM ${schema}."${tableName}"
-                WHERE "deletedAt" IS NULL
-                LIMIT $1
-              )
-              DELETE FROM ${schema}."${tableName}" target
-              USING batch
-              WHERE target.id = batch.id
-              RETURNING target.id
-            `,
-            [batchSize],
-            workspaceId,
-          )) as { id: string }[];
+      try {
+        const deletedRows = await this.executeDeleteWithRetry(
+          workspaceId,
+          `${schema}."${tableName}" batch=${effectiveBatchSize}`,
+          () =>
+            this.workspaceQueryService.executeRawQuery(
+              `
+                WITH batch AS (
+                  SELECT id
+                  FROM ${schema}."${tableName}"
+                  WHERE "deletedAt" IS NULL
+                  LIMIT $1
+                )
+                DELETE FROM ${schema}."${tableName}" target
+                USING batch
+                WHERE target.id = batch.id
+                RETURNING target.id
+              `,
+              [effectiveBatchSize],
+              workspaceId,
+            ) as Promise<{ id: string }[]>,
+        );
 
-          batchDeleted = deletedRows?.length ?? 0;
-          break;
-        } catch (error) {
-          attempt++;
-          const message = error instanceof Error ? error.message : String(error);
-          const isTimeout = message.includes('timeout');
+        batchDeleted = deletedRows.length;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
 
-          if (!isTimeout || attempt >= maxRetries) {
-            throw error;
-          }
-
+        if (message.includes('timeout') && effectiveBatchSize > 10) {
+          effectiveBatchSize = Math.max(10, Math.floor(effectiveBatchSize / 2));
           this.logger.warn(
-            `Workspace ${workspaceId}: ${tableName} delete batch timed out (attempt ${attempt}/${maxRetries}), retrying...`,
+            `Workspace ${workspaceId}: reducing ${tableName} delete batch size to ${effectiveBatchSize}`,
           );
-          await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+          continue;
         }
+
+        throw error;
       }
 
       if (batchDeleted === 0) {
