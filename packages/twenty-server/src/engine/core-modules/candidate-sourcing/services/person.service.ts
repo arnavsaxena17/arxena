@@ -75,8 +75,10 @@ export class PersonService {
 
     const graphqlVariables = {
       filter: {
-        emailsPrimaryEmail: {
-          in: cleanedEmails,
+        emails: {
+          primaryEmail: {
+            in: cleanedEmails,
+          },
         },
       },
       limit: 30,

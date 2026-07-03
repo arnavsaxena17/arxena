@@ -16,6 +16,12 @@ import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/
 import { useCallback, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
+import { sleep } from '~/utils/sleep';
+
+const randomWaitMs = (minMs: number, maxMs: number) => {
+  const delayMs = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+  return sleep(delayMs);
+};
 
 export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => { 
   const { enqueueSnackBar } = useSnackBar();
@@ -126,8 +132,10 @@ export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectM
         return;
       }
 
-      const naukriRecords = recordsToUpdate.filter((record: any) => 
-        (record as any)?.source?.includes('naukri')
+      const naukriRecords = recordsToUpdate.filter((record: any) =>
+        (record as any)?.source?.includes('naukri') ||
+        record.hiringNaukriUrl?.primaryLinkUrl?.trim() ||
+        record.resdexNaukriUrl?.primaryLinkUrl?.trim(),
       );
       
       if (naukriRecords.length > 10) {
@@ -139,18 +147,32 @@ export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectM
       }
 
       if (naukriRecords.length > 0) {
-        const urls = naukriRecords.map(record => 
-          record.hiringNaukriUrl?.primaryLinkUrl?.trim() || record.resdexNaukriUrl?.primaryLinkUrl?.trim()
-        ).filter(Boolean);
+        const naukriProfileEntries = naukriRecords
+          .map((record) => ({
+            record,
+            url:
+              record.hiringNaukriUrl?.primaryLinkUrl?.trim() ||
+              record.resdexNaukriUrl?.primaryLinkUrl?.trim(),
+          }))
+          .filter(
+            (entry): entry is { record: (typeof naukriRecords)[number]; url: string } =>
+              Boolean(entry.url),
+          );
 
-        if (urls.length > 0) {
-          window.postMessage({
-            type: 'FETCH_NAUKRI_PROFILES',
-            urls: urls,
-            current_table_id: objectMetadataItem.id,
-            text: JSON.stringify(naukriRecords),
-            columns: Object.keys(gqlFields),
-          }, '*');
+        if (naukriProfileEntries.length > 0) {
+          for (let index = 0; index < naukriProfileEntries.length; index++) {
+            if (index > 0) {
+              await randomWaitMs(1000, 4000);
+            }
+            const { record, url } = naukriProfileEntries[index];
+            window.postMessage({
+              type: 'FETCH_NAUKRI_PROFILES',
+              urls: [url],
+              current_table_id: objectMetadataItem.id,
+              text: JSON.stringify([record]),
+              columns: Object.keys(gqlFields),
+            }, '*');
+          }
           return;
         }
       }
