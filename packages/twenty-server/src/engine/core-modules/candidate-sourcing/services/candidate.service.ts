@@ -2745,9 +2745,16 @@ export class CandidateService {
             console.log('Found candidates by profile URL:', candidateIds);
           }
         }
-        
+
+        // Fallback: match spreadsheet-imported (and other) candidates by email/phone.
+        // Their stored key is spreadsheet_import|email:/|phone:, which never equals a name-based CV key.
         if (!candidateIds || candidateIds.length === 0) {
-          console.log('No candidates found for unique string key or profile URL, cannot upload CV');
+          console.log('No candidates found by key/URL, trying email/phone fallback');
+          candidateIds = await this.findCandidateIdsByEmailOrPhone(contactData, apiToken);
+        }
+
+        if (!candidateIds || candidateIds.length === 0) {
+          console.log('No candidates found for unique string key, profile URL, or email/phone, cannot upload CV');
           return;
         }
       }
@@ -3033,8 +3040,8 @@ export class CandidateService {
       console.log("profileUrl: ", profileUrl);
       
       if (!profileUrl) {
-        console.log('No valid profile URL found');
-        return null;
+        console.log('No valid profile URL found, trying email/phone fallback');
+        return await this.getCandidateNodeByEmailOrPhone(contactData, apiToken);
       }
       
       // Try searching with full URL first (most accurate match)
@@ -3078,8 +3085,8 @@ export class CandidateService {
         }
       }
       
-      console.log('No candidates found with any search method');
-      return null;
+      console.log('No candidates found with any URL search method, trying email/phone fallback');
+      return await this.getCandidateNodeByEmailOrPhone(contactData, apiToken);
       
     } catch (error) {
       console.error('Error getting person from contact data:', error);
@@ -3213,9 +3220,17 @@ export class CandidateService {
             console.log('Found candidates by profile URL:', candidateIds);
           }
         }
-        
+
+        // Fallback: match spreadsheet-imported (and other) candidates by email/phone before
+        // creating a new candidate. Their key is spreadsheet_import|email:/|phone:, which a
+        // name-based CV key never matches, so without this we'd wrongly create a duplicate.
         if (!candidateIds || candidateIds.length === 0) {
-          console.log('No candidates found for unique string key or profile URL, creating candidate first');
+          console.log('No candidates found by key/URL, trying email/phone fallback');
+          candidateIds = await this.findCandidateIdsByEmailOrPhone(contactData, apiToken);
+        }
+
+        if (!candidateIds || candidateIds.length === 0) {
+          console.log('No candidates found for unique string key, profile URL, or email/phone, creating candidate first');
           
           // Parse json_data if available
           let jsonData = {};
@@ -3373,6 +3388,165 @@ export class CandidateService {
       console.error('Error getting candidate IDs by unique string key:', error);
       return [];
     }
+  }
+
+  /**
+   * Extract stable contact identifiers (emails, phones) from contact data or a user profile.
+   * Handles the extension's stringified json_data as well as parsed-CV / userProfile shapes.
+   */
+  private extractContactIdentifiers(contactData: any): { emails: string[]; phones: string[] } {
+    const emailCandidates: any[] = [];
+    const phoneCandidates: any[] = [];
+
+    const collectFrom = (obj: any): void => {
+      if (!obj || typeof obj !== 'object') {
+        return;
+      }
+      emailCandidates.push(
+        obj.emailAddresses,
+        obj.emailAddress,
+        obj['Email ID'],
+        obj['Email (emails)'],
+        obj['Email (email)'],
+        obj.emails,
+        obj.email,
+        obj.email_address,
+        obj.emailId,
+      );
+      phoneCandidates.push(
+        obj.phoneNumbers,
+        obj.phoneNumber,
+        obj['Phone Number'],
+        obj['Phone number (phones)'],
+        obj['Phone number (phoneNumber)'],
+        obj.phones,
+        obj.phone,
+        obj.phone_number,
+        obj.phone_numbers,
+      );
+    };
+
+    collectFrom(contactData);
+
+    if (contactData?.json_data) {
+      try {
+        const jsonData =
+          typeof contactData.json_data === 'string'
+            ? JSON.parse(contactData.json_data)
+            : contactData.json_data;
+        collectFrom(jsonData);
+      } catch (error) {
+        console.warn('extractContactIdentifiers: failed to parse json_data', error);
+      }
+    }
+
+    const emails = new Set<string>();
+    for (const raw of emailCandidates) {
+      if (!raw) {
+        continue;
+      }
+      for (const cleaned of this.dataProcessingUtils.cleanEmailAddresses(raw)) {
+        if (cleaned) {
+          emails.add(cleaned);
+        }
+      }
+    }
+
+    const phones = new Set<string>();
+    for (const raw of phoneCandidates) {
+      if (!raw) {
+        continue;
+      }
+      for (const cleaned of this.dataProcessingUtils.cleanPhoneNumbers(raw)) {
+        if (cleaned) {
+          phones.add(cleaned);
+        }
+      }
+    }
+
+    return { emails: [...emails], phones: [...phones] };
+  }
+
+  /**
+   * Fallback candidate lookup used during CV tagging when the name-based uniqueStringKey
+   * finds nothing. Spreadsheet-imported candidates are keyed on stable contact identifiers
+   * (spreadsheet_import|email:<email> / spreadsheet_import|phone:<phone>) rather than name+company,
+   * so a name-based CV key never matches them. Here we match on the CV's email/phone directly,
+   * including the spreadsheet_import key format.
+   */
+  private async findCandidateIdsByEmailOrPhone(contactData: any, apiToken: string): Promise<string[]> {
+    try {
+      const { emails, phones } = this.extractContactIdentifiers(contactData);
+
+      if (emails.length === 0 && phones.length === 0) {
+        console.log('findCandidateIdsByEmailOrPhone: no email/phone identifiers found in contact data');
+        return [];
+      }
+
+      console.log('findCandidateIdsByEmailOrPhone: matching by identifiers', { emails, phones });
+
+      const orConditions: any[] = [];
+
+      // Reconstruct the exact spreadsheet_import key format used at import time.
+      const spreadsheetKeys = [
+        ...emails.map(email => `spreadsheet_import|email:${email}`),
+        ...phones.map(phone => `spreadsheet_import|phone:${phone}`),
+      ];
+      if (spreadsheetKeys.length > 0) {
+        orConditions.push({ uniqueStringKey: { in: spreadsheetKeys } });
+      }
+
+      // Match any candidate carrying this email/phone directly, regardless of source/key format.
+      if (emails.length > 0) {
+        orConditions.push({ email: { primaryEmail: { in: emails } } });
+      }
+      for (const phone of phones) {
+        orConditions.push({ phoneNumber: { primaryPhoneNumber: { ilike: `%${phone}%` } } });
+      }
+
+      const graphqlQuery = {
+        filter: { or: orConditions },
+        orderBy: [{ position: 'AscNullsFirst' }],
+      };
+
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFetchAllCandidateData,
+        graphqlQuery,
+        apiToken,
+      );
+
+      const candidates = response?.data?.data?.candidates as {
+        edges: CandidatesEdge[];
+        pageInfo: PageInfo;
+      } | undefined;
+
+      if (!candidates?.edges || candidates.edges.length === 0) {
+        console.log('findCandidateIdsByEmailOrPhone: no candidates matched by email/phone');
+        return [];
+      }
+
+      const candidateIds = candidates.edges
+        .map(edge => edge?.node?.id)
+        .filter(Boolean) as string[];
+      const uniqueIds = [...new Set(candidateIds)];
+      console.log('findCandidateIdsByEmailOrPhone: matched candidate IDs', uniqueIds);
+      return uniqueIds;
+    } catch (error) {
+      console.error('findCandidateIdsByEmailOrPhone: error matching by email/phone', error);
+      return [];
+    }
+  }
+
+  /**
+   * Return the first candidate node matched by email/phone (spreadsheet_import key format included),
+   * or null. Used as a last-resort match before creating a brand new candidate for a CV upload.
+   */
+  private async getCandidateNodeByEmailOrPhone(contactData: any, apiToken: string): Promise<any> {
+    const candidateIds = await this.findCandidateIdsByEmailOrPhone(contactData, apiToken);
+    if (!candidateIds || candidateIds.length === 0) {
+      return null;
+    }
+    return await this.getCandidateDetails(candidateIds[0], apiToken);
   }
 
   private async getCandidateDetails(candidateId: string, apiToken: string): Promise<any> {

@@ -2150,7 +2150,6 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async testCvUpload(@Req() request: any): Promise<object> {
     console.log('Test CV upload endpoint reached');
-    console.log('Request body:', request.body);
     console.log('Authorization header:', request.headers.authorization);
     return { status: 'success', message: 'Test endpoint reached' };
   }
@@ -2158,7 +2157,6 @@ export class CandidateSourcingController {
   @Post('test-cv-upload-no-auth')
   async testCvUploadNoAuth(@Req() request: any): Promise<object> {
     console.log('Test CV upload endpoint reached (no auth)');
-    console.log('Request body:', request.body);
     return { status: 'success', message: 'Test endpoint reached (no auth)' };
   }
 
@@ -2180,7 +2178,6 @@ export class CandidateSourcingController {
     @UploadedFile() file: Express.Multer.File,
   ): Promise<object> {
     console.log('Test file upload endpoint reached (no auth)');
-    console.log('Request body:', request.body);
     console.log('File:', file);
     return { status: 'success', message: 'Test file upload reached (no auth)', file: file?.originalname };
   }
@@ -2203,7 +2200,6 @@ export class CandidateSourcingController {
     @UploadedFile() file: Express.Multer.File,
   ): Promise<object> {
     try {
-      console.log('Received direct CV upload from extension hit update-contact-with-cv-no-auth');
       
       if (!file) {
         console.error('No file provided in request');
@@ -2213,7 +2209,6 @@ export class CandidateSourcingController {
         };
       }
 
-      console.log('Request body:', request.body);
       console.log('File details:', {
         originalname: file.originalname,
         mimetype: file.mimetype,
@@ -2259,8 +2254,6 @@ export class CandidateSourcingController {
     try {
       console.log('Received direct CV upload from extension hit update-contact-with-cv');
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-      console.log('Request headers:', request.headers);
-      console.log('Request body:', request.body);
       console.log('Request body x-origin-domain:', request.body['x-origin-domain']);
       if (!request.headers['x-origin-domain']) {
       // Check if 'x-origin-domain' is present in the form fields in addition to headers
@@ -2281,7 +2274,6 @@ export class CandidateSourcingController {
       let candidateData: any = {};
       let uniqueStringKey = '';
       let profileDataStr = '';
-      // Optional Resdex identity fields (used to avoid attaching wrong contact to CV)
       let resdex_key: string | undefined;
       let resdex_encryptedResId: string | undefined;
       let resdex_doubleEncryptedUserName: string | undefined;
