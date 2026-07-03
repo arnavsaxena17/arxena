@@ -9,14 +9,16 @@ import {
   CandidatesEdge,
   chatMessageType,
   deleteOneWhatsappMessage,
-  graphqlQueryToCreateOneCandidateFieldValue,
+  getResolvedOtherFields,
   graphqlQueryToCreateOneNewWhatsappMessage,
   graphqlQueryToRemoveMessages,
   graphqlToFetchAllCandidateData,
   graphQltoUpdateOneCandidate,
   graphqlToUpdateOneClientInterview,
   Job,
+  mergeOtherFields,
   PageInfo,
+  questionTextToKey,
   whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
@@ -874,10 +876,35 @@ export class UpdateChat {
     AnswerMessageObj: AnswerMessageObj,
     apiToken: string,
   ) {
-    const updateCandidateObjectVariables = { input: { ...AnswerMessageObj } };
-
     try {
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToCreateOneCandidateFieldValue, updateCandidateObjectVariables, apiToken);
+      const answerKey =
+        AnswerMessageObj.questionKey ||
+        (AnswerMessageObj.question
+          ? questionTextToKey(AnswerMessageObj.question)
+          : '');
+
+      if (!answerKey) {
+        console.error(
+          'Skipping otherFields update: missing question or questionKey for candidate',
+          AnswerMessageObj.candidateId,
+        );
+
+        return null;
+      }
+
+      const currentOtherFields = getResolvedOtherFields(candidate);
+      const mergedOtherFields = mergeOtherFields(currentOtherFields, {
+        [answerKey]: AnswerMessageObj.name,
+      });
+
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphQltoUpdateOneCandidate,
+        {
+          idToUpdate: AnswerMessageObj.candidateId,
+          input: { otherFields: mergedOtherFields },
+        },
+        apiToken,
+      );
 
       return response.data;
     } catch (error) {

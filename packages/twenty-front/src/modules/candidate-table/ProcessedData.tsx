@@ -1,4 +1,4 @@
-import { CandidateNode } from "twenty-shared";
+import { CandidateNode, getResolvedOtherFields, otherFieldsToFlatRow, toCamelCaseKey } from "twenty-shared";
 import { isLinkedInUrl, reconstructLinkedInUrlForDisplay } from "../../utils/linkedinUrlUtils";
 import { ProcessedDataItem } from "./TableColumns";
 
@@ -33,20 +33,29 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
             ?.node?.createdAt || '' : '',
         hasCv: candidate?.attachments?.edges?.length > 0 || false,
       };
-      const fieldValues: Record<string, string> = {};
+
+      const otherFieldValues = otherFieldsToFlatRow(getResolvedOtherFields(candidate));
+      const legacyFieldValues: Record<string, string> = {};
+
       if (candidate.candidateFieldValues?.edges) {
         candidate.candidateFieldValues.edges.forEach((edge: any) => {
           if (edge.node) {
             const fieldName = edge.node.candidateFields?.name;
             if (fieldName && edge.node.name !== undefined) {
-              const camelCaseFieldName = fieldName.replace(/_([a-z])/g, (match: string, letter: string) => letter.toUpperCase());
-              fieldValues[camelCaseFieldName] = edge.node.name;
+              const camelCaseFieldName = toCamelCaseKey(fieldName);
+              if (!(camelCaseFieldName in otherFieldValues)) {
+                legacyFieldValues[camelCaseFieldName] = edge.node.name;
+              }
             }
           }
         });
       }
-      const processedData: ProcessedDataItem = { ...baseData, ...fieldValues };
-      // console.log("processedData re these:", processedData);
+
+      const processedData: ProcessedDataItem = {
+        ...baseData,
+        ...legacyFieldValues,
+        ...otherFieldValues,
+      };
       return processedData;
     });
   };

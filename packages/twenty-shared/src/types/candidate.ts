@@ -7,6 +7,7 @@ export type CandidateNode = {
     id: string;
     name: string;
     chatFlowOrder?: string[];
+    chatQuestions?: string[];
   };
   people: {
     id: string;

@@ -1,28 +1,30 @@
 import {
-  CandidateFieldEdge,
-  CandidateNode,
-  CandidatesEdge,
-  ChatControlsObjType,
-  ChatHistoryItem,
-  chatMessageType,
-  ClientInterviewEdge,
-  ClientInterviewNode,
-  ClientMeetingEdge,
-  emptyCandidateProfileObj,
-  graphqlQueryToFindManyCandidateFields,
-  graphqlQueryToFindManyPeople,
-  graphqlQueryToFindScheduledClientMeetings,
-  graphqlQueryToFindVideoInterviewTemplatesByJobId,
-  graphqlToFetchAllCandidateData,
-  graphQlToFetchWhatsappMessages,
-  graphqlToFindManyJobs,
-  Job,
-  MessageNode,
-  PageInfo,
-  PersonEdge,
-  PersonNode,
-  whatappUpdateMessageObjType,
-  WhatsAppMessagesEdge
+    CandidateFieldEdge,
+    CandidateNode,
+    CandidatesEdge,
+    ChatControlsObjType,
+    ChatHistoryItem,
+    chatMessageType,
+    ClientInterviewEdge,
+    ClientInterviewNode,
+    ClientMeetingEdge,
+    emptyCandidateProfileObj,
+    FindOneJob,
+    graphqlQueryToFindManyCandidateFields,
+    graphqlQueryToFindManyPeople,
+    graphqlQueryToFindScheduledClientMeetings,
+    graphqlQueryToFindVideoInterviewTemplatesByJobId,
+    graphqlToFetchAllCandidateData,
+    graphQlToFetchWhatsappMessages,
+    graphqlToFindManyJobs,
+    Job,
+    MessageNode,
+    PageInfo,
+    PersonEdge,
+    PersonNode,
+    questionTextToKey,
+    whatappUpdateMessageObjType,
+    WhatsAppMessagesEdge
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -602,17 +604,41 @@ export class FilterCandidates {
     jobId: string,
     apiToken: string,
   ): Promise<{
-    questionIdArray: { questionId: string; question: string }[] | undefined;
+    questionIdArray: { questionId: string; question: string; questionKey: string }[] | undefined;
     questionArray: string[];
   }> {
     console.log('Going to fetch questions for job id:', jobId);
-    const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyCandidateFields, {
-      filter: { jobsId: { in: [`${jobId}`] } },
-      orderBy: { position: 'DescNullsFirst' },
-    }, apiToken);
 
-    console.log('This is the response from fetchQuestionsByJobId:', response.data);
-    const candidateFields = response?.data?.data?.candidateFields;
+    const jobResponse = await this.staticGraphQLService.executeGraphQL(
+      FindOneJob,
+      { objectRecordId: jobId },
+      apiToken,
+    );
+
+    const chatQuestions = Array.isArray(jobResponse?.data?.data?.job?.chatQuestions)
+      ? jobResponse.data.data.job.chatQuestions.filter((question: string) => question?.trim())
+      : [];
+
+    if (chatQuestions.length > 0) {
+      const questionIdArray = chatQuestions.map((question: string) => ({
+        questionId: questionTextToKey(question),
+        question,
+        questionKey: questionTextToKey(question),
+      }));
+
+      return { questionArray: chatQuestions, questionIdArray };
+    }
+
+    const legacyResponse = await this.staticGraphQLService.executeGraphQL(
+      graphqlQueryToFindManyCandidateFields,
+      {
+        filter: { jobsId: { in: [`${jobId}`] } },
+        orderBy: { position: 'DescNullsFirst' },
+      },
+      apiToken,
+    );
+
+    const candidateFields = legacyResponse?.data?.data?.candidateFields;
 
     if (!candidateFields) {
       return { questionArray: [], questionIdArray: [] };
@@ -623,13 +649,16 @@ export class FilterCandidates {
       pageInfo: PageInfo;
     } | undefined;
 
-    const questionsArray: string[] = candidateFieldsEdges?.edges.map(
-      (val: { node: { name: string } }) => val.node.name,
-    ) || [];
+    const questionsArray: string[] =
+      candidateFieldsEdges?.edges.map(
+        (val: { node: { name: string } }) => val.node.name,
+      ) || [];
     const questionIdArray = candidateFieldsEdges?.edges.map(
-      (val: { node: { id: string; name: string } }) => {
-        return { questionId: val.node.id, question: val.node.name };
-      },
+      (val: { node: { id: string; name: string } }) => ({
+        questionId: val.node.id,
+        question: val.node.name,
+        questionKey: questionTextToKey(val.node.name),
+      }),
     );
 
     console.log('This is the questions array:', questionsArray);

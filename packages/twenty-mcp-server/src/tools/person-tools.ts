@@ -1,5 +1,7 @@
 import {
+  getResolvedOtherFields,
   graphqlQueryToFindManyPeople,
+  graphqlToFetchAllCandidateDataWithFieldValues,
   graphqlToFindManyCandidateFieldValues,
   mutationToUpdateOnePerson,
   People,
@@ -181,16 +183,44 @@ export const personTools: McpTool[] = [
       const data = await executeGraphQL(
         config.baseUrl,
         config.apiToken,
+        graphqlToFetchAllCandidateDataWithFieldValues,
+        { filter: { id: { eq: candidateId } }, limit: 1 },
+      );
+
+      const candidate = (data as { candidates?: { edges?: Array<{ node?: Record<string, unknown> }> } })
+        ?.candidates?.edges?.[0]?.node;
+      const resolvedOtherFields = getResolvedOtherFields(
+        (candidate ?? {}) as Parameters<typeof getResolvedOtherFields>[0],
+      );
+
+      const fieldValues = Object.entries(resolvedOtherFields).map(([name, value]) => ({
+        id: `${candidateId}:${name}`,
+        name: typeof value === 'string' ? value : JSON.stringify(value),
+        candidateFields: { id: name, name },
+      }));
+
+      const legacyData = await executeGraphQL(
+        config.baseUrl,
+        config.apiToken,
         graphqlToFindManyCandidateFieldValues,
         { filter: { candidateId: { eq: candidateId } }, limit: 50 },
       );
+      const legacyResult = legacyData as { candidateFieldValues: CandidateFieldValues };
+      const legacyFieldValues = legacyResult?.candidateFieldValues?.edges?.map((e) => e.node) ?? [];
 
-      const result = data as { candidateFieldValues: CandidateFieldValues };
-      const fieldValues = result?.candidateFieldValues?.edges?.map((e) => e.node) ?? [];
+      const mergedFieldValues = [
+        ...fieldValues,
+        ...legacyFieldValues.filter(
+          (legacyValue) =>
+            !fieldValues.some(
+              (fieldValue) => fieldValue.candidateFields?.name === legacyValue.candidateFields?.name,
+            ),
+        ),
+      ];
 
       return {
-        count: fieldValues.length,
-        fieldValues: fieldValues ?? [],
+        count: mergedFieldValues.length,
+        fieldValues: mergedFieldValues,
       };
     },
   },

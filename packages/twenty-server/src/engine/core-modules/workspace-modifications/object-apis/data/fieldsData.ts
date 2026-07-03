@@ -1243,6 +1243,16 @@ export function getFieldsData(
         type: 'RAW_JSON',
       },
     },
+    {
+      objectName: 'candidate',
+      field: {
+        description: 'Custom profile fields, chat answers, and AI enrichment data',
+        label: 'Other fields',
+        name: 'otherFields',
+        objectMetadataId: objectsNameIdMap.candidate,
+        type: 'RAW_JSON',
+      },
+    },
 
     {
       objectName: 'job',
@@ -1250,6 +1260,16 @@ export function getFieldsData(
         description: '',
         label: 'chatFlowOrder',
         name: 'chatFlowOrder',
+        objectMetadataId: objectsNameIdMap.job,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      objectName: 'job',
+      field: {
+        description: 'Ordered chat questions asked during initial candidate engagement',
+        label: 'Chat questions',
+        name: 'chatQuestions',
         objectMetadataId: objectsNameIdMap.job,
         type: 'RAW_JSON',
       },

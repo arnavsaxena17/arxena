@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import {
+    getResolvedOtherFields,
     graphqlToFetchAllCandidateDataWithFieldValues,
+    otherFieldsToFlatRow,
 } from 'twenty-shared';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -116,20 +118,30 @@ export class CandidateDataService {
         linkedinUrl: candidate.linkedinUrl || 'N/A',
       };
 
-      // Add candidate field values as flattened properties, skipping keys already in baseData
-      const candidateFieldValues = candidate.candidateFieldValues?.edges || [];
       const baseDataKeys = new Set(Object.keys(baseData));
+      const resolvedOtherFields = getResolvedOtherFields(candidate);
+      const flatOtherFields = otherFieldsToFlatRow(resolvedOtherFields);
+
+      for (const [fieldName, fieldValue] of Object.entries(flatOtherFields)) {
+        if (baseDataKeys.has(fieldName)) {
+          continue;
+        }
+
+        baseData[fieldName] = fieldValue;
+      }
+
+      // Legacy fallback for non-migrated rows
+      const candidateFieldValues = candidate.candidateFieldValues?.edges || [];
 
       for (const edge of candidateFieldValues) {
         const node = edge.node;
         if (node?.candidateFields?.name && node.name !== null) {
           const fieldName = node.candidateFields.name;
-          if (baseDataKeys.has(fieldName)) {
+          if (baseDataKeys.has(fieldName) || fieldName in flatOtherFields) {
             continue;
           }
           let fieldValue = node.name;
 
-          // Try to parse JSON values
           if (typeof fieldValue === 'string') {
             try {
               fieldValue = JSON.parse(fieldValue);

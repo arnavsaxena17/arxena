@@ -3,9 +3,11 @@ import * as fs from 'fs';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import * as path from 'path';
 import {
-  findManyAttachmentsQuery,
-  graphQltoUpdateOneCandidate,
-  graphqlToFetchAllCandidateDataWithFieldValues,
+    findManyAttachmentsQuery,
+    getResolvedOtherFields,
+    graphQltoUpdateOneCandidate,
+    graphqlToFetchAllCandidateDataWithFieldValues,
+    questionTextToKey,
 } from 'twenty-shared';
 import { z } from 'zod';
 
@@ -393,6 +395,35 @@ export class CandidateDataProcessorService {
 
       for (const candidate of candidates) {
         const candidateName = candidate.node.name;
+        const resolvedOtherFields = getResolvedOtherFields(candidate.node);
+        const chatQuestions =
+          candidate.node?.jobs?.chatQuestions ||
+          candidate.node?.jobs?.edges?.[0]?.node?.chatQuestions ||
+          [];
+
+        for (const [fieldKey, fieldValue] of Object.entries(resolvedOtherFields)) {
+          if (
+            fieldValue === null ||
+            fieldValue === undefined ||
+            typeof fieldValue !== 'string' ||
+            fieldValue.startsWith('[') ||
+            fieldValue.startsWith('{')
+          ) {
+            continue;
+          }
+
+          const matchedQuestion = Array.isArray(chatQuestions)
+            ? chatQuestions.find(
+                (question: string) => questionTextToKey(question) === fieldKey,
+              )
+            : undefined;
+
+          qaArray.push({
+            question: matchedQuestion || fieldKey.replace(/_/g, ' '),
+            answer: fieldValue,
+          });
+        }
+
         const answers = candidate.node.candidateFieldValues?.edges || [];
 
         for (const answer of answers) {
@@ -405,8 +436,15 @@ export class CandidateDataProcessorService {
             !answerNode.name.startsWith('[') &&
             !answerNode.name.startsWith('{')
           ) {
+            const question = answerNode.candidateFields.name || '';
+            const questionKey = questionTextToKey(question);
+
+            if (questionKey in resolvedOtherFields) {
+              continue;
+            }
+
             qaArray.push({
-              question: answerNode.candidateFields.name || '',
+              question,
               answer: answerNode.name || '',
             });
           }

@@ -8,7 +8,8 @@ import {
     ChatControlsObjType,
     graphqlQueryToCreateOneClientInterview,
     graphqlQueryToCreateOneReminder,
-    Job
+    Job,
+    questionTextToKey,
 } from 'twenty-shared';
 import { z } from 'zod';
 
@@ -307,8 +308,8 @@ export class ToolCallingAgents {
     );
 
     const AnswerMessageObj = {
-      // questionsId: mostSimilarQuestion[0]?.questionId,
-      candidateFieldsId: mostSimilarQuestion?.[0]?.questionId,
+      question: matches[0] || inputs.question,
+      questionKey: questionTextToKey(matches[0] || inputs.question),
       name: inputs.answer,
       candidateId: candidate?.id,
     };

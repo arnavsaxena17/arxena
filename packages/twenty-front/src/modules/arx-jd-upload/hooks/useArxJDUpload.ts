@@ -106,12 +106,6 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
   const { updateOneRecord: updateOneAssistantThreadRecord } = useUpdateOneRecord({
     objectNameSingular: 'assistantThread',
   });
-  const { createOneRecord: createOneCandidateFieldRecord } = useCreateOneRecord({ 
-    objectNameSingular: 'candidateField' 
-  });
-  const { updateOneRecord: updateOneCandidateFieldRecord } = useUpdateOneRecord({
-    objectNameSingular: 'candidateField',
-  });
 
   const [updateWorkspaceMemberProfile] = useMutation(gql`
     ${graphQLToUpdateOneWorkspaceMemberProfile}
@@ -773,8 +767,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
           await syncChatQuestionsToDatabase({
             parsedJD,
             jobId: jobIdForChatQuestions,
-            createOneCandidateFieldRecord,
-            updateOneCandidateFieldRecord,
+            apiToken: tokenPair?.accessToken?.token,
           });
         } catch (error) {
           console.error('Error syncing chat questions:', error);
@@ -794,8 +787,6 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
     findBestCompanyMatch,
     createOneRecord,
     updateOneRecord,
-    createOneCandidateFieldRecord,
-    updateOneCandidateFieldRecord,
     triggerJobsRefetch,
     tokenPair?.accessToken?.token,
   ]);

@@ -1,3 +1,5 @@
+import type { OtherFieldsRecord } from '../utils/otherFields';
+
 export interface ChatTableProps {
   individuals: PersonNode[];
   selectedIndividual: string;
@@ -810,6 +812,7 @@ export interface ArxenaCandidateNode {
   jobsId: string;
   peopleId: string;
   messagingChannel: string;
+  otherFields?: Record<string, unknown>;
 }
 
 export interface ArxenaJobCandidateNode {
@@ -969,9 +972,11 @@ export type ChatHistoryItem = {
 };
 
 export interface AnswerMessageObj {
-  questionsId: string;
+  questionsId?: string;
+  questionKey?: string;
+  question?: string;
   name: string;
-  position: string;
+  position?: string;
   candidateId: string;
 }
 
@@ -1857,6 +1862,7 @@ export interface CandidateNode {
   jobsId?: string;
   peopleId: string;
   candidateFieldValues: CandidateFieldValues;
+  otherFields?: OtherFieldsRecord | null;
   candidateReminders: Reminders;
   clientInterview?: ClientInterviews;
   people: PersonNode;
@@ -2040,6 +2046,7 @@ export const DEFAULT_ENGAGEMENT_PROCESSING_DELAY_MINUTES = 2;
 
 export interface Job {
   chatFlowOrder?: chatControlType[]; // Array defining the order for this job
+  chatQuestions?: string[];
   /** Delay in minutes after last message before processing from queue. Recruiter-configurable per job. */
   engagementProcessingDelayMinutes?: number;
   /** Target spacing when batching start-chats: total window uses n × this value (minutes), capped by startChatMaxSpreadMinutes. Default 1. */

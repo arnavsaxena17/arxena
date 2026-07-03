@@ -62,6 +62,7 @@ export class DeleteFieldValuesQueueProcessor {
       // Use parameterized query for better performance and security
       // Since SUB_BATCH_SIZE is 1, we always have a single candidate
       const deleteFieldValuesQuery = `DELETE FROM ${dataSourceSchema}."_candidateFieldValue" WHERE "candidateId" = $1`;
+      const clearOtherFieldsQuery = `UPDATE ${dataSourceSchema}."_candidate" SET "otherFields" = '{}'::jsonb WHERE "id" = $1`;
       const parameters = [subBatch[0]];
 
       let retryCount = 0;
@@ -71,6 +72,11 @@ export class DeleteFieldValuesQueueProcessor {
         try {
           await this.workspaceQueryService.executeRawQuery(
             deleteFieldValuesQuery,
+            parameters,
+            workspaceId,
+          );
+          await this.workspaceQueryService.executeRawQuery(
+            clearOtherFieldsQuery,
             parameters,
             workspaceId,
           );

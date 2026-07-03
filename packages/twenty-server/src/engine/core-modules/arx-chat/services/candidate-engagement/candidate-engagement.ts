@@ -4,6 +4,7 @@ import {
   ChatControlsObjType,
   chatControlType,
   ChatHistoryItem,
+  getCandidateCustomField,
   getGraphqlToFindManyJobs,
   graphqlToFetchAllCandidateData,
   graphqlToFetchAllCandidateDataWithFieldValues,
@@ -232,8 +233,8 @@ export class CandidateEngagementArx {
     const candidateId = candidate?.id || '';
     console.log("candidateId::", candidateId)
     if (candidateId && chatReply === 'startChat') {
-      const companyName = candidate?.candidateFieldValues?.edges?.find(field => field.node.name === 'job_company_name')?.node?.name;
-      const jobTitle = candidate?.candidateFieldValues?.edges?.find(field => field.node.name === 'job_name')?.node?.name;
+      const companyName = getCandidateCustomField(candidate, 'job_company_name');
+      const jobTitle = getCandidateCustomField(candidate, 'job_name');
       console.log('companyName in google contacts::', companyName);
       console.log('jobTitle in google contacts::', jobTitle);
     }

@@ -250,6 +250,7 @@ const graphqlToFindManyJobsFull = `query FindManyJobs($filter: JobFilterInput, $
         isActive
         arxenaSiteId
         chatFlowOrder
+        chatQuestions
         engagementProcessingDelayMinutes
         startChatSpreadMinutesPerMessage
         startChatMaxSpreadMinutes
@@ -323,6 +324,7 @@ const graphqlToFindManyJobsOrgChart = `query FindManyJobs($filter: JobFilterInpu
         isActive
         arxenaSiteId
         chatFlowOrder
+        chatQuestions
         engagementProcessingDelayMinutes
         startChatSpreadMinutesPerMessage
         startChatMaxSpreadMinutes
@@ -399,6 +401,7 @@ const graphqlToFindManyJobsWithPromptsFull = `query FindManyJobs($filter: JobFil
         isActive
         arxenaSiteId
         chatFlowOrder
+        chatQuestions
         engagementProcessingDelayMinutes
         startChatSpreadMinutesPerMessage
         startChatMaxSpreadMinutes
@@ -482,6 +485,7 @@ const graphqlToFindManyJobsWithPromptsOrgChart = `query FindManyJobs($filter: Jo
         isActive
         arxenaSiteId
         chatFlowOrder
+        chatQuestions
         engagementProcessingDelayMinutes
         startChatSpreadMinutesPerMessage
         startChatMaxSpreadMinutes
@@ -551,6 +555,7 @@ const graphqlToFindManyJobsWithCandidateValuesFull = `query FindManyJobs($filter
         isActive
         arxenaSiteId
         chatFlowOrder
+        chatQuestions
         engagementProcessingDelayMinutes
         startChatSpreadMinutesPerMessage
         startChatMaxSpreadMinutes
@@ -604,6 +609,7 @@ const graphqlToFindManyJobsWithCandidateValuesFull = `query FindManyJobs($filter
               campaign
               messagingChannel
               whatsappProvider
+              otherFields
               candidateFieldValues{
               edges{
                 node{
@@ -669,6 +675,7 @@ const graphqlToFindManyJobsWithCandidateValuesOrgChart = `query FindManyJobs($fi
         isActive
         arxenaSiteId
         chatFlowOrder
+        chatQuestions
         engagementProcessingDelayMinutes
         startChatSpreadMinutesPerMessage
         startChatMaxSpreadMinutes
@@ -722,6 +729,7 @@ const graphqlToFindManyJobsWithCandidateValuesOrgChart = `query FindManyJobs($fi
               campaign
               messagingChannel
               whatsappProvider
+              otherFields
               candidateFieldValues{
               edges{
                 node{
@@ -798,6 +806,7 @@ const graphqlToFindManyJobsWithCandidatesFull = `query FindManyJobs($filter: Job
         isActive
         arxenaSiteId
         chatFlowOrder
+        chatQuestions
         engagementProcessingDelayMinutes
         startChatSpreadMinutesPerMessage
         startChatMaxSpreadMinutes
@@ -917,6 +926,7 @@ const graphqlToFindManyJobsWithCandidatesOrgChart = `query FindManyJobs($filter:
         isActive
         arxenaSiteId
         chatFlowOrder
+        chatQuestions
         engagementProcessingDelayMinutes
         startChatSpreadMinutesPerMessage
         startChatMaxSpreadMinutes
@@ -1318,6 +1328,7 @@ export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterview
           chatCount
           status
           jobSpecificFields
+          otherFields
           jobsId
           createdAt
           source
@@ -1969,7 +1980,8 @@ export const FindOneJob = `
         companyId
         position
         id
-
+        chatFlowOrder
+        chatQuestions
     }
   }
   `;
@@ -2819,6 +2831,17 @@ export const graphqlToFetchAllCandidateData = `
             primaryLinkUrl
             primaryLinkLabel
           }
+          otherFields
+          candidateFieldValues {
+            edges {
+              node {
+                name
+                candidateFields {
+                  name
+                }
+              }
+            }
+          }
           people {
             id
             name {
@@ -2876,6 +2899,7 @@ export const graphqlToFetchAllCandidateData = `
             recruiterId
             companyDetails
             chatFlowOrder
+            chatQuestions
             engagementProcessingDelayMinutes
             startChatSpreadMinutesPerMessage
             startChatMaxSpreadMinutes
@@ -2950,6 +2974,7 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
             primaryLinkUrl
             primaryLinkLabel
           }
+          otherFields
           candidateFieldValues {
             edges {
               node {
@@ -3058,6 +3083,7 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
             primaryLinkUrl
             primaryLinkLabel
           }
+          otherFields
           startChat
           remarks
           chatCount

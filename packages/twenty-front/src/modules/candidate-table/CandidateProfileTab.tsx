@@ -1,5 +1,6 @@
 import styled from '@emotion/styled';
 import { IconBuilding, IconCalendar, IconCurrencyRupee, IconMail, IconMapPin, IconPhone, IconUser } from '@tabler/icons-react';
+import { getCandidateCustomField } from 'twenty-shared';
 
 type CandidateProfileTabProps = {
   candidateData: any;
@@ -98,21 +99,27 @@ const StyledLoadingContainer = styled.div`
 `;
 
 export const CandidateProfileTab = ({ candidateData, isLoading }: CandidateProfileTabProps) => {
-  // Helper function to get field value from candidateFieldValues
   const getFieldValue = (fieldName: string) => {
-    if (!candidateData?.candidateFieldValues?.edges) return '';
-    
-    const field = candidateData?.candidateFieldValues?.edges?.find(
-      (edge: any) => edge?.node?.candidateFields?.name === fieldName
-    );
-    return field?.node?.name || '';
+    const value = getCandidateCustomField(candidateData, fieldName);
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    return typeof value === 'string' ? value : JSON.stringify(value);
   };
 
-  // Parse JSON fields
   const parseJsonField = (fieldName: string) => {
-    const value = getFieldValue(fieldName);
+    const value = getCandidateCustomField(candidateData, fieldName);
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    if (typeof value === 'object') {
+      return value;
+    }
+
     try {
-      return value ? JSON.parse(value) : null;
+      return typeof value === 'string' ? JSON.parse(value) : null;
     } catch {
       return null;
     }

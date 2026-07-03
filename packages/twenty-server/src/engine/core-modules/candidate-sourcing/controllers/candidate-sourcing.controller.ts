@@ -17,7 +17,7 @@ import axios from 'axios';
 import {
   CandidateEdge,
   CandidateEnrichmentEdge,
-  createOneCandidateField,
+  CandidateWithCustomFields,
   CreateOneVideoInterviewTemplate,
   findWorkspaceMemberProfiles,
   getGraphqlToFindManyJobs,
@@ -34,14 +34,16 @@ import {
   graphQLToUpdateOneWorkspaceMemberProfile,
   Job,
   JobEdge,
+  mergeChatQuestionsPreservingOrder,
   mutations,
   PageInfo,
+  parseRowOtherFields,
   PersonEdge,
   PersonNode,
   queries,
   resolveIsOrgChartEnabledFromWorkspace,
   UpdateOneJob,
-  UserProfile,
+  UserProfile
 } from 'twenty-shared';
 import { v4 } from 'uuid';
 
@@ -59,6 +61,7 @@ import { CandidateWorkspaceGraphQLService } from 'src/engine/core-modules/candid
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
 import { JDParserService } from 'src/engine/core-modules/candidate-sourcing/services/jd-parser.service';
+import { OtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/other-fields.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
 import { createJobIdErrorResponse, validateAndExtractJobId } from 'src/engine/core-modules/candidate-sourcing/utils/job-id.utils';
@@ -110,6 +113,7 @@ export class CandidateSourcingController {
     private readonly deleteFieldValuesService: DeleteFieldValuesService,
     private readonly jdParserService: JDParserService,
     private readonly candidateWorkspaceGraphQLService: CandidateWorkspaceGraphQLService,
+    private readonly otherFieldsService: OtherFieldsService,
     private readonly fileStorageService: FileStorageService,
   ) {}
 
@@ -1111,7 +1115,6 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async addQuestions(@Req() request: any) {
     try {
-      // console.log(body);
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '')  ;
       const data = request.body;
       const arxenaSiteId = data?.job_id;
@@ -1121,22 +1124,66 @@ export class CandidateSourcingController {
         jobName,
         apiToken,
       );
-      const questions = data?.questions || [];
+
+      if (!jobObject?.id) {
+        return {
+          status: 'Failed',
+          message: 'Job not found',
+        };
+      }
+
+      const questions = Array.isArray(data?.questions) ? data.questions : [];
+      const existingQuestions = await this.otherFieldsService.fetchJobChatQuestions(
+        jobObject.id,
+        apiToken,
+      );
 
       console.log('Number Questions:', questions?.length);
-      for (const question of questions) {
-        const graphqlVariables = {
-          input: { name: question, jobsId: jobObject?.id },
-        };
+      const mergedQuestions = mergeChatQuestionsPreservingOrder(
+        existingQuestions,
+        questions,
+      );
 
-        const response = await this.staticGraphQLService.executeGraphQL(createOneCandidateField, graphqlVariables, apiToken);
-      }
+      await this.otherFieldsService.updateJobChatQuestions(
+        jobObject.id,
+        mergedQuestions,
+        apiToken,
+      );
 
       return { status: 'success' };
     } catch (error) {
       console.log('Error in add questions', error);
 
-      return { error: error.message };
+      return { error: (error as Error).message };
+    }
+  }
+
+  @Post('update-chat-questions')
+  @UseGuards(JwtAuthGuard)
+  async updateChatQuestions(@Req() request: any) {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const { jobId, chatQuestions, previousQuestions } = request.body;
+
+      if (!jobId || !Array.isArray(chatQuestions)) {
+        return {
+          status: 'Failed',
+          message: 'jobId and chatQuestions are required',
+        };
+      }
+
+      await this.otherFieldsService.updateJobChatQuestions(
+        jobId,
+        chatQuestions,
+        apiToken,
+        Array.isArray(previousQuestions) ? previousQuestions : [],
+      );
+
+      return { status: 'success' };
+    } catch (error) {
+      console.log('Error in update chat questions', error);
+
+      return { error: (error as Error).message };
     }
   }
 
@@ -2292,7 +2339,8 @@ export class CandidateSourcingController {
             const contactData = {
               json_data: profileData.json_data || '{}',
               popup_data: profileData.popup_data || {},
-              data_source: profileData.data_source || ''
+              data_source: profileData.data_source || '',
+              direct_download: true,
             };
             // Process contact data to ensure candidate is created/updated in the job
             // This is important for CV uploads to be associated with the correct job
@@ -2827,6 +2875,7 @@ export class CandidateSourcingController {
           c."jobsId", c.remarks, c."messagingChannel", c."engagementStatus", c."lastEngagementChatControl",
           c."startVideoInterviewChat", c."startMeetingSchedulingChat", c."stopChat", c."uniqueStringKey",
           c."startChat", c."chatCount", c."startChatCompleted", c."startMeetingSchedulingChatCompleted", c."startVideoInterviewChatCompleted",
+          c."otherFields",
           COALESCE(JSON_AGG(CASE WHEN cfv.id IS NOT NULL THEN JSON_BUILD_OBJECT('id', cfv.id, 'name', cfv.name, 'candidateFields', JSON_BUILD_OBJECT('name', cf.name, 'id', cf.id)) ELSE NULL END) FILTER (WHERE cfv.id IS NOT NULL), '[]'::json) as candidate_field_values,
           COALESCE(JSON_AGG(CASE WHEN wm.id IS NOT NULL THEN JSON_BUILD_OBJECT('updatedAt', wm."updatedAt", 'messageObj', wm."messageObj", 'createdAt', wm."createdAt", 'whatsappDeliveryStatus', wm."whatsappDeliveryStatus", 'id', wm.id, 'name', wm.name, 'recruiterId', wm."recruiterId", 'message', wm.message, 'candidateId', wm."candidateId", 'jobsId', wm."jobsId", 'position', wm.position, 'phoneTo', wm."phoneTo", 'phoneFrom', wm."phoneFrom") ELSE NULL END) FILTER (WHERE wm.id IS NOT NULL), '[]'::json) as whatsappMessages
         FROM ${dataSourceSchema}."_candidate" c
@@ -2889,8 +2938,9 @@ export class CandidateSourcingController {
           hiringNaukriUrl: row.hiring_naukri_url || { primaryLinkUrl: '', primaryLinkLabel: '' },
           resdexNaukriUrl: row.resdex_naukri_url || { primaryLinkUrl: '', primaryLinkLabel: '' },
           linkedinUrl: row.linkedin_url || { primaryLinkUrl: '', primaryLinkLabel: '' },
+          otherFields: parseRowOtherFields(row),
           candidateFieldValues: { edges: (row.candidate_field_values || []).map((cfv: any) => ({ node: cfv })) },
-          whatsappMessages: { edges: (row.whatsapp_messages || []).map((wm: any) => ({ node: wm })) },
+          whatsappMessages: { edges: (row.whatsappMessages || row.whatsapp_messages || []).map((wm: any) => ({ node: wm })) },
           startChat: row.startChat,
           chatCount: row.chatCount,
           startChatCompleted: row.startChatCompleted,
@@ -3251,7 +3301,13 @@ export class CandidateSourcingController {
       return createJobIdErrorResponse(jobIdValidation.error!);
     }
     const actualJobId = jobIdValidation.jobId!;
-    const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '');
+    const authHeader = request?.headers?.authorization;
+
+    if (!authHeader?.startsWith('Bearer ')) {
+      return createJobIdErrorResponse('Missing authorization token');
+    }
+
+    const apiToken = authHeader.split(' ')[1].replace(/[\r\n]+/g, '');
 
     const allCandidates: any[] = [];
     let lastCursor: string | null = null;
@@ -3272,7 +3328,12 @@ export class CandidateSourcingController {
         break;
       }
       hasNextPage = candidates.pageInfo?.hasNextPage || false;
-      allCandidates.push(...candidates.edges.map((edge) => edge.node));
+      const pageCandidates = candidates.edges.map((edge) => edge.node);
+      const migratedCandidates = await this.otherFieldsService.lazyMigrateCandidates(
+        pageCandidates as CandidateWithCustomFields[],
+        apiToken,
+      );
+      allCandidates.push(...migratedCandidates);
       if (!hasNextPage) break;
       lastCursor = candidates.pageInfo?.endCursor;
     }

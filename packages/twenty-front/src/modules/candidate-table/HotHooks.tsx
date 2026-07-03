@@ -2,7 +2,7 @@ import { RightDrawerPages } from "@/ui/layout/right-drawer/types/RightDrawerPage
 import { IconMessages } from "@tabler/icons-react";
 import axios from 'axios';
 import { SetterOrUpdater } from 'recoil';
-import { CandidateNode } from 'twenty-shared';
+import { CandidateNode, mergeOtherFields, toSnakeCaseKey } from 'twenty-shared';
 // import { Change } from './states/tableStateAtom';
 
 export const updateUnreadMessagesStatus = async (unreadMessageIds: string[], tokenPair: any) => {
@@ -415,6 +415,31 @@ const handleCheckboxChange = (rowData: any, newValue: boolean, setTableState: an
   setSelectedCandidateId(nextSelectedIds[0] ?? null);
 };
 
+const DIRECT_TABLE_FIELDS = new Set([
+  'id',
+  'personId',
+  'name',
+  'phone',
+  'email',
+  'remarks',
+  'status',
+  'candConversationStatus',
+  'checkbox',
+  'startChat',
+  'startChatCompleted',
+  'jobTitle',
+  'jobCompanyName',
+  'updatedAt',
+  'stopChat',
+  'source',
+  'messagingChannel',
+  'resdexNaukriUrl',
+  'hiringNaukriUrl',
+  'linkedinUrl',
+  'lastMessage',
+  'hasCv',
+]);
+
 const updateTableState = (rowData: any, prop: string, newValue: any, setTableState: any, hot: any) => {
   console.log(`Updating field: ${prop} for row ${rowData.id}`);
   console.log(`Column index for ${prop}:`, hot?.propToCol(prop));
@@ -467,77 +492,21 @@ const updateTableState = (rowData: any, prop: string, newValue: any, setTableSta
         };
       }
 
-      // Check if this is a direct field on the candidate object
-      const isDirectField = Object.prototype.hasOwnProperty.call(currentRow, prop) ||
-                          prop === 'remarks' || // Add any other known direct fields here
-                          !currentRow.candidateFieldValues?.edges;
-      
+      const isDirectField = DIRECT_TABLE_FIELDS.has(prop);
+
       if (isDirectField) {
-        // Skip update if value hasn't actually changed
         if (currentRow[prop] === newValue) {
           return prev;
         }
-        // Update direct field
         const updatedRow = { ...currentRow };
         updatedRow[prop] = newValue;
         updatedRawData[index] = updatedRow;
       } else {
-        // This might be a candidateFieldValue - need to update within candidateFieldValues
-        if (currentRow.candidateFieldValues && currentRow.candidateFieldValues.edges) {
-          const updatedEdges = [...currentRow.candidateFieldValues.edges];
-          
-          // Convert camelCase prop back to snake_case for field lookup
-          const snakeCaseFieldName = prop.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-          
-          // Find the field in candidateFieldValues
-          const fieldIndex = updatedEdges.findIndex(edge => 
-            edge.node?.candidateFields?.name === snakeCaseFieldName ||
-            edge.node?.candidateFields?.name === prop // Also check exact match
-          );
-          
-          if (fieldIndex >= 0) {
-            // Check if value has actually changed
-            const currentFieldValue = updatedEdges[fieldIndex].node?.name;
-            if (String(currentFieldValue) === String(newValue)) {
-              return prev;
-            }
-            
-            // Update existing field value
-            updatedEdges[fieldIndex] = {
-              ...updatedEdges[fieldIndex],
-              node: {
-                ...updatedEdges[fieldIndex].node,
-                name: String(newValue)
-              }
-            };
-            
-            const updatedRow = { ...currentRow };
-            updatedRow.candidateFieldValues = {
-              ...updatedRow.candidateFieldValues,
-              edges: updatedEdges
-            };
-            updatedRawData[index] = updatedRow;
-          } else {
-            console.log(`Field ${prop} not found, treating as direct field`);
-            // If not found in candidateFieldValues, add as direct field
-            // Skip update if value hasn't actually changed
-            if (currentRow[prop] === newValue) {
-              return prev;
-            }
-            const updatedRow = { ...currentRow };
-            updatedRow[prop] = newValue;
-            updatedRawData[index] = updatedRow;
-          }
-        } else {
-          // No candidateFieldValues structure, add as direct field
-          // Skip update if value hasn't actually changed
-          if (currentRow[prop] === newValue) {
-            return prev;
-          }
-          const updatedRow = { ...currentRow };
-          updatedRow[prop] = newValue;
-          updatedRawData[index] = updatedRow;
-        }
+        const updatedRow = { ...currentRow };
+        updatedRow.otherFields = mergeOtherFields(updatedRow.otherFields || {}, {
+          [toSnakeCaseKey(prop)]: newValue,
+        });
+        updatedRawData[index] = updatedRow;
       }
     } else {
       // Row not found in rawData (e.g. id/personId mismatch); avoid spurious re-render
@@ -735,8 +704,7 @@ export const afterChange = async (
       continue;
     }
 
-    const isDirectField = 
-      Object.prototype.hasOwnProperty.call(rowData, prop) && prop !== 'candidateFieldValues';
+    const isDirectField = DIRECT_TABLE_FIELDS.has(prop);
     console.log(`Updating field: ${prop}, isDirectField: ${isDirectField}`);
     
     // Check if this is a saved candidate (has personId) or fetched candidate (no personId)

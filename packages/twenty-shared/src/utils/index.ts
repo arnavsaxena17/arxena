@@ -7,6 +7,7 @@ export * from './inferLinkedInSearchTypeFromUnipileOwnerProfile';
 export * from './is-likely-browser-logo-request';
 export * from './is-likely-browser-request';
 export * from './linkedinUnipileSearchPageLimit';
+export * from './otherFields';
 export * from './orgchart';
 export * from './permissions';
 export * from './privacy-consent';

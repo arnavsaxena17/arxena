@@ -12,7 +12,7 @@ import axios from 'axios';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { graphQltoUpdateOneCandidate } from 'twenty-shared';
+import { getCandidateCustomField, graphQltoUpdateOneCandidate } from 'twenty-shared';
 import { Status } from 'twenty-ui';
 import { STATUS_LABELS } from './TableColumns';
 
@@ -455,12 +455,12 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
 
   // Helper function to get field value from candidateFieldValues
   const getFieldValue = (candidateData: any, fieldName: string) => {
-    if (!candidateData?.candidateFieldValues?.edges) return '';
-    
-    const field = candidateData?.candidateFieldValues?.edges?.find(
-      (edge: any) => edge.node?.candidateFields?.name === fieldName
-    );
-    return field?.node?.name || '';
+    const value = getCandidateCustomField(candidateData, fieldName);
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    return typeof value === 'string' ? value : JSON.stringify(value);
   };
 
   // Get basic candidate info

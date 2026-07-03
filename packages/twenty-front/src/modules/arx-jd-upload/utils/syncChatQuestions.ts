@@ -1,71 +1,34 @@
+import axios from 'axios';
 import { ParsedJD } from '../types/ParsedJD';
-
-type CreateCandidateField = (input: {
-  name: string;
-  jobsId: string;
-  candidateFieldType: string;
-}) => Promise<unknown>;
-
-type UpdateCandidateField = (input: {
-  idToUpdate: string;
-  updateOneRecordInput: { name: string };
-}) => Promise<unknown>;
 
 export const syncChatQuestionsToDatabase = async ({
   parsedJD,
   jobId,
-  createOneCandidateFieldRecord,
-  updateOneCandidateFieldRecord,
+  apiToken,
 }: {
   parsedJD: ParsedJD;
   jobId: string;
-  createOneCandidateFieldRecord: CreateCandidateField;
-  updateOneCandidateFieldRecord: UpdateCandidateField;
+  apiToken?: string;
 }): Promise<void> => {
-  const currentQuestions = parsedJD.chatFlow?.questions ?? [];
-  if (currentQuestions.length === 0) {
+  const currentQuestions = (parsedJD.chatFlow?.questions ?? [])
+    .map((question) => question.trim())
+    .filter(Boolean);
+
+  if (currentQuestions.length === 0 || !apiToken) {
     return;
   }
 
-  const existingSnapshot = parsedJD.existingChatQuestions ?? [];
-  const fieldIds = parsedJD.chatQuestionFieldIds ?? [];
-
-  const updatePromises: Promise<unknown>[] = [];
-
-  for (let index = 0; index < existingSnapshot.length; index++) {
-    const fieldId = fieldIds[index];
-    const newName = currentQuestions[index]?.trim();
-    const oldName = existingSnapshot[index]?.trim();
-
-    if (
-      fieldId &&
-      newName &&
-      oldName &&
-      newName.toLowerCase() !== oldName.toLowerCase()
-    ) {
-      updatePromises.push(
-        updateOneCandidateFieldRecord({
-          idToUpdate: fieldId,
-          updateOneRecordInput: { name: newName },
-        }),
-      );
-    }
-  }
-
-  const createPromises: Promise<unknown>[] = [];
-
-  for (let index = existingSnapshot.length; index < currentQuestions.length; index++) {
-    const name = currentQuestions[index]?.trim();
-    if (name) {
-      createPromises.push(
-        createOneCandidateFieldRecord({
-          name,
-          jobsId: jobId,
-          candidateFieldType: 'Text',
-        }),
-      );
-    }
-  }
-
-  await Promise.all([...updatePromises, ...createPromises]);
+  await axios.post(
+    `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-chat-questions`,
+    {
+      jobId,
+      chatQuestions: currentQuestions,
+      previousQuestions: parsedJD.existingChatQuestions ?? [],
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${apiToken}`,
+      },
+    },
+  );
 };

@@ -6,23 +6,20 @@ import * as path from 'path';
 import {
   ArxenaCandidateNode,
   ArxenaPersonNode,
-  CandidateFieldEdge,
+  buildOtherFieldsFromUnmapped,
   CandidatesEdge,
-  CreateManyCandidateFieldValues,
+  collectOtherFieldKeys,
   CreateManyCandidates,
-  createOneCandidateField,
   getGraphqlToFindManyJobsWithCandidateValues,
-  graphqlQueryToCreateOneCandidateFieldValue,
-  graphqlQueryToFindManyCandidateFields,
   graphqlToFetchAllCandidateData,
-  graphqlToFindManyCandidateFieldValues,
   graphQltoUpdateOneCandidate,
   Job,
   mutationToUpdateOnePerson,
   PageInfo,
   PersonNode,
+  questionTextToKey,
   resolveIsOrgChartEnabledFromWorkspace,
-  updateOneCandidateFieldValue,
+  toSnakeCaseKey,
   UserProfile
 } from 'twenty-shared';
 import { NameProcessor } from '../../workspace-modifications/object-apis/data/nameProcessor';
@@ -49,6 +46,7 @@ import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrap
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { ProcessCandidatesService } from '../jobs/process-candidates.service';
 import { CandidateWorkspaceGraphQLService } from './candidate-workspace-graphql.service';
+import { OtherFieldsService } from './other-fields.service';
 import { PersonService } from './person.service';
 
 // Forward reference type to avoid circular dependency
@@ -75,7 +73,6 @@ interface ProcessingContext {
 @Injectable()
 export class CandidateService {
   private processingContexts = new Map<string, ProcessingContext>();
-  private candidateFieldsMap = new Map<string, Map<string, { id: string; name: string }>>();
   private processingStats: {
     totalCandidates: number;
     duplicatesRemoved: number;
@@ -93,6 +90,7 @@ export class CandidateService {
     private readonly fileStorageService: FileStorageService,
     private readonly dataProcessingUtils: DataProcessingUtils,
     private readonly candidateWorkspaceGraphQLService: CandidateWorkspaceGraphQLService,
+    private readonly otherFieldsService: OtherFieldsService,
     @Inject(forwardRef(() => ProcessCandidatesService))
     private readonly processCandidatesService: ProcessCandidatesServiceRef,
   ) {}
@@ -125,47 +123,6 @@ export class CandidateService {
     } catch (error) {
       console.error('Error getting workspace ID from token:', error);
       throw new Error(`Failed to get workspace ID from token: ${error.message}`);
-    }
-  }
-
-  private async initializeCandidateFields(workspaceId: string, apiToken: string) {
-    try {
-      // Check if we already have fields for this workspace
-      if (this.candidateFieldsMap.has(workspaceId)) {
-        return;
-      }
-
-      const query = graphqlQueryToFindManyCandidateFields;
-      const variables = {
-        filter: {},
-        orderBy: [{ position: 'AscNullsFirst' }],
-      };
-
-      const response = await this.staticGraphQLService.executeGraphQL(
-        query,
-        variables,
-        apiToken,
-      );
-
-      const fields = response?.data?.data?.candidateFields as {
-        edges: CandidateFieldEdge[];
-        pageInfo: PageInfo;
-      } | undefined;
-        // const fields = fields?.edges || [];
-      const workspaceFieldsMap = new Map<string, { id: string; name: string }>();
-
-      fields?.edges.forEach((field: any) => {
-        if (field?.node?.id && field?.node?.name) {
-          workspaceFieldsMap.set(field.node.name, {
-            id: field.node.id,
-            name: field.node.name
-          });
-        }
-      });
-
-      this.candidateFieldsMap.set(workspaceId, workspaceFieldsMap);
-    } catch (error) {
-      console.error('Error initializing candidate fields:', error);
     }
   }
 
@@ -464,16 +421,8 @@ export class CandidateService {
       throw error;
     }
 
-    // Only call createCandidateFieldsAndValues for new candidates
-    console.log('newCandidatesData.length:', newCandidatesData.length);
-    if (newCandidatesData.length > 0) {
-      console.log('Calling createCandidateFieldsAndValues...');
-      await this.createCandidateFieldsAndValues(newCandidatesData, jobObject, results, tracking, apiToken);
-      console.log('createCandidateFieldsAndValues completed');
-    } else {
-      console.log('No new candidates to process for field values creation');
-    }
-    
+    // otherFields are set on candidate at creation time in processCandidatesBatch
+
     // Handle CV uploads for candidates that have CV file paths
     await this.processCvUploadsForCandidates(data, results, tracking, origin, apiToken);
 
@@ -523,174 +472,6 @@ export class CandidateService {
       console.error('Error processing CV uploads for candidates:', error);
       // Don't throw - we don't want to fail the whole batch if CV upload fails
     }
-  }
-
-  async createCandidateFieldsAndValues(
-    data: any, 
-    jobObject: Job, 
-    results: any, 
-    tracking: any, 
-    apiToken: string
-  ): Promise<void> {
-    console.log('=== createCandidateFieldsAndValues STARTED ===');
-    console.log('Data length:', data.length);
-    console.log('Data uniqueStringKeys:', data.map(c => c.uniqueStringKey));
-    console.log('Tracking candidateIdMap:', tracking.candidateIdMap);
-    const workspaceId = await this.getWorkspaceIdFromToken(apiToken);
-    await this.initializeCandidateFields(workspaceId, apiToken);
-    const uniqueFields = new Set<string>();
-    const fieldValuesToCreate: any[] = [];
-    const workspaceFieldsMap = this.candidateFieldsMap.get(workspaceId) || new Map();
-    console.log('=== Field Processing Summary ===');
-    console.log('Total candidates being processed:', data.length);
-
-    // Define excluded fields
-    const excludedFields = ['age', 'birth_date', 'full_name', 'gender', 'all_mails', 'all_numbers', 'experience_stats', 'queryId', 'data_sources', 'interests', 'locations', 'profiles', 'phone_numbers', 'tables', 'socialprofiles', 'count_promotions', 'ug_graduation_year', 'pg_graduation_year', 'current_role_tenure', 'total_tenure', 'total_job_changes', 'average_tenure', 'pg_institute_name', 'ug_graduation_degree', 'pg_graduation_degree', 'ug_graduation_year', 'education_institute_ug', 'education_type_ug', 'education_year_ug', 'education_course_ug', 'education_institute_pg', 'education_type_pg', 'education_year_pg', 'education_course_pg','ug_institute_name'];
-    for (const candidate of data) {
-      const { unmappedCandidateObject, personNode, candidateNode } = await generateCompleteMappings(candidate, jobObject);
-      
-      if (personNode) {
-        Object.keys(personNode).forEach(fieldName => {
-        });
-      }
-
-      if (candidateNode) {
-        Object.keys(candidateNode).forEach(fieldName => {
-        });
-      }
-
-      if (unmappedCandidateObject) {
-        unmappedCandidateObject.forEach((fieldName: any) => {
-          // Skip excluded fields
-          if (!excludedFields.includes(fieldName.key)) {
-            uniqueFields.add(fieldName.key);
-          } 
-        });
-      }
-    }
-
-    workspaceFieldsMap.forEach((field, name) => {
-      console.log(`- ${name} (ID: ${field.id})`);
-    });
-
-    for (const fieldName of uniqueFields) {
-      // Skip excluded fields
-      if (excludedFields.includes(fieldName)) {
-        console.log(`Skipping creation of excluded field: ${fieldName}`);
-        continue;
-      }
-
-      if (!workspaceFieldsMap.has(fieldName)) {
-        const createFieldQuery = createOneCandidateField;
-        const fieldVariables = { input: { name: fieldName.toString(), candidateFieldType: 'Text', } };
-        try {
-          const response = await this.staticGraphQLService.executeGraphQL(
-            createFieldQuery,
-            fieldVariables,
-            apiToken
-          );
-          const fieldObj   = response?.data?.data?.createCandidateField as {
-            id: string;
-            name: string;
-          } | undefined;
-
-          if (fieldObj?.id) {
-            workspaceFieldsMap.set(fieldName, {
-              id: fieldObj?.id,
-              name: fieldName
-            });
-            console.log(`Successfully created field: ${fieldName} (ID: ${fieldObj?.id})`);
-          }
-        } catch (error) {
-          console.error(`Error creating field ${fieldName}:`, error);
-          continue;
-        }
-      } else {
-      }
-    }
-
-    console.log('This is the numebr of candidates:', data.length);
-    for (const candidate of data) {
-
-      const { unmappedCandidateObject } = await generateCompleteMappings(candidate, jobObject);
-      const candidateId = tracking.candidateIdMap.get(candidate.uniqueStringKey);
-      
-      // Skip if candidateId is not found
-      if (!candidateId) {
-        continue;
-      }
-      
-      unmappedCandidateObject.forEach((field: any) => {
-        // Skip excluded fields
-        if (excludedFields.includes(field.key)) {
-          return;
-        }
-
-        const fieldId = workspaceFieldsMap.get(field.key)?.id;
-        if (field.value && field.value !== '') {
-          // Check if the field value is already in the array
-          const isDuplicate = fieldValuesToCreate.some(
-          (fv) => fv.name === String(field.value) && fv.candidateId === candidateId && fv.candidateFieldsId === fieldId
-        );
-        if (!isDuplicate) {
-          fieldValuesToCreate.push({
-            name: typeof field.value === 'string' ? field.value : JSON.stringify(field.value),
-            candidateId,
-            candidateFieldsId: fieldId
-          });
-        }
-      }
-    });
-  }
-
-    this.candidateFieldsMap.set(workspaceId, workspaceFieldsMap);
-    console.log('This is the number of fieldValuesToCreate:', fieldValuesToCreate.length);
-    if (fieldValuesToCreate.length > 0) {
-      console.log(`\nCreating ${fieldValuesToCreate.length} field values in batches`);
-      const batchSize = 30;
-      let totalCreated = 0;
-      let totalFailed = 0;
-      for (let i = 0; i < fieldValuesToCreate.length; i += batchSize) {
-        const batch = fieldValuesToCreate.slice(i, i + batchSize);
-        const batchNumber = Math.floor(i / batchSize) + 1;
-        console.log(`Processing batch ${batchNumber} of ${Math.ceil(fieldValuesToCreate.length/batchSize)}`);
-        try {
-          const response = await this.staticGraphQLService.executeGraphQL(
-            CreateManyCandidateFieldValues,
-            { data: batch },
-            apiToken
-          );
-          
-          // Check for GraphQL errors in response
-          if (response.data?.errors) {
-            console.error(`Error creating field values batch ${batchNumber}:`, response.data.errors);
-            totalFailed += batch.length;
-            continue;
-          }
-          
-          // Verify the data was actually created
-          const createdCount = response.data?.data?.createCandidateFieldValues?.length || 0;
-          if (createdCount === 0) {
-            console.error(`Warning: Batch ${batchNumber} returned no created field values. Expected ${batch.length}`);
-            totalFailed += batch.length;
-          } else if (createdCount < batch.length) {
-            console.warn(`Warning: Batch ${batchNumber} only created ${createdCount} of ${batch.length} field values`);
-            totalCreated += createdCount;
-            totalFailed += (batch.length - createdCount);
-          } else {
-            console.log(`Successfully created batch ${batchNumber} with ${createdCount} field values`);
-            totalCreated += createdCount;
-          }
-        } catch (error) {
-          console.error(`Error creating field values batch ${batchNumber}:`, error);
-          totalFailed += batch.length;
-        }
-      }
-      
-      console.log(`\nField values creation summary: ${totalCreated} created, ${totalFailed} failed out of ${fieldValuesToCreate.length} total`);
-    }
-    
-    console.log('=== createCandidateFieldsAndValues COMPLETED ===');
   }
 
   // Helper method to process a chunk of candidates
@@ -1224,18 +1005,26 @@ export class CandidateService {
 
         // Create candidate if it doesn't already exist, regardless of personId status
         if (!existingCandidate) {
+          const { unmappedCandidateObject } = await generateCompleteMappings(
+            profile,
+            jobObject,
+          );
           const { candidateNode } = await processArxCandidate(
             profile,
             jobObject,
             whatsapp_key,
           );
+          const otherFields = buildOtherFieldsFromUnmapped(unmappedCandidateObject);
   
-          // Set personId if available, otherwise leave it undefined (will be handled later)
-          candidateNode.peopleId = personId || undefined;
-          candidatesToCreate.push(candidateNode);
+          const candidateWithOtherFields = {
+            ...candidateNode,
+            peopleId: personId || undefined,
+            otherFields,
+          };
+          candidatesToCreate.push(candidateWithOtherFields);
           candidateKeys.push(key);
-          results.manyCandidateObjects.push(candidateNode);
-          console.log(`- Candidate personId: ${candidateNode.peopleId || 'undefined (will need to be linked later)'}`);
+          results.manyCandidateObjects.push(candidateWithOtherFields);
+          console.log(`- Candidate personId: ${candidateWithOtherFields.peopleId || 'undefined (will need to be linked later)'}`);
           
           
         } else if (existingCandidate) {
@@ -1436,148 +1225,32 @@ export class CandidateService {
     apiToken: string,
   ): Promise<any> {
     try {
-      console.log("Going to update fieldName:", fieldName)
-      const workspaceId = await this.getWorkspaceIdFromToken(apiToken);
-      
-      // Initialize candidate fields for this workspace if not already loaded
-      await this.initializeCandidateFields(workspaceId, apiToken);
-      
-      // Get the workspace fields map
-      const workspaceFieldsMap = this.candidateFieldsMap.get(workspaceId) || new Map();
-      
-      // Try to find the field directly
-      let fieldInfo = workspaceFieldsMap.get(fieldName);
-      
-      // If not found, try various transformations of the field name
-      if (!fieldInfo) {
-        // Try snake_case (convert camelCase to snake_case)
-        const snakeCaseName = fieldName.replace(/([A-Z])/g, '_$1').toLowerCase();
-        console.log("snakeCaseName::", snakeCaseName)
-        fieldInfo = workspaceFieldsMap.get(snakeCaseName);
-        console.log("fieldInfo::", fieldInfo)
-        // If still not found, check if any workspace field name is contained within the fieldName
-        if (!fieldInfo) {
-          console.log('Field not directly found, checking similar names...');
-          for (const [key, value] of workspaceFieldsMap.entries()) {
-            // Check if the field name contains the workspace field key
-            if (fieldName.toLowerCase().includes(key.toLowerCase())) {
-              console.log(`Found potential match: ${key} for ${fieldName}`);
-              fieldInfo = value;
-              break;
-            }
-          }
-        }
-      }
-      
-      if (!fieldInfo || !fieldInfo.id) {
-        console.error(`Field ${fieldName} not found in workspace fields`);
-        
-        // As a fallback, create the field if it doesn't exist
-        console.log(`Creating new field: ${fieldName}`);
-        const createFieldQuery = createOneCandidateField;
-        const fieldVariables = {
-          input: {
-            name: fieldName,
-            candidateFieldType: 'Text', // Default to Text type
-          }
-        };
+      console.log('Going to update otherFields field:', fieldName);
 
-        try {
-          const response = await this.staticGraphQLService.executeGraphQL(createOneCandidateField, fieldVariables, apiToken);
-
-          if (response?.data?.data?.createCandidateField?.id) {
-            fieldInfo = {
-              id: response.data.data.createCandidateField.id,
-              name: fieldName
-            };
-            
-            // Update the map
-            workspaceFieldsMap.set(fieldName, fieldInfo);
-            this.candidateFieldsMap.set(workspaceId, workspaceFieldsMap);
-            
-            console.log(`Successfully created field: ${fieldName} (ID: ${fieldInfo.id})`);
-          } else {
-            throw new Error(`Failed to create field ${fieldName}`);
-          }
-        } catch (error) {
-          console.error(`Error creating field ${fieldName}:`, error);
-          throw error;
-        }
-      }
-      
-      // Special handling for mobile_phone field
       if (fieldName === 'mobilePhone') {
-        console.log("Going to update mobilePhone in person and candidate")
         return this.handlePhoneNumberUpdate(candidateId, value, apiToken);
       }
-      
-      const findVariables = {
-        filter: {
-          and: [ { candidateId: { in: [candidateId] } }, { candidateFieldsId: { in: [fieldInfo.id] } } ]
-        },
-        orderBy: [{ position: "AscNullsFirst" }]
-      };
-      
 
+      const candidate = await this.otherFieldsService.fetchCandidateById(
+        candidateId,
+        apiToken,
+      );
 
-      const findResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyCandidateFieldValues, findVariables, apiToken);
-      
-      // The GraphQL query already filters by candidateFieldsId, so we should only get field values for this specific field
-      // Use the correct response path - GraphQL responses are typically nested under data.data
-      // Handle both possible response structures for safety
-      const candidateFieldValues = (findResponse?.data?.data?.candidateFieldValues || findResponse?.data?.candidateFieldValues) as {
-        edges: Array<{ node: { id: string; name: string; candidateFields: { id: string; name: string } } }>;
-        pageInfo: PageInfo;
-      } | undefined;
-      
-      // Since we're already filtering by candidateFieldsId in the query, we can trust that all returned values are for the correct field
-      // No need to filter again by name which could cause mismatches and update wrong fields
-      const existingFieldValues = candidateFieldValues?.edges || [];
-      
-      console.log("Field ID being queried:", fieldInfo.id);
-      console.log("Field name:", fieldInfo.name);
-      console.log("Found existing field values:", existingFieldValues.length);
-      if (existingFieldValues.length > 0) {
-        console.log("Existing field values details:", existingFieldValues.map(ev => ({ 
-          id: ev.node.id, 
-          value: ev.node.name, 
-          fieldId: ev.node.candidateFields.id, 
-          fieldName: ev.node.candidateFields.name 
-        })));
+      if (candidate) {
+        await this.otherFieldsService.lazyMigrateCandidateOtherFields(
+          candidate,
+          apiToken,
+        );
       }
-      if (existingFieldValues.length > 0) {
-        // Update existing field value using a simple GraphQL mutation
-        console.log("Setting value to :", String(value))
-        const updatePromises = existingFieldValues.map(async (fieldValue) => {
-          console.log("fieldValue::", fieldValue)
-          const fieldValueId = fieldValue?.node?.id;
-          console.log("fieldValueId::", fieldValueId)
-          const updateVariables = {
-            idToUpdate: fieldValueId,
-            input: { name: String(value) }
-          };
 
-          const updateResponse = await this.staticGraphQLService.executeGraphQL(updateOneCandidateFieldValue, updateVariables, apiToken);
+      const merged = await this.otherFieldsService.patchCandidateOtherFields(
+        candidateId,
+        { [toSnakeCaseKey(fieldName)]: value },
+        apiToken,
+        candidate ? this.otherFieldsService.resolveOtherFields(candidate) : undefined,
+      );
 
-          return updateResponse?.data?.data?.updateCandidateFieldValue;
-        });
-
-        const results = await Promise.all(updatePromises);
-        return results;
-      } else {
-        // Create new field value
-        const createMutation = graphqlQueryToCreateOneCandidateFieldValue;
-        
-        const createVariables = {
-          input: {
-            name: String(value),
-            candidateFieldsId: fieldInfo.id,
-            candidateId: candidateId
-          }
-        };
-        const createResponse = await this.staticGraphQLService.executeGraphQL(createMutation, createVariables, apiToken);
-        return createResponse?.data?.data?.createCandidateFieldValue;
-      }
+      return { success: true, otherFields: merged };
     } catch (error) {
       console.error('Error updating candidate field value:', error);
       throw error;
@@ -1829,18 +1502,18 @@ export class CandidateService {
         formattedValue = formattedValue?.toLowerCase() === 'true';
       }
 
-      const snakeCaseFieldName = fieldName.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-      console.log("snakeCaseFieldName::", snakeCaseFieldName);
+      const snakeCaseFieldName = toSnakeCaseKey(fieldName);
+      console.log('snakeCaseFieldName::', snakeCaseFieldName);
 
-      // Initialize workspace fields if not already done
-      const workspaceId = await this.getWorkspaceIdFromToken(apiToken);
-      await this.initializeCandidateFields(workspaceId, apiToken);
-      const workspaceFieldsMap = this.candidateFieldsMap.get(workspaceId) || new Map();
+      const directFields = [
+        'remarks', 'engagementStatus', 'startChat', 'stopChat', 'startChatCompleted', 'status',
+        'startMeetingSchedulingChat', 'startMeetingSchedulingChatCompleted', 'hiringNaukriUrl',
+        'startVideoInterviewChat', 'startVideoInterviewChatCompleted', 'candConversationStatus',
+        'messagingChannel', 'linkedinUrl', 'email', 'jobTitle', 'jobCompanyName', 'mobilePhone',
+        'phone', 'phoneNumber',
+      ];
 
-      // Check if this is a candidate field value
-      const isFieldValue = workspaceFieldsMap.has(snakeCaseFieldName);
-      console.log("isFieldValue::", isFieldValue);
-      console.log("formattedValue in updateCandidateField::", formattedValue);
+      const isDirectField = directFields.includes(fieldName);
       // Special handling for specific fields
       if (fieldName === 'email') {
         try {
@@ -1924,91 +1597,81 @@ export class CandidateService {
         return candidateResponse?.data?.data;
       }
 
-      // If it's a candidate field value, use updateCandidateFieldValue
-      if (isFieldValue) {
-        console.log("Updating as candidate field value");
-        return this.updateCandidateFieldValue(candidateId, snakeCaseFieldName, formattedValue, apiToken);
+      // Custom fields are stored in candidate.otherFields
+      if (!isDirectField) {
+        console.log('Updating as otherFields value');
+        return this.updateCandidateFieldValue(
+          candidateId,
+          snakeCaseFieldName,
+          formattedValue,
+          apiToken,
+        );
       }
 
-      // For direct fields, proceed with normal update
-      const directFields = ['remarks', 'engagementStatus', 'startChat', 'stopChat', 'startChatCompleted', 'status',
-                          'startMeetingSchedulingChat', 'startMeetingSchedulingChatCompleted', 'hiringNaukriUrl',
-                          'startVideoInterviewChat', 'startVideoInterviewChatCompleted','candConversationStatus','messagingChannel',
-                          'linkedinUrl'];
-
-      if (directFields.includes(fieldName)) {
-        console.log("Updating as direct field");
-        let updateData: Record<string, any> = {};
+      console.log('formattedValue in updateCandidateField::', formattedValue);
+      console.log('Updating as direct field');
+      let updateData: Record<string, any> = {};
+      
+      // Special handling for candConversationStatus to map label back to key
+      if (fieldName === 'candConversationStatus' && typeof formattedValue === 'string') {
+        const CANDIDATE_CONVERSATION_STATUS_LABELS_REVERSE = {
+          'No Conversation': 'ONLY_ADDED_NO_CONVERSATION',
+          'Started, No Response': 'CONVERSATION_STARTED_HAS_NOT_RESPONDED',
+          'Shared JD, No Response': 'SHARED_JD_HAS_NOT_RESPONDED',
+          'Refuses Relocation': 'CANDIDATE_REFUSES_TO_RELOCATE',
+          'Stopped Responding': 'STOPPED_RESPONDING_ON_QUESTIONS',
+          'Salary Out of Range': 'CANDIDATE_SALARY_OUT_OF_RANGE',
+          'Keen to Chat': 'CANDIDATE_IS_KEEN_TO_CHAT',
+          'Declined Opportunity': 'CANDIDATE_DECLINED_OPPORTUNITY',
+          'Followed Up': 'CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT',
+          'Reluctant on Compensation': 'CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION',
+          'Closed to Contact': 'CONVERSATION_CLOSED_TO_BE_CONTACTED'
+        };
         
-        // Special handling for candConversationStatus to map label back to key
-        if (fieldName === 'candConversationStatus' && typeof formattedValue === 'string') {
-          // Create reverse mapping of STATUS_LABELS
-          const CANDIDATE_CONVERSATION_STATUS_LABELS_REVERSE = {
-            'No Conversation': 'ONLY_ADDED_NO_CONVERSATION',
-            'Started, No Response': 'CONVERSATION_STARTED_HAS_NOT_RESPONDED',
-            'Shared JD, No Response': 'SHARED_JD_HAS_NOT_RESPONDED',
-            'Refuses Relocation': 'CANDIDATE_REFUSES_TO_RELOCATE',
-            'Stopped Responding': 'STOPPED_RESPONDING_ON_QUESTIONS',
-            'Salary Out of Range': 'CANDIDATE_SALARY_OUT_OF_RANGE',
-            'Keen to Chat': 'CANDIDATE_IS_KEEN_TO_CHAT',
-            'Declined Opportunity': 'CANDIDATE_DECLINED_OPPORTUNITY',
-            'Followed Up': 'CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT',
-            'Reluctant on Compensation': 'CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION',
-            'Closed to Contact': 'CONVERSATION_CLOSED_TO_BE_CONTACTED'
-          };
-          
-          const statusKey = CANDIDATE_CONVERSATION_STATUS_LABELS_REVERSE[formattedValue];
-          if (statusKey) {
-            updateData[fieldName] = statusKey;
-          } else {
-            console.warn(`Unknown status label: ${formattedValue}`);
-            updateData[fieldName] = formattedValue; // Fallback to original value if not found
-          }
-        } else if (fieldName === 'status' && typeof formattedValue === 'string') {
-          // Create reverse mapping of STATUS_LABELS
-          const STATUS_LABELS_REVERSE = {
-            'Not Interested': 'NOT_INTERESTED',
-            'Interested': 'INTERESTED',
-            'CV Received': 'CV_RECEIVED',
-            'Not Fit': 'NOT_FIT',
-            'Screening': 'SCREENING',
-            'Recruiter Interview': 'RECRUITER_INTERVIEW',
-            'CV Sent': 'CV_SENT',
-            'Client Interview': 'CLIENT_INTERVIEW',
-            'Negotiation': 'NEGOTIATION'
-          };
-          
-          const statusKey = STATUS_LABELS_REVERSE[formattedValue];
-          if (statusKey) {
-            updateData[fieldName] = statusKey;
-          } else {
-            console.warn(`Unknown status label: ${formattedValue}`);
-            updateData[fieldName] = formattedValue; // Fallback to original value if not found
-          }
+        const statusKey = CANDIDATE_CONVERSATION_STATUS_LABELS_REVERSE[formattedValue];
+        if (statusKey) {
+          updateData[fieldName] = statusKey;
         } else {
+          console.warn(`Unknown status label: ${formattedValue}`);
           updateData[fieldName] = formattedValue;
         }
-        
-        const variables = {
-          idToUpdate: candidateId,
-          input: updateData
+      } else if (fieldName === 'status' && typeof formattedValue === 'string') {
+        const STATUS_LABELS_REVERSE = {
+          'Not Interested': 'NOT_INTERESTED',
+          'Interested': 'INTERESTED',
+          'CV Received': 'CV_RECEIVED',
+          'Not Fit': 'NOT_FIT',
+          'Screening': 'SCREENING',
+          'Recruiter Interview': 'RECRUITER_INTERVIEW',
+          'CV Sent': 'CV_SENT',
+          'Client Interview': 'CLIENT_INTERVIEW',
+          'Negotiation': 'NEGOTIATION'
         };
-        const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, variables, apiToken);
         
-        // Check for GraphQL errors in the response
-        if (response?.data?.errors && response.data.errors.length > 0) {
-          console.error(`[CandidateService] GraphQL errors in updateCandidateField for field "${fieldName}":`, response.data.errors);
-          console.error(`[CandidateService] Candidate ID: ${candidateId}, Field: ${fieldName}, Value:`, formattedValue);
-          console.error(`[CandidateService] Variables sent:`, JSON.stringify(variables, null, 2));
+        const statusKey = STATUS_LABELS_REVERSE[formattedValue];
+        if (statusKey) {
+          updateData[fieldName] = statusKey;
+        } else {
+          console.warn(`Unknown status label: ${formattedValue}`);
+          updateData[fieldName] = formattedValue;
         }
-        
-        return response?.data;
+      } else {
+        updateData[fieldName] = formattedValue;
       }
-
-      // If we get here, the field is neither a direct field nor a candidate field value
-      console.warn(`Field ${fieldName} is not recognized as either a direct field or candidate field value`);
-      throw new Error(`Field ${fieldName} is not recognized as either a direct field or candidate field value`);
-
+      
+      const variables = {
+        idToUpdate: candidateId,
+        input: updateData
+      };
+      const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, variables, apiToken);
+      
+      if (response?.data?.errors && response.data.errors.length > 0) {
+        console.error(`[CandidateService] GraphQL errors in updateCandidateField for field "${fieldName}":`, response.data.errors);
+        console.error(`[CandidateService] Candidate ID: ${candidateId}, Field: ${fieldName}, Value:`, formattedValue);
+        console.error(`[CandidateService] Variables sent:`, JSON.stringify(variables, null, 2));
+      }
+      
+      return response?.data;
     } catch (error) {
       console.error('Error updating candidate field:', error);
       throw error;
@@ -2040,12 +1703,21 @@ export class CandidateService {
         variables,
         apiToken,
       );
-      // console.log("NUmber of candidate field values  =", response.data.data?.jobs?.edges[0]?.node?.candidates?.edges[0]?.node?.candidateFieldValues?.edges.length);
-      // const candidateFieldsJobs = response?.data?.data?.jobs?.edges[0]?.node?.candidateFields?.edges || [];
-      const candidateFields = response.data.data?.jobs?.edges[0]?.node?.candidates?.edges[0]?.node?.candidateFieldValues?.edges
-        .map((edge: any) => edge?.node?.candidateFields?.name)
-        .filter((name: string) => name !== null && name !== undefined) || [];
-      return candidateFields;
+
+      const candidates =
+        response.data.data?.jobs?.edges?.[0]?.node?.candidates?.edges?.map(
+          (edge: { node: unknown }) => edge.node,
+        ) ?? [];
+      const chatQuestions = await this.otherFieldsService.fetchJobChatQuestions(
+        jobId,
+        apiToken,
+      );
+      const fieldKeys = collectOtherFieldKeys(candidates);
+      const questionKeys = chatQuestions.map((question) =>
+        questionTextToKey(question),
+      );
+
+      return Array.from(new Set([...fieldKeys, ...questionKeys]));
     } catch (error) {
       console.error('Error fetching candidate fields by job ID:', error);
       throw error;
@@ -2089,6 +1761,11 @@ export class CandidateService {
 
   private async processResumeData(contactData: any, jsonData: any, origin: string, apiToken: string): Promise<void> {
     try {
+      if (contactData.direct_download) {
+        console.log('Skipping server-side CV download — extension already uploaded file (direct_download=true)');
+        return;
+      }
+
       // Extract resume-related data
       const htmlCV = jsonData.htmlCV || '';
       const cookies = jsonData.cookies || '';
@@ -2552,7 +2229,11 @@ export class CandidateService {
         headers['systemid'] = 'naukriIndia';
         
         // Clean up hiring.naukri URLs
-        if (url.includes('searchId')) {
+        if (url.includes('hiring.naukri.com/cloudgateway-rm/rm-document-services/v0/download/applications/')) {
+          const appId = url.match(/applications\/([^?]+)/)?.[1] ?? '';
+          const jobId = url.match(/jobId=([^&]+)/)?.[1] ?? '';
+          url = `https://hiring.naukri.com/cloudgateway-rm/rm-document-services/v0/download/applications/${appId}?jobId=${jobId}&applyType=`;
+        } else if (url.includes('searchId')) {
           const cleanUrl = url.split('searchId')[0];
           const jobIdPart = url.split('jobId')[1];
           if (jobIdPart) {

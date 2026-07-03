@@ -33,6 +33,7 @@ import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/ser
 import { ChatService } from 'src/engine/core-modules/candidate-sourcing/services/chat.service';
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
 import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-sourcing/services/orgchart-progress-redis.service';
+import { OtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/other-fields.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
@@ -121,6 +122,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     OrgChartProgressRedisService,
     CandidateDataService,
     CandidateFieldValueService,
+    OtherFieldsService,
     CandidateWorkspaceGraphQLService,
     WorkspaceQueryService,
     WorkspaceDataSourceService,
@@ -160,6 +162,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
   exports: [
     PersonService,
     CandidateService,
+    OtherFieldsService,
     ChatService,
     CandidateDataService,
     ProcessCandidatesService,

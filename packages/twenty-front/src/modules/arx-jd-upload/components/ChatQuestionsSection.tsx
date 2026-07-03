@@ -4,7 +4,7 @@ import { IconInfoCircle } from '@tabler/icons-react';
 import axios from 'axios';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { graphqlMutationToDeleteManyCandidateFields, graphqlQueryToFindManyCandidateFields } from 'twenty-shared';
+import { FindOneJob } from 'twenty-shared';
 import { Button, IconMinus, IconPlus } from 'twenty-ui';
 import { FormComponentProps } from '../types/FormComponentProps';
 import {
@@ -49,13 +49,6 @@ const DEFAULT_CHAT_QUESTIONS = [
   'What is your current and expected CTC?',
   'Who do you report to, which functions report to you?',
 ];
-
-type CandidateFieldEdge = {
-  node: {
-    id: string;
-    name: string;
-  };
-};
 
 /** Empty arrays are truthy in JS — do not use `questions || fallback` or `[]` wins over defaults. */
 const resolveChatQuestionsList = (
@@ -102,21 +95,18 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
           method: 'post',
           url: `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
           data: {
-            operationName: 'FindManyCandidateFields',
+            operationName: 'FindOneJob',
             variables: {
-              filter: { jobsId: { in: [jobId] } },
-              orderBy: [{ position: 'AscNullsFirst' }],
+              objectRecordId: jobId,
             },
-            query: graphqlQueryToFindManyCandidateFields,
+            query: FindOneJob,
           },
           headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
         });
 
-        const edges: CandidateFieldEdge[] =
-          response.data?.data?.candidateFields?.edges ?? [];
-
-        const questions = edges.map((edge) => edge.node.name);
-        const fieldIds = edges.map((edge) => edge.node.id);
+        const questions = Array.isArray(response.data?.data?.job?.chatQuestions)
+          ? response.data.data.job.chatQuestions
+          : [];
 
         fetchedJobIdRef.current = jobId;
 
@@ -129,7 +119,6 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
           setParsedJD({
             ...currentParsedJD,
             existingChatQuestions: questions,
-            chatQuestionFieldIds: fieldIds,
             chatFlow: {
               ...currentParsedJD.chatFlow,
               questions,
@@ -139,7 +128,6 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
           setParsedJD({
             ...currentParsedJD,
             existingChatQuestions: [],
-            chatQuestionFieldIds: [],
             chatFlow: {
               ...currentParsedJD.chatFlow,
               questions: [...DEFAULT_CHAT_QUESTIONS],
@@ -198,42 +186,12 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
     });
   };
 
-  const handleChatQuestionRemove = async (index: number) => {
-    const persistedCount = parsedJD.existingChatQuestions?.length ?? 0;
-    const isPersistedQuestion = index < persistedCount;
-    const fieldId = isPersistedQuestion
-      ? parsedJD.chatQuestionFieldIds?.[index]
-      : undefined;
-
-    if (fieldId && parsedJD.id) {
-      try {
-        await axios({
-          method: 'post',
-          url: `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
-          data: {
-            operationName: 'DeleteManyCandidateFields',
-            variables: {
-              filter: { id: { in: [fieldId] } },
-            },
-            query: graphqlMutationToDeleteManyCandidateFields,
-          },
-          headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
-        });
-      } catch (error) {
-        console.error('Error deleting question:', error);
-      }
-    }
-
+  const handleChatQuestionRemove = (index: number) => {
     const updatedQuestions = displayQuestions.filter((_, i) => i !== index);
 
     setParsedJD({
       ...parsedJD,
-      existingChatQuestions: isPersistedQuestion
-        ? (parsedJD.existingChatQuestions ?? []).filter((_, i) => i !== index)
-        : parsedJD.existingChatQuestions,
-      chatQuestionFieldIds: isPersistedQuestion
-        ? (parsedJD.chatQuestionFieldIds ?? []).filter((_, i) => i !== index)
-        : parsedJD.chatQuestionFieldIds,
+      existingChatQuestions: updatedQuestions,
       chatFlow: {
         ...parsedJD.chatFlow,
         questions: updatedQuestions,
