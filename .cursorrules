@@ -114,5 +114,5 @@
 - Use aws profile arxanalytics
 - production server is available at ssh app.arxena.com
 - at /home/ubuntu in production build_app_in_new_instance.sh builds production by running script_to_build_app_in_new_instance.sh in a remote instance
-
+- NEVER SCP FILES TO PRODUCTION. Always check if local branch is the same as production branch and then do git add .; git commit -m "message"; git push on local and then git pull on production
 
