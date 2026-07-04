@@ -2154,6 +2154,38 @@ export class CandidateSourcingController {
     return { status: 'success', message: 'Test endpoint reached' };
   }
 
+  // Repair/backfill: ensure a candidate's resume(s) are attached to every candidate that shares its
+  // identity (same email / phone / uniqueStringKey / profile URL) across jobs. Pass any one of the
+  // matching candidate IDs.
+  @Post('replicate-cv-attachments')
+  @UseGuards(JwtAuthGuard)
+  async replicateCvAttachments(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const candidateId = request.body?.candidateId;
+      if (!candidateId) {
+        return { status: 'error', message: 'Missing candidateId' };
+      }
+
+      const result = await this.candidateService.replicateCvAttachmentsAcrossMatchingCandidates(
+        candidateId,
+        apiToken,
+      );
+
+      return {
+        status: 'success',
+        message: `Replicated CV attachments across ${result.matchedCandidateIds.length} candidate(s); created ${result.attachmentsCreated} attachment record(s)`,
+        ...result,
+      };
+    } catch (error) {
+      console.error('Error replicating CV attachments:', error);
+      return {
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Failed to replicate CV attachments',
+      };
+    }
+  }
+
   @Post('test-cv-upload-no-auth')
   async testCvUploadNoAuth(@Req() request: any): Promise<object> {
     console.log('Test CV upload endpoint reached (no auth)');

@@ -2721,42 +2721,14 @@ export class CandidateService {
         console.error('Missing required parameters for CV upload');
         return;
       }
-      
-      // Get candidate IDs for the unique string key
-      let candidateIds = await this.getCandidateIdsByUniqueStringKey(uniqueStringKey, apiToken);
-      
-      // If no candidates found by unique string key, try to find by profile URL
+
+      // Attach the CV to EVERY candidate that shares this identity (same uniqueStringKey,
+      // email/phone, or profile URL) across all jobs — not just the first match.
+      const candidateIds = await this.resolveAllMatchingCandidateIds(uniqueStringKey, contactData, apiToken);
+
       if (!candidateIds || candidateIds.length === 0) {
-        console.log('No candidates found for unique string key, trying to find by profile URL');
-        
-        // Extract profile URL from contact data
-        let profileUrl = '';
-        if (contactData.profile_url) {
-          profileUrl = contactData.profile_url;
-        } else if (contactData.json_data) {
-          const jsonData = JSON.parse(contactData.json_data);
-          profileUrl = jsonData.profile_url || jsonData.window_url || '';
-        }
-        
-        if (profileUrl) {
-          const candidates = await this.findCandidatesByProfileUrl(profileUrl, apiToken);
-          if (candidates && candidates.length > 0) {
-            candidateIds = candidates.map(candidate => candidate.id);
-            console.log('Found candidates by profile URL:', candidateIds);
-          }
-        }
-
-        // Fallback: match spreadsheet-imported (and other) candidates by email/phone.
-        // Their stored key is spreadsheet_import|email:/|phone:, which never equals a name-based CV key.
-        if (!candidateIds || candidateIds.length === 0) {
-          console.log('No candidates found by key/URL, trying email/phone fallback');
-          candidateIds = await this.findCandidateIdsByEmailOrPhone(contactData, apiToken);
-        }
-
-        if (!candidateIds || candidateIds.length === 0) {
-          console.log('No candidates found for unique string key, profile URL, or email/phone, cannot upload CV');
-          return;
-        }
+        console.log('No candidates found by unique string key, email/phone, or profile URL, cannot upload CV');
+        return;
       }
       
       console.log('Found candidates for CV upload:', candidateIds);
@@ -3196,76 +3168,38 @@ export class CandidateService {
         console.error('Missing required parameters for CV upload');
         return;
       }
-      
-      // Get candidate IDs for the unique string key
-      let candidateIds = await this.getCandidateIdsByUniqueStringKey(uniqueStringKey, apiToken);
-      
-      // If no candidates found by unique string key, try to find by profile URL
+
+      // Attach the CV to EVERY candidate that shares this identity (same uniqueStringKey,
+      // email/phone, or profile URL) across all jobs — not just the first match.
+      let candidateIds = await this.resolveAllMatchingCandidateIds(uniqueStringKey, contactData, apiToken);
+
+      // If no candidate matches at all, create one, then re-resolve the full union.
       if (!candidateIds || candidateIds.length === 0) {
-        console.log('No candidates found for unique string key, trying to find by profile URL');
-        
-        // Extract profile URL from contact data
-        let profileUrl = '';
-        if (contactData.profile_url) {
-          profileUrl = contactData.profile_url;
-        } else if (contactData.json_data) {
-          const jsonData = JSON.parse(contactData.json_data);
-          profileUrl = jsonData.profile_url || jsonData.window_url || '';
-        }
-        
-        if (profileUrl) {
-          const candidates = await this.findCandidatesByProfileUrl(profileUrl, apiToken);
-          if (candidates && candidates.length > 0) {
-            candidateIds = candidates.map(candidate => candidate.id);
-            console.log('Found candidates by profile URL:', candidateIds);
+        console.log('No candidates found by unique string key, email/phone, or profile URL, creating candidate first');
+
+        // Parse json_data if available
+        let jsonData = {};
+        if (contactData?.json_data) {
+          try {
+            jsonData = JSON.parse(contactData.json_data);
+          } catch (error) {
+            console.warn('Error parsing json_data:', error);
           }
         }
 
-        // Fallback: match spreadsheet-imported (and other) candidates by email/phone before
-        // creating a new candidate. Their key is spreadsheet_import|email:/|phone:, which a
-        // name-based CV key never matches, so without this we'd wrongly create a duplicate.
-        if (!candidateIds || candidateIds.length === 0) {
-          console.log('No candidates found by key/URL, trying email/phone fallback');
-          candidateIds = await this.findCandidateIdsByEmailOrPhone(contactData, apiToken);
-        }
+        // Create candidate using upload-profiles flow
+        await this.createCandidateFromContactData(contactData || {}, jsonData, origin || '', apiToken);
+
+        // Wait for candidate to be created, then try to find it again
+        console.log('Waiting for candidate creation to complete...');
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        // Re-resolve the full union after creation.
+        candidateIds = await this.resolveAllMatchingCandidateIds(uniqueStringKey, contactData, apiToken);
 
         if (!candidateIds || candidateIds.length === 0) {
-          console.log('No candidates found for unique string key, profile URL, or email/phone, creating candidate first');
-          
-          // Parse json_data if available
-          let jsonData = {};
-          if (contactData?.json_data) {
-            try {
-              jsonData = JSON.parse(contactData.json_data);
-            } catch (error) {
-              console.warn('Error parsing json_data:', error);
-            }
-          }
-          
-          // Create candidate using upload-profiles flow
-          await this.createCandidateFromContactData(contactData || {}, jsonData, origin || '', apiToken);
-          
-          // Wait for candidate to be created, then try to find it again
-          console.log('Waiting for candidate creation to complete...');
-          await new Promise(resolve => setTimeout(resolve, 3000));
-          
-          // Try to find candidates again
-          candidateIds = await this.getCandidateIdsByUniqueStringKey(uniqueStringKey, apiToken);
-          
-          if (!candidateIds || candidateIds.length === 0) {
-            if (profileUrl) {
-              const candidates = await this.findCandidatesByProfileUrl(profileUrl, apiToken);
-              if (candidates && candidates.length > 0) {
-                candidateIds = candidates.map(candidate => candidate.id);
-                console.log('Found candidates by profile URL after creation:', candidateIds);
-              }
-            }
-          }
-          
-          if (!candidateIds || candidateIds.length === 0) {
-            console.warn('Candidate may still be processing, will retry CV upload later');
-            return;
-          }
+          console.warn('Candidate may still be processing, will retry CV upload later');
+          return;
         }
       }
       
@@ -3549,6 +3483,75 @@ export class CandidateService {
     return await this.getCandidateDetails(candidateIds[0], apiToken);
   }
 
+  /**
+   * Extract a profile URL from contact data (handles both the flattened shape and the
+   * extension's stringified json_data).
+   */
+  private extractProfileUrl(contactData: any): string {
+    if (!contactData) {
+      return '';
+    }
+    if (contactData.profile_url) {
+      return contactData.profile_url;
+    }
+    if (contactData.json_data) {
+      try {
+        const jsonData =
+          typeof contactData.json_data === 'string'
+            ? JSON.parse(contactData.json_data)
+            : contactData.json_data;
+        return jsonData.profile_url || jsonData.window_url || jsonData.candidate_profile || '';
+      } catch (error) {
+        console.warn('extractProfileUrl: failed to parse json_data', error);
+      }
+    }
+    return '';
+  }
+
+  /**
+   * Resolve EVERY candidate a CV should attach to: the union of candidates matching the CV's
+   * uniqueStringKey, its email/phone (incl. the spreadsheet_import|email:/|phone: key format),
+   * and its profile URL. A single person can have multiple candidate records across jobs, so a
+   * resume must be tagged to all of them — not just the first match found.
+   */
+  private async resolveAllMatchingCandidateIds(
+    uniqueStringKey: string,
+    contactData: any,
+    apiToken: string,
+  ): Promise<string[]> {
+    const matchedIds = new Set<string>();
+
+    // 1) Exact uniqueStringKey match (shared across jobs for the same name-based key).
+    if (uniqueStringKey && uniqueStringKey.trim() !== '') {
+      const keyMatches = await this.getCandidateIdsByUniqueStringKey(uniqueStringKey, apiToken);
+      keyMatches.forEach(id => matchedIds.add(id));
+    }
+
+    // 2) Email / phone match (covers spreadsheet_import-keyed candidates and any candidate
+    //    carrying the same primary email/phone, regardless of source).
+    const emailPhoneMatches = await this.findCandidateIdsByEmailOrPhone(contactData, apiToken);
+    emailPhoneMatches.forEach(id => matchedIds.add(id));
+
+    // 3) Profile URL match (LinkedIn / Naukri / Resdex identity).
+    const profileUrl = this.extractProfileUrl(contactData);
+    if (profileUrl) {
+      const urlMatches = await this.findCandidatesByProfileUrl(profileUrl, apiToken);
+      (urlMatches || []).forEach(candidate => {
+        if (candidate?.id) {
+          matchedIds.add(candidate.id);
+        }
+      });
+    }
+
+    const ids = [...matchedIds];
+    console.log('resolveAllMatchingCandidateIds: union of matched candidate IDs', {
+      uniqueStringKey,
+      count: ids.length,
+      ids,
+    });
+    return ids;
+  }
+
   private async getCandidateDetails(candidateId: string, apiToken: string): Promise<any> {
     try {
       console.log('Getting candidate details for:', candidateId);
@@ -3583,6 +3586,159 @@ export class CandidateService {
       console.error('Error getting candidate details:', error);
       return null;
     }
+  }
+
+  /**
+   * Backfill / repair: ensure the resume(s) attached to any one candidate are present on EVERY
+   * candidate that shares its identity (same email / phone / uniqueStringKey / profile URL) across
+   * jobs. Collects the union of attachments across all matching candidates and creates the missing
+   * attachment records (pointing at the same stored file), so the resume is visible on each profile.
+   */
+  async replicateCvAttachmentsAcrossMatchingCandidates(
+    candidateId: string,
+    apiToken: string,
+  ): Promise<{ matchedCandidateIds: string[]; attachmentsCreated: number }> {
+    console.log('replicateCvAttachments: starting for candidate', candidateId);
+
+    const seedCandidate = await this.getCandidateDetails(candidateId, apiToken);
+    if (!seedCandidate) {
+      console.warn('replicateCvAttachments: seed candidate not found', candidateId);
+      return { matchedCandidateIds: [], attachmentsCreated: 0 };
+    }
+
+    const primaryEmail =
+      seedCandidate?.email?.primaryEmail ||
+      seedCandidate?.people?.emails?.primaryEmail ||
+      '';
+    const primaryPhone =
+      seedCandidate?.phoneNumber?.primaryPhoneNumber ||
+      seedCandidate?.people?.phones?.primaryPhoneNumber ||
+      '';
+    const uniqueStringKey = seedCandidate?.uniqueStringKey || '';
+    const profileUrl =
+      seedCandidate?.linkedinUrl?.primaryLinkUrl ||
+      seedCandidate?.resdexNaukriUrl?.primaryLinkUrl ||
+      seedCandidate?.hiringNaukriUrl?.primaryLinkUrl ||
+      '';
+
+    const contactData = {
+      emailAddress: primaryEmail,
+      phoneNumber: primaryPhone,
+      profile_url: profileUrl,
+    };
+
+    const matchedCandidateIds = await this.resolveAllMatchingCandidateIds(
+      uniqueStringKey,
+      contactData,
+      apiToken,
+    );
+
+    // Always include the seed candidate itself.
+    if (!matchedCandidateIds.includes(candidateId)) {
+      matchedCandidateIds.push(candidateId);
+    }
+
+    if (matchedCandidateIds.length < 2) {
+      console.log('replicateCvAttachments: fewer than 2 matching candidates, nothing to replicate', matchedCandidateIds);
+      return { matchedCandidateIds, attachmentsCreated: 0 };
+    }
+
+    // Fetch full data (including attachments) for all matched candidates.
+    const response = await this.staticGraphQLService.executeGraphQL(
+      graphqlToFetchAllCandidateData,
+      { filter: { id: { in: matchedCandidateIds } }, orderBy: [{ position: 'AscNullsFirst' }] },
+      apiToken,
+    );
+    const edges = response?.data?.data?.candidates?.edges || [];
+
+    const attachmentByPath = new Map<string, { name: string; fullPath: string; type: string; authorId: string }>();
+    const existingPathsByCandidate = new Map<string, Set<string>>();
+
+    for (const edge of edges) {
+      const node = edge?.node;
+      if (!node?.id) {
+        continue;
+      }
+      const paths = new Set<string>();
+      for (const attEdge of node.attachments?.edges || []) {
+        const att = attEdge?.node;
+        if (!att?.fullPath) {
+          continue;
+        }
+        paths.add(att.fullPath);
+        if (!attachmentByPath.has(att.fullPath)) {
+          attachmentByPath.set(att.fullPath, {
+            name: att.name || att.fullPath.split('/').pop() || 'resume.pdf',
+            fullPath: att.fullPath,
+            type: att.type || 'TextDocument',
+            authorId: att.authorId,
+          });
+        }
+      }
+      existingPathsByCandidate.set(node.id, paths);
+    }
+
+    if (attachmentByPath.size === 0) {
+      console.log('replicateCvAttachments: no attachments found on any matching candidate');
+      return { matchedCandidateIds, attachmentsCreated: 0 };
+    }
+
+    let attachmentsCreated = 0;
+    for (const cid of matchedCandidateIds) {
+      const existing = existingPathsByCandidate.get(cid) || new Set<string>();
+      for (const [fullPath, meta] of attachmentByPath) {
+        if (existing.has(fullPath)) {
+          continue;
+        }
+        if (!meta.authorId) {
+          console.warn('replicateCvAttachments: skipping attachment without authorId', fullPath);
+          continue;
+        }
+        try {
+          await this.createAttachmentRecordForCandidate(cid, meta, apiToken);
+          attachmentsCreated++;
+          console.log(`replicateCvAttachments: created attachment on candidate ${cid} for ${fullPath}`);
+        } catch (error) {
+          console.error(`replicateCvAttachments: failed to create attachment on candidate ${cid}`, error);
+        }
+      }
+    }
+
+    console.log('replicateCvAttachments: done', { matchedCandidateIds, attachmentsCreated });
+    return { matchedCandidateIds, attachmentsCreated };
+  }
+
+  /**
+   * Create an attachment record for a candidate pointing at an already-stored file (no re-upload).
+   */
+  private async createAttachmentRecordForCandidate(
+    candidateId: string,
+    meta: { name: string; fullPath: string; type: string; authorId: string },
+    apiToken: string,
+  ): Promise<void> {
+    const createAttachmentMutation = `
+      mutation CreateOneAttachment($input: AttachmentCreateInput!) {
+        createAttachment(data: $input) {
+          id
+          name
+          fullPath
+          type
+        }
+      }
+    `;
+    await this.staticGraphQLService.executeGraphQL(
+      createAttachmentMutation,
+      {
+        input: {
+          authorId: meta.authorId,
+          name: meta.name,
+          fullPath: meta.fullPath,
+          type: meta.type,
+          candidateId,
+        },
+      },
+      apiToken,
+    );
   }
 
   private async createCvAttachment(filePath: string, candidateId: string, origin: string, apiToken: string): Promise<void> {
