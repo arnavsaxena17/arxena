@@ -3665,11 +3665,12 @@ export class CandidateService {
         if (!att?.fullPath) {
           continue;
         }
-        paths.add(att.fullPath);
-        if (!attachmentByPath.has(att.fullPath)) {
-          attachmentByPath.set(att.fullPath, {
-            name: att.name || att.fullPath.split('/').pop() || 'resume.pdf',
-            fullPath: att.fullPath,
+        const normalizedPath = this.normalizeAttachmentPath(att.fullPath);
+        paths.add(normalizedPath);
+        if (!attachmentByPath.has(normalizedPath)) {
+          attachmentByPath.set(normalizedPath, {
+            name: att.name || normalizedPath.split('/').pop() || 'resume.pdf',
+            fullPath: normalizedPath,
             type: att.type || 'TextDocument',
             authorId: att.authorId,
           });
@@ -3706,6 +3707,28 @@ export class CandidateService {
 
     console.log('replicateCvAttachments: done', { matchedCandidateIds, attachmentsCreated });
     return { matchedCandidateIds, attachmentsCreated };
+  }
+
+  /**
+   * Normalize an attachment fullPath into the stable, storable relative form (e.g. `attachment/<uuid>.pdf`).
+   *
+   * The GraphQL API returns fullPath as a freshly-signed absolute URL
+   * (e.g. `https://host/files/attachment/<uuid>.pdf?token=...`). Storing that verbatim is wrong:
+   * the embedded token expires and is re-appended on every read, so the value is unstable (breaking
+   * dedup) and produces broken, double-tokened download URLs. We strip the query string and the
+   * `.../files/` origin prefix so the value matches what `uploadFile` stores for real uploads.
+   */
+  private normalizeAttachmentPath(fullPath: string): string {
+    if (!fullPath) {
+      return fullPath;
+    }
+    let path = fullPath.split('?')[0];
+    const filesMarker = '/files/';
+    const filesIdx = path.indexOf(filesMarker);
+    if (filesIdx >= 0) {
+      path = path.substring(filesIdx + filesMarker.length);
+    }
+    return path;
   }
 
   /**
@@ -3885,10 +3908,11 @@ export class CandidateService {
         if (!att?.fullPath || !att?.authorId) {
           continue;
         }
-        if (!attachmentByPath.has(att.fullPath)) {
-          attachmentByPath.set(att.fullPath, {
-            name: att.name || att.fullPath.split('/').pop() || 'resume.pdf',
-            fullPath: att.fullPath,
+        const normalizedPath = this.normalizeAttachmentPath(att.fullPath);
+        if (!attachmentByPath.has(normalizedPath)) {
+          attachmentByPath.set(normalizedPath, {
+            name: att.name || normalizedPath.split('/').pop() || 'resume.pdf',
+            fullPath: normalizedPath,
             type: att.type || 'TextDocument',
             authorId: att.authorId,
           });
@@ -3908,19 +3932,21 @@ export class CandidateService {
       const existing = new Set<string>(
         (member.attachments?.edges || [])
           .map((e: any) => e?.node?.fullPath)
-          .filter(Boolean),
+          .filter(Boolean)
+          .map((p: string) => this.normalizeAttachmentPath(p)),
       );
       for (const [fullPath, meta] of attachmentByPath) {
         if (existing.has(fullPath)) {
           continue;
         }
-        created++;
         if (dryRun) {
+          created++;
           console.log(`bulkBackfillCvAttachments[dryRun]: would attach ${fullPath} to candidate ${member.id}`);
           continue;
         }
         try {
           await this.createAttachmentRecordForCandidate(member.id, meta, apiToken);
+          created++;
           console.log(`bulkBackfillCvAttachments: attached ${fullPath} to candidate ${member.id}`);
         } catch (error) {
           console.error(`bulkBackfillCvAttachments: failed to attach ${fullPath} to candidate ${member.id}`, error);
