@@ -3741,6 +3741,376 @@ export class CandidateService {
     );
   }
 
+  /**
+   * Paginate through candidates (optionally filtered), including attachments + identity fields.
+   */
+  private async fetchCandidatesPaginated(filter: any, apiToken: string): Promise<any[]> {
+    const results: any[] = [];
+    const limit = 50;
+    let lastCursor: string | null = null;
+    let hasNextPage = true;
+    let safety = 0;
+
+    while (hasNextPage && safety < 100000) {
+      safety++;
+      const variables: any = { limit };
+      if (filter) {
+        variables.filter = filter;
+      }
+      if (lastCursor) {
+        variables.lastCursor = lastCursor;
+      }
+
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFetchAllCandidateData,
+        variables,
+        apiToken,
+      );
+
+      const candidates = response?.data?.data?.candidates as {
+        edges: CandidatesEdge[];
+        pageInfo: PageInfo;
+      } | undefined;
+
+      const edges = candidates?.edges || [];
+      for (const edge of edges) {
+        if (edge?.node) {
+          results.push(edge.node);
+        }
+      }
+
+      hasNextPage = candidates?.pageInfo?.hasNextPage || false;
+      lastCursor = candidates?.pageInfo?.endCursor || null;
+      if (!lastCursor) {
+        break;
+      }
+    }
+
+    return results;
+  }
+
+  private async fetchAllCandidatesForBackfill(apiToken: string): Promise<any[]> {
+    const results = await this.fetchCandidatesPaginated(undefined, apiToken);
+    console.log(`bulkBackfillCvAttachments: fetched ${results.length} candidates (workspace)`);
+    return results;
+  }
+
+  /**
+   * Collect normalized identity tokens (emails, phones, and uniqueStringKeys — including the
+   * reconstructed spreadsheet_import key format) from a set of candidates.
+   */
+  private collectIdentityTokens(candidates: any[]): { emails: string[]; phones: string[]; keys: string[] } {
+    const emails = new Set<string>();
+    const phones = new Set<string>();
+    const keys = new Set<string>();
+
+    for (const candidate of candidates) {
+      const emailRaw =
+        candidate?.email?.primaryEmail || candidate?.people?.emails?.primaryEmail || '';
+      const email = emailRaw ? String(emailRaw).toLowerCase().trim() : '';
+      if (email) {
+        emails.add(email);
+        keys.add(`spreadsheet_import|email:${email}`);
+      }
+
+      const phoneRaw =
+        candidate?.phoneNumber?.primaryPhoneNumber ||
+        candidate?.people?.phones?.primaryPhoneNumber ||
+        '';
+      const phone = phoneRaw ? this.dataProcessingUtils.cleanPhoneNumbers(phoneRaw)[0] : '';
+      if (phone) {
+        phones.add(phone);
+        keys.add(`spreadsheet_import|phone:${phone}`);
+      }
+
+      if (candidate?.uniqueStringKey) {
+        keys.add(candidate.uniqueStringKey);
+      }
+    }
+
+    return { emails: [...emails], phones: [...phones], keys: [...keys] };
+  }
+
+  /**
+   * Fetch candidates across the workspace that match any of the given identity tokens.
+   */
+  private async fetchCandidatesByIdentityTokens(
+    tokens: { emails: string[]; phones: string[]; keys: string[] },
+    apiToken: string,
+  ): Promise<any[]> {
+    const byId = new Map<string, any>();
+
+    const runFilter = async (filter: any): Promise<void> => {
+      const nodes = await this.fetchCandidatesPaginated(filter, apiToken);
+      for (const node of nodes) {
+        if (node?.id) {
+          byId.set(node.id, node);
+        }
+      }
+    };
+
+    for (const part of this.chunkArray(tokens.emails, 30)) {
+      if (part.length > 0) {
+        await runFilter({ email: { primaryEmail: { in: part } } });
+      }
+    }
+    for (const part of this.chunkArray(tokens.keys, 30)) {
+      if (part.length > 0) {
+        await runFilter({ uniqueStringKey: { in: part } });
+      }
+    }
+    for (const part of this.chunkArray(tokens.phones, 30)) {
+      if (part.length > 0) {
+        await runFilter({ phoneNumber: { primaryPhoneNumber: { in: part } } });
+      }
+    }
+
+    return [...byId.values()];
+  }
+
+  /**
+   * Ensure every write-target candidate in a group has the union of the group's CV attachments.
+   * writeTargetIds = null means write to all members. Returns the number of attachment records created.
+   */
+  private async replicateAttachmentsWithinGroup(
+    members: any[],
+    writeTargetIds: Set<string> | null,
+    dryRun: boolean,
+    apiToken: string,
+  ): Promise<number> {
+    const attachmentByPath = new Map<string, { name: string; fullPath: string; type: string; authorId: string }>();
+    for (const member of members) {
+      for (const attEdge of member.attachments?.edges || []) {
+        const att = attEdge?.node;
+        if (!att?.fullPath || !att?.authorId) {
+          continue;
+        }
+        if (!attachmentByPath.has(att.fullPath)) {
+          attachmentByPath.set(att.fullPath, {
+            name: att.name || att.fullPath.split('/').pop() || 'resume.pdf',
+            fullPath: att.fullPath,
+            type: att.type || 'TextDocument',
+            authorId: att.authorId,
+          });
+        }
+      }
+    }
+
+    if (attachmentByPath.size === 0) {
+      return 0;
+    }
+
+    let created = 0;
+    for (const member of members) {
+      if (writeTargetIds && !writeTargetIds.has(member.id)) {
+        continue;
+      }
+      const existing = new Set<string>(
+        (member.attachments?.edges || [])
+          .map((e: any) => e?.node?.fullPath)
+          .filter(Boolean),
+      );
+      for (const [fullPath, meta] of attachmentByPath) {
+        if (existing.has(fullPath)) {
+          continue;
+        }
+        created++;
+        if (dryRun) {
+          console.log(`bulkBackfillCvAttachments[dryRun]: would attach ${fullPath} to candidate ${member.id}`);
+          continue;
+        }
+        try {
+          await this.createAttachmentRecordForCandidate(member.id, meta, apiToken);
+          console.log(`bulkBackfillCvAttachments: attached ${fullPath} to candidate ${member.id}`);
+        } catch (error) {
+          console.error(`bulkBackfillCvAttachments: failed to attach ${fullPath} to candidate ${member.id}`, error);
+        }
+      }
+    }
+
+    return created;
+  }
+
+  /**
+   * One-time repair: group candidates that share an identity (email / phone / uniqueStringKey —
+   * transitively, via union-find) and ensure every member has all of the group's CV/resume
+   * attachments.
+   *
+   * - No jobId: scans the whole workspace and makes every group fully consistent.
+   * - With jobId: sources CVs from cross-job siblings but only WRITES to the target job's candidates,
+   *   fetching just those candidates plus their identity siblings (2-hop) for efficiency.
+   *
+   * Use dryRun to preview counts without writing.
+   */
+  async bulkBackfillCvAttachments(
+    apiToken: string,
+    dryRun = false,
+    jobId?: string,
+  ): Promise<{
+    candidatesScanned: number;
+    groupsWithReplication: number;
+    attachmentsCreated: number;
+    dryRun: boolean;
+    jobId: string | null;
+  }> {
+    console.log(`bulkBackfillCvAttachments: starting (dryRun=${dryRun}, jobId=${jobId || 'ALL'})`);
+
+    let members: any[];
+    let writeTargetIds: Set<string> | null = null;
+
+    if (jobId) {
+      const jobCandidates = await this.fetchCandidatesPaginated({ jobsId: { eq: jobId } }, apiToken);
+      writeTargetIds = new Set(
+        jobCandidates.map(candidate => candidate?.id).filter(Boolean) as string[],
+      );
+      console.log(`bulkBackfillCvAttachments: job ${jobId} has ${writeTargetIds.size} candidates`);
+
+      // Expand to identity siblings (up to 2 hops) so cross-job CVs are sourced correctly.
+      const byId = new Map<string, any>();
+      for (const candidate of jobCandidates) {
+        if (candidate?.id) {
+          byId.set(candidate.id, candidate);
+        }
+      }
+
+      let frontier = jobCandidates;
+      for (let hop = 0; hop < 2; hop++) {
+        const tokens = this.collectIdentityTokens(frontier);
+        const siblings = await this.fetchCandidatesByIdentityTokens(tokens, apiToken);
+        const newOnes: any[] = [];
+        for (const sibling of siblings) {
+          if (sibling?.id && !byId.has(sibling.id)) {
+            byId.set(sibling.id, sibling);
+            newOnes.push(sibling);
+          }
+        }
+        if (newOnes.length === 0) {
+          break;
+        }
+        frontier = newOnes;
+      }
+
+      members = [...byId.values()];
+      console.log(`bulkBackfillCvAttachments: job scope resolved to ${members.length} candidates (incl. siblings)`);
+    } else {
+      members = await this.fetchAllCandidatesForBackfill(apiToken);
+    }
+
+    // Union-find over candidate ids.
+    const parent = new Map<string, string>();
+    const find = (x: string): string => {
+      let root = x;
+      while (parent.get(root) !== root) {
+        root = parent.get(root) as string;
+      }
+      let cur = x;
+      while (parent.get(cur) !== root) {
+        const next = parent.get(cur) as string;
+        parent.set(cur, root);
+        cur = next;
+      }
+      return root;
+    };
+    const union = (a: string, b: string): void => {
+      const ra = find(a);
+      const rb = find(b);
+      if (ra !== rb) {
+        parent.set(ra, rb);
+      }
+    };
+
+    for (const candidate of members) {
+      if (candidate?.id) {
+        parent.set(candidate.id, candidate.id);
+      }
+    }
+
+    // Link candidates that share any identity token.
+    const tokenToCandidate = new Map<string, string>();
+    for (const candidate of members) {
+      if (!candidate?.id) {
+        continue;
+      }
+      const tokens: string[] = [];
+
+      const emailRaw =
+        candidate?.email?.primaryEmail || candidate?.people?.emails?.primaryEmail || '';
+      const email = emailRaw ? String(emailRaw).toLowerCase().trim() : '';
+      if (email) {
+        tokens.push(`email:${email}`);
+      }
+
+      const phoneRaw =
+        candidate?.phoneNumber?.primaryPhoneNumber ||
+        candidate?.people?.phones?.primaryPhoneNumber ||
+        '';
+      const phone = phoneRaw ? this.dataProcessingUtils.cleanPhoneNumbers(phoneRaw)[0] : '';
+      if (phone) {
+        tokens.push(`phone:${phone}`);
+      }
+
+      if (candidate?.uniqueStringKey) {
+        tokens.push(`key:${candidate.uniqueStringKey}`);
+      }
+
+      for (const token of tokens) {
+        const existing = tokenToCandidate.get(token);
+        if (existing) {
+          union(candidate.id, existing);
+        } else {
+          tokenToCandidate.set(token, candidate.id);
+        }
+      }
+    }
+
+    // Group candidates by their union-find root.
+    const groups = new Map<string, any[]>();
+    for (const candidate of members) {
+      if (!candidate?.id) {
+        continue;
+      }
+      const root = find(candidate.id);
+      if (!groups.has(root)) {
+        groups.set(root, []);
+      }
+      (groups.get(root) as any[]).push(candidate);
+    }
+
+    let groupsWithReplication = 0;
+    let attachmentsCreated = 0;
+
+    for (const groupMembers of groups.values()) {
+      if (groupMembers.length < 2) {
+        continue;
+      }
+      // When scoped to a job, skip groups that contain no write-target candidate.
+      if (writeTargetIds && !groupMembers.some(member => writeTargetIds!.has(member.id))) {
+        continue;
+      }
+
+      const created = await this.replicateAttachmentsWithinGroup(
+        groupMembers,
+        writeTargetIds,
+        dryRun,
+        apiToken,
+      );
+      if (created > 0) {
+        groupsWithReplication++;
+        attachmentsCreated += created;
+      }
+    }
+
+    const summary = {
+      candidatesScanned: members.length,
+      groupsWithReplication,
+      attachmentsCreated,
+      dryRun,
+      jobId: jobId || null,
+    };
+    console.log('bulkBackfillCvAttachments: done', summary);
+    return summary;
+  }
+
   private async createCvAttachment(filePath: string, candidateId: string, origin: string, apiToken: string): Promise<void> {
     try {
       console.log('Creating CV attachment for candidate:', candidateId);

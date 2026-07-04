@@ -2186,6 +2186,37 @@ export class CandidateSourcingController {
     }
   }
 
+  // One-time repair: group candidates sharing an identity (email / phone / uniqueStringKey) and
+  // ensure each has all of the group's CVs. Pass { "dryRun": true } first to preview counts without
+  // writing. Pass { "jobId": "<id>" } to scope the WRITES to a single job's candidates (CVs are
+  // still sourced from cross-job siblings); omit jobId to repair the whole workspace.
+  @Post('bulk-backfill-cv-attachments')
+  @UseGuards(JwtAuthGuard)
+  async bulkBackfillCvAttachments(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const dryRun = request.body?.dryRun === true;
+      const jobId = request.body?.jobId || undefined;
+
+      const result = await this.candidateService.bulkBackfillCvAttachments(apiToken, dryRun, jobId);
+
+      const scope = jobId ? `job ${jobId}` : 'the whole workspace';
+      return {
+        status: 'success',
+        message: dryRun
+          ? `Dry run (${scope}): would create ${result.attachmentsCreated} attachment record(s) across ${result.groupsWithReplication} identity group(s)`
+          : `Created ${result.attachmentsCreated} attachment record(s) across ${result.groupsWithReplication} identity group(s) (${scope})`,
+        ...result,
+      };
+    } catch (error) {
+      console.error('Error in bulk CV attachment backfill:', error);
+      return {
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Failed to run bulk CV attachment backfill',
+      };
+    }
+  }
+
   @Post('test-cv-upload-no-auth')
   async testCvUploadNoAuth(@Req() request: any): Promise<object> {
     console.log('Test CV upload endpoint reached (no auth)');
