@@ -19,6 +19,7 @@ export type OrgChartRateLimitProfile =
   | 'sitemap'
   | 'expensive'
   | 'default'
+  | 'embed'
   | 'page';
 
 export type OrgChartApiGuardResult =
@@ -76,6 +77,8 @@ const getMaxRequestsForProfile = (
       );
     case 'default':
       return parsePositiveInt(process.env.ORG_CHART_API_RATE_LIMIT_MAX, 30);
+    case 'embed':
+      return parsePositiveInt(process.env.ORG_CHART_EMBED_RATE_LIMIT_MAX, 60);
     case 'page':
       return parsePositiveInt(process.env.ORG_CHART_PAGE_RATE_LIMIT_MAX, 60);
   }
@@ -166,6 +169,9 @@ export const resolveOrgChartRateLimitProfile = (
   }
   if (pathname.startsWith('/api/org-chart')) {
     return 'default';
+  }
+  if (pathname.startsWith('/api/embed/')) {
+    return 'embed';
   }
   if (pathname.startsWith('/api/org/')) {
     return 'default';

@@ -105,6 +105,22 @@ const SettingsDevelopersApiKeysNew = lazy(() =>
   })),
 );
 
+const SettingsDevelopersOrgChartEmbedNew = lazy(() =>
+  import(
+    '~/pages/settings/developers/org-chart-embed/SettingsDevelopersOrgChartEmbedNew'
+  ).then((module) => ({
+    default: module.SettingsDevelopersOrgChartEmbedNew,
+  })),
+);
+
+const SettingsDevelopersOrgChartEmbedDetail = lazy(() =>
+  import(
+    '~/pages/settings/developers/org-chart-embed/SettingsDevelopersOrgChartEmbedDetail'
+  ).then((module) => ({
+    default: module.SettingsDevelopersOrgChartEmbedDetail,
+  })),
+);
+
 const Releases = lazy(() =>
   import('~/pages/settings/Releases').then((module) => ({
     default: module.Releases,
@@ -388,6 +404,14 @@ export const SettingsRoutes = ({
       <Route
         path={SettingsPath.DevelopersNewWebhookDetail}
         element={<SettingsDevelopersWebhooksDetail />}
+      />
+      <Route
+        path={SettingsPath.DevelopersOrgChartEmbedNew}
+        element={<SettingsDevelopersOrgChartEmbedNew />}
+      />
+      <Route
+        path={SettingsPath.DevelopersOrgChartEmbedDetail}
+        element={<SettingsDevelopersOrgChartEmbedDetail />}
       />
       <Route
         path={SettingsPath.Workflows}

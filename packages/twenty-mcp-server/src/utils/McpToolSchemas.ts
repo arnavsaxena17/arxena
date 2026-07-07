@@ -313,6 +313,42 @@ export const SEARCH_COMPANIES_INDEX_INPUT_DESCRIPTOR: readonly McpInputFieldDesc
   { key: 'offset', type: 'number', description: 'Pagination offset', required: false },
 ] as const;
 
+// ==================== People API Tools ====================
+
+/** Descriptor for search_people_by_job_title tool input. */
+export const SEARCH_PEOPLE_BY_JOB_TITLE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'jobTitle', type: 'string', description: 'Sample job title to classify (e.g. "Head of Marketing", "VP Engineering")', required: true },
+  { key: 'companyId', type: 'string', description: 'Company slug/id (e.g. salesforce, google)', required: false },
+  { key: 'companyName', type: 'string', description: 'Company name (e.g. Salesforce)', required: false },
+  { key: 'website', type: 'string', description: 'Company website domain (e.g. salesforce.com)', required: false },
+  { key: 'country', type: 'string', description: 'Location country filter', required: false },
+  { key: 'dataSource', type: 'string', description: 'Data source alias: index (default), apollo, pdl, contactout, harvest', required: false },
+  { key: 'limit', type: 'number', description: 'Maximum results (default 20, max 100)', required: false },
+  { key: 'offset', type: 'number', description: 'Pagination offset', required: false },
+] as const;
+
+/** Descriptor for search_people_api tool input. */
+export const SEARCH_PEOPLE_API_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'dataSource', type: 'string', description: 'Data source alias: index (default), apollo, pdl, contactout, harvest', required: false },
+  { key: 'query', type: 'string', description: 'Free-text search', required: false },
+  { key: 'personName', type: 'string', description: 'Person name filter', required: false },
+  { key: 'jobTitle', type: 'string', description: 'Job title filter', required: false },
+  { key: 'companyId', type: 'string', description: 'Company slug/id filter', required: false },
+  { key: 'companyName', type: 'string', description: 'Company name filter', required: false },
+  { key: 'website', type: 'string', description: 'Company website filter', required: false },
+  { key: 'stdFunction', type: 'string', description: 'Standardized function (e.g. marketing, engineering)', required: false },
+  { key: 'stdGrade', type: 'string', description: 'Standardized grade (e.g. leadership, mid)', required: false },
+  { key: 'country', type: 'string', description: 'Location country filter', required: false },
+  { key: 'linkedinUrl', type: 'string', description: 'LinkedIn profile URL filter', required: false },
+  { key: 'limit', type: 'number', description: 'Maximum results (default 20, max 100)', required: false },
+  { key: 'offset', type: 'number', description: 'Pagination offset', required: false },
+] as const;
+
+/** Shared optional title param for taxonomy list tools. */
+export const LIST_TAXONOMY_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'title', type: 'string', description: 'Optional job title to classify', required: false },
+] as const;
+
 // ==================== LinkedIn Search Tools ====================
 
 /** Descriptor for expand_companies tool input. */

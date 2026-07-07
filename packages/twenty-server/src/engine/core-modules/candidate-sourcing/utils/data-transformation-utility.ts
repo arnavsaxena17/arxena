@@ -1,4 +1,8 @@
 import { ArxenaCandidateNode, ArxenaPersonNode } from "twenty-shared";
+import {
+  extractDisplayPictureUrl,
+  resolveAvatarUrlFromDisplayPictureUrl,
+} from './avatar-url.util';
 import { DataProcessingUtils } from './data-processing.utils';
 import { normalizeLinkedInUrl } from './linkedin-url.utils';
 
@@ -22,25 +26,10 @@ type EnhancedEmailsValue = {
 export const mapArxCandidateToPersonNode = (candidate: any) => {
   const firstName = candidate?.firstName  || "";
   const lastName = candidate?.lastName || "";
-  
-  // Extract display picture: displayPicture (object or string), profile_picture_url (org chart/API), job_process_events
-  let displayPictureUrl = candidate?.displayPicture || candidate?.display_picture || '';
-  if (typeof displayPictureUrl === 'object' && displayPictureUrl?.primaryLinkUrl) {
-    displayPictureUrl = displayPictureUrl.primaryLinkUrl;
-  }
-  if (!displayPictureUrl || typeof displayPictureUrl !== 'string') {
-    displayPictureUrl =
-      (typeof candidate?.profile_picture_url === 'string' && candidate.profile_picture_url) ||
-      (typeof candidate?.profilePictureUrl === 'string' && candidate.profilePictureUrl) ||
-      (typeof candidate?.profile_picture_url_large === 'string' && candidate.profile_picture_url_large) ||
-      '';
-  }
-  if (!displayPictureUrl && candidate?.job_process_events) {
-    const profilePictureEvent = candidate.job_process_events.find(event => event.type === 'profile_picture');
-    if (profilePictureEvent) {
-      displayPictureUrl = profilePictureEvent.value;
-    }
-  }
+  const displayPictureUrl = extractDisplayPictureUrl(candidate as Record<string, unknown>);
+  const avatarUrl =
+    (typeof candidate?.avatarUrl === 'string' && candidate.avatarUrl.trim()) ||
+    resolveAvatarUrlFromDisplayPictureUrl(displayPictureUrl);
 
   // Initialize DataProcessingUtils for enhanced cleaning
   const dataProcessingUtils = new DataProcessingUtils();
@@ -96,6 +85,7 @@ export const mapArxCandidateToPersonNode = (candidate: any) => {
   } = {
     name: { firstName, lastName },
     displayPicture: {"primaryLinkLabel":"Display Picture", "primaryLinkUrl": displayPictureUrl},
+    avatarUrl,
     emails: {
       primaryEmail: emailData.primaryEmail,
       additionalEmails: emailData.additionalEmails
@@ -185,22 +175,11 @@ export const mapArxCandidateToCandidateNode = (candidate: {
     phoneData = dataProcessingUtils.parsePhoneNumbers(candidate.phoneNumber);
   }
   
-  // Extract display picture: displayPicture (object or string), profile_picture_url (org chart/API)
   const raw = candidate as Record<string, unknown>;
-  let displayPictureUrl = '';
-  const dp = raw.displayPicture ?? raw.display_picture;
-  if (typeof dp === 'string') {
-    displayPictureUrl = dp;
-  } else if (dp && typeof dp === 'object' && typeof (dp as { primaryLinkUrl?: string }).primaryLinkUrl === 'string') {
-    displayPictureUrl = (dp as { primaryLinkUrl: string }).primaryLinkUrl;
-  }
-  if (!displayPictureUrl) {
-    displayPictureUrl =
-      (typeof raw.profile_picture_url === 'string' && raw.profile_picture_url) ||
-      (typeof raw.profilePictureUrl === 'string' && raw.profilePictureUrl) ||
-      (typeof raw.profile_picture_url_large === 'string' && raw.profile_picture_url_large) ||
-      '';
-  }
+  const displayPictureUrl = extractDisplayPictureUrl(raw);
+  const avatarUrl =
+    (typeof raw.avatarUrl === 'string' && raw.avatarUrl.trim()) ||
+    resolveAvatarUrlFromDisplayPictureUrl(displayPictureUrl);
 
   // Extract hiring Naukri URL from candidate data
   let hiringNaukriUrl = '';
@@ -258,6 +237,7 @@ export const mapArxCandidateToCandidateNode = (candidate: {
       "primaryLinkLabel": "Display Picture", 
       "primaryLinkUrl": displayPictureUrl
     },
+    avatarUrl,
     linkedinUrl: { 
       "primaryLinkLabel": linkedinUrl ? normalizeLinkedInUrl(linkedinUrl) : '', 
       "primaryLinkUrl": linkedinUrl ? normalizeLinkedInUrl(linkedinUrl) : ''

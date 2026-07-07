@@ -1,4 +1,5 @@
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
+import { apiKeysState } from '@/arx-jd-upload/states/apiKeysState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { tableStateAtom } from '@/candidate-table/states/states';
@@ -26,6 +27,7 @@ export const useSyncChatsWithWhatsappAction: ActionHookWithObjectMetadataItem = 
   const tableState = useRecoilValue(tableStateAtom);
   const searchResults = useRecoilValue(searchResultsState);
   const tokenPair = useRecoilValue(tokenPairState);
+  const apiKeys = useRecoilValue(apiKeysState);
   const { enqueueSnackBar } = useSnackBar();
   const [isSyncChatsModalOpen, setIsSyncChatsModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -150,19 +152,30 @@ export const useSyncChatsWithWhatsappAction: ActionHookWithObjectMetadataItem = 
           continue;
         }
 
+        const messagingChannel =
+          record.messagingChannel || apiKeys.whatsapp_key || 'baileys';
+        const usesUnipile =
+          messagingChannel === 'whatsapp-unipile' ||
+          apiKeys.whatsapp_key === 'whatsapp-unipile';
+        const syncEndpoint = usesUnipile
+          ? `${process.env.REACT_APP_SERVER_BASE_URL}/whatsapp-unipile/sync-messages`
+          : `${process.env.REACT_APP_SERVER_BASE_URL}/baileys-whatsapp/sync-messages`;
+
         try {
           console.log('Syncing chats for record', {
             record,
             phoneNumber: record.phoneNumber.primaryPhoneNumber,
+            usesUnipile,
+            syncEndpoint,
           });
           console.log("process.env.REACT_APP_SERVER_BASE_URL::", process.env.REACT_APP_SERVER_BASE_URL);
 
           const response = await axios.post(
-            `${process.env.REACT_APP_SERVER_BASE_URL}/baileys-whatsapp/sync-messages`,
+            syncEndpoint,
             {
               phoneNumber: record.phoneNumber.primaryPhoneNumber,
               candidateId: record.id,
-              limit: 50,
+              limit: usesUnipile ? 250 : 50,
             },
             {
               headers: { 
@@ -237,6 +250,7 @@ export const useSyncChatsWithWhatsappAction: ActionHookWithObjectMetadataItem = 
     searchResults,
     fetchAllRecords,
     tokenPair?.accessToken?.token,
+    apiKeys.whatsapp_key,
     enqueueSnackBar,
   ]);
 

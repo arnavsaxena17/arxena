@@ -200,6 +200,21 @@ export const SOLUTION_PAGES: MarketingDetailPage[] = [
     ],
     bulletsTitle: 'In practice',
   },
+  {
+    slug: 'org-chart-embed',
+    title: 'Org chart embed',
+    headline: 'Drop live org charts on any website',
+    metaDescription:
+      'Embed Arxena org charts on your careers page or portal with a JavaScript snippet and origin-secured embed key.',
+    lead: 'Create an embed key, allow your domain, and paste one snippet. Charts load in real time from Arxena with the branded ARXENA loader.',
+    bullets: [
+      'iframe embed by default—small loader, full interactive chart.',
+      'Live domain lookup or published snapshot modes.',
+      'Origin allowlist and per-key rate limits.',
+      'Snippet generator in Settings → Developers.',
+    ],
+    bulletsTitle: 'In practice',
+  },
 ];
 
 const productBySlug = new Map(PRODUCT_PAGES.map((page) => [page.slug, page]));

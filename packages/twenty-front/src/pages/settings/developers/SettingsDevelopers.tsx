@@ -1,6 +1,7 @@
 import { v4 } from 'uuid';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import { SettingsApiKeysTable } from '@/settings/developers/components/SettingsApiKeysTable';
+import { SettingsOrgChartEmbedTable } from '@/settings/developers/components/SettingsOrgChartEmbedTable';
 import { SettingsReadDocumentationButton } from '@/settings/developers/components/SettingsReadDocumentationButton';
 import { SettingsWebhooksTable } from '@/settings/developers/components/SettingsWebhooksTable';
 import { SettingsPath } from '@/types/SettingsPath';
@@ -82,6 +83,22 @@ export const SettingsDevelopers = () => {
                     creationMode: true,
                   },
                 )}
+              />
+            </StyledButtonContainer>
+          </Section>
+          <Section>
+            <H2Title
+              title={t`Org chart embed`}
+              description={t`Embed live org charts on your website with a JavaScript snippet.`}
+            />
+            <SettingsOrgChartEmbedTable />
+            <StyledButtonContainer>
+              <Button
+                Icon={IconPlus}
+                title={t`Create embed key`}
+                size="small"
+                variant="secondary"
+                to={getSettingsPath(SettingsPath.DevelopersOrgChartEmbedNew)}
               />
             </StyledButtonContainer>
           </Section>

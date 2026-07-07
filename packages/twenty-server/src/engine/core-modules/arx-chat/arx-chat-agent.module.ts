@@ -73,6 +73,7 @@ import { SchemaCacheService } from 'src/engine/core-modules/graphql/services/sch
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
 import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
+import { WarmPathsModule } from 'src/engine/core-modules/warm-paths/warm-paths.module';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
 import { LLMChatModelModule } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.module';
 import { LinkedinOutreachOpenerService } from 'src/engine/core-modules/org-chart-outreach/linkedin-outreach-opener.service';
@@ -112,6 +113,7 @@ import { MemberLinkedinUnipileConnectionService } from './services/member-linked
 import { MessagingControls } from './services/messaging-controls';
 import { WhatsAppMonitoringUnifiedService } from './services/whatsapp-monitoring-unified.service';
 import { WhatsappUnipileRequestService } from './services/whatsapp-unipile-request.service';
+import { WhatsappUnipileSyncService } from './services/whatsapp-unipile/whatsapp-unipile-sync.service';
 import { UnipilePoolModule } from './unipile-pool.module';
 
 const isWorker = process.argv[1]?.includes('queue-worker');
@@ -129,6 +131,7 @@ const conditionalImports = isWorker
     WebSocketModule,
     DataSourceModule, 
     LinkedInSearchModule,
+    WarmPathsModule,
     LLMChatModelModule,
     WorkspaceSchemaBuilderModule,
     FeatureFlagModule,
@@ -227,6 +230,7 @@ const conditionalImports = isWorker
     MemberLinkedinUnipileConnectionService,
     ExtensionUnipileConnectionStatusService,
     WhatsappUnipileRequestService,
+    WhatsappUnipileSyncService,
     LinkedinUnipileRequestService,
     WhatsAppMonitoringUnifiedService,
     WhatsAppMonitoringResolver,

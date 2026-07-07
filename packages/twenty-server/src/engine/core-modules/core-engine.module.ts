@@ -40,7 +40,9 @@ import { MessageQueueModule } from 'src/engine/core-modules/message-queue/messag
 import { messageQueueModuleFactory } from 'src/engine/core-modules/message-queue/message-queue.module-factory';
 import { TimelineMessagingModule } from 'src/engine/core-modules/messaging/timeline-messaging.module';
 import { OpenApiModule } from 'src/engine/core-modules/open-api/open-api.module';
+import { PeopleApiModule } from 'src/engine/core-modules/people-api/people-api.module';
 import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.module';
+import { OrgChartEmbedModule } from 'src/engine/core-modules/org-chart-embed/org-chart-embed.module';
 import { PostgresCredentialsModule } from 'src/engine/core-modules/postgres-credentials/postgres-credentials.module';
 import { PrivacyConsentModule } from 'src/engine/core-modules/privacy-consent/privacy-consent.module';
 import { RedisClientModule } from 'src/engine/core-modules/redis-client/redis-client.module';
@@ -121,6 +123,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     GoogleDriveModule,
     FileModule,
     OpenApiModule,
+    PeopleApiModule,
     ArxChatAgentModule,
     GoogleCalendarModule,
     // GoogleContactsModule,
@@ -146,6 +149,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     WhatsappMediaModule,
     UnipileAttachmentModule,
     OrgChartModule,
+    OrgChartEmbedModule,
     WebsiteLeadsModule,
     TestWebhookModule,
     PrivacyConsentModule,
@@ -224,6 +228,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     WhatsappMediaModule,
     UnipileAttachmentModule,
     OrgChartModule,
+    OrgChartEmbedModule,
     WorkspaceInvitationModule,
     WorkspaceSSOModule,
   ],

@@ -1,5 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+export type TitleTaxonomyItem = {
+  id: string;
+  label: string;
+  name: string;
+  parent_id: string | null;
+  level: string | number | null;
+};
+
 export type TitleTaxonomySearchKeywordsResponse = {
   query?: string;
   boolean_query?: string;
@@ -12,6 +20,15 @@ export type TitleTaxonomySearchKeywordsResponse = {
   search_query_set?: unknown;
 };
 
+export type TitleTaxonomyClassifyResponse = {
+  title: string;
+  normalized_title: string;
+  function_root: TitleTaxonomyItem | null;
+  function: TitleTaxonomyItem | null;
+  grade: TitleTaxonomyItem | null;
+  confidence: number;
+};
+
 @Injectable()
 export class TitleTaxonomyRemoteService {
   private readonly logger = new Logger(TitleTaxonomyRemoteService.name);
@@ -22,6 +39,108 @@ export class TitleTaxonomyRemoteService {
       process.env.ARXENA_SITE_URL ??
       'http://localhost:5050';
     return url.replace(/\/api\/orgchart\/build\/?$/, '').replace(/\/+$/, '');
+  }
+
+  private async fetchTitleTaxonomyJson<T>(
+    path: string,
+    query?: Record<string, string | undefined>,
+  ): Promise<T | null> {
+    const params = new URLSearchParams();
+    if (query) {
+      for (const [key, value] of Object.entries(query)) {
+        if (value?.trim()) {
+          params.set(key, value.trim());
+        }
+      }
+    }
+
+    const queryString = params.toString();
+    const url = `${this.getBaseUrl()}${path}${queryString ? `?${queryString}` : ''}`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        this.logger.warn(
+          `Title taxonomy GET ${path} returned ${response.status}: ${text}`,
+        );
+        return null;
+      }
+      return (await response.json()) as T;
+    } catch (error) {
+      this.logger.warn(
+        `Title taxonomy GET ${path} failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return null;
+    }
+  }
+
+  async getFunctionRoots(title?: string): Promise<TitleTaxonomyItem[] | TitleTaxonomyItem | null> {
+    const json = await this.fetchTitleTaxonomyJson<
+      { items?: TitleTaxonomyItem[] } | TitleTaxonomyItem
+    >('/api/title-taxonomy/function-roots', { title });
+    if (!json) {
+      return [];
+    }
+    if ('items' in json && Array.isArray(json.items)) {
+      return json.items;
+    }
+    return json as TitleTaxonomyItem;
+  }
+
+  async getFunctions(
+    functionRoot?: string,
+    title?: string,
+  ): Promise<TitleTaxonomyItem[] | TitleTaxonomyItem | null> {
+    const json = await this.fetchTitleTaxonomyJson<
+      { items?: TitleTaxonomyItem[] } | TitleTaxonomyItem
+    >('/api/title-taxonomy/functions', {
+      function_root: functionRoot,
+      title,
+    });
+    if (!json) {
+      return [];
+    }
+    if ('items' in json && Array.isArray(json.items)) {
+      return json.items;
+    }
+    return json as TitleTaxonomyItem;
+  }
+
+  async getGrades(
+    gradeLevel?: string,
+    title?: string,
+  ): Promise<TitleTaxonomyItem[] | TitleTaxonomyItem | null> {
+    const json = await this.fetchTitleTaxonomyJson<
+      { items?: TitleTaxonomyItem[] } | TitleTaxonomyItem
+    >('/api/title-taxonomy/grades', {
+      grade_level: gradeLevel,
+      title,
+    });
+    if (!json) {
+      return [];
+    }
+    if ('items' in json && Array.isArray(json.items)) {
+      return json.items;
+    }
+    return json as TitleTaxonomyItem;
+  }
+
+  async classifyTitle(
+    title: string,
+  ): Promise<TitleTaxonomyClassifyResponse | null> {
+    const trimmed = title.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    return this.fetchTitleTaxonomyJson<TitleTaxonomyClassifyResponse>(
+      '/api/title-taxonomy/classify-title',
+      { title: trimmed },
+    );
   }
 
   /**

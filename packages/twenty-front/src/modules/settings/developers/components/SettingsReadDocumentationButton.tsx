@@ -11,7 +11,7 @@ export const SettingsReadDocumentationButton = () => {
       accent="default"
       size="small"
       Icon={IconBook2}
-      to={'https://docs.twenty.com'}
+      to={'https://arxena.com/solutions/org-chart-embed'}
       target="_blank"
     ></Button>
   );

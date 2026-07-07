@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { getCandidateCustomField, graphQltoUpdateOneCandidate } from 'twenty-shared';
 import { Status } from 'twenty-ui';
+import { getCandidateProfileUrl } from './utils/getCandidateProfileUrl';
 import { STATUS_LABELS } from './TableColumns';
 
 
@@ -436,22 +437,8 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
     return CONVERSATION_STATUS_COLORS[conversationStatus] || 'gray';
   };
 
-  const getProfileUrl = (candidateData: any) => {
-    console.log("candidateData", candidateData);
-    if (candidateData?.resdexNaukriUrl) {
-      return candidateData.resdexNaukriUrl.primaryLinkUrl;
-    }
-    if (candidateData?.hiringNaukriUrl) {
-      return candidateData.hiringNaukriUrl.primaryLinkUrl;
-    }
-    if (candidateData?.linkedin) {
-      return candidateData.linkedin.primaryLinkUrl;
-    }
-    if (candidateData?.profileUrl) {
-      return candidateData.profileUrl.primaryLinkUrl;
-    }
-    return '';
-  };
+  const getProfileUrl = (data: Record<string, unknown>) =>
+    getCandidateProfileUrl(data);
 
   // Helper function to get field value from candidate otherFields
   const getFieldValue = (candidateData: any, fieldName: string) => {

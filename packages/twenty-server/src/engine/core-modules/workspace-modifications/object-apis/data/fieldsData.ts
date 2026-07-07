@@ -2108,6 +2108,17 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'candidate',
+      field: {
+        description: 'Candidate profile photo for record avatars',
+        icon: 'IconFileUpload',
+        label: 'avatarUrl',
+        name: 'avatarUrl',
+        objectMetadataId: objectsNameIdMap.candidate,
+        type: 'TEXT',
+      },
+    },
+    {
       objectName: 'person',
       field: {
         description: 'Display Picture URL',

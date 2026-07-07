@@ -35,7 +35,8 @@ import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-gra
 import { RecruiterProfileService } from '../../services/recruiter-profile';
 import { CandidateEngagementArx } from './candidate-engagement';
 import { FilterCandidates } from './filter-candidates';
-  
+import type { UnipileSyncMessageItem } from '../whatsapp-unipile/whatsapp-unipile-sync.service';
+
 @Injectable()
 export class UpdateChat {
   constructor(
@@ -761,6 +762,7 @@ export class UpdateChat {
     candidate: CandidateNode,
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     apiToken: string,
+    options?: { createdAt?: string },
   ) {
     console.log(
       'This is the message being updated in the database ',
@@ -786,6 +788,7 @@ export class UpdateChat {
         whatsappMessageId: whatappUpdateMessageObj?.whatsappMessageId,
         typeOfMessage: whatappUpdateMessageObj?.typeOfMessage,
         audioFilePath: whatappUpdateMessageObj?.databaseFilePath,
+        ...(options?.createdAt ? { createdAt: options.createdAt } : {}),
       },
     };
 
@@ -1194,6 +1197,237 @@ export class UpdateChat {
       return 'contactMessage';
     }
 
+    return 'conversation';
+  }
+
+  /**
+   * Sync Unipile WhatsApp messages with database for a candidate conversation.
+   */
+  async syncUnipileMessagesWithDatabase(
+    unipileMessages: UnipileSyncMessageItem[],
+    candidateId: string,
+    apiToken: string,
+    context: { candidatePhone: string; recruiterPhone: string },
+  ): Promise<{ synced: number; skipped: number; errors: number }> {
+    console.log(
+      `🔄 Syncing ${unipileMessages.length} Unipile messages with database for candidate: ${candidateId}`,
+    );
+
+    let synced = 0;
+    let skipped = 0;
+    let errors = 0;
+
+    try {
+      const existingMessages = await new FilterCandidates(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+      ).fetchAllWhatsappMessages(candidateId, apiToken);
+
+      const existingMessageIds = new Set(
+        existingMessages
+          .map((msg) => (msg as { whatsappMessageId?: string }).whatsappMessageId)
+          .filter(Boolean),
+      );
+
+      const existingContentKeys = new Set(
+        existingMessages.map((msg) =>
+          this.buildMessageDedupeKey(
+            msg.message ?? '',
+            msg.phoneFrom ?? '',
+            msg.phoneTo ?? '',
+          ),
+        ),
+      );
+
+      const candidate = await new FilterCandidates(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+      ).getCandidateDetailsById(candidateId, apiToken);
+
+      if (!candidate) {
+        console.error(`❌ Candidate not found: ${candidateId}`);
+        return { synced: 0, skipped: 0, errors: unipileMessages.length };
+      }
+
+      const candidatePhoneDigits = this.normalizePhoneDigitsForSync(
+        context.candidatePhone ||
+          candidate.phoneNumber?.primaryPhoneNumber ||
+          '',
+      );
+      const recruiterPhoneDigits = this.normalizePhoneDigitsForSync(
+        context.recruiterPhone,
+      );
+
+      for (const unipileMessage of unipileMessages) {
+        try {
+          if (unipileMessage.deleted === 1 || unipileMessage.is_event === 1) {
+            skipped++;
+            continue;
+          }
+
+          const unipileMessageId = unipileMessage.id;
+          const providerId = unipileMessage.provider_id?.trim();
+
+          if (
+            existingMessageIds.has(unipileMessageId) ||
+            (providerId && existingMessageIds.has(providerId))
+          ) {
+            skipped++;
+            continue;
+          }
+
+          const isFromConnectedUser = unipileMessage.is_sender === 1;
+          const messageContent = this.extractUnipileMessageContent(unipileMessage);
+
+          if (!messageContent) {
+            skipped++;
+            continue;
+          }
+
+          const phoneFrom = isFromConnectedUser
+            ? recruiterPhoneDigits
+            : candidatePhoneDigits;
+          const phoneTo = isFromConnectedUser
+            ? candidatePhoneDigits
+            : recruiterPhoneDigits;
+
+          const dedupeKey = this.buildMessageDedupeKey(
+            messageContent,
+            phoneFrom,
+            phoneTo,
+          );
+          if (existingContentKeys.has(dedupeKey)) {
+            skipped++;
+            continue;
+          }
+
+          const whatsappMessageObj: whatappUpdateMessageObjType = {
+            id: unipileMessageId,
+            phoneNumberFrom: phoneFrom,
+            phoneNumberTo: phoneTo,
+            messageType: isFromConnectedUser ? 'botMessage' : 'whatsapp-unipile',
+            messages: [
+              {
+                role: isFromConnectedUser ? 'assistant' : 'user',
+                content: messageContent,
+              },
+            ],
+            messageObj: [
+              {
+                role: isFromConnectedUser ? 'assistant' : 'user',
+                content: messageContent,
+              },
+            ],
+            whatsappDeliveryStatus: isFromConnectedUser
+              ? 'delivered'
+              : 'receivedFromCandidate',
+            whatsappMessageId: unipileMessageId,
+            typeOfMessage: this.determineUnipileMessageType(unipileMessage),
+            lastEngagementChatControl: 'startChat',
+            candidateProfile: candidate,
+            candidateFirstName: candidate.name?.split(' ')[0] || '',
+            whatsappMessageType: this.determineUnipileMessageType(unipileMessage),
+          };
+
+          await this.createAndUpdateWhatsappMessage(
+            candidate,
+            whatsappMessageObj,
+            apiToken,
+            unipileMessage.timestamp
+              ? { createdAt: unipileMessage.timestamp }
+              : undefined,
+          );
+
+          existingMessageIds.add(unipileMessageId);
+          if (providerId) {
+            existingMessageIds.add(providerId);
+          }
+          existingContentKeys.add(dedupeKey);
+
+          synced++;
+          console.log(`✅ Synced Unipile message: ${unipileMessageId}`);
+        } catch (error) {
+          console.error(
+            `❌ Error syncing Unipile message ${unipileMessage.id}:`,
+            error,
+          );
+          errors++;
+        }
+      }
+
+      console.log(
+        `📈 Unipile sync completed - Synced: ${synced}, Skipped: ${skipped}, Errors: ${errors}`,
+      );
+      return { synced, skipped, errors };
+    } catch (error) {
+      console.error('❌ Error in syncUnipileMessagesWithDatabase:', error);
+      return { synced, skipped, errors: unipileMessages.length };
+    }
+  }
+
+  private normalizePhoneDigitsForSync(phone: string): string {
+    return phone.replace(/[^\d]/g, '');
+  }
+
+  private buildMessageDedupeKey(
+    message: string,
+    phoneFrom: string,
+    phoneTo: string,
+  ): string {
+    const from = this.normalizePhoneDigitsForSync(phoneFrom);
+    const to = this.normalizePhoneDigitsForSync(phoneTo);
+    const participants = [from, to].sort().join('|');
+    return `${participants}::${message}`;
+  }
+
+  private extractUnipileMessageContent(
+    unipileMessage: UnipileSyncMessageItem,
+  ): string {
+    const text = unipileMessage.text?.trim();
+    if (text) {
+      return text;
+    }
+
+    const attachments = unipileMessage.attachments ?? [];
+    if (attachments.length > 0) {
+      const attachment = attachments[0];
+      if (attachment.type === 'audio') {
+        return '[Audio Message]';
+      }
+      if (attachment.type === 'img') {
+        return '[Image]';
+      }
+      if (attachment.type === 'video') {
+        return '[Video]';
+      }
+      if (attachment.type === 'file') {
+        return '[Document]';
+      }
+      return 'Attachment Received';
+    }
+
+    return '';
+  }
+
+  private determineUnipileMessageType(
+    unipileMessage: UnipileSyncMessageItem,
+  ): string {
+    const attachmentType = unipileMessage.attachments?.[0]?.type;
+    if (!attachmentType) {
+      return 'conversation';
+    }
+    if (attachmentType === 'img') {
+      return 'imageMessage';
+    }
+    if (attachmentType === 'video') {
+      return 'videoMessage';
+    }
+    if (attachmentType === 'audio') {
+      return 'audioMessage';
+    }
+    if (attachmentType === 'file') {
+      return 'documentMessage';
+    }
     return 'conversation';
   }
 

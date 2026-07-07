@@ -65,7 +65,9 @@ function isOrgChartDocumentPath(pathname: string): boolean {
     pathname === '/org-chart' ||
     pathname.startsWith('/org-chart/') ||
     pathname === '/org' ||
-    pathname.startsWith('/org/')
+    pathname.startsWith('/org/') ||
+    pathname === '/embed/org-chart' ||
+    pathname.startsWith('/embed/')
   );
 }
 
@@ -151,7 +153,7 @@ export async function middleware(request: NextRequest) {
     );
     res.headers.append(
       'Access-Control-Allow-Headers',
-      'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, x-origin-domain, x-domain-origin, X-Origin-Domain, X-Domain-Origin',
+      'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, x-origin-domain, x-domain-origin, X-Origin-Domain, X-Domain-Origin, X-Embed-Key',
     );
   }
 

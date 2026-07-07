@@ -22,6 +22,7 @@ import {
 import { UnipileClient } from 'unipile-node-sdk';
 import { UnipileWebhookService } from '../services/unipile-webhook.service';
 import { WhatsappUnipileRequestService } from '../services/whatsapp-unipile-request.service';
+import { WhatsappUnipileSyncService } from '../services/whatsapp-unipile/whatsapp-unipile-sync.service';
 import { WorkspaceMemberProfileUnipileService } from '../services/workspace-member-profile-unipile.service';
 import type {
     UnipileAccountStatusWebhook,
@@ -41,6 +42,7 @@ export class WhatsappUnipileController {
     private readonly webhookService: UnipileWebhookService,
     private readonly unipileRequestService: WhatsappUnipileRequestService,
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly whatsappUnipileSyncService: WhatsappUnipileSyncService,
   ) {
     this.logger.log(`Unipile API URL: ${this.unipileApiUrl}`);
     this.logger.log(`Unipile Access Token configured: ${!!this.unipileAccessToken}`);
@@ -304,6 +306,58 @@ export class WhatsappUnipileController {
       
       this.logger.error(`Failed to get WhatsApp account ${accountId}:`, error);
       throw error;
+    }
+  }
+
+  @Post('sync-messages')
+  async syncMessages(
+    @Body()
+    body: { phoneNumber: string; candidateId: string; limit?: number },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const authHeader = request.headers?.authorization;
+    const apiToken = authHeader?.replace(/^Bearer\s+/i, '').trim();
+
+    if (!apiToken) {
+      throw new HttpException('Authorization required', HttpStatus.UNAUTHORIZED);
+    }
+
+    const { phoneNumber, candidateId, limit = 250 } = body;
+
+    if (!phoneNumber?.trim()) {
+      throw new HttpException('phoneNumber is required', HttpStatus.BAD_REQUEST);
+    }
+
+    if (!candidateId?.trim()) {
+      throw new HttpException('candidateId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      this.logger.log(
+        `Syncing WhatsApp Unipile messages for candidate ${candidateId}, phone ${phoneNumber}`,
+      );
+
+      const data = await this.whatsappUnipileSyncService.syncMessagesForCandidate({
+        phoneNumber: phoneNumber.trim(),
+        candidateId: candidateId.trim(),
+        apiToken,
+        limit,
+      });
+
+      return {
+        status: 'ok',
+        data,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error('Failed to sync WhatsApp Unipile messages:', error);
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Failed to sync messages',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 

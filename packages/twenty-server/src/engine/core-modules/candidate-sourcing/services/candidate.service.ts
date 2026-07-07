@@ -27,6 +27,7 @@ import { NameProcessor } from '../../workspace-modifications/object-apis/data/na
 import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
 import { generateCompleteMappings, mapArxCandidateToPersonNode, processArxCandidate } from 'src/engine/core-modules/candidate-sourcing/utils/data-transformation-utility';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
+import { resolveAvatarUrlFromDisplayPictureUrl } from 'src/engine/core-modules/candidate-sourcing/utils/avatar-url.util';
 import {
   CandidateUploadLookup,
   deduplicateProfilesForUpload,
@@ -1151,6 +1152,7 @@ export class CandidateService {
         hiringNaukriUrl: { "primaryLinkLabel": string; "primaryLinkUrl": string; };
         resdexNaukriUrl: { "primaryLinkLabel": string; "primaryLinkUrl": string; };
         displayPicture: { "primaryLinkLabel": string; "primaryLinkUrl": string; };
+        avatarUrl: string;
         linkedinUrl: { "primaryLinkLabel": string; "primaryLinkUrl": string; };
         personId: string;
         profile: UserProfile;
@@ -1375,13 +1377,22 @@ export class CandidateService {
           
           if (missingFields.length > 0) {
             console.log('Missing fields:', missingFields);
+            const displayPictureUrl =
+              typeof profile?.displayPicture === 'string'
+                ? profile.displayPicture
+                : (profile?.displayPicture as { primaryLinkUrl?: string } | undefined)
+                    ?.primaryLinkUrl || profile?.avatarUrl || '';
+            const avatarUrl =
+              profile?.avatarUrl ||
+              resolveAvatarUrlFromDisplayPictureUrl(displayPictureUrl);
             const candidateToUpdate = 
             {
               candidateId: existingCandidate.id,
               personId: existingCandidate.peopleId || '',
               hiringNaukriUrl: { "primaryLinkLabel": profile?.profileUrl && profile?.profileUrl.includes('hiring') ? profile?.profileUrl : '', "primaryLinkUrl": profile?.profileUrl && profile?.profileUrl.includes('hiring') ? profile?.profileUrl : '' },
               resdexNaukriUrl: { "primaryLinkLabel": profile?.profileUrl && profile?.profileUrl.includes('resdex') ? profile?.profileUrl : '', "primaryLinkUrl": profile?.profileUrl && profile?.profileUrl.includes('resdex') ? profile?.profileUrl : '' },
-              displayPicture: { "primaryLinkLabel": "Display Picture", "primaryLinkUrl": typeof profile?.displayPicture === 'string' ? profile?.displayPicture : (profile?.displayPicture as any)?.primaryLinkUrl || '' },
+              displayPicture: { "primaryLinkLabel": "Display Picture", "primaryLinkUrl": displayPictureUrl },
+              avatarUrl,
               linkedinUrl: { "primaryLinkLabel": profile?.profileUrl && profile?.profileUrl.includes('linkedin') ? normalizeLinkedInUrl(profile?.profileUrl) : '', "primaryLinkUrl": profile?.profileUrl && profile?.profileUrl.includes('linkedin') ? normalizeLinkedInUrl(profile?.profileUrl) : '' },
               profile: profile,
               missingFields
@@ -1426,7 +1437,7 @@ export class CandidateService {
   
       if (candidatesToUpdate.length > 0) {
         for (const updateCandidate of candidatesToUpdate) {
-          const { candidateId, personId, profile, missingFields } = updateCandidate;
+          const { candidateId, personId, profile, missingFields, displayPicture, avatarUrl } = updateCandidate;
           try {
             for (const fieldName of missingFields) {
               if (fieldName === 'phoneNumber') {
@@ -1452,6 +1463,34 @@ export class CandidateService {
                   const updateData = {"linkedinUrl": {primaryLinkLabel: normalizedUrl, primaryLinkUrl: normalizedUrl}};
                   const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, { idToUpdate: candidateId, input: updateData }, apiToken);
                 }
+              }
+            }
+
+            if (displayPicture.primaryLinkUrl) {
+              await this.staticGraphQLService.executeGraphQL(
+                graphQltoUpdateOneCandidate,
+                {
+                  idToUpdate: candidateId,
+                  input: {
+                    displayPicture,
+                    ...(avatarUrl ? { avatarUrl } : {}),
+                  },
+                },
+                apiToken,
+              );
+
+              if (personId && avatarUrl) {
+                await this.staticGraphQLService.executeGraphQL(
+                  mutationToUpdateOnePerson,
+                  {
+                    idToUpdate: personId,
+                    input: {
+                      avatarUrl,
+                      displayPicture,
+                    },
+                  },
+                  apiToken,
+                );
               }
             }
           } catch (error) {

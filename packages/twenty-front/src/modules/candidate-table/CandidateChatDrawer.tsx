@@ -7,7 +7,7 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TabList } from '@/ui/layout/tab/components/TabList';
 import { useTabList } from '@/ui/layout/tab/hooks/useTabList';
 import styled from '@emotion/styled';
-import { IconFileText, IconMessages, IconUser, IconVideo } from '@tabler/icons-react';
+import { IconFileText, IconMessages, IconRoute, IconUser, IconVideo } from '@tabler/icons-react';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -16,6 +16,7 @@ import { graphqlToFetchAllCandidateDataWithFieldValues, MessageNode } from 'twen
 import AttachmentPanel from './AttachmentPanel';
 import { CandidateInfoHeader } from './CandidateInfoHeader';
 import { CandidateProfileTab } from './CandidateProfileTab';
+import { CandidateWarmPathTab } from './CandidateWarmPathTab';
 import VideoInterviewTab from './VideoInterviewTab';
 import { useTemplates } from './hooks/useTemplates';
 
@@ -416,6 +417,11 @@ export const CandidateChatDrawer = React.memo(() => {
       Icon: IconUser,
     },
     {
+      id: 'warm-path',
+      title: 'Warm path',
+      Icon: IconRoute,
+    },
+    {
       id: 'cv',
       title: 'CV',
       Icon: IconFileText,
@@ -652,7 +658,7 @@ export const CandidateChatDrawer = React.memo(() => {
     if (!activeTabId) {
       // Check if we have a default tab in localStorage
       const defaultTab = localStorage.getItem('candidate-chat-default-tab');
-      if (defaultTab && (defaultTab === 'chat' || defaultTab === 'profile' || defaultTab === 'cv' || defaultTab === 'video-interview')) {
+      if (defaultTab && (defaultTab === 'chat' || defaultTab === 'profile' || defaultTab === 'warm-path' || defaultTab === 'cv' || defaultTab === 'video-interview')) {
         setActiveTabId(defaultTab);
         // Clear the stored value after using it
         localStorage.removeItem('candidate-chat-default-tab');
@@ -948,6 +954,13 @@ export const CandidateChatDrawer = React.memo(() => {
     </ChatView>
   );
 
+  const renderWarmPathTab = () => (
+    <CandidateWarmPathTab
+      candidateData={candidateData}
+      isActive={activeTabId === 'warm-path'}
+    />
+  );
+
   const renderCVTab = () => (
     <AttachmentPanel 
       isOpen={true}
@@ -1071,6 +1084,7 @@ export const CandidateChatDrawer = React.memo(() => {
           <>
             {activeTabId === 'chat' && renderChatTab()}
             {activeTabId === 'profile' && renderProfileTab()}
+            {activeTabId === 'warm-path' && renderWarmPathTab()}
             {activeTabId === 'cv' && renderCVTab()}
             {activeTabId === 'video-interview' && renderVideoInterviewTab()}
           </>

@@ -21,6 +21,8 @@ import { AppModule } from './app.module';
 
 import './instrument';
 
+import { apiReference } from '@scalar/nestjs-api-reference';
+
 import { settings } from './engine/constants/settings';
 import { generateFrontConfig } from './utils/generate-front-config';
 
@@ -119,6 +121,17 @@ const bootstrap = async () => {
 
   // Inject the server url in the frontend page
   generateFrontConfig();
+
+  app.use(
+    '/api-docs',
+    apiReference({
+      theme: 'default',
+      url: '/people-api/openapi.json',
+      metaData: {
+        title: 'Arxena People API',
+      },
+    }),
+  );
 
   console.log("Starting server")
   console.log("environmentService.get('NODE_PORT')", environmentService.get('NODE_PORT'))

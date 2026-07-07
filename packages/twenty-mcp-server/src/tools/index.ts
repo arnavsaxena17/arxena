@@ -10,6 +10,7 @@ import { internalTools } from './internal-tools';
 import { jobTools } from './job-tools';
 import { linkedinSearchTools } from './linkedin-search-tools';
 import { orgChartTools } from './org-chart-tools';
+import { peopleApiTools } from './people-api-tools';
 import { pendingActionsTools } from './pending-actions-tools';
 import { personTools } from './person-tools';
 import { reminderTools } from './reminder-tools';
@@ -24,6 +25,7 @@ export const publicTools: McpTool[] = [
   ...personTools,
   ...companyTools,
   ...orgChartTools,
+  ...peopleApiTools,
   ...esIndexSearchTools,
   ...candidateSearchTools,
   ...linkedinSearchTools,

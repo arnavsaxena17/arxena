@@ -136,6 +136,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     ApolloPeopleSearchTransformerService,
     PythonQueryGenerationService,
     OrgChartIntentService,
+    TitleTaxonomyRemoteService,
   ],
 })
 export class CandidateSearchModule {}

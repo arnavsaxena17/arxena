@@ -33,6 +33,8 @@ export enum SettingsPath {
   NewSSOIdentityProvider = 'security/sso/new',
   EditSSOIdentityProvider = 'security/sso/:identityProviderId',
   DevelopersNewWebhookDetail = 'developers/webhooks/:webhookId',
+  DevelopersOrgChartEmbedNew = 'developers/org-chart-embed/new',
+  DevelopersOrgChartEmbedDetail = 'developers/org-chart-embed/:embedKeyId',
   Releases = 'releases',
   AdminPanel = 'admin-panel',
   FeatureFlags = 'admin-panel/feature-flags',

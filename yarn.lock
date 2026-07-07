@@ -13712,6 +13712,62 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@scalar/client-side-rendering@npm:0.3.1":
+  version: 0.3.1
+  resolution: "@scalar/client-side-rendering@npm:0.3.1"
+  dependencies:
+    "@scalar/schemas": "npm:0.7.1"
+    "@scalar/types": "npm:0.16.1"
+    "@scalar/validation": "npm:0.6.0"
+  checksum: 10c0/9d4c8d3f35cff96a14f7b5a51c336d52936b9aed16d350175e04e89a027ade2bd806b7cff5214f8cf7d8da58651dddda56067ec7d7aadd5456e2e90971fe3af1
+  languageName: node
+  linkType: hard
+
+"@scalar/helpers@npm:0.9.0":
+  version: 0.9.0
+  resolution: "@scalar/helpers@npm:0.9.0"
+  checksum: 10c0/8c2065de95e3dcbe41b9432affb73abea8598b53267b9b0b1e4aefa4b51ea65e7ecbed1d74615550cbe89c44cefe7c2f4b9bcd138718059a38d822cacebe24e4
+  languageName: node
+  linkType: hard
+
+"@scalar/nestjs-api-reference@npm:^1.2.8":
+  version: 1.2.8
+  resolution: "@scalar/nestjs-api-reference@npm:1.2.8"
+  dependencies:
+    "@scalar/client-side-rendering": "npm:0.3.1"
+  checksum: 10c0/9117984f46d1b08adc4aaa98a6e6ec64db67537bf8ea774d216de571da2ce872cef6dc6fb6aeea48f70b8b0a779177de2d6651cd49120b369e2dbef3ec226376
+  languageName: node
+  linkType: hard
+
+"@scalar/schemas@npm:0.7.1":
+  version: 0.7.1
+  resolution: "@scalar/schemas@npm:0.7.1"
+  dependencies:
+    "@scalar/helpers": "npm:0.9.0"
+    "@scalar/validation": "npm:0.6.0"
+  checksum: 10c0/2cf6cd62b324ba189ffa835837de67b45d17139206bb0f2fa4364fb0a2ad7bfc69b904a0c50d3459c3fc83ee472e29b689dffff4832f2514b44b35990f3b40c5
+  languageName: node
+  linkType: hard
+
+"@scalar/types@npm:0.16.1":
+  version: 0.16.1
+  resolution: "@scalar/types@npm:0.16.1"
+  dependencies:
+    "@scalar/helpers": "npm:0.9.0"
+    nanoid: "npm:^5.1.6"
+    type-fest: "npm:^5.3.1"
+    zod: "npm:^4.3.5"
+  checksum: 10c0/0ce27d3158362e86a6b0bd1f2be46b13fea78cc9e932109091082cdc674ef6ad195a807fa37b46b13b831c05b9e4084da7b8374f0377320866680feb1398b10a
+  languageName: node
+  linkType: hard
+
+"@scalar/validation@npm:0.6.0":
+  version: 0.6.0
+  resolution: "@scalar/validation@npm:0.6.0"
+  checksum: 10c0/a6132b22cb7adb4ca3419edd82b774f288566dd0cac8013bec1f0ad216a36f41fa991fc4192a1825bafebdf34c483a1ec264d7e5c4587e221a1544a44b77af1d
+  languageName: node
+  linkType: hard
+
 "@selderee/plugin-htmlparser2@npm:^0.11.0":
   version: 0.11.0
   resolution: "@selderee/plugin-htmlparser2@npm:0.11.0"
@@ -40786,6 +40842,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"nanoid@npm:^5.1.6":
+  version: 5.1.16
+  resolution: "nanoid@npm:5.1.16"
+  bin:
+    nanoid: bin/nanoid.js
+  checksum: 10c0/04b4f96237f5639716da0e98f453361b313bebaf458bb67dea2d384724fc8b3340a28f032a4373052150bcf3b801d122e291d81ae4fc522969f55c134f4401a3
+  languageName: node
+  linkType: hard
+
 "napi-build-utils@npm:^1.0.1":
   version: 1.0.2
   resolution: "napi-build-utils@npm:1.0.2"
@@ -51047,6 +51112,7 @@ __metadata:
     "@ptc-org/nestjs-query-typeorm": "npm:4.2.1-alpha.2"
     "@react-email/components": "npm:0.0.32"
     "@react-email/render": "npm:0.0.17"
+    "@scalar/nestjs-api-reference": "npm:^1.2.8"
     "@sentry/node": "npm:^8"
     "@sentry/profiling-node": "npm:^8"
     "@sentry/react": "npm:^8"
@@ -54713,6 +54779,13 @@ __metadata:
   version: 4.3.6
   resolution: "zod@npm:4.3.6"
   checksum: 10c0/860d25a81ab41d33aa25f8d0d07b091a04acb426e605f396227a796e9e800c44723ed96d0f53a512b57be3d1520f45bf69c0cb3b378a232a00787a2609625307
+  languageName: node
+  linkType: hard
+
+"zod@npm:^4.3.5":
+  version: 4.4.3
+  resolution: "zod@npm:4.4.3"
+  checksum: 10c0/7ea31b558e88f9faf44f31dd185e2e1cbf51fed3081787fb96cc2534749b50c0acfc6da7f0922a7353ed092dd358c7d50c28ea96c94d04af64191bd33152eca3
   languageName: node
   linkType: hard
 

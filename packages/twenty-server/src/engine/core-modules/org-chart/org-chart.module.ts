@@ -125,6 +125,7 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     CompaniesEsService,
     PeopleEsService,
     OrgChartEsService,
+    ImageProxyService,
   ],
 })
 export class OrgChartModule {}

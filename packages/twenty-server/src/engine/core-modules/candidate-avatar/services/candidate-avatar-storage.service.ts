@@ -14,6 +14,9 @@ import {
     extractLinkedinProfileUrlFromOrgChartCandidateRow,
     extractProfilePictureUrlFromOrgChartCandidateRow,
 } from 'src/engine/core-modules/org-chart/utils/orgchart-candidate-linkedin-url.util';
+import {
+    resolveAvatarUrlFromDisplayPictureUrl,
+} from 'src/engine/core-modules/candidate-sourcing/utils/avatar-url.util';
 import { UserProfile } from 'twenty-shared';
 
 import {
@@ -429,8 +432,21 @@ export class CandidateAvatarStorageService {
       linkedinUrl,
     });
 
+    const finalDisplayPictureUrl =
+      persisted === displayPictureUrl ? displayPictureUrl : persisted;
+    const avatarUrl = resolveAvatarUrlFromDisplayPictureUrl(
+      finalDisplayPictureUrl,
+    );
+
     if (persisted === displayPictureUrl) {
-      return profile;
+      if (!avatarUrl) {
+        return profile;
+      }
+
+      return {
+        ...profile,
+        avatarUrl,
+      };
     }
 
     return {
@@ -440,6 +456,7 @@ export class CandidateAvatarStorageService {
         primaryLinkUrl: persisted,
       },
       profilePictureUrl: persisted,
+      avatarUrl,
     };
   }
 

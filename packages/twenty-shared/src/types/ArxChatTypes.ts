@@ -708,6 +708,7 @@ export interface UserProfile {
   preferredLocations?: string | null;
   displayPicture?: string | { primaryLinkLabel: string; primaryLinkUrl: string } | null;
   profilePictureUrl?: string;
+  avatarUrl?: string;
   hiringNaukriUrl?: { primaryLinkLabel: string; primaryLinkUrl: string } | null;
   resumeDownloadUrl?: string | null;
   
@@ -809,6 +810,7 @@ export interface ArxenaCandidateNode {
   resdexNaukriUrl?: { primaryLinkLabel: string; primaryLinkUrl: string };
   linkedinUrl?: { primaryLinkLabel: string; primaryLinkUrl: string };
   displayPicture: { primaryLinkLabel: string; primaryLinkUrl: string };
+  avatarUrl?: string;
   jobsId: string;
   peopleId: string;
   messagingChannel: string;
@@ -882,6 +884,7 @@ export interface ArxenaPersonNode {
   };
   linkedinLink?: { primaryLinkLabel: string; primaryLinkUrl: string };
   displayPicture?: { primaryLinkLabel: string; primaryLinkUrl: string };
+  avatarUrl?: string;
   emails?: { primaryEmail: string };
   phones?: { primaryPhoneNumber: string };
   uniqueStringKey?: string | null;
