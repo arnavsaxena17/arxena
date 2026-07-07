@@ -8,6 +8,7 @@ import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-gra
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
+import { WhatsappMediaStorageService } from '../../whatsapp-media/services/whatsapp-media-storage.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { WhatsAppSessionManager } from '../session-manager';
 import { MessageDto } from '../types/baileys-types';
@@ -36,6 +37,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly whatsappMediaStorageService: WhatsappMediaStorageService,
     private readonly emailService: EmailService,
     private readonly environmentService: EnvironmentService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
@@ -44,6 +46,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     this.sessionManager = new WhatsAppSessionManager(
       this.workspaceQueryService,
       this.staticGraphQLService,
+      this.whatsappMediaStorageService,
       this.messageQueueService!,
       50, // max sessions
       300000, // session timeout (5 minutes)

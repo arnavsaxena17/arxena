@@ -1,4 +1,4 @@
-import type { PeopleDataSourceAlias } from '../constants/people-data-source-aliases';
+import type { PeopleDataSourceAlias } from './constants/people-data-source-aliases';
 
 export type TaxonomyItem = {
   id: string;

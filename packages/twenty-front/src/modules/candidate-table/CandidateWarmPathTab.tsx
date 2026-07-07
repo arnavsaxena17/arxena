@@ -7,7 +7,9 @@ import type {
 import styled from '@emotion/styled';
 import { IconExternalLink, IconRefresh, IconRoute } from '@tabler/icons-react';
 import { useEffect } from 'react';
-import { Button, IconButton, Status } from 'twenty-ui'; = styled.div`
+import { Button, IconButton, Status } from 'twenty-ui';
+
+const StyledTabRoot = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(2)};

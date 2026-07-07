@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { MessageQueueService } from '../message-queue/services/message-queue.service';
+import { WhatsappMediaStorageService } from '../whatsapp-media/services/whatsapp-media-storage.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { IEventsGateway } from './events-gateway-module/events-gateway.interface';
 import { BaileysWhatsappService } from './whiskeysocket-baileys.service';
@@ -31,6 +32,7 @@ export class WhatsAppSessionManager {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly whatsappMediaStorageService: WhatsappMediaStorageService,
     private readonly messageQueueService: MessageQueueService,
     maxSessions: number = 50, // Configurable limit
     sessionTimeout: number = 300000, // 5 minutes
@@ -108,7 +110,8 @@ export class WhatsAppSessionManager {
     const session = new BaileysWhatsappService(
       this.workspaceQueryService,
       this.staticGraphQLService,
-      this.messageQueueService
+      this.whatsappMediaStorageService,
+      this.messageQueueService,
     );
     
     await session.initializeSession(recruiterId, eventsGateway, recruiterName);

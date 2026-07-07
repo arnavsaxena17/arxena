@@ -15,6 +15,20 @@ import {
     UNIPILE_ATTACHMENT_S3_FOLDER,
 } from '../unipile-attachment.constants';
 
+export type UnipileAttachmentSender = {
+  attendee_id?: string;
+  attendee_name?: string;
+  attendee_provider_id?: string;
+  attendee_profile_url?: string;
+  attendee_specifics?: {
+    provider?: string;
+    phone_number?: string;
+    lid?: string;
+    [key: string]: unknown;
+  };
+  attendee_public_identifier?: string;
+};
+
 export type SaveUnipileAttachmentParams = {
   workspaceId: string;
   attachment: {
@@ -27,7 +41,7 @@ export type SaveUnipileAttachmentParams = {
     url?: string;
     mimetype?: string;
   };
-  sender: Record<string, unknown>;
+  sender: UnipileAttachmentSender;
   accountType: string;
   messageId: string;
   timestamp: string;
@@ -50,7 +64,7 @@ export class UnipileAttachmentStorageService {
       .substring(0, 100);
   }
 
-  getSenderIdentifier(sender: Record<string, unknown>, accountType: string): string {
+  getSenderIdentifier(sender: UnipileAttachmentSender, accountType: string): string {
     if (accountType === 'WHATSAPP') {
       const attendeeSpecifics = sender?.attendee_specifics as
         | { phone_number?: string }
