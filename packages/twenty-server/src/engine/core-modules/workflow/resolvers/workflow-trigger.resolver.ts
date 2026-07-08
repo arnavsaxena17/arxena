@@ -2,8 +2,10 @@ import { UseFilters, UseGuards } from '@nestjs/common';
 import { Args, Mutation, Resolver } from '@nestjs/graphql';
 
 import { User } from 'src/engine/core-modules/user/user.entity';
+import { RunWorkflowVersionOnRecordsInput } from 'src/engine/core-modules/workflow/dtos/run-workflow-version-on-records-input.dto';
 import { RunWorkflowVersionInput } from 'src/engine/core-modules/workflow/dtos/run-workflow-version-input.dto';
 import { WorkflowRunDTO } from 'src/engine/core-modules/workflow/dtos/workflow-run.dto';
+import { WorkflowRunsDTO } from 'src/engine/core-modules/workflow/dtos/workflow-runs.dto';
 import { WorkflowTriggerGraphqlApiExceptionFilter } from 'src/engine/core-modules/workflow/filters/workflow-trigger-graphql-api-exception.filter';
 import { AuthUser } from 'src/engine/decorators/auth/auth-user.decorator';
 import { AuthWorkspaceMemberId } from 'src/engine/decorators/auth/auth-workspace-member-id.decorator';
@@ -46,6 +48,21 @@ export class WorkflowTriggerResolver {
     return await this.workflowTriggerWorkspaceService.runWorkflowVersion(
       workflowVersionId,
       payload ?? {},
+      workspaceMemberId,
+      user,
+    );
+  }
+
+  @Mutation(() => WorkflowRunsDTO)
+  async runWorkflowVersionOnRecords(
+    @AuthWorkspaceMemberId() workspaceMemberId: string,
+    @AuthUser() user: User,
+    @Args('input')
+    { workflowVersionId, payloads }: RunWorkflowVersionOnRecordsInput,
+  ) {
+    return await this.workflowTriggerWorkspaceService.runWorkflowVersionOnRecords(
+      workflowVersionId,
+      (payloads ?? []) as object[],
       workspaceMemberId,
       user,
     );

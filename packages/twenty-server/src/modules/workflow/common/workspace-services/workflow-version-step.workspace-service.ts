@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { isDefined } from 'twenty-shared';
 import { Repository } from 'typeorm';
+import { type QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { v4 } from 'uuid';
 
 import { DatabaseEventAction } from 'src/engine/api/graphql/graphql-query-runner/enums/database-event-action';
@@ -23,6 +24,11 @@ import {
 import { assertWorkflowVersionHasSteps } from 'src/modules/workflow/common/utils/assert-workflow-version-has-steps';
 import { assertWorkflowVersionIsDraft } from 'src/modules/workflow/common/utils/assert-workflow-version-is-draft.util';
 import { assertWorkflowVersionTriggerIsDefined } from 'src/modules/workflow/common/utils/assert-workflow-version-trigger-is-defined.util';
+import {
+  insertNextStepId,
+  linkParentStepToChild,
+} from 'src/modules/workflow/common/utils/insert-step.util';
+import { normalizeFlowToGraph } from 'src/modules/workflow/workflow-executor/utils/normalize-flow-to-graph.util';
 import { WorkflowBuilderWorkspaceService } from 'src/modules/workflow/workflow-builder/workflow-builder.workspace-service';
 import { BaseWorkflowActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action-settings.type';
 import {
@@ -206,6 +212,100 @@ export class WorkflowVersionStepWorkspaceService {
           },
         };
       }
+      case WorkflowActionType.FILTER: {
+        return {
+          id: newStepId,
+          name: 'Filter',
+          type: WorkflowActionType.FILTER,
+          valid: false,
+          settings: {
+            ...BASE_STEP_DEFINITION,
+            input: {
+              stepFilterGroups: [],
+              stepFilters: [],
+            },
+          },
+        };
+      }
+      case WorkflowActionType.IF_ELSE: {
+        return {
+          id: newStepId,
+          name: 'If/Else',
+          type: WorkflowActionType.IF_ELSE,
+          valid: false,
+          settings: {
+            ...BASE_STEP_DEFINITION,
+            input: {
+              stepFilterGroups: [],
+              stepFilters: [],
+              branches: [],
+            },
+          },
+        };
+      }
+      case WorkflowActionType.ITERATOR: {
+        return {
+          id: newStepId,
+          name: 'Iterator',
+          type: WorkflowActionType.ITERATOR,
+          valid: false,
+          settings: {
+            ...BASE_STEP_DEFINITION,
+            input: {
+              items: [],
+              initialLoopStepIds: [],
+              shouldContinueOnIterationFailure: false,
+            },
+          },
+        };
+      }
+      case WorkflowActionType.AI_AGENT: {
+        return {
+          id: newStepId,
+          name: 'AI Agent',
+          type: WorkflowActionType.AI_AGENT,
+          valid: false,
+          settings: {
+            ...BASE_STEP_DEFINITION,
+            input: {
+              agentId: '',
+              prompt: '',
+              systemPrompt: '',
+            },
+          },
+        };
+      }
+      case WorkflowActionType.DELAY: {
+        return {
+          id: newStepId,
+          name: 'Delay',
+          type: WorkflowActionType.DELAY,
+          valid: false,
+          settings: {
+            ...BASE_STEP_DEFINITION,
+            input: {
+              delayType: 'DURATION',
+              duration: {
+                days: 0,
+                hours: 0,
+                minutes: 1,
+                seconds: 0,
+              },
+            },
+          },
+        };
+      }
+      case WorkflowActionType.EMPTY: {
+        return {
+          id: newStepId,
+          name: 'Empty',
+          type: WorkflowActionType.EMPTY,
+          valid: true,
+          settings: {
+            ...BASE_STEP_DEFINITION,
+          },
+        };
+      }
       default:
         throw new WorkflowVersionStepException(
           `WorkflowActionType '${type}' unknown`,
@@ -277,10 +377,19 @@ export class WorkflowVersionStepWorkspaceService {
     workspaceId,
     workflowVersionId,
     stepType,
+    parentStepId,
+    nextStepId,
+    parentStepConnectionOptions,
   }: {
     workspaceId: string;
     workflowVersionId: string;
     stepType: WorkflowActionType;
+    parentStepId?: string;
+    nextStepId?: string;
+    parentStepConnectionOptions?: {
+      branchId?: string;
+      isLoopEntry?: boolean;
+    };
   }): Promise<WorkflowActionDTO> {
     const newStep = await this.getStepDefaultDefinition({
       type: stepType,
@@ -290,6 +399,13 @@ export class WorkflowVersionStepWorkspaceService {
       step: newStep,
       workspaceId,
     });
+
+    // When inserting in the middle of a chain, the new step takes over the
+    // connection to the step that previously followed the parent connection.
+    if (isDefined(nextStepId)) {
+      enrichedNewStep.nextStepIds = [nextStepId];
+    }
+
     const workflowVersionRepository =
       await this.twentyORMManager.getRepository<WorkflowVersionWorkspaceEntity>(
         'workflowVersion',
@@ -308,9 +424,52 @@ export class WorkflowVersionStepWorkspaceService {
       );
     }
 
+    // Legacy workflows only carry an implicit linear order (no `nextStepIds`).
+    // Materialize the full graph for the whole flow BEFORE linking the new
+    // step, otherwise linking a single parent leaves every other step without
+    // `nextStepIds` and the diagram ends up in a broken mixed state.
+    const { trigger: normalizedTrigger, steps: normalizedSteps } = isDefined(
+      workflowVersion.trigger,
+    )
+      ? normalizeFlowToGraph({
+          trigger: workflowVersion.trigger,
+          steps: workflowVersion.steps ?? [],
+        })
+      : { trigger: workflowVersion.trigger, steps: workflowVersion.steps ?? [] };
+
+    let updatedSteps = [...normalizedSteps, enrichedNewStep];
+    let updatedTrigger = normalizedTrigger;
+
+    if (isDefined(parentStepId)) {
+      if (parentStepId === TRIGGER_STEP_ID) {
+        if (isDefined(updatedTrigger)) {
+          updatedTrigger = {
+            ...updatedTrigger,
+            nextStepIds: insertNextStepId({
+              nextStepIds: updatedTrigger.nextStepIds,
+              newStepId: enrichedNewStep.id,
+              nextStepId,
+            }),
+          };
+        }
+      } else {
+        updatedSteps = updatedSteps.map((step) =>
+          step.id === parentStepId
+            ? linkParentStepToChild({
+                step,
+                newStepId: enrichedNewStep.id,
+                nextStepId,
+                connectionOptions: parentStepConnectionOptions,
+              })
+            : step,
+        );
+      }
+    }
+
     await workflowVersionRepository.update(workflowVersion.id, {
-      steps: [...(workflowVersion.steps || []), enrichedNewStep],
-    });
+      steps: updatedSteps,
+      trigger: updatedTrigger,
+    } as unknown as QueryDeepPartialEntity<WorkflowVersionWorkspaceEntity>);
 
     return enrichedNewStep;
   }
@@ -364,7 +523,7 @@ export class WorkflowVersionStepWorkspaceService {
 
     await workflowVersionRepository.update(workflowVersion.id, {
       steps: updatedSteps,
-    });
+    } as unknown as QueryDeepPartialEntity<WorkflowVersionWorkspaceEntity>);
 
     return enrichedNewStep;
   }
@@ -421,7 +580,7 @@ export class WorkflowVersionStepWorkspaceService {
 
     await workflowVersionRepository.update(
       workflowVersion.id,
-      workflowVersionUpdates,
+      workflowVersionUpdates as unknown as QueryDeepPartialEntity<WorkflowVersionWorkspaceEntity>,
     );
 
     await this.runWorkflowVersionStepDeletionSideEffects({
@@ -506,7 +665,7 @@ export class WorkflowVersionStepWorkspaceService {
     await workflowVersionRepository.update(draftWorkflowVersion.id, {
       steps: newWorkflowVersionSteps,
       trigger: newWorkflowVersionTrigger,
-    });
+    } as unknown as QueryDeepPartialEntity<WorkflowVersionWorkspaceEntity>);
 
     return draftWorkflowVersion.id;
   }

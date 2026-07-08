@@ -26,12 +26,21 @@ export class WorkflowVersionStepResolver {
   async createWorkflowVersionStep(
     @AuthWorkspace() { id: workspaceId }: Workspace,
     @Args('input')
-    { stepType, workflowVersionId }: CreateWorkflowVersionStepInput,
+    {
+      stepType,
+      workflowVersionId,
+      parentStepId,
+      nextStepId,
+      parentStepConnectionOptions,
+    }: CreateWorkflowVersionStepInput,
   ): Promise<WorkflowActionDTO> {
     return this.workflowVersionStepWorkspaceService.createWorkflowVersionStep({
       workspaceId,
       workflowVersionId,
       stepType,
+      parentStepId,
+      nextStepId,
+      parentStepConnectionOptions,
     });
   }
 

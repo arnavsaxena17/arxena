@@ -1,7 +1,13 @@
+import { WorkflowDiagramCreateStepConnectionOptions } from '@/workflow/workflow-diagram/types/WorkflowDiagram';
 import { createState } from '@ui/utilities/state/utils/createState';
 
+export type WorkflowCreateStepFromParent = {
+  parentStepId: string;
+  connectionOptions?: WorkflowDiagramCreateStepConnectionOptions;
+};
+
 export const workflowCreateStepFromParentStepIdState = createState<
-  string | undefined
+  WorkflowCreateStepFromParent | undefined
 >({
   key: 'workflowCreateStepFromParentStepId',
   defaultValue: undefined,

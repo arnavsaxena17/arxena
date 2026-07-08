@@ -332,7 +332,20 @@ export type CreateServerlessFunctionInput = {
   timeoutSeconds?: InputMaybe<Scalars['Float']>;
 };
 
+export type CreateWorkflowVersionStepConnectionOptions = {
+  /** If/Else branch id the new step should be connected to (for IF_ELSE parents) */
+  branchId?: InputMaybe<Scalars['String']>;
+  /** Whether the new step is the entry point of an iterator loop body (for ITERATOR parents) */
+  isLoopEntry?: InputMaybe<Scalars['Boolean']>;
+};
+
 export type CreateWorkflowVersionStepInput = {
+  /** Id of the step that currently follows the parent connection, so the new step is inserted in between */
+  nextStepId?: InputMaybe<Scalars['String']>;
+  /** Id of the parent step (or "trigger") the new step is created from */
+  parentStepId?: InputMaybe<Scalars['String']>;
+  /** Additional options describing how the parent connection is made */
+  parentStepConnectionOptions?: InputMaybe<CreateWorkflowVersionStepConnectionOptions>;
   /** New step type */
   stepType: Scalars['String'];
   /** Workflow version ID */

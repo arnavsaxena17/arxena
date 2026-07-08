@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import DOMPurify from 'dompurify';
 import { JSDOM } from 'jsdom';
-import { isDefined, isValidUuid } from 'twenty-shared';
+import { isDefined, isValidUuid, WorkflowActionType } from 'twenty-shared';
 import { z } from 'zod';
 
 import { WorkflowAction } from 'src/modules/workflow/workflow-executor/interfaces/workflow-action.interface';
@@ -15,12 +15,15 @@ import {
   WorkflowStepExecutorException,
   WorkflowStepExecutorExceptionCode,
 } from 'src/modules/workflow/workflow-executor/exceptions/workflow-step-executor.exception';
+import { type WorkflowActionInput } from 'src/modules/workflow/workflow-executor/types/workflow-action-input';
+import { type WorkflowActionOutput } from 'src/modules/workflow/workflow-executor/types/workflow-action-output.type';
+import { findStepOrThrow } from 'src/modules/workflow/workflow-executor/utils/find-step-or-throw.util';
+import { resolveInput } from 'src/modules/workflow/workflow-executor/utils/variable-resolver.util';
 import {
   SendEmailActionException,
   SendEmailActionExceptionCode,
 } from 'src/modules/workflow/workflow-executor/workflow-actions/mail-sender/exceptions/send-email-action.exception';
 import { WorkflowSendEmailActionInput } from 'src/modules/workflow/workflow-executor/workflow-actions/mail-sender/types/workflow-send-email-action-input.type';
-import { WorkflowActionResult } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action-result.type';
 
 export type WorkflowSendEmailStepOutputSchema = {
   success: boolean;
@@ -79,9 +82,25 @@ export class SendEmailWorkflowAction implements WorkflowAction {
     }
   }
 
-  async execute(
-    workflowActionInput: WorkflowSendEmailActionInput,
-  ): Promise<WorkflowActionResult> {
+  async execute({
+    currentStepId,
+    steps,
+    context,
+  }: WorkflowActionInput): Promise<WorkflowActionOutput> {
+    const step = findStepOrThrow({ stepId: currentStepId, steps });
+
+    if (step.type !== WorkflowActionType.SEND_EMAIL) {
+      throw new WorkflowStepExecutorException(
+        'Step is not a send email action',
+        WorkflowStepExecutorExceptionCode.INVALID_STEP_TYPE,
+      );
+    }
+
+    const workflowActionInput = resolveInput(
+      step.settings.input,
+      context,
+    ) as WorkflowSendEmailActionInput;
+
     const emailProvider = await this.getEmailClient(
       workflowActionInput.connectedAccountId,
     );

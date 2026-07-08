@@ -2,13 +2,23 @@ import {
   WorkflowActionType,
   WorkflowTriggerType,
 } from '@/workflow/types/Workflow';
-import { Edge, Node } from '@xyflow/react';
+import { Edge, Node, Position } from '@xyflow/react';
+
+export type WorkflowDiagramEdgeLabelOptions = {
+  label: string;
+  position?: Position;
+  elseIfIndex?: number;
+};
+
+export type WorkflowDiagramEdgeData = {
+  labelOptions?: WorkflowDiagramEdgeLabelOptions;
+};
 
 export type WorkflowDiagramNode = Node<WorkflowDiagramNodeData>;
-export type WorkflowDiagramEdge = Edge;
+export type WorkflowDiagramEdge = Edge<WorkflowDiagramEdgeData>;
 
 export type WorkflowRunDiagramNode = Node<WorkflowRunDiagramNodeData>;
-export type WorkflowRunDiagramEdge = Edge;
+export type WorkflowRunDiagramEdge = Edge<WorkflowDiagramEdgeData>;
 
 export type WorkflowRunDiagram = {
   nodes: Array<WorkflowRunDiagramNode>;
@@ -34,6 +44,7 @@ export type WorkflowDiagramStepNodeData =
       icon?: string;
       runStatus?: WorkflowDiagramRunStatus;
       isLeafNode: boolean;
+      sourceHandleIds?: string[];
     }
   | {
       nodeType: 'action';
@@ -41,11 +52,20 @@ export type WorkflowDiagramStepNodeData =
       name: string;
       runStatus?: WorkflowDiagramRunStatus;
       isLeafNode: boolean;
+      sourceHandleIds?: string[];
     };
+
+export type WorkflowDiagramCreateStepConnectionOptions = {
+  sourceHandleId?: string;
+  branchId?: string;
+  isLoopEntry?: boolean;
+  nextStepId?: string;
+};
 
 export type WorkflowDiagramCreateStepNodeData = {
   nodeType: 'create-step';
   parentNodeId: string;
+  connectionOptions?: WorkflowDiagramCreateStepConnectionOptions;
   isLeafNode?: never;
 };
 

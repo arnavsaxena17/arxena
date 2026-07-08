@@ -9,4 +9,7 @@ export class WorkflowStepExecutorException extends CustomException {
 export enum WorkflowStepExecutorExceptionCode {
   SCOPED_WORKSPACE_NOT_FOUND = 'SCOPED_WORKSPACE_NOT_FOUND',
   INVALID_STEP_TYPE = 'INVALID_STEP_TYPE',
+  INVALID_STEP_INPUT = 'INVALID_STEP_INPUT',
+  STEP_NOT_FOUND = 'STEP_NOT_FOUND',
+  INTERNAL_ERROR = 'INTERNAL_ERROR',
 }

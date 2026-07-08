@@ -87,6 +87,38 @@ export class WorkflowTriggerWorkspaceService {
     );
   }
 
+  async runWorkflowVersionOnRecords(
+    workflowVersionId: string,
+    payloads: object[],
+    workspaceMemberId: string,
+    { firstName, lastName }: User,
+  ) {
+    await this.workflowCommonWorkspaceService.getWorkflowVersionOrFail(
+      workflowVersionId,
+    );
+
+    const workspaceId = this.getWorkspaceId();
+    const createdBy = buildCreatedByFromFullNameMetadata({
+      fullNameMetadata: { firstName, lastName },
+      workspaceMemberId,
+    });
+
+    const workflowRunIds: string[] = [];
+
+    for (const payload of payloads) {
+      const { workflowRunId } = await this.workflowRunnerWorkspaceService.run(
+        workspaceId,
+        workflowVersionId,
+        payload,
+        createdBy,
+      );
+
+      workflowRunIds.push(workflowRunId);
+    }
+
+    return { workflowRunIds };
+  }
+
   async activateWorkflowVersion(workflowVersionId: string) {
     const workflowVersionRepository =
       await this.twentyORMManager.getRepository<WorkflowVersionWorkspaceEntity>(

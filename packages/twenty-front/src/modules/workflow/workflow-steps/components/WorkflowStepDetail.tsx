@@ -1,9 +1,14 @@
 import { WorkflowAction, WorkflowTrigger } from '@/workflow/types/Workflow';
 import { assertUnreachable } from '@/workflow/utils/assertUnreachable';
 import { getStepDefinitionOrThrow } from '@/workflow/utils/getStepDefinitionOrThrow';
+import { WorkflowEditActionFormAiAgent } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionFormAiAgent';
 import { WorkflowEditActionFormCreateRecord } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionFormCreateRecord';
+import { WorkflowEditActionFormDelay } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionFormDelay';
 import { WorkflowEditActionFormDeleteRecord } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionFormDeleteRecord';
+import { WorkflowEditActionFormFilter } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionFormFilter';
 import { WorkflowEditActionFormFindRecords } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionFormFindRecords';
+import { WorkflowEditActionFormIfElse } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionFormIfElse';
+import { WorkflowEditActionFormIterator } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionFormIterator';
 import { WorkflowEditActionFormSendEmail } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionFormSendEmail';
 import { WorkflowEditActionFormUpdateRecord } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionFormUpdateRecord';
 import { WorkflowEditTriggerCronForm } from '@/workflow/workflow-trigger/components/WorkflowEditTriggerCronForm';
@@ -148,6 +153,60 @@ export const WorkflowStepDetail = ({
               actionOptions={props}
             />
           );
+        }
+
+        case 'FILTER': {
+          return (
+            <WorkflowEditActionFormFilter
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={props}
+            />
+          );
+        }
+
+        case 'IF_ELSE': {
+          return (
+            <WorkflowEditActionFormIfElse
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={props}
+            />
+          );
+        }
+
+        case 'ITERATOR': {
+          return (
+            <WorkflowEditActionFormIterator
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={props}
+            />
+          );
+        }
+
+        case 'AI_AGENT': {
+          return (
+            <WorkflowEditActionFormAiAgent
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={props}
+            />
+          );
+        }
+
+        case 'DELAY': {
+          return (
+            <WorkflowEditActionFormDelay
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={props}
+            />
+          );
+        }
+
+        case 'EMPTY': {
+          return null;
         }
       }
 

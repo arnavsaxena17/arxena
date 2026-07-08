@@ -5,6 +5,8 @@ import { NODE_ICON_LEFT_MARGIN } from '@/workflow/workflow-diagram/constants/Nod
 import { NODE_ICON_WIDTH } from '@/workflow/workflow-diagram/constants/NodeIconWidth';
 import { WorkflowDiagramStepNodeData } from '@/workflow/workflow-diagram/types/WorkflowDiagram';
 import { WorkflowDiagramNodeVariant } from '@/workflow/workflow-diagram/types/WorkflowDiagramNodeVariant';
+import { WORKFLOW_DIAGRAM_NODE_DEFAULT_SOURCE_HANDLE_ID } from '@/workflow/workflow-diagram/workflow-nodes/constants/WorkflowDiagramNodeDefaultSourceHandleId';
+import { WORKFLOW_DIAGRAM_NODE_DEFAULT_TARGET_HANDLE_ID } from '@/workflow/workflow-diagram/workflow-nodes/constants/WorkflowDiagramNodeDefaultTargetHandleId';
 import { css } from '@emotion/react';
 import styled from '@emotion/styled';
 import { Handle, Position } from '@xyflow/react';
@@ -181,6 +183,7 @@ export const WorkflowDiagramStepNodeBase = ({
   Icon,
   RightFloatingElement,
   isLeafNode,
+  sourceHandleIds,
 }: {
   nodeType: WorkflowDiagramStepNodeData['nodeType'];
   name: string;
@@ -188,11 +191,19 @@ export const WorkflowDiagramStepNodeBase = ({
   Icon?: React.ReactNode;
   RightFloatingElement?: React.ReactNode;
   isLeafNode: boolean;
+  sourceHandleIds?: string[];
 }) => {
+  const hasMultipleSourceHandles =
+    isDefined(sourceHandleIds) && sourceHandleIds.length > 0;
+
   return (
     <StyledStepNodeContainer className="workflow-node-container">
       {nodeType !== 'trigger' ? (
-        <StyledTargetHandle type="target" position={Position.Top} />
+        <StyledTargetHandle
+          type="target"
+          id={WORKFLOW_DIAGRAM_NODE_DEFAULT_TARGET_HANDLE_ID}
+          position={Position.Top}
+        />
       ) : null}
 
       <StyledStepNodeType variant="small" nodeVariant={variant}>
@@ -213,9 +224,25 @@ export const WorkflowDiagramStepNodeBase = ({
         ) : null}
       </StyledStepNodeInnerContainer>
 
-      {!isLeafNode && (
-        <StyledSourceHandle type="source" position={Position.Bottom} />
-      )}
+      {hasMultipleSourceHandles
+        ? sourceHandleIds.map((handleId, index) => (
+            <StyledSourceHandle
+              key={handleId}
+              type="source"
+              id={handleId}
+              position={Position.Bottom}
+              style={{
+                left: `${((index + 1) / (sourceHandleIds.length + 1)) * 100}%`,
+              }}
+            />
+          ))
+        : !isLeafNode && (
+            <StyledSourceHandle
+              type="source"
+              id={WORKFLOW_DIAGRAM_NODE_DEFAULT_SOURCE_HANDLE_ID}
+              position={Position.Bottom}
+            />
+          )}
     </StyledStepNodeContainer>
   );
 };

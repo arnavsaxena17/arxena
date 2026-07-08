@@ -31,6 +31,7 @@ export const WorkflowDiagramStepNodeEditableContent = ({
         ) : undefined
       }
       isLeafNode={data.isLeafNode}
+      sourceHandleIds={data.sourceHandleIds}
     />
   );
 };

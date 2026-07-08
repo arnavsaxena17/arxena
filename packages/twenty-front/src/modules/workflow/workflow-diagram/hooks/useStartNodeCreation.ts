@@ -2,6 +2,7 @@ import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { RightDrawerHotkeyScope } from '@/ui/layout/right-drawer/types/RightDrawerHotkeyScope';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
 import { useSetHotkeyScope } from '@/ui/utilities/hotkey/hooks/useSetHotkeyScope';
+import { WorkflowDiagramCreateStepConnectionOptions } from '@/workflow/workflow-diagram/types/WorkflowDiagram';
 import { workflowCreateStepFromParentStepIdState } from '@/workflow/workflow-steps/states/workflowCreateStepFromParentStepIdState';
 import { useCallback } from 'react';
 import { useSetRecoilState } from 'recoil';
@@ -19,8 +20,14 @@ export const useStartNodeCreation = () => {
    * That's why its wrapped in a `useCallback` hook. Removing memoization might break the app unexpectedly.
    */
   const startNodeCreation = useCallback(
-    (parentNodeId: string) => {
-      setWorkflowCreateStepFromParentStepId(parentNodeId);
+    (
+      parentNodeId: string,
+      connectionOptions?: WorkflowDiagramCreateStepConnectionOptions,
+    ) => {
+      setWorkflowCreateStepFromParentStepId({
+        parentStepId: parentNodeId,
+        connectionOptions,
+      });
 
       setHotkeyScope(RightDrawerHotkeyScope.RightDrawer, { goto: false });
       openRightDrawer(RightDrawerPages.WorkflowStepSelectAction, {

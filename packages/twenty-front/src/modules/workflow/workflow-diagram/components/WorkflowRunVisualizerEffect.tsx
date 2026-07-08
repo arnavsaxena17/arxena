@@ -14,34 +14,37 @@ export const WorkflowRunVisualizerEffect = ({
   const setFlow = useSetRecoilState(flowState);
   const setWorkflowDiagram = useSetRecoilState(workflowDiagramState);
 
+  const flow = workflowRun.state?.flow ?? workflowRun.output?.flow;
+
   useEffect(() => {
-    if (!isDefined(workflowRun.output)) {
+    if (!isDefined(flow)) {
       setFlow(undefined);
 
       return;
     }
 
     setFlow({
-      trigger: workflowRun.output.flow.trigger,
-      steps: workflowRun.output.flow.steps,
+      trigger: flow.trigger,
+      steps: flow.steps,
     });
-  }, [setFlow, workflowRun.output]);
+  }, [setFlow, flow]);
 
   useEffect(() => {
-    if (!isDefined(workflowRun.output)) {
+    if (!isDefined(flow)) {
       setWorkflowDiagram(undefined);
 
       return;
     }
 
     const nextWorkflowDiagram = generateWorkflowRunDiagram({
-      trigger: workflowRun.output.flow.trigger,
-      steps: workflowRun.output.flow.steps,
-      stepsOutput: workflowRun.output.stepsOutput,
+      trigger: flow.trigger,
+      steps: flow.steps,
+      stepsOutput: workflowRun.output?.stepsOutput,
+      stepInfos: workflowRun.state?.stepInfos,
     });
 
     setWorkflowDiagram(nextWorkflowDiagram);
-  }, [setWorkflowDiagram, workflowRun.output]);
+  }, [setWorkflowDiagram, flow, workflowRun.output, workflowRun.state]);
 
   return null;
 };

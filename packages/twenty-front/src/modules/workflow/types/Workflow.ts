@@ -1,3 +1,5 @@
+import { StepFilter, StepFilterGroup, StepIfElseBranch } from 'twenty-shared';
+
 type BaseWorkflowActionSettings = {
   input: object;
   outputSchema: object;
@@ -62,10 +64,69 @@ export type WorkflowFindRecordsActionSettings = BaseWorkflowActionSettings & {
   };
 };
 
+export type WorkflowStepFilter = StepFilter & {
+  label?: string;
+  displayValue?: string;
+};
+
+export type WorkflowStepFilterGroup = StepFilterGroup;
+
+export type WorkflowFilterActionSettings = BaseWorkflowActionSettings & {
+  input: {
+    stepFilterGroups?: WorkflowStepFilterGroup[];
+    stepFilters?: WorkflowStepFilter[];
+  };
+};
+
+export type WorkflowIfElseBranch = StepIfElseBranch;
+
+export type WorkflowIfElseActionSettings = BaseWorkflowActionSettings & {
+  input: {
+    stepFilterGroups: WorkflowStepFilterGroup[];
+    stepFilters: WorkflowStepFilter[];
+    branches: WorkflowIfElseBranch[];
+  };
+};
+
+export type WorkflowIteratorActionSettings = BaseWorkflowActionSettings & {
+  input: {
+    items?: unknown[] | string;
+    initialLoopStepIds?: string[];
+    shouldContinueOnIterationFailure?: boolean;
+  };
+};
+
+export type WorkflowAiAgentActionSettings = BaseWorkflowActionSettings & {
+  input: {
+    agentId?: string;
+    prompt?: string;
+    systemPrompt?: string;
+  };
+};
+
+export type WorkflowDelayActionSettings = BaseWorkflowActionSettings & {
+  input:
+    | {
+        delayType: 'DURATION';
+        duration: {
+          days?: number;
+          hours?: number;
+          minutes?: number;
+          seconds?: number;
+        };
+      }
+    | {
+        delayType: 'SCHEDULED_DATE';
+        scheduledDateTime: string;
+      };
+};
+
 type BaseWorkflowAction = {
   id: string;
   name: string;
   valid: boolean;
+  nextStepIds?: string[];
+  position?: { x: number; y: number };
 };
 
 export type WorkflowCodeAction = BaseWorkflowAction & {
@@ -98,13 +159,49 @@ export type WorkflowFindRecordsAction = BaseWorkflowAction & {
   settings: WorkflowFindRecordsActionSettings;
 };
 
+export type WorkflowFilterAction = BaseWorkflowAction & {
+  type: 'FILTER';
+  settings: WorkflowFilterActionSettings;
+};
+
+export type WorkflowIfElseAction = BaseWorkflowAction & {
+  type: 'IF_ELSE';
+  settings: WorkflowIfElseActionSettings;
+};
+
+export type WorkflowIteratorAction = BaseWorkflowAction & {
+  type: 'ITERATOR';
+  settings: WorkflowIteratorActionSettings;
+};
+
+export type WorkflowAiAgentAction = BaseWorkflowAction & {
+  type: 'AI_AGENT';
+  settings: WorkflowAiAgentActionSettings;
+};
+
+export type WorkflowDelayAction = BaseWorkflowAction & {
+  type: 'DELAY';
+  settings: WorkflowDelayActionSettings;
+};
+
+export type WorkflowEmptyAction = BaseWorkflowAction & {
+  type: 'EMPTY';
+  settings: BaseWorkflowActionSettings;
+};
+
 export type WorkflowAction =
   | WorkflowCodeAction
   | WorkflowSendEmailAction
   | WorkflowCreateRecordAction
   | WorkflowUpdateRecordAction
   | WorkflowDeleteRecordAction
-  | WorkflowFindRecordsAction;
+  | WorkflowFindRecordsAction
+  | WorkflowFilterAction
+  | WorkflowIfElseAction
+  | WorkflowIteratorAction
+  | WorkflowAiAgentAction
+  | WorkflowDelayAction
+  | WorkflowEmptyAction;
 
 export type WorkflowActionType = WorkflowAction['type'];
 
@@ -115,6 +212,8 @@ export type WorkflowStepType = WorkflowStep['type'];
 type BaseTrigger = {
   name?: string;
   type: string;
+  nextStepIds?: string[];
+  position?: { x: number; y: number };
 };
 
 export type WorkflowDatabaseEventTrigger = BaseTrigger & {
@@ -206,11 +305,37 @@ export type WorkflowRunOutput = {
   error?: string;
 };
 
+export type WorkflowRunStepStatus =
+  | 'NOT_STARTED'
+  | 'RUNNING'
+  | 'SUCCESS'
+  | 'FAILED'
+  | 'PENDING'
+  | 'STOPPED';
+
+export type WorkflowRunStepInfo = {
+  status: WorkflowRunStepStatus;
+  result?: unknown;
+  error?: string;
+};
+
+export type WorkflowRunStepInfos = Record<string, WorkflowRunStepInfo>;
+
+export type WorkflowRunState = {
+  flow: {
+    trigger: WorkflowTrigger;
+    steps: WorkflowAction[];
+  };
+  stepInfos: WorkflowRunStepInfos;
+  workflowRunError?: string;
+};
+
 export type WorkflowRun = {
   __typename: 'WorkflowRun';
   id: string;
   workflowVersionId: string;
   output: WorkflowRunOutput | null;
+  state?: WorkflowRunState | null;
 };
 
 export type Workflow = {

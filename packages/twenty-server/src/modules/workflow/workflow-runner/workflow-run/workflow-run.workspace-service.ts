@@ -1,13 +1,22 @@
 import { Injectable } from '@nestjs/common';
 
+import {
+  StepStatus,
+  type WorkflowRunStepInfo,
+  type WorkflowRunStepInfos,
+} from 'twenty-shared';
+import { type QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
+
 import { ActorMetadata } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
 import { TwentyORMManager } from 'src/engine/twenty-orm/twenty-orm.manager';
 import {
-  WorkflowRunOutput,
   WorkflowRunStatus,
+  type WorkflowRunState,
   WorkflowRunWorkspaceEntity,
 } from 'src/modules/workflow/common/standard-objects/workflow-run.workspace-entity';
 import { WorkflowCommonWorkspaceService } from 'src/modules/workflow/common/workspace-services/workflow-common.workspace-service';
+import { WorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
+import { WorkflowTrigger } from 'src/modules/workflow/workflow-trigger/types/workflow-trigger.type';
 import {
   WorkflowRunException,
   WorkflowRunExceptionCode,
@@ -50,12 +59,14 @@ export class WorkflowRunWorkspaceService {
 
   async startWorkflowRun({
     workflowRunId,
-    context,
-    output,
+    trigger,
+    steps,
+    triggerPayload,
   }: {
     workflowRunId: string;
-    context: Record<string, any>;
-    output: Pick<WorkflowRunOutput, 'flow'>;
+    trigger: WorkflowTrigger;
+    steps: WorkflowAction[];
+    triggerPayload: object;
   }) {
     const workflowRunRepository =
       await this.twentyORMManager.getRepository<WorkflowRunWorkspaceEntity>(
@@ -80,12 +91,131 @@ export class WorkflowRunWorkspaceService {
       );
     }
 
+    const state: WorkflowRunState = {
+      flow: {
+        trigger,
+        steps,
+      },
+      stepInfos: {
+        trigger: { status: StepStatus.SUCCESS, result: triggerPayload },
+        ...Object.fromEntries(
+          steps.map((step) => [step.id, { status: StepStatus.NOT_STARTED }]),
+        ),
+      },
+    };
+
     return workflowRunRepository.update(workflowRunToUpdate.id, {
       status: WorkflowRunStatus.RUNNING,
       startedAt: new Date().toISOString(),
-      context,
-      output,
+      context: { trigger: triggerPayload },
+      output: {
+        flow: {
+          trigger,
+          steps,
+        },
+      },
+      state,
+    } as unknown as QueryDeepPartialEntity<WorkflowRunWorkspaceEntity>);
+  }
+
+  async getWorkflowRunOrFail({
+    workflowRunId,
+  }: {
+    workflowRunId: string;
+    workspaceId?: string;
+  }): Promise<WorkflowRunWorkspaceEntity> {
+    const workflowRunRepository =
+      await this.twentyORMManager.getRepository<WorkflowRunWorkspaceEntity>(
+        'workflowRun',
+      );
+
+    const workflowRun = await workflowRunRepository.findOneBy({
+      id: workflowRunId,
     });
+
+    if (!workflowRun) {
+      throw new WorkflowRunException(
+        'Workflow run not found',
+        WorkflowRunExceptionCode.WORKFLOW_RUN_NOT_FOUND,
+      );
+    }
+
+    return workflowRun;
+  }
+
+  async updateWorkflowRunStepInfo({
+    stepId,
+    stepInfo,
+    workflowRunId,
+  }: {
+    stepId: string;
+    stepInfo: WorkflowRunStepInfo;
+    workflowRunId: string;
+    workspaceId?: string;
+  }) {
+    const workflowRunRepository =
+      await this.twentyORMManager.getRepository<WorkflowRunWorkspaceEntity>(
+        'workflowRun',
+      );
+
+    const workflowRunToUpdate = await this.getWorkflowRunOrFail({
+      workflowRunId,
+    });
+
+    const nextState: WorkflowRunState = {
+      ...(workflowRunToUpdate.state as WorkflowRunState),
+      stepInfos: {
+        ...workflowRunToUpdate.state?.stepInfos,
+        [stepId]: {
+          ...workflowRunToUpdate.state?.stepInfos?.[stepId],
+          result: stepInfo?.result,
+          error: stepInfo?.error,
+          status: stepInfo.status,
+        },
+      },
+    };
+
+    return workflowRunRepository.update(workflowRunId, {
+      state: nextState,
+    } as unknown as QueryDeepPartialEntity<WorkflowRunWorkspaceEntity>);
+  }
+
+  async updateWorkflowRunStepInfos({
+    stepInfos,
+    workflowRunId,
+  }: {
+    stepInfos: WorkflowRunStepInfos;
+    workflowRunId: string;
+    workspaceId?: string;
+  }) {
+    const workflowRunRepository =
+      await this.twentyORMManager.getRepository<WorkflowRunWorkspaceEntity>(
+        'workflowRun',
+      );
+
+    const workflowRunToUpdate = await this.getWorkflowRunOrFail({
+      workflowRunId,
+    });
+
+    const existingStepInfos = workflowRunToUpdate.state?.stepInfos ?? {};
+
+    const mergedStepInfos: WorkflowRunStepInfos = { ...existingStepInfos };
+
+    for (const [stepId, info] of Object.entries(stepInfos)) {
+      mergedStepInfos[stepId] = {
+        ...existingStepInfos[stepId],
+        ...info,
+      };
+    }
+
+    const nextState: WorkflowRunState = {
+      ...(workflowRunToUpdate.state as WorkflowRunState),
+      stepInfos: mergedStepInfos,
+    };
+
+    return workflowRunRepository.update(workflowRunId, {
+      state: nextState,
+    } as unknown as QueryDeepPartialEntity<WorkflowRunWorkspaceEntity>);
   }
 
   async endWorkflowRun({
@@ -96,67 +226,68 @@ export class WorkflowRunWorkspaceService {
     workflowRunId: string;
     status: WorkflowRunStatus;
     error?: string;
+    isSystemError?: boolean;
+    workspaceId?: string;
   }) {
     const workflowRunRepository =
       await this.twentyORMManager.getRepository<WorkflowRunWorkspaceEntity>(
         'workflowRun',
       );
 
-    const workflowRunToUpdate = await workflowRunRepository.findOneBy({
-      id: workflowRunId,
+    const workflowRunToUpdate = await this.getWorkflowRunOrFail({
+      workflowRunId,
     });
 
-    if (!workflowRunToUpdate) {
-      throw new WorkflowRunException(
-        'No workflow run to end',
-        WorkflowRunExceptionCode.WORKFLOW_RUN_NOT_FOUND,
-      );
-    }
+    const updatedStepInfos = this.markRunningStepsAsFailed({
+      stepInfosToUpdate: workflowRunToUpdate.state?.stepInfos ?? {},
+    });
+
+    const nextState: WorkflowRunState | undefined = workflowRunToUpdate.state
+      ? {
+          ...(workflowRunToUpdate.state as WorkflowRunState),
+          workflowRunError: error,
+          stepInfos: updatedStepInfos,
+        }
+      : undefined;
 
     return workflowRunRepository.update(workflowRunToUpdate.id, {
       status,
       endedAt: new Date().toISOString(),
+      state: nextState,
       output: {
-        ...(workflowRunToUpdate.output ?? {}),
+        ...(workflowRunToUpdate.output ?? {
+          flow: { trigger: undefined, steps: [] },
+        }),
         error,
       },
-    });
+    } as unknown as QueryDeepPartialEntity<WorkflowRunWorkspaceEntity>);
   }
 
-  async saveWorkflowRunState({
-    workflowRunId,
-    output,
-    context,
+  private markRunningStepsAsFailed({
+    stepInfosToUpdate,
   }: {
-    workflowRunId: string;
-    output: Pick<WorkflowRunOutput, 'error' | 'stepsOutput'>;
-    context: Record<string, any>;
-  }) {
-    const workflowRunRepository =
-      await this.twentyORMManager.getRepository<WorkflowRunWorkspaceEntity>(
-        'workflowRun',
-      );
+    stepInfosToUpdate: WorkflowRunStepInfos;
+  }): WorkflowRunStepInfos {
+    return Object.entries(stepInfosToUpdate ?? {}).reduce(
+      (acc, [stepId, step]) => {
+        if (
+          step.status === StepStatus.RUNNING ||
+          step.status === StepStatus.PENDING
+        ) {
+          acc[stepId] = {
+            ...step,
+            status: StepStatus.FAILED,
+            error: 'Workflow has been ended before this step was completed',
+          };
 
-    const workflowRunToUpdate = await workflowRunRepository.findOneBy({
-      id: workflowRunId,
-    });
+          return acc;
+        }
 
-    if (!workflowRunToUpdate) {
-      throw new WorkflowRunException(
-        'No workflow run to save',
-        WorkflowRunExceptionCode.WORKFLOW_RUN_NOT_FOUND,
-      );
-    }
+        acc[stepId] = step;
 
-    return workflowRunRepository.update(workflowRunId, {
-      output: {
-        flow: workflowRunToUpdate.output?.flow ?? {
-          trigger: undefined,
-          steps: [],
-        },
-        ...output,
+        return acc;
       },
-      context,
-    });
+      {} as WorkflowRunStepInfos,
+    );
   }
 }

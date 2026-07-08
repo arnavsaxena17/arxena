@@ -1,0 +1,12 @@
+import { Module } from '@nestjs/common';
+
+import { DelayWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/delay.workflow-action';
+import { ResumeDelayedWorkflowJob } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/jobs/resume-delayed-workflow.job';
+import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.module';
+
+@Module({
+  imports: [WorkflowRunModule],
+  providers: [DelayWorkflowAction, ResumeDelayedWorkflowJob],
+  exports: [DelayWorkflowAction, ResumeDelayedWorkflowJob],
+})
+export class DelayActionModule {}

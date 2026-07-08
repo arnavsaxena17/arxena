@@ -1,6 +1,7 @@
 import { Logger, Scope } from '@nestjs/common';
 
 import { isDefined } from 'twenty-shared';
+import { type QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
@@ -203,7 +204,7 @@ export class WorkflowStatusesUpdateJob {
 
       await workflowVersionRepository.update(statusUpdate.workflowVersionId, {
         steps: newSteps,
-      });
+      } as unknown as QueryDeepPartialEntity<WorkflowVersionWorkspaceEntity>);
     }
   }
 

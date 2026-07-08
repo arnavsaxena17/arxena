@@ -8,7 +8,7 @@ const mockCreateWorkflowVersionStep = jest.fn().mockResolvedValue({
 });
 
 jest.mock('recoil', () => ({
-  useRecoilValue: () => 'parent-step-id',
+  useRecoilValue: () => ({ parentStepId: 'parent-step-id' }),
   useSetRecoilState: () => jest.fn(),
   atom: (params: any) => params,
 }));

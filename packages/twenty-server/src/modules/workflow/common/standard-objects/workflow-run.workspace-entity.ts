@@ -22,6 +22,8 @@ import { FavoriteWorkspaceEntity } from 'src/modules/favorite/standard-objects/f
 import { TimelineActivityWorkspaceEntity } from 'src/modules/timeline/standard-objects/timeline-activity.workspace-entity';
 import { WorkflowVersionWorkspaceEntity } from 'src/modules/workflow/common/standard-objects/workflow-version.workspace-entity';
 import { WorkflowWorkspaceEntity } from 'src/modules/workflow/common/standard-objects/workflow.workspace-entity';
+import { WorkflowRunStepInfos } from 'twenty-shared';
+
 import { WorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
 import { WorkflowTrigger } from 'src/modules/workflow/workflow-trigger/types/workflow-trigger.type';
 
@@ -30,6 +32,8 @@ export enum WorkflowRunStatus {
   RUNNING = 'RUNNING',
   COMPLETED = 'COMPLETED',
   FAILED = 'FAILED',
+  STOPPED = 'STOPPED',
+  STOPPING = 'STOPPING',
 }
 
 type StepRunOutput = {
@@ -48,6 +52,15 @@ export type WorkflowRunOutput = {
   };
   stepsOutput?: Record<string, StepRunOutput>;
   error?: string;
+};
+
+export type WorkflowRunState = {
+  flow: {
+    trigger: WorkflowTrigger;
+    steps: WorkflowAction[];
+  };
+  stepInfos: WorkflowRunStepInfos;
+  workflowRunError?: string;
 };
 
 @WorkspaceEntity({
@@ -120,6 +133,18 @@ export class WorkflowRunWorkspaceEntity extends BaseWorkspaceEntity {
         position: 3,
         color: 'red',
       },
+      {
+        value: WorkflowRunStatus.STOPPED,
+        label: 'Stopped',
+        position: 4,
+        color: 'gray',
+      },
+      {
+        value: WorkflowRunStatus.STOPPING,
+        label: 'Stopping',
+        position: 5,
+        color: 'orange',
+      },
     ],
     defaultValue: "'NOT_STARTED'",
   })
@@ -153,6 +178,16 @@ export class WorkflowRunWorkspaceEntity extends BaseWorkspaceEntity {
   })
   @WorkspaceIsNullable()
   context: Record<string, any> | null;
+
+  @WorkspaceField({
+    standardId: WORKFLOW_RUN_STANDARD_FIELD_IDS.state,
+    type: FieldMetadataType.RAW_JSON,
+    label: msg`State`,
+    description: msg`Json object holding the workflow run graph state (flow + step infos)`,
+    icon: 'IconHierarchy2',
+  })
+  @WorkspaceIsNullable()
+  state: WorkflowRunState | null;
 
   @WorkspaceField({
     standardId: WORKFLOW_RUN_STANDARD_FIELD_IDS.position,

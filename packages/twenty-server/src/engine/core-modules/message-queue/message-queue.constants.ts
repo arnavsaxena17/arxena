@@ -16,6 +16,7 @@ export enum MessageQueue {
   recordPositionBackfillQueue = 'record-position-backfill-queue',
   entityEventsToDbQueue = 'entity-events-to-db-queue',
   workflowQueue = 'workflow-queue',
+  delayedJobsQueue = 'delayed-jobs-queue',
   serverlessFunctionQueue = 'serverless-function-queue',
   deleteCascadeQueue = 'delete-cascade-queue',
   testQueue = 'test-queue',

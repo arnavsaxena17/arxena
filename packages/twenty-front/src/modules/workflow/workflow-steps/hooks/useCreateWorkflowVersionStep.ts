@@ -4,7 +4,10 @@ import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSi
 import { useGetRecordFromCache } from '@/object-record/cache/hooks/useGetRecordFromCache';
 import { updateRecordFromCache } from '@/object-record/cache/utils/updateRecordFromCache';
 import { CREATE_WORKFLOW_VERSION_STEP } from '@/workflow/graphql/mutations/createWorkflowVersionStep';
-import { WorkflowVersion } from '@/workflow/types/Workflow';
+import { WorkflowStep, WorkflowVersion } from '@/workflow/types/Workflow';
+import { WorkflowDiagramCreateStepConnectionOptions } from '@/workflow/workflow-diagram/types/WorkflowDiagram';
+import { TRIGGER_STEP_ID } from '@/workflow/workflow-trigger/constants/TriggerStepId';
+import { insertStepInWorkflowVersion } from '@/workflow/workflow-steps/utils/insertStepInWorkflowVersion';
 import { useApolloClient, useMutation } from '@apollo/client';
 import { isDefined } from 'twenty-shared';
 import {
@@ -12,6 +15,10 @@ import {
   CreateWorkflowVersionStepMutation,
   CreateWorkflowVersionStepMutationVariables,
 } from '~/generated/graphql';
+
+type CreateWorkflowVersionStepParams = CreateWorkflowVersionStepInput & {
+  connectionOptions?: WorkflowDiagramCreateStepConnectionOptions;
+};
 
 export const useCreateWorkflowVersionStep = () => {
   const apolloClient = useApolloClient();
@@ -29,8 +36,10 @@ export const useCreateWorkflowVersionStep = () => {
     client: apolloClient,
   });
   const createWorkflowVersionStep = async (
-    input: CreateWorkflowVersionStepInput,
+    params: CreateWorkflowVersionStepParams,
   ) => {
+    const { connectionOptions, ...input } = params;
+
     const result = await mutate({
       variables: { input },
     });
@@ -46,13 +55,31 @@ export const useCreateWorkflowVersionStep = () => {
       return;
     }
 
+    const newStep = {
+      ...(createdStep as unknown as WorkflowStep),
+      nextStepIds: isDefined(input.nextStepId) ? [input.nextStepId] : [],
+    };
+
+    const { steps: updatedSteps, trigger: updatedTrigger } =
+      insertStepInWorkflowVersion({
+        steps: cachedRecord.steps ?? [],
+        trigger: cachedRecord.trigger,
+        newStep,
+        parentStepId: input.parentStepId ?? undefined,
+        nextStepId: input.nextStepId ?? undefined,
+        connectionOptions,
+        triggerStepId: TRIGGER_STEP_ID,
+      });
+
     const newCachedRecord = {
       ...cachedRecord,
-      steps: [...(cachedRecord.steps || []), createdStep],
+      steps: updatedSteps,
+      trigger: updatedTrigger,
     };
 
     const recordGqlFields = {
       steps: true,
+      trigger: true,
     };
     updateRecordFromCache({
       objectMetadataItems,

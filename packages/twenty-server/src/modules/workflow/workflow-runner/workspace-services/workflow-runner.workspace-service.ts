@@ -5,10 +5,8 @@ import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decora
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { ActorMetadata } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
-import {
-  RunWorkflowJob,
-  RunWorkflowJobData,
-} from 'src/modules/workflow/workflow-runner/jobs/run-workflow.job';
+import { RUN_WORKFLOW_JOB_NAME } from 'src/modules/workflow/workflow-runner/constants/run-workflow-job-name';
+import { type RunWorkflowJobData } from 'src/modules/workflow/workflow-runner/types/run-workflow-job-data.type';
 import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.workspace-service';
 
 @Injectable()
@@ -42,7 +40,7 @@ export class WorkflowRunnerWorkspaceService {
       });
 
     await this.messageQueueService.add<RunWorkflowJobData>(
-      RunWorkflowJob.name,
+      RUN_WORKFLOW_JOB_NAME,
       {
         workspaceId,
         workflowVersionId,

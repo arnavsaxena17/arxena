@@ -34,6 +34,7 @@ export const WorkflowDiagramStepNodeReadonly = ({
       nodeType={data.nodeType}
       Icon={<WorkflowDiagramStepNodeIcon data={data} />}
       isLeafNode={data.isLeafNode}
+      sourceHandleIds={data.sourceHandleIds}
     />
   );
 };

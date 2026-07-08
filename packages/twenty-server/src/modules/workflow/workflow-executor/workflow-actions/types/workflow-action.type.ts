@@ -1,4 +1,11 @@
+import { WorkflowActionType } from 'twenty-shared';
+
+import { WorkflowAiAgentActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-agent/types/workflow-ai-agent-action-settings.type';
 import { WorkflowCodeActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/code/types/workflow-code-action-settings.type';
+import { WorkflowDelayActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/types/workflow-delay-action-settings.type';
+import { WorkflowFilterActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/filter/types/workflow-filter-action-settings.type';
+import { WorkflowIfElseActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/if-else/types/workflow-if-else-action-settings.type';
+import { WorkflowIteratorActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/iterator/types/workflow-iterator-action-settings.type';
 import { WorkflowSendEmailActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/mail-sender/types/workflow-send-email-action-settings.type';
 import {
   WorkflowCreateRecordActionSettings,
@@ -8,14 +15,7 @@ import {
 } from 'src/modules/workflow/workflow-executor/workflow-actions/record-crud/types/workflow-record-crud-action-settings.type';
 import { WorkflowActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action-settings.type';
 
-export enum WorkflowActionType {
-  CODE = 'CODE',
-  SEND_EMAIL = 'SEND_EMAIL',
-  CREATE_RECORD = 'CREATE_RECORD',
-  UPDATE_RECORD = 'UPDATE_RECORD',
-  DELETE_RECORD = 'DELETE_RECORD',
-  FIND_RECORDS = 'FIND_RECORDS',
-}
+export { WorkflowActionType };
 
 type BaseWorkflowAction = {
   id: string;
@@ -23,6 +23,11 @@ type BaseWorkflowAction = {
   type: WorkflowActionType;
   settings: WorkflowActionSettings;
   valid: boolean;
+  nextStepIds?: string[];
+  position?: {
+    x: number;
+    y: number;
+  };
 };
 
 export type WorkflowCodeAction = BaseWorkflowAction & {
@@ -55,10 +60,45 @@ export type WorkflowFindRecordsAction = BaseWorkflowAction & {
   settings: WorkflowFindRecordsActionSettings;
 };
 
+export type WorkflowFilterAction = BaseWorkflowAction & {
+  type: WorkflowActionType.FILTER;
+  settings: WorkflowFilterActionSettings;
+};
+
+export type WorkflowIfElseAction = BaseWorkflowAction & {
+  type: WorkflowActionType.IF_ELSE;
+  settings: WorkflowIfElseActionSettings;
+};
+
+export type WorkflowIteratorAction = BaseWorkflowAction & {
+  type: WorkflowActionType.ITERATOR;
+  settings: WorkflowIteratorActionSettings;
+};
+
+export type WorkflowAiAgentAction = BaseWorkflowAction & {
+  type: WorkflowActionType.AI_AGENT;
+  settings: WorkflowAiAgentActionSettings;
+};
+
+export type WorkflowDelayAction = BaseWorkflowAction & {
+  type: WorkflowActionType.DELAY;
+  settings: WorkflowDelayActionSettings;
+};
+
+export type WorkflowEmptyAction = BaseWorkflowAction & {
+  type: WorkflowActionType.EMPTY;
+};
+
 export type WorkflowAction =
   | WorkflowCodeAction
   | WorkflowSendEmailAction
   | WorkflowCreateRecordAction
   | WorkflowUpdateRecordAction
   | WorkflowDeleteRecordAction
-  | WorkflowFindRecordsAction;
+  | WorkflowFindRecordsAction
+  | WorkflowFilterAction
+  | WorkflowIfElseAction
+  | WorkflowIteratorAction
+  | WorkflowAiAgentAction
+  | WorkflowDelayAction
+  | WorkflowEmptyAction;

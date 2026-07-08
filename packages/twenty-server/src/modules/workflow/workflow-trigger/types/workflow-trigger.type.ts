@@ -15,6 +15,11 @@ type BaseTrigger = {
   name: string;
   type: WorkflowTriggerType;
   settings: BaseWorkflowTriggerSettings;
+  nextStepIds?: string[];
+  position?: {
+    x: number;
+    y: number;
+  };
 };
 
 export type WorkflowDatabaseEventTrigger = BaseTrigger & {
@@ -33,6 +38,8 @@ export type WorkflowManualTrigger = BaseTrigger & {
   type: WorkflowTriggerType.MANUAL;
   settings: {
     objectType?: string;
+    availability?: WorkflowManualTriggerAvailability;
+    isMultiRecordEnabled?: boolean;
   };
 };
 

@@ -6,7 +6,13 @@ import {
   WorkflowStepExecutorException,
   WorkflowStepExecutorExceptionCode,
 } from 'src/modules/workflow/workflow-executor/exceptions/workflow-step-executor.exception';
+import { AiAgentWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-agent/ai-agent.workflow-action';
 import { CodeWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/code/code.workflow-action';
+import { DelayWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/delay.workflow-action';
+import { EmptyWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/empty/empty.workflow-action';
+import { FilterWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/filter/filter.workflow-action';
+import { IfElseWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/if-else/if-else.workflow-action';
+import { IteratorWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/iterator/iterator.workflow-action';
 import { SendEmailWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/mail-sender/send-email.workflow-action';
 import { CreateRecordWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/record-crud/create-record.workflow-action';
 import { DeleteRecordWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/record-crud/delete-record.workflow-action';
@@ -23,6 +29,12 @@ export class WorkflowActionFactory {
     private readonly updateRecordWorkflowAction: UpdateRecordWorkflowAction,
     private readonly deleteRecordWorkflowAction: DeleteRecordWorkflowAction,
     private readonly findRecordsWorflowAction: FindRecordsWorflowAction,
+    private readonly filterWorkflowAction: FilterWorkflowAction,
+    private readonly ifElseWorkflowAction: IfElseWorkflowAction,
+    private readonly iteratorWorkflowAction: IteratorWorkflowAction,
+    private readonly delayWorkflowAction: DelayWorkflowAction,
+    private readonly emptyWorkflowAction: EmptyWorkflowAction,
+    private readonly aiAgentWorkflowAction: AiAgentWorkflowAction,
   ) {}
 
   get(stepType: WorkflowActionType): WorkflowAction {
@@ -39,6 +51,18 @@ export class WorkflowActionFactory {
         return this.deleteRecordWorkflowAction;
       case WorkflowActionType.FIND_RECORDS:
         return this.findRecordsWorflowAction;
+      case WorkflowActionType.FILTER:
+        return this.filterWorkflowAction;
+      case WorkflowActionType.IF_ELSE:
+        return this.ifElseWorkflowAction;
+      case WorkflowActionType.ITERATOR:
+        return this.iteratorWorkflowAction;
+      case WorkflowActionType.DELAY:
+        return this.delayWorkflowAction;
+      case WorkflowActionType.EMPTY:
+        return this.emptyWorkflowAction;
+      case WorkflowActionType.AI_AGENT:
+        return this.aiAgentWorkflowAction;
       default:
         throw new WorkflowStepExecutorException(
           `Workflow step executor not found for step type '${stepType}'`,

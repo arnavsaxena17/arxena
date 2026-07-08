@@ -32,12 +32,23 @@ export const useCreateStep = ({
       throw new Error('Select a step to create a new step from first.');
     }
 
+    const { parentStepId, connectionOptions } =
+      workflowCreateStepFromParentStepId;
+
     const workflowVersionId = await getUpdatableWorkflowVersion(workflow);
 
     const createdStep = (
       await createWorkflowVersionStep({
         workflowVersionId,
         stepType: newStepType,
+        parentStepId,
+        nextStepId: connectionOptions?.nextStepId,
+        parentStepConnectionOptions: isDefined(connectionOptions?.branchId)
+          ? { branchId: connectionOptions.branchId }
+          : connectionOptions?.isLoopEntry === true
+            ? { isLoopEntry: true }
+            : undefined,
+        connectionOptions,
       })
     )?.data?.createWorkflowVersionStep;
 

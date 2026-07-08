@@ -1,4 +1,5 @@
 import { EDGE_GREEN_ROUNDED_ARROW_MARKER_WIDTH_PX } from '@/workflow/workflow-diagram/constants/EdgeGreenRoundedArrowMarkerWidthPx';
+import { WorkflowDiagramEdgeData } from '@/workflow/workflow-diagram/types/WorkflowDiagram';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import {
@@ -7,13 +8,16 @@ import {
   EdgeProps,
   getStraightPath,
 } from '@xyflow/react';
+import { isDefined } from 'twenty-shared';
 import { Label } from 'twenty-ui';
 
 const StyledLabel = styled(Label)`
   color: ${({ theme }) => theme.tag.text.turquoise};
 `;
 
-type WorkflowDiagramSuccessEdgeProps = EdgeProps;
+type WorkflowDiagramSuccessEdgeProps = EdgeProps & {
+  data?: WorkflowDiagramEdgeData;
+};
 
 export const WorkflowDiagramSuccessEdge = ({
   sourceX,
@@ -23,6 +27,7 @@ export const WorkflowDiagramSuccessEdge = ({
   markerStart,
   markerEnd,
   label,
+  data,
 }: WorkflowDiagramSuccessEdgeProps) => {
   const theme = useTheme();
 
@@ -32,6 +37,8 @@ export const WorkflowDiagramSuccessEdge = ({
     targetX,
     targetY,
   });
+
+  const resolvedLabel = data?.labelOptions?.label ?? label;
 
   return (
     <>
@@ -52,7 +59,7 @@ export const WorkflowDiagramSuccessEdge = ({
           }}
           className="nodrag nopan"
         >
-          {label}
+          {resolvedLabel}
         </StyledLabel>
       </EdgeLabelRenderer>
     </>

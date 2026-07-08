@@ -149,4 +149,130 @@ describe('generateWorkflowDiagram', () => {
     expect(result.edges[1].source).toEqual(result.nodes[1].id);
     expect(result.edges[1].target).toEqual(result.nodes[2].id);
   });
+
+  it('should build branches from nextStepIds when the flow is graph-based', () => {
+    const trigger: WorkflowTrigger = {
+      name: 'Company created',
+      type: 'DATABASE_EVENT',
+      nextStepIds: ['if-else'],
+      settings: {
+        eventName: 'company.created',
+        outputSchema: {},
+      },
+    };
+
+    const baseSettings = {
+      errorHandlingOptions: {
+        retryOnFailure: { value: false },
+        continueOnFailure: { value: false },
+      },
+      input: {},
+      outputSchema: {},
+    };
+
+    const steps: WorkflowStep[] = [
+      {
+        id: 'if-else',
+        name: 'If/Else',
+        type: 'IF_ELSE',
+        valid: true,
+        nextStepIds: [],
+        settings: {
+          ...baseSettings,
+          input: {
+            stepFilterGroups: [],
+            stepFilters: [],
+            branches: [
+              {
+                id: 'branch-true',
+                nextStepIds: ['true-step'],
+                filterGroupId: 'group-true',
+              },
+              {
+                id: 'branch-false',
+                nextStepIds: ['false-step'],
+              },
+            ],
+          },
+        },
+      } as unknown as WorkflowStep,
+      {
+        id: 'true-step',
+        name: 'True',
+        type: 'CODE',
+        valid: true,
+        nextStepIds: [],
+        settings: baseSettings,
+      } as unknown as WorkflowStep,
+      {
+        id: 'false-step',
+        name: 'False',
+        type: 'CODE',
+        valid: true,
+        nextStepIds: [],
+        settings: baseSettings,
+      } as unknown as WorkflowStep,
+    ];
+
+    const result = generateWorkflowDiagram({ trigger, steps });
+
+    // trigger + 3 steps
+    expect(result.nodes).toHaveLength(4);
+    // trigger->if-else, if-else->true, if-else->false
+    expect(result.edges).toHaveLength(3);
+
+    const ifElseOutgoing = result.edges.filter(
+      (edge) => edge.source === 'if-else',
+    );
+
+    expect(ifElseOutgoing).toHaveLength(2);
+    expect(ifElseOutgoing.map((edge) => edge.target).sort()).toEqual([
+      'false-step',
+      'true-step',
+    ]);
+  });
+
+  it('should not loop forever when steps form an iterator cycle', () => {
+    const trigger: WorkflowTrigger = {
+      name: 'Manual',
+      type: 'MANUAL',
+      nextStepIds: ['iterator'],
+      settings: {
+        outputSchema: {},
+      },
+    };
+
+    const baseSettings = {
+      errorHandlingOptions: {
+        retryOnFailure: { value: false },
+        continueOnFailure: { value: false },
+      },
+      input: {},
+      outputSchema: {},
+    };
+
+    const steps: WorkflowStep[] = [
+      {
+        id: 'iterator',
+        name: 'Iterator',
+        type: 'ITERATOR',
+        valid: true,
+        nextStepIds: ['loop-body'],
+        settings: baseSettings,
+      } as unknown as WorkflowStep,
+      {
+        id: 'loop-body',
+        name: 'Loop body',
+        type: 'CODE',
+        valid: true,
+        nextStepIds: ['iterator'],
+        settings: baseSettings,
+      } as unknown as WorkflowStep,
+    ];
+
+    const result = generateWorkflowDiagram({ trigger, steps });
+
+    expect(result.nodes).toHaveLength(3);
+    expect(result.edges).toHaveLength(3);
+  });
 });
