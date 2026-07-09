@@ -1,45 +1,56 @@
-import dns from 'node:dns/promises';
-
 import {
-    clearVerifiedSearchBotCacheForTests,
-    isVerifiedBingbot,
-    isVerifiedGooglebot,
-    isVerifiedOpenAIBot,
-    isVerifiedSearchBot,
+  clearVerifiedSearchBotCacheForTests,
+  isVerifiedBingbot,
+  isVerifiedGooglebot,
+  isVerifiedOpenAIBot,
+  isVerifiedSearchBot,
 } from '../verified-search-bot';
 
-jest.mock('node:dns/promises', () => ({
-  reverse: jest.fn(),
-  resolve4: jest.fn(),
-}));
-
-const mockedDns = dns as jest.Mocked<typeof dns>;
+const mockDnsJson = (answers: string[]) =>
+  Promise.resolve({
+    ok: true,
+    json: async () => ({
+      Answer: answers.map((data) => ({ data })),
+    }),
+  } as Response);
 
 describe('verified-search-bot', () => {
+  const fetchMock = jest.fn();
+
   beforeEach(() => {
     jest.clearAllMocks();
     clearVerifiedSearchBotCacheForTests();
     delete process.env.ORG_CHART_ALLOW_VERIFIED_BOTS;
     delete process.env.ORG_CHART_OPENAI_BOT_CIDRS;
+    global.fetch = fetchMock as unknown as typeof fetch;
   });
 
   it('isVerifiedGooglebot returns true when reverse and forward DNS match', async () => {
-    mockedDns.reverse.mockResolvedValue(['crawl-66-249-66-1.googlebot.com']);
-    mockedDns.resolve4.mockResolvedValue(['66.249.66.1']);
+    fetchMock
+      .mockResolvedValueOnce(
+        mockDnsJson(['crawl-66-249-66-1.googlebot.com.']),
+      )
+      .mockResolvedValueOnce(mockDnsJson(['66.249.66.1']));
 
     await expect(isVerifiedGooglebot('66.249.66.1')).resolves.toBe(true);
   });
 
   it('isVerifiedGooglebot returns false when forward DNS does not match', async () => {
-    mockedDns.reverse.mockResolvedValue(['crawl-66-249-66-1.googlebot.com']);
-    mockedDns.resolve4.mockResolvedValue(['1.2.3.4']);
+    fetchMock
+      .mockResolvedValueOnce(
+        mockDnsJson(['crawl-66-249-66-1.googlebot.com.']),
+      )
+      .mockResolvedValueOnce(mockDnsJson(['1.2.3.4']));
 
     await expect(isVerifiedGooglebot('66.249.66.1')).resolves.toBe(false);
   });
 
   it('isVerifiedBingbot returns true for search.msn.com hostnames', async () => {
-    mockedDns.reverse.mockResolvedValue(['msnbot-157-55-39-1.search.msn.com']);
-    mockedDns.resolve4.mockResolvedValue(['157.55.39.1']);
+    fetchMock
+      .mockResolvedValueOnce(
+        mockDnsJson(['msnbot-157-55-39-1.search.msn.com.']),
+      )
+      .mockResolvedValueOnce(mockDnsJson(['157.55.39.1']));
 
     await expect(isVerifiedBingbot('157.55.39.1')).resolves.toBe(true);
   });
@@ -52,21 +63,25 @@ describe('verified-search-bot', () => {
   });
 
   it('isVerifiedSearchBot caches positive results', async () => {
-    mockedDns.reverse.mockResolvedValue(['crawl-66-249-66-1.googlebot.com']);
-    mockedDns.resolve4.mockResolvedValue(['66.249.66.1']);
+    fetchMock
+      .mockResolvedValueOnce(
+        mockDnsJson(['crawl-66-249-66-1.googlebot.com.']),
+      )
+      .mockResolvedValueOnce(mockDnsJson(['66.249.66.1']));
 
     await expect(isVerifiedSearchBot('66.249.66.1')).resolves.toBe(true);
     await expect(isVerifiedSearchBot('66.249.66.1')).resolves.toBe(true);
 
-    expect(mockedDns.reverse).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it('isVerifiedSearchBot returns false when ORG_CHART_ALLOW_VERIFIED_BOTS=0', async () => {
     process.env.ORG_CHART_ALLOW_VERIFIED_BOTS = '0';
-    mockedDns.reverse.mockResolvedValue(['crawl-66-249-66-1.googlebot.com']);
-    mockedDns.resolve4.mockResolvedValue(['66.249.66.1']);
+    fetchMock.mockResolvedValueOnce(
+      mockDnsJson(['crawl-66-249-66-1.googlebot.com.']),
+    );
 
     await expect(isVerifiedSearchBot('66.249.66.1')).resolves.toBe(false);
-    expect(mockedDns.reverse).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

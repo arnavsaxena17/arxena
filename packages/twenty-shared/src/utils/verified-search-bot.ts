@@ -1,10 +1,17 @@
-import dns from 'node:dns/promises';
-
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const DOH_ENDPOINT = 'https://cloudflare-dns.com/dns-query';
 
 type CacheEntry = {
   value: boolean;
   expiresAt: number;
+};
+
+type DohAnswer = {
+  data?: string;
+};
+
+type DohResponse = {
+  Answer?: DohAnswer[];
 };
 
 const verificationCache = new Map<string, CacheEntry>();
@@ -69,24 +76,45 @@ const writeCache = (ip: string, value: boolean): void => {
   });
 };
 
-const reverseDnsHostnames = async (ip: string): Promise<string[]> => {
+const ipv4ToPtrName = (ip: string): string => {
+  const [a, b, c, d] = ip.split('.');
+  return `${d}.${c}.${b}.${a}.in-addr.arpa`;
+};
+
+const stripTrailingDot = (value: string): string =>
+  value.endsWith('.') ? value.slice(0, -1) : value;
+
+const queryDnsOverHttps = async (
+  name: string,
+  type: 'PTR' | 'A',
+): Promise<string[]> => {
+  const url = `${DOH_ENDPOINT}?name=${encodeURIComponent(name)}&type=${type}`;
   try {
-    return await dns.reverse(ip);
+    const response = await fetch(url, {
+      headers: { Accept: 'application/dns-json' },
+    });
+    if (!response.ok) {
+      return [];
+    }
+    const payload = (await response.json()) as DohResponse;
+    return (payload.Answer ?? [])
+      .map((answer) => answer.data)
+      .filter((data): data is string => typeof data === 'string' && data.length > 0)
+      .map(stripTrailingDot);
   } catch {
     return [];
   }
 };
 
+const reverseDnsHostnames = async (ip: string): Promise<string[]> =>
+  queryDnsOverHttps(ipv4ToPtrName(ip), 'PTR');
+
 const forwardDnsIncludesIp = async (
   hostname: string,
   ip: string,
 ): Promise<boolean> => {
-  try {
-    const addresses = await dns.resolve4(hostname);
-    return addresses.includes(ip);
-  } catch {
-    return false;
-  }
+  const addresses = await queryDnsOverHttps(hostname, 'A');
+  return addresses.includes(ip);
 };
 
 const verifyReverseForwardDns = async (

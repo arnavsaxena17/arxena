@@ -162,4 +162,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: ['/((?!_next/image|favicon\\.ico).*)'],
+  // twenty-shared's barrel bundles lodash helpers that contain unreachable
+  // Function("return this") for global detection; allow the build-time check.
+  unstable_allowDynamic: ['**/twenty-shared/dist/**'],
 };
