@@ -1,4 +1,5 @@
 import { WorkflowVersionStatus } from '@/workflow/types/Workflow';
+import { WorkflowBuilderActionButtons } from '@/workflow/components/WorkflowBuilderActionButtons';
 import { WorkflowDiagramCanvasBase } from '@/workflow/workflow-diagram/components/WorkflowDiagramCanvasBase';
 import { WorkflowDiagramCanvasReadonlyEffect } from '@/workflow/workflow-diagram/components/WorkflowDiagramCanvasReadonlyEffect';
 import { WorkflowDiagramDefaultEdge } from '@/workflow/workflow-diagram/components/WorkflowDiagramDefaultEdge';
@@ -9,13 +10,22 @@ import { ReactFlowProvider } from '@xyflow/react';
 
 export const WorkflowDiagramCanvasReadonly = ({
   versionStatus,
+  workflowVersionId,
 }: {
   versionStatus: WorkflowVersionStatus;
+  workflowVersionId?: string;
 }) => {
   return (
     <ReactFlowProvider>
       <WorkflowDiagramCanvasBase
         status={versionStatus}
+        toolbarContent={
+          workflowVersionId ? (
+            <WorkflowBuilderActionButtons
+              workflowVersionId={workflowVersionId}
+            />
+          ) : undefined
+        }
         nodeTypes={{
           default: WorkflowDiagramStepNodeReadonly,
           'empty-trigger': WorkflowDiagramEmptyTrigger,

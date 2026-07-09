@@ -1,4 +1,5 @@
 import { msg } from '@lingui/core/macro';
+import { registerEnumType } from '@nestjs/graphql';
 import { FieldMetadataType } from 'twenty-shared';
 
 import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
@@ -35,6 +36,11 @@ export enum WorkflowRunStatus {
   STOPPED = 'STOPPED',
   STOPPING = 'STOPPING',
 }
+
+registerEnumType(WorkflowRunStatus, {
+  name: 'WorkflowRunStatusEnum',
+  description: 'Status of the workflow run',
+});
 
 type StepRunOutput = {
   id: string;

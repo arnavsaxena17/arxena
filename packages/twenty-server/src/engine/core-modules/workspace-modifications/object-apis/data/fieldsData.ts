@@ -2409,6 +2409,29 @@ export function getFieldsData(
       },
     },
     {
+      objectName: 'opportunity',
+      field: {
+        description: 'When the lead booked a Calendly demo',
+        icon: 'IconCalendar',
+        label: 'Meeting scheduled at',
+        name: 'meetingScheduledAt',
+        objectMetadataId: objectsNameIdMap.opportunity,
+        type: 'DATE_TIME',
+      },
+    },
+    {
+      objectName: 'workflowRun',
+      field: {
+        description:
+          'Json object holding the workflow run graph state (flow + step infos)',
+        icon: 'IconHierarchy2',
+        label: 'State',
+        name: 'state',
+        objectMetadataId: objectsNameIdMap.workflowRun,
+        type: 'RAW_JSON',
+      },
+    },
+    {
       objectName: 'orgChart',
       field: {
         description: 'Keywords hash for function-grade cache keys',

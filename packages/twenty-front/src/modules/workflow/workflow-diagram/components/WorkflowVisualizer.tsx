@@ -16,6 +16,7 @@ export const WorkflowVisualizer = ({ workflowId }: { workflowId: string }) => {
       {isDefined(workflowWithCurrentVersion) ? (
         <WorkflowDiagramCanvasEditable
           versionStatus={workflowWithCurrentVersion.currentVersion.status}
+          workflowId={workflowId}
         />
       ) : null}
     </>

@@ -329,6 +329,7 @@ export const OPPORTUNITY_STANDARD_FIELD_IDS = {
   noteTargets: '20202020-dd3f-42d5-a382-db58aabf43d3',
   attachments: '20202020-87c7-4118-83d6-2f4031005209',
   timelineActivities: '20202020-30e2-421f-96c7-19c69d1cf631',
+  meetingScheduledAt: '20202020-4c8e-9b2a-8f1d-4e6a-9c3b-7d2e1f0a8b6c',
   searchVector: '428a0da5-4b2e-4ce3-b695-89a8b384e6e3',
 };
 

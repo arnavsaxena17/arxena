@@ -77,20 +77,17 @@ export const RecordShowPage = () => {
                   headerIcon={headerIcon}
                 >
                   <>
-                    {!isCommandMenuV2Enabled &&
-                      objectNameSingular ===
-                        CoreObjectNameSingular.Workflow && (
-                        <RecordShowPageWorkflowHeader
-                          workflowId={objectRecordId}
-                        />
-                      )}
-                    {!isCommandMenuV2Enabled &&
-                      objectNameSingular ===
-                        CoreObjectNameSingular.WorkflowVersion && (
-                        <RecordShowPageWorkflowVersionHeader
-                          workflowVersionId={objectRecordId}
-                        />
-                      )}
+                    {objectNameSingular === CoreObjectNameSingular.Workflow && (
+                      <RecordShowPageWorkflowHeader
+                        workflowId={objectRecordId}
+                      />
+                    )}
+                    {objectNameSingular ===
+                      CoreObjectNameSingular.WorkflowVersion && (
+                      <RecordShowPageWorkflowVersionHeader
+                        workflowVersionId={objectRecordId}
+                      />
+                    )}
                     {(isCommandMenuV2Enabled ||
                       (objectNameSingular !== CoreObjectNameSingular.Workflow &&
                         objectNameSingular !==

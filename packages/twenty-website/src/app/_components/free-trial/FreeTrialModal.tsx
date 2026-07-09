@@ -15,6 +15,7 @@ import {
   FreeTrialSource,
 } from '@/lib/free-trial-types';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
+import { submitCalendlyBookingCompleted } from '@/lib/submit-calendly-booking-completed';
 import { OrgChartSignUpIntro } from 'twenty-orgchart/orgchart-core';
 import {
   isAllowedEmailForNewWorkspaceSignup,
@@ -304,7 +305,15 @@ const trackFreeTrialEvent = (
   trackGA4Event(eventName, props);
 };
 
-const isCalendlyScheduledMessage = (data: unknown): boolean => {
+const isCalendlyScheduledMessage = (
+  data: unknown,
+): data is {
+  event: 'calendly.event_scheduled';
+  payload: {
+    event?: { uri?: string };
+    invitee?: { uri?: string };
+  };
+} => {
   if (!data || typeof data !== 'object') {
     return false;
   }
@@ -379,6 +388,19 @@ export const FreeTrialModal = ({
         return;
       }
 
+      if (lead) {
+        void submitCalendlyBookingCompleted({
+          email: lead.email,
+          name: lead.name,
+          company: lead.company,
+          calendlyEventUri: event.data.payload.event?.uri,
+          calendlyInviteeUri: event.data.payload.invitee?.uri,
+          calendlyPayload: event.data.payload,
+        }).catch((error: unknown) => {
+          console.error('Failed to submit Calendly booking to server', error);
+        });
+      }
+
       trackFreeTrialEvent('free_trial_calendly_scheduled', {
         source,
         orgChartCompany: orgChartContext?.companyName,
@@ -395,7 +417,7 @@ export const FreeTrialModal = ({
     return () => {
       window.removeEventListener('message', onMessage);
     };
-  }, [orgChartContext?.companyName, source, step]);
+  }, [lead, orgChartContext?.companyName, source, step]);
 
   useEffect(() => {
     if (step !== 'success') {

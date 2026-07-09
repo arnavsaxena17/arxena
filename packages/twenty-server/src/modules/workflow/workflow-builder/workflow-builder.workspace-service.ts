@@ -127,22 +127,38 @@ export class WorkflowBuilderWorkspaceService {
     workspaceId: string;
     objectMetadataRepository: Repository<ObjectMetadataEntity>;
   }): Promise<OutputSchema> {
-    const recordOutputSchema = await this.computeRecordOutputSchema({
-      objectType,
-      workspaceId,
-      objectMetadataRepository,
+    const objectMetadata = await objectMetadataRepository.findOneOrFail({
+      where: {
+        nameSingular: objectType,
+        workspaceId,
+      },
+      relations: ['fields'],
     });
+
+    if (!isDefined(objectMetadata)) {
+      return {};
+    }
+
+    const recordOutputSchema = generateFakeObjectRecord(objectMetadata);
+    const recordLabel = objectMetadata.labelSingular || 'Record';
 
     return {
       first: {
         isLeaf: false,
         icon: 'IconAlpha',
+        label: `First ${recordLabel}`,
         value: recordOutputSchema,
       },
-      last: { isLeaf: false, icon: 'IconOmega', value: recordOutputSchema },
+      last: {
+        isLeaf: false,
+        icon: 'IconOmega',
+        label: `Last ${recordLabel}`,
+        value: recordOutputSchema,
+      },
       totalCount: {
         isLeaf: true,
         icon: 'IconSum',
+        label: 'Total Count',
         type: 'number',
         value: generateFakeValue('number'),
       },

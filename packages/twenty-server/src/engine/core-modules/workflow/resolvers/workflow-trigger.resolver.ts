@@ -53,6 +53,13 @@ export class WorkflowTriggerResolver {
     );
   }
 
+  @Mutation(() => WorkflowRunDTO)
+  async stopWorkflowRun(@Args('workflowRunId') workflowRunId: string) {
+    return await this.workflowTriggerWorkspaceService.stopWorkflowRun(
+      workflowRunId,
+    );
+  }
+
   @Mutation(() => WorkflowRunsDTO)
   async runWorkflowVersionOnRecords(
     @AuthWorkspaceMemberId() workspaceMemberId: string,

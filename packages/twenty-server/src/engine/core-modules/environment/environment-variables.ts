@@ -2,17 +2,17 @@ import { LogLevel, Logger } from '@nestjs/common';
 
 import { plainToClass } from 'class-transformer';
 import {
-  IsBoolean,
-  IsDefined,
-  IsEnum,
-  IsIn,
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsUUID,
-  IsUrl,
-  ValidateIf,
-  validateSync,
+    IsBoolean,
+    IsDefined,
+    IsEnum,
+    IsIn,
+    IsNumber,
+    IsOptional,
+    IsString,
+    IsUUID,
+    IsUrl,
+    ValidateIf,
+    validateSync,
 } from 'class-validator';
 
 import { EmailDriver } from 'src/engine/core-modules/email/interfaces/email.interface';
@@ -202,6 +202,24 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   DEAL_DILIGENCE_CALENDLY_EMBED_URL?: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'Workspace ID where free trial website leads create company, person, and opportunity records.',
+  })
+  @IsOptional()
+  @IsUUID()
+  FREE_TRIAL_LEAD_WORKSPACE_ID?: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'Gmail connected account UUID used by the free trial follow-up workflow send-email steps.',
+  })
+  @IsOptional()
+  @IsUUID()
+  FREE_TRIAL_WORKFLOW_CONNECTED_ACCOUNT_ID?: string;
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.TokensDuration,
@@ -1185,9 +1203,11 @@ export class EnvironmentVariables {
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.LLM,
-    description: 'Driver for the LLM chat model',
+    description:
+      'Driver for the LLM chat model (defaults to openai when OPENAI_API_KEY is set)',
   })
-  LLM_CHAT_MODEL_DRIVER: LLMChatModelDriver;
+  @IsOptional()
+  LLM_CHAT_MODEL_DRIVER?: LLMChatModelDriver;
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.LLM,

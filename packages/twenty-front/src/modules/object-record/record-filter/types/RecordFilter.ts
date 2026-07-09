@@ -7,10 +7,13 @@ export type RecordFilter = {
   value: string;
   displayValue: string;
   type: FilterableFieldType;
+  recordFilterGroupId?: string;
   viewFilterGroupId?: string;
   displayAvatarUrl?: string;
   operand: ViewFilterOperand;
+  positionInRecordFilterGroup?: number | null;
   positionInViewFilterGroup?: number | null;
   label: string;
   subFieldName?: string | null | undefined;
+  relationTargetFieldMetadataId?: string | null;
 };

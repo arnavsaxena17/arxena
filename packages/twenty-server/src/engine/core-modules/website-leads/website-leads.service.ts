@@ -4,6 +4,7 @@ import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 
 import { FreeTrialLeadDto } from './dto/free-trial-lead.dto';
+import { FreeTrialLeadCrmService } from './free-trial-lead-crm.service';
 
 const DEFAULT_FREE_TRIAL_LEAD_RECIPIENT = 'arnav@arxena.com';
 
@@ -14,6 +15,7 @@ export class WebsiteLeadsService {
   constructor(
     private readonly emailService: EmailService,
     private readonly environmentService: EnvironmentService,
+    private readonly freeTrialLeadCrmService: FreeTrialLeadCrmService,
   ) {}
 
   private formatOrgChartContext(
@@ -63,6 +65,16 @@ export class WebsiteLeadsService {
       subject,
       text,
     });
+
+    const crmRecords = await this.freeTrialLeadCrmService.createRecordsFromLead(
+      lead,
+    );
+
+    if (crmRecords) {
+      this.logger.log(
+        `Created CRM records for free trial lead ${lead.email.trim()}: opportunity=${crmRecords.opportunityId}`,
+      );
+    }
 
     this.logger.log(
       `Queued free trial lead notification for ${lead.email.trim()} (source=${lead.source})`,

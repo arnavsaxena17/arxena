@@ -11,6 +11,9 @@ export const WorkflowVersionVisualizer = ({
   const workflowVersion = useWorkflowVersion(workflowVersionId);
 
   return isDefined(workflowVersion) ? (
-    <WorkflowDiagramCanvasReadonly versionStatus={workflowVersion.status} />
+    <WorkflowDiagramCanvasReadonly
+      versionStatus={workflowVersion.status}
+      workflowVersionId={workflowVersionId}
+    />
   ) : null;
 };

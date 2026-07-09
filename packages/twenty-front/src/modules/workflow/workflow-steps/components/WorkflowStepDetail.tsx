@@ -6,7 +6,7 @@ import { WorkflowEditActionFormCreateRecord } from '@/workflow/workflow-steps/wo
 import { WorkflowEditActionFormDelay } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionFormDelay';
 import { WorkflowEditActionFormDeleteRecord } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionFormDeleteRecord';
 import { WorkflowEditActionFormFilter } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionFormFilter';
-import { WorkflowEditActionFormFindRecords } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionFormFindRecords';
+import { WorkflowEditActionFindRecords } from '@/workflow/workflow-steps/workflow-actions/find-records-action/components/WorkflowEditActionFindRecords';
 import { WorkflowEditActionFormIfElse } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionFormIfElse';
 import { WorkflowEditActionFormIterator } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionFormIterator';
 import { WorkflowEditActionFormSendEmail } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionFormSendEmail';
@@ -147,7 +147,7 @@ export const WorkflowStepDetail = ({
 
         case 'FIND_RECORDS': {
           return (
-            <WorkflowEditActionFormFindRecords
+            <WorkflowEditActionFindRecords
               key={stepId}
               action={stepDefinition.definition}
               actionOptions={props}

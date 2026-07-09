@@ -1,5 +1,5 @@
 import { WorkflowFindRecordsAction } from '@/workflow/types/Workflow';
-import { WorkflowEditActionFormFindRecords } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionFormFindRecords';
+import { WorkflowEditActionFindRecords } from '@/workflow/workflow-steps/workflow-actions/find-records-action/components/WorkflowEditActionFindRecords';
 import { Meta, StoryObj } from '@storybook/react';
 import { expect, fn, userEvent, within } from '@storybook/test';
 import { ComponentDecorator, RouterDecorator } from 'twenty-ui';
@@ -13,13 +13,18 @@ import { getWorkflowNodeIdMock } from '~/testing/mock-data/workflow';
 
 const DEFAULT_ACTION = {
   id: getWorkflowNodeIdMock(),
-  name: 'Search Records',
+  name: 'Refresh Opportunity',
   type: 'FIND_RECORDS',
-  valid: false,
+  valid: true,
   settings: {
     input: {
-      objectName: 'person',
+      objectName: 'opportunity',
       limit: 1,
+      filter: {
+        id: {
+          eq: '{{trigger.recordId}}',
+        },
+      },
     },
     outputSchema: {},
     errorHandlingOptions: {
@@ -33,9 +38,9 @@ const DEFAULT_ACTION = {
   },
 } satisfies WorkflowFindRecordsAction;
 
-const meta: Meta<typeof WorkflowEditActionFormFindRecords> = {
-  title: 'Modules/Workflow/WorkflowEditActionFormFindRecords',
-  component: WorkflowEditActionFormFindRecords,
+const meta: Meta<typeof WorkflowEditActionFindRecords> = {
+  title: 'Modules/Workflow/WorkflowEditActionFindRecords',
+  component: WorkflowEditActionFindRecords,
   parameters: {
     msw: graphqlMocks,
   },
@@ -55,7 +60,7 @@ const meta: Meta<typeof WorkflowEditActionFormFindRecords> = {
 
 export default meta;
 
-type Story = StoryObj<typeof WorkflowEditActionFormFindRecords>;
+type Story = StoryObj<typeof WorkflowEditActionFindRecords>;
 
 export const Default: Story = {
   args: {
@@ -74,11 +79,11 @@ export const DisabledWithEmptyValues: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
 
-    const titleInput = await canvas.findByDisplayValue('Search Records');
+    const titleInput = await canvas.findByDisplayValue('Refresh Opportunity');
 
     expect(titleInput).toBeDisabled();
 
-    const objectSelectCurrentValue = await canvas.findByText('People');
+    const objectSelectCurrentValue = await canvas.findByText('Opportunities');
 
     await userEvent.click(objectSelectCurrentValue);
 

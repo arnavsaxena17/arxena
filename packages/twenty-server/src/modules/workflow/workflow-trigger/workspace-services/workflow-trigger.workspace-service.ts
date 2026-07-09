@@ -119,6 +119,13 @@ export class WorkflowTriggerWorkspaceService {
     return { workflowRunIds };
   }
 
+  async stopWorkflowRun(workflowRunId: string) {
+    return this.workflowRunnerWorkspaceService.stopWorkflowRun(
+      this.getWorkspaceId(),
+      workflowRunId,
+    );
+  }
+
   async activateWorkflowVersion(workflowVersionId: string) {
     const workflowVersionRepository =
       await this.twentyORMManager.getRepository<WorkflowVersionWorkspaceEntity>(

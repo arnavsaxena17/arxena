@@ -23,6 +23,7 @@ const StyledButton = styled.div`
 `;
 
 const StyledButtonLabel = styled.div`
+  font-size: ${({ theme }) => theme.font.size.md};
   font-weight: ${({ theme }) => theme.font.weight.medium};
   margin-left: ${({ theme }) => theme.spacing(1)};
 `;

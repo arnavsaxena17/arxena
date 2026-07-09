@@ -61,6 +61,9 @@ export type WorkflowFindRecordsActionSettings = BaseWorkflowActionSettings & {
   input: {
     objectName: string;
     limit?: number;
+    offset?: number;
+    filter?: Record<string, unknown>;
+    orderBy?: Record<string, unknown>;
   };
 };
 

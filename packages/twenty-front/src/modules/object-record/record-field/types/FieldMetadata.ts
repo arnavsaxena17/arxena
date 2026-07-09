@@ -278,6 +278,16 @@ export type FieldRichTextV2Value = {
 
 export type FieldRichTextValue = null | string;
 
+export const FieldActorSource = {
+  API: 'API',
+  IMPORT: 'IMPORT',
+  EMAIL: 'EMAIL',
+  CALENDAR: 'CALENDAR',
+  MANUAL: 'MANUAL',
+  SYSTEM: 'SYSTEM',
+  WORKFLOW: 'WORKFLOW',
+} as const;
+
 const FieldActorSourceSchema = z.union([
   z.literal('API'),
   z.literal('IMPORT'),

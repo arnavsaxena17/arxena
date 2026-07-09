@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import { LLMChatModelDriver } from 'src/engine/core-modules/llm-chat-model/drivers/interfaces/llm-prompt-template-driver.interface';
 
@@ -11,6 +11,12 @@ export class LLMChatModelService {
   ) {}
 
   getJSONChatModel() {
+    if (!this.driver) {
+      throw new Error(
+        'LLM chat model driver is not configured. Set LLM_CHAT_MODEL_DRIVER=openai and OPENAI_API_KEY.',
+      );
+    }
+
     return this.driver.getJSONChatModel();
   }
 }

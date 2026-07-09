@@ -6,6 +6,8 @@ import { useNavigateToNextRecordSingleRecordAction } from '@/action-menu/actions
 import { useNavigateToPreviousRecordSingleRecordAction } from '@/action-menu/actions/record-actions/single-record/hooks/useNavigateToPreviousRecordSingleRecordAction';
 import { useRemoveFromFavoritesSingleRecordAction } from '@/action-menu/actions/record-actions/single-record/hooks/useRemoveFromFavoritesSingleRecordAction';
 import { SingleRecordActionKeys } from '@/action-menu/actions/record-actions/single-record/types/SingleRecordActionsKey';
+import { useStopWorkflowRunSingleRecordAction } from '@/action-menu/actions/record-actions/single-record/workflow-run-actions/hooks/useStopWorkflowRunSingleRecordAction';
+import { WorkflowRunSingleRecordActionKeys } from '@/action-menu/actions/record-actions/single-record/workflow-run-actions/types/WorkflowRunSingleRecordActionsKeys';
 import { ActionHook } from '@/action-menu/actions/types/ActionHook';
 import { ActionViewType } from '@/action-menu/actions/types/ActionViewType';
 import {
@@ -20,6 +22,7 @@ import {
   IconDatabaseExport,
   IconHeart,
   IconHeartOff,
+  IconPlayerStop,
 } from 'twenty-ui';
 
 export const WORKFLOW_RUNS_ACTIONS_CONFIG: Record<
@@ -28,6 +31,21 @@ export const WORKFLOW_RUNS_ACTIONS_CONFIG: Record<
     useAction: ActionHook;
   }
 > = {
+  stopWorkflowRunSingleRecord: {
+    key: WorkflowRunSingleRecordActionKeys.STOP,
+    label: msg`Stop workflow run`,
+    shortLabel: msg`Stop`,
+    position: 0,
+    isPinned: true,
+    type: ActionMenuEntryType.Standard,
+    scope: ActionMenuEntryScope.RecordSelection,
+    Icon: IconPlayerStop,
+    availableOn: [
+      ActionViewType.SHOW_PAGE,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
+    useAction: useStopWorkflowRunSingleRecordAction,
+  },
   addToFavoritesSingleRecord: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,

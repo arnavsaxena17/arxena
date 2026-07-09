@@ -70,11 +70,16 @@ const StyledResetReactflowStyles = styled.div`
   --xy-node-boxshadow-selected: none;
 `;
 
-const StyledStatusTagContainer = styled.div`
+const StyledToolbarContainer = styled.div`
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  gap: ${({ theme }) => theme.spacing(2)};
   left: 0;
-  top: 0;
-  position: absolute;
   padding: ${({ theme }) => theme.spacing(2)};
+  position: absolute;
+  right: 0;
+  top: 0;
 `;
 
 const defaultFitViewOptions = {
@@ -87,8 +92,12 @@ export const WorkflowDiagramCanvasBase = ({
   nodeTypes,
   edgeTypes,
   children,
+  toolbarContent,
+  onPaneContextMenu,
 }: {
   status: WorkflowVersionStatus;
+  toolbarContent?: React.ReactNode;
+  onPaneContextMenu?: (event: React.MouseEvent) => void;
   nodeTypes: Partial<
     Record<
       WorkflowDiagramNodeType,
@@ -250,6 +259,7 @@ export const WorkflowDiagramCanvasBase = ({
         edgesFocusable={false}
         nodesDraggable={false}
         onPaneClick={closeCommandMenu}
+        onPaneContextMenu={onPaneContextMenu}
         nodesConnectable={false}
         paneClickDistance={10} // Fix small unwanted user dragging does not select node
       >
@@ -258,9 +268,10 @@ export const WorkflowDiagramCanvasBase = ({
         {children}
       </ReactFlow>
 
-      <StyledStatusTagContainer data-testid="workflow-visualizer-status">
+      <StyledToolbarContainer data-testid="workflow-visualizer-status">
         <WorkflowVersionStatusTag versionStatus={status} />
-      </StyledStatusTagContainer>
+        {toolbarContent}
+      </StyledToolbarContainer>
     </StyledResetReactflowStyles>
   );
 };

@@ -110,4 +110,34 @@ describe('resolveInput', () => {
       }),
     ).toBe('{ "a": "str" }');
   });
+
+  it('resolves paths that start with a UUID step id', () => {
+    const stepId = '846f9a28-7976-43b1-a048-801b4b527968';
+
+    expect(
+      resolveInput(`{{${stepId}.result.first.pointOfContactId}}`, {
+        [stepId]: {
+          first: {
+            pointOfContactId: 'e5193a1b-a5c9-49b1-bac7-083af76c59bf',
+          },
+        },
+      }),
+    ).toBe('e5193a1b-a5c9-49b1-bac7-083af76c59bf');
+  });
+
+  it('resolves email paths from find-records step output', () => {
+    const stepId = 'e58d8015-9366-4032-9b6d-e5c47d3c6fac';
+
+    expect(
+      resolveInput(`{{${stepId}.result.first.emails.primaryEmail}}`, {
+        [stepId]: {
+          first: {
+            emails: {
+              primaryEmail: 'lead@arxorg.com',
+            },
+          },
+        },
+      }),
+    ).toBe('lead@arxorg.com');
+  });
 });

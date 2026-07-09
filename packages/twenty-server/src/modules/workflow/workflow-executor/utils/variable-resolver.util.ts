@@ -4,6 +4,37 @@ import Handlebars from 'handlebars';
 
 const VARIABLE_PATTERN = RegExp('\\{\\{(.*?)\\}\\}', 'g');
 
+const UUID_STEP_PATH_PATTERN =
+  /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.(.+)$/i;
+
+const getValueAtPath = (
+  context: Record<string, unknown>,
+  path: string,
+): unknown => {
+  const uuidStepPathMatch = path.match(UUID_STEP_PATH_PATTERN);
+
+  const segments = uuidStepPathMatch
+    ? [uuidStepPathMatch[1], ...uuidStepPathMatch[2].split('.')]
+    : path.split('.');
+
+  const resolvedSegments =
+    uuidStepPathMatch && segments[1] === 'result'
+      ? [segments[0], ...segments.slice(2)]
+      : segments;
+
+  let current: unknown = context;
+
+  for (const segment of resolvedSegments) {
+    if (current === null || current === undefined || typeof current !== 'object') {
+      return undefined;
+    }
+
+    current = (current as Record<string, unknown>)[segment];
+  }
+
+  return current;
+};
+
 export const resolveInput = (
   unresolvedInput: unknown,
   context: Record<string, unknown>,
@@ -77,6 +108,16 @@ const resolveString = (
 };
 
 const evalFromContext = (input: string, context: Record<string, unknown>) => {
+  const trimmedPath = input.replace(/^\{\{|\}\}$/g, '').trim();
+
+  if (/^\{\{[^}]+\}\}$/.test(input) && !trimmedPath.includes(' ')) {
+    const value = getValueAtPath(context, trimmedPath);
+
+    if (value !== undefined) {
+      return value;
+    }
+  }
+
   try {
     Handlebars.registerHelper('json', (input: string) => JSON.stringify(input));
 

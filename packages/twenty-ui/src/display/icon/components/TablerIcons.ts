@@ -14,6 +14,7 @@ export {
     IconArrowRight,
     IconArrowUp,
     IconArrowUpRight,
+    IconArrowsSort,
     IconArrowsVertical,
     IconAt,
     IconBaselineDensitySmall,

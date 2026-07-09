@@ -126,6 +126,16 @@ export class OpportunityWorkspaceEntity extends BaseWorkspaceEntity {
   })
   createdBy: ActorMetadata;
 
+  @WorkspaceField({
+    standardId: OPPORTUNITY_STANDARD_FIELD_IDS.meetingScheduledAt,
+    type: FieldMetadataType.DATE_TIME,
+    label: msg`Meeting scheduled at`,
+    description: msg`When the prospect booked a Calendly meeting`,
+    icon: 'IconCalendarEvent',
+  })
+  @WorkspaceIsNullable()
+  meetingScheduledAt: Date | null;
+
   @WorkspaceRelation({
     standardId: OPPORTUNITY_STANDARD_FIELD_IDS.pointOfContact,
     type: RelationMetadataType.MANY_TO_ONE,

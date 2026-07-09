@@ -2,14 +2,16 @@ import { objectMetadataItemsState } from '@/object-metadata/states/objectMetadat
 import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
 
-export const useFieldMetadataItemById = (fieldMetadataId: string) => {
+export const useFieldMetadataItemById = (fieldMetadataId?: string) => {
   const objectMetadataItems = useRecoilValue(objectMetadataItemsState);
 
-  const fieldMetadataItem = objectMetadataItems
-    .flatMap((objectMetadataItem) => objectMetadataItem.fields)
-    .find((field) => field.id === fieldMetadataId);
+  const fieldMetadataItem = isDefined(fieldMetadataId)
+    ? objectMetadataItems
+        .flatMap((objectMetadataItem) => objectMetadataItem.fields)
+        .find((field) => field.id === fieldMetadataId)
+    : undefined;
 
-  if (!isDefined(fieldMetadataItem)) {
+  if (isDefined(fieldMetadataId) && !isDefined(fieldMetadataItem)) {
     throw new Error(`Field metadata item not found for id ${fieldMetadataId}`);
   }
 

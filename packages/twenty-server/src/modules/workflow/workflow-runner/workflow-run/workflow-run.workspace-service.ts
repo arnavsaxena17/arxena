@@ -218,6 +218,26 @@ export class WorkflowRunWorkspaceService {
     } as unknown as QueryDeepPartialEntity<WorkflowRunWorkspaceEntity>);
   }
 
+  async updateWorkflowRun({
+    workflowRunId,
+    partialUpdate,
+  }: {
+    workflowRunId: string;
+    workspaceId?: string;
+    partialUpdate: QueryDeepPartialEntity<WorkflowRunWorkspaceEntity>;
+  }) {
+    const workflowRunRepository =
+      await this.twentyORMManager.getRepository<WorkflowRunWorkspaceEntity>(
+        'workflowRun',
+      );
+
+    await this.getWorkflowRunOrFail({
+      workflowRunId,
+    });
+
+    return workflowRunRepository.update(workflowRunId, partialUpdate);
+  }
+
   async endWorkflowRun({
     workflowRunId,
     status,
