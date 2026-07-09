@@ -10,7 +10,7 @@ for config in "$SCRIPT_DIR/build.config" "$HOME/twenty/build.config" "/home/ubun
     break
   fi
 done
-BUILD_BRANCH="${BUILD_BRANCH:-onboarding-workspace}"
+BUILD_BRANCH="${BUILD_BRANCH:-workflows}"
 
 # Function to cleanup staging artifacts and terminate the temporary build instance
 cleanup() {

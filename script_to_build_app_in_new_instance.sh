@@ -1,6 +1,6 @@
 # Branch: from BUILD_BRANCH env (passed by build_app_in_new_instance.sh) or build.config or default
 [ -f ~/build.config ] && source ~/build.config
-BUILD_BRANCH="${BUILD_BRANCH:-without-payment}"
+BUILD_BRANCH="${BUILD_BRANCH:-workflows}"
 
 BUILD_STATUS_FILE="${HOME}/build_status.env"
 rm -f "$BUILD_STATUS_FILE"
@@ -65,7 +65,7 @@ build_step() {
 	  cp ~/twenty/packages/twenty-website/.env.example ~/twenty/packages/twenty-website/.env
 	fi
 
-	git checkout "${BUILD_BRANCH:-without-payment}"
+	git checkout "${BUILD_BRANCH:-workflows}"
       	# Branch set by build_app_in_new_instance.sh via BUILD_BRANCH env
 	#rm -rf yarn.lock
         #touch yarn.lock
