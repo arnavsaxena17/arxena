@@ -30,7 +30,6 @@ export const WorkspaceFavorites = () => {
     'client contacts',
     'candidate reminders',
     'tasks',
-    'notes',
     'offers',
     'screenings',
   ]);
