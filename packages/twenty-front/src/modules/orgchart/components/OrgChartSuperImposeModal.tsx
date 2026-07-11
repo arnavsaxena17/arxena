@@ -122,7 +122,7 @@ const StyledFieldLabel = styled.label`
   font-weight: ${({ theme }) => theme.font.weight.medium};
 `;
 
-const StyledSelect = styled.selec`
+const StyledSelect = styled.select`
   background: ${({ theme }) => theme.background.primary};
   border: 1px solid ${({ theme }) => theme.border.color.medium};
   border-radius: ${({ theme }) => theme.border.radius.sm};

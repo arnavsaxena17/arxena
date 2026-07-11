@@ -67,6 +67,35 @@ export class CacheStorageService {
     return this.cache.reset();
   }
 
+  async scanKeysByLogicalPattern(logicalPattern: string): Promise<string[]> {
+    if (!this.isRedisCache()) {
+      return [];
+    }
+
+    const redisClient = (this.cache as RedisCache).store.client;
+    const fullPattern = `${this.namespace}:${logicalPattern}`;
+    const namespacePrefix = `${this.namespace}:`;
+    const logicalKeys: string[] = [];
+    let cursor = 0;
+
+    do {
+      const result = await redisClient.scan(cursor, {
+        MATCH: fullPattern,
+        COUNT: 100,
+      });
+
+      cursor = result.cursor;
+
+      for (const key of result.keys) {
+        if (key.startsWith(namespacePrefix)) {
+          logicalKeys.push(key.slice(namespacePrefix.length));
+        }
+      }
+    } while (cursor !== 0);
+
+    return logicalKeys;
+  }
+
   async flushByPattern(scanPattern: string): Promise<void> {
     if (!this.isRedisCache()) {
       throw new Error('flushByPattern is only supported with Redis cache');

@@ -1,7 +1,8 @@
 import { UseFilters, UseGuards } from '@nestjs/common';
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
 
 import { GraphQLError } from 'graphql';
+import { Request } from 'express';
 
 import { AdminPanelHealthService } from 'src/engine/core-modules/admin-panel/admin-panel-health.service';
 import { AdminPanelService } from 'src/engine/core-modules/admin-panel/admin-panel.service';
@@ -12,12 +13,18 @@ import { ImpersonateInput } from 'src/engine/core-modules/admin-panel/dtos/imper
 import { ImpersonateOutput } from 'src/engine/core-modules/admin-panel/dtos/impersonate.output';
 import { SystemHealth } from 'src/engine/core-modules/admin-panel/dtos/system-health.dto';
 import { UpdateWorkspaceFeatureFlagInput } from 'src/engine/core-modules/admin-panel/dtos/update-workspace-feature-flag.input';
+import { AdminPublishedOrgChart } from 'src/engine/core-modules/admin-panel/dtos/admin-published-org-chart.output';
+import { AddAdminPublishedOrgChartAliasInput } from 'src/engine/core-modules/admin-panel/dtos/add-admin-published-org-chart-alias.input';
+import { RebuildAdminPublishedOrgChartInput } from 'src/engine/core-modules/admin-panel/dtos/rebuild-admin-published-org-chart.input';
+import { RenameAdminPublishedOrgChartSlugInput } from 'src/engine/core-modules/admin-panel/dtos/rename-admin-published-org-chart-slug.input';
+import { UpdateAdminPublishedOrgChartInput } from 'src/engine/core-modules/admin-panel/dtos/update-admin-published-org-chart.input';
 import { UpsertOrgChartClientIpRuleInput } from 'src/engine/core-modules/admin-panel/dtos/upsert-org-chart-client-ip-rule.input';
 import { UserLookup } from 'src/engine/core-modules/admin-panel/dtos/user-lookup.entity';
 import { UserLookupInput } from 'src/engine/core-modules/admin-panel/dtos/user-lookup.input';
 import { AuthGraphqlApiExceptionFilter } from 'src/engine/core-modules/auth/filters/auth-graphql-api-exception.filter';
 import { OrgChartClientIpRuleEntity } from 'src/engine/core-modules/org-chart/org-chart-client-ip-rule.entity';
 import { OrgChartClientIpService } from 'src/engine/core-modules/org-chart/services/org-chart-client-ip.service';
+import { OrgChartPublishedAdminService } from 'src/engine/core-modules/org-chart/services/org-chart-published-admin.service';
 import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
@@ -36,6 +43,7 @@ export class AdminPanelResolver {
     private adminPanelHealthService: AdminPanelHealthService,
     private readonly workspaceService: WorkspaceService,
     private readonly orgChartClientIpService: OrgChartClientIpService,
+    private readonly orgChartPublishedAdminService: OrgChartPublishedAdminService,
   ) {}
 
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
@@ -83,6 +91,66 @@ export class AdminPanelResolver {
     await this.workspaceService.deleteWorkspace(workspaceId);
 
     return true;
+  }
+
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
+  @Query(() => [AdminPublishedOrgChart])
+  async adminPublishedOrgCharts(): Promise<AdminPublishedOrgChart[]> {
+    return this.orgChartPublishedAdminService.listPublishedOrgCharts();
+  }
+
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
+  @Mutation(() => AdminPublishedOrgChart)
+  async rebuildAdminPublishedOrgChart(
+    @Args('input') input: RebuildAdminPublishedOrgChartInput,
+    @Context() context: { req: Request },
+  ): Promise<AdminPublishedOrgChart> {
+    const apiToken = this.extractBearerToken(context.req);
+
+    return this.orgChartPublishedAdminService.rebuildPublishedOrgChart({
+      publishSlug: input.publishSlug,
+      apiToken,
+    });
+  }
+
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
+  @Mutation(() => AdminPublishedOrgChart)
+  async updateAdminPublishedOrgChart(
+    @Args('input') input: UpdateAdminPublishedOrgChartInput,
+  ): Promise<AdminPublishedOrgChart> {
+    return this.orgChartPublishedAdminService.updatePublishedOrgChart(input);
+  }
+
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
+  @Mutation(() => AdminPublishedOrgChart)
+  async addAdminPublishedOrgChartAlias(
+    @Args('input') input: AddAdminPublishedOrgChartAliasInput,
+  ): Promise<AdminPublishedOrgChart> {
+    return this.orgChartPublishedAdminService.addPublishedOrgChartAlias({
+      sourcePublishSlug: input.sourcePublishSlug,
+      newPublishSlug: input.newPublishSlug,
+    });
+  }
+
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
+  @Mutation(() => AdminPublishedOrgChart)
+  async renameAdminPublishedOrgChartSlug(
+    @Args('input') input: RenameAdminPublishedOrgChartSlugInput,
+  ): Promise<AdminPublishedOrgChart> {
+    return this.orgChartPublishedAdminService.renamePublishedOrgChartSlug({
+      publishSlug: input.publishSlug,
+      newPublishSlug: input.newPublishSlug,
+    });
+  }
+
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
+  @Mutation(() => Boolean)
+  async deleteAdminPublishedOrgChartSlug(
+    @Args('publishSlug') publishSlug: string,
+  ): Promise<boolean> {
+    return this.orgChartPublishedAdminService.deletePublishedOrgChartSlug(
+      publishSlug,
+    );
   }
 
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
@@ -153,5 +221,21 @@ export class AdminPanelResolver {
     indicatorName: AdminPanelIndicatorHealthStatusInputEnum,
   ): Promise<AdminPanelHealthServiceData> {
     return this.adminPanelHealthService.getIndicatorHealthStatus(indicatorName);
+  }
+
+  private extractBearerToken(req: Request): string {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader?.startsWith('Bearer ')) {
+      throw new GraphQLError('Authentication required');
+    }
+
+    const token = authHeader.slice('Bearer '.length).trim();
+
+    if (!token) {
+      throw new GraphQLError('Authentication required');
+    }
+
+    return token;
   }
 }

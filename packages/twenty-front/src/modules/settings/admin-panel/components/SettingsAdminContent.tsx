@@ -3,7 +3,7 @@ import { SETTINGS_ADMIN_TABS } from '@/settings/admin-panel/constants/SettingsAd
 import { SETTINGS_ADMIN_TABS_ID } from '@/settings/admin-panel/constants/SettingsAdminTabsId';
 import { TabList } from '@/ui/layout/tab/components/TabList';
 import styled from '@emotion/styled';
-import { IconBrandWhatsapp, IconNetwork } from '@tabler/icons-react';
+import { IconBrandWhatsapp, IconHierarchy, IconNetwork } from '@tabler/icons-react';
 import {
   IconCurrencyDollar,
   IconHeart,
@@ -64,6 +64,11 @@ export const SettingsAdminContent = () => {
       id: SETTINGS_ADMIN_TABS.ORG_CHART_CLIENT_IPS,
       title: 'Org chart IPs',
       Icon: IconNetwork,
+    },
+    {
+      id: SETTINGS_ADMIN_TABS.PUBLISHED_ORG_CHARTS,
+      title: 'Org Charts',
+      Icon: IconHierarchy,
     },
     {
       id: SETTINGS_ADMIN_TABS.USERS,

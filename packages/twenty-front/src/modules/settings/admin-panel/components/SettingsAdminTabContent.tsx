@@ -2,6 +2,7 @@ import { SettingsAdminEnvVariables } from '@/settings/admin-panel/components/Set
 import { SettingsAdminGeneral } from '@/settings/admin-panel/components/SettingsAdminGeneral';
 import { SettingsAdminHealthStatus } from '@/settings/admin-panel/components/SettingsAdminHealthStatus';
 import { SettingsAdminOrgChartClientIps } from '@/settings/admin-panel/components/SettingsAdminOrgChartClientIps';
+import { SettingsAdminPublishedOrgCharts } from '@/settings/admin-panel/components/SettingsAdminPublishedOrgCharts';
 import { SettingsAdminUsers } from '@/settings/admin-panel/components/SettingsAdminUsers';
 import { SettingsAdminWhatsAppMonitoring } from '@/settings/admin-panel/components/SettingsAdminWhatsAppMonitoring';
 import { SettingsAdminWorkspaceCredits } from '@/settings/admin-panel/components/SettingsAdminWorkspaceCredits';
@@ -40,6 +41,8 @@ export const SettingsAdminTabContent = () => {
       return renderContent(<SettingsAdminWorkspaceCredits />);
     case SETTINGS_ADMIN_TABS.ORG_CHART_CLIENT_IPS:
       return renderContent(<SettingsAdminOrgChartClientIps />);
+    case SETTINGS_ADMIN_TABS.PUBLISHED_ORG_CHARTS:
+      return renderContent(<SettingsAdminPublishedOrgCharts />);
     case SETTINGS_ADMIN_TABS.USERS:
       return renderContent(<SettingsAdminUsers />);
     default:

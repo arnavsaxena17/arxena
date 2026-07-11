@@ -2502,6 +2502,8 @@ export class OrgChartLinkedInBuildService {
       maxItems,
       profileScraperMode: body.profileScraperMode,
       includeOrgIntelligence: body.includeOrgIntelligence === true,
+      ...(body.website?.trim() ? { website: body.website.trim() } : {}),
+      ...(body.asOfMonth?.trim() ? { asOfMonth: body.asOfMonth.trim() } : {}),
       shouldWriteCompanyOrgChartCache,
     };
 
@@ -4267,9 +4269,9 @@ export class OrgChartLinkedInBuildService {
             companyLinkedinUrl:
               jobData.linkedinCompanyUrl?.trim().replace(/\/+$/, '') ||
               undefined,
-            website: rawBody.website,
+            website: jobData.website,
             profileSourceFallback: 'apify',
-            asOfMonth: (jobData as any).asOfMonth,
+            asOfMonth: jobData.asOfMonth,
           },
         );
     } catch (error) {

@@ -11,13 +11,10 @@ import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decora
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { ImageProxyService } from 'src/engine/core-modules/org-chart/services/image-proxy.service';
+import { OrgChartPublishedSlugService } from 'src/engine/core-modules/org-chart/services/org-chart-published-slug.service';
 import { OrgChartService } from 'src/engine/core-modules/org-chart/services/org-chart.service';
 import { OrgChartS3Service } from 'src/engine/core-modules/org-chart/services/orgchart-s3.service';
-import {
-  orgPublishedSlugCacheKey,
-  type OrgPublishedSlugMapping,
-  validatePublishSlug,
-} from 'src/engine/core-modules/org-chart/utils/org-chart-published-slug.util';
+import { validatePublishSlug } from 'src/engine/core-modules/org-chart/utils/org-chart-published-slug.util';
 
 import {
   isOrgChartEmbedConfigActive,
@@ -63,6 +60,7 @@ export class OrgChartEmbedService {
   constructor(
     private readonly orgChartService: OrgChartService,
     private readonly orgChartS3Service: OrgChartS3Service,
+    private readonly orgChartPublishedSlugService: OrgChartPublishedSlugService,
     private readonly imageProxyService: ImageProxyService,
     private readonly orgChartEmbedWebhookService: OrgChartEmbedWebhookService,
     @InjectCacheStorage(CacheStorageNamespace.EngineOrgChart)
@@ -383,9 +381,10 @@ export class OrgChartEmbedService {
       throw new HttpException('Invalid publish slug', HttpStatus.BAD_REQUEST);
     }
 
-    const mapping = await this.orgChartCacheStorageService.get<
-      OrgPublishedSlugMapping
-    >(orgPublishedSlugCacheKey(slugValidation.slug));
+    const mapping =
+      await this.orgChartPublishedSlugService.getPublishedSlugMapping(
+        slugValidation.slug,
+      );
 
     const companyId = mapping?.companyId?.trim();
     if (!companyId) {

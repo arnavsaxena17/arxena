@@ -14,5 +14,9 @@ export type OrgchartApifyBuildJobData = {
   maxItems: number;
   profileScraperMode?: string;
   includeOrgIntelligence?: boolean;
+  /** Company site URL; persisted on orgchart.json top-level metadata. */
+  website?: string;
+  /** Optional MonthYear snapshot filter in YYYY-MM. */
+  asOfMonth?: string;
   shouldWriteCompanyOrgChartCache: boolean;
 };

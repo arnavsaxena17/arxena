@@ -2308,6 +2308,8 @@ export class OrgChartBuildService {
       linkedinCompanyUrl,
       maxItems,
       profileScraperMode: body.profileScraperMode,
+      ...(body.website?.trim() ? { website: body.website.trim() } : {}),
+      ...(body.asOfMonth?.trim() ? { asOfMonth: body.asOfMonth.trim() } : {}),
       shouldWriteCompanyOrgChartCache,
     };
 

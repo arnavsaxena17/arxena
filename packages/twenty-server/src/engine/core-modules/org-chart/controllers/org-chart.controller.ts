@@ -59,6 +59,7 @@ import { OrgChartLinkedInBuildService } from '../services/org-chart-linkedin-bui
 import { OrgChartSuperImposeAutocompleteService } from '../services/org-chart-super-impose-autocomplete.service';
 import { OrgChartSuperImposeService } from '../services/org-chart-super-impose.service';
 import { OrgChartTheOrgEnrichmentService } from '../services/org-chart-theorg-enrichment.service';
+import { OrgChartPublishedSlugService } from '../services/org-chart-published-slug.service';
 import { OrgChartS3Service } from '../services/orgchart-s3.service';
 import { PythonOrgChartService } from '../services/python-org-chart.service';
 import type { SuperImposeInputs } from '../types/super-impose.types';
@@ -66,7 +67,6 @@ import { resolveFirstAutocompleteSource } from '../utils/first-autocomplete-sour
 import {
   isOrgPublishForeverTtl,
   ORG_PUBLISH_MAX_TTL_SECONDS,
-  resolveOrgChartPublishCacheTtlMs,
   toOrgChartCacheTtlMs,
 } from '../utils/org-chart-cache-ttl.util';
 import { isOrgChartPdlProxyAuthorized } from '../utils/org-chart-pdl-proxy.util';
@@ -76,8 +76,6 @@ import {
 } from '../utils/org-chart-public-access.util';
 import {
   buildDefaultPublishSlug,
-  orgPublishedCompanyCacheKey,
-  orgPublishedSlugCacheKey,
   type OrgPublishedSlugMapping,
   validatePublishSlug,
 } from '../utils/org-chart-published-slug.util';
@@ -125,6 +123,7 @@ export class OrgChartController {
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly apiKeyService: ApiKeyService,
     private readonly orgChartS3Service: OrgChartS3Service,
+    private readonly orgChartPublishedSlugService: OrgChartPublishedSlugService,
     @InjectCacheStorage(CacheStorageNamespace.EngineOrgChart)
     private readonly orgChartCacheStorageService: CacheStorageService,
   ) {}
@@ -611,8 +610,8 @@ export class OrgChartController {
 
     const publishSlug = slugValidation.slug;
     const existingSlugMapping =
-      await this.orgChartCacheStorageService.get<OrgPublishedSlugMapping>(
-        orgPublishedSlugCacheKey(publishSlug),
+      await this.orgChartPublishedSlugService.getPublishedSlugMapping(
+        publishSlug,
       );
 
     if (
@@ -622,20 +621,6 @@ export class OrgChartController {
       throw new HttpException(
         'This brand URL is already published for another company',
         HttpStatus.CONFLICT,
-      );
-    }
-
-    const previousSlugForCompany =
-      await this.orgChartCacheStorageService.get<string>(
-        orgPublishedCompanyCacheKey(normalizedCompanyId),
-      );
-
-    if (
-      previousSlugForCompany?.trim() &&
-      previousSlugForCompany.trim() !== publishSlug
-    ) {
-      await this.orgChartCacheStorageService.del(
-        orgPublishedSlugCacheKey(previousSlugForCompany.trim()),
       );
     }
 
@@ -650,22 +635,18 @@ export class OrgChartController {
       publishedAt,
     };
 
-    const publishTtlMs = resolveOrgChartPublishCacheTtlMs(ttlSeconds);
-
-    await this.orgChartCacheStorageService.set(
-      orgPublishedSlugCacheKey(publishSlug),
-      mapping,
-      publishTtlMs,
-    );
-    await this.orgChartCacheStorageService.set(
-      orgPublishedCompanyCacheKey(normalizedCompanyId),
-      publishSlug,
-      publishTtlMs,
-    );
-
     const expiresAt = isOrgPublishForeverTtl(ttlSeconds)
       ? null
       : new Date(Date.now() + ttlSeconds * 1000).toISOString();
+
+    await this.orgChartPublishedSlugService.savePublishedSlugMapping({
+      publishSlug,
+      mapping: {
+        ...mapping,
+        expiresAt,
+      },
+      expiresAt,
+    });
 
     return {
       status: 'ok',
@@ -687,9 +668,10 @@ export class OrgChartController {
       throw new HttpException('Org chart not found', HttpStatus.NOT_FOUND);
     }
 
-    const mapping = await this.orgChartCacheStorageService.get<
-      OrgPublishedSlugMapping
-    >(orgPublishedSlugCacheKey(slugValidation.slug));
+    const mapping =
+      await this.orgChartPublishedSlugService.getPublishedSlugMapping(
+        slugValidation.slug,
+      );
 
     const companyId = mapping?.companyId?.trim() ?? '';
 
