@@ -288,10 +288,13 @@ const OrgChartsNavigationDrawerItemsContent = ({
   const handleChartNavigate = (record: OrgChartNavRecord) => {
     handleSectionInteraction();
     const companyId = record.externalCompanyId ?? '';
+    const labelFromName = extractCompanyLabelFromOrgChartName(record.name);
     const label =
-      typeof record.name === 'string' && record.name.length > 0
-        ? record.name
-        : companyId;
+      labelFromName.length > 0
+        ? labelFromName
+        : typeof record.name === 'string' && record.name.length > 0
+          ? record.name
+          : companyId;
 
     navigate(`/${AppPath.OrgChart}/${companyId}`, {
       state: {

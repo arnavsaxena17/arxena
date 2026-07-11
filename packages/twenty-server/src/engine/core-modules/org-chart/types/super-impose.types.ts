@@ -40,6 +40,7 @@ export type SuperImposeManifest = {
   primaryCompanyId: string;
   primaryCompanyName: string;
   primaryLinkedinCompanyUrl?: string;
+  primaryWebsiteUrl?: string;
   builtAt: string;
   candidateSource: 'harvest' | 'unipile';
   inputs: {

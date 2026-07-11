@@ -142,6 +142,44 @@ export const convertLegacySimpleFilterToWorkflowFindRecordsFilter = (
   };
 };
 
+export const ensureRecordFilterGroupsForFilters = ({
+  recordFilters,
+  recordFilterGroups,
+}: {
+  recordFilters: RecordFilter[];
+  recordFilterGroups: RecordFilterGroup[];
+}): {
+  recordFilters: RecordFilter[];
+  recordFilterGroups: RecordFilterGroup[];
+} => {
+  if (recordFilterGroups.length > 0) {
+    return { recordFilters, recordFilterGroups };
+  }
+
+  if (recordFilters.length === 0) {
+    return { recordFilters, recordFilterGroups };
+  }
+
+  const rootGroupIdFromFilters = recordFilters.find((recordFilter) =>
+    isDefined(recordFilter.recordFilterGroupId),
+  )?.recordFilterGroupId;
+
+  const rootGroupId = rootGroupIdFromFilters ?? v4();
+
+  return {
+    recordFilters: recordFilters.map((recordFilter) => ({
+      ...recordFilter,
+      recordFilterGroupId: recordFilter.recordFilterGroupId ?? rootGroupId,
+    })),
+    recordFilterGroups: [
+      {
+        id: rootGroupId,
+        logicalOperator: ViewFilterGroupLogicalOperator.AND,
+      },
+    ],
+  };
+};
+
 export const parseWorkflowFindRecordsFilter = (
   filter?: Record<string, unknown>,
   objectMetadataItem?: ObjectMetadataItem,
@@ -151,10 +189,16 @@ export const parseWorkflowFindRecordsFilter = (
   }
 
   if ('recordFilters' in filter || 'recordFilterGroups' in filter) {
+    const { recordFilters, recordFilterGroups } =
+      ensureRecordFilterGroupsForFilters({
+        recordFilters: (filter.recordFilters as RecordFilter[]) ?? [],
+        recordFilterGroups:
+          (filter.recordFilterGroups as RecordFilterGroup[]) ?? [],
+      });
+
     return {
-      recordFilters: (filter.recordFilters as RecordFilter[]) ?? [],
-      recordFilterGroups:
-        (filter.recordFilterGroups as RecordFilterGroup[]) ?? [],
+      recordFilters,
+      recordFilterGroups,
       gqlOperationFilter: filter.gqlOperationFilter as
         | Record<string, unknown>
         | undefined,

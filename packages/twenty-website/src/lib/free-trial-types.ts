@@ -3,7 +3,8 @@ export type FreeTrialSource =
   | 'header'
   | 'header_mobile'
   | 'org_chart_banner'
-  | 'org_chart_node_modal';
+  | 'org_chart_node_modal'
+  | 'org_chart_fetch_contacts';
 
 export type FreeTrialOrgChartContext = {
   companyName?: string;

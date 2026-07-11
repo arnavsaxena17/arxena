@@ -20,6 +20,17 @@ jest.mock('@/object-record/record-field/components/FormFieldInput', () => ({
 }));
 
 jest.mock(
+  '@/object-record/record-field/form-types/components/FormSelectFieldInput',
+  () => ({
+    FormSelectFieldInput: ({
+      options,
+    }: {
+      options: { value: string }[];
+    }) => <div data-testid="select-options-count">{options.length}</div>,
+  }),
+);
+
+jest.mock(
   '@/object-record/record-field/form-types/components/FormMultiSelectFieldInput',
   () => ({
     FormMultiSelectFieldInput: ({
@@ -111,7 +122,7 @@ describe('AdvancedFilterSidePanelValueFormInput', () => {
     const { getByTestId } = render(<Wrapper />);
 
     await waitFor(() => {
-      expect(getByTestId('multiselect-options-count').textContent).toBe(
+      expect(getByTestId('select-options-count').textContent).toBe(
         String(selectField.options?.length),
       );
     });

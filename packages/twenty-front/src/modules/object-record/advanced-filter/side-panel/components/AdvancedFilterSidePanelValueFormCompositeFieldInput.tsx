@@ -23,11 +23,11 @@ const ACTOR_SOURCE_OPTIONS: SelectOption<string>[] = Object.values(
 
 export const AdvancedFilterSidePanelValueFormCompositeFieldInput = ({
   recordFilter,
-  onChange,
+  onPersist,
   onClear,
 }: {
   recordFilter: RecordFilter;
-  onChange: (newValue: JsonValue) => void;
+  onPersist: (newValue: JsonValue) => void;
   onClear: () => void;
 }) => {
   const { VariablePicker } = useContext(AdvancedFilterContext);
@@ -46,14 +46,16 @@ export const AdvancedFilterSidePanelValueFormCompositeFieldInput = ({
         subFieldNameUsedInDropdown === 'addressCountry' ? (
           <FormCountryMultiSelectInput
             defaultValue={recordFilter.value}
-            onChange={onChange}
+            onChange={onPersist}
             VariablePicker={VariablePicker}
             readonly={readonly}
           />
         ) : (
           <FormTextFieldInput
+            label=""
+            placeholder=""
             defaultValue={recordFilter.value}
-            onChange={onChange}
+            onPersist={onPersist}
             VariablePicker={VariablePicker}
             readonly={readonly}
           />
@@ -62,15 +64,16 @@ export const AdvancedFilterSidePanelValueFormCompositeFieldInput = ({
         recordFilter.subFieldName === 'currencyCode' ? (
           <FormMultiSelectFieldInput
             defaultValue={recordFilter.value}
-            onChange={onChange}
+            onPersist={onPersist}
             VariablePicker={VariablePicker}
             options={CURRENCIES}
             readonly={readonly}
           />
         ) : recordFilter.subFieldName === 'amountMicros' ? (
           <FormNumberFieldInput
+            label=""
             defaultValue={recordFilter.value}
-            onChange={onChange}
+            onPersist={onPersist}
             VariablePicker={VariablePicker}
             readonly={readonly}
           />
@@ -78,15 +81,18 @@ export const AdvancedFilterSidePanelValueFormCompositeFieldInput = ({
       ) : filterType === 'PHONES' ? (
         recordFilter.subFieldName === 'primaryPhoneNumber' ? (
           <FormNumberFieldInput
+            label=""
             defaultValue={recordFilter.value}
-            onChange={onChange}
+            onPersist={onPersist}
             VariablePicker={VariablePicker}
             readonly={readonly}
           />
         ) : (
           <FormTextFieldInput
+            label=""
+            placeholder=""
             defaultValue={recordFilter.value}
-            onChange={onChange}
+            onPersist={onPersist}
             VariablePicker={VariablePicker}
             readonly={readonly}
           />
@@ -95,7 +101,7 @@ export const AdvancedFilterSidePanelValueFormCompositeFieldInput = ({
         recordFilter.subFieldName === 'source' ? (
           <FormMultiSelectFieldInput
             defaultValue={recordFilter.value}
-            onChange={onChange}
+            onPersist={onPersist}
             options={ACTOR_SOURCE_OPTIONS}
             readonly={readonly}
             VariablePicker={VariablePicker}
@@ -103,23 +109,27 @@ export const AdvancedFilterSidePanelValueFormCompositeFieldInput = ({
         ) : recordFilter.subFieldName === 'workspaceMemberId' ? (
           <FormWorkspaceMemberFilterValueInput
             defaultValue={recordFilter.value}
-            onChange={onChange}
+            onChange={onPersist}
             onClear={onClear}
             VariablePicker={VariablePicker}
             readonly={readonly}
           />
         ) : (
           <FormTextFieldInput
+            label=""
+            placeholder=""
             defaultValue={recordFilter.value}
-            onChange={onChange}
+            onPersist={onPersist}
             VariablePicker={VariablePicker}
             readonly={readonly}
           />
         )
       ) : (
         <FormTextFieldInput
+          label=""
+          placeholder=""
           defaultValue={recordFilter.value}
-          onChange={onChange}
+          onPersist={onPersist}
           VariablePicker={VariablePicker}
           readonly={readonly}
         />

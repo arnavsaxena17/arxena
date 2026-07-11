@@ -122,7 +122,7 @@ const StyledFieldLabel = styled.label`
   font-weight: ${({ theme }) => theme.font.weight.medium};
 `;
 
-const StyledSelect = styled.select`
+const StyledSelect = styled.selec`
   background: ${({ theme }) => theme.background.primary};
   border: 1px solid ${({ theme }) => theme.border.color.medium};
   border-radius: ${({ theme }) => theme.border.radius.sm};
@@ -586,7 +586,7 @@ export const OrgChartSuperImposeModal = ({
 
   const handleGenerate = () => {
     if (!targetCompany) {
-      enqueueSnackBar(t`Select a target company.`, {
+      enqueueSnackBar(`Select a target company.`, {
         variant: SnackBarVariant.Error,
         duration: 5000,
       });
@@ -595,7 +595,7 @@ export const OrgChartSuperImposeModal = ({
 
     if (estimate?.scopeRequired) {
       enqueueSnackBar(
-        t`Too many people. Select a location, function, or leadership filter first.`,
+        `Too many people. Select a location, function, or leadership filter first.`,
         { variant: SnackBarVariant.Error, duration: 6000 },
       );
       return;
@@ -626,21 +626,21 @@ export const OrgChartSuperImposeModal = ({
       </StyledCloseButtonContainer>
 
       <StyledHeader>
-        <StyledHeaderTitle>{t`Super Impose Org Chart`}</StyledHeaderTitle>
+        <StyledHeaderTitle>{`Super Impose Org Charts`}</StyledHeaderTitle>
       </StyledHeader>
 
       <StyledContent>
         <OnboardingIntentModalLayout panelWidth="lg">
           <StyledBody>
             <StyledDescription>
-              {t`Select a target company and optional location, then merge employees from additional sources into the chart.`}
+              {`Select a target company and optional location, then merge employees from additional sources into the chart.`}
             </StyledDescription>
 
             <StyledField>
-              <StyledFieldLabel>{t`Company`}</StyledFieldLabel>
+              <StyledFieldLabel>{`Company`}</StyledFieldLabel>
               <SuperImposeLinkedInFacetAutocomplete
                 kind="company"
-                label={t`Company`}
+                label={`Company`}
                 value={companySelection}
                 onChange={setCompanySelection}
                 accessToken={accessToken}
@@ -649,11 +649,11 @@ export const OrgChartSuperImposeModal = ({
             </StyledField>
 
             <StyledField>
-              <StyledFieldLabel>{t`Location (optional)`}</StyledFieldLabel>
+              <StyledFieldLabel>{`Location`}</StyledFieldLabel>
               <SuperImposeLinkedInFacetAutocomplete
                 kind="location"
-                label={t`Location`}
-                placeholder={t`Global if empty`}
+                label={`Location`}
+                placeholder={`Global if empty`}
                 value={locationSelection}
                 onChange={setLocationSelection}
                 accessToken={accessToken}
@@ -662,7 +662,7 @@ export const OrgChartSuperImposeModal = ({
             </StyledField>
 
             <StyledField>
-              <StyledFieldLabel>{t`Function`}</StyledFieldLabel>
+              <StyledFieldLabel>{`Function`}</StyledFieldLabel>
               <StyledSelect
                 value={functionRoot}
                 onChange={(event) => setFunctionRoot(event.target.value)}
@@ -686,23 +686,23 @@ export const OrgChartSuperImposeModal = ({
                 size={CheckboxSize.Small}
                 variant={CheckboxVariant.Primary}
               />
-              {t`Fetch leadership positions only`}
+              {`Fetch leadership positions only`}
             </StyledCheckboxRow>
 
             <StyledField>
-              <StyledFieldLabel>{t`Business division (optional)`}</StyledFieldLabel>
+              <StyledFieldLabel>{`Business division (optional)`}</StyledFieldLabel>
               <TextInput
                 value={businessDivision}
                 onChange={setBusinessDivision}
-                placeholder={t`e.g. textile machinery team`}
+                placeholder={`e.g. textile machinery team`}
               />
             </StyledField>
 
             <StyledAdvancedSection>
-              <StyledAdvancedSummary>{t`Advanced sources`}</StyledAdvancedSummary>
+              <StyledAdvancedSummary>{`Advanced sources`}</StyledAdvancedSummary>
               <StyledAdvancedBody>
                 <StyledField>
-                  <StyledFieldLabel>{t`LinkedIn company URLs (one per line)`}</StyledFieldLabel>
+                  <StyledFieldLabel>{`LinkedIn company URLs (one per line)`}</StyledFieldLabel>
                   <TextArea
                     minRows={2}
                     value={linkedinUrlsText}
@@ -712,7 +712,7 @@ export const OrgChartSuperImposeModal = ({
                 </StyledField>
 
                 <StyledField>
-                  <StyledFieldLabel>{t`Company websites (one per line)`}</StyledFieldLabel>
+                  <StyledFieldLabel>{`Company websites (one per line)`}</StyledFieldLabel>
                   <TextArea
                     minRows={2}
                     value={websiteUrlsText}
@@ -722,7 +722,7 @@ export const OrgChartSuperImposeModal = ({
                 </StyledField>
 
                 <StyledField>
-                  <StyledFieldLabel>{t`Sales Navigator search URLs`}</StyledFieldLabel>
+                  <StyledFieldLabel>{`Sales Navigator search URLs`}</StyledFieldLabel>
                   <TextArea
                     minRows={2}
                     value={salesNavUrlsText}
@@ -732,11 +732,11 @@ export const OrgChartSuperImposeModal = ({
                 </StyledField>
 
                 <StyledField>
-                  <StyledFieldLabel>{t`Keywords (optional)`}</StyledFieldLabel>
+                  <StyledFieldLabel>{`Keywords (optional)`}</StyledFieldLabel>
                   <TextInput
                     value={keywords}
                     onChange={setKeywords}
-                    placeholder={t`Boolean keywords, e.g. insulator OR NGK`}
+                    placeholder={`Boolean keywords, e.g. insulator OR NGK`}
                   />
                 </StyledField>
               </StyledAdvancedBody>
@@ -744,7 +744,7 @@ export const OrgChartSuperImposeModal = ({
 
             {resolvedPreview.length > 0 ? (
               <StyledField>
-                <StyledFieldLabel>{t`Resolved companies`}</StyledFieldLabel>
+                <StyledFieldLabel>{`Resolved companies`}</StyledFieldLabel>
                 <StyledResolvedList>
                   {resolvedPreview.map((company) => (
                     <li key={company.slug}>
@@ -764,14 +764,14 @@ export const OrgChartSuperImposeModal = ({
 
             <StyledInfoCard $tone={estimateTone}>
               {estimateLoading
-                ? t`Estimating people…`
+                ? `Estimating people…`
                 : estimate
                   ? estimate.scopeRequired
-                    ? t`Too many people (~${estimate.estimatedTotalUpperBound}). Select a location, function, or leadership filter.`
-                    : t`≈ ${estimate.estimatedTotal} people (up to ${estimate.estimatedTotalUpperBound})`
+                    ? `Too many people (~${estimate.estimatedTotalUpperBound}). Select a location, function, or leadership filter.`
+                    : `≈ ${estimate.estimatedTotal} people (up to ${estimate.estimatedTotalUpperBound})`
                   : targetCompany
-                    ? t`Estimating…`
-                    : t`Select a company to see an estimate`}
+                    ? `Estimating…`
+                    : `Select a company to see an estimate`}
             </StyledInfoCard>
 
             <StyledCheckboxRow>
@@ -782,7 +782,7 @@ export const OrgChartSuperImposeModal = ({
                 size={CheckboxSize.Small}
                 variant={CheckboxVariant.Primary}
               />
-              {t`Append to existing chart`}
+              {`Append to existing char`}
               {!appendEligibility.eligible && appendEligibility.reason ? (
                 <StyledCheckboxHint>
                   — {appendEligibility.reason}
@@ -795,14 +795,14 @@ export const OrgChartSuperImposeModal = ({
 
       <StyledFooter>
         <MainButton
-          title={t`Cancel`}
+          title={`Cancel`}
           variant="secondary"
           onClick={onClose}
           disabled={isGenerating}
         />
         <MainButton
           Icon={isGenerating || estimateLoading ? CircularProgressBar : undefined}
-          title={isGenerating ? t`Generating...` : t`Generate`}
+          title={isGenerating ? `Generating...` : `Generate`}
           variant="primary"
           onClick={!isGenerating ? handleGenerate : undefined}
           disabled={generateDisabled}

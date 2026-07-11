@@ -64,7 +64,9 @@ export const useUpsertRecordFilterGroup = () => {
     recordFilterGroupToSet: RecordFilterGroup,
   ) => {
     upsertRecordFilterGroupCallback(recordFilterGroupToSet);
-    onUpdate?.();
+    queueMicrotask(() => {
+      onUpdate?.();
+    });
   };
 
   return {

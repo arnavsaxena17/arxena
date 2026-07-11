@@ -23,6 +23,7 @@ type RelativeDatePickerHeaderProps = {
   direction: VariableDateViewFilterValueDirection;
   amount?: number;
   unit: VariableDateViewFilterValueUnit;
+  dropdownIdPrefix?: string;
   onChange?: (value: {
     direction: VariableDateViewFilterValueDirection;
     amount?: number;
@@ -54,10 +55,13 @@ export const RelativeDatePickerHeader = (
     label: `${unit.label}${isUnitPlural ? 's' : ''}`,
   }));
 
+  const directionDropdownId = `${props.dropdownIdPrefix ?? 'relative-date'}-direction-select`;
+  const unitDropdownId = `${props.dropdownIdPrefix ?? 'relative-date'}-unit-select`;
+
   return (
     <StyledContainer>
       <Select
-        dropdownId="direction-select"
+        dropdownId={directionDropdownId}
         value={direction}
         onChange={(newDirection) => {
           setDirection(newDirection);
@@ -94,7 +98,7 @@ export const RelativeDatePickerHeader = (
         disabled={direction === 'THIS'}
       />
       <Select
-        dropdownId="unit-select"
+        dropdownId={unitDropdownId}
         value={unit}
         onChange={(newUnit) => {
           setUnit(newUnit);

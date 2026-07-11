@@ -3,6 +3,7 @@ import { currentRecordFilterGroupsComponentState } from '@/object-record/record-
 import { currentRecordFiltersComponentState } from '@/object-record/record-filter/states/currentRecordFiltersComponentState';
 import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import { useRecoilComponentFamilyStateV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentFamilyStateV2';
+import { ensureRecordFilterGroupsForFilters } from '@/workflow/workflow-steps/workflow-actions/find-records-action/utils/workflowFindRecordsFilterUtils';
 import { hasInitializedCurrentRecordFilterGroupsComponentFamilyState } from '@/views/states/hasInitializedCurrentRecordFilterGroupsComponentFamilyState';
 import { hasInitializedCurrentRecordFiltersComponentFamilyState } from '@/views/states/hasInitializedCurrentRecordFiltersComponentFamilyState';
 import { WorkflowFindRecordsFilter } from '@/workflow/workflow-steps/workflow-actions/find-records-action/utils/workflowFindRecordsFilterUtils';
@@ -48,34 +49,41 @@ export const WorkflowFindRecordsFiltersEffect = ({
 
   useEffect(() => {
     if (
-      !hasInitializedCurrentRecordFilters &&
-      isDefined(defaultValue?.recordFilters)
+      hasInitializedCurrentRecordFilters &&
+      hasInitializedCurrentRecordFilterGroups
     ) {
-      setCurrentRecordFilters(defaultValue.recordFilters ?? []);
-      setShouldSetAdvancedFilterDropdownStates(true);
-      setHasInitializedCurrentRecordFilters(true);
+      return;
     }
-  }, [
-    setCurrentRecordFilters,
-    hasInitializedCurrentRecordFilters,
-    setHasInitializedCurrentRecordFilters,
-    defaultValue?.recordFilters,
-  ]);
 
-  useEffect(() => {
-    if (
-      !hasInitializedCurrentRecordFilterGroups &&
-      isDefined(defaultValue?.recordFilterGroups) &&
-      defaultValue.recordFilterGroups.length > 0
-    ) {
-      setCurrentRecordFilterGroups(defaultValue.recordFilterGroups ?? []);
+    if (!isDefined(defaultValue?.recordFilters)) {
+      return;
+    }
+
+    const { recordFilters, recordFilterGroups } =
+      ensureRecordFilterGroupsForFilters({
+        recordFilters: defaultValue.recordFilters ?? [],
+        recordFilterGroups: defaultValue.recordFilterGroups ?? [],
+      });
+
+    if (!hasInitializedCurrentRecordFilters) {
+      setCurrentRecordFilters(recordFilters);
+      setHasInitializedCurrentRecordFilters(true);
+      setShouldSetAdvancedFilterDropdownStates(true);
+    }
+
+    if (!hasInitializedCurrentRecordFilterGroups) {
+      setCurrentRecordFilterGroups(recordFilterGroups);
       setHasInitializedCurrentRecordFilterGroups(true);
     }
   }, [
-    setCurrentRecordFilterGroups,
-    hasInitializedCurrentRecordFilterGroups,
-    setHasInitializedCurrentRecordFilterGroups,
     defaultValue?.recordFilterGroups,
+    defaultValue?.recordFilters,
+    hasInitializedCurrentRecordFilterGroups,
+    hasInitializedCurrentRecordFilters,
+    setCurrentRecordFilterGroups,
+    setCurrentRecordFilters,
+    setHasInitializedCurrentRecordFilterGroups,
+    setHasInitializedCurrentRecordFilters,
   ]);
 
   useEffect(() => {

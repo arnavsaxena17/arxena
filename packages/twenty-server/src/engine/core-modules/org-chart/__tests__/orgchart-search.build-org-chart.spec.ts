@@ -6,6 +6,10 @@ jest.mock('openai', () => ({
 }));
 
 import { Test } from '@nestjs/testing';
+import { CandidateAvatarStorageService } from 'src/engine/core-modules/candidate-avatar/services/candidate-avatar-storage.service';
+import { LinkedinUnipileEstimateAccountService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-estimate-account.service';
+import { LinkedinUnipileSessionService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-session.service';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
 import { OrgChartIntentService } from 'src/engine/core-modules/candidate-search/services/org-chart-intent.service';
 import { OrgchartLinkedInQueryRouterService } from 'src/engine/core-modules/candidate-search/services/orgchart-linkedin-query-router.service';
@@ -50,6 +54,13 @@ describe('OrgChartSearchService.buildOrgChartFromLinkedInCompanyCandidates', () 
         { provide: OrgChartCacheService, useValue: {} },
         { provide: OrgChartIntentService, useValue: {} },
         OrgChartProfileDataSourceMapperService,
+        {
+          provide: CandidateAvatarStorageService,
+          useValue: { ingestBatch: jest.fn((people) => Promise.resolve(people)) },
+        },
+        { provide: LinkedinUnipileSessionService, useValue: {} },
+        { provide: LinkedinUnipileEstimateAccountService, useValue: {} },
+        { provide: EnvironmentService, useValue: {} },
       ],
     }).compile();
 
@@ -59,7 +70,7 @@ describe('OrgChartSearchService.buildOrgChartFromLinkedInCompanyCandidates', () 
   it('passes canonical company LinkedIn URL to Python when companyLinkedinUrl is set (e.g. briskpe)', async () => {
     const canonical = 'https://www.linkedin.com/company/briskpe';
 
-    await service.buildOrgChartFromLinkedInCompanyCandidates(
+    const result = await service.buildOrgChartFromLinkedInCompanyCandidates(
       [
         {
           name: 'Test User',
@@ -73,8 +84,12 @@ describe('OrgChartSearchService.buildOrgChartFromLinkedInCompanyCandidates', () 
         companyId: 'briskpe',
         mode: 'entire_company',
         companyLinkedinUrl: `${canonical}/`,
+        website: 'https://briskpe.com',
       },
     );
+
+    expect(result.job_company_website).toBe('https://briskpe.com');
+    expect(result.job_company_linkedin_url).toBe(canonical);
 
     expect(pythonOrgChartService.createOrgChartFromStandardizedPeople).toHaveBeenCalled();
     const callArg =

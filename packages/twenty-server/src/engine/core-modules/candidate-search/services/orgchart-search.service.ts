@@ -14,6 +14,7 @@ import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services
 import { OrgchartCancelRegistryService } from 'src/engine/core-modules/org-chart/services/orgchart-cancel-registry.service';
 import { PythonOrgChartService } from 'src/engine/core-modules/org-chart/services/python-org-chart.service';
 import type { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
+import { applyOrgChartCompanyMetadata } from 'src/engine/core-modules/org-chart/utils/apply-org-chart-company-metadata.util';
 import { mergeOrgChartCompanyTenureOntoOrgChartData } from 'src/engine/core-modules/org-chart/utils/merge-orgchart-company-tenure.util';
 import {
   applyApolloOnlyNodeLockState,
@@ -946,6 +947,8 @@ export class OrgChartSearchService {
       function?: string;
       /** When set, used as job_company_linkedin_url for the Python service (overrides /company/{companyId}) */
       companyLinkedinUrl?: string;
+      /** Company website from the build request; persisted on orgchart.json top-level metadata. */
+      website?: string;
       /** Raw industry label forwarded to Python list_data.industry */
       industry?: string;
       /** Macro category override forwarded to Python list_data.industry_category */
@@ -974,6 +977,15 @@ export class OrgChartSearchService {
         : normalizedCompanyId !== ''
           ? `https://www.linkedin.com/company/${normalizedCompanyId}`
           : '';
+    const normalizedWebsite = options.website?.trim() ?? '';
+
+    const applyBuildRequestCompanyMetadata = <T extends OrgChartData>(
+      orgChart: T,
+    ): T =>
+      applyOrgChartCompanyMetadata(orgChart, {
+        website: normalizedWebsite || undefined,
+        linkedinCompanyUrl: companyLinkedinUrl || undefined,
+      }) as T;
 
     const urlToSlug = new Map<string, string>();
     const urlToContact = new Map<string, OrgChartNodeContactAvailability>();
@@ -1190,7 +1202,7 @@ export class OrgChartSearchService {
           job_company_name: jobCompanyName,
           industry,
           country: locationCountry || 'global',
-          job_company_website: '',
+          job_company_website: normalizedWebsite,
           linkedin_url: linkedinUrl,
           facebook_url: '',
           twitter_url: '',
@@ -1272,9 +1284,13 @@ export class OrgChartSearchService {
         tenureByUrl,
         tenureById,
       );
-      return apolloPublicSlug
-        ? applyApolloOnlyNodeLockState(withTenure, apolloPublicSlug)
-        : withTenure;
+      const withMetadata = applyBuildRequestCompanyMetadata(
+        apolloPublicSlug
+          ? applyApolloOnlyNodeLockState(withTenure, apolloPublicSlug)
+          : withTenure,
+      );
+
+      return withMetadata;
     } catch (error) {
       if (!isYugaLabsCompany) {
         throw error;
@@ -1319,9 +1335,11 @@ export class OrgChartSearchService {
         tenureByUrl,
         tenureById,
       );
-      return apolloPublicSlug
-        ? applyApolloOnlyNodeLockState(withTenure, apolloPublicSlug)
-        : withTenure;
+      return applyBuildRequestCompanyMetadata(
+        apolloPublicSlug
+          ? applyApolloOnlyNodeLockState(withTenure, apolloPublicSlug)
+          : withTenure,
+      );
     }
   }
 

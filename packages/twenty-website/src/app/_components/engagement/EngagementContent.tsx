@@ -132,7 +132,7 @@ export const EngagementContent = ({ signUpUrl }: EngagementContentProps) => {
       </StyledDataSources>
 
       <StyledCtaSection>
-        <StyledCtaButton href={signUpUrl}>Start for free</StyledCtaButton>
+        <StyledCtaButton href={signUpUrl}>Setup a free trial</StyledCtaButton>
       </StyledCtaSection>
     </StyledSection>
   );

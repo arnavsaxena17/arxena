@@ -250,6 +250,7 @@ export const WorkflowEditActionFindRecords = ({
                 >
                   <WorkflowFindRecordsFilters
                     objectMetadataItem={selectedObjectMetadataItem}
+                    recordIndexId={instanceId}
                     onChange={(filter: WorkflowFindRecordsFilter) => {
                       if (isFormDisabled === true) {
                         return;

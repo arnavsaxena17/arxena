@@ -10,8 +10,11 @@ import { subFieldNameUsedInDropdownComponentState } from '@/object-record/object
 import { configurableViewFilterOperands } from '@/object-record/object-filter-dropdown/utils/configurableViewFilterOperands';
 import { FormFieldInput } from '@/object-record/record-field/components/FormFieldInput';
 import { FormBooleanFieldInput } from '@/object-record/record-field/form-types/components/FormBooleanFieldInput';
+import { FormDateFieldInput } from '@/object-record/record-field/form-types/components/FormDateFieldInput';
+import { FormDateTimeFieldInput } from '@/object-record/record-field/form-types/components/FormDateTimeFieldInput';
 import { FormMultiSelectFieldInput } from '@/object-record/record-field/form-types/components/FormMultiSelectFieldInput';
 import { FormRelativeDatePicker } from '@/object-record/record-field/form-types/components/FormRelativeDatePicker';
+import { FormSelectFieldInput } from '@/object-record/record-field/form-types/components/FormSelectFieldInput';
 import { FormTextFieldInput } from '@/object-record/record-field/form-types/components/FormTextFieldInput';
 import {
   type FieldMetadata,
@@ -22,7 +25,6 @@ import { currentRecordFiltersComponentState } from '@/object-record/record-filte
 import { RecordFilterOperand } from '@/object-record/record-filter/types/RecordFilterOperand';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import { stringifyRelativeDateFilter } from '@/views/view-filter-value/utils/stringifyRelativeDateFilter';
-import { WORKFLOW_TIMEZONE } from '@/workflow/constants/WorkflowTimeZone';
 import { isObject, isString } from '@sniptt/guards';
 import { useContext } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -39,7 +41,6 @@ export const AdvancedFilterSidePanelValueFormInput = ({
     readonly,
     VariablePicker,
     objectMetadataItem,
-    isWorkflowFindRecords,
   } = useContext(AdvancedFilterContext);
 
   const currentRecordFilters = useRecoilComponentValueV2(
@@ -68,7 +69,7 @@ export const AdvancedFilterSidePanelValueFormInput = ({
   const { applyObjectFilterDropdownFilterValue } =
     useApplyObjectFilterDropdownFilterValue();
 
-  const handleChange = (newValue: JsonValue) => {
+  const handlePersist = (newValue: JsonValue) => {
     if (isString(newValue)) {
       applyObjectFilterDropdownFilterValue(newValue);
     } else if (Array.isArray(newValue) || isObject(newValue)) {
@@ -122,9 +123,11 @@ export const AdvancedFilterSidePanelValueFormInput = ({
     subFieldNameUsedInDropdown,
   });
 
-  const isFilterableByMultiSelectValue =
-    recordFilter.type === FieldMetadataType.MULTI_SELECT ||
+  const isFilterableBySelectValue =
     recordFilter.type === FieldMetadataType.SELECT;
+
+  const isFilterableByMultiSelectValue =
+    recordFilter.type === FieldMetadataType.MULTI_SELECT;
 
   const isFilterableByDateValue =
     recordFilter.type === FieldMetadataType.DATE ||
@@ -153,8 +156,9 @@ export const AdvancedFilterSidePanelValueFormInput = ({
     return (
       <FormTextFieldInput
         label=""
+        placeholder=""
         defaultValue={recordFilter.value}
-        onChange={handleChange}
+        onPersist={handlePersist}
         readonly={readonly}
         VariablePicker={VariablePicker}
       />
@@ -165,8 +169,24 @@ export const AdvancedFilterSidePanelValueFormInput = ({
     return (
       <AdvancedFilterSidePanelValueFormCompositeFieldInput
         recordFilter={recordFilter}
-        onChange={handleChange}
+        onPersist={handlePersist}
         onClear={handleClear}
+      />
+    );
+  }
+
+  if (isFilterableBySelectValue) {
+    const metadata = fieldDefinition?.metadata as FieldSelectMetadata | undefined;
+
+    return (
+      <FormSelectFieldInput
+        label=""
+        defaultValue={recordFilter.value}
+        onPersist={handlePersist}
+        readonly={readonly}
+        VariablePicker={VariablePicker}
+        options={metadata?.options ?? []}
+        placeholder=""
       />
     );
   }
@@ -174,13 +194,13 @@ export const AdvancedFilterSidePanelValueFormInput = ({
   if (isFilterableByMultiSelectValue) {
     const metadata = fieldDefinition?.metadata as
       | FieldMultiSelectMetadata
-      | FieldSelectMetadata
       | undefined;
+
     return (
       <FormMultiSelectFieldInput
         label=""
         defaultValue={recordFilter.value}
-        onChange={handleChange}
+        onPersist={handlePersist}
         readonly={readonly}
         VariablePicker={VariablePicker}
         options={metadata?.options ?? []}
@@ -198,7 +218,37 @@ export const AdvancedFilterSidePanelValueFormInput = ({
       <FormBooleanFieldInput
         label=""
         defaultValue={parsedValue}
-        onChange={handleChange}
+        onPersist={handlePersist}
+        readonly={readonly}
+        VariablePicker={VariablePicker}
+      />
+    );
+  }
+
+  if (
+    recordFilter.type === FieldMetadataType.DATE &&
+    recordFilter.operand === RecordFilterOperand.Is
+  ) {
+    return (
+      <FormDateFieldInput
+        label=""
+        defaultValue={recordFilter.value}
+        onPersist={handlePersist}
+        readonly={readonly}
+        VariablePicker={VariablePicker}
+      />
+    );
+  }
+
+  if (
+    recordFilter.type === FieldMetadataType.DATE_TIME &&
+    recordFilter.operand === RecordFilterOperand.Is
+  ) {
+    return (
+      <FormDateTimeFieldInput
+        label=""
+        defaultValue={recordFilter.value}
+        onPersist={handlePersist}
         readonly={readonly}
         VariablePicker={VariablePicker}
       />
@@ -206,27 +256,18 @@ export const AdvancedFilterSidePanelValueFormInput = ({
   }
 
   const field = {
-    type:
-      recordFilter.type === FieldMetadataType.DATE_TIME &&
-      recordFilter.operand === RecordFilterOperand.Is
-        ? FieldMetadataType.DATE
-        : (recordFilter.type as FieldMetadataType),
+    type: recordFilter.type as FieldMetadataType,
     label: '',
     metadata: fieldDefinition?.metadata as FieldMetadata,
   };
-
-  const shouldUseUTCTimeZone = isWorkflowFindRecords === true;
-  const timeZone = shouldUseUTCTimeZone ? WORKFLOW_TIMEZONE : undefined;
 
   return (
     <FormFieldInput
       field={field}
       defaultValue={recordFilter.value}
-      onChange={handleChange}
+      onPersist={handlePersist}
       readonly={readonly}
-      // VariablePicker is not supported for date filters yet
       VariablePicker={isFilterableByDateValue ? undefined : VariablePicker}
-      timeZone={timeZone}
     />
   );
 };

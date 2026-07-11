@@ -102,7 +102,7 @@ export const SignInUp = () => {
 
     if (workspaceName === 'Arxena') {
       if (isOrgChartEnabledEnv) {
-        return t`Start for free!`;
+        return t`Setup a free trial!`;
       }
       return t`Welcome to Arxena.`;
     }

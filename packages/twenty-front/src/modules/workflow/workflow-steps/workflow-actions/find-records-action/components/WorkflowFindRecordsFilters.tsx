@@ -12,10 +12,12 @@ export const WorkflowFindRecordsFilters = ({
   objectMetadataItem,
   onChange,
   readonly,
+  recordIndexId,
 }: {
   objectMetadataItem: ObjectMetadataItem;
   onChange: (filter: WorkflowFindRecordsFilter) => void;
   readonly?: boolean;
+  recordIndexId: string;
 }) => {
   const currentRecordFilterGroupsCallbackState =
     useRecoilComponentCallbackStateV2(currentRecordFilterGroupsComponentState);
@@ -54,6 +56,7 @@ export const WorkflowFindRecordsFilters = ({
       VariablePicker={WorkflowVariablePicker}
       readonly={readonly}
       isWorkflowFindRecords={true}
+      recordIndexId={recordIndexId}
     />
   );
 };

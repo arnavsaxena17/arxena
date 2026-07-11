@@ -15,11 +15,12 @@ import {
   FreeTrialSource,
 } from '@/lib/free-trial-types';
 
-import { FreeTrialModal } from './FreeTrialModal';
+import { FreeTrialModal, type FreeTrialModalIntro } from './FreeTrialModal';
 
 type OpenFreeTrialParams = {
   source: FreeTrialSource;
   orgChartContext?: FreeTrialOrgChartContext;
+  intro?: FreeTrialModalIntro;
 };
 
 type FreeTrialFlowContextValue = {
@@ -43,17 +44,19 @@ export const FreeTrialFlowProvider = ({
     isOpen: boolean;
     source: FreeTrialSource;
     orgChartContext?: FreeTrialOrgChartContext;
+    intro?: FreeTrialModalIntro;
   }>({
     isOpen: false,
     source: 'homepage_hero',
   });
 
   const openFreeTrial = useCallback(
-    ({ source, orgChartContext }: OpenFreeTrialParams) => {
+    ({ source, orgChartContext, intro }: OpenFreeTrialParams) => {
       setModalState({
         isOpen: true,
         source,
         orgChartContext,
+        intro,
       });
     },
     [],
@@ -82,6 +85,7 @@ export const FreeTrialFlowProvider = ({
           isOpen={modalState.isOpen}
           source={modalState.source}
           orgChartContext={modalState.orgChartContext}
+          intro={modalState.intro}
           onClose={closeFreeTrial}
         />
       )}

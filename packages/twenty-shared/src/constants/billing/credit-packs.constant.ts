@@ -433,7 +433,7 @@ export const PRICING_HELP_ENGAGEMENT_LINK_LABEL = 'Learn about Engagement →';
 export const PRICING_HELP_TITLE = 'Need more information?';
 export const PRICING_HELP_SUBTITLE =
   "Let's find the perfect solution for your organization.";
-export const PRICING_CTA_START_FOR_FREE = 'Start for free';
+export const PRICING_CTA_START_FOR_FREE = 'Setup a free trial';
 export const PRICING_CTA_TALK_TO_SALES = 'Talk to sales';
 export const PRICING_CTA_BOOK_DEMO = 'Book a demo';
 export const PRICING_MAP_TYPE_LABEL = 'Map type';

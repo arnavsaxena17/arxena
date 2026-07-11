@@ -10,10 +10,10 @@ import styled from '@emotion/styled';
 
 import { useOrgChartDiagramReady } from '@/app/_components/cookie-consent/OrgChartDiagramReadyProvider';
 import { useFreeTrialFlow } from '@/app/_components/free-trial/FreeTrialFlowProvider';
-import { FreeTrialModal } from '@/app/_components/free-trial/FreeTrialModal';
 import { useFreeTrialCta } from '@/app/_components/free-trial/useFreeTrialCta';
 import { OrgChartCompanyInfo } from '@/app/_components/orgchart/OrgChartCompanyInfo';
 import { OrgChartHiredFromRibbon } from '@/app/_components/orgchart/OrgChartHiredFromRibbon';
+import { OrgChartPublishedNodeModal } from '@/app/_components/orgchart/OrgChartPublishedNodeModal';
 import { trackGA4Event } from '@/lib/analytics';
 import { companySearchLightTheme } from '@/lib/company-search';
 import { FREE_TRIAL_CTA_LABEL } from '@/lib/free-trial-flow';
@@ -816,8 +816,8 @@ export const OrgChartPageClient = ({
   }, []);
 
   const handleNodeClick = useCallback((node: OrgChartNodeData) => {
-    trackGA4Event('sign_up_cta_click', { source: 'modal' });
-    trackWebsiteEvent('sign_up_cta_click', { source: 'modal' });
+    trackGA4Event('org_chart_node_click', { headline: node.headline });
+    trackWebsiteEvent('org_chart_node_click', { headline: node.headline });
     setClickedNode(node);
   }, []);
 
@@ -848,7 +848,8 @@ export const OrgChartPageClient = ({
     [companyName, selectedCountry, selectedFunctionRoot],
   );
 
-  const { isFreeTrialFlow } = useFreeTrialFlow();
+  const { isFreeTrialFlow, openFreeTrial } = useFreeTrialFlow();
+  const isPublishedOrgFreeTrial = isFreeTrialFlow && filterInPlace;
 
   const { onCtaClick: onBannerFreeTrialClick } = useFreeTrialCta({
     source: 'org_chart_banner',
@@ -865,6 +866,36 @@ export const OrgChartPageClient = ({
     }),
     [clickedNode?.headline, orgChartContext],
   );
+
+  const handleFetchContactsFromNode = useCallback(() => {
+    if (!clickedNode) {
+      return;
+    }
+
+    trackGA4Event('free_trial_cta_click', { source: 'org_chart_fetch_contacts' });
+    trackWebsiteEvent('free_trial_cta_click', {
+      source: 'org_chart_fetch_contacts',
+      orgChartCompany: companyName,
+    });
+    openFreeTrial({
+      source: 'org_chart_fetch_contacts',
+      orgChartContext: nodeModalOrgChartContext,
+      intro: {
+        node: clickedNode,
+        companyName,
+        selectedCountry,
+        selectedFunctionRoot,
+      },
+    });
+    setClickedNode(null);
+  }, [
+    clickedNode,
+    companyName,
+    nodeModalOrgChartContext,
+    openFreeTrial,
+    selectedCountry,
+    selectedFunctionRoot,
+  ]);
 
   useEffect(() => {
     trackGA4Event('org_chart_view', {
@@ -995,7 +1026,7 @@ export const OrgChartPageClient = ({
             {showPreviewPersistentBanner && (
               <StyledPreviewPersistentBanner>
                 <span>Get access to 10M Real Time Org Charts, Sign up</span>
-                {isFreeTrialFlow ? (
+                {isPublishedOrgFreeTrial ? (
                   <StyledPreviewBannerSignupButton
                     type="button"
                     onClick={onBannerFreeTrialClick}
@@ -1105,21 +1136,15 @@ export const OrgChartPageClient = ({
                   </StyledSearchOverlay>
                 </>
               )}
-              {clickedNode && isFreeTrialFlow && (
-                <FreeTrialModal
-                  isOpen
-                  source="org_chart_node_modal"
-                  orgChartContext={nodeModalOrgChartContext}
-                  intro={{
-                    node: clickedNode,
-                    companyName,
-                    selectedCountry,
-                    selectedFunctionRoot,
-                  }}
+              {clickedNode && isPublishedOrgFreeTrial && (
+                <OrgChartPublishedNodeModal
+                  node={clickedNode}
+                  companyName={companyName}
                   onClose={handleCloseSignUpModal}
+                  onFetchContacts={handleFetchContactsFromNode}
                 />
               )}
-              {clickedNode && !isFreeTrialFlow && (
+              {clickedNode && !isPublishedOrgFreeTrial && (
                 <OrgChartSignUpModal
                   node={clickedNode}
                   onClose={handleCloseSignUpModal}

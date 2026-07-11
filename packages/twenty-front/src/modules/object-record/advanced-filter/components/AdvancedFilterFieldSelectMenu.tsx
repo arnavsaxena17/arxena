@@ -13,14 +13,15 @@ import { AdvancedFilterFieldSelectSearchInput } from '@/object-record/advanced-f
 import { useAdvancedFilterFieldSelectDropdown } from '@/object-record/advanced-filter/hooks/useAdvancedFilterFieldSelectDropdown';
 import { useApplyAdvancedFilterSourceField } from '@/object-record/advanced-filter/hooks/useApplyAdvancedFilterSourceField';
 import { AdvancedFilterContext } from '@/object-record/advanced-filter/states/context/AdvancedFilterContext';
-import { ObjectFilterDropdownFilterSelectMenuItem } from '@/object-record/object-filter-dropdown/components/ObjectFilterDropdownFilterSelectMenuItem';
+import { AdvancedFilterFieldSelectMenuItem } from '@/object-record/advanced-filter/components/AdvancedFilterFieldSelectMenuItem';
 import { fieldMetadataItemIdUsedInDropdownComponentState } from '@/object-record/object-filter-dropdown/states/fieldMetadataItemIdUsedInDropdownComponentState';
 import { objectFilterDropdownIsSelectingCompositeFieldComponentState } from '@/object-record/object-filter-dropdown/states/objectFilterDropdownIsSelectingCompositeFieldComponentState';
 import { objectFilterDropdownIsSelectingRelationTargetFieldComponentState } from '@/object-record/object-filter-dropdown/states/objectFilterDropdownIsSelectingRelationTargetFieldComponentState';
 import { objectFilterDropdownSubMenuFieldTypeComponentState } from '@/object-record/object-filter-dropdown/states/objectFilterDropdownSubMenuFieldTypeComponentState';
 import { isCompositeFilterableFieldType } from '@/object-record/object-filter-dropdown/utils/isCompositeFilterableFieldType';
 import { isManyToOneRelationField } from '@/object-metadata/utils/isManyToOneRelationField';
-import { visibleRecordFieldsComponentSelector } from '@/object-record/record-field/states/visibleRecordFieldsComponentSelector';
+import { hiddenTableColumnsComponentSelector } from '@/object-record/record-table/states/selectors/hiddenTableColumnsComponentSelector';
+import { visibleTableColumnsComponentSelector } from '@/object-record/record-table/states/selectors/visibleTableColumnsComponentSelector';
 import { useFilterableFieldMetadataItems } from '@/object-record/record-filter/hooks/useFilterableFieldMetadataItems';
 import { DropdownContent } from '@/ui/layout/dropdown/components/DropdownContentWidthContainer';
 import { DropdownMenuSectionLabel } from '@/ui/layout/dropdown/components/DropdownMenuSectionLabel';
@@ -36,6 +37,9 @@ type AdvancedFilterFieldSelectMenuProps = {
   recordFilterId: string;
 };
 
+const ADVANCED_FILTER_FIELD_SELECT_FALLBACK_INSTANCE_ID =
+  'advanced-filter-field-select-fallback';
+
 export const AdvancedFilterFieldSelectMenu = ({
   recordFilterId,
 }: AdvancedFilterFieldSelectMenuProps) => {
@@ -48,17 +52,31 @@ export const AdvancedFilterFieldSelectMenu = ({
     objectFilterDropdownSearchInputComponentState,
   );
 
-  const { objectMetadataItem } = useContext(AdvancedFilterContext);
+  const { objectMetadataItem, isWorkflowFindRecords, recordIndexId } =
+    useContext(AdvancedFilterContext);
 
   const { filterableFieldMetadataItems: filterableFieldMetadataItems } =
     useFilterableFieldMetadataItems(objectMetadataItem.id);
 
-  const visibleRecordFields = useRecoilComponentValueV2(
-    visibleRecordFieldsComponentSelector,
+  const tableColumnsInstanceId =
+    recordIndexId ?? ADVANCED_FILTER_FIELD_SELECT_FALLBACK_INSTANCE_ID;
+
+  const visibleTableColumns = useRecoilComponentValueV2(
+    visibleTableColumnsComponentSelector,
+    tableColumnsInstanceId,
   );
 
-  const visibleFieldMetadataItemIds = visibleRecordFields.map(
-    (recordField) => recordField.fieldMetadataItemId,
+  const hiddenTableColumns = useRecoilComponentValueV2(
+    hiddenTableColumnsComponentSelector,
+    tableColumnsInstanceId,
+  );
+
+  const visibleFieldMetadataItemIds = visibleTableColumns.map(
+    (column) => column.fieldMetadataId,
+  );
+
+  const hiddenFieldMetadataItemIds = hiddenTableColumns.map(
+    (column) => column.fieldMetadataId,
   );
 
   const filteredSearchInputFieldMetadataItems =
@@ -68,23 +86,34 @@ export const AdvancedFilterFieldSelectMenu = ({
         .includes(objectFilterDropdownSearchInput.toLocaleLowerCase()),
     );
 
-  const visibleFieldMetadataItems = filteredSearchInputFieldMetadataItems
-    .toSorted((a, b) => {
-      return (
-        visibleFieldMetadataItemIds.indexOf(a.id) -
-        visibleFieldMetadataItemIds.indexOf(b.id)
-      );
-    })
-    .filter((fieldMetadataItem) =>
-      visibleFieldMetadataItemIds.includes(fieldMetadataItem.id),
-    );
+  const shouldShowAllFieldsWithoutColumnGrouping =
+    isWorkflowFindRecords === true ||
+    (visibleFieldMetadataItemIds.length === 0 &&
+      hiddenFieldMetadataItemIds.length === 0);
 
-  const hiddenColumnsFieldMetadataItems = filteredSearchInputFieldMetadataItems
-    .sort((a, b) => a.label.localeCompare(b.label))
-    .filter(
-      (fieldMetadataItem) =>
-        !visibleFieldMetadataItemIds.includes(fieldMetadataItem.id),
-    );
+  const visibleFieldMetadataItems = shouldShowAllFieldsWithoutColumnGrouping
+    ? filteredSearchInputFieldMetadataItems.toSorted((a, b) =>
+        a.label.localeCompare(b.label),
+      )
+    : filteredSearchInputFieldMetadataItems
+        .toSorted((a, b) => {
+          return (
+            visibleFieldMetadataItemIds.indexOf(a.id) -
+            visibleFieldMetadataItemIds.indexOf(b.id)
+          );
+        })
+        .filter((fieldMetadataItem) =>
+          visibleFieldMetadataItemIds.includes(fieldMetadataItem.id),
+        );
+
+  const hiddenColumnsFieldMetadataItems =
+    shouldShowAllFieldsWithoutColumnGrouping
+      ? []
+      : filteredSearchInputFieldMetadataItems
+          .sort((a, b) => a.label.localeCompare(b.label))
+          .filter((fieldMetadataItem) =>
+            hiddenFieldMetadataItemIds.includes(fieldMetadataItem.id),
+          );
 
   const { resetSelectedItem } = useSelectableList(
     advancedFilterFieldSelectDropdownId,
@@ -208,7 +237,7 @@ export const AdvancedFilterFieldSelectMenu = ({
                     itemId={visibleFieldMetadataItem.id}
                     key={`visible-select-filter-${index}`}
                   >
-                    <ObjectFilterDropdownFilterSelectMenuItem
+                    <AdvancedFilterFieldSelectMenuItem
                       fieldMetadataItemToSelect={visibleFieldMetadataItem}
                       onClick={handleFieldMetadataItemSelect}
                     />
@@ -231,7 +260,7 @@ export const AdvancedFilterFieldSelectMenu = ({
                     itemId={hiddenFieldMetadataItem.id}
                     key={`hidden-select-filter-${index}`}
                   >
-                    <ObjectFilterDropdownFilterSelectMenuItem
+                    <AdvancedFilterFieldSelectMenuItem
                       fieldMetadataItemToSelect={hiddenFieldMetadataItem}
                       onClick={handleFieldMetadataItemSelect}
                     />

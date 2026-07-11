@@ -3033,6 +3033,7 @@ export class OrgChartLinkedInBuildService {
               mode,
               function: body.functionRoot,
               companyLinkedinUrl: canonicalCompanyLinkedinUrl,
+              website: body.website,
               industry: body.industry,
               industryCategory: body.industryCategory,
               profileSourceFallback: body.candidateSource,
@@ -3248,6 +3249,7 @@ export class OrgChartLinkedInBuildService {
                 mode,
                 function: body.functionRoot,
                 companyLinkedinUrl: canonicalCompanyLinkedinUrl,
+                website: body.website,
                 industry: body.industry,
                 industryCategory: body.industryCategory,
                 profileSourceFallback: body.candidateSource,
@@ -3308,6 +3310,7 @@ export class OrgChartLinkedInBuildService {
                 mode,
                 function: body.functionRoot,
                 companyLinkedinUrl: canonicalCompanyLinkedinUrl,
+                website: body.website,
                 industry: body.industry,
                 industryCategory: body.industryCategory,
                 profileSourceFallback: body.candidateSource,
@@ -4264,6 +4267,7 @@ export class OrgChartLinkedInBuildService {
             companyLinkedinUrl:
               jobData.linkedinCompanyUrl?.trim().replace(/\/+$/, '') ||
               undefined,
+            website: rawBody.website,
             profileSourceFallback: 'apify',
             asOfMonth: (jobData as any).asOfMonth,
           },
@@ -5846,16 +5850,24 @@ export class OrgChartLinkedInBuildService {
         companyId,
         resolvedCompanyName,
       );
+      const primaryWebsiteUrl = rawBody.website?.trim();
+      const websiteUrls = [
+        ...(primaryWebsiteUrl ? [primaryWebsiteUrl] : []),
+        ...(superImpose.websiteUrls ?? []).filter(
+          (url) => url.trim() !== primaryWebsiteUrl,
+        ),
+      ];
       const manifest: SuperImposeManifest = {
         version: 1,
         primaryCompanyId: companyId ?? resolvedCompanyName,
         primaryCompanyName: resolvedCompanyName,
         primaryLinkedinCompanyUrl: canonicalCompanyLinkedinUrl,
+        primaryWebsiteUrl,
         builtAt: new Date().toISOString(),
         candidateSource,
         inputs: {
           linkedinCompanyUrls: superImpose.linkedinCompanyUrls ?? [],
-          websiteUrls: superImpose.websiteUrls ?? [],
+          websiteUrls,
           salesNavigatorSearchUrls: superImpose.salesNavigatorSearchUrls ?? [],
           linkedinSearchKeywords: superImpose.linkedinSearchKeywords ?? null,
           businessDivisionRawQuery:

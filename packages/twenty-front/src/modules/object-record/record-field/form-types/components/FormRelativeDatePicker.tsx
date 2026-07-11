@@ -42,15 +42,11 @@ export const FormRelativeDatePicker = ({
 
   return (
     <RelativeDatePickerHeader
-      instanceId={instanceId}
+      dropdownIdPrefix={instanceId}
       onChange={handleValueChange}
       direction={valueParsed?.direction ?? 'THIS'}
       unit={valueParsed?.unit ?? 'DAY'}
       amount={valueParsed?.amount ?? undefined}
-      isFormField={true}
-      readonly={readonly}
-      unitDropdownWidth={150}
-      allowIntraDayUnits={isDateTimeField}
     />
   );
 };

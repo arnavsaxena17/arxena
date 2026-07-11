@@ -467,7 +467,7 @@ export const PricingContent = ({
 
               <StyledCtaStack>
                 <StyledCtaPrimary href={signUpUrl}>
-                  Start for free
+                  Setup a free trial
                 </StyledCtaPrimary>
                 <StyledCtaSecondary
                   href="https://calendly.com/arxena/30min"

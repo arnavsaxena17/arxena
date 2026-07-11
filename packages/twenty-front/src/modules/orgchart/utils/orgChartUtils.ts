@@ -45,6 +45,33 @@ export const extractCompanyDomainFromWebsite = (
   }
 };
 
+export type OrgChartSavedCompanyMetadata = {
+  companyName?: string;
+  website?: string;
+  linkedinUrl?: string;
+};
+
+const pickTrimmedStringField = (
+  record: Record<string, unknown> | null | undefined,
+  key: string,
+): string | undefined => {
+  const value = record?.[key];
+  return typeof value === 'string' && value.trim().length > 0
+    ? value.trim()
+    : undefined;
+};
+
+/** Company fields persisted on org chart payloads (S3 / GET /org-chart/:companyId). */
+export const extractOrgChartSavedCompanyMetadata = (
+  orgData: Record<string, unknown> | null | undefined,
+): OrgChartSavedCompanyMetadata => ({
+  companyName: pickTrimmedStringField(orgData, 'job_company_name'),
+  website:
+    pickTrimmedStringField(orgData, 'job_company_website') ??
+    pickTrimmedStringField(orgData, 'company_website'),
+  linkedinUrl: pickTrimmedStringField(orgData, 'job_company_linkedin_url'),
+});
+
 /** True when header metadata should be enriched via PDL autocomplete / domain resolve. */
 export const needsOrgChartCompanyInfoLookup = (metadata: {
   website?: string;

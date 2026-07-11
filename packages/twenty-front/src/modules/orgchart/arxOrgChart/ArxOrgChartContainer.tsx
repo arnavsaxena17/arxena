@@ -33,7 +33,7 @@ import { OrgChartSuperImposeModal } from '../components/OrgChartSuperImposeModal
 import { useJobOrgChartData } from '../hooks/useJobOrgChartData';
 import { useOrgChartActions, type OrgChartLinkedInSearchEstimate } from '../hooks/useOrgChartActions';
 import { isDifferentSuperImposeTargetCompany } from '../types/superImposeTypes';
-import { extractCompanyDomainFromWebsite, needsOrgChartCompanyInfoLookup, orgChartSelectionSearch } from '../utils/orgChartUtils';
+import { extractCompanyDomainFromWebsite, extractOrgChartSavedCompanyMetadata, needsOrgChartCompanyInfoLookup, orgChartSelectionSearch } from '../utils/orgChartUtils';
 import {
     StyledOrgChartConfirmDd,
     StyledOrgChartConfirmDt,
@@ -583,6 +583,18 @@ export const ArxOrgChartContainer = ({
 
   const orgData = useMemo(() => extractOrgData(orgSource), [orgSource]);
 
+  const savedCompanyMetadata = useMemo(
+    () => extractOrgChartSavedCompanyMetadata(orgData),
+    [orgData],
+  );
+
+  const displayCompanyWebsite =
+    effectiveCompanyWebsite ?? savedCompanyMetadata.website;
+  const displayCompanyName =
+    effectiveCompanyName ?? savedCompanyMetadata.companyName;
+  const displayLinkedinUrl =
+    linkedinUrl ?? savedCompanyMetadata.linkedinUrl ?? fallbackCompanyInfo?.linkedinUrl;
+
   useEffect(() => {
     const next = hydrateContactsByKeyFromOrgData({
       orgData: orgData as unknown as Record<string, unknown> | null,
@@ -732,17 +744,32 @@ export const ArxOrgChartContainer = ({
   ]);
 
   useEffect(() => {
-    if (!fallbackCompanyInfo) return;
+    if (!fallbackCompanyInfo && !savedCompanyMetadata.website && !savedCompanyMetadata.companyName) {
+      return;
+    }
     setSelectedCompanyInfo({
-      companyId: fallbackCompanyInfo.companyId,
-      companyName: fallbackCompanyInfo.companyName,
-      website: fallbackCompanyInfo.website,
-      locationName: fallbackCompanyInfo.locationName,
-      industry: fallbackCompanyInfo.industry,
-      profileCount: fallbackCompanyInfo.profileCount,
-      linkedinUrl: fallbackCompanyInfo.linkedinUrl,
+      companyId: fallbackCompanyInfo?.companyId ?? companyId,
+      companyName:
+        displayCompanyName ?? fallbackCompanyInfo?.companyName ?? companyId,
+      website: displayCompanyWebsite ?? fallbackCompanyInfo?.website,
+      locationName: fallbackCompanyInfo?.locationName ?? locationName,
+      industry: fallbackCompanyInfo?.industry ?? industry,
+      profileCount: fallbackCompanyInfo?.profileCount ?? profileCount,
+      linkedinUrl: displayLinkedinUrl,
     });
-  }, [fallbackCompanyInfo, setSelectedCompanyInfo]);
+  }, [
+    companyId,
+    displayCompanyName,
+    displayCompanyWebsite,
+    displayLinkedinUrl,
+    fallbackCompanyInfo,
+    industry,
+    locationName,
+    profileCount,
+    savedCompanyMetadata.companyName,
+    savedCompanyMetadata.website,
+    setSelectedCompanyInfo,
+  ]);
 
   useEffect(() => {
     if (
@@ -1658,13 +1685,13 @@ export const ArxOrgChartContainer = ({
   );
 
   const headerProps = {
-    companyName: effectiveCompanyName ?? fallbackCompanyInfo?.companyName,
-    website: effectiveCompanyWebsite,
+    companyName: displayCompanyName ?? fallbackCompanyInfo?.companyName,
+    website: displayCompanyWebsite,
     locationName: locationName ?? fallbackCompanyInfo?.locationName,
     industry: industry ?? fallbackCompanyInfo?.industry,
     profileCount: profileCount ?? fallbackCompanyInfo?.profileCount,
     hideProfileCountWhenUnipile: !!unipileCompanyProfile,
-    linkedinUrl: linkedinUrl ?? fallbackCompanyInfo?.linkedinUrl,
+    linkedinUrl: displayLinkedinUrl,
     employeeCount: effectiveEmployeeCount ?? fallbackCompanyInfo?.employeeCount,
     linkedinDisplayName: fallbackCompanyInfo?.linkedinDisplayName,
     description: unipileCompanyProfile?.description,

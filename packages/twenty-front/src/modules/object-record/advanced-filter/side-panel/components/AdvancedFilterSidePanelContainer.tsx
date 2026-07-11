@@ -32,6 +32,7 @@ export type AdvancedFilterSidePanelContainerProps = {
   objectMetadataItem: ObjectMetadataItem;
   VariablePicker?: VariablePickerComponent;
   isWorkflowFindRecords?: boolean;
+  recordIndexId?: string;
 };
 
 export const AdvancedFilterSidePanelContainer = ({
@@ -40,6 +41,7 @@ export const AdvancedFilterSidePanelContainer = ({
   objectMetadataItem,
   VariablePicker,
   isWorkflowFindRecords,
+  recordIndexId,
 }: AdvancedFilterSidePanelContainerProps) => {
   const rootRecordFilterGroup = useRecoilComponentValueV2(
     rootLevelRecordFilterGroupComponentSelector,
@@ -55,6 +57,7 @@ export const AdvancedFilterSidePanelContainer = ({
       value={{
         onUpdate: readonly ? undefined : onUpdate,
         isWorkflowFindRecords,
+        recordIndexId,
         readonly,
         VariablePicker,
         objectMetadataItem,

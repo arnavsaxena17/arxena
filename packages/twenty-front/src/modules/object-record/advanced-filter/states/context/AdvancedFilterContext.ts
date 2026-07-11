@@ -5,6 +5,7 @@ import { createContext } from 'react';
 type AdvancedFilterContextType = {
   onUpdate?: () => void;
   isWorkflowFindRecords?: boolean;
+  recordIndexId?: string;
   readonly?: boolean;
   VariablePicker?: VariablePickerComponent;
   objectMetadataItem: ObjectMetadataItem;

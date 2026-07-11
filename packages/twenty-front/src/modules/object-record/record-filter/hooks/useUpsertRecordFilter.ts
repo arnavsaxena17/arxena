@@ -51,7 +51,9 @@ export const useUpsertRecordFilter = () => {
 
   const upsertRecordFilter = (recordFilterToSet: RecordFilter) => {
     upsertRecordFilterCallback(recordFilterToSet);
-    onUpdate?.();
+    queueMicrotask(() => {
+      onUpdate?.();
+    });
   };
 
   return {

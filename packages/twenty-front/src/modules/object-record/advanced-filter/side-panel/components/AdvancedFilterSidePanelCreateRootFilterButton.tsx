@@ -6,8 +6,6 @@ import { useUpsertRecordFilterGroup } from '@/object-record/record-filter-group/
 import { useCreateEmptyRecordFilterFromFieldMetadataItem } from '@/object-record/record-filter/hooks/useCreateEmptyRecordFilterFromFieldMetadataItem';
 import { useUpsertRecordFilter } from '@/object-record/record-filter/hooks/useUpsertRecordFilter';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
-import { useSetRecoilComponentFamilyStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentFamilyStateV2';
-import { hasInitializedCurrentRecordFiltersComponentFamilyState } from '@/views/states/hasInitializedCurrentRecordFiltersComponentFamilyState';
 import { t } from '@lingui/core/macro';
 import { useContext } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -46,18 +44,10 @@ export const AdvancedFilterSidePanelCreateRootFilterButton = ({
   const { createEmptyRecordFilterFromFieldMetadataItem } =
     useCreateEmptyRecordFilterFromFieldMetadataItem();
 
-  const setHasInitializedCurrentRecordFilters =
-    useSetRecoilComponentFamilyStateV2(
-      hasInitializedCurrentRecordFiltersComponentFamilyState,
-      {},
-    );
-
   const addRootRecordFilterGroup = () => {
     const alreadyHasAdvancedFilterGroup = isDefined(rootRecordFilterGroup);
 
     if (!alreadyHasAdvancedFilterGroup) {
-      setHasInitializedCurrentRecordFilters(false);
-
       const newRecordFilterGroup = {
         id: v4(),
         logicalOperator: ViewFilterGroupLogicalOperator.AND,
