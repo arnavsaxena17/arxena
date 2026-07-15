@@ -15,6 +15,7 @@ describe('LinkedinUnipileSessionService', () => {
   const createService = (options?: {
     onDemand?: boolean;
     keepConnected?: boolean;
+    storedLinkedinAccountId?: string | null;
     resolverResult?: {
       accountId: string | null;
       accountCreatedThisSession?: boolean;
@@ -28,6 +29,10 @@ describe('LinkedinUnipileSessionService', () => {
   }) => {
     const onDemand = options?.onDemand ?? true;
     const keepConnected = options?.keepConnected ?? false;
+    const storedLinkedinAccountId =
+      options?.storedLinkedinAccountId === undefined
+        ? null
+        : options.storedLinkedinAccountId;
     const resolverResult = options?.resolverResult ?? {
       accountId,
       accountCreatedThisSession: true,
@@ -50,7 +55,9 @@ describe('LinkedinUnipileSessionService', () => {
 
     const workspaceMemberProfileUnipileService = {
       getKeepLinkedinConnected: jest.fn().mockResolvedValue(keepConnected),
-      getWorkspaceMemberUnipileAccountId: jest.fn().mockResolvedValue(null),
+      getWorkspaceMemberUnipileAccountId: jest
+        .fn()
+        .mockResolvedValue(storedLinkedinAccountId),
       getWorkspaceMemberLinkedinCookieTokens: jest.fn().mockResolvedValue({
         linkedinLiAtToken: 'li-at-token',
         linkedinLiAToken: 'li-a-token',
@@ -215,11 +222,54 @@ describe('LinkedinUnipileSessionService', () => {
     ).not.toHaveBeenCalled();
   });
 
-  it('withLinkedinSession does not schedule idle disconnect for explicit account id', async () => {
-    const { service, linkedinUnipileTeardownSchedulerService } = createService();
+  it('withLinkedinSession does not schedule idle disconnect for unrelated explicit account id', async () => {
+    const { service, linkedinUnipileTeardownSchedulerService } = createService({
+      storedLinkedinAccountId: 'some-other-member-account',
+    });
 
     await service.withLinkedinSession(apiToken, accountId, async (session) => session.accountId);
 
+    expect(
+      linkedinUnipileTeardownSchedulerService.cancelPendingDisconnect,
+    ).not.toHaveBeenCalled();
+    expect(
+      linkedinUnipileTeardownSchedulerService.scheduleIdleDisconnect,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('withLinkedinSession cancels and reschedules idle disconnect for member-owned explicit account id', async () => {
+    const { service, linkedinUnipileTeardownSchedulerService } = createService({
+      storedLinkedinAccountId: accountId,
+    });
+
+    await service.withLinkedinSession(apiToken, accountId, async (session) => session.accountId);
+
+    expect(
+      linkedinUnipileTeardownSchedulerService.cancelPendingDisconnect,
+    ).toHaveBeenCalledWith(workspaceMemberId);
+    expect(
+      linkedinUnipileTeardownSchedulerService.scheduleIdleDisconnect,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId,
+        workspaceMemberId,
+        workspaceId,
+        authToken: apiToken,
+      }),
+    );
+  });
+
+  it('withLinkedinSession skips idle disconnect for member-owned explicit account when keepLinkedinConnected is true', async () => {
+    const { service, linkedinUnipileTeardownSchedulerService } = createService({
+      keepConnected: true,
+      storedLinkedinAccountId: accountId,
+    });
+
+    await service.withLinkedinSession(apiToken, accountId, async (session) => session.accountId);
+
+    expect(
+      linkedinUnipileTeardownSchedulerService.cancelPendingDisconnect,
+    ).not.toHaveBeenCalled();
     expect(
       linkedinUnipileTeardownSchedulerService.scheduleIdleDisconnect,
     ).not.toHaveBeenCalled();

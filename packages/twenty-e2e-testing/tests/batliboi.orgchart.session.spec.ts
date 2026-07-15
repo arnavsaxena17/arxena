@@ -33,7 +33,7 @@ test.describe('Batliboi org chart session flow', () => {
 
   const searchAndOpenCompany = async (page: Page) => {
     const companySearchInput = page
-      .getByPlaceholder('Search company for org charts...')
+      .getByPlaceholder('Search any company\'s org chart...')
       .first();
     await expect(companySearchInput).toBeVisible({ timeout: 60_000 });
 

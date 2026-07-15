@@ -37,4 +37,6 @@ export enum MessageQueue {
   orgchartApifyQueue = 'orgchart-apify-queue',
   /** Delayed idle disconnect for on-demand LinkedIn Unipile member sessions. */
   linkedinUnipileTeardownQueue = 'linkedin-unipile-teardown-queue',
+  /** Async Unipile webhook processing (messages, relations, account status). */
+  unipileWebhookQueue = 'unipile-webhook-queue',
 }

@@ -2,7 +2,7 @@
 
 import styled from '@emotion/styled';
 import { IconBrandLinkedin, IconMail, IconPhone, IconX } from '@tabler/icons-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   buildOrgChartNodeProfiles,
@@ -225,6 +225,9 @@ const ProfileRow = ({ profile, onFetchContacts }: ProfileRowProps) => {
         {roleCompanyLine.length > 0 && (
           <StyledProfileSubline>{roleCompanyLine}</StyledProfileSubline>
         )}
+        {profile.location && (
+          <StyledProfileSubline>{profile.location}</StyledProfileSubline>
+        )}
         <StyledProfileActions>
           {profile.linkedinUrl && (
             <StyledExternalLink
@@ -264,6 +267,19 @@ export const OrgChartPublishedNodeModal = ({
     () => buildOrgChartNodeProfiles(node, companyName),
     [node, companyName],
   );
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [onClose]);
 
   return (
     <StyledBackdrop onClick={onClose} role="presentation">

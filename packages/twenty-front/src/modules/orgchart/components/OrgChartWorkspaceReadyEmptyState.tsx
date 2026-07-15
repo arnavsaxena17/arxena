@@ -77,7 +77,7 @@ export const OrgChartWorkspaceReadyEmptyState = ({
       {/* <StyledEmptyStateOrgChartSearchRow> */}
         <OrgChartCompanySearchWrapper
           onCompanySelect={onCompanySelect}
-          placeholder="Search company for org charts..."
+          placeholder="Search any company\'s org chart..."
           disabled={!hasToken}
           startIcon={<IconHierarchy2 size={20} />}
         />

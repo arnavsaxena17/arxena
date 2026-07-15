@@ -22,9 +22,11 @@
     "@nivo/calendar": "^0.87.0",
     "@tabler/icons-react": "^2.44.0",
     "gray-matter": "^4.0.3",
+    "libphonenumber-js": "^1.10.26",
     "mixpanel-browser": "^2.75.0",
     "next-runtime-env": "^3.2.2",
     "postgres": "^3.4.3",
+    "react-phone-number-input": "^3.3.4",
     "twenty-orgchart": "workspace:*",
     "twenty-shared": "workspace:*"
   }

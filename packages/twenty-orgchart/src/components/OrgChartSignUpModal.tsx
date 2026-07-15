@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import styled from '@emotion/styled';
 import { IconX } from '@tabler/icons-react';
 
@@ -77,6 +78,23 @@ export const OrgChartSignUpModal = ({
   selectedCountry,
   selectedFunctionRoot,
 }: OrgChartSignUpModalProps) => {
+  useEffect(() => {
+    if (!node) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [node, onClose]);
+
   if (!node) return null;
 
   return (

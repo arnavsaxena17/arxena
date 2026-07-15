@@ -59,7 +59,7 @@ const completeOnboardingIfNeeded = async (page: Page) => {
     }
 
     const orgChartSearchVisible = await page
-      .getByPlaceholder('Search company for org charts...')
+      .getByPlaceholder('Search any company\'s org chart...')
       .first()
       .isVisible()
       .catch(() => false);
@@ -208,7 +208,7 @@ test('Jobs org chart pipeline: full company, leadership, functions, geos, nodes'
   });
 
   const companySearchInput = page.getByPlaceholder(
-    'Search company for org charts...',
+    'Search any company\'s org chart...',
   );
   await expect(companySearchInput).toBeVisible({ timeout: 60_000 });
   await companySearchInput.click();

@@ -60,6 +60,7 @@ import { OrgChartSuperImposeAutocompleteService } from '../services/org-chart-su
 import { OrgChartSuperImposeService } from '../services/org-chart-super-impose.service';
 import { OrgChartTheOrgEnrichmentService } from '../services/org-chart-theorg-enrichment.service';
 import { OrgChartPublishedSlugService } from '../services/org-chart-published-slug.service';
+import { OrgChartCompanyNewsService } from '../services/org-chart-company-news.service';
 import { OrgChartS3Service } from '../services/orgchart-s3.service';
 import { PythonOrgChartService } from '../services/python-org-chart.service';
 import type { SuperImposeInputs } from '../types/super-impose.types';
@@ -123,6 +124,7 @@ export class OrgChartController {
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly apiKeyService: ApiKeyService,
     private readonly orgChartS3Service: OrgChartS3Service,
+    private readonly orgChartCompanyNewsService: OrgChartCompanyNewsService,
     private readonly orgChartPublishedSlugService: OrgChartPublishedSlugService,
     @InjectCacheStorage(CacheStorageNamespace.EngineOrgChart)
     private readonly orgChartCacheStorageService: CacheStorageService,
@@ -1929,6 +1931,98 @@ export class OrgChartController {
         limit: limitParsed,
       }),
     };
+  }
+
+  /**
+   * GET /org-chart/:companyId/company-news
+   *
+   * Returns persisted company news from S3 (if any).
+   */
+  @Get(':companyId/company-news')
+  async getOrgChartCompanyNews(@Param('companyId') companyId: string) {
+    if (!companyId || companyId.includes('/') || companyId.includes('..')) {
+      throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
+    }
+
+    const normalizedCompanyId = this.normalizeCompanyId(companyId);
+    const storage =
+      await this.orgChartCompanyNewsService.getStoredCompanyNews(
+        normalizedCompanyId,
+      );
+
+    return {
+      status: 'ok' as const,
+      result: storage
+        ? {
+            ...storage,
+            mergedNewsItems:
+              this.orgChartCompanyNewsService.mergeNewsItemsFromStorage(storage),
+          }
+        : null,
+    };
+  }
+
+  /**
+   * POST /org-chart/:companyId/company-news/fetch
+   *
+   * Fetches latest company news via OpenAI web search and appends to S3.
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post(':companyId/company-news/fetch')
+  async fetchOrgChartCompanyNews(
+    @Param('companyId') companyId: string,
+    @Body()
+    body: {
+      companyName?: string;
+      location?: string;
+    },
+    @Req() req: Request,
+  ) {
+    if (!companyId || companyId.includes('/') || companyId.includes('..')) {
+      throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
+    }
+
+    const authToken = this.getAuthToken(req);
+    if (!authToken || !(req as { user?: unknown }).user) {
+      throw new HttpException(
+        'Authentication required',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const normalizedCompanyId = this.normalizeCompanyId(companyId);
+    const companyName =
+      (body?.companyName ?? '').trim() || normalizedCompanyId;
+    const location = (body?.location ?? '').trim() || undefined;
+
+    try {
+      const storage =
+        await this.orgChartCompanyNewsService.fetchAndStoreCompanyNews({
+          companyId: normalizedCompanyId,
+          companyName,
+          location,
+        });
+
+      return {
+        status: 'ok' as const,
+        result: {
+          ...storage,
+          mergedNewsItems:
+            this.orgChartCompanyNewsService.mergeNewsItemsFromStorage(storage),
+        },
+      };
+    } catch (error) {
+      this.logger.error('Fetch company news failed', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch company news',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Get(':companyId/:country/:functionRoot')

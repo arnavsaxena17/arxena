@@ -48,6 +48,10 @@ export class FreeTrialLeadDto {
   @IsNotEmpty()
   company: string;
 
+  @IsString()
+  @IsNotEmpty()
+  phone: string;
+
   @IsIn(FREE_TRIAL_SOURCES)
   source: FreeTrialLeadSource;
 

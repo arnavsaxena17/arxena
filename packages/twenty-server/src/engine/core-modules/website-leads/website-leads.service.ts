@@ -52,6 +52,7 @@ export class WebsiteLeadsService {
       '',
       `Name: ${lead.name.trim()}`,
       `Email: ${lead.email.trim()}`,
+      `Phone: ${lead.phone.trim()}`,
       `Company: ${lead.company.trim()}`,
       `Source: ${lead.source}`,
       '',

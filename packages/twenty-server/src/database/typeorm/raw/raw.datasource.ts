@@ -2,6 +2,9 @@ import { config } from 'dotenv';
 import { DataSource, DataSourceOptions } from 'typeorm';
 config({ path: process.env.NODE_ENV === 'test' ? '.env.test' : '.env' });
 
+const poolMax = parseInt(process.env.PG_POOL_RAW_MAX ?? '10', 10);
+const poolMin = parseInt(process.env.PG_POOL_RAW_MIN ?? '0', 10);
+
 const typeORMRawModuleOptions: DataSourceOptions = {
   url: process.env.PG_DATABASE_URL,
   type: 'postgres',
@@ -14,9 +17,9 @@ const typeORMRawModuleOptions: DataSourceOptions = {
       : undefined,
   extra: {
     query_timeout: 10000,
-    // Connection pooling configuration for TypeORM 0.3.20
-    max: 100,
-    min: 10,
+    // Connection pooling: cap to avoid "too many clients" (sum of all pools must be < PostgreSQL max_connections)
+    max: poolMax,
+    min: poolMin,
     idle: 60000,
     acquire: 120000,
     evict: 30000,
@@ -24,7 +27,7 @@ const typeORMRawModuleOptions: DataSourceOptions = {
     idleTimeoutMillis: 60000, // Match TypeORM idle timeout
     connectionTimeoutMillis: 120000, // Match TypeORM acquire timeout
     // Additional PostgreSQL pool settings
-    connectionLimit: 100,
+    connectionLimit: poolMax,
     acquireTimeout: 120000,
     timeout: 60000,
   },

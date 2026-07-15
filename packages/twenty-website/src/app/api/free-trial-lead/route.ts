@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isValidPhoneNumber } from 'libphonenumber-js';
 import {
   isAllowedEmailForNewWorkspaceSignup,
   WORK_EMAIL_REQUIRED_MESSAGE,
@@ -63,6 +64,7 @@ export async function POST(request: NextRequest) {
     const email =
       typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
     const company = typeof body.company === 'string' ? body.company.trim() : '';
+    const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
     const source =
       typeof body.source === 'string' && isFreeTrialSource(body.source)
         ? body.source
@@ -86,6 +88,18 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
+    if (!phone) {
+      return NextResponse.json(
+        { message: 'Phone number is required.' },
+        { status: 400 },
+      );
+    }
+    if (!isValidPhoneNumber(phone)) {
+      return NextResponse.json(
+        { message: 'Please enter a valid phone number.' },
+        { status: 400 },
+      );
+    }
     if (!company) {
       return NextResponse.json(
         { message: 'Company name is required.' },
@@ -100,6 +114,7 @@ export async function POST(request: NextRequest) {
       name,
       email,
       company,
+      phone,
       source,
       orgChartContext: parseOrgChartContext(body.orgChartContext),
     };

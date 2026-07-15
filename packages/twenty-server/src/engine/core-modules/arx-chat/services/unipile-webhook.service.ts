@@ -6,6 +6,11 @@ import { InjectMessageQueue } from '../../message-queue/decorators/message-queue
 import { MessageQueue } from '../../message-queue/message-queue.constants';
 import { MessageQueueService } from '../../message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
+import {
+  UNIPILE_WEBHOOK_PROCESSOR_NAME,
+  type UnipileWebhookJobData,
+  type UnipileWebhookJobKind,
+} from '../types/unipile-webhook-job.types';
 import type {
     CreateWebhookDto,
     UnipileAccountStatusWebhook,
@@ -33,8 +38,99 @@ export class UnipileWebhookService {
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     private readonly unipileAttachmentStorageService: UnipileAttachmentStorageService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
+    @InjectMessageQueue(MessageQueue.unipileWebhookQueue)
+    private readonly unipileWebhookQueueService?: MessageQueueService,
   ) {
     this.attachmentStorage = new UnipileAttachmentStorageUtil();
+  }
+
+  /**
+   * Enqueue webhook for async processing with limited BullMQ concurrency.
+   * HTTP handlers should return 200 after this succeeds so Unipile does not retry bursts.
+   */
+  async enqueueWebhook(
+    kind: UnipileWebhookJobKind,
+    payload: UnipileWebhookPayload | UnipileNewRelationWebhook,
+  ): Promise<void> {
+    if (!this.unipileWebhookQueueService) {
+      this.logger.warn(
+        'Unipile webhook queue unavailable, processing webhook synchronously',
+      );
+      if (kind === 'relations') {
+        await this.processNewRelationWebhook(payload as UnipileNewRelationWebhook);
+        return;
+      }
+      await this.processWebhook(payload);
+      return;
+    }
+
+    const receivedAt = new Date().toISOString();
+    const jobData: UnipileWebhookJobData = {
+      kind,
+      payload,
+      receivedAt,
+    };
+
+    await this.unipileWebhookQueueService.add<UnipileWebhookJobData>(
+      UNIPILE_WEBHOOK_PROCESSOR_NAME,
+      jobData,
+      {
+        id: this.buildWebhookJobId(kind, payload, receivedAt),
+        retryLimit: 3,
+      },
+    );
+
+    this.logger.log(
+      `Queued Unipile webhook kind=${kind} event=${this.getPayloadEventLabel(payload, kind)} receivedAt=${receivedAt}`,
+    );
+  }
+
+  private getPayloadEventLabel(
+    payload: UnipileWebhookPayload | UnipileNewRelationWebhook,
+    kind: UnipileWebhookJobKind,
+  ): string {
+    if ('event' in payload) {
+      return payload.event;
+    }
+
+    if ('AccountStatus' in payload) {
+      return 'account_status';
+    }
+
+    return kind;
+  }
+
+  private buildWebhookJobId(
+    kind: UnipileWebhookJobKind,
+    payload: UnipileWebhookPayload | UnipileNewRelationWebhook,
+    receivedAt: string,
+  ): string {
+    if ('message_id' in payload && payload.message_id) {
+      const event =
+        'event' in payload && payload.event ? payload.event : 'message';
+      return `unipile-${kind}-${event}-${payload.message_id}`;
+    }
+
+    if ('AccountStatus' in payload) {
+      const accountStatus = payload.AccountStatus;
+      return `unipile-account-${accountStatus.account_id}-${accountStatus.message}-${receivedAt}`;
+    }
+
+    if ('event' in payload && payload.event === 'new_relation') {
+      const relationPayload = payload as UnipileNewRelationWebhook;
+      const providerId =
+        relationPayload.user_provider_id ??
+        relationPayload.user_public_identifier ??
+        relationPayload.relation?.profile_url ??
+        'unknown';
+      return `unipile-${kind}-new_relation-${relationPayload.account_id}-${providerId}-${receivedAt}`;
+    }
+
+    const accountId =
+      'account_id' in payload && payload.account_id
+        ? payload.account_id
+        : 'unknown';
+    return `unipile-${kind}-${accountId}-${receivedAt}`;
   }
 
   /**

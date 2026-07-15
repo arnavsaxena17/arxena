@@ -396,204 +396,374 @@ export class FilterCandidates {
     }
   }
 
-  async getCandidateInformation(
+  private resolveMessageIdentifierToSearch(
     userMessage: chatMessageType,
-    apiToken: string,
-  ) {
-    console.log('This is the messageFrom', userMessage?.phoneNumberFrom);
-    let messageIdentifierToSearch: string;
-
-    console.log("API Token received for candidate information::")
+  ): string | null {
     if (userMessage.phoneNumberFrom === '') {
       console.log('Message from is empty, returning empty candidate profile object');
-      return emptyCandidateProfileObj;
+      return null;
     }
+
+    let messageIdentifierToSearch: string;
+
     if (userMessage.messageType === 'messageFromSelf') {
       messageIdentifierToSearch = userMessage.phoneNumberTo.replace('+', '');
     } else {
       messageIdentifierToSearch = userMessage.phoneNumberFrom.replace('+', '');
     }
 
-    if (messageIdentifierToSearch.length > 10 && !messageIdentifierToSearch.includes("linkedin")) {
-      console.log( 'Message identifier is more than 10 digits will slice:', messageIdentifierToSearch );
-      if (messageIdentifierToSearch.includes("@s.whatsapp.net")) {
-        messageIdentifierToSearch = messageIdentifierToSearch.split("@s.whatsapp.net")[0];
-      } else{
+    if (
+      messageIdentifierToSearch.length > 10 &&
+      !messageIdentifierToSearch.includes('linkedin')
+    ) {
+      console.log(
+        'Message identifier is more than 10 digits will slice:',
+        messageIdentifierToSearch,
+      );
+      if (messageIdentifierToSearch.includes('@s.whatsapp.net')) {
+        messageIdentifierToSearch =
+          messageIdentifierToSearch.split('@s.whatsapp.net')[0];
+      } else {
         messageIdentifierToSearch = messageIdentifierToSearch.slice(-10);
       }
     }
 
     console.log('messageIdentifierToSearch::', messageIdentifierToSearch);
-    
-    let graphVariables : any;
-    graphVariables = {
-      filter: { phones: { primaryPhoneNumber: { ilike: '%' + messageIdentifierToSearch + '%' } } },
-      orderBy: { position: 'AscNullsFirst' },
-    };
 
-    if (userMessage.messageType === 'linkedin' || messageIdentifierToSearch.includes("linkedin")) {
-      // For LinkedIn, we need to search both by full URL and by profile ID
-      // Since we standardize LinkedIn URLs to https://linkedin.com/in/ format, we only need to search for that format
-      
-      // Normalize the LinkedIn URL first
+    return messageIdentifierToSearch;
+  }
+
+  private buildPeopleSearchGraphVariables(
+    messageIdentifierToSearch: string,
+    userMessage: chatMessageType,
+  ): Record<string, unknown> {
+    if (
+      userMessage.messageType === 'linkedin' ||
+      messageIdentifierToSearch.includes('linkedin')
+    ) {
       const normalizedUrl = normalizeLinkedInUrl(messageIdentifierToSearch);
-      
-      // Extract profile ID from LinkedIn URL if it's a full URL
       let profileId = messageIdentifierToSearch;
+
       if (messageIdentifierToSearch.includes('linkedin.com/in/')) {
         profileId = messageIdentifierToSearch.split('linkedin.com/in/')[1];
       }
-      
+
       console.log('LinkedIn search - Original URL:', messageIdentifierToSearch);
       console.log('LinkedIn search - Normalized URL:', normalizedUrl);
       console.log('LinkedIn search - Profile ID:', profileId);
-      
-      graphVariables = {
+
+      return {
         filter: {
           or: [
             {
               linkedinLink: {
-                primaryLinkUrl: { ilike: '%' + messageIdentifierToSearch + '%' },
-              }
+                primaryLinkUrl: {
+                  ilike: '%' + messageIdentifierToSearch + '%',
+                },
+              },
             },
             {
               linkedinLink: {
                 primaryLinkUrl: { ilike: '%' + normalizedUrl + '%' },
-              }
+              },
             },
             {
               linkedinLink: {
                 primaryLinkUrl: { ilike: '%' + profileId + '%' },
-              }
-            }
-          ]
+              },
+            },
+          ],
         },
         orderBy: { position: 'AscNullsFirst' },
-      }
+      };
     }
-    
+
+    return {
+      filter: {
+        phones: {
+          primaryPhoneNumber: { ilike: '%' + messageIdentifierToSearch + '%' },
+        },
+      },
+      orderBy: { position: 'AscNullsFirst' },
+    };
+  }
+
+  private buildDirectCandidateSearchGraphVariables(
+    messageIdentifierToSearch: string,
+    userMessage: chatMessageType,
+  ): Record<string, unknown> {
+    if (
+      userMessage.messageType === 'linkedin' ||
+      messageIdentifierToSearch.includes('linkedin')
+    ) {
+      const normalizedUrl = normalizeLinkedInUrl(messageIdentifierToSearch);
+      let profileId = messageIdentifierToSearch;
+
+      if (messageIdentifierToSearch.includes('linkedin.com/in/')) {
+        profileId = messageIdentifierToSearch.split('linkedin.com/in/')[1];
+      }
+
+      return {
+        filter: {
+          or: [
+            {
+              linkedinUrl: {
+                primaryLinkUrl: {
+                  ilike: '%' + messageIdentifierToSearch + '%',
+                },
+              },
+            },
+            {
+              linkedinUrl: {
+                primaryLinkUrl: { ilike: '%' + normalizedUrl + '%' },
+              },
+            },
+            {
+              linkedinUrl: {
+                primaryLinkUrl: { ilike: '%' + profileId + '%' },
+              },
+            },
+          ],
+        },
+        orderBy: { position: 'AscNullsFirst' },
+        limit: 50,
+      };
+    }
+
+    return {
+      filter: {
+        phoneNumber: {
+          primaryPhoneNumber: { ilike: '%' + messageIdentifierToSearch + '%' },
+        },
+      },
+      orderBy: { position: 'AscNullsFirst' },
+      limit: 50,
+    };
+  }
+
+  private selectActiveJobCandidate(
+    candidateEdges: CandidatesEdge[],
+  ): CandidatesEdge | undefined {
+    return candidateEdges
+      .filter((edge: CandidatesEdge) => {
+        const isActive = edge?.node?.jobs?.isActive;
+        const hasStartChat = edge?.node?.startChat;
+        const isStopped = edge?.node?.stopChat;
+
+        console.log(
+          `Filtering candidate ${edge?.node?.id}: isActive=${isActive}, hasStartChat=${hasStartChat}, isStopped=${isStopped}`,
+        );
+
+        return isActive && !isStopped;
+      })
+      .sort((a, b) => {
+        const aTime = a?.node?.updatedAt
+          ? new Date(a.node.updatedAt).getTime()
+          : 0;
+        const bTime = b?.node?.updatedAt
+          ? new Date(b.node.updatedAt).getTime()
+          : 0;
+
+        return bTime - aTime;
+      })[0];
+  }
+
+  private buildCandidateProfileObj(
+    activeJobCandidateObj: CandidatesEdge,
+    personNode: PersonNode | undefined,
+    userMessage: chatMessageType,
+  ): CandidateNode {
+    const activeJobCandidate: CandidateNode = activeJobCandidateObj?.node;
+    const activeJob: Job = activeJobCandidate?.jobs as Job;
+    const activeCompany = activeJob?.company;
+    const candidatePhone =
+      activeJobCandidate?.phoneNumber?.primaryPhoneNumber || '';
+    const personPhone = personNode?.phones?.primaryPhoneNumber || '';
+    const resolvedPhone = candidatePhone || personPhone;
+
+    return {
+      name:
+        personNode?.name?.firstName ||
+        activeJobCandidate?.name ||
+        activeJobCandidate?.people?.name?.firstName ||
+        '',
+      id: activeJobCandidate?.id,
+      attachments: activeJobCandidate?.attachments,
+      whatsappProvider: activeJobCandidate?.whatsappProvider,
+      jobs: {
+        name: activeJob?.name || '',
+        id: activeJob?.id,
+        recruiterId: activeJob?.recruiterId,
+        jobCode: activeJob?.jobCode,
+        isActive: activeJob?.isActive,
+        company: {
+          name: activeCompany?.name || '',
+          id: activeCompany?.companyId || '',
+          companyId: activeCompany?.companyId || '',
+          domainName: activeCompany?.domainName,
+          descriptionOneliner: activeCompany?.descriptionOneliner,
+        },
+        jobLocation: activeJob?.jobLocation,
+        whatsappMessages: activeJob?.whatsappMessages,
+      },
+      createdAt: activeJobCandidate?.createdAt,
+      videoInterview: activeJobCandidate?.videoInterview,
+      engagementStatus: activeJobCandidate?.engagementStatus,
+      lastEngagementChatControl:
+        activeJobCandidate?.lastEngagementChatControl,
+      phoneNumber: {
+        primaryPhoneNumber:
+          resolvedPhone.length === 10 ? '91' + resolvedPhone : resolvedPhone,
+      },
+      email: {
+        primaryEmail:
+          personNode?.emails?.primaryEmail ||
+          activeJobCandidate?.email?.primaryEmail ||
+          activeJobCandidate?.people?.emails?.primaryEmail ||
+          '',
+      },
+      peopleId: personNode?.id || activeJobCandidate?.peopleId || '',
+      input: userMessage?.messages[0]?.content,
+      startChat: activeJobCandidate?.startChat,
+      startMeetingSchedulingChat:
+        activeJobCandidate?.startMeetingSchedulingChat,
+      startVideoInterviewChat: activeJobCandidate?.startVideoInterviewChat,
+      stopChat: activeJobCandidate?.stopChat,
+      otherFields: activeJobCandidate?.otherFields ?? {},
+      whatsappMessages: activeJobCandidate?.whatsappMessages,
+      status: activeJobCandidate?.status,
+      messagingChannel: activeJobCandidate?.messagingChannel,
+      emailMessages: { edges: activeJobCandidate?.emailMessages?.edges },
+      candidateReminders: {
+        edges: activeJobCandidate?.candidateReminders?.edges,
+      },
+      updatedAt: activeJobCandidate.updatedAt,
+      people: (personNode || activeJobCandidate?.people) as PersonNode,
+      chatCount: activeJobCandidate.chatCount,
+    };
+  }
+
+  private async fetchCandidateEdgesByPhoneDirect(
+    messageIdentifierToSearch: string,
+    userMessage: chatMessageType,
+    apiToken: string,
+  ): Promise<CandidatesEdge[]> {
+    const graphVariables = this.buildDirectCandidateSearchGraphVariables(
+      messageIdentifierToSearch,
+      userMessage,
+    );
+
+    console.log(
+      'Falling back to direct candidate search by phone/linkedin:',
+      JSON.stringify(graphVariables),
+    );
+
+    const response = await this.staticGraphQLService.executeGraphQL(
+      graphqlToFetchAllCandidateData,
+      graphVariables,
+      apiToken,
+    );
+    const candidates = response?.data?.data?.candidates as
+      | {
+          edges: CandidatesEdge[];
+          pageInfo: PageInfo;
+        }
+      | undefined;
+
+    const candidateEdges = candidates?.edges || [];
+
+    console.log(
+      `Direct candidate search returned ${candidateEdges.length} candidate(s)`,
+    );
+
+    return candidateEdges;
+  }
+
+  async getCandidateInformation(
+    userMessage: chatMessageType,
+    apiToken: string,
+  ) {
+    console.log('This is the messageFrom', userMessage?.phoneNumberFrom);
+    console.log('API Token received for candidate information::');
+
+    const messageIdentifierToSearch =
+      this.resolveMessageIdentifierToSearch(userMessage);
+
+    if (!messageIdentifierToSearch) {
+      return emptyCandidateProfileObj;
+    }
+
+    const graphVariables = this.buildPeopleSearchGraphVariables(
+      messageIdentifierToSearch,
+      userMessage,
+    );
+
     try {
       console.log('going to get candidate information');
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, graphVariables, apiToken);
-      const people = response?.data?.data?.people as { 
-        edges: PersonEdge[];
-        pageInfo: PageInfo;
-      } | undefined;
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlQueryToFindManyPeople,
+        graphVariables,
+        apiToken,
+      );
+      const people = response?.data?.data?.people as
+        | {
+            edges: PersonEdge[];
+            pageInfo: PageInfo;
+          }
+        | undefined;
       const peopleEdges = people?.edges || [];
-      
-      console.log("Number of people fetched::", peopleEdges.length);
-      
-      // Debug: Log the LinkedIn URLs of found people
+
+      console.log('Number of people fetched::', peopleEdges.length);
+
       if (peopleEdges.length > 0) {
         console.log('Found people with LinkedIn URLs:');
         peopleEdges.forEach((person, index) => {
           const linkedinUrl = person?.node?.linkedinLink?.primaryLinkUrl;
-          console.log(`Person ${index + 1}: ${linkedinUrl || 'No LinkedIn URL'}`);
+          console.log(
+            `Person ${index + 1}: ${linkedinUrl || 'No LinkedIn URL'}`,
+          );
         });
       }
 
-      // Flatten all candidates from all people into single array
-      const candidateDataObjs = peopleEdges.flatMap(person => 
-        person?.node?.candidates?.edges || []
+      const candidateDataObjs = peopleEdges.flatMap(
+        (person) => person?.node?.candidates?.edges || [],
       );
 
+      let activeJobCandidateObj =
+        this.selectActiveJobCandidate(candidateDataObjs);
 
-      // Find most recently updated candidate with active job
-      // For incoming messages, we should be more permissive and not require startChat to be true
-      // because incoming messages should trigger engagement even if startChat is not initially enabled
-      const activeJobCandidateObj = candidateDataObjs
-        .filter((edge: CandidatesEdge) => {
-          const isActive = edge?.node?.jobs?.isActive;
-          const hasStartChat = edge?.node?.startChat;
-          const isStopped = edge?.node?.stopChat;
-          console.log(`Filtering candidate ${edge?.node?.id}: isActive=${isActive}, hasStartChat=${hasStartChat}, isStopped=${isStopped}`);
-          
-          // For incoming messages, we should process candidates with active jobs
-          // even if startChat is not enabled, but we should skip if stopChat is true
-          return isActive && !isStopped;
-        })
-        .sort((a, b) => {
-          const aTime = a?.node?.updatedAt ? new Date(a.node.updatedAt).getTime() : 0;
-          const bTime = b?.node?.updatedAt ? new Date(b.node.updatedAt).getTime() : 0;
-          return bTime - aTime; // Sort descending
-        })[0];
-
-
-
-      if (activeJobCandidateObj) {
-        const personWithActiveJob = peopleEdges.find(
-          (person: PersonEdge) =>
-            person?.node?.candidates?.edges?.some(
-              (candidate) => candidate?.node?.jobs?.isActive,
-            ),
+      if (!activeJobCandidateObj) {
+        const directCandidateEdges = await this.fetchCandidateEdgesByPhoneDirect(
+          messageIdentifierToSearch,
+          userMessage,
+          apiToken,
         );
 
-        const activeJobCandidate: CandidateNode = activeJobCandidateObj?.node;
-        const activeJob: Job = activeJobCandidate?.jobs as Job;
-        const activeCompany = activeJob?.company;
-
-        const candidateProfileObj: CandidateNode = {
-          name: personWithActiveJob?.node?.name?.firstName || '',
-          id: activeJobCandidate?.id,
-          attachments: activeJobCandidate?.attachments,
-          whatsappProvider: activeJobCandidate?.whatsappProvider,
-          jobs: {
-            name: activeJob?.name || '',
-            id: activeJob?.id,
-            recruiterId: activeJob?.recruiterId,
-            jobCode: activeJob?.jobCode,
-            isActive: activeJob?.isActive,
-            company: {
-              name: activeCompany?.name || '',
-              id: activeCompany?.companyId || '',
-              companyId: activeCompany?.companyId || '',
-              domainName: activeCompany?.domainName,
-              descriptionOneliner: activeCompany?.descriptionOneliner,
-            },
-            jobLocation: activeJob?.jobLocation,
-            whatsappMessages: activeJob?.whatsappMessages,
-          },
-          createdAt: activeJobCandidate?.createdAt,
-          videoInterview: activeJobCandidate?.videoInterview,
-          engagementStatus: activeJobCandidate?.engagementStatus,
-          lastEngagementChatControl: activeJobCandidate?.lastEngagementChatControl,
-          phoneNumber: {
-            primaryPhoneNumber: personWithActiveJob?.node?.phones?.primaryPhoneNumber?.length == 10
-              ? '91' + personWithActiveJob?.node?.phones?.primaryPhoneNumber
-              : personWithActiveJob?.node?.phones?.primaryPhoneNumber || '',
-          },
-          email: {
-            primaryEmail: personWithActiveJob?.node?.emails?.primaryEmail || '',
-          },
-          peopleId: personWithActiveJob?.node?.id || '',
-          input: userMessage?.messages[0]?.content,
-          startChat: activeJobCandidate?.startChat,
-          startMeetingSchedulingChat: activeJobCandidate?.startMeetingSchedulingChat,
-          startVideoInterviewChat: activeJobCandidate?.startVideoInterviewChat,
-          stopChat: activeJobCandidate?.stopChat,
-          otherFields: activeJobCandidate?.otherFields ?? {},
-          whatsappMessages: activeJobCandidate?.whatsappMessages,
-          status: activeJobCandidate?.status,
-          messagingChannel: activeJobCandidate?.messagingChannel,
-          emailMessages: { edges: activeJobCandidate?.emailMessages?.edges },
-          candidateReminders: {
-            edges: activeJobCandidate?.candidateReminders?.edges,
-          },
-          updatedAt: activeJobCandidate.updatedAt,
-          people: personWithActiveJob?.node as PersonNode,
-          chatCount: activeJobCandidate.chatCount
-        };
-
-        return candidateProfileObj;
-      } else {
-        console.log('No active candidate found (job not active or chat stopped)');
-        return emptyCandidateProfileObj;
+        activeJobCandidateObj =
+          this.selectActiveJobCandidate(directCandidateEdges);
       }
+
+      if (activeJobCandidateObj) {
+        const personWithActiveJob =
+          peopleEdges.find((person: PersonEdge) =>
+            person?.node?.candidates?.edges?.some(
+              (candidate) => candidate?.node?.id === activeJobCandidateObj?.node?.id,
+            ),
+          )?.node ||
+          peopleEdges[0]?.node ||
+          activeJobCandidateObj.node?.people;
+
+        return this.buildCandidateProfileObj(
+          activeJobCandidateObj,
+          personWithActiveJob,
+          userMessage,
+        );
+      }
+
+      console.log('No active candidate found (job not active or chat stopped)');
+      return emptyCandidateProfileObj;
     } catch (error) {
-      console.error(
-        'Error getting candidate information:',
-        error
-      );
+      console.error('Error getting candidate information:', error);
       return emptyCandidateProfileObj;
     }
   }

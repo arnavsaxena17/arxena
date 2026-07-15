@@ -1,5 +1,6 @@
 'use client';
 
+import { ThemeProvider } from '@emotion/react';
 import {
   createContext,
   ReactNode,
@@ -9,6 +10,7 @@ import {
   useState,
 } from 'react';
 
+import { companySearchLightTheme } from '@/lib/company-search';
 import { isFreeTrialLeadFlowEnabled } from '@/lib/free-trial-flow';
 import {
   FreeTrialOrgChartContext,
@@ -81,13 +83,15 @@ export const FreeTrialFlowProvider = ({
     <FreeTrialFlowContext.Provider value={value}>
       {children}
       {isFreeTrialFlow && (
-        <FreeTrialModal
-          isOpen={modalState.isOpen}
-          source={modalState.source}
-          orgChartContext={modalState.orgChartContext}
-          intro={modalState.intro}
-          onClose={closeFreeTrial}
-        />
+        <ThemeProvider theme={companySearchLightTheme}>
+          <FreeTrialModal
+            isOpen={modalState.isOpen}
+            source={modalState.source}
+            orgChartContext={modalState.orgChartContext}
+            intro={modalState.intro}
+            onClose={closeFreeTrial}
+          />
+        </ThemeProvider>
       )}
     </FreeTrialFlowContext.Provider>
   );

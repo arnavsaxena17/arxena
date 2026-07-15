@@ -246,6 +246,7 @@ export const ArxOrgChartView = ({
       logoUrl: headerProps.logoUrl,
       hideProfileCountWhenUnipile: headerProps.hideProfileCountWhenUnipile,
       timelineMetrics: headerProps.timelineMetrics ?? null,
+      timelineProfilesOptions: headerProps.timelineProfilesOptions,
       onClearCompanyCache: headerProps.onClearCompanyCache,
     }),
     [headerProps],

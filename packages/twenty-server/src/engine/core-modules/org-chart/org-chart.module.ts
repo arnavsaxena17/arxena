@@ -48,6 +48,7 @@ import { OrgchartCancelRegistryService } from './services/orgchart-cancel-regist
 import { OrgChartIncrementalBuildCacheService } from './services/orgchart-incremental-build-cache.service';
 import { OrgChartPublishedAdminService } from './services/org-chart-published-admin.service';
 import { OrgChartPublishedSlugService } from './services/org-chart-published-slug.service';
+import { OrgChartCompanyNewsService } from './services/org-chart-company-news.service';
 import { OrgChartS3Service } from './services/orgchart-s3.service';
 import { PdlAutocompleteService } from './services/pdl-autocomplete.service';
 import { PdlPersonOrgMovementService } from './services/pdl-person-org-movement.service';
@@ -103,6 +104,7 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     ImageProxyService,
     PythonOrgChartService,
     OrgChartS3Service,
+    OrgChartCompanyNewsService,
     OrgChartCacheService,
     OrgchartCancelRegistryService,
     OrgChartIncrementalBuildCacheService,

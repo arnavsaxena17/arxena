@@ -16,7 +16,7 @@ export const DEFAULT_SITE_DESCRIPTION =
 
 export const HOMEPAGE_HERO = {
   title: 'Org Intelligence',
-  lead: "View & power through any company's org structure — hack growth via relevant, contexual meetings.",
+  lead: "Build & power through any company's org structure.",
   stats:
     '10M+ live, real-time company org charts · 800M+ people profiles, contact info & engagement',
   exampleStripTitle: 'Explore a live org chart: Click on any company below',

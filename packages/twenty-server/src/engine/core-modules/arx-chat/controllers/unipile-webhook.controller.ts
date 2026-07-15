@@ -111,17 +111,17 @@ export class UnipileWebhookController {
           message: 'Unauthorized webhook request',
         });
       }
-      await this.webhookService.processNewRelationWebhook(payload);
+      await this.webhookService.enqueueWebhook('relations', payload);
       return response.status(200).json({
         success: true,
-        message: 'Relations webhook processed successfully',
+        message: 'Relations webhook queued successfully',
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      this.logger.error('Failed to process relations webhook:', error);
+      this.logger.error('Failed to queue relations webhook:', error);
       return response.status(500).json({
         success: false,
-        message: 'Failed to process webhook',
+        message: 'Failed to queue webhook',
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
@@ -149,17 +149,17 @@ export class UnipileWebhookController {
         });
       }
       this.captureWebhookPayload(payload);
-      await this.webhookService.processWebhook(payload);
+      await this.webhookService.enqueueWebhook('webhook', payload);
       return response.status(200).json({
         success: true,
-        message: 'Webhook processed successfully',
+        message: 'Webhook queued successfully',
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      this.logger.error('Failed to process Unipile webhook:', error);
+      this.logger.error('Failed to queue Unipile webhook:', error);
       return response.status(500).json({
         success: false,
-        message: 'Failed to process webhook',
+        message: 'Failed to queue webhook',
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }

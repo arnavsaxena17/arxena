@@ -1,11 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { Repository } from 'typeorm';
 
 import { DatabaseEventAction } from 'src/engine/api/graphql/graphql-query-runner/enums/database-event-action';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { FieldActorSource } from 'src/engine/metadata-modules/field-metadata/composite-types/actor.composite-type';
+import { PhonesMetadata } from 'src/engine/metadata-modules/field-metadata/composite-types/phones.composite-type';
 import { ObjectMetadataEntity } from 'src/engine/metadata-modules/object-metadata/object-metadata.entity';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { WorkspaceEventEmitter } from 'src/engine/workspace-event-emitter/workspace-event-emitter';
@@ -65,6 +67,32 @@ export class FreeTrialLeadCrmService {
     return `${company.trim().toLowerCase().replace(/\s+/g, '')}.com`;
   }
 
+  private buildPhonesMetadata(phone: string): PhonesMetadata | null {
+    const trimmedPhone = phone.trim();
+
+    if (!trimmedPhone) {
+      return null;
+    }
+
+    const parsed = parsePhoneNumberFromString(trimmedPhone);
+
+    if (parsed?.isValid()) {
+      return {
+        primaryPhoneNumber: parsed.nationalNumber,
+        primaryPhoneCountryCode: parsed.country ?? '',
+        primaryPhoneCallingCode: `+${parsed.countryCallingCode}`,
+        additionalPhones: null,
+      };
+    }
+
+    return {
+      primaryPhoneNumber: trimmedPhone,
+      primaryPhoneCountryCode: '',
+      primaryPhoneCallingCode: '',
+      additionalPhones: null,
+    };
+  }
+
   async createRecordsFromLead(
     lead: FreeTrialLeadDto,
   ): Promise<FreeTrialLeadCrmRecords | null> {
@@ -82,6 +110,7 @@ export class FreeTrialLeadCrmService {
     const { firstName, lastName } = this.parseLeadName(lead.name);
     const companyName = lead.company.trim();
     const companyDomain = this.buildCompanyDomain(companyName, normalizedEmail);
+    const phones = this.buildPhonesMetadata(lead.phone);
 
     const companyRepository =
       await this.twentyORMGlobalManager.getRepositoryForWorkspace(
@@ -150,12 +179,18 @@ export class FreeTrialLeadCrmService {
           primaryEmail: normalizedEmail,
           additionalEmails: null,
         },
+        ...(phones ? { phones } : {}),
         companyId: company.id,
         position: lastPersonPosition + 1,
         createdBy: {
           source: FieldActorSource.SYSTEM,
           name: 'Website Free Trial',
         },
+      });
+    } else if (phones && !person.phones?.primaryPhoneNumber) {
+      person = await personRepository.save({
+        ...person,
+        phones,
       });
     }
 

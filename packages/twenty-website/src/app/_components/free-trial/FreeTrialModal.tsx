@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { CalendlyInline } from '@/app/_components/contact/CalendlyInline';
+import { FreeTrialPhoneInput } from '@/app/_components/free-trial/FreeTrialPhoneInput';
 import { trackGA4Event } from '@/lib/analytics';
 import { buildFreeTrialCalendlyUrl } from '@/lib/free-trial-calendly';
 import { FREE_TRIAL_CTA_LABEL } from '@/lib/free-trial-flow';
@@ -16,6 +17,7 @@ import {
 } from '@/lib/free-trial-types';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 import { submitCalendlyBookingCompleted } from '@/lib/submit-calendly-booking-completed';
+import { isValidPhoneNumber } from 'libphonenumber-js';
 import { OrgChartSignUpIntro } from 'twenty-orgchart/orgchart-core';
 import {
   isAllowedEmailForNewWorkspaceSignup,
@@ -335,6 +337,7 @@ export const FreeTrialModal = ({
   );
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [company, setCompany] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -344,6 +347,7 @@ export const FreeTrialModal = ({
     setStep(getInitialStep(intro));
     setName('');
     setEmail('');
+    setPhone('');
     setCompany('');
     setError(null);
     setIsSubmitting(false);
@@ -436,6 +440,7 @@ export const FreeTrialModal = ({
   const isFormComplete =
     name.trim().length > 0 &&
     email.trim().length > 0 &&
+    phone.trim().length > 0 &&
     company.trim().length > 0;
 
   const preloadCalendlyUrl = useMemo(() => {
@@ -487,9 +492,10 @@ export const FreeTrialModal = ({
 
     const trimmedName = name.trim();
     const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPhone = phone.trim();
     const trimmedCompany = company.trim();
 
-    if (!trimmedName || !trimmedEmail || !trimmedCompany) {
+    if (!trimmedName || !trimmedEmail || !trimmedPhone || !trimmedCompany) {
       setError('Please fill in all required fields.');
 
       return;
@@ -501,12 +507,19 @@ export const FreeTrialModal = ({
       return;
     }
 
+    if (!isValidPhoneNumber(trimmedPhone)) {
+      setError('Please enter a valid phone number.');
+
+      return;
+    }
+
     setIsSubmitting(true);
     setStep('loading');
 
     const payload: FreeTrialLeadPayload = {
       name: trimmedName,
       email: trimmedEmail,
+      phone: trimmedPhone,
       company: trimmedCompany,
       source,
       orgChartContext,
@@ -676,6 +689,16 @@ export const FreeTrialModal = ({
                       setEmail(changeEvent.target.value);
                     }}
                     required
+                  />
+                </StyledField>
+                <StyledField>
+                  <StyledLabel htmlFor="free-trial-phone">
+                    Phone number *
+                  </StyledLabel>
+                  <FreeTrialPhoneInput
+                    id="free-trial-phone"
+                    value={phone}
+                    onChange={setPhone}
                   />
                 </StyledField>
                 <StyledField>

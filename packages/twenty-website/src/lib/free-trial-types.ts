@@ -17,6 +17,7 @@ export type FreeTrialLeadPayload = {
   name: string;
   email: string;
   company: string;
+  phone: string;
   source: FreeTrialSource;
   orgChartContext?: FreeTrialOrgChartContext;
 };

@@ -1012,7 +1012,7 @@ export class EnvironmentVariables {
   @CastToPositiveNumber()
   @IsOptional()
   @IsNumber()
-  PG_POOL_METADATA_MAX = 25;
+  PG_POOL_METADATA_MAX = 10;
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.ServerConfig,
@@ -1031,7 +1031,7 @@ export class EnvironmentVariables {
   @CastToPositiveNumber()
   @IsOptional()
   @IsNumber()
-  PG_POOL_CORE_MAX = 25;
+  PG_POOL_CORE_MAX = 10;
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.ServerConfig,
@@ -1050,7 +1050,7 @@ export class EnvironmentVariables {
   @CastToPositiveNumber()
   @IsOptional()
   @IsNumber()
-  PG_POOL_MAIN_MAX = 10;
+  PG_POOL_MAIN_MAX = 5;
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.ServerConfig,
@@ -1070,7 +1070,7 @@ export class EnvironmentVariables {
   @CastToPositiveNumber()
   @IsOptional()
   @IsNumber()
-  PG_POOL_WORKSPACE_MAX = 10;
+  PG_POOL_WORKSPACE_MAX = 3;
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.ServerConfig,
@@ -1081,6 +1081,35 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsNumber()
   PG_POOL_WORKSPACE_MIN = 0;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.ServerConfig,
+    description:
+      'PostgreSQL connection pool max size for raw datasource. Keep sum of all PG_POOL_*_MAX below PostgreSQL max_connections.',
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  @IsNumber()
+  PG_POOL_RAW_MAX = 10;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.ServerConfig,
+    description: 'PostgreSQL connection pool min size for raw datasource',
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  @IsNumber()
+  PG_POOL_RAW_MIN = 0;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.ServerConfig,
+    description:
+      'BullMQ concurrency for Unipile webhook processing. Keep low to avoid PostgreSQL connection exhaustion.',
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  @IsNumber()
+  UNIPILE_WEBHOOK_CONCURRENCY = 2;
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.TokensDuration,

@@ -273,6 +273,48 @@ export class OrgChartS3Service {
     }
   }
 
+  async saveCompanyNews(
+    companyId: string,
+    payload: Record<string, unknown>,
+    variant?: OrgChartS3Variant,
+  ): Promise<void> {
+    const folder = this.buildFolderPath(companyId, variant);
+
+    try {
+      await this.fileStorageService.write({
+        file: Buffer.from(JSON.stringify(payload)),
+        name: 'company-news.json',
+        folder,
+        mimeType: 'application/json',
+      });
+      this.logger.log(`Saved company news to S3: ${folder}/company-news.json`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to save company news to S3 for companyId=${companyId} variant=${variant ?? 'default'}`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  async getCompanyNews(
+    companyId: string,
+    variant?: OrgChartS3Variant,
+  ): Promise<Record<string, unknown> | null> {
+    const folder = this.buildFolderPath(companyId, variant);
+
+    try {
+      const stream = await this.fileStorageService.read({
+        folderPath: folder,
+        filename: 'company-news.json',
+      });
+      const content = await this.streamToString(stream);
+      return JSON.parse(content) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  }
+
   async getSuperImposeManifest(
     companyId: string,
     variant?: OrgChartS3Variant,

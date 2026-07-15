@@ -247,6 +247,51 @@ const StyledFunctionGroupCount = styled.span`
   font-size: ${({ theme }) => theme.font.size.sm};
 `;
 
+const StyledNewsList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(1.5)};
+`;
+
+const StyledNewsCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(0.5)};
+  padding: ${({ theme }) => theme.spacing(1.5)};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background: ${({ theme }) => theme.background.secondary};
+`;
+
+const StyledNewsSummary = styled.div`
+  color: ${({ theme }) => theme.font.color.primary};
+  line-height: 1.5;
+`;
+
+const StyledNewsMeta = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing(1)};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${({ theme }) => theme.font.color.tertiary};
+`;
+
+const StyledNewsLink = styled.a`
+  color: ${({ theme }) => theme.color.blue};
+  text-decoration: none;
+  word-break: break-all;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const StyledNewsNotes = styled.div`
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.secondary};
+  line-height: 1.4;
+`;
+
 const StyledCacheSection = styled(StyledSection)`
   margin-top: auto;
 `;
@@ -266,6 +311,30 @@ export type OrgChartCompanyDrawerProps = OrgChartCompanyInfoProps & {
     sampleProfiles?: string;
     includeOrgIntelligence?: string;
   };
+};
+
+type CompanyNewsItem = {
+  summary: string;
+  date: string;
+  url: string;
+  fetchedAt?: string;
+};
+
+type CompanyNewsStorageResult = {
+  companyId: string;
+  companyName: string;
+  location?: string;
+  updatedAt: string;
+  fetches: Array<{
+    fetchedAt: string;
+    result: {
+      company_name: string;
+      location: string;
+      news_items: CompanyNewsItem[];
+      notes: string;
+    };
+  }>;
+  mergedNewsItems?: CompanyNewsItem[];
 };
 
 export const OrgChartCompanyDrawer = ({
@@ -292,12 +361,16 @@ export const OrgChartCompanyDrawer = ({
   const { activeTabId } = useTabList(timelineTabListInstanceId);
   const activeTab = (
     activeTabId ?? 'company'
-  ) as 'company' | 'joined' | 'left' | 'current' | 'past';
+  ) as 'company' | 'joined' | 'left' | 'current' | 'past' | 'news';
   const [activeWindow, setActiveWindow] = useState<'1m' | '3m' | '6m' | '1y'>(
     '1m',
   );
   const [timelineProfiles, setTimelineProfiles] = useState<Record<string, unknown> | null>(null);
   const [isTimelineProfilesLoading, setIsTimelineProfilesLoading] = useState(false);
+  const [companyNews, setCompanyNews] = useState<CompanyNewsStorageResult | null>(null);
+  const [isCompanyNewsLoading, setIsCompanyNewsLoading] = useState(false);
+  const [isCompanyNewsFetching, setIsCompanyNewsFetching] = useState(false);
+  const [companyNewsError, setCompanyNewsError] = useState<string | null>(null);
 
   const getLogoUrl = (site?: string): string | null => {
     if (!site?.trim()) return null;
@@ -341,6 +414,122 @@ export const OrgChartCompanyDrawer = ({
     activeTab === 'left' ||
     activeTab === 'current' ||
     activeTab === 'past';
+
+  const shouldLoadCompanyNews = activeTab === 'news';
+
+  const formatDateTime = (value?: string): string => {
+    if (!value?.trim()) return '—';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleString();
+  };
+
+  useEffect(() => {
+    if (!shouldLoadCompanyNews || !timelineProfilesOptions?.baseUrl?.trim()) {
+      setCompanyNews(null);
+      setCompanyNewsError(null);
+      return;
+    }
+
+    let cancelled = false;
+    const run = async () => {
+      setIsCompanyNewsLoading(true);
+      setCompanyNewsError(null);
+      try {
+        const url = `${timelineProfilesOptions.baseUrl.replace(
+          /\/$/,
+          '',
+        )}/org-chart/${encodeURIComponent(
+          timelineProfilesOptions.companyId,
+        )}/company-news`;
+        const res = await fetch(url, {
+          headers: {
+            ...(timelineProfilesOptions.accessToken
+              ? { Authorization: `Bearer ${timelineProfilesOptions.accessToken}` }
+              : {}),
+          },
+        });
+        const json = (await res.json()) as {
+          result?: CompanyNewsStorageResult | null;
+          message?: string;
+        };
+        if (!cancelled) {
+          if (!res.ok) {
+            setCompanyNews(null);
+            setCompanyNewsError(json.message ?? 'Failed to load company news');
+            return;
+          }
+          setCompanyNews(json.result ?? null);
+        }
+      } catch {
+        if (!cancelled) {
+          setCompanyNews(null);
+          setCompanyNewsError('Failed to load company news');
+        }
+      } finally {
+        if (!cancelled) setIsCompanyNewsLoading(false);
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [shouldLoadCompanyNews, timelineProfilesOptions]);
+
+  const handleFetchCompanyNews = async () => {
+    if (!timelineProfilesOptions?.baseUrl?.trim()) return;
+
+    setIsCompanyNewsFetching(true);
+    setCompanyNewsError(null);
+    try {
+      const url = `${timelineProfilesOptions.baseUrl.replace(
+        /\/$/,
+        '',
+      )}/org-chart/${encodeURIComponent(
+        timelineProfilesOptions.companyId,
+      )}/company-news/fetch`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(timelineProfilesOptions.accessToken
+            ? { Authorization: `Bearer ${timelineProfilesOptions.accessToken}` }
+            : {}),
+        },
+        body: JSON.stringify({
+          companyName: displayCompanyName || companyName,
+          location: displayLocationName || locationName,
+        }),
+      });
+      const json = (await res.json()) as {
+        result?: CompanyNewsStorageResult;
+        message?: string;
+      };
+      if (!res.ok) {
+        setCompanyNewsError(json.message ?? 'Failed to fetch company news');
+        return;
+      }
+      setCompanyNews(json.result ?? null);
+    } catch {
+      setCompanyNewsError('Failed to fetch company news');
+    } finally {
+      setIsCompanyNewsFetching(false);
+    }
+  };
+
+  const companyNewsItems = useMemo(() => {
+    if (companyNews?.mergedNewsItems?.length) {
+      return companyNews.mergedNewsItems;
+    }
+    const latestFetch = companyNews?.fetches?.[companyNews.fetches.length - 1];
+    return latestFetch?.result.news_items ?? [];
+  }, [companyNews]);
+
+  const latestCompanyNewsNotes = useMemo(() => {
+    const latestFetch = companyNews?.fetches?.[companyNews.fetches.length - 1];
+    return latestFetch?.result.notes?.trim() ?? '';
+  }, [companyNews]);
 
   useEffect(() => {
     if (!shouldFetchProfiles || !timelineProfilesOptions?.baseUrl?.trim()) {
@@ -603,13 +792,14 @@ export const OrgChartCompanyDrawer = ({
               isInRightDrawer
               tabs={[
                 { id: 'company', title: 'Company info' },
+                { id: 'news', title: 'News' },
                 { id: 'joined', title: 'Who joined' },
                 { id: 'left', title: 'Who left' },
                 { id: 'current', title: 'Current' },
                 { id: 'past', title: 'Past' },
               ]}
             />
-            {activeTab !== 'company' && (
+            {activeTab !== 'company' && activeTab !== 'news' && (
               <StyledTabsRow>
                 {(['1m', '3m', '6m', '1y'] as const).map((w) => (
                   <StyledWindowButton
@@ -624,7 +814,7 @@ export const OrgChartCompanyDrawer = ({
             )}
           </StyledSection>
 
-          {timelineMetrics && (
+          {timelineMetrics && activeTab !== 'news' && (
             <StyledSection>
               <StyledSectionTitle>Timeline metrics</StyledSectionTitle>
               <StyledSectionContent>
@@ -660,6 +850,75 @@ export const OrgChartCompanyDrawer = ({
                     </StyledMetaRow>
                   ))} */}
                 </StyledMetaGrid>
+              </StyledSectionContent>
+            </StyledSection>
+          )}
+
+          {activeTab === 'news' && (
+            <StyledSection>
+              <StyledSectionTitle>Company news</StyledSectionTitle>
+              <StyledActionsRow>
+                <Button
+                  title={
+                    isCompanyNewsFetching
+                      ? 'Fetching latest news…'
+                      : 'Fetch latest news'
+                  }
+                  variant="primary"
+                  size="small"
+                  onClick={() => void handleFetchCompanyNews()}
+                  disabled={
+                    isCompanyNewsFetching ||
+                    !timelineProfilesOptions?.baseUrl?.trim()
+                  }
+                />
+              </StyledActionsRow>
+              <StyledSectionContent>
+                {companyNews?.updatedAt && (
+                  <StyledMetaRow>
+                    <StyledMetaLabel>Last updated</StyledMetaLabel>
+                    <StyledMetaValue>
+                      {formatDateTime(companyNews.updatedAt)}
+                    </StyledMetaValue>
+                  </StyledMetaRow>
+                )}
+                {isCompanyNewsLoading && <div>Loading saved news…</div>}
+                {companyNewsError && <div>{companyNewsError}</div>}
+                {!isCompanyNewsLoading &&
+                  !companyNewsError &&
+                  companyNewsItems.length === 0 && (
+                    <div>
+                      No saved news yet. Fetch the latest company news to store
+                      it for this org chart.
+                    </div>
+                  )}
+                {!isCompanyNewsLoading && companyNewsItems.length > 0 && (
+                  <StyledNewsList>
+                    {companyNewsItems.map((item, idx) => (
+                      <StyledNewsCard key={`${item.url}-${idx}`}>
+                        <StyledNewsSummary>{item.summary}</StyledNewsSummary>
+                        <StyledNewsMeta>
+                          <span>{item.date || 'unknown'}</span>
+                          {item.fetchedAt && (
+                            <span>Fetched {formatDateTime(item.fetchedAt)}</span>
+                          )}
+                        </StyledNewsMeta>
+                        {item.url?.trim() && (
+                          <StyledNewsLink
+                            href={item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {item.url}
+                          </StyledNewsLink>
+                        )}
+                      </StyledNewsCard>
+                    ))}
+                  </StyledNewsList>
+                )}
+                {latestCompanyNewsNotes && (
+                  <StyledNewsNotes>{latestCompanyNewsNotes}</StyledNewsNotes>
+                )}
               </StyledSectionContent>
             </StyledSection>
           )}
@@ -762,7 +1021,7 @@ export const OrgChartCompanyDrawer = ({
             </StyledSection>
           )}
 
-          {description?.trim() && (
+          {description?.trim() && activeTab === 'company' && (
             <StyledSection>
               <StyledSectionTitle>About</StyledSectionTitle>
               <StyledSectionContent

@@ -144,7 +144,7 @@ export class WorkspaceDatasourceFactory {
                 extra: {
                   // Connection pooling: cap to avoid "too many clients" (sum of all pools must be < PostgreSQL max_connections)
                   max: parseInt(
-                    process.env.PG_POOL_WORKSPACE_MAX ?? '10',
+                    process.env.PG_POOL_WORKSPACE_MAX ?? '3',
                     10,
                   ),
                   min: parseInt(
@@ -157,7 +157,7 @@ export class WorkspaceDatasourceFactory {
                   idleTimeoutMillis: 60000,
                   connectionTimeoutMillis: 120000,
                   connectionLimit: parseInt(
-                    process.env.PG_POOL_WORKSPACE_MAX ?? '10',
+                    process.env.PG_POOL_WORKSPACE_MAX ?? '3',
                     10,
                   ),
                   acquireTimeout: 120000,

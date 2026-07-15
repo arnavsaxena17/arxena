@@ -61,7 +61,7 @@ export class TypeORMService implements OnModuleInit, OnModuleDestroy {
           }
         : undefined,
       extra: {
-        max: parseInt(process.env.PG_POOL_MAIN_MAX ?? '10', 10),
+        max: parseInt(process.env.PG_POOL_MAIN_MAX ?? '5', 10),
         min: parseInt(process.env.PG_POOL_MAIN_MIN ?? '1', 10),
         query_timeout: 10000,
         idleTimeoutMillis: 30000,

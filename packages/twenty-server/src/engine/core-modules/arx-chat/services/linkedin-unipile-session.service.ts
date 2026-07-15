@@ -131,12 +131,80 @@ export class LinkedinUnipileSessionService {
     return 'workspace_member_profile';
   }
 
+  /**
+   * When callers pass an explicit Unipile account id that belongs to the
+   * authenticated member (e.g. org-chart worker reuse), manage idle teardown
+   * the same as a normal member session: cancel pending teardown while the
+   * session is active, then push the idle window forward afterward.
+   */
+  private async resolveMemberOwnedExplicitSessionContext(
+    apiToken: string,
+    explicitAccountId: string,
+  ): Promise<LinkedinSessionContext | null> {
+    try {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const workspaceMemberId =
+        await this.workspaceQueryService.getWorkspaceMemberIdFromToken(apiToken);
+
+      if (!workspaceMemberId || !workspaceId) {
+        return null;
+      }
+
+      const storedAccountId =
+        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+          workspaceMemberId,
+          workspaceId,
+          apiToken,
+          'linkedin',
+        );
+
+      if (storedAccountId?.trim() !== explicitAccountId) {
+        return null;
+      }
+
+      const keepConnected =
+        await this.workspaceMemberProfileUnipileService.getKeepLinkedinConnected(
+          workspaceMemberId,
+          apiToken,
+        );
+
+      this.logResolvedAccountId(
+        explicitAccountId,
+        'explicit_request',
+        `member-owned workspaceMemberId=${workspaceMemberId} disconnectAfterUse=${!keepConnected}`,
+      );
+
+      return {
+        accountId: explicitAccountId,
+        accountIdSource: 'explicit_request',
+        accountCreatedThisSession: false,
+        disconnectAfterUse: !keepConnected,
+        workspaceMemberId,
+        authToken: apiToken,
+      };
+    } catch (error) {
+      this.logger.warn(
+        `Failed to resolve member-owned teardown context for explicit LinkedIn account ${explicitAccountId}: ${error}`,
+      );
+
+      return null;
+    }
+  }
+
   private async ensureLinkedinSessionContext(
     apiToken: string,
     explicitAccountId?: string,
   ): Promise<LinkedinSessionContext> {
     const explicit = explicitAccountId?.trim();
     if (explicit) {
+      const memberOwnedContext =
+        await this.resolveMemberOwnedExplicitSessionContext(apiToken, explicit);
+
+      if (memberOwnedContext) {
+        return memberOwnedContext;
+      }
+
       this.logResolvedAccountId(explicit, 'explicit_request');
       return {
         accountId: explicit,

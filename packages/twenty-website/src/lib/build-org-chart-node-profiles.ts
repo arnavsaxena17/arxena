@@ -9,9 +9,60 @@ export type OrgChartNodeProfile = {
   fullName: string;
   headline?: string;
   company?: string;
+  location?: string;
   linkedinUrl?: string;
   imageUrl?: string;
   companyTenure?: 'current' | 'past';
+};
+
+const readCandidateString = (
+  candidate: Record<string, unknown>,
+  keys: string[],
+): string => {
+  for (const key of keys) {
+    const value = candidate[key];
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+  return '';
+};
+
+export const extractCandidateLocation = (
+  candidate: Record<string, unknown>,
+): string | undefined => {
+  const locationName = readCandidateString(candidate, [
+    'location_name',
+    'locationName',
+  ]);
+  if (locationName) {
+    return toTitleCase(locationName, { skipIfMasked: true });
+  }
+
+  const locality = readCandidateString(candidate, [
+    'location_locality',
+    'locationLocality',
+    'location_city',
+    'locationCity',
+    'city',
+  ]);
+  const region = readCandidateString(candidate, [
+    'location_region',
+    'locationRegion',
+    'location_metro',
+    'locationMetro',
+  ]);
+  const country = readCandidateString(candidate, [
+    'location_country',
+    'locationCountry',
+    'country',
+  ]);
+
+  const parts = [locality, region, country]
+    .filter((part) => part.length > 0)
+    .map((part) => toTitleCase(part, { skipIfMasked: true }));
+
+  return parts.length > 0 ? parts.join(', ') : undefined;
 };
 
 const normalizeCandidateRecord = (
@@ -52,6 +103,7 @@ const normalizeCandidateRecord = (
       ? toTitleCase(headlineRaw, { skipIfMasked: true })
       : undefined,
     company: companyName,
+    location: extractCandidateLocation(candidate),
     linkedinUrl: isValidLinkedInProfileUrl(linkedinRaw)
       ? linkedinRaw.trim()
       : undefined,
@@ -98,6 +150,11 @@ export const buildOrgChartNodeProfiles = (
     const companyTenure =
       tenureVal === 'current' || tenureVal === 'past' ? tenureVal : undefined;
 
+    const nodeCountry =
+      typeof node.country === 'string' && node.country.trim().length > 0
+        ? toTitleCase(node.country.trim(), { skipIfMasked: true })
+        : undefined;
+
     profiles.push({
       id: `${node.key}-${i}`,
       fullName: toTitleCase(name.trim(), { skipIfMasked: true }),
@@ -106,6 +163,7 @@ export const buildOrgChartNodeProfiles = (
           ? toTitleCase(node[titleKey] as string, { skipIfMasked: true })
           : undefined,
       company: companyName,
+      location: nodeCountry,
       linkedinUrl: isValidLinkedInProfileUrl(linkedinRaw)
         ? linkedinRaw.trim()
         : undefined,

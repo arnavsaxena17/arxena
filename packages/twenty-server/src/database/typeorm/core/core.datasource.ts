@@ -39,14 +39,14 @@ export const typeORMCoreModuleOptions: TypeOrmModuleOptions = {
   extra: {
     query_timeout: 10000,
     // Connection pooling: cap to avoid "too many clients" (sum of all pools must be < PostgreSQL max_connections)
-    max: parseInt(process.env.PG_POOL_CORE_MAX ?? '25', 10),
+    max: parseInt(process.env.PG_POOL_CORE_MAX ?? '10', 10),
     min: parseInt(process.env.PG_POOL_CORE_MIN ?? '2', 10),
     idle: 60000,
     acquire: 120000,
     evict: 30000,
     idleTimeoutMillis: 60000,
     connectionTimeoutMillis: 120000,
-    connectionLimit: parseInt(process.env.PG_POOL_CORE_MAX ?? '25', 10),
+    connectionLimit: parseInt(process.env.PG_POOL_CORE_MAX ?? '10', 10),
     acquireTimeout: 120000,
     timeout: 60000,
   },
