@@ -108,6 +108,12 @@ export const resolveSuperImposeLinkedinCompanyParameterIds = (
 ): string[] => {
   const primaryId = primaryParameterId?.trim();
   if (resolvedCompanies.length === 0) {
+    // Log input state when no resolved companies found
+    console.log(
+      '[resolveSuperImposeLinkedinCompanyParameterIds] No resolved companies provided.',
+      'Input primaryParameterId:', primaryParameterId,
+      'Trimmed primaryId:', primaryId
+    );
     return primaryId ? [primaryId] : [];
   }
 
@@ -116,14 +122,41 @@ export const resolveSuperImposeLinkedinCompanyParameterIds = (
 
   for (let index = 0; index < resolvedCompanies.length; index += 1) {
     const company = resolvedCompanies[index];
-    const id =
-      index === 0 && primaryId ? primaryId : company.slug.trim();
+    let id: string;
+    let logic: string;
+    if (index === 0 && primaryId) {
+      id = primaryId;
+      logic = 'Used primaryParameterId for first company';
+    } else {
+      id = company.slug.trim();
+      logic = 'Used company.slug (trimmed)';
+    }
+
+    console.log(
+      '[resolveSuperImposeLinkedinCompanyParameterIds] Processing company at index',
+      index,
+      'Raw company:', company,
+      'Input string (slug):', company.slug,
+      'Resolved id:', id,
+      'Logic:', logic
+    );
+
     if (!id || seen.has(id)) {
+      console.log(
+        '[resolveSuperImposeLinkedinCompanyParameterIds] Skipping id (empty or duplicate):',
+        id,
+        'Index:', index
+      );
       continue;
     }
     seen.add(id);
     result.push(id);
   }
+
+  console.log(
+    '[resolveSuperImposeLinkedinCompanyParameterIds] Final result:',
+    result
+  );
 
   return result;
 };
