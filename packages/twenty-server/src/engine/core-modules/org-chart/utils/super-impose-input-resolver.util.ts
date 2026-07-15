@@ -97,6 +97,37 @@ export const resolveSuperImposeCompanySearchNames = (
   return result;
 };
 
+/**
+ * LinkedIn company facet ids for Unipile people search.
+ * Prefer the autocomplete id for the primary company; fall back to slugs for
+ * additional URL-pasted companies so multi-company estimates include every source.
+ */
+export const resolveSuperImposeLinkedinCompanyParameterIds = (
+  resolvedCompanies: SuperImposeResolvedCompany[],
+  primaryParameterId?: string,
+): string[] => {
+  const primaryId = primaryParameterId?.trim();
+  if (resolvedCompanies.length === 0) {
+    return primaryId ? [primaryId] : [];
+  }
+
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (let index = 0; index < resolvedCompanies.length; index += 1) {
+    const company = resolvedCompanies[index];
+    const id =
+      index === 0 && primaryId ? primaryId : company.slug.trim();
+    if (!id || seen.has(id)) {
+      continue;
+    }
+    seen.add(id);
+    result.push(id);
+  }
+
+  return result;
+};
+
 export const buildResolvedCompanyFromUrl = (
   linkedinUrl: string,
   resolvedFrom: SuperImposeResolvedCompany['resolvedFrom'],

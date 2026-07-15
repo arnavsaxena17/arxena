@@ -162,6 +162,8 @@ export class OrgChartSearchService {
       linkedinLocationId?: string;
       linkedinLocationName?: string;
       linkedinCompanyParameterId?: string;
+      /** Multiple LinkedIn company facet ids (super-impose multi-company). Takes precedence over singular id. */
+      linkedinCompanyParameterIds?: string[];
       /** Pre-computed boolean keyword clause (e.g. super-impose mergedSearchClause). */
       linkedinKeywords?: string;
       /** When true, counts as a LinkedIn subset scope filter for threshold gating. */
@@ -208,8 +210,15 @@ export class OrgChartSearchService {
     let functionRoot = rawFunctionFromOptions;
     const linkedinLocationId = options?.linkedinLocationId?.trim() || '';
     const linkedinLocationName = options?.linkedinLocationName?.trim() || '';
-    const linkedinCompanyParameterId =
-      options?.linkedinCompanyParameterId?.trim() || '';
+    const linkedinCompanyParameterIds = (
+      options?.linkedinCompanyParameterIds?.length
+        ? options.linkedinCompanyParameterIds
+        : options?.linkedinCompanyParameterId
+          ? [options.linkedinCompanyParameterId]
+          : []
+    )
+      .map((id) => id.trim())
+      .filter(Boolean);
     if (!country && linkedinLocationName) {
       country = linkedinLocationName;
     }
@@ -392,20 +401,23 @@ export class OrgChartSearchService {
           apiToken,
           queryGenerator: options?.queryGenerator,
           sendEvent,
-          linkedinCompanyIds: linkedinCompanyParameterId
-            ? [linkedinCompanyParameterId]
-            : undefined,
+          linkedinCompanyIds:
+            linkedinCompanyParameterIds.length > 0
+              ? linkedinCompanyParameterIds
+              : undefined,
           linkedinLocationIds: linkedinLocationId
             ? [linkedinLocationId]
             : undefined,
-          linkedinCompanyDisplay: linkedinCompanyParameterId
-            ? [
-                {
-                  id: linkedinCompanyParameterId,
-                  title: primaryCompanyName || linkedinCompanyParameterId,
-                },
-              ]
-            : undefined,
+          linkedinCompanyDisplay:
+            linkedinCompanyParameterIds.length > 0
+              ? linkedinCompanyParameterIds.map((id, index) => ({
+                  id,
+                  title:
+                    companyNames[index] ||
+                    primaryCompanyName ||
+                    id,
+                }))
+              : undefined,
           linkedinLocationDisplay: linkedinLocationId
             ? [
                 {
@@ -735,6 +747,8 @@ export class OrgChartSearchService {
       linkedinLocationId?: string;
       linkedinLocationName?: string;
       linkedinCompanyParameterId?: string;
+      /** Multiple LinkedIn company facet ids (super-impose multi-company). Takes precedence over singular id. */
+      linkedinCompanyParameterIds?: string[];
       /** Pre-computed boolean keyword clause (e.g. super-impose mergedSearchClause). */
       linkedinKeywords?: string;
       leadershipOnly?: boolean;
@@ -763,8 +777,15 @@ export class OrgChartSearchService {
     let functionRoot = rawFunctionFromOptions;
     const linkedinLocationId = options?.linkedinLocationId?.trim() || '';
     const linkedinLocationName = options?.linkedinLocationName?.trim() || '';
-    const linkedinCompanyParameterId =
-      options?.linkedinCompanyParameterId?.trim() || '';
+    const linkedinCompanyParameterIds = (
+      options?.linkedinCompanyParameterIds?.length
+        ? options.linkedinCompanyParameterIds
+        : options?.linkedinCompanyParameterId
+          ? [options.linkedinCompanyParameterId]
+          : []
+    )
+      .map((id) => id.trim())
+      .filter(Boolean);
     if (!country && linkedinLocationName) {
       country = linkedinLocationName;
     }
@@ -826,20 +847,23 @@ export class OrgChartSearchService {
           isAllPeopleInCompanyMode,
           apiToken,
           queryGenerator: options?.queryGenerator,
-          linkedinCompanyIds: linkedinCompanyParameterId
-            ? [linkedinCompanyParameterId]
-            : undefined,
+          linkedinCompanyIds:
+            linkedinCompanyParameterIds.length > 0
+              ? linkedinCompanyParameterIds
+              : undefined,
           linkedinLocationIds: linkedinLocationId
             ? [linkedinLocationId]
             : undefined,
-          linkedinCompanyDisplay: linkedinCompanyParameterId
-            ? [
-                {
-                  id: linkedinCompanyParameterId,
-                  title: primaryCompanyName || linkedinCompanyParameterId,
-                },
-              ]
-            : undefined,
+          linkedinCompanyDisplay:
+            linkedinCompanyParameterIds.length > 0
+              ? linkedinCompanyParameterIds.map((id, index) => ({
+                  id,
+                  title:
+                    companyNames[index] ||
+                    primaryCompanyName ||
+                    id,
+                }))
+              : undefined,
           linkedinLocationDisplay: linkedinLocationId
             ? [
                 {

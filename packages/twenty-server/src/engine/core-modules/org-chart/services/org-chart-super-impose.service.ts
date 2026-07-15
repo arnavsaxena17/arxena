@@ -24,7 +24,8 @@ import {
   buildResolvedCompanyFromUrl,
   isValidLinkedinCompanyPageUrl,
   isValidSalesNavigatorPeopleSearchUrl,
-  normalizeLinkedinCompanyUrl
+  normalizeLinkedinCompanyUrl,
+  resolveSuperImposeLinkedinCompanyParameterIds,
 } from 'src/engine/core-modules/org-chart/utils/super-impose-input-resolver.util';
 
 export type ResolveSuperImposeInputsArgs = {
@@ -279,6 +280,11 @@ export class OrgChartSuperImposeService {
         const primaryCompany = plan.resolvedCompanies[0];
         const searchLabel = companySearchNames.join(', ');
         try {
+          const companyParameterIds =
+            resolveSuperImposeLinkedinCompanyParameterIds(
+              plan.resolvedCompanies,
+              plan.linkedinCompanyParameterId,
+            );
           const estimate =
             await this.orgChartSearchService.estimateLinkedInOrgChartSearch(
               `Employees at ${searchLabel}`,
@@ -297,6 +303,10 @@ export class OrgChartSuperImposeService {
                 linkedinLocationId: plan.linkedinLocationId,
                 linkedinLocationName: plan.linkedinLocationName,
                 linkedinCompanyParameterId: plan.linkedinCompanyParameterId,
+                linkedinCompanyParameterIds:
+                  companyParameterIds.length > 0
+                    ? companyParameterIds
+                    : undefined,
                 linkedinKeywords: plan.mergedSearchClause,
                 leadershipOnly: plan.leadershipOnly,
               },
@@ -428,6 +438,10 @@ export class OrgChartSuperImposeService {
       await context.onProgress?.(
         `Unipile: fetching employees for ${searchLabel}...`,
       );
+      const companyParameterIds = resolveSuperImposeLinkedinCompanyParameterIds(
+        plan.resolvedCompanies,
+        plan.linkedinCompanyParameterId ?? context.linkedinCompanyParameterId,
+      );
       const searchResult =
         await this.orgChartSearchService.runOrgchartLinkedInSearch(
           `Employees at ${searchLabel}`,
@@ -453,6 +467,8 @@ export class OrgChartSuperImposeService {
               plan.linkedinLocationName ?? context.linkedinLocationName,
             linkedinCompanyParameterId:
               plan.linkedinCompanyParameterId ?? context.linkedinCompanyParameterId,
+            linkedinCompanyParameterIds:
+              companyParameterIds.length > 0 ? companyParameterIds : undefined,
             linkedinKeywords: plan.mergedSearchClause,
             leadershipOnly: plan.leadershipOnly,
           },

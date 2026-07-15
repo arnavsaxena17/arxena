@@ -7,6 +7,7 @@ import {
     normalizeLinkedinCompanyUrl,
     parseMultilineUrlInput,
     resolveSuperImposeCompanySearchNames,
+    resolveSuperImposeLinkedinCompanyParameterIds,
 } from 'src/engine/core-modules/org-chart/utils/super-impose-input-resolver.util';
 import {
     andMergeBooleanSearchClauses,
@@ -91,6 +92,32 @@ describe('super-impose-input-resolver.util', () => {
     ).toEqual([
       'Insulators and Electricals Company',
       'insulator and electrical company',
+    ]);
+  });
+
+  it('builds linkedin company parameter ids for all resolved companies', () => {
+    expect(
+      resolveSuperImposeLinkedinCompanyParameterIds(
+        [
+          {
+            slug: 'pd-hinduja-national-hospital-&-medical-research-centre-mumbai-',
+            linkedinUrl:
+              'https://www.linkedin.com/company/pd-hinduja-national-hospital-&-medical-research-centre-mumbai-/',
+            resolvedFrom: 'primary_chart',
+            companyName:
+              'pd hinduja national hospital & medical research centre (mumbai)',
+          },
+          {
+            slug: 'hinduja-hospital',
+            linkedinUrl: 'https://www.linkedin.com/company/hinduja-hospital/',
+            resolvedFrom: 'linkedin_url',
+          },
+        ],
+        'pd-hinduja-national-hospital-&-medical-research-centre-mumbai-',
+      ),
+    ).toEqual([
+      'pd-hinduja-national-hospital-&-medical-research-centre-mumbai-',
+      'hinduja-hospital',
     ]);
   });
 });
