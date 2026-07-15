@@ -7,6 +7,9 @@ import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/typ
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export type UnipileCompanyProfileDto = {
+  id?: string;
+  entity_urn?: string;
+  public_identifier?: string;
   employee_count?: number;
   description?: string;
   tagline?: string;
@@ -28,6 +31,9 @@ export type UnipileCompanyProfileDto = {
 
 type UnipileCompanyProfileRaw = {
   object?: string;
+  id?: string | number;
+  entity_urn?: string;
+  public_identifier?: string;
   name?: string;
   description?: string;
   tagline?: string;
@@ -45,6 +51,22 @@ type UnipileCompanyProfileRaw = {
   }>;
   industry?: string[];
   activities?: string[];
+};
+
+export const extractLinkedinCompanyIdFromUnipileProfile = (
+  profile: Pick<UnipileCompanyProfileDto, 'id' | 'entity_urn'>,
+): string | null => {
+  if (typeof profile.id === 'string' && /^\d+$/.test(profile.id.trim())) {
+    return profile.id.trim();
+  }
+
+  const urn = profile.entity_urn?.trim();
+  if (!urn) {
+    return null;
+  }
+
+  const match = urn.match(/fsd_company:(\d+)/i) ?? urn.match(/:(\d+)\s*$/);
+  return match?.[1] ?? null;
 };
 
 function extractPublicIdentifier(linkedinUrlOrSlug: string): string | null {
@@ -129,7 +151,20 @@ export class UnipileCompanyService {
       }
 
       const raw = data as UnipileCompanyProfileRaw;
+      const rawId =
+        typeof raw.id === 'number'
+          ? String(raw.id)
+          : typeof raw.id === 'string'
+            ? raw.id.trim()
+            : undefined;
       const profile: UnipileCompanyProfileDto = {
+        id: rawId && /^\d+$/.test(rawId) ? rawId : undefined,
+        entity_urn:
+          typeof raw.entity_urn === 'string' ? raw.entity_urn : undefined,
+        public_identifier:
+          typeof raw.public_identifier === 'string'
+            ? raw.public_identifier
+            : undefined,
         employee_count: typeof raw.employee_count === 'number' ? raw.employee_count : undefined,
         description: typeof raw.description === 'string' ? raw.description : undefined,
         tagline: typeof raw.tagline === 'string' ? raw.tagline : undefined,

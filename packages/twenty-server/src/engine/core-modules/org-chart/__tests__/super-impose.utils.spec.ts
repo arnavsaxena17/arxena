@@ -8,7 +8,9 @@ import {
     parseMultilineUrlInput,
     resolveSuperImposeCompanySearchNames,
     resolveSuperImposeLinkedinCompanyParameterIds,
+    sumSuperImposeEmployeeCounts,
 } from 'src/engine/core-modules/org-chart/utils/super-impose-input-resolver.util';
+import { extractLinkedinCompanyIdFromUnipileProfile } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import {
     andMergeBooleanSearchClauses,
     wrapJobTitleAsOrClause,
@@ -119,6 +121,77 @@ describe('super-impose-input-resolver.util', () => {
       'pd-hinduja-national-hospital-&-medical-research-centre-mumbai-',
       'hinduja-hospital',
     ]);
+  });
+
+  it('prefers profile-resolved numeric company ids over slugs', () => {
+    expect(
+      resolveSuperImposeLinkedinCompanyParameterIds(
+        [
+          {
+            slug: 'pd-hinduja-national-hospital-&-medical-research-centre-mumbai-',
+            linkedinUrl:
+              'https://www.linkedin.com/company/pd-hinduja-national-hospital-&-medical-research-centre-mumbai-/',
+            resolvedFrom: 'primary_chart',
+          },
+          {
+            slug: 'hinduja-hospital',
+            linkedinUrl: 'https://www.linkedin.com/company/hinduja-hospital/',
+            resolvedFrom: 'linkedin_url',
+          },
+        ],
+        'pd-hinduja-national-hospital-&-medical-research-centre-mumbai-',
+        ['33634615', '946958'],
+      ),
+    ).toEqual(['33634615', '946958']);
+  });
+
+  it('sums employee counts only when every company has a valid count', () => {
+    expect(
+      sumSuperImposeEmployeeCounts([
+        {
+          slug: 'a',
+          linkedinCompanyId: '1',
+          employeeCount: 100,
+          resolvedVia: 'company_profile',
+        },
+        {
+          slug: 'b',
+          linkedinCompanyId: '2',
+          employeeCount: 50,
+          resolvedVia: 'company_profile',
+        },
+      ]),
+    ).toBe(150);
+
+    expect(
+      sumSuperImposeEmployeeCounts([
+        {
+          slug: 'a',
+          linkedinCompanyId: '1',
+          employeeCount: 100,
+          resolvedVia: 'company_profile',
+        },
+        {
+          slug: 'b',
+          linkedinCompanyId: '2',
+          resolvedVia: 'slug_fallback',
+        },
+      ]),
+    ).toBeNull();
+  });
+
+  it('extracts numeric company ids from Unipile profiles', () => {
+    expect(
+      extractLinkedinCompanyIdFromUnipileProfile({
+        id: '946958',
+        entity_urn: 'urn:li:fsd_company:946958',
+      }),
+    ).toBe('946958');
+    expect(
+      extractLinkedinCompanyIdFromUnipileProfile({
+        entity_urn: 'urn:li:fsd_company:27444961',
+      }),
+    ).toBe('27444961');
   });
 });
 

@@ -101,19 +101,15 @@ export const resolveSuperImposeCompanySearchNames = (
  * LinkedIn company facet ids for Unipile people search.
  * Prefer the autocomplete id for the primary company; fall back to slugs for
  * additional URL-pasted companies so multi-company estimates include every source.
+ * Prefer numeric profile-resolved ids when available.
  */
 export const resolveSuperImposeLinkedinCompanyParameterIds = (
   resolvedCompanies: SuperImposeResolvedCompany[],
   primaryParameterId?: string,
+  profileResolvedCompanyIds?: Array<string | null | undefined>,
 ): string[] => {
   const primaryId = primaryParameterId?.trim();
   if (resolvedCompanies.length === 0) {
-    // Log input state when no resolved companies found
-    console.log(
-      '[resolveSuperImposeLinkedinCompanyParameterIds] No resolved companies provided.',
-      'Input primaryParameterId:', primaryParameterId,
-      'Trimmed primaryId:', primaryId
-    );
     return primaryId ? [primaryId] : [];
   }
 
@@ -122,43 +118,50 @@ export const resolveSuperImposeLinkedinCompanyParameterIds = (
 
   for (let index = 0; index < resolvedCompanies.length; index += 1) {
     const company = resolvedCompanies[index];
-    let id: string;
-    let logic: string;
-    if (index === 0 && primaryId) {
-      id = primaryId;
-      logic = 'Used primaryParameterId for first company';
-    } else {
-      id = company.slug.trim();
-      logic = 'Used company.slug (trimmed)';
-    }
-
-    console.log(
-      '[resolveSuperImposeLinkedinCompanyParameterIds] Processing company at index',
-      index,
-      'Raw company:', company,
-      'Input string (slug):', company.slug,
-      'Resolved id:', id,
-      'Logic:', logic
-    );
-
+    const profileId = profileResolvedCompanyIds?.[index]?.trim();
+    const id =
+      (profileId && profileId.length > 0 ? profileId : undefined) ??
+      (index === 0 && primaryId ? primaryId : undefined) ??
+      company.slug.trim();
     if (!id || seen.has(id)) {
-      console.log(
-        '[resolveSuperImposeLinkedinCompanyParameterIds] Skipping id (empty or duplicate):',
-        id,
-        'Index:', index
-      );
       continue;
     }
     seen.add(id);
     result.push(id);
   }
 
-  console.log(
-    '[resolveSuperImposeLinkedinCompanyParameterIds] Final result:',
-    result
-  );
-
   return result;
+};
+
+export type SuperImposeCompanyProfileFacet = {
+  slug: string;
+  linkedinCompanyId: string | null;
+  companyName?: string;
+  employeeCount?: number;
+  resolvedVia: 'company_profile' | 'primary_parameter' | 'slug_fallback' | 'failed';
+  error?: string;
+};
+
+export const sumSuperImposeEmployeeCounts = (
+  facets: SuperImposeCompanyProfileFacet[],
+): number | null => {
+  if (facets.length === 0) {
+    return null;
+  }
+
+  let total = 0;
+  for (const facet of facets) {
+    if (
+      typeof facet.employeeCount !== 'number' ||
+      !Number.isFinite(facet.employeeCount) ||
+      facet.employeeCount < 0
+    ) {
+      return null;
+    }
+    total += Math.round(facet.employeeCount);
+  }
+
+  return total;
 };
 
 export const buildResolvedCompanyFromUrl = (
