@@ -27,6 +27,77 @@ type ResolvedParameterItem = {
   title: string;
 };
 
+type LinkedinParameterMatchItem = {
+  id: string;
+  title: string;
+};
+
+const normalizeParameterMatchText = (value: string): string =>
+  value
+    .normalize('NFKD')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+export const findBestLinkedinParameterMatch = (
+  items: LinkedinParameterMatchItem[],
+  searchTerm: string,
+): LinkedinParameterMatchItem | null => {
+  if (items.length === 0) {
+    return null;
+  }
+
+  const normalizedSearchTerm = normalizeParameterMatchText(searchTerm);
+  if (!normalizedSearchTerm) {
+    return null;
+  }
+
+  const normalizedItems = items.map((item) => ({
+    item,
+    normalizedTitle: normalizeParameterMatchText(item.title),
+  }));
+  const exactMatch = normalizedItems.find(
+    ({ normalizedTitle }) => normalizedTitle === normalizedSearchTerm,
+  );
+  if (exactMatch) {
+    return exactMatch.item;
+  }
+
+  const searchWords = new Set(
+    normalizedSearchTerm.split(' ').filter((word) => word.length > 1),
+  );
+  if (searchWords.size === 0) {
+    return null;
+  }
+
+  let bestMatch: LinkedinParameterMatchItem | null = null;
+  let bestMatchedWordCount = 0;
+  let bestPrecision = 0;
+
+  for (const { item, normalizedTitle } of normalizedItems) {
+    const itemWords = new Set(
+      normalizedTitle.split(' ').filter((word) => word.length > 1),
+    );
+    const matchedWordCount = [...searchWords].filter((word) =>
+      itemWords.has(word),
+    ).length;
+    const precision =
+      itemWords.size > 0 ? matchedWordCount / itemWords.size : 0;
+
+    if (
+      matchedWordCount > bestMatchedWordCount ||
+      (matchedWordCount === bestMatchedWordCount && precision > bestPrecision)
+    ) {
+      bestMatch = item;
+      bestMatchedWordCount = matchedWordCount;
+      bestPrecision = precision;
+    }
+  }
+
+  return bestMatchedWordCount > 0 ? bestMatch : null;
+};
+
 @Injectable()
 export class LinkedinParameterResolver implements OnModuleDestroy {
   private readonly logger = new Logger(LinkedinParameterResolver.name);
@@ -196,6 +267,87 @@ export class LinkedinParameterResolver implements OnModuleDestroy {
     // Save cache immediately on shutdown
     this.saveCacheToDisk();
     this.logger.log('Parameter cache saved to disk on module destruction');
+  }
+
+  listCacheEntries(): Array<{
+    cacheKey: string;
+    parameterType: string;
+    searchTerm: string;
+    linkedinId: string | null;
+    linkedinTitle: string | null;
+    notFound: boolean;
+  }> {
+    const entries: Array<{
+      cacheKey: string;
+      parameterType: string;
+      searchTerm: string;
+      linkedinId: string | null;
+      linkedinTitle: string | null;
+      notFound: boolean;
+    }> = [];
+
+    for (const [cacheKey, value] of this.parameterCache.entries()) {
+      const parsed = this.parseCacheKey(cacheKey);
+      entries.push({
+        cacheKey,
+        parameterType: parsed.parameterType,
+        searchTerm: parsed.searchTerm,
+        linkedinId: value?.id ?? null,
+        linkedinTitle: value?.title ?? null,
+        notFound: value === null,
+      });
+    }
+
+    return entries.sort((left, right) =>
+      left.cacheKey.localeCompare(right.cacheKey),
+    );
+  }
+
+  deleteCacheEntry(cacheKey: string): boolean {
+    const normalizedKey = cacheKey.trim();
+    if (!normalizedKey || !this.parameterCache.has(normalizedKey)) {
+      return false;
+    }
+
+    this.parameterCache.delete(normalizedKey);
+    this.saveCacheToDisk();
+    this.logger.log(`Deleted LinkedIn parameter cache entry: ${normalizedKey}`);
+    return true;
+  }
+
+  clearCache(): number {
+    const deletedCount = this.parameterCache.size;
+    this.parameterCache.clear();
+    this.saveCacheToDisk();
+    this.logger.log(`Cleared ${deletedCount} LinkedIn parameter cache entries`);
+    return deletedCount;
+  }
+
+  private parseCacheKey(cacheKey: string): {
+    parameterType: string;
+    searchTerm: string;
+  } {
+    const knownTypes: ParameterType[] = [
+      'LOCATION',
+      'INDUSTRY',
+      'COMPANY',
+      'SCHOOL',
+    ];
+
+    for (const parameterType of knownTypes) {
+      const prefix = `${parameterType}_`;
+      if (cacheKey.startsWith(prefix)) {
+        return {
+          parameterType,
+          searchTerm: cacheKey.slice(prefix.length),
+        };
+      }
+    }
+
+    return {
+      parameterType: 'UNKNOWN',
+      searchTerm: cacheKey,
+    };
   }
 
   /**
@@ -710,63 +862,10 @@ export class LinkedinParameterResolver implements OnModuleDestroy {
   /**
    * Find the best matching parameter from a list of LinkedIn parameters
    */
-  private findBestMatch(items: any[], searchTerm: string): any | null {
-    if (!items || items.length === 0) {
-      return null;
-    }
-
-    const normalizedSearchTerm = searchTerm.toLowerCase().trim();
-    
-    // First, try exact match
-    let exactMatch = items.find(item => 
-      item.title.toLowerCase() === normalizedSearchTerm
-    );
-    if (exactMatch) {
-      return exactMatch;
-    }
-
-    // Then try starts with match
-    let startsWithMatch = items.find(item => 
-      item.title.toLowerCase().startsWith(normalizedSearchTerm) ||
-      normalizedSearchTerm.startsWith(item.title.toLowerCase())
-    );
-    if (startsWithMatch) {
-      return startsWithMatch;
-    }
-
-    // Then try contains match
-    let containsMatch = items.find(item => 
-      item.title.toLowerCase().includes(normalizedSearchTerm) ||
-      normalizedSearchTerm.includes(item.title.toLowerCase())
-    );
-    if (containsMatch) {
-      return containsMatch;
-    }
-
-    // Finally, try fuzzy matching with word boundaries
-    const searchWords = normalizedSearchTerm.split(/\s+/);
-    let bestMatch = null;
-    let bestScore = 0;
-
-    for (const item of items) {
-      const itemWords = item.title.toLowerCase().split(/\s+/);
-      let score = 0;
-      
-      for (const searchWord of searchWords) {
-        for (const itemWord of itemWords) {
-          if (itemWord.includes(searchWord) || searchWord.includes(itemWord)) {
-            score += 1;
-          }
-        }
-      }
-      
-      if (score > bestScore) {
-        bestScore = score;
-        bestMatch = item;
-      }
-    }
-
-    // Only return if we have a reasonable match (at least 1 word match)
-    return bestScore > 0 ? bestMatch : null;
+  private findBestMatch(
+    items: LinkedinParameterMatchItem[],
+    searchTerm: string,
+  ): LinkedinParameterMatchItem | null {
+    return findBestLinkedinParameterMatch(items, searchTerm);
   }
 }

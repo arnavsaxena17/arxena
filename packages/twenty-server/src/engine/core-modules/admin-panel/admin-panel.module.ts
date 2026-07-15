@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { UnipilePoolModule } from 'src/engine/core-modules/arx-chat/unipile-pool.module';
+import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
 import { OrgChartClientIpModule } from 'src/engine/core-modules/org-chart/org-chart-client-ip.module';
 import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.module';
 
@@ -22,6 +23,7 @@ import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/works
 
 @Module({
   imports: [
+    LinkedInSearchModule,
     OrgChartClientIpModule,
     forwardRef(() => OrgChartModule),
     forwardRef(() => UnipilePoolModule),

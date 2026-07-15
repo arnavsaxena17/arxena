@@ -4,6 +4,7 @@ import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { GraphQLError } from 'graphql';
 import { Request } from 'express';
 
+import { AdminLinkedinParameterCacheEntry } from 'src/engine/core-modules/admin-panel/dtos/admin-linkedin-parameter-cache-entry.output';
 import { AdminPanelHealthService } from 'src/engine/core-modules/admin-panel/admin-panel-health.service';
 import { AdminPanelService } from 'src/engine/core-modules/admin-panel/admin-panel.service';
 import { AdminPanelWorkspaceMemberRow } from 'src/engine/core-modules/admin-panel/dtos/admin-panel-workspace-member-row.output';
@@ -22,6 +23,7 @@ import { UpsertOrgChartClientIpRuleInput } from 'src/engine/core-modules/admin-p
 import { UserLookup } from 'src/engine/core-modules/admin-panel/dtos/user-lookup.entity';
 import { UserLookupInput } from 'src/engine/core-modules/admin-panel/dtos/user-lookup.input';
 import { AuthGraphqlApiExceptionFilter } from 'src/engine/core-modules/auth/filters/auth-graphql-api-exception.filter';
+import { LinkedinParameterResolver } from 'src/engine/core-modules/candidate-search/utils/linkedin-parameter-resolver.util';
 import { OrgChartClientIpRuleEntity } from 'src/engine/core-modules/org-chart/org-chart-client-ip-rule.entity';
 import { OrgChartClientIpService } from 'src/engine/core-modules/org-chart/services/org-chart-client-ip.service';
 import { OrgChartPublishedAdminService } from 'src/engine/core-modules/org-chart/services/org-chart-published-admin.service';
@@ -44,6 +46,7 @@ export class AdminPanelResolver {
     private readonly workspaceService: WorkspaceService,
     private readonly orgChartClientIpService: OrgChartClientIpService,
     private readonly orgChartPublishedAdminService: OrgChartPublishedAdminService,
+    private readonly linkedinParameterResolver: LinkedinParameterResolver,
   ) {}
 
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
@@ -179,6 +182,26 @@ export class AdminPanelResolver {
     @Args('id') id: string,
   ): Promise<boolean> {
     return this.orgChartClientIpService.resetCounters(id);
+  }
+
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
+  @Query(() => [AdminLinkedinParameterCacheEntry])
+  adminLinkedinParameterCacheEntries(): AdminLinkedinParameterCacheEntry[] {
+    return this.linkedinParameterResolver.listCacheEntries();
+  }
+
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
+  @Mutation(() => Boolean)
+  adminDeleteLinkedinParameterCacheEntry(
+    @Args('cacheKey') cacheKey: string,
+  ): boolean {
+    return this.linkedinParameterResolver.deleteCacheEntry(cacheKey);
+  }
+
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
+  @Mutation(() => Number)
+  adminClearLinkedinParameterCache(): number {
+    return this.linkedinParameterResolver.clearCache();
   }
 
   @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)

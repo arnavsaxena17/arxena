@@ -61,6 +61,6 @@ import { WorkspaceModificationsModule } from '../workspace-modifications/workspa
     ParameterSanitizer,
     WorkspaceCacheStorageService,
     ],
-  exports: [LinkedInSearchService, LinkedInSessionTrackerService],
+  exports: [LinkedInSearchService, LinkedInSessionTrackerService, LinkedinParameterResolver],
 })
 export class LinkedInSearchModule {}
