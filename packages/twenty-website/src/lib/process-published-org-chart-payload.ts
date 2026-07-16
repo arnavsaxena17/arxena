@@ -2,14 +2,17 @@ import {
   extractOrgData,
   getProxiedImageUrl,
   processOrgChartToNodeData,
-  OrgChartNodeData,
+  type JsonValue,
+  type OrgChartNodeData,
 } from 'twenty-shared';
 
+type JsonObject = { [key: string]: JsonValue | undefined };
+
 const proxyCandidateImageFields = (
-  candidate: Record<string, unknown>,
+  candidate: JsonObject,
   apiBase: string,
-): Record<string, unknown> => {
-  const out = { ...candidate };
+): JsonObject => {
+  const out: JsonObject = { ...candidate };
   for (const key of ['image', 'profile_picture_url', 'profilePictureUrl']) {
     const value = out[key];
     if (typeof value === 'string' && value.trim().length > 0) {
@@ -34,18 +37,18 @@ export const proxyOrgChartNodeImages = (
 
   const allCandidates = out.allCandidates;
   if (Array.isArray(allCandidates)) {
-    out.allCandidates = allCandidates.map((candidate) => {
+    out.allCandidates = allCandidates.map((candidate): JsonValue => {
       if (
         candidate &&
         typeof candidate === 'object' &&
         !Array.isArray(candidate)
       ) {
         return proxyCandidateImageFields(
-          candidate as Record<string, unknown>,
+          candidate as JsonObject,
           apiBase,
         );
       }
-      return candidate;
+      return candidate as JsonValue;
     });
   }
 
