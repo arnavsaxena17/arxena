@@ -9,6 +9,8 @@ import type {
   TheOrgFetchPersonOptions,
   TheOrgImage,
   TheOrgNormalizedNode,
+  TheOrgOffice,
+  TheOrgOfficeMember,
   TheOrgPerson,
   TheOrgStorageLocation,
   TheOrgStorageTarget,
@@ -63,6 +65,14 @@ export class TheOrgService {
 
   private get teamConcurrency(): number {
     return Number(process.env.THEORG_TEAM_CONCURRENCY ?? 4);
+  }
+
+  private get officeConcurrency(): number {
+    return Number(process.env.THEORG_OFFICE_CONCURRENCY ?? 4);
+  }
+
+  private get officePageSize(): number {
+    return Number(process.env.THEORG_OFFICE_PAGE_SIZE ?? 50);
   }
 
   private get maxFullTreePositionCount(): number {
@@ -157,6 +167,10 @@ export class TheOrgService {
 
   private buildTeamUrl(companySlug: string, teamSlug: string): string {
     return `${BASE_URL}/org/${companySlug}/teams/${teamSlug}`;
+  }
+
+  private buildOfficeUrl(companySlug: string, officeSlug: string): string {
+    return `${BASE_URL}/org/${companySlug}/offices/${officeSlug}`;
   }
 
   private sanitizeSegment(value: string): string {
@@ -342,6 +356,15 @@ export class TheOrgService {
         teamNames: Array.from(
           new Set([...(existing.teamNames || []), ...(person.teamNames || [])]),
         ),
+        officeIds: Array.from(
+          new Set([...(existing.officeIds || []), ...(person.officeIds || [])]),
+        ),
+        officeSlugs: Array.from(
+          new Set([...(existing.officeSlugs || []), ...(person.officeSlugs || [])]),
+        ),
+        officeNames: Array.from(
+          new Set([...(existing.officeNames || []), ...(person.officeNames || [])]),
+        ),
       });
     }
 
@@ -511,10 +534,311 @@ export class TheOrgService {
     }));
   }
 
+  private normalizeOfficeMember(member: any): TheOrgOfficeMember | null {
+    if (!member?.id || !member?.fullName) {
+      return null;
+    }
+
+    return {
+      id: member.id,
+      name: member.fullName,
+      role: member.role || null,
+      slug: member.slug || null,
+      parentPositionId: member.parentPositionId ?? null,
+      profileImageUrl: this.buildImageUrl(
+        member.profileImage || member.profilePicture,
+      ),
+      updatedAt: member.lastUpdate || null,
+    };
+  }
+
+  private async fetchOfficePositionsPage(
+    companySlug: string,
+    officeSlug: string,
+    positionsLimit: number,
+    positionsOffset: number,
+  ): Promise<{
+    id: string | null;
+    positionCount: number | null;
+    positions: TheOrgOfficeMember[];
+  }> {
+    const payload = {
+      operationName: 'officePositionsPage',
+      variables: {
+        slug: officeSlug,
+        companySlug,
+        positionsLimit,
+        positionsOffset,
+      },
+      query:
+        'query officePositionsPage($slug: String!, $companySlug: String!, $positionsLimit: Int!, $positionsOffset: Int!) { companyOffice(slug: $slug, companySlug: $companySlug) { id positionCount positions(positionsLimit: $positionsLimit, positionsOffset: $positionsOffset) { id fullName role slug parentPositionId lastUpdate profileImage { endpoint ext uri versions } } } }',
+    };
+
+    const response = await this.postJson<any>(GRAPHQL_URL, payload);
+    if (response.errors?.length) {
+      throw new Error(
+        `GraphQL office positions failed for ${companySlug}/offices/${officeSlug} offset=${positionsOffset}: ${response.errors
+          .map((error: any) => error.message)
+          .join('; ')}`,
+      );
+    }
+
+    const office = response.data?.companyOffice;
+    if (!office) {
+      throw new Error(
+        `GraphQL office positions returned no companyOffice for ${companySlug}/offices/${officeSlug}`,
+      );
+    }
+
+    return {
+      id: office.id || null,
+      positionCount:
+        typeof office.positionCount === 'number' ? office.positionCount : null,
+      positions: Array.isArray(office.positions)
+        ? office.positions
+            .map((member: any) => this.normalizeOfficeMember(member))
+            .filter(Boolean)
+        : [],
+    };
+  }
+
+  private async fetchAllOfficeMembers(
+    companySlug: string,
+    officeSlug: string,
+  ): Promise<{
+    id: string | null;
+    positionCount: number;
+    members: TheOrgOfficeMember[];
+  }> {
+    const pageSize = Math.max(1, this.officePageSize);
+    const membersById = new Map<number, TheOrgOfficeMember>();
+    let positionsOffset = 0;
+    let positionCount: number | null = null;
+    let officeId: string | null = null;
+
+    while (true) {
+      const page = await this.fetchOfficePositionsPage(
+        companySlug,
+        officeSlug,
+        pageSize,
+        positionsOffset,
+      );
+
+      officeId = page.id || officeId;
+      if (typeof page.positionCount === 'number') {
+        positionCount = page.positionCount;
+      }
+
+      for (const member of page.positions) {
+        membersById.set(member.id, member);
+      }
+
+      if (page.positions.length === 0) {
+        break;
+      }
+
+      positionsOffset += page.positions.length;
+
+      if (
+        typeof positionCount === 'number' &&
+        membersById.size >= positionCount
+      ) {
+        break;
+      }
+
+      if (page.positions.length < pageSize) {
+        break;
+      }
+    }
+
+    return {
+      id: officeId,
+      positionCount: positionCount ?? membersById.size,
+      members: [...membersById.values()].sort((a, b) =>
+        a.name.localeCompare(b.name),
+      ),
+    };
+  }
+
+  private parseOfficePage(
+    html: string,
+    sourceLabel: string,
+  ): Omit<TheOrgOffice, 'url'> {
+    const nextData = this.extractNextData(html, sourceLabel);
+    const pageProps = nextData?.props?.pageProps || {};
+    const initialOffice = pageProps.initialCompanyOffice || null;
+
+    if (!initialOffice) {
+      throw new Error(`Could not find initialCompanyOffice in ${sourceLabel}`);
+    }
+
+    return {
+      id: initialOffice.id || null,
+      slug: initialOffice.slug || null,
+      name: initialOffice.name || null,
+      description: initialOffice.description || null,
+      positionCount: initialOffice.positionCount ?? 0,
+      jobPostCount: Array.isArray(initialOffice.publishedJobs)
+        ? initialOffice.publishedJobs.length
+        : (initialOffice.jobPostCount ?? 0),
+      members: Array.isArray(initialOffice.positions)
+        ? initialOffice.positions
+            .map((member: any) => this.normalizeOfficeMember(member))
+            .filter(Boolean)
+        : [],
+      location: initialOffice.location || null,
+    };
+  }
+
+  private async enrichOfficesWithMembers(
+    companySlug: string,
+    initialOffices: any[],
+  ): Promise<TheOrgOffice[]> {
+    const offices = Array.isArray(initialOffices)
+      ? initialOffices
+          .filter((office) => office?.slug)
+          .map((office) => ({
+            id: office.id || null,
+            slug: office.slug || null,
+            name: office.name || null,
+            description: office.description || null,
+            positionCount: office.positionCount ?? 0,
+            jobPostCount: office.jobPostCount ?? 0,
+            location: office.location || null,
+            url: this.buildOfficeUrl(companySlug, office.slug),
+            membersPreview: Array.isArray(office.positions)
+              ? office.positions
+                  .map((member: any) => this.normalizeOfficeMember(member))
+                  .filter(Boolean)
+              : [],
+          }))
+      : [];
+    const enriched = new Array<TheOrgOffice>(offices.length);
+    let cursor = 0;
+
+    const worker = async () => {
+      while (cursor < offices.length) {
+        const currentIndex = cursor++;
+        const office = offices[currentIndex];
+
+        try {
+          const fetched = await this.fetchAllOfficeMembers(
+            companySlug,
+            office.slug,
+          );
+
+          enriched[currentIndex] = {
+            id: fetched.id || office.id,
+            slug: office.slug,
+            name: office.name,
+            description: office.description,
+            positionCount: fetched.positionCount || office.positionCount,
+            jobPostCount: office.jobPostCount,
+            members: fetched.members,
+            membersPreviewCount: office.membersPreview.length,
+            location: office.location,
+            url: office.url,
+          };
+        } catch (error) {
+          this.logger.warn(
+            `GraphQL office fetch failed for ${office.url}; falling back to HTML: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+
+          try {
+            const html = await this.fetchText(office.url);
+            const parsed = this.parseOfficePage(html, office.url);
+
+            enriched[currentIndex] = {
+              ...parsed,
+              slug: parsed.slug || office.slug,
+              name: parsed.name || office.name,
+              description: parsed.description || office.description,
+              jobPostCount: parsed.jobPostCount ?? office.jobPostCount,
+              location: parsed.location || office.location,
+              membersPreviewCount: office.membersPreview.length,
+              url: office.url,
+            };
+          } catch (htmlError) {
+            enriched[currentIndex] = {
+              id: office.id,
+              slug: office.slug,
+              name: office.name,
+              description: office.description,
+              positionCount: office.positionCount,
+              jobPostCount: office.jobPostCount,
+              members: office.membersPreview,
+              membersPreviewCount: office.membersPreview.length,
+              location: office.location,
+              url: office.url,
+              fetchError:
+                htmlError instanceof Error
+                  ? htmlError.message
+                  : 'Failed to fetch office page',
+            };
+          }
+        }
+      }
+    };
+
+    await Promise.all(
+      Array.from(
+        { length: Math.min(this.officeConcurrency, Math.max(1, offices.length)) },
+        () => worker(),
+      ),
+    );
+
+    return enriched
+      .filter(Boolean)
+      .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+  }
+
+  private peopleFromOffices(
+    offices: TheOrgOffice[],
+    companySlug: string,
+  ): TheOrgPerson[] {
+    const flattened = offices.flatMap((office) =>
+      (office.members || []).map((member) => ({
+        id: member.id,
+        name: member.name,
+        role: member.role || null,
+        slug: member.slug || null,
+        nodeId: `office:${office.slug || office.id || 'unknown'}:${member.id}`,
+        parentNodeId: null,
+        section: 'office',
+        reportCount: 0,
+        profileUrl:
+          member.slug && companySlug
+            ? this.buildPersonProfileUrl(companySlug, member.slug)
+            : null,
+        linkedInUrl: null,
+        source: 'office' as const,
+        sources: ['offices'] as TheOrgFetchMode[],
+        officeIds: office.id ? [office.id] : [],
+        officeSlugs: office.slug ? [office.slug] : [],
+        officeNames: office.name ? [office.name] : [],
+        profileImageUrl: member.profileImageUrl || null,
+      })),
+    );
+
+    return this.dedupePeople(flattened).map((person) => ({
+      ...person,
+      officeIds: Array.from(new Set(person.officeIds || [])),
+      officeSlugs: Array.from(new Set(person.officeSlugs || [])),
+      officeNames: Array.from(new Set(person.officeNames || [])),
+    }));
+  }
+
   private normalizeMode(rawMode?: string | null): TheOrgFetchMode {
     const mode = String(rawMode || '').trim().toLowerCase();
 
-    if (mode === 'teams' || mode === 'orgchart' || mode === 'combined') {
+    if (
+      mode === 'teams' ||
+      mode === 'orgchart' ||
+      mode === 'offices' ||
+      mode === 'combined'
+    ) {
       return mode;
     }
 
@@ -924,10 +1248,14 @@ export class TheOrgService {
     const ssrPeople = this.uniquePeopleFromApollo(apolloState);
     const initialNodes = pageProps.initialNodes || [];
     const initialTeams = pageProps.initialTeams || [];
+    const initialOffices = Array.isArray(initialCompany.offices)
+      ? initialCompany.offices
+      : [];
     const resolvedCompanySlug = initialCompany.slug || slug;
     const skipFullTree = this.shouldSkipFullTree(initialCompany.stats);
     const shouldFetchOrgChart = mode === 'orgchart' || mode === 'combined';
     const shouldFetchTeams = mode === 'teams' || mode === 'combined';
+    const shouldFetchOffices = mode === 'offices' || mode === 'combined';
     const fullNodes = shouldFetchOrgChart
       ? skipFullTree
         ? this.uniqueNodes(initialNodes.map((entry) => this.normalizeNode(entry)))
@@ -944,18 +1272,30 @@ export class TheOrgService {
       shouldFetchTeams && resolvedCompanySlug
         ? this.peopleFromTeams(teams, resolvedCompanySlug)
         : [];
-    const basePeople = this.dedupePeople(
+    const offices =
+      shouldFetchOffices && resolvedCompanySlug
+        ? await this.enrichOfficesWithMembers(resolvedCompanySlug, initialOffices)
+        : [];
+    const officePeople =
+      shouldFetchOffices && resolvedCompanySlug
+        ? this.peopleFromOffices(offices, resolvedCompanySlug)
+        : [];
+    const peopleForMode =
       mode === 'combined'
-        ? [...orgChartPeople, ...teamPeople]
+        ? [...orgChartPeople, ...teamPeople, ...officePeople]
         : mode === 'teams'
           ? teamPeople
-          : orgChartPeople,
-    ).map((person) => {
+          : mode === 'offices'
+            ? officePeople
+            : orgChartPeople;
+    const basePeople = this.dedupePeople(peopleForMode).map((person) => {
       const orgChartMatch = orgChartPeople.find((candidate) => candidate.id === person.id);
       const teamMatch = teamPeople.find((candidate) => candidate.id === person.id);
+      const officeMatch = officePeople.find((candidate) => candidate.id === person.id);
       const sources = new Set<TheOrgFetchMode>([
         ...((orgChartMatch?.sources || (orgChartMatch ? ['orgchart'] : [])) as TheOrgFetchMode[]),
         ...((teamMatch?.sources || (teamMatch ? ['teams'] : [])) as TheOrgFetchMode[]),
+        ...((officeMatch?.sources || (officeMatch ? ['offices'] : [])) as TheOrgFetchMode[]),
       ]);
 
       return {
@@ -969,6 +1309,9 @@ export class TheOrgService {
         teamIds: Array.from(new Set(person.teamIds || [])),
         teamSlugs: Array.from(new Set(person.teamSlugs || [])),
         teamNames: Array.from(new Set(person.teamNames || [])),
+        officeIds: Array.from(new Set(person.officeIds || [])),
+        officeSlugs: Array.from(new Set(person.officeSlugs || [])),
+        officeNames: Array.from(new Set(person.officeNames || [])),
         sources: [...sources].sort(),
       };
     });
@@ -1005,12 +1348,16 @@ export class TheOrgService {
       inlineProfileMaxPeople: this.inlineProfileMaxPeople,
       maxFullTreePositionCount: this.maxFullTreePositionCount,
       teamCount: teams.length,
+      officeCount: offices.length,
       orgChartPeopleCount: orgChartPeople.length,
       teamPeopleCount: teamPeople.length,
+      officePeopleCount: officePeople.length,
       nodes: fullNodes,
       teams,
+      offices,
       orgChartPeople,
       teamPeople,
+      officePeople,
       people,
     };
 

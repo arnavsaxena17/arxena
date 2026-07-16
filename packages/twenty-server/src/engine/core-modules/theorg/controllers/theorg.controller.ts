@@ -33,7 +33,10 @@ export class TheOrgController {
     try {
       const result = await this.theOrgService.fetchCompanyDetails(slug, {
         mode:
-          mode === 'teams' || mode === 'orgchart' || mode === 'combined'
+          mode === 'teams' ||
+          mode === 'orgchart' ||
+          mode === 'offices' ||
+          mode === 'combined'
             ? mode
             : undefined,
         includePeopleProfiles: ['1', 'true', 'yes', 'y'].includes(

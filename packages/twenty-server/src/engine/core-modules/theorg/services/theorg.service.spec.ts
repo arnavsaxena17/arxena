@@ -15,6 +15,7 @@ describe('TheOrgService', () => {
     delete process.env.THEORG_INLINE_PROFILE_MAX_PEOPLE;
     delete process.env.THEORG_STORAGE_PREFIX;
     delete process.env.THEORG_PERSIST_RESULTS;
+    delete process.env.THEORG_OFFICE_PAGE_SIZE;
 
     fileStorageService = {
       write: jest.fn().mockResolvedValue(undefined),
@@ -442,6 +443,250 @@ describe('TheOrgService', () => {
           name: 'Tom Mavis',
           profileImageUrl:
             'https://cdn.theorg.com/e8fe8757-d356-4e6f-b055-c494040c2315_medium.jpg',
+        }),
+      ]),
+    );
+  });
+
+  it('fetches and paginates office people into officePeople and combined people', async () => {
+    process.env.THEORG_OFFICE_PAGE_SIZE = '2';
+
+    const companyHtml = `
+      <html>
+        <body>
+          <script id="__NEXT_DATA__" type="application/json">${JSON.stringify({
+            props: {
+              pageProps: {
+                initialCompany: {
+                  id: 'company-1',
+                  slug: 'lilavati-hospital-research-centre',
+                  name: 'Lilavati Hospital',
+                  industries: [{ title: 'Healthcare' }],
+                  stats: { positionCount: 4, officesCount: 1, teamsCount: 0 },
+                  offices: [
+                    {
+                      id: 'office-hq',
+                      slug: 'hq',
+                      name: 'HQ',
+                      description: 'Headquarters',
+                      positionCount: 3,
+                      jobPostCount: 0,
+                      positions: [
+                        {
+                          id: 1,
+                          fullName: 'Preview Only',
+                          profileImage: null,
+                        },
+                      ],
+                    },
+                  ],
+                },
+                initialTeams: [],
+                initialNodes: [],
+              },
+            },
+          })}</script>
+        </body>
+      </html>
+    `;
+
+    const fetchMock = jest.fn(async (url: string, init?: RequestInit) => {
+      if (String(url).includes('prod-graphql-api.theorg.com')) {
+        const body = JSON.parse(String(init?.body || '{}'));
+        const offset = Number(body.variables?.positionsOffset ?? 0);
+
+        const pages: Record<number, Array<Record<string, unknown>>> = {
+          0: [
+            {
+              id: 10,
+              fullName: 'Dr. Sindhu Kode',
+              role: 'Intensivist',
+              slug: 'dr-sindhu-kode',
+              parentPositionId: null,
+              lastUpdate: '2024-01-01T00:00:00.000Z',
+              profileImage: {
+                endpoint: 'https://cdn.theorg.com',
+                ext: 'jpg',
+                uri: 'office-person-1',
+                versions: ['medium'],
+              },
+            },
+            {
+              id: 11,
+              fullName: 'Sudheer Ambekar',
+              role: 'Neurosurgeon',
+              slug: 'sudheer-ambekar',
+              parentPositionId: null,
+              profileImage: null,
+            },
+          ],
+          2: [
+            {
+              id: 12,
+              fullName: 'Priyanka Bisht',
+              role: 'Head International Marketing',
+              slug: 'priyanka-bisht',
+              parentPositionId: null,
+              profileImage: null,
+            },
+          ],
+        };
+
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              companyOffice: {
+                id: 'office-hq',
+                positionCount: 3,
+                positions: pages[offset] || [],
+              },
+            },
+          }),
+        };
+      }
+
+      return {
+        ok: true,
+        text: async () => companyHtml,
+      };
+    });
+
+    global.fetch = fetchMock as any;
+
+    const result = await service.fetchCompanyDetails(
+      'lilavati-hospital-research-centre',
+      { mode: 'offices' },
+    );
+
+    expect(result.officeCount).toBe(1);
+    expect(result.officePeopleCount).toBe(3);
+    expect(result.officePeople).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'Dr. Sindhu Kode',
+          role: 'Intensivist',
+          source: 'office',
+          sources: ['offices'],
+          officeSlugs: ['hq'],
+          profileImageUrl:
+            'https://cdn.theorg.com/office-person-1_medium.jpg',
+        }),
+        expect.objectContaining({
+          name: 'Priyanka Bisht',
+          officeNames: ['HQ'],
+        }),
+      ]),
+    );
+    expect(result.people).toHaveLength(3);
+    expect(result.people.every((person) => person.sources?.includes('offices'))).toBe(
+      true,
+    );
+
+    const graphqlCalls = fetchMock.mock.calls.filter((call) =>
+      String(call[0]).includes('prod-graphql-api.theorg.com'),
+    );
+    expect(graphqlCalls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('includes office people when mode is combined', async () => {
+    const companyHtml = `
+      <html>
+        <body>
+          <script id="__NEXT_DATA__" type="application/json">${JSON.stringify({
+            props: {
+              pageProps: {
+                initialCompany: {
+                  id: 'company-1',
+                  slug: 'demo-co',
+                  name: 'Demo Co',
+                  industries: [],
+                  stats: { positionCount: 1, officesCount: 1 },
+                  offices: [
+                    {
+                      id: 'office-1',
+                      slug: 'hq',
+                      name: 'HQ',
+                      positionCount: 1,
+                      positions: [],
+                    },
+                  ],
+                },
+                initialTeams: [],
+                initialNodes: [
+                  {
+                    id: 'node-1',
+                    title: 'CEO',
+                    containingNodeId: null,
+                    order: 0,
+                    parentId: null,
+                    section: 'orgChart',
+                    type: 'POSITION',
+                    reportCount: 0,
+                    node: {
+                      position: {
+                        id: 1,
+                        fullName: 'Org Chart Person',
+                        role: 'CEO',
+                        slug: 'org-chart-person',
+                        claimedBy: null,
+                        hasNotes: false,
+                        profileImage: null,
+                        social: null,
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          })}</script>
+        </body>
+      </html>
+    `;
+
+    global.fetch = jest.fn(async (url: string) => {
+      if (String(url).includes('prod-graphql-api.theorg.com')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              companyOffice: {
+                id: 'office-1',
+                positionCount: 1,
+                positions: [
+                  {
+                    id: 99,
+                    fullName: 'Office Person',
+                    role: 'Manager',
+                    slug: 'office-person',
+                    parentPositionId: null,
+                    profileImage: null,
+                  },
+                ],
+              },
+            },
+          }),
+        };
+      }
+
+      return {
+        ok: true,
+        text: async () => companyHtml,
+      };
+    }) as any;
+
+    const result = await service.fetchCompanyDetails('demo-co', {
+      mode: 'combined',
+    });
+
+    expect(result.orgChartPeopleCount).toBe(1);
+    expect(result.officePeopleCount).toBe(1);
+    expect(result.people).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'Org Chart Person' }),
+        expect.objectContaining({
+          name: 'Office Person',
+          sources: ['offices'],
         }),
       ]),
     );

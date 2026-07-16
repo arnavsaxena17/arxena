@@ -127,13 +127,6 @@ export class LinkedinUnipileRequestService {
       const response = await fetch(url, config);
       const data = await response.json().catch(() => ({}));
       this.logger.log(`Data in MAKE UNIPILE REQUEST: ${JSON.stringify(data, null, 2)}`);
-      this.logger.log(`Response in MAKE UNIPILE REQUEST: ${JSON.stringify(response, null, 2)}`);
-      this.logger.log(`Endpoint in MAKE UNIPILE REQUEST: ${endpoint}`);
-      this.logger.log(`Method in MAKE UNIPILE REQUEST: ${method}`);
-      this.logger.log(`Body in MAKE UNIPILE REQUEST: ${JSON.stringify(body, null, 2)}`);
-      this.logger.log(`Options in MAKE UNIPILE REQUEST: ${JSON.stringify(options, null, 2)}`);
-      this.logger.log(`Headers in MAKE UNIPILE REQUEST: ${JSON.stringify(headers, null, 2)}`);
-      this.logger.log(`Config in MAKE UNIPILE REQUEST: ${JSON.stringify(config, null, 2)}`);
       if (!response.ok) {
         this.logger.error(
           `Unipile API error: ${response.status} ${response.statusText}`,

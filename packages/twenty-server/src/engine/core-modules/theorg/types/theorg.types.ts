@@ -12,7 +12,7 @@ export type TheOrgSocial = {
   websiteUrl?: string | null;
 };
 
-export type TheOrgFetchMode = 'teams' | 'orgchart' | 'combined';
+export type TheOrgFetchMode = 'teams' | 'orgchart' | 'offices' | 'combined';
 
 export type TheOrgNormalizedNode = {
   id: string;
@@ -54,11 +54,14 @@ export type TheOrgPerson = {
   profileUrl: string | null;
   /** LinkedIn profile URL from position.social.linkedInUrl (or profile fetch when inlined) */
   linkedInUrl: string | null;
-  source?: 'orgChart' | 'team';
+  source?: 'orgChart' | 'team' | 'office';
   sources?: TheOrgFetchMode[];
   teamIds?: string[];
   teamSlugs?: string[];
   teamNames?: string[];
+  officeIds?: string[];
+  officeSlugs?: string[];
+  officeNames?: string[];
   profileImageUrl?: string | null;
   profile?: Record<string, unknown>;
   profileError?: string;
@@ -84,6 +87,30 @@ export type TheOrgTeam = {
   publishedJobsCount?: number;
   members: TheOrgTeamMember[];
   membersPreviewCount?: number;
+  url: string;
+  fetchError?: string;
+};
+
+export type TheOrgOfficeMember = {
+  id: number;
+  name: string;
+  role: string | null;
+  slug: string | null;
+  parentPositionId: number | null;
+  profileImageUrl: string | null;
+  updatedAt: string | null;
+};
+
+export type TheOrgOffice = {
+  id: string | null;
+  slug: string | null;
+  name: string | null;
+  description: string | null;
+  positionCount: number;
+  jobPostCount?: number;
+  members: TheOrgOfficeMember[];
+  membersPreviewCount?: number;
+  location?: Record<string, unknown> | null;
   url: string;
   fetchError?: string;
 };
@@ -148,12 +175,16 @@ export type TheOrgCompanyResponse = {
   inlineProfileMaxPeople: number;
   maxFullTreePositionCount: number;
   teamCount: number;
+  officeCount: number;
   orgChartPeopleCount: number;
   teamPeopleCount: number;
+  officePeopleCount: number;
   nodes: TheOrgNormalizedNode[];
   teams: TheOrgTeam[];
+  offices: TheOrgOffice[];
   orgChartPeople: TheOrgPerson[];
   teamPeople: TheOrgPerson[];
+  officePeople: TheOrgPerson[];
   people: TheOrgPerson[];
   storage?: TheOrgStorageLocation;
   slugResolution?: TheOrgSlugResolution;
