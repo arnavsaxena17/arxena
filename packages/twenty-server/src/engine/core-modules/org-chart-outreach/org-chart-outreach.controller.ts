@@ -1,22 +1,22 @@
 import {
-    Body,
-    Controller,
-    Post,
-    Req,
-    UnauthorizedException,
-    UseGuards,
-    ValidationPipe,
+  Body,
+  Controller,
+  Post,
+  Req,
+  UnauthorizedException,
+  UseGuards,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
-    IsArray,
-    IsBoolean,
-    IsIn,
-    IsNumber,
-    IsObject,
-    IsOptional,
-    IsString,
-    Max,
-    Min,
+  IsArray,
+  IsBoolean,
+  IsIn,
+  IsNumber,
+  IsObject,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
 } from 'class-validator';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -28,12 +28,14 @@ import { IcpOutreachMessageService } from './icp-outreach-message.service';
 import { LinkedinOutreachOpenerService } from './linkedin-outreach-opener.service';
 import { OrgChartOutreachService } from './org-chart-outreach.service';
 import type {
-    ExtractIcpResponse,
-    FetchIcpCandidatesResponse,
-    GenerateIcpCommentResponse,
-    GenerateIcpMessageResponse,
-    GenerateOutreachMessageResponse,
-    SendPostCommentResponse,
+  ExtractIcpResponse,
+  FetchIcpCandidatesResponse,
+  GenerateIcpCommentResponse,
+  GenerateIcpEmailResponse,
+  GenerateIcpMessageResponse,
+  GenerateIcpWhatsappResponse,
+  GenerateOutreachMessageResponse,
+  SendPostCommentResponse,
 } from './org-chart-outreach.types';
 
 class OrgChartOutreachBodyDto {
@@ -228,8 +230,10 @@ class IcpRankedCandidateDto {
 }
 
 class GenerateIcpMessageBodyDto {
+  /** Optional — extracted automatically from the target's profile when omitted. */
+  @IsOptional()
   @IsObject()
-  icp: IcpBodyDto;
+  icp?: IcpBodyDto;
 
   @IsOptional()
   @IsString()
@@ -239,6 +243,7 @@ class GenerateIcpMessageBodyDto {
   @IsString()
   chartFunction?: string;
 
+  /** LinkedIn public identifier or full profile URL. */
   @IsString()
   targetIdentifier: string;
 
@@ -269,14 +274,21 @@ class GenerateIcpMessageBodyDto {
   @IsString()
   customInstructions?: string;
 
+  /** Send the connection request after generation (connection_request only). */
+  @IsOptional()
+  @IsBoolean()
+  execute?: boolean;
+
   @IsOptional()
   @IsString()
   accountId?: string;
 }
 
-class GenerateIcpCommentBodyDto {
+class GenerateIcpChannelBodyDto {
+  /** Optional — extracted automatically from the target's profile when omitted. */
+  @IsOptional()
   @IsObject()
-  icp: IcpBodyDto;
+  icp?: IcpBodyDto;
 
   @IsOptional()
   @IsString()
@@ -286,6 +298,73 @@ class GenerateIcpCommentBodyDto {
   @IsString()
   chartFunction?: string;
 
+  /** LinkedIn public identifier or full profile URL. */
+  @IsString()
+  targetIdentifier: string;
+
+  @IsOptional()
+  @IsArray()
+  rankedCandidates?: IcpRankedCandidateDto[];
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(365)
+  recentPostDays?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(50)
+  postsLimit?: number;
+
+  @IsOptional()
+  @IsIn(['professional', 'warm', 'direct'])
+  tone?: 'professional' | 'warm' | 'direct';
+
+  @IsOptional()
+  @IsString()
+  customInstructions?: string;
+
+  /** Send the message after generation. */
+  @IsOptional()
+  @IsBoolean()
+  execute?: boolean;
+
+  @IsOptional()
+  @IsString()
+  accountId?: string;
+}
+
+class GenerateIcpEmailBodyDto extends GenerateIcpChannelBodyDto {
+  /** Recipient email — skips the contact-enrichment waterfall when provided. */
+  @IsOptional()
+  @IsString()
+  email?: string;
+}
+
+class GenerateIcpWhatsappBodyDto extends GenerateIcpChannelBodyDto {
+  /** Recipient phone — skips the contact-enrichment waterfall when provided. */
+  @IsOptional()
+  @IsString()
+  phone?: string;
+}
+
+class GenerateIcpCommentBodyDto {
+  /** Optional — extracted automatically from the post author's profile when omitted. */
+  @IsOptional()
+  @IsObject()
+  icp?: IcpBodyDto;
+
+  @IsOptional()
+  @IsString()
+  sells?: string;
+
+  @IsOptional()
+  @IsString()
+  chartFunction?: string;
+
+  /** LinkedIn public identifier or full profile URL of the post author. */
   @IsOptional()
   @IsString()
   personIdentifier?: string;
@@ -317,6 +396,11 @@ class GenerateIcpCommentBodyDto {
   @IsOptional()
   @IsString()
   customInstructions?: string;
+
+  /** Publish the first generated comment on the resolved post. */
+  @IsOptional()
+  @IsBoolean()
+  execute?: boolean;
 
   @IsOptional()
   @IsString()
@@ -528,6 +612,71 @@ export class OrgChartOutreachController {
       postsLimit: body.postsLimit,
       tone: body.tone,
       customInstructions: body.customInstructions,
+      execute: body.execute,
+      accountId: body.accountId,
+      apiToken,
+      workspaceMemberId,
+      workspaceId: workspace.id,
+    });
+  }
+
+  @Post('icp/generate-email')
+  async generateIcpEmail(
+    @Body(new ValidationPipe({ transform: true, whitelist: true }))
+    body: GenerateIcpEmailBodyDto,
+    @AuthWorkspace() workspace: Workspace,
+    @Req()
+    request: {
+      workspaceMemberId?: string;
+      headers?: { authorization?: string };
+    },
+  ): Promise<GenerateIcpEmailResponse> {
+    const { apiToken, workspaceMemberId } = this.resolveAuthContext(request);
+
+    return this.icpOutreachMessageService.generateIcpEmail({
+      icp: body.icp,
+      sells: body.sells,
+      chartFunction: body.chartFunction,
+      targetIdentifier: body.targetIdentifier,
+      rankedCandidates: body.rankedCandidates,
+      recentPostDays: body.recentPostDays,
+      postsLimit: body.postsLimit,
+      tone: body.tone,
+      customInstructions: body.customInstructions,
+      email: body.email,
+      execute: body.execute,
+      accountId: body.accountId,
+      apiToken,
+      workspaceMemberId,
+      workspaceId: workspace.id,
+    });
+  }
+
+  @Post('icp/generate-whatsapp')
+  async generateIcpWhatsapp(
+    @Body(new ValidationPipe({ transform: true, whitelist: true }))
+    body: GenerateIcpWhatsappBodyDto,
+    @AuthWorkspace() workspace: Workspace,
+    @Req()
+    request: {
+      workspaceMemberId?: string;
+      headers?: { authorization?: string };
+    },
+  ): Promise<GenerateIcpWhatsappResponse> {
+    const { apiToken, workspaceMemberId } = this.resolveAuthContext(request);
+
+    return this.icpOutreachMessageService.generateIcpWhatsapp({
+      icp: body.icp,
+      sells: body.sells,
+      chartFunction: body.chartFunction,
+      targetIdentifier: body.targetIdentifier,
+      rankedCandidates: body.rankedCandidates,
+      recentPostDays: body.recentPostDays,
+      postsLimit: body.postsLimit,
+      tone: body.tone,
+      customInstructions: body.customInstructions,
+      phone: body.phone,
+      execute: body.execute,
       accountId: body.accountId,
       apiToken,
       workspaceMemberId,
@@ -559,6 +708,7 @@ export class OrgChartOutreachController {
       variants: body.variants,
       recentPostDays: body.recentPostDays,
       customInstructions: body.customInstructions,
+      execute: body.execute,
       accountId: body.accountId,
       apiToken,
       workspaceMemberId,

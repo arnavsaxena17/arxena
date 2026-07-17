@@ -221,12 +221,23 @@ export type IcpProfileInput = {
   pain_signals: string[];
 };
 
+/** Channels the ICP outreach composer can write for. */
+export type IcpChannelMessageType = OutreachMessageType | 'email' | 'whatsapp';
+
+/** Outcome of an executed send (present only when `execute` was requested). */
+export type IcpExecutionResult = {
+  attempted: boolean;
+  success: boolean;
+  error?: string;
+};
+
 export type GenerateIcpMessageParams = {
-  icp: IcpProfileInput;
+  /** ICP from icp/extract. When omitted, extracted automatically from the target's profile. */
+  icp?: IcpProfileInput;
   /** "sells" summary from icp/extract, grounds the message in what they do. */
   sells?: string;
   chartFunction?: string | null;
-  /** LinkedIn public identifier or provider id of the message recipient. */
+  /** LinkedIn public identifier, provider id, or full profile URL of the recipient. */
   targetIdentifier: string;
   messageType: OutreachMessageType;
   /** Ranked companies from icp/candidates to reference as the org-chart lure. */
@@ -236,6 +247,8 @@ export type GenerateIcpMessageParams = {
   postsLimit?: number;
   tone?: OutreachTone;
   customInstructions?: string;
+  /** Send the connection request after generation (connection_request only). */
+  execute?: boolean;
   accountId?: string;
   apiToken: string;
   workspaceMemberId: string;
@@ -248,20 +261,28 @@ export type GenerateIcpMessageResponse = {
   subject?: string;
   /** The post the message hooked on, when one existed within the window. */
   recentPostUsed: LinkedinPostSummary | null;
+  /** Echoed back when the ICP was auto-extracted, so clients can reuse it. */
+  icp?: IcpProfileInput;
   contextUsed: {
     targetPublicIdentifier?: string;
     postsConsidered: number;
     postsWithinWindow: number;
     recentPostDays: number;
     rankedCandidatesCount: number;
+    icpSource: 'provided' | 'extracted';
   };
+  execution?: IcpExecutionResult;
 };
 
 export type GenerateIcpCommentParams = {
-  icp: IcpProfileInput;
+  /** ICP from icp/extract. When omitted, extracted automatically from the post author's profile. */
+  icp?: IcpProfileInput;
   sells?: string;
   chartFunction?: string | null;
-  /** Author of the post — used to fetch their latest post when postId/postText are absent. */
+  /**
+   * Author of the post — public identifier, provider id, or full profile URL.
+   * Used to fetch their latest post when postId/postText are absent.
+   */
   personIdentifier?: string;
   /** Unipile post id or LinkedIn social id — fetched directly when given. */
   postId?: string;
@@ -273,6 +294,8 @@ export type GenerateIcpCommentParams = {
   /** Window for picking the author's latest post, in days. Defaults to 30. */
   recentPostDays?: number;
   customInstructions?: string;
+  /** Publish the first generated comment on the resolved post. */
+  execute?: boolean;
   accountId?: string;
   apiToken: string;
   workspaceMemberId: string;
@@ -283,11 +306,78 @@ export type GenerateIcpCommentResponse = {
   comments: string[];
   /** The post the comments were written for (id present when fetched, so it can be sent). */
   post: LinkedinPostSummary;
+  /** Echoed back when the ICP was auto-extracted, so clients can reuse it. */
+  icp?: IcpProfileInput;
   contextUsed: {
     postSource: 'provided_text' | 'fetched_by_id' | 'latest_from_person';
     authorIdentifier?: string;
     postsConsidered: number;
+    icpSource: 'provided' | 'extracted';
   };
+  execution?: IcpExecutionResult & { commentText?: string; postId?: string };
+};
+
+export type GenerateIcpChannelParams = {
+  /** ICP from icp/extract. When omitted, extracted automatically from the target's profile. */
+  icp?: IcpProfileInput;
+  sells?: string;
+  chartFunction?: string | null;
+  /** LinkedIn public identifier, provider id, or full profile URL of the recipient. */
+  targetIdentifier: string;
+  rankedCandidates?: IcpRankedCandidateInput[];
+  recentPostDays?: number;
+  postsLimit?: number;
+  tone?: OutreachTone;
+  customInstructions?: string;
+  execute?: boolean;
+  accountId?: string;
+  apiToken: string;
+  workspaceMemberId: string;
+  workspaceId: string;
+};
+
+export type GenerateIcpEmailParams = GenerateIcpChannelParams & {
+  /** Recipient email — skips the contact-enrichment waterfall when provided. */
+  email?: string;
+};
+
+export type GenerateIcpWhatsappParams = GenerateIcpChannelParams & {
+  /** Recipient phone — skips the contact-enrichment waterfall when provided. */
+  phone?: string;
+};
+
+type IcpChannelContextUsed = {
+  targetPublicIdentifier?: string;
+  postsConsidered: number;
+  postsWithinWindow: number;
+  recentPostDays: number;
+  rankedCandidatesCount: number;
+  icpSource: 'provided' | 'extracted';
+};
+
+export type GenerateIcpEmailResponse = {
+  subject: string;
+  message: string;
+  /** Address the email would be (or was) sent to. */
+  toEmail?: string;
+  /** Contact-enrichment waterfall output ('provided' when the caller passed the email). */
+  contact: { emails: string[]; source: string };
+  recentPostUsed: LinkedinPostSummary | null;
+  icp?: IcpProfileInput;
+  contextUsed: IcpChannelContextUsed;
+  execution?: IcpExecutionResult;
+};
+
+export type GenerateIcpWhatsappResponse = {
+  message: string;
+  /** Phone the message would be (or was) sent to. */
+  toPhone?: string;
+  /** Contact-enrichment waterfall output ('provided' when the caller passed the phone). */
+  contact: { phones: string[]; source: string };
+  recentPostUsed: LinkedinPostSummary | null;
+  icp?: IcpProfileInput;
+  contextUsed: IcpChannelContextUsed;
+  execution?: IcpExecutionResult;
 };
 
 export type SendPostCommentParams = {

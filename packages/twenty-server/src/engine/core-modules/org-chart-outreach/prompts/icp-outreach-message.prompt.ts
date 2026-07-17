@@ -1,13 +1,13 @@
-import type { IcpProfile } from 'src/engine/core-modules/org-chart-outreach/schemas/icp-extraction.schema';
 import type {
+    IcpChannelMessageType,
     IcpRankedCandidateInput,
     LinkedinPostSummary,
-    OutreachMessageType,
     OutreachTone,
 } from 'src/engine/core-modules/org-chart-outreach/org-chart-outreach.types';
+import type { IcpProfile } from 'src/engine/core-modules/org-chart-outreach/schemas/icp-extraction.schema';
 
 const messageTypeInstructions = (
-  messageType: OutreachMessageType,
+  messageType: IcpChannelMessageType,
 ): string => {
   switch (messageType) {
     case 'connection_request':
@@ -26,6 +26,21 @@ const messageTypeInstructions = (
       return [
         'Write a LinkedIn direct message.',
         'Keep the message under 1000 characters.',
+        'Return JSON: {"message":"..."}',
+      ].join('\n');
+    case 'email':
+      return [
+        'Write a cold outreach email.',
+        'Subject: specific and under 80 characters, no clickbait.',
+        'Body: plain text, roughly 500-900 characters, 2-3 short paragraphs,',
+        'ending with a low-friction ask (e.g. "worth a look?"). No signature block.',
+        'Return JSON: {"subject":"...","message":"..."}',
+      ].join('\n');
+    case 'whatsapp':
+      return [
+        'Write a short WhatsApp message.',
+        'Hard limit: 600 characters. Conversational but professional; no',
+        'greeting fluff, no signature, no markdown formatting.',
         'Return JSON: {"message":"..."}',
       ].join('\n');
   }
@@ -67,7 +82,7 @@ export const buildIcpOutreachMessagePrompt = (input: {
   targetHeadline?: string;
   recentPost: LinkedinPostSummary | null;
   rankedCandidates: IcpRankedCandidateInput[];
-  messageType: OutreachMessageType;
+  messageType: IcpChannelMessageType;
   tone: OutreachTone;
   customInstructions?: string;
 }): string => {

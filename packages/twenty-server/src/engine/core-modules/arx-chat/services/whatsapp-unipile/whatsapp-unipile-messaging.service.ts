@@ -2,11 +2,11 @@ import axios from 'axios';
 import FormData from 'form-data';
 import * as fs from 'fs';
 import {
-  CandidateNode,
-  ChatControlsObjType,
-  ChatHistoryItem,
-  Job,
-  whatappUpdateMessageObjType
+    CandidateNode,
+    ChatControlsObjType,
+    ChatHistoryItem,
+    Job,
+    whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
@@ -181,6 +181,51 @@ export class WhatsappUnipileMessagingService {
       return { status: 'success' };
     } catch (error) {
       console.error('sendTextToPhoneForJob failed:', error);
+      return {
+        status: 'failed',
+        message:
+          error instanceof Error ? error.message : 'Error sending WhatsApp message',
+      };
+    }
+  }
+
+  /**
+   * Send a plain text WhatsApp message to a phone number without a job
+   * context (e.g. ICP outreach). Resolves the Unipile account from the JWT's
+   * workspace member.
+   */
+  async sendTextToPhoneForMember(
+    apiToken: string,
+    phone: string,
+    message: string,
+  ): Promise<{ status: 'success' | 'failed'; message?: string }> {
+    try {
+      const whatsappAccountId = await this.resolveWhatsappUnipileAccountId(
+        apiToken,
+        null,
+      );
+      if (!whatsappAccountId) {
+        return {
+          status: 'failed',
+          message: 'WhatsApp Unipile account not configured',
+        };
+      }
+      const trimmed = phone.trim();
+      if (!trimmed) {
+        return { status: 'failed', message: 'Phone number required' };
+      }
+      const normalizedPhoneNumber = trimmed.replace(/[^\d+]/g, '');
+      const attendeeId = `${normalizedPhoneNumber}@s.whatsapp.net`;
+      await this.sendMessage(
+        whatsappAccountId,
+        [attendeeId],
+        normalizeWhatsAppOutboundMessage(message),
+        undefined,
+        null,
+      );
+      return { status: 'success' };
+    } catch (error) {
+      console.error('sendTextToPhoneForMember failed:', error);
       return {
         status: 'failed',
         message:

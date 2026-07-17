@@ -613,6 +613,97 @@
           }
         },
         {
+          "name": "ICP Generate Message - URL Only (auto-ICP extraction)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('ICP Generate Message (URL only): status', pm.response.code);",
+                  "",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "console.log('ICP Generate Message (URL only) response:', JSON.stringify(json, null, 2));",
+                  "",
+                  "pm.test('message is a non-empty string within 300 chars', function () {",
+                  "    pm.expect(json.message).to.be.a('string').and.to.have.length.above(0);",
+                  "    pm.expect(json.message.length).to.be.at.most(300);",
+                  "});",
+                  "",
+                  "pm.test('ICP was auto-extracted and echoed back', function () {",
+                  "    pm.expect(json.contextUsed.icpSource).to.eql('extracted');",
+                  "    pm.expect(json.icp.buyer_titles).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/org-chart-outreach/icp/generate-message",
+              "host": ["{{baseUrl}}"],
+              "path": ["org-chart-outreach", "icp", "generate-message"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetIdentifier\": \"https://www.linkedin.com/in/gaurav-sherlocks-ai\",\n  \"messageType\": \"connection_request\"\n}"
+            },
+            "description": "Minimal request: only a full LinkedIn URL (or plain identifier). The server extracts the ICP/sells/chart_function from the target's own profile (Prompt 1) before composing the message, and echoes the extracted icp back so it can be reused. Add \"execute\": true to also send the connection request via Unipile."
+          }
+        },
+        {
+          "name": "ICP Generate Message - Execute (SENDS CONNECTION REQUEST)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('ICP Generate Message (execute): status', pm.response.code);",
+                  "const json = pm.response.json();",
+                  "console.log('ICP Generate Message (execute) response:', JSON.stringify(json, null, 2));",
+                  "",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});",
+                  "",
+                  "pm.test('execution result is reported', function () {",
+                  "    pm.expect(json.execution).to.be.an('object');",
+                  "    pm.expect(json.execution.attempted).to.be.a('boolean');",
+                  "    pm.expect(json.execution.success).to.be.a('boolean');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/org-chart-outreach/icp/generate-message",
+              "host": ["{{baseUrl}}"],
+              "path": ["org-chart-outreach", "icp", "generate-message"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetIdentifier\": \"https://www.linkedin.com/in/gaurav-sherlocks-ai\",\n  \"messageType\": \"connection_request\",\n  \"execute\": true\n}"
+            },
+            "description": "WARNING: actually sends the generated connection request via Unipile (POST /users/invite). execute is only allowed for messageType connection_request."
+          }
+        },
+        {
           "name": "ICP Generate Comment - Latest Post of Person",
           "event": [
             {
@@ -664,6 +755,161 @@
               "raw": "{\n  \"icp\": {{extractedIcp}},\n  \"sells\": \"Agentic AI SRE platform for automated incident root-cause analysis\",\n  \"chartFunction\": \"{{chartFunction}}\",\n  \"personIdentifier\": \"gaurav-sherlocks-ai\",\n  \"rankedCandidates\": [\n    {\n      \"company_name\": \"Acme Corp\",\n      \"chart_function\": \"Platform Engineering\"\n    }\n  ],\n  \"variants\": 3\n}"
             },
             "description": "Generates 3 comment variants for the person's latest post (last 30 days preferred): value-add first, with at most one variant lightly redirecting to org-chart value relevant to their ICP. Alternatively pass postId (fetches that post) or postText (no Unipile calls). Stores the post id + first comment in collection variables for the send request."
+          }
+        },
+        {
+          "name": "ICP Generate Comment - URL Only (auto-ICP, optional execute)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('ICP Generate Comment (URL only): status', pm.response.code);",
+                  "",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "console.log('ICP Generate Comment (URL only) response:', JSON.stringify(json, null, 2));",
+                  "",
+                  "pm.test('returns comment variants and the target post', function () {",
+                  "    pm.expect(json.comments).to.be.an('array').and.to.have.length.within(1, 3);",
+                  "    pm.expect(json.post.text).to.be.a('string');",
+                  "});",
+                  "",
+                  "pm.test('ICP was auto-extracted', function () {",
+                  "    pm.expect(json.contextUsed.icpSource).to.eql('extracted');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/org-chart-outreach/icp/generate-comment",
+              "host": ["{{baseUrl}}"],
+              "path": ["org-chart-outreach", "icp", "generate-comment"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"personIdentifier\": \"https://www.linkedin.com/in/gaurav-sherlocks-ai\",\n  \"variants\": 3\n}"
+            },
+            "description": "Minimal request: only the post author's LinkedIn URL (or identifier). The server extracts the ICP from the author's profile and comments on their latest post. Add \"execute\": true to publish the first variant on the post via Unipile (PUBLISHES PUBLICLY)."
+          }
+        },
+        {
+          "name": "ICP Generate Email - URL Only (contact waterfall, optional execute)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('ICP Generate Email: status', pm.response.code);",
+                  "",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "console.log('ICP Generate Email response:', JSON.stringify(json, null, 2));",
+                  "",
+                  "pm.test('subject and message are non-empty', function () {",
+                  "    pm.expect(json.subject).to.be.a('string').and.to.have.length.above(0);",
+                  "    pm.expect(json.message).to.be.a('string').and.to.have.length.above(0);",
+                  "});",
+                  "",
+                  "pm.test('contact enrichment result is reported', function () {",
+                  "    pm.expect(json.contact.emails).to.be.an('array');",
+                  "    pm.expect(json.contact.source).to.be.a('string');",
+                  "});",
+                  "",
+                  "if (json.toEmail) {",
+                  "    console.log('Resolved recipient email:', json.toEmail, 'via', json.contact.source);",
+                  "} else {",
+                  "    console.log('No email found by the waterfall; pass \"email\" explicitly to send');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/org-chart-outreach/icp/generate-email",
+              "host": ["{{baseUrl}}"],
+              "path": ["org-chart-outreach", "icp", "generate-email"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetIdentifier\": \"https://www.linkedin.com/in/gaurav-sherlocks-ai\"\n}"
+            },
+            "description": "Generates a cold email grounded in the (auto-extracted or provided) ICP. The recipient address comes from the contact-enrichment waterfall (arxena → pdl → contactout → lusha → apollo) keyed on the LinkedIn URL, unless \"email\" is passed. Add \"execute\": true to send it via the workspace member's connected Gmail (SENDS A REAL EMAIL)."
+          }
+        },
+        {
+          "name": "ICP Generate WhatsApp - URL Only (contact waterfall, optional execute)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('ICP Generate WhatsApp: status', pm.response.code);",
+                  "",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "console.log('ICP Generate WhatsApp response:', JSON.stringify(json, null, 2));",
+                  "",
+                  "pm.test('message is non-empty and within 600 chars', function () {",
+                  "    pm.expect(json.message).to.be.a('string').and.to.have.length.above(0);",
+                  "    pm.expect(json.message.length).to.be.at.most(600);",
+                  "});",
+                  "",
+                  "pm.test('contact enrichment result is reported', function () {",
+                  "    pm.expect(json.contact.phones).to.be.an('array');",
+                  "    pm.expect(json.contact.source).to.be.a('string');",
+                  "});",
+                  "",
+                  "if (json.toPhone) {",
+                  "    console.log('Resolved recipient phone:', json.toPhone, 'via', json.contact.source);",
+                  "} else {",
+                  "    console.log('No phone found by the waterfall; pass \"phone\" explicitly to send');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/org-chart-outreach/icp/generate-whatsapp",
+              "host": ["{{baseUrl}}"],
+              "path": ["org-chart-outreach", "icp", "generate-whatsapp"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetIdentifier\": \"https://www.linkedin.com/in/gaurav-sherlocks-ai\"\n}"
+            },
+            "description": "Generates a short WhatsApp message grounded in the (auto-extracted or provided) ICP. The phone number comes from the contact-enrichment waterfall keyed on the LinkedIn URL, unless \"phone\" is passed. Add \"execute\": true to send it via the workspace member's connected WhatsApp Unipile account (SENDS A REAL MESSAGE)."
           }
         },
         {

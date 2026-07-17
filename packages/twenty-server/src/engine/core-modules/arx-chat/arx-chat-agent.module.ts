@@ -64,6 +64,7 @@ import { JDParserService } from 'src/engine/core-modules/candidate-sourcing/serv
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { ResumeReadParseUploadService } from 'src/engine/core-modules/candidate-sourcing/services/resume-read-parse-upload.service';
 import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
+import { ContactEnrichmentModule } from 'src/engine/core-modules/contact-enrichment/contact-enrichment.module';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { FeatureFlag } from 'src/engine/core-modules/feature-flag/feature-flag.entity';
@@ -74,7 +75,6 @@ import { SchemaCacheService } from 'src/engine/core-modules/graphql/services/sch
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
 import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
-import { WarmPathsModule } from 'src/engine/core-modules/warm-paths/warm-paths.module';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
 import { LLMChatModelModule } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.module';
 import { IcpExtractionService } from 'src/engine/core-modules/org-chart-outreach/icp-extraction.service';
@@ -86,6 +86,7 @@ import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.modu
 import { UnipileAttachmentModule } from 'src/engine/core-modules/unipile-attachments/unipile-attachment.module';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { User } from 'src/engine/core-modules/user/user.entity';
+import { WarmPathsModule } from 'src/engine/core-modules/warm-paths/warm-paths.module';
 import { WhatsappMediaModule } from 'src/engine/core-modules/whatsapp-media/whatsapp-media.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module'; // Add this import
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -112,9 +113,9 @@ import { GmailDraftShortlistQueueService } from './services/candidate-engagement
 import { UpdateChat } from './services/candidate-engagement/update-chat';
 import { LinkedInUnipileMonitoringService } from './services/linkedin-unipile-monitoring.service';
 import { LinkedinUnipileRequestService } from './services/linkedin-unipile-request.service';
-import { UnipileCompanyService } from './services/unipile-company.service';
 import { MemberLinkedinUnipileConnectionService } from './services/member-linkedin-unipile-connection.service';
 import { MessagingControls } from './services/messaging-controls';
+import { UnipileCompanyService } from './services/unipile-company.service';
 import { WhatsAppMonitoringUnifiedService } from './services/whatsapp-monitoring-unified.service';
 import { WhatsappUnipileRequestService } from './services/whatsapp-unipile-request.service';
 import { WhatsappUnipileSyncService } from './services/whatsapp-unipile/whatsapp-unipile-sync.service';
@@ -149,6 +150,7 @@ const conditionalImports = isWorker
     UnipileAttachmentModule,
     CandidateSearchModule,
     CandidateSourcingModule,
+    ContactEnrichmentModule,
     JwtModule,
     UnipilePoolModule,
     forwardRef(() => OrgChartModule),

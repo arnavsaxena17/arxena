@@ -1,11 +1,11 @@
 import { forwardRef, HttpException, HttpStatus, Inject, Injectable, Logger, Optional } from '@nestjs/common';
 
 import {
-  hasWorkspaceMemberLinkedinFullProfile,
-  hasWorkspaceMemberLinkedinOwnerProfile,
-  inferLinkedInSearchTypeFromUnipileOwnerProfile,
-  workspaceMemberLinkedinProfileMatchesAccountId,
-  type UnipileAccountOwnerProfile,
+    hasWorkspaceMemberLinkedinFullProfile,
+    hasWorkspaceMemberLinkedinOwnerProfile,
+    inferLinkedInSearchTypeFromUnipileOwnerProfile,
+    workspaceMemberLinkedinProfileMatchesAccountId,
+    type UnipileAccountOwnerProfile,
 } from 'twenty-shared';
 
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -13,37 +13,37 @@ import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 
 import { UnipileLinkedinAccountUnusableError } from '../errors/unipile-linkedin-account-unusable.error';
 import type {
-  LinkedinSenderFullProfileCacheEntry,
-  LinkedinSenderFullProfileResult,
+    LinkedinSenderFullProfileCacheEntry,
+    LinkedinSenderFullProfileResult,
 } from '../types/linkedin-sender-profile-cache.types';
 import { LinkedinUnipileAccountCleanupContext } from '../types/linkedin-unipile-account-cleanup.types';
 import { isUnipileLinkedinAccountUnusableError } from '../utils/is-unipile-linkedin-account-unusable-error.util';
 import {
-  fetchUnipileAccountsListWithCache,
-  invalidateUnipileAccountsListCache,
-  removeAccountFromUnipileAccountsListCache,
-  seedUnipileAccountsListCache,
-  shouldInvalidateUnipileAccountsListCache,
+    fetchUnipileAccountsListWithCache,
+    invalidateUnipileAccountsListCache,
+    removeAccountFromUnipileAccountsListCache,
+    seedUnipileAccountsListCache,
+    shouldInvalidateUnipileAccountsListCache,
 } from '../utils/unipile-accounts-list.cache';
 import {
-  isUnipileAccountNotFoundApiError,
-  isUnipileDisconnectedAccountApiError,
-  parseAccountIdFromUnipileEndpoint,
+    isUnipileAccountNotFoundApiError,
+    isUnipileDisconnectedAccountApiError,
+    parseAccountIdFromUnipileEndpoint,
 } from '../utils/unipile-disconnected-account.util';
 import {
-  getSnapshotLinkedinAccounts,
-  getSnapshotOwnerProfile,
-  getSnapshotRawAccountById,
-  getSnapshotRawAccountsList,
-  hasSnapshotOwnerProfile,
-  isUnipileLinkedinSnapshotFresh,
-  patchSnapshotOwnerProfile,
-  patchSnapshotRawAccount,
-  removeSnapshotAccountById,
-  setUnipileLinkedinSnapshot,
-  UNIPILE_LINKEDIN_SNAPSHOT_TTL_MS,
-  type UnipileLinkedinSnapshotAccountRow,
-  type UnipileLinkedinSnapshotRawAccount,
+    getSnapshotLinkedinAccounts,
+    getSnapshotOwnerProfile,
+    getSnapshotRawAccountById,
+    getSnapshotRawAccountsList,
+    hasSnapshotOwnerProfile,
+    isUnipileLinkedinSnapshotFresh,
+    patchSnapshotOwnerProfile,
+    patchSnapshotRawAccount,
+    removeSnapshotAccountById,
+    setUnipileLinkedinSnapshot,
+    UNIPILE_LINKEDIN_SNAPSHOT_TTL_MS,
+    type UnipileLinkedinSnapshotAccountRow,
+    type UnipileLinkedinSnapshotRawAccount,
 } from '../utils/unipile-linkedin-snapshot.cache';
 import type { MemberLinkedinUnipileConnectionService } from './member-linkedin-unipile-connection.service';
 import type { WorkspaceMemberProfileUnipileService } from './workspace-member-profile-unipile.service';
@@ -1060,6 +1060,53 @@ export class LinkedinUnipileRequestService {
 
     return (await this.makeUnipileRequest(
       `/api/v1/posts/${encodeURIComponent(trimmedPostId)}/comments`,
+      'POST',
+      body,
+      {
+        linkedinAccountCleanup: options?.cleanupContext
+          ? { ...options.cleanupContext, accountId: trimmedAccountId }
+          : undefined,
+      },
+    )) as Record<string, unknown>;
+  }
+
+  /**
+   * Sends a LinkedIn connection invitation (Unipile POST /users/invite).
+   * Throws on failure so callers can surface the error.
+   */
+  async sendLinkedinInvitation(
+    accountId: string,
+    providerId: string,
+    message: string,
+    options?: {
+      cleanupContext?: LinkedinUnipileAccountCleanupContext;
+    },
+  ): Promise<Record<string, unknown>> {
+    const trimmedAccountId = accountId.trim();
+    const trimmedProviderId = providerId.trim();
+    const trimmedMessage = message.trim();
+    if (!trimmedAccountId || !trimmedProviderId) {
+      throw new HttpException(
+        'accountId and providerId are required to send an invitation',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const body: Record<string, unknown> = {
+      account_id: trimmedAccountId,
+      provider_id: trimmedProviderId,
+    };
+    if (trimmedMessage) {
+      // LinkedIn hard-caps invitation notes at 300 characters.
+      body.message = trimmedMessage.slice(0, 300);
+    }
+
+    this.logger.log(
+      `Sending LinkedIn invitation to ${trimmedProviderId} via account ${trimmedAccountId} (${trimmedMessage.length} chars)`,
+    );
+
+    return (await this.makeUnipileRequest(
+      '/api/v1/users/invite',
       'POST',
       body,
       {

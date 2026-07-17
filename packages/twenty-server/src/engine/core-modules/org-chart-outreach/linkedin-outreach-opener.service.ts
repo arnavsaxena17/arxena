@@ -1,7 +1,7 @@
 import {
-  BadRequestException,
-  Injectable,
-  Logger,
+    BadRequestException,
+    Injectable,
+    Logger,
 } from '@nestjs/common';
 
 import { z } from 'zod';
@@ -14,32 +14,33 @@ import type { LinkedinSenderFullProfileResult } from 'src/engine/core-modules/ar
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { LLMChatModelService } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.service';
 import type {
-  GenerateOutreachMessageParams,
-  GenerateOutreachMessageResponse,
-  OutreachCompanySelectionLlmResult,
-  OutreachConnectionRequestLlmResult,
-  OutreachDirectMessageLlmResult,
-  OutreachInmailLlmResult,
-  SuggestedOutreachCompany,
+    GenerateOutreachMessageParams,
+    GenerateOutreachMessageResponse,
+    OutreachCompanySelectionLlmResult,
+    OutreachConnectionRequestLlmResult,
+    OutreachDirectMessageLlmResult,
+    OutreachInmailLlmResult,
+    SuggestedOutreachCompany,
 } from 'src/engine/core-modules/org-chart-outreach/org-chart-outreach.types';
 import { buildOutreachCompanySelectionPrompt } from 'src/engine/core-modules/org-chart-outreach/prompts/outreach-company-selection.prompt';
 import {
-  buildOutreachMessageCompositionPrompt,
-  CONNECTION_REQUEST_MAX_LENGTH,
-  DIRECT_MESSAGE_MAX_LENGTH,
-  INMAIL_SUBJECT_MAX_LENGTH,
+    buildOutreachMessageCompositionPrompt,
+    CONNECTION_REQUEST_MAX_LENGTH,
+    DIRECT_MESSAGE_MAX_LENGTH,
+    INMAIL_SUBJECT_MAX_LENGTH,
 } from 'src/engine/core-modules/org-chart-outreach/prompts/outreach-message-composition.prompt';
+import { normalizeLinkedinIdentifier } from 'src/engine/core-modules/org-chart-outreach/utils/linkedin-identifier.util';
 import {
-  buildOutreachProfileContext,
-  extractTargetProviderId,
+    buildOutreachProfileContext,
+    extractTargetProviderId,
 } from 'src/engine/core-modules/org-chart-outreach/utils/linkedin-profile-context.util';
 import {
-  buildLinkedinCompanyUrl,
-  buildOrgChartUrl,
-  normalizeLlmJsonContent,
-  pickBestCompanySearchMatch,
-  resolveCompanySlugFromAutocompleteItem,
-  sleepMs,
+    buildLinkedinCompanyUrl,
+    buildOrgChartUrl,
+    normalizeLlmJsonContent,
+    pickBestCompanySearchMatch,
+    resolveCompanySlugFromAutocompleteItem,
+    sleepMs,
 } from 'src/engine/core-modules/org-chart-outreach/utils/outreach-company-resolver.util';
 import { OrgChartSuperImposeAutocompleteService } from 'src/engine/core-modules/org-chart/services/org-chart-super-impose-autocomplete.service';
 import { hasWorkspaceMemberLinkedinFullProfile } from 'twenty-shared';
@@ -86,7 +87,10 @@ export class LinkedinOutreachOpenerService {
   async generateMessage(
     params: GenerateOutreachMessageParams,
   ): Promise<GenerateOutreachMessageResponse> {
-    const targetIdentifier = params.targetIdentifier?.trim();
+    // Accepts a public identifier, provider id, or full LinkedIn profile URL.
+    const targetIdentifier = normalizeLinkedinIdentifier(
+      params.targetIdentifier,
+    );
     if (!targetIdentifier) {
       throw new BadRequestException('targetIdentifier is required');
     }

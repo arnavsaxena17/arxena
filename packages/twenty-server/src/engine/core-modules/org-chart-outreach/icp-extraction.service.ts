@@ -25,6 +25,7 @@ import {
   icpProfileSchema,
   type IcpProfile,
 } from 'src/engine/core-modules/org-chart-outreach/schemas/icp-extraction.schema';
+import { normalizeLinkedinIdentifier } from 'src/engine/core-modules/org-chart-outreach/utils/linkedin-identifier.util';
 import { normalizeLlmJsonContent } from 'src/engine/core-modules/org-chart-outreach/utils/outreach-company-resolver.util';
 
 /** Sales Navigator company-headcount facet buckets (min/max pairs accepted by Unipile). */
@@ -191,9 +192,12 @@ export class IcpExtractionService {
   ) {}
 
   async extractIcp(params: ExtractIcpParams): Promise<ExtractIcpResponse> {
+    // Accepts a public identifier, provider id, or full LinkedIn profile URL.
+    const personIdentifier = normalizeLinkedinIdentifier(
+      params.personIdentifier,
+    );
     const hasPersonInput =
-      params.personProfile !== undefined ||
-      Boolean(params.personIdentifier?.trim());
+      params.personProfile !== undefined || Boolean(personIdentifier);
 
     if (!hasPersonInput) {
       throw new BadRequestException(
@@ -239,19 +243,21 @@ export class IcpExtractionService {
               fetchedPerson =
                 await this.linkedinUnipileRequestService.fetchLinkedinUserProfile(
                   session.accountId,
-                  params.personIdentifier as string,
+                  personIdentifier,
                   { linkedinSections: ['*'], cleanupContext },
                 );
               if (!fetchedPerson) {
                 throw new BadRequestException(
-                  `Failed to fetch LinkedIn profile for "${params.personIdentifier}"`,
+                  `Failed to fetch LinkedIn profile for "${personIdentifier}"`,
                 );
               }
             }
 
             let fetchedCompany: Record<string, unknown> | null =
               params.companyProfile ?? null;
-            let companyIdentifierUsed = params.companyIdentifier?.trim();
+            let companyIdentifierUsed = normalizeLinkedinIdentifier(
+              params.companyIdentifier,
+            ) || undefined;
             let companyIdentifierWasDerived = false;
             if (!fetchedCompany) {
               if (!companyIdentifierUsed) {
@@ -294,7 +300,7 @@ export class IcpExtractionService {
               const providerId =
                 typeof fetchedPerson.provider_id === 'string'
                   ? fetchedPerson.provider_id
-                  : params.personIdentifier;
+                  : personIdentifier;
               if (providerId) {
                 fetchedPosts =
                   await this.linkedinUnipileRequestService.fetchLinkedinUserPosts(

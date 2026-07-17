@@ -3,8 +3,14 @@ import { Test, type TestingModule } from '@nestjs/testing';
 
 import { LinkedinUnipileEstimateAccountService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-estimate-account.service';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
+import { WhatsappOutboundRateLimiterService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.service';
+import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { ContactEnrichmentWaterfallService } from 'src/engine/core-modules/contact-enrichment/services/contact-enrichment-waterfall.service';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { LLMChatModelService } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.service';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
+import { IcpExtractionService } from './icp-extraction.service';
 import {
     IcpOutreachMessageService,
     pickMostRecentPost,
@@ -70,6 +76,9 @@ describe('IcpOutreachMessageService', () => {
   const fetchLinkedinUserPosts = jest.fn();
   const fetchLinkedinPost = jest.fn();
   const commentOnLinkedinPost = jest.fn();
+  const sendLinkedinInvitation = jest.fn();
+  const extractIcp = jest.fn();
+  const fetchContacts = jest.fn();
   const withOutreachLinkedinSession = jest.fn(
     async (
       _apiToken: string,
@@ -95,11 +104,36 @@ describe('IcpOutreachMessageService', () => {
             fetchLinkedinUserPosts,
             fetchLinkedinPost,
             commentOnLinkedinPost,
+            sendLinkedinInvitation,
           },
         },
         {
           provide: LinkedinUnipileEstimateAccountService,
           useValue: { withOutreachLinkedinSession },
+        },
+        {
+          provide: IcpExtractionService,
+          useValue: { extractIcp },
+        },
+        {
+          provide: ContactEnrichmentWaterfallService,
+          useValue: { fetchContacts },
+        },
+        {
+          provide: WorkspaceQueryService,
+          useValue: {},
+        },
+        {
+          provide: StaticGraphQLService,
+          useValue: {},
+        },
+        {
+          provide: WorkspaceMemberProfileUnipileService,
+          useValue: {},
+        },
+        {
+          provide: WhatsappOutboundRateLimiterService,
+          useValue: {},
         },
       ],
     }).compile();
@@ -173,6 +207,7 @@ describe('IcpOutreachMessageService', () => {
         postsWithinWindow: 2,
         recentPostDays: 30,
         rankedCandidatesCount: 1,
+        icpSource: 'provided',
       });
 
       const prompt = invoke.mock.calls[0][0] as string;
@@ -246,6 +281,105 @@ describe('IcpOutreachMessageService', () => {
           ...baseAuth,
         }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('accepts a full LinkedIn URL as targetIdentifier', async () => {
+      fetchLinkedinUserProfile.mockResolvedValueOnce(TARGET_PROFILE_FIXTURE);
+      fetchLinkedinUserPosts.mockResolvedValueOnce(buildPostsPayload());
+      invoke.mockResolvedValueOnce({
+        content: JSON.stringify({ message: 'Hello from a URL.' }),
+      });
+
+      const result = await service.generateIcpMessage({
+        icp: ICP_FIXTURE,
+        targetIdentifier: 'https://in.linkedin.com/in/varunchojhar',
+        messageType: 'connection_request',
+        ...baseAuth,
+      });
+      console.log('generateIcpMessage URL-identifier result:', result.message);
+
+      expect(fetchLinkedinUserProfile).toHaveBeenCalledWith(
+        'unipile-account-1',
+        'varunchojhar',
+        expect.anything(),
+      );
+    });
+
+    it('extracts the ICP automatically when it is not provided', async () => {
+      fetchLinkedinUserProfile.mockResolvedValueOnce(TARGET_PROFILE_FIXTURE);
+      fetchLinkedinUserPosts.mockResolvedValueOnce(buildPostsPayload());
+      extractIcp.mockResolvedValueOnce({
+        sells: 'Agentic AI SRE platform',
+        relevant_recipient_for_target_account_lure: true,
+        reasoning: 'Co-founder selling into SRE teams',
+        icp: ICP_FIXTURE,
+        chart_function: 'Engineering/Platform',
+        contextUsed: {
+          personSource: 'provided',
+          companySource: 'derived_from_person',
+          postsCount: 0,
+        },
+      });
+      invoke.mockResolvedValueOnce({
+        content: JSON.stringify({ message: 'Auto-ICP message.' }),
+      });
+
+      const result = await service.generateIcpMessage({
+        targetIdentifier: 'gaurav-sherlocks-ai',
+        messageType: 'connection_request',
+        ...baseAuth,
+      });
+      console.log('generateIcpMessage auto-ICP result:', result);
+
+      expect(extractIcp).toHaveBeenCalledWith(
+        expect.objectContaining({
+          personProfile: TARGET_PROFILE_FIXTURE,
+        }),
+      );
+      expect(result.contextUsed.icpSource).toBe('extracted');
+      expect(result.icp).toEqual(ICP_FIXTURE);
+
+      const prompt = invoke.mock.calls[0][0] as string;
+      expect(prompt).toContain('Agentic AI SRE platform');
+    });
+
+    it('sends the connection request when execute is set', async () => {
+      fetchLinkedinUserProfile.mockResolvedValueOnce(TARGET_PROFILE_FIXTURE);
+      fetchLinkedinUserPosts.mockResolvedValueOnce(buildPostsPayload());
+      invoke.mockResolvedValueOnce({
+        content: JSON.stringify({ message: 'Short note.' }),
+      });
+      sendLinkedinInvitation.mockResolvedValueOnce({ object: 'Invitation' });
+
+      const result = await service.generateIcpMessage({
+        icp: ICP_FIXTURE,
+        targetIdentifier: 'gaurav-sherlocks-ai',
+        messageType: 'connection_request',
+        execute: true,
+        ...baseAuth,
+      });
+      console.log('generateIcpMessage execute result:', result.execution);
+
+      expect(sendLinkedinInvitation).toHaveBeenCalledWith(
+        'unipile-account-1',
+        'ACoAAA-target',
+        'Short note.',
+        expect.anything(),
+      );
+      expect(result.execution).toEqual({ attempted: true, success: true });
+    });
+
+    it('rejects execute for non connection_request types', async () => {
+      await expect(
+        service.generateIcpMessage({
+          icp: ICP_FIXTURE,
+          targetIdentifier: 'gaurav-sherlocks-ai',
+          messageType: 'message',
+          execute: true,
+          ...baseAuth,
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(withOutreachLinkedinSession).not.toHaveBeenCalled();
     });
   });
 
@@ -329,6 +463,224 @@ describe('IcpOutreachMessageService', () => {
       await expect(
         service.generateIcpComment({ icp: ICP_FIXTURE, ...baseAuth }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when neither icp nor personIdentifier is provided', async () => {
+      await expect(
+        service.generateIcpComment({
+          postText: 'Some post.',
+          ...baseAuth,
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('accepts a full LinkedIn URL as personIdentifier', async () => {
+      fetchLinkedinUserProfile.mockResolvedValueOnce(TARGET_PROFILE_FIXTURE);
+      fetchLinkedinUserPosts.mockResolvedValueOnce(buildPostsPayload());
+      invoke.mockResolvedValueOnce({
+        content: JSON.stringify({ comments: ['Nice one.'] }),
+      });
+
+      const result = await service.generateIcpComment({
+        icp: ICP_FIXTURE,
+        personIdentifier: 'https://in.linkedin.com/in/gaurav-sherlocks-ai',
+        variants: 1,
+        ...baseAuth,
+      });
+      console.log('generateIcpComment URL-identifier result:', result.contextUsed);
+
+      expect(fetchLinkedinUserProfile).toHaveBeenCalledWith(
+        'unipile-account-1',
+        'gaurav-sherlocks-ai',
+        expect.anything(),
+      );
+      expect(result.contextUsed.authorIdentifier).toBe('gaurav-sherlocks-ai');
+    });
+
+    it('publishes the first comment when execute is set', async () => {
+      fetchLinkedinUserProfile.mockResolvedValueOnce(TARGET_PROFILE_FIXTURE);
+      fetchLinkedinUserPosts.mockResolvedValueOnce(buildPostsPayload());
+      invoke.mockResolvedValueOnce({
+        content: JSON.stringify({ comments: ['First variant.', 'Second.'] }),
+      });
+      commentOnLinkedinPost.mockResolvedValueOnce({ object: 'PostComment' });
+
+      const result = await service.generateIcpComment({
+        icp: ICP_FIXTURE,
+        personIdentifier: 'gaurav-sherlocks-ai',
+        execute: true,
+        ...baseAuth,
+      });
+      console.log('generateIcpComment execute result:', result.execution);
+
+      expect(commentOnLinkedinPost).toHaveBeenCalledWith(
+        'unipile-account-1',
+        'post-recent',
+        'First variant.',
+        expect.anything(),
+      );
+      expect(result.execution).toEqual({
+        attempted: true,
+        success: true,
+        commentText: 'First variant.',
+        postId: 'post-recent',
+      });
+    });
+
+    it('reports an unexecutable send when the post id is unknown', async () => {
+      invoke.mockResolvedValueOnce({
+        content: JSON.stringify({ comments: ['On raw text.'] }),
+      });
+
+      const result = await service.generateIcpComment({
+        icp: ICP_FIXTURE,
+        postText: 'Raw post text without an id.',
+        execute: true,
+        ...baseAuth,
+      });
+      console.log('generateIcpComment unexecutable result:', result.execution);
+
+      expect(commentOnLinkedinPost).not.toHaveBeenCalled();
+      expect(result.execution?.attempted).toBe(false);
+      expect(result.execution?.success).toBe(false);
+    });
+  });
+
+  describe('generateIcpEmail', () => {
+    it('generates the email and resolves the address via the enrichment waterfall', async () => {
+      fetchLinkedinUserProfile.mockResolvedValueOnce(TARGET_PROFILE_FIXTURE);
+      fetchLinkedinUserPosts.mockResolvedValueOnce(buildPostsPayload());
+      invoke.mockResolvedValueOnce({
+        content: JSON.stringify({
+          subject: 'Org charts for your SRE targets',
+          message: 'Saw your post on Kubernetes root-cause analysis...',
+        }),
+      });
+      fetchContacts.mockResolvedValueOnce({
+        emails: ['gaurav@sherlocks.ai'],
+        phones: [],
+        source: 'contactout',
+      });
+
+      const result = await service.generateIcpEmail({
+        icp: ICP_FIXTURE,
+        targetIdentifier: 'https://www.linkedin.com/in/gaurav-sherlocks-ai',
+        rankedCandidates: RANKED_CANDIDATES_FIXTURE,
+        ...baseAuth,
+      });
+      console.log('generateIcpEmail result:', result);
+
+      expect(fetchContacts).toHaveBeenCalledWith(
+        'https://www.linkedin.com/in/gaurav-sherlocks-ai',
+        { wantEmail: true, wantPhone: false },
+      );
+      expect(result.subject).toBe('Org charts for your SRE targets');
+      expect(result.toEmail).toBe('gaurav@sherlocks.ai');
+      expect(result.contact.source).toBe('contactout');
+      expect(result.execution).toBeUndefined();
+    });
+
+    it('skips enrichment when the email is provided', async () => {
+      fetchLinkedinUserProfile.mockResolvedValueOnce(TARGET_PROFILE_FIXTURE);
+      fetchLinkedinUserPosts.mockResolvedValueOnce(buildPostsPayload());
+      invoke.mockResolvedValueOnce({
+        content: JSON.stringify({ subject: 'Hi', message: 'Body.' }),
+      });
+
+      const result = await service.generateIcpEmail({
+        icp: ICP_FIXTURE,
+        targetIdentifier: 'gaurav-sherlocks-ai',
+        email: 'direct@example.com',
+        ...baseAuth,
+      });
+      console.log('generateIcpEmail provided-email result:', result.contact);
+
+      expect(fetchContacts).not.toHaveBeenCalled();
+      expect(result.toEmail).toBe('direct@example.com');
+      expect(result.contact).toEqual({
+        emails: ['direct@example.com'],
+        source: 'provided',
+      });
+    });
+
+    it('reports an unexecutable send when no email is found', async () => {
+      fetchLinkedinUserProfile.mockResolvedValueOnce(TARGET_PROFILE_FIXTURE);
+      fetchLinkedinUserPosts.mockResolvedValueOnce(buildPostsPayload());
+      invoke.mockResolvedValueOnce({
+        content: JSON.stringify({ subject: 'Hi', message: 'Body.' }),
+      });
+      fetchContacts.mockResolvedValueOnce({
+        emails: [],
+        phones: [],
+        source: 'none',
+      });
+
+      const result = await service.generateIcpEmail({
+        icp: ICP_FIXTURE,
+        targetIdentifier: 'gaurav-sherlocks-ai',
+        execute: true,
+        ...baseAuth,
+      });
+      console.log('generateIcpEmail no-email result:', result.execution);
+
+      expect(result.execution?.attempted).toBe(false);
+      expect(result.execution?.success).toBe(false);
+      expect(result.execution?.error).toContain('No email address found');
+    });
+  });
+
+  describe('generateIcpWhatsapp', () => {
+    it('generates the message and resolves the phone via the enrichment waterfall', async () => {
+      fetchLinkedinUserProfile.mockResolvedValueOnce(TARGET_PROFILE_FIXTURE);
+      fetchLinkedinUserPosts.mockResolvedValueOnce(buildPostsPayload());
+      invoke.mockResolvedValueOnce({
+        content: JSON.stringify({ message: 'Quick one on org charts.' }),
+      });
+      fetchContacts.mockResolvedValueOnce({
+        emails: [],
+        phones: ['+919999999999'],
+        source: 'apollo',
+      });
+
+      const result = await service.generateIcpWhatsapp({
+        icp: ICP_FIXTURE,
+        targetIdentifier: 'gaurav-sherlocks-ai',
+        ...baseAuth,
+      });
+      console.log('generateIcpWhatsapp result:', result);
+
+      expect(fetchContacts).toHaveBeenCalledWith(
+        'https://www.linkedin.com/in/gaurav-sherlocks-ai',
+        { wantEmail: false, wantPhone: true },
+      );
+      expect(result.message).toBe('Quick one on org charts.');
+      expect(result.toPhone).toBe('+919999999999');
+      expect(result.contact.source).toBe('apollo');
+    });
+
+    it('reports an unexecutable send when no phone is found', async () => {
+      fetchLinkedinUserProfile.mockResolvedValueOnce(TARGET_PROFILE_FIXTURE);
+      fetchLinkedinUserPosts.mockResolvedValueOnce(buildPostsPayload());
+      invoke.mockResolvedValueOnce({
+        content: JSON.stringify({ message: 'Quick one.' }),
+      });
+      fetchContacts.mockResolvedValueOnce({
+        emails: [],
+        phones: [],
+        source: 'none',
+      });
+
+      const result = await service.generateIcpWhatsapp({
+        icp: ICP_FIXTURE,
+        targetIdentifier: 'gaurav-sherlocks-ai',
+        execute: true,
+        ...baseAuth,
+      });
+      console.log('generateIcpWhatsapp no-phone result:', result.execution);
+
+      expect(result.execution?.attempted).toBe(false);
+      expect(result.execution?.success).toBe(false);
+      expect(result.execution?.error).toContain('No phone number found');
     });
   });
 

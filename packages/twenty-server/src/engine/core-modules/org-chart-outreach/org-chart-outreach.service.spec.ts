@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
+import { WhatsappOutboundRateLimiterService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { CandidateWorkspaceGraphQLService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-workspace-graphql.service';
 import { GoogleContactsService } from 'src/engine/core-modules/google-contacts/google-contacts.service';
@@ -94,6 +95,10 @@ describe('OrgChartOutreachService', () => {
           useValue: {
             getJobDetails,
           },
+        },
+        {
+          provide: WhatsappOutboundRateLimiterService,
+          useValue: {},
         },
       ],
     }).compile();
