@@ -131,6 +131,9 @@ export const summarizeLinkedinPosts = (
           ? item.parsed_datetime
           : undefined,
       isRepost: item.is_repost === true,
+      id: typeof item.id === 'string' ? item.id : undefined,
+      socialId: typeof item.social_id === 'string' ? item.social_id : undefined,
+      shareUrl: typeof item.share_url === 'string' ? item.share_url : undefined,
     }))
     .filter((item) => item.text.length > 0);
 
@@ -158,6 +161,27 @@ export const summarizeLinkedinComments = (
     }))
     .filter((item) => item.text.length > 0)
     .slice(0, limit);
+};
+
+/**
+ * Keeps only posts published within the last `days` days (based on Unipile's
+ * parsed_datetime). Posts without a parseable date are dropped, since they
+ * cannot be verified as recent.
+ */
+export const filterPostsWithinDays = (
+  posts: LinkedinPostSummary[],
+  days: number,
+  now: Date = new Date(),
+): LinkedinPostSummary[] => {
+  const cutoffMs = now.getTime() - days * 24 * 60 * 60 * 1000;
+
+  return posts.filter((post) => {
+    if (!post.parsedDatetime) {
+      return false;
+    }
+    const postMs = Date.parse(post.parsedDatetime);
+    return !Number.isNaN(postMs) && postMs >= cutoffMs;
+  });
 };
 
 export const buildOutreachProfileContext = (input: {

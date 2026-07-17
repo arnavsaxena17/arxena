@@ -918,6 +918,158 @@ export class LinkedinUnipileRequestService {
     }
   }
 
+  /** Retrieves a single LinkedIn post by id or social id (Unipile GET /posts/{postId}). */
+  async fetchLinkedinPost(
+    accountId: string,
+    postId: string,
+    options?: {
+      cleanupContext?: LinkedinUnipileAccountCleanupContext;
+    },
+  ): Promise<Record<string, unknown> | null> {
+    const trimmedAccountId = accountId.trim();
+    const trimmedPostId = postId.trim();
+    if (!trimmedAccountId || !trimmedPostId) {
+      return null;
+    }
+
+    const queryParams = new URLSearchParams({
+      account_id: trimmedAccountId,
+    });
+
+    try {
+      return (await this.makeUnipileRequest(
+        `/api/v1/posts/${encodeURIComponent(trimmedPostId)}?${queryParams}`,
+        'GET',
+        undefined,
+        {
+          linkedinAccountCleanup: options?.cleanupContext
+            ? { ...options.cleanupContext, accountId: trimmedAccountId }
+            : undefined,
+        },
+      )) as Record<string, unknown>;
+    } catch (err) {
+      this.logger.warn(
+        `fetchLinkedinPost failed for ${trimmedPostId}: ${err instanceof Error ? err.message : err}`,
+      );
+      return null;
+    }
+  }
+
+  /** Lists comments on a LinkedIn post (Unipile GET /posts/{postId}/comments). */
+  async fetchLinkedinPostComments(
+    accountId: string,
+    postId: string,
+    options?: {
+      limit?: number;
+      cursor?: string;
+      commentId?: string;
+      cleanupContext?: LinkedinUnipileAccountCleanupContext;
+    },
+  ): Promise<Record<string, unknown> | null> {
+    const trimmedAccountId = accountId.trim();
+    const trimmedPostId = postId.trim();
+    if (!trimmedAccountId || !trimmedPostId) {
+      return null;
+    }
+
+    const queryParams = new URLSearchParams({
+      account_id: trimmedAccountId,
+    });
+    if (options?.limit !== undefined) {
+      queryParams.append('limit', String(options.limit));
+    }
+    if (options?.cursor) {
+      queryParams.append('cursor', options.cursor);
+    }
+    if (options?.commentId) {
+      queryParams.append('comment_id', options.commentId);
+    }
+
+    try {
+      return (await this.makeUnipileRequest(
+        `/api/v1/posts/${encodeURIComponent(trimmedPostId)}/comments?${queryParams}`,
+        'GET',
+        undefined,
+        {
+          linkedinAccountCleanup: options?.cleanupContext
+            ? { ...options.cleanupContext, accountId: trimmedAccountId }
+            : undefined,
+        },
+      )) as Record<string, unknown>;
+    } catch (err) {
+      this.logger.warn(
+        `fetchLinkedinPostComments failed for ${trimmedPostId}: ${err instanceof Error ? err.message : err}`,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Publishes a comment on a LinkedIn post (Unipile POST /posts/{postId}/comments).
+   * Throws on failure so callers can surface the error instead of silently
+   * pretending the comment was published.
+   */
+  async commentOnLinkedinPost(
+    accountId: string,
+    postId: string,
+    text: string,
+    options?: {
+      /** Reply to an existing comment instead of the post itself. */
+      commentId?: string;
+      mentions?: Array<{
+        name: string;
+        profile_id: string;
+        is_company?: boolean;
+      }>;
+      externalLink?: string;
+      /** LinkedIn organization id to comment as a company page. */
+      asOrganization?: string;
+      cleanupContext?: LinkedinUnipileAccountCleanupContext;
+    },
+  ): Promise<Record<string, unknown>> {
+    const trimmedAccountId = accountId.trim();
+    const trimmedPostId = postId.trim();
+    const trimmedText = text.trim();
+    if (!trimmedAccountId || !trimmedPostId || !trimmedText) {
+      throw new HttpException(
+        'accountId, postId and text are required to comment on a post',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const body: Record<string, unknown> = {
+      account_id: trimmedAccountId,
+      text: trimmedText,
+    };
+    if (options?.commentId) {
+      body.comment_id = options.commentId;
+    }
+    if (options?.mentions && options.mentions.length > 0) {
+      body.mentions = options.mentions;
+    }
+    if (options?.externalLink) {
+      body.external_link = options.externalLink;
+    }
+    if (options?.asOrganization) {
+      body.as_organization = options.asOrganization;
+    }
+
+    this.logger.log(
+      `Commenting on LinkedIn post ${trimmedPostId} via account ${trimmedAccountId} (${trimmedText.length} chars)`,
+    );
+
+    return (await this.makeUnipileRequest(
+      `/api/v1/posts/${encodeURIComponent(trimmedPostId)}/comments`,
+      'POST',
+      body,
+      {
+        linkedinAccountCleanup: options?.cleanupContext
+          ? { ...options.cleanupContext, accountId: trimmedAccountId }
+          : undefined,
+      },
+    )) as Record<string, unknown>;
+  }
+
   async fetchLinkedinUserComments(
     accountId: string,
     identifier: string,

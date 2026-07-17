@@ -50,6 +50,10 @@ export type ApolloOrganizationSearchParams = {
   q_organization_name?: string;
   q_organization_domains_list?: string[];
   organization_locations?: string[];
+  /** Employee count ranges, formatted "min,max" (e.g. "200,2000"). */
+  organization_num_employees_ranges?: string[];
+  /** Industry / keyword tags to filter organizations by. */
+  q_organization_keyword_tags?: string[];
   page?: number;
   per_page?: number;
 };
@@ -227,11 +231,21 @@ export class ApolloIoRestService {
       .map((l) => l.trim().toLowerCase())
       .filter(Boolean)
       .sort();
+    const employeeRanges = [...(input.organization_num_employees_ranges ?? [])]
+      .map((r) => r.trim())
+      .filter(Boolean)
+      .sort();
+    const keywordTags = [...(input.q_organization_keyword_tags ?? [])]
+      .map((t) => t.trim().toLowerCase())
+      .filter(Boolean)
+      .sort();
 
     return JSON.stringify({
       n: input.q_organization_name?.trim().toLowerCase() ?? '',
       d: domains,
       l: locs,
+      er: employeeRanges,
+      kt: keywordTags,
       p: input.page ?? 1,
       pp: input.per_page ?? 10,
     });
@@ -508,6 +522,16 @@ export class ApolloIoRestService {
       params,
       'organization_locations',
       input.organization_locations,
+    );
+    appendApolloParams(
+      params,
+      'organization_num_employees_ranges',
+      input.organization_num_employees_ranges,
+    );
+    appendApolloParams(
+      params,
+      'q_organization_keyword_tags',
+      input.q_organization_keyword_tags,
     );
     const page = input.page ?? 1;
     const perPage = input.per_page ?? 10;

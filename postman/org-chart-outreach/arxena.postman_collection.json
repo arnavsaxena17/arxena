@@ -1,0 +1,716 @@
+{
+  "info": {
+    "name": "Arxena",
+    "description": "Arxena API collection. Set `baseUrl` and `authToken` in collection variables (or an environment) before running.\n\nRun order matters for the Org Chart Outreach folder: `ICP Extract - Provided Profiles` stores the extracted ICP in collection variables, which the ICP Candidates requests then reuse. Defaults are provided so candidates requests can also run standalone.\n\nCLI: npx newman run postman/org-chart-outreach/arxena.postman_collection.json --env-var authToken=<jwt>",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "extractedIcp",
+      "value": "{\"industry\":[\"B2B SaaS\"],\"employee_range\":\"200-2000\",\"tech_stack_signals\":[\"Kubernetes\",\"Datadog\"],\"buyer_titles\":[\"VP Engineering\",\"Head of SRE\"],\"pain_signals\":[\"on-call fatigue\",\"high MTTR\"]}",
+      "type": "string"
+    },
+    {
+      "key": "chartFunction",
+      "value": "Engineering/Platform",
+      "type": "string"
+    },
+    {
+      "key": "commentPostId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "generatedComment",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Org Chart Outreach",
+      "description": "ICP extraction (Prompt 1: screen + extract ICP) and ICP target-account candidate fetch + ranking (Prompt 2) endpoints.",
+      "item": [
+        {
+          "name": "ICP Extract - Provided Profiles (Gaurav @ Sherlocks.ai)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('ICP Extract (provided profiles): status', pm.response.code);",
+                  "",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "console.log('ICP Extract response:', JSON.stringify(json, null, 2));",
+                  "",
+                  "pm.test('sells is a non-empty string', function () {",
+                  "    pm.expect(json.sells).to.be.a('string').and.to.have.length.above(0);",
+                  "});",
+                  "",
+                  "pm.test('Founder-led sales at a 10-person startup screens as TRUE', function () {",
+                  "    pm.expect(json.relevant_recipient_for_target_account_lure).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test('reasoning justifies the call', function () {",
+                  "    pm.expect(json.reasoning).to.be.a('string').and.to.have.length.above(20);",
+                  "});",
+                  "",
+                  "pm.test('icp has all fields with correct shapes', function () {",
+                  "    pm.expect(json.icp.industry).to.be.an('array');",
+                  "    pm.expect(json.icp.employee_range).to.be.a('string');",
+                  "    pm.expect(json.icp.tech_stack_signals).to.be.an('array');",
+                  "    pm.expect(json.icp.buyer_titles).to.be.an('array').and.to.have.length.above(0);",
+                  "    pm.expect(json.icp.pain_signals).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('chart_function targets engineering, not sales, for an SRE tool', function () {",
+                  "    pm.expect(json.chart_function).to.be.a('string');",
+                  "    pm.expect(json.chart_function.toLowerCase()).to.not.include('sales');",
+                  "});",
+                  "",
+                  "pm.test('contextUsed reports provided sources', function () {",
+                  "    pm.expect(json.contextUsed.personSource).to.eql('provided');",
+                  "    pm.expect(json.contextUsed.companySource).to.eql('provided');",
+                  "});",
+                  "",
+                  "if (json.icp) {",
+                  "    pm.collectionVariables.set('extractedIcp', JSON.stringify(json.icp));",
+                  "    if (json.chart_function) {",
+                  "        pm.collectionVariables.set('chartFunction', json.chart_function);",
+                  "    }",
+                  "    console.log('Stored extractedIcp + chartFunction collection variables for candidates requests');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/org-chart-outreach/icp/extract",
+              "host": ["{{baseUrl}}"],
+              "path": ["org-chart-outreach", "icp", "extract"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"personProfile\": {\n    \"object\": \"UserProfile\",\n    \"provider\": \"LINKEDIN\",\n    \"provider_id\": \"ACoAAAHU7vABvj0KTKkaLOIc5El2eMWE5aLnPq4\",\n    \"public_identifier\": \"gaurav-sherlocks-ai\",\n    \"first_name\": \"Gaurav\",\n    \"last_name\": \"Toshniwal\",\n    \"headline\": \"Alerts / Tickets → Root Cause → Fix... in Minutes | Co-founder @Sherlocks.ai | Ex-CTO at Doubtnut (50M+ users)\",\n    \"location\": \"San Francisco, California, United States\",\n    \"follower_count\": 11284,\n    \"connections_count\": 8220,\n    \"work_experience\": [\n      {\n        \"company_id\": \"105905196\",\n        \"company\": \"Sherlocks.ai\",\n        \"position\": \"Founder\",\n        \"location\": \"San Francisco Bay Area, Mumbai · Hybrid\",\n        \"description\": \"We're building AI that thinks like an SRE, works like a beast, and never needs coffee (but you still can). Less firefighting, more winning. If your infra's playing games, we're here to outsmart it. Let's talk AI, ops, and the future of reliability.\",\n        \"status\": \"Full-time\",\n        \"skills\": [\"Site Reliability Engineering\", \"On-call Support\", \"DevOps\"],\n        \"start\": \"1/1/2025\",\n        \"end\": null\n      },\n      {\n        \"company_id\": \"13222185\",\n        \"company\": \"Doubtnut\",\n        \"position\": \"Chief Technology Officer\",\n        \"location\": \"Gurugram, Haryana, India\",\n        \"status\": \"Full-time\",\n        \"skills\": [\"Node.js\", \"Kubernetes\", \"AWS\", \"DevOps\", \"Microservices\"],\n        \"start\": \"11/1/2019\",\n        \"end\": \"1/1/2025\"\n      }\n    ]\n  },\n  \"companyProfile\": {\n    \"object\": \"CompanyProfile\",\n    \"id\": \"105905196\",\n    \"name\": \"Sherlocks.ai\",\n    \"description\": \"Every production incident has a culprit. We built a detective agency to find it. Sherlocks.ai is an agentic AI SRE platform. When an alert fires, our agents don't wait for a human to open six dashboards and start guessing. They investigate immediately: correlate signals across your stack, test hypotheses like a senior engineer would, and deliver root cause with clear next steps. Minutes, not hours. 16+ specialized agents across Kubernetes, databases, networks, cloud infra, CI/CD. 30+ integrations. Read-only access, always. 70% less downtime. 90% less alert noise. SOC 2 Type 2 certified. Data stays in your VPC.\",\n    \"public_identifier\": \"sherlocks-ai\",\n    \"tagline\": \"The best (SRE) Investigators\",\n    \"activities\": [\"SRE\", \"Site Reliability\", \"AI\", \"incident management\", \"AIOps\", \"Observability\", \"Devops\", \"MTTR Reduction\", \"Incident Response\", \"Alert management\", \"Reliability Automation\", \"Agentic AI\", \"ITOps\"],\n    \"website\": \"https://www.sherlocks.ai\",\n    \"foundation_date\": \"01/01/2025\",\n    \"employee_count\": 10,\n    \"industry\": [\"IT System Operations and Maintenance\"],\n    \"locations\": [\n      { \"is_headquarter\": true, \"city\": \"Palo Alto\", \"country\": \"US\", \"area\": \"California\" }\n    ]\n  }\n}"
+            },
+            "description": "Prompt 1: screens the lead and extracts the ICP from raw Unipile person + company profile JSON. Stores the resulting icp and chart_function in collection variables for the candidates requests."
+          }
+        },
+        {
+          "name": "ICP Extract - Person Identifier Only (company derived from current role)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('ICP Extract (person only): status', pm.response.code);",
+                  "",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "console.log('ICP Extract (person only) response:', JSON.stringify(json, null, 2));",
+                  "",
+                  "pm.test('person was fetched via Unipile', function () {",
+                  "    pm.expect(json.contextUsed.personSource).to.eql('unipile');",
+                  "});",
+                  "",
+                  "pm.test('company was derived from the person\\'s current role', function () {",
+                  "    pm.expect(json.contextUsed.companySource).to.eql('derived_from_person');",
+                  "    pm.expect(json.contextUsed.derivedCompanyIdentifier).to.eql('105905196');",
+                  "});",
+                  "",
+                  "pm.test('icp fields are present', function () {",
+                  "    pm.expect(json.icp.buyer_titles).to.be.an('array').and.to.have.length.above(0);",
+                  "    pm.expect(json.icp.employee_range).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/org-chart-outreach/icp/extract",
+              "host": ["{{baseUrl}}"],
+              "path": ["org-chart-outreach", "icp", "extract"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"personIdentifier\": \"gaurav-sherlocks-ai\",\n  \"includePosts\": false\n}"
+            },
+            "description": "Only the person identifier is sent. The server fetches the person via the pooled Unipile session, takes the company_id of their current work_experience entry (105905196 = Sherlocks.ai), fetches that company profile, and runs the extraction. Requires Unipile to be configured on the server."
+          }
+        },
+        {
+          "name": "ICP Extract - Person + Company Identifiers (explicit)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('ICP Extract (explicit identifiers): status', pm.response.code);",
+                  "",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "console.log('ICP Extract (explicit identifiers) response:', JSON.stringify(json, null, 2));",
+                  "",
+                  "pm.test('both profiles were fetched via Unipile (no derivation)', function () {",
+                  "    pm.expect(json.contextUsed.personSource).to.eql('unipile');",
+                  "    pm.expect(json.contextUsed.companySource).to.eql('unipile');",
+                  "    pm.expect(json.contextUsed.derivedCompanyIdentifier).to.be.undefined;",
+                  "});",
+                  "",
+                  "pm.test('icp fields are present', function () {",
+                  "    pm.expect(json.icp.buyer_titles).to.be.an('array').and.to.have.length.above(0);",
+                  "    pm.expect(json.icp.employee_range).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/org-chart-outreach/icp/extract",
+              "host": ["{{baseUrl}}"],
+              "path": ["org-chart-outreach", "icp", "extract"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"personIdentifier\": \"gaurav-sherlocks-ai\",\n  \"companyIdentifier\": \"sherlocks-ai\",\n  \"includePosts\": false\n}"
+            },
+            "description": "Both identifiers passed explicitly: the server fetches person and company via the pooled Unipile session with no derivation. An explicit companyIdentifier always wins over the person's current-role company_id."
+          }
+        },
+        {
+          "name": "ICP Extract - 400 When No Inputs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('ICP Extract (empty body): status', pm.response.code);",
+                  "console.log('ICP Extract (empty body) response:', pm.response.text());",
+                  "",
+                  "pm.test('Status is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error message explains required inputs', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(JSON.stringify(json.message)).to.include('personProfile');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/org-chart-outreach/icp/extract",
+              "host": ["{{baseUrl}}"],
+              "path": ["org-chart-outreach", "icp", "extract"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "description": "Validation check: neither profiles nor identifiers provided must return 400."
+          }
+        },
+        {
+          "name": "ICP Extract - 401/403 Without Auth Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('ICP Extract (no auth): status', pm.response.code);",
+                  "",
+                  "pm.test('Status is 401 or 403', function () {",
+                  "    pm.expect([401, 403]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/org-chart-outreach/icp/extract",
+              "host": ["{{baseUrl}}"],
+              "path": ["org-chart-outreach", "icp", "extract"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"personIdentifier\": \"gaurav-sherlocks-ai\",\n  \"companyIdentifier\": \"sherlocks-ai\"\n}"
+            },
+            "description": "Auth guard check: request without a Bearer token must be rejected."
+          }
+        },
+        {
+          "name": "ICP Candidates - Sales Navigator (free)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('ICP Candidates (sales_navigator): status', pm.response.code);",
+                  "",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "console.log('ICP Candidates (sales_navigator) response:', JSON.stringify(json, null, 2));",
+                  "",
+                  "pm.test('source is sales_navigator', function () {",
+                  "    pm.expect(json.source).to.eql('sales_navigator');",
+                  "});",
+                  "",
+                  "pm.test('candidates is an array', function () {",
+                  "    pm.expect(json.candidates).to.be.an('array');",
+                  "});",
+                  "",
+                  "if (json.candidates.length > 0) {",
+                  "    pm.test('ranking returns at most 3 ranked candidates from the supplied list', function () {",
+                  "        pm.expect(json.ranking).to.be.an('object');",
+                  "        pm.expect(json.ranking.ranked_candidates).to.be.an('array').and.to.have.length.of.at.most(3);",
+                  "        const candidateNames = json.candidates.map(c => c.name);",
+                  "        json.ranking.ranked_candidates.forEach(rc => {",
+                  "            console.log('Ranked:', rc.company_name, '→', rc.chart_function);",
+                  "            pm.expect(candidateNames).to.include(rc.company_name);",
+                  "            pm.expect(rc.fit_reasoning).to.be.a('string').and.to.have.length.above(0);",
+                  "        });",
+                  "    });",
+                  "} else {",
+                  "    console.log('No candidates returned; skipping ranking assertions');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/org-chart-outreach/icp/candidates",
+              "host": ["{{baseUrl}}"],
+              "path": ["org-chart-outreach", "icp", "candidates"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"icp\": {{extractedIcp}},\n  \"chartFunction\": \"{{chartFunction}}\",\n  \"source\": \"sales_navigator\",\n  \"limit\": 10\n}"
+            },
+            "description": "Prompt 2 pipeline via LinkedIn Sales Navigator company search (free, no Apollo credits). Uses the icp/chart_function stored by the extract request (falls back to collection variable defaults)."
+          }
+        },
+        {
+          "name": "ICP Candidates - Apollo (consumes 1 credit)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('ICP Candidates (apollo): status', pm.response.code);",
+                  "",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "console.log('ICP Candidates (apollo) response:', JSON.stringify(json, null, 2));",
+                  "",
+                  "pm.test('source is apollo', function () {",
+                  "    pm.expect(json.source).to.eql('apollo');",
+                  "});",
+                  "",
+                  "pm.test('candidates is an array', function () {",
+                  "    pm.expect(json.candidates).to.be.an('array');",
+                  "});",
+                  "",
+                  "if (json.candidates.length > 0) {",
+                  "    pm.test('apollo candidates carry name and source', function () {",
+                  "        json.candidates.forEach(c => {",
+                  "            pm.expect(c.name).to.be.a('string');",
+                  "            pm.expect(c.source).to.eql('apollo');",
+                  "        });",
+                  "    });",
+                  "    pm.test('ranking returns at most 3 ranked candidates', function () {",
+                  "        pm.expect(json.ranking.ranked_candidates).to.be.an('array').and.to.have.length.of.at.most(3);",
+                  "        json.ranking.ranked_candidates.forEach(rc => console.log('Ranked:', rc.company_name, '→', rc.chart_function));",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/org-chart-outreach/icp/candidates",
+              "host": ["{{baseUrl}}"],
+              "path": ["org-chart-outreach", "icp", "candidates"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"icp\": {{extractedIcp}},\n  \"chartFunction\": \"{{chartFunction}}\",\n  \"source\": \"apollo\",\n  \"limit\": 10\n}"
+            },
+            "description": "Prompt 2 pipeline via Apollo organization search. WARNING: each call consumes 1 Apollo credit (server-side Redis caching dedupes identical searches for 24h)."
+          }
+        },
+        {
+          "name": "ICP Candidates - Sales Navigator Without Ranking (rank=false)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('ICP Candidates (rank=false): status', pm.response.code);",
+                  "",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "console.log('ICP Candidates (rank=false) candidates count:', json.candidates.length);",
+                  "",
+                  "pm.test('ranking is omitted when rank=false', function () {",
+                  "    pm.expect(json.ranking).to.be.undefined;",
+                  "});",
+                  "",
+                  "pm.test('candidates is an array', function () {",
+                  "    pm.expect(json.candidates).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/org-chart-outreach/icp/candidates",
+              "host": ["{{baseUrl}}"],
+              "path": ["org-chart-outreach", "icp", "candidates"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"icp\": {{extractedIcp}},\n  \"source\": \"sales_navigator\",\n  \"limit\": 5,\n  \"rank\": false\n}"
+            },
+            "description": "Fetch-only variant: skips the LLM ranking step and just returns the mapped candidate companies."
+          }
+        },
+        {
+          "name": "ICP Candidates - Rejects Invalid Source",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('ICP Candidates (invalid source): status', pm.response.code);",
+                  "console.log('ICP Candidates (invalid source) response:', pm.response.text());",
+                  "",
+                  "// Known server behavior: ValidationPipe (DTO-level) failures currently surface",
+                  "// as 500 instead of 400 across all controllers (global exception filter quirk).",
+                  "// Service-level BadRequestExceptions do return proper 400s.",
+                  "pm.test('Request is rejected (4xx or 5xx, never 2xx)', function () {",
+                  "    pm.expect(pm.response.code).to.be.at.least(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/org-chart-outreach/icp/candidates",
+              "host": ["{{baseUrl}}"],
+              "path": ["org-chart-outreach", "icp", "candidates"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"icp\": {{extractedIcp}},\n  \"source\": \"builtwith\",\n  \"limit\": 5\n}"
+            },
+            "description": "Validation check: source must be apollo or sales_navigator."
+          }
+        },
+        {
+          "name": "Generate Message - Opener (profile-driven, existing)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('Generate Message (opener): status', pm.response.code);",
+                  "",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "console.log('Generate Message response:', JSON.stringify(json, null, 2));",
+                  "",
+                  "pm.test('message is a non-empty string', function () {",
+                  "    pm.expect(json.message).to.be.a('string').and.to.have.length.above(0);",
+                  "});",
+                  "",
+                  "pm.test('connection request stays within 300 chars', function () {",
+                  "    pm.expect(json.message.length).to.be.at.most(300);",
+                  "});",
+                  "",
+                  "pm.test('suggestedCompanies is an array', function () {",
+                  "    pm.expect(json.suggestedCompanies).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('contextUsed reports sender and target', function () {",
+                  "    pm.expect(json.contextUsed.targetPublicIdentifier).to.be.a('string');",
+                  "    pm.expect(json.contextUsed.postsCount).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/org-chart-outreach/generate-message",
+              "host": ["{{baseUrl}}"],
+              "path": ["org-chart-outreach", "generate-message"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetIdentifier\": \"gaurav-sherlocks-ai\",\n  \"messageType\": \"connection_request\",\n  \"includePosts\": true,\n  \"includeOrgChartLinks\": false,\n  \"tone\": \"professional\"\n}"
+            },
+            "description": "Existing profile-driven opener: fetches sender + target profiles and target posts via Unipile, LLM-selects companies from the target's profile, resolves them against the org chart autocomplete, then composes the message. Requires the sender's LinkedIn profile to be synced (or session mode)."
+          }
+        },
+        {
+          "name": "ICP Generate Message - Connection Request (ICP + last-month post)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('ICP Generate Message: status', pm.response.code);",
+                  "",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "console.log('ICP Generate Message response:', JSON.stringify(json, null, 2));",
+                  "",
+                  "pm.test('message is a non-empty string within 300 chars', function () {",
+                  "    pm.expect(json.message).to.be.a('string').and.to.have.length.above(0);",
+                  "    pm.expect(json.message.length).to.be.at.most(300);",
+                  "});",
+                  "",
+                  "pm.test('contextUsed reports the post window', function () {",
+                  "    pm.expect(json.contextUsed.recentPostDays).to.eql(30);",
+                  "    pm.expect(json.contextUsed.postsConsidered).to.be.a('number');",
+                  "    pm.expect(json.contextUsed.postsWithinWindow).to.be.a('number');",
+                  "});",
+                  "",
+                  "if (json.recentPostUsed) {",
+                  "    console.log('Hooked on post from', json.recentPostUsed.parsedDatetime, ':', json.recentPostUsed.text.slice(0, 120));",
+                  "    pm.test('hooked post is within the last month', function () {",
+                  "        const ageDays = (Date.now() - Date.parse(json.recentPostUsed.parsedDatetime)) / 86400000;",
+                  "        pm.expect(ageDays).to.be.at.most(31);",
+                  "    });",
+                  "} else {",
+                  "    console.log('No post within the last month; message hooked on ICP only');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/org-chart-outreach/icp/generate-message",
+              "host": ["{{baseUrl}}"],
+              "path": ["org-chart-outreach", "icp", "generate-message"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"icp\": {{extractedIcp}},\n  \"sells\": \"Agentic AI SRE platform for automated incident root-cause analysis\",\n  \"chartFunction\": \"{{chartFunction}}\",\n  \"targetIdentifier\": \"gaurav-sherlocks-ai\",\n  \"messageType\": \"connection_request\",\n  \"rankedCandidates\": [\n    {\n      \"company_name\": \"Acme Corp\",\n      \"chart_function\": \"Platform Engineering\",\n      \"fit_reasoning\": \"Runs Kubernetes + Datadog, 800 employees inside the ICP range\"\n    }\n  ],\n  \"tone\": \"professional\"\n}"
+            },
+            "description": "Prompt 3: composes the outreach message from the extracted ICP. Grounded in (1) what the recipient's company does (icp/sells) and (2) their most recent post within the last 30 days (recentPostDays), referencing ranked target companies from icp/candidates as the org-chart lure. Uses the icp/chartFunction stored by the extract request."
+          }
+        },
+        {
+          "name": "ICP Generate Comment - Latest Post of Person",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('ICP Generate Comment: status', pm.response.code);",
+                  "",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "console.log('ICP Generate Comment response:', JSON.stringify(json, null, 2));",
+                  "",
+                  "pm.test('returns 1-3 comment variants', function () {",
+                  "    pm.expect(json.comments).to.be.an('array').and.to.have.length.within(1, 3);",
+                  "    json.comments.forEach(c => pm.expect(c).to.be.a('string').and.to.have.length.above(0));",
+                  "});",
+                  "",
+                  "pm.test('returns the post the comments target', function () {",
+                  "    pm.expect(json.post.text).to.be.a('string').and.to.have.length.above(0);",
+                  "    pm.expect(json.contextUsed.postSource).to.eql('latest_from_person');",
+                  "});",
+                  "",
+                  "if (json.post.id) {",
+                  "    pm.collectionVariables.set('commentPostId', json.post.id);",
+                  "    pm.collectionVariables.set('generatedComment', json.comments[0]);",
+                  "    console.log('Stored commentPostId + generatedComment for the send request');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/org-chart-outreach/icp/generate-comment",
+              "host": ["{{baseUrl}}"],
+              "path": ["org-chart-outreach", "icp", "generate-comment"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"icp\": {{extractedIcp}},\n  \"sells\": \"Agentic AI SRE platform for automated incident root-cause analysis\",\n  \"chartFunction\": \"{{chartFunction}}\",\n  \"personIdentifier\": \"gaurav-sherlocks-ai\",\n  \"rankedCandidates\": [\n    {\n      \"company_name\": \"Acme Corp\",\n      \"chart_function\": \"Platform Engineering\"\n    }\n  ],\n  \"variants\": 3\n}"
+            },
+            "description": "Generates 3 comment variants for the person's latest post (last 30 days preferred): value-add first, with at most one variant lightly redirecting to org-chart value relevant to their ICP. Alternatively pass postId (fetches that post) or postText (no Unipile calls). Stores the post id + first comment in collection variables for the send request."
+          }
+        },
+        {
+          "name": "Send Post Comment - Unipile (PUBLISHES PUBLICLY)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('Send Post Comment: status', pm.response.code);",
+                  "console.log('Send Post Comment response:', pm.response.text());",
+                  "",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test('comment was published', function () {",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "    pm.expect(json.postId).to.be.a('string');",
+                  "    pm.expect(json.accountId).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/org-chart-outreach/posts/comment",
+              "host": ["{{baseUrl}}"],
+              "path": ["org-chart-outreach", "posts", "comment"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"postId\": \"{{commentPostId}}\",\n  \"text\": \"{{generatedComment}}\"\n}"
+            },
+            "description": "WARNING: this actually publishes the comment on LinkedIn via Unipile (POST /posts/{postId}/comments) using the resolved outreach account. Run ICP Generate Comment first to populate commentPostId and generatedComment, and review the text before sending. Optional body fields: commentId (reply to a comment), mentions, externalLink, asOrganization."
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -77,6 +77,8 @@ import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/li
 import { WarmPathsModule } from 'src/engine/core-modules/warm-paths/warm-paths.module';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
 import { LLMChatModelModule } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.module';
+import { IcpExtractionService } from 'src/engine/core-modules/org-chart-outreach/icp-extraction.service';
+import { IcpOutreachMessageService } from 'src/engine/core-modules/org-chart-outreach/icp-outreach-message.service';
 import { LinkedinOutreachOpenerService } from 'src/engine/core-modules/org-chart-outreach/linkedin-outreach-opener.service';
 import { OrgChartOutreachController } from 'src/engine/core-modules/org-chart-outreach/org-chart-outreach.controller';
 import { OrgChartOutreachService } from 'src/engine/core-modules/org-chart-outreach/org-chart-outreach.service';
@@ -110,6 +112,7 @@ import { GmailDraftShortlistQueueService } from './services/candidate-engagement
 import { UpdateChat } from './services/candidate-engagement/update-chat';
 import { LinkedInUnipileMonitoringService } from './services/linkedin-unipile-monitoring.service';
 import { LinkedinUnipileRequestService } from './services/linkedin-unipile-request.service';
+import { UnipileCompanyService } from './services/unipile-company.service';
 import { MemberLinkedinUnipileConnectionService } from './services/member-linkedin-unipile-connection.service';
 import { MessagingControls } from './services/messaging-controls';
 import { WhatsAppMonitoringUnifiedService } from './services/whatsapp-monitoring-unified.service';
@@ -234,6 +237,7 @@ const conditionalImports = isWorker
     WhatsappUnipileRequestService,
     WhatsappUnipileSyncService,
     LinkedinUnipileRequestService,
+    UnipileCompanyService,
     WhatsAppMonitoringUnifiedService,
     WhatsAppMonitoringResolver,
     LinkedInUnipileMonitoringService,
@@ -242,6 +246,8 @@ const conditionalImports = isWorker
     LinkedinParameterResolver,
     OrgChartOutreachService,
     LinkedinOutreachOpenerService,
+    IcpExtractionService,
+    IcpOutreachMessageService,
   ],
   exports: [ExtSockWhatsappService, CandidateEngagementArx],
 })
