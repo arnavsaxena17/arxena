@@ -37,6 +37,7 @@ export const GET_ADMIN_PANEL_ALL_WORKSPACE_MEMBERS = gql`
         linkedinCookiesValidatedAt
         linkedinIp
         linkedinCountry
+        linkedinUserAgentStored
       }
     }
   }

@@ -74,4 +74,7 @@ export class AdminPanelWorkspaceMemberRecruiterProfile {
 
   @Field(() => String, { nullable: true })
   linkedinCountry?: string | null;
+
+  @Field(() => Boolean, { nullable: true })
+  linkedinUserAgentStored?: boolean | null;
 }

@@ -266,4 +266,139 @@ export class LinkedinStoredCookieValidationService {
       accountStatus: accountStatus ?? null,
     };
   }
+
+  /**
+   * Admin (or server) connect using cookies / IP / user-agent already on the workspace member profile.
+   * Unlike validate, this does not require validate-then-disconnect and does not schedule teardown.
+   */
+  async connectStoredCookiesForMember(
+    params: ValidateStoredLinkedinCookiesParams,
+  ): Promise<ValidateStoredLinkedinCookiesResult> {
+    const logContext =
+      params.logContext ?? 'stored LinkedIn cookie Unipile connect';
+    const storedCookies =
+      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
+        params.authToken,
+        params.workspaceMemberId,
+      );
+
+    const hasLiAt = Boolean(storedCookies.linkedinLiAtToken);
+    const hasLiA = Boolean(storedCookies.linkedinLiAToken);
+
+    if (!hasLiAt) {
+      return {
+        attempted: true,
+        connected: false,
+        disconnectedAfterValidation: false,
+        keepConnected: false,
+        hasLiAt: false,
+        hasLiA,
+        lastSyncedAt: storedCookies.linkedinCookiesLastSyncedAt,
+        lastValidatedAt: storedCookies.linkedinCookiesValidatedAt,
+        message: 'No stored LinkedIn li_at cookie on workspace member profile',
+        errorCode: 'NO_STORED_LI_AT',
+        reconnectAttempted: false,
+        reconnectSucceeded: false,
+        accountId: null,
+        accountStatus: null,
+      };
+    }
+
+    const userAgent = resolveLinkedinConnectUserAgent({
+      storedUserAgent: storedCookies.linkedinUserAgent,
+      requestUserAgent: params.userAgent,
+    });
+    const ip =
+      normalizeLinkedinConnectionIp(
+        params.clientIp?.trim() || storedCookies.linkedinIp?.trim() || undefined,
+      ) ?? undefined;
+    const country =
+      normalizeLinkedinConnectionCountry(
+        params.clientCountry?.trim() ||
+          storedCookies.linkedinCountry?.trim() ||
+          undefined,
+      ) ??
+      (ip ? ((await lookupCountryByIp(ip)) ?? undefined) : undefined);
+
+    this.logger.log(
+      `[connectStoredCookies] workspaceMemberId=${params.workspaceMemberId} context=${logContext} ` +
+        `hasLiAt=${hasLiAt} hasLiA=${hasLiA} userAgent=${userAgent?.slice(0, 60) ?? 'none'} ` +
+        `ip=${ip ?? 'none'} country=${country ?? 'none'}`,
+    );
+
+    const resolution =
+      await this.linkedinUnipileMemberAccountResolverService.resolveMemberLinkedinUnipileAccount(
+        {
+          workspaceId: params.workspace.id,
+          workspaceMemberId: params.workspaceMemberId,
+          authToken: params.authToken,
+          reconnectSourceToken: storedCookies.linkedinLiAtToken,
+          premiumToken: storedCookies.linkedinLiAToken,
+          userAgent,
+          ip,
+          country,
+          cleanupContext: logContext,
+          reconnectLogContext: logContext,
+        },
+      );
+
+    const accountId = resolution.accountId;
+    const accountStatus = resolution.accountStatus;
+    const connected =
+      resolution.isConnected ||
+      accountStatus === 'connected' ||
+      accountStatus === 'pending';
+
+    const keepConnected =
+      await this.workspaceMemberProfileUnipileService.getKeepLinkedinConnected(
+        params.workspaceMemberId,
+        params.authToken,
+      );
+
+    if (connected) {
+      await this.linkedinUnipileTeardownSchedulerService.cancelPendingDisconnect(
+        params.workspaceMemberId,
+      );
+      await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberLinkedinCookieTokens(
+        params.authToken,
+        params.workspaceMemberId,
+        {},
+        { touchLastValidatedAt: true },
+      );
+    }
+
+    const storedCookiesAfter =
+      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
+        params.authToken,
+        params.workspaceMemberId,
+      );
+
+    const message =
+      resolution.reconnectMessage ??
+      (connected
+        ? 'LinkedIn Unipile connection succeeded with stored cookies'
+        : 'LinkedIn Unipile connection failed with stored cookies');
+
+    this.logger.log(
+      `[connectStoredCookies] connected=${connected} accountId=${accountId ?? 'none'} ` +
+        `reconnectAttempted=${resolution.reconnectAttempted} reconnectSucceeded=${resolution.reconnectSucceeded}`,
+    );
+
+    return {
+      attempted: true,
+      connected,
+      disconnectedAfterValidation: false,
+      keepConnected,
+      hasLiAt: Boolean(storedCookiesAfter.linkedinLiAtToken),
+      hasLiA: Boolean(storedCookiesAfter.linkedinLiAToken),
+      lastSyncedAt: storedCookiesAfter.linkedinCookiesLastSyncedAt,
+      lastValidatedAt: storedCookiesAfter.linkedinCookiesValidatedAt,
+      message,
+      errorCode: connected ? null : 'LINKEDIN_CONNECTION_FAILED',
+      reconnectAttempted: resolution.reconnectAttempted,
+      reconnectSucceeded: resolution.reconnectSucceeded,
+      accountId: accountId ?? null,
+      accountStatus: accountStatus ?? null,
+    };
+  }
 }

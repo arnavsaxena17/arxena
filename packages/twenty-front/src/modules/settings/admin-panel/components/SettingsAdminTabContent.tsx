@@ -1,6 +1,7 @@
 import { SettingsAdminEnvVariables } from '@/settings/admin-panel/components/SettingsAdminEnvVariables';
 import { SettingsAdminGeneral } from '@/settings/admin-panel/components/SettingsAdminGeneral';
 import { SettingsAdminHealthStatus } from '@/settings/admin-panel/components/SettingsAdminHealthStatus';
+import { SettingsAdminLinkedinParameterCache } from '@/settings/admin-panel/components/SettingsAdminLinkedinParameterCache';
 import { SettingsAdminOrgChartClientIps } from '@/settings/admin-panel/components/SettingsAdminOrgChartClientIps';
 import { SettingsAdminPublishedOrgCharts } from '@/settings/admin-panel/components/SettingsAdminPublishedOrgCharts';
 import { SettingsAdminUsers } from '@/settings/admin-panel/components/SettingsAdminUsers';
@@ -43,6 +44,8 @@ export const SettingsAdminTabContent = () => {
       return renderContent(<SettingsAdminOrgChartClientIps />);
     case SETTINGS_ADMIN_TABS.PUBLISHED_ORG_CHARTS:
       return renderContent(<SettingsAdminPublishedOrgCharts />);
+    case SETTINGS_ADMIN_TABS.LINKEDIN_PARAMETER_CACHE:
+      return renderContent(<SettingsAdminLinkedinParameterCache />);
     case SETTINGS_ADMIN_TABS.USERS:
       return renderContent(<SettingsAdminUsers />);
     default:

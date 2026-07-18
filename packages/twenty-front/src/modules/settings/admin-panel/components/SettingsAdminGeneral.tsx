@@ -1,7 +1,6 @@
 import { currentUserState } from '@/auth/states/currentUserState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { canManageFeatureFlagsState } from '@/client-config/states/canManageFeatureFlagsState';
-import { SettingsAdminLinkedinParameterCache } from '@/settings/admin-panel/components/SettingsAdminLinkedinParameterCache';
 import { SettingsAdminWorkspaceContent } from '@/settings/admin-panel/components/SettingsAdminWorkspaceContent';
 import { SETTINGS_ADMIN_USER_LOOKUP_WORKSPACE_TABS_ID } from '@/settings/admin-panel/constants/SettingsAdminUserLookupWorkspaceTabsId';
 import { userLookupResultState } from '@/settings/admin-panel/states/userLookupResultState';
@@ -172,8 +171,6 @@ export const SettingsAdminGeneral = () => {
         <H2Title title="About" description="Version of the application" />
         <GithubVersionLink version={packageJson.version} />
       </Section>
-
-      {currentUser?.canImpersonate && <SettingsAdminLinkedinParameterCache />}
 
       <Section>
         <H2Title

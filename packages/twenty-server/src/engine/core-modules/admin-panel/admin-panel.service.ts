@@ -5,6 +5,7 @@ import { DataSource, IsNull, Repository } from 'typeorm';
 
 import { AdminPanelWorkspaceMemberRecruiterProfile } from 'src/engine/core-modules/admin-panel/dtos/admin-panel-workspace-member-recruiter-profile.output';
 import { AdminPanelWorkspaceMemberRow } from 'src/engine/core-modules/admin-panel/dtos/admin-panel-workspace-member-row.output';
+import { AdminConnectMemberLinkedinUnipileOutput } from 'src/engine/core-modules/admin-panel/dtos/admin-connect-member-linkedin-unipile.output';
 import { AdminValidateMemberLinkedinStoredCookiesOutput } from 'src/engine/core-modules/admin-panel/dtos/admin-validate-member-linkedin-stored-cookies.output';
 import { EnvironmentVariable } from 'src/engine/core-modules/admin-panel/dtos/environment-variable.dto';
 import { EnvironmentVariablesGroupData } from 'src/engine/core-modules/admin-panel/dtos/environment-variables-group.dto';
@@ -323,6 +324,10 @@ export class AdminPanelService {
       ),
       linkedinIp: pickStringFromRow(row, 'linkedinIp'),
       linkedinCountry: pickStringFromRow(row, 'linkedinCountry'),
+      linkedinUserAgentStored: hasNonEmptyStringRowValue(
+        row,
+        'linkedinUserAgent',
+      ),
     };
   }
 
@@ -372,6 +377,7 @@ export class AdminPanelService {
           linkedinCookiesValidatedAt: null,
           linkedinIp: null,
           linkedinCountry: null,
+          linkedinUserAgentStored: false,
         };
       }
 
@@ -406,6 +412,7 @@ export class AdminPanelService {
           linkedinCookiesValidatedAt: null,
           linkedinIp: null,
           linkedinCountry: null,
+          linkedinUserAgentStored: false,
         };
       }
 
@@ -495,6 +502,83 @@ export class AdminPanelService {
       attempted: result.attempted,
       connected: result.connected,
       disconnectedAfterValidation: result.disconnectedAfterValidation,
+      keepConnected: result.keepConnected,
+      hasLiAt: result.hasLiAt,
+      hasLiA: result.hasLiA,
+      lastSyncedAt: result.lastSyncedAt,
+      lastValidatedAt: result.lastValidatedAt,
+      message: result.message,
+      errorCode: result.errorCode,
+      reconnectAttempted: result.reconnectAttempted,
+      reconnectSucceeded: result.reconnectSucceeded,
+      accountId: result.accountId,
+      accountStatus: result.accountStatus,
+    };
+  }
+
+  async connectMemberLinkedinUnipile(
+    workspaceId: string,
+    workspaceMemberId: string,
+  ): Promise<AdminConnectMemberLinkedinUnipileOutput> {
+    const workspace = await this.workspaceRepository.findOne({
+      where: { id: workspaceId, deletedAt: IsNull() },
+    });
+
+    workspaceValidator.assertIsDefinedOrThrow(
+      workspace,
+      new AuthException('Workspace not found', AuthExceptionCode.INVALID_INPUT),
+    );
+
+    this.logger.log(
+      `Connecting member LinkedIn Unipile from stored cookies for workspace id: ${workspaceId} and workspace member id: ${workspaceMemberId}`,
+    );
+
+    const schema = this.workspaceDataSourceService.getSchemaName(workspaceId);
+    const memberRows = await this.workspaceDataSourceService.executeRawQuery(
+      `SELECT id, "userId" FROM ${schema}."workspaceMember" WHERE id = $1 LIMIT 1`,
+      [workspaceMemberId],
+      workspaceId,
+    );
+
+    if (!memberRows?.length) {
+      throw new AuthException(
+        'Workspace member not found',
+        AuthExceptionCode.INVALID_INPUT,
+      );
+    }
+
+    const memberRow = memberRows[0] as { id: string; userId: string };
+    const userId = String(memberRow.userId);
+    const authTokenPair = await this.accessTokenService.generateAccessToken(
+      userId,
+      workspaceId,
+    );
+
+    const authContext = await this.accessTokenService.validateToken(
+      authTokenPair.token,
+    );
+
+    if (authContext.workspaceMemberId !== workspaceMemberId) {
+      throw new AuthException(
+        'Workspace member mismatch for generated access token',
+        AuthExceptionCode.INVALID_INPUT,
+      );
+    }
+
+    const result =
+      await this.linkedinStoredCookieValidationService.connectStoredCookiesForMember(
+        {
+          workspace,
+          workspaceMemberId,
+          authToken: authTokenPair.token,
+          audience: 'admin',
+          logContext: 'admin panel LinkedIn Unipile connect',
+        },
+      );
+
+    return {
+      attempted: result.attempted,
+      connected: result.connected,
       keepConnected: result.keepConnected,
       hasLiAt: result.hasLiAt,
       hasLiA: result.hasLiA,

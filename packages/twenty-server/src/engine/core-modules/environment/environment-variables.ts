@@ -368,14 +368,14 @@ export class EnvironmentVariables {
   })
   @IsDuration()
   @IsOptional()
-  ACCESS_TOKEN_EXPIRES_IN = '60d';
+  ACCESS_TOKEN_EXPIRES_IN = '1y';
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.TokensDuration,
     description: 'Duration for which the refresh token is valid',
   })
   @IsOptional()
-  REFRESH_TOKEN_EXPIRES_IN = '60d';
+  REFRESH_TOKEN_EXPIRES_IN = '1y';
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.TokensDuration,

@@ -8,6 +8,7 @@ import { AdminLinkedinParameterCacheEntry } from 'src/engine/core-modules/admin-
 import { AdminPanelHealthService } from 'src/engine/core-modules/admin-panel/admin-panel-health.service';
 import { AdminPanelService } from 'src/engine/core-modules/admin-panel/admin-panel.service';
 import { AdminPanelWorkspaceMemberRow } from 'src/engine/core-modules/admin-panel/dtos/admin-panel-workspace-member-row.output';
+import { AdminConnectMemberLinkedinUnipileOutput } from 'src/engine/core-modules/admin-panel/dtos/admin-connect-member-linkedin-unipile.output';
 import { AdminValidateMemberLinkedinStoredCookiesOutput } from 'src/engine/core-modules/admin-panel/dtos/admin-validate-member-linkedin-stored-cookies.output';
 import { EnvironmentVariablesOutput } from 'src/engine/core-modules/admin-panel/dtos/environment-variables.output';
 import { ImpersonateInput } from 'src/engine/core-modules/admin-panel/dtos/impersonate.input';
@@ -219,6 +220,18 @@ export class AdminPanelResolver {
     @Args('workspaceMemberId') workspaceMemberId: string,
   ): Promise<AdminValidateMemberLinkedinStoredCookiesOutput> {
     return this.adminService.validateMemberLinkedinStoredCookies(
+      workspaceId,
+      workspaceMemberId,
+    );
+  }
+
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard, ImpersonateGuard)
+  @Mutation(() => AdminConnectMemberLinkedinUnipileOutput)
+  async adminConnectMemberLinkedinUnipile(
+    @Args('workspaceId') workspaceId: string,
+    @Args('workspaceMemberId') workspaceMemberId: string,
+  ): Promise<AdminConnectMemberLinkedinUnipileOutput> {
+    return this.adminService.connectMemberLinkedinUnipile(
       workspaceId,
       workspaceMemberId,
     );
