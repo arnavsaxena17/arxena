@@ -811,6 +811,64 @@ describe('IcpExtractionService', () => {
       expect(result.relevant_recipient_for_target_account_lure).toBe(true);
     });
 
+    it('falls back to CV content when LinkedIn profile fetch fails', async () => {
+      parseResumeText.mockResolvedValueOnce({
+        fullName: 'Nikita Nayak',
+        email: 'nikita@example.com',
+        linkedinUrl: 'https://www.linkedin.com/in/nikitanayak-058357128',
+        workExperience: [
+          {
+            company: 'Acme Marketing',
+            jobTitle: 'Marketing Lead',
+            jobSummary: 'Owns demand gen for B2B SaaS',
+          },
+        ],
+        skills: 'HubSpot, SEO',
+      });
+      fetchLinkedinUserProfile.mockResolvedValueOnce(null);
+      jest
+        .spyOn(service as never, 'fetchCompanyProfileViaWebSearch' as never)
+        .mockResolvedValue({
+          name: 'Acme Marketing',
+          description: 'B2B marketing agency',
+          industry: 'Marketing',
+          employee_count: 80,
+          website: 'https://acme-marketing.example',
+          headquarters: 'Mumbai',
+          products_services: 'Demand gen',
+          linkedin_url: null,
+          notes: 'Matched via web search',
+        } as never);
+      mockIcpAndMomTestInvokes(invoke);
+
+      const result = await service.extractIcpFromResume({
+        resumeText:
+          'Nikita Nayak\nhttps://www.linkedin.com/in/nikitanayak-058357128\nMarketing Lead at Acme Marketing',
+        includeMomTestQuestions: true,
+        ...baseAuth,
+      });
+      console.log(
+        'extractIcpFromResume linkedin-fallback contextUsed:',
+        result.contextUsed,
+      );
+
+      expect(withOutreachLinkedinSession).toHaveBeenCalled();
+      expect(result.contextUsed.personSource).toBe('resume');
+      expect(result.contextUsed.companySource).toBe('web_search');
+      expect(result.contextUsed.linkedinUrlFromResume).toBe(
+        'https://www.linkedin.com/in/nikitanayak-058357128',
+      );
+      expect(result.parsedResume.currentCompany).toBe('Acme Marketing');
+      expect(result.relevant_recipient_for_target_account_lure).toBe(true);
+
+      const icpCall = invoke.mock.calls.find(
+        (call) => typeof call[0] === 'string',
+      );
+      const prompt = icpCall?.[0] as string;
+      expect(prompt).toContain('Acme Marketing');
+      expect(prompt).toContain('B2B marketing agency');
+    });
+
     it('uses parsed resume + company websearch when no LinkedIn URL is present', async () => {
       parseResumeText.mockResolvedValueOnce({
         fullName: 'Prince Kumar',

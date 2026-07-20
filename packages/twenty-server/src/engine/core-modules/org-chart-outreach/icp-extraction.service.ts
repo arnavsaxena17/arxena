@@ -416,8 +416,9 @@ export class IcpExtractionService {
 
   /**
    * ICP extract from a raw resume (PDF/DOCX/DOC or pasted text).
-   * If a LinkedIn /in/ URL is present, delegates to the LinkedIn Unipile path.
-   * Otherwise parses the CV, web-searches the current company, and runs ICP + Mom Test.
+   * If a LinkedIn /in/ URL is present, prefers the LinkedIn Unipile path.
+   * When LinkedIn is missing or cannot be fetched, falls back to parsed CV
+   * content + optional company websearch for ICP + Mom Test.
    */
   async extractIcpFromResume(
     params: ExtractIcpFromResumeParams,
@@ -441,28 +442,76 @@ export class IcpExtractionService {
     );
 
     if (linkedinUrl) {
-      const extraction = await this.extractIcp({
-        personIdentifier: linkedinUrl,
-        includePosts: params.includePosts,
-        postsLimit: params.postsLimit,
-        includeMomTestQuestions: params.includeMomTestQuestions,
-        interviewContext: params.interviewContext,
-        accountId: params.accountId,
-        apiToken: params.apiToken,
-        workspaceMemberId: params.workspaceMemberId,
-        workspaceId: params.workspaceId,
-      });
+      try {
+        const extraction = await this.extractIcp({
+          personIdentifier: linkedinUrl,
+          includePosts: params.includePosts,
+          postsLimit: params.postsLimit,
+          includeMomTestQuestions: params.includeMomTestQuestions,
+          interviewContext: params.interviewContext,
+          accountId: params.accountId,
+          apiToken: params.apiToken,
+          workspaceMemberId: params.workspaceMemberId,
+          workspaceId: params.workspaceId,
+        });
 
-      return {
-        ...extraction,
-        parsedResume: parsedResumeSummary,
-        contextUsed: {
-          ...extraction.contextUsed,
-          resumeFileName,
-          linkedinUrlFromResume: linkedinUrl,
-        },
-      };
+        return {
+          ...extraction,
+          parsedResume: parsedResumeSummary,
+          contextUsed: {
+            ...extraction.contextUsed,
+            resumeFileName,
+            linkedinUrlFromResume: linkedinUrl,
+          },
+        };
+      } catch (error) {
+        // LinkedIn URL on the CV is best-effort — if Unipile cannot resolve
+        // the profile, continue with parsed resume text + company websearch.
+        this.logger.warn(
+          `ICP from resume: LinkedIn unavailable for "${linkedinUrl}", falling back to CV content: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
     }
+
+    return this.extractIcpFromResumeContent({
+      params,
+      resumeText,
+      resumeFileName,
+      parsed,
+      linkedinUrl,
+      currentCompany,
+      parsedResumeSummary,
+    });
+  }
+
+  /**
+   * ICP + Mom Test from parsed CV text (and optional company websearch).
+   * Used when the resume has no LinkedIn URL, or LinkedIn fetch failed.
+   */
+  private async extractIcpFromResumeContent(input: {
+    params: ExtractIcpFromResumeParams;
+    resumeText: string;
+    resumeFileName: string;
+    parsed: ParsedCVData;
+    linkedinUrl: string | undefined;
+    currentCompany: {
+      companyName?: string;
+      role?: string;
+      location?: string;
+    };
+    parsedResumeSummary: ExtractIcpFromResumeResponse['parsedResume'];
+  }): Promise<ExtractIcpFromResumeResponse> {
+    const {
+      params,
+      resumeText,
+      resumeFileName,
+      parsed,
+      linkedinUrl,
+      currentCompany,
+      parsedResumeSummary,
+    } = input;
 
     const personProfile = buildPersonProfileFromParsedCv(parsed, resumeText);
     let companyProfile: Record<string, unknown> | null = null;
@@ -516,7 +565,7 @@ export class IcpExtractionService {
     ]);
 
     this.logger.log(
-      `ICP from resume (no LinkedIn): sells="${parsedIcp.sells.slice(0, 120)}" relevant=${parsedIcp.relevant_recipient_for_target_account_lure} companySource=${companySource} momTest=${Boolean(momTestQuestions)}`,
+      `ICP from resume (CV content): sells="${parsedIcp.sells.slice(0, 120)}" relevant=${parsedIcp.relevant_recipient_for_target_account_lure} companySource=${companySource} momTest=${Boolean(momTestQuestions)} linkedinFallback=${Boolean(linkedinUrl)}`,
     );
 
     return {
@@ -529,6 +578,7 @@ export class IcpExtractionService {
         postsCount: 0,
         momTestQuestionsGenerated: Boolean(momTestQuestions),
         resumeFileName,
+        ...(linkedinUrl ? { linkedinUrlFromResume: linkedinUrl } : {}),
       },
     };
   }
