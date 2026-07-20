@@ -28,4 +28,23 @@ describe('normalizePersonForPythonOrgChartBuild', () => {
 
     expect(normalized.profile_picture_url).toBe('https://media.apify/p.png');
   });
+
+  it('preserves Unipile extras when present on the input person', () => {
+    const normalized = normalizePersonForPythonOrgChartBuild(
+      {
+        full_name: 'Ada Lovelace',
+        job_title: 'Engineer',
+        networkDistance: 'DISTANCE_1',
+        premium: true,
+        open_profile: true,
+        followersCount: 1200,
+      },
+      { companyId: 'co', companyName: 'Co' },
+    );
+
+    expect(normalized.networkDistance).toBe('DISTANCE_1');
+    expect(normalized.premium).toBe(true);
+    expect(normalized.open_profile).toBe(true);
+    expect(normalized.followersCount).toBe(1200);
+  });
 });

@@ -18,6 +18,7 @@ import {
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { ConfirmationModal, StyledCenteredButton } from '@/ui/layout/modal/components/ConfirmationModal';
 import { Modal } from '@/ui/layout/modal/components/Modal';
 import {
   getProxiedImageUrl,
@@ -28,11 +29,15 @@ import { OnboardingIntentModalLayout } from '~/pages/onboarding/OnboardingIntent
 import { orgChartContactsByKeyState } from '../states/orgChartContactsByKeyState';
 
 import { ContextResultItem } from '../types';
-import { extractCompanyDomainFromWebsite } from '../utils/orgChartUtils';
+import {
+  extractCompanyDomainFromWebsite,
+  formatNetworkDistanceDegree,
+} from '../utils/orgChartUtils';
 import {
   OrgChartModalTightContent,
   OrgChartModalTightHeader,
 } from './OrgChartModalTightContent';
+import { OrgChartOutreachModal } from './OrgChartOutreachModal';
 import { OrgChartResultsAddToJobPanel } from './OrgChartResultsAddToJobPanel';
 
 const DEFAULT_AVATAR =
@@ -186,6 +191,29 @@ const StyledProfileMeta = styled.div`
   color: ${({ theme }) => theme.font.color.tertiary};
   font-size: ${({ theme }) => theme.font.size.sm};
   line-height: ${({ theme }) => theme.text.lineHeight.md};
+`;
+
+const StyledNetworkDistance = styled.span`
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+`;
+
+const StyledBadgeRow = styled.div`
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledProfileBadge = styled.span`
+  background: ${({ theme }) => theme.background.tertiary};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  padding: ${({ theme }) => theme.spacing(0.5)}
+    ${({ theme }) => theme.spacing(1)};
 `;
 
 const StyledProfileActions = styled.div`
@@ -351,6 +379,8 @@ type ResultItemProps = {
     item: ContextResultItem,
     opts: { wantEmail: boolean; wantPhone: boolean },
   ) => void;
+  onAddToJob?: (item: ContextResultItem) => void;
+  onSendConnectionRequest?: (item: ContextResultItem) => void;
   companyWebsite?: string;
 };
 
@@ -386,6 +416,8 @@ const ResultItem = ({
   contactInfo,
   isFetchingContacts,
   onFetchContacts,
+  onAddToJob,
+  onSendConnectionRequest,
   companyWebsite,
 }: ResultItemProps) => {
   const { t } = useLingui();
@@ -405,6 +437,32 @@ const ResultItem = ({
   const roleCompanyLine = [displayHeadline, displayCompany]
     .filter((part) => part.length > 0)
     .join(' · ');
+  const networkDegree = formatNetworkDistanceDegree(item.networkDistance);
+  const locationLine = [
+    item.locationName,
+    item.locationRegion,
+    item.locationCountry,
+  ]
+    .filter((part): part is string => Boolean(part?.trim()))
+    .join(' · ');
+  const countsLine = [
+    typeof item.sharedConnectionsCount === 'number'
+      ? `${item.sharedConnectionsCount} shared`
+      : null,
+    typeof item.followersCount === 'number'
+      ? `${item.followersCount} followers`
+      : null,
+    typeof item.connectionsCount === 'number'
+      ? `${item.connectionsCount} connections`
+      : null,
+  ]
+    .filter((part): part is string => part !== null)
+    .join(' · ');
+  const badgeLabels = [
+    item.premium === true ? 'Premium' : null,
+    item.verified === true ? 'Verified' : null,
+    item.openProfile === true ? 'Open profile' : null,
+  ].filter((part): part is string => part !== null);
 
   const hasLinkedInProfile = isValidLinkedInProfileUrl(item.linkedinUrl);
   const m7kqDomain = extractCompanyDomainFromWebsite(companyWebsite);
@@ -422,7 +480,6 @@ const ResultItem = ({
 
   const derivedContactInfo = getItemDerivedContactInfo(item);
   const effectiveContactInfo = contactInfo ?? derivedContactInfo;
-  const isAlreadyFetched = effectiveContactInfo?.fetched === true;
 
   const missingEmail = !effectiveContactInfo?.email?.trim();
   const missingPhone = !effectiveContactInfo?.phone?.trim();
@@ -438,6 +495,12 @@ const ResultItem = ({
         ? 'Fetch email'
         : 'Fetch phone';
 
+  const showActions =
+    Boolean(hasLinkedInProfile && item.linkedinUrl) ||
+    showFetchContacts ||
+    Boolean(onAddToJob) ||
+    Boolean(onSendConnectionRequest && hasLinkedInProfile);
+
   return (
     <StyledProfileCard
       fullWidth
@@ -448,6 +511,9 @@ const ResultItem = ({
       <StyledProfileTextColumn>
         <StyledProfileNameRow>
           <StyledProfileName>{item.fullName}</StyledProfileName>
+          {networkDegree && (
+            <StyledNetworkDistance>· {networkDegree}</StyledNetworkDistance>
+          )}
           {companyTenureAtTarget && (
             <StyledOrgChartTenureDot
               $variant={companyTenureAtTarget}
@@ -463,6 +529,19 @@ const ResultItem = ({
         </StyledProfileNameRow>
         {roleCompanyLine.length > 0 && (
           <StyledProfileSubline>{roleCompanyLine}</StyledProfileSubline>
+        )}
+        {locationLine.length > 0 && (
+          <StyledProfileMeta>{locationLine}</StyledProfileMeta>
+        )}
+        {badgeLabels.length > 0 && (
+          <StyledBadgeRow>
+            {badgeLabels.map((label) => (
+              <StyledProfileBadge key={label}>{label}</StyledProfileBadge>
+            ))}
+          </StyledBadgeRow>
+        )}
+        {countsLine.length > 0 && (
+          <StyledProfileMeta>{countsLine}</StyledProfileMeta>
         )}
         {effectiveContactInfo &&
           (effectiveContactInfo.email || effectiveContactInfo.phone) && (
@@ -488,8 +567,7 @@ const ResultItem = ({
               No contacts have been fetched for this person yet.
             </StyledProfileMeta>
           )}
-        {(Boolean(hasLinkedInProfile && item.linkedinUrl) ||
-          showFetchContacts) && (
+        {showActions && (
           <StyledProfileActions>
             {hasLinkedInProfile && item.linkedinUrl && (
               <StyledProfileExternalLink
@@ -516,6 +594,24 @@ const ResultItem = ({
                 <IconPhone size={iconSm} stroke={1.5} />
                 <IconMail size={iconSm} stroke={1.5} />
                 {isFetchingContacts ? 'Fetching contacts…' : fetchLabel}
+              </StyledContactButton>
+            )}
+            {onAddToJob && (
+              <StyledContactButton
+                data-testid={`orgchart-add-to-job-${item.id}`}
+                type="button"
+                onClick={() => onAddToJob(item)}
+              >
+                Add to job
+              </StyledContactButton>
+            )}
+            {onSendConnectionRequest && hasLinkedInProfile && (
+              <StyledContactButton
+                data-testid={`orgchart-connect-${item.id}`}
+                type="button"
+                onClick={() => onSendConnectionRequest(item)}
+              >
+                Send connection request
               </StyledContactButton>
             )}
           </StyledProfileActions>
@@ -773,40 +869,45 @@ const useClickedContactLinkImage = (
   const manageContactsFetching = async (
     item: ContextResultItem,
     opts: { wantEmail: boolean; wantPhone: boolean },
-  ) => {
+    options?: { skipSavedCheck?: boolean },
+  ): Promise<
+    | { needsAddToJobPrompt: true; item: ContextResultItem; opts: typeof opts }
+    | { needsAddToJobPrompt: false }
+    | undefined
+  > => {
     const cacheKey = getContactCacheKey(item, companyWebsite);
     const derived = getItemDerivedContactInfo(item);
 
     const existing = contactsById[cacheKey];
-    if (existing?.fetched && !opts.wantEmail && !opts.wantPhone) return;
+    if (existing?.fetched && !opts.wantEmail && !opts.wantPhone) {
+      return { needsAddToJobPrompt: false };
+    }
 
     if (derived) {
       persistContacts(cacheKey, derived);
-      return;
+      return { needsAddToJobPrompt: false };
     }
 
     setLoadingById((prev) => ({ ...prev, [cacheKey]: true }));
 
     try {
-      // Enforce saved-candidate rule when possible
       let savedStatus: {
         saved: boolean;
         candidateIds?: string[];
         jobIds?: string[];
       } | null = null;
 
-      if (item.linkedinUrl) {
+      if (item.linkedinUrl && !options?.skipSavedCheck) {
         savedStatus = await checkCandidateSavedStatus(item);
         if (savedStatus && !savedStatus.saved) {
-          enqueueSnackBar(
-            'Please add this person to a job before fetching contacts.',
-            {
-              variant: SnackBarVariant.Error,
-              duration: 4000,
-            },
-          );
-          return;
+          return {
+            needsAddToJobPrompt: true,
+            item,
+            opts,
+          };
         }
+      } else if (item.linkedinUrl && options?.skipSavedCheck) {
+        savedStatus = await checkCandidateSavedStatus(item);
       }
 
       const localInfo: ContactInfo = { fetched: true };
@@ -836,13 +937,11 @@ const useClickedContactLinkImage = (
           ...(existing ?? {}),
           ...finalInfo,
           fetched: true,
-          // Preserve existing linkedin/fullname if server did not return them.
           linkedinUrl: finalInfo.linkedinUrl ?? existing?.linkedinUrl,
           fullName: finalInfo.fullName ?? existing?.fullName,
         };
         persistContacts(cacheKey, merged);
         void persistToOrgChart({ item, info: merged });
-        // Also update backend candidate/person when we can
         if (
           item.linkedinUrl &&
           tokenPair?.accessToken?.token &&
@@ -883,6 +982,7 @@ const useClickedContactLinkImage = (
           }
         }
       }
+      return { needsAddToJobPrompt: false };
     } finally {
       setLoadingById((prev) => {
         const { [cacheKey]: _omit, ...rest } = prev;
@@ -891,14 +991,19 @@ const useClickedContactLinkImage = (
     }
   };
 
-  const clickedContactLinkImage = (
+  const clickedContactLinkImage = async (
     item: ContextResultItem,
     opts: { wantEmail: boolean; wantPhone: boolean },
   ) => {
-    void manageContactsFetching(item, opts);
+    return manageContactsFetching(item, opts);
   };
 
-  return { contactsById, loadingById, clickedContactLinkImage };
+  return {
+    contactsById,
+    loadingById,
+    clickedContactLinkImage,
+    manageContactsFetching,
+  };
 };
 
 export type OrgChartResultModalProps = {
@@ -957,10 +1062,27 @@ export const OrgChartResultModal = ({
   addToJobInlineContext,
 }: OrgChartResultModalProps) => {
   const { t } = useLingui();
-  const { contactsById, loadingById, clickedContactLinkImage } =
-    useClickedContactLinkImage(companyWebsite, companyId);
+  const {
+    contactsById,
+    loadingById,
+    clickedContactLinkImage,
+    manageContactsFetching,
+  } = useClickedContactLinkImage(companyWebsite, companyId);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isAddToJobView, setIsAddToJobView] = useState(false);
+  const [addToJobPanelResults, setAddToJobPanelResults] = useState<
+    ContextResultItem[] | null
+  >(null);
+  const [addToJobQueueStartChatAfter, setAddToJobQueueStartChatAfter] =
+    useState(true);
+  const [addToJobViewTitle, setAddToJobViewTitle] = useState('Add to job');
+  const [fetchContactsPrompt, setFetchContactsPrompt] = useState<{
+    item: ContextResultItem;
+    opts: { wantEmail: boolean; wantPhone: boolean };
+  } | null>(null);
+  const [outreachItem, setOutreachItem] = useState<ContextResultItem | null>(
+    null,
+  );
 
   const addToJobContextKey = addToJobInlineContext
     ? [
@@ -976,6 +1098,9 @@ export const OrgChartResultModal = ({
 
   useEffect(() => {
     setIsAddToJobView(false);
+    setAddToJobPanelResults(null);
+    setFetchContactsPrompt(null);
+    setOutreachItem(null);
   }, [
     title,
     isLoading,
@@ -987,7 +1112,31 @@ export const OrgChartResultModal = ({
 
   const handleMainClose = () => {
     setIsAddToJobView(false);
+    setAddToJobPanelResults(null);
+    setFetchContactsPrompt(null);
+    setOutreachItem(null);
     onClose();
+  };
+
+  const openAddToJobView = (args: {
+    panelResults: ContextResultItem[];
+    queueStartChatAfter: boolean;
+    viewTitle: string;
+  }) => {
+    setAddToJobPanelResults(args.panelResults);
+    setAddToJobQueueStartChatAfter(args.queueStartChatAfter);
+    setAddToJobViewTitle(args.viewTitle);
+    setIsAddToJobView(true);
+  };
+
+  const handleFetchContacts = async (
+    item: ContextResultItem,
+    opts: { wantEmail: boolean; wantPhone: boolean },
+  ) => {
+    const result = await clickedContactLinkImage(item, opts);
+    if (result?.needsAddToJobPrompt) {
+      setFetchContactsPrompt({ item: result.item, opts: result.opts });
+    }
   };
 
   useEffect(() => {
@@ -1024,6 +1173,8 @@ export const OrgChartResultModal = ({
     !isLoading &&
     !error;
 
+  const panelResults = addToJobPanelResults ?? results;
+
   return (
     <StyledOrgChartResultModal
       isClosable
@@ -1038,11 +1189,14 @@ export const OrgChartResultModal = ({
             <StyledAddToJobHeaderRow>
               <IconButton
                 Icon={IconChevronLeft}
-                onClick={() => setIsAddToJobView(false)}
+                onClick={() => {
+                  setIsAddToJobView(false);
+                  setAddToJobPanelResults(null);
+                }}
                 variant="tertiary"
                 ariaLabel={t`Back`}
               />
-              <StyledTitle>{t`Add to job`}</StyledTitle>
+              <StyledTitle>{addToJobViewTitle}</StyledTitle>
             </StyledAddToJobHeaderRow>
           ) : (
             <StyledTitle>{title}</StyledTitle>
@@ -1058,16 +1212,32 @@ export const OrgChartResultModal = ({
         {isAddToJobView && canInlineAddToJob && addToJobInlineContext ? (
           <OnboardingIntentModalLayout>
             <OrgChartResultsAddToJobPanel
-              results={results}
+              results={panelResults}
               companyName={addToJobInlineContext.companyName}
               contextModalMode={addToJobInlineContext.contextModalMode}
               selectedNodeFunction={addToJobInlineContext.selectedNodeFunction}
               selectedNodeGrade={addToJobInlineContext.selectedNodeGrade}
-              queueStartChatAfter={
-                addToJobInlineContext.queueStartChatAfter ?? true
-              }
-              onCancel={() => setIsAddToJobView(false)}
-              onComplete={handleMainClose}
+              queueStartChatAfter={addToJobQueueStartChatAfter}
+              initialSelectedIds={panelResults.map((r) => r.id)}
+              onCancel={() => {
+                setIsAddToJobView(false);
+                setAddToJobPanelResults(null);
+              }}
+              onComplete={() => {
+                const pendingFetch = fetchContactsPrompt;
+                setIsAddToJobView(false);
+                setAddToJobPanelResults(null);
+                if (pendingFetch) {
+                  setFetchContactsPrompt(null);
+                  void manageContactsFetching(
+                    pendingFetch.item,
+                    pendingFetch.opts,
+                    { skipSavedCheck: true },
+                  );
+                  return;
+                }
+                handleMainClose();
+              }}
             />
           </OnboardingIntentModalLayout>
         ) : (
@@ -1111,21 +1281,34 @@ export const OrgChartResultModal = ({
               results.length > 0 &&
               (!isLoading || error) && (
                 <StyledProfileList>
-                  {results.map((item) =>
-                    (() => {
-                      const cacheKey = getContactCacheKey(item, companyWebsite);
-                      return (
-                        <ResultItem
-                          key={item.id}
-                          item={item}
-                          contactInfo={contactsById[cacheKey]}
-                          isFetchingContacts={!!loadingById[cacheKey]}
-                          onFetchContacts={clickedContactLinkImage}
-                          companyWebsite={companyWebsite}
-                        />
-                      );
-                    })(),
-                  )}
+                  {results.map((item) => {
+                    const cacheKey = getContactCacheKey(item, companyWebsite);
+                    return (
+                      <ResultItem
+                        key={item.id}
+                        item={item}
+                        contactInfo={contactsById[cacheKey]}
+                        isFetchingContacts={!!loadingById[cacheKey]}
+                        onFetchContacts={handleFetchContacts}
+                        onAddToJob={
+                          canInlineAddToJob
+                            ? (person) =>
+                                openAddToJobView({
+                                  panelResults: [person],
+                                  queueStartChatAfter:
+                                    addToJobInlineContext?.queueStartChatAfter ??
+                                    true,
+                                  viewTitle: t`Add to job`,
+                                })
+                            : undefined
+                        }
+                        onSendConnectionRequest={(person) =>
+                          setOutreachItem(person)
+                        }
+                        companyWebsite={companyWebsite}
+                      />
+                    );
+                  })}
                 </StyledProfileList>
               )}
             {!isLoading &&
@@ -1150,14 +1333,85 @@ export const OrgChartResultModal = ({
             <Button
               variant="secondary"
               title={t`Add to job`}
-              onClick={() => setIsAddToJobView(true)}
+              onClick={() =>
+                openAddToJobView({
+                  panelResults: results,
+                  queueStartChatAfter:
+                    addToJobInlineContext?.queueStartChatAfter ?? true,
+                  viewTitle: t`Add to job`,
+                })
+              }
               dataTestId="orgchart-results-add-to-job"
+            />
+          )}
+          {canInlineAddToJob && (
+            <Button
+              variant="secondary"
+              title={t`Add to campaign`}
+              onClick={() =>
+                openAddToJobView({
+                  panelResults: results,
+                  queueStartChatAfter: true,
+                  viewTitle: t`Add to campaign`,
+                })
+              }
+              dataTestId="orgchart-results-add-to-campaign"
             />
           )}
           {extraFooterButtons}
           <Button variant="primary" title="Close" onClick={handleMainClose} />
         </StyledOrgChartModalFooter>
       )}
+      <ConfirmationModal
+        isOpen={fetchContactsPrompt !== null}
+        setIsOpen={(open) => {
+          if (!open) {
+            setFetchContactsPrompt(null);
+          }
+        }}
+        title={t`Add to job first?`}
+        subtitle={t`This person is not on a job yet. Add them to a job before fetching contacts, or fetch and save contacts to the org chart without adding to a job.`}
+        deleteButtonText={t`Add to job then fetch`}
+        confirmButtonAccent="blue"
+        onConfirmClick={() => {
+          if (!fetchContactsPrompt || !canInlineAddToJob) {
+            setFetchContactsPrompt(null);
+            return;
+          }
+          openAddToJobView({
+            panelResults: [fetchContactsPrompt.item],
+            queueStartChatAfter:
+              addToJobInlineContext?.queueStartChatAfter ?? true,
+            viewTitle: t`Add to job`,
+          });
+        }}
+        AdditionalButtons={
+          <StyledCenteredButton
+            variant="secondary"
+            title={t`Fetch without adding`}
+            fullWidth
+            onClick={() => {
+              if (!fetchContactsPrompt) {
+                return;
+              }
+              const pending = fetchContactsPrompt;
+              setFetchContactsPrompt(null);
+              void manageContactsFetching(pending.item, pending.opts, {
+                skipSavedCheck: true,
+              });
+            }}
+          />
+        }
+      />
+      <OrgChartOutreachModal
+        isOpen={outreachItem !== null}
+        onClose={() => setOutreachItem(null)}
+        channel="linkedin_invite"
+        contextItem={outreachItem}
+        node={null}
+        companyName={addToJobInlineContext?.companyName}
+        allowSkipJob
+      />
     </StyledOrgChartResultModal>
   );
 };

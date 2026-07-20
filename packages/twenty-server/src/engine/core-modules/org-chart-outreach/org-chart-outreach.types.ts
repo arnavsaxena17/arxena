@@ -108,6 +108,28 @@ export type OutreachProfileContext = {
 
 export type IcpCandidateSource = 'apollo' | 'sales_navigator';
 
+export type MomTestHypothesisTag = 'T' | 'M' | 'M-r' | 'V';
+
+export type MomTestCoreQuestion = {
+  question: string;
+  tag: MomTestHypothesisTag;
+  /** What answer pattern would confirm vs kill the tagged hypothesis. */
+  listen_for: string;
+};
+
+export type MomTestMoneyProbe = {
+  question: string;
+  tag: MomTestHypothesisTag;
+};
+
+/** Mom Test discovery questions generated alongside ICP extract. */
+export type MomTestQuestions = {
+  persona_read: string;
+  core_questions: MomTestCoreQuestion[];
+  money_probes: MomTestMoneyProbe[];
+  trap_check: string;
+};
+
 export type ExtractIcpParams = {
   /** Raw Unipile person profile JSON. When absent, personIdentifier is fetched via Unipile. */
   personProfile?: Record<string, unknown>;
@@ -123,6 +145,16 @@ export type ExtractIcpParams = {
   companyIdentifier?: string;
   includePosts?: boolean;
   postsLimit?: number;
+  /**
+   * Generate Mom Test discovery questions from the person's profile (as resume).
+   * Defaults to true.
+   */
+  includeMomTestQuestions?: boolean;
+  /**
+   * Per-person context for Mom Test (kept out of the system prompt).
+   * E.g. "rejected candidate, interviewed 2 months ago, warm relationship".
+   */
+  interviewContext?: string;
   accountId?: string;
   apiToken: string;
   workspaceMemberId: string;
@@ -141,16 +173,53 @@ export type ExtractIcpResponse = {
     pain_signals: string[];
   };
   chart_function: string | null;
+  /** Present when includeMomTestQuestions is true (default). */
+  momTestQuestions?: MomTestQuestions;
   contextUsed: {
-    personSource: 'provided' | 'unipile';
+    personSource: 'provided' | 'unipile' | 'resume';
     /**
      * 'person_only' means no company profile could be derived or fetched;
      * the ICP was inferred from the person's headline/summary/roles alone.
+     * 'web_search' means company details came from LLM web search (resume path).
      */
-    companySource: 'provided' | 'unipile' | 'derived_from_person' | 'person_only';
+    companySource:
+      | 'provided'
+      | 'unipile'
+      | 'derived_from_person'
+      | 'person_only'
+      | 'web_search';
     /** Set when the company was resolved from the person's current role. */
     derivedCompanyIdentifier?: string;
     postsCount: number;
+    momTestQuestionsGenerated?: boolean;
+    /** Present when ICP was extracted from an uploaded / pasted resume. */
+    resumeFileName?: string;
+    linkedinUrlFromResume?: string;
+  };
+};
+
+export type ExtractIcpFromResumeParams = {
+  /** Absolute path to a local PDF/DOCX/DOC resume on the server filesystem. */
+  resumeFilePath?: string;
+  /** Raw resume text when no local file path is provided. */
+  resumeText?: string;
+  includePosts?: boolean;
+  postsLimit?: number;
+  includeMomTestQuestions?: boolean;
+  interviewContext?: string;
+  accountId?: string;
+  apiToken: string;
+  workspaceMemberId: string;
+  workspaceId: string;
+};
+
+export type ExtractIcpFromResumeResponse = ExtractIcpResponse & {
+  parsedResume: {
+    name?: string;
+    email?: string;
+    linkedinUrl?: string | null;
+    currentCompany?: string | null;
+    currentRole?: string | null;
   };
 };
 

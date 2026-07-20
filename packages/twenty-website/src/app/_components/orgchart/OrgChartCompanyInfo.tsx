@@ -254,7 +254,7 @@ export const OrgChartCompanyInfo = ({
             <span aria-hidden>·</span>
           ) : null}
           {typeof profileCount === 'number' ? (
-            <span>{`${profileCount.toLocaleString()} public profiles`}</span>
+            <span>{`${profileCount.toLocaleString()} public profiles (Final count will be higher)`}</span>
           ) : null}
         </StyledHeadcountStrip>
       )}

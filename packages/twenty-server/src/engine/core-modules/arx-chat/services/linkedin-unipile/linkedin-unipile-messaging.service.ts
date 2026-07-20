@@ -378,6 +378,66 @@ export class LinkedinUnipileMessagingService {
   }
 
   /**
+   * LinkedIn connection invite using workspace / member Unipile account (no job required).
+   */
+  async sendLinkedinInviteForWorkspace(
+    apiToken: string,
+    linkedinProfileIdentifier: string,
+    rawMessage: string,
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      let accountId: string | null = null;
+      if (this.workspaceMemberProfileUnipileService) {
+        const memberId =
+          await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
+            apiToken,
+          );
+        if (memberId?.trim()) {
+          accountId =
+            await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+              memberId.trim(),
+              workspaceId,
+              apiToken,
+              'linkedin',
+            );
+        }
+      }
+      if (!accountId?.trim()) {
+        accountId = await this.workspaceQueryService.getWorkspaceApiKey(
+          workspaceId,
+          'linkedin_unipile_account_id',
+        );
+      }
+      if (!accountId?.trim()) {
+        return {
+          success: false,
+          error: 'LinkedIn Unipile account not configured',
+        };
+      }
+      const maxLength = 300;
+      const message =
+        rawMessage.length > maxLength
+          ? rawMessage.slice(0, maxLength)
+          : rawMessage;
+      await this.sendInvitation(
+        accountId.trim(),
+        linkedinProfileIdentifier.trim(),
+        message,
+      );
+      return { success: true };
+    } catch (error) {
+      console.error('sendLinkedinInviteForWorkspace error:', error);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : 'LinkedIn invitation failed',
+      };
+    }
+  }
+
+  /**
    * Send message or invitation based on response
    */
   async sendMessageOrInvitation(

@@ -20,7 +20,7 @@ export type OrgChartOutreachChannel =
 
 export type OrgChartOutreachRunParams = {
   channel: OrgChartOutreachChannel;
-  jobId: string;
+  jobId?: string;
   message: string;
   templateId?: string;
   linkedinUrl?: string;
@@ -64,15 +64,22 @@ export class OrgChartOutreachService {
   }
 
   async run(params: OrgChartOutreachRunParams): Promise<Record<string, unknown>> {
-    const job = await this.candidateWorkspaceGraphQLService.getJobDetails(
-      params.jobId,
-      '',
-      params.apiToken,
-    );
-    if (!job) {
+    const jobId = params.jobId?.trim();
+    const job =
+      jobId && jobId.length > 0
+        ? await this.candidateWorkspaceGraphQLService.getJobDetails(
+            jobId,
+            '',
+            params.apiToken,
+          )
+        : null;
+    if (jobId && !job) {
       throw new BadRequestException('Job not found');
     }
-    const candidateJob = job as Job;
+    if (!job && params.channel !== 'linkedin_invite') {
+      throw new BadRequestException('jobId required');
+    }
+    const candidateJob = job as Job | null;
 
     switch (params.channel) {
       case 'linkedin_invite': {
@@ -80,18 +87,27 @@ export class OrgChartOutreachService {
         if (!linkedinUrl) {
           throw new BadRequestException('linkedinUrl required');
         }
-        const result = await this.linkedinMessaging().sendLinkedinInviteForJob(
-          params.apiToken,
-          candidateJob,
-          linkedinUrl,
-          params.message,
-        );
+        const result = candidateJob
+          ? await this.linkedinMessaging().sendLinkedinInviteForJob(
+              params.apiToken,
+              candidateJob,
+              linkedinUrl,
+              params.message,
+            )
+          : await this.linkedinMessaging().sendLinkedinInviteForWorkspace(
+              params.apiToken,
+              linkedinUrl,
+              params.message,
+            );
         if (!result.success) {
           throw new BadRequestException(result.error || 'LinkedIn invite failed');
         }
         return { success: true };
       }
       case 'whatsapp': {
+        if (!candidateJob) {
+          throw new BadRequestException('jobId required');
+        }
         const phone = params.phone?.trim();
         if (!phone) {
           throw new BadRequestException('phone required');
@@ -154,6 +170,9 @@ export class OrgChartOutreachService {
         return { success: true };
       }
       case 'email': {
+        if (!candidateJob) {
+          throw new BadRequestException('jobId required');
+        }
         const to = params.email?.trim();
         if (!to) {
           throw new BadRequestException('email required');

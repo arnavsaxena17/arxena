@@ -100,6 +100,7 @@ export type OrgChartResultsAddToJobPanelProps = {
   selectedNodeFunction?: string;
   selectedNodeGrade?: string;
   queueStartChatAfter?: boolean;
+  initialSelectedIds?: string[];
   onCancel: () => void;
   onComplete: () => void;
 };
@@ -111,6 +112,7 @@ export const OrgChartResultsAddToJobPanel = ({
   selectedNodeFunction,
   selectedNodeGrade,
   queueStartChatAfter = true,
+  initialSelectedIds,
   onCancel,
   onComplete,
 }: OrgChartResultsAddToJobPanelProps) => {
@@ -172,9 +174,13 @@ export const OrgChartResultsAddToJobPanel = ({
 
   useEffect(() => {
     if (results.length > 0) {
-      setSelectedCandidateIds(new Set(results.map((c) => c.id)));
+      const ids =
+        initialSelectedIds && initialSelectedIds.length > 0
+          ? initialSelectedIds.filter((id) => results.some((r) => r.id === id))
+          : results.map((c) => c.id);
+      setSelectedCandidateIds(new Set(ids.length > 0 ? ids : results.map((c) => c.id)));
     }
-  }, [results]);
+  }, [results, initialSelectedIds]);
 
   useEffect(() => {
     setNewJobName(suggestedJobName);

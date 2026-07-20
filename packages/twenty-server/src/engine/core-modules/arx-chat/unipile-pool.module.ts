@@ -17,6 +17,8 @@ import { MemberLinkedinUnipileConnectionService } from './services/member-linked
 import { UnipileAccountPoolService } from './services/unipile-account-pool.service';
 import { UnipileInactivityCronService } from './services/unipile-inactivity-cron.service';
 import { UnipileLinkedinSnapshotCacheCronService } from './services/unipile-linkedin-snapshot-cache.cron.service';
+import { LinkedinProfileCacheService } from './services/linkedin-profile-cache.service';
+import { LinkedinProfileS3Service } from './services/linkedin-profile-s3.service';
 import { WhatsappUnipileRequestService } from './services/whatsapp-unipile-request.service';
 import { WorkspaceMemberProfileUnipileService } from './services/workspace-member-profile-unipile.service';
 
@@ -41,6 +43,8 @@ import { WorkspaceMemberProfileUnipileService } from './services/workspace-membe
     UnipileAccountPoolService,
     UnipileInactivityCronService,
     UnipileLinkedinSnapshotCacheCronService,
+    LinkedinProfileS3Service,
+    LinkedinProfileCacheService,
     LinkedinStoredCookieValidationService,
   ],
   exports: [
@@ -53,6 +57,8 @@ import { WorkspaceMemberProfileUnipileService } from './services/workspace-membe
     LinkedinUnipileTeardownSchedulerService,
     MemberLinkedinUnipileConnectionService,
     LinkedinStoredCookieValidationService,
+    LinkedinProfileCacheService,
+    LinkedinProfileS3Service,
   ],
 })
 export class UnipilePoolModule {}

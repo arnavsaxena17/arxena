@@ -1,10 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
-import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
-import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
-
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+import { LinkedinProfileCacheService } from './linkedin-profile-cache.service';
 
 export type UnipileCompanyProfileDto = {
   id?: string;
@@ -87,8 +83,7 @@ export class UnipileCompanyService {
   private readonly logger = new Logger(UnipileCompanyService.name);
 
   constructor(
-    @InjectCacheStorage(CacheStorageNamespace.EngineOrgChart)
-    private readonly cacheStorage: CacheStorageService,
+    private readonly linkedinProfileCacheService: LinkedinProfileCacheService,
   ) {}
 
   isConfigured(): boolean {
@@ -111,11 +106,13 @@ export class UnipileCompanyService {
     }
 
     const slug = publicIdentifier.trim();
-    const cacheKey = `unipile-company:${slug}:${accountId}`;
 
-    const cached = await this.cacheStorage.get<UnipileCompanyProfileDto>(cacheKey);
+    const cached =
+      await this.linkedinProfileCacheService.getLinkedinCompanyProfile<UnipileCompanyProfileDto>(
+        slug,
+      );
     if (cached) {
-      this.logger.log(`Unipile company profile cached for ${slug}`);
+      this.logger.log(`LinkedIn company profile cached for ${slug}`);
       return cached;
     }
 
@@ -179,7 +176,7 @@ export class UnipileCompanyService {
         activities: Array.isArray(raw.activities) ? raw.activities : undefined,
       };
 
-      await this.cacheStorage.set(cacheKey, profile, CACHE_TTL_MS);
+      await this.linkedinProfileCacheService.saveLinkedinCompanyProfile(slug, profile);
       return profile;
     } catch (error) {
       this.logger.error(`Unipile company profile fetch failed for ${slug}`, error);

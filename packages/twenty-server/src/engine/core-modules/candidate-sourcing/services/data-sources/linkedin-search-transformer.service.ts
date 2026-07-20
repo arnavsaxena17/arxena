@@ -60,8 +60,10 @@ export type TransformedCandidateForTable = Omit<
   networkDistance?: string;
   premium?: boolean;
   verified?: boolean;
+  openProfile?: boolean;
   sharedConnectionsCount?: number;
   followersCount?: number;
+  connectionsCount?: number;
   keywordsMatch?: string;
   
   // Relevance scoring fields
@@ -452,8 +454,10 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         networkDistance: peopleResult.network_distance || 'UNKNOWN',
         premium: peopleResult.premium || false,
         verified: peopleResult.verified || false,
+        openProfile: peopleResult.open_profile || false,
         sharedConnectionsCount: peopleResult.shared_connections_count,
         followersCount: peopleResult.followers_count,
+        connectionsCount: peopleResult.connections_count,
         keywordsMatch: peopleResult.keywords_match || '',
         
         // Naming aliases for DataTable compatibility

@@ -78,6 +78,20 @@ export function normalizePersonForPythonOrgChartBuild(
   };
 
   const extras: Record<string, unknown> = {};
+  const unipileExtraKeys = new Set([
+    'network_distance',
+    'networkDistance',
+    'shared_connections_count',
+    'sharedConnectionsCount',
+    'premium',
+    'verified',
+    'open_profile',
+    'openProfile',
+    'followers_count',
+    'followersCount',
+    'connections_count',
+    'connectionsCount',
+  ]);
   for (const key of Object.keys(partial)) {
     if (
       key.startsWith('org_') ||
@@ -85,7 +99,8 @@ export function normalizePersonForPythonOrgChartBuild(
       key === 'category' ||
       key === 'section' ||
       key === 'report_count' ||
-      key === 'profile_url'
+      key === 'profile_url' ||
+      unipileExtraKeys.has(key)
     ) {
       extras[key] = partial[key];
     }

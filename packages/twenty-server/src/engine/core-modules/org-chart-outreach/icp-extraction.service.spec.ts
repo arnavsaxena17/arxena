@@ -5,6 +5,7 @@ import { LinkedinUnipileEstimateAccountService } from 'src/engine/core-modules/a
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { ApolloIoRestService } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
+import { ResumeReadParseUploadService } from 'src/engine/core-modules/candidate-sourcing/services/resume-read-parse-upload.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { LLMChatModelService } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.service';
 
@@ -76,6 +77,55 @@ const VALID_EXTRACTION_LLM_JSON = JSON.stringify({
   chart_function: 'Engineering/Platform',
 });
 
+const VALID_MOM_TEST_LLM_JSON = JSON.stringify({
+  persona_read:
+    'Founder / Co-founder, early-stage — Sherlocks.ai, ex-CTO Doubtnut, SF location',
+  core_questions: [
+    {
+      question:
+        'Walk me through the last time you picked which account to go after at Sherlocks — how did you decide where to start?',
+      tag: 'T',
+      listen_for:
+        'Confirms if they use gut/title guesses vs structured account selection; kills if they already have a rigorous targeting process',
+    },
+    {
+      question:
+        'Tell me about the most recent deal where a new stakeholder showed up late — what happened?',
+      tag: 'M',
+      listen_for:
+        'Confirms multi-threading blindness; kills if they systematically map buying committees early',
+    },
+    {
+      question:
+        'What did your last outbound week look like day-to-day — which tools and lists did you actually use?',
+      tag: 'T',
+      listen_for:
+        'Confirms ZoomInfo/list-building pain anchors; kills if targeting is already solved',
+    },
+    {
+      question:
+        'Walk me through how you last reviewed whether your pipeline accounts were the right ones.',
+      tag: 'V',
+      listen_for:
+        'Confirms no coverage/accuracy instrument; kills if they already measure targeting quality',
+    },
+  ],
+  money_probes: [
+    {
+      question:
+        'Roughly how much did the last tool you begged for (or bought) for prospecting cost, and whose budget was it?',
+      tag: 'T',
+    },
+    {
+      question:
+        'Think of the last deal that slipped or died after a late stakeholder — roughly what size was it?',
+      tag: 'M',
+    },
+  ],
+  trap_check:
+    'Founder pitching his own product may steer answers toward AI/SRE narratives — keep questions on past sales process, not product opinions.',
+});
+
 const VALID_RANKING_LLM_JSON = JSON.stringify({
   proceed: true,
   ranked_candidates: [
@@ -88,6 +138,16 @@ const VALID_RANKING_LLM_JSON = JSON.stringify({
   ],
 });
 
+/** ICP extract + Mom Test run in parallel; route by invoke input shape. */
+const mockIcpAndMomTestInvokes = (invokeFn: jest.Mock) => {
+  invokeFn.mockImplementation(async (input: unknown) => {
+    if (Array.isArray(input)) {
+      return { content: VALID_MOM_TEST_LLM_JSON };
+    }
+    return { content: VALID_EXTRACTION_LLM_JSON };
+  });
+};
+
 describe('IcpExtractionService', () => {
   let service: IcpExtractionService;
   const invoke = jest.fn();
@@ -96,6 +156,8 @@ describe('IcpExtractionService', () => {
   const getCompanyProfile = jest.fn();
   const organizationsSearch = jest.fn();
   const searchCompaniesSalesNavigator = jest.fn();
+  const parseResumeText = jest.fn();
+  const readAndParseResumeFile = jest.fn();
   const withOutreachLinkedinSession = jest.fn(
     async (
       _apiToken: string,
@@ -133,6 +195,10 @@ describe('IcpExtractionService', () => {
         {
           provide: LinkedInSearchService,
           useValue: { searchCompaniesSalesNavigator },
+        },
+        {
+          provide: ResumeReadParseUploadService,
+          useValue: { parseResumeText, readAndParseResumeFile },
         },
       ],
     }).compile();
@@ -337,7 +403,7 @@ describe('IcpExtractionService', () => {
     });
 
     it('extracts ICP from provided profiles without touching Unipile', async () => {
-      invoke.mockResolvedValueOnce({ content: VALID_EXTRACTION_LLM_JSON });
+      mockIcpAndMomTestInvokes(invoke);
 
       const result = await service.extractIcp({
         personProfile: PERSON_PROFILE_FIXTURE,
@@ -349,23 +415,80 @@ describe('IcpExtractionService', () => {
       expect(result.relevant_recipient_for_target_account_lure).toBe(true);
       expect(result.chart_function).toBe('Engineering/Platform');
       expect(result.icp.buyer_titles).toContain('VP Engineering');
+      expect(result.momTestQuestions?.core_questions.length).toBeGreaterThanOrEqual(
+        4,
+      );
+      expect(result.momTestQuestions?.money_probes.length).toBeGreaterThanOrEqual(
+        2,
+      );
       expect(result.contextUsed).toEqual({
         personSource: 'provided',
         companySource: 'provided',
         postsCount: 0,
+        momTestQuestionsGenerated: true,
       });
       expect(withOutreachLinkedinSession).not.toHaveBeenCalled();
 
-      const prompt = invoke.mock.calls[0][0] as string;
+      const icpCall = invoke.mock.calls.find(
+        (call) => typeof call[0] === 'string',
+      );
+      const momTestCall = invoke.mock.calls.find((call) =>
+        Array.isArray(call[0]),
+      );
+      expect(icpCall).toBeDefined();
+      expect(momTestCall).toBeDefined();
+      const prompt = icpCall?.[0] as string;
       console.log('extractIcp prompt length:', prompt.length);
       expect(prompt).toContain('target-account org chart lure');
       expect(prompt).toContain('Sherlocks.ai');
     });
 
+    it('skips Mom Test generation when includeMomTestQuestions is false', async () => {
+      invoke.mockResolvedValueOnce({ content: VALID_EXTRACTION_LLM_JSON });
+
+      const result = await service.extractIcp({
+        personProfile: PERSON_PROFILE_FIXTURE,
+        companyProfile: COMPANY_PROFILE_FIXTURE,
+        includeMomTestQuestions: false,
+        ...baseAuth,
+      });
+      console.log('extractIcp skip-mom-test result:', result.contextUsed);
+
+      expect(result.momTestQuestions).toBeUndefined();
+      expect(result.contextUsed.momTestQuestionsGenerated).toBe(false);
+      expect(invoke).toHaveBeenCalledTimes(1);
+      expect(typeof invoke.mock.calls[0][0]).toBe('string');
+    });
+
+    it('passes interviewContext into the Mom Test user message', async () => {
+      mockIcpAndMomTestInvokes(invoke);
+
+      await service.extractIcp({
+        personProfile: PERSON_PROFILE_FIXTURE,
+        companyProfile: COMPANY_PROFILE_FIXTURE,
+        interviewContext:
+          'rejected candidate, interviewed 2 months ago, warm relationship',
+        ...baseAuth,
+      });
+
+      const momTestCall = invoke.mock.calls.find((call) =>
+        Array.isArray(call[0]),
+      );
+      expect(momTestCall).toBeDefined();
+      const messages = momTestCall?.[0] as Array<{ content: string }>;
+      const userContent = messages[1]?.content ?? '';
+      console.log('Mom Test user message snippet:', userContent.slice(0, 200));
+      expect(userContent).toContain('Optional context:');
+      expect(userContent).toContain('rejected candidate');
+      expect(userContent).toContain('Gaurav');
+      expect(messages[0]?.content).toContain('The Mom Test');
+      expect(messages[0]?.content).toContain('[T] Targeting');
+    });
+
     it('fetches person and company via Unipile when only identifiers are given', async () => {
       fetchLinkedinUserProfile.mockResolvedValueOnce(PERSON_PROFILE_FIXTURE);
       getCompanyProfile.mockResolvedValueOnce(COMPANY_PROFILE_FIXTURE);
-      invoke.mockResolvedValueOnce({ content: VALID_EXTRACTION_LLM_JSON });
+      mockIcpAndMomTestInvokes(invoke);
 
       const result = await service.extractIcp({
         personIdentifier: 'gaurav-sherlocks-ai',
@@ -386,12 +509,13 @@ describe('IcpExtractionService', () => {
       );
       expect(result.contextUsed.personSource).toBe('unipile');
       expect(result.contextUsed.companySource).toBe('unipile');
+      expect(result.contextUsed.momTestQuestionsGenerated).toBe(true);
     });
 
     it('derives the company from the person\'s current role when only personIdentifier is given', async () => {
       fetchLinkedinUserProfile.mockResolvedValueOnce(PERSON_PROFILE_FIXTURE);
       getCompanyProfile.mockResolvedValueOnce(COMPANY_PROFILE_FIXTURE);
-      invoke.mockResolvedValueOnce({ content: VALID_EXTRACTION_LLM_JSON });
+      mockIcpAndMomTestInvokes(invoke);
 
       const result = await service.extractIcp({
         personIdentifier: 'gaurav-sherlocks-ai',
@@ -415,7 +539,7 @@ describe('IcpExtractionService', () => {
         ...PERSON_PROFILE_FIXTURE,
         work_experience: [],
       });
-      invoke.mockResolvedValueOnce({ content: VALID_EXTRACTION_LLM_JSON });
+      mockIcpAndMomTestInvokes(invoke);
 
       const result = await service.extractIcp({
         personIdentifier: 'someone-without-experience',
@@ -427,7 +551,10 @@ describe('IcpExtractionService', () => {
       expect(result.contextUsed.companySource).toBe('person_only');
       expect(result.contextUsed.derivedCompanyIdentifier).toBeUndefined();
 
-      const prompt = invoke.mock.calls[0][0] as string;
+      const icpCall = invoke.mock.calls.find(
+        (call) => typeof call[0] === 'string',
+      );
+      const prompt = icpCall?.[0] as string;
       expect(prompt).toContain('Company profile: NOT AVAILABLE');
       expect(prompt).toContain('headline, summary');
     });
@@ -435,7 +562,7 @@ describe('IcpExtractionService', () => {
     it('falls back to person-only extraction when the derived company fetch fails', async () => {
       fetchLinkedinUserProfile.mockResolvedValueOnce(PERSON_PROFILE_FIXTURE);
       getCompanyProfile.mockResolvedValueOnce(null);
-      invoke.mockResolvedValueOnce({ content: VALID_EXTRACTION_LLM_JSON });
+      mockIcpAndMomTestInvokes(invoke);
 
       const result = await service.extractIcp({
         personIdentifier: 'gaurav-sherlocks-ai',
@@ -450,7 +577,10 @@ describe('IcpExtractionService', () => {
       expect(result.contextUsed.companySource).toBe('person_only');
       expect(result.contextUsed.derivedCompanyIdentifier).toBe('105905196');
 
-      const prompt = invoke.mock.calls[0][0] as string;
+      const icpCall = invoke.mock.calls.find(
+        (call) => typeof call[0] === 'string',
+      );
+      const prompt = icpCall?.[0] as string;
       expect(prompt).toContain('Company profile: NOT AVAILABLE');
     });
 
@@ -473,7 +603,7 @@ describe('IcpExtractionService', () => {
       fetchLinkedinUserPosts.mockResolvedValueOnce({
         items: [{ text: 'We just shipped agentic RCA for Kubernetes!' }],
       });
-      invoke.mockResolvedValueOnce({ content: VALID_EXTRACTION_LLM_JSON });
+      mockIcpAndMomTestInvokes(invoke);
 
       const result = await service.extractIcp({
         personIdentifier: 'gaurav-sherlocks-ai',
@@ -485,13 +615,19 @@ describe('IcpExtractionService', () => {
 
       expect(fetchLinkedinUserPosts).toHaveBeenCalled();
       expect(result.contextUsed.postsCount).toBe(1);
-      const prompt = invoke.mock.calls[0][0] as string;
+      const icpCall = invoke.mock.calls.find(
+        (call) => typeof call[0] === 'string',
+      );
+      const prompt = icpCall?.[0] as string;
       expect(prompt).toContain('agentic RCA for Kubernetes');
     });
 
     it('rejects malformed LLM output via zod', async () => {
-      invoke.mockResolvedValueOnce({
-        content: JSON.stringify({ sells: 'x' }),
+      invoke.mockImplementation(async (input: unknown) => {
+        if (Array.isArray(input)) {
+          return { content: VALID_MOM_TEST_LLM_JSON };
+        }
+        return { content: JSON.stringify({ sells: 'x' }) };
       });
       console.log('extractIcp malformed LLM output test');
       await expect(
@@ -625,6 +761,154 @@ describe('IcpExtractionService', () => {
           ...baseAuth,
         }),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('extractIcpFromResume', () => {
+    it('throws when neither resume file nor resumeText is provided', async () => {
+      console.log('extractIcpFromResume missing-input test');
+      await expect(
+        service.extractIcpFromResume({ ...baseAuth }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('delegates to LinkedIn extractIcp when resume contains a LinkedIn URL', async () => {
+      parseResumeText.mockResolvedValueOnce({
+        fullName: 'Prince Kumar',
+        email: 'prince@example.com',
+        linkedinUrl: 'https://www.linkedin.com/in/prince-kumar',
+        workExperience: [
+          { company: 'Acme Corp', jobTitle: 'Account Executive' },
+        ],
+      });
+      fetchLinkedinUserProfile.mockResolvedValueOnce(PERSON_PROFILE_FIXTURE);
+      getCompanyProfile.mockResolvedValueOnce(COMPANY_PROFILE_FIXTURE);
+      mockIcpAndMomTestInvokes(invoke);
+
+      const result = await service.extractIcpFromResume({
+        resumeText:
+          'Prince Kumar\nhttps://www.linkedin.com/in/prince-kumar\nAE at Acme',
+        ...baseAuth,
+      });
+      console.log(
+        'extractIcpFromResume linkedin path contextUsed:',
+        result.contextUsed,
+      );
+
+      expect(parseResumeText).toHaveBeenCalled();
+      expect(withOutreachLinkedinSession).toHaveBeenCalled();
+      expect(result.parsedResume).toEqual({
+        name: 'Prince Kumar',
+        email: 'prince@example.com',
+        linkedinUrl: 'https://www.linkedin.com/in/prince-kumar',
+        currentCompany: 'Acme Corp',
+        currentRole: 'Account Executive',
+      });
+      expect(result.contextUsed.linkedinUrlFromResume).toBe(
+        'https://www.linkedin.com/in/prince-kumar',
+      );
+      expect(result.contextUsed.resumeFileName).toBe('resume.txt');
+      expect(result.relevant_recipient_for_target_account_lure).toBe(true);
+    });
+
+    it('uses parsed resume + company websearch when no LinkedIn URL is present', async () => {
+      parseResumeText.mockResolvedValueOnce({
+        fullName: 'Prince Kumar',
+        location: 'Bangalore',
+        workExperience: [
+          {
+            company: 'Acme Corp',
+            jobTitle: 'Account Executive',
+            jobSummary: 'Sells CRM to mid-market',
+          },
+        ],
+        skills: 'Salesforce, HubSpot',
+      });
+      jest
+        .spyOn(service as never, 'fetchCompanyProfileViaWebSearch' as never)
+        .mockResolvedValue({
+          name: 'Acme Corp',
+          description: 'B2B CRM platform for mid-market sales teams',
+          industry: 'SaaS',
+          employee_count: 120,
+          website: 'https://acme.example',
+          headquarters: 'Bangalore',
+          products_services: 'CRM',
+          linkedin_url: null,
+          notes: 'Matched via web search',
+        } as never);
+      mockIcpAndMomTestInvokes(invoke);
+
+      const result = await service.extractIcpFromResume({
+        resumeText:
+          'Prince Kumar\nAccount Executive at Acme Corp\nBangalore\nNo LinkedIn listed',
+        includeMomTestQuestions: true,
+        ...baseAuth,
+      });
+      console.log(
+        'extractIcpFromResume websearch path contextUsed:',
+        result.contextUsed,
+      );
+
+      expect(result.contextUsed.personSource).toBe('resume');
+      expect(result.contextUsed.companySource).toBe('web_search');
+      expect(result.contextUsed.linkedinUrlFromResume).toBeUndefined();
+      expect(result.parsedResume.linkedinUrl).toBeNull();
+      expect(result.parsedResume.currentCompany).toBe('Acme Corp');
+      expect(result.momTestQuestions?.core_questions.length).toBeGreaterThanOrEqual(
+        4,
+      );
+
+      const icpCall = invoke.mock.calls.find(
+        (call) => typeof call[0] === 'string',
+      );
+      const prompt = icpCall?.[0] as string;
+      expect(prompt).toContain('Acme Corp');
+      expect(prompt).toContain('B2B CRM platform');
+    });
+    it('reads and parses a resume from a local file path', async () => {
+      readAndParseResumeFile.mockResolvedValueOnce({
+        content: {
+          text: 'Prince Kumar\nAccount Executive at Acme Corp\nBangalore',
+          fileName: 'Prince cv 26.pdf',
+        },
+        parsed: {
+          fullName: 'Prince Kumar',
+          workExperience: [
+            { company: 'Acme Corp', jobTitle: 'Account Executive' },
+          ],
+        },
+      });
+      jest
+        .spyOn(service as never, 'fetchCompanyProfileViaWebSearch' as never)
+        .mockResolvedValue({
+          name: 'Acme Corp',
+          description: 'B2B CRM',
+          industry: 'SaaS',
+          employee_count: 120,
+          website: 'https://acme.example',
+          headquarters: 'Bangalore',
+          products_services: 'CRM',
+          linkedin_url: null,
+          notes: 'Matched via web search',
+        } as never);
+      mockIcpAndMomTestInvokes(invoke);
+
+      const result = await service.extractIcpFromResume({
+        resumeFilePath: '/Users/arnavsaxena/Downloads/Prince cv 26.pdf',
+        ...baseAuth,
+      });
+      console.log(
+        'extractIcpFromResume file path contextUsed:',
+        result.contextUsed,
+      );
+
+      expect(readAndParseResumeFile).toHaveBeenCalledWith(
+        '/Users/arnavsaxena/Downloads/Prince cv 26.pdf',
+      );
+      expect(parseResumeText).not.toHaveBeenCalled();
+      expect(result.contextUsed.resumeFileName).toBe('Prince cv 26.pdf');
+      expect(result.parsedResume.currentCompany).toBe('Acme Corp');
     });
   });
 });

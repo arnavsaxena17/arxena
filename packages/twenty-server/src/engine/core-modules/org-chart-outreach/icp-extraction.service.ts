@@ -1,9 +1,14 @@
+import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import OpenAI from 'openai';
+import { zodTextFormat } from 'openai/helpers/zod';
 
 import { LinkedinUnipileEstimateAccountService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-estimate-account.service';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { ApolloIoRestService } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
+import type { ParsedCVData } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/parsed-cv-transformer.service';
+import { ResumeReadParseUploadService } from 'src/engine/core-modules/candidate-sourcing/services/resume-read-parse-upload.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import type {
   LinkedInCompanySearchResult,
@@ -11,22 +16,46 @@ import type {
 } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { LLMChatModelService } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.service';
 import type {
+  ExtractIcpFromResumeParams,
+  ExtractIcpFromResumeResponse,
   ExtractIcpParams,
   ExtractIcpResponse,
   FetchIcpCandidatesParams,
   FetchIcpCandidatesResponse,
   IcpCandidateCompany,
+  MomTestQuestions,
 } from 'src/engine/core-modules/org-chart-outreach/org-chart-outreach.types';
 import { buildIcpCandidateRankingPrompt } from 'src/engine/core-modules/org-chart-outreach/prompts/icp-candidate-ranking.prompt';
 import { buildIcpExtractionPrompt } from 'src/engine/core-modules/org-chart-outreach/prompts/icp-extraction.prompt';
+import {
+  buildCompanyWebsearchUserPrompt,
+  COMPANY_WEBSEARCH_DEVELOPER_PROMPT,
+} from 'src/engine/core-modules/org-chart-outreach/prompts/company-websearch.prompt';
+import {
+  buildMomTestSystemPrompt,
+  buildMomTestUserMessage,
+  formatLinkedinProfileAsResumeText,
+} from 'src/engine/core-modules/org-chart-outreach/prompts/mom-test-question-generator.prompt';
+import {
+  companyWebsearchLlmResultSchema,
+  type CompanyWebsearchLlmResult,
+} from 'src/engine/core-modules/org-chart-outreach/schemas/company-websearch.schema';
 import {
   icpCandidateRankingLlmResultSchema,
   icpExtractionLlmResultSchema,
   icpProfileSchema,
   type IcpProfile,
 } from 'src/engine/core-modules/org-chart-outreach/schemas/icp-extraction.schema';
+import { momTestQuestionsLlmResultSchema } from 'src/engine/core-modules/org-chart-outreach/schemas/mom-test-questions.schema';
 import { normalizeLinkedinIdentifier } from 'src/engine/core-modules/org-chart-outreach/utils/linkedin-identifier.util';
 import { normalizeLlmJsonContent } from 'src/engine/core-modules/org-chart-outreach/utils/outreach-company-resolver.util';
+import {
+  buildPersonProfileFromParsedCv,
+  resolveCurrentCompanyFromParsedCv,
+  resolveLinkedinUrlFromResume,
+} from 'src/engine/core-modules/org-chart-outreach/utils/resume-linkedin.util';
+
+const COMPANY_WEBSEARCH_MODEL = 'gpt-5.4-nano';
 
 /** Sales Navigator company-headcount facet buckets (min/max pairs accepted by Unipile). */
 const SALES_NAVIGATOR_HEADCOUNT_BUCKETS: Array<{ min: number; max: number }> = [
@@ -189,6 +218,7 @@ export class IcpExtractionService {
     private readonly unipileCompanyService: UnipileCompanyService,
     private readonly apolloIoRestService: ApolloIoRestService,
     private readonly linkedInSearchService: LinkedInSearchService,
+    private readonly resumeReadParseUploadService: ResumeReadParseUploadService,
   ) {}
 
   async extractIcp(params: ExtractIcpParams): Promise<ExtractIcpResponse> {
@@ -330,28 +360,44 @@ export class IcpExtractionService {
       postsCount = posts.count;
     }
 
-    const prompt = buildIcpExtractionPrompt({
-      personProfile: personProfile as Record<string, unknown>,
+    const personProfileRecord = personProfile as Record<string, unknown>;
+    const includeMomTestQuestions = params.includeMomTestQuestions ?? true;
+
+    const icpPrompt = buildIcpExtractionPrompt({
+      personProfile: personProfileRecord,
       companyProfile,
       postsSummary,
     });
 
     const model = this.llmChatModelService.getJSONChatModel();
-    const response = await model.invoke(prompt);
-    const rawContent = normalizeLlmJsonContent(response);
 
-    if (!rawContent) {
-      throw new BadRequestException('LLM returned empty ICP extraction');
-    }
+    const icpPromise = model.invoke(icpPrompt).then((response) => {
+      const rawContent = normalizeLlmJsonContent(response);
+      if (!rawContent) {
+        throw new BadRequestException('LLM returned empty ICP extraction');
+      }
+      return icpExtractionLlmResultSchema.parse(JSON.parse(rawContent));
+    });
 
-    const parsed = icpExtractionLlmResultSchema.parse(JSON.parse(rawContent));
+    const momTestPromise = includeMomTestQuestions
+      ? this.generateMomTestQuestions({
+          personProfile: personProfileRecord,
+          interviewContext: params.interviewContext,
+        })
+      : Promise.resolve(undefined);
+
+    const [parsed, momTestQuestions] = await Promise.all([
+      icpPromise,
+      momTestPromise,
+    ]);
 
     this.logger.log(
-      `ICP extraction: sells="${parsed.sells.slice(0, 120)}" relevant=${parsed.relevant_recipient_for_target_account_lure} chart_function=${parsed.chart_function ?? 'null'}`,
+      `ICP extraction: sells="${parsed.sells.slice(0, 120)}" relevant=${parsed.relevant_recipient_for_target_account_lure} chart_function=${parsed.chart_function ?? 'null'} momTest=${Boolean(momTestQuestions)}`,
     );
 
     return {
       ...parsed,
+      ...(momTestQuestions ? { momTestQuestions } : {}),
       contextUsed: {
         personSource: params.personProfile ? 'provided' : 'unipile',
         companySource: params.companyProfile
@@ -363,8 +409,324 @@ export class IcpExtractionService {
               : 'unipile',
         derivedCompanyIdentifier,
         postsCount,
+        momTestQuestionsGenerated: Boolean(momTestQuestions),
       },
     };
+  }
+
+  /**
+   * ICP extract from a raw resume (PDF/DOCX/DOC or pasted text).
+   * If a LinkedIn /in/ URL is present, delegates to the LinkedIn Unipile path.
+   * Otherwise parses the CV, web-searches the current company, and runs ICP + Mom Test.
+   */
+  async extractIcpFromResume(
+    params: ExtractIcpFromResumeParams,
+  ): Promise<ExtractIcpFromResumeResponse> {
+    const { resumeText, resumeFileName, parsed } =
+      await this.loadAndParseResume(params);
+
+    const linkedinUrl = resolveLinkedinUrlFromResume({
+      parsed,
+      resumeText,
+    });
+    const currentCompany = resolveCurrentCompanyFromParsedCv(parsed);
+    const parsedResumeSummary = this.buildParsedResumeSummary(
+      parsed,
+      linkedinUrl,
+      currentCompany,
+    );
+
+    this.logger.log(
+      `ICP from resume file="${resumeFileName}" linkedin=${linkedinUrl ?? 'none'} company="${currentCompany.companyName ?? 'none'}"`,
+    );
+
+    if (linkedinUrl) {
+      const extraction = await this.extractIcp({
+        personIdentifier: linkedinUrl,
+        includePosts: params.includePosts,
+        postsLimit: params.postsLimit,
+        includeMomTestQuestions: params.includeMomTestQuestions,
+        interviewContext: params.interviewContext,
+        accountId: params.accountId,
+        apiToken: params.apiToken,
+        workspaceMemberId: params.workspaceMemberId,
+        workspaceId: params.workspaceId,
+      });
+
+      return {
+        ...extraction,
+        parsedResume: parsedResumeSummary,
+        contextUsed: {
+          ...extraction.contextUsed,
+          resumeFileName,
+          linkedinUrlFromResume: linkedinUrl,
+        },
+      };
+    }
+
+    const personProfile = buildPersonProfileFromParsedCv(parsed, resumeText);
+    let companyProfile: Record<string, unknown> | null = null;
+    let companySource: ExtractIcpResponse['contextUsed']['companySource'] =
+      'person_only';
+
+    if (currentCompany.companyName) {
+      try {
+        const webCompany = await this.fetchCompanyProfileViaWebSearch({
+          companyName: currentCompany.companyName,
+          personName: parsedResumeSummary.name,
+          personRole: currentCompany.role,
+          location: currentCompany.location ?? parsed.location,
+        });
+        companyProfile = webCompany as unknown as Record<string, unknown>;
+        companySource = 'web_search';
+      } catch (error) {
+        this.logger.warn(
+          `ICP from resume: company websearch failed for "${currentCompany.companyName}": ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
+
+    const includeMomTestQuestions = params.includeMomTestQuestions ?? true;
+    const icpPrompt = buildIcpExtractionPrompt({
+      personProfile,
+      companyProfile,
+    });
+    const model = this.llmChatModelService.getJSONChatModel();
+
+    const icpPromise = model.invoke(icpPrompt).then((response) => {
+      const rawContent = normalizeLlmJsonContent(response);
+      if (!rawContent) {
+        throw new BadRequestException('LLM returned empty ICP extraction');
+      }
+      return icpExtractionLlmResultSchema.parse(JSON.parse(rawContent));
+    });
+
+    const momTestPromise = includeMomTestQuestions
+      ? this.generateMomTestQuestions({
+          resumeText,
+          interviewContext: params.interviewContext,
+        })
+      : Promise.resolve(undefined);
+
+    const [parsedIcp, momTestQuestions] = await Promise.all([
+      icpPromise,
+      momTestPromise,
+    ]);
+
+    this.logger.log(
+      `ICP from resume (no LinkedIn): sells="${parsedIcp.sells.slice(0, 120)}" relevant=${parsedIcp.relevant_recipient_for_target_account_lure} companySource=${companySource} momTest=${Boolean(momTestQuestions)}`,
+    );
+
+    return {
+      ...parsedIcp,
+      ...(momTestQuestions ? { momTestQuestions } : {}),
+      parsedResume: parsedResumeSummary,
+      contextUsed: {
+        personSource: 'resume',
+        companySource,
+        postsCount: 0,
+        momTestQuestionsGenerated: Boolean(momTestQuestions),
+        resumeFileName,
+      },
+    };
+  }
+
+  private async loadAndParseResume(params: ExtractIcpFromResumeParams): Promise<{
+    resumeText: string;
+    resumeFileName: string;
+    parsed: ParsedCVData;
+  }> {
+    const providedText = params.resumeText?.trim();
+    if (providedText) {
+      const parsed =
+        await this.resumeReadParseUploadService.parseResumeText(providedText);
+      return {
+        resumeText: providedText,
+        resumeFileName: 'resume.txt',
+        parsed,
+      };
+    }
+
+    const filePath = params.resumeFilePath?.trim();
+    if (!filePath) {
+      throw new BadRequestException(
+        'Provide resumePath (local PDF/DOCX/DOC file) or resumeText',
+      );
+    }
+
+    const { content, parsed } =
+      await this.resumeReadParseUploadService.readAndParseResumeFile(filePath);
+    return {
+      resumeText: content.text,
+      resumeFileName: content.fileName,
+      parsed,
+    };
+  }
+
+  private buildParsedResumeSummary(
+    parsed: ParsedCVData,
+    linkedinUrl: string | undefined,
+    currentCompany: { companyName?: string; role?: string },
+  ): ExtractIcpFromResumeResponse['parsedResume'] {
+    const name =
+      parsed.fullName?.trim() ||
+      parsed.name?.trim() ||
+      [parsed.firstName, parsed.lastName].filter(Boolean).join(' ').trim() ||
+      undefined;
+
+    return {
+      name,
+      email: parsed.email?.trim() || undefined,
+      linkedinUrl: linkedinUrl ?? null,
+      currentCompany: currentCompany.companyName ?? null,
+      currentRole: currentCompany.role ?? null,
+    };
+  }
+
+  private createOpenAiClient(): OpenAI {
+    const apiKey = process.env.OPENAI_API_KEY ?? process.env.OPENAI_KEY;
+    if (!apiKey?.trim()) {
+      throw new BadRequestException('OpenAI API key is not configured');
+    }
+    return new OpenAI({ apiKey });
+  }
+
+  /**
+   * LLM web_search fallback for company details when the resume has no LinkedIn URL.
+   */
+  private async fetchCompanyProfileViaWebSearch(input: {
+    companyName: string;
+    personName?: string;
+    personRole?: string;
+    location?: string;
+  }): Promise<CompanyWebsearchLlmResult> {
+    const openai = this.createOpenAiClient();
+    const userPrompt = buildCompanyWebsearchUserPrompt(input);
+
+    this.logger.log(
+      `Company websearch for "${input.companyName}" person="${input.personName ?? ''}"`,
+    );
+
+    const response = await openai.responses.create({
+      model: COMPANY_WEBSEARCH_MODEL,
+      reasoning: { effort: 'medium' },
+      tools: [{ type: 'web_search' }],
+      tool_choice: 'required',
+      input: [
+        {
+          role: 'developer',
+          content: COMPANY_WEBSEARCH_DEVELOPER_PROMPT,
+        },
+        {
+          role: 'user',
+          content: userPrompt,
+        },
+      ],
+      text: {
+        format: zodTextFormat(
+          companyWebsearchLlmResultSchema,
+          'company_websearch',
+        ),
+      },
+      store: true,
+    });
+
+    const outputText = this.extractOpenAiResponseOutputText(response);
+    if (!outputText?.trim()) {
+      throw new BadRequestException(
+        `Empty company websearch response for "${input.companyName}"`,
+      );
+    }
+
+    const parsed = companyWebsearchLlmResultSchema.parse(
+      this.parseJsonLoose(outputText),
+    );
+
+    this.logger.log(
+      `Company websearch returned name="${parsed.name}" industry="${parsed.industry}"`,
+    );
+
+    return parsed;
+  }
+
+  private extractOpenAiResponseOutputText(response: {
+    output_text?: string | null;
+    output?: Array<{
+      type?: string;
+      content?: Array<{ type?: string; text?: string }>;
+    }>;
+  }): string | null {
+    if (typeof response.output_text === 'string' && response.output_text.trim()) {
+      return response.output_text.trim();
+    }
+
+    const message = response.output?.find((item) => item.type === 'message');
+    const textPart = message?.content?.find(
+      (part) => part.type === 'output_text',
+    );
+    return typeof textPart?.text === 'string' ? textPart.text.trim() : null;
+  }
+
+  private parseJsonLoose(content: string): unknown {
+    const cleaned = content
+      .trim()
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/\s*```$/i, '')
+      .trim();
+    return JSON.parse(cleaned) as unknown;
+  }
+
+  /**
+   * Mom Test discovery questions: system prompt = fixed strategy (product,
+   * hypotheses, persona map, rules); user message = resume + optional context.
+   */
+  private async generateMomTestQuestions(input: {
+    personProfile?: Record<string, unknown>;
+    resumeText?: string;
+    interviewContext?: string;
+  }): Promise<MomTestQuestions> {
+    const resumeText =
+      input.resumeText?.trim() ||
+      (input.personProfile
+        ? formatLinkedinProfileAsResumeText(input.personProfile)
+        : '');
+
+    if (!resumeText) {
+      throw new BadRequestException(
+        'Mom Test questions require a person profile or resume text',
+      );
+    }
+
+    const messages = [
+      new SystemMessage(buildMomTestSystemPrompt()),
+      new HumanMessage(
+        buildMomTestUserMessage({
+          resumeText,
+          interviewContext: input.interviewContext,
+        }),
+      ),
+    ];
+
+    const model = this.llmChatModelService.getJSONChatModel();
+    const response = await model.invoke(messages);
+    const rawContent = normalizeLlmJsonContent(response);
+
+    if (!rawContent) {
+      throw new BadRequestException('LLM returned empty Mom Test questions');
+    }
+
+    const parsed = momTestQuestionsLlmResultSchema.parse(
+      JSON.parse(rawContent),
+    );
+
+    this.logger.log(
+      `Mom Test questions: persona="${parsed.persona_read.slice(0, 80)}" core=${parsed.core_questions.length} money=${parsed.money_probes.length}`,
+    );
+
+    return parsed;
   }
 
   async fetchIcpCandidates(

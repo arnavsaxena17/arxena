@@ -17,6 +17,11 @@ import type { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/or
 import { applyOrgChartCompanyMetadata } from 'src/engine/core-modules/org-chart/utils/apply-org-chart-company-metadata.util';
 import { mergeOrgChartCompanyTenureOntoOrgChartData } from 'src/engine/core-modules/org-chart/utils/merge-orgchart-company-tenure.util';
 import {
+  extractUnipileProfileFieldsFromSearchRow,
+  mergeOrgChartUnipileProfileFieldsOntoOrgChartData,
+  type OrgChartUnipileProfileFields,
+} from 'src/engine/core-modules/org-chart/utils/merge-orgchart-unipile-profile-fields.util';
+import {
   applyApolloOnlyNodeLockState,
   assignApolloPublicSlugToAllPersonSlots,
   backfillUnmappedLinkedInSlotsWithApolloSlug,
@@ -89,6 +94,13 @@ type StandardizedOrgChartPerson = {
   phone_numbers: string;
   profile_picture_url: string;
   id: string;
+  network_distance?: string;
+  shared_connections_count?: number;
+  premium?: boolean;
+  verified?: boolean;
+  open_profile?: boolean;
+  followers_count?: number;
+  connections_count?: number;
 };
 
 type SearchExecutionResult = {
@@ -1039,6 +1051,8 @@ export class OrgChartSearchService {
 
     const tenureByUrl = new Map<string, 'current' | 'past'>();
     const tenureById = new Map<string, 'current' | 'past'>();
+    const unipileByUrl = new Map<string, OrgChartUnipileProfileFields>();
+    const unipileById = new Map<string, OrgChartUnipileProfileFields>();
     for (const candidate of candidatesForSnapshot) {
       const raw = candidate as Record<string, unknown>;
       const tenure = companyTenureFromDerivedExperience({
@@ -1046,19 +1060,13 @@ export class OrgChartSearchService {
         companyName: normalizedCompanyName,
         companyLinkedinUrl: companyLinkedinUrl || undefined,
       });
-      if (tenure === 'unknown') {
-        continue;
-      }
       const li = extractLinkedinProfileUrlFromOrgChartCandidateRow(raw).trim();
-      if (li.length > 0) {
-        tenureByUrl.set(normalizeOrgChartLinkedinUrlKey(li), tenure);
-      }
       const rawPeopleId =
         typeof raw.peopleId === 'string' ? raw.peopleId.trim() : '';
       const rawTempId =
         typeof raw.tempId === 'string' ? raw.tempId.trim() : '';
       const rawRowId = typeof raw.id === 'string' ? raw.id.trim() : '';
-      const idForTenure =
+      const idForLookup =
         rawPeopleId.length > 0
           ? rawPeopleId
           : rawTempId.length > 0
@@ -1066,8 +1074,24 @@ export class OrgChartSearchService {
             : rawRowId.length > 0
               ? rawRowId
               : '';
-      if (idForTenure.length > 0) {
-        tenureById.set(idForTenure, tenure);
+
+      if (tenure !== 'unknown') {
+        if (li.length > 0) {
+          tenureByUrl.set(normalizeOrgChartLinkedinUrlKey(li), tenure);
+        }
+        if (idForLookup.length > 0) {
+          tenureById.set(idForLookup, tenure);
+        }
+      }
+
+      const unipileFields = extractUnipileProfileFieldsFromSearchRow(raw);
+      if (Object.keys(unipileFields).length > 0) {
+        if (li.length > 0) {
+          unipileByUrl.set(normalizeOrgChartLinkedinUrlKey(li), unipileFields);
+        }
+        if (idForLookup.length > 0) {
+          unipileById.set(idForLookup, unipileFields);
+        }
       }
     }
 
@@ -1242,6 +1266,7 @@ export class OrgChartSearchService {
           phone_numbers: '',
           profile_picture_url: profilePictureUrl,
           id: idValue,
+          ...extractUnipileProfileFieldsFromSearchRow(raw),
         };
       },
     );
@@ -1308,10 +1333,15 @@ export class OrgChartSearchService {
         tenureByUrl,
         tenureById,
       );
+      const withUnipile = mergeOrgChartUnipileProfileFieldsOntoOrgChartData(
+        withTenure,
+        unipileByUrl,
+        unipileById,
+      );
       const withMetadata = applyBuildRequestCompanyMetadata(
         apolloPublicSlug
-          ? applyApolloOnlyNodeLockState(withTenure, apolloPublicSlug)
-          : withTenure,
+          ? applyApolloOnlyNodeLockState(withUnipile, apolloPublicSlug)
+          : withUnipile,
       );
 
       return withMetadata;
@@ -1359,10 +1389,15 @@ export class OrgChartSearchService {
         tenureByUrl,
         tenureById,
       );
+      const withUnipile = mergeOrgChartUnipileProfileFieldsOntoOrgChartData(
+        withTenure,
+        unipileByUrl,
+        unipileById,
+      );
       return applyBuildRequestCompanyMetadata(
         apolloPublicSlug
-          ? applyApolloOnlyNodeLockState(withTenure, apolloPublicSlug)
-          : withTenure,
+          ? applyApolloOnlyNodeLockState(withUnipile, apolloPublicSlug)
+          : withUnipile,
       );
     }
   }

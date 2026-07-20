@@ -6,6 +6,120 @@ import {
 
 import type { ContextResultItem } from '../types';
 
+const readOptionalString = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
+
+const readOptionalNumber = (value: unknown): number | undefined => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string' && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+  return undefined;
+};
+
+const readOptionalBoolean = (value: unknown): boolean | undefined => {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  return undefined;
+};
+
+/** Compact degree label for UI (e.g. DISTANCE_2 → "2°"). */
+export const formatNetworkDistanceDegree = (
+  raw: string | null | undefined,
+): string | null => {
+  if (!raw) {
+    return null;
+  }
+  const upper = raw.toUpperCase();
+  if (upper === 'SELF' || upper.includes('1') || upper === 'FIRST_DEGREE') {
+    return '1°';
+  }
+  if (upper.includes('2') || upper === 'SECOND_DEGREE') {
+    return '2°';
+  }
+  if (upper.includes('3') || upper === 'THIRD_DEGREE') {
+    return '3°';
+  }
+  if (upper.includes('OUT')) {
+    return 'Out of network';
+  }
+  if (upper === 'UNKNOWN') {
+    return null;
+  }
+  return raw.replace(/^DISTANCE_/i, '') + (raw.includes('DISTANCE_') ? '°' : '');
+};
+
+const extractPromotedProfileFields = (
+  raw: Record<string, unknown>,
+): Pick<
+  ContextResultItem,
+  | 'networkDistance'
+  | 'sharedConnectionsCount'
+  | 'premium'
+  | 'verified'
+  | 'openProfile'
+  | 'followersCount'
+  | 'connectionsCount'
+  | 'locationName'
+  | 'locationCountry'
+  | 'locationRegion'
+> => {
+  const linkedinSpecific =
+    raw.linkedinSpecificData && typeof raw.linkedinSpecificData === 'object'
+      ? (raw.linkedinSpecificData as Record<string, unknown>)
+      : undefined;
+
+  const networkDistance =
+    readOptionalString(raw.networkDistance) ??
+    readOptionalString(raw.network_distance) ??
+    readOptionalString(linkedinSpecific?.networkDistance);
+
+  const locationName =
+    readOptionalString(raw.location_name) ??
+    readOptionalString(raw.locationName) ??
+    (typeof raw.location === 'string'
+      ? readOptionalString(raw.location)
+      : undefined);
+
+  return {
+    networkDistance:
+      networkDistance && networkDistance !== 'UNKNOWN'
+        ? networkDistance
+        : undefined,
+    sharedConnectionsCount: readOptionalNumber(
+      raw.sharedConnectionsCount ?? raw.shared_connections_count,
+    ),
+    premium: readOptionalBoolean(raw.premium),
+    verified: readOptionalBoolean(raw.verified),
+    openProfile: readOptionalBoolean(
+      raw.openProfile ?? raw.open_profile ?? linkedinSpecific?.isOpenProfile,
+    ),
+    followersCount: readOptionalNumber(
+      raw.followersCount ?? raw.followers_count,
+    ),
+    connectionsCount: readOptionalNumber(
+      raw.connectionsCount ?? raw.connections_count,
+    ),
+    locationName,
+    locationCountry:
+      readOptionalString(raw.location_country) ??
+      readOptionalString(raw.locationCountry) ??
+      readOptionalString(raw.country),
+    locationRegion:
+      readOptionalString(raw.location_region) ??
+      readOptionalString(raw.locationRegion),
+  };
+};
+
 /**
  * Extract a bare domain (e.g. "litify.com") from a website URL/string.
  *
@@ -171,6 +285,7 @@ export const normalizeCandidateItem = (
     linkedinUrl,
     email: email && typeof email === 'string' ? email : undefined,
     phone: phone && typeof phone === 'string' ? phone : undefined,
+    ...extractPromotedProfileFields(raw),
     raw,
   };
 };
@@ -376,6 +491,16 @@ export const contextResultItemFromNodePersonSlot = (
   const tenureRaw = node[tenureKey];
   const tenureAtCompany =
     tenureRaw === 'current' || tenureRaw === 'past' ? tenureRaw : undefined;
+
+  const allCandidates = (node as Record<string, unknown>).allCandidates;
+  const slotCandidate =
+    Array.isArray(allCandidates) &&
+    allCandidates[i] &&
+    typeof allCandidates[i] === 'object'
+      ? (allCandidates[i] as Record<string, unknown>)
+      : undefined;
+  const profileFields = extractPromotedProfileFields(slotCandidate ?? {});
+
   return {
     id: `${node.key}-${i}`,
     fullName: name.trim(),
@@ -390,7 +515,9 @@ export const contextResultItemFromNodePersonSlot = (
       typeof phoneRaw === 'string' && phoneRaw.trim()
         ? phoneRaw.trim()
         : undefined,
+    ...profileFields,
     raw: {
+      ...(slotCandidate ?? {}),
       ...(typeof image === 'string'
         ? { image, profile_picture_url: image }
         : {}),

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Post,
@@ -18,6 +19,8 @@ import {
   Max,
   Min,
 } from 'class-validator';
+import * as fs from 'fs';
+import * as path from 'path';
 
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
@@ -28,6 +31,7 @@ import { IcpOutreachMessageService } from './icp-outreach-message.service';
 import { LinkedinOutreachOpenerService } from './linkedin-outreach-opener.service';
 import { OrgChartOutreachService } from './org-chart-outreach.service';
 import type {
+  ExtractIcpFromResumeResponse,
   ExtractIcpResponse,
   FetchIcpCandidatesResponse,
   GenerateIcpCommentResponse,
@@ -42,8 +46,9 @@ class OrgChartOutreachBodyDto {
   @IsIn(['linkedin_invite', 'whatsapp', 'google_contact', 'email'])
   channel: 'linkedin_invite' | 'whatsapp' | 'google_contact' | 'email';
 
+  @IsOptional()
   @IsString()
-  jobId: string;
+  jobId?: string;
 
   @IsString()
   message: string;
@@ -155,6 +160,49 @@ class ExtractIcpBodyDto {
   @Min(1)
   @Max(50)
   postsLimit?: number;
+
+  /** Generate Mom Test discovery questions (default true). */
+  @IsOptional()
+  @IsBoolean()
+  includeMomTestQuestions?: boolean;
+
+  /**
+   * Per-person Mom Test context (user message only).
+   * E.g. "rejected candidate, interviewed 2 months ago, warm relationship".
+   */
+  @IsOptional()
+  @IsString()
+  interviewContext?: string;
+
+  @IsOptional()
+  @IsString()
+  accountId?: string;
+}
+
+class ExtractIcpFromResumeBodyDto {
+  /** Absolute path to a local PDF/DOCX/DOC resume on the server filesystem. */
+  @IsOptional()
+  @IsString()
+  resumePath?: string;
+
+  /** Raw resume text when no local file path is provided. */
+  @IsOptional()
+  @IsString()
+  resumeText?: string;
+
+  /** Multipart sends booleans as strings — accepted as string | boolean. */
+  @IsOptional()
+  includePosts?: boolean | string;
+
+  @IsOptional()
+  postsLimit?: number | string;
+
+  @IsOptional()
+  includeMomTestQuestions?: boolean | string;
+
+  @IsOptional()
+  @IsString()
+  interviewContext?: string;
 
   @IsOptional()
   @IsString()
@@ -504,6 +552,94 @@ export class OrgChartOutreachController {
       companyIdentifier: body.companyIdentifier,
       includePosts: body.includePosts,
       postsLimit: body.postsLimit,
+      includeMomTestQuestions: body.includeMomTestQuestions,
+      interviewContext: body.interviewContext,
+      accountId: body.accountId,
+      apiToken,
+      workspaceMemberId,
+      workspaceId: workspace.id,
+    });
+  }
+
+  /**
+   * ICP extract from a raw resume (local file path or pasted resumeText).
+   * LinkedIn URL in the resume → Unipile profile/company fetch (same as icp/extract).
+   * Otherwise → parse CV, LLM websearch for company, then ICP + Mom Test.
+   */
+  @Post('icp/extract-from-resume')
+  async extractIcpFromResume(
+    @Body(new ValidationPipe({ transform: true, whitelist: true }))
+    body: ExtractIcpFromResumeBodyDto,
+    @AuthWorkspace() workspace: Workspace,
+    @Req()
+    request: {
+      workspaceMemberId?: string;
+      headers?: { authorization?: string };
+    },
+  ): Promise<ExtractIcpFromResumeResponse> {
+    const { apiToken, workspaceMemberId } = this.resolveAuthContext(request);
+
+    const resumePath = body.resumePath?.trim();
+    const hasPath = Boolean(resumePath);
+    const hasText = Boolean(body.resumeText?.trim());
+    if (!hasPath && !hasText) {
+      throw new BadRequestException(
+        'Provide resumePath (local PDF/DOCX/DOC file) or resumeText',
+      );
+    }
+
+    if (resumePath) {
+      if (!path.isAbsolute(resumePath)) {
+        throw new BadRequestException('resumePath must be an absolute file path');
+      }
+      if (!fs.existsSync(resumePath)) {
+        throw new BadRequestException(`resumePath does not exist: ${resumePath}`);
+      }
+      const stats = fs.statSync(resumePath);
+      if (!stats.isFile()) {
+        throw new BadRequestException(`resumePath is not a file: ${resumePath}`);
+      }
+      const supported = /\.(pdf|docx|doc)$/i.test(resumePath);
+      if (!supported) {
+        throw new BadRequestException(
+          'Invalid file type. Only PDF, DOCX, and DOC resumes are supported.',
+        );
+      }
+    }
+
+    const parseBoolean = (value: unknown): boolean | undefined => {
+      if (typeof value === 'boolean') {
+        return value;
+      }
+      if (typeof value === 'string') {
+        if (value.toLowerCase() === 'true') {
+          return true;
+        }
+        if (value.toLowerCase() === 'false') {
+          return false;
+        }
+      }
+      return undefined;
+    };
+
+    const parseNumber = (value: unknown): number | undefined => {
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        return value;
+      }
+      if (typeof value === 'string' && value.trim()) {
+        const n = Number(value);
+        return Number.isFinite(n) ? n : undefined;
+      }
+      return undefined;
+    };
+
+    return this.icpExtractionService.extractIcpFromResume({
+      resumeFilePath: resumePath,
+      resumeText: body.resumeText,
+      includePosts: parseBoolean(body.includePosts),
+      postsLimit: parseNumber(body.postsLimit),
+      includeMomTestQuestions: parseBoolean(body.includeMomTestQuestions),
+      interviewContext: body.interviewContext,
       accountId: body.accountId,
       apiToken,
       workspaceMemberId,

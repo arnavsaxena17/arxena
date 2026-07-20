@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Arxena",
-    "description": "Arxena API collection. Set `baseUrl` and `authToken` in collection variables (or an environment) before running.\n\nRun order matters for the Org Chart Outreach folder: `ICP Extract - Provided Profiles` stores the extracted ICP in collection variables, which the ICP Candidates requests then reuse. Defaults are provided so candidates requests can also run standalone.\n\nCLI: npx newman run postman/org-chart-outreach/arxena.postman_collection.json --env-var authToken=<jwt>",
+    "description": "Arxena API collection. Set `baseUrl` and `authToken` in collection variables (or an environment) before running.\n\nRun order matters for the Org Chart Outreach folder: `ICP Extract - Provided Profiles` stores the extracted ICP in collection variables, which the ICP Candidates requests then reuse. Defaults are provided so candidates requests can also run standalone.\n\nResume ICP: use `ICP Extract From Resume - Local Path` (set `resumePath`) or `ICP Extract From Resume - Pasted Text`.\n\nCLI: npx newman run postman/org-chart-outreach/arxena.postman_collection.json --env-var authToken=<jwt>",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -33,6 +33,11 @@
     {
       "key": "generatedComment",
       "value": "",
+      "type": "string"
+    },
+    {
+      "key": "resumePath",
+      "value": "/Users/arnavsaxena/Downloads/Rahul Gulrajani CV.pdf",
       "type": "string"
     }
   ],
@@ -115,6 +120,125 @@
               "raw": "{\n  \"personProfile\": {\n    \"object\": \"UserProfile\",\n    \"provider\": \"LINKEDIN\",\n    \"provider_id\": \"ACoAAAHU7vABvj0KTKkaLOIc5El2eMWE5aLnPq4\",\n    \"public_identifier\": \"gaurav-sherlocks-ai\",\n    \"first_name\": \"Gaurav\",\n    \"last_name\": \"Toshniwal\",\n    \"headline\": \"Alerts / Tickets → Root Cause → Fix... in Minutes | Co-founder @Sherlocks.ai | Ex-CTO at Doubtnut (50M+ users)\",\n    \"location\": \"San Francisco, California, United States\",\n    \"follower_count\": 11284,\n    \"connections_count\": 8220,\n    \"work_experience\": [\n      {\n        \"company_id\": \"105905196\",\n        \"company\": \"Sherlocks.ai\",\n        \"position\": \"Founder\",\n        \"location\": \"San Francisco Bay Area, Mumbai · Hybrid\",\n        \"description\": \"We're building AI that thinks like an SRE, works like a beast, and never needs coffee (but you still can). Less firefighting, more winning. If your infra's playing games, we're here to outsmart it. Let's talk AI, ops, and the future of reliability.\",\n        \"status\": \"Full-time\",\n        \"skills\": [\"Site Reliability Engineering\", \"On-call Support\", \"DevOps\"],\n        \"start\": \"1/1/2025\",\n        \"end\": null\n      },\n      {\n        \"company_id\": \"13222185\",\n        \"company\": \"Doubtnut\",\n        \"position\": \"Chief Technology Officer\",\n        \"location\": \"Gurugram, Haryana, India\",\n        \"status\": \"Full-time\",\n        \"skills\": [\"Node.js\", \"Kubernetes\", \"AWS\", \"DevOps\", \"Microservices\"],\n        \"start\": \"11/1/2019\",\n        \"end\": \"1/1/2025\"\n      }\n    ]\n  },\n  \"companyProfile\": {\n    \"object\": \"CompanyProfile\",\n    \"id\": \"105905196\",\n    \"name\": \"Sherlocks.ai\",\n    \"description\": \"Every production incident has a culprit. We built a detective agency to find it. Sherlocks.ai is an agentic AI SRE platform. When an alert fires, our agents don't wait for a human to open six dashboards and start guessing. They investigate immediately: correlate signals across your stack, test hypotheses like a senior engineer would, and deliver root cause with clear next steps. Minutes, not hours. 16+ specialized agents across Kubernetes, databases, networks, cloud infra, CI/CD. 30+ integrations. Read-only access, always. 70% less downtime. 90% less alert noise. SOC 2 Type 2 certified. Data stays in your VPC.\",\n    \"public_identifier\": \"sherlocks-ai\",\n    \"tagline\": \"The best (SRE) Investigators\",\n    \"activities\": [\"SRE\", \"Site Reliability\", \"AI\", \"incident management\", \"AIOps\", \"Observability\", \"Devops\", \"MTTR Reduction\", \"Incident Response\", \"Alert management\", \"Reliability Automation\", \"Agentic AI\", \"ITOps\"],\n    \"website\": \"https://www.sherlocks.ai\",\n    \"foundation_date\": \"01/01/2025\",\n    \"employee_count\": 10,\n    \"industry\": [\"IT System Operations and Maintenance\"],\n    \"locations\": [\n      { \"is_headquarter\": true, \"city\": \"Palo Alto\", \"country\": \"US\", \"area\": \"California\" }\n    ]\n  }\n}"
             },
             "description": "Prompt 1: screens the lead and extracts the ICP from raw Unipile person + company profile JSON. Stores the resulting icp and chart_function in collection variables for the candidates requests."
+          }
+        },
+        {
+          "name": "ICP Extract From Resume - Pasted Text",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('ICP Extract From Resume: status', pm.response.code);",
+                  "",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "console.log('ICP Extract From Resume response:', JSON.stringify(json, null, 2));",
+                  "",
+                  "pm.test('sells is a non-empty string', function () {",
+                  "    pm.expect(json.sells).to.be.a('string').and.to.have.length.above(0);",
+                  "});",
+                  "",
+                  "pm.test('parsedResume is present', function () {",
+                  "    pm.expect(json.parsedResume).to.be.an('object');",
+                  "});",
+                  "",
+                  "pm.test('icp fields are present', function () {",
+                  "    pm.expect(json.icp.buyer_titles).to.be.an('array');",
+                  "    pm.expect(json.icp.employee_range).to.be.a('string');",
+                  "});",
+                  "",
+                  "if (json.icp) {",
+                  "    pm.collectionVariables.set('extractedIcp', JSON.stringify(json.icp));",
+                  "    if (json.chart_function) {",
+                  "        pm.collectionVariables.set('chartFunction', json.chart_function);",
+                  "    }",
+                  "    console.log('Stored extractedIcp + chartFunction from resume extract');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/org-chart-outreach/icp/extract-from-resume",
+              "host": ["{{baseUrl}}"],
+              "path": ["org-chart-outreach", "icp", "extract-from-resume"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resumeText\": \"Prince Kumar\\nAccount Executive at Acme Corp\\nBangalore, India\\nSold Salesforce CRM to mid-market BFSI accounts. Quota $1.2M.\\nSkills: Salesforce, HubSpot, Outreach.\\nEmail: prince@example.com\",\n  \"includeMomTestQuestions\": true\n}"
+            },
+            "description": "ICP extract from pasted resume text. If a LinkedIn /in/ URL is found, fetches Unipile profiles (same as icp/extract). Otherwise parses the CV and LLM-websearches the current company, then returns ICP + Mom Test questions."
+          }
+        },
+        {
+          "name": "ICP Extract From Resume - Local Path",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('ICP Extract From Resume (local path): status', pm.response.code);",
+                  "",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "console.log('ICP Extract From Resume (local path) response:', JSON.stringify(json, null, 2));",
+                  "",
+                  "pm.test('parsedResume is present', function () {",
+                  "    pm.expect(json.parsedResume).to.be.an('object');",
+                  "});",
+                  "",
+                  "pm.test('icp fields are present', function () {",
+                  "    pm.expect(json.icp.buyer_titles).to.be.an('array');",
+                  "    pm.expect(json.icp.employee_range).to.be.a('string');",
+                  "});",
+                  "",
+                  "pm.test('contextUsed reports resume ingestion', function () {",
+                  "    pm.expect(json.contextUsed.personSource).to.be.oneOf(['resume', 'unipile', 'provided']);",
+                  "    pm.expect(json.contextUsed.resumeFileName).to.be.a('string');",
+                  "});",
+                  "",
+                  "if (json.icp) {",
+                  "    pm.collectionVariables.set('extractedIcp', JSON.stringify(json.icp));",
+                  "    if (json.chart_function) {",
+                  "        pm.collectionVariables.set('chartFunction', json.chart_function);",
+                  "    }",
+                  "    console.log('Stored extractedIcp + chartFunction from resume local path extract');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/org-chart-outreach/icp/extract-from-resume",
+              "host": ["{{baseUrl}}"],
+              "path": ["org-chart-outreach", "icp", "extract-from-resume"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resumePath\": \"{{resumePath}}\",\n  \"includeMomTestQuestions\": true\n}"
+            },
+            "description": "ICP extract from a resume file on the server filesystem. POST JSON with `resumePath` (absolute path readable by the server). Set collection variable `resumePath`. LinkedIn URL in resume → Unipile; otherwise CV parse + company websearch."
           }
         },
         {

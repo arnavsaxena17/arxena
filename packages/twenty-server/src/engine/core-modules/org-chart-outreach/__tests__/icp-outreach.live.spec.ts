@@ -105,6 +105,16 @@ type IcpResponse = {
     pain_signals: string[];
   };
   chart_function: string | null;
+  momTestQuestions?: {
+    persona_read: string;
+    core_questions: Array<{
+      question: string;
+      tag: string;
+      listen_for: string;
+    }>;
+    money_probes: Array<{ question: string; tag: string }>;
+    trap_check: string;
+  };
   contextUsed: Record<string, unknown>;
 };
 
@@ -156,6 +166,18 @@ describeLive('ICP outreach controllers live E2E (localhost server)', () => {
     expect(typeof json.chart_function).toBe('string');
     // An SRE tool should chart an engineering/infra function, not Sales.
     expect((json.chart_function ?? '').toLowerCase()).not.toContain('sales');
+
+    expect(json.momTestQuestions).toBeDefined();
+    expect(json.momTestQuestions?.persona_read.length).toBeGreaterThan(0);
+    expect(json.momTestQuestions?.core_questions.length).toBeGreaterThanOrEqual(
+      4,
+    );
+    expect(json.momTestQuestions?.money_probes.length).toBeGreaterThanOrEqual(2);
+    expect(json.momTestQuestions?.trap_check.length).toBeGreaterThan(0);
+    console.log(
+      'icp/extract momTestQuestions persona:',
+      json.momTestQuestions?.persona_read,
+    );
 
     extractedIcp = json;
   });

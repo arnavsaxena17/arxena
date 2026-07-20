@@ -1085,7 +1085,11 @@ export const createNodeTemplate = ({
             alignment: go.Spot.Right,
             height: 40,
           },
-          new go.Binding('visible', 'nodeState', (s) => s === 'active'),
+          new go.Binding(
+            'visible',
+            'nodeState',
+            (s) => s === 'active' || s === 'preview',
+          ),
           $(
             go.Panel,
             'Table',
@@ -1105,6 +1109,7 @@ export const createNodeTemplate = ({
                 width: 12,
                 cursor: 'pointer',
               },
+              new go.Binding('visible', 'nodeState', (s) => s === 'active'),
               {
                 click: (_e: go.InputEvent, obj: go.GraphObject) => {
                   const part = obj.part as go.Node | undefined;
@@ -1123,6 +1128,7 @@ export const createNodeTemplate = ({
                 width: 12,
                 cursor: 'pointer',
               },
+              new go.Binding('visible', 'nodeState', (s) => s === 'active'),
               {
                 click: (_e: go.InputEvent, obj: go.GraphObject) => {
                   const part = obj.part as go.Node | undefined;

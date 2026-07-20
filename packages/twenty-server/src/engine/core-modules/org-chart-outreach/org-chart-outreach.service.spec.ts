@@ -17,6 +17,7 @@ jest.mock(
   () => ({
     LinkedinUnipileMessagingService: jest.fn().mockImplementation(() => ({
       sendLinkedinInviteForJob: mockSendLinkedinInviteForJob,
+      sendLinkedinInviteForWorkspace: mockSendLinkedinInviteForJob,
     })),
   }),
 );

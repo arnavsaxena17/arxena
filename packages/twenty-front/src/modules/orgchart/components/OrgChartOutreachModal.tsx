@@ -144,6 +144,8 @@ export type OrgChartOutreachModalProps = {
   contextItem: ContextResultItem | null;
   node: OrgChartNodeData | null;
   companyName?: string;
+  /** When true, LinkedIn invites can be sent without adding to a job. */
+  allowSkipJob?: boolean;
 };
 
 export const OrgChartOutreachModal = ({
@@ -153,6 +155,7 @@ export const OrgChartOutreachModal = ({
   contextItem,
   node,
   companyName,
+  allowSkipJob = false,
 }: OrgChartOutreachModalProps) => {
   const { enqueueSnackBar } = useSnackBar();
   const tokenPair = useRecoilValue(tokenPairState);
@@ -174,6 +177,7 @@ export const OrgChartOutreachModal = ({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isJobsLoading, setIsJobsLoading] = useState(false);
+  const [alsoAddToJob, setAlsoAddToJob] = useState(!allowSkipJob);
 
   const activeJobs = useMemo(
     () =>
@@ -205,6 +209,13 @@ export const OrgChartOutreachModal = ({
     setTemplateId(first?.id ?? '');
     setMessage(first?.body ?? '');
   }, [isOpen, channel]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+    setAlsoAddToJob(!allowSkipJob);
+  }, [isOpen, allowSkipJob]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -248,7 +259,15 @@ export const OrgChartOutreachModal = ({
   );
 
   const handleSubmit = useCallback(async () => {
-    if (!channel || !contextItem || !selectedJob) {
+    if (!channel || !contextItem) {
+      enqueueSnackBar('Missing candidate context.', {
+        variant: SnackBarVariant.Error,
+        duration: 4000,
+      });
+      return;
+    }
+    const requiresJob = !allowSkipJob || alsoAddToJob || channel !== 'linkedin_invite';
+    if (requiresJob && !selectedJob) {
       enqueueSnackBar('Select a job and try again.', {
         variant: SnackBarVariant.Error,
         duration: 4000,
@@ -300,90 +319,96 @@ export const OrgChartOutreachModal = ({
     setIsSubmitting(true);
     beginUploadProgressSseSession();
     try {
-      const nodeStdFunction = node
-        ? ((node as Record<string, unknown>).std_function as string | undefined)
-        : undefined;
-      const nodeStdGrade = node
-        ? ((node as Record<string, unknown>).std_grade as string | undefined)
-        : undefined;
+      if (requiresJob && selectedJob) {
+        const nodeStdFunction = node
+          ? ((node as Record<string, unknown>).std_function as
+              | string
+              | undefined)
+          : undefined;
+        const nodeStdGrade = node
+          ? ((node as Record<string, unknown>).std_grade as string | undefined)
+          : undefined;
 
-      const upload = await uploadOrgChartCandidatesToJob({
-        baseUrl,
-        accessToken,
-        items: [
-          { ...contextItem, company: contextItem.company || companyName || '' },
-        ],
-        jobId: selectedJob.id,
-        jobName: selectedJob.name,
-        recruiterId: currentWorkspaceMember?.id,
-        queueStartChatAfter: false,
-        orgChartSelectedNodes:
-          (nodeStdFunction ?? nodeStdGrade)
-            ? {
-                ...(nodeStdFunction && { std_function: nodeStdFunction }),
-                ...(nodeStdGrade && { std_grade: nodeStdGrade }),
-              }
-            : undefined,
-      });
-
-      if (!upload.ok) {
-        throw new Error(upload.message);
-      }
-
-      let candidateId: string | null = null;
-      if (contextItem.linkedinUrl?.trim()) {
-        candidateId = await pollCandidateIdOnJob({
+        const upload = await uploadOrgChartCandidatesToJob({
           baseUrl,
           accessToken,
-          linkedinUrl: contextItem.linkedinUrl.trim(),
+          items: [
+            {
+              ...contextItem,
+              company: contextItem.company || companyName || '',
+            },
+          ],
           jobId: selectedJob.id,
-          maxAttempts: 25,
-          delayMs: 1200,
+          jobName: selectedJob.name,
+          recruiterId: currentWorkspaceMember?.id,
+          queueStartChatAfter: false,
+          orgChartSelectedNodes:
+            nodeStdFunction ?? nodeStdGrade
+              ? {
+                  ...(nodeStdFunction && { std_function: nodeStdFunction }),
+                  ...(nodeStdGrade && { std_grade: nodeStdGrade }),
+                }
+              : undefined,
         });
-      }
 
-      if (
-        candidateId &&
-        contextItem.linkedinUrl &&
-        (contextItem.email || contextItem.phone)
-      ) {
-        const emails =
-          contextItem.email && contextItem.email.trim()
-            ? [contextItem.email.trim()]
-            : [];
-        const phones =
-          contextItem.phone && contextItem.phone.trim()
-            ? [contextItem.phone.trim()]
-            : [];
-        if (emails.length > 0 || phones.length > 0) {
-          try {
-            await fetch(
-              `${baseUrl.replace(/\/$/, '')}/candidate-sourcing/update-contact-from-enrichment`,
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${accessToken}`,
+        if (!upload.ok) {
+          throw new Error(upload.message);
+        }
+
+        let candidateId: string | null = null;
+        if (contextItem.linkedinUrl?.trim()) {
+          candidateId = await pollCandidateIdOnJob({
+            baseUrl,
+            accessToken,
+            linkedinUrl: contextItem.linkedinUrl.trim(),
+            jobId: selectedJob.id,
+            maxAttempts: 25,
+            delayMs: 1200,
+          });
+        }
+
+        if (
+          candidateId &&
+          contextItem.linkedinUrl &&
+          (contextItem.email || contextItem.phone)
+        ) {
+          const emails =
+            contextItem.email && contextItem.email.trim()
+              ? [contextItem.email.trim()]
+              : [];
+          const phones =
+            contextItem.phone && contextItem.phone.trim()
+              ? [contextItem.phone.trim()]
+              : [];
+          if (emails.length > 0 || phones.length > 0) {
+            try {
+              await fetch(
+                `${baseUrl.replace(/\/$/, '')}/candidate-sourcing/update-contact-from-enrichment`,
+                {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${accessToken}`,
+                  },
+                  body: JSON.stringify({
+                    linkedinUrl: contextItem.linkedinUrl.trim(),
+                    emails,
+                    phones,
+                    jobId: selectedJob.id,
+                    candidateId,
+                  }),
+                  credentials: 'include',
                 },
-                body: JSON.stringify({
-                  linkedinUrl: contextItem.linkedinUrl.trim(),
-                  emails,
-                  phones,
-                  jobId: selectedJob.id,
-                  candidateId,
-                }),
-                credentials: 'include',
-              },
-            );
-          } catch {
-            // best-effort
+              );
+            } catch {
+              // best-effort
+            }
           }
         }
       }
 
       const outreachBody: Record<string, unknown> = {
         channel,
-        jobId: selectedJob.id,
         message:
           channel === 'google_contact'
             ? message.trim() || `Added from org chart — ${contextItem.fullName}`
@@ -396,6 +421,9 @@ export const OrgChartOutreachModal = ({
         jobTitle: contextItem.headline,
         companyName: contextItem.company || companyName,
       };
+      if (selectedJob && requiresJob) {
+        outreachBody.jobId = selectedJob.id;
+      }
       if (channel === 'email') {
         outreachBody.subject = emailSubject.trim();
       }
@@ -451,21 +479,23 @@ export const OrgChartOutreachModal = ({
       endUploadProgressSseSessionAfterDelay();
     }
   }, [
+    allowSkipJob,
+    alsoAddToJob,
+    beginUploadProgressSseSession,
     channel,
-    contextItem,
-    selectedJob,
-    node,
     companyName,
-    tokenPair?.accessToken?.token,
+    contextItem,
     currentWorkspaceMember?.id,
-    message,
-    templateId,
     emailSubject,
     enqueueSnackBar,
-    beginUploadProgressSseSession,
     endUploadProgressSseSessionAfterDelay,
-    refetchJobs,
+    message,
+    node,
     onClose,
+    refetchJobs,
+    selectedJob,
+    templateId,
+    tokenPair?.accessToken?.token,
   ]);
 
   if (!isOpen || !channel || !contextItem) {
@@ -522,35 +552,67 @@ export const OrgChartOutreachModal = ({
               </StyledTaskBlock>
             ) : (
               <>
-                <StyledTaskBlock>
-                  <StyledTaskHeading>Step 1</StyledTaskHeading>
-                  <StyledSectionLabel>Choose a job</StyledSectionLabel>
-                  <StyledSelect
-                    data-testid="orgchart-outreach-job-select"
-                    value={selectedJobId}
-                    onChange={(e) => onJobChange(e.target.value)}
-                    disabled={isJobsLoading}
-                  >
-                    <option value="">Select a job</option>
-                    {activeJobs.map((job) => (
-                      <option key={job.id} value={job.id}>
-                        {job.name}
-                      </option>
-                    ))}
-                  </StyledSelect>
-                </StyledTaskBlock>
+                {allowSkipJob && channel === 'linkedin_invite' ? (
+                  <StyledTaskBlock>
+                    <StyledSectionLabel>
+                      <label
+                        style={{
+                          alignItems: 'center',
+                          display: 'inline-flex',
+                          gap: 8,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={alsoAddToJob}
+                          onChange={(e) => setAlsoAddToJob(e.target.checked)}
+                          data-testid="orgchart-outreach-also-add-to-job"
+                        />
+                        Also add to a job
+                      </label>
+                    </StyledSectionLabel>
+                  </StyledTaskBlock>
+                ) : null}
+                {(!allowSkipJob ||
+                  alsoAddToJob ||
+                  channel !== 'linkedin_invite') && (
+                  <StyledTaskBlock>
+                    <StyledTaskHeading>Step 1</StyledTaskHeading>
+                    <StyledSectionLabel>Choose a job</StyledSectionLabel>
+                    <StyledSelect
+                      data-testid="orgchart-outreach-job-select"
+                      value={selectedJobId}
+                      onChange={(e) => onJobChange(e.target.value)}
+                      disabled={isJobsLoading}
+                    >
+                      <option value="">Select a job</option>
+                      {activeJobs.map((job) => (
+                        <option key={job.id} value={job.id}>
+                          {job.name}
+                        </option>
+                      ))}
+                    </StyledSelect>
+                  </StyledTaskBlock>
+                )}
 
                 <StyledTaskBlock>
-                  <StyledTaskHeading>Step 2</StyledTaskHeading>
+                  <StyledTaskHeading>
+                    {allowSkipJob &&
+                    channel === 'linkedin_invite' &&
+                    !alsoAddToJob
+                      ? 'Step 1'
+                      : 'Step 2'}
+                  </StyledTaskHeading>
                   <StyledSectionLabel>Pick a template</StyledSectionLabel>
                   <StyledSelect
                     data-testid="orgchart-outreach-template-select"
                     value={templateId}
                     onChange={(e) => onTemplateChange(e.target.value)}
                   >
-                    {templates.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.label}
+                    {templates.map((tmpl) => (
+                      <option key={tmpl.id} value={tmpl.id}>
+                        {tmpl.label}
                       </option>
                     ))}
                   </StyledSelect>
@@ -595,13 +657,16 @@ export const OrgChartOutreachModal = ({
                 : 'Sending…'
               : channel === 'google_contact'
                 ? 'Add to Google Contacts'
-                : 'Add to job & send'
+                : allowSkipJob && !alsoAddToJob
+                  ? 'Send connection request'
+                  : 'Add to job & send'
           }
           onClick={() => void handleSubmit()}
           disabled={
             isSubmitting ||
-            !selectedJobId ||
-            (channel !== 'google_contact' && !message.trim())
+            ((!(allowSkipJob && channel === 'linkedin_invite' && !alsoAddToJob) &&
+              !selectedJobId) ||
+              (channel !== 'google_contact' && !message.trim()))
           }
           dataTestId="orgchart-outreach-send"
         />

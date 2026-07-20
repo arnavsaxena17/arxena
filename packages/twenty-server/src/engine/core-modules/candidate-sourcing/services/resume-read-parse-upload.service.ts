@@ -265,12 +265,8 @@ export class ResumeReadParseUploadService {
 
       const batchPromises = batch.map(async (content) => {
         try {
-          const parsedCV = await this.parseResumeWithOpenAI(content.text);
-          if (parsedCV) {
-            return { success: true, data: parsedCV, fileName: content.fileName };
-          } else {
-            return { success: false, error: 'Failed to parse resume - no data returned', fileName: content.fileName };
-          }
+          const parsedCV = await this.parseResumeText(content.text);
+          return { success: true, data: parsedCV, fileName: content.fileName };
         } catch (error) {
           this.logger.error(`Failed to parse resume ${content.fileName}:`, error);
           return { success: false, error: error.message, fileName: content.fileName };
@@ -287,6 +283,30 @@ export class ResumeReadParseUploadService {
     }
 
     return results;
+  }
+
+  /**
+   * Parse resume text using OpenAI. Public so other features (e.g. ICP extract
+   * from resume) can reuse the same CV schema without re-uploading candidates.
+   */
+  async parseResumeText(resumeText: string): Promise<ParsedCVData> {
+    const parsed = await this.parseResumeWithOpenAI(resumeText);
+    if (!parsed) {
+      throw new Error('Failed to parse resume - no data returned');
+    }
+    return parsed;
+  }
+
+  /**
+   * Read a resume file from disk and parse it into structured CV data.
+   */
+  async readAndParseResumeFile(filePath: string): Promise<{
+    content: ResumeContent;
+    parsed: ParsedCVData;
+  }> {
+    const content = await this.readResumeFile(filePath);
+    const parsed = await this.parseResumeText(content.text);
+    return { content, parsed };
   }
 
   /**

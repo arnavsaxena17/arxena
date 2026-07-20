@@ -46,11 +46,16 @@ import {
     type UnipileLinkedinSnapshotRawAccount,
 } from '../utils/unipile-linkedin-snapshot.cache';
 import type { MemberLinkedinUnipileConnectionService } from './member-linkedin-unipile-connection.service';
+import type { LinkedinProfileCacheService } from './linkedin-profile-cache.service';
 import type { WorkspaceMemberProfileUnipileService } from './workspace-member-profile-unipile.service';
 
 const getMemberLinkedinUnipileConnectionService = () =>
   require('./member-linkedin-unipile-connection.service')
     .MemberLinkedinUnipileConnectionService as typeof import('./member-linkedin-unipile-connection.service').MemberLinkedinUnipileConnectionService;
+
+const getLinkedinProfileCacheService = () =>
+  require('./linkedin-profile-cache.service')
+    .LinkedinProfileCacheService as typeof import('./linkedin-profile-cache.service').LinkedinProfileCacheService;
 
 const getWorkspaceMemberProfileUnipileService = () =>
   require('./workspace-member-profile-unipile.service')
@@ -86,6 +91,9 @@ export class LinkedinUnipileRequestService {
     @Optional()
     @Inject(forwardRef(getWorkspaceMemberProfileUnipileService))
     private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
+    @Optional()
+    @Inject(forwardRef(getLinkedinProfileCacheService))
+    private readonly linkedinProfileCacheService?: LinkedinProfileCacheService,
   ) {
     this.logger.log(`Unipile API URL: ${this.unipileApiUrl}`);
     this.logger.log(
@@ -827,6 +835,17 @@ export class LinkedinUnipileRequestService {
       return null;
     }
 
+    const cachedProfile =
+      await this.linkedinProfileCacheService?.getLinkedinUserProfile<Record<string, unknown>>(
+        trimmedIdentifier,
+      );
+    if (cachedProfile) {
+      this.logger.log(
+        `fetchLinkedinUserProfile cache HIT for ${trimmedIdentifier}`,
+      );
+      return cachedProfile;
+    }
+
     const queryParams = new URLSearchParams({
       account_id: trimmedAccountId,
     });
@@ -839,7 +858,7 @@ export class LinkedinUnipileRequestService {
     }
 
     try {
-      return (await this.makeUnipileRequest(
+      const profile = (await this.makeUnipileRequest(
         `/api/v1/users/${encodeURIComponent(trimmedIdentifier)}?${queryParams}`,
         'GET',
         undefined,
@@ -849,6 +868,20 @@ export class LinkedinUnipileRequestService {
             : undefined,
         },
       )) as Record<string, unknown>;
+
+      if (profile && this.linkedinProfileCacheService) {
+        const cacheKey =
+          typeof profile.public_identifier === 'string' &&
+          profile.public_identifier.trim()
+            ? profile.public_identifier.trim()
+            : trimmedIdentifier;
+        await this.linkedinProfileCacheService.saveLinkedinUserProfile(
+          cacheKey,
+          profile,
+        );
+      }
+
+      return profile;
     } catch (err) {
       if (isUnipileLinkedinAccountUnusableError(err)) {
         this.logger.warn(
