@@ -16,6 +16,7 @@ export interface AiFilterConfig {
   fields: AiFilterField[];
   selectedMetadataFields: string[];
   embeddingsModel?: boolean;
+  includeResume?: boolean;
 }
 
 // Mapping from frontend model values to actual OpenAI model names
@@ -157,26 +158,35 @@ export class AiFilteringProcessorService {
     return results;
   }
 
+  private buildUserInput(
+    candidate: CandidateData,
+    aiFilter: AiFilterConfig,
+  ): string {
+    const parts = (aiFilter.selectedMetadataFields || [])
+      .map((field) => {
+        const value = candidate[field];
+        if (!value) return '';
+
+        const stringValue =
+          typeof value === 'object' ? JSON.stringify(value) : String(value);
+
+        return `${field}: ${stringValue}`;
+      })
+      .filter(Boolean);
+
+    if (aiFilter.includeResume && candidate.resume) {
+      parts.push(`resume: ${candidate.resume}`);
+    }
+
+    return parts.join('; ');
+  }
+
   private async processSingleAiFilter(
     candidate: CandidateData,
     aiFilter: AiFilterConfig
   ): Promise<Record<string, any>> {
     try {
-      // Build user input from selected metadata fields
-      const userInput = aiFilter.selectedMetadataFields
-        .map(field => {
-          const value = candidate[field];
-          if (!value) return '';
-
-          // Properly stringify objects and arrays, keep primitives as-is
-          const stringValue = typeof value === 'object'
-            ? JSON.stringify(value)
-            : String(value);
-
-          return `${field}: ${stringValue}`;
-        })
-        .filter(Boolean)
-        .join('; ');
+      const userInput = this.buildUserInput(candidate, aiFilter);
 
       if (!userInput.trim()) {
         console.warn(`No input data for candidate ${candidate.id} with AI filter ${aiFilter.modelName}`);
@@ -338,9 +348,7 @@ export class AiFilteringProcessorService {
     // Rough token estimation (1 token ≈ 4 characters)
     for (const aiFilter of aiFilters) {
       for (const candidate of candidates) {
-        const userInput = aiFilter.selectedMetadataFields
-          .map(field => candidate[field] || '')
-          .join('; ');
+        const userInput = this.buildUserInput(candidate, aiFilter);
 
         const inputTokens = Math.ceil((aiFilter.prompt.length + userInput.length) / 4);
         const outputTokens = Math.ceil(aiFilter.fields.length * 50 / 4); // Estimate 50 chars per field

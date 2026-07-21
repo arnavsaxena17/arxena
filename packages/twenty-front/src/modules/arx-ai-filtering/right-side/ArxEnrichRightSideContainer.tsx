@@ -12,6 +12,10 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 // import { useViewStates } from '@/views/hooks/internal/useViewStates';
 // import { currentViewWithFiltersState } from '@/views/states/currentViewState';
 import { currentJobIdState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import {
+  buildSelectedMetadataFieldsForPersist,
+  hasAiFilterContext,
+} from '@/arx-ai-filtering/utils/resumeMetadata';
 import { IconLoader2 } from 'twenty-ui/icons';
 import { useState } from 'react';
 
@@ -302,8 +306,8 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
       return;
     }
   
-    if (!currentEnrichment.selectedMetadataFields?.length) {
-      setError('Please select at least one metadata field');
+    if (!hasAiFilterContext(currentEnrichment)) {
+      setError('Please select at least one column header or include resume');
       return;
     }
   
@@ -324,8 +328,13 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
     console.log("All rows from table state:", tableState?.rawData);
 
     try {
+      const aiFiltersForRequest = enrichments.map((enrichment) => ({
+        ...enrichment,
+        selectedMetadataFields: buildSelectedMetadataFieldsForPersist(enrichment),
+      }));
+
       const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL+'/candidate-sourcing/process-ai-filters', {
-        aiFilters: enrichments,
+        aiFilters: aiFiltersForRequest,
         objectNameSingular,
         jobId,
         objectRecordId,

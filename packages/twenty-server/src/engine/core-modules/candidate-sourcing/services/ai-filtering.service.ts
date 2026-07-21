@@ -106,10 +106,16 @@ export class AiFilteringService {
       }
 
       console.log('Fetching candidates data');
+      const needsResumeText = validAiFilters.some(
+        (filter) =>
+          filter.includeResume === true ||
+          (filter.selectedMetadataFields || []).includes('resume'),
+      );
       const candidates = await this.candidateDataService.fetchCandidatesForJob(
         jobId,
         selectedRecordIds,
-        apiToken
+        apiToken,
+        { includeResumeText: needsResumeText },
       );
 
       if (recruiterId) {
@@ -139,21 +145,36 @@ export class AiFilteringService {
         throw new Error('OpenAI API key not found in workspace API keys');
       }
 
-      const aiFilterConfigs: AiFilterConfig[] = validAiFilters.map(e => ({
-        modelName: e.modelName,
-        prompt: e.prompt,
-        selectedModel: e.selectedModel || 'gpt-5.1-chat-latest',
-        fields: e.fields || [],
-        selectedMetadataFields: e.selectedMetadataFields || [],
-        embeddingsModel: false
-      }));
+      const aiFilterConfigs: AiFilterConfig[] = validAiFilters.map(e => {
+        const selectedMetadataFields = e.selectedMetadataFields || [];
+        const includeResume =
+          e.includeResume === true || selectedMetadataFields.includes('resume');
+
+        return {
+          modelName: e.modelName,
+          prompt: e.prompt,
+          selectedModel: e.selectedModel || 'gpt-5.1-chat-latest',
+          fields: e.fields || [],
+          selectedMetadataFields: selectedMetadataFields.filter(
+            (field) => field !== 'resume',
+          ),
+          includeResume,
+          embeddingsModel: false,
+        };
+      });
 
       for (const config of aiFilterConfigs) {
         if (!config.fields || config.fields.length === 0) {
           throw new Error(`AI filter "${config.modelName}" has no output fields defined`);
         }
-        if (!config.selectedMetadataFields || config.selectedMetadataFields.length === 0) {
-          throw new Error(`AI filter "${config.modelName}" has no input fields selected`);
+        if (
+          (!config.selectedMetadataFields ||
+            config.selectedMetadataFields.length === 0) &&
+          !config.includeResume
+        ) {
+          throw new Error(
+            `AI filter "${config.modelName}" has no input fields selected`,
+          );
         }
       }
 
@@ -234,6 +255,14 @@ export class AiFilteringService {
     jobId: string,
     apiToken: string,
   ): Promise<any> {
+    const selectedMetadataFields = [...(aiFilter.selectedMetadataFields || [])];
+    if (
+      aiFilter.includeResume === true &&
+      !selectedMetadataFields.includes('resume')
+    ) {
+      selectedMetadataFields.push('resume');
+    }
+
     const graphqlVariables = {
       input: {
         name: aiFilter.modelName,
@@ -241,7 +270,7 @@ export class AiFilteringService {
         prompt: aiFilter.prompt,
         selectedModel: aiFilter.selectedModel,
         fields: aiFilter.fields,
-        selectedMetadataFields: aiFilter.selectedMetadataFields,
+        selectedMetadataFields,
         jobId: jobId,
       },
     };
@@ -278,10 +307,17 @@ export class AiFilteringService {
         };
       }
 
+      const needsResumeText = validAiFilters.some(
+        (filter) =>
+          filter.includeResume === true ||
+          (filter.selectedMetadataFields || []).includes('resume'),
+      );
+
       const candidates = await this.candidateDataService.fetchCandidatesForJob(
         jobId,
         selectedRecordIds,
-        apiToken
+        apiToken,
+        { includeResumeText: needsResumeText },
       );
 
       if (candidates.length === 0) {
@@ -293,14 +329,23 @@ export class AiFilteringService {
         };
       }
 
-      const aiFilterConfigs: AiFilterConfig[] = validAiFilters.map(e => ({
-        modelName: e.modelName,
-        prompt: e.prompt,
-        selectedModel: e.selectedModel || 'gpt-5.1-chat-latest',
-        fields: e.fields || [],
-        selectedMetadataFields: e.selectedMetadataFields || [],
-        embeddingsModel: false
-      }));
+      const aiFilterConfigs: AiFilterConfig[] = validAiFilters.map(e => {
+        const selectedMetadataFields = e.selectedMetadataFields || [];
+        const includeResume =
+          e.includeResume === true || selectedMetadataFields.includes('resume');
+
+        return {
+          modelName: e.modelName,
+          prompt: e.prompt,
+          selectedModel: e.selectedModel || 'gpt-5.1-chat-latest',
+          fields: e.fields || [],
+          selectedMetadataFields: selectedMetadataFields.filter(
+            (field) => field !== 'resume',
+          ),
+          includeResume,
+          embeddingsModel: false,
+        };
+      });
 
       const tokenAnalysis = await this.aiFilteringProcessorService.computeTokensForAiFilters(
         candidates,

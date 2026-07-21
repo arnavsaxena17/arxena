@@ -1,4 +1,5 @@
 import { activeEnrichmentState, enrichmentsState, sampleEnrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import { normalizeEnrichmentResumeFlag } from '@/arx-ai-filtering/utils/resumeMetadata';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import axios from 'axios';
@@ -144,20 +145,20 @@ export const SampleEnrichments = () => {
     }
   }, [tokenPair, setSampleEnrichments, sampleEnrichments.length]);
 
-  const handleSampleClick = (sample: { modelName: string; prompt: string; fields: { name: string; type: string; description: string;  id: number; required: boolean; }[]; selectedMetadataFields: string[]; selectedModel: string; filterDescription: string; bestOf: number; }) => {
+  const handleSampleClick = (sample: { modelName: string; prompt: string; fields: { name: string; type: string; description: string;  id: number; required: boolean; }[]; selectedMetadataFields: string[]; selectedModel: string; filterDescription: string; bestOf: number; includeResume?: boolean; }) => {
     setEnrichments(prev => {
       // Check if an enrichment with the same modelName already exists
       const exists = prev.some(enrichment => enrichment.modelName === sample.modelName);
       // Only add if it doesn't exist
       if (!exists) {
         // Create a new enrichment with all sample values
-        const newEnrichment = {
+        const newEnrichment = normalizeEnrichmentResumeFlag({
           ...sample,
           fields: sample.fields.map(field => ({
             ...field,
             id: Date.now() + Math.random() // Ensure unique IDs
           }))
-        };
+        });
         return [...prev.map(e => ({...e})), newEnrichment];
       }
       return prev;

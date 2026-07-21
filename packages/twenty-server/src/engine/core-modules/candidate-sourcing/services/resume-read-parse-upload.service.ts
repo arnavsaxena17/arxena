@@ -77,12 +77,16 @@ export class ResumeReadParseUploadService {
   private async readPdfFile(filePath: string): Promise<string> {
     try {
       const dataBuffer = fs.readFileSync(filePath);
-      const data = await pdfParse.default(dataBuffer);
-      return data.text;
+      return this.readPdfBuffer(dataBuffer);
     } catch (error) {
       this.logger.error(`Error reading PDF file ${filePath}:`, error);
       throw new Error(`Failed to read PDF file: ${error.message}`);
     }
+  }
+
+  private async readPdfBuffer(dataBuffer: Buffer): Promise<string> {
+    const data = await pdfParse.default(dataBuffer);
+    return data.text;
   }
 
   private async readDocxFile(filePath: string): Promise<string> {
@@ -95,6 +99,11 @@ export class ResumeReadParseUploadService {
     }
   }
 
+  private async readDocxBuffer(dataBuffer: Buffer): Promise<string> {
+    const result = await mammoth.extractRawText({ buffer: dataBuffer });
+    return result.value;
+  }
+
   private async readDocFile(filePath: string): Promise<string> {
     try {
       const result = await mammoth.extractRawText({ path: filePath });
@@ -103,6 +112,41 @@ export class ResumeReadParseUploadService {
       this.logger.warn(`Failed to read DOC file with mammoth: ${error.message}`);
       throw new Error('DOC file reading not fully supported. Please convert to DOCX or PDF format.');
     }
+  }
+
+  /**
+   * Extract text from an in-memory resume buffer (e.g. loaded from file storage).
+   */
+  async readResumeFromBuffer(
+    dataBuffer: Buffer,
+    fileName: string,
+  ): Promise<ResumeContent> {
+    const fileExtension = path.extname(fileName).toLowerCase();
+
+    this.logger.log(
+      `Reading resume buffer: ${fileName} (${fileExtension}, ${dataBuffer.length} bytes)`,
+    );
+
+    let text = '';
+
+    switch (fileExtension) {
+      case '.pdf':
+        text = await this.readPdfBuffer(dataBuffer);
+        break;
+      case '.docx':
+      case '.doc':
+        text = await this.readDocxBuffer(dataBuffer);
+        break;
+      default:
+        throw new Error(`Unsupported file type: ${fileExtension}`);
+    }
+
+    return {
+      text: this.cleanText(text),
+      fileName,
+      fileType: fileExtension,
+      fileSize: dataBuffer.length,
+    };
   }
 
   private cleanText(text: string): string {

@@ -16,8 +16,10 @@ type MetadataFieldsSelectorProps = {
   isLoadingFields: boolean;
   apiError: string | null;
   selectedMetadataFields: string[];
+  includeResume?: boolean;
   onFieldToggle: (fieldName: string, isChecked: boolean) => void;
   onFieldRemove: (fieldName: string) => void;
+  onIncludeResumeToggle?: (isChecked: boolean) => void;
 };
 
 export const MetadataFieldsSelector: React.FC<MetadataFieldsSelectorProps> = ({
@@ -25,8 +27,10 @@ export const MetadataFieldsSelector: React.FC<MetadataFieldsSelectorProps> = ({
   isLoadingFields,
   apiError,
   selectedMetadataFields,
+  includeResume = false,
   onFieldToggle,
-  onFieldRemove
+  onFieldRemove,
+  onIncludeResumeToggle,
 }) => {
   if (isLoadingFields) {
     return (
@@ -49,6 +53,15 @@ export const MetadataFieldsSelector: React.FC<MetadataFieldsSelectorProps> = ({
   return (
     <>
       <CheckboxFieldsContainer>
+        <CheckboxField>
+          <input
+            type="checkbox"
+            id="field-include-resume"
+            checked={includeResume}
+            onChange={(e) => onIncludeResumeToggle?.(e.target.checked)}
+          />
+          <label htmlFor="field-include-resume">Include resume</label>
+        </CheckboxField>
         {otherFieldKeys.map((field, idx) => (
           <CheckboxField key={`${field.name}-${idx}`}>
             <input
@@ -70,8 +83,19 @@ export const MetadataFieldsSelector: React.FC<MetadataFieldsSelectorProps> = ({
         </div>
       )}
 
-      {selectedMetadataFields.length > 0 && (
+      {(selectedMetadataFields.length > 0 || includeResume) && (
         <SelectedFieldsContainer>
+          {includeResume && (
+            <SelectedFieldTag key="selected-include-resume">
+              Include resume
+              <IconX
+                size={14}
+                stroke={1.5}
+                style={{ cursor: 'pointer' }}
+                onClick={() => onIncludeResumeToggle?.(false)}
+              />
+            </SelectedFieldTag>
+          )}
           {selectedMetadataFields
             .filter((fieldName: string, index: number, self: string[]) => 
               self.indexOf(fieldName) === index)

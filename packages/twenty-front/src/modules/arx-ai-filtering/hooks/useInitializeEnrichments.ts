@@ -1,4 +1,5 @@
 import { activeEnrichmentState, Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import { normalizeEnrichmentResumeFlag } from '@/arx-ai-filtering/utils/resumeMetadata';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import axios from 'axios';
 import { useCallback, useState } from 'react';
@@ -68,7 +69,8 @@ export const useInitializeEnrichments = () => {
           filterDescription: '',
           prompt: '',
           selectedModel: 'gpt4omini',
-          bestOf: 1
+          bestOf: 1,
+          includeResume: false,
         };
         setEnrichments([initialEnrichment]);
         setActiveEnrichment(0);
@@ -89,7 +91,9 @@ export const useInitializeEnrichments = () => {
           
           if (response.status === 200 || response.status === 201) {
             // Combine server enrichments with local samples
-            const combinedEnrichments = [...SAMPLE_ENRICHMENTS, ...response.data.data];
+            const combinedEnrichments = [...SAMPLE_ENRICHMENTS, ...response.data.data].map(
+              (item) => normalizeEnrichmentResumeFlag(item),
+            );
             // Sort by createdAt
             combinedEnrichments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
             // Deduplicate by modelName

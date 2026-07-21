@@ -1656,6 +1656,8 @@ export interface AiFilter {
   selectedMetadataFields: string[];
   selectedModel: string;
   bestOf?: number;
+  /** When true, candidate CV attachment text is loaded into the AI filter context. */
+  includeResume?: boolean;
 }
 
 import Anthropic from '@anthropic-ai/sdk';

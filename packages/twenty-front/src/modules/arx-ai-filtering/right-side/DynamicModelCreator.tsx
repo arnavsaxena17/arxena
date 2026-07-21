@@ -13,6 +13,7 @@ import { useEnrichmentState } from './hooks/useEnrichmentState';
 import { DynamicModelCreatorProps } from './types';
 import { generateModelCode } from './utils/modelCode';
 import { validateFieldName, validateModelName } from './utils/validation';
+import { normalizeEnrichmentResumeFlag } from '@/arx-ai-filtering/utils/resumeMetadata';
 
 // Components
 import { FieldCardComponent } from './components/FieldCard';
@@ -163,18 +164,23 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
     updateEnrichment({ selectedMetadataFields: updatedSelected });
   }, [currentEnrichment.selectedMetadataFields, updateEnrichment]);
 
+  const handleIncludeResumeToggle = useCallback((isChecked: boolean) => {
+    updateEnrichment({ includeResume: isChecked });
+  }, [updateEnrichment]);
+
   const handleProcessAIFilter = useCallback(async () => {
     try {
       const config = await processAIFilter(localFilterDescription, otherFieldKeys);
       if (config) {
-        updateEnrichment({
+        const normalized = normalizeEnrichmentResumeFlag({
           modelName: config.modelName,
           prompt: config.prompt,
           fields: config.fields || [],
           selectedMetadataFields: config.selectedMetadataFields || [],
           selectedModel: config.selectedModel || 'gpt4omini',
-          bestOf: config.bestOf || 1
+          bestOf: config.bestOf || 1,
         });
+        updateEnrichment(normalized);
       }
     } catch (error) {
       // Error is handled in the hook
@@ -278,8 +284,10 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
             isLoadingFields={isLoadingFields}
             apiError={apiError}
             selectedMetadataFields={currentEnrichment.selectedMetadataFields}
+            includeResume={currentEnrichment.includeResume === true}
             onFieldToggle={handleFieldToggle}
             onFieldRemove={handleFieldRemove}
+            onIncludeResumeToggle={handleIncludeResumeToggle}
           />
         </>
       )}
@@ -345,11 +353,13 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
             {/* Sample Open AI Call */}
       {currentEnrichment.modelName && 
        currentEnrichment.prompt && 
-       currentEnrichment.selectedMetadataFields?.length > 0 && 
+       ((currentEnrichment.selectedMetadataFields?.length ?? 0) > 0 ||
+         currentEnrichment.includeResume === true) && 
        candidateData && (
         <SampleOpenAICall
           prompt={currentEnrichment.prompt}
           selectedMetadataFields={currentEnrichment.selectedMetadataFields}
+          includeResume={currentEnrichment.includeResume === true}
           fields={currentEnrichment.fields}
           candidateData={candidateData}
         />

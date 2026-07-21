@@ -1,4 +1,5 @@
 import { enrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import { hasAiFilterContext } from '@/arx-ai-filtering/utils/resumeMetadata';
 import styled from '@emotion/styled';
 import { useRecoilState } from 'recoil';
 
@@ -168,7 +169,7 @@ export const ArxEnrichName: React.FC<ArxEnrichNameProps> = ({
       currentEnrichment.modelName &&
       currentEnrichment.prompt &&
       (currentEnrichment.selectedModel || currentEnrichment.selectedModel=="") &&
-      currentEnrichment.selectedMetadataFields.length > 0 &&
+      hasAiFilterContext(currentEnrichment) &&
       currentEnrichment.fields.length > 0
     );
     console.log("isFormValidValueisFiformValidValue:", isFormValidValue)

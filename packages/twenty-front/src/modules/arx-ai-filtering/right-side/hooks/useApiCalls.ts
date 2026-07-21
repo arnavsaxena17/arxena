@@ -1,4 +1,5 @@
 import { currentJobIdState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import { buildSelectedMetadataFieldsForPersist } from '@/arx-ai-filtering/utils/resumeMetadata';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { TableState, tableStateAtom } from '@/candidate-table/states/states';
 import axios from 'axios';
@@ -68,7 +69,10 @@ export const useApiCalls = (index: number, onError: (error: string) => void) => 
       const response = await axios.post(
         `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/compute-tokens`,
         { 
-          enrichments: [enrichment], 
+          enrichments: [{
+            ...enrichment,
+            selectedMetadataFields: buildSelectedMetadataFieldsForPersist(enrichment),
+          }], 
           selectedRecordIds, 
           jobId: currentJobId 
         },

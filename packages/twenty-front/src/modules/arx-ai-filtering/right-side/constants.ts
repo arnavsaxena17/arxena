@@ -48,4 +48,8 @@ export const DEFAULT_ENRICHMENT = {
   selectedMetadataFields: [],
   selectedModel: 'gpt4omini',
   bestOf: 1,
+  includeResume: false,
 };
+
+/** Marker persisted in selectedMetadataFields when includeResume is enabled. */
+export const RESUME_METADATA_FIELD = 'resume';

@@ -32,6 +32,7 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
             .sort((a, b) => new Date(b.node?.createdAt || 0).getTime() - new Date(a.node?.createdAt || 0).getTime())[0]
             ?.node?.createdAt || '' : '',
         hasCv: candidate?.attachments?.edges?.length > 0 || false,
+        cvAvailability: candidate?.attachments?.edges?.length > 0 ? 'CV Available' : 'CV Not found',
       };
 
       const otherFieldValues = otherFieldsToFlatRow(getResolvedOtherFields(candidate));

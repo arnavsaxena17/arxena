@@ -79,6 +79,8 @@ export const CANDIDATE_CONVERSATION_STATUS_LABELS: Record<string, string> = {
   'CONVERSATION_CLOSED_TO_BE_CONTACTED': 'Closed to Contact'
 };
 
+const CV_AVAILABILITY_OPTIONS = ['CV Available', 'CV Not found'] as const;
+
 export const MESSAGING_CHANNEL_OPTIONS = [
   'baileys',
   'whatsapp-unipile',
@@ -91,6 +93,7 @@ const MESSAGING_CHANNEL_COLUMN_WIDTH = 190;
 
 const COLUMN_TITLE_OVERRIDES: Record<string, string> = {
   candConversationStatus: 'Bot Status',
+  cvAvailability: 'CV',
 };
 
 const getColumnTitle = (key: string) =>
@@ -138,7 +141,7 @@ const hasAllEmptyValues = (columnName: string, processedData: CandidateDataItem[
   if (!processedData.length) return true;
   
   // Special cases: always show these columns even if they have default values
-  const alwaysShowColumns = ['jobTitle','jobCompanyName','locationName','status', 'candConversationStatus', 'checkbox', 'name','remarks', 'hasCv', 'startChat', 'startChatCompleted', 'stopChat', 'relevanceScore', 'relevanceLabel', 'messagingChannel'];
+  const alwaysShowColumns = ['jobTitle','jobCompanyName','locationName','status', 'candConversationStatus', 'checkbox', 'name','remarks', 'hasCv', 'cvAvailability', 'startChat', 'startChatCompleted', 'stopChat', 'relevanceScore', 'relevanceLabel', 'messagingChannel'];
   if (alwaysShowColumns.includes(columnName)) {
     return false;
   }
@@ -661,6 +664,12 @@ export const TableColumns = ({
     return td;
   };
 
+  const cvAvailabilityRenderer: ColumnRenderer = (instance, td, row, column, prop, value, cellProperties) => {
+    // Use dropdown renderer so the value shows consistently with other dropdown columns.
+    Handsontable.renderers.DropdownRenderer(instance, td, row, column, prop, value, cellProperties);
+    return td;
+  };
+
   const messagingChannelRenderer: ColumnRenderer = (instance, td, row, column, prop, value, cellProperties) => {
     Handsontable.renderers.DropdownRenderer(instance, td, row, column, prop, value, cellProperties);
     td.style.whiteSpace = 'nowrap';
@@ -753,6 +762,7 @@ export const TableColumns = ({
       const isChatField = chatColumns.includes(key);
       const isStatusField = key === 'candConversationStatus' || key === 'status';
       const isMessagingChannelField = key === 'messagingChannel';
+      const isCvAvailabilityField = key === 'cvAvailability';
       
       // Relevance score fields
       const isRelevanceScoreField = key === 'relevanceScore';
@@ -791,6 +801,8 @@ export const TableColumns = ({
         renderer = statusRenderer;
       } else if (isMessagingChannelField) {
         renderer = messagingChannelRenderer;
+      } else if (isCvAvailabilityField) {
+        renderer = cvAvailabilityRenderer;
       } else if (isRelevanceScoreField) {
         renderer = relevanceScoreRenderer;
       } else if (isRelevanceLabelField) {
@@ -807,14 +819,17 @@ export const TableColumns = ({
                isRelevanceLabelField ? 140 :
                isArrayField ? 200 :
                isMessagingChannelField ? MESSAGING_CHANNEL_COLUMN_WIDTH :
+               isCvAvailabilityField ? 160 :
                smallFields.includes(key) ? 40 : 150,
         renderer: renderer,
-        type: isStatusField || isMessagingChannelField ? 'dropdown' : 'text',
+        type: isStatusField || isMessagingChannelField || isCvAvailabilityField ? 'dropdown' : 'text',
         source: isStatusField ? (key === 'candConversationStatus' ? 
           Object.values(CANDIDATE_CONVERSATION_STATUS_LABELS) as string[] : 
           Object.values(STATUS_LABELS) as string[]) :
-          isMessagingChannelField ? MESSAGING_CHANNEL_OPTIONS : undefined,
-        editor: isStatusField || isMessagingChannelField ? 'dropdown' : undefined
+          isMessagingChannelField ? MESSAGING_CHANNEL_OPTIONS :
+          isCvAvailabilityField ? [...CV_AVAILABILITY_OPTIONS] :
+          undefined,
+        editor: isStatusField || isMessagingChannelField || isCvAvailabilityField ? 'dropdown' : undefined
       });
     });
 

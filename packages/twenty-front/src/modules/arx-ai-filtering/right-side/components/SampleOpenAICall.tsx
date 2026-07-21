@@ -8,6 +8,7 @@ type SampleOpenAICallProps = {
   selectedMetadataFields: string[];
   fields: any[];
   candidateData: any;
+  includeResume?: boolean;
 };
 
 
@@ -24,7 +25,8 @@ export const SampleOpenAICall: React.FC<SampleOpenAICallProps> = ({
   prompt,
   selectedMetadataFields,
   fields,
-  candidateData
+  candidateData,
+  includeResume = false,
 }) => {
   console.log("candidateData in SampleOpenAICall", candidateData);
   console.log("selectedMetadataFields in SampleOpenAICall", selectedMetadataFields);
@@ -46,6 +48,10 @@ export const SampleOpenAICall: React.FC<SampleOpenAICallProps> = ({
     return `${fieldName}: ${value !== null && value !== undefined ? JSON.stringify(value) : 'null'}`;
   }).join('\n');
 
+  const resumeContextLine = includeResume
+    ? '\nresume: [CV attachment text will be loaded when Create AI Filter runs]'
+    : '';
+
   const expectedOutputFormat = fields?.map(field => 
     `${field.name}: ${field.type === 'text' ? 'string' : field.type === 'number' ? 'number' : field.type === 'boolean' ? 'boolean' : field.type === 'enum' ? `enum(${field.enumValues?.join(', ') || ''})` : 'string'}`
   ).join('\n') || 'No fields defined';
@@ -56,7 +62,7 @@ export const SampleOpenAICall: React.FC<SampleOpenAICallProps> = ({
       <CodeBlock>
       <SampleOpenAICallSelectLabel>Prompt:</SampleOpenAICallSelectLabel>
 
-      <pre>{`${prompt}\n\nData:\n${metadataValues}`}</pre>
+      <pre>{`${prompt}\n\nData:\n${metadataValues}${resumeContextLine}`}</pre>
       </CodeBlock>
       <CodeBlock>
       <SampleOpenAICallSelectLabel>Expected Output Columns:</SampleOpenAICallSelectLabel>

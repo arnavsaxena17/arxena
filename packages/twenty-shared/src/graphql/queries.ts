@@ -2646,6 +2646,8 @@ export const graphqlToFetchAllCandidateData = `
                 createdAt
                 fullPath
                 id
+                name
+                type
               }
             }
           }
@@ -2779,6 +2781,8 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
                 createdAt
                 fullPath
                 id
+                name
+                type
               }
             }
           }
@@ -2876,6 +2880,8 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
                 createdAt
                 fullPath
                 id
+                name
+                type
               }
             }
           }
