@@ -1,3 +1,4 @@
+import { IconSettingsAutomation } from 'twenty-ui/icons';
 import { useActionMenuEntries } from '@/action-menu/hooks/useActionMenuEntries';
 import {
   ActionMenuEntryScope,
@@ -13,7 +14,7 @@ import { msg } from '@lingui/core/macro';
 
 import { useRecoilValue } from 'recoil';
 import { capitalize, isDefined } from 'twenty-shared';
-import { IconSettingsAutomation } from 'twenty-ui';
+
 export const useWorkflowRunRecordActions = ({
   objectMetadataItem,
 }: {

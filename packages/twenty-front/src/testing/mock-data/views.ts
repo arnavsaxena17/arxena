@@ -1,3 +1,4 @@
+import { IconSkyline, IconPerson, IconOpportunity } from 'twenty-ui';
 import { AGGREGATE_OPERATIONS } from '@/object-record/record-table/constants/AggregateOperations';
 import { View } from '@/views/types/View';
 import { ViewKey } from '@/views/types/ViewKey';

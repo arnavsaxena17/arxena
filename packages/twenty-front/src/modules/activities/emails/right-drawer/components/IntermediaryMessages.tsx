@@ -1,6 +1,7 @@
+import { Button } from 'twenty-ui';
+import { IconArrowsVertical } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { useState } from 'react';
-import { Button, IconArrowsVertical } from 'twenty-ui';
 
 import { EmailThreadMessage } from '@/activities/emails/components/EmailThreadMessage';
 import { EmailThreadMessageWithSender } from '@/activities/emails/types/EmailThreadMessageWithSender';

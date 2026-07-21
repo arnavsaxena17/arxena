@@ -1,16 +1,8 @@
+
+import { type IconComponent } from 'twenty-ui';
+import { IconFile, IconFileText, IconFileZip, IconHeadphones, IconPhoto, IconPresentation, IconTable, IconVideo } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import {
-  IconComponent,
-  IconFile,
-  IconFileText,
-  IconFileZip,
-  IconHeadphones,
-  IconPhoto,
-  IconPresentation,
-  IconTable,
-  IconVideo,
-} from 'twenty-ui';
 
 import { AttachmentType } from '@/activities/files/types/Attachment';
 

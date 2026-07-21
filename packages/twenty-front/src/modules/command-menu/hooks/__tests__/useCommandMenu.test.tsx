@@ -1,3 +1,4 @@
+import { IconList, IconSearch } from 'twenty-ui/icons';
 import { renderHook } from '@testing-library/react';
 import { act } from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -9,7 +10,6 @@ import { commandMenuPageState } from '@/command-menu/states/commandMenuPageState
 import { commandMenuPageInfoState } from '@/command-menu/states/commandMenuPageTitle';
 import { isCommandMenuOpenedState } from '@/command-menu/states/isCommandMenuOpenedState';
 import { CommandMenuPages } from '@/command-menu/types/CommandMenuPages';
-import { IconList, IconSearch } from 'twenty-ui';
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
   <RecoilRoot>

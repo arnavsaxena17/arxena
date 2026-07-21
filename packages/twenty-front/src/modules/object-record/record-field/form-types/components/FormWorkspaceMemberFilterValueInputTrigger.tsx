@@ -1,7 +1,7 @@
+import { IconUserCircle } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { t } from '@lingui/core/macro';
 import { isDefined } from 'twenty-shared/utils';
-import { IconUserCircle } from 'twenty-ui';
 
 import { FormFieldPlaceholder } from '@/object-record/record-field/form-types/components/FormFieldPlaceholder';
 import { VariableChipStandalone } from '@/object-record/record-field/form-types/components/VariableChipStandalone';

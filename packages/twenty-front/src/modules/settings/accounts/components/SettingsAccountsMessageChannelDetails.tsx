@@ -1,5 +1,6 @@
+import { Card, H2Title, Section } from 'twenty-ui';
+import { IconBriefcase, IconUsers } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
-import { Card, H2Title, IconBriefcase, IconUsers, Section } from 'twenty-ui';
 
 import {
   MessageChannel,

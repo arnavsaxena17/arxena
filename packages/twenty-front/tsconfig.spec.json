@@ -7,7 +7,7 @@
      "@/*": ["./packages/twenty-front/src/modules/*"],
       "~/*": ["./packages/twenty-front/src/*"],
       "twenty-ui": ["./packages/twenty-ui/src/index.ts"],
-      "@ui/*": ["./packages/twenty-ui/src/*"]
+      "twenty-ui/icons": ["./packages/twenty-ui/src/display/icon/components/TablerIcons.ts"]
     }
   },
   "include": [

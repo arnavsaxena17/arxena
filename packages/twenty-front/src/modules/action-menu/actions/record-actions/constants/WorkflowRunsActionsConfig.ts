@@ -1,3 +1,4 @@
+import { IconChevronDown, IconChevronUp, IconDatabaseExport, IconHeart, IconHeartOff, IconPlayerStop } from 'twenty-ui/icons';
 import { useExportMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useExportMultipleRecordsAction';
 import { MultipleRecordsActionKeys } from '@/action-menu/actions/record-actions/multiple-records/types/MultipleRecordsActionKeys';
 import { NoSelectionRecordActionKeys } from '@/action-menu/actions/record-actions/no-selection/types/NoSelectionRecordActionsKey';
@@ -16,14 +17,6 @@ import {
   ActionMenuEntryType,
 } from '@/action-menu/types/ActionMenuEntry';
 import { msg } from '@lingui/core/macro';
-import {
-  IconChevronDown,
-  IconChevronUp,
-  IconDatabaseExport,
-  IconHeart,
-  IconHeartOff,
-  IconPlayerStop,
-} from 'twenty-ui';
 
 export const WORKFLOW_RUNS_ACTIONS_CONFIG: Record<
   string,

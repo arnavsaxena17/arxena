@@ -1,10 +1,12 @@
+import { useIcons } from 'twenty-ui';
+import { IconArrowsSort, IconTrash } from 'twenty-ui/icons';
 import { ObjectMetadataItem } from '@/object-metadata/types/ObjectMetadataItem';
 import { filterSortableFieldMetadataItems } from '@/object-metadata/utils/filterSortableFieldMetadataItems';
 import { WorkflowFindRecordsRecordSort } from '@/workflow/workflow-steps/workflow-actions/find-records-action/utils/workflowFindRecordsFilterUtils';
 import { Select, SelectOption } from '@/ui/input/components/Select';
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
-import { IconArrowsSort, IconTrash, useIcons } from 'twenty-ui';
+
 import { Button } from 'twenty-ui';
 import { v4 as uuidv4 } from 'uuid';
 import { RecordSortDirection } from '@/object-record/record-sort/types/RecordSortDirection';

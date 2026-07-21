@@ -1,3 +1,4 @@
+import { IconChevronDown, IconUserCircle } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { t } from '@lingui/core/macro';
@@ -9,7 +10,7 @@ import {
   useState,
 } from 'react';
 import { isDefined } from 'twenty-shared/utils';
-import { IconChevronDown, IconUserCircle } from 'twenty-ui';
+
 import { type JsonValue } from 'type-fest';
 
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';

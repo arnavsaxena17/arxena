@@ -1,8 +1,9 @@
+import { Button } from 'twenty-ui';
+import { IconCheck, IconRefresh } from 'twenty-ui/icons';
 import type { AiFiltersResponse } from 'twenty-shared';
 import styled from '@emotion/styled';
-import { IconBrain } from '@tabler/icons-react';
+import { IconBrain } from 'twenty-ui/icons';
 import React from 'react';
-import { Button, IconCheck, IconRefresh } from 'twenty-ui';
 
 const StyledMessageContainer = styled.div`
   padding: ${({ theme }) => theme.spacing(3)};

@@ -1,15 +1,9 @@
+import { type IconComponent } from 'twenty-ui';
 import styled from '@emotion/styled';
 import { i18n, type MessageDescriptor } from '@lingui/core';
 import { isString } from '@sniptt/guards';
 import { type MouseEvent } from 'react';
-import {
-  AppTooltip,
-  Button,
-  IconButton,
-  type IconComponent,
-  TooltipDelay,
-  TooltipPosition,
-} from 'twenty-ui';
+import { AppTooltip, Button, IconButton, TooltipDelay, TooltipPosition } from 'twenty-ui';
 
 const StyledWrapper = styled.div`
   font-size: ${({ theme }) => theme.font.size.md};

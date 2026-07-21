@@ -1,5 +1,6 @@
+import { IconButton } from 'twenty-ui';
+import { IconX } from 'twenty-ui/icons';
 import { ReactNode } from 'react';
-import { IconButton, IconX } from 'twenty-ui';
 
 import {
   StyledAdjuster,

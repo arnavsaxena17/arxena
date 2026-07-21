@@ -64,12 +64,10 @@ export default defineConfig(({ command }) => {
         transformMixedEsModules: true,
       },
       lib: {
-        // Could also be a dictionary or array of multiple entry points.
-        entry: 'src/index.ts',
-        name: 'twenty-ui',
-        fileName: 'index',
-        // Change this to the formats you want to support.
-        // Don't forget to update your package.json as well.
+        entry: {
+          index: 'src/index.ts',
+          icons: 'src/display/icon/components/TablerIcons.ts',
+        },
         formats: ['es', 'cjs'],
       },
       rollupOptions: {

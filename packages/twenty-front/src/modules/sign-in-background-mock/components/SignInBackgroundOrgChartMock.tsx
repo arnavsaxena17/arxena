@@ -1,13 +1,19 @@
 import styled from '@emotion/styled';
-import { useCallback, useMemo } from 'react';
+import { lazy, Suspense, useCallback, useMemo } from 'react';
 
-import { OrgChartDiagram, type OrgChartDiagramHandle } from 'twenty-orgchart';
+import type { OrgChartDiagramHandle } from 'twenty-orgchart';
 import {
     processOrgChartToNodeData,
     type OrgChartNodeData,
 } from 'twenty-shared';
 
 import { SIGN_IN_BACKGROUND_MOCK_SALESFORCE_ORG_CHART } from '@/sign-in-background-mock/constants/SignInBackgroundMockSalesforceOrgChart';
+
+const OrgChartDiagram = lazy(() =>
+  import('twenty-orgchart').then((module) => ({
+    default: module.OrgChartDiagram,
+  })),
+);
 
 const StyledDiagramWrap = styled.div`
   display: flex;
@@ -34,16 +40,18 @@ export const SignInBackgroundOrgChartMock = () => {
 
   return (
     <StyledDiagramWrap>
-      <OrgChartDiagram
-        nodeDataArray={nodeDataArray}
-        iconUrls={{
-          lock: '/img/lock.png',
-          linkedin: '/img/linkedin-icon-png-circle-2.png',
-          download: '/img/download-icon.png',
-          similarItems: '/img/similar-items.png',
-        }}
-        onDiagramReady={handleDiagramReady}
-      />
+      <Suspense fallback={null}>
+        <OrgChartDiagram
+          nodeDataArray={nodeDataArray}
+          iconUrls={{
+            lock: '/img/lock.png',
+            linkedin: '/img/linkedin-icon-png-circle-2.png',
+            download: '/img/download-icon.png',
+            similarItems: '/img/similar-items.png',
+          }}
+          onDiagramReady={handleDiagramReady}
+        />
+      </Suspense>
     </StyledDiagramWrap>
   );
 };

@@ -1,3 +1,5 @@
+import { Button } from 'twenty-ui';
+import { IconPlayerPlay, IconPlayerStop, IconPower, IconSettingsAutomation, IconTrash } from 'twenty-ui/icons';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useActivateWorkflowVersion } from '@/workflow/hooks/useActivateWorkflowVersion';
@@ -9,14 +11,7 @@ import { useTheme } from '@emotion/react';
 import { useLingui } from '@lingui/react/macro';
 
 import { isDefined } from 'twenty-shared';
-import {
-  Button,
-  IconPlayerPlay,
-  IconPlayerStop,
-  IconPower,
-  IconSettingsAutomation,
-  IconTrash,
-} from 'twenty-ui';
+
 import { assertWorkflowWithCurrentVersionIsDefined } from '../utils/assertWorkflowWithCurrentVersionIsDefined';
 
 export const RecordShowPageWorkflowHeader = ({

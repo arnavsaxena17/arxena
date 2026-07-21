@@ -1,15 +1,7 @@
 import styled from '@emotion/styled';
 import { AnimatePresence, LayoutGroup } from 'framer-motion';
 import { ReactNode, useState } from 'react';
-import {
-  Button,
-  ButtonAccent,
-  H1Title,
-  H1TitleFontColor,
-  Section,
-  SectionAlignment,
-  SectionFontColor,
-} from 'twenty-ui';
+import { Button, ButtonAccent, H1Title, H1TitleFontColor, Section, SectionAlignment, SectionFontColor } from 'twenty-ui';
 import { useDebouncedCallback } from 'use-debounce';
 
 import { TextInput } from '@/ui/input/components/TextInput';

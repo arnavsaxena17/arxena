@@ -1,7 +1,7 @@
+import { IconCheck, IconX } from 'twenty-ui/icons';
 import type { AssistantAgentEvent } from '@/assistant/types/assistant.types';
 import styled from '@emotion/styled';
-import { IconActivity } from '@tabler/icons-react';
-import { IconCheck, IconX } from 'twenty-ui';
+import { IconActivity } from 'twenty-ui/icons';
 
 const StyledActivityFeed = styled.div`
   flex-shrink: 0;

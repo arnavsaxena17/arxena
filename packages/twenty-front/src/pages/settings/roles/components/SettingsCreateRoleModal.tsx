@@ -1,9 +1,10 @@
+import { Button, IconButton } from 'twenty-ui';
+import { IconX } from 'twenty-ui/icons';
 import { ApolloError, useMutation } from '@apollo/client';
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { useState } from 'react';
 import { isDefined } from 'twenty-shared';
-import { Button, IconButton, IconX } from 'twenty-ui';
 
 import { CREATE_ONE_ROLE } from '@/settings/roles/graphql/mutations/createOneRoleMutation';
 import { GET_ROLES } from '@/settings/roles/graphql/queries/getRolesQuery';

@@ -1,13 +1,7 @@
 /* @license Enterprise */
 
-import {
-  IconArchive,
-  IconDotsVertical,
-  IconTrash,
-  LightIconButton,
-  MenuItem,
-} from 'twenty-ui';
-
+import { LightIconButton, MenuItem } from 'twenty-ui';
+import { IconArchive, IconDotsVertical, IconTrash } from 'twenty-ui/icons';
 import { useDeleteSSOIdentityProvider } from '@/settings/security/hooks/useDeleteSSOIdentityProvider';
 import { useUpdateSSOIdentityProvider } from '@/settings/security/hooks/useUpdateSSOIdentityProvider';
 import { SSOIdentitiesProvidersState } from '@/settings/security/states/SSOIdentitiesProvidersState';

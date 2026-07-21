@@ -1,3 +1,5 @@
+import { LightIconButton, MenuItem, OverflowingTextWithTooltip } from 'twenty-ui';
+import { IconCheck, IconDotsVertical, IconPencil, IconTrash, IconX } from 'twenty-ui/icons';
 import { EnvironmentVariable } from '@/settings/serverless-functions/components/tabs/SettingsServerlessFunctionTabEnvironmentVariablesSection';
 import { TextInputV2 } from '@/ui/input/components/TextInputV2';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
@@ -7,16 +9,6 @@ import { TableCell } from '@/ui/layout/table/components/TableCell';
 import { TableRow } from '@/ui/layout/table/components/TableRow';
 import styled from '@emotion/styled';
 import { useState } from 'react';
-import {
-  IconCheck,
-  IconDotsVertical,
-  IconPencil,
-  IconTrash,
-  IconX,
-  LightIconButton,
-  MenuItem,
-  OverflowingTextWithTooltip,
-} from 'twenty-ui';
 
 const StyledEditModeTableRow = styled(TableRow)`
   grid-template-columns: 180px auto 56px;

@@ -1,7 +1,8 @@
+import { Button } from 'twenty-ui';
+import { IconRefresh, IconSettings } from 'twenty-ui/icons';
 import { SearchParametersResponse, SearchVariation } from '@/candidate-search/types/candidate-search.types';
 import styled from '@emotion/styled';
 import React, { useEffect, useState } from 'react';
-import { Button, IconRefresh, IconSettings } from 'twenty-ui';
 
 const StyledMessageContainer = styled.div`
   padding: ${({ theme }) => theme.spacing(3)};
@@ -455,7 +456,6 @@ type SearchParametersMessageProps = {
   onApplyParameters?: (parameters: any) => void;
   onViewStrategyResults?: (strategy: any, preview: any, parameterKey: string) => void;
 };
-
 
 export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = ({
   searchParameters,

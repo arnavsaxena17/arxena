@@ -1,14 +1,6 @@
+import { AnimatedPlaceholder, AnimatedPlaceholderEmptyContainer, AnimatedPlaceholderEmptySubTitle, AnimatedPlaceholderEmptyTextContainer, AnimatedPlaceholderEmptyTitle, Button, EMPTY_PLACEHOLDER_TRANSITION_PROPS } from 'twenty-ui';
+import { IconPlus } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
-import {
-  AnimatedPlaceholder,
-  AnimatedPlaceholderEmptyContainer,
-  AnimatedPlaceholderEmptySubTitle,
-  AnimatedPlaceholderEmptyTextContainer,
-  AnimatedPlaceholderEmptyTitle,
-  Button,
-  EMPTY_PLACEHOLDER_TRANSITION_PROPS,
-  IconPlus,
-} from 'twenty-ui';
 
 import { SkeletonLoader } from '@/activities/components/SkeletonLoader';
 import { useOpenCreateActivityDrawer } from '@/activities/hooks/useOpenCreateActivityDrawer';

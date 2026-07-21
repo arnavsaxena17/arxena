@@ -1,5 +1,7 @@
 /* @license Enterprise */
 
+import { Button, H2Title, HorizontalSeparator, Section } from 'twenty-ui';
+import { IconCheck, IconCopy, IconDownload, IconUpload } from 'twenty-ui/icons';
 import { parseSAMLMetadataFromXMLFile } from '@/settings/security/utils/parseSAMLMetadataFromXMLFile';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -9,16 +11,7 @@ import styled from '@emotion/styled';
 import { ChangeEvent, useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { isDefined } from 'twenty-shared';
-import {
-  Button,
-  H2Title,
-  HorizontalSeparator,
-  IconCheck,
-  IconCopy,
-  IconDownload,
-  IconUpload,
-  Section,
-} from 'twenty-ui';
+
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const StyledUploadFileContainer = styled.div`

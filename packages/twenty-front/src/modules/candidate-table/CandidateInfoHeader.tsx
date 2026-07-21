@@ -7,7 +7,7 @@ import { useStartChats } from '@/object-record/hooks/useStartChats';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import styled from '@emotion/styled';
-import { IconCopy, IconExternalLink, IconId, IconMessageCircle, IconMessageX, IconPhone, IconUserCircle } from '@tabler/icons-react';
+import { IconCopy, IconExternalLink, IconId, IconMessageCircle, IconMessageX, IconPhone, IconUserCircle } from 'twenty-ui/icons';
 import axios from 'axios';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -16,7 +16,6 @@ import { getCandidateCustomField, graphQltoUpdateOneCandidate } from 'twenty-sha
 import { Status } from 'twenty-ui';
 import { getCandidateProfileUrl } from './utils/getCandidateProfileUrl';
 import { STATUS_LABELS } from './TableColumns';
-
 
 // Status colors mapping
 const STATUS_COLORS: Record<string, "red" | "green" | "orange" | "turquoise" | "sky" | "blue" | "purple" | "gray" | "pink" | "yellow"> = {
@@ -60,8 +59,6 @@ const CONVERSATION_STATUS_COLORS: Record<string, "red" | "green" | "orange" | "t
   CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION: 'orange',
   CONVERSATION_CLOSED_TO_BE_CONTACTED: 'gray'
 };
-
-
 
 // All chat options
 const ALL_CHATS = [

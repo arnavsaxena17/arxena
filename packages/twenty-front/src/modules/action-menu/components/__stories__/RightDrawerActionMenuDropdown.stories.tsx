@@ -1,3 +1,5 @@
+import { ComponentDecorator, getCanvasElementForDropdownTesting, MenuItemAccent } from 'twenty-ui';
+import { IconFileExport, IconHeart, IconTrash } from 'twenty-ui/icons';
 import { expect, jest } from '@storybook/jest';
 import { Meta, StoryObj } from '@storybook/react';
 import { RecoilRoot } from 'recoil';
@@ -14,14 +16,7 @@ import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-sto
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { msg } from '@lingui/core/macro';
 import { userEvent, waitFor, within } from '@storybook/test';
-import {
-  ComponentDecorator,
-  getCanvasElementForDropdownTesting,
-  IconFileExport,
-  IconHeart,
-  IconTrash,
-  MenuItemAccent,
-} from 'twenty-ui';
+
 import { I18nFrontDecorator } from '~/testing/decorators/I18nFrontDecorator';
 
 const deleteMock = jest.fn();

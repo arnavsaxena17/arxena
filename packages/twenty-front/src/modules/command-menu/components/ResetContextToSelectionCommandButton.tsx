@@ -1,3 +1,4 @@
+import { IconArrowBackUp } from 'twenty-ui/icons';
 import { CommandMenuContextRecordChip } from '@/command-menu/components/CommandMenuContextRecordChip';
 import { CommandMenuItem } from '@/command-menu/components/CommandMenuItem';
 import { RESET_CONTEXT_TO_SELECTION } from '@/command-menu/constants/ResetContextToSelection';
@@ -9,7 +10,6 @@ import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/
 import { t } from '@lingui/core/macro';
 import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import { IconArrowBackUp } from 'twenty-ui';
 
 export const ResetContextToSelectionCommandButton = () => {
   const contextStoreTargetedRecordsRule = useRecoilComponentValueV2(

@@ -1,6 +1,6 @@
 import { SortConfig } from '@/candidate-table/states/states';
 import styled from '@emotion/styled';
-import { IconArrowDown, IconArrowUp, IconPlus, IconX } from '@tabler/icons-react';
+import { IconArrowDown, IconArrowUp, IconPlus, IconX } from 'twenty-ui/icons';
 import Handsontable from 'handsontable';
 import { useState } from 'react';
 

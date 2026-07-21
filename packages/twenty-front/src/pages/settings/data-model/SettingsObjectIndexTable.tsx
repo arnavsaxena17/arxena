@@ -1,3 +1,4 @@
+import { IconSearch, IconSquareKey } from 'twenty-ui/icons';
 import { ObjectMetadataItem } from '@/object-metadata/types/ObjectMetadataItem';
 import { settingsObjectIndexesFamilyState } from '@/settings/data-model/object-details/states/settingsObjectIndexesFamilyState';
 import { TextInput } from '@/ui/input/components/TextInput';
@@ -14,7 +15,7 @@ import { useLingui } from '@lingui/react/macro';
 import { isNonEmptyArray } from '@sniptt/guards';
 import { useEffect, useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { IconSearch, IconSquareKey } from 'twenty-ui';
+
 import { SettingsObjectIndexesTableItem } from '~/pages/settings/data-model/types/SettingsObjectIndexesTableItem';
 
 export const StyledObjectIndexTableRow = styled(TableRow)`

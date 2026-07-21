@@ -1,3 +1,5 @@
+import { VisibilityHidden } from 'twenty-ui';
+import { IconChevronDown } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 
 import { FormFieldInputContainer } from '@/object-record/record-field/form-types/components/FormFieldInputContainer';
@@ -17,7 +19,6 @@ import { isStandaloneVariableString } from '@/workflow/utils/isStandaloneVariabl
 import { useTheme } from '@emotion/react';
 import { useId, useState } from 'react';
 import { isDefined } from 'twenty-shared';
-import { IconChevronDown, VisibilityHidden } from 'twenty-ui';
 
 type FormMultiSelectFieldInputProps = {
   label?: string;

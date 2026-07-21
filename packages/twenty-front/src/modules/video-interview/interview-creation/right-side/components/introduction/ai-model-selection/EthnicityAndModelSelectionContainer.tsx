@@ -84,8 +84,6 @@ export const EthnicityAndModelSelectionContainer = ({ videoInterviewModelsArr }:
     setSelectedLanguage(language);
   };
 
-
-
   const availableLanguages: string[] = useMemo(() => {
     const availableLanguagesArr: any = [];
 

@@ -1,14 +1,9 @@
+import { ComponentDecorator } from 'twenty-ui';
+import { IconBell, IconLock, IconRobot, IconUsers } from 'twenty-ui/icons';
 import { SettingsOptionCardContentToggle } from '@/settings/components/SettingsOptions/SettingsOptionCardContentToggle';
 import styled from '@emotion/styled';
 import { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
-import {
-  ComponentDecorator,
-  IconBell,
-  IconLock,
-  IconRobot,
-  IconUsers,
-} from 'twenty-ui';
 
 const StyledContainer = styled.div`
   width: 480px;

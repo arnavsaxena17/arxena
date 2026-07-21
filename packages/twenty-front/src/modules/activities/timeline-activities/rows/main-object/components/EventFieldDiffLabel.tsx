@@ -1,5 +1,8 @@
+
+import { type IconComponent } from 'twenty-ui';
+import { useIcons } from 'twenty-ui';
+import { Icon123 } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
-import { Icon123, useIcons } from 'twenty-ui';
 
 import { FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
 

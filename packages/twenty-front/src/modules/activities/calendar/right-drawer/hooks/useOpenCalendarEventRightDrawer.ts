@@ -1,3 +1,4 @@
+import { IconCalendarEvent } from 'twenty-ui/icons';
 import { useSetRecoilState } from 'recoil';
 
 import { viewableRecordIdState } from '@/object-record/record-right-drawer/states/viewableRecordIdState';
@@ -5,7 +6,6 @@ import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { RightDrawerHotkeyScope } from '@/ui/layout/right-drawer/types/RightDrawerHotkeyScope';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
 import { useSetHotkeyScope } from '@/ui/utilities/hotkey/hooks/useSetHotkeyScope';
-import { IconCalendarEvent } from 'twenty-ui';
 
 export const useOpenCalendarEventRightDrawer = () => {
   const { openRightDrawer } = useRightDrawer();

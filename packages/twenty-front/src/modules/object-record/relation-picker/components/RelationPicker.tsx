@@ -1,5 +1,5 @@
+import { IconForbid } from 'twenty-ui/icons';
 import { useContext } from 'react';
-import { IconForbid } from 'twenty-ui';
 
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { FieldContext } from '@/object-record/record-field/contexts/FieldContext';

@@ -1,3 +1,4 @@
+import { IconList } from 'twenty-ui/icons';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 
 import { useCommandMenu } from '@/command-menu/hooks/useCommandMenu';
@@ -9,7 +10,7 @@ import { RightDrawerHotkeyScope } from '@/ui/layout/right-drawer/types/RightDraw
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
 import { useSetHotkeyScope } from '@/ui/utilities/hotkey/hooks/useSetHotkeyScope';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
-import { IconList } from 'twenty-ui';
+
 import { FeatureFlagKey } from '~/generated/graphql';
 
 export const useOpenActivityRightDrawer = ({

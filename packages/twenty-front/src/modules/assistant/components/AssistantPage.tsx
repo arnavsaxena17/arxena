@@ -1,3 +1,5 @@
+import { Button } from 'twenty-ui';
+import { IconMessage, IconPlus } from 'twenty-ui/icons';
 import { AssistantChatColumn } from '@/assistant/components/AssistantChatColumn';
 import type { AssistantTableData } from '@/assistant/components/AssistantDetailsTable';
 import { AssistantResultsPanel } from '@/assistant/components/AssistantResultsPanel';
@@ -17,10 +19,9 @@ import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
 import styled from '@emotion/styled';
-import { Loader } from '@ui/feedback/loader/components/Loader';
+import { Loader } from 'twenty-ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { Button, IconMessage, IconPlus } from 'twenty-ui';
 
 // ── localStorage persistence helpers ────────────────────────────────────────
 // Only lightweight refs (no rows/columns) are stored locally.
@@ -583,7 +584,6 @@ export const AssistantPage = () => {
       ),
     );
   }, [currentThreadId]);
-
 
   const handleNewThread = useCallback(
     async (e?: React.MouseEvent<HTMLButtonElement>) => {

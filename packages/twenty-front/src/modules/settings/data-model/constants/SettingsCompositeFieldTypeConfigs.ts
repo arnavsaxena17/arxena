@@ -12,16 +12,7 @@ import {
 import { SettingsFieldTypeConfig } from '@/settings/data-model/constants/SettingsNonCompositeFieldTypeConfigs';
 import { CompositeFieldType } from '@/settings/data-model/types/CompositeFieldType';
 import { ConnectedAccountProvider } from 'twenty-shared';
-import {
-  IllustrationIconCurrency,
-  IllustrationIconLink,
-  IllustrationIconMail,
-  IllustrationIconMap,
-  IllustrationIconPhone,
-  IllustrationIconSetting,
-  IllustrationIconText,
-  IllustrationIconUser,
-} from 'twenty-ui';
+import { IllustrationIconCurrency, IllustrationIconLink, IllustrationIconMail, IllustrationIconMap, IllustrationIconPhone, IllustrationIconSetting, IllustrationIconText, IllustrationIconUser } from 'twenty-ui';
 import { FieldMetadataType } from '~/generated-metadata/graphql';
 
 export type SettingsCompositeFieldTypeConfig<T> = SettingsFieldTypeConfig<T> & {

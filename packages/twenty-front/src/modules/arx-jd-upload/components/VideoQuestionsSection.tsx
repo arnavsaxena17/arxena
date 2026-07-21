@@ -1,5 +1,7 @@
+import { Button } from 'twenty-ui';
+import { IconMinus, IconPlus } from 'twenty-ui/icons';
 import React from 'react';
-import { Button, IconMinus, IconPlus } from 'twenty-ui';
+
 import { FormComponentProps } from '../types/FormComponentProps';
 import {
   StyledInput,

@@ -2,7 +2,7 @@ import { enrichmentsState, sampleEnrichmentsState } from '@/arx-ai-filtering/sta
 import { customSortState } from '@/candidate-table/states/customSortState';
 import { processedDataSelector } from '@/candidate-table/states/states';
 import styled from '@emotion/styled';
-import { IconChevronDown, IconSortAscending, IconSortDescending } from '@tabler/icons-react';
+import { IconChevronDown, IconSortAscending, IconSortDescending } from 'twenty-ui/icons';
 import { useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { BaseSortField, CustomSortState, SortField } from '../types/sortTypes';

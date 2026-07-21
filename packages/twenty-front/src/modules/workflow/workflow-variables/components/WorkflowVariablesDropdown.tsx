@@ -1,3 +1,4 @@
+import { IconVariablePlus } from 'twenty-ui/icons';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
 import { StyledDropdownButtonContainer } from '@/ui/layout/dropdown/components/StyledDropdownButtonContainer';
 import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
@@ -12,7 +13,6 @@ import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useState } from 'react';
 import { isDefined } from 'twenty-shared';
-import { IconVariablePlus } from 'twenty-ui';
 
 const StyledDropdownVariableButtonContainer = styled(
   StyledDropdownButtonContainer,

@@ -1,12 +1,14 @@
 /* @license Enterprise */
 
+import { Button, H2Title, Section } from 'twenty-ui';
+import { IconCopy } from 'twenty-ui/icons';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TextInput } from '@/ui/input/components/TextInput';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { Controller, useFormContext } from 'react-hook-form';
-import { Button, H2Title, IconCopy, Section } from 'twenty-ui';
+
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const StyledInputsContainer = styled.div`

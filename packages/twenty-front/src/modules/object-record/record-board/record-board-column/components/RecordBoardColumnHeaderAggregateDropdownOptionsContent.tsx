@@ -1,3 +1,4 @@
+import { IconCheck, IconChevronLeft } from 'twenty-ui/icons';
 import { useDropdown } from '@/dropdown/hooks/useDropdown';
 import {
   RecordBoardColumnHeaderAggregateDropdownContext,
@@ -20,7 +21,6 @@ import { useUpdateViewAggregate } from '@/views/hooks/useUpdateViewAggregate';
 import isEmpty from 'lodash.isempty';
 import { useRecoilValue } from 'recoil';
 import { Key } from 'ts-key-enum';
-import { IconCheck, IconChevronLeft } from 'twenty-ui';
 
 export const RecordBoardColumnHeaderAggregateDropdownOptionsContent = ({
   availableAggregations,

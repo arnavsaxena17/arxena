@@ -1,6 +1,7 @@
+import { Button } from 'twenty-ui';
+import { IconReload } from 'twenty-ui/icons';
 import { FetchResult } from '@apollo/client';
 import styled from '@emotion/styled';
-import { Button, IconReload } from 'twenty-ui';
 
 import { SyncRemoteTableSchemaChangesMutation } from '~/generated-metadata/graphql';
 

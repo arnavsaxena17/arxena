@@ -1,11 +1,6 @@
-import {
-  AvatarChipVariant,
-  Checkbox,
-  CheckboxVariant,
-  LightIconButton,
-  IconEye,
-  IconEyeOff,
-} from 'twenty-ui';
+
+import { AvatarChipVariant, Checkbox, CheckboxVariant, LightIconButton } from 'twenty-ui';
+import { IconEye, IconEyeOff } from 'twenty-ui/icons';
 import { RecordBoardCardHeaderContainer } from '@/object-record/record-board/record-board-card/components/RecordBoardCardHeaderContainer';
 import { RecordInlineCellEditMode } from '@/object-record/record-inline-cell/components/RecordInlineCellEditMode';
 import styled from '@emotion/styled';

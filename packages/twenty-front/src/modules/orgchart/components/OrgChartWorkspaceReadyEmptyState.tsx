@@ -1,11 +1,6 @@
 import styled from '@emotion/styled';
-import { IconHierarchy2 } from '@tabler/icons-react';
-import {
-    AnimatedPlaceholder,
-    AnimatedPlaceholderEmptySubTitle,
-    AnimatedPlaceholderEmptyTextContainer,
-    AnimatedPlaceholderEmptyTitle,
-} from 'twenty-ui';
+import { IconHierarchy2 } from 'twenty-ui/icons';
+import { AnimatedPlaceholder, AnimatedPlaceholderEmptySubTitle, AnimatedPlaceholderEmptyTextContainer, AnimatedPlaceholderEmptyTitle } from 'twenty-ui';
 
 import { OrgChartCompanySearchWrapper } from '@/orgchart/components/OrgChartCompanySearchWrapper';
 

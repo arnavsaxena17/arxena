@@ -1,8 +1,8 @@
-import { PartialBlock } from '@blocknote/core';
+import { RichTextPartialBlock } from '@/ui/input/editor/types/RichTextBlock.types';
 import { isUndefinedOrNull } from '~/utils/isUndefinedOrNull';
 
 export const getFirstNonEmptyLineOfRichText = (
-  blocks: PartialBlock[] | null,
+  blocks: RichTextPartialBlock[] | null,
 ): string => {
   if (blocks === null) {
     return '';

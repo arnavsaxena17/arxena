@@ -1,5 +1,6 @@
-import { IconChevronDown } from 'twenty-ui';
 
+
+import { IconChevronDown } from 'twenty-ui/icons';
 import { DropdownMenuHeader } from '@/ui/layout/dropdown/components/DropdownMenuHeader';
 
 import { ObjectFilterDropdownOperandSelect } from '@/object-record/object-filter-dropdown/components/ObjectFilterDropdownOperandSelect';

@@ -1,3 +1,4 @@
+import { IconEyeOff, IconSettings } from 'twenty-ui/icons';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { RecordBoardColumnContext } from '@/object-record/record-board/record-board-column/contexts/RecordBoardColumnContext';
 import { useRecordGroupVisibility } from '@/object-record/record-group/hooks/useRecordGroupVisibility';
@@ -12,7 +13,7 @@ import { useCallback, useContext, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import { IconEyeOff, IconSettings } from 'twenty-ui';
+
 import { useNavigateSettings } from '~/hooks/useNavigateSettings';
 
 type UseRecordGroupActionsParams = {

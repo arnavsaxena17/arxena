@@ -1,10 +1,8 @@
+import { IconMail } from 'twenty-ui/icons';
 import { campaignMetricsState } from '@/drip-campaign/states/dripCampaignModalOpenState';
 import styled from '@emotion/styled';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import {
-    IconMail
-} from 'twenty-ui';
 
 const StyledContainer = styled.div`
   display: flex;

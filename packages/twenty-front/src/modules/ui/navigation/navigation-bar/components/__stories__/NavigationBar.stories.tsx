@@ -1,12 +1,6 @@
+import { ComponentDecorator, NavigationBar } from 'twenty-ui';
+import { IconCheckbox, IconList, IconSearch, IconSettings } from 'twenty-ui/icons';
 import { Meta, StoryObj } from '@storybook/react';
-import {
-  ComponentDecorator,
-  IconCheckbox,
-  IconList,
-  IconSearch,
-  IconSettings,
-  NavigationBar,
-} from 'twenty-ui';
 
 import { ComponentWithRouterDecorator } from '~/testing/decorators/ComponentWithRouterDecorator';
 

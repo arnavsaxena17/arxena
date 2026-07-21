@@ -1,3 +1,5 @@
+import { Button, CoreEditorHeader, H2Title, Section } from 'twenty-ui';
+import { IconGitCommit, IconPlayerPlay, IconRestore } from 'twenty-ui/icons';
 import {
   File,
   SettingsServerlessFunctionCodeEditor,
@@ -10,15 +12,7 @@ import { useTabList } from '@/ui/layout/tab/hooks/useTabList';
 import { useScopedHotkeys } from '@/ui/utilities/hotkey/hooks/useScopedHotkeys';
 import styled from '@emotion/styled';
 import { Key } from 'ts-key-enum';
-import {
-  Button,
-  CoreEditorHeader,
-  H2Title,
-  IconGitCommit,
-  IconPlayerPlay,
-  IconRestore,
-  Section,
-} from 'twenty-ui';
+
 import { useHotkeyScopeOnMount } from '~/hooks/useHotkeyScopeOnMount';
 import { useNavigateSettings } from '~/hooks/useNavigateSettings';
 

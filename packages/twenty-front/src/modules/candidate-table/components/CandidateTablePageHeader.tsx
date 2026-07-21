@@ -1,15 +1,11 @@
+import { IconDownload } from 'twenty-ui/icons';
+import { Button, IconComponent } from 'twenty-ui';
+import { IconAlertCircle, IconHierarchy2, IconMessage } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
-import { IconGitMerge } from '@tabler/icons-react';
+import { IconGitMerge } from 'twenty-ui/icons';
 import { ReactNode, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import {
-  Button,
-  IconAlertCircle,
-  IconComponent,
-  IconHierarchy2,
-  IconMessage
-} from 'twenty-ui';
 
 import { CreditHistoryModal } from '@/billing/components/CreditHistoryModal';
 import { CandidateTableJobsPageMenuDropdown } from '@/candidate-table/components/CandidateTableJobsPageMenuDropdown';

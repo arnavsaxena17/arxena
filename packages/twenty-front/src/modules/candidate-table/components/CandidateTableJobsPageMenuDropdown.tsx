@@ -1,3 +1,6 @@
+import { IconSearch } from 'twenty-ui/icons';
+import { Button, MenuItem } from 'twenty-ui';
+import { IconApi, IconBrandChrome, IconBrandLinkedin, IconChevronDown, IconCoins, IconComment, IconDownload, IconGitCommit, IconPlus } from 'twenty-ui/icons';
 import { ORG_CHART_CANDIDATE_SOURCE_M7KQ } from '@/orgchart/constants/orgChartM7kqSource';
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
 import { orgChartLinkedInSearchTypeState } from '@/orgchart/states/orgChartLinkedInSearchTypeState';
@@ -9,19 +12,6 @@ import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useRecoilState } from 'recoil';
 import { ARXENA_CHROME_WEBSTORE_URL, LinkedInSearchType } from 'twenty-shared';
-import {
-  Button,
-  IconApi,
-  IconBrandChrome,
-  IconBrandLinkedin,
-  IconChevronDown,
-  IconCoins,
-  IconComment,
-  IconDownload,
-  IconGitCommit,
-  IconPlus,
-  MenuItem
-} from 'twenty-ui';
 
 const ORG_CHART_LINKEDIN_SEARCH_TYPE_OPTIONS: {
   value: LinkedInSearchType;

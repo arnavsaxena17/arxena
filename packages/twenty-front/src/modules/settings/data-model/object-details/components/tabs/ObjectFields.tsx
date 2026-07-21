@@ -1,9 +1,10 @@
+import { Button, H2Title, Section, UndecoratedLink } from 'twenty-ui';
+import { IconPlus } from 'twenty-ui/icons';
 import { ObjectMetadataItem } from '@/object-metadata/types/ObjectMetadataItem';
 import { SettingsObjectFieldTable } from '~/pages/settings/data-model/SettingsObjectFieldTable';
 
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
-import { Button, H2Title, IconPlus, Section, UndecoratedLink } from 'twenty-ui';
 
 const StyledDiv = styled.div`
   display: flex;

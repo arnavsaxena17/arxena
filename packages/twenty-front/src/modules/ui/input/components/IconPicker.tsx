@@ -1,14 +1,8 @@
+import { IconButton, IconButtonVariant, IconComponent, LightIconButton, useIcons } from 'twenty-ui';
+import { IconApps } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import {
-  IconApps,
-  IconButton,
-  IconButtonVariant,
-  IconComponent,
-  LightIconButton,
-  useIcons,
-} from 'twenty-ui';
 
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
 import { DropdownMenu } from '@/ui/layout/dropdown/components/DropdownMenu';

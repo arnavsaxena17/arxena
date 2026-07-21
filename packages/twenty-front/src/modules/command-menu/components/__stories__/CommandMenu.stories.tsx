@@ -1,3 +1,4 @@
+import { IconDotsVertical } from 'twenty-ui/icons';
 import { Decorator, Meta, StoryObj } from '@storybook/react';
 import { expect, userEvent, within } from '@storybook/test';
 import { useSetRecoilState } from 'recoil';
@@ -23,7 +24,7 @@ import { ContextStoreComponentInstanceContext } from '@/context-store/states/con
 import { RecordFiltersComponentInstanceContext } from '@/object-record/record-filter/states/context/RecordFiltersComponentInstanceContext';
 import { RecordSortsComponentInstanceContext } from '@/object-record/record-sort/states/context/RecordSortsComponentInstanceContext';
 import { HttpResponse, graphql } from 'msw';
-import { IconDotsVertical } from 'twenty-ui';
+
 import { FeatureFlagKey } from '~/generated/graphql';
 import { I18nFrontDecorator } from '~/testing/decorators/I18nFrontDecorator';
 import { JestContextStoreSetter } from '~/testing/jest/JestContextStoreSetter';

@@ -1,12 +1,7 @@
-import {
-  Button,
-  CodeEditor,
-  CoreEditorHeader,
-  H2Title,
-  IconPlayerPlay,
-  Section,
-} from 'twenty-ui';
 
+
+import { Button, CodeEditor, CoreEditorHeader, H2Title, Section } from 'twenty-ui';
+import { IconPlayerPlay } from 'twenty-ui/icons';
 import { ServerlessFunctionExecutionResult } from '@/serverless-functions/components/ServerlessFunctionExecutionResult';
 import { SettingsServerlessFunctionHotkeyScope } from '@/settings/serverless-functions/types/SettingsServerlessFunctionHotKeyScope';
 import { SettingsPath } from '@/types/SettingsPath';

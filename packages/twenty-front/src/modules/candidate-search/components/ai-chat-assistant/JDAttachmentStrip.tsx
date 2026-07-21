@@ -1,8 +1,8 @@
+import { IconFile } from 'twenty-ui/icons';
 import { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
 import { useFindManyAttachments } from '@/object-record/hooks/useFindManyAttachments';
 import styled from '@emotion/styled';
 import { useEffect, useState } from 'react';
-import { IconFile } from 'twenty-ui';
 
 const StyledAttachmentStrip = styled.div`
   display: flex;
@@ -24,8 +24,6 @@ const StyledFileName = styled.span`
   font-weight: ${({ theme }) => theme.font.weight.medium};
   color: ${({ theme }) => theme.font.color.primary};
 `;
-
-
 
 type JDAttachmentStripProps = {
   parsedJD: ParsedJD | null;

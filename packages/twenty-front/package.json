@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npx nx build twenty-orgchart && VITE_DISABLE_TYPESCRIPT_CHECKER=true VITE_DISABLE_ESLINT_CHECKER=true NODE_OPTIONS=--max-old-space-size=8192 npx vite build && sh ./scripts/inject-runtime-env.sh",
-    "build:sourcemaps": "npx nx build twenty-orgchart && VITE_BUILD_SOURCEMAP=true VITE_DISABLE_TYPESCRIPT_CHECKER=true VITE_DISABLE_ESLINT_CHECKER=true NODE_OPTIONS=--max-old-space-size=8192 npx vite build && sh ./scripts/inject-runtime-env.sh",
+    "build": "npx nx build twenty-ui && npx nx build twenty-orgchart && VITE_DISABLE_TYPESCRIPT_CHECKER=true VITE_DISABLE_ESLINT_CHECKER=true NODE_OPTIONS=--max-old-space-size=8192 npx vite build && sh ./scripts/inject-runtime-env.sh",
+    "build:sourcemaps": "npx nx build twenty-ui && npx nx build twenty-orgchart && VITE_BUILD_SOURCEMAP=true VITE_DISABLE_TYPESCRIPT_CHECKER=true VITE_DISABLE_ESLINT_CHECKER=true NODE_OPTIONS=--max-old-space-size=8192 npx vite build && sh ./scripts/inject-runtime-env.sh",
     "start:prod": "NODE_ENV=production npx vite --host",
     "tsup": "npx tsup"
   },
@@ -61,7 +61,8 @@
     "recoil-sync": "^0.2.0",
     "transliteration": "^2.3.5",
     "twenty-orgchart": "workspace:*",
-    "twenty-shared": "workspace:*"
+    "twenty-shared": "workspace:*",
+    "twenty-ui": "workspace:*"
   },
   "devDependencies": {
     "@types/file-saver": "^2"

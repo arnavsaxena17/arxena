@@ -1,3 +1,4 @@
+import { IconBriefcase } from 'twenty-ui/icons';
 import { FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
 import { ObjectMetadataItem } from '@/object-metadata/types/ObjectMetadataItem';
 

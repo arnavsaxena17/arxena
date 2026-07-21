@@ -1,3 +1,4 @@
+import { IconUsers } from 'twenty-ui/icons';
 import { useMemo } from 'react';
 
 import { useFilteredObjectMetadataItems } from '@/object-metadata/hooks/useFilteredObjectMetadataItems';

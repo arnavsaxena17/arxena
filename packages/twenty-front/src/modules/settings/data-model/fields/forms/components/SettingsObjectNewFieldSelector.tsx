@@ -1,3 +1,5 @@
+import { H2Title, UndecoratedLink } from 'twenty-ui';
+import { IconSearch } from 'twenty-ui/icons';
 import { FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
 import { SettingsCard } from '@/settings/components/SettingsCard';
 import { SETTINGS_FIELD_TYPE_CATEGORIES } from '@/settings/data-model/constants/SettingsFieldTypeCategories';
@@ -16,7 +18,7 @@ import styled from '@emotion/styled';
 import { Section } from '@react-email/components';
 import { useState } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
-import { H2Title, IconSearch, UndecoratedLink } from 'twenty-ui';
+
 import { FieldMetadataType } from '~/generated-metadata/graphql';
 import { SettingsDataModelFieldTypeFormValues } from '~/pages/settings/data-model/SettingsObjectNewField/SettingsObjectNewFieldSelect';
 import { getSettingsPath } from '~/utils/navigation/getSettingsPath';

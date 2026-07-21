@@ -1,6 +1,6 @@
 import type { AssistantThread } from '@/assistant/types/assistant.types';
 import styled from '@emotion/styled';
-import { Loader } from '@ui/feedback/loader/components/Loader';
+import { Loader } from 'twenty-ui';
 import type { MouseEvent } from 'react';
 import { Button } from 'twenty-ui';
 

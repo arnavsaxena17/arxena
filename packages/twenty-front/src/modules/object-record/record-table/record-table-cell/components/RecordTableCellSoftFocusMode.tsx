@@ -1,7 +1,8 @@
+import { IconLayoutSidebarRightExpand } from 'twenty-ui/icons';
+import { IconArrowUpRight } from 'twenty-ui/icons';
 import { ReactElement, useContext, useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 import { Key } from 'ts-key-enum';
-import { IconArrowUpRight } from 'twenty-ui';
 
 import { useClearField } from '@/object-record/record-field/hooks/useClearField';
 import { useGetButtonIcon } from '@/object-record/record-field/hooks/useGetButtonIcon';

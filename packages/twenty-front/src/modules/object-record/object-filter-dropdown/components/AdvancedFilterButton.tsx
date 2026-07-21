@@ -1,3 +1,5 @@
+import { MenuItemLeftContent, Pill, StyledMenuItemBase } from 'twenty-ui';
+import { IconFilter } from 'twenty-ui/icons';
 import { useObjectMetadataItemById } from '@/object-metadata/hooks/useObjectMetadataItemById';
 import { availableFieldMetadataItemsForFilterFamilySelector } from '@/object-metadata/states/availableFieldMetadataItemsForFilterFamilySelector';
 import { getFilterTypeFromFieldType } from '@/object-metadata/utils/formatFieldMetadataItemsAsFilterDefinitions';
@@ -14,12 +16,7 @@ import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import {
-  IconFilter,
-  MenuItemLeftContent,
-  Pill,
-  StyledMenuItemBase,
-} from 'twenty-ui';
+
 import { v4 } from 'uuid';
 
 export const StyledContainer = styled.div`

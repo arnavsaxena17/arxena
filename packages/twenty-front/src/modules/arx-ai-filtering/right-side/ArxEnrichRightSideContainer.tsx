@@ -1,3 +1,4 @@
+import { IconAlertCircle } from 'twenty-ui/icons';
 import { activeAiFilterState, aiFiltersState, isArxAiFilteringModalMinimizedState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import styled from '@emotion/styled';
 import axios from 'axios';
@@ -11,9 +12,9 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 // import { useViewStates } from '@/views/hooks/internal/useViewStates';
 // import { currentViewWithFiltersState } from '@/views/states/currentViewState';
 import { currentJobIdState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
-import { IconLoader2 } from '@tabler/icons-react';
+import { IconLoader2 } from 'twenty-ui/icons';
 import { useState } from 'react';
-import { IconAlertCircle } from 'twenty-ui';
+
 import { refreshTableDataTriggerState } from '../../candidate-table/states/refreshTableDataTriggerState';
 import { ArxEnrichName } from './ArxEnrichName'; // Ensure this import is correct
 import DynamicModelCreator from './DynamicModelCreator';
@@ -37,7 +38,6 @@ const ErrorContainer = styled.div`
   z-index: 1;
   width: 100%;
 `;
-
 
 const StyledAllContainer = styled.div<{ isMinimized?: boolean }>`
   background-color: ${({ theme }) => theme.background.primary};
@@ -79,7 +79,6 @@ const ErrorAlert = styled.div`
   z-index: 1; // Add this
   margin-bottom: 1rem; // Add this
 `;
-
 
 interface ArxEnrichRightSideContainerProps {
   closeModal: () => void;
@@ -151,7 +150,6 @@ const ProgressDetails = styled.div`
   justify-content: space-between;
   align-items: center;
 `;
-
 
 export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerProps> = ({ 
   closeModal, 

@@ -1,8 +1,8 @@
+import { IconAlertCircle } from 'twenty-ui/icons';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { IconAlertCircle } from 'twenty-ui';
 
 const StyledRequestStatus = styled.div<{ warning?: boolean; maxed?: boolean }>`
   display: flex;

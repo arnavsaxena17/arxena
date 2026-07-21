@@ -1,3 +1,5 @@
+import { ActionLink, AnimatedEaseIn, Loader, Pill, ThemeType } from 'twenty-ui';
+import { IconBuildingSkyscraper, IconPhone, IconSearch, IconUsers } from 'twenty-ui/icons';
 import { Logo } from '@/auth/components/Logo';
 import { SubTitle } from '@/auth/components/SubTitle';
 import { Title } from '@/auth/components/Title';
@@ -21,17 +23,7 @@ import {
   type OnboardingIntentPathKey,
   type PricingPlanId,
 } from 'twenty-shared';
-import {
-  ActionLink,
-  AnimatedEaseIn,
-  IconBuildingSkyscraper,
-  IconPhone,
-  IconSearch,
-  IconUsers,
-  Loader,
-  Pill,
-  ThemeType,
-} from 'twenty-ui';
+
 import { getPostAuthLandingAppPath } from '~/config';
 import { OnboardingIntentPath, OnboardingStatus } from '~/generated/graphql';
 import { Mixpanel } from '~/mixpanel';

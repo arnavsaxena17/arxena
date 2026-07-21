@@ -1,3 +1,5 @@
+import { Button, H3Title, MAIN_COLORS, UndecoratedLink } from 'twenty-ui';
+import { IconCodeCircle, IconListDetails, IconPlus, IconPoint, IconSettings } from 'twenty-ui/icons';
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -20,17 +22,7 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 
 import { useLingui } from '@lingui/react/macro';
 import { isDefined } from 'twenty-shared';
-import {
-  Button,
-  H3Title,
-  IconCodeCircle,
-  IconListDetails,
-  IconPlus,
-  IconPoint,
-  IconSettings,
-  MAIN_COLORS,
-  UndecoratedLink,
-} from 'twenty-ui';
+
 import { FeatureFlagKey } from '~/generated/graphql';
 import { useNavigateApp } from '~/hooks/useNavigateApp';
 import { SETTINGS_OBJECT_DETAIL_TABS } from '~/pages/settings/data-model/constants/SettingsObjectDetailTabs';

@@ -1,3 +1,4 @@
+import { IconPlus, IconReload, IconTrash, IconSearch } from 'twenty-ui/icons';
 import { WorkflowStepType } from '@/workflow/types/Workflow';
 
 export const RECORD_ACTIONS: Array<{

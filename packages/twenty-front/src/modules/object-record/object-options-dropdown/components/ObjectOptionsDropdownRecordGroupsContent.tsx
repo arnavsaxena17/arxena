@@ -1,14 +1,6 @@
+import { MenuItem, MenuItemNavigate, MenuItemToggle } from 'twenty-ui';
+import { IconChevronLeft, IconCircleOff, IconEyeOff, IconLayoutList, IconSortDescending } from 'twenty-ui/icons';
 import { useEffect } from 'react';
-import {
-  IconChevronLeft,
-  IconCircleOff,
-  IconEyeOff,
-  IconLayoutList,
-  IconSortDescending,
-  MenuItem,
-  MenuItemNavigate,
-  MenuItemToggle,
-} from 'twenty-ui';
 
 import { useOptionsDropdown } from '@/object-record/object-options-dropdown/hooks/useOptionsDropdown';
 import { RecordGroupReorderConfirmationModal } from '@/object-record/record-group/components/RecordGroupReorderConfirmationModal';

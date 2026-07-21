@@ -1,11 +1,12 @@
+import { CatalogDecorator, CatalogStory } from 'twenty-ui';
+import { IconSearch } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { Meta, StoryObj } from '@storybook/react';
-import { CatalogDecorator, CatalogStory, IconSearch } from 'twenty-ui';
 
 import { ComponentWithRouterDecorator } from '~/testing/decorators/ComponentWithRouterDecorator';
 import { MemoryRouterDecorator } from '~/testing/decorators/MemoryRouterDecorator';
 
-import { getOsControlSymbol } from '@ui/utilities/device/getOsControlSymbol';
+import { getOsControlSymbol } from 'twenty-ui';
 import { NavigationDrawerItem } from '../NavigationDrawerItem';
 
 const StyledContainer = styled.div`

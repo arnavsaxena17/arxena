@@ -1,3 +1,5 @@
+import { VisibilityHidden } from 'twenty-ui';
+import { IconChevronDown } from 'twenty-ui/icons';
 import { FormFieldInputContainer } from '@/object-record/record-field/form-types/components/FormFieldInputContainer';
 import { FormFieldInputInputContainer } from '@/object-record/record-field/form-types/components/FormFieldInputInputContainer';
 import { FormFieldInputRowContainer } from '@/object-record/record-field/form-types/components/FormFieldInputRowContainer';
@@ -19,7 +21,6 @@ import styled from '@emotion/styled';
 import { useId, useState } from 'react';
 import { Key } from 'ts-key-enum';
 import { isDefined } from 'twenty-shared';
-import { IconChevronDown, VisibilityHidden } from 'twenty-ui';
 
 type FormSelectFieldInputProps = {
   label?: string;

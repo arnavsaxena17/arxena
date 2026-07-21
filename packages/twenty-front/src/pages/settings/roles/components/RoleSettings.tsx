@@ -1,9 +1,11 @@
+import { IconUser } from 'twenty-ui/icons';
+import { Button, H2Title, IconButton, Section, Toggle } from 'twenty-ui';
+import { IconX } from 'twenty-ui/icons';
 import { ApolloError, useMutation } from '@apollo/client';
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { useState } from 'react';
 import { isDefined } from 'twenty-shared';
-import { Button, H2Title, IconButton, IconX, Section, Toggle } from 'twenty-ui';
 
 import { DELETE_ONE_ROLE } from '@/settings/roles/graphql/mutations/deleteOneRoleMutation';
 import { UPDATE_ONE_ROLE } from '@/settings/roles/graphql/mutations/updateOneRoleMutation';

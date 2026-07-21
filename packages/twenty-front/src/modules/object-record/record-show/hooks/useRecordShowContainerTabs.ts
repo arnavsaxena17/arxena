@@ -1,3 +1,4 @@
+import { IconCalendarEvent, IconMail, IconNotes, IconPrinter, IconSettings } from 'twenty-ui/icons';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { objectMetadataItemsState } from '@/object-metadata/states/objectMetadataItemsState';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
@@ -9,13 +10,7 @@ import { SingleTabProps } from '@/ui/layout/tab/components/TabList';
 import { RecordLayoutTab } from '@/ui/layout/tab/types/RecordLayoutTab';
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
 import { useRecoilValue } from 'recoil';
-import {
-  IconCalendarEvent,
-  IconMail,
-  IconNotes,
-  IconPrinter,
-  IconSettings,
-} from 'twenty-ui';
+
 import { FieldMetadataType } from '~/generated-metadata/graphql';
 import { FeatureFlagKey } from '~/generated/graphql';
 

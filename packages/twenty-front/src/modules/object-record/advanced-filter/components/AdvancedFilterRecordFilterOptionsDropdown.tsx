@@ -1,3 +1,4 @@
+import { IconDotsVertical, IconTrash } from 'twenty-ui/icons';
 import { useChildRecordFiltersAndRecordFilterGroups } from '@/object-record/advanced-filter/hooks/useChildRecordFiltersAndRecordFilterGroups';
 import { useRemoveRecordFilterGroup } from '@/object-record/record-filter-group/hooks/useRemoveRecordFilterGroup';
 import { useRemoveRootRecordFilterGroupIfEmpty } from '@/object-record/record-filter-group/hooks/useRemoveRootRecordFilterGroupIfEmpty';
@@ -13,7 +14,7 @@ import { useCloseDropdown } from '@/ui/layout/dropdown/hooks/useCloseDropdown';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import { t } from '@lingui/core/macro';
 import { isDefined } from 'twenty-shared';
-import { IconDotsVertical, IconTrash } from 'twenty-ui';
+
 import { IconButton } from 'twenty-ui';
 import { MenuItem } from 'twenty-ui';
 import { ADVANCED_FILTER_DROPDOWN_ID } from '@/views/constants/AdvancedFilterDropdownId';

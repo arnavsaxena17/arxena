@@ -1,3 +1,5 @@
+import { Button } from 'twenty-ui';
+import { IconPhotoUp, IconTrash, IconUpload, IconX } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { Trans, useLingui } from '@lingui/react/macro';
@@ -5,7 +7,7 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { isNonEmptyString } from '@sniptt/guards';
 import React from 'react';
 import { getImageAbsoluteURI, isDefined } from 'twenty-shared';
-import { Button, IconPhotoUp, IconTrash, IconUpload, IconX } from 'twenty-ui';
+
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const StyledContainer = styled.div`
@@ -119,7 +121,6 @@ export const ImageInput = ({
         baseUrl: REACT_APP_SERVER_BASE_URL,
       })
     : null;
-
 
   return (
     <StyledContainer className={className}>

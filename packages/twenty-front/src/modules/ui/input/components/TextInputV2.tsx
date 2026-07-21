@@ -1,3 +1,5 @@
+import { AutogrowWrapper, IconComponent } from 'twenty-ui';
+import { IconEye, IconEyeOff } from 'twenty-ui/icons';
 import { InputErrorHelper } from '@/ui/input/components/InputErrorHelper';
 import { InputLabel } from '@/ui/input/components/InputLabel';
 import { useTheme } from '@emotion/react';
@@ -11,7 +13,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { AutogrowWrapper, IconComponent, IconEye, IconEyeOff } from 'twenty-ui';
+
 import { useCombinedRefs } from '~/hooks/useCombinedRefs';
 import { turnIntoEmptyStringIfWhitespacesOnly } from '~/utils/string/turnIntoEmptyStringIfWhitespacesOnly';
 

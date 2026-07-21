@@ -1,15 +1,11 @@
+import { AnimatedExpandableContainer, LightIconButton } from 'twenty-ui';
+import { IconChevronRight, IconEye, IconEyeOff } from 'twenty-ui/icons';
 import { TableCell } from '@/ui/layout/table/components/TableCell';
 import { TableRow } from '@/ui/layout/table/components/TableRow';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useState } from 'react';
-import {
-  AnimatedExpandableContainer,
-  IconChevronRight,
-  IconEye,
-  IconEyeOff,
-  LightIconButton,
-} from 'twenty-ui';
+
 type SettingsAdminEnvVariablesRowProps = {
   variable: {
     name: string;

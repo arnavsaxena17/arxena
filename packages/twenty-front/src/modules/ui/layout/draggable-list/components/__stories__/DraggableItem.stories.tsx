@@ -1,6 +1,7 @@
+import { ComponentDecorator, MenuItemDraggable } from 'twenty-ui';
+import { IconBell } from 'twenty-ui/icons';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Meta, StoryObj } from '@storybook/react';
-import { ComponentDecorator, IconBell, MenuItemDraggable } from 'twenty-ui';
 
 import { DraggableItem } from '@/ui/layout/draggable-list/components/DraggableItem';
 

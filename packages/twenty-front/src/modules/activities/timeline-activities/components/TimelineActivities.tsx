@@ -6,15 +6,7 @@ import { EventList } from '@/activities/timeline-activities/components/EventList
 import { useTimelineActivities } from '@/activities/timeline-activities/hooks/useTimelineActivities';
 import { ActivityTargetableObject } from '@/activities/types/ActivityTargetableEntity';
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
-import {
-  AnimatedPlaceholder,
-  AnimatedPlaceholderEmptyContainer,
-  AnimatedPlaceholderEmptySubTitle,
-  AnimatedPlaceholderEmptyTextContainer,
-  AnimatedPlaceholderEmptyTitle,
-  EMPTY_PLACEHOLDER_TRANSITION_PROPS,
-  MOBILE_VIEWPORT,
-} from 'twenty-ui';
+import { AnimatedPlaceholder, AnimatedPlaceholderEmptyContainer, AnimatedPlaceholderEmptySubTitle, AnimatedPlaceholderEmptyTextContainer, AnimatedPlaceholderEmptyTitle, EMPTY_PLACEHOLDER_TRANSITION_PROPS, MOBILE_VIEWPORT } from 'twenty-ui';
 
 const StyledMainContainer = styled.div`
   align-items: flex-start;

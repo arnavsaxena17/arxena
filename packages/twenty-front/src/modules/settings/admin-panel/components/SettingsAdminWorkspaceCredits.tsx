@@ -1,3 +1,5 @@
+import { Button, Checkbox, H2Title, Section, useIsMobile } from 'twenty-ui';
+import { IconTrash } from 'twenty-ui/icons';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { ADMIN_ADJUST_WORKSPACE_CREDITS } from '@/settings/admin-panel/graphql/mutations/adminAdjustWorkspaceCredits';
 import { ADMIN_DELETE_WORKSPACE } from '@/settings/admin-panel/graphql/mutations/adminDeleteWorkspace';
@@ -15,14 +17,6 @@ import styled from '@emotion/styled';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import {
-  Button,
-  Checkbox,
-  H2Title,
-  IconTrash,
-  Section,
-  useIsMobile,
-} from 'twenty-ui';
 
 type WorkspaceCreditsRow = {
   workspaceId: string;

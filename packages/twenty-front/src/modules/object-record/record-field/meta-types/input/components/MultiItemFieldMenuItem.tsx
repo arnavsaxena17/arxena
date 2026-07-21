@@ -1,14 +1,9 @@
+import { MenuItem } from 'twenty-ui';
+import { IconBookmark, IconBookmarkPlus, IconPencil, IconTrash } from 'twenty-ui/icons';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
 import { MenuItemWithOptionDropdown } from '@/ui/navigation/menu-item/components/MenuItemWithOptionDropdown';
 import React, { useState } from 'react';
-import {
-  IconBookmark,
-  IconBookmarkPlus,
-  IconPencil,
-  IconTrash,
-  MenuItem,
-} from 'twenty-ui';
 
 type MultiItemFieldMenuItemProps<T> = {
   dropdownId: string;

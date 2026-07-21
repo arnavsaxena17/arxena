@@ -1,17 +1,13 @@
+import { OverflowingTextWithTooltip } from 'twenty-ui';
+import { IconCalendar, IconComment } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import {
-  IconCalendar,
-  IconComment,
-  OverflowingTextWithTooltip,
-} from 'twenty-ui';
 
 import { ActivityTargetsInlineCell } from '@/activities/inline-cell/components/ActivityTargetsInlineCell';
 import { Activity } from '@/activities/types/Activity';
 
 import { getActivitySummary } from '@/activities/utils/getActivitySummary';
-import { Checkbox, CheckboxShape } from '@ui/input';
-
+import { Checkbox, CheckboxShape } from 'twenty-ui';
 
 import { Task } from '@/activities/types/Task';
   // import { useCompleteTask } from '../hooks/useCompleteTask';

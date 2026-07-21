@@ -1,8 +1,9 @@
+import { ComponentDecorator, MenuItemDraggable } from 'twenty-ui';
+import { IconBell } from 'twenty-ui/icons';
 import { DraggableItem } from '@/ui/layout/draggable-list/components/DraggableItem';
 import { DraggableList } from '@/ui/layout/draggable-list/components/DraggableList';
 import { action } from '@storybook/addon-actions';
 import { Meta, StoryObj } from '@storybook/react';
-import { ComponentDecorator, IconBell, MenuItemDraggable } from 'twenty-ui';
 
 const meta: Meta<typeof DraggableList> = {
   title: 'UI/Layout/DraggableList/DraggableList',

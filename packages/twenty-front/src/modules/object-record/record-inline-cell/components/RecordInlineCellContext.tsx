@@ -1,3 +1,4 @@
+import { IconLabel } from 'twenty-ui';
 import { HotkeyScope } from '@/ui/utilities/hotkey/types/HotkeyScope';
 import { createContext, ReactElement, useContext } from 'react';
 import { IconComponent } from 'twenty-ui';

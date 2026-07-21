@@ -1,9 +1,4 @@
-import 'handsontable/styles/handsontable.min.css';
-import 'handsontable/styles/ht-theme-main.min.css';
-
-
-import { registerAllModules } from 'handsontable/registry';
-registerAllModules();
+import '@/candidate-table/initHandsontable';
 
 import { HotTable } from '@handsontable/react-wrapper';
 

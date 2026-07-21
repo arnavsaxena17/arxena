@@ -1,3 +1,5 @@
+import { AppTooltip, Button, H2Title, Section, TooltipDelay } from 'twenty-ui';
+import { IconPlus, IconSearch } from 'twenty-ui/icons';
 import { currentWorkspaceMembersState } from '@/auth/states/currentWorkspaceMembersStates';
 import { SettingsPath } from '@/types/SettingsPath';
 import { TextInput } from '@/ui/input/components/TextInput';
@@ -8,15 +10,7 @@ import styled from '@emotion/styled';
 import { t } from '@lingui/core/macro';
 import { useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import {
-  AppTooltip,
-  Button,
-  H2Title,
-  IconPlus,
-  IconSearch,
-  Section,
-  TooltipDelay,
-} from 'twenty-ui';
+
 import { Role, WorkspaceMember } from '~/generated-metadata/graphql';
 import {
   GetRolesDocument,

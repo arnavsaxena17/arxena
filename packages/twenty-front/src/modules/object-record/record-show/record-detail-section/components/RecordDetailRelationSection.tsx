@@ -1,7 +1,8 @@
+import { LightIconButton } from 'twenty-ui';
+import { IconForbid, IconPencil, IconPlus } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { useCallback, useContext } from 'react';
 import { useRecoilValue } from 'recoil';
-import { IconForbid, IconPencil, IconPlus, LightIconButton } from 'twenty-ui';
 
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';

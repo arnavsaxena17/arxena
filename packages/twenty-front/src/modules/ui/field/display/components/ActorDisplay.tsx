@@ -1,21 +1,9 @@
+import { AvatarChip, AvatarChipVariant, IconGmail, IconGoogleCalendar, IconMicrosoftCalendar, IconMicrosoftOutlook } from 'twenty-ui';
+import { IconApi, IconCalendar, IconCsv, IconMail, IconRobot, IconSettingsAutomation } from 'twenty-ui/icons';
 import { FieldActorValue } from '@/object-record/record-field/types/FieldMetadata';
 import { ConnectedAccountProvider } from 'twenty-shared';
 
 import { useMemo } from 'react';
-import {
-  AvatarChip,
-  AvatarChipVariant,
-  IconApi,
-  IconCalendar,
-  IconCsv,
-  IconGmail,
-  IconGoogleCalendar,
-  IconMail,
-  IconMicrosoftCalendar,
-  IconMicrosoftOutlook,
-  IconRobot,
-  IconSettingsAutomation,
-} from 'twenty-ui';
 
 type ActorDisplayProps = Partial<FieldActorValue> & {
   avatarUrl?: string | null;

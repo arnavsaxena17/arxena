@@ -1,5 +1,6 @@
+import { Button } from 'twenty-ui';
+import { IconArrowLeft, IconRefresh } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
-import { Button, IconArrowLeft, IconRefresh } from 'twenty-ui';
 
 const StyledContainer = styled.div`
   border-top: 1px solid ${({ theme }) => theme.border.color.medium};

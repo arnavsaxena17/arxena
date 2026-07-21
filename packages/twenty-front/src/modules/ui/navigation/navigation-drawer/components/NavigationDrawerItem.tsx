@@ -12,13 +12,7 @@ import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
 import { capitalize, isDefined } from 'twenty-shared';
-import {
-  IconComponent,
-  Label,
-  MOBILE_VIEWPORT,
-  Pill,
-  TablerIconsProps,
-} from 'twenty-ui';
+import { IconComponent, Label, MOBILE_VIEWPORT, Pill, TablerIconsProps } from 'twenty-ui';
 
 const DEFAULT_INDENTATION_LEVEL = 1;
 

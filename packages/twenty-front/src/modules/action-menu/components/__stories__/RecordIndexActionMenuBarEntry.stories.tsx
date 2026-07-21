@@ -1,3 +1,5 @@
+import { ComponentDecorator } from 'twenty-ui';
+import { IconCheckbox, IconTrash } from 'twenty-ui/icons';
 import { RecordIndexActionMenuBarEntry } from '@/action-menu/components/RecordIndexActionMenuBarEntry';
 import {
   ActionMenuEntryScope,
@@ -7,7 +9,7 @@ import { msg } from '@lingui/core/macro';
 import { expect, jest } from '@storybook/jest';
 import { Meta, StoryObj } from '@storybook/react';
 import { userEvent, within } from '@storybook/testing-library';
-import { ComponentDecorator, IconCheckbox, IconTrash } from 'twenty-ui';
+
 import { I18nFrontDecorator } from '~/testing/decorators/I18nFrontDecorator';
 
 const meta: Meta<typeof RecordIndexActionMenuBarEntry> = {

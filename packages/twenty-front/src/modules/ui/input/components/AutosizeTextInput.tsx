@@ -1,9 +1,10 @@
+import { Button, RoundedIconButton } from 'twenty-ui';
+import { IconArrowRight } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { useRef, useState } from 'react';
 import { HotkeysEvent } from 'react-hotkeys-hook/dist/types';
 import TextareaAutosize from 'react-textarea-autosize';
 import { Key } from 'ts-key-enum';
-import { Button, IconArrowRight, RoundedIconButton } from 'twenty-ui';
 
 import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousHotkeyScope';
 import { useScopedHotkeys } from '@/ui/utilities/hotkey/hooks/useScopedHotkeys';

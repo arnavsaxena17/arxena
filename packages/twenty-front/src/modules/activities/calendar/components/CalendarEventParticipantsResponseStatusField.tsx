@@ -1,8 +1,8 @@
+import { IconCheck, IconQuestionMark, IconX } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useRef } from 'react';
 import { useRecoilValue } from 'recoil';
-import { IconCheck, IconQuestionMark, IconX } from 'twenty-ui';
 
 import { CalendarEventParticipant } from '@/activities/calendar/types/CalendarEventParticipant';
 import { ParticipantChip } from '@/activities/components/ParticipantChip';

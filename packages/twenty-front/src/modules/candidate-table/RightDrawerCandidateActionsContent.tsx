@@ -1,3 +1,4 @@
+import { IconUser } from 'twenty-ui/icons';
 import { TABLE_CANDIDATE_ACTIONS_CONFIG } from '@/action-menu/actions/record-actions/constants/TableCandidateActionsConfig';
 import { ActionViewType } from '@/action-menu/actions/types/ActionViewType';
 import { ActionMenuContext } from '@/action-menu/contexts/ActionMenuContext';

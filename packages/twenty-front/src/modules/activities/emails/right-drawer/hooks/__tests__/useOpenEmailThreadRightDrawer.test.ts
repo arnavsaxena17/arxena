@@ -1,10 +1,10 @@
+import { IconMail } from 'twenty-ui/icons';
 import { renderHook } from '@testing-library/react';
 import { act } from 'react-dom/test-utils';
 
 import { useOpenEmailThreadRightDrawer } from '@/activities/emails/right-drawer/hooks/useOpenEmailThreadRightDrawer';
 import { RightDrawerHotkeyScope } from '@/ui/layout/right-drawer/types/RightDrawerHotkeyScope';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
-import { IconMail } from 'twenty-ui';
 
 const mockOpenRightDrawer = jest.fn();
 const mockSetHotkeyScope = jest.fn();

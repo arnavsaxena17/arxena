@@ -2,12 +2,11 @@ import { enrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenSt
 import styled from '@emotion/styled';
 import { useRecoilState } from 'recoil';
 
-import { Button } from '@ui/input/button/components/Button';
+import { Button } from 'twenty-ui';
 
-import { IconMaximize, IconMinus } from '@tabler/icons-react';
+import { IconMaximize, IconMinus } from 'twenty-ui/icons';
 import { useMemo } from 'react';
 import { Enrichment } from '../arxEnrichmentModal';
-
 
 const StyledArxEnrichNameContainer = styled.div<{ hasPrompt: boolean; isMinimized?: boolean }>`
   display: flex;
@@ -49,7 +48,6 @@ const StyledInput = styled.input<{ isMinimized?: boolean }>`
   max-width: ${({ isMinimized }) => isMinimized ? '200px' : '300px'};
   min-width: ${({ isMinimized }) => isMinimized ? 'auto' : '200px'};
 `;
-
 
 const StyledValidationMessage = styled.div`
   position: absolute;
@@ -179,7 +177,6 @@ export const ArxEnrichName: React.FC<ArxEnrichNameProps> = ({
     }
     return isFormValidValue
   }, [currentEnrichment]);
-
 
   const handleModelNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newModelName = e.target.value;

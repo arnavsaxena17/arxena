@@ -1,6 +1,6 @@
 import { type EmailSequence } from '@/drip-campaign/states/dripCampaignModalOpenState';
 import styled from '@emotion/styled';
-import { IconEdit, IconX } from '@tabler/icons-react';
+import { IconEdit, IconX } from 'twenty-ui/icons';
 import { useEffect, useState } from 'react';
 
 const StyledEditor = styled.div`

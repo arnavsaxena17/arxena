@@ -1,5 +1,7 @@
-import { IconComponent, IconPencil } from 'twenty-ui';
 
+
+import { IconComponent } from 'twenty-ui';
+import { IconPencil } from 'twenty-ui/icons';
 import { FieldDefinition } from '@/object-record/record-field/types/FieldDefinition';
 import { FieldMetadata } from '@/object-record/record-field/types/FieldMetadata';
 import { isFieldDisplayedAsPhone } from '@/object-record/record-field/types/guards/isFieldDisplayedAsPhone';

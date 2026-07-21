@@ -1,5 +1,6 @@
+import { LightIconButton } from 'twenty-ui';
+import { IconChevronRight } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
-import { IconChevronRight, LightIconButton } from 'twenty-ui';
 
 import { SettingsListCard } from '@/settings/components/SettingsListCard';
 import { SettingsIntegrationDatabaseConnectionSyncStatus } from '@/settings/integrations/database-connection/components/SettingsIntegrationDatabaseConnectionSyncStatus';

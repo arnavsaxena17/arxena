@@ -1,11 +1,6 @@
+import { Button, ButtonGroup, MenuItem } from 'twenty-ui';
+import { IconChevronDown, IconPlus } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
-import {
-  Button,
-  ButtonGroup,
-  IconChevronDown,
-  IconPlus,
-  MenuItem,
-} from 'twenty-ui';
 
 import { contextStoreCurrentViewIdComponentState } from '@/context-store/states/contextStoreCurrentViewIdComponentState';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';

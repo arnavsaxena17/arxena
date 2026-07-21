@@ -1,3 +1,4 @@
+import { IconPlaylistAdd } from 'twenty-ui/icons';
 import { getUuidV4Mock } from '~/testing/utils/getUuidV4Mock';
 import { getWorkflowVersionDiagram } from '../getWorkflowVersionDiagram';
 

@@ -1,6 +1,7 @@
+import { ComponentDecorator } from 'twenty-ui';
+import { IconUserCircle } from 'twenty-ui/icons';
 import { Meta, StoryObj } from '@storybook/react';
 import { expect, userEvent, within } from '@storybook/test';
-import { ComponentDecorator, IconUserCircle } from 'twenty-ui';
 
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { ComponentWithRecoilScopeDecorator } from '~/testing/decorators/ComponentWithRecoilScopeDecorator';

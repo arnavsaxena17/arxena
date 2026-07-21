@@ -1,3 +1,4 @@
+import { IconLabel } from 'twenty-ui';
 import { useContext } from 'react';
 import { useIcons } from 'twenty-ui';
 

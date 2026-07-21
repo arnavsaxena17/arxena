@@ -1,19 +1,12 @@
+import { IconUser } from 'twenty-ui/icons';
+import { MenuItem } from 'twenty-ui';
+import { IconBriefcase, IconCalendar, IconCheck, IconDotsVertical, IconMap, IconPencil, IconX } from 'twenty-ui/icons';
 import { gql, useMutation } from '@apollo/client';
 import styled from '@emotion/styled';
-import { IconHierarchy2 } from '@tabler/icons-react';
+import { IconHierarchy2 } from 'twenty-ui/icons';
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
-import {
-    IconBriefcase,
-    IconCalendar,
-    IconCheck,
-    IconDotsVertical,
-    IconMap,
-    IconPencil,
-    IconX,
-    MenuItem,
-} from 'twenty-ui';
 
 import { useJobStatusToggle } from '@/candidate-table/hooks/useJobStatusToggle';
 import { jobsState } from '@/candidate-table/states/states';
@@ -24,7 +17,6 @@ import { isNavigationDrawerExpandedState } from '@/ui/navigation/states/isNaviga
 import { navigationDrawerExpandedMemorizedState } from '@/ui/navigation/states/navigationDrawerExpandedMemorizedState';
 import { navigationMemorizedUrlState } from '@/ui/navigation/states/navigationMemorizedUrlState';
 import { UpdateOneJob } from 'twenty-shared';
-
 
 type JobCardProps = {
   id: string;

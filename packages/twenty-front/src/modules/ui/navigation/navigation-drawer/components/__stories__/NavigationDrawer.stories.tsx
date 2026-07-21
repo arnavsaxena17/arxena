@@ -1,26 +1,10 @@
+import { GithubVersionLink, getOsControlSymbol } from 'twenty-ui';
+import { IconAt, IconBell, IconBuildingSkyscraper, IconCalendarEvent, IconCheckbox, IconColorSwatch, IconDoorEnter, IconMail, IconSearch, IconSettings, IconTargetArrow, IconUser, IconUserCircle, IconUsers } from 'twenty-ui/icons';
 import { expect } from '@storybook/jest';
 import { Meta, StoryObj } from '@storybook/react';
 import { within } from '@storybook/test';
 import { useEffect } from 'react';
 import { useSetRecoilState } from 'recoil';
-import {
-  GithubVersionLink,
-  IconAt,
-  IconBell,
-  IconBuildingSkyscraper,
-  IconCalendarEvent,
-  IconCheckbox,
-  IconColorSwatch,
-  IconDoorEnter,
-  IconMail,
-  IconSearch,
-  IconSettings,
-  IconTargetArrow,
-  IconUser,
-  IconUserCircle,
-  IconUsers,
-  getOsControlSymbol,
-} from 'twenty-ui';
 
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { objectMetadataItemsState } from '@/object-metadata/states/objectMetadataItemsState';

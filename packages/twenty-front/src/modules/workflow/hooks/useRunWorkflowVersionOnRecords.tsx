@@ -1,9 +1,9 @@
+import { IconSettingsAutomation } from 'twenty-ui/icons';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { RUN_WORKFLOW_VERSION_ON_RECORDS } from '@/workflow/graphql/mutations/runWorkflowVersionOnRecords';
 import { useApolloClient, useMutation } from '@apollo/client';
 import { useTheme } from '@emotion/react';
-import { IconSettingsAutomation } from 'twenty-ui';
 
 type RunWorkflowVersionOnRecordsResult = {
   runWorkflowVersionOnRecords?: {

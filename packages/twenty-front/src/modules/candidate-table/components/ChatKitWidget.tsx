@@ -1,9 +1,9 @@
+import { IconX } from 'twenty-ui/icons';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import { ChatKit, useChatKit } from '@openai/chatkit-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { IconX } from 'twenty-ui';
 
 const StyledChatKitContainer = styled.div<{ isOpen: boolean }>`
   position: fixed;

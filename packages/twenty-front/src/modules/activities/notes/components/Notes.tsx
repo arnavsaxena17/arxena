@@ -1,3 +1,5 @@
+import { AnimatedPlaceholder, AnimatedPlaceholderEmptyContainer, AnimatedPlaceholderEmptySubTitle, AnimatedPlaceholderEmptyTextContainer, AnimatedPlaceholderEmptyTitle, Button, EMPTY_PLACEHOLDER_TRANSITION_PROPS } from 'twenty-ui';
+import { IconPlus } from 'twenty-ui/icons';
 import { SkeletonLoader } from '@/activities/components/SkeletonLoader';
 import { useOpenCreateActivityDrawer } from '@/activities/hooks/useOpenCreateActivityDrawer';
 import { NoteList } from '@/activities/notes/components/NoteList';
@@ -5,16 +7,6 @@ import { useNotes } from '@/activities/notes/hooks/useNotes';
 import { ActivityTargetableObject } from '@/activities/types/ActivityTargetableEntity';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import styled from '@emotion/styled';
-import {
-  AnimatedPlaceholder,
-  AnimatedPlaceholderEmptyContainer,
-  AnimatedPlaceholderEmptySubTitle,
-  AnimatedPlaceholderEmptyTextContainer,
-  AnimatedPlaceholderEmptyTitle,
-  Button,
-  EMPTY_PLACEHOLDER_TRANSITION_PROPS,
-  IconPlus,
-} from 'twenty-ui';
 
 const StyledNotesContainer = styled.div`
   display: flex;

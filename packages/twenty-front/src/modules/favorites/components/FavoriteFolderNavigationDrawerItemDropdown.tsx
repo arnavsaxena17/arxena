@@ -1,14 +1,8 @@
+import { LightIconButton, MenuItem } from 'twenty-ui';
+import { IconDotsVertical, IconPencil, IconTrash } from 'twenty-ui/icons';
 import { FavoriteFolderHotkeyScope } from '@/favorites/constants/FavoriteFolderRightIconDropdownHotkeyScope';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
-
-import {
-  IconDotsVertical,
-  IconPencil,
-  IconTrash,
-  LightIconButton,
-  MenuItem,
-} from 'twenty-ui';
 
 type FavoriteFolderNavigationDrawerItemDropdownProps = {
   folderId: string;

@@ -1,5 +1,5 @@
+import { IconHierarchy2 } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
-import { IconHierarchy2 } from 'twenty-ui';
 
 import { SignInBackgroundOrgChartMock } from '@/sign-in-background-mock/components/SignInBackgroundOrgChartMock';
 import { PageBody } from '@/ui/layout/page/components/PageBody';

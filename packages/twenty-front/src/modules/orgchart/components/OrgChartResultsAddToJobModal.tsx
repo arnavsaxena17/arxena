@@ -1,5 +1,6 @@
+import { IconButton } from 'twenty-ui';
+import { IconX } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
-import { IconButton, IconX } from 'twenty-ui';
 
 import { Modal } from '@/ui/layout/modal/components/Modal';
 import { OnboardingIntentModalLayout } from '~/pages/onboarding/OnboardingIntentModalLayout';

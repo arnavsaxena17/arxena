@@ -1,3 +1,4 @@
+import { IconFilter, IconTable } from 'twenty-ui/icons';
 import { useArxJDUpload } from '@/arx-jd-upload/hooks/useArxJDUpload';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import type { AssistantThreadSummary } from '@/arx-jd-upload/types/ParsedJD';
@@ -26,7 +27,6 @@ import { useUploadProgressSseSession } from '@/websocket-context/hooks/useUpload
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { IconFilter, IconTable } from 'twenty-ui';
 
 // Styled Components for Panels
 const StyledPanelContainer = styled.div`
@@ -90,7 +90,6 @@ const StyledPanelContent = styled.div`
   overflow-y: auto;
   padding: ${({ theme }) => theme.spacing(3)};
 `;
-
 
 export const CandidateSearchModal = () => {
   const { beginUploadProgressSseSession, endUploadProgressSseSessionAfterDelay } =
@@ -272,9 +271,6 @@ export const CandidateSearchModal = () => {
       });
     }
   }, [isCandidateSearchModalOpen, setParsedJD]);
-
-
-
 
   // Create a placeholder search function that shows loading state when not ready
   const placeholderSearchFunction = useCallback(() => {

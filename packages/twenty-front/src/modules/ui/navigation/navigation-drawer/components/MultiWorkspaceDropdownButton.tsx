@@ -1,3 +1,5 @@
+import { Avatar, MenuItemSelectAvatar, UndecoratedLink } from 'twenty-ui';
+import { IconChevronDown } from 'twenty-ui/icons';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { Workspaces } from '@/auth/states/workspaces';
 import { useBuildWorkspaceUrl } from '@/domain-manager/hooks/useBuildWorkspaceUrl';
@@ -11,12 +13,7 @@ import { isNavigationDrawerExpandedState } from '@/ui/navigation/states/isNaviga
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import {
-  Avatar,
-  IconChevronDown,
-  MenuItemSelectAvatar,
-  UndecoratedLink,
-} from 'twenty-ui';
+
 import { useRedirectToWorkspaceDomain } from '@/domain-manager/hooks/useRedirectToWorkspaceDomain';
 import { getWorkspaceUrl } from '~/utils/getWorkspaceUrl';
 

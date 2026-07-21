@@ -1,10 +1,9 @@
+import { IconTrash } from 'twenty-ui/icons';
 import { activeEnrichmentState, enrichmentsState, type Enrichment } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import styled from '@emotion/styled';
 import { useRecoilState } from 'recoil';
-import { IconTrash } from 'twenty-ui';
+
 import { SampleEnrichments } from './SampleEnrichments';
-
-
 
 const StyledContainer = styled.div`
   color: ${({ theme }) => theme.font.color.secondary};
@@ -22,7 +21,6 @@ const StyledContainer = styled.div`
   position: relative;
   pointer-events: auto;
 `;
-
 
 const ScrollableContent = styled.div`
   display: flex;
@@ -56,7 +54,6 @@ const ScrollableContent = styled.div`
   scrollbar-color: ${({ theme }) => `${theme.background.quaternary || '#888'} ${theme.background.tertiary}`};
 `;
 
-
 const StyledModalNavElementContainer = styled.nav`
   display: flex;
   gap: 4px;
@@ -64,10 +61,6 @@ const StyledModalNavElementContainer = styled.nav`
   flex-direction: column;
   overflow: visible;
 `;
-
-
-
-
 
 const StyledIntroductionNavElement = styled.div`
   font-family: ${({ theme }) => theme.font.family};
@@ -108,8 +101,6 @@ const StyledQuestionsContainer = styled.ol`
   list-style-type: none;
   scroll-behavior: smooth;
 `;
-
-
 
 const StyledListItem = styled.li`
   display: flex;

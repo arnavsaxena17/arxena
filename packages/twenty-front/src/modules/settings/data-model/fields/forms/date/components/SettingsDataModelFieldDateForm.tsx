@@ -1,3 +1,4 @@
+import { IconSlash } from 'twenty-ui/icons';
 import { Controller, useFormContext } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -5,7 +6,6 @@ import { FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
 import { SettingsOptionCardContentToggle } from '@/settings/components/SettingsOptions/SettingsOptionCardContentToggle';
 import { useDateSettingsFormInitialValues } from '@/settings/data-model/fields/forms/date/hooks/useDateSettingsFormInitialValues';
 import { useLingui } from '@lingui/react/macro';
-import { IconSlash } from 'twenty-ui';
 
 export const settingsDataModelFieldDateFormSchema = z.object({
   settings: z

@@ -1,5 +1,5 @@
 import { Notification } from '@/ui/notifications/types/Notification';
-import { createState } from '@ui/utilities/state/utils/createState';
+import { createState } from 'twenty-ui';
 
 // Sample notifications for testing
 const mockNotifications: Notification[] = [

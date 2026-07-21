@@ -1,3 +1,5 @@
+import { Button, Card, CardContent, MOBILE_VIEWPORT, Pill, Section, ThemeType } from 'twenty-ui';
+import { IconCheck, IconCreditCard, IconFileText } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { useState } from 'react';
@@ -27,18 +29,6 @@ import {
   SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE,
   SupportedPricingCurrency,
 } from 'twenty-shared';
-import {
-  Button,
-  Card,
-  CardContent,
-  IconCheck,
-  IconCreditCard,
-  IconFileText,
-  MOBILE_VIEWPORT,
-  Pill,
-  Section,
-  ThemeType,
-} from 'twenty-ui';
 
 type CreditPack = {
   key: string;

@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { lazy, Suspense, useContext } from 'react';
 
 import { ActorFieldDisplay } from '@/object-record/record-field/meta-types/display/components/ActorFieldDisplay';
 import { ArrayFieldDisplay } from '@/object-record/record-field/meta-types/display/components/ArrayFieldDisplay';
@@ -9,7 +9,6 @@ import { PhonesFieldDisplay } from '@/object-record/record-field/meta-types/disp
 import { RatingFieldDisplay } from '@/object-record/record-field/meta-types/display/components/RatingFieldDisplay';
 import { RelationFromManyFieldDisplay } from '@/object-record/record-field/meta-types/display/components/RelationFromManyFieldDisplay';
 import { RichTextFieldDisplay } from '@/object-record/record-field/meta-types/display/components/RichTextFieldDisplay';
-import { RichTextV2FieldDisplay } from '@/object-record/record-field/meta-types/display/components/RichTextV2FieldDisplay';
 import { isFieldIdentifierDisplay } from '@/object-record/record-field/meta-types/display/utils/isFieldIdentifierDisplay';
 import { isFieldActor } from '@/object-record/record-field/types/guards/isFieldActor';
 import { isFieldArray } from '@/object-record/record-field/types/guards/isFieldArray';
@@ -47,6 +46,12 @@ import { isFieldRawJson } from '../types/guards/isFieldRawJson';
 import { isFieldSelect } from '../types/guards/isFieldSelect';
 import { isFieldText } from '../types/guards/isFieldText';
 import { isFieldUuid } from '../types/guards/isFieldUuid';
+
+const RichTextV2FieldDisplay = lazy(() =>
+  import(
+    '@/object-record/record-field/meta-types/display/components/RichTextV2FieldDisplay'
+  ).then((module) => ({ default: module.RichTextV2FieldDisplay })),
+);
 
 export const FieldDisplay = () => {
   const { fieldDefinition, isLabelIdentifier } = useContext(FieldContext);
@@ -93,7 +98,9 @@ export const FieldDisplay = () => {
   ) : isFieldRichText(fieldDefinition) ? (
     <RichTextFieldDisplay />
   ) : isFieldRichTextV2(fieldDefinition) ? (
-    <RichTextV2FieldDisplay />
+    <Suspense fallback={null}>
+      <RichTextV2FieldDisplay />
+    </Suspense>
   ) : isFieldActor(fieldDefinition) ? (
     <ActorFieldDisplay />
   ) : isFieldArray(fieldDefinition) ? (

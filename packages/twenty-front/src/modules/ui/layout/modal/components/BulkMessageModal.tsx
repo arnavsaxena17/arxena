@@ -1,3 +1,5 @@
+import { IconButton } from 'twenty-ui';
+import { IconX } from 'twenty-ui/icons';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { tableStateAtom } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
@@ -9,7 +11,6 @@ import styled from '@emotion/styled';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { IconButton, IconX } from 'twenty-ui';
 
 const StyledModalContainer = styled.div`
   background-color: solid;

@@ -1,6 +1,7 @@
+import { LightIconButton, MenuItem } from 'twenty-ui';
+import { IconCheck, IconPlus } from 'twenty-ui/icons';
 import React, { useRef, useState } from 'react';
 import { Key } from 'ts-key-enum';
-import { IconCheck, IconPlus, LightIconButton, MenuItem } from 'twenty-ui';
 
 import {
   MultiItemBaseInput,

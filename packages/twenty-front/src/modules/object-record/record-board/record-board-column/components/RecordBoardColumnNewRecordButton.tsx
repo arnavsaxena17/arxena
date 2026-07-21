@@ -1,7 +1,7 @@
+import { IconPlus } from 'twenty-ui/icons';
 import { useColumnNewCardActions } from '@/object-record/record-board/record-board-column/hooks/useColumnNewCardActions';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { IconPlus } from 'twenty-ui';
 
 const StyledNewButton = styled.button`
   align-items: center;

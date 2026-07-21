@@ -1,3 +1,6 @@
+import { IconVariable } from 'twenty-ui/icons';
+import { CodeEditor, useIcons } from 'twenty-ui';
+import { IconCode, IconPlayerPlay } from 'twenty-ui/icons';
 import { useGetAvailablePackages } from '@/settings/serverless-functions/hooks/useGetAvailablePackages';
 import { useServerlessFunctionUpdateFormState } from '@/settings/serverless-functions/hooks/useServerlessFunctionUpdateFormState';
 import { useUpdateOneServerlessFunction } from '@/settings/serverless-functions/hooks/useUpdateOneServerlessFunction';
@@ -34,7 +37,7 @@ import { AutoTypings } from 'monaco-editor-auto-typings';
 import { useEffect, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import { CodeEditor, IconCode, IconPlayerPlay, useIcons } from 'twenty-ui';
+
 import { useDebouncedCallback } from 'use-debounce';
 
 const StyledContainer = styled.div`

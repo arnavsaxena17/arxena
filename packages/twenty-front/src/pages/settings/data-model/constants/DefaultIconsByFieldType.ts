@@ -1,3 +1,5 @@
+import { IconToggleLeft, IconCalendarClock, IconStar, IconBraces, IconTypography } from 'twenty-ui';
+import { IconMap, IconMoneybag, IconCalendarEvent, IconUserCircle, IconTags, IconNumber9, IconRelationOneToMany, IconTag, IconId, IconBracketsContain, IconMail, IconWorld, IconPhone, IconUsers } from 'twenty-ui/icons';
 import { FieldMetadataType } from '~/generated-metadata/graphql';
 
 export const DEFAULT_ICONS_BY_FIELD_TYPE: Record<FieldMetadataType, string> = {

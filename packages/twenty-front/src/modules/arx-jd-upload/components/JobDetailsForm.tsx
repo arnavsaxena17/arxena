@@ -1,3 +1,5 @@
+import { TEXT_INPUT_STYLE } from 'twenty-ui';
+import { IconEye, IconInfoCircle } from 'twenty-ui/icons';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
@@ -23,7 +25,7 @@ import ReactPhoneNumberInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { graphQLToUpdateOneWorkspaceMemberProfile, graphqlToFindManyJobsWithCandidateValues, isDefined } from 'twenty-shared';
-import { IconEye, IconInfoCircle, TEXT_INPUT_STYLE } from 'twenty-ui';
+
 import { v4 } from 'uuid';
 import { FormComponentProps } from '../types/FormComponentProps';
 import {

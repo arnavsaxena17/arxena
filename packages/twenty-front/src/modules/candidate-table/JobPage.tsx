@@ -1,3 +1,4 @@
+import { IconCheckbox } from 'twenty-ui/icons';
 import { ActionMenuComponentInstanceContext } from "@/action-menu/states/contexts/ActionMenuComponentInstanceContext";
 import { TableContainer } from "@/candidate-table/components/styled";
 // import { StyledTopBar } from "@/activities/chats/components/chat-window/ChatWindowStyles";
@@ -22,7 +23,6 @@ import { isOrgChartEnabledState } from '@/arx-jd-upload/states/isOrgChartEnabled
 import { ChatOptionsDropdownButton } from "@/candidate-table/ChatOptionsDropdownButton";
 import { ArxDownloadModal } from "@/candidate-table/components/ArxDownloadModal";
 import { CandidateTablePageHeader } from '@/candidate-table/components/CandidateTablePageHeader';
-import { DataTable } from "@/candidate-table/DataTable";
 import { HotTableActionMenu } from "@/candidate-table/HotTableActionMenu";
 import { jobIdAtom, jobsState } from "@/candidate-table/states/states";
 import { ContextStoreComponentInstanceContext } from "@/context-store/states/contexts/ContextStoreComponentInstanceContext";
@@ -48,10 +48,9 @@ import { ViewComponentInstanceContext } from "@/views/states/contexts/ViewCompon
 import { useQuery } from '@apollo/client';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { IconCheckbox } from 'twenty-ui';
 
 import { FloatingAIChat } from '@/candidate-search/components/FloatingAIChat/FloatingAIChat';
 import { CandidateSearchModal } from '@/candidate-search/components/search-components/CandidateSearchModal';
@@ -83,7 +82,6 @@ const StyledPageContainer = styled(PageContainer)`
   overflow: hidden;
 `;
 
-
 const StyledTopBar = styled(TopBar)`
   border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
   flex-shrink: 0;
@@ -106,12 +104,17 @@ const StyledTabListContainer = styled.div`
   padding: 0 16px;
 `;
 
-
 const StyledRightSection = styled.div`
   display: flex;
   font-weight: ${({ theme }) => theme.font.weight.regular};
   gap: ${({ theme }) => theme.betweenSiblingsGap};
 `;
+
+const DataTable = lazy(() =>
+  import('@/candidate-table/DataTable').then((module) => ({
+    default: module.DataTable,
+  })),
+);
 
 export const JobPage: React.FC = () => {
   debugLog(`JobPage rendering`);
@@ -631,9 +634,6 @@ export const JobPage: React.FC = () => {
     </StyledRightSection>
   ), [jobId]);
 
-
-
-
   const recordIndexContextValue = {
     indexIdentifierUrl: (recordId: string) => `/job/${jobId}/${recordId}` || '',
     onIndexRecordsLoaded: () => {},
@@ -796,11 +796,13 @@ export const JobPage: React.FC = () => {
                     </>
                   )}
                   
-                  <DataTable
-                    ref={dataTableRef}
-                    jobId={jobId}
-                    onImportCandidatesClick={handleImportCandidates}
-                  />
+                  <Suspense fallback={null}>
+                    <DataTable
+                      ref={dataTableRef}
+                      jobId={jobId}
+                      onImportCandidatesClick={handleImportCandidates}
+                    />
+                  </Suspense>
                 </TableContainer>
                 
                 <div style={{ 

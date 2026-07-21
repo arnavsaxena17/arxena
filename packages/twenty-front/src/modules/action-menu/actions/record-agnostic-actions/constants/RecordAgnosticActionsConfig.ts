@@ -1,3 +1,4 @@
+import { IconSearch } from 'twenty-ui/icons';
 import { useSearchRecordsRecordAgnosticAction } from '@/action-menu/actions/record-agnostic-actions/hooks/useSearchRecordsRecordAgnosticAction';
 import { RecordAgnosticActionsKey } from '@/action-menu/actions/record-agnostic-actions/types/RecordAgnosticActionsKey';
 import { ActionHookWithoutObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
@@ -8,7 +9,6 @@ import {
   ActionMenuEntryType,
 } from '@/action-menu/types/ActionMenuEntry';
 import { msg } from '@lingui/core/macro';
-import { IconSearch } from 'twenty-ui';
 
 export const RECORD_AGNOSTIC_ACTIONS_CONFIG: Record<
   string,

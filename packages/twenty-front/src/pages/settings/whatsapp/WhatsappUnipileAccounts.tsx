@@ -1,5 +1,5 @@
+import { IconSettings } from 'twenty-ui/icons';
 import { useCallback, useState } from 'react';
-import { IconSettings } from 'twenty-ui';
 
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import { SettingsPath } from '@/types/SettingsPath';

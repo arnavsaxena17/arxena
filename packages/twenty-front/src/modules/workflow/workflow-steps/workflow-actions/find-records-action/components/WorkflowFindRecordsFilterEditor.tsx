@@ -1,3 +1,5 @@
+import { Button, IconButton } from 'twenty-ui';
+import { IconPlus, IconTrash } from 'twenty-ui/icons';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { FormTextFieldInput } from '@/object-record/record-field/form-types/components/FormTextFieldInput';
 import { Select } from '@/ui/input/components/Select';
@@ -9,7 +11,6 @@ import {
 } from '@/workflow/workflow-steps/workflow-actions/find-records-action/utils/workflowFindRecordsFilterUtils';
 import { WorkflowVariablePicker } from '@/workflow/workflow-variables/components/WorkflowVariablePicker';
 import styled from '@emotion/styled';
-import { Button, IconPlus, IconTrash, IconButton } from 'twenty-ui';
 
 const StyledContainer = styled.div`
   display: flex;

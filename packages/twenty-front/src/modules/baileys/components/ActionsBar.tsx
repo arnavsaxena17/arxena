@@ -1,6 +1,6 @@
 // src/components/ActionsBar.tsx
 import styled from '@emotion/styled';
-import { IconFileText, IconList, IconMessages, IconRefresh, IconUsers, IconX } from '@tabler/icons-react';
+import { IconFileText, IconList, IconMessages, IconRefresh, IconUsers, IconX } from 'twenty-ui/icons';
 import React from 'react';
 const ActionsBarContainer = styled.div`
   position: fixed;

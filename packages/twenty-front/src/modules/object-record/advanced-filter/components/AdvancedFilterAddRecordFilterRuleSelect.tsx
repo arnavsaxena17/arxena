@@ -1,3 +1,5 @@
+import { LightButton, MenuItem } from 'twenty-ui';
+import { IconLibraryPlus, IconPlus } from 'twenty-ui/icons';
 import { availableFieldMetadataItemsForFilterFamilySelector } from '@/object-metadata/states/availableFieldMetadataItemsForFilterFamilySelector';
 import { FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
 import { useChildRecordFiltersAndRecordFilterGroups } from '@/object-record/advanced-filter/hooks/useChildRecordFiltersAndRecordFilterGroups';
@@ -19,7 +21,7 @@ import { t } from '@lingui/core/macro';
 import { useContext } from 'react';
 import { useRecoilCallback } from 'recoil';
 import { getFilterTypeFromFieldType, isDefined } from 'twenty-shared';
-import { IconLibraryPlus, IconPlus, LightButton, MenuItem } from 'twenty-ui';
+
 import { v4 } from 'uuid';
 import { ADVANCED_FILTER_DROPDOWN_ID } from '@/views/constants/AdvancedFilterDropdownId';
 

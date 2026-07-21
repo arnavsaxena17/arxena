@@ -1,5 +1,7 @@
-import { IconMinus, LightIconButton } from 'twenty-ui';
 
+
+import { LightIconButton } from 'twenty-ui';
+import { IconMinus } from 'twenty-ui/icons';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 
 export const RightDrawerTopBarMinimizeButton = () => {

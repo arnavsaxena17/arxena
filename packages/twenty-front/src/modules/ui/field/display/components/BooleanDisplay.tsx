@@ -1,5 +1,6 @@
+import { THEME_COMMON } from 'twenty-ui-source/theme/constants/ThemeCommon';
+import { IconCheck, IconX } from 'twenty-ui/icons';
 import { styled } from '@linaria/react';
-import { IconCheck, IconX, THEME_COMMON } from 'twenty-ui';
 
 const spacing = THEME_COMMON.spacingMultiplicator * 1;
 const iconSizeSm = THEME_COMMON.icon.size.sm;

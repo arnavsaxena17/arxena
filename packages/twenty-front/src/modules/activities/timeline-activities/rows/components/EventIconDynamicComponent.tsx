@@ -1,5 +1,8 @@
-import { IconCirclePlus, IconEditCircle, IconTrash, useIcons } from 'twenty-ui';
 
+
+import { type IconComponent } from 'twenty-ui';
+import { useIcons } from 'twenty-ui';
+import { IconCirclePlus, IconEditCircle, IconTrash } from 'twenty-ui/icons';
 import { TimelineActivity } from '@/activities/timeline-activities/types/TimelineActivity';
 import { ObjectMetadataItem } from '@/object-metadata/types/ObjectMetadataItem';
 

@@ -1,7 +1,7 @@
+import { IconChevronDown, IconChevronRight } from 'twenty-ui/icons';
 import type { AgentNote } from '@/assistant/types/assistant.types';
 import styled from '@emotion/styled';
 import { useCallback, useState } from 'react';
-import { IconChevronDown, IconChevronRight } from 'twenty-ui';
 
 const StyledNotesSection = styled.div`
   flex-shrink: 0;

@@ -1,3 +1,5 @@
+import { Button, MenuItem } from 'twenty-ui';
+import { IconChevronDown } from 'twenty-ui/icons';
 import { SettingsFieldType } from '@/settings/data-model/types/SettingsFieldType';
 import { SettingsPath } from '@/types/SettingsPath';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
@@ -8,7 +10,7 @@ import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { isDefined } from 'twenty-shared';
-import { Button, IconChevronDown, MenuItem } from 'twenty-ui';
+
 import { useNavigateSettings } from '~/hooks/useNavigateSettings';
 
 const StyledContainer = styled.div`

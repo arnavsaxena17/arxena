@@ -1,3 +1,5 @@
+import { MenuItem } from 'twenty-ui';
+import { IconCheck } from 'twenty-ui/icons';
 import { getAggregateOperationLabel } from '@/object-record/record-board/record-board-column/utils/getAggregateOperationLabel';
 import { RecordTableColumnAggregateFooterDropdownContext } from '@/object-record/record-table/record-table-footer/components/RecordTableColumnAggregateFooterDropdownContext';
 import { useViewFieldAggregateOperation } from '@/object-record/record-table/record-table-footer/hooks/useViewFieldAggregateOperation';
@@ -5,7 +7,6 @@ import { ExtendedAggregateOperations } from '@/object-record/record-table/types/
 import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
 import { ReactNode, useContext } from 'react';
 import { isDefined } from 'twenty-shared';
-import { IconCheck, MenuItem } from 'twenty-ui';
 
 export const RecordTableColumnAggregateFooterAggregateOperationMenuItems = ({
   aggregateOperations,

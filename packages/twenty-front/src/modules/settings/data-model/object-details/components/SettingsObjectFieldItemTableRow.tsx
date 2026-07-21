@@ -1,3 +1,5 @@
+import { LightIconButton, UndecoratedLink, useIcons } from 'twenty-ui';
+import { IconMinus, IconPlus } from 'twenty-ui/icons';
 import { LABEL_IDENTIFIER_FIELD_METADATA_TYPES } from '@/object-metadata/constants/LabelIdentifierFieldMetadataTypes';
 import { useFieldMetadataItem } from '@/object-metadata/hooks/useFieldMetadataItem';
 import { useGetRelationMetadata } from '@/object-metadata/hooks/useGetRelationMetadata';
@@ -20,13 +22,7 @@ import styled from '@emotion/styled';
 import { useMemo } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import {
-  IconMinus,
-  IconPlus,
-  LightIconButton,
-  UndecoratedLink,
-  useIcons,
-} from 'twenty-ui';
+
 import { RelationDefinitionType } from '~/generated-metadata/graphql';
 import { useNavigateSettings } from '~/hooks/useNavigateSettings';
 import { SettingsObjectDetailTableItem } from '~/pages/settings/data-model/types/SettingsObjectDetailTableItem';

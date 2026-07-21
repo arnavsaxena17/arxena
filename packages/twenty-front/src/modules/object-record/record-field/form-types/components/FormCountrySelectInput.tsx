@@ -1,5 +1,6 @@
+import { IconComponentProps } from 'twenty-ui';
+import { IconCircleOff } from 'twenty-ui/icons';
 import { useMemo } from 'react';
-import { IconCircleOff, IconComponentProps } from 'twenty-ui';
 
 import { FormSelectFieldInput } from '@/object-record/record-field/form-types/components/FormSelectFieldInput';
 import { VariablePickerComponent } from '@/object-record/record-field/form-types/types/VariablePickerComponent';

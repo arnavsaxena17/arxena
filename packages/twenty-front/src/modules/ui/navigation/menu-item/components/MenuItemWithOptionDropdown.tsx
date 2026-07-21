@@ -1,19 +1,10 @@
+import { IconComponent, LightIconButton, LightIconButtonProps, MenuItemAccent, MenuItemLeftContent, StyledHoverableMenuItemBase, StyledMenuItemLeftContent } from 'twenty-ui';
+import { IconChevronRight, IconDotsVertical } from 'twenty-ui/icons';
 import { SelectHotkeyScope } from '@/ui/input/types/SelectHotkeyScope';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
 import { useTheme } from '@emotion/react';
 import { Placement } from '@floating-ui/react';
 import { FunctionComponent, MouseEvent, ReactElement, ReactNode } from 'react';
-import {
-  IconChevronRight,
-  IconComponent,
-  IconDotsVertical,
-  LightIconButton,
-  LightIconButtonProps,
-  MenuItemAccent,
-  MenuItemLeftContent,
-  StyledHoverableMenuItemBase,
-  StyledMenuItemLeftContent,
-} from 'twenty-ui';
 
 export type MenuItemIconButton = {
   Wrapper?: FunctionComponent<{ iconButton: ReactElement }>;

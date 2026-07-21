@@ -1,16 +1,11 @@
+import { CodeEditor, CoreEditorHeader, AnimatedCircleLoading } from 'twenty-ui';
+import { IconSquareRoundedCheck, IconSquareRoundedX, IconLoader } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 
 import { LightCopyIconButton } from '@/object-record/record-field/components/LightCopyIconButton';
 import { ServerlessFunctionTestData } from '@/workflow/states/serverlessFunctionTestDataFamilyState';
 import { useTheme } from '@emotion/react';
-import {
-  CodeEditor,
-  CoreEditorHeader,
-  IconSquareRoundedCheck,
-  IconSquareRoundedX,
-  IconLoader,
-  AnimatedCircleLoading,
-} from 'twenty-ui';
+
 import { ServerlessFunctionExecutionStatus } from '~/generated-metadata/graphql';
 
 const StyledContainer = styled.div`

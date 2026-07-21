@@ -1,3 +1,5 @@
+import { ActionLink, Loader, MainButton, Pill } from 'twenty-ui';
+import { IconBolt, IconPhone } from 'twenty-ui/icons';
 import { SubTitle } from '@/auth/components/SubTitle';
 import { Title } from '@/auth/components/Title';
 import { currentUserState } from '@/auth/states/currentUserState';
@@ -18,14 +20,7 @@ import {
     PRICING_PLAN_CONTENT_BY_ID,
     PRICING_PLANS,
 } from 'twenty-shared';
-import {
-    ActionLink,
-    IconBolt,
-    IconPhone,
-    Loader,
-    MainButton,
-    Pill,
-} from 'twenty-ui';
+
 import { getPostAuthLandingAppPath } from '~/config';
 import { OnboardingStatus } from '~/generated/graphql';
 import { Mixpanel } from '~/mixpanel';

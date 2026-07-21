@@ -1,3 +1,5 @@
+import { AppTooltip, Button, TooltipDelay } from 'twenty-ui';
+import { IconArrowsVertical, IconBriefcase, IconChartCandle, IconCheck, IconDatabase, IconExternalLink, IconFileImport, IconFilterCog, IconMail, IconMessage, IconRefresh, IconSearch, IconTrash, IconX } from 'twenty-ui/icons';
 import { arxUploadJDModalModeState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { isOrgChartEnabledState } from '@/arx-jd-upload/states/isOrgChartEnabledState';
 import { CandidateSearchModal } from '@/candidate-search/components/search-components/CandidateSearchModal';
@@ -17,7 +19,6 @@ import styled from '@emotion/styled';
 import { memo, ReactNode, useCallback, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { AppTooltip, Button, IconArrowsVertical, IconBriefcase, IconChartCandle, IconCheck, IconDatabase, IconExternalLink, IconFileImport, IconFilterCog, IconMail, IconMessage, IconRefresh, IconSearch, IconTrash, IconX, TooltipDelay } from 'twenty-ui';
 
 // Debug logging utility
 const DEBUG_LOGS = false;

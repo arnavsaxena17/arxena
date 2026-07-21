@@ -1,6 +1,7 @@
+import { Button } from 'twenty-ui';
+import { IconCopy, IconLink } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { Button, IconCopy, IconLink } from 'twenty-ui';
 
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';

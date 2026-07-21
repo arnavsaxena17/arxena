@@ -1,10 +1,4 @@
-import {
-  AnimatedPlaceholder,
-  AnimatedPlaceholderEmptyContainer,
-  AnimatedPlaceholderEmptyTextContainer,
-  AnimatedPlaceholderEmptyTitle,
-  Loader,
-} from 'twenty-ui';
+import { AnimatedPlaceholder, AnimatedPlaceholderEmptyContainer, AnimatedPlaceholderEmptyTextContainer, AnimatedPlaceholderEmptyTitle, Loader } from 'twenty-ui';
 
 export const EmailLoader = ({ loadingText }: { loadingText?: string }) => (
   <AnimatedPlaceholderEmptyContainer>

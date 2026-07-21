@@ -4,7 +4,7 @@ import { FormMultiSelectFieldInput } from '@/object-record/record-field/form-typ
 import { type VariablePickerComponent } from '@/object-record/record-field/form-types/types/VariablePickerComponent';
 import { type FieldMultiSelectValue } from '@/object-record/record-field/types/FieldMetadata';
 import { useCountries } from '@/ui/input/components/internal/hooks/useCountries';
-import { type IconComponentProps } from 'twenty-ui';
+
 import { type SelectOption } from '@/ui/input/components/Select';
 
 export const FormCountryMultiSelectInput = ({

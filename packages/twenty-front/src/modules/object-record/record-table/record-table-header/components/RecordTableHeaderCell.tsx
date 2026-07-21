@@ -1,7 +1,8 @@
+import { LightIconButton } from 'twenty-ui';
+import { IconPlus } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { useCallback, useMemo, useState } from 'react';
 import { useRecoilCallback } from 'recoil';
-import { IconPlus, LightIconButton } from 'twenty-ui';
 
 import { isObjectMetadataReadOnly } from '@/object-metadata/utils/isObjectMetadataReadOnly';
 import { FieldMetadata } from '@/object-record/record-field/types/FieldMetadata';

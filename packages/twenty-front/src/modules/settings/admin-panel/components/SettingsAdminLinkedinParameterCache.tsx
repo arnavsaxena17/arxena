@@ -1,3 +1,5 @@
+import { Button, H2Title, Section } from 'twenty-ui';
+import { IconRefresh, IconTrash } from 'twenty-ui/icons';
 import {
   CLEAR_ADMIN_LINKEDIN_PARAMETER_CACHE,
   DELETE_ADMIN_LINKEDIN_PARAMETER_CACHE_ENTRY,
@@ -13,13 +15,6 @@ import { TableRow } from '@/ui/layout/table/components/TableRow';
 import { useMutation, useQuery } from '@apollo/client';
 import styled from '@emotion/styled';
 import { useMemo, useState } from 'react';
-import {
-  Button,
-  H2Title,
-  IconRefresh,
-  IconTrash,
-  Section,
-} from 'twenty-ui';
 
 type LinkedinParameterCacheEntryRow = {
   cacheKey: string;

@@ -1,3 +1,4 @@
+import { IconPlus } from 'twenty-ui/icons';
 import { gql } from '@apollo/client';
 
 export const query = gql`

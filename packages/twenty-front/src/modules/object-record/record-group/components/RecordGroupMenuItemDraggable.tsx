@@ -1,5 +1,7 @@
-import { IconEye, IconEyeOff, MenuItemDraggable, Tag } from 'twenty-ui';
 
+
+import { MenuItemDraggable, Tag } from 'twenty-ui';
+import { IconEye, IconEyeOff } from 'twenty-ui/icons';
 import { recordGroupDefinitionFamilyState } from '@/object-record/record-group/states/recordGroupDefinitionFamilyState';
 import {
   RecordGroupDefinition,

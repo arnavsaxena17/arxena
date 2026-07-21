@@ -1,3 +1,4 @@
+import { IconEye } from 'twenty-ui/icons';
 import { useSetRecoilState } from 'recoil';
 import { v4 } from 'uuid';
 
@@ -11,7 +12,7 @@ import { viewableRecordNameSingularState } from '@/object-record/record-right-dr
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
 import { isDefined } from 'twenty-shared';
-import { IconEye } from 'twenty-ui';
+
 import {
   FieldMetadataType,
   RelationDefinitionType,

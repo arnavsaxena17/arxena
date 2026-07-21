@@ -4,14 +4,14 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
-import { IconChevronDown, IconChevronLeft, IconChevronRight, IconChevronUp, IconCopy, IconGripVertical } from '@tabler/icons-react';
+import { IconChevronDown, IconChevronLeft, IconChevronRight, IconChevronUp, IconCopy, IconGripVertical } from 'twenty-ui/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
-import React, { useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { PersonNode } from 'twenty-shared';
 import ActionsBar from './ActionsBar'; // Add this import
-import AttachmentPanel from './AttachmentPanel';
+const AttachmentPanel = lazy(() => import('./AttachmentPanel'));
 // import { chatStatusLabels } from './ChatSidebar';
 import MultiCandidateChat from './MultiCandidateChat';
 
@@ -825,13 +825,15 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
 
       {isAttachmentPanelOpen && currentCandidate && (
         <>
-          <AttachmentPanel
-            isOpen={isAttachmentPanelOpen}
-            onClose={() => setIsAttachmentPanelOpen(false)}
-            candidateId={currentCandidate.candidates.edges[0].node.id}
-            candidateName={`${currentCandidate.name.firstName} ${currentCandidate.name.lastName}`}
-            PanelContainer={PanelContainer}
-          />
+          <Suspense fallback={null}>
+            <AttachmentPanel
+              isOpen={isAttachmentPanelOpen}
+              onClose={() => setIsAttachmentPanelOpen(false)}
+              candidateId={currentCandidate.candidates.edges[0].node.id}
+              candidateName={`${currentCandidate.name.firstName} ${currentCandidate.name.lastName}`}
+              PanelContainer={PanelContainer}
+            />
+          </Suspense>
 
           {selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen) && (
             <CandidateNavigation>

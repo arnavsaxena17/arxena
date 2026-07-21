@@ -1,3 +1,5 @@
+import { Button } from 'twenty-ui';
+import { IconArrowBackUp } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { useEffect, useMemo } from 'react';
 import { useRecoilCallback, useSetRecoilState } from 'recoil';
@@ -15,7 +17,6 @@ import { useClickOutsideListener } from '@/ui/utilities/pointer-event/hooks/useC
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
 import { assertUnreachable } from '@/workflow/utils/assertUnreachable';
 import { ConnectedAccountProvider } from 'twenty-shared';
-import { Button, IconArrowBackUp } from 'twenty-ui';
 
 const StyledWrapper = styled.div`
   display: flex;

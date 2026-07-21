@@ -1,14 +1,6 @@
 import { isObjectMetadataReadOnly } from '@/object-metadata/utils/isObjectMetadataReadOnly';
 import { useRecordTableContextOrThrow } from '@/object-record/record-table/contexts/RecordTableContext';
-import {
-  AnimatedPlaceholder,
-  AnimatedPlaceholderEmptyContainer,
-  AnimatedPlaceholderEmptySubTitle,
-  AnimatedPlaceholderEmptyTextContainer,
-  AnimatedPlaceholderEmptyTitle,
-  AnimatedPlaceholderType,
-  IconComponent
-} from 'twenty-ui';
+import { AnimatedPlaceholder, AnimatedPlaceholderEmptyContainer, AnimatedPlaceholderEmptySubTitle, AnimatedPlaceholderEmptyTextContainer, AnimatedPlaceholderEmptyTitle, AnimatedPlaceholderType, IconComponent } from 'twenty-ui';
 
 type RecordTableEmptyStateDisplayButtonComponentProps = {
   buttonComponent?: React.ReactNode;

@@ -1,3 +1,5 @@
+import { MenuItem } from 'twenty-ui';
+import { IconPlus } from 'twenty-ui/icons';
 import { useCloseRightClickMenu } from '@/workflow/workflow-diagram/hooks/useCloseRightClickMenu';
 import { useStartNodeCreation } from '@/workflow/workflow-diagram/hooks/useStartNodeCreation';
 import { workflowDiagramRightClickMenuPositionState } from '@/workflow/workflow-diagram/states/workflowDiagramRightClickMenuPositionState';
@@ -7,7 +9,7 @@ import { useLingui } from '@lingui/react/macro';
 import { useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import { IconPlus, MenuItem } from 'twenty-ui';
+
 import { WorkflowDiagramRightClickCommandMenuClickOutsideEffect } from './WorkflowDiagramRightClickCommandMenuClickOutsideEffect';
 
 const StyledContainer = styled.div<{ x: number; y: number }>`

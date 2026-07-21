@@ -1,11 +1,13 @@
+import { Button } from 'twenty-ui';
+import { IconMinus, IconPlus } from 'twenty-ui/icons';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
-import { IconInfoCircle } from '@tabler/icons-react';
+import { IconInfoCircle } from 'twenty-ui/icons';
 import axios from 'axios';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { FindOneJob } from 'twenty-shared';
-import { Button, IconMinus, IconPlus } from 'twenty-ui';
+
 import { FormComponentProps } from '../types/FormComponentProps';
 import {
   StyledInput,

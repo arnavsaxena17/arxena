@@ -1,5 +1,6 @@
+import { Button, H2Title } from 'twenty-ui';
+import { IconDownload } from 'twenty-ui/icons';
 import { useState } from 'react';
-import { Button, H2Title, IconDownload } from 'twenty-ui';
 
 import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
 import { useLingui } from '@lingui/react/macro';
@@ -33,8 +34,4 @@ export const DownloadApp = () => {
     </>
   );
 };
-
-
-
-
 

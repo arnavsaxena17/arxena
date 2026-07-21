@@ -1,6 +1,7 @@
 import { styled } from '@linaria/react';
 import { ReactNode, useContext } from 'react';
-import { BORDER_COMMON, ThemeContext } from 'twenty-ui';
+import { BORDER_COMMON } from 'twenty-ui-source/theme/constants/BorderCommon';
+import { ThemeContext } from 'twenty-ui-source/theme/provider/ThemeContextProvider';
 
 import { FieldContext } from '@/object-record/record-field/contexts/FieldContext';
 import { useFieldFocus } from '@/object-record/record-field/hooks/useFieldFocus';

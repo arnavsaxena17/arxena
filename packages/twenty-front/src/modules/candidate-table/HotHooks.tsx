@@ -1,5 +1,5 @@
 import { RightDrawerPages } from "@/ui/layout/right-drawer/types/RightDrawerPages";
-import { IconMessages } from "@tabler/icons-react";
+import { IconMessages } from "twenty-ui/icons";
 import axios from 'axios';
 import { SetterOrUpdater } from 'recoil';
 import { CandidateNode, mergeOtherFields, toSnakeCaseKey } from 'twenty-shared';

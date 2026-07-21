@@ -7,7 +7,6 @@ import { TimelineActivities } from '@/activities/timeline-activities/components/
 import { ActivityTargetableObject } from '@/activities/types/ActivityTargetableEntity';
 import { FieldsCard } from '@/object-record/record-show/components/FieldsCard';
 import { CardType } from '@/object-record/record-show/types/CardType';
-import { ShowPageActivityContainer } from '@/ui/layout/show-page/components/ShowPageActivityContainer';
 import { WorkflowRunOutputVisualizer } from '@/workflow/components/WorkflowRunOutputVisualizer';
 import { WorkflowRunVisualizer } from '@/workflow/components/WorkflowRunVisualizer';
 import { WorkflowVersionVisualizer } from '@/workflow/workflow-diagram/components/WorkflowVersionVisualizer';
@@ -15,6 +14,7 @@ import { WorkflowVersionVisualizerEffect } from '@/workflow/workflow-diagram/com
 import { WorkflowVisualizer } from '@/workflow/workflow-diagram/components/WorkflowVisualizer';
 import { WorkflowVisualizerEffect } from '@/workflow/workflow-diagram/components/WorkflowVisualizerEffect';
 import styled from '@emotion/styled';
+import { lazy, Suspense } from 'react';
 
 const StyledGreyBox = styled.div<{ isInRightDrawer?: boolean }>`
   background: ${({ theme, isInRightDrawer }) =>
@@ -28,6 +28,12 @@ const StyledGreyBox = styled.div<{ isInRightDrawer?: boolean }>`
   margin: ${({ isInRightDrawer, theme }) =>
     isInRightDrawer ? theme.spacing(4) : ''};
 `;
+
+const ShowPageActivityContainer = lazy(() =>
+  import('@/ui/layout/show-page/components/ShowPageActivityContainer').then(
+    (module) => ({ default: module.ShowPageActivityContainer }),
+  ),
+);
 
 type CardComponentProps = {
   targetableObject: Pick<
@@ -54,7 +60,9 @@ export const CardComponents: Record<CardType, CardComponentType> = {
   ),
 
   [CardType.RichTextCard]: ({ targetableObject }) => (
-    <ShowPageActivityContainer targetableObject={targetableObject} />
+    <Suspense fallback={null}>
+      <ShowPageActivityContainer targetableObject={targetableObject} />
+    </Suspense>
   ),
 
   [CardType.TaskCard]: ({ targetableObject }) => (

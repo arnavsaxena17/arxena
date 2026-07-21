@@ -1,3 +1,5 @@
+import { Button, Loader } from 'twenty-ui';
+import { IconChevronDown, IconHierarchy2 } from 'twenty-ui/icons';
 import {
     AssistantDetailsTable,
     AssistantTableData,
@@ -20,7 +22,6 @@ import React, {
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { Button, IconChevronDown, IconHierarchy2, Loader } from 'twenty-ui';
 
 import { useControlledMessages } from '@/assistant/hooks/useControlledMessages';
 import { useMcpStreamingChat } from '@/assistant/hooks/useMcpStreamingChat';
@@ -131,8 +132,6 @@ const StyledMessage = styled.div<{ isUser: boolean }>`
   overflow-wrap: break-word;
 `;
 
-
-
 const StyledToolCalls = styled.div`
   font-size: ${({ theme }) => theme.font.size.sm};
   color: ${({ theme }) => theme.font.color.tertiary};
@@ -235,7 +234,6 @@ const StyledTextArea = styled.textarea`
     border-color: ${({ theme }) => theme.color.blue};
   }
 `;
-
 
 const StyledTableSnapshot = styled.div`
   margin-top: ${({ theme }) => theme.spacing(1)};

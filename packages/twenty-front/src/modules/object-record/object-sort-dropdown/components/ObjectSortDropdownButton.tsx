@@ -1,5 +1,6 @@
+import { MenuItem, useIcons } from 'twenty-ui';
+import { IconChevronDown } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
-import { IconChevronDown, MenuItem, useIcons } from 'twenty-ui';
 
 import { OBJECT_SORT_DROPDOWN_ID } from '@/object-record/object-sort-dropdown/constants/ObjectSortDropdownId';
 import { useCloseSortDropdown } from '@/object-record/object-sort-dropdown/hooks/useCloseSortDropdown';

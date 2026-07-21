@@ -1,7 +1,8 @@
+import { ThemeContext } from 'twenty-ui';
+import { IconPlus } from 'twenty-ui/icons';
 import { Theme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useContext } from 'react';
-import { IconPlus, ThemeContext } from 'twenty-ui';
 
 import { HIDDEN_TABLE_COLUMN_DROPDOWN_ID } from '@/object-record/record-table/constants/HiddenTableColumnDropdownId';
 import { RecordTableHeaderPlusButtonContent } from '@/object-record/record-table/record-table-header/components/RecordTableHeaderPlusButtonContent';

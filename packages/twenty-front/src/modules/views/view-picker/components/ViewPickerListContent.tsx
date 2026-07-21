@@ -1,7 +1,8 @@
+import { MenuItem } from 'twenty-ui';
+import { IconPlus } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { DropResult } from '@hello-pangea/dnd';
 import { MouseEvent, useCallback } from 'react';
-import { IconPlus, MenuItem } from 'twenty-ui';
 
 import { DraggableItem } from '@/ui/layout/draggable-list/components/DraggableItem';
 import { DraggableList } from '@/ui/layout/draggable-list/components/DraggableList';

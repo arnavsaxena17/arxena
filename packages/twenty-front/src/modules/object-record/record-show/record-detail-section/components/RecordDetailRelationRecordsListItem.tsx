@@ -1,17 +1,9 @@
+import { AnimatedEaseInOut, IconComponent, LightIconButton, MenuItem } from 'twenty-ui';
+import { IconChevronDown, IconDotsVertical, IconTrash, IconUnlink } from 'twenty-ui/icons';
 import { css } from '@emotion/react';
 import styled from '@emotion/styled';
 import { motion } from 'framer-motion';
 import { useCallback, useContext, useState } from 'react';
-import {
-  AnimatedEaseInOut,
-  IconChevronDown,
-  IconComponent,
-  IconDotsVertical,
-  IconTrash,
-  IconUnlink,
-  LightIconButton,
-  MenuItem,
-} from 'twenty-ui';
 
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';

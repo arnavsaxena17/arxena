@@ -1,3 +1,4 @@
+import { IconVariable } from 'twenty-ui/icons';
 import { InputSchemaPropertyType } from '@/workflow/types/InputSchema';
 import { BaseOutputSchema } from '@/workflow/workflow-variables/types/StepOutputSchema';
 import { isObject } from '@sniptt/guards';

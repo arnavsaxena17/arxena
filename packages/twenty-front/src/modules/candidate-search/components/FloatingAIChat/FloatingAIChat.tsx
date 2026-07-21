@@ -1,10 +1,10 @@
+import { IconMinus, IconX } from 'twenty-ui/icons';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { AIChatAssistant } from '@/candidate-search/components/ai-chat-assistant/AIChatAssistant';
 import { fetchedCandidatesCountSelector } from '@/candidate-search/states/searchResultsState';
 import styled from '@emotion/styled';
 import { useCallback, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { IconMinus, IconX } from 'twenty-ui';
 
 const StyledFloatingChat = styled.div<{ isExpanded: boolean }>`
   position: fixed;

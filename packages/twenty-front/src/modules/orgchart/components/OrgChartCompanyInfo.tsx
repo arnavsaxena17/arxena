@@ -4,7 +4,7 @@ import {
     IconInfoCircle,
     IconShare,
     IconWorld,
-} from '@tabler/icons-react';
+} from 'twenty-ui/icons';
 import { useState } from 'react';
 
 import { toTitleCase } from 'twenty-shared';

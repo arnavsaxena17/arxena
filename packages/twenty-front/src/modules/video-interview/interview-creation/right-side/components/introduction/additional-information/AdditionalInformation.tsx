@@ -43,7 +43,6 @@ const StyledTextArea = styled.textarea`
 
 export const AdditionalInformation = () => {
 
-
   const { goBackToPreviousHotkeyScope, setHotkeyScopeAndMemorizePreviousScope, } = usePreviousHotkeyScope();
   const handleFocus = () => { setHotkeyScopeAndMemorizePreviousScope(InputHotkeyScope.TextInput); };
   const handleBlur = () => { goBackToPreviousHotkeyScope(); };

@@ -1,3 +1,4 @@
+import { IconApi, IconBrandLinkedin, IconSearch, IconX } from 'twenty-ui/icons';
 import { useArxJDUpload } from '@/arx-jd-upload/hooks/useArxJDUpload';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import type { AssistantThread } from '@/assistant/types/assistant.types';
@@ -31,7 +32,6 @@ import styled from '@emotion/styled';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { LinkedInSearchCategory, LinkedInSearchType } from 'twenty-shared';
-import { IconApi, IconBrandLinkedin, IconSearch, IconX } from 'twenty-ui';
 
 const StyledSearchPanel = styled.div<{ isOpen: boolean; width: number }>`
   position: fixed;

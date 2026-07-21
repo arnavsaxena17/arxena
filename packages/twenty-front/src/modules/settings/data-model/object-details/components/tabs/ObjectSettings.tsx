@@ -1,8 +1,10 @@
 /* eslint-disable react/jsx-props-no-spreading */
+import { Button, H2Title, Section } from 'twenty-ui';
+import { IconArchive } from 'twenty-ui/icons';
 import { ObjectMetadataItem } from '@/object-metadata/types/ObjectMetadataItem';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FormProvider, useForm } from 'react-hook-form';
-import { Button, H2Title, IconArchive, Section } from 'twenty-ui';
+
 import { ZodError, z } from 'zod';
 
 import { useUpdateOneObjectMetadataItem } from '@/object-metadata/hooks/useUpdateOneObjectMetadataItem';

@@ -1,3 +1,4 @@
+import { IconDatabase } from 'twenty-ui/icons';
 import {
     AppRouterProviders,
     MinimalProviders,
@@ -55,25 +56,30 @@ import { OrgChartWorkspaceReadyEmptyState } from '@/orgchart/components/OrgChart
 import { orgChartSelectionSearch } from '@/orgchart/utils/orgChartUtils';
 // import OrgChart from '@/orgchart/OrgChart';
 import { useBaileysConnection } from '@/baileys/contexts/BaileysContext';
-import { SearchModels } from '@/search-models/SearchModels';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { useUnipile } from '@/unipile/contexts/UnipileContext';
 import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import { useQuery } from '@apollo/client';
-import React, { useEffect } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 import {
     buildCanonicalOrgChartPath,
     resolveOrgChartCanonicalCompanyId,
     shouldRedirectOrgChartCompanySlug,
 } from 'twenty-shared';
-import { IconDatabase } from 'twenty-ui';
+
 import { WORKSPACE_CREDITS } from '~/modules/billing/graphql/workspaceCredits';
 
 const ArxOrgChart = React.lazy(() =>
   import('@/orgchart/ArxOrgChart').then((m) => ({ default: m.ArxOrgChart })),
+);
+
+const SearchModels = React.lazy(() =>
+  import('@/search-models/SearchModels').then((module) => ({
+    default: module.SearchModels,
+  })),
 );
 
 const VideoInterviewWrapper = () => {
@@ -383,7 +389,14 @@ export const useCreateAppRouter = (
             <Route path="job/:jobId/:candidateId" element={<SingleJobView />} /> */}
             <Route path="job/:jobId" element={<JobPage />} />
             <Route path="job/:jobId/:candidateId" element={<JobPage />} />
-            <Route path="search-models" element={<SearchModels />} />
+            <Route
+              path="search-models"
+              element={
+                <Suspense fallback={null}>
+                  <SearchModels />
+                </Suspense>
+              }
+            />
             <Route path={AppPath.Assistant} element={<AssistantPage />} />
 
             <Route

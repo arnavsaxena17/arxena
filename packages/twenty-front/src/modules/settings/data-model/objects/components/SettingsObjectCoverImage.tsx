@@ -1,5 +1,6 @@
+import { Card, FloatingButton } from 'twenty-ui';
+import { IconEye } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
-import { Card, FloatingButton, IconEye } from 'twenty-ui';
 
 import { SettingsPath } from '@/types/SettingsPath';
 import { useLingui } from '@lingui/react/macro';

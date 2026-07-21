@@ -1,6 +1,7 @@
+import { Banner } from 'twenty-ui';
+import { IconChevronDown, IconInfoCircle } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { Banner, IconChevronDown, IconInfoCircle } from 'twenty-ui';
 
 const StyledBanner = styled(Banner)`
   background: ${({ theme }) => theme.accent.secondary};

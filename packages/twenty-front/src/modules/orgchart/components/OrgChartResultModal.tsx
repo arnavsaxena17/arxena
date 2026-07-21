@@ -1,19 +1,10 @@
+import { Button, Card, IconButton, Loader } from 'twenty-ui';
+import { IconBrandLinkedin, IconChevronLeft, IconMail, IconPhone, IconX } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { useEffect, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import {
-  Button,
-  Card,
-  IconBrandLinkedin,
-  IconButton,
-  IconChevronLeft,
-  IconMail,
-  IconPhone,
-  IconX,
-  Loader,
-} from 'twenty-ui';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useOpenCandidateChatDrawer } from '@/candidate-table/hooks/useOpenCandidateChatDrawer';

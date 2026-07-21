@@ -1,5 +1,6 @@
-import { IconArrowDown, IconArrowUp } from 'twenty-ui';
 
+
+import { IconArrowDown, IconArrowUp } from 'twenty-ui/icons';
 import { useRemoveRecordSort } from '@/object-record/record-sort/hooks/useRemoveRecordSort';
 import { useUpsertRecordSort } from '@/object-record/record-sort/hooks/useUpsertRecordSort';
 import { RecordSort } from '@/object-record/record-sort/types/RecordSort';

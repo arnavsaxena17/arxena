@@ -1,5 +1,7 @@
+import { Button, IconButton } from 'twenty-ui';
+import { IconHeart, IconHeartOff } from 'twenty-ui/icons';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
-import { Button, IconButton, IconHeart, IconHeartOff } from 'twenty-ui';
+
 import { FeatureFlagKey } from '~/generated/graphql';
 
 type PageFavoriteButtonProps = {

@@ -6,7 +6,6 @@ import { InstructionsTextArea } from '@/video-interview/interview-creation/right
 import { Instruction } from '@/video-interview/interview-creation/right-side/components/introduction/instructions/types/instruction';
 import { H2Title } from 'twenty-ui';
 
-
 const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;

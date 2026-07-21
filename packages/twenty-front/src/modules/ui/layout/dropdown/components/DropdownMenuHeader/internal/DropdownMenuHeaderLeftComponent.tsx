@@ -1,11 +1,8 @@
+import { type IconComponent } from 'twenty-ui';
 import { type MouseEvent, type ReactElement } from 'react';
 import styled from '@emotion/styled';
 import { useTheme } from '@emotion/react';
-import {
-  type Avatar,
-  type AvatarProps,
-  type IconComponent,
-} from 'twenty-ui';
+
 import { LightIconButton } from 'twenty-ui';
 
 const StyledNonClickableStartIcon = styled.div`

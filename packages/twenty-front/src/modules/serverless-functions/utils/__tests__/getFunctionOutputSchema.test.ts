@@ -1,3 +1,4 @@
+import { IconVariable } from 'twenty-ui/icons';
 import { getFunctionOutputSchema } from '@/serverless-functions/utils/getFunctionOutputSchema';
 
 describe('getFunctionOutputSchema', () => {

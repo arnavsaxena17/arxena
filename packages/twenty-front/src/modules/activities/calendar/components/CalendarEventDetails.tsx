@@ -1,12 +1,7 @@
+import { Chip, ChipAccent, ChipSize, ChipVariant } from 'twenty-ui';
+import { IconCalendarEvent } from 'twenty-ui/icons';
 import { css, useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import {
-  Chip,
-  ChipAccent,
-  ChipSize,
-  ChipVariant,
-  IconCalendarEvent,
-} from 'twenty-ui';
 
 import { CalendarEventParticipantsResponseStatus } from '@/activities/calendar/components/CalendarEventParticipantsResponseStatus';
 import { CalendarEvent } from '@/activities/calendar/types/CalendarEvent';

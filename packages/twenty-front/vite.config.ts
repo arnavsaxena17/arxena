@@ -148,7 +148,6 @@ export default defineConfig(({ command, mode }) => {
           '**/RecordTableCellTd.tsx',
           '**/RecordTableTd.tsx',
           '**/RecordTableHeaderDragDropColumn.tsx',
-          '**/ActorDisplay.tsx',
           '**/AvatarChip.tsx',
         ],
         babelOptions: {
@@ -220,17 +219,52 @@ export default defineConfig(({ command, mode }) => {
       },
     },
     resolve: {
-      alias: {
-        path: 'rollup-plugin-node-polyfills/polyfills/path',
-        'twenty-orgchart': path.resolve(
-          __dirname,
-          '../twenty-orgchart/dist/index.js',
-        ),
-        'twenty-orgchart/company-search': path.resolve(
-          __dirname,
-          '../twenty-orgchart/dist/company-search.js',
-        ),
-      },
+      alias: [
+        {
+          find: 'path',
+          replacement: 'rollup-plugin-node-polyfills/polyfills/path',
+        },
+        {
+          find: /^@ui\/(.*)$/,
+          replacement: path.resolve(__dirname, '../twenty-ui/src/$1'),
+        },
+        {
+          find: /^twenty-ui-source\/(.*)$/,
+          replacement: path.resolve(__dirname, '../twenty-ui/src/$1'),
+        },
+        {
+          find: 'twenty-ui/icons',
+          replacement: path.resolve(
+            __dirname,
+            isBuildCommand
+              ? '../twenty-ui/dist/icons.js'
+              : '../twenty-ui/src/display/icon/components/TablerIcons.ts',
+          ),
+        },
+        {
+          find: 'twenty-ui',
+          replacement: path.resolve(
+            __dirname,
+            isBuildCommand
+              ? '../twenty-ui/dist/index.js'
+              : '../twenty-ui/src/index.ts',
+          ),
+        },
+        {
+          find: 'twenty-orgchart',
+          replacement: path.resolve(
+            __dirname,
+            '../twenty-orgchart/dist/index.js',
+          ),
+        },
+        {
+          find: 'twenty-orgchart/company-search',
+          replacement: path.resolve(
+            __dirname,
+            '../twenty-orgchart/dist/company-search.js',
+          ),
+        },
+      ],
     },
   };
 });

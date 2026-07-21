@@ -1,7 +1,8 @@
+import { IconUser } from 'twenty-ui/icons';
 import { SettingsCard } from '@/settings/components/SettingsCard';
 import styled from '@emotion/styled';
 import { t } from '@lingui/core/macro';
-import { IconUser } from 'twenty-ui';
+
 import { RoleAssignmentConfirmationModalMode } from '~/pages/settings/roles/types/RoleAssignmentConfirmationModalMode';
 import { RoleAssignmentConfirmationModalSelectedWorkspaceMember } from '~/pages/settings/roles/types/RoleAssignmentConfirmationModalSelectedWorkspaceMember';
 

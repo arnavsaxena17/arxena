@@ -1,3 +1,5 @@
+import { Button, IconButton, useIcons } from 'twenty-ui';
+import { IconPlus, IconTrash } from 'twenty-ui/icons';
 import {
   WorkflowIfElseAction,
   WorkflowIfElseBranch,
@@ -12,7 +14,7 @@ import { getActionIcon } from '@/workflow/workflow-steps/workflow-actions/utils/
 import styled from '@emotion/styled';
 import { useTheme } from '@emotion/react';
 import { isDefined } from 'twenty-shared';
-import { Button, IconPlus, IconTrash, IconButton, useIcons } from 'twenty-ui';
+
 import { v4 } from 'uuid';
 
 const StyledDescription = styled.p`

@@ -1,3 +1,5 @@
+import { Button } from 'twenty-ui';
+import { IconFilter } from 'twenty-ui/icons';
 import { availableFieldMetadataItemsForFilterFamilySelector } from '@/object-metadata/states/availableFieldMetadataItemsForFilterFamilySelector';
 import { type ObjectMetadataItem } from '@/object-metadata/types/ObjectMetadataItem';
 import { AdvancedFilterContext } from '@/object-record/advanced-filter/states/context/AdvancedFilterContext';
@@ -11,7 +13,7 @@ import { useContext } from 'react';
 import { useRecoilValue } from 'recoil';
 import { ViewFilterGroupLogicalOperator } from '@/views/types/ViewFilterGroupLogicalOperator';
 import { isDefined } from 'twenty-shared';
-import { IconFilter, Button } from 'twenty-ui';
+
 import { v4 } from 'uuid';
 
 export const AdvancedFilterSidePanelCreateRootFilterButton = ({

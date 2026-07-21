@@ -1,5 +1,5 @@
 import styled from "@emotion/styled";
-import { IconAlertCircle, IconCheck, IconChecks } from "@tabler/icons-react";
+import { IconAlertCircle, IconCheck, IconChecks } from "twenty-ui/icons";
 import dayjs from "dayjs";
 import { ReactElement } from "react";
 import { MessageNode } from "twenty-shared";

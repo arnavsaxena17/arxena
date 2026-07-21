@@ -1,3 +1,5 @@
+import { getCanvasElementForDropdownTesting } from 'twenty-ui';
+import { IconCheckbox, IconHeart, IconTrash } from 'twenty-ui/icons';
 import { expect, jest } from '@storybook/jest';
 import { Meta, StoryObj } from '@storybook/react';
 import { userEvent, within } from '@storybook/testing-library';
@@ -15,12 +17,7 @@ import {
 import { isDropdownOpenComponentState } from '@/ui/layout/dropdown/states/isDropdownOpenComponentState';
 import { extractComponentState } from '@/ui/utilities/state/component-state/utils/extractComponentState';
 import { msg } from '@lingui/core/macro';
-import {
-  IconCheckbox,
-  IconHeart,
-  IconTrash,
-  getCanvasElementForDropdownTesting,
-} from 'twenty-ui';
+
 import { I18nFrontDecorator } from '~/testing/decorators/I18nFrontDecorator';
 
 const deleteMock = jest.fn();

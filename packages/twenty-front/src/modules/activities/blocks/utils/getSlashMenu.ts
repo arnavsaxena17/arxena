@@ -1,20 +1,6 @@
+import { IconComponent } from 'twenty-ui';
+import { IconFile, IconH1, IconH2, IconH3, IconHeadphones, IconList, IconListCheck, IconListNumbers, IconMoodSmile, IconPhoto, IconPilcrow, IconTable, IconVideo } from 'twenty-ui/icons';
 import { getDefaultReactSlashMenuItems } from '@blocknote/react';
-import {
-  IconComponent,
-  IconFile,
-  IconH1,
-  IconH2,
-  IconH3,
-  IconHeadphones,
-  IconList,
-  IconListCheck,
-  IconListNumbers,
-  IconMoodSmile,
-  IconPhoto,
-  IconPilcrow,
-  IconTable,
-  IconVideo,
-} from 'twenty-ui';
 
 import { SuggestionItem } from '@/ui/input/editor/components/CustomSlashMenu';
 

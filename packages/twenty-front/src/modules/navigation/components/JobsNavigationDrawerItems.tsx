@@ -1,7 +1,8 @@
+import { LightIconButton } from 'twenty-ui';
+import { IconBriefcase, IconPlus, IconUsers } from 'twenty-ui/icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
-import { IconBriefcase, IconPlus, IconUsers, LightIconButton } from 'twenty-ui';
 
 import { useOpenAddJobModal } from '@/arx-jd-upload/hooks/useOpenAddJobModal';
 import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
@@ -111,7 +112,6 @@ export const JobsNavigationDrawerItems = () => {
     setIsNavigationDrawerExpanded(true);
     setNavigationMemorizedUrl(location.pathname + location.search);
   };
-
 
   return (
     <NavigationDrawerSection>

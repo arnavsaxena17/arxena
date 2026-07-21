@@ -1,3 +1,5 @@
+import { Button, H2Title, MOBILE_VIEWPORT, Section } from 'twenty-ui';
+import { IconPlus } from 'twenty-ui/icons';
 import { v4 } from 'uuid';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import { SettingsApiKeysTable } from '@/settings/developers/components/SettingsApiKeysTable';
@@ -9,7 +11,7 @@ import { SubMenuTopBarContainer } from '@/ui/layout/page/components/SubMenuTopBa
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
 import styled from '@emotion/styled';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { Button, H2Title, IconPlus, MOBILE_VIEWPORT, Section } from 'twenty-ui';
+
 import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
 
 const StyledButtonContainer = styled.div`

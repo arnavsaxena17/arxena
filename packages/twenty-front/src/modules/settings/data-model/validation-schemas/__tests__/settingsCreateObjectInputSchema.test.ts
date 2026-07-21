@@ -1,3 +1,4 @@
+import { IconPlus } from 'twenty-ui/icons';
 import { SafeParseSuccess } from 'zod';
 
 import { CreateObjectInput } from '~/generated-metadata/graphql';

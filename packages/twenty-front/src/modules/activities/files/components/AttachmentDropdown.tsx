@@ -1,12 +1,7 @@
-import {
-  IconDotsVertical,
-  IconDownload,
-  IconPencil,
-  IconTrash,
-  LightIconButton,
-  MenuItem,
-} from 'twenty-ui';
 
+
+import { LightIconButton, MenuItem } from 'twenty-ui';
+import { IconDotsVertical, IconDownload, IconPencil, IconTrash } from 'twenty-ui/icons';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';

@@ -7,13 +7,14 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TabList } from '@/ui/layout/tab/components/TabList';
 import { useTabList } from '@/ui/layout/tab/hooks/useTabList';
 import styled from '@emotion/styled';
-import { IconFileText, IconMessages, IconRoute, IconUser, IconVideo } from '@tabler/icons-react';
+import { IconFileText, IconMessages, IconRoute, IconUser, IconVideo } from 'twenty-ui/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { graphqlToFetchAllCandidateDataWithFieldValues, MessageNode } from 'twenty-shared';
-import AttachmentPanel from './AttachmentPanel';
+
+const AttachmentPanel = lazy(() => import('./AttachmentPanel'));
 import { CandidateInfoHeader } from './CandidateInfoHeader';
 import { CandidateProfileTab } from './CandidateProfileTab';
 import { CandidateWarmPathTab } from './CandidateWarmPathTab';
@@ -962,13 +963,15 @@ export const CandidateChatDrawer = React.memo(() => {
   );
 
   const renderCVTab = () => (
-    <AttachmentPanel 
-      isOpen={true}
-      onClose={() => setActiveTabId('chat')}
-      candidateId={candidateId || ''}
-      candidateName={candidateName}
-      PanelContainer={StyledInlineContainer}
-    />
+    <Suspense fallback={null}>
+      <AttachmentPanel
+        isOpen={true}
+        onClose={() => setActiveTabId('chat')}
+        candidateId={candidateId || ''}
+        candidateName={candidateName}
+        PanelContainer={StyledInlineContainer}
+      />
+    </Suspense>
   );
 
   const renderProfileTab = () => (

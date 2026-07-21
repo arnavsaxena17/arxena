@@ -1,5 +1,7 @@
-import { Button, H2Title, IconUser, Toggle } from 'twenty-ui';
 
+
+import { Button, H2Title, Toggle } from 'twenty-ui';
+import { IconUser } from 'twenty-ui/icons';
 import { currentUserState } from '@/auth/states/currentUserState';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { canManageFeatureFlagsState } from '@/client-config/states/canManageFeatureFlagsState';

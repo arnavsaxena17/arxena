@@ -1,3 +1,4 @@
+import { IconList } from 'twenty-ui/icons';
 import { useRecoilCallback, useSetRecoilState } from 'recoil';
 
 import { useInitDraftValueV2 } from '@/object-record/record-field/hooks/useInitDraftValueV2';
@@ -26,7 +27,7 @@ import { getDropdownFocusIdForRecordField } from '@/object-record/utils/getDropd
 import { useSetActiveDropdownFocusIdAndMemorizePrevious } from '@/ui/layout/dropdown/hooks/useSetFocusedDropdownIdAndMemorizePrevious';
 import { useClickOustideListenerStates } from '@/ui/utilities/pointer-event/hooks/useClickOustideListenerStates';
 import { useNavigate } from 'react-router-dom';
-import { IconList } from 'twenty-ui';
+
 import { TableHotkeyScope } from '../../types/TableHotkeyScope';
 
 export const DEFAULT_CELL_SCOPE: HotkeyScope = {

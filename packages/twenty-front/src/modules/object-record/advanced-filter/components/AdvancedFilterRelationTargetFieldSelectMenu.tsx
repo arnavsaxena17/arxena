@@ -1,3 +1,5 @@
+import { useIcons } from 'twenty-ui';
+import { IconChevronLeft } from 'twenty-ui/icons';
 import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
 import { isManyToOneRelationField } from '@/object-metadata/utils/isManyToOneRelationField';
 import { useAdvancedFilterFieldSelectDropdown } from '@/object-record/advanced-filter/hooks/useAdvancedFilterFieldSelectDropdown';
@@ -18,7 +20,7 @@ import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/
 import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import { IconChevronLeft, useIcons } from 'twenty-ui';
+
 import { MenuItem } from 'twenty-ui';
 
 type AdvancedFilterRelationTargetFieldSelectMenuProps = {

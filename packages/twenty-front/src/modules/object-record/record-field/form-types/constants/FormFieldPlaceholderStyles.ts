@@ -1,5 +1,4 @@
 import { css } from '@emotion/react';
-import { type ThemeType } from 'twenty-ui';
 
 export const FORM_FIELD_PLACEHOLDER_STYLES = (props: {
   theme: ThemeType;

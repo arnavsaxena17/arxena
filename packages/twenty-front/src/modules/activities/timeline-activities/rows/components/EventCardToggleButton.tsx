@@ -1,5 +1,6 @@
+import { IconButton } from 'twenty-ui';
+import { IconChevronDown, IconChevronUp } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
-import { IconButton, IconChevronDown, IconChevronUp } from 'twenty-ui';
 
 type EventCardToggleButtonProps = {
   isOpen: boolean;

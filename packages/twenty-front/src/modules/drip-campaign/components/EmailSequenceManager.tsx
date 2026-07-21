@@ -1,3 +1,4 @@
+import { IconMail, IconPlus, IconTrash } from 'twenty-ui/icons';
 import { EmailSequenceEditor } from '@/drip-campaign/components/EmailSequenceEditor';
 import {
     activeEmailSequenceState,
@@ -5,14 +6,9 @@ import {
     type EmailSequence
 } from '@/drip-campaign/states/dripCampaignModalOpenState';
 import styled from '@emotion/styled';
-import { IconEdit } from '@tabler/icons-react';
+import { IconEdit } from 'twenty-ui/icons';
 import { useState } from 'react';
 import { useRecoilState } from 'recoil';
-import {
-    IconMail,
-    IconPlus,
-    IconTrash
-} from 'twenty-ui';
 
 const StyledContainer = styled.div`
   display: flex;

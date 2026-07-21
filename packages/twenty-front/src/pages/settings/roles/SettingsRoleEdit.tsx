@@ -1,14 +1,9 @@
+import { H3Title } from 'twenty-ui';
+import { IconLockOpen, IconSettings, IconUser, IconUserPlus } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { t } from '@lingui/core/macro';
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import {
-    H3Title,
-    IconLockOpen,
-    IconSettings,
-    IconUser,
-    IconUserPlus,
-} from 'twenty-ui';
 
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import { SettingsPath } from '@/types/SettingsPath';

@@ -1,8 +1,9 @@
+import { useIcons } from 'twenty-ui';
+import { IconChevronDown, IconChevronUp } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { Node, NodeProps } from '@xyflow/react';
 import { Link } from 'react-router-dom';
-import { IconChevronDown, IconChevronUp, useIcons } from 'twenty-ui';
 
 import { ObjectMetadataItem } from '@/object-metadata/types/ObjectMetadataItem';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';

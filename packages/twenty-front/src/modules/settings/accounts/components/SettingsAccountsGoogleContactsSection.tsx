@@ -1,12 +1,7 @@
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { useRecoilValue } from 'recoil';
-import {
-    Button,
-    H2Title,
-    IconAddressBook,
-    Section,
-} from 'twenty-ui';
+import { Button, H2Title, IconAddressBook, Section } from 'twenty-ui';
 
 import { ConnectedAccount } from '@/accounts/types/ConnectedAccount';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';

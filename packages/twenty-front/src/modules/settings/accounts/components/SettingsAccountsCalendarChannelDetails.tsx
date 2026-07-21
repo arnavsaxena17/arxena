@@ -1,3 +1,5 @@
+import { Card, H2Title } from 'twenty-ui';
+import { IconUserPlus } from 'twenty-ui/icons';
 import { CalendarChannel } from '@/accounts/types/CalendarChannel';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
@@ -5,7 +7,7 @@ import { SettingsAccountsEventVisibilitySettingsCard } from '@/settings/accounts
 import { SettingsOptionCardContentToggle } from '@/settings/components/SettingsOptions/SettingsOptionCardContentToggle';
 import styled from '@emotion/styled';
 import { Section } from '@react-email/components';
-import { Card, H2Title, IconUserPlus } from 'twenty-ui';
+
 import { CalendarChannelVisibility } from '~/generated-metadata/graphql';
 
 const StyledDetailsContainer = styled.div`

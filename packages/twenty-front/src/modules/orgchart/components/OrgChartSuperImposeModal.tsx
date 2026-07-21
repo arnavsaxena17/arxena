@@ -1,3 +1,5 @@
+import { Checkbox, CheckboxSize, CheckboxVariant, CircularProgressBar, IconButton, MainButton, MOBILE_VIEWPORT } from 'twenty-ui';
+import { IconX } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -6,16 +8,7 @@ import {
     formatOrgChartFunctionRootOptionLabel,
 } from 'twenty-orgchart';
 import { resolveOrgChartCanonicalCompanyId } from 'twenty-shared';
-import {
-    Checkbox,
-    CheckboxSize,
-    CheckboxVariant,
-    CircularProgressBar,
-    IconButton,
-    IconX,
-    MainButton,
-    MOBILE_VIEWPORT,
-} from 'twenty-ui';
+
 import { useDebouncedCallback } from 'use-debounce';
 
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';

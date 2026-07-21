@@ -1,3 +1,5 @@
+import { AnimatedExpandableContainer, LightIconButton } from 'twenty-ui';
+import { IconFolder, IconFolderOpen, IconHeartOff } from 'twenty-ui/icons';
 import { FavoriteFolderNavigationDrawerItemDropdown } from '@/favorites/components/FavoriteFolderNavigationDrawerItemDropdown';
 import { FavoriteIcon } from '@/favorites/components/FavoriteIcon';
 import { FavoritesDroppable } from '@/favorites/components/FavoritesDroppable';
@@ -21,13 +23,6 @@ import { useContext, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
-import {
-  AnimatedExpandableContainer,
-  IconFolder,
-  IconFolderOpen,
-  IconHeartOff,
-  LightIconButton,
-} from 'twenty-ui';
 
 type CurrentWorkspaceMemberFavoritesProps = {
   folder: {

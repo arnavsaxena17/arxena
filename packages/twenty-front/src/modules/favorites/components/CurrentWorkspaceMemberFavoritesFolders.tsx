@@ -1,3 +1,5 @@
+import { LightIconButton } from 'twenty-ui';
+import { IconFolderPlus } from 'twenty-ui/icons';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { CurrentWorkspaceMemberOrphanFavorites } from '@/favorites/components/CurrentWorkspaceMemberOrphanFavorites';
 import { FavoritesDragProvider } from '@/favorites/components/FavoritesDragProvider';
@@ -14,7 +16,6 @@ import { useNavigationSection } from '@/ui/navigation/navigation-drawer/hooks/us
 import { useLingui } from '@lingui/react/macro';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import { IconFolderPlus, LightIconButton } from 'twenty-ui';
 
 export const CurrentWorkspaceMemberFavoritesFolders = () => {
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);

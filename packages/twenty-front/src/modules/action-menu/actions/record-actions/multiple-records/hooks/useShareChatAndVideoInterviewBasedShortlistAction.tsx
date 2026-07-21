@@ -9,11 +9,16 @@ import { DEFAULT_QUERY_PAGE_SIZE } from '@/object-record/constants/DefaultQueryP
 import { useLazyFetchAllRecords } from '@/object-record/hooks/useLazyFetchAllRecords';
 import { useFilterValueDependencies } from '@/object-record/record-filter/hooks/useFilterValueDependencies';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, lazy, Suspense } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import { ShortlistEditModal } from '../components/ShortlistEditModal';
+
+const ShortlistEditModal = lazy(() =>
+  import('../components/ShortlistEditModal').then((module) => ({
+    default: module.ShortlistEditModal,
+  })),
+);
 
 export const useShareChatAndVideoInterviewBasedShortlistAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => {
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
@@ -82,14 +87,16 @@ export const useShareChatAndVideoInterviewBasedShortlistAction: ActionHookWithOb
     return null;
   }, [isJobRoute, location.pathname]);
 
-  const shortlistModal = (
-    <ShortlistEditModal
-      isOpen={isShareChatAndVideoInterviewBasedShortlistModalOpen}
-      onClose={() => setIsShareChatAndVideoInterviewBasedShortlistModalOpen(false)}
-      candidateIds={getSelectedCandidateIds()}
-      jobId={getJobId() || ''}
-    />
-  );
+  const shortlistModal = isShareChatAndVideoInterviewBasedShortlistModalOpen ? (
+    <Suspense fallback={null}>
+      <ShortlistEditModal
+        isOpen={isShareChatAndVideoInterviewBasedShortlistModalOpen}
+        onClose={() => setIsShareChatAndVideoInterviewBasedShortlistModalOpen(false)}
+        candidateIds={getSelectedCandidateIds()}
+        jobId={getJobId() || ''}
+      />
+    </Suspense>
+  ) : null;
 
   return {
     shouldBeRegistered,

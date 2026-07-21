@@ -1,11 +1,6 @@
+import { IconAlertCircle, IconAlertTriangle, IconCheck, IconInfoCircle } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { formatDistanceToNow } from 'date-fns';
-import {
-    IconAlertCircle,
-    IconAlertTriangle,
-    IconCheck,
-    IconInfoCircle,
-} from 'twenty-ui';
 
 import { Notification, NotificationType } from '../types/Notification';
 

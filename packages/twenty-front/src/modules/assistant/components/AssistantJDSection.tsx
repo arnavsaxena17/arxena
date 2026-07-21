@@ -1,12 +1,17 @@
-import { DocumentViewer } from '@/activities/files/components/DocumentViewer';
+import { IconDotsVertical, IconTrash, IconUpload } from 'twenty-ui/icons';
 import { useArxJDUpload } from '@/arx-jd-upload/hooks/useArxJDUpload';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { createDefaultParsedJD } from '@/arx-jd-upload/utils/createDefaultParsedJD';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import styled from '@emotion/styled';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import { useRecoilState } from 'recoil';
-import { IconDotsVertical, IconTrash, IconUpload } from 'twenty-ui';
+
+const DocumentViewer = lazy(() =>
+  import('@/activities/files/components/DocumentViewer').then((module) => ({
+    default: module.DocumentViewer,
+  })),
+);
 
 const StyledJDHeaderRow = styled.div<{ $isCompact?: boolean }>`
   display: flex;
@@ -417,10 +422,12 @@ export const AssistantJDSection = ({
               Close
             </StyledJDViewerCloseButton>
           </StyledJDViewerHeader>
-          <DocumentViewer
-            documentName={getJDDisplayName() ?? parsedJD.name ?? 'Job Description'}
-            documentUrl={parsedJD.filePath}
-          />
+          <Suspense fallback={null}>
+            <DocumentViewer
+              documentName={getJDDisplayName() ?? parsedJD.name ?? 'Job Description'}
+              documentUrl={parsedJD.filePath}
+            />
+          </Suspense>
         </StyledJDViewerContainer>
       )}
     </>

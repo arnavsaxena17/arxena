@@ -24,8 +24,9 @@
       "@/*": ["./src/modules/*"],
       "~/*": ["./src/*"],
       "twenty-ui": ["../twenty-ui/src/index.ts"],
-      "twenty-orgchart": ["../twenty-orgchart/src/index.ts"],
-      "@ui/*": ["../twenty-ui/src/*"]
+      "twenty-ui/icons": ["../twenty-ui/src/display/icon/components/TablerIcons.ts"],
+      "twenty-ui-source/*": ["../twenty-ui/src/*"],
+      "twenty-orgchart": ["../twenty-orgchart/src/index.ts"]
     }
   },
   "files": [],

@@ -1,8 +1,7 @@
 import styled from '@emotion/styled';
 import { HotTable } from '@handsontable/react-wrapper';
+import '@/candidate-table/initHandsontable';
 import Handsontable from 'handsontable';
-import 'handsontable/styles/handsontable.min.css';
-import 'handsontable/styles/ht-theme-main.min.css';
 import { useMemo } from 'react';
 
 const StyledTableWrapper = styled.div`

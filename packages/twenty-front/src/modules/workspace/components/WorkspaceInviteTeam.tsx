@@ -1,8 +1,10 @@
+import { Button } from 'twenty-ui';
+import { IconSend } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Button, IconSend } from 'twenty-ui';
+
 import { z } from 'zod';
 
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';

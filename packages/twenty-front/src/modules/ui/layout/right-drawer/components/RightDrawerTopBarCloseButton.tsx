@@ -1,5 +1,7 @@
-import { IconX, LightIconButton } from 'twenty-ui';
 
+
+import { LightIconButton } from 'twenty-ui';
+import { IconX } from 'twenty-ui/icons';
 import { useRightDrawer } from '../hooks/useRightDrawer';
 
 export const RightDrawerTopBarCloseButton = () => {

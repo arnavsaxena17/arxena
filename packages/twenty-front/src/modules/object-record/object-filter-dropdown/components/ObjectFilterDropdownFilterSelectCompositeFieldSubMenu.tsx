@@ -1,3 +1,5 @@
+import { MenuItem, useIcons } from 'twenty-ui';
+import { IconApps, IconChevronLeft } from 'twenty-ui/icons';
 import { FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
 import { getFilterTypeFromFieldType } from '@/object-metadata/utils/formatFieldMetadataItemsAsFilterDefinitions';
 import { useAdvancedFilterDropdown } from '@/object-record/advanced-filter/hooks/useAdvancedFilterDropdown';
@@ -24,7 +26,6 @@ import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/
 import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import { useState } from 'react';
 import { isDefined } from 'twenty-shared';
-import { IconApps, IconChevronLeft, MenuItem, useIcons } from 'twenty-ui';
 
 export const ObjectFilterDropdownFilterSelectCompositeFieldSubMenu = () => {
   const [searchText] = useState('');

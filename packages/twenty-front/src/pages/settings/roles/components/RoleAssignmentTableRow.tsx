@@ -1,14 +1,11 @@
+import { Avatar, IconButton, OverflowingTextWithTooltip } from 'twenty-ui';
+import { IconTrash } from 'twenty-ui/icons';
 import { Table } from '@/ui/layout/table/components/Table';
 import { TableCell } from '@/ui/layout/table/components/TableCell';
 import { TableRow } from '@/ui/layout/table/components/TableRow';
 import styled from '@emotion/styled';
 import { t } from '@lingui/core/macro';
-import {
-  Avatar,
-  IconButton,
-  IconTrash,
-  OverflowingTextWithTooltip,
-} from 'twenty-ui';
+
 import { WorkspaceMember } from '~/generated-metadata/graphql';
 
 const StyledTable = styled(Table)`

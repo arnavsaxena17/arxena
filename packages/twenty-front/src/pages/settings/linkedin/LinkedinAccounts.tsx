@@ -1,6 +1,6 @@
+import { IconSettings } from 'twenty-ui/icons';
 import { useCallback, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { IconSettings } from 'twenty-ui';
 
 import { ConnectedAccount } from '@/accounts/types/ConnectedAccount';
 import { useApiKeysRecoil } from '@/arx-jd-upload/hooks/useApiKeysRecoil';

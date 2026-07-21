@@ -1,3 +1,5 @@
+import { MenuItem, useIcons } from 'twenty-ui';
+import { Icon123, IconCheck, IconChevronLeft } from 'twenty-ui/icons';
 import { useDropdown } from '@/dropdown/hooks/useDropdown';
 import { RecordBoardColumnHeaderAggregateDropdownContext } from '@/object-record/record-board/record-board-column/components/RecordBoardColumnHeaderAggregateDropdownContext';
 import { aggregateOperationComponentState } from '@/object-record/record-board/record-board-column/states/aggregateOperationComponentState';
@@ -10,13 +12,6 @@ import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/
 import { useUpdateViewAggregate } from '@/views/hooks/useUpdateViewAggregate';
 import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import {
-  Icon123,
-  IconCheck,
-  IconChevronLeft,
-  MenuItem,
-  useIcons,
-} from 'twenty-ui';
 
 export const RecordBoardColumnHeaderAggregateDropdownFieldsContent = () => {
   const {

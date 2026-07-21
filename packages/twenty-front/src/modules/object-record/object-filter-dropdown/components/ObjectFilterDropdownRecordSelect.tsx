@@ -1,3 +1,4 @@
+import { IconUserCircle } from 'twenty-ui/icons';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import {
   getFilterTypeFromFieldType,
@@ -22,7 +23,7 @@ import { RelationFilterValue } from '@/views/view-filter-value/types/RelationFil
 import { jsonRelationFilterValueSchema } from '@/views/view-filter-value/validation-schemas/jsonRelationFilterValueSchema';
 import { simpleRelationFilterValueSchema } from '@/views/view-filter-value/validation-schemas/simpleRelationFilterValueSchema';
 import { isDefined } from 'twenty-shared';
-import { IconUserCircle } from 'twenty-ui';
+
 import { v4 } from 'uuid';
 
 export const EMPTY_FILTER_VALUE: string = JSON.stringify({

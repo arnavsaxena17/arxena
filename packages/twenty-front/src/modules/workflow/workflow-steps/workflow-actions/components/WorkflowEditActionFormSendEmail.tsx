@@ -1,3 +1,5 @@
+import { useIcons } from 'twenty-ui';
+import { IconPlus } from 'twenty-ui/icons';
 import { GMAIL_SEND_SCOPE } from '@/accounts/constants/GmailSendScope';
 import { ConnectedAccount } from '@/accounts/types/ConnectedAccount';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
@@ -15,7 +17,7 @@ import { useTheme } from '@emotion/react';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import { IconPlus, useIcons } from 'twenty-ui';
+
 import { JsonValue } from 'type-fest';
 import { useDebouncedCallback } from 'use-debounce';
 

@@ -5,7 +5,7 @@ import type {
   WarmPathRankedBridge,
 } from '@/candidate-table/types/warm-path.types';
 import styled from '@emotion/styled';
-import { IconExternalLink, IconRefresh, IconRoute } from '@tabler/icons-react';
+import { IconExternalLink, IconRefresh, IconRoute } from 'twenty-ui/icons';
 import { useEffect } from 'react';
 import { Button, IconButton, Status } from 'twenty-ui';
 

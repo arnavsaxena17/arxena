@@ -1,3 +1,4 @@
+import { IconHeartOff } from 'twenty-ui/icons';
 import { FavoriteIcon } from '@/favorites/components/FavoriteIcon';
 import { FavoritesDroppable } from '@/favorites/components/FavoritesDroppable';
 import { FavoritesDragContext } from '@/favorites/contexts/FavoritesDragContext';
@@ -7,10 +8,9 @@ import { isLocationMatchingFavorite } from '@/favorites/utils/isLocationMatching
 import { DraggableItem } from '@/ui/layout/draggable-list/components/DraggableItem';
 import { NavigationDrawerItem } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import styled from '@emotion/styled';
-import { LightIconButton } from '@ui/input/button/components/LightIconButton';
+import { LightIconButton } from 'twenty-ui';
 import { useContext } from 'react';
 import { useLocation } from 'react-router-dom';
-import { IconHeartOff } from 'twenty-ui';
 
 const StyledEmptyContainer = styled.div`
   width: 100%;

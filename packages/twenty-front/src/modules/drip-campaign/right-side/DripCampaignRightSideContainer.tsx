@@ -1,3 +1,4 @@
+import { IconMail, IconMinus, IconSettings, IconX } from 'twenty-ui/icons';
 import {
   activeDripCampaignState,
   dripCampaignsState,
@@ -6,12 +7,7 @@ import {
 import styled from '@emotion/styled';
 import { useEffect, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import {
-  IconMail,
-  IconMinus,
-  IconSettings,
-  IconX
-} from 'twenty-ui';
+
 import { EmailSequenceManager } from '../components/EmailSequenceManager';
 
 const StyledFormElement = styled.form<{ isMinimized?: boolean }>`
@@ -81,7 +77,6 @@ const StyledEditableTitle = styled.input`
     box-shadow: 0 0 0 2px ${({ theme }) => theme.color.blue20};
   }
 `;
-
 
 const StyledButtonGroup = styled.div`
   display: flex;

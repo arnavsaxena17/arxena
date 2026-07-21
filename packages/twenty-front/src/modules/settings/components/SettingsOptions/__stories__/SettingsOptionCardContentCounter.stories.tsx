@@ -1,8 +1,9 @@
+import { ComponentDecorator } from 'twenty-ui';
+import { IconUsers } from 'twenty-ui/icons';
 import { SettingsOptionCardContentCounter } from '@/settings/components/SettingsOptions/SettingsOptionCardContentCounter';
 import styled from '@emotion/styled';
 import { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
-import { ComponentDecorator, IconUsers } from 'twenty-ui';
 
 const StyledContainer = styled.div`
   width: 480px;

@@ -1,18 +1,4 @@
-import {
-  IconComponent,
-  IllustrationIconArray,
-  IllustrationIconCalendarEvent,
-  IllustrationIconCalendarTime,
-  IllustrationIconJson,
-  IllustrationIconNumbers,
-  IllustrationIconOneToMany,
-  IllustrationIconStar,
-  IllustrationIconTag,
-  IllustrationIconTags,
-  IllustrationIconText,
-  IllustrationIconToggle,
-  IllustrationIconUid,
-} from 'twenty-ui';
+import { IconComponent, IllustrationIconArray, IllustrationIconCalendarEvent, IllustrationIconCalendarTime, IllustrationIconJson, IllustrationIconNumbers, IllustrationIconOneToMany, IllustrationIconStar, IllustrationIconTag, IllustrationIconTags, IllustrationIconText, IllustrationIconToggle, IllustrationIconUid } from 'twenty-ui';
 
 import {
   FieldArrayValue,

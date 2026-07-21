@@ -1,7 +1,8 @@
+import { Button, H2Title } from 'twenty-ui';
+import { IconTrash } from 'twenty-ui/icons';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { Button, H2Title, IconTrash } from 'twenty-ui';
 
 import { useAuth } from '@/auth/hooks/useAuth';
 import { currentUserState } from '@/auth/states/currentUserState';

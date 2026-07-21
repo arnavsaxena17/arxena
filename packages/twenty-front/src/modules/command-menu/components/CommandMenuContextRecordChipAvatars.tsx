@@ -1,3 +1,4 @@
+import { IconColor } from 'twenty-ui';
 import { useGetStandardObjectIcon } from '@/object-metadata/hooks/useGetStandardObjectIcon';
 import { ObjectMetadataItem } from '@/object-metadata/types/ObjectMetadataItem';
 import { useRecordChipData } from '@/object-record/hooks/useRecordChipData';

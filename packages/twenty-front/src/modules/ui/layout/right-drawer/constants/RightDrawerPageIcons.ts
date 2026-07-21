@@ -1,3 +1,4 @@
+import { IconMail, IconCalendarEvent, IconSparkles, IconMessages, IconActivity, IconList, IconBell, IconUser } from 'twenty-ui/icons';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
 
 export const RIGHT_DRAWER_PAGE_ICONS = {

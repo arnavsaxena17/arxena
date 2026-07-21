@@ -1,16 +1,10 @@
+import { LightIconButton, MenuItem, UndecoratedLink } from 'twenty-ui';
+import { IconDotsVertical, IconPencil, IconTrash } from 'twenty-ui/icons';
 import { SettingsSummaryCard } from '@/settings/components/SettingsSummaryCard';
 import { SettingsIntegrationDatabaseConnectionSyncStatus } from '@/settings/integrations/database-connection/components/SettingsIntegrationDatabaseConnectionSyncStatus';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import styled from '@emotion/styled';
-import {
-  IconDotsVertical,
-  IconPencil,
-  IconTrash,
-  LightIconButton,
-  MenuItem,
-  UndecoratedLink,
-} from 'twenty-ui';
 
 type SettingsIntegrationDatabaseConnectionSummaryCardProps = {
   databaseLogoUrl: string;

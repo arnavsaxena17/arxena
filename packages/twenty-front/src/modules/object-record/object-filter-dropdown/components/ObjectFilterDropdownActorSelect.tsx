@@ -1,3 +1,4 @@
+import { IconUserCircle } from 'twenty-ui/icons';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { ObjectFilterDropdownRecordPinnedItems } from '@/object-record/object-filter-dropdown/components/ObjectFilterDropdownRecordPinnedItems';
 import { CURRENT_WORKSPACE_MEMBER_SELECTABLE_ITEM_ID } from '@/object-record/object-filter-dropdown/constants/CurrentWorkspaceMemberSelectableItemId';
@@ -15,7 +16,6 @@ import {
   arrayOfUuidOrVariableSchema,
   jsonRelationFilterValueSchema,
 } from 'twenty-shared/utils';
-import { IconUserCircle } from 'twenty-ui';
 
 export const EMPTY_ACTOR_FILTER_VALUE: string = JSON.stringify({
   isCurrentWorkspaceMemberSelected: false,

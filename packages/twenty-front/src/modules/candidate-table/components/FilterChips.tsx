@@ -1,6 +1,6 @@
+import { IconX } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { memo, useCallback } from 'react';
-import { IconX } from 'twenty-ui';
 
 const StyledFilterChipsContainer = styled.div`
   display: flex;

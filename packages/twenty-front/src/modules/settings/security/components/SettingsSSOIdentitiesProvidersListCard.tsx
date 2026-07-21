@@ -1,5 +1,6 @@
 /* @license Enterprise */
 
+import { IconKey } from 'twenty-ui/icons';
 import { Link } from 'react-router-dom';
 
 import { SettingsPath } from '@/types/SettingsPath';
@@ -14,7 +15,7 @@ import isPropValid from '@emotion/is-prop-valid';
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { IconKey } from 'twenty-ui';
+
 import { useGetSsoIdentityProvidersQuery } from '~/generated/graphql';
 import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
 

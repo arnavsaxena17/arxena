@@ -1,17 +1,7 @@
+import { AppTooltip, Avatar, Button, H2Title, Section, TooltipDelay } from 'twenty-ui';
+import { IconChevronRight, IconLock, IconPlus, IconUser } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { Trans, useLingui } from '@lingui/react/macro';
-import {
-    AppTooltip,
-    Avatar,
-    Button,
-    H2Title,
-    IconChevronRight,
-    IconLock,
-    IconPlus,
-    IconUser,
-    Section,
-    TooltipDelay,
-} from 'twenty-ui';
 
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import { SettingsPath } from '@/types/SettingsPath';

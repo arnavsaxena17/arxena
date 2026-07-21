@@ -1,8 +1,9 @@
+import { OverflowingTextWithTooltip } from 'twenty-ui';
+import { IconChevronDown } from 'twenty-ui/icons';
 import { SelectOption, SelectSizeVariant } from '@/ui/input/components/Select';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { isDefined } from 'twenty-shared';
-import { IconChevronDown, OverflowingTextWithTooltip } from 'twenty-ui';
 
 const StyledControlContainer = styled.div<{
   disabled?: boolean;

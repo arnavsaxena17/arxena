@@ -1,3 +1,4 @@
+import { IconSettingsAutomation } from 'twenty-ui/icons';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { RightDrawerHotkeyScope } from '@/ui/layout/right-drawer/types/RightDrawerHotkeyScope';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
@@ -6,7 +7,6 @@ import { WorkflowDiagramCreateStepConnectionOptions } from '@/workflow/workflow-
 import { workflowCreateStepFromParentStepIdState } from '@/workflow/workflow-steps/states/workflowCreateStepFromParentStepIdState';
 import { useCallback } from 'react';
 import { useSetRecoilState } from 'recoil';
-import { IconSettingsAutomation } from 'twenty-ui';
 
 export const useStartNodeCreation = () => {
   const { openRightDrawer } = useRightDrawer();

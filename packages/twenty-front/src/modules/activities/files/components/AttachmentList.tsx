@@ -1,6 +1,7 @@
+import { IconButton } from 'twenty-ui';
+import { IconDownload, IconX } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { lazy, ReactElement, Suspense, useState } from 'react';
-import { IconButton, IconDownload, IconX } from 'twenty-ui';
 
 import { DropZone } from '@/activities/files/components/DropZone';
 import { useUploadAttachmentFile } from '@/activities/files/hooks/useUploadAttachmentFile';

@@ -1,15 +1,9 @@
+import { Button, Card, CardContent, H2Title, Section, Status } from 'twenty-ui';
+import { IconRefresh } from 'twenty-ui/icons';
 import { useLazyQuery } from '@apollo/client';
 import styled from '@emotion/styled';
 import { useEffect, useState } from 'react';
-import {
-  Button,
-  Card,
-  CardContent,
-  H2Title,
-  IconRefresh,
-  Section,
-  Status
-} from 'twenty-ui';
+
 import { GET_LINKEDIN_UNIPILE_HEALTH_STATUS, GET_LINKEDIN_UNIPILE_SESSION_STATS } from '../graphql/queries/getLinkedInUnipileMonitoring';
 import { GET_WHATSAPP_HEALTH_STATUS, GET_WHATSAPP_SESSION_STATS } from '../graphql/queries/getWhatsAppHealthStatus';
 

@@ -1,3 +1,5 @@
+import { MenuItem } from 'twenty-ui';
+import { IconPlus } from 'twenty-ui/icons';
 import { isFavoriteFolderCreatingState } from '@/favorites/states/isFavoriteFolderCreatingState';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
@@ -5,7 +7,6 @@ import { useNavigationSection } from '@/ui/navigation/navigation-drawer/hooks/us
 import { isNavigationDrawerExpandedState } from '@/ui/navigation/states/isNavigationDrawerExpanded';
 import { useTheme } from '@emotion/react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
-import { IconPlus, MenuItem } from 'twenty-ui';
 
 export const FavoriteFolderPickerFooter = ({
   dropdownId,

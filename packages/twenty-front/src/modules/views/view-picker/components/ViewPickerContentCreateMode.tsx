@@ -1,6 +1,6 @@
+import { IconLayoutKanban, IconTable, IconX } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { Key } from 'ts-key-enum';
-import { IconLayoutKanban, IconTable, IconX } from 'twenty-ui';
 
 import { useObjectMetadataItemById } from '@/object-metadata/hooks/useObjectMetadataItemById';
 import { IconPicker } from '@/ui/input/components/IconPicker';

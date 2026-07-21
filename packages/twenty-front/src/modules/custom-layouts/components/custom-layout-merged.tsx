@@ -1,3 +1,5 @@
+import { IconAbc } from 'twenty-ui';
+import { IconUsers, IconBriefcase } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useRecoilCallback, useRecoilValue, useSetRecoilState } from 'recoil';

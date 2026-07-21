@@ -1,8 +1,9 @@
+
+import { IconHierarchy2 } from 'twenty-ui/icons';
 import { useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import { IconHierarchy2, type TablerIconsProps } from 'twenty-ui';
 
 import { isOrgChartEnabledState } from '@/arx-jd-upload/states/isOrgChartEnabledState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';

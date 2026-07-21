@@ -15,13 +15,7 @@ import type {
   LinkedinCredentials,
   LinkedinSignupCompleteData,
 } from 'twenty-shared';
-import {
-  ActionLink,
-  H2Title,
-  LightButton,
-  Loader,
-  MainButton,
-} from 'twenty-ui';
+import { ActionLink, H2Title, LightButton, Loader, MainButton } from 'twenty-ui';
 import { OnboardingStatus } from '~/generated/graphql';
 import { Mixpanel } from '~/mixpanel';
 import { getLinkedinService } from '~/pages/settings/linkedin/services/linkedin-backend.service';

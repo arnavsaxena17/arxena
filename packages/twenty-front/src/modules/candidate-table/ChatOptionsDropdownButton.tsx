@@ -1,11 +1,7 @@
+import { MenuItem } from 'twenty-ui';
+import { IconFileText, IconSparkles, IconVideo } from 'twenty-ui/icons';
 import { Trans } from '@lingui/react/macro';
 import { useId } from 'react';
-import {
-    IconFileText,
-    IconSparkles,
-    IconVideo,
-    MenuItem,
-} from 'twenty-ui';
 
 import { useArxUploadJDModal } from '@/arx-jd-upload/hooks/useArxUploadJDModal';
 import { DROPDOWN_OFFSET_Y } from '@/dropdown/constants/DropdownOffsetY';
@@ -15,7 +11,7 @@ import { StyledHeaderDropdownButton } from '@/ui/layout/dropdown/components/Styl
 import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
 import {
     IconFileDescription,
-} from '@tabler/icons-react';
+} from 'twenty-ui/icons';
 
 // Define your specific actions here
 const handleCreateEnrichments = () => {

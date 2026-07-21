@@ -1,3 +1,6 @@
+import { IconEngine } from 'twenty-ui';
+import { IconMessage, IconPaperclip, IconFileCheck, IconUser, IconCopy, IconVideo } from 'twenty-ui/icons';
+import { IconList } from 'twenty-ui/icons';
 import { useAddToGoogleContactsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useAddToGoogleContactsAction';
 import { useCheckContactAvailabilityAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCheckContactAvailabilityAction';
 import { useDeleteCandidatesAndPeopleAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDeleteCandidatesAndPeopleAction';
@@ -23,10 +26,7 @@ import {
   ActionMenuEntryType,
 } from '@/action-menu/types/ActionMenuEntry';
 import { msg } from '@lingui/core/macro';
-import { IconBriefcase, IconDownload, IconMail, IconMessageCircle, IconMessageX, IconMessages, IconPhone, IconRefresh, IconShare, IconTrashOff, IconTrashX } from '@tabler/icons-react';
-import {
-  IconList
-} from 'twenty-ui';
+import { IconBriefcase, IconDownload, IconMail, IconMessageCircle, IconMessageX, IconMessages, IconPhone, IconRefresh, IconShare, IconTrashOff, IconTrashX } from 'twenty-ui/icons';
 
 export const TABLE_CANDIDATE_ACTIONS_CONFIG: Record<
   string,
@@ -101,7 +101,6 @@ export const TABLE_CANDIDATE_ACTIONS_CONFIG: Record<
   //   availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION],
   //   useAction: useBulkMessageChatAction, // This would typically point to a different action hook
   // },
-
 
   // cloneMultipleRecords: {
   //   type: ActionMenuEntryType.Standard,

@@ -1,5 +1,6 @@
+import { MenuItem, MenuItemAvatar } from 'twenty-ui';
+import { IconMinus, IconPlus } from 'twenty-ui/icons';
 import { offset } from '@floating-ui/react';
-import { IconMinus, IconPlus, MenuItem, MenuItemAvatar } from 'twenty-ui';
 
 import { MessageThreadSubscriberDropdownAddSubscriber } from '@/activities/emails/components/MessageThreadSubscriberDropdownAddSubscriber';
 import { MessageThreadSubscribersChip } from '@/activities/emails/components/MessageThreadSubscribersChip';

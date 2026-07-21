@@ -1,17 +1,9 @@
+import { IconButton, IconComponent, LightIconButton, MOBILE_VIEWPORT, OverflowingTextWithTooltip } from 'twenty-ui';
+import { IconChevronDown, IconChevronUp, IconX } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { ReactNode } from 'react';
 import { useRecoilValue } from 'recoil';
-import {
-  IconButton,
-  IconChevronDown,
-  IconChevronUp,
-  IconComponent,
-  IconX,
-  LightIconButton,
-  MOBILE_VIEWPORT,
-  OverflowingTextWithTooltip,
-} from 'twenty-ui';
 
 import { NavigationDrawerCollapseButton } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerCollapseButton';
 

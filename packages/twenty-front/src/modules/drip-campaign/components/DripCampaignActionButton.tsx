@@ -1,6 +1,7 @@
+import { IconMail } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { useRecoilState } from 'recoil';
-import { IconMail } from 'twenty-ui';
+
 import { currentJobIdForDripState, isDripCampaignModalOpenState } from '../states/dripCampaignModalOpenState';
 
 const StyledButton = styled.button`

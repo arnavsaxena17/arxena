@@ -1,5 +1,7 @@
-import { Button, IconPlus } from 'twenty-ui';
 
+
+import { Button } from 'twenty-ui';
+import { IconPlus } from 'twenty-ui/icons';
 import { useObjectLabel } from '@/object-metadata/hooks/useObjectLabel';
 import { RecordIndexAddRecordInGroupDropdown } from '@/object-record/record-index/components/RecordIndexAddRecordInGroupDropdown';
 import { recordIndexRecordGroupHideComponentFamilyState } from '@/object-record/record-index/states/recordIndexRecordGroupHideComponentFamilyState';

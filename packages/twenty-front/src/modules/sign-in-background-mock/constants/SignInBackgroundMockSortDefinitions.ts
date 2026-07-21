@@ -1,3 +1,4 @@
+import { IconLink, IconUsers, IconBuildingSkyscraper, IconMap, IconCalendar, IconTarget } from 'twenty-ui/icons';
 import { SortDefinition } from '@/object-record/object-sort-dropdown/types/SortDefinition';
 
 export const SIGN_IN_BACKGROUND_MOCK_SORT_DEFINITIONS = [

@@ -1,7 +1,7 @@
+import { IconBriefcase, IconVideo, IconLayout } from 'twenty-ui/icons';
+import { IconSearch, IconSettings } from 'twenty-ui/icons';
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
-import { IconSearch, IconSettings } from 'twenty-ui';
-
 
 import { isOrgChartEnabledState } from '@/arx-jd-upload/states/isOrgChartEnabledState';
 import { useCommandMenu } from '@/command-menu/hooks/useCommandMenu';
@@ -21,7 +21,7 @@ import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
 import { ScrollWrapper } from '@/ui/utilities/scroll/components/ScrollWrapper';
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
-import { IconMessage2 } from '@tabler/icons-react';
+import { IconMessage2 } from 'twenty-ui/icons';
 import { getAppPath } from '~/utils/navigation/getAppPath';
 import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
 

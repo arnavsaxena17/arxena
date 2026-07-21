@@ -1,3 +1,4 @@
+import { IconList } from 'twenty-ui/icons';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
 import { useAddNewCard } from '@/object-record/record-board/record-board-column/hooks/useAddNewCard';
@@ -12,7 +13,7 @@ import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import { IconList } from 'twenty-ui';
+
 import { v4 } from 'uuid';
 
 export const RecordBoardColumnNewOpportunity = ({

@@ -1,3 +1,5 @@
+import { IconClock } from 'twenty-ui';
+import { IconHandMove } from 'twenty-ui/icons';
 import { WorkflowTriggerType } from '@/workflow/types/Workflow';
 
 export const OTHER_TRIGGER_TYPES: Array<{

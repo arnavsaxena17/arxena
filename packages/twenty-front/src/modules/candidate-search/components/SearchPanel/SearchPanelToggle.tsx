@@ -1,7 +1,7 @@
+import { IconSearch } from 'twenty-ui/icons';
 import { isSearchPanelOpenState } from '@/candidate-search/states/searchPanelState';
 import styled from '@emotion/styled';
 import { useRecoilState } from 'recoil';
-import { IconSearch } from 'twenty-ui';
 
 const StyledToggleButton = styled.button<{ isOpen: boolean }>`
   position: fixed;

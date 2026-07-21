@@ -1,11 +1,7 @@
-import {
-  AnimatedButton,
-  IconButton,
-  IconDotsVertical,
-  getOsControlSymbol,
-  useIsMobile,
-} from 'twenty-ui';
 
+
+import { AnimatedButton, IconButton, getOsControlSymbol, useIsMobile } from 'twenty-ui';
+import { IconDotsVertical } from 'twenty-ui/icons';
 import { useCommandMenu } from '@/command-menu/hooks/useCommandMenu';
 import { isCommandMenuOpenedState } from '@/command-menu/states/isCommandMenuOpenedState';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';

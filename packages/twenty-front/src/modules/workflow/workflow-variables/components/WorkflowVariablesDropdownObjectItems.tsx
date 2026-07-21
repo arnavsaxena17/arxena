@@ -1,3 +1,5 @@
+import { MenuItemSelect, OverflowingTextWithTooltip, useIcons } from 'twenty-ui';
+import { IconChevronLeft } from 'twenty-ui/icons';
 import { DropdownMenuHeader } from '@/ui/layout/dropdown/components/DropdownMenuHeader';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import { DropdownMenuSearchInput } from '@/ui/layout/dropdown/components/DropdownMenuSearchInput';
@@ -9,12 +11,6 @@ import { isBaseOutputSchema } from '@/workflow/workflow-variables/utils/isBaseOu
 import { isRecordOutputSchema } from '@/workflow/workflow-variables/utils/isRecordOutputSchema';
 
 import { useState } from 'react';
-import {
-  IconChevronLeft,
-  MenuItemSelect,
-  OverflowingTextWithTooltip,
-  useIcons,
-} from 'twenty-ui';
 
 type WorkflowVariablesDropdownObjectItemsProps = {
   step: StepOutputSchema;

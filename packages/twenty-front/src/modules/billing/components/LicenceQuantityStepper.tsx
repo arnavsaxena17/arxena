@@ -1,6 +1,7 @@
+import { IconButton } from 'twenty-ui';
+import { IconMinus, IconPlus } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
-import { IconButton, IconMinus, IconPlus } from 'twenty-ui';
 
 const StyledStepper = styled.div`
   align-items: center;

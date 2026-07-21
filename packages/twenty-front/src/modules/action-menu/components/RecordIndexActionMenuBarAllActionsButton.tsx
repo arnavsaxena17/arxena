@@ -1,10 +1,11 @@
+import { getOsControlSymbol } from 'twenty-ui';
+import { IconLayoutSidebarRightExpand } from 'twenty-ui/icons';
 import { useCommandMenu } from '@/command-menu/hooks/useCommandMenu';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useLocation } from 'react-router-dom';
-import { getOsControlSymbol, IconLayoutSidebarRightExpand } from 'twenty-ui';
 
 const StyledButton = styled.div`
   border-radius: ${({ theme }) => theme.border.radius.sm};

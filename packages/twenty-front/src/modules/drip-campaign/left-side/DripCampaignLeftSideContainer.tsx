@@ -1,3 +1,4 @@
+import { IconPlus, IconTrash } from 'twenty-ui/icons';
 import {
   activeDripCampaignState,
   dripCampaignsState,
@@ -5,7 +6,6 @@ import {
 } from '@/drip-campaign/states/dripCampaignModalOpenState';
 import styled from '@emotion/styled';
 import { useRecoilState } from 'recoil';
-import { IconPlus, IconTrash } from 'twenty-ui';
 
 const StyledContainer = styled.div`
   color: ${({ theme }) => theme.font.color.secondary};

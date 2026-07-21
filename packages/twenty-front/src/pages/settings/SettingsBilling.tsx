@@ -1,15 +1,10 @@
+import { IconCircleX } from 'twenty-ui/icons';
 import { useMutation, useQuery } from '@apollo/client';
 import styled from '@emotion/styled';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import {
-  Button,
-  Card,
-  CardContent,
-  H2Title,
-  Section
-} from 'twenty-ui';
+import { Button, Card, CardContent, H2Title, Section } from 'twenty-ui';
 
 import { currentUserState } from '@/auth/states/currentUserState';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';

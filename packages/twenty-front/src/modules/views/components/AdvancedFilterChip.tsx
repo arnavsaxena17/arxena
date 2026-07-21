@@ -1,5 +1,6 @@
-import { IconFilterCog } from 'twenty-ui';
 
+
+import { IconFilterCog } from 'twenty-ui/icons';
 import { SortOrFilterChip } from '@/views/components/SortOrFilterChip';
 import { ADVANCED_FILTER_DROPDOWN_ID } from '@/views/constants/AdvancedFilterDropdownId';
 import { plural } from 'pluralize';

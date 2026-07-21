@@ -1,16 +1,8 @@
-import {
-    IconAddressBook,
-    IconApps,
-    IconAt,
-    IconCalendarEvent,
-    IconComponent,
-    IconCurrencyDollar,
-    IconMail,
-    IconSettings,
-    IconUserCircle,
-    IconUsers
-} from 'twenty-ui';
 
+
+import { IconMessages, IconSearch, IconRocket } from 'twenty-ui/icons';
+import { IconAddressBook, IconComponent } from 'twenty-ui';
+import { IconApps, IconAt, IconCalendarEvent, IconCurrencyDollar, IconMail, IconSettings, IconUserCircle, IconUsers } from 'twenty-ui/icons';
 import { SettingsPath } from '@/types/SettingsPath';
 import { SettingsFeatures } from 'twenty-shared';
 
@@ -21,7 +13,7 @@ import { useSettingsPermissionMap } from '@/settings/roles/hooks/useSettingsPerm
 import { NavigationDrawerItemIndentationLevel } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { t } from '@lingui/core/macro';
-import { IconBrandFacebook, IconBrandLinkedin, IconBrandWhatsapp, IconCode, IconColorSwatch, IconFlask, IconFunction, IconHierarchy2, IconKey, IconLock, IconServer, IconTopologyFull } from '@tabler/icons-react';
+import { IconBrandFacebook, IconBrandLinkedin, IconBrandWhatsapp, IconCode, IconColorSwatch, IconFlask, IconFunction, IconHierarchy2, IconKey, IconLock, IconServer, IconTopologyFull } from 'twenty-ui/icons';
 import { useRecoilValue } from 'recoil';
 import { FeatureFlagKey } from '~/generated/graphql';
 

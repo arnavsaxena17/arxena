@@ -1,3 +1,4 @@
+import { IconDatabaseExport, IconHeart, IconHeartOff, IconTrash, IconTrashX } from 'twenty-ui/icons';
 import { useDeleteMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDeleteMultipleRecordsAction';
 import { useDestroyMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDestroyMultipleRecordsAction';
 import { useExportMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useExportMultipleRecordsAction';
@@ -15,13 +16,6 @@ import {
   ActionMenuEntryType,
 } from '@/action-menu/types/ActionMenuEntry';
 import { msg } from '@lingui/core/macro';
-import {
-  IconDatabaseExport,
-  IconHeart,
-  IconHeartOff,
-  IconTrash,
-  IconTrashX,
-} from 'twenty-ui';
 
 export const DEFAULT_ACTIONS_CONFIG_V1: Record<
   string,

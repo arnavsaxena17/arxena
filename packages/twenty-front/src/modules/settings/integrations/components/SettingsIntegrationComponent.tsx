@@ -1,13 +1,7 @@
+import { Button, Pill, Status } from 'twenty-ui';
+import { IconArrowUpRight, IconBolt, IconPlus } from 'twenty-ui/icons';
 import { css } from '@emotion/react';
 import styled from '@emotion/styled';
-import {
-  Button,
-  IconArrowUpRight,
-  IconBolt,
-  IconPlus,
-  Pill,
-  Status,
-} from 'twenty-ui';
 
 import { SettingsIntegration } from '@/settings/integrations/types/SettingsIntegration';
 import { Link } from 'react-router-dom';

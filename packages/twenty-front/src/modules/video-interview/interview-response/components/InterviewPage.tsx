@@ -3,8 +3,8 @@ import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 import React, { useEffect, useRef, useState } from 'react';
 import Webcam from 'react-webcam';
 
-import { Button } from '@ui/input/button/components/Button';
-import { ButtonGroup } from '@ui/input/button/components/ButtonGroup';
+import { Button } from 'twenty-ui';
+import { ButtonGroup } from 'twenty-ui';
 import { v4 as uuid } from 'uuid';
 import {
   SnapScrollContainer,
@@ -20,7 +20,7 @@ import {
 import VideoContainer from '../VideoContainer';
 import { VideoPlayer } from '../utils/videoPlaybackUtils';
 
-import { IconCommand, IconRewindBackward5 } from '@tabler/icons-react';
+import { IconCommand, IconRewindBackward5 } from 'twenty-ui/icons';
 import { InterviewPageProps } from 'twenty-shared';
 import { Mixpanel } from '~/mixpanel';
 

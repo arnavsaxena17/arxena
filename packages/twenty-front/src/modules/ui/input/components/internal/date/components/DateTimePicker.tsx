@@ -1,3 +1,4 @@
+import { IconCalendarX } from 'twenty-ui/icons';
 import { SKELETON_LOADER_HEIGHT_SIZES } from '@/activities/components/SkeletonLoader';
 import {
   convertFirstDayOfTheWeekToCalendarStartDayNumber,
@@ -18,11 +19,7 @@ import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 
 import 'react-datepicker/dist/react-datepicker.css';
 
-import { IconCalendarX } from 'twenty-ui';
-import {
-  MenuItemLeftContent,
-  StyledHoverableMenuItemBase,
-} from 'twenty-ui';
+import { MenuItemLeftContent, StyledHoverableMenuItemBase } from 'twenty-ui';
 
 import { useGetShiftedDateToSystemTimeZone } from '@/ui/input/components/internal/date/hooks/useGetShiftedDateToSystemTimeZone';
 import { useUserFirstDayOfTheWeek } from '@/ui/input/components/internal/date/hooks/useUserFirstDayOfTheWeek';

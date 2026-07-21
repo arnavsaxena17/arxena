@@ -1,3 +1,4 @@
+import { IconDatabase } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -6,7 +7,7 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 import { useOpenArxenaSiteWithToken } from '@/auth/hooks/useOpenArxenaSiteWithToken';
 import { AppPath } from '@/types/AppPath';
 import { useQuery } from '@apollo/client';
-import { IconDatabase } from 'twenty-ui';
+
 import { Mixpanel } from '~/mixpanel';
 
 import { ArxEnrichmentModal } from '@/arx-ai-filtering/arxEnrichmentModal';
@@ -338,7 +339,6 @@ export const Jobs = () => {
       refetchJobsRef.current();
     }
   }, [updatedMetadataStructureLoaded, jobMetadataItem?.id]);
-
 
   // Track previous modal state to detect when it closes
   const prevModalOpenRef = useRef(false);

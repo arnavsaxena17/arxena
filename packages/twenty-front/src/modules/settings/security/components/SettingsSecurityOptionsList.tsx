@@ -1,3 +1,5 @@
+import { Card, IconGoogle, IconMicrosoft } from 'twenty-ui';
+import { IconLink, IconPassword } from 'twenty-ui/icons';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { authProvidersState } from '@/client-config/states/authProvidersState';
 import { SettingsOptionCardContentToggle } from '@/settings/components/SettingsOptions/SettingsOptionCardContentToggle';
@@ -8,13 +10,7 @@ import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { capitalize } from 'twenty-shared';
-import {
-  Card,
-  IconGoogle,
-  IconLink,
-  IconMicrosoft,
-  IconPassword,
-} from 'twenty-ui';
+
 import { AuthProviders } from '~/generated-metadata/graphql';
 import { useUpdateWorkspaceMutation } from '~/generated/graphql';
 

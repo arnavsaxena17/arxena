@@ -1,11 +1,6 @@
-import {
-  IconBuildingSkyscraper,
-  IconCheckbox,
-  IconSettings,
-  IconTargetArrow,
-  IconUser,
-} from 'twenty-ui';
 
+
+import { IconBuildingSkyscraper, IconCheckbox, IconSettings, IconTargetArrow, IconUser } from 'twenty-ui/icons';
 import { CoreObjectNamePlural } from '@/object-metadata/types/CoreObjectNamePlural';
 import { AppPath } from '@/types/AppPath';
 import { SettingsPath } from '@/types/SettingsPath';

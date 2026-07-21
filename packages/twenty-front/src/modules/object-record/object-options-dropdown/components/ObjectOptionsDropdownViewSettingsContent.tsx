@@ -1,9 +1,7 @@
-import {
-  IconBaselineDensitySmall,
-  IconChevronLeft,
-  MenuItemToggle,
-} from 'twenty-ui';
 
+
+import { MenuItemToggle } from 'twenty-ui';
+import { IconBaselineDensitySmall, IconChevronLeft } from 'twenty-ui/icons';
 import { useObjectOptionsForBoard } from '@/object-record/object-options-dropdown/hooks/useObjectOptionsForBoard';
 import { useOptionsDropdown } from '@/object-record/object-options-dropdown/hooks/useOptionsDropdown';
 import { DropdownMenuHeader } from '@/ui/layout/dropdown/components/DropdownMenuHeader';

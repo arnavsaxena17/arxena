@@ -1,3 +1,5 @@
+import { IconButton } from 'twenty-ui';
+import { IconPlus } from 'twenty-ui/icons';
 import { StyledHandle } from '@/workflow/workflow-diagram/components/WorkflowDiagramStepNodeBase';
 import { NODE_BORDER_WIDTH } from '@/workflow/workflow-diagram/constants/NodeBorderWidth';
 import { NODE_ICON_LEFT_MARGIN } from '@/workflow/workflow-diagram/constants/NodeIconLeftMargin';
@@ -5,7 +7,6 @@ import { NODE_ICON_WIDTH } from '@/workflow/workflow-diagram/constants/NodeIconW
 import { WORKFLOW_DIAGRAM_NODE_DEFAULT_TARGET_HANDLE_ID } from '@/workflow/workflow-diagram/workflow-nodes/constants/WorkflowDiagramNodeDefaultTargetHandleId';
 import styled from '@emotion/styled';
 import { Position } from '@xyflow/react';
-import { IconButton, IconPlus } from 'twenty-ui';
 
 const StyledContainer = styled.div`
   padding-top: ${({ theme }) => theme.spacing(3)};

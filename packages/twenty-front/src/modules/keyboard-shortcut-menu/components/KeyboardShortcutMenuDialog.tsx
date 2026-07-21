@@ -1,5 +1,7 @@
-import { IconButton, IconX } from 'twenty-ui';
 
+
+import { IconButton } from 'twenty-ui';
+import { IconX } from 'twenty-ui/icons';
 import {
   StyledContainer,
   StyledDialog,

@@ -1,18 +1,11 @@
+import { AnimatedPlaceholder, AnimatedPlaceholderEmptyContainer, AnimatedPlaceholderEmptySubTitle, AnimatedPlaceholderEmptyTextContainer, AnimatedPlaceholderEmptyTitle, Button } from 'twenty-ui';
+import { IconRefresh } from 'twenty-ui/icons';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 import { useEffect, useState } from 'react';
 import { FallbackProps } from 'react-error-boundary';
 import { useLocation } from 'react-router-dom';
-import {
-  AnimatedPlaceholder,
-  AnimatedPlaceholderEmptyContainer,
-  AnimatedPlaceholderEmptySubTitle,
-  AnimatedPlaceholderEmptyTextContainer,
-  AnimatedPlaceholderEmptyTitle,
-  Button,
-  IconRefresh,
-} from 'twenty-ui';
 
 type GenericErrorFallbackProps = FallbackProps & {
   title?: string;

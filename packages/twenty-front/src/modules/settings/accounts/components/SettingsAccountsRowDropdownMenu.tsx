@@ -1,13 +1,6 @@
+import { LightIconButton, MenuItem } from 'twenty-ui';
+import { IconCalendarEvent, IconDotsVertical, IconMail, IconRefresh, IconTrash } from 'twenty-ui/icons';
 import { useState } from 'react';
-import {
-  IconCalendarEvent,
-  IconDotsVertical,
-  IconMail,
-  IconRefresh,
-  IconTrash,
-  LightIconButton,
-  MenuItem,
-} from 'twenty-ui';
 
 import { ConnectedAccount } from '@/accounts/types/ConnectedAccount';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';

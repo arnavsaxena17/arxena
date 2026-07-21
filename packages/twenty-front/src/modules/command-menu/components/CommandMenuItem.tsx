@@ -1,6 +1,7 @@
+import { IconComponent, MenuItemCommand } from 'twenty-ui';
+import { IconArrowUpRight } from 'twenty-ui/icons';
 import { isNonEmptyString } from '@sniptt/guards';
 import { useRecoilValue } from 'recoil';
-import { IconArrowUpRight, IconComponent, MenuItemCommand } from 'twenty-ui';
 
 import { useCommandMenuOnItemClick } from '@/command-menu/hooks/useCommandMenuOnItemClick';
 import { useSelectableList } from '@/ui/layout/selectable-list/hooks/useSelectableList';

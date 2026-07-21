@@ -1,5 +1,6 @@
+import { Button, LightIconButton } from 'twenty-ui';
+import { IconHelpCircle } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
-import { Button, IconHelpCircle, LightIconButton } from 'twenty-ui';
 
 import { SupportButtonSkeletonLoader } from '@/support/components/SupportButtonSkeletonLoader';
 import { useSupportChat } from '@/support/hooks/useSupportChat';

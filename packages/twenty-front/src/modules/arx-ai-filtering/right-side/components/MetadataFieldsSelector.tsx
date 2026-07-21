@@ -1,5 +1,6 @@
+import { IconX } from 'twenty-ui/icons';
 import React from 'react';
-import { IconX } from 'twenty-ui';
+
 import { OtherFieldKey } from '../types';
 import {
     CheckboxField,

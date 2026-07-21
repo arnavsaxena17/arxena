@@ -1,7 +1,7 @@
+import { IconUpload } from 'twenty-ui/icons';
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import styled from '@emotion/styled';
-import { IconUpload } from 'twenty-ui';
 
 const ModalContainer = styled.div`
   background: ${({ theme }) => theme.background.primary};
@@ -70,7 +70,6 @@ export interface ResumeUploadModalProps {
   onUpload: (files: File[]) => Promise<void>;
   onClose: () => void;
 }
-
 
 export const ResumeUploadModal: React.FC<ResumeUploadModalProps> = ({ 
   onUpload, 

@@ -1,3 +1,5 @@
+import { AppTooltip, MenuItemDraggable, useIcons } from 'twenty-ui';
+import { IconEye, IconEyeOff, IconInfoCircle } from 'twenty-ui/icons';
 import {
   DropResult,
   OnDragEndResponder,
@@ -5,14 +7,6 @@ import {
 } from '@hello-pangea/dnd';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  AppTooltip,
-  IconEye,
-  IconEyeOff,
-  IconInfoCircle,
-  MenuItemDraggable,
-  useIcons,
-} from 'twenty-ui';
 
 import { FieldMetadata } from '@/object-record/record-field/types/FieldMetadata';
 import { ColumnDefinition } from '@/object-record/record-table/types/ColumnDefinition';

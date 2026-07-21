@@ -1,3 +1,4 @@
+import { IconLink, IconUsers, IconBuildingSkyscraper, IconHeart, IconMap, IconUserCircle, IconFileImport, IconCalendar, IconTarget, IconBrandLinkedin, IconTargetArrow, IconBrandX, IconCheckbox, IconMoneybag } from 'twenty-ui/icons';
 import { FieldMetadata } from '@/object-record/record-field/types/FieldMetadata';
 import { ColumnDefinition } from '@/object-record/record-table/types/ColumnDefinition';
 import { filterAvailableTableColumns } from '@/object-record/utils/filterAvailableTableColumns';

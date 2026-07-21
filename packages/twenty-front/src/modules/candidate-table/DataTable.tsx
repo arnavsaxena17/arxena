@@ -1,8 +1,11 @@
+import { Loader } from 'twenty-ui';
+import { IconPlus, IconX } from 'twenty-ui/icons';
 import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { getCandidateSearchFromFileUrl } from '@/candidate-search/constants/candidateSearchApiPaths';
 import { fetchSearchResultsCache, persistSearchMetadataToStorage, persistSearchResultsToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { afterChange, afterSelectionEnd, getPermanentId, isUUID, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
+import '@/candidate-table/initHandsontable';
 import { CANDIDATE_CONVERSATION_STATUS_LABELS, isAiFilterField } from '@/candidate-table/TableColumns';
 import { NaukriQueueStatusEffect } from '@/candidate-table/components/NaukriQueueStatusEffect';
 import { SortingControls } from '@/candidate-table/components/SortingControls';
@@ -22,11 +25,8 @@ import { HotTable } from '@handsontable/react-wrapper';
 import axios from 'axios';
 import Handsontable from 'handsontable';
 import { CellChange, ChangeSource } from 'handsontable/common';
-import 'handsontable/styles/handsontable.min.css';
-import 'handsontable/styles/ht-theme-main.min.css';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { IconPlus, IconX, Loader } from 'twenty-ui';
 
 const StyledTableWrapper = styled.div`
   position: relative;
@@ -160,7 +160,6 @@ const StyledEmptyDescription = styled.div`
   max-width: 300px;
 `;
 
-
 const StyledFilterBadge = styled.div`
   position: absolute;
   top: ${({ theme }) => theme.spacing(2)};
@@ -213,8 +212,6 @@ type ColumnRenderer = (
   value: any,
   cellProperties: Handsontable.CellProperties
 ) => HTMLTableCellElement;
-
-
 
 export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; clearAllFiltersAndSorts: () => void; toggleSortingControls?: () => void; applyGeneratedSorts?: (sorts: any) => void; loadMoreCandidates?: (pages?: number) => Promise<void>; hasMoreCandidates?: boolean; isLoadingMore?: boolean }, DataTableProps>(({ jobId, onImportCandidatesClick }, ref) => {
     const tableRef = useRef<any>(null);

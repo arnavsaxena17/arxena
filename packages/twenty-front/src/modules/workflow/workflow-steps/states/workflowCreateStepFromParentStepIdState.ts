@@ -1,5 +1,5 @@
 import { WorkflowDiagramCreateStepConnectionOptions } from '@/workflow/workflow-diagram/types/WorkflowDiagram';
-import { createState } from '@ui/utilities/state/utils/createState';
+import { createState } from 'twenty-ui';
 
 export type WorkflowCreateStepFromParent = {
   parentStepId: string;

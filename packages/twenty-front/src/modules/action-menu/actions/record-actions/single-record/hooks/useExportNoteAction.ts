@@ -3,7 +3,6 @@ import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/Ac
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
-import { BlockNoteEditor } from '@blocknote/core';
 import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
 import { FeatureFlagKey } from '~/generated/graphql';
@@ -53,6 +52,8 @@ export const useExportNoteAction: ActionHookWithObjectMetadataItem = ({
       // eslint-disable-next-line no-console
       console.warn(initialBody);
     }
+
+    const { BlockNoteEditor } = await import('@blocknote/core');
 
     const editor = BlockNoteEditor.create({
       initialContent: parsedBody,

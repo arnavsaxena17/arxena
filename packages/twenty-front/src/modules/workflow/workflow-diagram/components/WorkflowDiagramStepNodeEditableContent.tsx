@@ -1,8 +1,9 @@
+import { FloatingIconButton } from 'twenty-ui';
+import { IconTrash } from 'twenty-ui/icons';
 import { WorkflowDiagramStepNodeBase } from '@/workflow/workflow-diagram/components/WorkflowDiagramStepNodeBase';
 import { WorkflowDiagramStepNodeIcon } from '@/workflow/workflow-diagram/components/WorkflowDiagramStepNodeIcon';
 import { WorkflowDiagramStepNodeData } from '@/workflow/workflow-diagram/types/WorkflowDiagram';
 import { WorkflowDiagramNodeVariant } from '@/workflow/workflow-diagram/types/WorkflowDiagramNodeVariant';
-import { FloatingIconButton, IconTrash } from 'twenty-ui';
 
 export const WorkflowDiagramStepNodeEditableContent = ({
   data,

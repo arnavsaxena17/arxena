@@ -1,3 +1,4 @@
+import { IconCalendarEvent } from 'twenty-ui/icons';
 import { Meta, StoryObj } from '@storybook/react';
 import { expect, fn, userEvent, within } from '@storybook/test';
 import { useEffect } from 'react';

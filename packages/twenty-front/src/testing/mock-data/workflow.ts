@@ -1,3 +1,5 @@
+import { IconCalendarMinus, IconCalendarClock, IconAdCircle, IconIconTimelineEvent, IconBrandVisa } from 'twenty-ui';
+import { IconTargetArrow, IconProgressCheck, IconCurrencyDollar, IconCalendarEvent, IconCalendar, IconCreativeCommonsSa, IconBuildingSkyscraper, IconBrandX, IconMap, IconUsers, IconLink, IconVideo, IconHome, IconBrandLinkedin, IconTarget, IconMoneybag, IconHierarchy2, IconUser, IconUserCircle, IconCheckbox, IconNotes, IconHeart, IconFileImport } from 'twenty-ui/icons';
 import { RecordGqlConnection } from '@/object-record/graphql/types/RecordGqlConnection';
 
 export const getWorkflowMock = () => {

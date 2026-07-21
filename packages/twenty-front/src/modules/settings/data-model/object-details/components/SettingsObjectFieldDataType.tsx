@@ -1,3 +1,4 @@
+import { IconFromProps } from 'twenty-ui';
 import { css, useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { Link } from 'react-router-dom';

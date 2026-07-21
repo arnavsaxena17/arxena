@@ -1,3 +1,6 @@
+import { IconAbc, IconUserCheck, IconMessageChatbot, IconMessageNumber, IconCalendarCheck, IconHandStop, IconVideoCheck, IconScreenShare } from 'twenty-ui';
+import { IconUsers, IconCheckbox, IconMail, IconPhone, IconVideo, IconCalendarTime, IconBrandWhatsapp, IconUser, IconPencil, IconActivity, IconSend, IconListCheck } from 'twenty-ui/icons';
+
 export const CandidateObjectFields = {
   __typename: 'Object',
   id: '0aebd4fa-cc94-4ddb-ba95-556748f3c795',

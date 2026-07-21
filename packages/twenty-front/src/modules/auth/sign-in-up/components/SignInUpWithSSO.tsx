@@ -1,3 +1,5 @@
+import { HorizontalSeparator, MainButton } from 'twenty-ui';
+import { IconLock } from 'twenty-ui/icons';
 import { useSSO } from '@/auth/sign-in-up/hooks/useSSO';
 import {
   SignInUpStep,
@@ -8,7 +10,6 @@ import { useTheme } from '@emotion/react';
 import { useLingui } from '@lingui/react/macro';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import { HorizontalSeparator, IconLock, MainButton } from 'twenty-ui';
 
 export const SignInUpWithSSO = () => {
   const theme = useTheme();

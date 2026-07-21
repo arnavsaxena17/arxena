@@ -1,4 +1,6 @@
-import { IconComponent, IconFileText, IconVideo } from 'twenty-ui';
+
+import { type IconComponent } from 'twenty-ui';
+import { IconVideo, IconFileText } from 'twenty-ui/icons';
 
 type QuestionOrAnswer = {
   label: string;

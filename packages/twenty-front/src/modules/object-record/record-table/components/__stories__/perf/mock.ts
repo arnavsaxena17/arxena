@@ -1,3 +1,4 @@
+import { IconUser, IconBuildingSkyscraper, IconFileUpload, IconMap, IconCheckbox, IconTargetArrow, IconCalendar, IconHeart, IconBrandLinkedin, IconFileImport, IconPhone, IconHierarchy2, IconMail, IconBriefcase, IconTimelineEvent, IconBrandX, IconUserCircle } from 'twenty-ui/icons';
 import { FieldMetadataType } from '~/generated-metadata/graphql';
 
 export const mockPerformance = {

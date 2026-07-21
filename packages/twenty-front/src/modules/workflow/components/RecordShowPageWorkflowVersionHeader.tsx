@@ -1,3 +1,5 @@
+import { Button } from 'twenty-ui';
+import { IconPencil, IconPlayerStop, IconPower } from 'twenty-ui/icons';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { useFindOneRecord } from '@/object-record/hooks/useFindOneRecord';
@@ -11,7 +13,6 @@ import { openOverrideWorkflowDraftConfirmationModalState } from '@/workflow/stat
 import { Workflow, WorkflowVersion } from '@/workflow/types/Workflow';
 import { useSetRecoilState } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import { Button, IconPencil, IconPlayerStop, IconPower } from 'twenty-ui';
 
 import { useNavigateApp } from '~/hooks/useNavigateApp';
 

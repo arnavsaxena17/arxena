@@ -1,6 +1,8 @@
+import { Button } from 'twenty-ui';
+import { IconMinus, IconPlus } from 'twenty-ui/icons';
 import { TextInput } from '@/ui/input/components/TextInput';
 import styled from '@emotion/styled';
-import { Button, IconMinus, IconPlus } from 'twenty-ui';
+
 import { castAsNumberOrNull } from '~/utils/cast-as-number-or-null';
 
 type SettingsCounterProps = {

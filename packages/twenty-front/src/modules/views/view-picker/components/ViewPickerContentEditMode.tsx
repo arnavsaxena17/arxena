@@ -1,5 +1,5 @@
+import { IconChevronLeft } from 'twenty-ui/icons';
 import { Key } from 'ts-key-enum';
-import { IconChevronLeft } from 'twenty-ui';
 
 import { IconPicker } from '@/ui/input/components/IconPicker';
 import { TextInputV2 } from '@/ui/input/components/TextInputV2';

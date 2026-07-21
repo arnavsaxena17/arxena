@@ -1,3 +1,4 @@
+import { IconBuildingSkyscraper } from 'twenty-ui/icons';
 import { renderHook } from '@testing-library/react';
 import { act } from 'react';
 

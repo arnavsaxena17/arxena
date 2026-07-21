@@ -1,3 +1,4 @@
+import { IconChevronDown } from 'twenty-ui/icons';
 import { hasRecordGroupsComponentSelector } from '@/object-record/record-group/states/selectors/hasRecordGroupsComponentSelector';
 import { RECORD_TABLE_TD_WIDTH } from '@/object-record/record-table/record-table-cell/components/RecordTableTd';
 import { RecordTableColumnAggregateFooterCellContext } from '@/object-record/record-table/record-table-footer/components/RecordTableColumnAggregateFooterCellContext';
@@ -9,7 +10,6 @@ import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useContext, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { IconChevronDown } from 'twenty-ui';
 
 const StyledCell = styled.div<{ isUnfolded: boolean; isFirstCell: boolean }>`
   align-items: center;

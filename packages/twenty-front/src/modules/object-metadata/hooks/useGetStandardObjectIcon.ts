@@ -1,5 +1,7 @@
+import { IconColor } from 'twenty-ui';
+import { IconComponent } from 'twenty-ui';
+import { IconCheckbox, IconNotes } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
-import { IconCheckbox, IconComponent, IconNotes } from 'twenty-ui';
 
 export const useGetStandardObjectIcon = (objectNameSingular: string) => {
   const theme = useTheme();

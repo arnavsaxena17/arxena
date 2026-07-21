@@ -1,3 +1,4 @@
+import { IconPlaylistAdd, IconRefreshDot, IconTrash } from 'twenty-ui/icons';
 import { WorkflowTriggerType } from '@/workflow/types/Workflow';
 import { DatabaseTriggerDefaultLabel } from '@/workflow/workflow-trigger/constants/DatabaseTriggerDefaultLabel';
 

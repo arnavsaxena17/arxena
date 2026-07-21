@@ -1,13 +1,6 @@
+import { IconGmail, IconGoogleCalendar } from 'twenty-ui';
+import { IconApi, IconCsv, IconRobot, IconSettingsAutomation, IconUserCircle } from 'twenty-ui/icons';
 import { SelectableItem } from '@/object-record/select/types/SelectableItem';
-import {
-  IconApi,
-  IconCsv,
-  IconGmail,
-  IconGoogleCalendar,
-  IconRobot,
-  IconSettingsAutomation,
-  IconUserCircle,
-} from 'twenty-ui';
 
 export const getActorSourceMultiSelectOptions = (
   selectedSourceNames: string[],

@@ -1,3 +1,5 @@
+import { Button, Toggle } from 'twenty-ui';
+import { IconTrash } from 'twenty-ui/icons';
 import { Heading } from '@/spreadsheet-import/components/Heading';
 import { SpreadsheetImportTable } from '@/spreadsheet-import/components/SpreadsheetImportTable';
 import { StepNavigationButton } from '@/spreadsheet-import/components/StepNavigationButton';
@@ -35,7 +37,7 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import { Button, IconTrash, Toggle } from 'twenty-ui';
+
 import { generateColumns } from './components/columns';
 import { ImportedStructuredRowMetadata } from './types';
 

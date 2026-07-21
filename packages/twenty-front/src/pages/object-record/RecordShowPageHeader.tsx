@@ -1,3 +1,5 @@
+import { Button } from 'twenty-ui';
+import { IconExternalLink } from 'twenty-ui/icons';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { getObjectMetadataIdentifierFields } from '@/object-metadata/utils/getObjectMetadataIdentifierFields';
 import { ObjectRecordShowPageBreadcrumb } from '@/object-record/record-show/components/ObjectRecordShowPageBreadcrumb';
@@ -6,7 +8,6 @@ import { useRecordShowPage } from '@/object-record/record-show/hooks/useRecordSh
 import { useRecordShowPagePagination } from '@/object-record/record-show/hooks/useRecordShowPagePagination';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 import { useNavigate } from 'react-router-dom';
-import { Button, IconExternalLink } from 'twenty-ui';
 
 export const RecordShowPageHeader = ({
   objectNameSingular,

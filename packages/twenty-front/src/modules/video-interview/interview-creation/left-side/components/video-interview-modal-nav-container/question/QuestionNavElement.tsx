@@ -1,6 +1,6 @@
+import { IconTrash } from 'twenty-ui/icons';
 import React from 'react';
 import styled from '@emotion/styled';
-import { IconTrash } from 'twenty-ui';
 
 import { useQuestionToDisplay } from '@/video-interview/interview-creation/hooks/useQuestionToDisplay';
 

@@ -1,10 +1,7 @@
+import { ComponentDecorator } from 'twenty-ui';
+import { IconBuildingSkyscraper, IconUser } from 'twenty-ui/icons';
 import { Meta, StoryObj } from '@storybook/react';
 
-import {
-  ComponentDecorator,
-  IconBuildingSkyscraper,
-  IconUser,
-} from 'twenty-ui';
 import { CommandMenuContextChip } from '../CommandMenuContextChip';
 
 const meta: Meta<typeof CommandMenuContextChip> = {

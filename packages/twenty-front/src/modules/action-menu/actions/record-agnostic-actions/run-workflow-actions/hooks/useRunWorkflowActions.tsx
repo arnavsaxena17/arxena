@@ -1,3 +1,4 @@
+import { IconSettingsAutomation } from 'twenty-ui/icons';
 import {
   ActionMenuEntryScope,
   ActionMenuEntryType,
@@ -8,7 +9,7 @@ import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { msg } from '@lingui/core/macro';
 
 import { capitalize, isDefined } from 'twenty-shared';
-import { IconSettingsAutomation } from 'twenty-ui';
+
 import { FeatureFlagKey } from '~/generated/graphql';
 
 export const useRunWorkflowActions = () => {

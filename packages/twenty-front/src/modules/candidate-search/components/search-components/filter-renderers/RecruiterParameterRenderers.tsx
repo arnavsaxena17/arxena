@@ -1,5 +1,5 @@
 import { ParameterRendererProps } from '@/candidate-search/types/candidate-search.types';
-import { Button } from '@ui/input/button/components/Button';
+import { Button } from 'twenty-ui';
 import React from 'react';
 import {
   StyledButtonContainer,

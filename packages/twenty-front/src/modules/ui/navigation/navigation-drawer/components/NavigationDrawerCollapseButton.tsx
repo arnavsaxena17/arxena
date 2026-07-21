@@ -1,11 +1,8 @@
+import { LightIconButton } from 'twenty-ui';
+import { IconLayoutSidebarLeftCollapse, IconLayoutSidebarRightCollapse } from 'twenty-ui/icons';
 import { isNavigationDrawerExpandedState } from '@/ui/navigation/states/isNavigationDrawerExpanded';
 import styled from '@emotion/styled';
 import { useSetRecoilState } from 'recoil';
-import {
-  IconLayoutSidebarLeftCollapse,
-  IconLayoutSidebarRightCollapse,
-  LightIconButton,
-} from 'twenty-ui';
 
 const StyledCollapseButton = styled.div`
   align-items: center;

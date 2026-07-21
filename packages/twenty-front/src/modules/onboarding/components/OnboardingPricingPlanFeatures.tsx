@@ -1,3 +1,5 @@
+import { ThemeType } from 'twenty-ui';
+import { IconCheck } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import {
@@ -7,7 +9,6 @@ import {
     type PricingPlanId,
     type PricingSegmentTone,
 } from 'twenty-shared';
-import { IconCheck, ThemeType } from 'twenty-ui';
 
 type OnboardingPricingPlanFeaturesLayout = 'grid' | 'column';
 

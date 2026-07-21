@@ -1,3 +1,5 @@
+import { IconArrowsSplit2, IconRotateClockwise2, IconClock } from 'twenty-ui';
+import { IconSend, IconCode, IconFilter, IconRobot } from 'twenty-ui/icons';
 import { WorkflowStepType } from '@/workflow/types/Workflow';
 
 export const OTHER_ACTIONS: Array<{

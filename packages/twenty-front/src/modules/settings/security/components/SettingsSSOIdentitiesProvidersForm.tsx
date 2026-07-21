@@ -1,5 +1,7 @@
 /* @license Enterprise */
 
+import { H2Title, IconComponent, Section } from 'twenty-ui';
+import { IconKey } from 'twenty-ui/icons';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import { SettingsRadioCardContainer } from '@/settings/components/SettingsRadioCardContainer';
 import { SettingsSSOOIDCForm } from '@/settings/security/components/SettingsSSOOIDCForm';
@@ -9,7 +11,7 @@ import { TextInput } from '@/ui/input/components/TextInput';
 import styled from '@emotion/styled';
 import { ReactElement, useMemo } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
-import { H2Title, IconComponent, IconKey, Section } from 'twenty-ui';
+
 import { IdentityProviderType } from '~/generated/graphql';
 
 const StyledInputsContainer = styled.div`

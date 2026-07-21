@@ -1,3 +1,5 @@
+import { IconMessageChatbot, IconMessageCheck, IconHandStop, IconPencilStar, IconUserCheck, IconShoppingCart, IconMessageNumber, IconVideoCheck, IconCalendarCheck, IconMessageDots } from 'twenty-ui';
+import { IconUsers, IconPhone, IconMessageCircle, IconLink, IconBrandWhatsapp, IconBuilding, IconVideo, IconCalendarTime, IconJson } from 'twenty-ui/icons';
 import { AvailableFieldForImport } from '@/object-record/spreadsheet-import/types/AvailableFieldForImport';
 import { IconComponent } from 'twenty-ui';
 import { FieldMetadataType } from '~/generated-metadata/graphql';

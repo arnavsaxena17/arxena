@@ -1,7 +1,8 @@
+import { MenuItem, UndecoratedLink, useIcons } from 'twenty-ui';
+import { IconSettings } from 'twenty-ui/icons';
 import { useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
-import { IconSettings, MenuItem, UndecoratedLink, useIcons } from 'twenty-ui';
 
 import { FieldMetadata } from '@/object-record/record-field/types/FieldMetadata';
 import { useRecordTableContextOrThrow } from '@/object-record/record-table/contexts/RecordTableContext';

@@ -1,3 +1,4 @@
+import { IconSearch } from 'twenty-ui/icons';
 import { ObjectMetadataItem } from '@/object-metadata/types/ObjectMetadataItem';
 import {
   SettingsObjectFieldItemTableRow,
@@ -17,7 +18,7 @@ import { useLingui } from '@lingui/react/macro';
 import { isNonEmptyArray } from '@sniptt/guards';
 import { useEffect, useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { IconSearch } from 'twenty-ui';
+
 import { useMapFieldMetadataItemToSettingsObjectDetailTableItem } from '~/pages/settings/data-model/hooks/useMapFieldMetadataItemToSettingsObjectDetailTableItem';
 import { SettingsObjectDetailTableItem } from '~/pages/settings/data-model/types/SettingsObjectDetailTableItem';
 

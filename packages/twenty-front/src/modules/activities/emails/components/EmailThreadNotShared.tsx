@@ -1,6 +1,6 @@
+import { IconLock } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { IconLock } from 'twenty-ui';
 
 const StyledContainer = styled.div`
   align-items: center;

@@ -1,6 +1,6 @@
 /* eslint-disable @nx/workspace-no-navigate-prefer-link */
-import { IconSettings } from 'twenty-ui';
 
+import { IconSettings } from 'twenty-ui/icons';
 import { RecordTableEmptyStateDisplay } from '@/object-record/record-table/empty-state/components/RecordTableEmptyStateDisplay';
 import { SettingsPath } from '@/types/SettingsPath';
 import { useNavigateSettings } from '~/hooks/useNavigateSettings';

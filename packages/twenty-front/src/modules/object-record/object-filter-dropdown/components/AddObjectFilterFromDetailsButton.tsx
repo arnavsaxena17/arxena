@@ -1,5 +1,7 @@
-import { IconPlus, LightButton } from 'twenty-ui';
 
+
+import { LightButton } from 'twenty-ui';
+import { IconPlus } from 'twenty-ui/icons';
 import { OBJECT_FILTER_DROPDOWN_ID } from '@/object-record/object-filter-dropdown/constants/ObjectFilterDropdownId';
 import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
 

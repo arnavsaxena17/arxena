@@ -1,11 +1,8 @@
-/* @license Enterprise */
+import { type IconComponent } from 'twenty-ui';
+import { IconGoogle, IconMicrosoftOutlook } from 'twenty-ui';
+import { IconKey } from 'twenty-ui/icons';
 
-import {
-  IconComponent,
-  IconGoogle,
-  IconKey,
-  IconMicrosoftOutlook,
-} from 'twenty-ui';
+/* @license Enterprise */
 
 export const guessSSOIdentityProviderIconByUrl = (
   url: string,

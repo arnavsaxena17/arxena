@@ -1,6 +1,8 @@
+import { Button, IconButton, useIsMobile } from 'twenty-ui';
+import { IconPlus } from 'twenty-ui/icons';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { useLingui } from '@lingui/react/macro';
-import { Button, IconButton, IconPlus, useIsMobile } from 'twenty-ui';
+
 import { FeatureFlagKey } from '~/generated/graphql';
 
 type PageAddButtonProps = {

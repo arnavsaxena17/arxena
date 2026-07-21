@@ -1,3 +1,4 @@
+import { IconDotsVertical, IconFile, IconX } from 'twenty-ui/icons';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { AssistantThreadNotes } from '@/assistant/components/AssistantThreadNotes';
 import type {
@@ -13,7 +14,6 @@ import { TextInput } from '@/ui/input/components/TextInput';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { IconDotsVertical, IconFile, IconX } from 'twenty-ui';
 
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 

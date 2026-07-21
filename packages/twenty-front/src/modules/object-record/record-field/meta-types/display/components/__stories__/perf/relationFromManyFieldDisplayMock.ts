@@ -1,3 +1,4 @@
+import { IconUsers } from 'twenty-ui/icons';
 import { FieldMetadataType } from '~/generated-metadata/graphql';
 
 export const fieldValue = [

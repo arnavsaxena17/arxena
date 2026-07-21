@@ -1,6 +1,8 @@
+import { ComponentDecorator, THEME_LIGHT } from 'twenty-ui';
+import { IconPlus } from 'twenty-ui/icons';
 import { Meta, StoryObj } from '@storybook/react';
 import { expect, fn, userEvent, waitFor, within } from '@storybook/test';
-import { ComponentDecorator, IconPlus, THEME_LIGHT } from 'twenty-ui';
+
 import { WorkflowStepHeader } from '../WorkflowStepHeader';
 
 const meta: Meta<typeof WorkflowStepHeader> = {

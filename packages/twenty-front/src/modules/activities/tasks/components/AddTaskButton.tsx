@@ -1,5 +1,6 @@
+import { Button } from 'twenty-ui';
+import { IconPlus } from 'twenty-ui/icons';
 import { isNonEmptyArray } from '@sniptt/guards';
-import { Button, IconPlus } from 'twenty-ui';
 
 import { useOpenCreateActivityDrawer } from '@/activities/hooks/useOpenCreateActivityDrawer';
 import { ActivityTargetableObject } from '@/activities/types/ActivityTargetableEntity';

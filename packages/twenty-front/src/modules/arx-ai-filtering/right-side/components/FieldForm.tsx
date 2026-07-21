@@ -1,6 +1,7 @@
-import { Button } from '@ui/input/button/components/Button';
+import { IconPlus, IconX } from 'twenty-ui/icons';
+import { Button } from 'twenty-ui';
 import React from 'react';
-import { IconPlus, IconX } from 'twenty-ui';
+
 import { FIELD_TYPES } from '../constants';
 import { NewField } from '../types';
 import {

@@ -1,10 +1,11 @@
+import { Button, H2Title, Section } from 'twenty-ui';
+import { IconRepeat, IconTrash } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { isNonEmptyString } from '@sniptt/guards';
 import { DateTime } from 'luxon';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
-import { Button, H2Title, IconRepeat, IconTrash, Section } from 'twenty-ui';
 
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';

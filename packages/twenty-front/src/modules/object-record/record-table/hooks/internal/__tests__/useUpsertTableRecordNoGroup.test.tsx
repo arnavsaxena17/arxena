@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react';
-import { createState } from '@ui/utilities/state/utils/createState';
+import { createState } from 'twenty-ui';
 import { ReactNode, act } from 'react';
 import { RecoilRoot } from 'recoil';
 

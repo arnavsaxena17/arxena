@@ -1,3 +1,5 @@
+import { LightIconButton } from 'twenty-ui';
+import { IconChevronLeft, IconChevronRight } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { useRecoilValue } from 'recoil';
 
@@ -9,7 +11,7 @@ import { getMonthSelectOptions } from '@/ui/input/components/internal/date/utils
 import { ClickOutsideListenerContext } from '@/ui/utilities/pointer-event/contexts/ClickOutsideListenerContext';
 import { type Temporal } from 'temporal-polyfill';
 import { SOURCE_LOCALE } from 'twenty-shared/i18n';
-import { IconChevronLeft, IconChevronRight, LightIconButton } from 'twenty-ui';
+
 import {
   MONTH_AND_YEAR_DROPDOWN_MONTH_SELECT_ID,
   MONTH_AND_YEAR_DROPDOWN_YEAR_SELECT_ID,

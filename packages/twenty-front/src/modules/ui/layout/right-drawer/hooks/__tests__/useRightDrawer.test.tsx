@@ -1,8 +1,8 @@
+import { IconList } from 'twenty-ui/icons';
 import { renderHook } from '@testing-library/react';
 import { act } from 'react-dom/test-utils';
 import { RecoilRoot, useRecoilValue } from 'recoil';
 
-import { IconList } from 'twenty-ui';
 import { isRightDrawerOpenState } from '../../states/isRightDrawerOpenState';
 import { rightDrawerPageState } from '../../states/rightDrawerPageState';
 import { RightDrawerPages } from '../../types/RightDrawerPages';

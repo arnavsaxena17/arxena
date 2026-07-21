@@ -1,3 +1,5 @@
+import { MenuItem } from 'twenty-ui';
+import { IconCheck } from 'twenty-ui/icons';
 import { AGGREGATE_OPERATIONS } from '@/object-record/record-table/constants/AggregateOperations';
 import { useRecordTableContextOrThrow } from '@/object-record/record-table/contexts/RecordTableContext';
 import { RecordTableColumnAggregateFooterDropdownContext } from '@/object-record/record-table/record-table-footer/components/RecordTableColumnAggregateFooterDropdownContext';
@@ -12,7 +14,7 @@ import { t } from '@lingui/core/macro';
 import { useContext, useMemo } from 'react';
 import { Key } from 'ts-key-enum';
 import { isDefined, isFieldMetadataDateKind } from 'twenty-shared';
-import { IconCheck, MenuItem } from 'twenty-ui';
+
 import { FieldMetadataType } from '~/generated-metadata/graphql';
 
 export const RecordTableColumnAggregateFooterMenuContent = () => {

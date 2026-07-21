@@ -1,10 +1,6 @@
+import { CatalogDecorator, CatalogStory, ComponentDecorator } from 'twenty-ui';
+import { IconCheckbox } from 'twenty-ui/icons';
 import { Meta, StoryObj } from '@storybook/react';
-import {
-  CatalogDecorator,
-  CatalogStory,
-  ComponentDecorator,
-  IconCheckbox,
-} from 'twenty-ui';
 
 import { Tab } from '../Tab';
 

@@ -1,3 +1,5 @@
+import { RouterDecorator } from 'twenty-ui';
+import { IconTrash } from 'twenty-ui/icons';
 import { RecordIndexActionMenuBar } from '@/action-menu/components/RecordIndexActionMenuBar';
 import { actionMenuEntriesComponentState } from '@/action-menu/states/actionMenuEntriesComponentState';
 import { ActionMenuComponentInstanceContext } from '@/action-menu/states/contexts/ActionMenuComponentInstanceContext';
@@ -18,7 +20,7 @@ import { expect, jest } from '@storybook/jest';
 import { Meta, StoryObj } from '@storybook/react';
 import { userEvent, waitFor, within } from '@storybook/test';
 import { RecoilRoot } from 'recoil';
-import { IconTrash, RouterDecorator } from 'twenty-ui';
+
 import { I18nFrontDecorator } from '~/testing/decorators/I18nFrontDecorator';
 
 const deleteMock = jest.fn();

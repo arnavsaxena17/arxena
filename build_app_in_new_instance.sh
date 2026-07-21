@@ -181,6 +181,7 @@ set_deploy_status TWENTY_SERVER kept-existing-files
 set_deploy_status TWENTY_FRONT kept-existing-files
 set_deploy_status TWENTY_SHARED kept-existing-files
 set_deploy_status TWENTY_ORGCHART kept-existing-files
+set_deploy_status TWENTY_UI kept-existing-files
 set_deploy_status TWENTY_WEBSITE kept-existing-files
 set_deploy_status TWENTY_MCP_SERVER kept-existing-files
 
@@ -214,6 +215,14 @@ if deploy_component TWENTY_ORGCHART "twenty-orgchart dist" "$REPO_DIR/packages/t
   /home/ubuntu/dist/packages/twenty-orgchart; then
   DEPLOYMENTS_APPLIED=1
   set_deploy_status TWENTY_ORGCHART updated
+fi
+
+if deploy_component TWENTY_UI "twenty-ui dist" "$REPO_DIR/packages/twenty-ui/dist" \
+  /home/ubuntu/twenty/packages/twenty-ui/dist \
+  /home/ubuntu/twenty/dist/packages/twenty-ui \
+  /home/ubuntu/dist/packages/twenty-ui; then
+  DEPLOYMENTS_APPLIED=1
+  set_deploy_status TWENTY_UI updated
 fi
 
 deploy_component TWENTY_FRONT "twenty-front generated locales" "$REPO_DIR/packages/twenty-front/src/locales/generated" \
@@ -250,7 +259,7 @@ if [ "$DEPLOYMENTS_APPLIED" -eq 1 ]; then
   scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/twenty/package.json "$REPO_DIR/package.json"
   scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/twenty/yarn.lock "$REPO_DIR/yarn.lock"
   # Copy workspace package.json files (twenty-server, etc.) so deps match exactly
-  for pkg in twenty-server twenty-front twenty-website twenty-worker twenty-shared twenty-orgchart twenty-emails twenty-mcp-server; do
+  for pkg in twenty-server twenty-front twenty-website twenty-worker twenty-shared twenty-orgchart twenty-ui twenty-emails twenty-mcp-server; do
     if [ -d "$REPO_DIR/packages/$pkg" ]; then
       scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no "ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/$pkg/package.json" "$REPO_DIR/packages/$pkg/package.json" 2>/dev/null || true
     fi

@@ -1,11 +1,7 @@
+import { MenuItem, UndecoratedLink } from 'twenty-ui';
+import { IconChevronLeft, IconSettings } from 'twenty-ui/icons';
 import { useLocation } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
-import {
-  IconChevronLeft,
-  IconSettings,
-  MenuItem,
-  UndecoratedLink,
-} from 'twenty-ui';
 
 import { useObjectNamePluralFromSingular } from '@/object-metadata/hooks/useObjectNamePluralFromSingular';
 

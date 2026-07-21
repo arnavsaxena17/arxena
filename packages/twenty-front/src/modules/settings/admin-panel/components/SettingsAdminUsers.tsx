@@ -1,3 +1,5 @@
+import { Button, H2Title, LightIconButton, Section } from 'twenty-ui';
+import { IconCopy } from 'twenty-ui/icons';
 import { ADMIN_CONNECT_MEMBER_LINKEDIN_UNIPILE } from '@/settings/admin-panel/graphql/mutations/adminConnectMemberLinkedinUnipile';
 import { ADMIN_VALIDATE_MEMBER_LINKEDIN_STORED_COOKIES } from '@/settings/admin-panel/graphql/mutations/adminValidateMemberLinkedinStoredCookies';
 import { GET_ADMIN_PANEL_ALL_WORKSPACE_MEMBERS } from '@/settings/admin-panel/graphql/queries/getAdminPanelAllWorkspaceMembers';
@@ -13,13 +15,6 @@ import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useMemo, useState } from 'react';
-import {
-  Button,
-  H2Title,
-  IconCopy,
-  LightIconButton,
-  Section,
-} from 'twenty-ui';
 
 type RecruiterProfileRow = {
   workspaceMemberId?: string | null;

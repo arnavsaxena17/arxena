@@ -1,3 +1,5 @@
+import { Button, LightIconButton, getOsControlSymbol, useIsMobile } from 'twenty-ui';
+import { IconChevronLeft, IconX } from 'twenty-ui/icons';
 import { CommandMenuContextChip } from '@/command-menu/components/CommandMenuContextChip';
 import { CommandMenuContextChipGroups } from '@/command-menu/components/CommandMenuContextChipGroups';
 import { CommandMenuContextChipGroupsWithRecordSelection } from '@/command-menu/components/CommandMenuContextChipGroupsWithRecordSelection';
@@ -19,14 +21,7 @@ import { useMemo, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import {
-  Button,
-  IconChevronLeft,
-  IconX,
-  LightIconButton,
-  getOsControlSymbol,
-  useIsMobile,
-} from 'twenty-ui';
+
 import { FeatureFlagKey } from '~/generated-metadata/graphql';
 
 const StyledInputContainer = styled.div`

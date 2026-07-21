@@ -1,8 +1,9 @@
+import { Button } from 'twenty-ui';
+import { IconCheck, IconFilter } from 'twenty-ui/icons';
 import { CandidateSearchFilter } from '@/candidate-search/types/candidate-search.types';
 import styled from '@emotion/styled';
 import React from 'react';
 import { FiltersResponse } from 'twenty-shared';
-import { Button, IconCheck, IconFilter } from 'twenty-ui';
 
 const StyledMessageContainer = styled.div`
   padding: ${({ theme }) => theme.spacing(3)};

@@ -1,7 +1,7 @@
+import { IconPencil } from 'twenty-ui/icons';
 import { renderHook } from '@testing-library/react';
 import { ReactNode } from 'react';
 import { RecoilRoot } from 'recoil';
-import { IconPencil } from 'twenty-ui';
 
 import {
   phonesFieldDefinition,

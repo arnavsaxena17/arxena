@@ -1,3 +1,5 @@
+import { Button, H2Title, Section, Toggle } from 'twenty-ui';
+import { IconRefresh, IconTrash } from 'twenty-ui/icons';
 import {
     DELETE_ORG_CHART_CLIENT_IP_RULE,
     RESET_ORG_CHART_CLIENT_IP_RULE_COUNTERS,
@@ -15,14 +17,6 @@ import { FetchResult, useMutation, useQuery } from '@apollo/client';
 import styled from '@emotion/styled';
 import { useState } from 'react';
 import { isDefined } from 'twenty-shared';
-import {
-    Button,
-    H2Title,
-    IconRefresh,
-    IconTrash,
-    Section,
-    Toggle,
-} from 'twenty-ui';
 
 type OrgChartClientIpRuleRow = {
   id: string;

@@ -1,3 +1,5 @@
+import { Button } from 'twenty-ui';
+import { IconPencil, IconPlayerPlay, IconPlayerStop, IconPower, IconSettingsAutomation, IconTrash } from 'twenty-ui/icons';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useActivateWorkflowVersion } from '@/workflow/hooks/useActivateWorkflowVersion';
@@ -16,15 +18,7 @@ import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { useSetRecoilState } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import {
-  Button,
-  IconPencil,
-  IconPlayerPlay,
-  IconPlayerStop,
-  IconPower,
-  IconSettingsAutomation,
-  IconTrash,
-} from 'twenty-ui';
+
 import { useNavigateApp } from '~/hooks/useNavigateApp';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';

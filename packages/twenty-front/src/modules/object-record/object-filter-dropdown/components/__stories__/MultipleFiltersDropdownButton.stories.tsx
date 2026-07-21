@@ -14,10 +14,7 @@ import { tableColumnsComponentState } from '@/object-record/record-table/states/
 import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import { ViewComponentInstanceContext } from '@/views/states/contexts/ViewComponentInstanceContext';
 import { within } from '@storybook/test';
-import {
-  ComponentDecorator,
-  getCanvasElementForDropdownTesting,
-} from 'twenty-ui';
+import { ComponentDecorator, getCanvasElementForDropdownTesting } from 'twenty-ui';
 import { ContextStoreDecorator } from '~/testing/decorators/ContextStoreDecorator';
 import { I18nFrontDecorator } from '~/testing/decorators/I18nFrontDecorator';
 import { IconsProviderDecorator } from '~/testing/decorators/IconsProviderDecorator';

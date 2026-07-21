@@ -84,6 +84,8 @@ build_step() {
 	build_step TWENTY_SHARED_WORKSPACE yarn workspace twenty-shared build
 	build_step TWENTY_ORGCHART npx nx build twenty-orgchart
 	build_step TWENTY_ORGCHART_WORKSPACE yarn workspace twenty-orgchart build
+	build_step TWENTY_UI npx nx build twenty-ui
+	build_step TWENTY_UI_WORKSPACE yarn workspace twenty-ui build
 	cd ~/twenty/packages/twenty-server/
        	mkdir -p src/engine/core-modules/i18n/locales/generated
 	# Standard object/field labels are translated via generateMessageId(sourceEnglish) matching
@@ -135,6 +137,7 @@ required_builds=(
   TWENTY_SERVER
   TWENTY_FRONT
   TWENTY_ORGCHART
+  TWENTY_UI
   TWENTY_SHARED
   TWENTY_WEBSITE
   TWENTY_MCP_SERVER

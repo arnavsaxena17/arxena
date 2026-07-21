@@ -1,3 +1,5 @@
+import { Avatar, AvatarGroup, Card, CardContent } from 'twenty-ui';
+import { IconArrowRight, IconLock } from 'twenty-ui/icons';
 import { css, useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { format } from 'date-fns';
@@ -12,14 +14,7 @@ import { getCalendarEventStartDate } from '@/activities/calendar/utils/getCalend
 import { hasCalendarEventEnded } from '@/activities/calendar/utils/hasCalendarEventEnded';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { isDefined } from 'twenty-shared';
-import {
-  Avatar,
-  AvatarGroup,
-  Card,
-  CardContent,
-  IconArrowRight,
-  IconLock,
-} from 'twenty-ui';
+
 import {
   CalendarChannelVisibility,
   TimelineCalendarEvent,

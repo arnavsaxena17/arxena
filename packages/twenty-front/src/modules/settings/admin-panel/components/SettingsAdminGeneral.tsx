@@ -1,3 +1,5 @@
+import { Button, GithubVersionLink, H1Title, H1TitleFontColor, H2Title, Section } from 'twenty-ui';
+import { IconRefresh, IconSearch } from 'twenty-ui/icons';
 import { currentUserState } from '@/auth/states/currentUserState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { canManageFeatureFlagsState } from '@/client-config/states/canManageFeatureFlagsState';
@@ -15,16 +17,7 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { getImageAbsoluteURI, isDefined } from 'twenty-shared';
-import {
-  Button,
-  GithubVersionLink,
-  H1Title,
-  H1TitleFontColor,
-  H2Title,
-  IconRefresh,
-  IconSearch,
-  Section,
-} from 'twenty-ui';
+
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import { useUserLookupAdminPanelMutation } from '~/generated/graphql';
 

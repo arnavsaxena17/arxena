@@ -4,7 +4,6 @@ import { QuestionTextArea } from '@/video-interview/interview-creation/right-sid
 import { QuestionTypeSelect } from '@/video-interview/interview-creation/right-side/components/question/question-type-selection/QuestionTypeSelect';
 import { H2Title } from 'twenty-ui';
 
-
 const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;

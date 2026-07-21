@@ -1,11 +1,9 @@
+import { LightButton } from 'twenty-ui';
+import { IconBriefcase, IconFileText, IconMessage } from 'twenty-ui/icons';
 import { ActionMenuComponentInstanceContext } from '@/action-menu/states/contexts/ActionMenuComponentInstanceContext';
-import {
-    AssistantDetailsTable,
-    AssistantTableData,
-} from '@/assistant/components/AssistantDetailsTable';
+import type { AssistantTableData } from '@/assistant/components/AssistantDetailsTable';
 import type { OrgChartPreview } from '@/assistant/types/assistant.types';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
-import { DataTable } from '@/candidate-table/DataTable';
 import { HotTableActionMenu } from '@/candidate-table/HotTableActionMenu';
 import { selectedCandidateIdState } from '@/candidate-table/states/states';
 import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
@@ -15,20 +13,27 @@ import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import styled from '@emotion/styled';
-import { Loader } from '@ui/feedback/loader/components/Loader';
-import React, { Suspense, useCallback, useEffect, useState } from 'react';
+import { Loader } from 'twenty-ui';
+import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
-import {
-    IconBriefcase,
-    IconFileText,
-    IconMessage,
-    LightButton,
-} from 'twenty-ui';
+
 import { getAppPath } from '~/utils/navigation/getAppPath';
 
 const LazyArxOrgChart = React.lazy(() =>
   import('@/orgchart/ArxOrgChart').then((m) => ({ default: m.ArxOrgChart })),
+);
+
+const DataTable = lazy(() =>
+  import('@/candidate-table/DataTable').then((module) => ({
+    default: module.DataTable,
+  })),
+);
+
+const AssistantDetailsTable = lazy(() =>
+  import('@/assistant/components/AssistantDetailsTable').then((module) => ({
+    default: module.AssistantDetailsTable,
+  })),
 );
 
 /** Virtual jobId used for assistant-fetched LinkedIn candidates in DataTable. */
@@ -437,15 +442,17 @@ export const AssistantResultsPanel = ({
         </StyledActionsBar>
       )}
       <StyledTableWrapper>
-        {showDataTable ? (
-          <DataTable jobId={dataTableJobId} />
-        ) : (
-          <AssistantDetailsTable
-            data={tableData!}
-            maxHeight={maxTableHeight}
-            onSelectRow={(index) => setSelectedRowIndex(index)}
-          />
-        )}
+        <Suspense fallback={<Loader />}>
+          {showDataTable ? (
+            <DataTable jobId={dataTableJobId} />
+          ) : (
+            <AssistantDetailsTable
+              data={tableData!}
+              maxHeight={maxTableHeight}
+              onSelectRow={(index) => setSelectedRowIndex(index)}
+            />
+          )}
+        </Suspense>
       </StyledTableWrapper>
     </StyledResultsPanel>
   );

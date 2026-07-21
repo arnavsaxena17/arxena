@@ -1,3 +1,4 @@
+import { IconCode, IconGauge, IconSettings, IconTestPipe } from 'twenty-ui/icons';
 import { isAnalyticsEnabledState } from '@/client-config/states/isAnalyticsEnabledState';
 import { useTestServerlessFunction } from '@/serverless-functions/hooks/useTestServerlessFunction';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
@@ -20,7 +21,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import { IconCode, IconGauge, IconSettings, IconTestPipe } from 'twenty-ui';
+
 import { useDebouncedCallback } from 'use-debounce';
 import { FeatureFlagKey } from '~/generated/graphql';
 import { isDeeplyEqual } from '~/utils/isDeeplyEqual';

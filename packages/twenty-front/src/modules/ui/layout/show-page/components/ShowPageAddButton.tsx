@@ -1,13 +1,6 @@
+import { Button, IconButton, MenuItem } from 'twenty-ui';
+import { IconCheckbox, IconNotes, IconPlus, IconVideo } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
-import {
-  Button,
-  IconButton,
-  IconCheckbox,
-  IconNotes,
-  IconPlus,
-  IconVideo,
-  MenuItem,
-} from 'twenty-ui';
 
 import { useOpenCreateActivityDrawer } from '@/activities/hooks/useOpenCreateActivityDrawer';
 import { ActivityTargetableObject } from '@/activities/types/ActivityTargetableEntity';
@@ -21,7 +14,7 @@ import { isWorkflowSubObjectMetadata } from '@/object-metadata/utils/isWorkflowS
 import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIntegrityOfJob';
 import { useInterviewCreationModal } from '@/video-interview/interview-creation/hooks/useInterviewCreationModal';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
-import { IconClipboardCheck } from '@tabler/icons-react';
+import { IconClipboardCheck } from 'twenty-ui/icons';
 import { FeatureFlagKey } from '~/generated/graphql';
 import { Dropdown } from '../../dropdown/components/Dropdown';
 

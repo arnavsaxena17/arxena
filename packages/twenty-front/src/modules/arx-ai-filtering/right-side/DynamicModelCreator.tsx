@@ -1,9 +1,9 @@
+import { IconAlertCircle, IconPlus } from 'twenty-ui/icons';
 import { candidateDataState, processedDataSelector } from '@/candidate-table/states/states';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
-import { Button } from '@ui/input/button/components/Button';
+import { Button } from 'twenty-ui';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { IconAlertCircle, IconPlus } from 'twenty-ui';
 
 // Local imports
 import { AVAILABLE_MODELS, DEFAULT_FIELD } from './constants';
@@ -31,8 +31,6 @@ import {
     StyledSelect,
     StyledTextArea
 } from './components/StyledComponents';
-
-
 
 const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({ 
   objectNameSingular, 
@@ -240,8 +238,6 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         </>
       )}
 
-
-
       {/* Prompt */}
       {currentEnrichment.prompt && (
         <>
@@ -345,7 +341,6 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
           )}
         </>
       )}
-
 
             {/* Sample Open AI Call */}
       {currentEnrichment.modelName && 

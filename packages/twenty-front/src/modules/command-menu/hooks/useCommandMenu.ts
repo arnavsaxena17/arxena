@@ -1,3 +1,6 @@
+import { IconList } from 'twenty-ui/icons';
+import { useIcons } from 'twenty-ui';
+import { IconDotsVertical, IconSearch } from 'twenty-ui/icons';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
 import { commandMenuSearchState } from '@/command-menu/states/commandMenuSearchState';
@@ -5,7 +8,6 @@ import { objectMetadataItemFamilySelector } from '@/object-metadata/states/objec
 import { useSelectableList } from '@/ui/layout/selectable-list/hooks/useSelectableList';
 import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousHotkeyScope';
 import { AppHotkeyScope } from '@/ui/utilities/hotkey/types/AppHotkeyScope';
-import { IconDotsVertical, IconSearch, useIcons } from 'twenty-ui';
 
 import { useCopyContextStoreStates } from '@/command-menu/hooks/useCopyContextStoreAndActionMenuStates';
 import { useResetContextStoreStates } from '@/command-menu/hooks/useResetContextStoreStates';

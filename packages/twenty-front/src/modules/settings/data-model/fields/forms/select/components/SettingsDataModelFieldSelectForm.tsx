@@ -1,14 +1,9 @@
+import { CardContent, CardFooter, LightButton, MAIN_COLORS } from 'twenty-ui';
+import { IconPlus, IconPoint } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { DropResult } from '@hello-pangea/dnd';
 import { Controller, useFormContext } from 'react-hook-form';
-import {
-  CardContent,
-  CardFooter,
-  IconPlus,
-  IconPoint,
-  LightButton,
-  MAIN_COLORS,
-} from 'twenty-ui';
+
 import { z } from 'zod';
 
 import {

@@ -1,16 +1,12 @@
+import { Button, H2Title, Section } from 'twenty-ui';
+import { IconArchive, IconArchiveOff } from 'twenty-ui/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import omit from 'lodash.omit';
 import pick from 'lodash.pick';
 import { useEffect } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useParams } from 'react-router-dom';
-import {
-  Button,
-  H2Title,
-  IconArchive,
-  IconArchiveOff,
-  Section,
-} from 'twenty-ui';
+
 import { z } from 'zod';
 
 import { useFieldMetadataItem } from '@/object-metadata/hooks/useFieldMetadataItem';

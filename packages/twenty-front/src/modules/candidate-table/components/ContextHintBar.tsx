@@ -1,9 +1,10 @@
+import { IconDatabase, IconTrash } from 'twenty-ui/icons';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { fetchedCandidatesCountSelector } from '@/candidate-search/states/searchResultsState';
 import styled from '@emotion/styled';
-import { IconBulb } from '@tabler/icons-react';
+import { IconBulb } from 'twenty-ui/icons';
 import { useRecoilValue } from 'recoil';
-import { IconDatabase, IconTrash } from 'twenty-ui';
+
 const StyledContextHintBar = styled.div`
   display: flex;
   align-items: center;

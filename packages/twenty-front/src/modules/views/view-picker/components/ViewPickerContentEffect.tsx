@@ -1,3 +1,4 @@
+import { IconLayoutKanban, IconTable } from 'twenty-ui/icons';
 import { useEffect } from 'react';
 
 import { useContextStoreObjectMetadataItemOrThrow } from '@/context-store/hooks/useContextStoreObjectMetadataItemOrThrow';

@@ -1,4 +1,4 @@
-import { createState } from '@ui/utilities/state/utils/createState';
+import { createState } from 'twenty-ui';
 
 /** Candidate search panel: LinkedIn (Unipile) vs Apollo.io proxy. */
 export type CandidateSearchDataSource = 'linkedin' | 'apollo';

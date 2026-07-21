@@ -1,11 +1,8 @@
+import { MenuItemLeftContent, StyledHoverableMenuItemBase } from 'twenty-ui';
+import { IconCalendarX } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { DateTime } from 'luxon';
 import ReactDatePicker from 'react-datepicker';
-import {
-  IconCalendarX,
-  MenuItemLeftContent,
-  StyledHoverableMenuItemBase,
-} from 'twenty-ui';
 
 import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
 import { isDefined } from 'twenty-shared';

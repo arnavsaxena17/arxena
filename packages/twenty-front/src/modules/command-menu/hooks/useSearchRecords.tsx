@@ -1,3 +1,5 @@
+import { Avatar } from 'twenty-ui';
+import { IconCheckbox, IconNotes } from 'twenty-ui/icons';
 import { useOpenActivityRightDrawer } from '@/activities/hooks/useOpenActivityRightDrawer';
 import { Note } from '@/activities/types/Note';
 import { Task } from '@/activities/types/Task';
@@ -15,7 +17,7 @@ import { t } from '@lingui/core/macro';
 import isEmpty from 'lodash.isempty';
 import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
-import { Avatar, IconCheckbox, IconNotes } from 'twenty-ui';
+
 import { useDebounce } from 'use-debounce';
 import { FeatureFlagKey } from '~/generated-metadata/graphql';
 import { getLogoUrlFromDomainName } from '~/utils';

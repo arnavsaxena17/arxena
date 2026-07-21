@@ -1,6 +1,7 @@
+import { IconLabel } from 'twenty-ui';
+import { IconArrowUpRight, IconPencil } from 'twenty-ui/icons';
 import { useContext } from 'react';
 import { Key } from 'ts-key-enum';
-import { IconArrowUpRight, IconPencil } from 'twenty-ui';
 
 import { ActivityTargetChips } from '@/activities/components/ActivityTargetChips';
 import { useActivityTargetObjectRecords } from '@/activities/hooks/useActivityTargetObjectRecords';

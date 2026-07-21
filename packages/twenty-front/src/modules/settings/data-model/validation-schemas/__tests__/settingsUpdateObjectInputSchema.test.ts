@@ -1,3 +1,4 @@
+import { IconName } from 'twenty-ui';
 import { SafeParseSuccess } from 'zod';
 
 import { UpdateObjectPayload } from '~/generated-metadata/graphql';

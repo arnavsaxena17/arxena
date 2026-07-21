@@ -1,5 +1,7 @@
-import { IconFilterOff, MenuItem } from 'twenty-ui';
 
+
+import { MenuItem } from 'twenty-ui';
+import { IconFilterOff } from 'twenty-ui/icons';
 import { useEmptyRecordFilter } from '@/object-record/object-filter-dropdown/hooks/useEmptyRecordFilter';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';

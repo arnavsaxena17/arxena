@@ -1,3 +1,4 @@
+import { IconLink } from 'twenty-ui/icons';
 import { Meta, StoryObj } from '@storybook/react';
 import { useEffect } from 'react';
 import { useSetRecoilState } from 'recoil';

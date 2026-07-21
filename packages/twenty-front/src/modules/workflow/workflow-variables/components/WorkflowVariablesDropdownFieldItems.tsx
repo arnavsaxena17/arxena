@@ -1,3 +1,5 @@
+import { MenuItemSelect, OverflowingTextWithTooltip, useIcons } from 'twenty-ui';
+import { IconChevronLeft } from 'twenty-ui/icons';
 import { DropdownMenuHeader } from '@/ui/layout/dropdown/components/DropdownMenuHeader';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import { DropdownMenuSearchInput } from '@/ui/layout/dropdown/components/DropdownMenuSearchInput';
@@ -20,12 +22,6 @@ import { isLinkOutputSchema } from '@/workflow/workflow-variables/utils/isLinkOu
 import { useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import {
-  IconChevronLeft,
-  MenuItemSelect,
-  OverflowingTextWithTooltip,
-  useIcons,
-} from 'twenty-ui';
 
 type WorkflowVariablesDropdownFieldItemsProps = {
   step: StepOutputSchema;

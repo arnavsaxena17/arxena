@@ -1,3 +1,4 @@
+import { IconCopy, IconList, IconRefresh, IconVideo } from 'twenty-ui/icons';
 import { MultipleRecordsActionKeys } from '@/action-menu/actions/record-actions/multiple-records/types/MultipleRecordsActionKeys';
 import { ActionHook } from '@/action-menu/actions/types/ActionHook';
 import { ActionViewType } from '@/action-menu/actions/types/ActionViewType';
@@ -7,14 +8,7 @@ import {
     ActionMenuEntryType,
 } from '@/action-menu/types/ActionMenuEntry';
 import { msg } from '@lingui/core/macro';
-import { IconBriefcase, IconMessageCircle, IconMessageX, IconMessages, IconShare } from '@tabler/icons-react';
-import {
-    IconCopy,
-    IconList,
-    IconRefresh,
-    IconVideo,
-} from 'twenty-ui';
-
+import { IconBriefcase, IconMessageCircle, IconMessageX, IconMessages, IconShare } from 'twenty-ui/icons';
 
 import { useCloneMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCloneMultipleRecordsAction';
 import { useCreateMultipleVideoInterviewLinksAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCreateMultipleVideoInterviewLinksAction';

@@ -1,7 +1,8 @@
+import { Button, IconButton } from 'twenty-ui';
+import { IconX } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
-import { IconBrandLinkedin, IconWorld } from '@tabler/icons-react';
+import { IconBrandLinkedin, IconWorld } from 'twenty-ui/icons';
 import { useEffect, useMemo, useState } from 'react';
-import { Button, IconButton, IconX } from 'twenty-ui';
 
 import { TabList } from '@/ui/layout/tab/components/TabList';
 import { useTabList } from '@/ui/layout/tab/hooks/useTabList';

@@ -1,3 +1,5 @@
+import { LightIconButton } from 'twenty-ui';
+import { IconChevronDown, IconForbid } from 'twenty-ui/icons';
 import { useFindOneRecord } from '@/object-record/hooks/useFindOneRecord';
 import { FormFieldInputContainer } from '@/object-record/record-field/form-types/components/FormFieldInputContainer';
 import { FormFieldInputInputContainer } from '@/object-record/record-field/form-types/components/FormFieldInputInputContainer';
@@ -17,7 +19,6 @@ import { css } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useCallback } from 'react';
 import { isDefined, isValidUuid } from 'twenty-shared';
-import { IconChevronDown, IconForbid, LightIconButton } from 'twenty-ui';
 
 const StyledFormSelectContainer = styled(FormFieldInputInputContainer)`
   justify-content: space-between;

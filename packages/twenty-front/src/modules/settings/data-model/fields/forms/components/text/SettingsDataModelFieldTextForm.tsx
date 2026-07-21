@@ -1,9 +1,10 @@
+import { IconTextWrap } from 'twenty-ui/icons';
 import { Controller, useFormContext } from 'react-hook-form';
 
 import { FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
 import { SettingsOptionCardContentSelect } from '@/settings/components/SettingsOptions/SettingsOptionCardContentSelect';
 import { Select } from '@/ui/input/components/Select';
-import { IconTextWrap } from 'twenty-ui';
+
 import { z } from 'zod';
 
 type SettingsDataModelFieldTextFormProps = {

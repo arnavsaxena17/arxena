@@ -1,6 +1,6 @@
+import { IconChevronDown } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { IconChevronDown } from 'twenty-ui';
 
 import { CurrencyCode } from '@/object-record/record-field/types/CurrencyCode';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';

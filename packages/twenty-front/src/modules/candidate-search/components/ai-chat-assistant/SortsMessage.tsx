@@ -1,6 +1,6 @@
 import { SortsResponse } from '@/candidate-search/types/candidate-search.types';
 import styled from '@emotion/styled';
-import { IconCheck, IconSortAscending } from '@tabler/icons-react';
+import { IconCheck, IconSortAscending } from 'twenty-ui/icons';
 import React from 'react';
 import { Button } from 'twenty-ui';
 

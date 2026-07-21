@@ -1,5 +1,6 @@
-import { IconDoorEnter } from 'twenty-ui';
 
+
+import { IconDoorEnter } from 'twenty-ui/icons';
 import { useAuth } from '@/auth/hooks/useAuth';
 import { AdvancedSettingsWrapper } from '@/settings/components/AdvancedSettingsWrapper';
 import { SettingsNavigationDrawerItem } from '@/settings/components/SettingsNavigationDrawerItem';

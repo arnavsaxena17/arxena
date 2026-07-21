@@ -1,8 +1,9 @@
+import { AnimatedExpandableContainer, MAIN_COLORS } from 'twenty-ui';
+import { IconPoint } from 'twenty-ui/icons';
 import { ADVANCED_SETTINGS_ANIMATION_DURATION } from '@/settings/constants/AdvancedSettingsAnimationDurations';
 import { isAdvancedModeEnabledState } from '@/ui/navigation/navigation-drawer/states/isAdvancedModeEnabledState';
 import styled from '@emotion/styled';
 import { useRecoilValue } from 'recoil';
-import { AnimatedExpandableContainer, IconPoint, MAIN_COLORS } from 'twenty-ui';
 
 const StyledAdvancedWrapper = styled.div`
   position: relative;

@@ -1,3 +1,5 @@
+import { AnimatedEaseIn, MainButton, RGBA } from 'twenty-ui';
+import { IconCheck } from 'twenty-ui/icons';
 import { SubTitle } from '@/auth/components/SubTitle';
 import { Title } from '@/auth/components/Title';
 import { currentUserState } from '@/auth/states/currentUserState';
@@ -8,7 +10,7 @@ import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useSetRecoilState } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import { AnimatedEaseIn, IconCheck, MainButton, RGBA } from 'twenty-ui';
+
 import {
   OnboardingStatus,
   useGetCurrentUserLazyQuery,

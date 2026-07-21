@@ -1,6 +1,7 @@
+import { ComponentWithRouterDecorator } from 'twenty-ui';
+import { IconCheckbox } from 'twenty-ui/icons';
 import { Meta, StoryObj } from '@storybook/react';
 import { expect, within } from '@storybook/test';
-import { ComponentWithRouterDecorator, IconCheckbox } from 'twenty-ui';
 
 import { RecoilScope } from '@/ui/utilities/recoil-scope/components/RecoilScope';
 

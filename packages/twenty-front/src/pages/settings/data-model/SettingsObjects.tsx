@@ -1,3 +1,5 @@
+import { Button, H2Title, Section, UndecoratedLink } from 'twenty-ui';
+import { IconChevronRight, IconPlus, IconSearch } from 'twenty-ui/icons';
 import { useDeleteOneObjectMetadataItem } from '@/object-metadata/hooks/useDeleteOneObjectMetadataItem';
 import { useFilteredObjectMetadataItems } from '@/object-metadata/hooks/useFilteredObjectMetadataItems';
 import { useUpdateOneObjectMetadataItem } from '@/object-metadata/hooks/useUpdateOneObjectMetadataItem';
@@ -23,15 +25,7 @@ import styled from '@emotion/styled';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { isNonEmptyArray } from '@sniptt/guards';
 import { useMemo, useState } from 'react';
-import {
-  Button,
-  H2Title,
-  IconChevronRight,
-  IconPlus,
-  IconSearch,
-  Section,
-  UndecoratedLink,
-} from 'twenty-ui';
+
 import { GET_SETTINGS_OBJECT_TABLE_METADATA } from '~/pages/settings/data-model/constants/SettingsObjectTableMetadata';
 import { SettingsObjectTableItem } from '~/pages/settings/data-model/types/SettingsObjectTableItem';
 import { getSettingsPath } from '~/utils/navigation/getSettingsPath';

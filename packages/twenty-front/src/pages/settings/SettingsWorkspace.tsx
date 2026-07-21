@@ -1,14 +1,8 @@
+import { Button, H2Title, Section, UndecoratedLink } from 'twenty-ui';
+import { IconExternalLink, IconWorld } from 'twenty-ui/icons';
 import { useLingui } from '@lingui/react/macro';
 import { useRecoilValue } from 'recoil';
 import { ARXENA_CHROME_WEBSTORE_URL } from 'twenty-shared';
-import {
-  Button,
-  H2Title,
-  IconExternalLink,
-  IconWorld,
-  Section,
-  UndecoratedLink,
-} from 'twenty-ui';
 
 import { isMultiWorkspaceEnabledState } from '@/client-config/states/isMultiWorkspaceEnabledState';
 import { SettingsCard } from '@/settings/components/SettingsCard';

@@ -1,3 +1,5 @@
+import { Button, H2Title, MOBILE_VIEWPORT, Section } from 'twenty-ui';
+import { IconPlus, IconSearch } from 'twenty-ui/icons';
 import { SettingsServerlessFunctionTabEnvironmentVariableTableRow } from '@/settings/serverless-functions/components/tabs/SettingsServerlessFunctionTabEnvironmentVariableTableRow';
 import { ServerlessFunctionFormValues } from '@/settings/serverless-functions/hooks/useServerlessFunctionUpdateFormState';
 import { TextInput } from '@/ui/input/components/TextInput';
@@ -8,14 +10,7 @@ import { TableRow } from '@/ui/layout/table/components/TableRow';
 import styled from '@emotion/styled';
 import dotenv from 'dotenv';
 import { useMemo, useState } from 'react';
-import {
-  Button,
-  H2Title,
-  IconPlus,
-  IconSearch,
-  MOBILE_VIEWPORT,
-  Section,
-} from 'twenty-ui';
+
 import { v4 } from 'uuid';
 
 const StyledSearchInput = styled(TextInput)`

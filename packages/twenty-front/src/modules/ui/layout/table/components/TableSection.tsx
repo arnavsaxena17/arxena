@@ -1,7 +1,8 @@
+import { IconChevronDown, IconChevronUp } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { ReactNode, useState } from 'react';
-import { IconChevronDown, IconChevronUp } from 'twenty-ui';
+
 import { TableBody } from './TableBody';
 
 type TableSectionProps = {

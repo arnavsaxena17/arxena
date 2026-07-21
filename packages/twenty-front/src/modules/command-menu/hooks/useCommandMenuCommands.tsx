@@ -1,3 +1,4 @@
+import { IconSparkles } from 'twenty-ui/icons';
 import { actionMenuEntriesComponentSelector } from '@/action-menu/states/actionMenuEntriesComponentSelector';
 import {
   ActionMenuEntryScope,
@@ -16,7 +17,7 @@ import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { i18n } from '@lingui/core';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { IconSparkles } from 'twenty-ui';
+
 import { useDebounce } from 'use-debounce';
 import { FeatureFlagKey } from '~/generated/graphql';
 

@@ -1,3 +1,5 @@
+import { OverflowingTextWithTooltip } from 'twenty-ui';
+import { IconCalendar } from 'twenty-ui/icons';
 import { ActivityRow } from '@/activities/components/ActivityRow';
 import { AttachmentDropdown } from '@/activities/files/components/AttachmentDropdown';
 import { AttachmentIcon } from '@/activities/files/components/AttachmentIcon';
@@ -16,7 +18,6 @@ import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useMemo, useState } from 'react';
 import { isDefined } from 'twenty-shared';
-import { IconCalendar, OverflowingTextWithTooltip } from 'twenty-ui';
 
 import { formatToHumanReadableDate } from '~/utils/date-utils';
 import { getFileNameAndExtension } from '~/utils/file/getFileNameAndExtension';

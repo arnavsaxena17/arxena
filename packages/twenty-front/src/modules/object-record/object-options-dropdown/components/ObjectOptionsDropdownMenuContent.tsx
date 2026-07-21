@@ -1,17 +1,6 @@
+import { AppTooltip, MenuItem, useIcons } from 'twenty-ui';
+import { Icon24Hours, IconFileExport, IconFileImport, IconLayout, IconLayoutList, IconList, IconRotate2, IconTag } from 'twenty-ui/icons';
 import { Key } from 'ts-key-enum';
-import {
-  AppTooltip,
-  Icon24Hours,
-  IconFileExport,
-  IconFileImport,
-  IconLayout,
-  IconLayoutList,
-  IconList,
-  IconRotate2,
-  IconTag,
-  MenuItem,
-  useIcons,
-} from 'twenty-ui';
 
 import { useObjectNamePluralFromSingular } from '@/object-metadata/hooks/useObjectNamePluralFromSingular';
 import { useHandleToggleTrashColumnFilter } from '@/object-record/record-index/hooks/useHandleToggleTrashColumnFilter';
@@ -104,7 +93,6 @@ export const ObjectOptionsDropdownMenuContent = () => {
     };
   
     const locationName = useLocation().pathname
-
 
   const { progress, download } = useExportRecords({
     delayMs: 100,

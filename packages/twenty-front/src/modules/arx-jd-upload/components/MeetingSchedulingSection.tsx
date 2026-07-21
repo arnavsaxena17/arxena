@@ -1,3 +1,5 @@
+import { Button, MenuItemSelect, Radio } from 'twenty-ui';
+import { IconMinus } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { addDays } from 'date-fns';
@@ -6,7 +8,7 @@ import React from 'react';
 import { Calendar } from 'react-date-range';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
-import { Button, IconMinus, MenuItemSelect, Radio } from 'twenty-ui';
+
 import { FormComponentProps } from '../types/FormComponentProps';
 import { StyledSection, StyledSectionContent } from './ArxJDUploadModal.styled';
 

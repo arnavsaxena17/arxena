@@ -1,6 +1,7 @@
+import { IconComponent } from 'twenty-ui';
+import { IconX } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { IconComponent, IconX } from 'twenty-ui';
 
 const StyledChip = styled.div<{ variant: SortOrFilterChipVariant }>`
   align-items: center;

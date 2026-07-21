@@ -8,7 +8,6 @@ export * from './src/modules/ui/input/components/ImageInput';
 export * from './src/modules/ui/input/components/Select';
 export * from './src/modules/ui/input/components/TextArea';
 export * from './src/modules/ui/input/components/TextInput';
-export * from './src/modules/ui/input/editor/components/BlockEditor';
 export * from './src/modules/ui/navigation/step-bar/components/StepBar';
 
 declare module '@emotion/react' {

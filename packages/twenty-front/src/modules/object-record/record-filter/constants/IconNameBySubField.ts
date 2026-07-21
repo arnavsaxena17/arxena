@@ -1,3 +1,5 @@
+import { IconNumber95Small, IconTransferIn, IconMailPlus, IconLinkPlus, IconPhoneCall, IconPhonePlus } from 'twenty-ui';
+import { IconCurrencyDollar, IconTextSize, IconMail, IconLink, IconFlag, IconMapPin } from 'twenty-ui/icons';
 import { type CompositeFieldSubFieldName } from '@/settings/data-model/types/CompositeFieldSubFieldName';
 
 export const ICON_NAME_BY_SUB_FIELD: Partial<

@@ -1,12 +1,7 @@
-import {
-  IconArrowLeft,
-  IconArrowRight,
-  IconEyeOff,
-  IconFilter,
-  IconSortDescending,
-  MenuItem,
-} from 'twenty-ui';
 
+
+import { MenuItem } from 'twenty-ui';
+import { IconArrowLeft, IconArrowRight, IconEyeOff, IconFilter, IconSortDescending } from 'twenty-ui/icons';
 import { FieldMetadata } from '@/object-record/record-field/types/FieldMetadata';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import { DropdownMenuSeparator } from '@/ui/layout/dropdown/components/DropdownMenuSeparator';

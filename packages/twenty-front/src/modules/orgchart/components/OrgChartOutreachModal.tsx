@@ -1,7 +1,8 @@
+import { Button, IconButton } from 'twenty-ui';
+import { IconX } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { Button, IconButton, IconX } from 'twenty-ui';
 
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';

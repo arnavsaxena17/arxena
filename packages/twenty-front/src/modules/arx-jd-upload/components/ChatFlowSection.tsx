@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { IconInfoCircle } from '@tabler/icons-react';
+import { IconInfoCircle } from 'twenty-ui/icons';
 import React, { useEffect } from 'react';
 import { MenuItemSelect } from 'twenty-ui';
 import { FormComponentProps } from '../types/FormComponentProps';

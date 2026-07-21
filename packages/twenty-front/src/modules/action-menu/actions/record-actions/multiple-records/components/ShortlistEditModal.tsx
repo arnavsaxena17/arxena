@@ -1,14 +1,15 @@
+import { Button, IconButton } from 'twenty-ui';
+import { IconDeviceFloppy, IconDownload, IconFileText, IconMail, IconTable, IconUsers, IconX } from 'twenty-ui/icons';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import '@/candidate-table/initHandsontable';
 import { useNotification } from '@/notification-context/NotificationContextProvider';
 import { Modal } from '@/ui/layout/modal/components/Modal';
 import styled from '@emotion/styled';
 import { HotTable } from '@handsontable/react-wrapper';
 import { CellChange, ChangeSource } from 'handsontable/common';
-import 'handsontable/styles/handsontable.min.css';
-import 'handsontable/styles/ht-theme-main.min.css';
 import { useCallback, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
-import { Button, IconButton, IconDeviceFloppy, IconDownload, IconFileText, IconMail, IconTable, IconUsers, IconX } from 'twenty-ui';
+
 import { useShortlistEditModal } from '../hooks/useShortlistEditModal';
 
 const StyledModalContent = styled.div`

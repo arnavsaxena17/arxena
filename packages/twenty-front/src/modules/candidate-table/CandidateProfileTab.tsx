@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { IconBuilding, IconCalendar, IconCurrencyRupee, IconMail, IconMapPin, IconPhone, IconUser } from '@tabler/icons-react';
+import { IconBuilding, IconCalendar, IconCurrencyRupee, IconMail, IconMapPin, IconPhone, IconUser } from 'twenty-ui/icons';
 import { getCandidateCustomField } from 'twenty-shared';
 
 type CandidateProfileTabProps = {

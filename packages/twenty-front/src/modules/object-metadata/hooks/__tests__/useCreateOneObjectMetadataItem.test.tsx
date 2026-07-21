@@ -1,3 +1,4 @@
+import { IconPlus } from 'twenty-ui/icons';
 import { act, renderHook } from '@testing-library/react';
 
 import { useCreateOneObjectMetadataItem } from '@/object-metadata/hooks/useCreateOneObjectMetadataItem';

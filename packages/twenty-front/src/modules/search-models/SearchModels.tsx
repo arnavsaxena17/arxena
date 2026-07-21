@@ -1,15 +1,15 @@
+import { Button, Loader } from 'twenty-ui';
+import { IconCopy, IconDownload, IconPlus, IconUpload } from 'twenty-ui/icons';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import '@/candidate-table/initHandsontable';
 import { useNotification } from '@/notification-context/NotificationContextProvider';
 import styled from '@emotion/styled';
 import { HotTable } from '@handsontable/react-wrapper';
 import axios from 'axios';
 import Handsontable from 'handsontable';
 import { CellChange, ChangeSource } from 'handsontable/common';
-import 'handsontable/styles/handsontable.min.css';
-import 'handsontable/styles/ht-theme-main.min.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { Button, IconCopy, IconDownload, IconPlus, IconUpload, Loader } from 'twenty-ui';
 
 const StyledContainer = styled.div`
   display: flex;

@@ -1,3 +1,5 @@
+import { Button, IconButtonGroup } from 'twenty-ui';
+import { IconLock, IconLockOpen, IconMaximize, IconMinus, IconPlus, IconX } from 'twenty-ui/icons';
 import { SettingsDataModelOverviewEffect } from '@/settings/data-model/graph-overview/components/SettingsDataModelOverviewEffect';
 import { SettingsDataModelOverviewObject } from '@/settings/data-model/graph-overview/components/SettingsDataModelOverviewObject';
 import { SettingsDataModelOverviewRelationMarkers } from '@/settings/data-model/graph-overview/components/SettingsDataModelOverviewRelationMarkers';
@@ -21,16 +23,6 @@ import {
 } from '@xyflow/react';
 import { useCallback, useState } from 'react';
 import { isDefined } from 'twenty-shared';
-import {
-  Button,
-  IconButtonGroup,
-  IconLock,
-  IconLockOpen,
-  IconMaximize,
-  IconMinus,
-  IconPlus,
-  IconX,
-} from 'twenty-ui';
 
 const nodeTypes: NodeTypes = {
   object: SettingsDataModelOverviewObject,

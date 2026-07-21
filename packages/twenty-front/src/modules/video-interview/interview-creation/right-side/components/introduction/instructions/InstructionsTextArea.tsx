@@ -1,6 +1,6 @@
+import { IconTrash } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { IconTrash } from 'twenty-ui';
 
 const StyledInputArea = styled.input`
   background-color: ${({ theme }) => theme.background.transparent.lighter};

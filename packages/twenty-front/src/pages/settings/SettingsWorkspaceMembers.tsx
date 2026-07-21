@@ -1,21 +1,11 @@
+import { AppTooltip, Avatar, H2Title, IconButton, Section, Status, TooltipDelay } from 'twenty-ui';
+import { IconMail, IconReload, IconTrash } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { isNonEmptyArray } from '@sniptt/guards';
 import { useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import {
-  AppTooltip,
-  Avatar,
-  H2Title,
-  IconButton,
-  IconMail,
-  IconReload,
-  IconTrash,
-  Section,
-  Status,
-  TooltipDelay,
-} from 'twenty-ui';
 
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';

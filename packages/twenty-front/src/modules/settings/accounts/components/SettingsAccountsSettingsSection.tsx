@@ -1,13 +1,6 @@
+import { H2Title, IconAddressBook, MOBILE_VIEWPORT, Section, UndecoratedLink } from 'twenty-ui';
+import { IconCalendarEvent, IconMailCog } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
-import {
-  H2Title,
-  IconAddressBook,
-  IconCalendarEvent,
-  IconMailCog,
-  MOBILE_VIEWPORT,
-  Section,
-  UndecoratedLink
-} from 'twenty-ui';
 
 import { SettingsCard } from '@/settings/components/SettingsCard';
 import { SettingsPath } from '@/types/SettingsPath';

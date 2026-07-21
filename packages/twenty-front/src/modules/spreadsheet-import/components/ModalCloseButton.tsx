@@ -1,5 +1,6 @@
+import { IconButton } from 'twenty-ui';
+import { IconX } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
-import { IconButton, IconX } from 'twenty-ui';
 
 import { useSpreadsheetImportInitialStep } from '@/spreadsheet-import/hooks/useSpreadsheetImportInitialStep';
 import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpreadsheetImportInternal';

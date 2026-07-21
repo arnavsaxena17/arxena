@@ -1,3 +1,5 @@
+import { ColorSample, LightIconButton, MAIN_COLOR_NAMES, MenuItem, MenuItemSelectColor } from 'twenty-ui';
+import { IconCheck, IconDotsVertical, IconGripVertical, IconTrash, IconX } from 'twenty-ui/icons';
 import { FieldMetadataItemOption } from '@/object-metadata/types/FieldMetadataItem';
 import { AdvancedSettingsWrapper } from '@/settings/components/AdvancedSettingsWrapper';
 import { OPTION_VALUE_MAXIMUM_LENGTH } from '@/settings/data-model/constants/OptionValueMaximumLength';
@@ -8,18 +10,7 @@ import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/Drop
 import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import {
-  ColorSample,
-  IconCheck,
-  IconDotsVertical,
-  IconGripVertical,
-  IconTrash,
-  IconX,
-  LightIconButton,
-  MAIN_COLOR_NAMES,
-  MenuItem,
-  MenuItemSelectColor,
-} from 'twenty-ui';
+
 import { computeOptionValueFromLabel } from '~/pages/settings/data-model/utils/compute-option-value-from-label.utils';
 
 type SettingsDataModelFieldSelectFormOptionRowProps = {

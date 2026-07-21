@@ -1,3 +1,4 @@
+import { IconPlug, IconId } from 'twenty-ui/icons';
 import { FilterableFieldType } from '@/object-record/record-filter/types/FilterableFieldType';
 
 export const getSubMenuOptions = (subMenu: FilterableFieldType | null) => {

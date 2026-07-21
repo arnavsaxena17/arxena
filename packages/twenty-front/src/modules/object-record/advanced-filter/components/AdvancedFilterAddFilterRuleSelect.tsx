@@ -1,3 +1,5 @@
+import { LightButton, MenuItem } from 'twenty-ui';
+import { IconLibraryPlus, IconPlus } from 'twenty-ui/icons';
 import { useObjectMetadataItemById } from '@/object-metadata/hooks/useObjectMetadataItemById';
 import { availableFieldMetadataItemsForFilterFamilySelector } from '@/object-metadata/states/availableFieldMetadataItemsForFilterFamilySelector';
 import { getFilterTypeFromFieldType } from '@/object-metadata/utils/formatFieldMetadataItemsAsFilterDefinitions';
@@ -14,7 +16,7 @@ import { ViewFilterGroupLogicalOperator } from '@/views/types/ViewFilterGroupLog
 import { useCallback } from 'react';
 import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import { IconLibraryPlus, IconPlus, LightButton, MenuItem } from 'twenty-ui';
+
 import { v4 } from 'uuid';
 
 type AdvancedFilterAddFilterRuleSelectProps = {

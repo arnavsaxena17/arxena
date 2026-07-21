@@ -1,3 +1,4 @@
+import { IconHandClick } from 'twenty-ui/icons';
 import { Meta, StoryObj } from '@storybook/react';
 import { ComponentDecorator } from 'twenty-ui';
 

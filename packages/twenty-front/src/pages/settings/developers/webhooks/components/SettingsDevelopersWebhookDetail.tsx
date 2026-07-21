@@ -1,19 +1,9 @@
+import { Button, H2Title, IconButton, Section, useIcons } from 'twenty-ui';
+import { IconBox, IconNorthStar, IconPlus, IconRefresh, IconTrash } from 'twenty-ui/icons';
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
 import styled from '@emotion/styled';
 import { useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import {
-  Button,
-  H2Title,
-  IconBox,
-  IconButton,
-  IconNorthStar,
-  IconPlus,
-  IconRefresh,
-  IconTrash,
-  Section,
-  useIcons,
-} from 'twenty-ui';
 
 import { AnalyticsActivityGraph } from '@/analytics/components/AnalyticsActivityGraph';
 import { AnalyticsGraphEffect } from '@/analytics/components/AnalyticsGraphEffect';

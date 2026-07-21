@@ -1,7 +1,8 @@
+import { Button } from 'twenty-ui';
+import { IconTrash } from 'twenty-ui/icons';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { Button, IconTrash } from 'twenty-ui';
 
 import { ParsedJD } from '../types/ParsedJD';
 import { ArxJDStepHeading } from './ArxJDStepHeading';

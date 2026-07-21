@@ -1,5 +1,6 @@
-import { IconFilterOff } from 'twenty-ui';
 
+
+import { IconFilterOff } from 'twenty-ui/icons';
 import { useObjectLabel } from '@/object-metadata/hooks/useObjectLabel';
 import { useCheckIsSoftDeleteFilter } from '@/object-record/record-filter/hooks/useCheckIsSoftDeleteFilter';
 import { useRemoveRecordFilter } from '@/object-record/record-filter/hooks/useRemoveRecordFilter';

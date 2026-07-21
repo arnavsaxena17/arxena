@@ -1,3 +1,5 @@
+import { Tag, TagColor } from 'twenty-ui';
+import { IconChevronDown } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 
@@ -10,7 +12,7 @@ import { SelectFieldHotkeyScope } from '@/object-record/select/types/SelectField
 import { SelectInput } from '@/ui/input/components/SelectInput';
 import { useSetHotkeyScope } from '@/ui/utilities/hotkey/hooks/useSetHotkeyScope';
 import { useEffect, useState } from 'react';
-import { IconChevronDown, Tag, TagColor } from 'twenty-ui';
+
 import type {
   MatchedOptions,
   MatchedSelectColumn,

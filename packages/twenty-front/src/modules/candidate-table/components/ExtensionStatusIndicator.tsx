@@ -1,6 +1,7 @@
+import { IconCheck, IconLoader, IconX } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import React from 'react';
-import { IconCheck, IconLoader, IconX } from 'twenty-ui';
+
 import { useChromeExtensionDetection } from '../hooks/useChromeExtensionDetection';
 
 const StyledStatusIndicator = styled.div<{ isInstalled: boolean; isChecking: boolean }>`

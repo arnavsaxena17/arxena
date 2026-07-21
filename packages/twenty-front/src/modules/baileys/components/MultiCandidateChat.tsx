@@ -1,6 +1,6 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
-import { IconChevronLeft, IconChevronRight, IconX } from '@tabler/icons-react';
+import { IconChevronLeft, IconChevronRight, IconX } from 'twenty-ui/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';

@@ -1,6 +1,8 @@
 import { styled } from '@linaria/react';
 import { useContext, useState } from 'react';
-import { IconTwentyStarFilled, THEME_COMMON, ThemeContext } from 'twenty-ui';
+import { IconTwentyStarFilled } from 'twenty-ui-source/display/icon/components/IconTwentyStarFilled';
+import { THEME_COMMON } from 'twenty-ui-source/theme/constants/ThemeCommon';
+import { ThemeContext } from 'twenty-ui-source/theme/provider/ThemeContextProvider';
 
 import { useClearField } from '@/object-record/record-field/hooks/useClearField';
 import { RATING_VALUES } from '@/object-record/record-field/meta-types/constants/RatingValues';

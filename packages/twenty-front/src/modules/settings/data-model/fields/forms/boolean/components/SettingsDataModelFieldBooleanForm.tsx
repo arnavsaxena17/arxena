@@ -1,5 +1,6 @@
+import { IconCheck, IconX } from 'twenty-ui/icons';
 import { Controller, useFormContext } from 'react-hook-form';
-import { IconCheck, IconX } from 'twenty-ui';
+
 import { z } from 'zod';
 
 import { FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';

@@ -1,3 +1,4 @@
+import { IconCurrencyDollar, IconHeart, IconSettings2, IconUsers, IconVariable } from 'twenty-ui/icons';
 import { SettingsAdminTabContent } from '@/settings/admin-panel/components/SettingsAdminTabContent';
 import { SETTINGS_ADMIN_TABS } from '@/settings/admin-panel/constants/SettingsAdminTabs';
 import { SETTINGS_ADMIN_TABS_ID } from '@/settings/admin-panel/constants/SettingsAdminTabsId';
@@ -8,14 +9,7 @@ import {
   IconBrandWhatsapp,
   IconHierarchy,
   IconNetwork,
-} from '@tabler/icons-react';
-import {
-  IconCurrencyDollar,
-  IconHeart,
-  IconSettings2,
-  IconUsers,
-  IconVariable,
-} from 'twenty-ui';
+} from 'twenty-ui/icons';
 
 const StyledAdminContentWrapper = styled.div`
   display: grid;

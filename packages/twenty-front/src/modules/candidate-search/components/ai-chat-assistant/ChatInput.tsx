@@ -1,7 +1,7 @@
+import { IconSend } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { FocusEventHandler, useEffect, useRef, useState } from 'react';
 import { Key } from 'ts-key-enum';
-import { IconSend } from 'twenty-ui';
 
 import { InputHotkeyScope } from '@/ui/input/types/InputHotkeyScope';
 import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousHotkeyScope';

@@ -1,3 +1,5 @@
+import { useIcons } from 'twenty-ui';
+import { IconBolt } from 'twenty-ui/icons';
 import { useCommandMenu } from '@/command-menu/hooks/useCommandMenu';
 import { commandMenuNavigationStackState } from '@/command-menu/states/commandMenuNavigationStackState';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
@@ -19,7 +21,6 @@ import { OnSelectionChangeParams, useOnSelectionChange } from '@xyflow/react';
 import { useCallback } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import { IconBolt, useIcons } from 'twenty-ui';
 
 export const WorkflowDiagramCanvasEditableEffect = () => {
   const { t } = useLingui();

@@ -1,5 +1,5 @@
+import { IconForbid } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
-import { IconForbid } from 'twenty-ui';
 
 import { MatchColumnSelect } from '@/spreadsheet-import/components/MatchColumnSelect';
 import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpreadsheetImportInternal';

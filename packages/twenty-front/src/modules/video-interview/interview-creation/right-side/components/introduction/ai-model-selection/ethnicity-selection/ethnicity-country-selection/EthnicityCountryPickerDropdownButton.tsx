@@ -1,6 +1,6 @@
+import { IconChevronDown, IconWorld } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { IconChevronDown, IconWorld } from 'twenty-ui';
 
 import { CountryPickerHotkeyScope } from '@/ui/input/components/internal/phone/types/CountryPickerHotkeyScope';
 import { Country } from '@/ui/input/components/internal/types/Country';

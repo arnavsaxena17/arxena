@@ -1,13 +1,7 @@
+import { LightIconButton, MenuItem, useIcons } from 'twenty-ui';
+import { IconArchive, IconDotsVertical, IconPencil } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import {
-  IconArchive,
-  IconDotsVertical,
-  IconPencil,
-  LightIconButton,
-  MenuItem,
-  useIcons,
-} from 'twenty-ui';
 
 import { ObjectMetadataItem } from '@/object-metadata/types/ObjectMetadataItem';
 import { SettingsSummaryCard } from '@/settings/components/SettingsSummaryCard';

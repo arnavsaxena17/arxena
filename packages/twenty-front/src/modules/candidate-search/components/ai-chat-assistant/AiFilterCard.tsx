@@ -1,6 +1,6 @@
 import { Enrichment } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import styled from '@emotion/styled';
-import { IconEdit } from '@tabler/icons-react';
+import { IconEdit } from 'twenty-ui/icons';
 
 const StyledAiFilterCard = styled.div`
   background-color: ${({ theme }) => theme.background.secondary};

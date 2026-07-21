@@ -1,6 +1,7 @@
+import { Pill, Card, CardContent } from 'twenty-ui';
+import { IconChevronRight } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { IconChevronRight, Pill, Card, CardContent } from 'twenty-ui';
 
 import { ReactNode } from 'react';
 

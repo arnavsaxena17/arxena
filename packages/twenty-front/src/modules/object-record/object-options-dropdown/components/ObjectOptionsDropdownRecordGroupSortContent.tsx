@@ -1,11 +1,6 @@
+import { MenuItemSelect } from 'twenty-ui';
+import { IconChevronLeft, IconHandMove, IconSortAZ, IconSortZA } from 'twenty-ui/icons';
 import { useEffect } from 'react';
-import {
-  IconChevronLeft,
-  IconHandMove,
-  IconSortAZ,
-  IconSortZA,
-  MenuItemSelect,
-} from 'twenty-ui';
 
 import { useOptionsDropdown } from '@/object-record/object-options-dropdown/hooks/useOptionsDropdown';
 import { hiddenRecordGroupIdsComponentSelector } from '@/object-record/record-group/states/selectors/hiddenRecordGroupIdsComponentSelector';

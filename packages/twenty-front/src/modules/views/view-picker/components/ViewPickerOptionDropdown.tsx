@@ -1,3 +1,5 @@
+import { MenuItem, useIcons } from 'twenty-ui';
+import { IconHeart, IconLock, IconPencil, IconTrash } from 'twenty-ui/icons';
 import { useCreateFavorite } from '@/favorites/hooks/useCreateFavorite';
 import { useFavorites } from '@/favorites/hooks/useFavorites';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
@@ -9,14 +11,6 @@ import { useDeleteViewFromCurrentState } from '@/views/view-picker/hooks/useDele
 import { useViewPickerMode } from '@/views/view-picker/hooks/useViewPickerMode';
 import { viewPickerReferenceViewIdComponentState } from '@/views/view-picker/states/viewPickerReferenceViewIdComponentState';
 import { useState } from 'react';
-import {
-  IconHeart,
-  IconLock,
-  IconPencil,
-  IconTrash,
-  MenuItem,
-  useIcons,
-} from 'twenty-ui';
 
 type ViewPickerOptionDropdownProps = {
   isIndexView: boolean;

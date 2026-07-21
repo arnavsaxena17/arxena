@@ -1,14 +1,8 @@
+import { Avatar, AvatarGroup, Chip, ChipVariant, ThemeContext } from 'twenty-ui';
+import { IconChevronDown } from 'twenty-ui/icons';
 import { MessageThreadSubscriber } from '@/activities/emails/types/MessageThreadSubscriber';
 import { isNonEmptyString } from '@sniptt/guards';
 import { useContext } from 'react';
-import {
-  Avatar,
-  AvatarGroup,
-  Chip,
-  ChipVariant,
-  IconChevronDown,
-  ThemeContext,
-} from 'twenty-ui';
 
 const MAX_NUMBER_OF_AVATARS = 3;
 

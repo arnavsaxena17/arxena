@@ -1,3 +1,4 @@
+import { IconTag } from 'twenty-ui/icons';
 import { Decorator, Meta, StoryObj } from '@storybook/react';
 import { expect, fn, userEvent, waitFor } from '@storybook/test';
 import { useEffect } from 'react';

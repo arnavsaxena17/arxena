@@ -1,3 +1,5 @@
+import { LightIconButton, Tag } from 'twenty-ui';
+import { IconDotsVertical, IconPlus } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { useContext, useState } from 'react';
 
@@ -12,7 +14,6 @@ import { useIsOpportunitiesCompanyFieldDisabled } from '@/object-record/record-b
 import { RecordBoardColumnHotkeyScope } from '@/object-record/record-board/types/BoardColumnHotkeyScope';
 import { RecordGroupDefinitionType } from '@/object-record/record-group/types/RecordGroupDefinition';
 import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousHotkeyScope';
-import { IconDotsVertical, IconPlus, LightIconButton, Tag } from 'twenty-ui';
 
 const StyledHeader = styled.div`
   align-items: center;

@@ -1,3 +1,5 @@
+import { Button } from 'twenty-ui';
+import { IconPencil } from 'twenty-ui/icons';
 import { useApiKeysRecoil } from '@/arx-jd-upload/hooks/useApiKeysRecoil';
 import { ApiKey } from '@/arx-jd-upload/states/apiKeysState';
 import { isOrgChartEnabledState } from '@/arx-jd-upload/states/isOrgChartEnabledState';
@@ -6,7 +8,6 @@ import { TextInput } from '@/ui/input/components/TextInput';
 import styled from '@emotion/styled';
 import { useCallback, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { Button, IconPencil } from 'twenty-ui';
 
 const StyledInputContainer = styled.div`
   display: flex;
@@ -21,7 +22,6 @@ const StyledButtonContainer = styled.div`
   justify-content: flex-end;
   margin-top: ${({ theme }) => theme.spacing(3)};
 `;
-
 
 export const ApiKeysForm = () => {
   const isOrgChartEnabled = useRecoilValue(isOrgChartEnabledState);
@@ -38,7 +38,6 @@ export const ApiKeysForm = () => {
     updateApiKeys,
     resetKeys,
   } = useApiKeysRecoil();
-
 
   console.log("keys::", keys);
   const handleChange = useCallback(
@@ -91,7 +90,6 @@ export const ApiKeysForm = () => {
     return <div>Loading API keys...</div>;
   }
 
-
   const renderInputs = () => {
     return (
       <>
@@ -115,7 +113,6 @@ export const ApiKeysForm = () => {
       </>
     );
   };
-
 
   const renderOrgChartInputs = () => {
     return (

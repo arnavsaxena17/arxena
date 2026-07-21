@@ -1,5 +1,7 @@
-import { IconChevronLeft, IconEyeOff, MenuItemNavigate } from 'twenty-ui';
 
+
+import { MenuItemNavigate } from 'twenty-ui';
+import { IconChevronLeft, IconEyeOff } from 'twenty-ui/icons';
 import { useObjectOptionsForBoard } from '@/object-record/object-options-dropdown/hooks/useObjectOptionsForBoard';
 import { useObjectOptionsForTable } from '@/object-record/object-options-dropdown/hooks/useObjectOptionsForTable';
 import { useOptionsDropdown } from '@/object-record/object-options-dropdown/hooks/useOptionsDropdown';

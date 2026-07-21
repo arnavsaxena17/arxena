@@ -1,5 +1,5 @@
+import { IconLock } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
-import { IconLock } from 'twenty-ui';
 
 const StyledEventCardMessageContainer = styled.div`
   display: flex;

@@ -1,5 +1,5 @@
+import { IconChevronDown } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
-import { IconChevronDown } from 'twenty-ui';
 
 import { ObjectFilterDropdownRecordRemoveFilterMenuItem } from '@/object-record/object-filter-dropdown/components/ObjectFilterDropdownRecordRemoveFilterMenuItem';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';

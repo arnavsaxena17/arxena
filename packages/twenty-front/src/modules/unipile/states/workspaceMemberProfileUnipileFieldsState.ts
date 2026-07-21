@@ -1,4 +1,4 @@
-import { createState } from '@ui/utilities/state/utils/createState';
+import { createState } from 'twenty-ui';
 import type { WorkspaceMemberProfileUnipileFields } from 'twenty-shared';
 
 export type { WorkspaceMemberProfileUnipileFields };

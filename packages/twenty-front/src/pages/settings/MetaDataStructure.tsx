@@ -1,3 +1,5 @@
+import { Button } from 'twenty-ui';
+import { IconPlus, IconRefresh, IconRocket } from 'twenty-ui/icons';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -5,12 +7,7 @@ import styled from '@emotion/styled';
 import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { isOrgChartEnabledEnv } from 'twenty-shared';
-import {
-  Button,
-  IconPlus,
-  IconRefresh,
-  IconRocket,
-} from 'twenty-ui';
+
 import { useWebSocketEvent } from '../../modules/websocket-context/useWebSocketEvent';
 import { useWebSocket } from '../../modules/websocket-context/WebSocketContextProvider';
 

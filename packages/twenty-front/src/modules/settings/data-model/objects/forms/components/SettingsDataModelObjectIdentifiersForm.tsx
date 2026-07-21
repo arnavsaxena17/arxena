@@ -1,7 +1,9 @@
+import { useIcons } from 'twenty-ui';
+import { IconCircleOff } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { useMemo } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
-import { IconCircleOff, useIcons } from 'twenty-ui';
+
 import { z } from 'zod';
 
 import { LABEL_IDENTIFIER_FIELD_METADATA_TYPES } from '@/object-metadata/constants/LabelIdentifierFieldMetadataTypes';

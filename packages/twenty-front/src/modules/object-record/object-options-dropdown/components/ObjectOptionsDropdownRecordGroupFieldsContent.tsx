@@ -1,12 +1,6 @@
+import { MenuItem, MenuItemSelect, UndecoratedLink, useIcons } from 'twenty-ui';
+import { IconChevronLeft, IconSettings } from 'twenty-ui/icons';
 import { useEffect } from 'react';
-import {
-  IconChevronLeft,
-  IconSettings,
-  MenuItem,
-  MenuItemSelect,
-  UndecoratedLink,
-  useIcons,
-} from 'twenty-ui';
 
 import { useObjectNamePluralFromSingular } from '@/object-metadata/hooks/useObjectNamePluralFromSingular';
 

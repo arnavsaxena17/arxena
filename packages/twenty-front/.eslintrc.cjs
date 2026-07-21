@@ -32,6 +32,18 @@ module.exports = {
       },
       rules: {
         'project-structure/folder-structure': 'error',
+        'no-restricted-imports': [
+          'error',
+          {
+            paths: [
+              {
+                name: '@tabler/icons-react',
+                message:
+                  'Import icons from twenty-ui/icons instead of @tabler/icons-react.',
+              },
+            ],
+          },
+        ],
         /* 
         Uncomment this rule when we have a way to work on 
         'lingui/no-unlocalized-strings': [

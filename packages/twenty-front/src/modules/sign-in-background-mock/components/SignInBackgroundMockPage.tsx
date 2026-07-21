@@ -1,7 +1,7 @@
+import { IconBuildingSkyscraper } from 'twenty-ui/icons';
 import { signInBackgroundUseOrgChartMockState } from '@/client-config/states/signInBackgroundUseOrgChartMockState';
 import styled from '@emotion/styled';
 import { useRecoilValue } from 'recoil';
-import { IconBuildingSkyscraper } from 'twenty-ui';
 
 import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-store/contexts/RecordFieldValueSelectorContext';
 import { SignInBackgroundMockContainer } from '@/sign-in-background-mock/components/SignInBackgroundMockContainer';

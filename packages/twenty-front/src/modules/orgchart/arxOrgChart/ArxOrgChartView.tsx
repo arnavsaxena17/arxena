@@ -1,3 +1,5 @@
+import { Button, MenuItem } from 'twenty-ui';
+import { IconChevronDown } from 'twenty-ui/icons';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 
 import {
@@ -26,7 +28,7 @@ import {
     ConfirmationModal,
     StyledCenteredButton,
 } from '@/ui/layout/modal/components/ConfirmationModal';
-import { Button, IconChevronDown, MenuItem } from 'twenty-ui';
+
 import type { OrgChartLinkedInSearchEstimate } from '../hooks/useOrgChartActions';
 
 import {

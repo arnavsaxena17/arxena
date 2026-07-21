@@ -1,3 +1,4 @@
+import { IconTrash } from 'twenty-ui/icons';
 import { useIcons } from 'twenty-ui';
 
 import { useRemoveRecordFilter } from '@/object-record/record-filter/hooks/useRemoveRecordFilter';

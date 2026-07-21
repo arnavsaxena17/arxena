@@ -1,7 +1,8 @@
+import { Button } from 'twenty-ui';
+import { IconCheck } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { useCallback } from 'react';
 import { useRecoilState } from 'recoil';
-import { Button, IconCheck } from 'twenty-ui';
 
 import { notificationsState } from '../states/notificationsState';
 import { NotificationItem } from './NotificationItem';

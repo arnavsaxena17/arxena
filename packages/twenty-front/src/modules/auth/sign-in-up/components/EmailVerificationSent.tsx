@@ -1,10 +1,11 @@
+import { AnimatedEaseIn, Loader, MainButton, RGBA } from 'twenty-ui';
+import { IconMail } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 
 import { SubTitle } from '@/auth/components/SubTitle';
 import { Title } from '@/auth/components/Title';
 import { useHandleResendEmailVerificationToken } from '@/auth/sign-in-up/hooks/useHandleResendEmailVerificationToken';
 import { useTheme } from '@emotion/react';
-import { AnimatedEaseIn, IconMail, Loader, MainButton, RGBA } from 'twenty-ui';
 
 const StyledMailContainer = styled.div`
   align-items: center;

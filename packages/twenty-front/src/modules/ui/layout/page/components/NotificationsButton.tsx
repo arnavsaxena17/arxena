@@ -1,3 +1,5 @@
+import { Button, IconButton, useIsMobile } from 'twenty-ui';
+import { IconBell } from 'twenty-ui/icons';
 import { isRightDrawerOpenState } from '@/ui/layout/right-drawer/states/isRightDrawerOpenState';
 import { rightDrawerPageState } from '@/ui/layout/right-drawer/states/rightDrawerPageState';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
@@ -6,7 +8,7 @@ import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { Button, IconBell, IconButton, useIsMobile } from 'twenty-ui';
+
 import { FeatureFlagKey } from '~/generated/graphql';
 
 const StyledNotificationBadge = styled.div`

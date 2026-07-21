@@ -1,3 +1,5 @@
+import { Toggle } from 'twenty-ui';
+import { IconAlertCircle, IconDotsVertical, IconFile, IconTrash, IconUpload, IconX } from 'twenty-ui/icons';
 import type { AssistantThreadSummary } from '@/arx-jd-upload/types/ParsedJD';
 import { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
 import { tokenPairState } from '@/auth/states/tokenPairState';
@@ -5,7 +7,6 @@ import styled from '@emotion/styled';
 import { useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { LinkedInSearchType } from 'twenty-shared';
-import { IconAlertCircle, IconDotsVertical, IconFile, IconTrash, IconUpload, IconX, Toggle } from 'twenty-ui';
 
 const StyledPanelHeader = styled.div`
   display: flex;

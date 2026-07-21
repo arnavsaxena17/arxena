@@ -1,5 +1,5 @@
-import { IconLoader2 } from '@tabler/icons-react';
-import { Button } from '@ui/input/button/components/Button';
+import { IconLoader2 } from 'twenty-ui/icons';
+import { Button } from 'twenty-ui';
 import React from 'react';
 import { TokenAnalysis as TokenAnalysisType } from '../types';
 import {

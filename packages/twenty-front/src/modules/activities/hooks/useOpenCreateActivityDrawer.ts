@@ -1,3 +1,4 @@
+import { IconList } from 'twenty-ui/icons';
 import { useSetRecoilState } from 'recoil';
 
 import { activityTargetableEntityArrayState } from '@/activities/states/activityTargetableEntityArrayState';
@@ -19,7 +20,7 @@ import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
 import { isNewViewableRecordLoadingState } from '@/object-record/record-right-drawer/states/isNewViewableRecordLoading';
 import { viewableRecordNameSingularState } from '@/object-record/record-right-drawer/states/viewableRecordNameSingularState';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
-import { IconList } from 'twenty-ui';
+
 import { FeatureFlagKey } from '~/generated/graphql';
 import { ActivityTargetableObject } from '../types/ActivityTargetableEntity';
 

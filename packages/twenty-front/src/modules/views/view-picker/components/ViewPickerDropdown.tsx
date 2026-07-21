@@ -1,11 +1,7 @@
+import { MOBILE_VIEWPORT, useIcons } from 'twenty-ui';
+import { IconChevronDown, IconList } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import {
-  IconChevronDown,
-  IconList,
-  MOBILE_VIEWPORT,
-  useIcons,
-} from 'twenty-ui';
 
 import { recordIndexEntityCountComponentSelector } from '@/object-record/record-index/states/selectors/recordIndexEntityCountComponentSelector';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';

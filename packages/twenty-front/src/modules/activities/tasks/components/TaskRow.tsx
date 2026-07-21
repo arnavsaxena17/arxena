@@ -1,11 +1,7 @@
+import { Checkbox, CheckboxShape, OverflowingTextWithTooltip } from 'twenty-ui';
+import { IconCalendar } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import {
-  Checkbox,
-  CheckboxShape,
-  IconCalendar,
-  OverflowingTextWithTooltip,
-} from 'twenty-ui';
 
 import { useOpenActivityRightDrawer } from '@/activities/hooks/useOpenActivityRightDrawer';
 import { ActivityTargetsInlineCell } from '@/activities/inline-cell/components/ActivityTargetsInlineCell';

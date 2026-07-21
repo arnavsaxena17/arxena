@@ -1,3 +1,5 @@
+import { IconButton } from 'twenty-ui';
+import { IconX } from 'twenty-ui/icons';
 import { enrichmentsState, sampleEnrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { Modal } from '@/ui/layout/modal/components/Modal';
 import { TabList } from '@/ui/layout/tab/components/TabList';
@@ -5,7 +7,7 @@ import { useTabList } from '@/ui/layout/tab/hooks/useTabList';
 import styled from '@emotion/styled';
 import { useEffect, useMemo } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { IconButton, IconX } from 'twenty-ui';
+
 import { selectedConversationStatusState } from '../states/states';
 
 const StyledStatsContainer = styled.div`

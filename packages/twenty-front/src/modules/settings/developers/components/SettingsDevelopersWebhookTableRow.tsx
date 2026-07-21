@@ -1,6 +1,6 @@
+import { IconChevronRight } from 'twenty-ui/icons';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { IconChevronRight } from 'twenty-ui';
 
 import { Webhook } from '@/settings/developers/types/webhook/Webhook';
 import { TableCell } from '@/ui/layout/table/components/TableCell';

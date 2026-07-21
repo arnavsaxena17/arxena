@@ -1,11 +1,8 @@
+import { IconLabel } from 'twenty-ui';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useContext } from 'react';
-import {
-  AppTooltip,
-  OverflowingTextWithTooltip,
-  TooltipDelay,
-} from 'twenty-ui';
+import { AppTooltip, OverflowingTextWithTooltip, TooltipDelay } from 'twenty-ui';
 
 import { FieldContext } from '@/object-record/record-field/contexts/FieldContext';
 import { useFieldFocus } from '@/object-record/record-field/hooks/useFieldFocus';

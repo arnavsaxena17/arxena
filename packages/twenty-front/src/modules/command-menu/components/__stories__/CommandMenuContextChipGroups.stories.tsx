@@ -1,13 +1,9 @@
+import { ComponentDecorator } from 'twenty-ui';
+import { IconBuildingSkyscraper, IconSearch, IconSettingsAutomation, IconUser } from 'twenty-ui/icons';
 import { Meta, StoryObj } from '@storybook/react';
 
 import styled from '@emotion/styled';
-import {
-  ComponentDecorator,
-  IconBuildingSkyscraper,
-  IconSearch,
-  IconSettingsAutomation,
-  IconUser,
-} from 'twenty-ui';
+
 import { CommandMenuContextChipGroups } from '../CommandMenuContextChipGroups';
 
 const StyledContainer = styled.div`

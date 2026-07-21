@@ -1,8 +1,8 @@
+import { IconRefresh } from 'twenty-ui/icons';
 import { InformationBanner } from '@/information-banner/components/InformationBanner';
 import { useAccountToReconnect } from '@/information-banner/hooks/useAccountToReconnect';
 import { InformationBannerKeys } from '@/information-banner/types/InformationBannerKeys';
 import { useTriggerApisOAuth } from '@/settings/accounts/hooks/useTriggerApiOAuth';
-import { IconRefresh } from 'twenty-ui';
 
 export const InformationBannerReconnectAccountEmailAliases = () => {
   const { accountToReconnect } = useAccountToReconnect(

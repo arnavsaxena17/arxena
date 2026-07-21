@@ -1,3 +1,6 @@
+import { IconListNumbers } from 'twenty-ui/icons';
+import { AppTooltip, Card, TooltipDelay } from 'twenty-ui';
+import { IconInfoCircle, IconRefresh } from 'twenty-ui/icons';
 import { ObjectMetadataItem } from '@/object-metadata/types/ObjectMetadataItem';
 import { objectMetadataItemSchema } from '@/object-metadata/validation-schemas/objectMetadataItemSchema';
 import { AdvancedSettingsWrapper } from '@/settings/components/AdvancedSettingsWrapper';
@@ -12,13 +15,7 @@ import { useLingui } from '@lingui/react/macro';
 import { plural } from 'pluralize';
 import { Controller, useFormContext } from 'react-hook-form';
 import { isDefined } from 'twenty-shared';
-import {
-  AppTooltip,
-  Card,
-  IconInfoCircle,
-  IconRefresh,
-  TooltipDelay,
-} from 'twenty-ui';
+
 import { z } from 'zod';
 import { computeMetadataNameFromLabel } from '~/pages/settings/data-model/utils/compute-metadata-name-from-label.utils';
 

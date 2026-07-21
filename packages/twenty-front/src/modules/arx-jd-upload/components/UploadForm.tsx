@@ -1,6 +1,8 @@
+import { Button } from 'twenty-ui';
+import { IconUpload } from 'twenty-ui/icons';
 import styled from '@emotion/styled';
 import { useState } from 'react';
-import { Button, IconUpload } from 'twenty-ui';
+
 import { StyledDropzoneArea } from './ArxJDUploadModal.styled';
 
 const StyledContainer = styled.div`

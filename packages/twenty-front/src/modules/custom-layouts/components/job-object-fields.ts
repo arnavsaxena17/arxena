@@ -1,3 +1,6 @@
+import { IconAbc, IconCalendarClock, IconToggleLeft, IconBarcode, IconClock, IconUserSearch, IconEnrich, IconUserStar, IconScan, IconUserCheck } from 'twenty-ui';
+import { IconUsers, IconCalendar, IconCreativeCommonsSa, IconHierarchy2, IconTimelineEvent, IconHeart, IconFileImport, IconCheckbox, IconList, IconFileDescription, IconMapPin, IconTable, IconSearch, IconUserCircle, IconCurrencyDollar, IconBuilding, IconRoute, IconMessage, IconUser, IconQuestionMark, IconBrandWhatsapp, IconCalendarTime, IconPencil, IconSend, IconListCheck } from 'twenty-ui/icons';
+
 export const JobObjectFields = {
   __typename: 'Object',
   id: '472599e8-111f-4e56-baf9-74530a58b724',

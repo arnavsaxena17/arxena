@@ -1,3 +1,4 @@
+import { IconBuildingFactory2 } from 'twenty-ui';
 import { Meta, StoryObj } from '@storybook/react';
 import { ComponentDecorator } from 'twenty-ui';
 

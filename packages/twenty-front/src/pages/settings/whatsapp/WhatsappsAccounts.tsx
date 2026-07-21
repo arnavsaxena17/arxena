@@ -1,5 +1,5 @@
+import { IconSettings } from 'twenty-ui/icons';
 import { useRecoilValue } from 'recoil';
-import { IconSettings } from 'twenty-ui';
 
 import { ConnectedAccount } from '@/accounts/types/ConnectedAccount';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';

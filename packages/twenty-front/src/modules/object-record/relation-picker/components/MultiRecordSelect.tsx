@@ -1,3 +1,4 @@
+import { IconPlus } from 'twenty-ui/icons';
 import { useObjectRecordMultiSelectScopedStates } from '@/activities/hooks/useObjectRecordMultiSelectScopedStates';
 import { MultipleObjectRecordOnClickOutsideEffect } from '@/object-record/relation-picker/components/MultipleObjectRecordOnClickOutsideEffect';
 import { MultipleObjectRecordSelectItem } from '@/object-record/relation-picker/components/MultipleObjectRecordSelectItem';
@@ -25,7 +26,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 import { Key } from 'ts-key-enum';
 import { isDefined } from 'twenty-shared';
-import { IconPlus } from 'twenty-ui';
+
 import { isUndefinedOrNull } from '~/utils/isUndefinedOrNull';
 
 export const StyledSelectableItem = styled(SelectableItem)`

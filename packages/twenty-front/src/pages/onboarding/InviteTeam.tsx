@@ -1,3 +1,5 @@
+import { ActionLink, LightButton, MainButton, SeparatorLineText } from 'twenty-ui';
+import { IconCopy } from 'twenty-ui/icons';
 import { SubTitle } from '@/auth/components/SubTitle';
 import { Title } from '@/auth/components/Title';
 import { currentUserState } from '@/auth/states/currentUserState';
@@ -21,13 +23,7 @@ import {
 } from 'react-hook-form';
 import { useRecoilValue } from 'recoil';
 import { Key } from 'ts-key-enum';
-import {
-    ActionLink,
-    IconCopy,
-    LightButton,
-    MainButton,
-    SeparatorLineText,
-} from 'twenty-ui';
+
 import { z } from 'zod';
 
 import { isDefined } from 'twenty-shared';
