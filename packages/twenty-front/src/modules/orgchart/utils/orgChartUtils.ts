@@ -1,10 +1,10 @@
 import {
-    isValidLinkedInProfileUrl,
-    toTitleCase,
-    type OrgChartNodeData,
+  isValidLinkedInProfileUrl,
+  toTitleCase,
+  OrgChartNodeData,
 } from 'twenty-shared';
 
-import type { ContextResultItem } from '../types';
+import { ContextResultItem } from '../types';
 
 const readOptionalString = (value: unknown): string | undefined => {
   if (typeof value !== 'string') {
@@ -55,7 +55,9 @@ export const formatNetworkDistanceDegree = (
   if (upper === 'UNKNOWN') {
     return null;
   }
-  return raw.replace(/^DISTANCE_/i, '') + (raw.includes('DISTANCE_') ? '°' : '');
+  return (
+    raw.replace(/^DISTANCE_/i, '') + (raw.includes('DISTANCE_') ? '°' : '')
+  );
 };
 
 const extractPromotedProfileFields = (
@@ -151,7 +153,10 @@ export const extractCompanyDomainFromWebsite = (
   try {
     const withProtocol = site.startsWith('http') ? site : `https://${site}`;
     const { hostname } = new URL(withProtocol);
-    const bare = hostname.replace(/^www\./u, '').trim().toLowerCase();
+    const bare = hostname
+      .replace(/^www\./u, '')
+      .trim()
+      .toLowerCase();
     return bare.length > 0 ? bare : undefined;
   } catch {
     const trimmed = site.trim().toLowerCase();
@@ -449,10 +454,7 @@ export const pollCandidateIdOnJob = async (
       cache: 'no-store',
     });
     const json = (await response.json()) as {
-      results?: Record<
-        string,
-        { saved?: boolean; candidateIds?: string[] }
-      >;
+      results?: Record<string, { saved?: boolean; candidateIds?: string[] }>;
     };
     const row = json.results?.[linkedinUrl];
     if (row?.saved && row.candidateIds?.[0]) {
@@ -479,8 +481,7 @@ export const contextResultItemFromNodePersonSlot = (
   const emailKey = `email_${i}` as keyof OrgChartNodeData;
   const phoneKey = `phone_${i}` as keyof OrgChartNodeData;
   const imageKey = `image_${i}` as keyof OrgChartNodeData;
-  const rawLi =
-    typeof node[linkedinKey] === 'string' ? node[linkedinKey] : '';
+  const rawLi = typeof node[linkedinKey] === 'string' ? node[linkedinKey] : '';
   const linkedinUrl = isValidLinkedInProfileUrl(rawLi)
     ? (rawLi as string).trim()
     : undefined;
@@ -504,7 +505,9 @@ export const contextResultItemFromNodePersonSlot = (
   return {
     id: `${node.key}-${i}`,
     fullName: name.trim(),
-    headline: (typeof node[titleKey] === 'string' ? node[titleKey] : '') as string,
+    headline: (typeof node[titleKey] === 'string'
+      ? node[titleKey]
+      : '') as string,
     company: companyName ?? '',
     linkedinUrl,
     email:
@@ -521,9 +524,7 @@ export const contextResultItemFromNodePersonSlot = (
       ...(typeof image === 'string'
         ? { image, profile_picture_url: image }
         : {}),
-      ...(tenureAtCompany
-        ? { org_chart_company_tenure: tenureAtCompany }
-        : {}),
+      ...(tenureAtCompany ? { org_chart_company_tenure: tenureAtCompany } : {}),
     },
   };
 };
@@ -534,7 +535,9 @@ export const toLinkedInPremiumCandidate = (
   const raw = item.raw ?? {};
   const linkedinUrl = item.linkedinUrl ?? '';
   const publicIdentifier = linkedinUrl
-    ? linkedinUrl.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//i, '').split('/')[0]
+    ? linkedinUrl
+        .replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//i, '')
+        .split('/')[0]
     : '';
   return {
     full_name: item.fullName,
@@ -545,6 +548,214 @@ export const toLinkedInPremiumCandidate = (
     linkedin_profile_id_url: linkedinUrl,
     ...(raw && typeof raw === 'object' ? raw : {}),
     uniqueStringKey: linkedinUrl || `orgchart-${item.id}`,
+  };
+};
+
+export type OrgChartDrawerCandidateSeed = {
+  id: string;
+  name: string;
+  fullName: string;
+  headline: string;
+  jobTitle: string;
+  company: string;
+  linkedin?: string;
+  linkedinUrl?: { primaryLinkUrl: string };
+  email?: { primaryEmail: string };
+  phone?: string;
+  networkDistance?: string;
+  sharedConnectionsCount?: number;
+  otherFields?: Record<string, unknown>;
+};
+
+type DrawerExperienceEntry = {
+  title: { name: string };
+  company: { name: string; location?: { locality?: string } };
+  start_date: string | null;
+  end_date: string | null;
+};
+
+const readExperienceTitle = (exp: Record<string, unknown>): string => {
+  const title = exp.title;
+  if (typeof title === 'string' && title.trim().length > 0) {
+    return title.trim();
+  }
+  if (
+    title !== null &&
+    title !== undefined &&
+    typeof title === 'object' &&
+    'name' in title
+  ) {
+    const name = (title as { name?: unknown }).name;
+    if (typeof name === 'string' && name.trim().length > 0) {
+      return name.trim();
+    }
+  }
+  const position = exp.position ?? exp.role ?? exp.job_title;
+  return typeof position === 'string' ? position.trim() : '';
+};
+
+const readExperienceCompany = (exp: Record<string, unknown>): string => {
+  const company =
+    exp.company ?? exp.companyName ?? exp.company_name ?? exp.organization;
+  if (typeof company === 'string' && company.trim().length > 0) {
+    return company.trim();
+  }
+  if (
+    company !== null &&
+    company !== undefined &&
+    typeof company === 'object' &&
+    'name' in company
+  ) {
+    const name = (company as { name?: unknown }).name;
+    if (typeof name === 'string' && name.trim().length > 0) {
+      return name.trim();
+    }
+  }
+  return '';
+};
+
+const formatExperienceDate = (value: unknown): string | null => {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value === 'string' && value.trim().length > 0) {
+    return value.trim();
+  }
+  if (typeof value === 'object' && value !== null && 'year' in value) {
+    const year = (value as { year?: unknown; month?: unknown }).year;
+    const month = (value as { year?: unknown; month?: unknown }).month;
+    if (typeof year === 'number' && Number.isFinite(year)) {
+      const monthNum =
+        typeof month === 'number' && Number.isFinite(month) ? month : 1;
+      return `${year}-${String(monthNum).padStart(2, '0')}-01`;
+    }
+  }
+  return null;
+};
+
+const mapRawExperienceToDrawerShape = (
+  raw: Record<string, unknown>,
+): DrawerExperienceEntry[] => {
+  const sources = [
+    raw.experience,
+    raw.work_experience,
+    raw.workExperience,
+    raw.positions,
+  ];
+  for (const source of sources) {
+    if (Array.isArray(source) === false || source.length === 0) {
+      continue;
+    }
+    const mapped = source
+      .filter(
+        (entry): entry is Record<string, unknown> =>
+          entry !== null && entry !== undefined && typeof entry === 'object',
+      )
+      .map((exp) => {
+        const startDate =
+          formatExperienceDate(exp.start_date) ??
+          formatExperienceDate(exp.startDate) ??
+          formatExperienceDate(exp.start);
+        const endDate =
+          formatExperienceDate(exp.end_date) ??
+          formatExperienceDate(exp.endDate) ??
+          formatExperienceDate(exp.end);
+        const locality =
+          typeof exp.location === 'string'
+            ? exp.location
+            : readOptionalString(
+                (
+                  exp.company as
+                    | { location?: { locality?: unknown } }
+                    | undefined
+                )?.location?.locality,
+              );
+        return {
+          title: { name: readExperienceTitle(exp) },
+          company: {
+            name: readExperienceCompany(exp),
+            ...(locality !== undefined && locality.length > 0
+              ? { location: { locality } }
+              : {}),
+          },
+          start_date: startDate,
+          end_date: endDate,
+        };
+      })
+      .filter(
+        (exp) => exp.title.name.length > 0 || exp.company.name.length > 0,
+      );
+    if (mapped.length > 0) {
+      return mapped;
+    }
+  }
+  return [];
+};
+
+/**
+ * Maps an org-chart result row into a searchResults-shaped seed for CandidateChatDrawer.
+ * Experience is included only when present on `item.raw`.
+ */
+export const contextResultItemToDrawerCandidate = (
+  item: ContextResultItem,
+  contactInfo?: { email?: string; phone?: string },
+): OrgChartDrawerCandidateSeed => {
+  const linkedinUrl = item.linkedinUrl?.trim() ?? '';
+  const publicIdentifier = linkedinUrl
+    ? linkedinUrl
+        .replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//i, '')
+        .split('/')[0]
+        ?.split('?')[0]
+    : '';
+  const id =
+    publicIdentifier !== undefined && publicIdentifier.length > 0
+      ? publicIdentifier
+      : `orgchart-${item.id}`;
+
+  const email = contactInfo?.email?.trim() || item.email?.trim() || undefined;
+  const phone = contactInfo?.phone?.trim() || item.phone?.trim() || undefined;
+
+  const experience = mapRawExperienceToDrawerShape(item.raw ?? {});
+  const locationParts = [
+    item.locationName,
+    item.locationRegion,
+    item.locationCountry,
+  ].filter((part): part is string => Boolean(part?.trim()));
+
+  const otherFields: Record<string, unknown> = {
+    ...(experience.length > 0 ? { experience } : {}),
+    ...(item.locationName !== undefined && item.locationName.length > 0
+      ? { location_name: item.locationName }
+      : {}),
+    ...(locationParts.length > 0 ? { location: locationParts.join(', ') } : {}),
+    ...(item.headline.length > 0 ? { linkedin_headline: item.headline } : {}),
+    ...(item.company.length > 0 ? { job_company_name: item.company } : {}),
+  };
+
+  return {
+    id,
+    name: item.fullName,
+    fullName: item.fullName,
+    headline: item.headline,
+    jobTitle: item.headline,
+    company: item.company,
+    ...(linkedinUrl.length > 0
+      ? {
+          linkedin: linkedinUrl,
+          linkedinUrl: { primaryLinkUrl: linkedinUrl },
+        }
+      : {}),
+    ...(email !== undefined && email.length > 0
+      ? { email: { primaryEmail: email } }
+      : {}),
+    ...(phone !== undefined && phone.length > 0 ? { phone } : {}),
+    ...(item.networkDistance !== undefined && item.networkDistance.length > 0
+      ? { networkDistance: item.networkDistance }
+      : {}),
+    ...(typeof item.sharedConnectionsCount === 'number'
+      ? { sharedConnectionsCount: item.sharedConnectionsCount }
+      : {}),
+    ...(Object.keys(otherFields).length > 0 ? { otherFields } : {}),
   };
 };
 
@@ -559,7 +770,8 @@ export const getSuggestedJobNameFromContext = (
         ? 'All employees'
         : contextModalMode === 'function_grade'
           ? 'This function'
-          : contextModalMode === 'current_node' || contextModalMode === 'selected_nodes'
+          : contextModalMode === 'current_node' ||
+              contextModalMode === 'selected_nodes'
             ? 'Selected positions'
             : 'Org chart';
   return `${companyName || 'Company'} – ${label}`;
@@ -568,7 +780,10 @@ export const getSuggestedJobNameFromContext = (
 const escapeCsvValue = (value: string): string =>
   `"${String(value).replace(/"/g, '""')}"`;
 
-const CONTEXT_RESULT_CSV_COLUMNS: { key: keyof ContextResultItem; header: string }[] = [
+const CONTEXT_RESULT_CSV_COLUMNS: {
+  key: keyof ContextResultItem;
+  header: string;
+}[] = [
   { key: 'fullName', header: 'Full Name' },
   { key: 'headline', header: 'Headline' },
   { key: 'company', header: 'Company' },
