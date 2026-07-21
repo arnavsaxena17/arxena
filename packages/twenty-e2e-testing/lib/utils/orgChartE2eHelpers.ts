@@ -79,7 +79,7 @@ export const isOnJobsUi = async (page: Page) => {
   }
 
   const companySearchInput = page
-    .getByPlaceholder('Search any company\'s org chart...')
+    .getByPlaceholder("Search any company's org chart...")
     .first();
 
   return isVisible(companySearchInput);
@@ -353,7 +353,7 @@ export const searchAndOpenOrgChartCompany = async (
   },
 ) => {
   const companySearchInput = page
-    .getByPlaceholder('Search any company\'s org chart...')
+    .getByPlaceholder("Search any company's org chart...")
     .first();
   await expect(companySearchInput).toBeVisible({ timeout: 60_000 });
 

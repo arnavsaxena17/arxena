@@ -55,7 +55,7 @@ const OUT_DIR = '/Users/arnavsaxena/MEGA/arx/arxena/packages/twenty-e2e-testing/
     // Dismiss common modal overlays if present
     await clickIfVisible(page.getByRole('button', { name: /close|skip|not now|later/i }));
 
-    const companySearchInput = page.getByPlaceholder('Search any company\'s org chart...');
+    const companySearchInput = page.getByPlaceholder("Search any company's org chart...");
     await companySearchInput.waitFor({ state: 'visible', timeout: 120000 });
     await companySearchInput.click();
     await companySearchInput.fill(COMPANY);

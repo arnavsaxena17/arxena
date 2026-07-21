@@ -23,6 +23,15 @@ const StyledFilterChip = styled.div`
   color: ${({ theme }) => theme.font.color.secondary};
   cursor: pointer;
   transition: all 0.2s ease-in-out;
+  max-width: 320px;
+  min-width: 0;
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
 
   &:hover {
     background-color: ${({ theme }) => theme.background.tertiary};
@@ -83,6 +92,16 @@ export interface FilterChipsProps {
   onClearAllFilters: () => void;
 }
 
+const MAX_VISIBLE_FILTER_VALUES = 2;
+
+const formatValueList = (values: string[]): string => {
+  if (values.length <= MAX_VISIBLE_FILTER_VALUES) {
+    return values.join(', ');
+  }
+
+  return `${values.slice(0, MAX_VISIBLE_FILTER_VALUES).join(', ')} +${values.length - MAX_VISIBLE_FILTER_VALUES} more`;
+};
+
 const formatFilterValue = (condition: FilterCondition, columns: Array<{ title: string; data: string }>): string => {
   const columnTitle = columns[condition.column]?.title || `Column ${condition.column}`;
   
@@ -92,18 +111,18 @@ const formatFilterValue = (condition: FilterCondition, columns: Array<{ title: s
 
   const conditionTexts = condition.conditions.map(cond => {
     switch (cond.name) {
-      case 'by_value':
-        if (cond.args[0] && Array.isArray(cond.args[0])) {
-          const values = cond.args[0];
-          if (values.length === 2) {
-            return `between "${values[0]}" and "${values[1]}"`;
-          } else if (values.length === 1) {
-            return `is "${values[0]}"`;
-          } else {
-            return `in [${values.join(', ')}]`;
-          }
+      case 'by_value': {
+        const rawValues = Array.isArray(cond.args[0]) ? cond.args[0] : [cond.args[0]];
+        const values = rawValues.map(String).filter((value) => value.length > 0);
+
+        if (values.length === 0) {
+          return 'Active';
         }
-        return `is "${cond.args[0]}"`;
+        if (values.length === 1) {
+          return `is "${values[0]}"`;
+        }
+        return `in [${formatValueList(values)}]`;
+      }
       
       case 'contains':
         return `contains "${cond.args[0]}"`;
@@ -148,20 +167,24 @@ export const FilterChips = memo<FilterChipsProps>(({
 
   return (
     <StyledFilterChipsContainer>
-      {activeFilters.map((filter, index) => (
-        <StyledFilterChip key={`${filter.column}-${index}`}>
-          <span>{formatFilterValue(filter, columns)}</span>
-          <StyledClearButton
-            onClick={(e) => {
-              e.stopPropagation();
-              handleRemoveFilter(filter.column);
-            }}
-            title="Remove filter"
-          >
-            <IconX size={12} />
-          </StyledClearButton>
-        </StyledFilterChip>
-      ))}
+      {activeFilters.map((filter, index) => {
+        const label = formatFilterValue(filter, columns);
+
+        return (
+          <StyledFilterChip key={`${filter.column}-${index}`} title={label}>
+            <span>{label}</span>
+            <StyledClearButton
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRemoveFilter(filter.column);
+              }}
+              title="Remove filter"
+            >
+              <IconX size={12} />
+            </StyledClearButton>
+          </StyledFilterChip>
+        );
+      })}
       
       {activeFilters.length > 1 && (
         <StyledClearAllButton

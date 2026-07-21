@@ -231,7 +231,7 @@ export const CandidateTablePageHeader = ({
             <StyledOrgChartSearchRow>
               <OrgChartCompanySearchWrapper
                 onCompanySelect={onCompanySelect}
-                placeholder="Search any company\'s org chart..."
+                placeholder="Search any company's org chart..."
                 disabled={companySearchDisabled}
                 startIcon={<IconHierarchy2 size={20} />}
               />

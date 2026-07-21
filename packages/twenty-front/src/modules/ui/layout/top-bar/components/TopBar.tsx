@@ -235,6 +235,12 @@ const StyledInlineSection = styled.div`
   align-items: center;
   gap: ${({ theme }) => theme.spacing(1)};
   flex-wrap: wrap;
+  min-width: 0;
+`;
+
+const StyledFilterSection = styled(StyledInlineSection)`
+  flex: 1 1 auto;
+  max-width: 100%;
 `;
 
 const StyledInlineFilterChip = styled.div`
@@ -248,7 +254,75 @@ const StyledInlineFilterChip = styled.div`
   font-size: ${({ theme }) => theme.font.size.xs};
   color: ${({ theme }) => theme.font.color.primary};
   height: 24px;
+  max-width: 280px;
+  min-width: 0;
+  flex-shrink: 1;
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
 `;
+
+const MAX_VISIBLE_FILTER_VALUES = 2;
+
+const getFilterValues = (args: unknown[] | undefined): string[] => {
+  if (!args || args.length === 0) {
+    return [];
+  }
+
+  const firstArg = args[0];
+  if (Array.isArray(firstArg)) {
+    return firstArg.map(String).filter((value) => value.length > 0);
+  }
+
+  if (firstArg == null || firstArg === '') {
+    return [];
+  }
+
+  return [String(firstArg)];
+};
+
+const formatInlineFilterLabel = (
+  columnTitle: string,
+  condition?: { name: string; args: unknown[] },
+): { label: string; title: string } => {
+  if (!condition) {
+    return { label: `${columnTitle}: Active`, title: `${columnTitle}: Active` };
+  }
+
+  const values = getFilterValues(condition.args);
+
+  if (values.length === 0) {
+    if (condition.name === 'empty') {
+      return { label: `${columnTitle}: empty`, title: `${columnTitle}: empty` };
+    }
+    if (condition.name === 'not_empty') {
+      return {
+        label: `${columnTitle}: not empty`,
+        title: `${columnTitle}: not empty`,
+      };
+    }
+    return { label: `${columnTitle}: Active`, title: `${columnTitle}: Active` };
+  }
+
+  const fullValues = values.join(', ');
+  const truncatedValues =
+    values.length <= MAX_VISIBLE_FILTER_VALUES
+      ? fullValues
+      : `${values.slice(0, MAX_VISIBLE_FILTER_VALUES).join(', ')} +${values.length - MAX_VISIBLE_FILTER_VALUES} more`;
+
+  return {
+    label: `${columnTitle}: ${truncatedValues}`,
+    title: `${columnTitle}: ${fullValues}`,
+  };
+};
 
 const StyledInlineBatchInfo = styled.div`
   display: flex;
@@ -547,20 +621,28 @@ export const TopBar = memo(({
         </StyledInlineSection>
 
         {/* Center Section - Filter Chips and Batch Info */}
-        <StyledInlineSection>
+        <StyledFilterSection>
           {/* Inline Filter Chips */}
           {isJobPage && showFilterChips && tableState.activeFilters && tableState.activeFilters.length > 0 && (
             <>
-              {tableState.activeFilters.map((filter, index) => (
-                <StyledInlineFilterChip key={index}>
-                  <span>{columns[filter.column]?.title || 'Filter'}: {filter.conditions[0]?.args?.[0] || 'Active'}</span>
-                  <IconX 
-                    size={10} 
-                    style={{ cursor: 'pointer' }} 
-                    onClick={() => onRemoveFilter?.(filter.column)}
-                  />
-                </StyledInlineFilterChip>
-              ))}
+              {tableState.activeFilters.map((filter, index) => {
+                const columnTitle = columns[filter.column]?.title || 'Filter';
+                const { label, title } = formatInlineFilterLabel(
+                  columnTitle,
+                  filter.conditions[0],
+                );
+
+                return (
+                  <StyledInlineFilterChip key={`${filter.column}-${index}`} title={title}>
+                    <span>{label}</span>
+                    <IconX
+                      size={10}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => onRemoveFilter?.(filter.column)}
+                    />
+                  </StyledInlineFilterChip>
+                );
+              })}
               <StyledInlineButton onClick={onClearAllFilters}>
                 Clear All
               </StyledInlineButton>
@@ -573,7 +655,7 @@ export const TopBar = memo(({
               {searchResults.length} fetched • {selectedCandidates.length} selected
             </StyledInlineBatchInfo>
           )}
-        </StyledInlineSection>
+        </StyledFilterSection>
 
         {/* Right Section - Action Buttons */}
         <StyledInlineSection>

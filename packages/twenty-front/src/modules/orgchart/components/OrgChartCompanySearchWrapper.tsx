@@ -25,7 +25,7 @@ type OrgChartCompanySearchWrapperProps = {
 
 export const OrgChartCompanySearchWrapper = ({
   onCompanySelect,
-  placeholder = 'Search any company\'s org chart...',
+  placeholder = "Search any company's org chart...",
   disabled = false,
   startIcon,
 }: OrgChartCompanySearchWrapperProps) => {
