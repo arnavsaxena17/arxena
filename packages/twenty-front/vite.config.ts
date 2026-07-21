@@ -236,18 +236,14 @@ export default defineConfig(({ command, mode }) => {
           find: 'twenty-ui/icons',
           replacement: path.resolve(
             __dirname,
-            isBuildCommand
-              ? '../twenty-ui/dist/icons.js'
-              : '../twenty-ui/src/display/icon/components/TablerIcons.ts',
+            '../twenty-ui/src/display/icon/components/TablerIcons.ts',
           ),
         },
         {
           find: 'twenty-ui',
           replacement: path.resolve(
             __dirname,
-            isBuildCommand
-              ? '../twenty-ui/dist/index.js'
-              : '../twenty-ui/src/index.ts',
+            '../twenty-ui/src/index.ts',
           ),
         },
         {
