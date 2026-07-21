@@ -4,6 +4,8 @@ import {
     candidateFieldValuesToOtherFields,
     getCandidateCustomField,
     getResolvedOtherFields,
+    getValueFromCandidateRecord,
+    hasMeaningfulCandidateFieldValue,
     isJsonColumnEmpty,
     mergeChatQuestionsPreservingOrder,
     mergeOtherFields,
@@ -100,6 +102,40 @@ describe('otherFields utils', () => {
     );
 
     expect(value).toBe('20L');
+  });
+
+  it('getValueFromCandidateRecord resolves snake_case metadata to camelCase keys', () => {
+    const candidate = {
+      jobTitle: 'Head of Marketing',
+      profileTitle: 'Marketing Leader',
+      resumeHeadline: 'B2B SaaS',
+      experience: [{ title: { name: 'CMO' } }],
+    };
+
+    expect(getValueFromCandidateRecord(candidate, 'jobTitle')).toBe(
+      'Head of Marketing',
+    );
+    expect(getValueFromCandidateRecord(candidate, 'profile_title')).toBe(
+      'Marketing Leader',
+    );
+    expect(getValueFromCandidateRecord(candidate, 'resume_headline')).toBe(
+      'B2B SaaS',
+    );
+    expect(getValueFromCandidateRecord(candidate, 'experience')).toEqual([
+      { title: { name: 'CMO' } },
+    ]);
+    expect(
+      getValueFromCandidateRecord(candidate, 'additional_data'),
+    ).toBeUndefined();
+  });
+
+  it('hasMeaningfulCandidateFieldValue skips empty values but keeps false/0', () => {
+    expect(hasMeaningfulCandidateFieldValue(null)).toBe(false);
+    expect(hasMeaningfulCandidateFieldValue('')).toBe(false);
+    expect(hasMeaningfulCandidateFieldValue([])).toBe(false);
+    expect(hasMeaningfulCandidateFieldValue(false)).toBe(true);
+    expect(hasMeaningfulCandidateFieldValue(0)).toBe(true);
+    expect(hasMeaningfulCandidateFieldValue('Sales')).toBe(true);
   });
 
   it('remapOtherFieldsForQuestionChanges renames answer keys', () => {

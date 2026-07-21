@@ -24,6 +24,7 @@ import { PageTitle } from '@/ui/utilities/page-title/components/PageTitle';
 import { WorkspaceMemberProfileUnipileSyncEffect } from '@/unipile/components/WorkspaceMemberProfileUnipileSyncEffect';
 import { UserProvider } from '@/users/components/UserProvider';
 import { UserProviderEffect } from '@/users/components/UserProviderEffect';
+import { NotificationProvider } from '@/notification-context/NotificationContextProvider';
 import { WebSocketProvider } from '@/websocket-context/WebSocketContextProvider';
 import { WorkspaceProviderEffect } from '@/workspace/components/WorkspaceProviderEffect';
 import { StrictMode } from 'react';
@@ -70,7 +71,9 @@ export const AppRouterProviders = () => {
                                     <PageTitle title={pageTitle} />
                                     <PageFavicon />
                                     <WebSocketProvider>
-                                      <Outlet />
+                                      <NotificationProvider>
+                                        <Outlet />
+                                      </NotificationProvider>
                                     </WebSocketProvider>
                                   </StrictMode>
                                 </ModalProvider>

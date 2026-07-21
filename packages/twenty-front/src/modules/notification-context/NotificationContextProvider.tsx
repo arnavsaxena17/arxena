@@ -16,10 +16,20 @@ type NotificationContextType = {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
+const noopNotificationContext: NotificationContextType = {
+  showNotification: async () => {
+    console.warn('useNotification: NotificationProvider is not mounted; skipping notification');
+  },
+  requestPermission: async () => 'denied' as NotificationPermission,
+};
+
 export const useNotification = () => {
   const context = useContext(NotificationContext);
   if (!context) {
-    throw new Error('useNotification must be used within a NotificationProvider');
+    // Avoid crashing the page (e.g. Vite HMR context identity mismatch).
+    // Browser notifications are optional; prefer a no-op over an error boundary.
+    console.warn('useNotification must be used within a NotificationProvider');
+    return noopNotificationContext;
   }
   return context;
 };

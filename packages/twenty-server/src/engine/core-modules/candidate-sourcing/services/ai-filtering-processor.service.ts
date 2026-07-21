@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Sema } from 'async-sema';
 import { OpenAI } from 'openai';
+import {
+  getValueFromCandidateRecord,
+  hasMeaningfulCandidateFieldValue,
+} from 'twenty-shared';
 
 export interface AiFilterField {
   name: string;
@@ -162,10 +166,13 @@ export class AiFilteringProcessorService {
     candidate: CandidateData,
     aiFilter: AiFilterConfig,
   ): string {
+    const candidateRecord = candidate as Record<string, unknown>;
     const parts = (aiFilter.selectedMetadataFields || [])
       .map((field) => {
-        const value = candidate[field];
-        if (!value) return '';
+        const value = getValueFromCandidateRecord(candidateRecord, field);
+        if (!hasMeaningfulCandidateFieldValue(value)) {
+          return '';
+        }
 
         const stringValue =
           typeof value === 'object' ? JSON.stringify(value) : String(value);
@@ -174,7 +181,10 @@ export class AiFilteringProcessorService {
       })
       .filter(Boolean);
 
-    if (aiFilter.includeResume && candidate.resume) {
+    if (
+      aiFilter.includeResume &&
+      hasMeaningfulCandidateFieldValue(candidate.resume)
+    ) {
       parts.push(`resume: ${candidate.resume}`);
     }
 

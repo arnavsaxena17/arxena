@@ -233,6 +233,54 @@ export const getCandidateCustomField = (
   return undefined;
 };
 
+/**
+ * Resolve a field from a flattened candidate row (e.g. after otherFieldsToFlatRow),
+ * accepting either snake_case or camelCase keys from AI filter selectedMetadataFields.
+ */
+export const getValueFromCandidateRecord = (
+  candidate: Record<string, unknown>,
+  fieldName: string,
+): unknown => {
+  if (Object.prototype.hasOwnProperty.call(candidate, fieldName)) {
+    return candidate[fieldName];
+  }
+
+  const snakeKey = toSnakeCaseKey(fieldName);
+  if (
+    snakeKey !== fieldName &&
+    Object.prototype.hasOwnProperty.call(candidate, snakeKey)
+  ) {
+    return candidate[snakeKey];
+  }
+
+  const camelKey = toCamelCaseKey(snakeKey);
+  if (
+    camelKey !== fieldName &&
+    camelKey !== snakeKey &&
+    Object.prototype.hasOwnProperty.call(candidate, camelKey)
+  ) {
+    return candidate[camelKey];
+  }
+
+  return undefined;
+};
+
+export const hasMeaningfulCandidateFieldValue = (value: unknown): boolean => {
+  if (value === null || value === undefined) {
+    return false;
+  }
+
+  if (typeof value === 'string' && value.trim() === '') {
+    return false;
+  }
+
+  if (Array.isArray(value) && value.length === 0) {
+    return false;
+  }
+
+  return true;
+};
+
 export const collectOtherFieldKeys = (
   candidates: CandidateWithCustomFields[],
 ): string[] => {

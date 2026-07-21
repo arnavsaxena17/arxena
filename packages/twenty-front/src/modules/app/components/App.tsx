@@ -5,7 +5,6 @@ import { ApolloDevLogEffect } from '@/debug/components/ApolloDevLogEffect';
 import { RecoilDebugObserverEffect } from '@/debug/components/RecoilDebugObserver';
 import { AppErrorBoundary } from '@/error-handler/components/AppErrorBoundary';
 import { ExceptionHandlerProvider } from '@/error-handler/components/ExceptionHandlerProvider';
-import { NotificationProvider } from '@/notification-context/NotificationContextProvider';
 import { SnackBarProviderScope } from '@/ui/feedback/snack-bar-manager/scopes/SnackBarProviderScope';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
@@ -17,7 +16,6 @@ import { initialI18nActivate } from '~/utils/i18n/initialI18nActivate';
 import { OrgChartLinkedinSearchTypeSyncEffect } from '../../unipile/components/OrgChartLinkedinSearchTypeSyncEffect';
 import { UnipileProvider } from '../../unipile/contexts/UnipileContext';
 import { UploadProgressProvider } from '../../websocket-context/UploadProgressProvider';
-import { WebSocketProvider } from '../../websocket-context/WebSocketContextProvider';
 
 initialI18nActivate();
 
@@ -38,13 +36,9 @@ export const App = () => {
                         <UnipileProvider>
                           <OrgChartLinkedinSearchTypeSyncEffect />
                           <ChromeExtensionAuthBridgeEffect />
-                          <WebSocketProvider>
-                            <UploadProgressProvider>
-                              <NotificationProvider>
-                                <AppRouter />
-                              </NotificationProvider>
-                            </UploadProgressProvider>
-                          </WebSocketProvider>
+                          <UploadProgressProvider>
+                            <AppRouter />
+                          </UploadProgressProvider>
                         </UnipileProvider>
                       {/* </BaileysProvider> */}
                     </HelmetProvider>
