@@ -253,8 +253,15 @@ export class ContactsController {
       for (const candidate of candidates) {
         const phoneNumber = candidate.people?.phones?.primaryPhoneNumber || candidate.phoneNumber?.primaryPhoneNumber;
         const email = candidate.people?.emails?.primaryEmail || candidate.email?.primaryEmail;
-        const firstName = candidate.people?.name?.firstName || '';
-        const lastName = candidate.people?.name?.lastName || '';
+        const nameParts = typeof candidate.name === 'string' ? candidate.name.trim().split(/\s+/) : [];
+        const firstName =
+          candidate.people?.name?.firstName ||
+          nameParts[0] ||
+          '';
+        const lastName =
+          candidate.people?.name?.lastName ||
+          nameParts.slice(1).join(' ') ||
+          '';
         const jobTitle = candidate.people?.jobTitle || candidate.jobTitle || '';
         const companyName = candidate.jobCompanyName || '';
 

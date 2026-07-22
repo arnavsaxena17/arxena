@@ -1035,9 +1035,22 @@ export class IncomingWhatsappMessages {
     const normalizedRecipientPhoneNumber =
       incomingRecipientIdentifierId.replace(/[^\d+]/g, '').replace(/\+/g, '');
 
+    // Match stored 10-digit phones (e.g. 9136465636) when Unipile sends
+    // country-code form (e.g. 919136465636). Same as Facebook/Baileys paths.
+    const phoneNumberForLookup =
+      normalizedPhoneNumber.length > 10
+        ? normalizedPhoneNumber.slice(-10)
+        : normalizedPhoneNumber;
+
+    if (phoneNumberForLookup !== normalizedPhoneNumber) {
+      console.log(
+        'WhatsApp Unipile phone number is more than 10 digits, using last 10 for lookup:',
+        { full: normalizedPhoneNumber, lookup: phoneNumberForLookup },
+      );
+    }
 
     const recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_whatsappMessage" 
-      WHERE ("_whatsappMessage"."phoneFrom" ILIKE '%${normalizedPhoneNumber}%' OR "_whatsappMessage"."phoneTo" ILIKE '%${normalizedPhoneNumber}%')
+      WHERE ("_whatsappMessage"."phoneFrom" ILIKE '%${phoneNumberForLookup}%' OR "_whatsappMessage"."phoneTo" ILIKE '%${phoneNumberForLookup}%')
       ORDER BY "updatedAt" DESC
       LIMIT 1`;
 
@@ -1057,14 +1070,28 @@ export class IncomingWhatsappMessages {
       return null;
     }
 
+    const phoneDigitsMatch = (stored: string | null | undefined, candidate: string) => {
+      if (!stored || !candidate) {
+        return false;
+      }
+      const storedDigits = stored.replace(/[^\d]/g, '');
+      return (
+        storedDigits === candidate ||
+        storedDigits.endsWith(candidate) ||
+        candidate.endsWith(storedDigits)
+      );
+    };
+
     const isMessageDuplicate = recentMessage.some((msg) => {
       const messageMatches = msg.message === message;
       const senderMatches =
-        msg.phoneFrom === normalizedPhoneNumber ||
-        msg.phoneTo === normalizedPhoneNumber;
+        phoneDigitsMatch(msg.phoneFrom, normalizedPhoneNumber) ||
+        phoneDigitsMatch(msg.phoneTo, normalizedPhoneNumber) ||
+        phoneDigitsMatch(msg.phoneFrom, phoneNumberForLookup) ||
+        phoneDigitsMatch(msg.phoneTo, phoneNumberForLookup);
       const recipientMatches =
-        msg.phoneFrom === normalizedRecipientPhoneNumber ||
-        msg.phoneTo === normalizedRecipientPhoneNumber;
+        phoneDigitsMatch(msg.phoneFrom, normalizedRecipientPhoneNumber) ||
+        phoneDigitsMatch(msg.phoneTo, normalizedRecipientPhoneNumber);
 
       return messageMatches && senderMatches && recipientMatches;
     });
@@ -1073,7 +1100,7 @@ export class IncomingWhatsappMessages {
       return null;
     }
 
-    const personQuery = `SELECT * FROM ${dataSourceSchema}.person WHERE "person"."phonesPrimaryPhoneNumber" ILIKE '%${normalizedPhoneNumber}%'`;
+    const personQuery = `SELECT * FROM ${dataSourceSchema}.person WHERE "person"."phonesPrimaryPhoneNumber" ILIKE '%${phoneNumberForLookup}%'`;
 
     const person = await this.workspaceQueryService.executeRawQuery(
       personQuery,
@@ -1085,6 +1112,9 @@ export class IncomingWhatsappMessages {
       console.log(
         'No person found for WhatsApp Unipile phone number:',
         normalizedPhoneNumber,
+        '(looked up as',
+        phoneNumberForLookup,
+        ')',
       );
 
       return null;
