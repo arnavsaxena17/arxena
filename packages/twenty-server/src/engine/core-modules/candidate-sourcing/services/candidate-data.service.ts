@@ -7,6 +7,7 @@ import {
 
 import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { streamToBuffer } from 'src/utils/stream-to-buffer';
 
 import { ResumeReadParseUploadService } from './resume-read-parse-upload.service';
@@ -41,6 +42,7 @@ export class CandidateDataService {
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly fileStorageService: FileStorageService,
     private readonly resumeReadParseUploadService: ResumeReadParseUploadService,
+    private readonly workspaceQueryService: WorkspaceQueryService,
   ) {}
 
   async fetchCandidatesForJob(
@@ -103,7 +105,22 @@ export class CandidateDataService {
       const processedCandidates = this.processCandidateData(allCandidates);
 
       if (options?.includeResumeText) {
-        await this.attachResumeTextToCandidates(processedCandidates);
+        const workspaceId =
+          await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+        if (!workspaceId) {
+          this.logger.warn(
+            'Cannot load resume text: workspaceId missing from API token',
+          );
+          for (const candidate of processedCandidates) {
+            delete candidate._attachments;
+          }
+        } else {
+          await this.attachResumeTextToCandidates(
+            processedCandidates,
+            workspaceId,
+          );
+        }
       } else {
         for (const candidate of processedCandidates) {
           delete candidate._attachments;
@@ -119,13 +136,18 @@ export class CandidateDataService {
 
   /**
    * Load CV attachment text onto each candidate as `resume` for AI filter context.
+   * Files are stored at `workspace-{workspaceId}/{folder}/{filename}` (local or S3).
    */
   async attachResumeTextToCandidates(
     candidates: CandidateData[],
+    workspaceId: string,
   ): Promise<void> {
     for (const candidate of candidates) {
       try {
-        const resumeText = await this.loadResumeTextForCandidate(candidate);
+        const resumeText = await this.loadResumeTextForCandidate(
+          candidate,
+          workspaceId,
+        );
         if (resumeText) {
           candidate.resume = resumeText;
           this.logger.log(
@@ -148,6 +170,7 @@ export class CandidateDataService {
 
   private async loadResumeTextForCandidate(
     candidate: CandidateData,
+    workspaceId: string,
   ): Promise<string | null> {
     const attachment = this.pickResumeAttachment(candidate._attachments || []);
     if (!attachment?.fullPath) {
@@ -168,12 +191,21 @@ export class CandidateDataService {
     }
 
     const lastSlashIndex = normalizedPath.lastIndexOf('/');
-    const folderPath =
+    const relativeFolderPath =
       lastSlashIndex >= 0 ? normalizedPath.substring(0, lastSlashIndex) : '';
     const storageFileName =
       lastSlashIndex >= 0
         ? normalizedPath.substring(lastSlashIndex + 1)
         : normalizedPath;
+
+    // Match FileService.getFileStream / FileUploadService storage layout
+    const folderPath = relativeFolderPath.startsWith('workspace-')
+      ? relativeFolderPath
+      : `workspace-${workspaceId}/${relativeFolderPath}`;
+
+    this.logger.log(
+      `Loading resume for candidate ${candidate.id} from ${folderPath}/${storageFileName}`,
+    );
 
     const fileStream = await this.fileStorageService.read({
       folderPath,
