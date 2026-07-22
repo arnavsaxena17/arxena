@@ -16,6 +16,7 @@ import { UnipileMessageWebhook } from '../../types/unipile-webhook.types';
 import { EngagedCandidateQueueService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/engaged-candidate-queue.service';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
+import { buildIncomingAttachmentChatReply } from 'src/engine/core-modules/arx-chat/utils/unipile-attachment-message.util';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
@@ -299,7 +300,10 @@ export class IncomingWhatsappMessages {
       }
 
       // Create and update the message
-      const chatReply = message ?? (payload.attachments ? 'Attachment Received' : '');
+      const chatReply = buildIncomingAttachmentChatReply(
+        message,
+        payload.attachments,
+      );
       await this.createAndUpdateIncomingCandidateChatMessage(
         {
           chatReply,
@@ -444,8 +448,12 @@ export class IncomingWhatsappMessages {
         return;
       }
 
-      // Create and update the message
-      const chatReply = message ?? (payload.attachments ? 'Attachment Received' : '');
+      // Create and update the message — document attachments become "CV Received"
+      // so chat history / LLM agents know a resume arrived (not a blank/generic msg).
+      const chatReply = buildIncomingAttachmentChatReply(
+        message,
+        payload.attachments,
+      );
       await this.createAndUpdateIncomingCandidateChatMessage(
         {
           chatReply,
@@ -1480,7 +1488,7 @@ export class IncomingWhatsappMessages {
           };
 
           const replyObject = {
-            chatReply: chatReply || 'Attachment Received',
+            chatReply: chatReply || 'CV Received',
             whatsappDeliveryStatus: 'receivedFromCandidate',
             phoneNumberFrom: whatsappIncomingMessage.phoneNumberFrom,
             whatsappMessageId:

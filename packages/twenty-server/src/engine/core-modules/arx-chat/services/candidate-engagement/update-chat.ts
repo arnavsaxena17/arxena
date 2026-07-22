@@ -25,6 +25,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { StageWiseClassification } from 'src/engine/core-modules/arx-chat/services/llm-agents/stage-classification';
 import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
+import { buildIncomingAttachmentChatReply } from 'src/engine/core-modules/arx-chat/utils/unipile-attachment-message.util';
 import { Semaphore } from 'src/engine/core-modules/arx-chat/utils/semaphore';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
@@ -1383,30 +1384,10 @@ export class UpdateChat {
   private extractUnipileMessageContent(
     unipileMessage: UnipileSyncMessageItem,
   ): string {
-    const text = unipileMessage.text?.trim();
-    if (text) {
-      return text;
-    }
-
-    const attachments = unipileMessage.attachments ?? [];
-    if (attachments.length > 0) {
-      const attachment = attachments[0];
-      if (attachment.type === 'audio') {
-        return '[Audio Message]';
-      }
-      if (attachment.type === 'img') {
-        return '[Image]';
-      }
-      if (attachment.type === 'video') {
-        return '[Video]';
-      }
-      if (attachment.type === 'file') {
-        return '[Document]';
-      }
-      return 'Attachment Received';
-    }
-
-    return '';
+    return buildIncomingAttachmentChatReply(
+      unipileMessage.text,
+      unipileMessage.attachments,
+    );
   }
 
   private determineUnipileMessageType(

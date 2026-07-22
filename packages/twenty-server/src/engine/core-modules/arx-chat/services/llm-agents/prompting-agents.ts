@@ -258,6 +258,7 @@ export class PromptingAgents {
       lastName: nameProcessor.masterDataJson.last_name
     };
 
+    const dayText = this.getCallAvailabilityDayText();
     const variables = {
       candidate: candidateWithProcessedName,
       jobProfile: candidate?.jobs,
@@ -266,6 +267,7 @@ export class PromptingAgents {
       formattedQuestions: formattedQuestions,
       mannerOfAskingQuestions: mannerOfAskingQuestions,
       workingConditions: workingConditions,
+      dayText,
     };
 
     const SYSTEM_PROMPT_STRINGIFIED = await this.getPromptByJobIdAndName(
@@ -290,6 +292,15 @@ ${firstChatMessage}`;
     return SYSTEM_PROMPT_WITH_FORMATTING;
   }
 
+  private getCallAvailabilityDayText(): 'today' | 'tomorrow' {
+    const currentISTTime = new Date().toLocaleString('en-US', {
+      timeZone: 'Asia/Kolkata',
+    });
+    const currentHour = new Date(currentISTTime).getHours();
+
+    return currentHour < 17 ? 'today' : 'tomorrow';
+  }
+
   private buildStartChatFirstMessage(variables: {
     candidate: { firstName?: string };
     recruiterProfile: {
@@ -303,8 +314,10 @@ ${firstChatMessage}`;
       companyDetails?: string;
       jobLocation?: string;
     };
+    dayText?: 'today' | 'tomorrow';
   }): string {
     const { candidate, recruiterProfile, jobProfile } = variables;
+    const dayText = variables.dayText ?? this.getCallAvailabilityDayText();
     const companyDescription = recruiterProfile?.companyDescription?.trim();
     const companySuffix = companyDescription ? `, ${companyDescription}` : '';
     const companyDetails = jobProfile?.companyDetails?.trim() ?? '';
@@ -317,7 +330,7 @@ ${firstChatMessage}`;
       '',
       `I'm hiring for a ${jobProfile?.name ?? ''} role${companyDetailsSegment} based out of ${jobProfile?.jobLocation ?? ''} and got your application on my job posting. I believe this might be a good fit.`,
       '',
-      'Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?',
+      `Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime ${dayText}?`,
     ].join('\n');
   }
 

@@ -166,7 +166,7 @@ export const prompts = [
         Your first message when you receive the prompt "startChat" is: Hey \${candidate.firstName},
         I'm \${recruiterProfile.firstName}, \${recruiterProfile.jobTitle} at \${recruiterProfile.companyName}, \${recruiterProfile?.companyDescription}.
         I'm hiring for a \${jobProfile.name} role for \${jobProfile?.companyDetails} based out of \${jobProfile?.jobLocation} and got your application on my job posting. I believe this might be a good fit.
-        Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?`,
+        Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime \${dayText}?`,
   },
   {
     prompt: `You are an AI assistant helping recruiters classify the status of their candidate conversations. You will be analyzing chat conversations between recruiters and potential candidates to determine the current stage and progress of recruitment.
