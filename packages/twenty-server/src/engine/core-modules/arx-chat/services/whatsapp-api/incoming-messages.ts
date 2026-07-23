@@ -266,6 +266,7 @@ export class IncomingWhatsappMessages {
       linkedinUrlTo = account_info?.user_id ? `https://linkedin.com/in/${account_info.user_id}` : '';
     }
 
+    // Self messages must use messageFromSelf so candidate lookup uses phoneNumberTo (recipient)
     const linkedinIncomingMessage: chatMessageType = {
       phoneNumberFrom: linkedinUrlFrom,
       phoneNumberTo: linkedinUrlTo,
@@ -273,7 +274,7 @@ export class IncomingWhatsappMessages {
         role: isFromConnectedUser ? 'assistant' : 'user', 
         content: message 
       }],
-      messageType: 'linkedin',
+      messageType: isFromConnectedUser ? 'messageFromSelf' : 'linkedin',
     };
 
     console.log('Final LinkedIn URL from (phoneNumberFrom):', linkedinUrlFrom);
@@ -411,12 +412,20 @@ export class IncomingWhatsappMessages {
     const recipient = payload.attendees.find(attendee => 
       attendee.attendee_provider_id !== sender.attendee_provider_id
     );
+
+    // For self messages, provider_chat_id is the candidate chat JID (e.g. 919819185599@s.whatsapp.net)
+    const providerChatPhone = payload.provider_chat_id
+      ? payload.provider_chat_id.split('@')[0]?.replace(/[^\d]/g, '') || ''
+      : '';
     
-    // If no explicit recipient, we fall back to the connected account's user_id
+    // If no explicit recipient, fall back to provider_chat_id (self msgs) or connected account user_id
     const phoneNumberTo =
       extractWhatsappPhoneNumber(recipient) ||
+      (isFromConnectedUser ? providerChatPhone : '') ||
       (account_info?.user_id ? String(account_info.user_id).replace(/[^\d+]/g, '') : '');
 
+    // Self messages must use messageFromSelf so candidate lookup uses phoneNumberTo (recipient),
+    // not phoneNumberFrom (connected account). Stored as assistant/botMessage for the candidate.
     const whatsappIncomingMessage: chatMessageType = {
       phoneNumberFrom: phoneNumberFrom,
       phoneNumberTo: phoneNumberTo,
@@ -424,7 +433,7 @@ export class IncomingWhatsappMessages {
         role: isFromConnectedUser ? 'assistant' : 'user', 
         content: message 
       }],
-      messageType: 'whatsapp-unipile',
+      messageType: isFromConnectedUser ? 'messageFromSelf' : 'whatsapp-unipile',
     };
 
     console.log('Final WhatsApp phone from (phoneNumberFrom):', phoneNumberFrom);

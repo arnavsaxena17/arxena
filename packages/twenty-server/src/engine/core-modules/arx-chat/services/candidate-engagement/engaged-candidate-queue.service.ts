@@ -244,6 +244,11 @@ export class EngagedCandidateQueueService {
         phoneNumberFrom = candidateProfileDataNodeObj.people.phones.primaryPhoneNumber.length == 10
           ? '91' + candidateProfileDataNodeObj.people.phones.primaryPhoneNumber
           : candidateProfileDataNodeObj.people.phones.primaryPhoneNumber;
+      } else if (candidateProfileDataNodeObj.phoneNumber?.primaryPhoneNumber) {
+        phoneNumberFrom =
+          candidateProfileDataNodeObj.phoneNumber.primaryPhoneNumber.length == 10
+            ? '91' + candidateProfileDataNodeObj.phoneNumber.primaryPhoneNumber
+            : candidateProfileDataNodeObj.phoneNumber.primaryPhoneNumber;
       } else {
         console.warn(`No phone number found for candidate ${candidateProfileDataNodeObj.id}, using empty string`);
       }
@@ -262,7 +267,17 @@ export class EngagedCandidateQueueService {
         phoneNumberTo = recruiterProfile?.linkedinUrl || '';
       }
 
+      // Bot/self messages are stored with recruiter as phoneFrom and candidate as phoneTo
+      // (same direction as outbound botMessage rows). Candidate messages stay inverted.
+      if (replyObject.isFromMe) {
+        const candidatePhone = phoneNumberFrom;
+        phoneNumberFrom = phoneNumberTo;
+        phoneNumberTo = candidatePhone;
+      }
+
       // Step 6: Create WhatsApp update message object
+      // Self/manual messages (isFromMe) are stored as botMessage with assistant role so chat
+      // history treats them as bot responses and engagementStatus stays false.
       const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
         id: uuidv4(),
         candidateProfile: candidateProfileDataNodeObj,
@@ -270,8 +285,13 @@ export class EngagedCandidateQueueService {
         candidateFirstName: candidateProfileDataNodeObj.name,
         phoneNumberFrom: phoneNumberFrom,
         phoneNumberTo: phoneNumberTo,
-        messages: [{ content: replyObject.chatReply }],
-        messageType: 'candidateMessage',
+        messages: [
+          {
+            role: replyObject.isFromMe ? 'assistant' : 'user',
+            content: replyObject.chatReply,
+          },
+        ],
+        messageType: replyObject.isFromMe ? 'botMessage' : 'candidateMessage',
         messageObj: mostRecentMessageObj,
         lastEngagementChatControl: candidateProfileDataNodeObj?.lastEngagementChatControl,
         whatsappDeliveryStatus: replyObject.whatsappDeliveryStatus,
@@ -322,13 +342,9 @@ export class EngagedCandidateQueueService {
 
       // Check for duplicate messages - but only for this specific candidate and job combination
       let isDuplicate = false;
-      
-      // Skip duplicate check for self-messages (messageFromSelf) as they are delivery confirmations
-      if (whatsappIncomingMessage.messageType === 'messageFromSelf') {
-        console.log('Skipping duplicate check for self-message (delivery confirmation)');
-        return { candidateProfileData, candidateJob, isDuplicate: false };
-      }
-      
+
+      // Self messages (manual or bot webhook echoes) still need content/participant dedupe.
+      // Bot outbound rows often use synthetic whatsappMessageIds, so ID-only dedupe is not enough.
       if (candidateProfileData.id && candidateJob.id) {
         console.log(`Checking for duplicates for candidate ${candidateProfileData.id} (job ${candidateJob.id})`);
         console.log(`Incoming message: "${whatsappIncomingMessage.messages[0].content}"`);
@@ -342,16 +358,6 @@ export class EngagedCandidateQueueService {
         ).fetchAllWhatsappMessages(candidateProfileData.id, apiToken);
         
         console.log(`Found ${existingMessages.length} existing messages for candidate ${candidateProfileData.id}`);
-        
-        // Debug: Log existing messages
-        // existingMessages.forEach((msg, index) => {
-        //   console.log(`Existing message ${index + 1}:`, {
-        //     message: msg.message,
-        //     phoneFrom: msg.phoneFrom,
-        //     phoneTo: msg.phoneTo,
-        //     id: msg.id
-        //   });
-        // });
         
         // Check if the exact same message content already exists for this candidate
         // Since candidateProfileData is already the correct candidate for the current job,
