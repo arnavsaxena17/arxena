@@ -1707,8 +1707,11 @@ export class CandidateSourcingController {
   async getPhoneNumberStatus(@Req() request: any): Promise<object> {
     try {
       console.log('Getting phone number status');
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-      const { phoneNumber, candidateId } = request.body;
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
+      const phoneNumber =
+        request.body?.phoneNumber || request.body?.phone_number;
 
       if (!phoneNumber) {
         return {
@@ -1717,22 +1720,41 @@ export class CandidateSourcingController {
         };
       }
 
-      console.log(`Getting status for phone number: ${phoneNumber}, candidate ID: ${candidateId}`);
+      console.log(`Getting status for phone number: ${phoneNumber}`);
 
-      // For now, return a basic status response
-      // You can implement actual phone number status checking logic here
-      const status = {
-        phoneNumber: phoneNumber,
-        candidateId: candidateId,
-        status: 'active', // or whatever status logic you need
-        lastSeen: new Date().toISOString(),
-        isOnline: true, // or implement actual online status checking
+      const personObj: PersonNode | undefined = await new FilterCandidates(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+      ).getPersonDetailsByPhoneNumber(String(phoneNumber), apiToken);
+
+      const candidateNode = personObj?.candidates?.edges?.[0]?.node;
+      const jobInfo = candidateNode?.jobs;
+
+      if (!candidateNode || !jobInfo) {
+        console.log(
+          'No candidate/job found for phone number, returning empty status payload',
+        );
+        return {
+          status: 'success',
+          job_name: '',
+          job_status: '',
+          job_id: '',
+          candidate_id: '',
+          person_id: personObj?.id || '',
+        };
+      }
+
+      const responseObj = {
+        status: 'success',
+        job_name: jobInfo?.name || '',
+        job_id: jobInfo?.id || '',
+        job_status: candidateNode?.status || '',
+        candidate_id: candidateNode?.id || '',
+        person_id: personObj?.id || '',
       };
 
-      return {
-        status: 'Success',
-        data: status,
-      };
+      console.log('get-phone-number-status response:', responseObj);
+      return responseObj;
     } catch (err) {
       console.error('Error getting phone number status:', err);
       return {
