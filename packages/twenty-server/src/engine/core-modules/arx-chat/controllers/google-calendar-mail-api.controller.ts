@@ -452,7 +452,7 @@ export class GoogleControllers {
       location: gptInputs?.location || 'Google Meet',
       description:
         gptInputs?.description ||
-        'This meeting is scheduled to discuss the role and the company.',
+        'This meeting is scheduled to discuss the candidate and the job.',
       start: {
         dateTime: startTimeUTC,
         timeZone: timeZone,
@@ -462,9 +462,9 @@ export class GoogleControllers {
         timeZone: timeZone,
       },
       attendees: [
-        { email: person.emails.primaryEmail },
-        { email: recruiterProfile.email },
-      ],
+        { email: person.emails.primaryEmail, responseStatus: 'accepted' },
+        { email: recruiterProfile.email, responseStatus: 'accepted' },
+      ].filter((attendee) => Boolean(attendee.email?.trim())),
       reminders: {
         useDefault: false,
         overrides: [

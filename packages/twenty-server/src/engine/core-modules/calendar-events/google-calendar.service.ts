@@ -133,24 +133,28 @@ export class GoogleCalendarService {
           },
         };
       }
-      calendar.events.insert(
-        {
-          auth: auth,
-          calendarId: "primary",
-          //@ts-ignore
-          resource: calendarEventDataObj,
-          conferenceDataVersion: 1,
-        },
-        function (err, event) {
-          if (err) {
-            console.log( "There was an error contacting the Calendar service: " + err );
-            return;
-          }
-          console.log("Event created: %s", JSON.stringify(event));
-          console.log("Event created: htmlLink%s", event.htmlLink);
-        }
-      );
-      return { status: "Event created successfully" };
+      const attendees = (calendarEventDataObj.attendees ?? [])
+        .filter((attendee) => Boolean(attendee?.email?.trim()))
+        .map((attendee) => ({
+          ...attendee,
+          responseStatus: attendee.responseStatus ?? 'accepted',
+        }));
+      calendarEventDataObj = {
+        ...calendarEventDataObj,
+        attendees,
+      };
+
+      const event = await calendar.events.insert({
+        auth: auth,
+        calendarId: "primary",
+        //@ts-ignore
+        resource: calendarEventDataObj,
+        conferenceDataVersion: 1,
+        sendUpdates: "all",
+      });
+      console.log("Event created: %s", JSON.stringify(event.data));
+      console.log("Event created: htmlLink%s", event.data?.htmlLink);
+      return { status: "Event created successfully", event: event.data };
     } catch (error) {
       throw new Error(`Error creating event: ${error.message}`);
     }

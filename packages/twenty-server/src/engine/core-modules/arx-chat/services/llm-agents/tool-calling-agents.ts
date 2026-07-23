@@ -361,13 +361,18 @@ export class ToolCallingAgents {
       location: gptInputs?.location || 'Google Meet',
       description:
         gptInputs?.description ||
-        'This meeting is scheduled to discuss the role and the company.',
+        'This meeting is scheduled to discuss the candidate and the job.',
       start: {
         dateTime: gptInputs?.startDateTime,
         timeZone: gptInputs?.timeZone,
       },
       end: { dateTime: gptInputs?.endDateTime, timeZone: gptInputs?.timeZone },
-      attendees: [{ email: candidate?.email?.primaryEmail || '' }],
+      attendees: [
+        {
+          email: candidate?.email?.primaryEmail || '',
+          responseStatus: 'accepted',
+        },
+      ].filter((attendee) => Boolean(attendee.email?.trim())),
       reminders: {
         useDefault: false,
         overrides: [

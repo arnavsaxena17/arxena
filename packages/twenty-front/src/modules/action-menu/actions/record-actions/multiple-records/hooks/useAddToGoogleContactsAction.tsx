@@ -64,13 +64,22 @@ export const useAddToGoogleContactsAction: ActionHookWithObjectMetadataItem =
     });
 
     const shouldBeRegistered = true;
+
+    const numberOfSelectedRecords = isJobRoute
+      ? (tableStateAtom?.selectedRowIds?.length ?? 0)
+      : (contextStoreNumberOfSelectedRecords ?? 0);
+
     const [isAddToGoogleContactsModalOpen, setIsAddToGoogleContactsModalOpen] =
       useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [pendingCandidateIds, setPendingCandidateIds] = useState<
+      string[] | null
+    >(null);
 
     const resetState = useCallback(() => {
       setIsProcessing(false);
+      setPendingCandidateIds(null);
       setNumberOfSelectedRecords(0);
       setTargetedRecordsRule({
         mode: 'selection',
@@ -107,30 +116,25 @@ export const useAddToGoogleContactsAction: ActionHookWithObjectMetadataItem =
       [tokenPair?.accessToken?.token],
     );
 
-    const validateAndGetRecords = useCallback(async () => {
+    const validateAndGetCandidateIds = useCallback(async () => {
       let recordsToAddToGoogleContacts;
 
       if (isJobRoute && tableStateAtom?.selectedRowIds?.length > 0) {
         const selectedIdsSet = new Set(tableStateAtom.selectedRowIds);
 
-        // Filter database candidates (from rawData) - match by id
         const databaseCandidates = tableStateAtom.rawData.filter((record) =>
           selectedIdsSet.has(record.id),
         );
 
-        // Filter LinkedIn/search candidates (from searchResults) - match by id first, then tempId
-        // Since selectedRowIds now prefers permanent id, check id first
         const searchCandidates = searchResults.filter((record) => {
           const recordId = record?.id;
           const recordTempId = record?.tempId;
-          // Check if selectedRowIds contains either the permanent id or tempId
           return (
             (recordId && selectedIdsSet.has(recordId)) ||
             (recordTempId && selectedIdsSet.has(recordTempId))
           );
         });
 
-        // Merge both types of candidates
         recordsToAddToGoogleContacts = [
           ...databaseCandidates,
           ...searchCandidates,
@@ -139,41 +143,57 @@ export const useAddToGoogleContactsAction: ActionHookWithObjectMetadataItem =
         recordsToAddToGoogleContacts = await fetchAllRecordIds();
       }
 
-      if (!recordsToAddToGoogleContacts || recordsToAddToGoogleContacts.length === 0) {
+      if (
+        !recordsToAddToGoogleContacts ||
+        recordsToAddToGoogleContacts.length === 0
+      ) {
         throw new Error('No candidates selected to add to Google Contacts');
       }
 
-      const recordIdsToAddToGoogleContacts = recordsToAddToGoogleContacts
-        .map(
-          (record) =>
-            (record as { tempId?: string; id: string | null }).tempId || record.id,
-        )
-        .filter((id): id is string => id !== null && id !== undefined);
+      const candidateIds = [
+        ...new Set(
+          recordsToAddToGoogleContacts
+            .map(
+              (record) =>
+                (record as { tempId?: string; id: string | null }).tempId ||
+                record.id,
+            )
+            .filter((id): id is string => id !== null && id !== undefined),
+        ),
+      ];
 
-      return { recordIdsToAddToGoogleContacts };
-    }, [
-      fetchAllRecordIds,
-      isJobRoute,
-      objectMetadataItem.nameSingular,
-      searchResults,
-      tableStateAtom,
-    ]);
+      if (candidateIds.length === 0) {
+        throw new Error('No valid candidate ids to add to Google Contacts');
+      }
+
+      return candidateIds;
+    }, [fetchAllRecordIds, isJobRoute, searchResults, tableStateAtom]);
 
     const handleAddToGoogleContactsClick = useCallback(async () => {
       if (isProcessing) {
-        enqueueSnackBar('Adding candidates to Google Contacts is already in progress', {
-          variant: SnackBarVariant.Warning,
-          duration: 3000,
+        enqueueSnackBar(
+          'Adding candidates to Google Contacts is already in progress',
+          {
+            variant: SnackBarVariant.Warning,
+            duration: 3000,
+          },
+        );
+        return;
+      }
+
+      if (!pendingCandidateIds?.length) {
+        enqueueSnackBar('No candidates selected to add to Google Contacts', {
+          variant: SnackBarVariant.Error,
+          duration: 5000,
         });
         return;
       }
 
       try {
         setIsProcessing(true);
-        const { recordIdsToAddToGoogleContacts } = await validateAndGetRecords();
 
         const result = await sendAddToGoogleContactsRequest(
-          recordIdsToAddToGoogleContacts,
+          pendingCandidateIds,
           objectMetadataItem.nameSingular,
         );
 
@@ -210,7 +230,7 @@ export const useAddToGoogleContactsAction: ActionHookWithObjectMetadataItem =
       }
     }, [
       isProcessing,
-      validateAndGetRecords,
+      pendingCandidateIds,
       sendAddToGoogleContactsRequest,
       objectMetadataItem.nameSingular,
       enqueueSnackBar,
@@ -228,7 +248,8 @@ export const useAddToGoogleContactsAction: ActionHookWithObjectMetadataItem =
 
       try {
         setIsProcessing(true);
-        await validateAndGetRecords();
+        const ids = await validateAndGetCandidateIds();
+        setPendingCandidateIds(ids);
         setIsAddToGoogleContactsModalOpen(true);
       } catch (error) {
         enqueueSnackBar(
@@ -241,7 +262,12 @@ export const useAddToGoogleContactsAction: ActionHookWithObjectMetadataItem =
       } finally {
         setIsProcessing(false);
       }
-    }, [shouldBeRegistered, isProcessing, validateAndGetRecords, enqueueSnackBar]);
+    }, [
+      shouldBeRegistered,
+      isProcessing,
+      validateAndGetCandidateIds,
+      enqueueSnackBar,
+    ]);
 
     const confirmationModal = (
       <ConfirmationModal
@@ -253,7 +279,7 @@ export const useAddToGoogleContactsAction: ActionHookWithObjectMetadataItem =
           }
         }}
         title={'Add to Google Contacts'}
-        subtitle={`Are you sure you want to add ${contextStoreNumberOfSelectedRecords} selected candidate(s) to Google Contacts?`}
+        subtitle={`Are you sure you want to add ${pendingCandidateIds?.length ?? numberOfSelectedRecords} selected candidate(s) to Google Contacts?`}
         onConfirmClick={handleAddToGoogleContactsClick}
         deleteButtonText={'Add to Google Contacts'}
         confirmButtonAccent="blue"

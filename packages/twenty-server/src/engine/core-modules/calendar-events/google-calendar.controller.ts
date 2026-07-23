@@ -35,9 +35,17 @@ export class GoogleCalendarController {
     @Query('timeMax') timeMax?: string
   ): Promise<object> {
     const apiToken = request?.headers?.authorization?.split(' ')[1] || "";
+    const resolvedTimeMin =
+      timeMin || (request?.query?.timeMin as string | undefined);
+    const resolvedTimeMax =
+      timeMax || (request?.query?.timeMax as string | undefined);
     try {
       const auth = await this.googleCalendarService.authorize(apiToken);
-      const events = await this.googleCalendarService.listEvents(auth, timeMin, timeMax);
+      const events = await this.googleCalendarService.listEvents(
+        auth,
+        resolvedTimeMin,
+        resolvedTimeMax,
+      );
       return { 
         status: "success",
         data: events 

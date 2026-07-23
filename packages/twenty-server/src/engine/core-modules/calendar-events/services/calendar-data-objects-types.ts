@@ -13,6 +13,7 @@ export interface CalendarEventType {
     },
     attendees: {
         email: string
+        responseStatus?: 'needsAction' | 'declined' | 'tentative' | 'accepted'
     }[],
     reminders: {
         useDefault: boolean,
