@@ -19,6 +19,22 @@ export { CalendarChannelContactAutoCreationPolicy } from './CalendarChannelConta
 export { CalendarChannelSyncStage } from './CalendarChannelSyncStage';
 export { CalendarChannelSyncStatus } from './CalendarChannelSyncStatus';
 export { CalendarChannelVisibility } from './CalendarChannelVisibility';
+export type {
+  LinkedInSearchType,
+  LinkedInSearchCategory,
+  SearchAiFilterField,
+  AiFilterConfig,
+  AiFiltersResponse,
+  HandsontableFilterType,
+  HandsontableFilterCondition,
+  HandsontableFilter,
+  FilterStrategy,
+  FiltersResponse,
+  SortOrder,
+  SortColumn,
+  SortStrategy,
+  SortsResponse,
+} from './CandidateSearchTypes';
 export type { CommandMenuConfirmationModalResult } from './CommandMenuConfirmationModalResult';
 export type { CommandMenuConfirmationModalResultBrowserEventDetail } from './CommandMenuConfirmationModalResultBrowserEventDetail';
 export type { CommandMenuContextApi } from './CommandMenuContextApi';
@@ -140,6 +156,7 @@ export type { IsExactly } from './IsExactly';
 export type { IsGreaterOrEqual } from './IsGreaterOrEqual.type';
 export type { IsNever } from './IsNever.type';
 export type { IsSerializedRelation } from './IsSerializedRelation.type';
+export type { ProcessCandidateEngagementJobData } from './job-data';
 export type { LogicFunctionEvent } from './LogicFunctionEvent';
 export type { LogicFunctionHttpResponse } from './LogicFunctionResponse';
 export {

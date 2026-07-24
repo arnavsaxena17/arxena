@@ -77,6 +77,11 @@
       "import": "./dist/application.mjs",
       "require": "./dist/application.cjs"
     },
+    "./arx": {
+      "types": "./dist/arx/index.d.ts",
+      "import": "./dist/arx.mjs",
+      "require": "./dist/arx.cjs"
+    },
     "./constants": {
       "types": "./dist/constants/index.d.ts",
       "import": "./dist/constants.mjs",
@@ -86,6 +91,11 @@
       "types": "./dist/database-events/index.d.ts",
       "import": "./dist/database-events.mjs",
       "require": "./dist/database-events.cjs"
+    },
+    "./graphql": {
+      "types": "./dist/graphql/index.d.ts",
+      "import": "./dist/graphql.mjs",
+      "require": "./dist/graphql.cjs"
     },
     "./i18n": {
       "types": "./dist/i18n/index.d.ts",
@@ -147,8 +157,10 @@
     "dist",
     "ai",
     "application",
+    "arx",
     "constants",
     "database-events",
+    "graphql",
     "i18n",
     "logic-function",
     "metadata",
@@ -169,11 +181,17 @@
       "application": [
         "dist/application/index.d.ts"
       ],
+      "arx": [
+        "dist/arx/index.d.ts"
+      ],
       "constants": [
         "dist/constants/index.d.ts"
       ],
       "database-events": [
         "dist/database-events/index.d.ts"
+      ],
+      "graphql": [
+        "dist/graphql/index.d.ts"
       ],
       "i18n": [
         "dist/i18n/index.d.ts"

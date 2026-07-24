@@ -23,6 +23,44 @@ export { upsertIntoArrayOfObjectsComparingId } from './array/upsertIntoArrayOfOb
 export { upsertPropertiesOfItemIntoArrayOfObjectsComparingId } from './array/upsertPropertiesOfItemIntoArrayOfObjectsComparingId';
 export { assertUnreachable } from './assertUnreachable';
 export { base64UrlEncode } from './base64UrlEncode';
+export type {
+  CalendlyUtmParams,
+  BuildCalendlyUrlWithPrefillOptions,
+} from './calendly/buildCalendlyUrlWithPrefill';
+export {
+  applyCalendlyInlineEmbedParams,
+  formatCalendlyInviteeName,
+  buildCalendlyUrlWithPrefill,
+} from './calendly/buildCalendlyUrlWithPrefill';
+export {
+  attachClientGeoToLinkedinBody,
+  attachClientGeoToCookieAuth,
+  buildClientGeoHeaders,
+} from './clientGeo/attachClientGeoToRecord';
+export type {
+  ClientGeoSession,
+  ClientGeoLinkedinBodyFields,
+} from './clientGeo/clientGeoSession.types';
+export {
+  CLIENT_GEO_IP_HEADER,
+  CLIENT_GEO_COUNTRY_HEADER,
+  CLIENT_GEO_SESSION_STORAGE_KEY,
+  CLIENT_GEO_SESSION_TTL_MS,
+} from './clientGeo/clientGeoSession.types';
+export {
+  getOrFetchClientGeoSession,
+  clearClientGeoSessionCache,
+} from './clientGeo/clientGeoSessionCache';
+export { fetchClientGeoFromIpinfo } from './clientGeo/fetchClientGeoFromIpinfo';
+export type { CdnCountryHeaderMatch } from './clientGeo/getCountryCodeFromCdnHeaders';
+export {
+  CDN_COUNTRY_HEADER_NAMES,
+  getCountryCodeFromCdnHeaders,
+} from './clientGeo/getCountryCodeFromCdnHeaders';
+export { isPrivateOrLocalClientIp } from './clientGeo/isPrivateOrLocalClientIp';
+export { lookupCountryByIp } from './clientGeo/lookupCountryByIp';
+export { resolveClientIpinfoToken } from './clientGeo/resolveClientIpinfoToken';
+export { resolveIpinfoToken } from './clientGeo/resolveIpinfoToken';
 export { conditionalAvailabilityParser } from './command-menu-items/conditionalAvailabilityParser';
 export { evaluateConditionalAvailabilityExpression } from './command-menu-items/evaluateConditionalAvailabilityExpression';
 export { interpolateCommandMenuItemTemplate } from './command-menu-items/interpolateCommandMenuItemTemplate';
@@ -176,13 +214,156 @@ export {
   getLogoUrlFromDomainName,
 } from './image/getLogoUrlFromDomainName';
 export { getUniqueConstraintsFields } from './indexMetadata/getUniqueConstraintsFields';
+export type {
+  UnipileLinkedinProductSeat,
+  UnipileAccountOwnerProfile,
+} from './inferLinkedInSearchTypeFromUnipileOwnerProfile';
+export {
+  inferLinkedInSearchTypeFromUnipileOwnerProfile,
+  scoreLinkedinUnipileOwnerProfileCapability,
+} from './inferLinkedInSearchTypeFromUnipileOwnerProfile';
+export { isLikelyBrowserLogoRequest } from './is-likely-browser-logo-request';
+export { isLikelyBrowserRequest } from './is-likely-browser-request';
 export { isAutoSelectModelId } from './isAutoSelectModelId';
 export { fastDeepEqual } from './json/fast-deep-equal';
+export {
+  LINKEDIN_UNIPILE_CLASSIC_SEARCH_PAGE_LIMIT,
+  LINKEDIN_UNIPILE_SALES_NAVIGATOR_SEARCH_PAGE_LIMIT,
+  LINKEDIN_UNIPILE_RECRUITER_SEARCH_PAGE_LIMIT,
+  LINKEDIN_UNIPILE_ESTIMATE_PROBE_PAGE_LIMIT,
+  LINKEDIN_UNIPILE_SEARCH_PAGE_LIMITS,
+  getLinkedInUnipileSearchPageLimit,
+  getLinkedInUnipileEstimateProbePageLimit,
+  computeLinkedInUnipilePagesRequired,
+} from './linkedinUnipileSearchPageLimit';
 export { getAppPath } from './navigation/getAppPath';
 export { getSettingsPath } from './navigation/getSettingsPath';
+export type {
+  OrgChartGradeTier,
+  OrgChartGradeVisibility,
+  OrgChartNodeDataFilterOptions,
+} from './orgchart/filterOrgChartNodeDataArray';
+export {
+  DEFAULT_ORG_CHART_GRADE_VISIBILITY,
+  hasActiveOrgChartGradeFilter,
+  hasMeaningfulOrgChartCountryFilter,
+  hasMeaningfulOrgChartFunctionRootFilter,
+  filterOrgChartNodeDataArray,
+} from './orgchart/filterOrgChartNodeDataArray';
+export { getProxiedImageUrl } from './orgchart/getProxiedImageUrl';
+export { isValidLinkedInProfileUrl } from './orgchart/isValidLinkedInProfileUrl';
+export type {
+  OrgChartCompanyAliasGroup,
+  OrgChartS3LookupEntry,
+} from './orgchart/orgChartCompanyAliases';
+export {
+  ORG_CHART_COMPANY_ALIAS_GROUPS,
+  normalizeOrgChartCompanySlug,
+  resolveOrgChartCompanyAliasGroup,
+  resolveOrgChartCanonicalCompanyId,
+  collectOrgChartCompanyIdsForLookup,
+  buildOrgChartS3LookupPlan,
+  shouldRedirectOrgChartCompanySlug,
+  buildCanonicalOrgChartPath,
+} from './orgchart/orgChartCompanyAliases';
+export type {
+  JsonValue,
+  RawOrgNode,
+  NodeState,
+  OrgChartData,
+  OrgChartNodeData,
+} from './orgchart/orgChartDataUtils';
+export {
+  isMaskedName,
+  extractOrgData,
+  processOrgChartToNodeData,
+} from './orgchart/orgChartDataUtils';
+export {
+  orgChartSlotHasEmailForOutreach,
+  orgChartSlotHasPhoneForOutreach,
+  orgChartNodeHasOutreachLinkedin,
+  orgChartFirstSlotWithLinkedin,
+  orgChartNodeHasOutreachPhone,
+  orgChartFirstSlotWithPhone,
+  orgChartNodeHasOutreachEmail,
+  orgChartFirstSlotWithEmail,
+  orgChartFirstSlotWithPhoneAndEmail,
+  orgChartNodeHasGoogleContactFields,
+  isOutreachLinkedInContextVisible,
+  isOutreachWhatsappContextVisible,
+  isOutreachGoogleContactContextVisible,
+  isOutreachEmailContextVisible,
+} from './orgchart/orgChartOutreachVisibility';
+export type { PublishSlugValidationResult } from './orgchart/orgChartPublishedSlug';
+export {
+  ORG_PUBLISHED_SLUG_MIN_LENGTH,
+  ORG_PUBLISHED_SLUG_MAX_LENGTH,
+  ORG_PUBLISHED_SLUG_PATTERN,
+  ORG_PUBLISHED_RESERVED_SLUGS,
+  sanitizePublishSlug,
+  resolveBrandPublishSlug,
+  buildDefaultPublishSlug,
+  normalizePublishSlug,
+  validatePublishSlug,
+} from './orgchart/orgChartPublishedSlug';
+export type { OrgchartSearchMode } from './orgchart/orgchartSearchMode';
+export { ORG_CHART_SEARCH_MODES } from './orgchart/orgchartSearchMode';
+export type {
+  OrgChartSignupUrlParams,
+  OrgChartSignupContext,
+} from './orgchart/orgChartSignupFromWebsite';
+export {
+  ORG_CHART_SIGNUP_SEARCH_PARAMS,
+  ORG_CHART_SIGNUP_CONTEXT_STORAGE_KEY,
+  ORG_CHART_SIGNUP_CONTEXT_COOKIE_NAME,
+  formatOrgChartSliceLabel,
+  stripOrgChartSignupSearchParams,
+  appendOrgChartSignupSearchParams,
+  persistOrgChartSignupContext,
+  readOrgChartSignupContext,
+  clearOrgChartSignupContext,
+  navigateToOrgChartSignup,
+  consumeOrgChartSignupContext,
+} from './orgchart/orgChartSignupFromWebsite';
+export type {
+  OtherFieldsRecord,
+  LegacyCandidateFieldValueEdge,
+  CandidateWithCustomFields,
+  LegacyFieldValueRow,
+} from './otherFields';
+export {
+  UPLOAD_OTHER_FIELDS_EXCLUDED_KEYS,
+  toSnakeCaseKey,
+  toCamelCaseKey,
+  questionTextToKey,
+  parseOtherFieldValue,
+  normalizeOtherFields,
+  buildOtherFieldsFromUnmapped,
+  mergeOtherFields,
+  otherFieldsToFlatRow,
+  candidateFieldValuesToOtherFields,
+  hasLegacyFieldValues,
+  isOtherFieldsEmpty,
+  getResolvedOtherFields,
+  getCandidateCustomField,
+  getValueFromCandidateRecord,
+  hasMeaningfulCandidateFieldValue,
+  collectOtherFieldKeys,
+  isJsonColumnEmpty,
+  buildOtherFieldsFromLegacyRows,
+  mergeChatQuestionsPreservingOrder,
+  questionsRequireAnswerRemap,
+  parseRowOtherFields,
+  remapOtherFieldsForQuestionChanges,
+} from './otherFields';
 export { parseJson } from './parseJson';
+export {
+  parsePrivacyConsentCookieValue,
+  readPrivacyConsentCookieFromDocument,
+} from './privacy-consent/parsePrivacyConsentCookie';
 export { removePropertiesFromRecord } from './removePropertiesFromRecord';
 export { removeUndefinedFields } from './removeUndefinedFields';
+export { resolveLinkedinUnipileAccountIdForWorkspaceMember } from './resolveLinkedinUnipileAccountIdForWorkspaceMember';
 export { resolveRichTextVariables } from './rich-text-variable-resolver';
 export { safeParseRelativeDateFilterJsonStringified } from './safeParseRelativeDateFilterJsonStringified';
 export { getGenericOperationName } from './sentry/getGenericOperationName';
@@ -194,7 +375,10 @@ export { capitalize } from './strings/capitalize';
 export { kebabToCamelCase } from './strings/kebabToCamelCase';
 export { pascalCase } from './strings/pascalCase';
 export { pascalToKebab } from './strings/pascalToKebab';
+export { toSlug, fromSlug } from './strings/slug';
 export { stringifySafely } from './strings/stringifySafely';
+export type { ToTitleCaseOptions } from './strings/toTitleCase';
+export { isMaskedOrAnonymized, toTitleCase } from './strings/toTitleCase';
 export { uncapitalize } from './strings/uncapitalize';
 export { getSubdomainSlugFromDisplayName } from './subdomain/getSubdomainSlugFromDisplayName';
 export type {
@@ -216,6 +400,36 @@ export { isMetadataGqlOperationSignature } from './typeguard/isMetadataGqlOperat
 export { isPlainObject } from './typeguard/isPlainObject';
 export { isRecordGqlOperationSignature } from './typeguard/isRecordGqlOperationSignature';
 export { throwIfNotDefined } from './typeguard/throwIfNotDefined';
+export type {
+  WorkspaceMemberProfileUnipileFields,
+  LinkedinBrowserMemberMatchResult,
+} from './unipileWorkspaceMemberMatch';
+export {
+  normalizeUnipileStatus,
+  isUnipileConnectedStatus,
+  isUnipileLinkedinUsableStatus,
+  normalizePhoneDigits,
+  extractLinkedinSlugFromUrl,
+  linkedinBrowserUrlMatchesMemberProfile,
+  shouldRestrictWhatsappByProfile,
+  shouldRestrictLinkedinByProfile,
+  whatsappAccountMatchesWorkspaceMemberProfile,
+  linkedinAccountMatchesWorkspaceMemberProfile,
+  linkedinAccountUsableForWorkspaceMemberProfile,
+  filterWhatsappAccountsForWorkspaceMemberProfile,
+  filterLinkedinAccountsForWorkspaceMemberProfile,
+  hasMatchingConnectedWhatsappAccount,
+  shouldShowWhatsappUnipileConnectQr,
+  hasMatchingConnectedLinkedinAccount,
+  hasMatchingUsableLinkedinAccount,
+  shouldBlockNewUnipileConnectionForStatus,
+  linkedinAccountIdentityMatchesWorkspaceMemberProfile,
+  whatsappAccountIdentityMatchesWorkspaceMemberProfile,
+  findLinkedinUnipileAccountSameIdentityForProfile,
+  findWhatsappUnipileAccountSameIdentityForProfile,
+  findLinkedinUnipileAccountBlockingNewConnectionForProfile,
+  findWhatsappUnipileAccountBlockingNewConnectionForProfile,
+} from './unipileWorkspaceMemberMatch';
 export { formatUpgradeCommandName } from './upgrade/formatUpgradeCommandName';
 export { absoluteUrlSchema } from './url/absoluteUrlSchema';
 export { buildSignedPath } from './url/buildSignedPath';
@@ -248,5 +462,32 @@ export { normalizeLocale } from './validation/normalizeLocale';
 export { getCountryCodesForCallingCode } from './validation/phones-value/getCountryCodesForCallingCode';
 export { isValidCountryCode } from './validation/phones-value/isValidCountryCode';
 export { resolveInput } from './variable-resolver';
+export {
+  isVerifiedGooglebot,
+  isVerifiedBingbot,
+  isVerifiedOpenAIBot,
+  isVerifiedSearchBot,
+  clearVerifiedSearchBotCacheForTests,
+} from './verified-search-bot';
 export { getViewLayoutFromViewType } from './views/getViewLayoutFromViewType';
 export { isWidgetViewType } from './views/isWidgetViewType';
+export type { WorkspaceMemberLinkedinProfileStorage } from './workspaceMemberLinkedinProfile';
+export {
+  parseWorkspaceMemberLinkedinProfile,
+  hasWorkspaceMemberLinkedinOwnerProfile,
+  hasWorkspaceMemberLinkedinFullProfile,
+  mergeWorkspaceMemberLinkedinProfile,
+  workspaceMemberLinkedinProfileMatchesAccountId,
+} from './workspaceMemberLinkedinProfile';
+export type {
+  WorkspaceMemberLinkedinCookieTokens,
+  WorkspaceMemberProfileGraphqlNode,
+  WorkspaceMemberProfilesGraphqlResponse,
+} from './workspaceMemberProfileGraphql';
+export {
+  workspaceMemberProfileFilterByMemberId,
+  extractWorkspaceMemberProfileNode,
+  parseWorkspaceMemberProfileUnipileFields,
+  parseWorkspaceMemberLinkedinCookieTokensFromGraphql,
+  workspaceMemberProfileUnipileAccountFieldName,
+} from './workspaceMemberProfileGraphql';
