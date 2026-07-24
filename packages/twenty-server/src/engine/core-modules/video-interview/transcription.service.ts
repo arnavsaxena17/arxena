@@ -1,0 +1,39 @@
+import { BadRequestException, Injectable } from '@nestjs/common';
+import * as fs from 'fs';
+import OpenAI from 'openai';
+
+@Injectable()
+export class TranscriptionService {
+  private openai: OpenAI;
+
+  constructor() {
+    this.openai = new OpenAI({
+      apiKey: process.env.OPENAI_KEY,
+    });
+  }
+
+  async transcribeAudio(audioFilePath: string): Promise<string> {
+    try {
+      const resp = await this.openai.audio.transcriptions.create({
+        file: fs.createReadStream(audioFilePath),
+        model: 'whisper-1',
+      });
+
+      const transcript = resp.text;
+      console.log("This is the transcript:", transcript);
+      // Content moderation check
+      // const response = await this.openai.moderations.create({
+      //   input: transcript,
+      // });
+
+      // if (response.results[0].flagged) {
+      //   throw new BadRequestException('Inappropriate content detected. Please try again.');
+      // }
+
+      return transcript;
+    } catch (error) {
+      console.log('Transcription error', error);
+      throw new BadRequestException('Error during transcription');
+    }
+  }
+}

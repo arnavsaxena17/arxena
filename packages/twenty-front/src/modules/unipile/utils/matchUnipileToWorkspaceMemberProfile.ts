@@ -1,0 +1,4 @@
+export {
+    extractLinkedinSlugFromUrl, filterLinkedinAccountsForWorkspaceMemberProfile, filterWhatsappAccountsForWorkspaceMemberProfile, hasMatchingConnectedLinkedinAccount, hasMatchingConnectedWhatsappAccount, hasMatchingUsableLinkedinAccount, linkedinAccountMatchesWorkspaceMemberProfile, normalizePhoneDigits, normalizeUnipileStatus, shouldRestrictLinkedinByProfile, shouldRestrictWhatsappByProfile, shouldShowWhatsappUnipileConnectQr, whatsappAccountMatchesWorkspaceMemberProfile, type WorkspaceMemberProfileUnipileFields
+} from 'twenty-shared';
+
