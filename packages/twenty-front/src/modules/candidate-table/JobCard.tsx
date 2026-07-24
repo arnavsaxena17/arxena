@@ -1,0 +1,443 @@
+import { IconUser } from 'twenty-ui/icons';
+import { MenuItem } from 'twenty-ui';
+import { IconBriefcase, IconCalendar, IconCheck, IconDotsVertical, IconMap, IconPencil, IconX } from 'twenty-ui/icons';
+import { gql, useMutation } from '@apollo/client';
+import styled from '@emotion/styled';
+import { IconHierarchy2 } from 'twenty-ui/icons';
+import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useRecoilState, useSetRecoilState } from 'recoil';
+
+import { useJobStatusToggle } from '@/candidate-table/hooks/useJobStatusToggle';
+import { jobsState } from '@/candidate-table/states/states';
+import { DropdownMenu } from '@/ui/layout/dropdown/components/DropdownMenu';
+import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
+import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
+import { isNavigationDrawerExpandedState } from '@/ui/navigation/states/isNavigationDrawerExpanded';
+import { navigationDrawerExpandedMemorizedState } from '@/ui/navigation/states/navigationDrawerExpandedMemorizedState';
+import { navigationMemorizedUrlState } from '@/ui/navigation/states/navigationMemorizedUrlState';
+import { UpdateOneJob } from 'twenty-shared';
+
+type JobCardProps = {
+  id: string;
+  name: string;
+  createdAt: string;
+  isActive: boolean;
+  jobLocation?: string;
+  searchName?: string;
+  candidateCount?: number;
+  isMergeMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (jobId: string) => void;
+  onOpenOrgChart?: (jobId: string, jobName: string) => void;
+};
+
+const StyledCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  padding: ${({ theme }) => theme.spacing(4)};
+  background-color: ${({ theme }) => theme.background.primary};
+  transition: all 0.2s ease-in-out;
+  height: 150px;
+  position: relative;
+  cursor: pointer;
+
+  &:hover {
+    box-shadow: ${({ theme }) => theme.boxShadow.light};
+    border-color: ${({ theme }) => theme.border.color.medium};
+  }
+`;
+
+const StyledCardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  gap: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledMergeCheckbox = styled.div`
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+`;
+
+const StyledCardTitle = styled.h3`
+  font-size: ${({ theme }) => theme.font.size.lg};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${({ theme }) => theme.font.color.primary};
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+  flex: 1;
+  min-width: 0;
+`;
+
+const StyledCardContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledInfoItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  min-height: 20px;
+`;
+
+const StyledCardFooter = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledActiveStatus = styled.div<{ isActive: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  color: ${({ isActive, theme }) => 
+    isActive ? theme.font.color.primary : theme.font.color.tertiary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+`;
+
+const StyledMenuButton = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.font.color.tertiary};
+  height: 24px;
+  width: 24px;
+  padding: 0;
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+
+  &:hover {
+    background-color: ${({ theme }) => theme.background.tertiary};
+  }
+`;
+
+const StyledDropdownMenu = styled(DropdownMenu)`
+  position: absolute;
+  top: 32px;
+  right: 0;
+  z-index: 1;
+  background-color: ${({ theme }) => theme.background.primary};
+  height: ${({ theme }) => theme.spacing(10)};
+  max-height: 100px;
+  width: 200px;
+`;
+
+const StyledEditableField = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  min-height: 20px;
+`;
+
+const StyledEditableInput = styled.input`
+  background: none;
+  border: 1px solid transparent;
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  flex: 1;
+  min-width: 0;
+  min-height: 20px;
+  
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.border.color.medium};
+    background-color: ${({ theme }) => theme.background.secondary};
+  }
+
+  &:hover {
+    border-color: ${({ theme }) => theme.border.color.light};
+  }
+`;
+
+const StyledEditableText = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  cursor: pointer;
+  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid transparent;
+  min-height: 20px;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.background.tertiary};
+    border-color: ${({ theme }) => theme.border.color.light};
+  }
+`;
+
+const StyledEditButton = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.font.color.tertiary};
+  padding: ${({ theme }) => theme.spacing(0.5)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+
+  &:hover {
+    background-color: ${({ theme }) => theme.background.tertiary};
+  }
+`;
+
+const StyledActionButtons = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(0.5)};
+`;
+
+const StyledOrgChartButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1.5)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  background: ${({ theme }) => theme.background.primary};
+  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  cursor: pointer;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.background.tertiary};
+    border-color: ${({ theme }) => theme.border.color.medium};
+  }
+`;
+
+export const JobCard = ({
+  id,
+  name,
+  createdAt,
+  isActive,
+  jobLocation,
+  searchName,
+  isMergeMode,
+  isSelected,
+  onToggleSelect,
+  onOpenOrgChart,
+}: JobCardProps) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const dropdownId = `job-card-dropdown-${id}`;
+  const { isDropdownOpen, toggleDropdown, closeDropdown } = useDropdown(dropdownId);
+  const [isNavigationDrawerExpanded, setIsNavigationDrawerExpanded] =
+    useRecoilState(isNavigationDrawerExpandedState);
+  const setNavigationDrawerExpandedMemorized = useSetRecoilState(
+    navigationDrawerExpandedMemorizedState,
+  );
+  const setNavigationMemorizedUrl = useSetRecoilState(
+    navigationMemorizedUrlState,
+  );
+  
+  const { toggleJobStatus } = useJobStatusToggle({ 
+    jobId: id, 
+    currentJobActive: isActive 
+  });
+  const [jobs, setJobs] = useRecoilState(jobsState);
+  const [updateJob] = useMutation(gql(UpdateOneJob));
+  const [isEditingSearchName, setIsEditingSearchName] = useState(false);
+  const [searchNameValue, setSearchNameValue] = useState(searchName || '');
+  
+  const formattedDate = new Date(createdAt).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const handleCardClick = (event: React.MouseEvent) => {
+    // Don't navigate if clicking on the menu button or dropdown
+    if ((event.target as HTMLElement).closest('.menu-container')) {
+      return;
+    }
+    if ((event.target as HTMLElement).closest('.merge-checkbox')) {
+      return;
+    }
+
+    if (isMergeMode && onToggleSelect) {
+      onToggleSelect(id);
+      return;
+    }
+
+    setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
+    setIsNavigationDrawerExpanded(true);
+    setNavigationMemorizedUrl(location.pathname + location.search);
+    navigate(`/job/${id}`);
+  };
+
+  const handleToggleJobStatus = () => {
+    toggleJobStatus();
+    closeDropdown();
+  };
+
+  const handleSearchNameEdit = () => {
+    setIsEditingSearchName(true);
+  };
+
+  const handleSearchNameSave = () => {
+    if (searchNameValue !== searchName) {
+      const updatedJobs = jobs.map(job => 
+        job.id === id ? { ...job, searchName: searchNameValue } : job
+      );
+      setJobs(updatedJobs);
+      
+      updateJob({
+        variables: {
+          idToUpdate: id,
+          input: {
+            searchName: searchNameValue
+          }
+        },
+        onError: (error) => {
+          console.error('Failed to update search name:', error);
+          setJobs(jobs);
+          setSearchNameValue(searchName || '');
+        }
+      });
+    }
+    setIsEditingSearchName(false);
+  };
+
+  const handleSearchNameCancel = () => {
+    setSearchNameValue(searchName || '');
+    setIsEditingSearchName(false);
+  };
+
+  const handleSearchNameKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      handleSearchNameSave();
+    } else if (event.key === 'Escape') {
+      handleSearchNameCancel();
+    }
+  };
+
+  return (
+    <StyledCard onClick={handleCardClick}>
+      <StyledCardHeader>
+        {isMergeMode && (
+          <StyledMergeCheckbox
+            className="merge-checkbox"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleSelect?.(id);
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={!!isSelected}
+              onChange={() => onToggleSelect?.(id)}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </StyledMergeCheckbox>
+        )}
+        <StyledCardTitle>{name}</StyledCardTitle>
+        <div className="menu-container" onClick={(e) => e.stopPropagation()}>
+          <StyledMenuButton onClick={toggleDropdown}>
+            <IconDotsVertical size={16} />
+          </StyledMenuButton>
+          {isDropdownOpen && (
+            <StyledDropdownMenu width={200}>
+              <DropdownMenuItemsContainer>
+                <MenuItem 
+                  accent={isActive ? 'default' : 'danger'}
+                  onClick={handleToggleJobStatus} 
+                  text={isActive ? "Mark as Inactive" : "Mark as Active"} 
+                  LeftIcon={isActive ? IconBriefcase : IconBriefcase}
+                />
+              </DropdownMenuItemsContainer>
+            </StyledDropdownMenu>
+          )}
+        </div>
+      </StyledCardHeader>
+      
+      <StyledCardContent>
+        <StyledInfoItem>
+          <IconCalendar size={16} />
+          Created on {formattedDate}
+        </StyledInfoItem>
+        
+        {jobLocation && (
+          <StyledInfoItem>
+          <IconMap size={16} />
+            {jobLocation}
+          </StyledInfoItem>
+        )}
+        
+        <StyledEditableField onClick={(e) => e.stopPropagation()}>
+          {isEditingSearchName ? (
+            <>
+              <StyledEditableInput
+                value={searchNameValue}
+                onChange={(e) => setSearchNameValue(e.target.value)}
+                onKeyDown={handleSearchNameKeyDown}
+                placeholder="Enter search name..."
+                autoFocus
+              />
+              <StyledActionButtons>
+                <StyledEditButton onClick={handleSearchNameSave}>
+                  <IconCheck size={14} />
+                </StyledEditButton>
+                <StyledEditButton onClick={handleSearchNameCancel}>
+                  <IconX size={14} />
+                </StyledEditButton>
+              </StyledActionButtons>
+            </>
+          ) : (
+            <StyledEditableText onClick={handleSearchNameEdit}>
+              <IconPencil size={14} />
+              {searchName || 'Search remarks...'}
+            </StyledEditableText>
+          )}
+        </StyledEditableField>
+        
+        {/* <StyledInfoItem> */}
+        {/* <IconUser size={16} /> */}
+        {/* {candidateCount} {candidateCount === 1 ? 'Candidate' : 'Candidates'} */}
+        {/* </StyledInfoItem> */}
+      </StyledCardContent>
+      
+      <StyledCardFooter>
+        <StyledActiveStatus isActive={isActive}>
+          <IconBriefcase size={16} />
+          {isActive ? 'Active' : 'Inactive'}
+        </StyledActiveStatus>
+        {onOpenOrgChart && (
+          <StyledOrgChartButton
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenOrgChart(id, name);
+            }}
+          >
+            <IconHierarchy2 size={14} />
+            Org chart
+          </StyledOrgChartButton>
+        )}
+      </StyledCardFooter>
+    </StyledCard>
+  );
+}; 

@@ -1,0 +1,56 @@
+export type LinkedInSearchResult = {
+  type: 'PEOPLE' | 'COMPANY' | 'POST' | 'JOB';
+  id: string;
+  name?: string;
+  first_name?: string;
+  last_name?: string;
+  headline?: string;
+  location?: string;
+  industry?: string;
+  profile_url?: string;
+  public_profile_url?: string;
+  profile_picture_url?: string;
+  network_distance?: string;
+  member_urn?: string;
+  public_identifier?: string;
+  premium?: boolean;
+  open_profile?: boolean;
+  pending_invitation?: boolean;
+  can_send_inmail?: boolean;
+  recruiter_candidate_id?: string;
+  current_positions?: Array<{
+    company: string;
+    company_id?: string;
+    role: string;
+    description?: string;
+    location?: string;
+    start?: { month: number; year: number };
+    tenure_at_company?: { years: number };
+    tenure_at_role?: { years: number };
+  }>;
+  summary?: string;
+  followers_count?: number;
+  job_offers_count?: number;
+  headcount?: string;
+  share_url?: string;
+  date?: string;
+  parsed_datetime?: string;
+  comment_counter?: number;
+  impressions_counter?: number;
+  reaction_counter?: number;
+  repost_counter?: number;
+  text?: string;
+  attachments?: Array<{
+    id: string;
+    type: string;
+    url: string;
+    size?: { height: number; width: number };
+  }>;
+  author?: {
+    name: string;
+    public_identifier: string;
+    headline?: string;
+    is_company: boolean;
+  };
+  is_repost?: boolean;
+};

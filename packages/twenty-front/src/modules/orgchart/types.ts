@@ -1,0 +1,20 @@
+export type ContextResultItem = {
+  id: string;
+  fullName: string;
+  headline: string;
+  company: string;
+  linkedinUrl?: string;
+  email?: string;
+  phone?: string;
+  networkDistance?: string;
+  sharedConnectionsCount?: number;
+  premium?: boolean;
+  verified?: boolean;
+  openProfile?: boolean;
+  followersCount?: number;
+  connectionsCount?: number;
+  locationName?: string;
+  locationCountry?: string;
+  locationRegion?: string;
+  raw: Record<string, unknown>;
+};

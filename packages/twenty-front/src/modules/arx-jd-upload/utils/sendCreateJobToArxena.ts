@@ -1,0 +1,46 @@
+import axios from 'axios';
+import mongoose from 'mongoose';
+
+import { isDefined } from 'twenty-shared';
+
+export const sendCreateJobToArxena = async (
+  jobName: string,
+  jobId: string,
+  accessToken: string,
+  setError?: (error: string) => void,
+) => {
+  try {
+    console.log('sending job to arxena in sendJobToArxena::');
+    console.log('jobName::', jobName);
+    console.log('jobId::', jobId);
+    const arxenaSiteId = new mongoose.Types.ObjectId().toString();
+    console.log('arxenaSiteId::', arxenaSiteId);
+    const response = await axios.post(
+      process.env.NODE_ENV === 'production'
+        ? 'https://app.arxena.com/candidate-sourcing/create-job-in-arxena-and-sheets'
+        : 'http://localhost:3000/candidate-sourcing/create-job-in-arxena-and-sheets',
+      { job_name: jobName, new_job_id: arxenaSiteId, id_to_update: jobId },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    if (response.status !== 200) {
+      throw new Error(`Failed to create job on Arxena: ${response.statusText}`);
+    }
+    return response.data;
+  } catch (error) {
+    console.error('Error sending job to Arxena:', error);
+    if (isDefined(setError)) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Failed to create job on Arxena',
+      );
+    }
+    return null;
+  }
+};

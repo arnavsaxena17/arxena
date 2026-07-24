@@ -1,0 +1,401 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { spawn } from 'child_process';
+import { readFile } from 'fs/promises';
+import * as path from 'path';
+import type { OrgChartData } from 'twenty-shared';
+
+type PythonStdResult = {
+  input_title: string;
+  std_functions: string[];
+  std_grades: string[];
+  std_levels: string[];
+};
+
+@Injectable()
+export class PythonOrgChartService {
+  private readonly logger = new Logger(PythonOrgChartService.name);
+
+  /**
+   * Resolve the absolute path to the arxena-site arxenas3/model_arxena directory.
+   *
+   * We support being run from:
+   * - /.../arx/arxena
+   * - /.../arx/arxena/packages
+   * - /.../arx/arxena/packages/twenty-server
+   */
+  private resolveModelArxenaRoot(): string {
+    const cwd = process.cwd();
+    const cwdBase = path.basename(cwd);
+    const parentBase = path.basename(path.dirname(cwd));
+
+    if (cwdBase === 'twenty-server' && parentBase === 'packages') {
+      // /.../arx/arxena/packages/twenty-server -> /.../arx/arxena-site/arxenas3/model_arxena
+      // Go up three levels to the common /.../arx directory, then into arxena-site.
+      return path.resolve(
+        cwd,
+        '..',
+        '..',
+        '..',
+        'arxena-site',
+        'arxenas3',
+        'model_arxena',
+      );
+    }
+
+    if (cwdBase === 'packages') {
+      // /.../arx/arxena/packages -> /.../arx/arxena-site/arxenas3/model_arxena
+      return path.resolve(cwd, '..', 'arxena-site', 'arxenas3', 'model_arxena');
+    }
+
+    // Default: assume cwd is /.../arx/arxena
+    return path.resolve(cwd, '..', 'arxena-site', 'arxenas3', 'model_arxena');
+  }
+
+  /**
+   * arxena-site/arxenas3/static/yuga_labs_all_org_chart_assist.json — checked into
+   * arxena-site beside model_arxena (under arxenas3).
+   */
+  getYugaLabsStaticAssistPath(): string {
+    return path.join(
+      this.resolveModelArxenaRoot(),
+      '..',
+      'static',
+      'yuga_labs_all_org_chart_assist.json',
+    );
+  }
+
+  /**
+   * Load the pre-built Yuga Labs org chart JSON when HTTP/CLI build is unavailable.
+   */
+  async loadYugaLabsStaticAssistOrNull(): Promise<OrgChartData | null> {
+    const filePath = this.getYugaLabsStaticAssistPath();
+    try {
+      const raw = await readFile(filePath, 'utf8');
+      return JSON.parse(raw) as OrgChartData;
+    } catch (err) {
+      this.logger.warn(
+        `Could not read Yuga Labs static org chart at ${filePath}`,
+        err as Error,
+      );
+      return null;
+    }
+  }
+
+  private getPythonCliPath(): string {
+    const modelRoot = this.resolveModelArxenaRoot();
+    return path.resolve(modelRoot, 'boolean_orgchart_cli.py');
+  }
+
+  private runPython<T = unknown>(args: string[], stdinPayload?: unknown): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const scriptPath = this.getPythonCliPath();
+      const pythonArgs = [scriptPath, ...args];
+
+      // Prefer python3 explicitly since many environments no longer ship a bare `python` binary.
+      const pythonExecutable = process.env.PYTHON_EXECUTABLE ?? 'python3';
+
+      this.logger.log(
+        `Spawning ${pythonExecutable} ${pythonArgs.join(' ')}`,
+      );
+
+      const child = spawn(pythonExecutable, pythonArgs, {
+        cwd: this.resolveModelArxenaRoot(),
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      child.stdout.setEncoding('utf8');
+      child.stdout.on('data', (chunk) => {
+        stdout += chunk;
+      });
+
+      child.stderr.setEncoding('utf8');
+      child.stderr.on('data', (chunk) => {
+        stderr += chunk;
+      });
+
+      const timeoutMs = Number(process.env.PYTHON_ORGCHART_TIMEOUT_MS ?? 300000);
+      const timeoutHandle =
+        timeoutMs > 0
+          ? setTimeout(() => {
+              this.logger.error(
+                `Python orgchart process timed out after ${timeoutMs}ms. Killing child process. stderr=${stderr}`,
+              );
+              try {
+                child.kill('SIGKILL');
+              } catch {
+                // ignore kill errors
+              }
+              reject(
+                new Error(
+                  `python boolean_orgchart_cli.py timed out after ${timeoutMs}ms`,
+                ),
+              );
+            }, timeoutMs)
+          : null;
+
+      child.on('error', (err) => {
+        this.logger.error('Failed to spawn python process', err);
+        reject(err);
+      });
+
+      child.on('close', (code) => {
+        if (timeoutHandle) {
+          clearTimeout(timeoutHandle);
+        }
+        if (code !== 0) {
+          this.logger.error(
+            `Python exited with code ${code}. stderr=${stderr}`,
+          );
+          reject(
+            new Error(
+              `python boolean_orgchart_cli.py failed with code ${code}: ${stderr}`,
+            ),
+          );
+          return;
+        }
+
+        try {
+          const parsed = JSON.parse(stdout) as T;
+          resolve(parsed);
+        } catch (err) {
+          this.logger.error(
+            `Failed to parse python JSON output: ${stdout}`,
+            err as Error,
+          );
+          reject(err);
+        }
+      });
+
+      if (stdinPayload !== undefined) {
+        const toWrite = JSON.stringify(stdinPayload);
+        child.stdin.write(toWrite);
+      }
+      child.stdin.end();
+    });
+  }
+
+  /**
+   * Convenience wrapper to standardize a single job title using the
+   * canonical Python BooleanStandardize implementation.
+   */
+  async standardizeTitle(title: string): Promise<PythonStdResult> {
+    const result = await this.runPython<PythonStdResult>([
+      'standardize',
+      title,
+    ]);
+    return result;
+  }
+
+  /**
+   * Call arxena-site POST /api/orgchart/build when ARXENA_SITE_ORGCHART_URL is set.
+   * Avoids subprocess/cwd/path issues and uses the same timeout as the CLI path.
+   */
+  private getOrgChartBuildEndpoint(): string {
+    const baseUrl = (
+      process.env.ARXENA_SITE_ORGCHART_URL ||
+      process.env.ARXENA_SITE_URL ||
+      'http://127.0.0.1:8000'
+    )
+      .replace(/\/api\/orgchart\/build\/?$/, '')
+      .replace(/\/+$/, '');
+
+    return `${baseUrl}/api/orgchart/build`;
+  }
+
+  /** True when org chart build uses HTTP to arxena-site (not local Python CLI). */
+  usesHttpOrgChartBuild(): boolean {
+    return !(
+      process.env.USE_PYTHON_CLI_ORGCHART === '1' ||
+      process.env.USE_PYTHON_CLI_ORGCHART === 'true' ||
+      process.env.ARXENA_SITE_ORGCHART_URL === ''
+    );
+  }
+
+  /**
+   * Quick reachability check for the Arxena site / org chart HTTP agent (not used when USE_PYTHON_CLI_ORGCHART is set).
+   */
+  async isOrgChartAgentReachable(): Promise<boolean> {
+    if (!this.usesHttpOrgChartBuild()) {
+      return true;
+    }
+    const buildUrl = this.getOrgChartBuildEndpoint();
+    const siteBase = buildUrl.replace(/\/api\/orgchart\/build\/?$/, '');
+    const controller = new AbortController();
+    const timeoutMs = 5000;
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(siteBase, {
+        method: 'GET',
+        signal: controller.signal,
+        redirect: 'follow',
+      });
+      clearTimeout(timeoutId);
+      void response.status;
+      return true;
+    } catch {
+      clearTimeout(timeoutId);
+      return false;
+    }
+  }
+
+  static readonly ORG_CHART_AGENT_UNAVAILABLE_MESSAGE =
+    'Org chart agent service is not available. Ensure the Arxena site Python service is running and reachable (ARXENA_SITE_URL / ARXENA_SITE_ORGCHART_URL).';
+
+  private isLikelyTransportFailure(err: unknown): boolean {
+    if (!(err instanceof Error)) {
+      return false;
+    }
+    const msg = (err.message ?? '').toLowerCase();
+    const cause = 'cause' in err ? (err as { cause?: unknown }).cause : undefined;
+    const causeCode =
+      cause &&
+      typeof cause === 'object' &&
+      cause !== null &&
+      'code' in cause &&
+      typeof (cause as { code?: string }).code === 'string'
+        ? (cause as { code: string }).code
+        : '';
+    if (
+      causeCode === 'ECONNREFUSED' ||
+      causeCode === 'ENOTFOUND' ||
+      causeCode === 'ETIMEDOUT'
+    ) {
+      return true;
+    }
+    if (err.name === 'TypeError' && msg.includes('fetch failed')) {
+      return true;
+    }
+    if (
+      msg.includes('econnrefused') ||
+      msg.includes('enotfound') ||
+      msg.includes('network') ||
+      msg.includes('socket')
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  private async callOrgChartBuildUrl(payload: {
+    people: Record<string, unknown>[];
+    job_name: string;
+    job_id: string;
+    function_root?: string | null;
+    country?: string;
+    industry?: string;
+    industry_category?: string;
+  }): Promise<OrgChartData> {
+    const baseUrl = this.getOrgChartBuildEndpoint();
+    const url = baseUrl;
+    const timeoutMs = Number(process.env.PYTHON_ORGCHART_TIMEOUT_MS ?? 300000);
+
+    this.logger.log(`Calling org chart build at ${url} (timeout ${timeoutMs}ms)`);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(
+          `arxena-site orgchart build returned ${response.status}: ${text}`,
+        );
+      }
+      const result = (await response.json()) as Record<string, unknown>;
+      if (result && typeof (result as { error?: string }).error === 'string') {
+        throw new Error((result as { error: string }).error);
+      }
+      return result as OrgChartData;
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          throw new Error(
+            `arxena-site orgchart build timed out after ${timeoutMs}ms`,
+          );
+        }
+        if (this.isLikelyTransportFailure(err)) {
+          throw new Error(PythonOrgChartService.ORG_CHART_AGENT_UNAVAILABLE_MESSAGE);
+        }
+        throw err;
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Use the Python OrgStructure.create_org_charts_json_from_std_people_array
+   * to generate an org chart object from the "all standardized" people array.
+   *
+   * By default calls the arxena-site REST API (ARXENA_SITE_ORGCHART_URL or
+   * http://localhost:5050/api/orgchart/build). Set USE_PYTHON_CLI_ORGCHART=1
+   * or ARXENA_SITE_ORGCHART_URL="" to spawn the CLI instead.
+   *
+   * The expected person objects and semantics match the Python
+   * implementation in org_chart_list.py.
+   */
+  async createOrgChartFromStandardizedPeople(input: {
+    people: Record<string, unknown>[];
+    jobName?: string;
+    jobId?: string;
+    functionRoot?: string;
+    /** Geography hint for orgchart_api (e.g. "united states"); matches LinkedIn search path. */
+    country?: string;
+    /** Raw industry string (e.g. "Computer Software") forwarded to Python list_data.industry */
+    industry?: string;
+    /** Macro category override forwarded to Python list_data.industry_category */
+    industryCategory?: string;
+  }): Promise<OrgChartData> {
+    const payload = {
+      people: input.people,
+      job_name: input.jobName ?? '',
+      job_id: input.jobId ?? '',
+      // Optional hint to Python about which function-root
+      // subset is desired (e.g. "human resources").
+      function_root: input.functionRoot ?? null,
+      country: input.country?.trim() ?? '',
+      industry: input.industry?.trim() ?? '',
+      industry_category: input.industryCategory?.trim() ?? '',
+    };
+
+    const useCli =
+      process.env.USE_PYTHON_CLI_ORGCHART === '1' ||
+      process.env.USE_PYTHON_CLI_ORGCHART === 'true' ||
+      process.env.ARXENA_SITE_ORGCHART_URL === '';
+
+    this.logger.log(`Using ${useCli ? 'CLI' : 'HTTP'} orgchart build`);
+    if (useCli) {
+      return this.runPython<OrgChartData>(['orgchart'], payload);
+    }
+
+    return this.callOrgChartBuildUrl(payload);
+  }
+
+  /**
+   * Dev/test helper mirroring the Yuga Labs sanity-check:
+   *   - call the dedicated python CLI subcommand that:
+   *       * loads all_standardized_yuga_cs.json
+   *       * runs OrgStructure.create_org_charts_json_from_std_people_array
+   *   - return the raw org chart object
+   *
+   * The caller can then compare this against the static
+   * yuga_labs_all_org_chart_assist.json contents.
+   */
+  async buildYugaLabsOrgChartFromPython(): Promise<OrgChartData> {
+    const result = await this.runPython<OrgChartData>([
+      'orgchart-yuga',
+    ]);
+    return result;
+  }
+}
