@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Deploy CloudFront-scoped WAF for arxena.com org-chart protection.
-# Usage: AWS_PROFILE=arxanalytics ./scripts/aws/deploy-orgchart-waf.sh
+# Usage: AWS_PROFILE=arxmukti ./scripts/aws/deploy-orgchart-waf.sh
 set -euo pipefail
 
 export AWS_PROFILE="${AWS_PROFILE:-arxmukti}"

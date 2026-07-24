@@ -4,10 +4,10 @@ set -euo pipefail
 
 ANALYTICS_KEY="${ANALYTICS_KEY:-$HOME/.ssh/arx-analytics-key.pem}"
 MUKTI_KEY="${MUKTI_KEY:-$HOME/.ssh/arxmukti-key.pem}"
-ANALYTICS_HOST="${ANALYTICS_HOST:-54.159.41.63}"
+ANALYTICS_HOST="${ANALYTICS_HOST:-54.227.88.99}"
 MUKTI_HOST="${MUKTI_HOST:-44.210.207.156}"
 REPO="arx_migration_20260724"
-SNAP="full_all"
+SNAP="full_all_v2"
 AUTH_USER="elastic"
 AUTH_PASS="${ES_PASS:-Page321123a}"
 

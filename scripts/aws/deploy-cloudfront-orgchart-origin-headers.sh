@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Create/update CloudFront origin request policy with viewer IP + Sec-Fetch headers.
-# Usage: AWS_PROFILE=arxanalytics ./scripts/aws/deploy-cloudfront-orgchart-origin-headers.sh
+# Usage: AWS_PROFILE=arxmukti ./scripts/aws/deploy-cloudfront-orgchart-origin-headers.sh
 set -euo pipefail
 
 export AWS_PROFILE="${AWS_PROFILE:-arxmukti}"

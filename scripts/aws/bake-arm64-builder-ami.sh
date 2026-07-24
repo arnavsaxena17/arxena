@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Bake an arm64 "base-instance-twenty-building-image" equivalent for arxmukti.
-# Replays the install history from ami-09e12010e9d1fb5a3 (arxanalytics x86 builder),
+# Replays the install history from ami-09e12010e9d1fb5a3 (legacy x86 builder AMI),
 # updated for Node 22 + Docker (Chatwoot builds).
 #
 # Usage:

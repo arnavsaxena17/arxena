@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Create CloudWatch alarms for WAF blocks and org-chart server health signals.
-# Usage: AWS_PROFILE=arxanalytics ./scripts/aws/deploy-orgchart-cloudwatch-alarms.sh
+# Usage: AWS_PROFILE=arxmukti ./scripts/aws/deploy-orgchart-cloudwatch-alarms.sh
 set -euo pipefail
 
 export AWS_PROFILE="${AWS_PROFILE:-arxmukti}"

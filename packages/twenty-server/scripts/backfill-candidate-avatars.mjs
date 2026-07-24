@@ -8,8 +8,8 @@
  *     [--concurrency 8] \
  *     [--dry-run]
  *
- * With AWS (profile arxanalytics):
- *   aws s3 sync s3://BUCKET/org-charts ./org-charts --profile arxanalytics
+ * With AWS (profile arxmukti):
+ *   aws s3 sync s3://arx-server-storage-940813655147/org-charts ./org-charts --profile arxmukti
  *   node packages/twenty-server/scripts/backfill-candidate-avatars.mjs \
  *     --storage-root ./org-charts --company litify
  */
