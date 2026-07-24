@@ -89,3 +89,12 @@ Ignore Twenty leftovers: `favorites`, `prefetch`, `serverless-functions`, `datab
 - `packages/twenty-server/src/engine/core-modules/arx-chat/arx-chat-agent.module.ts`
 - `packages/twenty-server/src/engine/core-modules/org-chart/org-chart.module.ts`
 - `packages/twenty-server/src/engine/core-modules/message-queue/jobs.module.ts`
+
+## Build gate results (port/arxena-modules)
+
+- `npx nx build twenty-shared` — pass
+- `npx nx build twenty-orgchart` — pass
+- `npx nest build` (twenty-server / SWC) — pass (7630 files)
+- `npx nx build twenty-front` — not green yet; ported modules still need API adaptation against current Twenty front (Recoil/Jotai, UI, imports). Nest/core wiring is in place for Phase-1 routes.
+
+Next follow-ups: fix front compile errors module-by-module, register Arxena ConfigVariables formally (beyond EnvironmentService shim + process.env), nav drawer items, Unipile providers, and yarn install for mcp/embed package deps.
