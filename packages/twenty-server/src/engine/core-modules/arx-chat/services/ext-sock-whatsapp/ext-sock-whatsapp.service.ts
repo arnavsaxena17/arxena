@@ -1,0 +1,62 @@
+import {
+    WhatsappMessageData,
+    WhatsappMessageJobData,
+    isDefined,
+} from 'twenty-shared';
+
+import { QueueCronJobOptions } from 'src/engine/core-modules/message-queue/drivers/interfaces/job-options.interface';
+
+import { WhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.job';
+import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
+import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
+import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
+
+export class ExtSockWhatsappService {
+  constructor(
+    @InjectMessageQueue(MessageQueue.extSockWhatsappQueue)
+    private readonly messageQueueService: MessageQueueService,
+  ) {}
+
+  async queueMessage(messageData: WhatsappMessageData): Promise<void> {
+    try {
+      const messageType = isDefined(messageData?.linkedin_url)
+        ? 'LinkedIn'
+        : 'WhatsApp';
+
+      console.log(
+        `Queueing ${messageType} message for processing: ${messageData.id}`,
+      );
+
+      const queueJobOptions: QueueCronJobOptions = {
+        retryLimit: 3,
+        priority: 1,
+        repeat: {
+          every: 1000,
+        },
+      };
+
+      const jobData: WhatsappMessageJobData = {
+        data: messageData,
+      };
+
+      // Create unique job ID to prevent duplicate processing
+      const uniqueJobId = `whatsapp-message-${messageData.id}-${messageData.type || 'unknown'}`;
+      
+      await this.messageQueueService.add<WhatsappMessageJobData>(
+        WhatsappMessageProcessor.name,
+        jobData,
+        {
+          ...queueJobOptions,
+          id: uniqueJobId, // Add unique ID to prevent duplicates
+        },
+      );
+
+      console.log(
+        `Successfully queued ${messageType} message: ${messageData.id}`,
+      );
+    } catch (error) {
+      console.error('Failed to queue message:', error);
+      throw error;
+    }
+  }
+}

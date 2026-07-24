@@ -1,0 +1,168 @@
+import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import axios from 'axios';
+import { ExtSockWhatsappService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.service';
+import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+import { whatappUpdateMessageObjType, WhatsappMessageData } from 'twenty-shared';
+import { RedisService } from './redis-service-ops';
+
+@Controller('ext-sock-whatsapp')
+export class ExtSockWhatsappController {
+  constructor(
+    private readonly extSockWhatsappService: ExtSockWhatsappService,
+    private readonly redisService: RedisService,
+  ) {}
+
+  @Post('update-whitelist')
+  @UseGuards(JwtAuthGuard)
+  async updateWhitelist(
+    @Body() body: { oldPhoneNumber: string; newPhoneNumber: string; userId: string },
+  ) {
+    try {
+      console.log('updateWhitelist called with body:', body);
+      const { oldPhoneNumber, newPhoneNumber, userId } = body;
+      console.log('oldPhoneNumber::', oldPhoneNumber);
+      console.log('newPhoneNumber::', newPhoneNumber);
+      console.log('userId::', userId);
+
+      // Validate required fields
+      if (!userId) {
+        throw new Error('userId is required');
+      }
+      if (!newPhoneNumber) {
+        throw new Error('newPhoneNumber is required');
+      }
+
+      // Get whitelist before update
+      const beforeWhitelist = await this.redisService.getWhitelist(userId);
+      console.log('Whitelist before update:', beforeWhitelist);
+      
+      const formatPhoneNumber = (number: string) => {
+        if (!number) return '';
+        const normalized = number.replace(/\D/g, '');
+        return normalized.length === 10 ? `91${normalized}@c.us` : `${normalized}@c.us`;
+      };
+      
+      const newFormattedNumber = formatPhoneNumber(newPhoneNumber);
+      console.log('newFormattedNumber::', newFormattedNumber);
+
+      // Only remove old phone number if it exists
+      if (oldPhoneNumber) {
+        const oldFormattedNumber = formatPhoneNumber(oldPhoneNumber);
+        console.log('oldFormattedNumber::', oldFormattedNumber);
+        
+        try {
+          await this.redisService.removeFromWhitelist(userId, oldFormattedNumber);
+          console.log('removedFromWhitelist::', oldFormattedNumber);
+          await this.redisService.removeIdentifierToUserMapping(oldFormattedNumber);
+          console.log('removedIdentifierToUserMapping::', oldFormattedNumber);
+        } catch (removeError) {
+          console.warn('Error removing old phone number (continuing):', removeError);
+        }
+      }
+
+      // Add new phone number
+      await this.redisService.addToWhitelist(userId, newFormattedNumber);
+      console.log('addedToWhitelist::', newFormattedNumber);
+      await this.redisService.createIdentifierToUserMapping(newFormattedNumber, userId);
+      console.log('createdIdentifierToUserMapping::', newFormattedNumber);
+      
+      // Get whitelist after update
+      const afterWhitelist = await this.redisService.getWhitelist(userId);
+      console.log('Whitelist after update:', afterWhitelist);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to update whitelist in ext-sock-whatsapp controller:', error);
+      return {
+        success: false,
+        error: error.message,
+        details: error.stack
+      };
+    }
+  }
+
+  @Post('incoming-sock-message')
+  @UseGuards(JwtAuthGuard)
+  async receiveWhatsappMessage(@Body() messageData: WhatsappMessageData) {
+    console.log('Received WhatsApp message:', messageData);
+    try {
+      await this.extSockWhatsappService.queueMessage(messageData);
+
+      return {
+        status: 'success',
+        message: 'WhatsApp message queued successfully',
+        messageId: messageData.id,
+      };
+    } catch (error) {
+      console.error('Error queueing WhatsApp message:', error);
+
+      return {
+        status: 'error',
+        error: error.message,
+        details: error.stack,
+      };
+    }
+  }
+
+  @Post('send-sock-message')
+  @UseGuards(JwtAuthGuard)
+  async sendWhatsappMessage(@Body() messageData: whatappUpdateMessageObjType, @Req() request: any) {
+    console.log('Sending WhatsApp message via ext-sock:', messageData);
+
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1];
+
+      console.log('API Token:', apiToken);
+      const arxenaSiteBaseUrl =
+        process.env.ARXENA_SITE_BASE_URL || 'http://localhost:5050';
+
+      console.log('Arxena Site Base URL:', arxenaSiteBaseUrl);
+      const response = await axios.post(
+        `${arxenaSiteBaseUrl}/send_sock_message`,
+        {
+          phoneNumber: messageData.phoneNumberTo,
+          message: messageData.messages[0]?.content || messageData.messages,
+          candidateFirstName: messageData.candidateFirstName,
+          twentyMessageId: messageData.id,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${apiToken}`,
+          },
+        },
+      );
+
+      return {
+        status: 'success',
+        message: 'WhatsApp message sent successfully',
+        data: response.data,
+      };
+    } catch (error) {
+      console.error('Error sending WhatsApp message:', error);
+
+      return {
+        status: 'error',
+        error: error.message,
+        details: error.stack,
+      };
+    }
+  }
+
+  @Post('whitelist')
+  @UseGuards(JwtAuthGuard)
+  async getWhitelistedNumbers(@Body() body: { userId: string }) {
+    try {
+      const whitelistedNumbers = await this.redisService.getWhitelist(body.userId);
+      console.log("Fetched whitelistedNumbers::", whitelistedNumbers.length, "for user:", body.userId);
+      return {
+        status: 'success',
+        data: { userId: body.userId, whitelistedNumbers, },
+      };
+    } catch (error) {
+      console.error('Error fetching whitelisted numbers:', error);
+      return { status: 'error', error: error.message, details: error.stack, };
+    }
+  }
+}
+
+
