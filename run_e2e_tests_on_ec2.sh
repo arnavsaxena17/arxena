@@ -19,22 +19,22 @@
 #   TEST_BRANCH        git branch to test          (default: onboarding-workspace)
 #   FRONTEND_BASE_URL  production frontend URL      (default: https://app.arxena.com)
 #   BACKEND_BASE_URL   production backend URL       (default: https://api.arxena.com)
-#   EC2_INSTANCE_TYPE  EC2 type                    (default: t2.large)
+#   EC2_INSTANCE_TYPE  EC2 type                    (default: t4g.large)
 #   KEEP_INSTANCE      set to 1 to skip termination (default: 0)
 # ============================================================
 
 set -euo pipefail
 
 # ── Config ────────────────────────────────────────────────────────────────────
-AWS_PROFILE="${AWS_PROFILE:-arxanalytics}"
+AWS_PROFILE="${AWS_PROFILE:-arxmukti}"
 AWS_CMD="aws --profile $AWS_PROFILE"
 
-AMI_ID="ami-09e12010e9d1fb5a3"
-INSTANCE_TYPE="${EC2_INSTANCE_TYPE:-t2.large}"
-KEY_NAME="arx-analytics-key"
-KEY_PATH="$HOME/arx-analytics-key.pem"
-SECURITY_GROUP="sg-04efe18d868d9a023"
-SUBNET_ID="subnet-0fe5d2cdf8329f8a5"
+AMI_ID="${EC2_IMAGE_ID:-ami-02c4144237becae44}"
+INSTANCE_TYPE="${EC2_INSTANCE_TYPE:-t4g.large}"
+KEY_NAME="${EC2_KEY_NAME:-arxmukti-key}"
+KEY_PATH="${SSH_KEY_PATH:-$HOME/.ssh/arxmukti-key.pem}"
+SECURITY_GROUP="${EC2_SECURITY_GROUP_ID:-sg-0da9fdd5e7f6c4f1e}"
+SUBNET_ID="${EC2_SUBNET_ID:-subnet-026eb73699b4efba7}"
 
 TEST_BRANCH="${TEST_BRANCH:-onboarding-workspace}"
 FRONTEND_BASE_URL="${FRONTEND_BASE_URL:-https://app.arxena.com}"

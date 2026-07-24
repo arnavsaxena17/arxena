@@ -111,8 +111,9 @@
 
 
 ## Production
-- Use aws profile arxanalytics
-- production server is available at ssh app.arxena.com
+- Use aws profile arxmukti
+- production server is available at ssh app.arxena.com (after cutover: EIP 44.221.212.4 / arxmukti-key)
 - at /home/ubuntu in production build_app_in_new_instance.sh builds production by running script_to_build_app_in_new_instance.sh in a remote instance
 - NEVER SCP FILES TO PRODUCTION. Always check if local branch is the same as production branch and then do git add .; git commit -m "message"; git push on local and then git pull on production
+- Builder defaults: arm64 builder AMI ami-0cb194b5ec6f48d24 (nvm+node22/yarn/nest/docker/canvas deps; bake via scripts/aws/bake-arm64-builder-ami.sh), t4g.xlarge, key arxmukti-key, SG sg-0da9fdd5e7f6c4f1e, subnet subnet-026eb73699b4efba7
 

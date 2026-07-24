@@ -97,7 +97,7 @@ export class LambdaDriver implements ServerlessDriver {
     );
 
     const assumeRoleCommand = new AssumeRoleCommand({
-      RoleArn: 'arn:aws:iam::820242914089:role/LambdaDeploymentRole',
+      RoleArn: 'arn:aws:iam::940813655147:role/LambdaDeploymentRole',
       RoleSessionName: 'LambdaSession',
       DurationSeconds: CREDENTIALS_DURATION_IN_SECONDS,
     });

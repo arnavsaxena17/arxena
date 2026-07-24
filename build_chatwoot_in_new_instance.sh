@@ -18,20 +18,20 @@ CHATWOOT_IMAGE_NAME="${CHATWOOT_IMAGE_NAME:-arxena/chatwoot-local:latest}"
 CHATWOOT_SOURCE_DIR="${CHATWOOT_SOURCE_DIR:-$SCRIPT_DIR/tools/chatwoot-source}"
 CHATWOOT_COMPOSE_DIR="${CHATWOOT_COMPOSE_DIR:-$SCRIPT_DIR/tools/chatwoot-local}"
 CHATWOOT_BUILDER_VOLUME_SIZE="${CHATWOOT_BUILDER_VOLUME_SIZE:-80}"
-CHATWOOT_BUILDER_INSTANCE_TYPE="${CHATWOOT_BUILDER_INSTANCE_TYPE:-t3.xlarge}"
+CHATWOOT_BUILDER_INSTANCE_TYPE="${CHATWOOT_BUILDER_INSTANCE_TYPE:-t4g.xlarge}"
 CHATWOOT_DEPLOY_AFTER_BUILD="${CHATWOOT_DEPLOY_AFTER_BUILD:-1}"
 
-AWS_PROFILE="${AWS_PROFILE:-arxanalytics}"
+AWS_PROFILE="${AWS_PROFILE:-arxmukti}"
 AWS_CLI_PROFILE_ARGS=()
 if [ -n "${AWS_PROFILE:-}" ]; then
   AWS_CLI_PROFILE_ARGS=(--profile "$AWS_PROFILE")
 fi
 
-SSH_KEY_PATH="${SSH_KEY_PATH:-$HOME/arx-analytics-key.pem}"
-EC2_IMAGE_ID="${EC2_IMAGE_ID:-ami-09e12010e9d1fb5a3}"
-EC2_KEY_NAME="${EC2_KEY_NAME:-arx-analytics-key}"
-EC2_SECURITY_GROUP_ID="${EC2_SECURITY_GROUP_ID:-sg-04efe18d868d9a023}"
-EC2_SUBNET_ID="${EC2_SUBNET_ID:-subnet-0fe5d2cdf8329f8a5}"
+SSH_KEY_PATH="${SSH_KEY_PATH:-$HOME/.ssh/arxmukti-key.pem}"
+EC2_IMAGE_ID="${EC2_IMAGE_ID:-ami-0cb194b5ec6f48d24}" # arm64 builder w/ canvas deps (nvm+node22, yarn, nest, docker)
+EC2_KEY_NAME="${EC2_KEY_NAME:-arxmukti-key}"
+EC2_SECURITY_GROUP_ID="${EC2_SECURITY_GROUP_ID:-sg-0da9fdd5e7f6c4f1e}"
+EC2_SUBNET_ID="${EC2_SUBNET_ID:-subnet-026eb73699b4efba7}"
 
 TEMP_INSTANCE_ID=""
 STAGING_ROOT=""
@@ -92,14 +92,35 @@ end_time=$(date +%s)
 elapsed_time=$((end_time - start_time))
 echo "Instance creation took $elapsed_time seconds."
 
-TEMP_DNS="$(
+TEMP_PRIVATE_IP="$(
+  aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 describe-instances \
+    --instance-ids "$TEMP_INSTANCE_ID" \
+    --query 'Reservations[0].Instances[0].PrivateIpAddress' \
+    --output text
+)"
+TEMP_PUBLIC_DNS="$(
   aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 describe-instances \
     --instance-ids "$TEMP_INSTANCE_ID" \
     --query 'Reservations[0].Instances[0].PublicDnsName' \
     --output text
 )"
+IMDS_TOKEN="$(curl -s --connect-timeout 1 -X PUT http://169.254.169.254/latest/api/token -H 'X-aws-ec2-metadata-token-ttl-seconds: 60' || true)"
+if [ -n "$IMDS_TOKEN" ] && curl -s --connect-timeout 1 -H "X-aws-ec2-metadata-token: $IMDS_TOKEN" http://169.254.169.254/latest/meta-data/instance-id >/dev/null 2>&1; then
+  TEMP_DNS="$TEMP_PRIVATE_IP"
+elif [ "${EC2_BUILDER_USE_PRIVATE_IP:-0}" = "1" ]; then
+  TEMP_DNS="$TEMP_PRIVATE_IP"
+else
+  TEMP_DNS="$TEMP_PUBLIC_DNS"
+fi
 
-echo "$TEMP_DNS"
+echo "Builder host: $TEMP_DNS (private=$TEMP_PRIVATE_IP public=$TEMP_PUBLIC_DNS)"
+
+for _ in $(seq 1 60); do
+  if ssh -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no -o ConnectTimeout=5 "ubuntu@$TEMP_DNS" 'echo ok' >/dev/null 2>&1; then
+    break
+  fi
+  sleep 5
+done
 
 scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no \
   "$SCRIPT_DIR/script_to_build_chatwoot_in_new_instance.sh" \
@@ -159,8 +180,11 @@ scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no \
 
 if [ -f "$STAGING_ROOT/chatwoot-image.sha256" ]; then
   if command -v sha256sum >/dev/null 2>&1; then
+    # Rewrite absolute paths from builder to local basename before verifying
+    sed -i 's|.*/chatwoot-image\.tar\.gz|chatwoot-image.tar.gz|' "$STAGING_ROOT/chatwoot-image.sha256" || true
     (cd "$STAGING_ROOT" && sha256sum -c chatwoot-image.sha256)
   else
+    sed -i '' 's|.*/chatwoot-image\.tar\.gz|chatwoot-image.tar.gz|' "$STAGING_ROOT/chatwoot-image.sha256" 2>/dev/null || true
     (cd "$STAGING_ROOT" && shasum -a 256 -c chatwoot-image.sha256)
   fi
 fi

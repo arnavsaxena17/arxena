@@ -3,7 +3,7 @@
 # Usage: AWS_PROFILE=arxanalytics ./scripts/aws/deploy-orgchart-cloudwatch-alarms.sh
 set -euo pipefail
 
-export AWS_PROFILE="${AWS_PROFILE:-arxanalytics}"
+export AWS_PROFILE="${AWS_PROFILE:-arxmukti}"
 export AWS_REGION="${AWS_REGION:-us-east-1}"
 
 WEB_ACL_NAME="${WEB_ACL_NAME:-arxena-orgchart-protection}"

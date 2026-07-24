@@ -3,7 +3,7 @@
 # Run from repo root after building twenty-mcp-server locally or on the server.
 #
 # Usage:
-#   AWS_PROFILE=arxanalytics ./scripts/aws/setup-mcp-arxena-dns.sh
+#   AWS_PROFILE=arxmukti ./scripts/aws/setup-mcp-arxena-dns.sh
 #   ./scripts/deploy-mcp-arxena-production.sh
 
 set -euo pipefail
@@ -34,7 +34,7 @@ rsync -avz \
   "${SSH_HOST}:${REMOTE_TWENTY}/scripts/nginx/mcp-arxena.conf.snippet"
 
 echo "==> Route53 DNS (mcp.arxena.com -> EC2)"
-AWS_PROFILE="${AWS_PROFILE:-arxanalytics}" "$REPO_DIR/scripts/aws/setup-mcp-arxena-dns.sh"
+AWS_PROFILE="${AWS_PROFILE:-arxmukti}" "$REPO_DIR/scripts/aws/setup-mcp-arxena-dns.sh"
 
 echo "==> Remote nginx + certbot + pm2"
 ssh "$SSH_HOST" bash -s <<'REMOTE'

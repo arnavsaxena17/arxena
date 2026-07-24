@@ -3,10 +3,10 @@
 # Usage: AWS_PROFILE=arxanalytics ./scripts/aws/deploy-orgchart-waf.sh
 set -euo pipefail
 
-export AWS_PROFILE="${AWS_PROFILE:-arxanalytics}"
+export AWS_PROFILE="${AWS_PROFILE:-arxmukti}"
 export AWS_REGION="${AWS_REGION:-us-east-1}"
 
-CLOUDFRONT_DISTRIBUTION_ID="${CLOUDFRONT_DISTRIBUTION_ID:-E3AHPTNSVZ97HT}"
+CLOUDFRONT_DISTRIBUTION_ID="${CLOUDFRONT_DISTRIBUTION_ID:-EBBO9OCCU9TPA}"
 WEB_ACL_NAME="${WEB_ACL_NAME:-arxena-orgchart-protection}"
 IP_SET_NAME="${IP_SET_NAME:-arxena-orgchart-blocked-cidrs}"
 BLOCKED_CIDRS="${ORG_CHART_WAF_BLOCKED_CIDRS:-43.173.0.0/16 43.172.0.0/16}"

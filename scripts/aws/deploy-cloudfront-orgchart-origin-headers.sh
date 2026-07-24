@@ -3,9 +3,9 @@
 # Usage: AWS_PROFILE=arxanalytics ./scripts/aws/deploy-cloudfront-orgchart-origin-headers.sh
 set -euo pipefail
 
-export AWS_PROFILE="${AWS_PROFILE:-arxanalytics}"
+export AWS_PROFILE="${AWS_PROFILE:-arxmukti}"
 
-CLOUDFRONT_DISTRIBUTION_ID="${CLOUDFRONT_DISTRIBUTION_ID:-E3AHPTNSVZ97HT}"
+CLOUDFRONT_DISTRIBUTION_ID="${CLOUDFRONT_DISTRIBUTION_ID:-EBBO9OCCU9TPA}"
 POLICY_NAME="${ORIGIN_REQUEST_POLICY_NAME:-arxena-orgchart-viewer-headers}"
 REPLACE_POLICY_ID="${REPLACE_ORIGIN_REQUEST_POLICY_ID:-acba4595-bd28-49b8-b9fe-13317c0390fa}"
 

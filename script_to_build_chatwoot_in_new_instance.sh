@@ -84,7 +84,11 @@ build_step CHATWOOT_IMAGE build_chatwoot_image
 echo "Saving Chatwoot image artifact..."
 run_docker save "$CHATWOOT_IMAGE_NAME" -o "$IMAGE_TAR"
 gzip -1 "$IMAGE_TAR"
-sha256sum "$IMAGE_TAR_GZ" > "$IMAGE_SHA"
+# Basename-only checksum so verification works after scp to another host
+(
+  cd "$HOME"
+  sha256sum "$(basename "$IMAGE_TAR_GZ")" > "$IMAGE_SHA"
+)
 ls -lh "$IMAGE_TAR_GZ" "$IMAGE_SHA"
 
 echo "Build summary:"

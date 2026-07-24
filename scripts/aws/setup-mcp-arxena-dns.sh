@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Create or update mcp.arxena.com A record → production EC2 (direct, not CloudFront).
-# Usage: AWS_PROFILE=arxanalytics ./scripts/aws/setup-mcp-arxena-dns.sh [EC2_PUBLIC_IP]
+# Usage: AWS_PROFILE=arxmukti ./scripts/aws/setup-mcp-arxena-dns.sh [EC2_PUBLIC_IP]
 
 set -euo pipefail
 
-export AWS_PROFILE="${AWS_PROFILE:-arxanalytics}"
+export AWS_PROFILE="${AWS_PROFILE:-arxmukti}"
 HOSTED_ZONE_ID="${ARXENA_HOSTED_ZONE_ID:-Z05402123EAOTC6U2NR1N}"
 RECORD_NAME="mcp.arxena.com"
 TTL=300
@@ -12,7 +12,8 @@ TTL=300
 if [ -n "${1:-}" ]; then
   TARGET_IP="$1"
 else
-  TARGET_IP="$(ssh -o ConnectTimeout=15 -o StrictHostKeyChecking=no app.arxena.com 'curl -s ifconfig.me')"
+  # Default to new arxmukti app EIP until DNS cutover; override via arg or env.
+  TARGET_IP="${ARXENA_APP_EIP:-44.221.212.4}"
 fi
 
 if [ -z "$TARGET_IP" ]; then

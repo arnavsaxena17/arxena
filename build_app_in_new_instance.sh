@@ -12,6 +12,20 @@ for config in "$SCRIPT_DIR/build.config" "$HOME/twenty/build.config" "/home/ubun
 done
 BUILD_BRANCH="${BUILD_BRANCH:-workflows}"
 
+# arxmukti / Graviton defaults (override via env for break-glass)
+AWS_PROFILE="${AWS_PROFILE:-arxmukti}"
+AWS_CLI_PROFILE_ARGS=()
+if [ -n "${AWS_PROFILE:-}" ]; then
+  AWS_CLI_PROFILE_ARGS=(--profile "$AWS_PROFILE")
+fi
+SSH_KEY_PATH="${SSH_KEY_PATH:-$HOME/.ssh/arxmukti-key.pem}"
+EC2_IMAGE_ID="${EC2_IMAGE_ID:-ami-0cb194b5ec6f48d24}" # arm64 builder w/ canvas deps (nvm+node22, yarn, nest, docker)
+EC2_INSTANCE_TYPE="${EC2_INSTANCE_TYPE:-t4g.xlarge}"
+EC2_KEY_NAME="${EC2_KEY_NAME:-arxmukti-key}"
+EC2_SECURITY_GROUP_ID="${EC2_SECURITY_GROUP_ID:-sg-0da9fdd5e7f6c4f1e}"
+EC2_SUBNET_ID="${EC2_SUBNET_ID:-subnet-026eb73699b4efba7}"
+EC2_VOLUME_SIZE="${EC2_VOLUME_SIZE:-40}"
+
 # Function to cleanup staging artifacts and terminate the temporary build instance
 cleanup() {
     if [ -n "$STAGING_ROOT" ] && [ -d "$STAGING_ROOT" ]; then
@@ -22,7 +36,7 @@ cleanup() {
     fi
     if [ -n "$TEMP_INSTANCE_ID" ]; then
         echo "Cleaning up and terminating instance..."
-        aws ec2 terminate-instances --instance-ids $TEMP_INSTANCE_ID
+        aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 terminate-instances --instance-ids $TEMP_INSTANCE_ID
     fi
     exit
 }
@@ -43,15 +57,21 @@ if [ -d "$REPO_DIR/.git" ]; then
   git fetch origin
   git checkout "$BUILD_BRANCH"
   git pull origin "$BUILD_BRANCH" || true
+  # Keep local arxmukti/private-IP build script overrides when present
+  for f in build_app_in_new_instance.sh build_chatwoot_in_new_instance.sh script_to_build_app_in_new_instance.sh script_to_build_chatwoot_in_new_instance.sh; do
+    if [ -f "/tmp/build-script-keep/$f" ]; then
+      cp "/tmp/build-script-keep/$f" "$REPO_DIR/$f"
+    fi
+  done
   cd "$SCRIPT_DIR"
 fi
 
-# 1. Create temporary EC2 instance
-TEMP_INSTANCE_ID=$(aws ec2 run-instances --image-id ami-09e12010e9d1fb5a3 --instance-type t2.xlarge --key-name arx-analytics-key --security-group-ids sg-04efe18d868d9a023 --subnet-id subnet-0fe5d2cdf8329f8a5 --block-device-mappings '[{"DeviceName":"/dev/sda1","Ebs":{"VolumeSize":30,"VolumeType":"gp2"}}]' --query 'Instances[0].InstanceId' --output text)
+# 1. Create temporary EC2 instance (arm64 builder on arxmukti)
+TEMP_INSTANCE_ID=$(aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 run-instances --image-id "$EC2_IMAGE_ID" --instance-type "$EC2_INSTANCE_TYPE" --key-name "$EC2_KEY_NAME" --security-group-ids "$EC2_SECURITY_GROUP_ID" --subnet-id "$EC2_SUBNET_ID" --block-device-mappings "[{\"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":$EC2_VOLUME_SIZE,\"VolumeType\":\"gp3\"}}]" --query 'Instances[0].InstanceId' --output text)
 # Wait for instance to be running
 echo $TEMP_INSTANCE_ID
 echo "EC2 instance is starting, please wait....."
-aws ec2 wait instance-status-ok --instance-ids $TEMP_INSTANCE_ID
+aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 wait instance-status-ok --instance-ids $TEMP_INSTANCE_ID
 end_time=$(date +%s)
 elapsed_time=$((end_time - start_time))
 echo "Instance creation took $elapsed_time seconds."
@@ -59,21 +79,39 @@ echo "Instance creation took $elapsed_time seconds."
 
 
 
-# Get public IP of temporary instance
-TEMP_DNS=$(aws ec2 describe-instances --instance-ids $TEMP_INSTANCE_ID --query 'Reservations[0].Instances[0].PublicDnsName' --output text)
+# Prefer private IP when orchestrating from another VPC host (SG self-ref only matches private IP path).
+# Fall back to public DNS for laptop-driven builds.
+TEMP_PRIVATE_IP=$(aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 describe-instances --instance-ids $TEMP_INSTANCE_ID --query 'Reservations[0].Instances[0].PrivateIpAddress' --output text)
+TEMP_PUBLIC_DNS=$(aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 describe-instances --instance-ids $TEMP_INSTANCE_ID --query 'Reservations[0].Instances[0].PublicDnsName' --output text)
+IMDS_TOKEN="$(curl -s --connect-timeout 1 -X PUT http://169.254.169.254/latest/api/token -H 'X-aws-ec2-metadata-token-ttl-seconds: 60' || true)"
+if [ -n "$IMDS_TOKEN" ] && curl -s --connect-timeout 1 -H "X-aws-ec2-metadata-token: $IMDS_TOKEN" http://169.254.169.254/latest/meta-data/instance-id >/dev/null 2>&1; then
+  TEMP_HOST="$TEMP_PRIVATE_IP"
+elif [ "${EC2_BUILDER_USE_PRIVATE_IP:-0}" = "1" ]; then
+  TEMP_HOST="$TEMP_PRIVATE_IP"
+else
+  TEMP_HOST="$TEMP_PUBLIC_DNS"
+fi
+TEMP_DNS="$TEMP_HOST"
 # Copy script file
-echo $TEMP_DNS
-scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no "$SCRIPT_DIR/script_to_build_app_in_new_instance.sh" ubuntu@$TEMP_DNS:/home/ubuntu/
+echo "Builder host: $TEMP_DNS (private=$TEMP_PRIVATE_IP public=$TEMP_PUBLIC_DNS)"
+# Wait for sshd on the chosen address
+for _ in $(seq 1 60); do
+  if ssh -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no -o ConnectTimeout=5 "ubuntu@$TEMP_DNS" 'echo ok' >/dev/null 2>&1; then
+    break
+  fi
+  sleep 5
+done
+scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no "$SCRIPT_DIR/script_to_build_app_in_new_instance.sh" ubuntu@$TEMP_DNS:/home/ubuntu/
 # Copy build.config to temp instance (from repo or script dir)
 for config in "$SCRIPT_DIR/build.config" "$REPO_DIR/build.config" "/home/ubuntu/twenty/build.config"; do
   if [ -f "$config" ]; then
-    scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no "$config" ubuntu@$TEMP_DNS:/home/ubuntu/
+    scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no "$config" ubuntu@$TEMP_DNS:/home/ubuntu/
     break
   fi
 done
-scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no "$REPO_DIR/packages/twenty-front/.env" ubuntu@$TEMP_DNS:/home/ubuntu/.env_front
-scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no "$REPO_DIR/packages/twenty-server/.env" ubuntu@$TEMP_DNS:/home/ubuntu/.env_server
-scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no "$REPO_DIR/packages/twenty-website/.env" ubuntu@$TEMP_DNS:/home/ubuntu/.env_website
+scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no "$REPO_DIR/packages/twenty-front/.env" ubuntu@$TEMP_DNS:/home/ubuntu/.env_front
+scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no "$REPO_DIR/packages/twenty-server/.env" ubuntu@$TEMP_DNS:/home/ubuntu/.env_server
+scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no "$REPO_DIR/packages/twenty-website/.env" ubuntu@$TEMP_DNS:/home/ubuntu/.env_website
 echo "Maybe finished copying pem files"
 # 2. Set up build environment (you'll need to SSH and do this manually or use a script)
 # 3. Build your project (SSH and run build commands)
@@ -82,11 +120,11 @@ STAGING_ROOT="$(mktemp -d /tmp/twenty-build-stage.XXXXXX)"
 REMOTE_BUILD_EXIT_CODE=0
 
 set +e
-ssh -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS "BUILD_BRANCH=$BUILD_BRANCH chmod +x script_to_build_app_in_new_instance.sh && BUILD_BRANCH=$BUILD_BRANCH ./script_to_build_app_in_new_instance.sh"
+ssh -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS "BUILD_BRANCH=$BUILD_BRANCH chmod +x script_to_build_app_in_new_instance.sh && BUILD_BRANCH=$BUILD_BRANCH ./script_to_build_app_in_new_instance.sh"
 REMOTE_BUILD_EXIT_CODE=$?
 set -e
 
-scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/build_status.env "$BUILD_STATUS_LOCAL_FILE" 2>/dev/null || true
+scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/build_status.env "$BUILD_STATUS_LOCAL_FILE" 2>/dev/null || true
 
 get_build_status() {
   local build_name="$1"
@@ -118,7 +156,7 @@ stage_remote_dir() {
 
   mkdir -p "$stage_path"
   find "$stage_path" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
-  scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no -r "ubuntu@$TEMP_DNS:$remote_path/." "$stage_path/"
+  scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no -r "ubuntu@$TEMP_DNS:$remote_path/." "$stage_path/"
 }
 
 activate_staged_dir() {
@@ -166,7 +204,7 @@ resolve_remote_dir() {
   local package_name="$1"
   shift
   for candidate in "$@"; do
-    if ssh -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS "[ -d '$candidate' ]"; then
+    if ssh -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS "[ -d '$candidate' ]"; then
       echo "$candidate"
       return 0
     fi
@@ -256,12 +294,12 @@ fi
 
 if [ "$DEPLOYMENTS_APPLIED" -eq 1 ]; then
   # Copy package.json and yarn.lock so production has same deps as build (avoids missing new packages like apify-client)
-  scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/twenty/package.json "$REPO_DIR/package.json"
-  scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/twenty/yarn.lock "$REPO_DIR/yarn.lock"
+  scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/twenty/package.json "$REPO_DIR/package.json"
+  scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/twenty/yarn.lock "$REPO_DIR/yarn.lock"
   # Copy workspace package.json files (twenty-server, etc.) so deps match exactly
   for pkg in twenty-server twenty-front twenty-website twenty-worker twenty-shared twenty-orgchart twenty-ui twenty-emails twenty-mcp-server; do
     if [ -d "$REPO_DIR/packages/$pkg" ]; then
-      scp -i ~/arx-analytics-key.pem -o StrictHostKeyChecking=no "ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/$pkg/package.json" "$REPO_DIR/packages/$pkg/package.json" 2>/dev/null || true
+      scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no "ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/$pkg/package.json" "$REPO_DIR/packages/$pkg/package.json" 2>/dev/null || true
     fi
   done
 
