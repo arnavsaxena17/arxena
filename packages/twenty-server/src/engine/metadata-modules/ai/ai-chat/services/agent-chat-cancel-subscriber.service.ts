@@ -18,7 +18,10 @@ export class AgentChatCancelSubscriberService implements OnModuleDestroy {
 
   private ensureSubscriber(): Redis {
     if (!this.subscriber) {
-      this.subscriber = this.redisClientService.getClient().duplicate();
+      this.subscriber = this.redisClientService.getClient().duplicate({
+        disableClientInfo: true,
+        enableReadyCheck: false,
+      });
       this.subscriber.on('message', (channel: string) => {
         const callback = this.callbacks.get(channel);
 

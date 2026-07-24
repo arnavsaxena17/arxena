@@ -26,6 +26,9 @@ export class RedisClientService implements OnModuleDestroy {
 
       this.redisQueueClient = new IORedis(redisQueueUrl, {
         maxRetriesPerRequest: null,
+        // Avoid CLIENT SETINFO / INFO race with SUBSCRIBE on reconnect
+        // (ioredis >= 5.8.2): https://github.com/redis/ioredis/issues/2037
+        disableClientInfo: true,
       });
     }
 
@@ -42,6 +45,9 @@ export class RedisClientService implements OnModuleDestroy {
 
       this.redisClient = new IORedis(redisUrl, {
         maxRetriesPerRequest: null,
+        // Avoid CLIENT SETINFO / INFO race with SUBSCRIBE on reconnect
+        // (ioredis >= 5.8.2): https://github.com/redis/ioredis/issues/2037
+        disableClientInfo: true,
       });
     }
 
@@ -53,8 +59,12 @@ export class RedisClientService implements OnModuleDestroy {
       const redisClient = this.getClient();
 
       this.redisPubSubClient = new RedisPubSub({
-        publisher: redisClient.duplicate(),
-        subscriber: redisClient.duplicate(),
+        publisher: redisClient.duplicate({ disableClientInfo: true }),
+        // Subscriber skips ready-check INFO so SUBSCRIBE cannot race with it
+        subscriber: redisClient.duplicate({
+          disableClientInfo: true,
+          enableReadyCheck: false,
+        }),
       });
     }
 

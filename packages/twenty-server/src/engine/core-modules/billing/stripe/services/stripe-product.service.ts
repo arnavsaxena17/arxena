@@ -25,11 +25,44 @@ export class StripeProductService {
   }
 
   async getAllProducts() {
-    const products = await this.stripe.products.list({
+    const products: Stripe.Product[] = [];
+
+    for await (const product of this.stripe.products.list({
       active: true,
       limit: 100,
-    });
+    })) {
+      products.push(product);
+    }
 
-    return products.data;
+    return products;
+  }
+
+  async getProductById(productId: string) {
+    return this.stripe.products.retrieve(productId);
+  }
+
+  async createProduct({
+    name,
+    metadata,
+  }: {
+    name: string;
+    metadata: Stripe.MetadataParam;
+  }) {
+    return this.stripe.products.create({
+      name,
+      metadata,
+    });
+  }
+
+  async updateProductMetadata({
+    productId,
+    metadata,
+  }: {
+    productId: string;
+    metadata: Stripe.MetadataParam;
+  }) {
+    return this.stripe.products.update(productId, {
+      metadata,
+    });
   }
 }

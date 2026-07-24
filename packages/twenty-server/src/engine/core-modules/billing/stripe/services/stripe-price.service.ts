@@ -31,13 +31,40 @@ export class StripePriceService {
   }
 
   async getPricesByProductId(productId: string) {
-    const prices = await this.stripe.prices.list({
+    const prices: Stripe.Price[] = [];
+
+    for await (const price of this.stripe.prices.list({
       product: productId,
       type: 'recurring',
       limit: 100,
       expand: ['data.currency_options', 'data.tiers'],
-    });
+    })) {
+      prices.push(price);
+    }
 
-    return prices.data;
+    return prices;
+  }
+
+  async createLicensedRecurringPrice({
+    productId,
+    interval,
+    unitAmount,
+    metadata,
+  }: {
+    productId: string;
+    interval: Stripe.Price.Recurring.Interval;
+    unitAmount: number;
+    metadata?: Stripe.MetadataParam;
+  }) {
+    return this.stripe.prices.create({
+      product: productId,
+      currency: 'usd',
+      unit_amount: unitAmount,
+      recurring: {
+        interval,
+        usage_type: 'licensed',
+      },
+      metadata,
+    });
   }
 }

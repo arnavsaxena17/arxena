@@ -14,6 +14,7 @@ import { MEMBER_ROLE_LABEL } from 'src/engine/metadata-modules/permissions/const
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
 import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/workspace-scoped-repository';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
+import { ArxenaStandardApplicationService } from 'src/engine/workspace-manager/arxena-standard-metadata/services/arxena-standard-application.service';
 import { STANDARD_ROLE } from 'src/engine/workspace-manager/twenty-standard-application/constants/standard-role.constant';
 import { TwentyStandardApplicationService } from 'src/engine/workspace-manager/twenty-standard-application/services/twenty-standard-application.service';
 
@@ -33,6 +34,7 @@ export class WorkspaceManagerService {
     @InjectWorkspaceScopedRepository(RoleEntity)
     private readonly roleRepository: WorkspaceScopedRepository<RoleEntity>,
     private readonly applicationService: ApplicationService,
+    private readonly arxenaStandardApplicationService: ArxenaStandardApplicationService,
   ) {}
 
   public async init({
@@ -66,6 +68,12 @@ export class WorkspaceManagerService {
     });
 
     await this.twentyStandardApplicationService.synchronizeTwentyStandardApplicationOrThrow(
+      {
+        workspaceId,
+      },
+    );
+
+    await this.arxenaStandardApplicationService.synchronizeArxenaStandardApplicationOrThrow(
       {
         workspaceId,
       },

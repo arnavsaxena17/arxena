@@ -2,7 +2,7 @@
 
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Command } from 'nest-commander';
+import { Command, Option } from 'nest-commander';
 import { Repository } from 'typeorm';
 
 import type Stripe from 'stripe';
@@ -14,6 +14,7 @@ import {
 import { BillingMeterEntity } from 'src/engine/core-modules/billing/entities/billing-meter.entity';
 import { BillingPriceEntity } from 'src/engine/core-modules/billing/entities/billing-price.entity';
 import { BillingProductEntity } from 'src/engine/core-modules/billing/entities/billing-product.entity';
+import { BillingStripeCatalogService } from 'src/engine/core-modules/billing/services/billing-stripe-catalog.service';
 import { StripeBillingMeterService } from 'src/engine/core-modules/billing/stripe/services/stripe-billing-meter.service';
 import { StripePriceService } from 'src/engine/core-modules/billing/stripe/services/stripe-price.service';
 import { StripeProductService } from 'src/engine/core-modules/billing/stripe/services/stripe-product.service';
@@ -21,6 +22,7 @@ import { isStripeValidProductMetadata } from 'src/engine/core-modules/billing/ut
 import { transformStripeMeterToDatabaseMeter } from 'src/engine/core-modules/billing/utils/transform-stripe-meter-to-database-meter.util';
 import { transformStripePriceToDatabasePrice } from 'src/engine/core-modules/billing/utils/transform-stripe-price-to-database-price.util';
 import { transformStripeProductToDatabaseProduct } from 'src/engine/core-modules/billing/utils/transform-stripe-product-to-database-product.util';
+
 @Command({
   name: 'billing:sync-plans-data',
   description:
@@ -28,6 +30,8 @@ import { transformStripeProductToDatabaseProduct } from 'src/engine/core-modules
 })
 export class BillingSyncPlansDataCommand extends MigrationCommandRunner {
   private readonly batchSize = 5;
+  private ensureCatalog = false;
+
   constructor(
     @InjectRepository(BillingPriceEntity)
     private readonly billingPriceRepository: Repository<BillingPriceEntity>,
@@ -38,8 +42,21 @@ export class BillingSyncPlansDataCommand extends MigrationCommandRunner {
     private readonly stripeBillingMeterService: StripeBillingMeterService,
     private readonly stripeProductService: StripeProductService,
     private readonly stripePriceService: StripePriceService,
+    private readonly billingStripeCatalogService: BillingStripeCatalogService,
   ) {
     super();
+  }
+
+  @Option({
+    flags: '-e, --ensure-catalog',
+    description:
+      'Ensure required Stripe catalog products/prices exist before syncing to the database',
+    required: false,
+  })
+  parseEnsureCatalog(): boolean {
+    this.ensureCatalog = true;
+
+    return true;
   }
 
   private async upsertMetersRepositoryData(
@@ -142,6 +159,13 @@ export class BillingSyncPlansDataCommand extends MigrationCommandRunner {
     _passedParams: string[],
     options: MigrationCommandOptions,
   ): Promise<void> {
+    if (this.ensureCatalog) {
+      this.logger.log('Ensuring required Stripe billing catalog...');
+      await this.billingStripeCatalogService.ensureRequiredCatalog({
+        dryRun: options.dryRun,
+      });
+    }
+
     const billingMeters = await this.stripeBillingMeterService.getAllMeters();
 
     await this.upsertMetersRepositoryData(billingMeters, options);
@@ -162,6 +186,10 @@ export class BillingSyncPlansDataCommand extends MigrationCommandRunner {
       await this.billingPriceRepository.upsert(transformedPrices, {
         conflictPaths: ['stripePriceId'],
       });
+    }
+
+    if (this.ensureCatalog && options.dryRun !== true) {
+      await this.billingStripeCatalogService.assertRequiredCatalogExistsInStripe();
     }
   }
 }

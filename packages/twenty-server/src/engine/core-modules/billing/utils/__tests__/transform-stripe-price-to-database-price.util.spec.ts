@@ -188,5 +188,16 @@ describe('transformStripePriceToDatabasePrice', () => {
       expect(result.tiers).toBeUndefined();
       expect(result.currencyOptions).toBeUndefined();
     });
+
+    it('should preserve zero unit amounts', () => {
+      const mockPrice = createMockPrice({
+        unit_amount: 0,
+        unit_amount_decimal: '0',
+      });
+      const result = transformStripePriceToDatabasePrice(mockPrice);
+
+      expect(result.unitAmount).toBe(0);
+      expect(result.unitAmountDecimal).toBe('0');
+    });
   });
 });

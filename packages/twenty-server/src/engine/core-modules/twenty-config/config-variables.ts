@@ -942,6 +942,15 @@ export class ConfigVariables {
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.BILLING_CONFIG,
     description:
+      'Existing Stripe product id to use as the PRO BASE_PRODUCT when ensuring the billing catalog',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  BILLING_STRIPE_BASE_PLAN_PRODUCT_ID?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.BILLING_CONFIG,
+    description:
       'Use the ClickHouse-backed poller (instead of Stripe billing alerts) as the source of truth for metered-credit cap enforcement',
     type: ConfigVariableType.BOOLEAN,
   })

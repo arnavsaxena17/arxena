@@ -31,6 +31,7 @@ import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace
 import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/workspace-scoped-repository';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { TWENTY_STANDARD_APPLICATION } from 'src/engine/workspace-manager/twenty-standard-application/constants/twenty-standard-applications';
+import { ARXENA_STANDARD_APPLICATION } from 'src/engine/workspace-manager/arxena-standard-metadata/constants/arxena-standard-application.constant';
 
 @Injectable()
 export class ApplicationService {
@@ -429,6 +430,56 @@ export class ApplicationService {
     }
 
     return twentyStandardApplication;
+  }
+
+  async createArxenaStandardApplication(
+    {
+      workspaceId,
+      skipCacheInvalidation = false,
+    }: {
+      workspaceId: string;
+      skipCacheInvalidation?: boolean;
+    },
+    queryRunner?: QueryRunner,
+  ) {
+    const existingApplication = await this.findByUniversalIdentifier({
+      universalIdentifier: ARXENA_STANDARD_APPLICATION.universalIdentifier,
+      workspaceId,
+    });
+
+    if (isDefined(existingApplication)) {
+      return existingApplication;
+    }
+
+    const defaultPackageFields = await getDefaultApplicationPackageFields();
+
+    const arxenaStandardApplication = await this.create(
+      {
+        ...ARXENA_STANDARD_APPLICATION,
+        logicFunctionLayerId: null,
+        workspaceId,
+        canBeUninstalled: false,
+        packageJsonChecksum: defaultPackageFields.packageJsonChecksum,
+        packageJsonFileId: null,
+        yarnLockChecksum: defaultPackageFields.yarnLockChecksum,
+        yarnLockFileId: null,
+        availablePackages: defaultPackageFields.availablePackages,
+      },
+      queryRunner,
+    );
+
+    await this.uploadDefaultPackageFilesAndSetFileIds(
+      arxenaStandardApplication,
+      queryRunner,
+    );
+
+    if (!skipCacheInvalidation) {
+      await this.workspaceCacheService.invalidateAndRecompute(workspaceId, [
+        'flatApplicationMaps',
+      ]);
+    }
+
+    return arxenaStandardApplication;
   }
 
   async createWorkspaceCustomApplication(

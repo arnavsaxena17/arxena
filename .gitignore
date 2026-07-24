@@ -1,9 +1,12 @@
 **/**/.env
 .DS_Store
+*.log
+*.pid
 /.idea
 .claude/*
 !.claude/settings.json
 .cursor/debug-*.log
+.cursor/debug.log
 **/**/node_modules/
 .cache
 
@@ -63,3 +66,22 @@ screenshots/
 
 # local graphify knowledge-graph output (never commit)
 **/graphify-out/
+
+# Large / local-only artifacts (from workflows)
+sample_jds/
+sample_jds/**
+packages/twenty-e2e-testing/~/
+packages/twenty-website/public/sitemap-*.xml
+packages/twenty-server/baileys_auth_info/
+packages/twenty-server/all_resumes/
+packages/twenty-server/all_resumes_pdfs/
+packages/twenty-server/client_uploads/
+packages/twenty-server/.attachments/
+packages/twenty-server/unipile-attachments/
+packages/twenty-server/working_naukri_candidates/
+tools/chatwoot-source
+tools/chatwoot-local/
+backups/
+*.dump
+scripts/aws/.arm64-builder-ami-id
+Arxena.code-workspace
