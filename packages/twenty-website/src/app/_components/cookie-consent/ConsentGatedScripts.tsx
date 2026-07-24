@@ -14,7 +14,6 @@ const GA4_MEASUREMENT_ID = 'G-8TK071FYGG';
 export const ConsentGatedScripts = () => {
   const { consent } = useCookieConsent();
   const analyticsEnabled = consent?.categories.analytics === true;
-  const functionalEnabled = consent?.categories.functional === true;
 
   useEffect(() => {
     if (!analyticsEnabled) {
@@ -47,7 +46,7 @@ export const ConsentGatedScripts = () => {
           <MixpanelRouteSync />
         </>
       )}
-      {functionalEnabled && <WebsiteSupportChat />}
+      <WebsiteSupportChat />
     </>
   );
 };

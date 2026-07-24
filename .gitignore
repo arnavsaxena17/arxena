@@ -68,3 +68,8 @@ packages/twenty-website/public/sitemap-*.xml
 packages/twenty-server/all_resumes_pdfs/
 packages/twenty-server/working_naukri_candidates/
 tools/chatwoot-source
+
+# Local DB dumps and builder AMI cache (do not commit)
+backups/
+*.dump
+scripts/aws/.arm64-builder-ami-id

@@ -125,7 +125,7 @@ export const CookieConsentBanner = () => {
   return (
     <StyledBanner role="dialog" aria-labelledby="cookie-consent-title">
       <StyledCopy id="cookie-consent-title">
-        We use cookies for analytics and chat.{' '}
+        We use cookies for analytics.{' '}
         <StyledLink href="/legal/privacy">Privacy</StyledLink>
       </StyledCopy>
 
@@ -147,19 +147,6 @@ export const CookieConsentBanner = () => {
               }
             />
             <StyledPreferenceTitle>Analytics</StyledPreferenceTitle>
-          </StyledPreferenceRow>
-          <StyledPreferenceRow>
-            <input
-              type="checkbox"
-              checked={customCategories.functional}
-              onChange={(event) =>
-                setCustomCategories((current) => ({
-                  ...current,
-                  functional: event.target.checked,
-                }))
-              }
-            />
-            <StyledPreferenceTitle>Support chat</StyledPreferenceTitle>
           </StyledPreferenceRow>
         </StyledPreferences>
       )}
