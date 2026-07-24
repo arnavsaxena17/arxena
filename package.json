@@ -95,6 +95,8 @@
       "packages/twenty-e2e-testing",
       "packages/twenty-shared",
       "packages/twenty-orgchart",
+      "packages/twenty-orgchart-embed",
+      "packages/twenty-mcp-server",
       "packages/twenty-sdk",
       "packages/twenty-front-component-renderer",
       "packages/twenty-client-sdk",
