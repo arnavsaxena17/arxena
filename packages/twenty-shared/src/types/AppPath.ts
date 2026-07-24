@@ -36,6 +36,21 @@ export enum AppPath {
   // Deep link for twenty.com/dpa → in-app DPA generator (login-gated redirect).
   Dpa = '/dpa',
 
+  // Arxena product routes (ported from workflows)
+  OrgChart = 'org-chart',
+  Jobs = 'jobs',
+  Job = 'job/:jobId',
+  Search = 'search',
+  Assistant = 'assistant',
+  ClientCandidateSearch = 'candidate-search',
+  VideoInterview = 'video-interview',
+  VideoInterviewReview = 'video-interview-review',
+  Hot = 'hot',
+  GoogleSheet = 'GoogleSheet',
+  CustomLayoutCandidate = 'custom-layout-candidate',
+  CustomLayoutJob = 'custom-layout-job',
+  CustomLayoutMerged = 'custom-layout-merged',
+
   // 404 page not found
   NotFoundWildcard = '*',
   NotFound = '/not-found',

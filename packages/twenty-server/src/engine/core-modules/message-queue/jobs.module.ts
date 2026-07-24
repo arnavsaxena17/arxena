@@ -3,8 +3,13 @@ import { ModuleRef } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
+import { ArxChatAgentModule } from 'src/engine/core-modules/arx-chat/arx-chat-agent.module';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
+import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
+import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
+import { TheOrgModule } from 'src/engine/core-modules/theorg/theorg.module';
+import { LinkedinXrayModule } from 'src/modules/linkedin-xray/linkedin-xray.module';
 import { BillingProductEntity } from 'src/engine/core-modules/billing/entities/billing-product.entity';
 import { BillingSubscriptionItemEntity } from 'src/engine/core-modules/billing/entities/billing-subscription-item.entity';
 import { BillingSubscriptionEntity } from 'src/engine/core-modules/billing/entities/billing-subscription.entity';
@@ -71,6 +76,11 @@ import { WorkflowModule } from 'src/modules/workflow/workflow.module';
     UserVarsModule,
     EmailModule,
     BillingModule,
+    TheOrgModule,
+    CandidateSearchModule,
+    CandidateSourcingModule,
+    ArxChatAgentModule,
+    LinkedinXrayModule,
     UserWorkspaceModule,
     WorkspaceModule,
     AuthModule,

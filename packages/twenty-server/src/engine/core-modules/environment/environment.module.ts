@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import {
   ConfigVariables,
   validate,
@@ -20,11 +21,12 @@ import { EnvironmentConfigDriver } from 'src/engine/core-modules/twenty-config/d
   ],
   providers: [
     EnvironmentConfigDriver,
+    EnvironmentService,
     {
       provide: CONFIG_VARIABLES_INSTANCE_TOKEN,
       useValue: new ConfigVariables(),
     },
   ],
-  exports: [EnvironmentConfigDriver],
+  exports: [EnvironmentConfigDriver, EnvironmentService],
 })
 export class EnvironmentModule {}

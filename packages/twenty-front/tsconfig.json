@@ -21,6 +21,8 @@
     "forceConsistentCasingInFileNames": true,
     "outDir": "../../.cache/tsc",
     "paths": {
+      "twenty-orgchart": ["../twenty-orgchart/src/index.ts"],
+      "twenty-orgchart/*": ["../twenty-orgchart/src/*"],
       "@/*": ["./src/modules/*"],
       "~/*": ["./src/*"]
     },

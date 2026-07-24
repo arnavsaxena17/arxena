@@ -1,4 +1,4 @@
-import { lazy, useMemo } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 import {
   createBrowserRouter,
   createRoutesFromElements,
@@ -26,6 +26,30 @@ import { DefaultLayout } from '@/ui/layout/page/components/DefaultLayout';
 import { MainAppLayoutWithSidePanel } from '@/ui/layout/page/components/MainAppLayoutWithSidePanel';
 import { Verify } from '~/pages/onboarding/Verify';
 import { lazyWithPreload } from '~/utils/lazyWithPreload';
+
+const ArxOrgChart = lazy(() =>
+  import('@/orgchart/ArxOrgChart').then((module) => ({
+    default: module.ArxOrgChart,
+  })),
+);
+
+const Jobs = lazy(() =>
+  import('@/candidate-table/Jobs').then((module) => ({
+    default: module.Jobs,
+  })),
+);
+
+const AssistantPage = lazy(() =>
+  import('@/assistant/components/AssistantPage').then((module) => ({
+    default: module.AssistantPage,
+  })),
+);
+
+const ClientCandidateSearchPage = lazy(() =>
+  import('@/candidate-search/Search').then((module) => ({
+    default: module.Search,
+  })),
+);
 
 const RecordIndexPage = lazy(() =>
   import('~/pages/object-record/RecordIndexPage').then((module) => ({
@@ -200,6 +224,46 @@ const createWorkspaceAppRouter = (
                     to={getSettingsPath(SettingsPath.LegalDpa)}
                     replace
                   />
+                }
+              />
+              <Route
+                path={`${AppPath.OrgChart}/:companyKey?`}
+                element={
+                  <LazyRoute>
+                    <Suspense fallback={null}>
+                      <ArxOrgChart />
+                    </Suspense>
+                  </LazyRoute>
+                }
+              />
+              <Route
+                path={AppPath.Jobs}
+                element={
+                  <LazyRoute>
+                    <Suspense fallback={null}>
+                      <Jobs />
+                    </Suspense>
+                  </LazyRoute>
+                }
+              />
+              <Route
+                path={AppPath.Assistant}
+                element={
+                  <LazyRoute>
+                    <Suspense fallback={null}>
+                      <AssistantPage />
+                    </Suspense>
+                  </LazyRoute>
+                }
+              />
+              <Route
+                path={AppPath.ClientCandidateSearch}
+                element={
+                  <LazyRoute>
+                    <Suspense fallback={null}>
+                      <ClientCandidateSearchPage />
+                    </Suspense>
+                  </LazyRoute>
                 }
               />
               <Route

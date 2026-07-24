@@ -96,4 +96,11 @@ export enum SettingsPath {
   Legal = 'legal',
   LegalDpa = 'legal/dpa',
   LegalDpaNew = 'legal/dpa/new',
+
+  // Arxena settings (ported from workflows)
+  LinkedinSignUp = 'linkedin-signup',
+  WhatsappUnipile = 'whatsapp-unipile',
+  SearchPlans = 'search-plans',
+  DevelopersOrgChartEmbedNew = 'developers/org-chart-embed/new',
+  DevelopersOrgChartEmbedDetail = 'developers/org-chart-embed/:embedKeyId',
 }

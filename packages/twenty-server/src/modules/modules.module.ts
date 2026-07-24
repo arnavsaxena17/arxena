@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { LinkedinXrayModule } from 'src/modules/linkedin-xray/linkedin-xray.module';
 
 import { CalendarModule } from 'src/modules/calendar/calendar.module';
 import { ConnectedAccountModule } from 'src/modules/connected-account/connected-account.module';
@@ -9,6 +10,7 @@ import { WorkspaceMemberModule } from 'src/modules/workspace-member/workspace-me
 
 @Module({
   imports: [
+    LinkedinXrayModule,
     MessagingModule,
     CalendarModule,
     ConnectedAccountModule,

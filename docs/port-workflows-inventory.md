@@ -6,55 +6,55 @@ Living checklist for selective module ports. Skip Twenty rename leftovers (`doma
 
 | Package | Wave | Status |
 |---|---|---|
-| `packages/twenty-orgchart` | 1 | pending |
-| `packages/twenty-orgchart-embed` | 5 | pending |
-| `packages/twenty-mcp-server` | 5 | pending |
-| `packages/twenty-tinybird` | 5 | pending |
+| `packages/twenty-orgchart` | 1 | done |
+| `packages/twenty-orgchart-embed` | 5 | done |
+| `packages/twenty-mcp-server` | 5 | done |
+| `packages/twenty-tinybird` | 5 | done |
 
 ## Bucket B — Nest `core-modules`
 
 ### Primary (waves 2)
 
-- [ ] `org-chart`
-- [ ] `org-chart-embed`
-- [ ] `org-chart-outreach`
-- [ ] `candidate-search`
-- [ ] `candidate-sourcing`
-- [ ] `candidate-avatar`
-- [ ] `contact-enrichment`
-- [ ] `workspace-modifications`
-- [ ] `people-api`
-- [ ] `search-models`
+- [x] `org-chart`
+- [x] `org-chart-embed`
+- [x] `org-chart-outreach`
+- [x] `candidate-search`
+- [x] `candidate-sourcing`
+- [x] `candidate-avatar`
+- [x] `contact-enrichment`
+- [x] `workspace-modifications`
+- [x] `people-api`
+- [x] `search-models`
 
 ### Hub / chat (wave 3)
 
-- [ ] `arx-chat`
-- [ ] `warm-paths`
-- [ ] `assistant`
-- [ ] `autonomous-recruiter`
-- [ ] `website-leads`
-- [ ] `llm-chat-model`
-- [ ] `llm-tracing`
+- [x] `arx-chat`
+- [x] `warm-paths`
+- [x] `assistant`
+- [x] `autonomous-recruiter`
+- [x] `website-leads`
+- [x] `llm-chat-model`
+- [x] `llm-tracing`
 
 ### Integrations (wave 4)
 
-- [ ] `apify`
-- [ ] `bright-data`
-- [ ] `theorg`
-- [ ] `theofficialboard`
-- [ ] `linkedin-search`
-- [ ] `linkedin-company-search`
-- [ ] `linkedin-query-generation`
-- [ ] `unipile-attachments`
-- [ ] `whatsapp-media`
-- [ ] `gmail-sender`
-- [ ] `google-contacts`
-- [ ] `google-drive`
-- [ ] `google-sheets`
-- [ ] `calendar-events`
-- [ ] `extension-bridge`
-- [ ] `privacy-consent`
-- [ ] `video-interview`
+- [x] `apify`
+- [x] `bright-data`
+- [x] `theorg`
+- [x] `theofficialboard`
+- [x] `linkedin-search`
+- [x] `linkedin-company-search`
+- [x] `linkedin-query-generation`
+- [x] `unipile-attachments`
+- [x] `whatsapp-media`
+- [x] `gmail-sender`
+- [x] `google-contacts`
+- [x] `google-drive`
+- [x] `google-sheets`
+- [x] `calendar-events`
+- [x] `extension-bridge`
+- [x] `privacy-consent`
+- [x] `video-interview`
 
 ### Skip / defer
 
@@ -66,10 +66,10 @@ Living checklist for selective module ports. Skip Twenty rename leftovers (`doma
 
 ### Shared (wave 1)
 
-- [ ] `src/graphql/` (queries/mutations)
-- [ ] Types: `CandidateSearchTypes`, `ArxChatTypes`, `candidate`, `job-data`
-- [ ] Constants: org-chart guards, billing credits, privacy-consent, chrome webstore, SettingsFeatures extras, workspaceMemberProfileFields
-- [ ] Utils: `orgchart/*`, Unipile/LinkedIn helpers, privacy-consent, calendly, clientGeo
+- [x] `src/graphql/` (queries/mutations)
+- [x] Types: `CandidateSearchTypes`, `ArxChatTypes`, `candidate`, `job-data`
+- [x] Constants: org-chart guards, billing credits, privacy-consent, chrome webstore, SettingsFeatures extras, workspaceMemberProfileFields
+- [x] Utils: `orgchart/*`, Unipile/LinkedIn helpers, privacy-consent, calendly, clientGeo
 
 ### Front modules
 
